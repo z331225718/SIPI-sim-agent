@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-spice"
+version = "0.1.0"
+description = "PI simulation middleware with HSPICE deck compatibility"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=1.26",
+  "pyyaml>=6.0",
+  "scikit-rf>=1.6",
+]
+
+[project.scripts]
+agent-spice = "agent_spice.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
