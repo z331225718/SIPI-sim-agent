@@ -78,7 +78,7 @@ On the machine with solvers installed:
 .\tools\install-solvers.ps1 -PackagePortable .\third_party\solver-packages\agent-spice-solvers-win64.zip
 ```
 
-This package is generated as a runtime-only zip: solver `bin` directories, ngspice `lib` and `share`, XDM native support files, plus Xyce/XDM documentation or license files needed for redistribution review. The packager also creates XDM's expected Boost `-gd` DLL alias because the published Windows executable references that filename.
+This package is generated as a runtime-only zip: solver `bin` directories, ngspice `lib` and `share`, XDM native support files, plus Xyce/XDM documentation or license files needed for redistribution review. For XDM, the packager includes an extracted Python 3.9 runtime, a launcher for `xdm_bdl`, Boost/debug-runtime aliases, and the minimal `ucrtbased.dll` shim needed by the published Windows native modules on clean machines.
 
 After refreshing it, validate the repository-default path in a clean install root:
 

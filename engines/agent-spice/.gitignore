@@ -1,5 +1,7 @@
 __pycache__/
 *.py[cod]
+!third_party/solver-shims/**/*.pyc
+!third_party/solver-shims/**/*.pyd
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
