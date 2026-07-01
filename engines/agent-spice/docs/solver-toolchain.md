@@ -78,7 +78,7 @@ On the machine with solvers installed:
 .\tools\install-solvers.ps1 -PackagePortable .\third_party\solver-packages\agent-spice-solvers-win64.zip
 ```
 
-This package is generated as a runtime-only zip: solver `bin` directories, ngspice `lib` and `share`, plus Xyce/XDM documentation or license files needed for redistribution review.
+This package is generated as a runtime-only zip: solver `bin` directories, ngspice `lib` and `share`, XDM native support files, plus Xyce/XDM documentation or license files needed for redistribution review.
 
 After refreshing it, validate the repository-default path in a clean install root:
 
