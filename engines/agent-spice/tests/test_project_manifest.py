@@ -27,6 +27,12 @@ outputs:
     assert manifest.output_root == Path("out")
 
 
+def test_manifest_accepts_xyce_xdm_backend():
+    manifest = ProjectManifest.from_mapping({"name": "demo_pdn", "backend": "xyce-xdm"})
+
+    assert manifest.backend == "xyce-xdm"
+
+
 def test_prepare_run_directory_is_deterministic(tmp_path: Path):
     run_dir = prepare_run_directory(tmp_path, project_name="demo_pdn", case_name="base")
 

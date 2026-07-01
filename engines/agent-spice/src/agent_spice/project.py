@@ -8,7 +8,7 @@ from typing import Any
 import yaml
 
 
-VALID_BACKENDS = {"ngspice", "xyce"}
+VALID_BACKENDS = {"ngspice", "xyce", "xyce-xdm"}
 
 
 def _required_non_empty_string(data: Mapping[str, Any], field: str) -> str:

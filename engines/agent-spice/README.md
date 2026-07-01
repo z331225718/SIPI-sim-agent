@@ -58,7 +58,21 @@ python -m agent_spice.cli run-hspice tests/fixtures/hspice/simple_pi.sp --backen
 Test-Path runs-exec-ngspice/simple_pi/simple_pi__base/stdout.log
 ```
 
-For Xyce today, run XDM explicitly before Xyce:
+After installing solvers, run the XDM-assisted Xyce execution smoke:
+
+```powershell
+python -m agent_spice.cli run-hspice tests/fixtures/hspice/simple_pi.sp --backend xyce-xdm --output-root runs-exec-xyce-xdm --execute
+Test-Path runs-exec-xyce-xdm/simple_pi/simple_pi__base/case.sp
+Test-Path runs-exec-xyce-xdm/simple_pi/simple_pi__base/xdm-out/case.sp
+Test-Path runs-exec-xyce-xdm/simple_pi/simple_pi__base/case.cir
+Test-Path runs-exec-xyce-xdm/simple_pi/simple_pi__base/xdm.stdout.log
+Test-Path runs-exec-xyce-xdm/simple_pi/simple_pi__base/xdm.stderr.log
+Test-Path runs-exec-xyce-xdm/simple_pi/simple_pi__base/xyce.stdout.log
+Test-Path runs-exec-xyce-xdm/simple_pi/simple_pi__base/xyce.stderr.log
+Test-Path runs-exec-xyce-xdm/simple_pi/simple_pi__base/run_summary.json
+```
+
+To inspect the raw solver toolchain directly, run XDM explicitly before Xyce:
 
 ```powershell
 New-Item -ItemType Directory -Force xdm-smoke | Out-Null
