@@ -10,3 +10,5 @@ dist/
 *.egg-info/
 runs/
 runs-smoke/
+runs-*/
+xdm-smoke/
