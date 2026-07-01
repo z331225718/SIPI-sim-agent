@@ -15,8 +15,9 @@ Current checkpoint:
 Install and verify local solver tools:
 
 ```powershell
+git lfs pull
 .\tools\install-solvers.ps1
-.\tools\doctor-solvers.ps1
+.\tools\doctor-solvers.ps1 -Smoke
 ```
 
 Open a new terminal after installation, or refresh the current shell:
@@ -66,6 +67,16 @@ Xyce xdm-smoke/simple_pi.sp
 ```
 
 Solver toolchain details are in `docs/solver-toolchain.md`.
+
+For remote Windows machines without administrator rights, use the repo-local portable solver package:
+
+```powershell
+git lfs pull
+.\tools\install-solvers.ps1 -SkipPathUpdate
+.\tools\doctor-solvers.ps1 -Smoke
+```
+
+When `third_party/solver-packages/agent-spice-solvers-win64.zip` exists, `install-solvers.ps1` uses that repo-local package directly. Use `-PreferDownload` to rebuild from official downloads, or `-PackagePortable .\third_party\solver-packages\agent-spice-solvers-win64.zip` to refresh the committed package from a working local install.
 
 The project spec is in `docs/pi-spice-simulator-spec.md`.
 
