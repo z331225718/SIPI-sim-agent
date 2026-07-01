@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from agent_spice.hspice.audit import audit_deck
 from agent_spice.hspice.manifest import CompatReport
+from agent_spice.hspice.measure import normalize_outputs
 
 
 @dataclass(frozen=True)
@@ -25,6 +27,12 @@ def _has_post_option(line: str) -> bool:
 
 def convert_hspice_deck(text: str, backend: str) -> ConversionResult:
     report = CompatReport(backend=backend)
+    audit = audit_deck(text)
+    outputs = normalize_outputs(text)
+    report.set_audit(audit.directive_counts, audit.includes, audit.libraries, audit.unsupported_directives)
+    report.set_outputs(outputs.probes, outputs.measures)
+    for directive in audit.unsupported_directives:
+        report.add_unsupported(directive, "unsupported_directive")
     output: list[str] = []
     for raw in text.splitlines():
         stripped = raw.strip()
@@ -43,4 +51,5 @@ def convert_hspice_deck(text: str, backend: str) -> ConversionResult:
             report.add_action("drop_option", stripped, "")
             continue
         output.append(raw)
+    report.finalize_summary()
     return ConversionResult(deck_text="\n".join(output).strip() + "\n", report=report)

@@ -1,0 +1,16 @@
+id: alter_corners
+top: alter_corners.sp
+source_kind: synthetic-real
+features:
+  - alter
+  - param
+  - probe
+expected_cases:
+  - alter_corners__base
+  - alter_corners__alter_001_fast
+  - alter_corners__alter_002_slow
+backends:
+  - ngspice
+compat_tier: auto_converted
+deps: []
+notes: Synthetic corner deck that verifies stable alter case expansion and reports.

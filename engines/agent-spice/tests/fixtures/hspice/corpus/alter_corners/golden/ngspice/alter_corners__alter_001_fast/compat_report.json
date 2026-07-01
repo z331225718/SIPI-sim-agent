@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "backend": "ngspice",
+  "deck": {
+    "id": "alter_corners",
+    "source": "tests/fixtures/hspice/corpus/alter_corners/alter_corners.sp",
+    "sha256": "f7138fd8fbaddfbcb12f7f54a2f2bed9a133f59a22a30ae5473b4a15fd0538e0"
+  },
+  "case": {
+    "name": "alter_corners__alter_001_fast",
+    "kind": "alter",
+    "alter_label": "fast"
+  },
+  "audit": {
+    "directive_counts": {
+      ".param": 2,
+      ".probe": 1,
+      ".tran": 1,
+      ".end": 1
+    },
+    "includes": [],
+    "libraries": [],
+    "unsupported_directives": []
+  },
+  "outputs": {
+    "probes": [
+      "v(rail)"
+    ],
+    "measures": []
+  },
+  "actions": [
+    {
+      "kind": "rewrite",
+      "source": ".probe tran v(rail)",
+      "target": ".print tran v(rail)"
+    }
+  ],
+  "unsupported": [],
+  "summary": {
+    "status": "auto_converted",
+    "rewrites": 1,
+    "drops": 0,
+    "unsupported": 0
+  }
+}

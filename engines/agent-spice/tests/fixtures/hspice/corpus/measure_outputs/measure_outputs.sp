@@ -1,0 +1,10 @@
+* synthetic-real output normalization deck
+Vsrc vdd 0 0.8
+R1 vdd load 10m
+C1 load 0 1u
+.print tran v(load)
+.probe tran v(vdd) i(Vsrc)
+.measure tran min_load min v(load) from=1n to=5n
+.meas tran max_load max v(load) from=1n to=5n
+.tran 10p 5n
+.end

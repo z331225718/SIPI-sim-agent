@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
+import re
 from typing import TYPE_CHECKING
 
 from agent_spice.deck.builder import write_case_artifacts
@@ -51,12 +53,37 @@ def _write_xyce_xdm_summary(run_dir: Path, result: "XyceXdmRunResult") -> None:
     (run_dir / "run_summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def _stable_source_path(deck_path: Path) -> str:
+    if not deck_path.is_absolute():
+        return deck_path.as_posix()
+    try:
+        return deck_path.resolve().relative_to(Path.cwd().resolve()).as_posix()
+    except ValueError:
+        return deck_path.name
+
+
+def _case_metadata(deck_id: str, case_name: str) -> tuple[str, str | None]:
+    suffix = case_name.removeprefix(f"{deck_id}__")
+    if suffix == "base":
+        return "base", None
+    match = re.fullmatch(r"alter_\d{3}(?:_(?P<label>.+))?", suffix)
+    if match:
+        return "alter", match.group("label")
+    return "case", suffix or None
+
+
 def run_hspice(deck_path: Path, backend_name: str, output_root: Path, execute: bool = False) -> int:
     source = deck_path.read_text(encoding="utf-8")
+    deck_id = deck_path.stem
+    source_hash = hashlib.sha256(source.encode("utf-8")).hexdigest()
+    source_path = _stable_source_path(deck_path)
     cases = split_alter_cases(source, stem=deck_path.stem)
     for case in cases:
         conversion = convert_hspice_deck(case.text, backend=backend_name)
-        run_dir = prepare_run_directory(output_root, project_name=deck_path.stem, case_name=case.name)
+        case_kind, alter_label = _case_metadata(deck_id, case.name)
+        conversion.report.set_deck(deck_id=deck_id, source=source_path, sha256=source_hash)
+        conversion.report.set_case(name=case.name, kind=case_kind, alter_label=alter_label)
+        run_dir = prepare_run_directory(output_root, project_name=deck_id, case_name=case.name)
         artifacts = write_case_artifacts(run_dir, conversion.deck_text, conversion.report)
         hspice_case_path = run_dir / "case.sp"
         if backend_name == "xyce-xdm":

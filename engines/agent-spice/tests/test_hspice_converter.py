@@ -38,3 +38,28 @@ def test_compat_report_serializes_to_json():
     encoded = result.report.to_json()
 
     assert json.loads(encoded)["backend"] == "xyce"
+
+
+def test_compat_report_includes_audit_outputs_and_summary():
+    result = convert_hspice_deck(
+        ".include 'models.inc'\n"
+        ".lib './corners.lib' tt\n"
+        ".probe tran v(vdd)\n"
+        ".measure tran droop min v(vdd) from=1n to=5n\n"
+        ".fft v(vdd)\n"
+        ".end\n",
+        backend="ngspice",
+    )
+
+    data = json.loads(result.report.to_json())
+
+    assert data["schema_version"] == 1
+    assert data["audit"]["directive_counts"][".include"] == 1
+    assert data["audit"]["libraries"] == [["./corners.lib", "tt"]]
+    assert data["audit"]["unsupported_directives"] == [".fft"]
+    assert data["outputs"]["probes"] == ["v(vdd)"]
+    assert data["outputs"]["measures"][0]["name"] == "droop"
+    assert data["unsupported"] == [{"line": ".fft", "reason": "unsupported_directive"}]
+    assert data["summary"]["status"] == "blocked"
+    assert data["summary"]["rewrites"] == 1
+    assert data["summary"]["unsupported"] == 1

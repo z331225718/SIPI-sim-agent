@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "backend": "ngspice",
+  "deck": {
+    "id": "vrm_decap_pdn",
+    "source": "tests/fixtures/hspice/corpus/vrm_decap_pdn/vrm_decap_pdn.sp",
+    "sha256": "28be298e4a90ea75691b1ce625366ec3c166cf0e5af67816fb5cd7e29c96ec35"
+  },
+  "case": {
+    "name": "vrm_decap_pdn__base",
+    "kind": "base",
+    "alter_label": null
+  },
+  "audit": {
+    "directive_counts": {
+      ".inc": 1,
+      ".option": 1,
+      ".param": 1,
+      ".probe": 1,
+      ".measure": 1,
+      ".tran": 1,
+      ".end": 1
+    },
+    "includes": [
+      "deps/decap.inc"
+    ],
+    "libraries": [],
+    "unsupported_directives": []
+  },
+  "outputs": {
+    "probes": [
+      "v(load)",
+      "i(Vvrm)"
+    ],
+    "measures": [
+      {
+        "analysis": "tran",
+        "name": "min_vload",
+        "operation": "min",
+        "target": "v(load)",
+        "raw": ".measure tran min_vload min v(load) from=1n to=5n"
+      }
+    ]
+  },
+  "actions": [
+    {
+      "kind": "rewrite",
+      "source": ".inc 'deps/decap.inc'",
+      "target": ".include 'deps/decap.inc'"
+    },
+    {
+      "kind": "drop_option",
+      "source": ".option post=2",
+      "target": ""
+    },
+    {
+      "kind": "rewrite",
+      "source": ".probe tran v(load) i(Vvrm)",
+      "target": ".print tran v(load) i(Vvrm)"
+    }
+  ],
+  "unsupported": [],
+  "summary": {
+    "status": "auto_converted",
+    "rewrites": 2,
+    "drops": 1,
+    "unsupported": 0
+  }
+}

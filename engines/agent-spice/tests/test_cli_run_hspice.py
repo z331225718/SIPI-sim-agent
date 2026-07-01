@@ -85,6 +85,43 @@ def test_run_hspice_executes_xyce_xdm_and_writes_two_stage_artifacts(tmp_path: P
     assert summary["stages"]["xyce"]["returncode"] == 0
 
 
+def test_run_hspice_report_includes_deck_and_case_metadata(tmp_path: Path):
+    deck = tmp_path / "legacy.sp"
+    deck.write_text(".probe tran v(vdd)\n.tran 1p 1n\n.end\n", encoding="utf-8")
+
+    exit_code = run_hspice(deck, backend_name="ngspice", output_root=tmp_path / "runs", execute=False)
+
+    report = json.loads((tmp_path / "runs" / "legacy" / "legacy__base" / "compat_report.json").read_text())
+    assert exit_code == 0
+    assert report["deck"]["id"] == "legacy"
+    assert report["deck"]["source"] == "legacy.sp"
+    assert len(report["deck"]["sha256"]) == 64
+    assert report["case"] == {"name": "legacy__base", "kind": "base", "alter_label": None}
+
+
+def test_run_hspice_report_marks_alter_cases(tmp_path: Path):
+    deck = tmp_path / "legacy.sp"
+    deck.write_text(
+        ".param cdecap=1u\n"
+        ".alter high_decap\n"
+        ".param cdecap=2u\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+
+    exit_code = run_hspice(deck, backend_name="ngspice", output_root=tmp_path / "runs", execute=False)
+
+    report = json.loads(
+        (tmp_path / "runs" / "legacy" / "legacy__alter_001_high_decap" / "compat_report.json").read_text()
+    )
+    assert exit_code == 0
+    assert report["case"] == {
+        "name": "legacy__alter_001_high_decap",
+        "kind": "alter",
+        "alter_label": "high_decap",
+    }
+
+
 def test_run_hspice_returns_xdm_failure_code_for_xyce_xdm(tmp_path: Path, monkeypatch):
     from agent_spice.backend.base import BackendResult
     from agent_spice.backend.xyce import XyceXdmRunResult

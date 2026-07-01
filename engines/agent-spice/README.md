@@ -51,6 +51,12 @@ Test-Path runs-smoke-alter/alter_pi/alter_pi__alter_001_high_decap/case.cir
 Test-Path runs-smoke-alter/alter_pi/alter_pi__alter_002_low_decap/case.cir
 ```
 
+Verify the synthetic-real HSPICE corpus golden reports:
+
+```powershell
+python -m pytest tests/test_hspice_corpus_golden.py -v
+```
+
 After installing solvers, run the ngspice execution smoke:
 
 ```powershell
