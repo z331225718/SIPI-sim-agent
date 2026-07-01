@@ -1,0 +1,11 @@
+{
+  "model": "chiplet_demo",
+  "bumps": [
+    {
+      "name": "VDD_A1",
+      "node": "load",
+      "return_node": "0",
+      "waveform": [[0.0, 0.01], [1e-9, 0.1]]
+    }
+  ]
+}

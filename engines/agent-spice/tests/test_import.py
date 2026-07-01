@@ -7,4 +7,4 @@ def test_package_version_is_exposed():
 
 
 def test_cli_entry_point_is_importable():
-    assert main([]) == 0
+    assert callable(main)

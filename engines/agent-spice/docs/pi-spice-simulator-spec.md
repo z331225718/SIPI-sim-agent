@@ -418,6 +418,7 @@ MVP 先支持可控中间格式，不直接押注厂商 CPM 私有格式。
 - CPM-lite JSON -> PWL 电流源。
 - 自动生成 deck 并运行 TRAN。
 - 输出基础报告：拟合误差、passivity、droop、runtime、memory。
+- M1 兼容矩阵见 `docs/m1-compatibility-matrix.md`，记录 HSPICE 子集覆盖、测试入口和延期项。
 
 成功标准：
 
