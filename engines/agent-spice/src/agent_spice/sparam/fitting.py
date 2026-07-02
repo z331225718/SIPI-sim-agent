@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from html import escape
 import inspect
 import json
+import math
 from pathlib import Path
 from typing import Any, Callable
 
@@ -36,8 +38,10 @@ class SParamFitResult:
     touchstone_path: Path
     spice_path: Path
     report_path: Path | None
+    html_report_path: Path | None
     ports: int
     frequency_points: int
+    frequency_range_hz: list[float] | None
     reference_impedance: list[float]
     config: SParamFitConfig
     rms_error: float | None
@@ -58,10 +62,13 @@ class SParamFitResult:
             "touchstone_path": str(self.touchstone_path),
             "spice_path": str(self.spice_path),
             "report_path": None if self.report_path is None else str(self.report_path),
+            "html_report_path": None if self.html_report_path is None else str(self.html_report_path),
             "ports": self.ports,
             "frequency_points": self.frequency_points,
+            "frequency_range_hz": self.frequency_range_hz,
             "reference_impedance": self.reference_impedance,
             "config": asdict(self.config),
+            "quality": _quality_summary(self),
             "rms_error": self.rms_error,
             "passive_before_enforce": self.passive_before_enforce,
             "passive_after_enforce": self.passive_after_enforce,
@@ -74,6 +81,12 @@ def _reference_impedance(network: Any) -> list[float]:
     if len(network.z0) == 0:
         return []
     return [float(value.real) for value in network.z0[0]]
+
+
+def _frequency_range(network: Any) -> list[float] | None:
+    if len(network.f) == 0:
+        return None
+    return [float(network.f[0]), float(network.f[-1])]
 
 
 def _safe_bool(method, **kwargs) -> bool | None:
@@ -117,6 +130,233 @@ def _safe_rms_error(vector_fit: VectorFitting, parameter_type: str) -> float | N
         return None
 
 
+def _quality_summary(result: SParamFitResult) -> dict[str, Any]:
+    if result.passive_after_enforce is True:
+        passivity = "passive"
+    elif result.passive_after_enforce is False:
+        passivity = "violations remain"
+    else:
+        passivity = "unknown"
+    return {
+        "rms_error": result.rms_error,
+        "passivity": passivity,
+        "passivity_enforcement_enabled": result.config.enforce_passivity,
+        "violation_bands_after": len(result.passivity_violations_after or []),
+    }
+
+
+def _format_float(value: float | None) -> str:
+    if value is None:
+        return "n/a"
+    return f"{value:.6g}"
+
+
+def _format_hz(value: float | None) -> str:
+    if value is None:
+        return "n/a"
+    units = [(1e9, "GHz"), (1e6, "MHz"), (1e3, "kHz")]
+    for scale, suffix in units:
+        if abs(value) >= scale:
+            return f"{value / scale:.6g} {suffix}"
+    return f"{value:.6g} Hz"
+
+
+def _format_bool(value: bool | None) -> str:
+    if value is True:
+        return "yes"
+    if value is False:
+        return "no"
+    return "unknown"
+
+
+def _network_s_value(network: Any, point_index: int, row: int, column: int) -> complex:
+    try:
+        return complex(network.s[point_index, row, column])
+    except TypeError:
+        return complex(network.s[point_index][row][column])
+
+
+def _to_db(value: complex) -> float:
+    magnitude = max(abs(value), 1e-300)
+    return 20.0 * math.log10(magnitude)
+
+
+def _comparison_traces(network: Any, vector_fit: VectorFitting, max_traces: int = 16) -> list[dict[str, Any]]:
+    if not hasattr(network, "s") or not hasattr(vector_fit, "get_model_response"):
+        return []
+    traces: list[dict[str, Any]] = []
+    freqs = [float(value) for value in network.f]
+    for row in range(network.nports):
+        for column in range(network.nports):
+            if len(traces) >= max_traces:
+                return traces
+            try:
+                fitted = _call_with_supported_kwargs(vector_fit.get_model_response, row, column, freqs=network.f)
+                original_db = [_to_db(_network_s_value(network, idx, row, column)) for idx in range(len(freqs))]
+                fitted_db = [_to_db(complex(value)) for value in fitted]
+            except Exception:
+                continue
+            traces.append(
+                {
+                    "label": f"S{row + 1}{column + 1}",
+                    "frequencies_hz": freqs,
+                    "original_db": original_db,
+                    "fitted_db": fitted_db,
+                }
+            )
+    return traces
+
+
+def _svg_polyline(points: list[tuple[float, float]]) -> str:
+    return " ".join(f"{x:.2f},{y:.2f}" for x, y in points)
+
+
+def _render_trace_chart(trace: dict[str, Any]) -> str:
+    width = 760
+    height = 320
+    left = 64
+    right = 24
+    top = 24
+    bottom = 48
+    plot_width = width - left - right
+    plot_height = height - top - bottom
+    freqs = trace["frequencies_hz"]
+    values = trace["original_db"] + trace["fitted_db"]
+    y_min = min(values)
+    y_max = max(values)
+    if math.isclose(y_min, y_max):
+        y_min -= 1.0
+        y_max += 1.0
+    padding = max((y_max - y_min) * 0.08, 0.5)
+    y_min -= padding
+    y_max += padding
+    positive_freqs = [max(freq, 1e-300) for freq in freqs]
+    x_min = math.log10(min(positive_freqs))
+    x_max = math.log10(max(positive_freqs))
+    if math.isclose(x_min, x_max):
+        x_max += 1.0
+
+    def map_points(series: list[float]) -> list[tuple[float, float]]:
+        points = []
+        for freq, value in zip(positive_freqs, series):
+            x = left + ((math.log10(freq) - x_min) / (x_max - x_min)) * plot_width
+            y = top + ((y_max - value) / (y_max - y_min)) * plot_height
+            points.append((x, y))
+        return points
+
+    original_points = _svg_polyline(map_points(trace["original_db"]))
+    fitted_points = _svg_polyline(map_points(trace["fitted_db"]))
+    x_start = _format_hz(min(freqs))
+    x_end = _format_hz(max(freqs))
+    y_top = _format_float(y_max)
+    y_bottom = _format_float(y_min)
+    label = escape(trace["label"])
+    return f"""
+<section class="chart">
+  <h3>{label} Original vs Fitted</h3>
+  <svg viewBox="0 0 {width} {height}" role="img" aria-label="{label} original vs fitted magnitude">
+    <rect x="0" y="0" width="{width}" height="{height}" class="plot-bg" />
+    <line x1="{left}" y1="{top}" x2="{left}" y2="{height - bottom}" class="axis" />
+    <line x1="{left}" y1="{height - bottom}" x2="{width - right}" y2="{height - bottom}" class="axis" />
+    <text x="12" y="{top + 4}" class="tick">{y_top} dB</text>
+    <text x="12" y="{height - bottom}" class="tick">{y_bottom} dB</text>
+    <text x="{left}" y="{height - 18}" class="tick">{escape(x_start)}</text>
+    <text x="{width - right - 92}" y="{height - 18}" class="tick">{escape(x_end)}</text>
+    <polyline points="{original_points}" class="line original" />
+    <polyline points="{fitted_points}" class="line fitted" />
+  </svg>
+  <div class="legend"><span class="swatch original"></span>Original Touchstone <span class="swatch fitted"></span>Fitted model</div>
+</section>
+"""
+
+
+def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -> str:
+    quality = _quality_summary(result)
+    freq_start = None if result.frequency_range_hz is None else result.frequency_range_hz[0]
+    freq_end = None if result.frequency_range_hz is None else result.frequency_range_hz[1]
+    violation_rows = "\n".join(
+        f"<tr><td>{_format_hz(band[0])}</td><td>{_format_hz(band[1])}</td></tr>"
+        for band in (result.passivity_violations_after or [])
+    )
+    if not violation_rows:
+        violation_rows = "<tr><td colspan=\"2\">No violation bands reported after enforcement.</td></tr>"
+    trace_sections = "\n".join(_render_trace_chart(trace) for trace in traces)
+    if not trace_sections:
+        trace_sections = "<p class=\"muted\">Comparison plot unavailable for this scikit-rf version or input.</p>"
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>S-Parameter Fit Report</title>
+  <style>
+    body {{ font-family: Segoe UI, Arial, sans-serif; margin: 32px; color: #17202a; background: #f7f9fb; }}
+    h1, h2, h3 {{ color: #102a43; }}
+    .cards {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 20px 0; }}
+    .card {{ background: white; border: 1px solid #d9e2ec; border-radius: 8px; padding: 14px; }}
+    .label {{ color: #627d98; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }}
+    .value {{ font-size: 20px; font-weight: 650; margin-top: 6px; }}
+    table {{ width: 100%; border-collapse: collapse; background: white; margin: 12px 0 24px; }}
+    th, td {{ text-align: left; padding: 8px 10px; border-bottom: 1px solid #d9e2ec; }}
+    th {{ background: #eef2f7; }}
+    .chart {{ background: white; border: 1px solid #d9e2ec; border-radius: 8px; padding: 16px; margin: 14px 0; }}
+    svg {{ width: 100%; max-width: 900px; height: auto; }}
+    .plot-bg {{ fill: #fbfdff; }}
+    .axis {{ stroke: #829ab1; stroke-width: 1.2; }}
+    .tick {{ fill: #52606d; font-size: 12px; }}
+    .line {{ fill: none; stroke-width: 2.4; }}
+    .original {{ stroke: #1f77b4; }}
+    .fitted {{ stroke: #d62728; stroke-dasharray: 6 4; }}
+    .legend {{ color: #52606d; font-size: 13px; }}
+    .swatch {{ display: inline-block; width: 22px; height: 3px; margin: 0 6px 3px 14px; vertical-align: middle; }}
+    .swatch.original {{ background: #1f77b4; }}
+    .swatch.fitted {{ background: repeating-linear-gradient(90deg, #d62728 0 8px, transparent 8px 13px); }}
+    .muted {{ color: #627d98; }}
+  </style>
+</head>
+<body>
+  <h1>S-Parameter Fit Report</h1>
+  <div class="cards">
+    <div class="card"><div class="label">Ports</div><div class="value">{result.ports}</div></div>
+    <div class="card"><div class="label">Frequency Points</div><div class="value">{result.frequency_points}</div></div>
+    <div class="card"><div class="label">RMS Error</div><div class="value">{_format_float(result.rms_error)}</div></div>
+    <div class="card"><div class="label">Passivity</div><div class="value">{escape(str(quality["passivity"]))}</div></div>
+  </div>
+
+  <h2>Input And Output</h2>
+  <table>
+    <tr><th>Item</th><th>Value</th></tr>
+    <tr><td>Touchstone</td><td>{escape(str(result.touchstone_path))}</td></tr>
+    <tr><td>SPICE subcircuit</td><td>{escape(str(result.spice_path))}</td></tr>
+    <tr><td>JSON report</td><td>{escape(str(result.report_path))}</td></tr>
+    <tr><td>Frequency span</td><td>{_format_hz(freq_start)} to {_format_hz(freq_end)}</td></tr>
+    <tr><td>Reference impedance</td><td>{escape(', '.join(_format_float(value) for value in result.reference_impedance))}</td></tr>
+  </table>
+
+  <h2>Fit Configuration</h2>
+  <table>
+    <tr><th>Field</th><th>Value</th></tr>
+    {''.join(f'<tr><td>{escape(key)}</td><td>{escape(str(value))}</td></tr>' for key, value in asdict(result.config).items())}
+  </table>
+
+  <h2>Passivity</h2>
+  <table>
+    <tr><th>Check</th><th>Value</th></tr>
+    <tr><td>Passive before enforcement</td><td>{_format_bool(result.passive_before_enforce)}</td></tr>
+    <tr><td>Passive after enforcement</td><td>{_format_bool(result.passive_after_enforce)}</td></tr>
+    <tr><td>Enforcement enabled</td><td>{_format_bool(result.config.enforce_passivity)}</td></tr>
+  </table>
+  <table>
+    <tr><th>Violation band start</th><th>Violation band end</th></tr>
+    {violation_rows}
+  </table>
+
+  <h2>Original vs Fitted</h2>
+  {trace_sections}
+</body>
+</html>
+"""
+
+
 def _fit_model(vector_fit: VectorFitting, config: SParamFitConfig) -> None:
     if config.mode == "auto":
         _call_with_supported_kwargs(
@@ -150,6 +390,7 @@ def fit_touchstone_to_spice(
     output_path: Path,
     config: SParamFitConfig | None = None,
     report_path: Path | None = None,
+    html_report_path: Path | None = None,
 ) -> SParamFitResult:
     config = config or SParamFitConfig()
     network = rf.Network(str(touchstone_path))
@@ -178,8 +419,10 @@ def fit_touchstone_to_spice(
         touchstone_path=touchstone_path,
         spice_path=output_path,
         report_path=report_path,
+        html_report_path=html_report_path,
         ports=network.nports,
         frequency_points=len(network.f),
+        frequency_range_hz=_frequency_range(network),
         reference_impedance=_reference_impedance(network),
         config=config,
         rms_error=rms_error,
@@ -191,4 +434,10 @@ def fit_touchstone_to_spice(
     if report_path is not None:
         report_path.parent.mkdir(parents=True, exist_ok=True)
         report_path.write_text(json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if html_report_path is not None:
+        html_report_path.parent.mkdir(parents=True, exist_ok=True)
+        html_report_path.write_text(
+            _render_html_report(result, _comparison_traces(network, vector_fit)),
+            encoding="utf-8",
+        )
     return result

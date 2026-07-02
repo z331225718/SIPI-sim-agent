@@ -119,6 +119,7 @@ def main(argv: list[str] | None = None) -> int:
     fit_parser.add_argument("touchstone", type=Path)
     fit_parser.add_argument("--output", type=Path, required=True)
     fit_parser.add_argument("--report", type=Path)
+    fit_parser.add_argument("--html-report", type=Path)
     fit_parser.add_argument("--mode", choices=["auto", "manual"], default="auto")
     fit_parser.add_argument("--n-poles-real", type=int, default=2)
     fit_parser.add_argument("--n-poles-cmplx", type=int, default=2)
@@ -141,7 +142,14 @@ def main(argv: list[str] | None = None) -> int:
             subckt_name=args.subckt_name,
         )
         report_path = args.report or (args.output.parent / "fit_report.json")
-        fit_touchstone_to_spice(args.touchstone, args.output, config=config, report_path=report_path)
+        html_report_path = args.html_report or (args.output.parent / "fit_report.html")
+        fit_touchstone_to_spice(
+            args.touchstone,
+            args.output,
+            config=config,
+            report_path=report_path,
+            html_report_path=html_report_path,
+        )
         return 0
     raise ValueError(f"Unsupported command '{args.command}'")
 

@@ -57,12 +57,13 @@ Verify the synthetic-real HSPICE corpus golden reports:
 python -m pytest tests/test_hspice_corpus_golden.py -v
 ```
 
-Generate an S-parameter fitted SPICE subcircuit and fit report:
+Generate an S-parameter fitted SPICE subcircuit plus JSON and HTML fit reports:
 
 ```powershell
-python -m agent_spice.cli fit-sparam tests/fixtures/sparam/simple_through.s2p --output runs-sparam/simple_through.sp --report runs-sparam/fit_report.json
+python -m agent_spice.cli fit-sparam tests/fixtures/sparam/simple_through.s2p --output runs-sparam/simple_through.sp --report runs-sparam/fit_report.json --html-report runs-sparam/fit_report.html
 Test-Path runs-sparam/simple_through.sp
 Test-Path runs-sparam/fit_report.json
+Test-Path runs-sparam/fit_report.html
 ```
 
 When using Python module execution, use the underscore package name `agent_spice.cli`. The hyphenated `agent-spice` name is only for the installed console script.

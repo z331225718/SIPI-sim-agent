@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import re
 
 from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice
 
@@ -45,6 +46,10 @@ class FakeVectorFitting:
         self.calls.append("get_rms_error")
         return 0.125
 
+    def get_model_response(self, i, j, freqs=None):
+        self.calls.append("get_model_response")
+        return [0.10 + 0.01j, 0.20 + 0.02j]
+
     def write_spice_subcircuit_s(self, filename, **kwargs):
         self.calls.append("write_spice_subcircuit_s")
         self.write_spice_kwargs = kwargs
@@ -54,6 +59,10 @@ class FakeVectorFitting:
 class FakeNetwork:
     nports = 2
     f = [1e6, 2e6]
+    s = [
+        [[0.11 + 0.01j, 0.78 - 0.02j], [0.77 - 0.02j, 0.12 + 0.01j]],
+        [[0.20 + 0.02j, 0.70 - 0.10j], [0.69 - 0.10j, 0.21 + 0.02j]],
+    ]
     z0 = [
         [50 + 0j, 50 + 0j],
         [50 + 0j, 50 + 0j],
@@ -142,6 +151,35 @@ def test_fit_touchstone_to_spice_writes_report_with_auto_fit_summary(tmp_path: P
     assert payload["rms_error"] == 0.125
 
 
+def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plot(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFitting)
+    output = tmp_path / "model.sp"
+    report = tmp_path / "fit_report.json"
+    html_report = tmp_path / "fit_report.html"
+
+    result = fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        output,
+        report_path=report,
+        html_report_path=html_report,
+    )
+
+    assert result.html_report_path == html_report
+    html = html_report.read_text(encoding="utf-8")
+    assert "<h1>S-Parameter Fit Report</h1>" in html
+    assert "Original vs Fitted" in html
+    assert "RMS Error" in html
+    assert "0.125" in html
+    assert "S11" in html
+    assert "S21" in html
+    assert re.search(r"<svg[^>]*>.*</svg>", html, flags=re.DOTALL)
+    assert "get_model_response" in FakeVectorFitting.instances[0].calls
+
+
 def test_manual_fit_uses_vector_fit_parameters(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 
@@ -192,12 +230,14 @@ def test_fit_touchstone_to_spice_smoke_with_fixture(tmp_path: Path):
     fixture = Path("tests/fixtures/sparam/simple_through.s2p")
     output = tmp_path / "simple_through.sp"
     report = tmp_path / "fit_report.json"
+    html_report = tmp_path / "fit_report.html"
 
     result = fit_touchstone_to_spice(
         fixture,
         output,
         config=SParamFitConfig(model_order_max=20, target_error=0.05),
         report_path=report,
+        html_report_path=html_report,
     )
 
     assert result.spice_path == output
@@ -206,3 +246,4 @@ def test_fit_touchstone_to_spice_smoke_with_fixture(tmp_path: Path):
     assert payload["ports"] == 2
     assert payload["frequency_points"] > 0
     assert payload["spice_path"] == str(output)
+    assert "<svg" in html_report.read_text(encoding="utf-8")

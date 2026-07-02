@@ -6,10 +6,11 @@ def test_fit_sparam_cli_passes_explicit_report_path(tmp_path: Path, monkeypatch)
 
     calls = []
 
-    def fake_fit(touchstone_path, output_path, config=None, report_path=None):
-        calls.append((touchstone_path, output_path, config, report_path))
+    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None):
+        calls.append((touchstone_path, output_path, config, report_path, html_report_path))
         output_path.write_text(".subckt s_equivalent 1 2\n.ends s_equivalent\n", encoding="utf-8")
         report_path.write_text("{}\n", encoding="utf-8")
+        html_report_path.write_text("<html></html>\n", encoding="utf-8")
         return output_path
 
     monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
@@ -22,6 +23,8 @@ def test_fit_sparam_cli_passes_explicit_report_path(tmp_path: Path, monkeypatch)
             str(tmp_path / "model.sp"),
             "--report",
             str(tmp_path / "fit_report.json"),
+            "--html-report",
+            str(tmp_path / "fit_report.html"),
             "--mode",
             "manual",
             "--n-poles-real",
@@ -37,6 +40,7 @@ def test_fit_sparam_cli_passes_explicit_report_path(tmp_path: Path, monkeypatch)
     assert calls[0][0] == tmp_path / "line.s2p"
     assert calls[0][1] == tmp_path / "model.sp"
     assert calls[0][3] == tmp_path / "fit_report.json"
+    assert calls[0][4] == tmp_path / "fit_report.html"
     assert calls[0][2].mode == "manual"
     assert calls[0][2].n_poles_real == 4
     assert calls[0][2].n_poles_cmplx == 5
@@ -48,10 +52,11 @@ def test_fit_sparam_cli_defaults_report_next_to_output(tmp_path: Path, monkeypat
 
     calls = []
 
-    def fake_fit(touchstone_path, output_path, config=None, report_path=None):
-        calls.append((touchstone_path, output_path, config, report_path))
+    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None):
+        calls.append((touchstone_path, output_path, config, report_path, html_report_path))
         output_path.write_text(".subckt s_equivalent 1 2\n.ends s_equivalent\n", encoding="utf-8")
         report_path.write_text("{}\n", encoding="utf-8")
+        html_report_path.write_text("<html></html>\n", encoding="utf-8")
         return output_path
 
     monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
@@ -60,6 +65,7 @@ def test_fit_sparam_cli_defaults_report_next_to_output(tmp_path: Path, monkeypat
 
     assert exit_code == 0
     assert calls[0][3] == tmp_path / "fit_report.json"
+    assert calls[0][4] == tmp_path / "fit_report.html"
     assert calls[0][2].enforce_passivity is True
 
 
@@ -68,8 +74,8 @@ def test_fit_sparam_cli_can_skip_passivity_enforcement(tmp_path: Path, monkeypat
 
     calls = []
 
-    def fake_fit(touchstone_path, output_path, config=None, report_path=None):
-        calls.append((touchstone_path, output_path, config, report_path))
+    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None):
+        calls.append((touchstone_path, output_path, config, report_path, html_report_path))
         return output_path
 
     monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
