@@ -63,6 +63,50 @@ class FakeNetwork:
         self.path = path
 
 
+class LegacyVectorFitting:
+    instances: list["LegacyVectorFitting"] = []
+
+    def __init__(self, network):
+        self.network = network
+        self.auto_fit_kwargs = {}
+        self.instances.append(self)
+
+    def auto_fit(
+        self,
+        n_poles_init_real=3,
+        n_poles_init_cmplx=3,
+        n_poles_add=3,
+        model_order_max=100,
+        target_error=0.01,
+        parameter_type="s",
+    ):
+        self.auto_fit_kwargs = {
+            "n_poles_init_real": n_poles_init_real,
+            "n_poles_init_cmplx": n_poles_init_cmplx,
+            "n_poles_add": n_poles_add,
+            "model_order_max": model_order_max,
+            "target_error": target_error,
+            "parameter_type": parameter_type,
+        }
+        return None
+
+    def is_passive(self):
+        return True
+
+    def passivity_test(self):
+        return []
+
+    def passivity_enforce(self, n_samples=200):
+        self.passivity_samples = n_samples
+        return None
+
+    def get_rms_error(self):
+        return 0.25
+
+    def write_spice_subcircuit_s(self, filename):
+        Path(filename).write_text(".subckt legacy 1 2\n.ends legacy\n", encoding="utf-8")
+
+
 def test_fit_touchstone_to_spice_writes_report_with_auto_fit_summary(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 
@@ -126,6 +170,22 @@ def test_legacy_path_comparison_still_works(tmp_path: Path, monkeypatch):
     result = fit_touchstone_to_spice(tmp_path / "line.s2p", output)
 
     assert result == output
+
+
+def test_fit_touchstone_to_spice_supports_legacy_vector_fitting_signature(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    LegacyVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "VectorFitting", LegacyVectorFitting)
+    output = tmp_path / "legacy.sp"
+
+    result = fit_touchstone_to_spice(tmp_path / "line.s2p", output)
+
+    assert result.spice_path == output
+    assert ".subckt legacy" in output.read_text(encoding="utf-8")
+    assert LegacyVectorFitting.instances[0].auto_fit_kwargs["parameter_type"] == "s"
+    assert result.passive_before_enforce is True
 
 
 def test_fit_touchstone_to_spice_smoke_with_fixture(tmp_path: Path):

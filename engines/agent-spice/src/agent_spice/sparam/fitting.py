@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import inspect
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import skrf as rf
 from skrf.vectorFitting import VectorFitting
@@ -77,14 +78,25 @@ def _reference_impedance(network: Any) -> list[float]:
 
 def _safe_bool(method, **kwargs) -> bool | None:
     try:
-        return bool(method(**kwargs))
+        return bool(_call_with_supported_kwargs(method, **kwargs))
     except Exception:
         return None
 
 
+def _call_with_supported_kwargs(method: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    try:
+        signature = inspect.signature(method)
+    except (TypeError, ValueError):
+        return method(*args, **kwargs)
+    if any(parameter.kind == inspect.Parameter.VAR_KEYWORD for parameter in signature.parameters.values()):
+        return method(*args, **kwargs)
+    supported_kwargs = {key: value for key, value in kwargs.items() if key in signature.parameters}
+    return method(*args, **supported_kwargs)
+
+
 def _safe_passivity_violations(vector_fit: VectorFitting, parameter_type: str) -> list[list[float]] | None:
     try:
-        violations = vector_fit.passivity_test(parameter_type=parameter_type)
+        violations = _call_with_supported_kwargs(vector_fit.passivity_test, parameter_type=parameter_type)
     except Exception:
         return None
     if violations is None:
@@ -100,14 +112,15 @@ def _safe_passivity_violations(vector_fit: VectorFitting, parameter_type: str) -
 
 def _safe_rms_error(vector_fit: VectorFitting, parameter_type: str) -> float | None:
     try:
-        return float(vector_fit.get_rms_error(parameter_type=parameter_type))
+        return float(_call_with_supported_kwargs(vector_fit.get_rms_error, parameter_type=parameter_type))
     except Exception:
         return None
 
 
 def _fit_model(vector_fit: VectorFitting, config: SParamFitConfig) -> None:
     if config.mode == "auto":
-        vector_fit.auto_fit(
+        _call_with_supported_kwargs(
+            vector_fit.auto_fit,
             n_poles_init_real=config.n_poles_init_real,
             n_poles_init_cmplx=config.n_poles_init_cmplx,
             n_poles_add=config.n_poles_add,
@@ -118,7 +131,8 @@ def _fit_model(vector_fit: VectorFitting, config: SParamFitConfig) -> None:
         )
         return
     if config.mode == "manual":
-        vector_fit.vector_fit(
+        _call_with_supported_kwargs(
+            vector_fit.vector_fit,
             n_poles_real=config.n_poles_real,
             n_poles_cmplx=config.n_poles_cmplx,
             init_pole_spacing=config.init_pole_spacing,
@@ -144,13 +158,18 @@ def fit_touchstone_to_spice(
     passive_before = _safe_bool(vector_fit.is_passive, parameter_type=config.parameter_type)
     violations_before = _safe_passivity_violations(vector_fit, config.parameter_type)
     if config.enforce_passivity:
-        vector_fit.passivity_enforce(n_samples=config.passivity_samples, parameter_type=config.parameter_type)
+        _call_with_supported_kwargs(
+            vector_fit.passivity_enforce,
+            n_samples=config.passivity_samples,
+            parameter_type=config.parameter_type,
+        )
     passive_after = _safe_bool(vector_fit.is_passive, parameter_type=config.parameter_type)
     violations_after = _safe_passivity_violations(vector_fit, config.parameter_type)
     rms_error = _safe_rms_error(vector_fit, config.parameter_type)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    vector_fit.write_spice_subcircuit_s(
+    _call_with_supported_kwargs(
+        vector_fit.write_spice_subcircuit_s,
         str(output_path),
         fitted_model_name=config.subckt_name,
         create_reference_pins=config.create_reference_pins,

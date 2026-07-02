@@ -65,6 +65,8 @@ Test-Path runs-sparam/simple_through.sp
 Test-Path runs-sparam/fit_report.json
 ```
 
+When using Python module execution, use the underscore package name `agent_spice.cli`. The hyphenated `agent-spice` name is only for the installed console script.
+
 After installing solvers, run the ngspice execution smoke:
 
 ```powershell
