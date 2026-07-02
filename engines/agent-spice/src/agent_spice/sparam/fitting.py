@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass
 from html import escape
 import inspect
 import json
+import logging
 import math
 from pathlib import Path
 from typing import Any, Callable
@@ -24,11 +25,20 @@ class SParamFitConfig:
     n_poles_init_real: int = 3
     n_poles_init_cmplx: int = 3
     n_poles_add: int = 3
+    iters_start: int = 3
+    iters_inter: int = 3
+    iters_final: int = 5
     model_order_max: int = 100
     target_error: float = 0.01
+    alpha: float = 0.03
+    gamma: float = 0.03
+    nu_samples: float = 1.0
+    max_iterations: int | None = None
     parameter_type: str = "s"
     enforce_passivity: bool = True
     passivity_samples: int = 200
+    passivity_f_max: float | None = None
+    preserve_dc: bool = True
     subckt_name: str = "s_equivalent"
     create_reference_pins: bool = False
 
@@ -39,6 +49,7 @@ class SParamFitResult:
     spice_path: Path
     report_path: Path | None
     html_report_path: Path | None
+    log_path: Path | None
     ports: int
     frequency_points: int
     frequency_range_hz: list[float] | None
@@ -63,6 +74,7 @@ class SParamFitResult:
             "spice_path": str(self.spice_path),
             "report_path": None if self.report_path is None else str(self.report_path),
             "html_report_path": None if self.html_report_path is None else str(self.html_report_path),
+            "log_path": None if self.log_path is None else str(self.log_path),
             "ports": self.ports,
             "frequency_points": self.frequency_points,
             "frequency_range_hz": self.frequency_range_hz,
@@ -105,6 +117,53 @@ def _call_with_supported_kwargs(method: Callable[..., Any], *args: Any, **kwargs
         return method(*args, **kwargs)
     supported_kwargs = {key: value for key, value in kwargs.items() if key in signature.parameters}
     return method(*args, **supported_kwargs)
+
+
+class _ProgressLog:
+    def __init__(self, path: Path | None):
+        self.path = path
+        self.handler: logging.Handler | None = None
+        self.loggers: list[logging.Logger] = []
+        self.old_levels: dict[logging.Logger, int] = {}
+        self.progress_logger = logging.getLogger("agent_spice.sparam.fitting")
+
+    def __enter__(self) -> "_ProgressLog":
+        if self.path is None:
+            return self
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.handler = logging.FileHandler(self.path, mode="w", encoding="utf-8")
+        self.handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+        self.loggers = [
+            self.progress_logger,
+            logging.getLogger("skrf.vectorFitting"),
+        ]
+        for logger in self.loggers:
+            self.old_levels[logger] = logger.level
+            logger.addHandler(self.handler)
+            logger.setLevel(logging.INFO)
+        return self
+
+    def __exit__(self, exc_type, exc, traceback) -> None:
+        if exc is not None:
+            self.exception("fit-sparam failed")
+        if self.handler is None:
+            return
+        for logger in self.loggers:
+            logger.removeHandler(self.handler)
+            logger.setLevel(self.old_levels[logger])
+        self.handler.close()
+
+    def info(self, message: str) -> None:
+        if self.handler is None:
+            return
+        self.progress_logger.info(message)
+        self.handler.flush()
+
+    def exception(self, message: str) -> None:
+        if self.handler is None:
+            return
+        self.progress_logger.exception(message)
+        self.handler.flush()
 
 
 def _safe_passivity_violations(vector_fit: VectorFitting, parameter_type: str) -> list[list[float]] | None:
@@ -358,6 +417,8 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
 
 
 def _fit_model(vector_fit: VectorFitting, config: SParamFitConfig) -> None:
+    if config.max_iterations is not None and hasattr(vector_fit, "max_iterations"):
+        vector_fit.max_iterations = config.max_iterations
     if config.mode == "auto":
         _call_with_supported_kwargs(
             vector_fit.auto_fit,
@@ -365,7 +426,13 @@ def _fit_model(vector_fit: VectorFitting, config: SParamFitConfig) -> None:
             n_poles_init_cmplx=config.n_poles_init_cmplx,
             n_poles_add=config.n_poles_add,
             model_order_max=config.model_order_max,
+            iters_start=config.iters_start,
+            iters_inter=config.iters_inter,
+            iters_final=config.iters_final,
             target_error=config.target_error,
+            alpha=config.alpha,
+            gamma=config.gamma,
+            nu_samples=config.nu_samples,
             parameter_type=config.parameter_type,
             enforce_dc=config.enforce_dc,
         )
@@ -391,53 +458,77 @@ def fit_touchstone_to_spice(
     config: SParamFitConfig | None = None,
     report_path: Path | None = None,
     html_report_path: Path | None = None,
+    log_path: Path | None = None,
 ) -> SParamFitResult:
     config = config or SParamFitConfig()
-    network = rf.Network(str(touchstone_path))
-    vector_fit = VectorFitting(network)
-    _fit_model(vector_fit, config)
-    passive_before = _safe_bool(vector_fit.is_passive, parameter_type=config.parameter_type)
-    violations_before = _safe_passivity_violations(vector_fit, config.parameter_type)
-    if config.enforce_passivity:
-        _call_with_supported_kwargs(
-            vector_fit.passivity_enforce,
-            n_samples=config.passivity_samples,
-            parameter_type=config.parameter_type,
+    with _ProgressLog(log_path) as progress:
+        progress.info(f"loading Touchstone: {touchstone_path}")
+        network = rf.Network(str(touchstone_path))
+        progress.info(
+            f"loaded Touchstone: ports={network.nports}, frequency_points={len(network.f)}, "
+            f"frequency_range={_frequency_range(network)}"
         )
-    passive_after = _safe_bool(vector_fit.is_passive, parameter_type=config.parameter_type)
-    violations_after = _safe_passivity_violations(vector_fit, config.parameter_type)
-    rms_error = _safe_rms_error(vector_fit, config.parameter_type)
+        vector_fit = VectorFitting(network)
+        progress.info(f"starting vector fit: mode={config.mode}, parameter_type={config.parameter_type}")
+        _fit_model(vector_fit, config)
+        progress.info("vector fit finished")
+        progress.info("checking passivity before enforcement")
+        passive_before = _safe_bool(vector_fit.is_passive, parameter_type=config.parameter_type)
+        violations_before = _safe_passivity_violations(vector_fit, config.parameter_type)
+        if config.enforce_passivity:
+            progress.info(
+                f"starting passivity enforcement: n_samples={config.passivity_samples}, "
+                f"f_max={config.passivity_f_max}, preserve_dc={config.preserve_dc}"
+            )
+            _call_with_supported_kwargs(
+                vector_fit.passivity_enforce,
+                n_samples=config.passivity_samples,
+                f_max=config.passivity_f_max,
+                parameter_type=config.parameter_type,
+                preserve_dc=config.preserve_dc,
+            )
+            progress.info("passivity enforcement finished")
+        else:
+            progress.info("passivity enforcement skipped")
+        passive_after = _safe_bool(vector_fit.is_passive, parameter_type=config.parameter_type)
+        violations_after = _safe_passivity_violations(vector_fit, config.parameter_type)
+        rms_error = _safe_rms_error(vector_fit, config.parameter_type)
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    _call_with_supported_kwargs(
-        vector_fit.write_spice_subcircuit_s,
-        str(output_path),
-        fitted_model_name=config.subckt_name,
-        create_reference_pins=config.create_reference_pins,
-    )
-    result = SParamFitResult(
-        touchstone_path=touchstone_path,
-        spice_path=output_path,
-        report_path=report_path,
-        html_report_path=html_report_path,
-        ports=network.nports,
-        frequency_points=len(network.f),
-        frequency_range_hz=_frequency_range(network),
-        reference_impedance=_reference_impedance(network),
-        config=config,
-        rms_error=rms_error,
-        passive_before_enforce=passive_before,
-        passive_after_enforce=passive_after,
-        passivity_violations_before=violations_before,
-        passivity_violations_after=violations_after,
-    )
-    if report_path is not None:
-        report_path.parent.mkdir(parents=True, exist_ok=True)
-        report_path.write_text(json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    if html_report_path is not None:
-        html_report_path.parent.mkdir(parents=True, exist_ok=True)
-        html_report_path.write_text(
-            _render_html_report(result, _comparison_traces(network, vector_fit)),
-            encoding="utf-8",
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        progress.info(f"writing SPICE subcircuit: {output_path}")
+        _call_with_supported_kwargs(
+            vector_fit.write_spice_subcircuit_s,
+            str(output_path),
+            fitted_model_name=config.subckt_name,
+            create_reference_pins=config.create_reference_pins,
         )
-    return result
+        result = SParamFitResult(
+            touchstone_path=touchstone_path,
+            spice_path=output_path,
+            report_path=report_path,
+            html_report_path=html_report_path,
+            log_path=log_path,
+            ports=network.nports,
+            frequency_points=len(network.f),
+            frequency_range_hz=_frequency_range(network),
+            reference_impedance=_reference_impedance(network),
+            config=config,
+            rms_error=rms_error,
+            passive_before_enforce=passive_before,
+            passive_after_enforce=passive_after,
+            passivity_violations_before=violations_before,
+            passivity_violations_after=violations_after,
+        )
+        if report_path is not None:
+            progress.info(f"writing JSON report: {report_path}")
+            report_path.parent.mkdir(parents=True, exist_ok=True)
+            report_path.write_text(json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        if html_report_path is not None:
+            progress.info(f"writing HTML report: {html_report_path}")
+            html_report_path.parent.mkdir(parents=True, exist_ok=True)
+            html_report_path.write_text(
+                _render_html_report(result, _comparison_traces(network, vector_fit)),
+                encoding="utf-8",
+            )
+        progress.info("fit-sparam completed")
+        return result

@@ -120,11 +120,25 @@ def main(argv: list[str] | None = None) -> int:
     fit_parser.add_argument("--output", type=Path, required=True)
     fit_parser.add_argument("--report", type=Path)
     fit_parser.add_argument("--html-report", type=Path)
+    fit_parser.add_argument("--log", type=Path)
     fit_parser.add_argument("--mode", choices=["auto", "manual"], default="auto")
     fit_parser.add_argument("--n-poles-real", type=int, default=2)
     fit_parser.add_argument("--n-poles-cmplx", type=int, default=2)
+    fit_parser.add_argument("--n-poles-init-real", type=int, default=3)
+    fit_parser.add_argument("--n-poles-init-cmplx", type=int, default=3)
+    fit_parser.add_argument("--n-poles-add", type=int, default=3)
+    fit_parser.add_argument("--iters-start", type=int, default=3)
+    fit_parser.add_argument("--iters-inter", type=int, default=3)
+    fit_parser.add_argument("--iters-final", type=int, default=5)
     fit_parser.add_argument("--model-order-max", type=int, default=100)
     fit_parser.add_argument("--target-error", type=float, default=0.01)
+    fit_parser.add_argument("--alpha", type=float, default=0.03)
+    fit_parser.add_argument("--gamma", type=float, default=0.03)
+    fit_parser.add_argument("--nu-samples", type=float, default=1.0)
+    fit_parser.add_argument("--fit-max-iterations", type=int)
+    fit_parser.add_argument("--passivity-samples", type=int, default=200)
+    fit_parser.add_argument("--passivity-f-max", type=float)
+    fit_parser.add_argument("--no-preserve-dc", action="store_true")
     fit_parser.add_argument("--skip-passivity-enforce", action="store_true")
     fit_parser.add_argument("--subckt-name", default="s_equivalent")
 
@@ -136,9 +150,22 @@ def main(argv: list[str] | None = None) -> int:
             mode=args.mode,
             n_poles_real=args.n_poles_real,
             n_poles_cmplx=args.n_poles_cmplx,
+            n_poles_init_real=args.n_poles_init_real,
+            n_poles_init_cmplx=args.n_poles_init_cmplx,
+            n_poles_add=args.n_poles_add,
+            iters_start=args.iters_start,
+            iters_inter=args.iters_inter,
+            iters_final=args.iters_final,
             model_order_max=args.model_order_max,
             target_error=args.target_error,
+            alpha=args.alpha,
+            gamma=args.gamma,
+            nu_samples=args.nu_samples,
+            max_iterations=args.fit_max_iterations,
             enforce_passivity=not args.skip_passivity_enforce,
+            passivity_samples=args.passivity_samples,
+            passivity_f_max=args.passivity_f_max,
+            preserve_dc=not args.no_preserve_dc,
             subckt_name=args.subckt_name,
         )
         report_path = args.report or (args.output.parent / "fit_report.json")
@@ -149,6 +176,7 @@ def main(argv: list[str] | None = None) -> int:
             config=config,
             report_path=report_path,
             html_report_path=html_report_path,
+            log_path=args.log,
         )
         return 0
     raise ValueError(f"Unsupported command '{args.command}'")

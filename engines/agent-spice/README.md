@@ -60,13 +60,23 @@ python -m pytest tests/test_hspice_corpus_golden.py -v
 Generate an S-parameter fitted SPICE subcircuit plus JSON and HTML fit reports:
 
 ```powershell
-python -m agent_spice.cli fit-sparam tests/fixtures/sparam/simple_through.s2p --output runs-sparam/simple_through.sp --report runs-sparam/fit_report.json --html-report runs-sparam/fit_report.html
+python -m agent_spice.cli fit-sparam tests/fixtures/sparam/simple_through.s2p --output runs-sparam/simple_through.sp --report runs-sparam/fit_report.json --html-report runs-sparam/fit_report.html --log runs-sparam/fit.log
 Test-Path runs-sparam/simple_through.sp
 Test-Path runs-sparam/fit_report.json
 Test-Path runs-sparam/fit_report.html
+Test-Path runs-sparam/fit.log
 ```
 
 When using Python module execution, use the underscore package name `agent_spice.cli`. The hyphenated `agent-spice` name is only for the installed console script.
+
+For large Touchstone files, start with a bounded fit and inspect `runs-sparam/fit.log` while it is running:
+
+```powershell
+python -m agent_spice.cli fit-sparam .\path\to\large.s16p --output runs-sparam/large.sp --report runs-sparam/fit_report.json --html-report runs-sparam/fit_report.html --log runs-sparam/fit.log --model-order-max 40 --target-error 0.05 --fit-max-iterations 30 --passivity-samples 80
+Get-Content runs-sparam/fit.log -Wait
+```
+
+More tuning notes are in `docs/sparam-fit-performance.md`.
 
 After installing solvers, run the ngspice execution smoke:
 

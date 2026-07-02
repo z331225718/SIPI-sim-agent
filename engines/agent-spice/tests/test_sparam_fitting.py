@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 import re
 
@@ -13,12 +14,14 @@ class FakeVectorFitting:
         self.calls: list[str] = []
         self.auto_fit_kwargs = {}
         self.vector_fit_kwargs = {}
+        self.max_iterations = 100
         self.enforced = False
         self.instances.append(self)
 
     def auto_fit(self, **kwargs):
         self.calls.append("auto_fit")
         self.auto_fit_kwargs = kwargs
+        logging.getLogger("skrf.vectorFitting").info("fake vector fitting internal progress")
         return None
 
     def vector_fit(self, **kwargs):
@@ -178,6 +181,53 @@ def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plo
     assert "S21" in html
     assert re.search(r"<svg[^>]*>.*</svg>", html, flags=re.DOTALL)
     assert "get_model_response" in FakeVectorFitting.instances[0].calls
+
+
+def test_fit_touchstone_to_spice_writes_progress_log_and_uses_tuning_options(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFitting)
+    output = tmp_path / "model.sp"
+    log_path = tmp_path / "fit.log"
+    config = SParamFitConfig(
+        n_poles_add=1,
+        model_order_max=12,
+        target_error=0.2,
+        iters_start=1,
+        iters_inter=1,
+        iters_final=2,
+        alpha=0.2,
+        gamma=0.4,
+        nu_samples=0.5,
+        max_iterations=7,
+        passivity_samples=17,
+        passivity_f_max=2.5e9,
+        preserve_dc=False,
+    )
+
+    result = fit_touchstone_to_spice(tmp_path / "line.s2p", output, config=config, log_path=log_path)
+
+    instance = FakeVectorFitting.instances[0]
+    assert result.log_path == log_path
+    assert instance.max_iterations == 7
+    assert instance.auto_fit_kwargs["n_poles_add"] == 1
+    assert instance.auto_fit_kwargs["iters_start"] == 1
+    assert instance.auto_fit_kwargs["iters_inter"] == 1
+    assert instance.auto_fit_kwargs["iters_final"] == 2
+    assert instance.auto_fit_kwargs["alpha"] == 0.2
+    assert instance.auto_fit_kwargs["gamma"] == 0.4
+    assert instance.auto_fit_kwargs["nu_samples"] == 0.5
+    assert instance.passivity_enforce_kwargs["n_samples"] == 17
+    assert instance.passivity_enforce_kwargs["f_max"] == 2.5e9
+    assert instance.passivity_enforce_kwargs["preserve_dc"] is False
+    log_text = log_path.read_text(encoding="utf-8")
+    assert "loading Touchstone" in log_text
+    assert "starting vector fit" in log_text
+    assert "fake vector fitting internal progress" in log_text
+    assert "writing SPICE subcircuit" in log_text
+    assert "fit-sparam completed" in log_text
 
 
 def test_manual_fit_uses_vector_fit_parameters(tmp_path: Path, monkeypatch):
