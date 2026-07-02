@@ -2,6 +2,8 @@
 
 日期：2026-07-02
 
+下一阶段质量门禁计划见 `docs/sparam-quality-gate-plan.md`。
+
 ## 进度与 Debug
 
 `fit-sparam` 支持把进度和 scikit-rf 内部 `skrf.vectorFitting` 日志写入文件：
@@ -19,6 +21,25 @@ Get-Content runs-sparam/fit.log -Wait
 - passivity enforcement 开始/完成或跳过。
 - SPICE、JSON、HTML 写入路径。
 - 异常堆栈。
+
+## 质量门禁
+
+默认 `fit-sparam` 是探索模式：即使报告里出现 `WARN` 或 `FAIL`，命令也会保持原有工作流，继续写出 `.sp`、JSON、HTML 和日志。自动化或签核场景应显式打开门禁：
+
+```powershell
+python -m agent_spice.cli fit-sparam .\model.s2p --output runs-sparam/model.sp --report runs-sparam/fit_report.json --html-report runs-sparam/fit_report.html --log runs-sparam/fit.log --quality-profile signoff --fail-on-quality --max-comparison-rms-error 0.05 --require-dc
+```
+
+关键参数：
+
+- `--quality-profile explore|signoff`：`signoff` 下未知质量项不能 PASS。
+- `--fail-on-quality`：质量不是 PASS 时返回非零码；配合 CI 使用。
+- `--allow-quality-warnings`：允许 WARN 返回 0，但 FAIL 仍然返回非零码。
+- `--max-comparison-rms-error`：原始频点对比 RMS 的门限。
+- `--max-passivity-epsilon`：输入采样最大奇异值检查的无源性容差。
+- `--require-dc`：缺少 DC 点时直接 FAIL。
+
+注意：`--skip-passivity-enforce` 只能生成 preview/debug 产物。`signoff` profile 下跳过 passivity enforcement 会被标记为 blocking diagnostic。
 
 ## 当前可用加速旋钮
 

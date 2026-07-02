@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import re
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from agent_spice.deck.builder import write_case_artifacts
 from agent_spice.hspice.alter import split_alter_cases
@@ -72,6 +72,25 @@ def _case_metadata(deck_id: str, case_name: str) -> tuple[str, str | None]:
     if match:
         return "alter", match.group("label")
     return "case", suffix or None
+
+
+def _quality_gate_failure(result: Any, allow_warnings: bool) -> str | None:
+    quality_report = getattr(result, "quality_report", None)
+    if quality_report is None:
+        return "quality gate unavailable: fit result did not include a quality report"
+    status = getattr(quality_report, "status", None)
+    if status == "PASS":
+        return None
+    if status == "WARN" and allow_warnings:
+        return None
+
+    blocking_reasons = list(getattr(quality_report, "blocking_reasons", []) or [])
+    warnings = list(getattr(quality_report, "warnings", []) or [])
+    reasons = blocking_reasons if status == "FAIL" else warnings
+    if not reasons:
+        reasons = blocking_reasons + warnings
+    reason_text = ", ".join(reasons) if reasons else str(status or "unknown")
+    return f"quality gate failed: status={status or 'unknown'}, reasons={reason_text}"
 
 
 def run_hspice(deck_path: Path, backend_name: str, output_root: Path, execute: bool = False) -> int:
@@ -145,6 +164,12 @@ def main(argv: list[str] | None = None) -> int:
     fit_parser.add_argument("--fit-f-min", type=float)
     fit_parser.add_argument("--fit-f-max", type=float)
     fit_parser.add_argument("--skip-passivity-enforce", action="store_true")
+    fit_parser.add_argument("--quality-profile", choices=["explore", "signoff"], default="explore")
+    fit_parser.add_argument("--fail-on-quality", action="store_true")
+    fit_parser.add_argument("--max-comparison-rms-error", type=float, default=0.05)
+    fit_parser.add_argument("--max-passivity-epsilon", type=float, default=1e-6)
+    fit_parser.add_argument("--require-dc", action="store_true")
+    fit_parser.add_argument("--allow-quality-warnings", action="store_true")
     fit_parser.add_argument("--subckt-name", default="s_equivalent")
 
     args = parser.parse_args(argv)
@@ -175,12 +200,16 @@ def main(argv: list[str] | None = None) -> int:
             fit_max_frequency_points=args.fit_max_frequency_points,
             fit_f_min=args.fit_f_min,
             fit_f_max=args.fit_f_max,
+            quality_profile=args.quality_profile,
+            max_comparison_rms_error=args.max_comparison_rms_error,
+            max_passivity_epsilon=args.max_passivity_epsilon,
+            require_dc=args.require_dc,
             subckt_name=args.subckt_name,
         )
         report_path = args.report or (args.output.parent / "fit_report.json")
         html_report_path = args.html_report or (args.output.parent / "fit_report.html")
         try:
-            fit_touchstone_to_spice(
+            result = fit_touchstone_to_spice(
                 args.touchstone,
                 args.output,
                 config=config,
@@ -191,6 +220,11 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
+        if args.fail_on_quality:
+            failure = _quality_gate_failure(result, allow_warnings=args.allow_quality_warnings)
+            if failure is not None:
+                print(f"error: {failure}", file=sys.stderr)
+                return 1
         return 0
     raise ValueError(f"Unsupported command '{args.command}'")
 

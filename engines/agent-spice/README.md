@@ -67,6 +67,14 @@ Test-Path runs-sparam/fit_report.html
 Test-Path runs-sparam/fit.log
 ```
 
+Use the report's `quality.status`, `quality.blocking_reasons`, and `diagnostics[]` to decide whether the model is only for exploration or is a transient handoff candidate. For CI/signoff, enable the quality gate explicitly:
+
+```powershell
+python -m agent_spice.cli fit-sparam .\path\to\model.s2p --output runs-sparam/model.sp --report runs-sparam/fit_report.json --html-report runs-sparam/fit_report.html --log runs-sparam/fit.log --quality-profile signoff --fail-on-quality --max-comparison-rms-error 0.05 --require-dc
+```
+
+During exploration, add `--allow-quality-warnings` if WARN diagnostics should still return exit code 0 while remaining visible in the reports.
+
 When using Python module execution, use the underscore package name `agent_spice.cli`. The hyphenated `agent-spice` name is only for the installed console script.
 
 For large Touchstone files, start with a bounded fit and inspect `runs-sparam/fit.log` while it is running:
@@ -76,7 +84,7 @@ python -m agent_spice.cli fit-sparam .\path\to\large.s16p --output runs-sparam/l
 Get-Content runs-sparam/fit.log -Wait
 ```
 
-More tuning notes are in `docs/sparam-fit-performance.md`.
+More tuning notes are in `docs/sparam-fit-performance.md`. The next-stage quality gate plan is in `docs/sparam-quality-gate-plan.md`.
 
 After installing solvers, run the ngspice execution smoke:
 

@@ -13,6 +13,8 @@ import numpy as np
 import skrf as rf
 from skrf.vectorFitting import VectorFitting
 
+from agent_spice.sparam.quality import SCHEMA_VERSION, QualityReport, build_quality_report
+
 
 @dataclass(frozen=True)
 class SParamFitConfig:
@@ -46,6 +48,10 @@ class SParamFitConfig:
     fit_max_frequency_points: int | None = None
     fit_f_min: float | None = None
     fit_f_max: float | None = None
+    quality_profile: str = "explore"
+    max_comparison_rms_error: float = 0.05
+    max_passivity_epsilon: float = 1e-6
+    require_dc: bool = False
 
 
 @dataclass(frozen=True)
@@ -69,6 +75,7 @@ class SParamFitResult:
     passive_after_enforce: bool | None
     passivity_violations_before: list[list[float]] | None
     passivity_violations_after: list[list[float]] | None
+    quality_report: QualityReport
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Path):
@@ -78,7 +85,9 @@ class SParamFitResult:
         return NotImplemented
 
     def to_dict(self) -> dict[str, Any]:
+        quality = _quality_summary(self)
         return {
+            "schema_version": SCHEMA_VERSION,
             "touchstone_path": str(self.touchstone_path),
             "spice_path": str(self.spice_path),
             "report_path": None if self.report_path is None else str(self.report_path),
@@ -92,7 +101,8 @@ class SParamFitResult:
             "fit_frequency_selection": self.fit_frequency_selection,
             "reference_impedance": self.reference_impedance,
             "config": asdict(self.config),
-            "quality": _quality_summary(self),
+            "quality": quality,
+            "diagnostics": quality["diagnostics"],
             "rms_error": self.rms_error,
             "rms_error_scope": "fit_frequency_points",
             "comparison_rms_error": self.comparison_rms_error,
@@ -324,15 +334,19 @@ def _quality_summary(result: SParamFitResult) -> dict[str, Any]:
         passivity = "violations remain"
     else:
         passivity = "unknown"
-    return {
-        "rms_error": result.rms_error,
-        "rms_error_scope": "fit_frequency_points",
-        "comparison_rms_error": result.comparison_rms_error,
-        "comparison_rms_error_scope": "original_frequency_points",
-        "passivity": passivity,
-        "passivity_enforcement_enabled": result.config.enforce_passivity,
-        "violation_bands_after": len(result.passivity_violations_after or []),
-    }
+    payload = result.quality_report.to_dict()
+    payload.update(
+        {
+            "rms_error": result.rms_error,
+            "rms_error_scope": "fit_frequency_points",
+            "comparison_rms_error": result.comparison_rms_error,
+            "comparison_rms_error_scope": "original_frequency_points",
+            "passivity": passivity,
+            "passivity_enforcement_enabled": result.config.enforce_passivity,
+            "violation_bands_after": len(result.passivity_violations_after or []),
+        }
+    )
+    return payload
 
 
 def _format_float(value: float | None) -> str:
@@ -357,6 +371,14 @@ def _format_bool(value: bool | None) -> str:
     if value is False:
         return "no"
     return "unknown"
+
+
+def _format_cell(value: Any) -> str:
+    if value is None:
+        return "n/a"
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, sort_keys=True)
+    return str(value)
 
 
 def _network_s_value(network: Any, point_index: int, row: int, column: int) -> complex:
@@ -469,7 +491,7 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     fit_freq_start = None if result.fit_frequency_range_hz is None else result.fit_frequency_range_hz[0]
     fit_freq_end = None if result.fit_frequency_range_hz is None else result.fit_frequency_range_hz[1]
     selection_rows = "".join(
-        f"<tr><td>{escape(key)}</td><td>{escape(str(value))}</td></tr>"
+        f"<tr><td>{escape(key)}</td><td>{escape(_format_cell(value))}</td></tr>"
         for key, value in result.fit_frequency_selection.items()
     )
     violation_rows = "\n".join(
@@ -478,6 +500,20 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     )
     if not violation_rows:
         violation_rows = "<tr><td colspan=\"2\">No violation bands reported after enforcement.</td></tr>"
+    diagnostic_rows = "\n".join(
+        "<tr>"
+        f"<td>{escape(_format_cell(diagnostic['id']))}</td>"
+        f"<td>{escape(_format_cell(diagnostic['status']))}</td>"
+        f"<td>{escape(_format_cell(diagnostic['severity']))}</td>"
+        f"<td>{escape(_format_cell(diagnostic['metric']))}</td>"
+        f"<td>{escape(_format_cell(diagnostic['threshold']))}</td>"
+        f"<td>{escape(_format_cell(diagnostic['message']))}</td>"
+        f"<td>{escape(_format_cell(diagnostic['recommendation']))}</td>"
+        "</tr>"
+        for diagnostic in quality["diagnostics"]
+    )
+    if not diagnostic_rows:
+        diagnostic_rows = "<tr><td colspan=\"7\">No quality diagnostics reported.</td></tr>"
     trace_sections = "\n".join(_render_trace_chart(trace) for trace in traces)
     if not trace_sections:
         trace_sections = "<p class=\"muted\">Comparison plot unavailable for this scikit-rf version or input.</p>"
@@ -519,8 +555,23 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     <div class="card"><div class="label">Fit Frequency Points</div><div class="value">{result.fit_frequency_points}</div></div>
     <div class="card"><div class="label">Fit-Sample RMS Error</div><div class="value">{_format_float(result.rms_error)}</div></div>
     <div class="card"><div class="label">Original-Point RMS Error</div><div class="value">{_format_float(result.comparison_rms_error)}</div></div>
+    <div class="card"><div class="label">Quality</div><div class="value">{escape(str(quality["status"]))}</div></div>
     <div class="card"><div class="label">Passivity</div><div class="value">{escape(str(quality["passivity"]))}</div></div>
   </div>
+
+  <h2>Quality Gate</h2>
+  <table>
+    <tr><th>Item</th><th>Value</th></tr>
+    <tr><td>Profile</td><td>{escape(str(quality["profile"]))}</td></tr>
+    <tr><td>Status</td><td>{escape(str(quality["status"]))}</td></tr>
+    <tr><td>Allowed for</td><td>{escape(str(quality["allowed_for"]))}</td></tr>
+    <tr><td>Blocking reasons</td><td>{escape(', '.join(quality["blocking_reasons"]))}</td></tr>
+    <tr><td>Warnings</td><td>{escape(', '.join(quality["warnings"]))}</td></tr>
+  </table>
+  <table>
+    <tr><th>Diagnostic</th><th>Status</th><th>Severity</th><th>Metric</th><th>Threshold</th><th>Message</th><th>Recommendation</th></tr>
+    {diagnostic_rows}
+  </table>
 
   <h2>Input And Output</h2>
   <table>
@@ -547,7 +598,7 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
   <h2>Fit Configuration</h2>
   <table>
     <tr><th>Field</th><th>Value</th></tr>
-    {''.join(f'<tr><td>{escape(key)}</td><td>{escape(str(value))}</td></tr>' for key, value in asdict(result.config).items())}
+    {''.join(f'<tr><td>{escape(key)}</td><td>{escape(_format_cell(value))}</td></tr>' for key, value in asdict(result.config).items())}
   </table>
 
   <h2>Passivity</h2>
@@ -655,6 +706,20 @@ def fit_touchstone_to_spice(
         violations_after = _safe_passivity_violations(vector_fit, config.parameter_type)
         rms_error = _safe_rms_error(vector_fit, config.parameter_type)
         comparison_rms_error = _comparison_rms_error(network, vector_fit, config.parameter_type)
+        quality_report = build_quality_report(
+            network=network,
+            frequency_points=len(network.f),
+            fit_frequency_points=len(fit_network.f),
+            comparison_rms_error=comparison_rms_error,
+            passive_after_enforce=passive_after,
+            passivity_violations_after=violations_after,
+            enforce_passivity=config.enforce_passivity,
+            poles=getattr(vector_fit, "poles", None),
+            profile=config.quality_profile,
+            comparison_rms_limit=config.max_comparison_rms_error,
+            passivity_epsilon=config.max_passivity_epsilon,
+            require_dc=config.require_dc,
+        )
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         progress.info(f"writing SPICE subcircuit: {output_path}")
@@ -684,6 +749,7 @@ def fit_touchstone_to_spice(
             passive_after_enforce=passive_after,
             passivity_violations_before=violations_before,
             passivity_violations_after=violations_after,
+            quality_report=quality_report,
         )
         if report_path is not None:
             progress.info(f"writing JSON report: {report_path}")

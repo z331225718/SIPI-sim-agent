@@ -151,6 +151,7 @@ def test_fit_touchstone_to_spice_writes_report_with_auto_fit_summary(tmp_path: P
 
     payload = json.loads(report.read_text(encoding="utf-8"))
     assert payload["touchstone_path"] == str(tmp_path / "line.s2p")
+    assert payload["schema_version"] == "0.2"
     assert payload["spice_path"] == str(output)
     assert payload["report_path"] == str(report)
     assert payload["ports"] == 2
@@ -162,6 +163,14 @@ def test_fit_touchstone_to_spice_writes_report_with_auto_fit_summary(tmp_path: P
     assert payload["rms_error_scope"] == "fit_frequency_points"
     assert payload["comparison_rms_error"] is not None
     assert payload["comparison_rms_error_scope"] == "original_frequency_points"
+    assert payload["quality"]["status"] == "WARN"
+    assert payload["quality"]["allowed_for"] == "report_only"
+    assert payload["quality"]["passivity"] == "passive"
+    assert {diagnostic["id"] for diagnostic in payload["diagnostics"]} >= {
+        "dc_coverage",
+        "comparison_rms_error",
+        "passivity_after_enforce",
+    }
 
 
 def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plot(tmp_path: Path, monkeypatch):
@@ -189,6 +198,8 @@ def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plo
     assert "Fit Frequency Points" in html
     assert "Fit-Sample RMS Error" in html
     assert "Original-Point RMS Error" in html
+    assert "Quality Gate" in html
+    assert "dc_coverage" in html
     assert "RMS Error" in html
     assert "0.125" in html
     assert "S11" in html

@@ -1,6 +1,18 @@
 from pathlib import Path
 
 
+class FakeQualityReport:
+    def __init__(self, status="PASS", blocking_reasons=None, warnings=None):
+        self.status = status
+        self.blocking_reasons = [] if blocking_reasons is None else blocking_reasons
+        self.warnings = [] if warnings is None else warnings
+
+
+class FakeFitResult:
+    def __init__(self, quality_report):
+        self.quality_report = quality_report
+
+
 def test_fit_sparam_cli_passes_explicit_report_path(tmp_path: Path, monkeypatch):
     import agent_spice.cli as cli
 
@@ -52,6 +64,13 @@ def test_fit_sparam_cli_passes_explicit_report_path(tmp_path: Path, monkeypatch)
             "1000000",
             "--fit-f-max",
             "5000000000",
+            "--quality-profile",
+            "signoff",
+            "--max-comparison-rms-error",
+            "0.02",
+            "--max-passivity-epsilon",
+            "0.0000015",
+            "--require-dc",
         ]
     )
 
@@ -73,6 +92,10 @@ def test_fit_sparam_cli_passes_explicit_report_path(tmp_path: Path, monkeypatch)
     assert calls[0][2].fit_max_frequency_points == 128
     assert calls[0][2].fit_f_min == 1e6
     assert calls[0][2].fit_f_max == 5e9
+    assert calls[0][2].quality_profile == "signoff"
+    assert calls[0][2].max_comparison_rms_error == 0.02
+    assert calls[0][2].max_passivity_epsilon == 1.5e-6
+    assert calls[0][2].require_dc is True
 
 
 def test_fit_sparam_cli_defaults_report_next_to_output(tmp_path: Path, monkeypatch):
@@ -137,3 +160,76 @@ def test_fit_sparam_cli_reports_value_error_without_traceback(tmp_path: Path, mo
     assert exit_code == 1
     assert "error: Frequency selection must contain at least 2 samples for vector fitting" in captured.err
     assert "Traceback" not in captured.err
+
+
+def test_fit_sparam_cli_fail_on_quality_rejects_warnings(tmp_path: Path, monkeypatch, capsys):
+    import agent_spice.cli as cli
+
+    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None, log_path=None):
+        return FakeFitResult(FakeQualityReport(status="WARN", warnings=["dc_coverage"]))
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
+
+    exit_code = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "line.s2p"),
+            "--output",
+            str(tmp_path / "model.sp"),
+            "--fail-on-quality",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "quality gate failed: status=WARN" in captured.err
+    assert "dc_coverage" in captured.err
+
+
+def test_fit_sparam_cli_fail_on_quality_can_allow_warnings(tmp_path: Path, monkeypatch, capsys):
+    import agent_spice.cli as cli
+
+    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None, log_path=None):
+        return FakeFitResult(FakeQualityReport(status="WARN", warnings=["dc_coverage"]))
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
+
+    exit_code = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "line.s2p"),
+            "--output",
+            str(tmp_path / "model.sp"),
+            "--fail-on-quality",
+            "--allow-quality-warnings",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "quality gate failed" not in captured.err
+
+
+def test_fit_sparam_cli_fail_on_quality_rejects_blocking_failures(tmp_path: Path, monkeypatch, capsys):
+    import agent_spice.cli as cli
+
+    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None, log_path=None):
+        return FakeFitResult(FakeQualityReport(status="FAIL", blocking_reasons=["passivity_after_enforce"]))
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
+
+    exit_code = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "line.s2p"),
+            "--output",
+            str(tmp_path / "model.sp"),
+            "--fail-on-quality",
+            "--allow-quality-warnings",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "quality gate failed: status=FAIL" in captured.err
+    assert "passivity_after_enforce" in captured.err
