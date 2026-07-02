@@ -57,6 +57,14 @@ Verify the synthetic-real HSPICE corpus golden reports:
 python -m pytest tests/test_hspice_corpus_golden.py -v
 ```
 
+Generate an S-parameter fitted SPICE subcircuit and fit report:
+
+```powershell
+python -m agent_spice.cli fit-sparam tests/fixtures/sparam/simple_through.s2p --output runs-sparam/simple_through.sp --report runs-sparam/fit_report.json
+Test-Path runs-sparam/simple_through.sp
+Test-Path runs-sparam/fit_report.json
+```
+
 After installing solvers, run the ngspice execution smoke:
 
 ```powershell

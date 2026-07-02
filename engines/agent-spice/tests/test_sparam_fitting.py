@@ -1,6 +1,7 @@
+import json
 from pathlib import Path
 
-from agent_spice.sparam.fitting import fit_touchstone_to_spice
+from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice
 
 
 class FakeVectorFitting:
@@ -9,27 +10,112 @@ class FakeVectorFitting:
     def __init__(self, network):
         self.network = network
         self.calls: list[str] = []
+        self.auto_fit_kwargs = {}
+        self.vector_fit_kwargs = {}
+        self.enforced = False
         self.instances.append(self)
 
-    def auto_fit(self):
+    def auto_fit(self, **kwargs):
         self.calls.append("auto_fit")
+        self.auto_fit_kwargs = kwargs
         return None
 
-    def passivity_enforce(self):
+    def vector_fit(self, **kwargs):
+        self.calls.append("vector_fit")
+        self.vector_fit_kwargs = kwargs
+        return None
+
+    def is_passive(self, parameter_type="s"):
+        self.calls.append("is_passive")
+        return self.enforced
+
+    def passivity_test(self, parameter_type="s"):
+        self.calls.append("passivity_test")
+        if self.enforced:
+            return []
+        return [[1e6, 2e6]]
+
+    def passivity_enforce(self, **kwargs):
         self.calls.append("passivity_enforce")
+        self.passivity_enforce_kwargs = kwargs
+        self.enforced = True
         return None
 
-    def write_spice_subcircuit_s(self, filename):
+    def get_rms_error(self, parameter_type="s"):
+        self.calls.append("get_rms_error")
+        return 0.125
+
+    def write_spice_subcircuit_s(self, filename, **kwargs):
         self.calls.append("write_spice_subcircuit_s")
+        self.write_spice_kwargs = kwargs
         Path(filename).write_text(".subckt fitted 1 2\n.ends fitted\n", encoding="utf-8")
 
 
 class FakeNetwork:
+    nports = 2
+    f = [1e6, 2e6]
+    z0 = [
+        [50 + 0j, 50 + 0j],
+        [50 + 0j, 50 + 0j],
+    ]
+
     def __init__(self, path):
         self.path = path
 
 
-def test_fit_touchstone_to_spice_calls_export(tmp_path: Path, monkeypatch):
+def test_fit_touchstone_to_spice_writes_report_with_auto_fit_summary(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFitting)
+    output = tmp_path / "model.sp"
+    report = tmp_path / "fit_report.json"
+
+    result = fit_touchstone_to_spice(tmp_path / "line.s2p", output, report_path=report)
+
+    assert result.spice_path == output
+    assert result.report_path == report
+    assert result.rms_error == 0.125
+    assert result.passive_before_enforce is False
+    assert result.passive_after_enforce is True
+    assert result.passivity_violations_before == [[1000000.0, 2000000.0]]
+    assert result.passivity_violations_after == []
+    assert len(FakeVectorFitting.instances) == 1
+    assert "auto_fit" in FakeVectorFitting.instances[0].calls
+    assert "passivity_enforce" in FakeVectorFitting.instances[0].calls
+    assert "write_spice_subcircuit_s" in FakeVectorFitting.instances[0].calls
+    assert ".subckt fitted" in output.read_text(encoding="utf-8")
+
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert payload["touchstone_path"] == str(tmp_path / "line.s2p")
+    assert payload["spice_path"] == str(output)
+    assert payload["report_path"] == str(report)
+    assert payload["ports"] == 2
+    assert payload["frequency_points"] == 2
+    assert payload["reference_impedance"] == [50.0, 50.0]
+    assert payload["config"]["mode"] == "auto"
+    assert payload["rms_error"] == 0.125
+
+
+def test_manual_fit_uses_vector_fit_parameters(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFitting)
+    config = SParamFitConfig(mode="manual", n_poles_real=4, n_poles_cmplx=5)
+
+    fit_touchstone_to_spice(tmp_path / "line.s2p", tmp_path / "model.sp", config=config)
+
+    instance = FakeVectorFitting.instances[0]
+    assert "vector_fit" in instance.calls
+    assert "auto_fit" not in instance.calls
+    assert instance.vector_fit_kwargs["n_poles_real"] == 4
+    assert instance.vector_fit_kwargs["n_poles_cmplx"] == 5
+
+
+def test_legacy_path_comparison_still_works(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 
     FakeVectorFitting.instances.clear()
@@ -40,10 +126,23 @@ def test_fit_touchstone_to_spice_calls_export(tmp_path: Path, monkeypatch):
     result = fit_touchstone_to_spice(tmp_path / "line.s2p", output)
 
     assert result == output
-    assert len(FakeVectorFitting.instances) == 1
-    assert FakeVectorFitting.instances[0].calls == [
-        "auto_fit",
-        "passivity_enforce",
-        "write_spice_subcircuit_s",
-    ]
-    assert ".subckt fitted" in output.read_text(encoding="utf-8")
+
+
+def test_fit_touchstone_to_spice_smoke_with_fixture(tmp_path: Path):
+    fixture = Path("tests/fixtures/sparam/simple_through.s2p")
+    output = tmp_path / "simple_through.sp"
+    report = tmp_path / "fit_report.json"
+
+    result = fit_touchstone_to_spice(
+        fixture,
+        output,
+        config=SParamFitConfig(model_order_max=20, target_error=0.05),
+        report_path=report,
+    )
+
+    assert result.spice_path == output
+    assert ".subckt" in output.read_text(encoding="utf-8").lower()
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert payload["ports"] == 2
+    assert payload["frequency_points"] > 0
+    assert payload["spice_path"] == str(output)

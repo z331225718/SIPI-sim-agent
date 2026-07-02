@@ -11,6 +11,7 @@ from agent_spice.deck.builder import write_case_artifacts
 from agent_spice.hspice.alter import split_alter_cases
 from agent_spice.hspice.converter import convert_hspice_deck
 from agent_spice.project import prepare_run_directory
+from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice
 
 if TYPE_CHECKING:
     from agent_spice.backend.xyce import XyceXdmRunResult
@@ -114,9 +115,34 @@ def main(argv: list[str] | None = None) -> int:
     run_parser.add_argument("--output-root", type=Path, default=Path("runs"))
     run_parser.add_argument("--execute", action="store_true")
 
+    fit_parser = subparsers.add_parser("fit-sparam")
+    fit_parser.add_argument("touchstone", type=Path)
+    fit_parser.add_argument("--output", type=Path, required=True)
+    fit_parser.add_argument("--report", type=Path)
+    fit_parser.add_argument("--mode", choices=["auto", "manual"], default="auto")
+    fit_parser.add_argument("--n-poles-real", type=int, default=2)
+    fit_parser.add_argument("--n-poles-cmplx", type=int, default=2)
+    fit_parser.add_argument("--model-order-max", type=int, default=100)
+    fit_parser.add_argument("--target-error", type=float, default=0.01)
+    fit_parser.add_argument("--skip-passivity-enforce", action="store_true")
+    fit_parser.add_argument("--subckt-name", default="s_equivalent")
+
     args = parser.parse_args(argv)
     if args.command == "run-hspice":
         return run_hspice(args.deck, args.backend, args.output_root, args.execute)
+    if args.command == "fit-sparam":
+        config = SParamFitConfig(
+            mode=args.mode,
+            n_poles_real=args.n_poles_real,
+            n_poles_cmplx=args.n_poles_cmplx,
+            model_order_max=args.model_order_max,
+            target_error=args.target_error,
+            enforce_passivity=not args.skip_passivity_enforce,
+            subckt_name=args.subckt_name,
+        )
+        report_path = args.report or (args.output.parent / "fit_report.json")
+        fit_touchstone_to_spice(args.touchstone, args.output, config=config, report_path=report_path)
+        return 0
     raise ValueError(f"Unsupported command '{args.command}'")
 
 
