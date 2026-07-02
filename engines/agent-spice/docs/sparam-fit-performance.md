@@ -22,6 +22,22 @@ Get-Content runs-sparam/fit.log -Wait
 
 ## 当前可用加速旋钮
 
+### 0. 频带裁剪和频点抽样
+
+这是当前在 Agent-Spice 封装层能安全实现的最大加速点：减少传给 `VectorFitting.auto_fit()` 的频点数。
+
+```powershell
+--fit-f-min 1e6 --fit-f-max 5e9 --fit-frequency-stride 2 --fit-max-frequency-points 512
+```
+
+注意：
+
+- 这会改变拟合输入数据，所以要用 HTML 的 `Original vs Fitted` 图在原始频点上复核误差。
+- 建议先用抽样结果确定端口顺序、阶数和大致趋势，再用更密频点跑最终模型。
+- JSON 和 HTML 报告都会同时记录原始 `frequency_points` 和实际用于 fit 的 `fit_frequency_points`。
+- 频点筛选后必须至少保留 2 个点；否则 CLI 会提前报错，不会把无效输入交给 scikit-rf。
+- `rms_error` 是 fit 样本上的训练误差；报告里的 `comparison_rms_error` 是在原始频点上重新评估的误差，更适合判断抽样后的全频段质量。
+
 ### 1. 限制模型阶数
 
 `--model-order-max` 是大模型最直接的上限。scikit-rf 的 `auto_fit()` 会自动加/删极点，阶数越高，拟合和导出子电路都会变慢。
@@ -97,6 +113,34 @@ Get-Content runs-sparam/fit.log -Wait
 ```powershell
 --mode manual --n-poles-real 2 --n-poles-cmplx 4 --skip-passivity-enforce
 ```
+
+## `auto_fit` 本身能不能并行
+
+结论：可以局部并行，但不适合在 Agent-Spice 里直接 monkey-patch scikit-rf 私有实现。
+
+原因：
+
+- `auto_fit()` 的 adding/skimming 主循环是串行依赖：每轮新增/剔除极点后，下一轮必须基于更新后的公共极点继续。
+- scikit-rf 的 `_pole_relocation()` 内部有一个按 response 做 QR 分解的循环。这个循环理论上可以并行，因为每个 Sij response 的 QR 可独立计算，再汇总到公共线性系统。
+- 后续 `_fit_residues()` 已经用 `np.linalg.lstsq(..., b.T)` 一次解多个右端项，主要依赖 BLAS/LAPACK。这里更现实的并行方式是让 NumPy/BLAS 使用多线程，而不是 Python 层拆任务。
+- passivity enforcement 内部包含每个频点/迭代的 SVD 和矩阵逆，也更适合 BLAS 线程和降低 `--passivity-samples`，不适合简单 Python 多进程复制大矩阵。
+
+短期建议：
+
+```powershell
+$env:OMP_NUM_THREADS="8"
+$env:MKL_NUM_THREADS="8"
+$env:OPENBLAS_NUM_THREADS="8"
+python -m agent_spice.cli fit-sparam ...
+```
+
+这些环境变量要在 Python 进程启动前设置。实际是否生效取决于当前 Python/NumPy 链接的 BLAS 实现。
+
+中期可以做的工程路线：
+
+- 给 scikit-rf 提 upstream PR：把 `_pole_relocation()` 中 response-wise QR 分解改成可选线程池实现。
+- 在 Agent-Spice 侧不要复制整段私有 `_pole_relocation()`，否则会和 scikit-rf 版本强绑定，维护风险高。
+- 对真实 16/32/64-port 数据建立 benchmark 后，再决定是否值得维护一个 fork 或上游补丁。
 
 ## 后续加速方向
 

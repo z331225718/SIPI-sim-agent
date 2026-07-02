@@ -72,7 +72,7 @@ When using Python module execution, use the underscore package name `agent_spice
 For large Touchstone files, start with a bounded fit and inspect `runs-sparam/fit.log` while it is running:
 
 ```powershell
-python -m agent_spice.cli fit-sparam .\path\to\large.s16p --output runs-sparam/large.sp --report runs-sparam/fit_report.json --html-report runs-sparam/fit_report.html --log runs-sparam/fit.log --model-order-max 40 --target-error 0.05 --fit-max-iterations 30 --passivity-samples 80
+python -m agent_spice.cli fit-sparam .\path\to\large.s16p --output runs-sparam/large.sp --report runs-sparam/fit_report.json --html-report runs-sparam/fit_report.html --log runs-sparam/fit.log --fit-f-min 1e6 --fit-f-max 5e9 --fit-max-frequency-points 512 --model-order-max 40 --target-error 0.05 --fit-max-iterations 30 --passivity-samples 80
 Get-Content runs-sparam/fit.log -Wait
 ```
 

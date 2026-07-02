@@ -44,6 +44,14 @@ def test_fit_sparam_cli_passes_explicit_report_path(tmp_path: Path, monkeypatch)
             "15",
             "--passivity-f-max",
             "3000000000",
+            "--fit-frequency-stride",
+            "2",
+            "--fit-max-frequency-points",
+            "128",
+            "--fit-f-min",
+            "1000000",
+            "--fit-f-max",
+            "5000000000",
         ]
     )
 
@@ -61,6 +69,10 @@ def test_fit_sparam_cli_passes_explicit_report_path(tmp_path: Path, monkeypatch)
     assert calls[0][2].max_iterations == 8
     assert calls[0][2].passivity_samples == 15
     assert calls[0][2].passivity_f_max == 3e9
+    assert calls[0][2].fit_frequency_stride == 2
+    assert calls[0][2].fit_max_frequency_points == 128
+    assert calls[0][2].fit_f_min == 1e6
+    assert calls[0][2].fit_f_max == 5e9
 
 
 def test_fit_sparam_cli_defaults_report_next_to_output(tmp_path: Path, monkeypatch):
@@ -109,3 +121,19 @@ def test_fit_sparam_cli_can_skip_passivity_enforcement(tmp_path: Path, monkeypat
 
     assert exit_code == 0
     assert calls[0][2].enforce_passivity is False
+
+
+def test_fit_sparam_cli_reports_value_error_without_traceback(tmp_path: Path, monkeypatch, capsys):
+    import agent_spice.cli as cli
+
+    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None, log_path=None):
+        raise ValueError("Frequency selection must contain at least 2 samples for vector fitting")
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
+
+    exit_code = cli.main(["fit-sparam", str(tmp_path / "line.s2p"), "--output", str(tmp_path / "model.sp")])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "error: Frequency selection must contain at least 2 samples for vector fitting" in captured.err
+    assert "Traceback" not in captured.err

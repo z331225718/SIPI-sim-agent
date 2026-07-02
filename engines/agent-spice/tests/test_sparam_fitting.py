@@ -3,6 +3,8 @@ import logging
 from pathlib import Path
 import re
 
+import pytest
+
 from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice
 
 
@@ -16,6 +18,7 @@ class FakeVectorFitting:
         self.vector_fit_kwargs = {}
         self.max_iterations = 100
         self.enforced = False
+        self.model_response_freq_lengths: list[int] = []
         self.instances.append(self)
 
     def auto_fit(self, **kwargs):
@@ -51,7 +54,10 @@ class FakeVectorFitting:
 
     def get_model_response(self, i, j, freqs=None):
         self.calls.append("get_model_response")
-        return [0.10 + 0.01j, 0.20 + 0.02j]
+        freqs = self.network.f if freqs is None else freqs
+        self.model_response_freq_lengths.append(len(freqs))
+        base_values = [0.10 + 0.01j, 0.20 + 0.02j]
+        return [base_values[index % len(base_values)] for index in range(len(freqs))]
 
     def write_spice_subcircuit_s(self, filename, **kwargs):
         self.calls.append("write_spice_subcircuit_s")
@@ -149,9 +155,13 @@ def test_fit_touchstone_to_spice_writes_report_with_auto_fit_summary(tmp_path: P
     assert payload["report_path"] == str(report)
     assert payload["ports"] == 2
     assert payload["frequency_points"] == 2
+    assert payload["fit_frequency_points"] == 2
     assert payload["reference_impedance"] == [50.0, 50.0]
     assert payload["config"]["mode"] == "auto"
     assert payload["rms_error"] == 0.125
+    assert payload["rms_error_scope"] == "fit_frequency_points"
+    assert payload["comparison_rms_error"] is not None
+    assert payload["comparison_rms_error_scope"] == "original_frequency_points"
 
 
 def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plot(tmp_path: Path, monkeypatch):
@@ -175,6 +185,10 @@ def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plo
     html = html_report.read_text(encoding="utf-8")
     assert "<h1>S-Parameter Fit Report</h1>" in html
     assert "Original vs Fitted" in html
+    assert "Fit Sample Selection" in html
+    assert "Fit Frequency Points" in html
+    assert "Fit-Sample RMS Error" in html
+    assert "Original-Point RMS Error" in html
     assert "RMS Error" in html
     assert "0.125" in html
     assert "S11" in html
@@ -228,6 +242,51 @@ def test_fit_touchstone_to_spice_writes_progress_log_and_uses_tuning_options(tmp
     assert "fake vector fitting internal progress" in log_text
     assert "writing SPICE subcircuit" in log_text
     assert "fit-sparam completed" in log_text
+
+
+def test_fit_touchstone_to_spice_can_fit_frequency_subset(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFitting)
+    fixture = Path("tests/fixtures/sparam/simple_through.s2p")
+    output = tmp_path / "subset.sp"
+    report = tmp_path / "fit_report.json"
+    html_report = tmp_path / "fit_report.html"
+
+    result = fit_touchstone_to_spice(
+        fixture,
+        output,
+        config=SParamFitConfig(fit_frequency_stride=2, fit_max_frequency_points=2),
+        report_path=report,
+        html_report_path=html_report,
+    )
+
+    fit_network = FakeVectorFitting.instances[0].network
+    assert result.frequency_points == 5
+    assert result.fit_frequency_points == 2
+    assert 5 in FakeVectorFitting.instances[0].model_response_freq_lengths
+    assert list(fit_network.f) == [1e6, 5e9]
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert payload["frequency_points"] == 5
+    assert payload["fit_frequency_points"] == 2
+    assert payload["comparison_rms_error"] is not None
+    assert payload["fit_frequency_selection"]["stride"] == 2
+    assert payload["fit_frequency_selection"]["max_points"] == 2
+    html = html_report.read_text(encoding="utf-8")
+    assert "Fit Sample Selection" in html
+    assert "Fit frequency points</td><td>2" in html
+
+
+def test_fit_touchstone_to_spice_rejects_single_frequency_subset(tmp_path: Path):
+    fixture = Path("tests/fixtures/sparam/simple_through.s2p")
+
+    with pytest.raises(ValueError, match="at least 2 samples"):
+        fit_touchstone_to_spice(
+            fixture,
+            tmp_path / "subset.sp",
+            config=SParamFitConfig(fit_max_frequency_points=1),
+        )
 
 
 def test_manual_fit_uses_vector_fit_parameters(tmp_path: Path, monkeypatch):

@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sys
 from typing import TYPE_CHECKING
 
 from agent_spice.deck.builder import write_case_artifacts
@@ -139,6 +140,10 @@ def main(argv: list[str] | None = None) -> int:
     fit_parser.add_argument("--passivity-samples", type=int, default=200)
     fit_parser.add_argument("--passivity-f-max", type=float)
     fit_parser.add_argument("--no-preserve-dc", action="store_true")
+    fit_parser.add_argument("--fit-frequency-stride", type=int, default=1)
+    fit_parser.add_argument("--fit-max-frequency-points", type=int)
+    fit_parser.add_argument("--fit-f-min", type=float)
+    fit_parser.add_argument("--fit-f-max", type=float)
     fit_parser.add_argument("--skip-passivity-enforce", action="store_true")
     fit_parser.add_argument("--subckt-name", default="s_equivalent")
 
@@ -166,18 +171,26 @@ def main(argv: list[str] | None = None) -> int:
             passivity_samples=args.passivity_samples,
             passivity_f_max=args.passivity_f_max,
             preserve_dc=not args.no_preserve_dc,
+            fit_frequency_stride=args.fit_frequency_stride,
+            fit_max_frequency_points=args.fit_max_frequency_points,
+            fit_f_min=args.fit_f_min,
+            fit_f_max=args.fit_f_max,
             subckt_name=args.subckt_name,
         )
         report_path = args.report or (args.output.parent / "fit_report.json")
         html_report_path = args.html_report or (args.output.parent / "fit_report.html")
-        fit_touchstone_to_spice(
-            args.touchstone,
-            args.output,
-            config=config,
-            report_path=report_path,
-            html_report_path=html_report_path,
-            log_path=args.log,
-        )
+        try:
+            fit_touchstone_to_spice(
+                args.touchstone,
+                args.output,
+                config=config,
+                report_path=report_path,
+                html_report_path=html_report_path,
+                log_path=args.log,
+            )
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
         return 0
     raise ValueError(f"Unsupported command '{args.command}'")
 

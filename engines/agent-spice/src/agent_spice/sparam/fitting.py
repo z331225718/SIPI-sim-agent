@@ -9,6 +9,7 @@ import math
 from pathlib import Path
 from typing import Any, Callable
 
+import numpy as np
 import skrf as rf
 from skrf.vectorFitting import VectorFitting
 
@@ -41,6 +42,10 @@ class SParamFitConfig:
     preserve_dc: bool = True
     subckt_name: str = "s_equivalent"
     create_reference_pins: bool = False
+    fit_frequency_stride: int = 1
+    fit_max_frequency_points: int | None = None
+    fit_f_min: float | None = None
+    fit_f_max: float | None = None
 
 
 @dataclass(frozen=True)
@@ -53,9 +58,13 @@ class SParamFitResult:
     ports: int
     frequency_points: int
     frequency_range_hz: list[float] | None
+    fit_frequency_points: int
+    fit_frequency_range_hz: list[float] | None
+    fit_frequency_selection: dict[str, Any]
     reference_impedance: list[float]
     config: SParamFitConfig
     rms_error: float | None
+    comparison_rms_error: float | None
     passive_before_enforce: bool | None
     passive_after_enforce: bool | None
     passivity_violations_before: list[list[float]] | None
@@ -78,10 +87,16 @@ class SParamFitResult:
             "ports": self.ports,
             "frequency_points": self.frequency_points,
             "frequency_range_hz": self.frequency_range_hz,
+            "fit_frequency_points": self.fit_frequency_points,
+            "fit_frequency_range_hz": self.fit_frequency_range_hz,
+            "fit_frequency_selection": self.fit_frequency_selection,
             "reference_impedance": self.reference_impedance,
             "config": asdict(self.config),
             "quality": _quality_summary(self),
             "rms_error": self.rms_error,
+            "rms_error_scope": "fit_frequency_points",
+            "comparison_rms_error": self.comparison_rms_error,
+            "comparison_rms_error_scope": "original_frequency_points",
             "passive_before_enforce": self.passive_before_enforce,
             "passive_after_enforce": self.passive_after_enforce,
             "passivity_violations_before": self.passivity_violations_before,
@@ -99,6 +114,56 @@ def _frequency_range(network: Any) -> list[float] | None:
     if len(network.f) == 0:
         return None
     return [float(network.f[0]), float(network.f[-1])]
+
+
+def _frequency_selection_summary(config: SParamFitConfig) -> dict[str, Any]:
+    return {
+        "stride": config.fit_frequency_stride,
+        "max_points": config.fit_max_frequency_points,
+        "f_min": config.fit_f_min,
+        "f_max": config.fit_f_max,
+    }
+
+
+def _selected_z0(network: Any, indices: np.ndarray) -> Any:
+    z0 = np.asarray(network.z0)
+    if z0.ndim < 2:
+        return network.z0
+    return z0[indices, :]
+
+
+def _select_fit_network(network: Any, config: SParamFitConfig) -> Any:
+    if config.fit_frequency_stride < 1:
+        raise ValueError("fit_frequency_stride must be >= 1")
+    if config.fit_max_frequency_points is not None and config.fit_max_frequency_points < 1:
+        raise ValueError("fit_max_frequency_points must be >= 1")
+
+    indices = np.arange(len(network.f))
+    if config.fit_f_min is not None:
+        indices = indices[network.f[indices] >= config.fit_f_min]
+    if config.fit_f_max is not None:
+        indices = indices[network.f[indices] <= config.fit_f_max]
+    if len(indices) == 0:
+        raise ValueError("Frequency selection produced no samples for vector fitting")
+
+    if config.fit_frequency_stride > 1:
+        indices = indices[:: config.fit_frequency_stride]
+
+    if config.fit_max_frequency_points is not None and len(indices) > config.fit_max_frequency_points:
+        sampled_positions = np.linspace(0, len(indices) - 1, config.fit_max_frequency_points, dtype=int)
+        indices = indices[np.unique(sampled_positions)]
+    if len(indices) < 2:
+        raise ValueError("Frequency selection must contain at least 2 samples for vector fitting")
+
+    if len(indices) == len(network.f) and np.array_equal(indices, np.arange(len(network.f))):
+        return network
+
+    return rf.Network(
+        frequency=network.frequency[indices],
+        s=network.s[indices, :, :],
+        z0=_selected_z0(network, indices),
+        name=f"{getattr(network, 'name', 'network')}_fit_subset",
+    )
 
 
 def _safe_bool(method, **kwargs) -> bool | None:
@@ -189,6 +254,69 @@ def _safe_rms_error(vector_fit: VectorFitting, parameter_type: str) -> float | N
         return None
 
 
+def _model_response_at_frequencies(
+    vector_fit: VectorFitting,
+    row: int,
+    column: int,
+    freqs: Any,
+) -> list[complex] | None:
+    if not hasattr(vector_fit, "get_model_response"):
+        return None
+    method = vector_fit.get_model_response
+    try:
+        signature = inspect.signature(method)
+    except (TypeError, ValueError):
+        try:
+            fitted = method(row, column, freqs=freqs)
+        except Exception:
+            return None
+    else:
+        parameters = list(signature.parameters.values())
+        supports_freqs_keyword = "freqs" in signature.parameters or any(
+            parameter.kind == inspect.Parameter.VAR_KEYWORD for parameter in parameters
+        )
+        supports_third_positional = any(parameter.kind == inspect.Parameter.VAR_POSITIONAL for parameter in parameters)
+        supports_third_positional = supports_third_positional or sum(
+            parameter.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            for parameter in parameters
+        ) >= 3
+        try:
+            if supports_freqs_keyword:
+                fitted = method(row, column, freqs=freqs)
+            elif supports_third_positional:
+                fitted = method(row, column, freqs)
+            else:
+                return None
+        except Exception:
+            return None
+    try:
+        fitted_values = [complex(value) for value in fitted]
+    except Exception:
+        return None
+    if len(fitted_values) != len(freqs):
+        return None
+    return fitted_values
+
+
+def _comparison_rms_error(network: Any, vector_fit: VectorFitting, parameter_type: str) -> float | None:
+    network_values = getattr(network, parameter_type.lower(), None)
+    if network_values is None or not hasattr(network, "f") or not hasattr(network, "nports"):
+        return None
+    try:
+        network_array = np.asarray(network_values)
+        error_mean_squared = 0.0
+        for row in range(network.nports):
+            for column in range(network.nports):
+                fitted = _model_response_at_frequencies(vector_fit, row, column, network.f)
+                if fitted is None:
+                    return None
+                original = network_array[:, row, column].astype(complex)
+                error_mean_squared += float(np.mean(np.square(np.abs(original - np.asarray(fitted)))))
+        return float(math.sqrt(error_mean_squared))
+    except Exception:
+        return None
+
+
 def _quality_summary(result: SParamFitResult) -> dict[str, Any]:
     if result.passive_after_enforce is True:
         passivity = "passive"
@@ -198,6 +326,9 @@ def _quality_summary(result: SParamFitResult) -> dict[str, Any]:
         passivity = "unknown"
     return {
         "rms_error": result.rms_error,
+        "rms_error_scope": "fit_frequency_points",
+        "comparison_rms_error": result.comparison_rms_error,
+        "comparison_rms_error_scope": "original_frequency_points",
         "passivity": passivity,
         "passivity_enforcement_enabled": result.config.enforce_passivity,
         "violation_bands_after": len(result.passivity_violations_after or []),
@@ -250,9 +381,11 @@ def _comparison_traces(network: Any, vector_fit: VectorFitting, max_traces: int 
             if len(traces) >= max_traces:
                 return traces
             try:
-                fitted = _call_with_supported_kwargs(vector_fit.get_model_response, row, column, freqs=network.f)
+                fitted = _model_response_at_frequencies(vector_fit, row, column, network.f)
+                if fitted is None:
+                    continue
                 original_db = [_to_db(_network_s_value(network, idx, row, column)) for idx in range(len(freqs))]
-                fitted_db = [_to_db(complex(value)) for value in fitted]
+                fitted_db = [_to_db(value) for value in fitted]
             except Exception:
                 continue
             traces.append(
@@ -333,6 +466,12 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     quality = _quality_summary(result)
     freq_start = None if result.frequency_range_hz is None else result.frequency_range_hz[0]
     freq_end = None if result.frequency_range_hz is None else result.frequency_range_hz[1]
+    fit_freq_start = None if result.fit_frequency_range_hz is None else result.fit_frequency_range_hz[0]
+    fit_freq_end = None if result.fit_frequency_range_hz is None else result.fit_frequency_range_hz[1]
+    selection_rows = "".join(
+        f"<tr><td>{escape(key)}</td><td>{escape(str(value))}</td></tr>"
+        for key, value in result.fit_frequency_selection.items()
+    )
     violation_rows = "\n".join(
         f"<tr><td>{_format_hz(band[0])}</td><td>{_format_hz(band[1])}</td></tr>"
         for band in (result.passivity_violations_after or [])
@@ -377,7 +516,9 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
   <div class="cards">
     <div class="card"><div class="label">Ports</div><div class="value">{result.ports}</div></div>
     <div class="card"><div class="label">Frequency Points</div><div class="value">{result.frequency_points}</div></div>
-    <div class="card"><div class="label">RMS Error</div><div class="value">{_format_float(result.rms_error)}</div></div>
+    <div class="card"><div class="label">Fit Frequency Points</div><div class="value">{result.fit_frequency_points}</div></div>
+    <div class="card"><div class="label">Fit-Sample RMS Error</div><div class="value">{_format_float(result.rms_error)}</div></div>
+    <div class="card"><div class="label">Original-Point RMS Error</div><div class="value">{_format_float(result.comparison_rms_error)}</div></div>
     <div class="card"><div class="label">Passivity</div><div class="value">{escape(str(quality["passivity"]))}</div></div>
   </div>
 
@@ -389,6 +530,18 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     <tr><td>JSON report</td><td>{escape(str(result.report_path))}</td></tr>
     <tr><td>Frequency span</td><td>{_format_hz(freq_start)} to {_format_hz(freq_end)}</td></tr>
     <tr><td>Reference impedance</td><td>{escape(', '.join(_format_float(value) for value in result.reference_impedance))}</td></tr>
+  </table>
+
+  <h2>Fit Sample Selection</h2>
+  <table>
+    <tr><th>Item</th><th>Value</th></tr>
+    <tr><td>Original frequency points</td><td>{result.frequency_points}</td></tr>
+    <tr><td>Fit frequency points</td><td>{result.fit_frequency_points}</td></tr>
+    <tr><td>Original frequency span</td><td>{_format_hz(freq_start)} to {_format_hz(freq_end)}</td></tr>
+    <tr><td>Fit frequency span</td><td>{_format_hz(fit_freq_start)} to {_format_hz(fit_freq_end)}</td></tr>
+    <tr><td>Fit-sample RMS error</td><td>{_format_float(result.rms_error)}</td></tr>
+    <tr><td>Original-point comparison RMS error</td><td>{_format_float(result.comparison_rms_error)}</td></tr>
+    {selection_rows}
   </table>
 
   <h2>Fit Configuration</h2>
@@ -468,7 +621,15 @@ def fit_touchstone_to_spice(
             f"loaded Touchstone: ports={network.nports}, frequency_points={len(network.f)}, "
             f"frequency_range={_frequency_range(network)}"
         )
-        vector_fit = VectorFitting(network)
+        fit_network = _select_fit_network(network, config)
+        if fit_network is network:
+            progress.info("using all frequency points for vector fit")
+        else:
+            progress.info(
+                f"using frequency subset for vector fit: {len(fit_network.f)} of {len(network.f)} points, "
+                f"range={_frequency_range(fit_network)}, selection={_frequency_selection_summary(config)}"
+            )
+        vector_fit = VectorFitting(fit_network)
         progress.info(f"starting vector fit: mode={config.mode}, parameter_type={config.parameter_type}")
         _fit_model(vector_fit, config)
         progress.info("vector fit finished")
@@ -493,6 +654,7 @@ def fit_touchstone_to_spice(
         passive_after = _safe_bool(vector_fit.is_passive, parameter_type=config.parameter_type)
         violations_after = _safe_passivity_violations(vector_fit, config.parameter_type)
         rms_error = _safe_rms_error(vector_fit, config.parameter_type)
+        comparison_rms_error = _comparison_rms_error(network, vector_fit, config.parameter_type)
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         progress.info(f"writing SPICE subcircuit: {output_path}")
@@ -511,9 +673,13 @@ def fit_touchstone_to_spice(
             ports=network.nports,
             frequency_points=len(network.f),
             frequency_range_hz=_frequency_range(network),
+            fit_frequency_points=len(fit_network.f),
+            fit_frequency_range_hz=_frequency_range(fit_network),
+            fit_frequency_selection=_frequency_selection_summary(config),
             reference_impedance=_reference_impedance(network),
             config=config,
             rms_error=rms_error,
+            comparison_rms_error=comparison_rms_error,
             passive_before_enforce=passive_before,
             passive_after_enforce=passive_after,
             passivity_violations_before=violations_before,
