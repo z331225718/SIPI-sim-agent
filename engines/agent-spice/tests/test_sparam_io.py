@@ -25,6 +25,40 @@ def test_load_touchstone_metadata_for_s2p(tmp_path: Path):
     assert metadata.reference_impedance_by_frequency == [[50.0, 50.0], [50.0, 50.0]]
 
 
+def test_load_touchstone_metadata_uses_fast_path_for_simple_touchstone(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.io as io
+
+    s3p = tmp_path / "line.s3p"
+    s3p.write_text(
+        "\n".join(
+            [
+                "! comment",
+                "# Hz S RI R 0.1",
+                "1e6 0 0 0 0 0 0",
+                "0 0 0 0 0 0",
+                "0 0 0 0 0 0",
+                "2e6 0 0 0 0 0 0",
+                "0 0 0 0 0 0",
+                "0 0 0 0 0 0",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    def fail_if_called(path):
+        raise AssertionError(f"rf.Network should not be called for simple metadata: {path}")
+
+    monkeypatch.setattr(io.rf, "Network", fail_if_called)
+
+    metadata = load_touchstone_metadata(s3p)
+
+    assert metadata.ports == 3
+    assert metadata.frequency_points == 2
+    assert metadata.reference_impedance == [0.1, 0.1, 0.1]
+    assert metadata.reference_impedance_by_frequency == [[0.1, 0.1, 0.1], [0.1, 0.1, 0.1]]
+
+
 class FakeNetwork:
     nports = 2
     f = [1e6, 2e6]
