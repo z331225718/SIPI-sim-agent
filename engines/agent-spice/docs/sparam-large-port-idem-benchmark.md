@@ -55,3 +55,27 @@ Findings:
 - Our best order-8 run tends to move one pole to an extremely high real frequency instead of preserving the high-frequency complex pairs. This points to pole relocation/constraint behavior rather than speed or memory.
 
 The immediate algorithmic direction is to improve low-order pole relocation so high-frequency complex pairs are retained or reintroduced, instead of simply increasing order.
+
+## Test16.s91p High-Frequency Pair Experiment
+
+After fixing the native residue solver's empty complex-index bug, a follow-up experiment tested high-frequency complex-pair preservation on `Test16.s91p`.
+
+Results:
+
+- Strict expanded order 8 was not enough. Forcing the layout back to `4 real + 2 complex pairs` after relocation produced a best mean RMS around `0.0039`, worse than the unconstrained log-initialized run.
+- Allowing the preserved-pair strategy to increase the expanded order reached the target:
+  - high-frequency pair preservation around `1.36 GHz` and `2.0 GHz`
+  - damping around `0.03`
+  - 14 relocation iterations
+  - mean RMS `0.0018194`
+  - effective expanded order `10`
+- A plain order-10 log sweep without the preservation/reinjection step did not reproduce the improvement; most tested order-10 log configurations stayed around `0.06` RMS or worse.
+
+Interpretation:
+
+The useful signal is not simply "add more order." The important behavior is selective pole topology control: preserve or reintroduce high-frequency complex pairs while keeping the low/mid-band real poles well placed. However, the naive exact-order truncation strategy is harmful, so this should not be made the default yet.
+
+Next target:
+
+- Design an order-aware pole selection step that chooses which real poles to trade for high-frequency complex pairs based on fit error contribution, not only frequency rank.
+- Re-test on `Test16.s91p` first, then check that `Test13.s60p` and `Test11.s163p` do not regress.
