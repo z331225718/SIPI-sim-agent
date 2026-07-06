@@ -233,3 +233,289 @@ def test_fit_sparam_cli_fail_on_quality_rejects_blocking_failures(tmp_path: Path
     assert exit_code == 1
     assert "quality gate failed: status=FAIL" in captured.err
     assert "passivity_after_enforce" in captured.err
+
+
+def test_fit_sparam_cli_supports_idem_exporter(tmp_path: Path, monkeypatch):
+    import agent_spice.cli as cli
+
+    exporter_value = []
+
+    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None, log_path=None):
+        exporter_value.append(config.exporter)
+        return FakeFitResult(FakeQualityReport(status="PASS"))
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
+
+    exit_code = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "line.s2p"),
+            "--output",
+            str(tmp_path / "model.sp"),
+            "--exporter",
+            "idem",
+        ]
+    )
+
+    assert exit_code == 0
+    assert exporter_value == ["idem"]
+
+
+def test_fit_sparam_cli_can_apply_compact_auto_preset_for_30p():
+    from argparse import Namespace
+
+    import agent_spice.cli as cli
+
+    args = Namespace(
+        auto_preset="compact",
+        touchstone=Path("model.s30p"),
+        auto_model_order_candidates=None,
+        auto_target_mean_rms_error=None,
+        skip_passivity_enforce=False,
+        skip_passivity_check=False,
+    )
+
+    cli._apply_sparam_auto_preset(args, ["fit-sparam", "model.s30p", "--auto-preset", "compact"])
+
+    assert args.auto_model_order_candidates == "40,60,75,80,120"
+    assert args.auto_target_mean_rms_error == 0.002
+    assert args.skip_passivity_enforce is True
+    assert args.skip_passivity_check is True
+
+
+def test_fit_sparam_cli_can_apply_idem_fast_preset_for_30p():
+    from argparse import Namespace
+
+    import agent_spice.cli as cli
+
+    args = Namespace(
+        auto_preset="idem-fast",
+        touchstone=Path("model.s30p"),
+        mode="auto",
+        n_poles_real=2,
+        n_poles_cmplx=2,
+        fit_max_iterations=None,
+        fit_max_frequency_points=None,
+        relocation_backend="skrf",
+        vector_fit_backend="skrf",
+        use_lightweight_network=False,
+        auto_model_order_candidates=None,
+        auto_target_mean_rms_error=None,
+        skip_passivity_enforce=False,
+        skip_passivity_check=False,
+    )
+
+    cli._apply_sparam_auto_preset(args, ["fit-sparam", "model.s30p", "--auto-preset", "idem-fast"])
+
+    assert args.mode == "manual"
+    assert args.n_poles_real == 4
+    assert args.n_poles_cmplx == 30
+    assert args.fit_max_iterations == 6
+    assert args.fit_max_frequency_points == 256
+    assert args.relocation_backend == "streaming-reciprocal"
+    assert args.vector_fit_backend == "native"
+    assert args.use_lightweight_network is True
+    assert args.auto_model_order_candidates is None
+    assert args.auto_target_mean_rms_error is None
+    assert args.skip_passivity_enforce is True
+    assert args.skip_passivity_check is True
+
+
+def test_fit_sparam_cli_uses_auto_order_runner(tmp_path: Path, monkeypatch):
+    import agent_spice.cli as cli
+
+    calls = []
+
+    class FakeAutoResult:
+        def __init__(self):
+            self.quality_report = FakeQualityReport(status="PASS")
+
+    def fake_auto(touchstone_path, output_path, *, config, order_candidates, target_mean_rms_error, report_path, html_report_path, log_path):
+        calls.append(
+            (
+                touchstone_path,
+                output_path,
+                config,
+                order_candidates,
+                target_mean_rms_error,
+                report_path,
+                html_report_path,
+                log_path,
+            )
+        )
+        return FakeAutoResult()
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice_auto_order", fake_auto, raising=False)
+
+    exit_code = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "line.s30p"),
+            "--output",
+            str(tmp_path / "model.sp"),
+            "--auto-model-order-candidates",
+            "40,60",
+            "--auto-target-mean-rms-error",
+            "0.002",
+        ]
+    )
+
+    assert exit_code == 0
+    assert calls[0][3] == [40, 60]
+    assert calls[0][4] == 0.002
+
+
+def test_fit_sparam_cli_idem_fast_preset_uses_single_manual_fit(tmp_path: Path, monkeypatch):
+    import agent_spice.cli as cli
+
+    fit_calls = []
+    auto_calls = []
+
+    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None, log_path=None):
+        fit_calls.append(config)
+        return FakeFitResult(FakeQualityReport(status="PASS"))
+
+    def fake_auto(*args, **kwargs):
+        auto_calls.append((args, kwargs))
+        return FakeFitResult(FakeQualityReport(status="PASS"))
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice_auto_order", fake_auto, raising=False)
+
+    exit_code = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "line.s30p"),
+            "--output",
+            str(tmp_path / "model.sp"),
+            "--auto-preset",
+            "idem-fast",
+        ]
+    )
+
+    assert exit_code == 0
+    assert len(fit_calls) == 1
+    assert auto_calls == []
+    assert fit_calls[0].mode == "manual"
+    assert fit_calls[0].n_poles_real == 4
+    assert fit_calls[0].n_poles_cmplx == 30
+    assert fit_calls[0].max_iterations == 6
+    assert fit_calls[0].fit_max_frequency_points == 256
+    assert fit_calls[0].relocation_backend == "streaming-reciprocal"
+    assert fit_calls[0].vector_fit_backend == "native"
+    assert fit_calls[0].use_lightweight_network is True
+    assert fit_calls[0].check_passivity is False
+    assert fit_calls[0].enforce_passivity is False
+
+
+def test_fit_sparam_cli_auto_preset_respects_explicit_options_when_argv_is_none(tmp_path: Path, monkeypatch):
+    import sys
+
+    import agent_spice.cli as cli
+
+    fit_calls = []
+
+    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None, log_path=None):
+        fit_calls.append(config)
+        return FakeFitResult(FakeQualityReport(status="PASS"))
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "agent-spice",
+            "fit-sparam",
+            str(tmp_path / "line.s30p"),
+            "--output",
+            str(tmp_path / "model.sp"),
+            "--auto-preset",
+            "idem-fast",
+            "--fit-max-frequency-points",
+            "320",
+        ],
+    )
+
+    exit_code = cli.main()
+
+    assert exit_code == 0
+    assert fit_calls[0].fit_max_frequency_points == 320
+
+
+def test_fit_sparam_cli_auto_preset_respects_explicit_vector_fit_backend(tmp_path: Path, monkeypatch):
+    import agent_spice.cli as cli
+
+    fit_calls = []
+
+    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None, log_path=None):
+        fit_calls.append(config)
+        return FakeFitResult(FakeQualityReport(status="PASS"))
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
+
+    exit_code = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "line.s30p"),
+            "--output",
+            str(tmp_path / "model.sp"),
+            "--auto-preset",
+            "idem-fast",
+            "--vector-fit-backend",
+            "skrf",
+        ]
+    )
+
+    assert exit_code == 0
+    assert fit_calls[0].vector_fit_backend == "skrf"
+
+
+def test_fit_sparam_cli_can_skip_passivity_check(tmp_path: Path, monkeypatch):
+    import agent_spice.cli as cli
+
+    calls = []
+
+    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None, log_path=None):
+        calls.append(config)
+        return FakeFitResult(FakeQualityReport(status="PASS"))
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
+
+    exit_code = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "line.s2p"),
+            "--output",
+            str(tmp_path / "model.sp"),
+            "--skip-passivity-check",
+        ]
+    )
+
+    assert exit_code == 0
+    assert calls[0].check_passivity is False
+
+
+def test_fit_sparam_cli_can_select_native_vector_fit_backend(tmp_path: Path, monkeypatch):
+    import agent_spice.cli as cli
+
+    calls = []
+
+    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None, log_path=None):
+        calls.append(config)
+        return FakeFitResult(FakeQualityReport(status="PASS"))
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
+
+    exit_code = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "line.s2p"),
+            "--output",
+            str(tmp_path / "model.sp"),
+            "--vector-fit-backend",
+            "native",
+        ]
+    )
+
+    assert exit_code == 0
+    assert calls[0].vector_fit_backend == "native"
