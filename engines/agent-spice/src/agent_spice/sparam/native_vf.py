@@ -157,8 +157,8 @@ class NativeVectorFitting:
                 idx_res_complex_re.append(response_column)
                 idx_res_complex_im.append(response_column + 1)
                 response_column += 2
-        idx_res_real = np.asarray(idx_res_real)
-        idx_res_complex_re = np.asarray(idx_res_complex_re)
+        idx_res_real = np.asarray(idx_res_real, dtype=int)
+        idx_res_complex_re = np.asarray(idx_res_complex_re, dtype=int)
         idx_res_complex_im = idx_res_complex_re + 1
 
         a_matrix = np.empty((n_freqs, n_cols), dtype=complex)

@@ -77,3 +77,22 @@ def test_native_spice_exporter_matches_skrf_element_vocabulary(tmp_path):
         "Fe1",
     }
     assert expected <= prefixes
+
+
+def test_native_residue_fit_handles_all_real_poles():
+    poles = np.array([-1.0e6 + 0.0j, -2.0e6 + 0.0j])
+    freqs = np.array([0.0, 1.0, 2.0, 3.0])
+    responses = np.array([[1.0 + 0.0j, 0.9 + 0.1j, 0.8 + 0.2j, 0.7 + 0.3j]])
+
+    residues, constant_coeff, proportional_coeff, *_ = NativeVectorFitting._fit_residues(
+        poles,
+        freqs,
+        responses,
+        True,
+        False,
+        True,
+    )
+
+    assert residues.shape == (1, 2)
+    assert constant_coeff.shape == (1,)
+    assert proportional_coeff.shape == (1,)
