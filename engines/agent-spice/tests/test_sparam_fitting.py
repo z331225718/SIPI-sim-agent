@@ -655,6 +655,23 @@ def test_manual_fit_uses_vector_fit_parameters(tmp_path: Path, monkeypatch):
     assert instance.vector_fit_kwargs["n_poles_cmplx"] == 5
 
 
+def test_create_native_vector_fitting_applies_high_frequency_complex_pair_options():
+    import agent_spice.sparam.fitting as fitting
+
+    config = SParamFitConfig(
+        vector_fit_backend="native",
+        high_frequency_complex_pair_count=2,
+        high_frequency_complex_pair_damping=0.05,
+        high_frequency_complex_pair_lower_fraction=0.7,
+    )
+
+    vector_fit = fitting._create_vector_fitting(FakeNetwork("line.s2p"), config)
+
+    assert vector_fit.high_frequency_complex_pair_count == 2
+    assert vector_fit.high_frequency_complex_pair_damping == 0.05
+    assert vector_fit.high_frequency_complex_pair_lower_fraction == 0.7
+
+
 def test_legacy_path_comparison_still_works(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 

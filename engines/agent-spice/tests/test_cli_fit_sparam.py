@@ -46,6 +46,8 @@ def test_fit_sparam_cli_passes_explicit_report_path(tmp_path: Path, monkeypatch)
             "4",
             "--n-poles-cmplx",
             "5",
+            "--init-pole-spacing",
+            "log",
             "--subckt-name",
             "pkg_model",
             "--n-poles-add",
@@ -64,6 +66,12 @@ def test_fit_sparam_cli_passes_explicit_report_path(tmp_path: Path, monkeypatch)
             "1000000",
             "--fit-f-max",
             "5000000000",
+            "--high-frequency-complex-pairs",
+            "2",
+            "--high-frequency-complex-pair-damping",
+            "0.05",
+            "--high-frequency-complex-pair-lower-fraction",
+            "0.7",
             "--quality-profile",
             "signoff",
             "--max-comparison-rms-error",
@@ -83,6 +91,7 @@ def test_fit_sparam_cli_passes_explicit_report_path(tmp_path: Path, monkeypatch)
     assert calls[0][2].mode == "manual"
     assert calls[0][2].n_poles_real == 4
     assert calls[0][2].n_poles_cmplx == 5
+    assert calls[0][2].init_pole_spacing == "log"
     assert calls[0][2].subckt_name == "pkg_model"
     assert calls[0][2].n_poles_add == 1
     assert calls[0][2].max_iterations == 8
@@ -92,6 +101,9 @@ def test_fit_sparam_cli_passes_explicit_report_path(tmp_path: Path, monkeypatch)
     assert calls[0][2].fit_max_frequency_points == 128
     assert calls[0][2].fit_f_min == 1e6
     assert calls[0][2].fit_f_max == 5e9
+    assert calls[0][2].high_frequency_complex_pair_count == 2
+    assert calls[0][2].high_frequency_complex_pair_damping == 0.05
+    assert calls[0][2].high_frequency_complex_pair_lower_fraction == 0.7
     assert calls[0][2].quality_profile == "signoff"
     assert calls[0][2].max_comparison_rms_error == 0.02
     assert calls[0][2].max_passivity_epsilon == 1.5e-6

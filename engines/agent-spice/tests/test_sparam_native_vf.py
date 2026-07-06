@@ -96,3 +96,19 @@ def test_native_residue_fit_handles_all_real_poles():
     assert residues.shape == (1, 2)
     assert constant_coeff.shape == (1,)
     assert proportional_coeff.shape == (1,)
+
+
+def test_native_high_frequency_complex_pair_repair_converts_largest_real_pole():
+    poles = np.array([-1.0 + 0.0j, -10.0 + 0.0j, -2.0 + 3.0j])
+    repaired = NativeVectorFitting._ensure_high_frequency_complex_pairs(
+        poles,
+        np.array([0.0, 1.0, 2.0]),
+        pair_count=2,
+        damping=0.05,
+        lower_fraction=0.5,
+    )
+
+    assert repaired[0] == poles[0]
+    assert repaired[2] == poles[2]
+    assert repaired[1].imag > 0.0
+    assert repaired[1].real < 0.0

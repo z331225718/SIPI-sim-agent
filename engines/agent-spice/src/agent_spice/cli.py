@@ -598,6 +598,7 @@ def main(argv: list[str] | None = None) -> int:
     fit_parser.add_argument("--mode", choices=["auto", "manual"], default="auto")
     fit_parser.add_argument("--n-poles-real", type=int, default=2)
     fit_parser.add_argument("--n-poles-cmplx", type=int, default=2)
+    fit_parser.add_argument("--init-pole-spacing", choices=["lin", "log"], default="lin")
     fit_parser.add_argument("--n-poles-init-real", type=int, default=3)
     fit_parser.add_argument("--n-poles-init-cmplx", type=int, default=3)
     fit_parser.add_argument("--n-poles-add", type=int, default=3)
@@ -623,6 +624,9 @@ def main(argv: list[str] | None = None) -> int:
         default="skrf",
     )
     fit_parser.add_argument("--vector-fit-backend", choices=["skrf", "native"], default="skrf")
+    fit_parser.add_argument("--high-frequency-complex-pairs", type=int, default=0)
+    fit_parser.add_argument("--high-frequency-complex-pair-damping", type=float, default=0.03)
+    fit_parser.add_argument("--high-frequency-complex-pair-lower-fraction", type=float, default=0.68)
     fit_parser.add_argument("--use-lightweight-network", action="store_true")
     fit_parser.add_argument("--skip-passivity-enforce", action="store_true")
     fit_parser.add_argument("--skip-passivity-check", action="store_true")
@@ -882,6 +886,7 @@ def main(argv: list[str] | None = None) -> int:
             mode=args.mode,
             n_poles_real=args.n_poles_real,
             n_poles_cmplx=args.n_poles_cmplx,
+            init_pole_spacing=args.init_pole_spacing,
             n_poles_init_real=args.n_poles_init_real,
             n_poles_init_cmplx=args.n_poles_init_cmplx,
             n_poles_add=args.n_poles_add,
@@ -906,6 +911,9 @@ def main(argv: list[str] | None = None) -> int:
             relocation_backend=args.relocation_backend,
             use_lightweight_network=args.use_lightweight_network,
             vector_fit_backend=args.vector_fit_backend,
+            high_frequency_complex_pair_count=args.high_frequency_complex_pairs,
+            high_frequency_complex_pair_damping=args.high_frequency_complex_pair_damping,
+            high_frequency_complex_pair_lower_fraction=args.high_frequency_complex_pair_lower_fraction,
             quality_profile=args.quality_profile,
             max_comparison_rms_error=args.max_comparison_rms_error,
             max_passivity_epsilon=args.max_passivity_epsilon,

@@ -42,7 +42,11 @@ def _create_vector_fitting(network: Any, config: "SParamFitConfig") -> Any:
     if config.vector_fit_backend == "native":
         from .native_vf import NativeVectorFitting
 
-        return NativeVectorFitting(network)
+        vector_fit = NativeVectorFitting(network)
+        vector_fit.high_frequency_complex_pair_count = config.high_frequency_complex_pair_count
+        vector_fit.high_frequency_complex_pair_damping = config.high_frequency_complex_pair_damping
+        vector_fit.high_frequency_complex_pair_lower_fraction = config.high_frequency_complex_pair_lower_fraction
+        return vector_fit
     raise ValueError("vector_fit_backend must be 'skrf' or 'native'")
 
 
@@ -82,6 +86,9 @@ class SParamFitConfig:
     relocation_backend: str = "skrf"
     use_lightweight_network: bool = False
     vector_fit_backend: str = "skrf"
+    high_frequency_complex_pair_count: int = 0
+    high_frequency_complex_pair_damping: float = 0.03
+    high_frequency_complex_pair_lower_fraction: float = 0.68
     quality_profile: str = "explore"
     max_comparison_rms_error: float = 0.05
     max_passivity_epsilon: float = 1e-6

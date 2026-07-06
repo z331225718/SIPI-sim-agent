@@ -25,6 +25,9 @@ class NativeVectorFitting:
         self.delta_max_history = []
         self.history_cond_A = []
         self.history_rank_deficiency = []
+        self.high_frequency_complex_pair_count = 0
+        self.high_frequency_complex_pair_damping = 0.03
+        self.high_frequency_complex_pair_lower_fraction = 0.68
 
     @staticmethod
     def get_model_order(poles: np.ndarray) -> int:
@@ -59,6 +62,37 @@ class NativeVectorFitting:
             omega = 2 * np.pi * freq
             poles[offset + i] = (-0.01 + 1j) * omega
         return poles
+
+    @staticmethod
+    def _ensure_high_frequency_complex_pairs(
+        poles: np.ndarray,
+        freqs: np.ndarray,
+        pair_count: int,
+        damping: float,
+        lower_fraction: float,
+    ) -> np.ndarray:
+        if pair_count <= 0:
+            return poles
+        pole_array = np.asarray(poles, dtype=complex).copy()
+        complex_mask = np.abs(pole_array.imag) > 0.0
+        existing_pairs = int(np.count_nonzero(complex_mask))
+        missing_pairs = pair_count - existing_pairs
+        if missing_pairs <= 0:
+            return pole_array
+
+        real_indices = np.nonzero(~complex_mask)[0]
+        if len(real_indices) == 0:
+            return pole_array
+
+        fmax = float(np.max(freqs))
+        lower = max(0.0, min(float(lower_fraction), 1.0))
+        anchors = np.linspace(lower * fmax, fmax, pair_count)
+        replacement_anchors = anchors[-missing_pairs:]
+        replacement_indices = sorted(real_indices, key=lambda idx: abs(pole_array[idx]), reverse=True)[:missing_pairs]
+        for idx, anchor in zip(replacement_indices, replacement_anchors):
+            omega = 2.0 * np.pi * anchor
+            pole_array[idx] = complex(-abs(damping) * omega, omega)
+        return pole_array
 
     def vector_fit(
         self,
@@ -106,6 +140,13 @@ class NativeVectorFitting:
             self.history_cond_A.append(cond)
             self.history_rank_deficiency.append(rank_deficiency)
             self.d_res_history.append(d_res)
+            poles = self._ensure_high_frequency_complex_pairs(
+                poles,
+                freqs_norm,
+                self.high_frequency_complex_pair_count,
+                self.high_frequency_complex_pair_damping,
+                self.high_frequency_complex_pair_lower_fraction,
+            )
             new_max_singular = np.amax(singular_vals)
             delta_max = np.abs(1 - new_max_singular / max_singular)
             self.delta_max_history.append(delta_max)
