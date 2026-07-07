@@ -83,9 +83,34 @@ Interpretation:
 - Local peak refinement gives only a tiny max-sigma gain while adding time, so it is not enabled in the default path.
 - Global damping proves that a cheap scalar fallback can nearly remove the remaining violation, but it pushes order10 RMS above the `0.002` target and still leaves a small residual violation. It should remain a diagnostic/fallback idea, not the default algorithm.
 
+IdEM full passivity check/enforcement:
+
+`idemmp_fitting.exe` only exposes fitting controls and the fitting XML only contains `enforceAsymptoticPassivity`, which corrects the high-frequency/asymptotic condition. Full model passivity is handled by the separate `idemmp_passivity.exe` command.
+
+| IdEM model | Before full check | Full enforcement result | Exported sampled max sigma | Exported mean RMS |
+|---|---|---|---:|---:|
+| `Test16.s91p`, order8 init3 | 129 Hamiltonian imaginary eigenvalues, passive NO | SOC 2 iterations + HAM check, passive YES | 0.999985766 | 0.001174775 |
+| `Test13.s60p`, order8 init3 | 22 Hamiltonian imaginary eigenvalues, passive NO | SOC 5 iterations + HAM check, passive YES | 0.999917309 | 0.001636927 |
+
+The IdEM passivity command is now wrapped by `probe-idem-passivity`, so the Test16 order8 reference can be reproduced with:
+
+```powershell
+python -m agent_spice.cli probe-idem-passivity `
+  runs-sparam\large-port-autofit-benchmark\Test16_s91p\idem\order8\order8_init3\model.mod.h5 `
+  --output-model runs-sparam\large-port-autofit-benchmark\Test16_s91p\idem\order8\order8_init3\model_passive_cli.mod.h5 `
+  --report runs-sparam\large-port-autofit-benchmark\Test16_s91p\idem\order8\order8_init3\passivity_cli_report.json `
+  --n-threads 8 `
+  --ham-solver 3 `
+  --timeout-seconds 240
+```
+
+The first CLI-wrapped run completed in `15.21 s`, peaked at `161.8 MB`, reported SOC peaks `1.00393 @ 1.998 GHz` and `1.00017 @ 1.954 GHz`, then HAM found `0` imaginary eigenvalues and marked `MOD/isPassive = 1`.
+
+This confirms that IdEM can repair full model passivity with very small sampled-fit degradation, but this capability is not part of the fitting step we had previously benchmarked. The right target to reverse-engineer is therefore `idemmp_passivity.exe`: combined SOC/HAM enforcement, model-based/data-based weighting, sparse/adaptive Hamiltonian eigensolver, and local constraints.
+
 Next target:
 
-- Continue from `Test16.s91p`: the current sparse local-QP scaffolding is memory-safe and can reduce max sigma, but it stalls near `1.0095`. The next algorithm step should move beyond scalar damping and add a fit-aware correction term or small pole/residue joint perturbation, rather than only increasing samples, iterations, or applying uniform response scaling.
+- Continue from `Test16.s91p`: the current sparse local-QP scaffolding is memory-safe and can reduce max sigma, but it stalls near `1.0095`. The next algorithm step should explicitly target IdEM's separate passivity engine behavior, especially fit-aware/data-aware residue perturbation and SOC/HAM iteration, rather than only increasing samples, iterations, or applying uniform response scaling.
 
 ## Test16.s91p Follow-Up
 

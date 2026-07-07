@@ -6,6 +6,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import subprocess
 import time
 from typing import Any
@@ -210,6 +211,99 @@ def run_idem_fitting(
     return _run_command(command, timeout_seconds=timeout_seconds)
 
 
+def parse_idem_passivity_stdout(stdout: str) -> dict[str, Any]:
+    max_singular_values: list[dict[str, Any]] = []
+    current_soc_iteration: int | None = None
+    soc_iterations = 0
+    ham_iterations = 0
+    ham_imaginary_eigenvalues: list[int] = []
+    passive: bool | None = None
+
+    for line in stdout.splitlines():
+        stripped = line.strip()
+        soc_match = re.search(r"SOC Iteration no\.\s*(\d+)", stripped)
+        if soc_match:
+            current_soc_iteration = int(soc_match.group(1))
+            soc_iterations = max(soc_iterations, current_soc_iteration)
+            continue
+        ham_match = re.search(r"HAM Iteration no\.\s*(\d+)", stripped)
+        if ham_match:
+            ham_iterations = max(ham_iterations, int(ham_match.group(1)))
+            continue
+        singular_match = re.search(
+            r"Maximum Singular Value\s*:\s*([-+0-9.eE]+)\s*@\s*([-+0-9.eE]+)\s*Hz",
+            stripped,
+        )
+        if singular_match:
+            max_singular_values.append(
+                {
+                    "iteration": current_soc_iteration,
+                    "value": float(singular_match.group(1)),
+                    "frequency_hz": float(singular_match.group(2)),
+                }
+            )
+            continue
+        eigen_match = re.search(r"Found\s+(\d+)\s+imaginary eigenvalues", stripped)
+        if eigen_match:
+            ham_imaginary_eigenvalues.append(int(eigen_match.group(1)))
+            continue
+        passive_match = re.search(r"Passive:\s*(YES|NO)", stripped, flags=re.IGNORECASE)
+        if passive_match:
+            passive = passive_match.group(1).upper() == "YES"
+
+    return {
+        "passive": passive,
+        "soc_iterations": soc_iterations,
+        "ham_iterations": ham_iterations,
+        "ham_imaginary_eigenvalues": ham_imaginary_eigenvalues,
+        "max_singular_values": max_singular_values,
+    }
+
+
+def run_idem_passivity(
+    model_path: Path,
+    output_model_path: Path,
+    *,
+    idem_bin_dir: Path | None = None,
+    threads: int = 8,
+    ham_solver: int | None = None,
+    preserve_dc: bool = False,
+    only_check: int | None = None,
+    options_xml_path: Path | None = None,
+    timeout_seconds: float | None = None,
+) -> dict[str, Any]:
+    idem_bin_dir = _resolve_idem_bin_dir(idem_bin_dir)
+    command = [str(idem_bin_dir / "idemmp_passivity.exe"), "-ih5", str(model_path), "-o", str(output_model_path)]
+    if only_check is not None:
+        command.extend(["-onlyCheck", str(only_check)])
+    if ham_solver is not None:
+        command.extend(["-hamSolver", str(ham_solver)])
+    if preserve_dc:
+        command.extend(["-DC", "1"])
+    command.extend(["-nThreads", str(threads)])
+    if options_xml_path is not None:
+        command.extend(["-xml", str(options_xml_path)])
+
+    command_result = _run_command(command, timeout_seconds=timeout_seconds)
+    passivity = parse_idem_passivity_stdout(command_result.stdout)
+    completed = _idem_passivity_completed(command_result, output_model_path)
+    model = inspect_idem_model(output_model_path) if output_model_path.exists() else {}
+    return {
+        "probe": "idem_passivity",
+        "model_path": str(model_path),
+        "output_model_path": str(output_model_path),
+        "status": "completed" if completed else "failed",
+        "threads": threads,
+        "ham_solver": ham_solver,
+        "preserve_dc": preserve_dc,
+        "only_check": only_check,
+        "xml_path": str(options_xml_path) if options_xml_path is not None else None,
+        "command": command_result.to_dict(),
+        "passivity": passivity,
+        "model": model,
+    }
+
+
 def inspect_idem_model(model_path: Path) -> dict[str, Any]:
     try:
         import h5py
@@ -222,6 +316,7 @@ def inspect_idem_model(model_path: Path) -> dict[str, Any]:
         error_history = _read_first_object_dataset(handle, "MOD/errorHistory")
         orders_history = _read_first_object_dataset(handle, "MOD/ordersHistory")
         fitting_options_xml = _read_text_dataset(handle, "MOD/fittingOptions")
+        is_passive = _array_to_jsonable(handle["MOD/isPassive"][()]) if "MOD/isPassive" in handle else None
 
         def visit(name: str, obj: Any) -> None:
             if not hasattr(obj, "shape"):
@@ -265,6 +360,7 @@ def inspect_idem_model(model_path: Path) -> dict[str, Any]:
         "error_history": _array_to_jsonable(error_history),
         "orders_history": _array_to_jsonable(orders_history),
         "fitting_options_xml": fitting_options_xml,
+        "is_passive": is_passive,
     }
 
 
@@ -2206,6 +2302,14 @@ def _idem_fit_completed(result: IdemCommandResult, model_path: Path) -> bool:
     if "Error:" in result.stdout or "Error:" in result.stderr:
         return False
     return result.returncode == 0 or "End of model build" in result.stdout
+
+
+def _idem_passivity_completed(result: IdemCommandResult, output_model_path: Path) -> bool:
+    if "Passive:" in result.stdout:
+        return True
+    if output_model_path.exists() and "End of passivity check" in result.stdout:
+        return True
+    return result.returncode == 0 and output_model_path.exists()
 
 
 def _touchstone_bandwidth_hz(path: Path) -> float:

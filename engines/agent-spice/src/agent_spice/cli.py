@@ -128,6 +128,10 @@ def run_idem_residue_sweep(*args: Any, **kwargs: Any) -> Any:
     return _idem_tool("run_idem_residue_sweep")(*args, **kwargs)
 
 
+def run_idem_passivity(*args: Any, **kwargs: Any) -> Any:
+    return _idem_tool("run_idem_passivity")(*args, **kwargs)
+
+
 def run_local_pole_relocation_probe(*args: Any, **kwargs: Any) -> Any:
     return _idem_tool("run_local_pole_relocation_probe")(*args, **kwargs)
 
@@ -691,6 +695,18 @@ def main(argv: list[str] | None = None) -> int:
     idem_residue_parser.add_argument("--fit-max-frequency-points", type=int)
     idem_residue_parser.add_argument("--rcond", type=float)
 
+    idem_passivity_parser = subparsers.add_parser("probe-idem-passivity")
+    idem_passivity_parser.add_argument("model", type=Path)
+    idem_passivity_parser.add_argument("--output-model", type=Path, required=True)
+    idem_passivity_parser.add_argument("--report", type=Path, required=True)
+    idem_passivity_parser.add_argument("--idem-bin", type=Path)
+    idem_passivity_parser.add_argument("--n-threads", type=int, default=8)
+    idem_passivity_parser.add_argument("--ham-solver", type=int, choices=[1, 2, 3])
+    idem_passivity_parser.add_argument("--preserve-dc", action="store_true")
+    idem_passivity_parser.add_argument("--only-check", type=int, choices=[1, 2])
+    idem_passivity_parser.add_argument("--xml", type=Path)
+    idem_passivity_parser.add_argument("--timeout-seconds", type=float)
+
     idem_sweep_parser = subparsers.add_parser("probe-idem-residue-sweep")
     idem_sweep_parser.add_argument("touchstone", type=Path)
     idem_sweep_parser.add_argument("--model", type=Path, action="append")
@@ -1040,6 +1056,37 @@ def main(argv: list[str] | None = None) -> int:
             f"cond={result['condition_number']:.6g} "
             f"s_rel_rms={result['s_relative_rms_error']:.6g} "
             f"z_log_rms={result['z_log_magnitude_rms_error']:.6g}"
+        )
+        return 0
+    if args.command == "probe-idem-passivity":
+        try:
+            result = run_idem_passivity(
+                args.model,
+                args.output_model,
+                idem_bin_dir=args.idem_bin,
+                threads=args.n_threads,
+                ham_solver=args.ham_solver,
+                preserve_dc=args.preserve_dc,
+                only_check=args.only_check,
+                options_xml_path=args.xml,
+                timeout_seconds=args.timeout_seconds,
+            )
+            write_json_report(result, args.report)
+        except (ValueError, RuntimeError, TimeoutError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        passivity = result.get("passivity") or {}
+        command = result.get("command") or {}
+        max_values = passivity.get("max_singular_values") or []
+        peak = max_values[0] if max_values else None
+        peak_text = ""
+        if peak is not None:
+            peak_text = f" first_peak={peak.get('value'):.6g}@{peak.get('frequency_hz'):.6g}Hz"
+        print(
+            f"idem passivity: {result['status']} passive={passivity.get('passive')} "
+            f"soc={passivity.get('soc_iterations')} ham={passivity.get('ham_iterations')} "
+            f"elapsed={command.get('elapsed_seconds'):.3f}s"
+            f"{peak_text}"
         )
         return 0
     if args.command == "probe-idem-residue-sweep":

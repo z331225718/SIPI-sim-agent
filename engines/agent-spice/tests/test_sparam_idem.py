@@ -14,8 +14,10 @@ from agent_spice.sparam.idem import (
     fit_matrix_with_idem_real_basis,
     fit_s_with_fixed_poles,
     initial_common_poles,
+    parse_idem_passivity_stdout,
     relocate_common_poles,
     render_fitting_options_xml,
+    run_idem_passivity,
     run_local_idem_like_fit,
 )
 
@@ -80,6 +82,82 @@ def test_run_idem_initial_iteration_probe_writes_xml_per_trial(tmp_path: Path, m
     xml_text = commands[1][2].read_text(encoding="utf-8")
     assert "<initial>3</initial>" in xml_text
     assert "<bandwidth mode=\"absolute\">5000000000</bandwidth>" in xml_text
+
+
+def test_parse_idem_passivity_stdout_extracts_soc_ham_progress():
+    stdout = """
+--- SOC Iteration no. 1
+Maximum Singular Value : 1.00393 @ 1.99796e+09 Hz
+ Launching SOCP solver...
+--- SOC Iteration no. 2
+Maximum Singular Value : 1.00017 @ 1.95352e+09 Hz
+ Launching SOCP solver...
+--- SOC Iteration no. 3
+No passivity violations detected by SOC
+--- HAM Iteration no. 1
+Finding imaginary eigenvalues in (0, 4.24725e+09)
+
+Found 0 imaginary eigenvalues.
+No passivity violations detected by HAM
+Model is Passive. End of passivity check
+------------------------------------------------------------------------
+Results
+Passive: YES
+"""
+
+    summary = parse_idem_passivity_stdout(stdout)
+
+    assert summary["passive"] is True
+    assert summary["soc_iterations"] == 3
+    assert summary["ham_iterations"] == 1
+    assert summary["ham_imaginary_eigenvalues"] == [0]
+    assert summary["max_singular_values"] == [
+        {"iteration": 1, "value": 1.00393, "frequency_hz": 1.99796e9},
+        {"iteration": 2, "value": 1.00017, "frequency_hz": 1.95352e9},
+    ]
+
+
+def test_run_idem_passivity_treats_passive_stdout_as_completed(tmp_path: Path, monkeypatch):
+    model = tmp_path / "model.mod.h5"
+    output_model = tmp_path / "model_passive.mod.h5"
+    model.write_text("fake", encoding="utf-8")
+    calls = []
+
+    def fake_run(command, timeout_seconds=None):
+        calls.append(command)
+        output_model.write_text("fake passive", encoding="utf-8")
+        return IdemCommandResult(
+            command=command,
+            returncode=1,
+            stdout="--- SOC Iteration no. 1\nMaximum Singular Value : 1.01 @ 2e+09 Hz\nResults\nPassive: YES\n",
+            stderr="",
+            elapsed_seconds=0.2,
+            peak_memory_mb=33.0,
+        )
+
+    monkeypatch.setattr(idem, "_run_command", fake_run)
+    monkeypatch.setattr(idem, "inspect_idem_model", lambda path: {"is_passive": 1})
+
+    result = run_idem_passivity(model, output_model, idem_bin_dir=tmp_path, threads=4, ham_solver=3, preserve_dc=True)
+
+    assert result["status"] == "completed"
+    assert result["passivity"]["passive"] is True
+    assert result["model"] == {"is_passive": 1}
+    assert calls == [
+        [
+            str(tmp_path / "idemmp_passivity.exe"),
+            "-ih5",
+            str(model),
+            "-o",
+            str(output_model),
+            "-hamSolver",
+            "3",
+            "-DC",
+            "1",
+            "-nThreads",
+            "4",
+        ]
+    ]
 
 
 def test_decode_idem_split_poles_expands_real_state_space_pairs():

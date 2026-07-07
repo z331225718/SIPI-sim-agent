@@ -191,6 +191,82 @@ def test_probe_idem_residue_cli_writes_json_report(tmp_path: Path, monkeypatch, 
     assert json.loads(report.read_text(encoding="utf-8"))["condition_number"] == 123.0
 
 
+def test_probe_idem_passivity_cli_writes_json_report(tmp_path: Path, monkeypatch, capsys):
+    import agent_spice.cli as cli
+
+    calls = []
+
+    def fake_passivity(
+        model,
+        output_model,
+        *,
+        idem_bin_dir=None,
+        threads=8,
+        ham_solver=None,
+        preserve_dc=False,
+        only_check=None,
+        options_xml_path=None,
+        timeout_seconds=None,
+    ):
+        calls.append(
+            (
+                model,
+                output_model,
+                idem_bin_dir,
+                threads,
+                ham_solver,
+                preserve_dc,
+                only_check,
+                options_xml_path,
+                timeout_seconds,
+            )
+        )
+        return {
+            "probe": "idem_passivity",
+            "status": "completed",
+            "model_path": str(model),
+            "output_model_path": str(output_model),
+            "passivity": {
+                "passive": True,
+                "soc_iterations": 2,
+                "ham_iterations": 1,
+                "max_singular_values": [{"iteration": 1, "value": 1.00393, "frequency_hz": 1.99796e9}],
+            },
+            "command": {"elapsed_seconds": 3.0, "peak_memory_mb": 44.0},
+            "model": {"is_passive": [1]},
+        }
+
+    monkeypatch.setattr(cli, "run_idem_passivity", fake_passivity)
+
+    report = tmp_path / "passivity.json"
+    exit_code = main(
+        [
+            "probe-idem-passivity",
+            str(tmp_path / "model.mod.h5"),
+            "--output-model",
+            str(tmp_path / "model_passive.mod.h5"),
+            "--report",
+            str(report),
+            "--n-threads",
+            "4",
+            "--ham-solver",
+            "3",
+            "--preserve-dc",
+            "--timeout-seconds",
+            "60",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert calls[0][3] == 4
+    assert calls[0][4] == 3
+    assert calls[0][5] is True
+    assert calls[0][8] == 60
+    assert "idem passivity: completed passive=True soc=2 ham=1" in captured.out
+    assert json.loads(report.read_text(encoding="utf-8"))["passivity"]["passive"] is True
+
+
 def test_probe_idem_residue_sweep_cli_ranks_by_z_log_error(tmp_path: Path, monkeypatch, capsys):
     import agent_spice.cli as cli
 
