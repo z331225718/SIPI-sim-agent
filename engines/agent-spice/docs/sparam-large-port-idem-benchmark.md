@@ -40,6 +40,27 @@ Therefore the next algorithmic target should be `Test16.s91p`: reproduce why IdE
 
 Some very low-order native real/complex pole configurations currently raise `IndexError('arrays used as indices must be of integer (or boolean) type')`. This does not affect the reported lowest passing configurations, but it should be fixed before turning the low-order sweep into an automated benchmark.
 
+## Native Passivity Enforcement Follow-Up
+
+The first low-memory passivity integration pass moved native S-parameter fitting away from the native backend's no-op `passivity_enforce()` and onto the local Hamiltonian/residue-perturbation path. The path is now independent of the SPICE exporter, so `fit-sparam --check-passivity --enforce-passivity` uses the same low-memory engine with the default `skrf` exporter.
+
+`Test13.s60p` with the current IdEM-fast fit and low-memory passivity enabled:
+
+| Run | Selected order | Mean RMS | Passive before | Passive after | Violation bands before | Violation bands after | Time | Peak memory |
+|---|---:|---:|---|---|---:|---:|---:|---:|
+| check only | 9 | 0.000593962 | false | false | 169 | 169 | 8.08 s | 177.9 MB |
+| sparse enforce, 8 samples, rollback | 9 | 0.000593962 | false | false | 169 | 169 | 15.94 s | 181.1 MB |
+
+Interpretation:
+
+- The memory target is now in the right range: `Test13.s60p` passivity check/enforce peaks around `181 MB`, comparable to or below the IdEM order-6 run's `155.5 MB`.
+- The enforcement algorithm is not yet effective: sparse residue perturbation did not reduce the 169 Hamiltonian violation bands on `Test13.s60p`.
+- A rollback guard is required and now active: if a residue perturbation worsens passivity score, the model keeps the best seen residues rather than silently destroying fit accuracy. Before this guard, the same sparse enforcement path could degrade mean RMS from `0.000593962` to `0.0673212` while still remaining non-passive.
+
+Next target:
+
+- Replace the current all-pole residue perturbation with a genuinely local violation-band QP: choose the worst few singular vectors, restrict residue variables to the poles with highest sensitivity at those frequencies, and accept updates only when both passivity score improves and mean RMS damage stays bounded.
+
 ## Test16.s91p Follow-Up
 
 The first diagnosis pass focused on `Test16.s91p`, because it had the largest order gap.

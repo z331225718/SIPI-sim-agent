@@ -330,6 +330,115 @@ def test_fit_touchstone_to_spice_can_skip_passivity_checks(tmp_path: Path, monke
     assert result.passive_after_enforce is None
 
 
+def test_native_fit_uses_low_memory_passivity_engine_without_idem_exporter(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+    import agent_spice.sparam.passivity as passivity
+
+    FakeVectorFitting.instances.clear()
+    calls: list[tuple[str, object, int | None]] = []
+
+    def fake_create_vector_fitting(network, config):
+        return FakeVectorFitting(network)
+
+    def fake_check(vector_fit, *, nports, epsilon, f_max=None):
+        calls.append(("check", vector_fit, None))
+        if len([name for name, _, _ in calls if name == "check"]) == 1:
+            return passivity.PassivitySampleReport(
+                max_sigma=1.1,
+                max_sigma_frequency_hz=1e6,
+                violation_bands_hz=[[1e6, 2e6]],
+                frequency_points=1,
+                chunk_size=1,
+            )
+        return passivity.PassivitySampleReport(
+            max_sigma=1.0,
+            max_sigma_frequency_hz=1e6,
+            violation_bands_hz=[],
+            frequency_points=1,
+            chunk_size=1,
+        )
+
+    def fake_enforce(vector_fit, *, nports, epsilon, max_iterations, f_max, max_violation_samples):
+        calls.append(("enforce", vector_fit, max_violation_samples))
+        vector_fit.enforced = True
+
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "_create_vector_fitting", fake_create_vector_fitting)
+    monkeypatch.setattr(passivity, "check_vector_fit_passivity_hamiltonian", fake_check)
+    monkeypatch.setattr(passivity, "enforce_passivity_hamiltonian", fake_enforce)
+
+    result = fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(
+            mode="manual",
+            vector_fit_backend="native",
+            exporter="skrf",
+            check_passivity=True,
+            enforce_passivity=True,
+            max_iterations=7,
+            passivity_samples=17,
+        ),
+    )
+
+    assert [name for name, _, _ in calls] == ["check", "enforce", "check"]
+    assert calls[1][2] == 17
+    assert "passivity_enforce" not in FakeVectorFitting.instances[0].calls
+    assert result.passive_before_enforce is False
+    assert result.passive_after_enforce is True
+    assert result.passivity_violations_before == [[1e6, 2e6]]
+    assert result.passivity_violations_after == []
+
+
+def test_native_fit_enforces_low_memory_passivity_when_checks_are_skipped(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+    import agent_spice.sparam.passivity as passivity
+
+    FakeVectorFitting.instances.clear()
+    calls: list[tuple[str, object, int | None]] = []
+
+    def fake_create_vector_fitting(network, config):
+        return FakeVectorFitting(network)
+
+    def fake_check(*args, **kwargs):
+        calls.append(("check", args[0], None))
+        return passivity.PassivitySampleReport(
+            max_sigma=1.0,
+            max_sigma_frequency_hz=1e6,
+            violation_bands_hz=[],
+            frequency_points=1,
+            chunk_size=1,
+        )
+
+    def fake_enforce(vector_fit, *, nports, epsilon, max_iterations, f_max, max_violation_samples):
+        calls.append(("enforce", vector_fit, max_violation_samples))
+        vector_fit.enforced = True
+
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "_create_vector_fitting", fake_create_vector_fitting)
+    monkeypatch.setattr(passivity, "check_vector_fit_passivity_hamiltonian", fake_check)
+    monkeypatch.setattr(passivity, "enforce_passivity_hamiltonian", fake_enforce)
+
+    result = fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(
+            mode="manual",
+            vector_fit_backend="native",
+            check_passivity=False,
+            enforce_passivity=True,
+            max_iterations=3,
+            passivity_samples=19,
+        ),
+    )
+
+    assert [name for name, _, _ in calls] == ["enforce"]
+    assert calls[0][2] == 19
+    assert "passivity_enforce" not in FakeVectorFitting.instances[0].calls
+    assert result.passive_before_enforce is None
+    assert result.passive_after_enforce is None
+
+
 def test_manual_fit_bypasses_skrf_internal_passivity_warning_check_when_checks_are_skipped(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 

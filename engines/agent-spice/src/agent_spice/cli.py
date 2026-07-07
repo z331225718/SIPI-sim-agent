@@ -640,7 +640,7 @@ def main(argv: list[str] | None = None) -> int:
     _add_hidden_argument(fit_parser, "--gamma", type=float, default=0.03)
     _add_hidden_argument(fit_parser, "--nu-samples", type=float, default=1.0)
     _add_hidden_argument(fit_parser, "--fit-max-iterations", type=int, default=14)
-    _add_hidden_argument(fit_parser, "--passivity-samples", type=int, default=200)
+    _add_hidden_argument(fit_parser, "--passivity-samples", type=int, default=8)
     _add_hidden_argument(fit_parser, "--passivity-f-max", type=float)
     _add_hidden_argument(fit_parser, "--no-preserve-dc", action="store_true")
     _add_hidden_argument(fit_parser, "--fit-frequency-stride", type=int, default=1)

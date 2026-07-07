@@ -1,7 +1,13 @@
 import numpy as np
 import pytest
 
-from agent_spice.sparam.passivity import sample_streaming_singular_values, sample_vector_fit_passivity
+from agent_spice.sparam.passivity import (
+    _PassivityScore,
+    _solve_min_norm_upper_bound_dual_qp,
+    _singular_violation_modes,
+    sample_streaming_singular_values,
+    sample_vector_fit_passivity,
+)
 
 
 def test_streaming_passivity_checker_chunks_frequency_samples():
@@ -77,3 +83,32 @@ def test_sample_vector_fit_passivity_builds_s_matrix_per_chunk():
         (1, 0, (3.0,)),
         (1, 1, (3.0,)),
     ]
+
+
+def test_dual_qp_solves_minimum_norm_upper_bound_constraint():
+    result = _solve_min_norm_upper_bound_dual_qp(np.array([[1.0]]), np.array([-0.2]))
+
+    assert result.success is True
+    assert result.x == pytest.approx([-0.2])
+
+
+def test_dual_qp_leaves_inactive_upper_bound_at_origin():
+    result = _solve_min_norm_upper_bound_dual_qp(np.array([[1.0]]), np.array([0.2]))
+
+    assert result.success is True
+    assert result.x == pytest.approx([0.0])
+
+
+def test_singular_violation_modes_keeps_only_worst_mode_by_default():
+    U = np.eye(3, dtype=complex)
+    Vh = np.eye(3, dtype=complex)
+    modes = _singular_violation_modes(U, np.array([1.2, 1.1, 0.5]), Vh, epsilon=1e-6)
+
+    assert len(modes) == 1
+    assert modes[0][0] == pytest.approx(1.2)
+
+
+def test_passivity_score_prefers_fewer_violations_then_lower_sigma():
+    assert _PassivityScore(1, 10.0).is_better_than(_PassivityScore(2, 1.1))
+    assert _PassivityScore(1, 1.1).is_better_than(_PassivityScore(1, 1.2))
+    assert not _PassivityScore(2, 1.0).is_better_than(_PassivityScore(1, 100.0))

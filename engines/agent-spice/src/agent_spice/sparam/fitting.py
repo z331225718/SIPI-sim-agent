@@ -928,6 +928,10 @@ def _fit_model_inner(vector_fit: VectorFitting, config: SParamFitConfig) -> None
     raise ValueError(f"Unsupported S-parameter fit mode '{config.mode}'")
 
 
+def _uses_low_memory_passivity(config: SParamFitConfig) -> bool:
+    return config.parameter_type.lower() == "s" and (config.vector_fit_backend == "native" or config.exporter == "idem")
+
+
 def _native_manual_auto_order_config(base_config: SParamFitConfig, order: int) -> SParamFitConfig:
     trial_config = replace(base_config, model_order_max=order)
     if base_config.mode != "manual" or base_config.vector_fit_backend != "native":
@@ -982,54 +986,70 @@ def fit_touchstone_to_spice(
         progress.info(f"starting vector fit: mode={config.mode}, parameter_type={config.parameter_type}")
         _fit_model(vector_fit, config)
         progress.info("vector fit finished")
+        use_low_memory_passivity = _uses_low_memory_passivity(config)
         if not config.check_passivity:
             progress.info("passivity checks skipped")
             passive_before = None
             violations_before = None
             if config.enforce_passivity:
-                progress.info(
-                    f"starting passivity enforcement: n_samples={config.passivity_samples}, "
-                    f"f_max={config.passivity_f_max}, preserve_dc={config.preserve_dc}"
-                )
-                _call_with_supported_kwargs(
-                    vector_fit.passivity_enforce,
-                    n_samples=config.passivity_samples,
-                    f_max=config.passivity_f_max,
-                    parameter_type=config.parameter_type,
-                    preserve_dc=config.preserve_dc,
-                )
+                if use_low_memory_passivity:
+                    progress.info("starting passivity enforcement using low-memory residue perturbation")
+                    from .passivity import enforce_passivity_hamiltonian
+
+                    enforce_passivity_hamiltonian(
+                        vector_fit,
+                        nports=network.nports,
+                        epsilon=config.max_passivity_epsilon,
+                        max_iterations=config.max_iterations or 10,
+                        f_max=config.passivity_f_max,
+                        max_violation_samples=config.passivity_samples,
+                    )
+                else:
+                    progress.info(
+                        f"starting passivity enforcement: n_samples={config.passivity_samples}, "
+                        f"f_max={config.passivity_f_max}, preserve_dc={config.preserve_dc}"
+                    )
+                    _call_with_supported_kwargs(
+                        vector_fit.passivity_enforce,
+                        n_samples=config.passivity_samples,
+                        f_max=config.passivity_f_max,
+                        parameter_type=config.parameter_type,
+                        preserve_dc=config.preserve_dc,
+                    )
                 progress.info("passivity enforcement finished")
             else:
                 progress.info("passivity enforcement skipped")
             passive_after = None
             violations_after = None
-        elif config.exporter == "idem" and config.parameter_type == "s":
-            progress.info("checking passivity before enforcement using Hamiltonian method")
+        elif use_low_memory_passivity:
+            progress.info("checking passivity before enforcement using low-memory Hamiltonian method")
             from .passivity import check_vector_fit_passivity_hamiltonian, enforce_passivity_hamiltonian
             report_before = check_vector_fit_passivity_hamiltonian(
                 vector_fit,
                 nports=network.nports,
-                epsilon=1e-6,
+                epsilon=config.max_passivity_epsilon,
                 f_max=config.passivity_f_max,
             )
             passive_before = (len(report_before.violation_bands_hz) == 0)
             violations_before = report_before.violation_bands_hz
             if config.enforce_passivity:
-                progress.info("starting passivity enforcement using residue perturbation (Hamiltonian method)")
+                progress.info("starting passivity enforcement using low-memory residue perturbation")
                 enforce_passivity_hamiltonian(
                     vector_fit,
                     nports=network.nports,
-                    epsilon=1e-6,
+                    epsilon=config.max_passivity_epsilon,
                     max_iterations=config.max_iterations or 10,
+                    f_max=config.passivity_f_max,
+                    max_violation_samples=config.passivity_samples,
                 )
                 progress.info("passivity enforcement finished")
             else:
                 progress.info("passivity enforcement skipped")
-            progress.info("checking passivity after enforcement using Hamiltonian method")
+            progress.info("checking passivity after enforcement using low-memory Hamiltonian method")
             report_after = check_vector_fit_passivity_hamiltonian(
                 vector_fit,
                 nports=network.nports,
-                epsilon=1e-6,
+                epsilon=config.max_passivity_epsilon,
                 f_max=config.passivity_f_max,
             )
             passive_after = (len(report_after.violation_bands_hz) == 0)

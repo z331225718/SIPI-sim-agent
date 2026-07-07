@@ -11,6 +11,24 @@ import scipy.optimize as opt
 
 
 @dataclass(frozen=True)
+class PassivityQpResult:
+    x: np.ndarray
+    success: bool
+    message: str
+
+
+@dataclass(frozen=True)
+class _PassivityScore:
+    violation_count: int
+    max_sigma: float
+
+    def is_better_than(self, other: "_PassivityScore | None") -> bool:
+        if other is None:
+            return True
+        return (self.violation_count, self.max_sigma) < (other.violation_count, other.max_sigma)
+
+
+@dataclass(frozen=True)
 class PassivitySampleReport:
     max_sigma: float
     max_sigma_frequency_hz: float
@@ -116,6 +134,54 @@ def sample_vector_fit_passivity(
         chunk_size=chunk_size,
         epsilon=epsilon,
     )
+
+
+def _solve_min_norm_upper_bound_dual_qp(A_ineq: np.ndarray, b_ineq: np.ndarray) -> PassivityQpResult:
+    """Solve min 0.5 ||x||^2 subject to A_ineq x <= b_ineq through its small dual."""
+    A_ineq = np.asarray(A_ineq, dtype=float)
+    b_ineq = np.asarray(b_ineq, dtype=float)
+    if A_ineq.ndim != 2:
+        raise ValueError("A_ineq must be a 2D array")
+    if b_ineq.ndim != 1 or b_ineq.shape[0] != A_ineq.shape[0]:
+        raise ValueError("b_ineq must be a vector with one entry per constraint")
+    if A_ineq.shape[0] == 0:
+        return PassivityQpResult(x=np.zeros(A_ineq.shape[1]), success=True, message="no constraints")
+
+    K = A_ineq @ A_ineq.T
+    result = opt.minimize(
+        fun=lambda lmbda: 0.5 * lmbda @ K @ lmbda + b_ineq @ lmbda,
+        x0=np.zeros(len(b_ineq)),
+        bounds=[(0.0, None)] * len(b_ineq),
+        method="SLSQP",
+        options={"maxiter": 100, "ftol": 1e-8},
+    )
+    if not result.success:
+        return PassivityQpResult(
+            x=np.zeros(A_ineq.shape[1]),
+            success=False,
+            message=str(result.message),
+        )
+    return PassivityQpResult(
+        x=-A_ineq.T @ result.x,
+        success=True,
+        message=str(result.message),
+    )
+
+
+def _singular_violation_modes(
+    U: np.ndarray,
+    singular_values: np.ndarray,
+    Vh: np.ndarray,
+    *,
+    epsilon: float,
+    max_modes_per_frequency: int = 1,
+) -> list[tuple[float, np.ndarray, np.ndarray]]:
+    violating_indices = [idx for idx, value in enumerate(singular_values) if float(value) > 1.0 + epsilon]
+    violating_indices.sort(key=lambda idx: float(singular_values[idx]), reverse=True)
+    modes = []
+    for idx in violating_indices[:max_modes_per_frequency]:
+        modes.append((float(singular_values[idx]), U[:, idx], Vh[idx, :].conj()))
+    return modes
 
 
 def real_state_space_realization(poles, residues, D_coeff, nports):
@@ -236,6 +302,40 @@ def check_passivity_hamiltonian_s(poles, residues, D_coeff, nports, f_max=None):
     return crossover_freqs_hz
 
 
+def _expand_poles_and_residues(poles, residues):
+    poles = np.asarray(poles, dtype=complex)
+    residues = np.asarray(residues, dtype=complex)
+    if residues.ndim == 1:
+        residues = residues.reshape((-1, len(poles)))
+
+    # Check if conjugates are present
+    has_conjugates = True
+    for p in poles:
+        if abs(p.imag) > 1e-15:
+            found = False
+            for other in poles:
+                if np.isclose(other.real, p.real) and np.isclose(other.imag, -p.imag):
+                    found = True
+                    break
+            if not found:
+                has_conjugates = False
+                break
+
+    if has_conjugates:
+        return poles, residues
+
+    expanded_poles = []
+    expanded_residues = []
+    for idx, p in enumerate(poles):
+        expanded_poles.append(p)
+        expanded_residues.append(residues[:, idx])
+        if abs(p.imag) > 1e-15:
+            expanded_poles.append(p.conj())
+            expanded_residues.append(residues[:, idx].conj())
+
+    return np.array(expanded_poles), np.column_stack(expanded_residues)
+
+
 def check_vector_fit_passivity_hamiltonian(
     vector_fit: Any,
     *,
@@ -247,9 +347,16 @@ def check_vector_fit_passivity_hamiltonian(
     Checks passivity using Hamiltonian matrix eigenvalues.
     Returns a PassivitySampleReport containing the violation bands.
     """
-    poles = np.asarray(getattr(vector_fit, "poles", []), dtype=complex)
-    residues = np.asarray(getattr(vector_fit, "residues", []), dtype=complex)
+    poles_orig = np.asarray(getattr(vector_fit, "poles", []), dtype=complex)
+    residues_orig = np.asarray(getattr(vector_fit, "residues", []), dtype=complex)
     constant_coeff = np.asarray(getattr(vector_fit, "constant_coeff", []), dtype=complex)
+
+    if residues_orig.size == 0 and len(poles_orig) > 0:
+        residues_orig = np.zeros((nports * nports, len(poles_orig)), dtype=complex)
+    if constant_coeff.size == 0:
+        constant_coeff = np.zeros(nports * nports, dtype=complex)
+
+    poles, residues = _expand_poles_and_residues(poles_orig, residues_orig)
 
     if residues.size == 0 and len(poles) > 0:
         residues = np.zeros((nports * nports, len(poles)), dtype=complex)
@@ -345,31 +452,39 @@ def enforce_passivity_hamiltonian(
     nports: int,
     epsilon: float = 1e-6,
     max_iterations: int = 10,
+    f_max: float | None = None,
+    max_violation_samples: int = 64,
 ) -> None:
     """
     Enforces passivity of S-parameter model using Hamiltonian crossover checks and SLSQP residue perturbation.
     """
-    poles = np.asarray(getattr(vector_fit, "poles", []), dtype=complex)
-    residues = np.asarray(getattr(vector_fit, "residues", []), dtype=complex)
+    poles_orig = np.asarray(getattr(vector_fit, "poles", []), dtype=complex)
+    residues_orig = np.asarray(getattr(vector_fit, "residues", []), dtype=complex)
     constant_coeff = np.asarray(getattr(vector_fit, "constant_coeff", []), dtype=complex)
 
-    if residues.size == 0 and len(poles) > 0:
-        residues = np.zeros((nports * nports, len(poles)), dtype=complex)
+    if residues_orig.size == 0 and len(poles_orig) > 0:
+        residues_orig = np.zeros((nports * nports, len(poles_orig)), dtype=complex)
     if constant_coeff.size == 0:
         constant_coeff = np.zeros(nports * nports, dtype=complex)
+
+    poles, residues = _expand_poles_and_residues(poles_orig, residues_orig)
 
     real_poles, complex_pairs = partition_poles(poles)
     n_real = len(real_poles)
     n_complex = len(complex_pairs)
     vars_per_pair = n_real + 2 * n_complex
     n_vars = nports * nports * vars_per_pair
+    best_residues = residues.copy()
+    best_score: _PassivityScore | None = None
 
     for iteration in range(max_iterations):
-        crossover_freqs = check_passivity_hamiltonian_s(poles, residues, constant_coeff, nports)
+        crossover_freqs = check_passivity_hamiltonian_s(poles, residues, constant_coeff, nports, f_max=f_max)
 
         f_limit = 100e9
         if len(crossover_freqs) > 0:
             f_limit = max(f_limit, crossover_freqs[-1] * 2.0)
+        if f_max is not None:
+            f_limit = min(f_limit, f_max)
         points = [0.0] + crossover_freqs + [f_limit]
 
         violating_freqs = []
@@ -393,7 +508,18 @@ def enforce_passivity_hamiltonian(
                 violating_freqs.append((max_f, max_sigma_val))
 
         if len(violating_freqs) == 0:
+            best_residues = residues.copy()
+            best_score = _PassivityScore(0, 1.0)
             break
+        current_score = _PassivityScore(
+            violation_count=len(violating_freqs),
+            max_sigma=max(sigma for _freq, sigma in violating_freqs),
+        )
+        if current_score.is_better_than(best_score):
+            best_score = current_score
+            best_residues = residues.copy()
+        if max_violation_samples > 0 and len(violating_freqs) > max_violation_samples:
+            violating_freqs = sorted(violating_freqs, key=lambda item: item[1], reverse=True)[:max_violation_samples]
 
         A_list = []
         b_list = []
@@ -405,34 +531,30 @@ def enforce_passivity_hamiltonian(
                 S_f += residues.reshape((nports, nports, len(poles)))[:, :, k] / (s_val - poles[k])
 
             U, s_values, Vh = la.svd(S_f)
-            for m, sm in enumerate(s_values):
-                if sm > 1.0 + epsilon:
-                    u_m = U[:, m]
-                    v_m = Vh[m, :].conj()
+            for sm, u_m, v_m in _singular_violation_modes(U, s_values, Vh, epsilon=epsilon):
+                A_row = np.zeros(n_vars)
+                b_val = 1.0 - sm
 
-                    A_row = np.zeros(n_vars)
-                    b_val = 1.0 - sm
+                for i in range(nports):
+                    for j in range(nports):
+                        r_idx = i * nports + j
+                        u_term = u_m[i].conj() * v_m[j]
+                        offset = r_idx * vars_per_pair
 
-                    for i in range(nports):
-                        for j in range(nports):
-                            r_idx = i * nports + j
-                            u_term = u_m[i].conj() * v_m[j]
-                            offset = r_idx * vars_per_pair
+                        for var_idx, (pole_idx, val) in enumerate(real_poles):
+                            z = 1.0 / (s_val - val)
+                            A_row[offset + var_idx] = np.real(u_term * z)
 
-                            for var_idx, (pole_idx, val) in enumerate(real_poles):
-                                z = 1.0 / (s_val - val)
-                                A_row[offset + var_idx] = np.real(u_term * z)
+                        for var_idx, (pole_idx1, pole_idx2, sigma, omega) in enumerate(complex_pairs):
+                            z1 = 1.0 / (s_val - (sigma + 1j * omega))
+                            z2 = 1.0 / (s_val - (sigma - 1j * omega))
+                            G1 = u_term * z1
+                            G2 = u_term * z2
+                            A_row[offset + n_real + 2 * var_idx] = np.real(G1 + G2)
+                            A_row[offset + n_real + 2 * var_idx + 1] = -np.imag(G1 - G2)
 
-                            for var_idx, (pole_idx1, pole_idx2, sigma, omega) in enumerate(complex_pairs):
-                                z1 = 1.0 / (s_val - (sigma + 1j * omega))
-                                z2 = 1.0 / (s_val - (sigma - 1j * omega))
-                                G1 = u_term * z1
-                                G2 = u_term * z2
-                                A_row[offset + n_real + 2 * var_idx] = np.real(G1 + G2)
-                                A_row[offset + n_real + 2 * var_idx + 1] = -np.imag(G1 - G2)
-
-                    A_list.append(A_row)
-                    b_list.append(b_val)
+                A_list.append(A_row)
+                b_list.append(b_val)
 
         if not A_list:
             break
@@ -440,19 +562,11 @@ def enforce_passivity_hamiltonian(
         A_ineq = np.array(A_list)
         b_ineq = np.array(b_list)
 
-        res = opt.minimize(
-            fun=lambda x: 0.5 * np.sum(x**2),
-            x0=np.zeros(n_vars),
-            jac=lambda x: x,
-            constraints=[{'type': 'ineq', 'fun': lambda x: b_ineq - A_ineq @ x, 'jac': lambda x: -A_ineq}],
-            method='SLSQP',
-            options={'maxiter': 100, 'ftol': 1e-8}
-        )
-
-        if not res.success:
+        qp_result = _solve_min_norm_upper_bound_dual_qp(A_ineq, b_ineq)
+        if not qp_result.success:
             break
 
-        x_opt = res.x
+        x_opt = qp_result.x
         for i in range(nports):
             for j in range(nports):
                 r_idx = i * nports + j
@@ -467,6 +581,16 @@ def enforce_passivity_hamiltonian(
                     residues[r_idx, pole_idx1] += dx + 1j * dy
                     residues[r_idx, pole_idx2] += dx - 1j * dy
 
-    vector_fit.residues = residues
-
-
+    residues = best_residues
+    if len(poles) != len(poles_orig):
+        contracted_residues = np.zeros_like(residues_orig)
+        idx_expanded = 0
+        for idx in range(len(poles_orig)):
+            contracted_residues[:, idx] = residues[:, idx_expanded]
+            if abs(poles_orig[idx].imag) > 1e-15:
+                idx_expanded += 2
+            else:
+                idx_expanded += 1
+        vector_fit.residues = contracted_residues
+    else:
+        vector_fit.residues = residues

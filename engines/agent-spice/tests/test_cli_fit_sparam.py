@@ -471,6 +471,7 @@ def test_fit_sparam_cli_defaults_to_idem_fast_auto_for_large_ports(tmp_path: Pat
     assert calls[0][2].init_pole_spacing == "log"
     assert calls[0][2].vector_fit_backend == "native"
     assert calls[0][2].high_frequency_complex_pair_count == 2
+    assert calls[0][2].passivity_samples == 8
     assert calls[0][2].enforce_passivity is False
     assert calls[0][2].check_passivity is False
 
