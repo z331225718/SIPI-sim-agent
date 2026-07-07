@@ -76,7 +76,7 @@ class SParamFitConfig:
     enforce_passivity: bool = True
     passivity_samples: int = 200
     passivity_max_iterations: int = 1
-    passivity_active_variables: int = 512
+    passivity_active_variables: int = 3072
     passivity_f_max: float | None = None
     preserve_dc: bool = True
     subckt_name: str = "s_equivalent"

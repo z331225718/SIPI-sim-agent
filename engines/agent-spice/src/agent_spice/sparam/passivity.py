@@ -25,7 +25,24 @@ class _PassivityScore:
     def is_better_than(self, other: "_PassivityScore | None") -> bool:
         if other is None:
             return True
-        return (self.violation_count, self.max_sigma) < (other.violation_count, other.max_sigma)
+        return (self.max_sigma, self.violation_count) < (other.max_sigma, other.violation_count)
+
+
+def _is_candidate_update_better(
+    candidate_score: _PassivityScore,
+    candidate_delta_norm: float,
+    best_score: _PassivityScore | None,
+    best_delta_norm: float,
+) -> bool:
+    if candidate_score.is_better_than(best_score):
+        return True
+    if best_score is None:
+        return True
+    return (
+        candidate_score.violation_count == best_score.violation_count
+        and np.isclose(candidate_score.max_sigma, best_score.max_sigma)
+        and candidate_delta_norm < best_delta_norm
+    )
 
 
 @dataclass(frozen=True)
@@ -193,6 +210,16 @@ def _select_active_variable_indices(A_ineq: np.ndarray, max_active_variables: in
     sensitivities = np.max(np.abs(A_ineq), axis=0)
     candidate_indices = np.argpartition(-sensitivities, max_active_variables - 1)[:max_active_variables]
     return np.array(sorted(candidate_indices, key=lambda idx: (-sensitivities[idx], idx)), dtype=int)
+
+
+def _active_variable_budget_candidates(max_active_variables: int, total_variables: int) -> list[int]:
+    if total_variables < 1:
+        return []
+    if max_active_variables <= 0:
+        return [0]
+    cap = min(max_active_variables, total_variables)
+    candidates = [max(1, cap // 4), max(1, cap // 2), cap]
+    return sorted(set(candidates))
 
 
 def _evaluate_passivity_score_at_freqs(
@@ -628,13 +655,6 @@ def enforce_passivity_hamiltonian(
         A_ineq = np.array(A_list)
         b_ineq = np.array(b_list)
 
-        active_indices = _select_active_variable_indices(A_ineq, max_active_variables)
-        qp_result = _solve_min_norm_upper_bound_dual_qp(A_ineq[:, active_indices], b_ineq)
-        if not qp_result.success:
-            break
-
-        x_opt = np.zeros(n_vars)
-        x_opt[active_indices] = qp_result.x
         sampled_freqs = [freq for freq, _sigma in violating_freqs]
         sampled_score = _evaluate_passivity_score_at_freqs(
             poles,
@@ -645,28 +665,48 @@ def enforce_passivity_hamiltonian(
             epsilon=epsilon,
         )
         accepted_residues = None
-        for scale in (1.0, 0.5, 0.25, 0.125, 0.0625):
-            candidate_residues = _apply_residue_delta(
-                residues,
-                x_opt,
-                nports=nports,
-                vars_per_pair=vars_per_pair,
-                n_real=n_real,
-                real_poles=real_poles,
-                complex_pairs=complex_pairs,
-                scale=scale,
-            )
-            candidate_score = _evaluate_passivity_score_at_freqs(
-                poles,
-                candidate_residues,
-                constant_coeff,
-                nports=nports,
-                freqs=sampled_freqs,
-                epsilon=epsilon,
-            )
-            if candidate_score.is_better_than(sampled_score):
-                accepted_residues = candidate_residues
-                break
+        accepted_score: _PassivityScore | None = None
+        accepted_delta_norm = np.inf
+        for active_budget in _active_variable_budget_candidates(max_active_variables, n_vars):
+            active_indices = _select_active_variable_indices(A_ineq, active_budget)
+            qp_result = _solve_min_norm_upper_bound_dual_qp(A_ineq[:, active_indices], b_ineq)
+            if not qp_result.success:
+                continue
+
+            x_opt = np.zeros(n_vars)
+            x_opt[active_indices] = qp_result.x
+            for scale in (1.0, 0.5, 0.25, 0.125, 0.0625):
+                candidate_residues = _apply_residue_delta(
+                    residues,
+                    x_opt,
+                    nports=nports,
+                    vars_per_pair=vars_per_pair,
+                    n_real=n_real,
+                    real_poles=real_poles,
+                    complex_pairs=complex_pairs,
+                    scale=scale,
+                )
+                candidate_score = _evaluate_passivity_score_at_freqs(
+                    poles,
+                    candidate_residues,
+                    constant_coeff,
+                    nports=nports,
+                    freqs=sampled_freqs,
+                    epsilon=epsilon,
+                )
+                candidate_delta_norm = float(np.linalg.norm(candidate_residues - residues))
+                if (
+                    candidate_score.is_better_than(sampled_score)
+                    and _is_candidate_update_better(
+                        candidate_score,
+                        candidate_delta_norm,
+                        accepted_score,
+                        accepted_delta_norm,
+                    )
+                ):
+                    accepted_residues = candidate_residues
+                    accepted_score = candidate_score
+                    accepted_delta_norm = candidate_delta_norm
         if accepted_residues is None:
             break
         residues = accepted_residues

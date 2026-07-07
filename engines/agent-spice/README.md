@@ -126,8 +126,9 @@ Passivity is deliberately off by default in the fast fitting path because the
 current bottleneck work is algorithmic fitting order, speed, and memory. When
 enabled on the native backend, the low-memory passivity check/enforcement is
 limited to the input Touchstone frequency range unless `--passivity-f-max` is
-provided as an advanced override. To run passivity diagnostics or enforcement
-explicitly:
+provided as an advanced override. The native enforcement path uses an adaptive
+active-variable QP budget up to `--passivity-active-variables 3072` by default.
+To run passivity diagnostics or enforcement explicitly:
 
 ```powershell
 python -m agent_spice.cli fit-sparam .\path\to\model.s91p `

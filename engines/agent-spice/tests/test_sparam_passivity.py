@@ -3,6 +3,8 @@ import pytest
 
 from agent_spice.sparam.passivity import (
     _PassivityScore,
+    _active_variable_budget_candidates,
+    _is_candidate_update_better,
     _evaluate_passivity_score_at_freqs,
     _select_active_variable_indices,
     _solve_min_norm_upper_bound_dual_qp,
@@ -110,10 +112,18 @@ def test_singular_violation_modes_keeps_only_worst_mode_by_default():
     assert modes[0][0] == pytest.approx(1.2)
 
 
-def test_passivity_score_prefers_fewer_violations_then_lower_sigma():
-    assert _PassivityScore(1, 10.0).is_better_than(_PassivityScore(2, 1.1))
+def test_passivity_score_prefers_lower_sigma_then_fewer_violations():
+    assert _PassivityScore(2, 1.1).is_better_than(_PassivityScore(1, 10.0))
     assert _PassivityScore(1, 1.1).is_better_than(_PassivityScore(1, 1.2))
-    assert not _PassivityScore(2, 1.0).is_better_than(_PassivityScore(1, 100.0))
+    assert _PassivityScore(1, 1.0).is_better_than(_PassivityScore(2, 1.0))
+
+
+def test_candidate_update_tie_breaks_equal_passivity_by_smaller_delta_norm():
+    score = _PassivityScore(1, 1.01)
+
+    assert _is_candidate_update_better(score, 0.5, score, 1.0)
+    assert not _is_candidate_update_better(score, 2.0, score, 1.0)
+    assert _is_candidate_update_better(_PassivityScore(0, 1.0), 10.0, score, 0.1)
 
 
 def test_evaluate_passivity_score_at_freqs_counts_violations_and_max_sigma():
@@ -142,3 +152,9 @@ def test_select_active_variable_indices_keeps_all_columns_when_limit_is_zero():
     matrix = np.array([[0.0, 3.0, -1.0]])
 
     assert _select_active_variable_indices(matrix, 0).tolist() == [0, 1, 2]
+
+
+def test_active_variable_budget_candidates_probe_smaller_windows_before_cap():
+    assert _active_variable_budget_candidates(2048, 10000) == [512, 1024, 2048]
+    assert _active_variable_budget_candidates(4096, 3000) == [750, 1500, 3000]
+    assert _active_variable_budget_candidates(0, 3000) == [0]
