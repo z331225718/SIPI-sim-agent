@@ -117,7 +117,146 @@ def test_build_quality_report_signoff_blocks_error_threshold_and_skipped_passivi
 
     payload = report.to_dict()
     assert payload["status"] == "FAIL"
-    assert {"comparison_rms_error", "passivity_enforcement"} <= set(payload["blocking_reasons"])
+    assert "comparison_rms_error" in payload["blocking_reasons"]
+    assert "passivity_enforcement" not in payload["blocking_reasons"]
+
+
+def test_build_quality_report_signoff_can_use_z_domain_threshold_as_primary_fit_gate():
+    report = build_quality_report(
+        network=QualityNetwork(),
+        frequency_points=3,
+        fit_frequency_points=3,
+        comparison_rms_error=0.2,
+        z_comparison_rms_error=0.01,
+        passive_after_enforce=True,
+        passivity_violations_after=[],
+        enforce_passivity=True,
+        poles=np.array([-1e6 + 0j]),
+        profile="signoff",
+        comparison_rms_limit=0.05,
+        z_comparison_rms_limit=0.05,
+        z_required_for_signoff=True,
+    )
+
+    payload = report.to_dict()
+    assert payload["status"] == "PASS"
+    comparison = next(diagnostic for diagnostic in payload["diagnostics"] if diagnostic["id"] == "comparison_rms_error")
+    assert comparison["status"] == "PASS"
+    assert comparison["severity"] == "warning"
+    assert "comparison_rms_error" not in payload["blocking_reasons"]
+    assert "z_comparison_rms_error" not in payload["blocking_reasons"]
+
+
+def test_build_quality_report_signoff_can_use_z_log_magnitude_threshold_as_primary_fit_gate():
+    report = build_quality_report(
+        network=QualityNetwork(),
+        frequency_points=3,
+        fit_frequency_points=3,
+        comparison_rms_error=0.2,
+        z_comparison_rms_error=1e6,
+        z_log_magnitude_rms_error=0.02,
+        passive_after_enforce=True,
+        passivity_violations_after=[],
+        enforce_passivity=True,
+        poles=np.array([-1e6 + 0j]),
+        profile="signoff",
+        comparison_rms_limit=0.05,
+        z_log_magnitude_rms_limit=0.05,
+        z_required_for_signoff=True,
+    )
+
+    payload = report.to_dict()
+    assert payload["status"] == "PASS"
+    assert "comparison_rms_error" not in payload["blocking_reasons"]
+    assert "z_log_magnitude_rms_error" not in payload["blocking_reasons"]
+    diagnostic = next(
+        diagnostic for diagnostic in payload["diagnostics"] if diagnostic["id"] == "z_log_magnitude_rms_error"
+    )
+    assert diagnostic["status"] == "PASS"
+    assert diagnostic["metric"] == 0.02
+    assert diagnostic["threshold"] == 0.05
+
+
+def test_build_quality_report_signoff_blocks_missing_required_z_domain_metric():
+    report = build_quality_report(
+        network=QualityNetwork(),
+        frequency_points=3,
+        fit_frequency_points=3,
+        comparison_rms_error=0.01,
+        z_comparison_rms_error=None,
+        passive_after_enforce=True,
+        passivity_violations_after=[],
+        enforce_passivity=True,
+        poles=np.array([-1e6 + 0j]),
+        profile="signoff",
+        z_comparison_rms_limit=0.05,
+        z_required_for_signoff=True,
+    )
+
+    payload = report.to_dict()
+    assert payload["status"] == "FAIL"
+    assert "z_comparison_rms_error" in payload["blocking_reasons"]
+
+
+def test_build_quality_report_signoff_blocks_z_domain_metric_over_limit():
+    report = build_quality_report(
+        network=QualityNetwork(),
+        frequency_points=3,
+        fit_frequency_points=3,
+        comparison_rms_error=0.01,
+        z_comparison_rms_error=0.2,
+        passive_after_enforce=True,
+        passivity_violations_after=[],
+        enforce_passivity=True,
+        poles=np.array([-1e6 + 0j]),
+        profile="signoff",
+        z_comparison_rms_limit=0.05,
+        z_required_for_signoff=True,
+    )
+
+    payload = report.to_dict()
+    assert payload["status"] == "FAIL"
+    assert "z_comparison_rms_error" in payload["blocking_reasons"]
+
+
+def test_build_quality_report_can_pass_band_limited_passivity_check():
+    report = build_quality_report(
+        network=QualityNetwork(),
+        frequency_points=3,
+        fit_frequency_points=3,
+        comparison_rms_error=0.01,
+        passive_after_enforce=False,
+        passivity_violations_after=[[2.1e9, 2.2e9]],
+        enforce_passivity=False,
+        poles=np.array([-1e6 + 0j]),
+        profile="signoff",
+        passivity_check_f_max=2.0e9,
+    )
+
+    payload = report.to_dict()
+    assert payload["status"] == "PASS"
+    assert payload["allowed_for"] == "ac_only"
+    assert payload["blocking_reasons"] == []
+    assert payload["warnings"] == []
+
+
+def test_build_quality_report_band_limited_check_fails_intersecting_violation():
+    report = build_quality_report(
+        network=QualityNetwork(),
+        frequency_points=3,
+        fit_frequency_points=3,
+        comparison_rms_error=0.01,
+        passive_after_enforce=False,
+        passivity_violations_after=[[1.9e9, 2.1e9]],
+        enforce_passivity=False,
+        poles=np.array([-1e6 + 0j]),
+        profile="signoff",
+        passivity_check_f_max=2.0e9,
+    )
+
+    payload = report.to_dict()
+    assert payload["status"] == "FAIL"
+    assert "passivity_violation_bands_after" in payload["blocking_reasons"]
 
 
 def test_build_quality_report_fails_non_monotonic_and_remaining_passivity():

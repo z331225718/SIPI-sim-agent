@@ -3,19 +3,29 @@ import logging
 from pathlib import Path
 import re
 
+import numpy as np
 import pytest
 
-from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice
+from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice, fit_touchstone_to_spice_auto_order
+
+
+def test_passivity_advanced_perturbations_are_experimental_opt_in():
+    config = SParamFitConfig()
+
+    assert config.passivity_perturb_constant is False
+    assert config.passivity_perturb_poles is False
 
 
 class FakeVectorFitting:
     instances: list["FakeVectorFitting"] = []
+    rms_errors: list[float] = []
 
     def __init__(self, network):
         self.network = network
         self.calls: list[str] = []
         self.auto_fit_kwargs = {}
         self.vector_fit_kwargs = {}
+        self.poles = [-1.0 + 0.0j, -2.0 + 3.0j, -4.0 + 0.0j]
         self.max_iterations = 100
         self.enforced = False
         self.model_response_freq_lengths: list[int] = []
@@ -50,6 +60,8 @@ class FakeVectorFitting:
 
     def get_rms_error(self, parameter_type="s"):
         self.calls.append("get_rms_error")
+        if self.rms_errors:
+            return self.rms_errors.pop(0)
         return 0.125
 
     def get_model_response(self, i, j, freqs=None):
@@ -79,6 +91,29 @@ class FakeNetwork:
 
     def __init__(self, path):
         self.path = path
+
+
+class FakeNetworkWithExpensiveInternalPassivity(FakeNetwork):
+    def is_passive(self):
+        raise AssertionError("internal passivity check should be bypassed")
+
+
+class FakeVectorFittingWithInternalPassivityCheck(FakeVectorFitting):
+    def vector_fit(self, **kwargs):
+        self.calls.append("vector_fit")
+        self.vector_fit_kwargs = kwargs
+        self.network.is_passive()
+        return None
+
+
+class FakeVectorFittingWithRelocationBackend(FakeVectorFitting):
+    _pole_relocation = staticmethod(lambda: "original")
+
+    def vector_fit(self, **kwargs):
+        self.calls.append("vector_fit")
+        self.vector_fit_kwargs = kwargs
+        self.seen_relocation_backend = self.__class__._pole_relocation
+        return None
 
 
 class LegacyVectorFitting:
@@ -255,6 +290,376 @@ def test_fit_touchstone_to_spice_writes_progress_log_and_uses_tuning_options(tmp
     assert "fit-sparam completed" in log_text
 
 
+def test_fit_touchstone_to_spice_reports_elapsed_and_mean_rms(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    FakeVectorFitting.rms_errors = [0.2]
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFitting)
+    report = tmp_path / "fit_report.json"
+
+    result = fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(enforce_passivity=False),
+        report_path=report,
+    )
+
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert result.comparison_mean_rms_error == pytest.approx(result.comparison_rms_error / 2)
+    assert payload["comparison_mean_rms_error"] == pytest.approx(result.comparison_rms_error / 2)
+    assert payload["elapsed_seconds"] >= 0.0
+    assert payload["peak_memory_mb"] is None or payload["peak_memory_mb"] > 0.0
+    assert payload["stored_pole_count"] == 3
+    assert payload["real_pole_count"] == 2
+    assert payload["complex_pair_count"] == 1
+    assert payload["expanded_model_order"] == 4
+
+
+def test_fit_touchstone_to_spice_can_skip_passivity_checks(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFitting)
+
+    result = fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(enforce_passivity=False, check_passivity=False),
+    )
+
+    instance = FakeVectorFitting.instances[0]
+    assert "is_passive" not in instance.calls
+    assert "passivity_test" not in instance.calls
+    assert result.passive_before_enforce is None
+    assert result.passive_after_enforce is None
+
+
+def test_native_fit_uses_low_memory_passivity_engine_without_idem_exporter(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+    import agent_spice.sparam.passivity as passivity
+
+    FakeVectorFitting.instances.clear()
+    calls: list[tuple[str, object, int | None, float | None, int | None, int | None]] = []
+
+    def fake_create_vector_fitting(network, config):
+        return FakeVectorFitting(network)
+
+    def fake_check(vector_fit, *, nports, epsilon, f_max=None):
+        calls.append(("check", vector_fit, None, f_max, None, None))
+        if len([name for name, _, _, _fmax, _iters, _active in calls if name == "check"]) == 1:
+            return passivity.PassivitySampleReport(
+                max_sigma=1.1,
+                max_sigma_frequency_hz=1e6,
+                violation_bands_hz=[[1e6, 2e6]],
+                frequency_points=1,
+                chunk_size=1,
+            )
+        return passivity.PassivitySampleReport(
+            max_sigma=1.0,
+            max_sigma_frequency_hz=1e6,
+            violation_bands_hz=[],
+            frequency_points=1,
+            chunk_size=1,
+        )
+
+    def fake_enforce(
+        vector_fit,
+        *,
+        nports,
+        epsilon,
+        max_iterations,
+        f_max,
+        max_violation_samples,
+        max_active_variables,
+        **kwargs,
+    ):
+        calls.append(("enforce", vector_fit, max_violation_samples, f_max, max_iterations, max_active_variables))
+        vector_fit.enforced = True
+        vector_fit.passivity_enforcement_diagnostics = [{"active_budget": 123, "accepted": True}]
+
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "_create_vector_fitting", fake_create_vector_fitting)
+    monkeypatch.setattr(passivity, "check_vector_fit_passivity_hamiltonian", fake_check)
+    monkeypatch.setattr(passivity, "enforce_passivity_hamiltonian", fake_enforce)
+
+    result = fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(
+            mode="manual",
+            vector_fit_backend="native",
+            exporter="skrf",
+            check_passivity=True,
+            enforce_passivity=True,
+            max_iterations=7,
+            passivity_samples=17,
+            passivity_active_variables=123,
+        ),
+    )
+
+    assert [name for name, _, _, _, _, _ in calls] == ["check", "enforce", "check"]
+    assert calls[1][2] == 17
+    assert [call[3] for call in calls] == [2e6, 2e6, 2e6]
+    assert calls[1][4] == 1
+    assert calls[1][5] == 123
+    assert "passivity_enforce" not in FakeVectorFitting.instances[0].calls
+    assert result.passive_before_enforce is False
+    assert result.passive_after_enforce is True
+    assert result.passivity_violations_before == [[1e6, 2e6]]
+    assert result.passivity_violations_after == []
+    assert result.passivity_max_sigma_before == pytest.approx(1.1)
+    assert result.passivity_max_sigma_after == pytest.approx(1.0)
+    assert result.passivity_enforcement_diagnostics == [{"active_budget": 123, "accepted": True}]
+
+
+def test_native_fit_enforces_low_memory_passivity_when_checks_are_skipped(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+    import agent_spice.sparam.passivity as passivity
+
+    FakeVectorFitting.instances.clear()
+    calls: list[tuple[str, object, int | None, float | None, int | None, int | None]] = []
+
+    def fake_create_vector_fitting(network, config):
+        return FakeVectorFitting(network)
+
+    def fake_check(*args, **kwargs):
+        calls.append(("check", args[0], None, kwargs.get("f_max"), None, None))
+        return passivity.PassivitySampleReport(
+            max_sigma=1.0,
+            max_sigma_frequency_hz=1e6,
+            violation_bands_hz=[],
+            frequency_points=1,
+            chunk_size=1,
+        )
+
+    def fake_enforce(
+        vector_fit,
+        *,
+        nports,
+        epsilon,
+        max_iterations,
+        f_max,
+        max_violation_samples,
+        max_active_variables,
+        **kwargs,
+    ):
+        calls.append(("enforce", vector_fit, max_violation_samples, f_max, max_iterations, max_active_variables))
+        vector_fit.enforced = True
+
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "_create_vector_fitting", fake_create_vector_fitting)
+    monkeypatch.setattr(passivity, "check_vector_fit_passivity_hamiltonian", fake_check)
+    monkeypatch.setattr(passivity, "enforce_passivity_hamiltonian", fake_enforce)
+
+    result = fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(
+            mode="manual",
+            vector_fit_backend="native",
+            check_passivity=False,
+            enforce_passivity=True,
+            max_iterations=3,
+            passivity_samples=19,
+            passivity_active_variables=321,
+        ),
+    )
+
+    assert [name for name, _, _, _, _, _ in calls] == ["enforce"]
+    assert calls[0][2] == 19
+    assert calls[0][3] == 2e6
+    assert calls[0][4] == 1
+    assert calls[0][5] == 321
+    assert "passivity_enforce" not in FakeVectorFitting.instances[0].calls
+    assert result.passive_before_enforce is None
+    assert result.passive_after_enforce is None
+
+
+def test_manual_fit_bypasses_skrf_internal_passivity_warning_check_when_checks_are_skipped(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFittingWithInternalPassivityCheck.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetworkWithExpensiveInternalPassivity)
+    monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFittingWithInternalPassivityCheck)
+
+    result = fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(mode="manual", enforce_passivity=False, check_passivity=False),
+    )
+
+    assert result.spice_path == tmp_path / "model.sp"
+
+
+def test_fit_touchstone_to_spice_can_use_streaming_relocation_backend(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFittingWithRelocationBackend.instances.clear()
+    original = FakeVectorFittingWithRelocationBackend._pole_relocation
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFittingWithRelocationBackend)
+
+    result = fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(
+            mode="manual",
+            enforce_passivity=False,
+            check_passivity=False,
+            relocation_backend="streaming",
+        ),
+    )
+
+    instance = FakeVectorFittingWithRelocationBackend.instances[0]
+    assert result.spice_path == tmp_path / "model.sp"
+    assert instance.seen_relocation_backend is not original
+    assert FakeVectorFittingWithRelocationBackend._pole_relocation is original
+
+
+def test_fit_touchstone_to_spice_can_use_streaming_lowmem_relocation_backend(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+    from agent_spice.sparam.skrf_streaming import streaming_lowmem_pole_relocation
+
+    FakeVectorFittingWithRelocationBackend.instances.clear()
+    original = FakeVectorFittingWithRelocationBackend._pole_relocation
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFittingWithRelocationBackend)
+
+    fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(
+            mode="manual",
+            enforce_passivity=False,
+            check_passivity=False,
+            relocation_backend="streaming-lowmem",
+        ),
+    )
+
+    instance = FakeVectorFittingWithRelocationBackend.instances[0]
+    assert instance.seen_relocation_backend is streaming_lowmem_pole_relocation
+    assert FakeVectorFittingWithRelocationBackend._pole_relocation is original
+
+
+def test_fit_touchstone_to_spice_can_use_streaming_reciprocal_relocation_backend(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+    from agent_spice.sparam.skrf_streaming import streaming_reciprocal_pole_relocation
+
+    FakeVectorFittingWithRelocationBackend.instances.clear()
+    original = FakeVectorFittingWithRelocationBackend._pole_relocation
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFittingWithRelocationBackend)
+
+    fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(
+            mode="manual",
+            enforce_passivity=False,
+            check_passivity=False,
+            relocation_backend="streaming-reciprocal",
+        ),
+    )
+
+    instance = FakeVectorFittingWithRelocationBackend.instances[0]
+    assert instance.seen_relocation_backend is streaming_reciprocal_pole_relocation
+    assert FakeVectorFittingWithRelocationBackend._pole_relocation is original
+
+
+def test_fit_touchstone_to_spice_auto_order_stops_at_first_mean_rms_target(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    calls = []
+
+    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None, log_path=None):
+        calls.append(config.model_order_max)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(f"* order {config.model_order_max}\n", encoding="utf-8")
+        mean = {40: 0.003, 60: 0.0019, 80: 0.0015}[config.model_order_max]
+        return fitting.SParamFitResult(
+            touchstone_path=touchstone_path,
+            spice_path=output_path,
+            report_path=report_path,
+            html_report_path=html_report_path,
+            log_path=log_path,
+            ports=30,
+            frequency_points=10,
+            frequency_range_hz=[1.0, 2.0],
+            fit_frequency_points=10,
+            fit_frequency_range_hz=[1.0, 2.0],
+            fit_frequency_selection={},
+            reference_impedance=[50.0] * 30,
+            config=config,
+            rms_error=mean * 30,
+            comparison_rms_error=mean * 30,
+            passive_before_enforce=None,
+            passive_after_enforce=None,
+            passivity_violations_before=None,
+            passivity_violations_after=None,
+            quality_report=type(
+                "Q",
+                (),
+                {
+                    "status": "PASS",
+                    "blocking_reasons": [],
+                    "warnings": [],
+                        "to_dict": lambda self: {
+                            "status": "PASS",
+                            "blocking_reasons": [],
+                            "warnings": [],
+                            "diagnostics": {},
+                        },
+                },
+            )(),
+            comparison_mean_rms_error=mean,
+            elapsed_seconds=0.1,
+            peak_memory_mb=12.0,
+        )
+
+    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+    report = tmp_path / "auto_report.json"
+
+    result = fit_touchstone_to_spice_auto_order(
+        tmp_path / "line.s30p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(enforce_passivity=False),
+        order_candidates=[40, 60, 80],
+        target_mean_rms_error=0.002,
+        report_path=report,
+    )
+
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert calls == [40, 60]
+    assert result.auto_model_order_selected == 60
+    assert payload["auto_model_order_selected"] == 60
+    assert payload["auto_model_order_stop_reason"] == "target_met"
+    assert [trial["order"] for trial in payload["auto_model_order_trials"]] == [40, 60]
+    assert (tmp_path / "model.sp").read_text(encoding="utf-8") == "* order 60\n"
+
+
+def test_native_manual_auto_order_maps_large_port_repair_candidates():
+    import agent_spice.sparam.fitting as fitting
+
+    base = SParamFitConfig(
+        mode="manual",
+        vector_fit_backend="native",
+        high_frequency_complex_pair_count=2,
+        n_poles_real=0,
+        n_poles_cmplx=2,
+    )
+
+    order9 = fitting._native_manual_auto_order_config(base, 9)
+    order10 = fitting._native_manual_auto_order_config(base, 10)
+    order12 = fitting._native_manual_auto_order_config(base, 12)
+
+    assert (order9.n_poles_real, order9.n_poles_cmplx) == (0, 2)
+    assert (order10.n_poles_real, order10.n_poles_cmplx) == (4, 2)
+    assert (order12.n_poles_real, order12.n_poles_cmplx) == (4, 3)
+
+
 def test_fit_touchstone_to_spice_can_fit_frequency_subset(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 
@@ -289,6 +694,107 @@ def test_fit_touchstone_to_spice_can_fit_frequency_subset(tmp_path: Path, monkey
     assert "Fit frequency points</td><td>2" in html
 
 
+def test_lightweight_s_network_preserves_lightweight_frequency_subset():
+    from agent_spice.sparam.fitting import _LightweightSNetwork, _select_fit_network
+
+    network = _LightweightSNetwork(
+        f=np.array([0.0, 1.0e6, 2.0e6, 3.0e6, 4.0e6]),
+        s=np.arange(5 * 2 * 2, dtype=float).reshape(5, 2, 2).astype(complex),
+        z0=np.full((5, 2), 50.0),
+        name="light",
+    )
+
+    selected = _select_fit_network(network, SParamFitConfig(fit_max_frequency_points=3))
+
+    assert isinstance(selected, _LightweightSNetwork)
+    assert selected.name == "light_fit_subset"
+    assert selected.nports == 2
+    assert selected.frequency is selected
+    assert selected.f.tolist() == [0.0, 2.0e6, 4.0e6]
+    np.testing.assert_allclose(selected.s, network.s[[0, 2, 4]])
+    np.testing.assert_allclose(selected.z0, network.z0[[0, 2, 4]])
+
+
+def test_lightweight_touchstone_loader_reads_hz_s_ri_fixture():
+    from agent_spice.sparam.fitting import _load_touchstone_s_ri_lightweight
+
+    network = _load_touchstone_s_ri_lightweight(Path("tests/fixtures/sparam/simple_through.s2p"))
+
+    assert network.nports == 2
+    assert network.f.tolist() == [1e6, 1e7, 1e8, 1e9, 5e9]
+    np.testing.assert_allclose(network.z0, np.full((5, 2), 50.0))
+    np.testing.assert_allclose(
+        network.s[0],
+        np.array(
+            [
+                [0.01 + 0.0j, 0.799999 - 0.000800j],
+                [0.799999 - 0.000800j, 0.01 + 0.0j],
+            ]
+        ),
+    )
+
+
+def test_lightweight_touchstone_loader_reads_multiline_nport_block(tmp_path: Path):
+    from agent_spice.sparam.fitting import _load_touchstone_s_ri_lightweight
+
+    touchstone = tmp_path / "multi.s3p"
+    touchstone.write_text(
+        "\n".join(
+            [
+                "! multiline block",
+                "# Hz S RI R 0.1",
+                "1e6 1 0 2 0 3 0",
+                "4 0 5 0 6 0",
+                "7 0 8 0 9 0",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    network = _load_touchstone_s_ri_lightweight(touchstone)
+
+    assert network.nports == 3
+    assert network.f.tolist() == [1e6]
+    np.testing.assert_allclose(network.z0, np.full((1, 3), 0.1))
+    np.testing.assert_allclose(
+        network.s[0],
+        np.array(
+            [
+                [1, 2, 3],
+                [4, 5, 6],
+                [7, 8, 9],
+            ],
+            dtype=complex,
+        ),
+    )
+
+
+def test_fit_touchstone_to_spice_lightweight_path_bypasses_skrf_network_loader(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFitting)
+
+    def fail_network(*args, **kwargs):
+        raise AssertionError("lightweight path should not construct skrf.Network")
+
+    monkeypatch.setattr(fitting.rf, "Network", fail_network)
+
+    result = fit_touchstone_to_spice(
+        Path("tests/fixtures/sparam/simple_through.s2p"),
+        tmp_path / "model.sp",
+        config=SParamFitConfig(
+            mode="manual",
+            check_passivity=False,
+            enforce_passivity=False,
+            use_lightweight_network=True,
+        ),
+    )
+
+    assert result.spice_path == tmp_path / "model.sp"
+    assert FakeVectorFitting.instances[0].network.nports == 2
+
+
 def test_fit_touchstone_to_spice_rejects_single_frequency_subset(tmp_path: Path):
     fixture = Path("tests/fixtures/sparam/simple_through.s2p")
 
@@ -315,6 +821,23 @@ def test_manual_fit_uses_vector_fit_parameters(tmp_path: Path, monkeypatch):
     assert "auto_fit" not in instance.calls
     assert instance.vector_fit_kwargs["n_poles_real"] == 4
     assert instance.vector_fit_kwargs["n_poles_cmplx"] == 5
+
+
+def test_create_native_vector_fitting_applies_high_frequency_complex_pair_options():
+    import agent_spice.sparam.fitting as fitting
+
+    config = SParamFitConfig(
+        vector_fit_backend="native",
+        high_frequency_complex_pair_count=2,
+        high_frequency_complex_pair_damping=0.05,
+        high_frequency_complex_pair_lower_fraction=0.7,
+    )
+
+    vector_fit = fitting._create_vector_fitting(FakeNetwork("line.s2p"), config)
+
+    assert vector_fit.high_frequency_complex_pair_count == 2
+    assert vector_fit.high_frequency_complex_pair_damping == 0.05
+    assert vector_fit.high_frequency_complex_pair_lower_fraction == 0.7
 
 
 def test_legacy_path_comparison_still_works(tmp_path: Path, monkeypatch):
@@ -367,3 +890,31 @@ def test_fit_touchstone_to_spice_smoke_with_fixture(tmp_path: Path):
     assert payload["frequency_points"] > 0
     assert payload["spice_path"] == str(output)
     assert "<svg" in html_report.read_text(encoding="utf-8")
+
+
+def test_fit_touchstone_to_spice_with_idem_exporter(tmp_path: Path):
+    fixture = Path("tests/fixtures/sparam/simple_through.s2p")
+    output = tmp_path / "simple_through_idem.sp"
+    report = tmp_path / "fit_report_idem.json"
+    html_report = tmp_path / "fit_report_idem.html"
+
+    result = fit_touchstone_to_spice(
+        fixture,
+        output,
+        config=SParamFitConfig(
+            model_order_max=20,
+            target_error=0.05,
+            exporter="idem",
+            enforce_passivity=True,
+        ),
+        report_path=report,
+        html_report_path=html_report,
+    )
+
+    assert result.spice_path == output
+    content = output.read_text(encoding="utf-8")
+    assert ".subckt s_equivalent" in content
+    assert "** STATE-SPACE REALIZATION" in content
+    assert "CS_" in content
+    assert "RS_" in content
+    assert "GS_" in content

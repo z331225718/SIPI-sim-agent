@@ -4,6 +4,16 @@
 
 下一阶段质量门禁计划见 `docs/sparam-quality-gate-plan.md`。
 
+19-port PDN 样例的完整调参记录见 `docs/sparam-19port-fit-case-study.md`。
+
+全部本地 S 参数的批量 fit 摸底记录见 `docs/sparam-batch-fit-results.md`。
+
+30-port PDN 的目标频段 PASS 命令：
+
+```powershell
+python -m agent_spice.cli fit-sparam user_input/spara/5power_30port_wocap_121124_221036_4876_DCfitted.s30p --output runs-sparam/attack-30port/order120-scale0992-bandpass/model.sp --report runs-sparam/attack-30port/order120-scale0992-bandpass/fit_report.json --html-report runs-sparam/attack-30port/order120-scale0992-bandpass/fit_report.html --log runs-sparam/attack-30port/order120-scale0992-bandpass/fit.log --quality-profile signoff --fail-on-quality --model-order-max 120 --target-error 0.005 --skip-passivity-enforce --response-scale 0.992 --passivity-check-f-max 2000000000 --quality-max-frequency-points 16 --max-comparison-rms-error 0.05 --require-dc --subckt-name s_5power_30port_order120_scale0992_bandpass
+```
+
 ## 进度与 Debug
 
 `fit-sparam` 支持把进度和 scikit-rf 内部 `skrf.vectorFitting` 日志写入文件：
@@ -36,7 +46,12 @@ python -m agent_spice.cli fit-sparam .\model.s2p --output runs-sparam/model.sp -
 - `--fail-on-quality`：质量不是 PASS 时返回非零码；配合 CI 使用。
 - `--allow-quality-warnings`：允许 WARN 返回 0，但 FAIL 仍然返回非零码。
 - `--max-comparison-rms-error`：原始频点对比 RMS 的门限。
+- `--max-z-comparison-rms-error`：原始频点 Z 参数幅值对比 RMS 的门限，单位 Ohm。
+- `--max-z-log-magnitude-rms-error`：原始频点 `log10(|Zfit| / |Zorig|)` RMS 门限，单位 decades。PDN 阶数筛选优先用这个指标；绝对 Ohm RMS 容易被接近奇异的 Z 转换点支配。
+- `--z-required-for-signoff`：把 Z 参数误差作为 signoff 主门禁。适合 PDN 场景；此时 S 参数误差仍会报告，但不再作为主要阻断项。
 - `--max-passivity-epsilon`：输入采样最大奇异值检查的无源性容差。
+- `--passivity-check-mode analytic|streaming|skip`：选择 scikit-rf analytic passivity check、Agent-Spice 分块采样检查，或完全跳过检查。
+- `--passivity-sample-chunk-size`：streaming passivity check 每批评估的频点数。值越小，峰值内存越低。
 - `--require-dc`：缺少 DC 点时直接 FAIL。
 
 注意：`--skip-passivity-enforce` 只能生成 preview/debug 产物。`signoff` profile 下跳过 passivity enforcement 会被标记为 blocking diagnostic。
@@ -127,7 +142,69 @@ python -m agent_spice.cli fit-sparam .\model.s2p --output runs-sparam/model.sp -
 
 注意：这个输出不应进入 transient 仿真闭环。
 
-### 7. 用 manual mode 做可控试跑
+如果只跳过 enforcement 但仍保留 passivity check，Agent-Spice 会复用 enforcement 前的 passivity 结果，不再重复运行同一个 analytic passivity test。
+
+### 7. 用 streaming passivity check 做大端口预览
+
+对 30-port 以上模型，scikit-rf analytic passivity check 和 enforcement 都可能占用大量内存。现在可以先用分块采样方式检查拟合模型在原始频点上的最大奇异值：
+
+```powershell
+--passivity-check-mode streaming --passivity-sample-chunk-size 16 --skip-passivity-enforce
+```
+
+这个检查通过 `VectorFitting.get_model_response()` 按频率块生成 S 矩阵，再对每个频点做 SVD。它能降低峰值内存，并在 JSON/HTML 报告中记录 sampled max sigma、最严重频点和 sampled violation bands。
+
+限制：
+
+- 这是采样检查，不是严格全频解析 passivity 证明。
+- 它不替代 `passivity_enforce()`；只用于 preview、阶数筛选和定位问题频段。
+- 对最终 transient signoff，仍需要更严格的 passivity enforcement 或后续的正实/无源综合路线。
+
+### 8. 用 order sweep 判断阶数是否合理
+
+30-port 如果需要 100+ order 才能过门，必须先量化“阶数-误差-无源性”的关系，而不是直接继续抬阶。benchmark 支持同一 case 下批量扫阶：
+
+```powershell
+python -m agent_spice.cli benchmark-sparam `
+  --manifest benchmarks/sparam/cases.yaml `
+  --case 5power_30port_wocap_z_sweep `
+  --run-fit `
+  --order-sweep 20,40,60,80 `
+  --output runs-sparam/order-sweep-30p.jsonl `
+  --csv runs-sparam/order-sweep-30p.csv `
+  --output-root runs-sparam/order-sweep-30p
+```
+
+输出 CSV/JSONL 会记录每个阶数的 `sweep_model_order_max`、S/Z 对比误差、Z log-magnitude RMS、质量状态、耗时和产物目录。PDN 推荐先用 `--z-required-for-signoff --max-z-log-magnitude-rms-error <decades>` 收敛门限，再看最低可接受阶数。
+
+本地 `5power_30port_wocap_z_sweep` 的初步结果保存在 `runs-sparam/order-sweep-30p-z/partial_summary.csv`。已完成的 20/40 阶 raw-response 结果均未达标：
+
+| Order | S RMS | Z log-mag RMS | Sampled max sigma | 结论 |
+| ---: | ---: | ---: | ---: | --- |
+| 20 | 1.1509 | 0.9737 decades | 1.3102 | 明显欠拟合 |
+| 40 | 0.4771 | 0.7582 decades | 1.3035 | 有改善但仍远离 0.1 decade |
+
+如果目标是先得到 S-domain 可用拟合，而不是继续做研究型 sweep，可以直接用自动 preset：
+
+```powershell
+python -m agent_spice.cli fit-sparam .\path\to\model.s30p `
+  --output runs-sparam/auto-s-fit/model.sp `
+  --report runs-sparam/auto-s-fit/fit_report.json `
+  --html-report runs-sparam/auto-s-fit/fit_report.html `
+  --log runs-sparam/auto-s-fit/fit.log `
+  --auto-preset compact `
+  --fail-on-quality
+```
+
+`compact` 会按端口数选择候选阶数，并在第一个满足 S RMS 门限的 order 停止。30-port 现有证据是 order40 S RMS `0.4771`、order60 S RMS `0.1040`、order70 S RMS `0.2602`、order75 S RMS `0.0291`、order80 S RMS `0.0476`、order120 raw S RMS `0.0211`，所以 `compact` 的 `0.05` S RMS 目标会跳过非单调坏点 order70，并在 order75 停止。该 preset 默认跳过 passivity enforcement/check，把 passivity 作为后续 PI 应用约束处理。
+
+自动 order 的最终 JSON 会写入 `auto_model_order_trials`、`auto_model_order_selected` 和 `auto_model_order_stop_reason`。如果所有候选阶数都没有达到配置的 S RMS 目标，CLI 会返回非零退出码，而不是把最后一个候选静默当作成功。19-port refined 实跑 `runs-sparam/auto-s-fit-19p-compact-v2-refined/fit_report.json` 显示 order40 S RMS `0.061694` 未达标、order60 S RMS `0.084725` 未达标、order62 S RMS `0.036899` 达标并停止；单档探针显示 order61 S RMS `0.053478`，因此当前 19-port 最小达标候选是 order62。
+
+30-port refined 实跑 `runs-sparam/auto-s-fit-30p-compact-v1-refined/fit_report.json` 显示 order40 S RMS `0.477138` 未达标、order60 S RMS `0.104034` 未达标、order75 S RMS `0.029135` 达标并停止。单档探针 `runs-sparam/s-fit-30p-order70-compact-probe-v1/fit_report.json` 显示 order70 S RMS `0.260239`，这是非单调坏点，因此 30-port compact 候选显式跳过 70。
+
+`high-accuracy` preset 使用更紧的 `0.025` S RMS 目标，也做成 bounded auto-order。19-port 当前配置下 order80 S RMS `0.029608` 未达标，order81 S RMS `0.015045` 达标，因此候选为 `80,81,85,90,100,120`。30-port 当前配置下 order75 S RMS `0.029135` 未达标、order110 S RMS `0.026438` 仍略高于门限、order115 S RMS `0.022807` 达标，因此候选为 `75,110,115,120`。
+
+### 9. 用 manual mode 做可控试跑
 
 `auto_fit` 适合最终自动定阶；大模型探索时可以先用手动极点数快速试跑：
 

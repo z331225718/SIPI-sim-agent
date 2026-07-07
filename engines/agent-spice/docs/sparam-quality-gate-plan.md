@@ -452,13 +452,13 @@ known-bad fixture 在 strict 模式下必须 FAIL。
 
 - Milestone 1 已落地：`sparam.quality`、JSON/HTML `quality` 和 `diagnostics[]`、report-only 默认行为。
 - Milestone 2 已落地：`--quality-profile`、`--fail-on-quality`、`--allow-quality-warnings`、`--max-comparison-rms-error`、`--max-passivity-epsilon`、`--require-dc`。
+- Milestone 3 已启动：`benchmark-sparam` CLI、`benchmarks/sparam/cases.yaml`、JSONL/CSV 输出、缺失私有数据自动 skip、scikit-rf 公开 API contract test。
 - 默认 `explore` profile 保持 MVP smoke 兼容。
 - `signoff` profile 下，未知质量项、超阈值误差、跳过 passivity enforcement、剩余 passivity violation、缺失 required DC 都会阻断质量通过。
 
 ## 下一步任务建议
 
-1. 建 `benchmarks/sparam/README.md` 和本地数据 manifest。
-2. 实现 `sparam benchmark` 或等价 CLI，输出 JSONL/CSV。
-3. 增加至少一个私有 16-port 样例的 benchmark 配置，数据缺失时自动 skip。
-4. 加 `tests/test_sparam_public_skrf_contract.py`，防止未来误用 scikit-rf 私有 API。
-5. 基于 benchmark 决定是否进入 scikit-rf upstream 优化或 MOR/SROPEE 研究线。
+1. 跑完 `5power_19port_withcap_preview` 的 preview fit，记录 runtime/memory/quality baseline。
+2. 等更复杂样例生成后，加入 30/60/91/163/166-port 分层 benchmark case。
+3. 为 benchmark 增加 profile preset，例如 `metadata`、`preview-fit`、`signoff-fit`。
+4. 汇总多样例结果后，再决定是否进入 scikit-rf upstream 优化或 MOR/SROPEE 研究线。

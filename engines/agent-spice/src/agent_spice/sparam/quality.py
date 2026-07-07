@@ -73,12 +73,23 @@ def _status_from_diagnostics(diagnostics: list[QualityDiagnostic], profile: str)
     return "PASS"
 
 
-def _allowed_for(status: str) -> str:
+def _allowed_for(status: str, band_limited: bool) -> str:
     if status == "PASS":
-        return "tran_candidate"
+        return "ac_only" if band_limited else "tran_candidate"
     if status == "WARN":
         return "report_only"
     return "report_only"
+
+
+def _filter_passivity_bands(
+    bands: list[list[float]] | None,
+    passivity_check_f_max: float | None,
+) -> list[list[float]] | None:
+    if bands is None:
+        return None
+    if passivity_check_f_max is None:
+        return bands
+    return [band for band in bands if len(band) >= 2 and float(band[0]) < passivity_check_f_max and float(band[1]) > 0.0]
 
 
 def _real_range(values: Any) -> dict[str, float] | None:
@@ -260,13 +271,23 @@ def _check_fit_metrics(
     fit_frequency_points: int,
     comparison_rms_error: float | None,
     comparison_rms_limit: float,
+    z_comparison_rms_error: float | None,
+    z_comparison_rms_limit: float | None,
+    z_log_magnitude_rms_error: float | None,
+    z_log_magnitude_rms_limit: float | None,
+    z_required_for_signoff: bool,
     passive_after_enforce: bool | None,
     passivity_violations_after: list[list[float]] | None,
     enforce_passivity: bool,
     poles: Any,
     stability_epsilon: float,
+    passivity_check_f_max: float | None,
 ) -> list[QualityDiagnostic]:
     diagnostics: list[QualityDiagnostic] = []
+    relevant_passivity_violations_after = _filter_passivity_bands(
+        passivity_violations_after,
+        passivity_check_f_max,
+    )
     if fit_frequency_points < frequency_points:
         diagnostics.append(
             QualityDiagnostic(
@@ -304,17 +325,23 @@ def _check_fit_metrics(
         )
     else:
         comparison_status = "PASS" if comparison_rms_error <= comparison_rms_limit else "WARN"
-        if profile == "signoff" and comparison_status == "WARN":
+        if profile == "signoff" and comparison_status == "WARN" and not z_required_for_signoff:
             comparison_status = "FAIL"
+        if z_required_for_signoff and comparison_status == "WARN":
+            comparison_status = "PASS"
         diagnostics.append(
             QualityDiagnostic(
                 id="comparison_rms_error",
                 status=comparison_status,
-                severity="info" if comparison_status == "PASS" else ("error" if comparison_status == "FAIL" else "warning"),
+                severity="warning"
+                if z_required_for_signoff and comparison_rms_error > comparison_rms_limit
+                else ("info" if comparison_status == "PASS" else ("error" if comparison_status == "FAIL" else "warning")),
                 metric=float(comparison_rms_error),
                 threshold=comparison_rms_limit,
                 message="Original-point comparison RMS error is within the configured threshold."
-                if comparison_status == "PASS"
+                if comparison_rms_error <= comparison_rms_limit
+                else "Original-point comparison RMS error exceeds the configured threshold, but Z-domain fit quality is the primary gate."
+                if z_required_for_signoff
                 else "Original-point comparison RMS error exceeds the configured threshold.",
                 recommendation=None
                 if comparison_status == "PASS"
@@ -322,14 +349,99 @@ def _check_fit_metrics(
             )
         )
 
+    z_log_gate_configured = z_log_magnitude_rms_limit is not None
+    z_absolute_gate_configured = z_comparison_rms_limit is not None or not z_log_gate_configured
+
+    if z_comparison_rms_error is not None or z_comparison_rms_limit is not None or (
+        z_required_for_signoff and z_absolute_gate_configured
+    ):
+        if z_comparison_rms_error is None:
+            z_status = "FAIL" if profile == "signoff" and z_required_for_signoff and z_absolute_gate_configured else "UNKNOWN"
+            diagnostics.append(
+                QualityDiagnostic(
+                    id="z_comparison_rms_error",
+                    status=z_status,
+                    severity="error" if z_status == "FAIL" else "warning",
+                    threshold=z_comparison_rms_limit,
+                    message="Original-point Z comparison RMS error is unavailable.",
+                    recommendation="Generate Z-domain comparison metrics before PDN signoff.",
+                )
+            )
+        else:
+            z_within_limit = z_comparison_rms_limit is None or z_comparison_rms_error <= z_comparison_rms_limit
+            z_status = (
+                "PASS"
+                if z_within_limit
+                else ("FAIL" if profile == "signoff" and z_required_for_signoff and z_absolute_gate_configured else "WARN")
+            )
+            diagnostics.append(
+                QualityDiagnostic(
+                    id="z_comparison_rms_error",
+                    status=z_status,
+                    severity="info" if z_status == "PASS" else ("error" if z_status == "FAIL" else "warning"),
+                    metric=float(z_comparison_rms_error),
+                    threshold=z_comparison_rms_limit,
+                    message="Original-point Z comparison RMS error is within the configured threshold."
+                    if z_within_limit
+                    else "Original-point Z comparison RMS error exceeds the configured threshold.",
+                    recommendation=None if z_within_limit else "Lower model order target assumptions, adjust fit weighting, or refit in Z-domain.",
+                )
+            )
+
+    if z_log_magnitude_rms_error is not None or z_log_magnitude_rms_limit is not None or (
+        z_required_for_signoff and z_log_gate_configured
+    ):
+        if z_log_magnitude_rms_error is None:
+            z_log_status = "FAIL" if profile == "signoff" and z_required_for_signoff and z_log_gate_configured else "UNKNOWN"
+            diagnostics.append(
+                QualityDiagnostic(
+                    id="z_log_magnitude_rms_error",
+                    status=z_log_status,
+                    severity="error" if z_log_status == "FAIL" else "warning",
+                    threshold=z_log_magnitude_rms_limit,
+                    message="Original-point Z log-magnitude RMS error is unavailable.",
+                    recommendation="Generate log-magnitude Z-domain comparison metrics before PDN signoff.",
+                )
+            )
+        else:
+            z_log_within_limit = (
+                z_log_magnitude_rms_limit is None or z_log_magnitude_rms_error <= z_log_magnitude_rms_limit
+            )
+            z_log_status = (
+                "PASS"
+                if z_log_within_limit
+                else ("FAIL" if profile == "signoff" and z_required_for_signoff and z_log_gate_configured else "WARN")
+            )
+            diagnostics.append(
+                QualityDiagnostic(
+                    id="z_log_magnitude_rms_error",
+                    status=z_log_status,
+                    severity="info" if z_log_status == "PASS" else ("error" if z_log_status == "FAIL" else "warning"),
+                    metric=float(z_log_magnitude_rms_error),
+                    threshold=z_log_magnitude_rms_limit,
+                    message="Original-point Z log-magnitude RMS error is within the configured threshold."
+                    if z_log_within_limit
+                    else "Original-point Z log-magnitude RMS error exceeds the configured threshold.",
+                    recommendation=None
+                    if z_log_within_limit
+                    else "Increase model order, adjust fit weighting, or fit the target band directly in Z-domain.",
+                )
+            )
+
     if not enforce_passivity:
+        passivity_checked = relevant_passivity_violations_after == []
         diagnostics.append(
             QualityDiagnostic(
                 id="passivity_enforcement",
-                status="FAIL" if profile == "signoff" else "WARN",
-                severity="error" if profile == "signoff" else "warning",
-                message="Passivity enforcement was skipped.",
-                recommendation="Treat this artifact as preview/debug only; enable passivity enforcement for handoff.",
+                status="PASS" if passivity_checked else ("FAIL" if profile == "signoff" else "WARN"),
+                severity="info" if passivity_checked else ("error" if profile == "signoff" else "warning"),
+                threshold=None if passivity_check_f_max is None else {"f_max_hz": passivity_check_f_max},
+                message="Passivity enforcement was skipped, but no violations intersect the checked frequency range."
+                if passivity_checked
+                else "Passivity enforcement was skipped.",
+                recommendation=None
+                if passivity_checked
+                else "Treat this artifact as preview/debug only; enable passivity enforcement for handoff.",
             )
         )
     elif passive_after_enforce is True:
@@ -339,6 +451,17 @@ def _check_fit_metrics(
                 status="PASS",
                 severity="info",
                 message="Model reports passive after enforcement.",
+            )
+        )
+    elif passive_after_enforce is False and relevant_passivity_violations_after == []:
+        diagnostics.append(
+            QualityDiagnostic(
+                id="passivity_after_enforce",
+                status="PASS",
+                severity="info",
+                threshold=None if passivity_check_f_max is None else {"f_max_hz": passivity_check_f_max},
+                message="Global passivity check reported out-of-band violations, but the checked frequency range is passive.",
+                recommendation=None,
             )
         )
     elif passive_after_enforce is False:
@@ -362,14 +485,15 @@ def _check_fit_metrics(
             )
         )
 
-    if passivity_violations_after:
+    if relevant_passivity_violations_after:
         diagnostics.append(
             QualityDiagnostic(
                 id="passivity_violation_bands_after",
                 status="FAIL",
                 severity="error",
-                metric=len(passivity_violations_after),
-                message="Passivity violation bands remain after enforcement.",
+                metric=len(relevant_passivity_violations_after),
+                threshold=None if passivity_check_f_max is None else {"f_max_hz": passivity_check_f_max},
+                message="Passivity violation bands remain in the checked frequency range.",
                 recommendation="Increase passivity sample density or revisit fitting order and conditioning.",
             )
         )
@@ -377,14 +501,15 @@ def _check_fit_metrics(
         diagnostics.append(
             QualityDiagnostic(
                 id="passivity_violation_bands_after",
-                status="PASS" if passivity_violations_after == [] else "UNKNOWN",
-                severity="info" if passivity_violations_after == [] else "warning",
-                metric=0 if passivity_violations_after == [] else None,
-                message="No passivity violation bands were reported after enforcement."
-                if passivity_violations_after == []
+                status="PASS" if relevant_passivity_violations_after == [] else "UNKNOWN",
+                severity="info" if relevant_passivity_violations_after == [] else "warning",
+                metric=0 if relevant_passivity_violations_after == [] else None,
+                threshold=None if passivity_check_f_max is None else {"f_max_hz": passivity_check_f_max},
+                message="No passivity violation bands intersect the checked frequency range."
+                if relevant_passivity_violations_after == []
                 else "Passivity violation bands after enforcement are unavailable.",
                 recommendation=None
-                if passivity_violations_after == []
+                if relevant_passivity_violations_after == []
                 else "Use strict quality mode only after passivity violation bands can be evaluated.",
             )
         )
@@ -442,9 +567,15 @@ def build_quality_report(
     poles: Any = None,
     profile: str = "explore",
     comparison_rms_limit: float = 0.05,
+    z_comparison_rms_error: float | None = None,
+    z_comparison_rms_limit: float | None = None,
+    z_log_magnitude_rms_error: float | None = None,
+    z_log_magnitude_rms_limit: float | None = None,
+    z_required_for_signoff: bool = False,
     passivity_epsilon: float = 1e-6,
     stability_epsilon: float = 1e-12,
     require_dc: bool = False,
+    passivity_check_f_max: float | None = None,
 ) -> QualityReport:
     if profile not in {"explore", "signoff"}:
         raise ValueError(f"Unsupported quality profile '{profile}'")
@@ -459,11 +590,17 @@ def build_quality_report(
             fit_frequency_points=fit_frequency_points,
             comparison_rms_error=comparison_rms_error,
             comparison_rms_limit=comparison_rms_limit,
+            z_comparison_rms_error=z_comparison_rms_error,
+            z_comparison_rms_limit=z_comparison_rms_limit,
+            z_log_magnitude_rms_error=z_log_magnitude_rms_error,
+            z_log_magnitude_rms_limit=z_log_magnitude_rms_limit,
+            z_required_for_signoff=z_required_for_signoff,
             passive_after_enforce=passive_after_enforce,
             passivity_violations_after=passivity_violations_after,
             enforce_passivity=enforce_passivity,
             poles=poles,
             stability_epsilon=stability_epsilon,
+            passivity_check_f_max=passivity_check_f_max,
         )
     )
 
@@ -479,7 +616,7 @@ def build_quality_report(
     return QualityReport(
         profile=profile,
         status=status,
-        allowed_for=_allowed_for(status),
+        allowed_for=_allowed_for(status, band_limited=passivity_check_f_max is not None),
         blocking_reasons=blocking_reasons,
         warnings=warnings,
         diagnostics=diagnostics,

@@ -57,7 +57,15 @@ Verify the synthetic-real HSPICE corpus golden reports:
 python -m pytest tests/test_hspice_corpus_golden.py -v
 ```
 
-Generate an S-parameter fitted SPICE subcircuit plus JSON and HTML fit reports:
+## S-Parameter Fitting
+
+`fit-sparam` is now centered on the local IdEM-fast baseline. Older `compact` and
+`high-accuracy` S-parameter presets are retired from this command path because
+the active direction is native vector fitting with low-order common poles,
+streaming reciprocal relocation, lightweight Touchstone loading, and targeted
+high-frequency pole repair.
+
+The normal command is intentionally short:
 
 ```powershell
 python -m agent_spice.cli fit-sparam tests/fixtures/sparam/simple_through.s2p --output runs-sparam/simple_through.sp --report runs-sparam/fit_report.json --html-report runs-sparam/fit_report.html --log runs-sparam/fit.log
@@ -67,24 +75,90 @@ Test-Path runs-sparam/fit_report.html
 Test-Path runs-sparam/fit.log
 ```
 
-Use the report's `quality.status`, `quality.blocking_reasons`, and `diagnostics[]` to decide whether the model is only for exploration or is a transient handoff candidate. For CI/signoff, enable the quality gate explicitly:
+For large-port Touchstone files (`.s60p`, `.s91p`, `.s163p`, etc.) the default
+expands to the current IdEM-fast large-port recipe:
+
+- native vector fitting backend
+- manual low-order pole topology with log-spaced initialization
+- two high-frequency complex pole pairs with damping `0.03`
+- streaming reciprocal pole relocation
+- lightweight Touchstone parsing
+- at most 256 fit frequency points
+- 14 vector-fit iterations per trial
+- auto-order candidates `9,10,12,14,17,20`
+- target mean S-domain RMS `0.002`
+- passivity check/enforcement skipped by default for fitting speed
+- when enabled, native passivity defaults to the Touchstone data band
+
+Example for a large package model:
 
 ```powershell
-python -m agent_spice.cli fit-sparam .\path\to\model.s2p --output runs-sparam/model.sp --report runs-sparam/fit_report.json --html-report runs-sparam/fit_report.html --log runs-sparam/fit.log --quality-profile signoff --fail-on-quality --max-comparison-rms-error 0.05 --require-dc
+python -m agent_spice.cli fit-sparam .\user_input\spara\Test16.s91p `
+  --output runs-sparam\Test16_s91p\model.sp `
+  --report runs-sparam\Test16_s91p\fit_report.json `
+  --html-report runs-sparam\Test16_s91p\fit_report.html `
+  --log runs-sparam\Test16_s91p\fit.log
+```
+
+The JSON report records the selected order in `auto_model_order_selected`, every
+trial in `auto_model_order_trials`, the stop reason in
+`auto_model_order_stop_reason`, peak memory in `peak_memory_mb`, and elapsed
+time in `elapsed_seconds`.
+
+Recent validation against IdEM-aligned large-port cases:
+
+| Case | Selected order | Mean S RMS | Trial time | Peak memory |
+| --- | ---: | ---: | ---: | ---: |
+| `Test13.s60p` | 9 | 0.000593962 | 5.47 s | 132.5 MB |
+| `Test16.s91p` | 10 | 0.001819411 | 32.25 s total trial time | 251.3 MB |
+
+The defaults are tuned for the current large-port path, not for exhaustive
+accuracy sweeps. Override only the auto-order boundary first:
+
+```powershell
+python -m agent_spice.cli fit-sparam .\path\to\model.s91p `
+  --output runs-sparam\model.sp `
+  --auto-model-order-candidates 9,10,12,14,17,20,24 `
+  --auto-target-mean-rms-error 0.0015
+```
+
+Passivity is deliberately off by default in the fast fitting path because the
+current bottleneck work is algorithmic fitting order, speed, and memory. When
+enabled on the native backend, the low-memory passivity check/enforcement is
+limited to the input Touchstone frequency range unless `--passivity-f-max` is
+provided as an advanced override. The native enforcement path uses an adaptive
+active-variable QP budget up to `--passivity-active-variables 3072` by default.
+To run passivity diagnostics or enforcement explicitly:
+
+```powershell
+python -m agent_spice.cli fit-sparam .\path\to\model.s91p `
+  --output runs-sparam\model_passive.sp `
+  --check-passivity `
+  --enforce-passivity
+```
+
+Use the report's `quality.status`, `quality.blocking_reasons`, and `diagnostics[]`
+to decide whether the model is only for exploration or is a transient handoff
+candidate. For CI/signoff, enable the quality gate explicitly:
+
+```powershell
+python -m agent_spice.cli fit-sparam .\path\to\model.s91p `
+  --output runs-sparam\model.sp `
+  --report runs-sparam\fit_report.json `
+  --html-report runs-sparam\fit_report.html `
+  --log runs-sparam\fit.log `
+  --quality-profile signoff `
+  --fail-on-quality
 ```
 
 During exploration, add `--allow-quality-warnings` if WARN diagnostics should still return exit code 0 while remaining visible in the reports.
 
 When using Python module execution, use the underscore package name `agent_spice.cli`. The hyphenated `agent-spice` name is only for the installed console script.
 
-For large Touchstone files, start with a bounded fit and inspect `runs-sparam/fit.log` while it is running:
-
-```powershell
-python -m agent_spice.cli fit-sparam .\path\to\large.s16p --output runs-sparam/large.sp --report runs-sparam/fit_report.json --html-report runs-sparam/fit_report.html --log runs-sparam/fit.log --fit-f-min 1e6 --fit-f-max 5e9 --fit-max-frequency-points 512 --model-order-max 40 --target-error 0.05 --fit-max-iterations 30 --passivity-samples 80
-Get-Content runs-sparam/fit.log -Wait
-```
-
-More tuning notes are in `docs/sparam-fit-performance.md`. The next-stage quality gate plan is in `docs/sparam-quality-gate-plan.md`.
+More historical tuning notes are in `docs/sparam-fit-performance.md`. Some older
+sections mention retired presets and should be treated as experiment logs rather
+than the current recommended CLI path. The next-stage quality gate plan is in
+`docs/sparam-quality-gate-plan.md`.
 
 After installing solvers, run the ngspice execution smoke:
 

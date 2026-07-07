@@ -1,19 +1,53 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from html import escape
 import inspect
 import json
 import logging
 import math
 from pathlib import Path
+import re
+import shutil
+import threading
+import time
 from typing import Any, Callable
 
 import numpy as np
-import skrf as rf
-from skrf.vectorFitting import VectorFitting
 
 from agent_spice.sparam.quality import SCHEMA_VERSION, QualityReport, build_quality_report
+
+
+class _LazyRf:
+    def Network(self, *args: Any, **kwargs: Any) -> Any:
+        import skrf as rf
+
+        return rf.Network(*args, **kwargs)
+
+
+class _LazyVectorFitting:
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        from skrf.vectorFitting import VectorFitting as SkRfVectorFitting
+
+        return SkRfVectorFitting(*args, **kwargs)
+
+
+rf = _LazyRf()
+VectorFitting = _LazyVectorFitting()
+
+
+def _create_vector_fitting(network: Any, config: "SParamFitConfig") -> Any:
+    if config.vector_fit_backend == "skrf":
+        return VectorFitting(network)
+    if config.vector_fit_backend == "native":
+        from .native_vf import NativeVectorFitting
+
+        vector_fit = NativeVectorFitting(network)
+        vector_fit.high_frequency_complex_pair_count = config.high_frequency_complex_pair_count
+        vector_fit.high_frequency_complex_pair_damping = config.high_frequency_complex_pair_damping
+        vector_fit.high_frequency_complex_pair_lower_fraction = config.high_frequency_complex_pair_lower_fraction
+        return vector_fit
+    raise ValueError("vector_fit_backend must be 'skrf' or 'native'")
 
 
 @dataclass(frozen=True)
@@ -38,8 +72,11 @@ class SParamFitConfig:
     nu_samples: float = 1.0
     max_iterations: int | None = None
     parameter_type: str = "s"
+    check_passivity: bool = True
     enforce_passivity: bool = True
     passivity_samples: int = 200
+    passivity_max_iterations: int = 1
+    passivity_active_variables: int = 3072
     passivity_f_max: float | None = None
     preserve_dc: bool = True
     subckt_name: str = "s_equivalent"
@@ -48,10 +85,22 @@ class SParamFitConfig:
     fit_max_frequency_points: int | None = None
     fit_f_min: float | None = None
     fit_f_max: float | None = None
+    relocation_backend: str = "skrf"
+    use_lightweight_network: bool = False
+    vector_fit_backend: str = "skrf"
+    high_frequency_complex_pair_count: int = 0
+    high_frequency_complex_pair_damping: float = 0.03
+    high_frequency_complex_pair_lower_fraction: float = 0.68
     quality_profile: str = "explore"
     max_comparison_rms_error: float = 0.05
     max_passivity_epsilon: float = 1e-6
     require_dc: bool = False
+    exporter: str = "skrf"
+    passivity_perturb_constant: bool = False
+    passivity_perturb_poles: bool = False
+    passivity_constant_weight: float = 1.0
+    passivity_pole_weight: float = 1.0
+
 
 
 @dataclass(frozen=True)
@@ -76,6 +125,21 @@ class SParamFitResult:
     passivity_violations_before: list[list[float]] | None
     passivity_violations_after: list[list[float]] | None
     quality_report: QualityReport
+    passivity_max_sigma_before: float | None = None
+    passivity_max_sigma_after: float | None = None
+    passivity_max_sigma_frequency_hz_before: float | None = None
+    passivity_max_sigma_frequency_hz_after: float | None = None
+    passivity_enforcement_diagnostics: list[dict[str, Any]] | None = None
+    comparison_mean_rms_error: float | None = None
+    elapsed_seconds: float | None = None
+    peak_memory_mb: float | None = None
+    stored_pole_count: int | None = None
+    real_pole_count: int | None = None
+    complex_pair_count: int | None = None
+    expanded_model_order: int | None = None
+    auto_model_order_trials: list[dict[str, Any]] | None = None
+    auto_model_order_selected: int | None = None
+    auto_model_order_stop_reason: str | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Path):
@@ -107,11 +171,163 @@ class SParamFitResult:
             "rms_error_scope": "fit_frequency_points",
             "comparison_rms_error": self.comparison_rms_error,
             "comparison_rms_error_scope": "original_frequency_points",
+            "comparison_mean_rms_error": self.comparison_mean_rms_error,
+            "elapsed_seconds": self.elapsed_seconds,
+            "peak_memory_mb": self.peak_memory_mb,
+            "stored_pole_count": self.stored_pole_count,
+            "real_pole_count": self.real_pole_count,
+            "complex_pair_count": self.complex_pair_count,
+            "expanded_model_order": self.expanded_model_order,
+            "auto_model_order_trials": self.auto_model_order_trials,
+            "auto_model_order_selected": self.auto_model_order_selected,
+            "auto_model_order_stop_reason": self.auto_model_order_stop_reason,
             "passive_before_enforce": self.passive_before_enforce,
             "passive_after_enforce": self.passive_after_enforce,
             "passivity_violations_before": self.passivity_violations_before,
             "passivity_violations_after": self.passivity_violations_after,
+            "passivity_max_sigma_before": self.passivity_max_sigma_before,
+            "passivity_max_sigma_after": self.passivity_max_sigma_after,
+            "passivity_max_sigma_frequency_hz_before": self.passivity_max_sigma_frequency_hz_before,
+            "passivity_max_sigma_frequency_hz_after": self.passivity_max_sigma_frequency_hz_after,
+            "passivity_enforcement_diagnostics": self.passivity_enforcement_diagnostics,
         }
+
+
+@dataclass(frozen=True)
+class _LightweightSNetwork:
+    f: np.ndarray
+    s: np.ndarray
+    z0: np.ndarray
+    name: str = "network"
+
+    @property
+    def nports(self) -> int:
+        return int(self.s.shape[1])
+
+    @property
+    def frequency(self) -> "_LightweightSNetwork":
+        return self
+
+    def __getitem__(self, indices: Any) -> "_LightweightSNetwork":
+        return self.subset(indices)
+
+    def subset(self, indices: Any, name: str | None = None) -> "_LightweightSNetwork":
+        index_array = np.asarray(indices)
+        return _LightweightSNetwork(
+            f=np.asarray(self.f)[index_array],
+            s=np.asarray(self.s)[index_array, :, :],
+            z0=_selected_z0(self, index_array),
+            name=name or self.name,
+        )
+
+    def is_passive(self, *args: Any, **kwargs: Any) -> bool:
+        return False
+
+
+def _touchstone_ports_from_suffix(path: Path) -> int:
+    match = re.search(r"\.s(\d+)p$", path.name.lower())
+    if match is None:
+        raise ValueError(f"Cannot infer Touchstone port count from suffix: {path}")
+    return int(match.group(1))
+
+
+def _load_touchstone_s_ri_lightweight(path: Path) -> _LightweightSNetwork:
+    ports = _touchstone_ports_from_suffix(path)
+    expected_values = 1 + 2 * ports * ports
+    frequency_scale = 1.0
+    reference_ohms = 50.0
+    header_seen = False
+    values: list[float] = []
+    frequencies: list[float] = []
+    responses: list[np.ndarray] = []
+
+    scales = {
+        "hz": 1.0,
+        "khz": 1.0e3,
+        "mhz": 1.0e6,
+        "ghz": 1.0e9,
+    }
+
+    with path.open("r", encoding="utf-8", errors="ignore") as handle:
+        for raw_line in handle:
+            line = raw_line.split("!", 1)[0].strip()
+            if not line:
+                continue
+            if line.startswith("#"):
+                tokens = line[1:].lower().split()
+                if len(tokens) < 3:
+                    raise ValueError(f"Unsupported Touchstone option line: {line}")
+                unit, parameter, data_format = tokens[:3]
+                if unit not in scales or parameter != "s" or data_format != "ri":
+                    raise ValueError("Lightweight Touchstone loader only supports '# Hz S RI R ...' style data")
+                frequency_scale = scales[unit]
+                if "r" in tokens:
+                    r_index = tokens.index("r")
+                    if r_index + 1 < len(tokens):
+                        reference_ohms = float(tokens[r_index + 1])
+                header_seen = True
+                continue
+            if not header_seen:
+                continue
+
+            values.extend(float(item) for item in line.split())
+            while len(values) >= expected_values:
+                point = values[:expected_values]
+                del values[:expected_values]
+                frequencies.append(point[0] * frequency_scale)
+                pairs = point[1:]
+                complex_values = [complex(pairs[i], pairs[i + 1]) for i in range(0, len(pairs), 2)]
+                responses.append(np.asarray(complex_values, dtype=complex).reshape(ports, ports))
+
+    if values:
+        raise ValueError(f"Incomplete Touchstone data block in {path}")
+    if not frequencies:
+        raise ValueError(f"No S-parameter samples found in {path}")
+    f = np.asarray(frequencies, dtype=float)
+    s = np.asarray(responses, dtype=complex)
+    z0 = np.full((len(frequencies), ports), complex(reference_ohms), dtype=complex)
+    return _LightweightSNetwork(f=f, s=s, z0=z0, name=path.stem)
+
+
+class _FitResourceMonitor:
+    def __init__(self, interval_seconds: float = 0.05):
+        self.interval_seconds = interval_seconds
+        self.elapsed_seconds: float | None = None
+        self.peak_memory_mb: float | None = None
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+        self._started = 0.0
+        self._process = None
+
+    def __enter__(self) -> "_FitResourceMonitor":
+        self._started = time.perf_counter()
+        try:
+            import psutil
+
+            self._process = psutil.Process()
+            self.peak_memory_mb = self._rss_mb()
+            self._thread = threading.Thread(target=self._sample_loop, daemon=True)
+            self._thread.start()
+        except Exception:
+            self._process = None
+        return self
+
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        self.elapsed_seconds = time.perf_counter() - self._started
+        if self._thread is not None:
+            self._stop.set()
+            self._thread.join(timeout=1.0)
+        if self._process is not None:
+            current = self._rss_mb()
+            self.peak_memory_mb = current if self.peak_memory_mb is None else max(self.peak_memory_mb, current)
+
+    def _rss_mb(self) -> float:
+        return float(self._process.memory_info().rss) / (1024.0 * 1024.0)
+
+    def _sample_loop(self) -> None:
+        while not self._stop.wait(self.interval_seconds):
+            current = self._rss_mb()
+            self.peak_memory_mb = current if self.peak_memory_mb is None else max(self.peak_memory_mb, current)
 
 
 def _reference_impedance(network: Any) -> list[float]:
@@ -167,6 +383,9 @@ def _select_fit_network(network: Any, config: SParamFitConfig) -> Any:
 
     if len(indices) == len(network.f) and np.array_equal(indices, np.arange(len(network.f))):
         return network
+
+    if isinstance(network, _LightweightSNetwork):
+        return network.subset(indices, name=f"{getattr(network, 'name', 'network')}_fit_subset")
 
     return rf.Network(
         frequency=network.frequency[indices],
@@ -327,6 +546,42 @@ def _comparison_rms_error(network: Any, vector_fit: VectorFitting, parameter_typ
         return None
 
 
+def _mean_rms_error_from_sum_style(value: float | None, ports: int) -> float | None:
+    if value is None:
+        return None
+    if ports <= 0:
+        return float(value)
+    return float(value) / float(ports)
+
+
+def _pole_summary(vector_fit: Any) -> dict[str, int | None]:
+    poles = getattr(vector_fit, "poles", None)
+    if poles is None:
+        return {
+            "stored_pole_count": None,
+            "real_pole_count": None,
+            "complex_pair_count": None,
+            "expanded_model_order": None,
+        }
+    try:
+        pole_array = np.asarray(poles, dtype=complex).reshape(-1)
+    except Exception:
+        return {
+            "stored_pole_count": None,
+            "real_pole_count": None,
+            "complex_pair_count": None,
+            "expanded_model_order": None,
+        }
+    real_count = int(np.count_nonzero(np.isclose(pole_array.imag, 0.0)))
+    complex_pair_count = int(len(pole_array) - real_count)
+    return {
+        "stored_pole_count": int(len(pole_array)),
+        "real_pole_count": real_count,
+        "complex_pair_count": complex_pair_count,
+        "expanded_model_order": real_count + 2 * complex_pair_count,
+    }
+
+
 def _quality_summary(result: SParamFitResult) -> dict[str, Any]:
     if result.passive_after_enforce is True:
         passivity = "passive"
@@ -341,6 +596,7 @@ def _quality_summary(result: SParamFitResult) -> dict[str, Any]:
             "rms_error_scope": "fit_frequency_points",
             "comparison_rms_error": result.comparison_rms_error,
             "comparison_rms_error_scope": "original_frequency_points",
+            "comparison_mean_rms_error": result.comparison_mean_rms_error,
             "passivity": passivity,
             "passivity_enforcement_enabled": result.config.enforce_passivity,
             "violation_bands_after": len(result.passivity_violations_after or []),
@@ -621,8 +877,40 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
 
 
 def _fit_model(vector_fit: VectorFitting, config: SParamFitConfig) -> None:
+    if config.relocation_backend not in {"skrf", "streaming", "streaming-lowmem", "streaming-reciprocal"}:
+        raise ValueError(
+            "relocation_backend must be 'skrf', 'streaming', 'streaming-lowmem', or 'streaming-reciprocal'"
+        )
     if config.max_iterations is not None and hasattr(vector_fit, "max_iterations"):
         vector_fit.max_iterations = config.max_iterations
+    network = getattr(vector_fit, "network", None)
+    original_is_passive = getattr(network, "is_passive", None)
+    if not config.check_passivity and original_is_passive is not None:
+        try:
+            setattr(network, "is_passive", lambda *args, **kwargs: False)
+        except Exception:
+            original_is_passive = None
+    try:
+        if config.relocation_backend in {"streaming", "streaming-lowmem", "streaming-reciprocal"}:
+            from .skrf_streaming import streaming_relocation_patch
+
+            with streaming_relocation_patch(
+                type(vector_fit),
+                low_memory=config.relocation_backend == "streaming-lowmem",
+                reciprocal=config.relocation_backend == "streaming-reciprocal",
+            ):
+                _fit_model_inner(vector_fit, config)
+        else:
+            _fit_model_inner(vector_fit, config)
+    finally:
+        if original_is_passive is not None:
+            try:
+                setattr(network, "is_passive", original_is_passive)
+            except Exception:
+                pass
+
+
+def _fit_model_inner(vector_fit: VectorFitting, config: SParamFitConfig) -> None:
     if config.mode == "auto":
         _call_with_supported_kwargs(
             vector_fit.auto_fit,
@@ -656,6 +944,39 @@ def _fit_model(vector_fit: VectorFitting, config: SParamFitConfig) -> None:
     raise ValueError(f"Unsupported S-parameter fit mode '{config.mode}'")
 
 
+def _uses_low_memory_passivity(config: SParamFitConfig) -> bool:
+    return config.parameter_type.lower() == "s" and (config.vector_fit_backend == "native" or config.exporter == "idem")
+
+
+def _effective_passivity_f_max(config: SParamFitConfig, network: Any) -> float | None:
+    if config.passivity_f_max is not None:
+        return config.passivity_f_max
+    if _uses_low_memory_passivity(config):
+        freqs = getattr(network, "f", None)
+        if freqs is not None and len(freqs) > 0:
+            return float(freqs[-1])
+    return None
+
+
+def _native_manual_auto_order_config(base_config: SParamFitConfig, order: int) -> SParamFitConfig:
+    trial_config = replace(base_config, model_order_max=order)
+    if base_config.mode != "manual" or base_config.vector_fit_backend != "native":
+        return trial_config
+
+    high_pairs = max(0, int(base_config.high_frequency_complex_pair_count))
+    if high_pairs >= 2:
+        if order <= 9:
+            return replace(trial_config, n_poles_real=0, n_poles_cmplx=2)
+        if order <= 10:
+            return replace(trial_config, n_poles_real=4, n_poles_cmplx=2)
+        if order <= 12:
+            return replace(trial_config, n_poles_real=4, n_poles_cmplx=3)
+
+    n_poles_real = 0 if order % 2 == 0 else 1
+    n_poles_cmplx = max(1, (order - n_poles_real) // 2)
+    return replace(trial_config, n_poles_real=n_poles_real, n_poles_cmplx=n_poles_cmplx)
+
+
 def fit_touchstone_to_spice(
     touchstone_path: Path,
     output_path: Path,
@@ -665,9 +986,16 @@ def fit_touchstone_to_spice(
     log_path: Path | None = None,
 ) -> SParamFitResult:
     config = config or SParamFitConfig()
+    resource_monitor = _FitResourceMonitor()
+    resource_monitor.__enter__()
     with _ProgressLog(log_path) as progress:
         progress.info(f"loading Touchstone: {touchstone_path}")
-        network = rf.Network(str(touchstone_path))
+        if config.use_lightweight_network:
+            if config.parameter_type.lower() != "s":
+                raise ValueError("use_lightweight_network only supports S-parameter fitting")
+            network = _load_touchstone_s_ri_lightweight(touchstone_path)
+        else:
+            network = rf.Network(str(touchstone_path))
         progress.info(
             f"loaded Touchstone: ports={network.nports}, frequency_points={len(network.f)}, "
             f"frequency_range={_frequency_range(network)}"
@@ -680,30 +1008,123 @@ def fit_touchstone_to_spice(
                 f"using frequency subset for vector fit: {len(fit_network.f)} of {len(network.f)} points, "
                 f"range={_frequency_range(fit_network)}, selection={_frequency_selection_summary(config)}"
             )
-        vector_fit = VectorFitting(fit_network)
+        vector_fit = _create_vector_fitting(fit_network, config)
         progress.info(f"starting vector fit: mode={config.mode}, parameter_type={config.parameter_type}")
         _fit_model(vector_fit, config)
         progress.info("vector fit finished")
-        progress.info("checking passivity before enforcement")
-        passive_before = _safe_bool(vector_fit.is_passive, parameter_type=config.parameter_type)
-        violations_before = _safe_passivity_violations(vector_fit, config.parameter_type)
-        if config.enforce_passivity:
-            progress.info(
-                f"starting passivity enforcement: n_samples={config.passivity_samples}, "
-                f"f_max={config.passivity_f_max}, preserve_dc={config.preserve_dc}"
+        use_low_memory_passivity = _uses_low_memory_passivity(config)
+        passivity_f_max = _effective_passivity_f_max(config, network)
+        if not config.check_passivity:
+            progress.info("passivity checks skipped")
+            passive_before = None
+            violations_before = None
+            passivity_max_sigma_before = None
+            passivity_max_sigma_frequency_before = None
+            if config.enforce_passivity:
+                if use_low_memory_passivity:
+                    progress.info("starting passivity enforcement using low-memory residue perturbation")
+                    from .passivity import enforce_passivity_hamiltonian
+
+                    enforce_passivity_hamiltonian(
+                        vector_fit,
+                        nports=network.nports,
+                        epsilon=config.max_passivity_epsilon,
+                        max_iterations=config.passivity_max_iterations,
+                        f_max=passivity_f_max,
+                        max_violation_samples=config.passivity_samples,
+                        max_active_variables=config.passivity_active_variables,
+                        perturb_constant=config.passivity_perturb_constant,
+                        perturb_poles=config.passivity_perturb_poles,
+                        constant_weight=config.passivity_constant_weight,
+                        pole_weight=config.passivity_pole_weight,
+                    )
+                else:
+                    progress.info(
+                        f"starting passivity enforcement: n_samples={config.passivity_samples}, "
+                        f"f_max={config.passivity_f_max}, preserve_dc={config.preserve_dc}"
+                    )
+                    _call_with_supported_kwargs(
+                        vector_fit.passivity_enforce,
+                        n_samples=config.passivity_samples,
+                        f_max=config.passivity_f_max,
+                        parameter_type=config.parameter_type,
+                        preserve_dc=config.preserve_dc,
+                    )
+                progress.info("passivity enforcement finished")
+            else:
+                progress.info("passivity enforcement skipped")
+            passive_after = None
+            violations_after = None
+            passivity_max_sigma_after = None
+            passivity_max_sigma_frequency_after = None
+        elif use_low_memory_passivity:
+            progress.info("checking passivity before enforcement using low-memory Hamiltonian method")
+            from .passivity import check_vector_fit_passivity_hamiltonian, enforce_passivity_hamiltonian
+            report_before = check_vector_fit_passivity_hamiltonian(
+                vector_fit,
+                nports=network.nports,
+                epsilon=config.max_passivity_epsilon,
+                f_max=passivity_f_max,
             )
-            _call_with_supported_kwargs(
-                vector_fit.passivity_enforce,
-                n_samples=config.passivity_samples,
-                f_max=config.passivity_f_max,
-                parameter_type=config.parameter_type,
-                preserve_dc=config.preserve_dc,
+            passive_before = (len(report_before.violation_bands_hz) == 0)
+            violations_before = report_before.violation_bands_hz
+            passivity_max_sigma_before = report_before.max_sigma
+            passivity_max_sigma_frequency_before = report_before.max_sigma_frequency_hz
+            if config.enforce_passivity:
+                progress.info("starting passivity enforcement using low-memory residue perturbation")
+                enforce_passivity_hamiltonian(
+                    vector_fit,
+                    nports=network.nports,
+                    epsilon=config.max_passivity_epsilon,
+                    max_iterations=config.passivity_max_iterations,
+                    f_max=passivity_f_max,
+                    max_violation_samples=config.passivity_samples,
+                    max_active_variables=config.passivity_active_variables,
+                    perturb_constant=config.passivity_perturb_constant,
+                    perturb_poles=config.passivity_perturb_poles,
+                    constant_weight=config.passivity_constant_weight,
+                    pole_weight=config.passivity_pole_weight,
+                )
+                progress.info("passivity enforcement finished")
+            else:
+                progress.info("passivity enforcement skipped")
+            progress.info("checking passivity after enforcement using low-memory Hamiltonian method")
+            report_after = check_vector_fit_passivity_hamiltonian(
+                vector_fit,
+                nports=network.nports,
+                epsilon=config.max_passivity_epsilon,
+                f_max=passivity_f_max,
             )
-            progress.info("passivity enforcement finished")
+            passive_after = (len(report_after.violation_bands_hz) == 0)
+            violations_after = report_after.violation_bands_hz
+            passivity_max_sigma_after = report_after.max_sigma
+            passivity_max_sigma_frequency_after = report_after.max_sigma_frequency_hz
         else:
-            progress.info("passivity enforcement skipped")
-        passive_after = _safe_bool(vector_fit.is_passive, parameter_type=config.parameter_type)
-        violations_after = _safe_passivity_violations(vector_fit, config.parameter_type)
+            progress.info("checking passivity before enforcement")
+            passive_before = _safe_bool(vector_fit.is_passive, parameter_type=config.parameter_type)
+            violations_before = _safe_passivity_violations(vector_fit, config.parameter_type)
+            passivity_max_sigma_before = None
+            passivity_max_sigma_frequency_before = None
+            if config.enforce_passivity:
+                progress.info(
+                    f"starting passivity enforcement: n_samples={config.passivity_samples}, "
+                    f"f_max={config.passivity_f_max}, preserve_dc={config.preserve_dc}"
+                )
+                _call_with_supported_kwargs(
+                    vector_fit.passivity_enforce,
+                    n_samples=config.passivity_samples,
+                    f_max=config.passivity_f_max,
+                    parameter_type=config.parameter_type,
+                    preserve_dc=config.preserve_dc,
+                )
+                progress.info("passivity enforcement finished")
+            else:
+                progress.info("passivity enforcement skipped")
+            passive_after = _safe_bool(vector_fit.is_passive, parameter_type=config.parameter_type)
+            violations_after = _safe_passivity_violations(vector_fit, config.parameter_type)
+            passivity_max_sigma_after = None
+            passivity_max_sigma_frequency_after = None
+
         rms_error = _safe_rms_error(vector_fit, config.parameter_type)
         comparison_rms_error = _comparison_rms_error(network, vector_fit, config.parameter_type)
         quality_report = build_quality_report(
@@ -722,13 +1143,25 @@ def fit_touchstone_to_spice(
         )
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        progress.info(f"writing SPICE subcircuit: {output_path}")
-        _call_with_supported_kwargs(
-            vector_fit.write_spice_subcircuit_s,
-            str(output_path),
-            fitted_model_name=config.subckt_name,
-            create_reference_pins=config.create_reference_pins,
-        )
+        if config.exporter == "idem":
+            progress.info(f"writing IDEM-style SPICE subcircuit: {output_path}")
+            write_idem_spice_subcircuit(
+                vector_fit,
+                output_path,
+                subcircuit_name=config.subckt_name,
+                Z0=_reference_impedance(network),
+            )
+        else:
+            progress.info(f"writing SPICE subcircuit: {output_path}")
+            _call_with_supported_kwargs(
+                vector_fit.write_spice_subcircuit_s,
+                str(output_path),
+                fitted_model_name=config.subckt_name,
+                create_reference_pins=config.create_reference_pins,
+            )
+        resource_monitor.__exit__(None, None, None)
+
+        pole_summary = _pole_summary(vector_fit)
         result = SParamFitResult(
             touchstone_path=touchstone_path,
             spice_path=output_path,
@@ -749,7 +1182,16 @@ def fit_touchstone_to_spice(
             passive_after_enforce=passive_after,
             passivity_violations_before=violations_before,
             passivity_violations_after=violations_after,
+            passivity_max_sigma_before=passivity_max_sigma_before,
+            passivity_max_sigma_after=passivity_max_sigma_after,
+            passivity_max_sigma_frequency_hz_before=passivity_max_sigma_frequency_before,
+            passivity_max_sigma_frequency_hz_after=passivity_max_sigma_frequency_after,
+            passivity_enforcement_diagnostics=getattr(vector_fit, "passivity_enforcement_diagnostics", None),
             quality_report=quality_report,
+            comparison_mean_rms_error=_mean_rms_error_from_sum_style(comparison_rms_error, network.nports),
+            elapsed_seconds=resource_monitor.elapsed_seconds,
+            peak_memory_mb=resource_monitor.peak_memory_mb,
+            **pole_summary,
         )
         if report_path is not None:
             progress.info(f"writing JSON report: {report_path}")
@@ -764,3 +1206,294 @@ def fit_touchstone_to_spice(
             )
         progress.info("fit-sparam completed")
         return result
+
+
+def fit_touchstone_to_spice_auto_order(
+    touchstone_path: Path,
+    output_path: Path,
+    *,
+    config: SParamFitConfig | None = None,
+    order_candidates: list[int],
+    target_mean_rms_error: float,
+    report_path: Path | None = None,
+    html_report_path: Path | None = None,
+    log_path: Path | None = None,
+) -> SParamFitResult:
+    if not order_candidates:
+        raise ValueError("order_candidates must contain at least one order")
+    if target_mean_rms_error <= 0.0:
+        raise ValueError("target_mean_rms_error must be > 0")
+
+    base_config = config or SParamFitConfig()
+    trials: list[dict[str, Any]] = []
+    selected: SParamFitResult | None = None
+    stop_reason = "exhausted"
+    output_stem = output_path.stem
+
+    for order in order_candidates:
+        if order < 1:
+            raise ValueError("order candidates must be >= 1")
+        trial_dir = output_path.parent / f"{output_stem}_order{order}"
+        trial_output = trial_dir / output_path.name
+        trial_report = trial_dir / "fit_report.json"
+        trial_html = trial_dir / "fit_report.html" if html_report_path is not None else None
+        trial_config = _native_manual_auto_order_config(base_config, order)
+        trial = fit_touchstone_to_spice(
+            touchstone_path,
+            trial_output,
+            config=trial_config,
+            report_path=trial_report,
+            html_report_path=trial_html,
+            log_path=log_path,
+        )
+        mean_rms = trial.comparison_mean_rms_error
+        trials.append(
+            {
+                "order": order,
+                "comparison_rms_error": trial.comparison_rms_error,
+                "comparison_mean_rms_error": mean_rms,
+                "elapsed_seconds": trial.elapsed_seconds,
+                "peak_memory_mb": trial.peak_memory_mb,
+                "stored_pole_count": trial.stored_pole_count,
+                "real_pole_count": trial.real_pole_count,
+                "complex_pair_count": trial.complex_pair_count,
+                "expanded_model_order": trial.expanded_model_order,
+                "spice_path": str(trial.spice_path),
+                "report_path": str(trial.report_path) if trial.report_path is not None else None,
+            }
+        )
+        selected = trial
+        if mean_rms is not None and mean_rms <= target_mean_rms_error:
+            stop_reason = "target_met"
+            break
+
+    assert selected is not None
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(selected.spice_path, output_path)
+
+    result = replace(
+        selected,
+        spice_path=output_path,
+        report_path=report_path,
+        html_report_path=html_report_path,
+        log_path=log_path,
+        auto_model_order_trials=trials,
+        auto_model_order_selected=selected.config.model_order_max,
+        auto_model_order_stop_reason=stop_reason,
+    )
+    if report_path is not None:
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if html_report_path is not None:
+        html_report_path.parent.mkdir(parents=True, exist_ok=True)
+        rows = "\n".join(
+            "<tr>"
+            f"<td>{trial['order']}</td>"
+            f"<td>{_format_float(trial['comparison_mean_rms_error'])}</td>"
+            f"<td>{_format_float(trial['comparison_rms_error'])}</td>"
+            f"<td>{_format_float(trial['elapsed_seconds'])}</td>"
+            f"<td>{_format_float(trial['peak_memory_mb'])}</td>"
+            "</tr>"
+            for trial in trials
+        )
+        html_report_path.write_text(
+            f"""<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>S-Parameter Auto Order Fit</title></head>
+<body>
+  <h1>S-Parameter Auto Order Fit</h1>
+  <p>Selected order: {result.auto_model_order_selected}; stop reason: {escape(str(stop_reason))}</p>
+  <table>
+    <tr><th>Order</th><th>Mean RMS</th><th>Sum-style RMS</th><th>Seconds</th><th>Peak MB</th></tr>
+    {rows}
+  </table>
+</body>
+</html>
+""",
+            encoding="utf-8",
+        )
+    return result
+
+
+def write_idem_spice_subcircuit(
+    vector_fit: Any,
+    output_path: Path,
+    subcircuit_name: str,
+    Z0: list[float],
+) -> None:
+    """Writes equivalent circuit in IDEM's State-Space Realization topology."""
+    poles = np.asarray(getattr(vector_fit, "poles", []), dtype=complex)
+    residues = np.asarray(getattr(vector_fit, "residues", []), dtype=complex)
+    constant_coeff = np.asarray(getattr(vector_fit, "constant_coeff", []), dtype=complex)
+
+    nports = len(Z0)
+    if residues.size == 0 and len(poles) > 0:
+        residues = np.zeros((nports * nports, len(poles)), dtype=complex)
+    if constant_coeff.size == 0:
+        constant_coeff = np.zeros(nports * nports, dtype=complex)
+
+    lines = []
+    lines.append("**********************************************************")
+    lines.append("** STATE-SPACE REALIZATION")
+    lines.append("** IN SPICE LANGUAGE (IDEM-COMPATIBLE STYLE)")
+    lines.append("** Generated automatically by agent-spice")
+    lines.append("**********************************************************")
+    lines.append("")
+    lines.append(".subckt {} {}".format(subcircuit_name, " ".join(f"a_{i}" for i in range(1, nports + 1)) + " ref"))
+    lines.append("")
+
+    # 1. Synthesis of port interface (Main circuit connected to output nodes)
+    lines.append("******************************************")
+    lines.append("* Main circuit connected to output nodes *")
+    lines.append("******************************************")
+
+    # Map poles layout to identify complex conjugate pairs
+    visited_poles = set()
+    poles_layout = []
+    for idx, p in enumerate(poles):
+        if idx in visited_poles:
+            continue
+        if p.imag == 0.0:
+            poles_layout.append({"type": "real", "pole": p, "indices": [idx]})
+            visited_poles.add(idx)
+        else:
+            conj_idx = None
+            for other_idx, other_p in enumerate(poles):
+                if other_idx not in visited_poles and other_idx != idx:
+                    if np.isclose(other_p.real, p.real) and np.isclose(other_p.imag, -p.imag):
+                        conj_idx = other_idx
+                        break
+            if conj_idx is not None:
+                poles_layout.append({"type": "complex", "pole": p if p.imag > 0 else other_p, "indices": [idx, conj_idx]})
+                visited_poles.add(idx)
+                visited_poles.add(conj_idx)
+            else:
+                poles_layout.append({"type": "real", "pole": p, "indices": [idx]})
+                visited_poles.add(idx)
+
+    Cs = 1e-12  # 1 pF scaling capacitor
+    state_counter = 1
+
+    port_gc_lines = {i: [] for i in range(1, nports + 1)}
+    port_gd_lines = {i: [] for i in range(1, nports + 1)}
+    state_lines = []
+
+    for j_port in range(1, nports + 1):
+        j_idx = j_port - 1
+        z0_j = Z0[j_idx]
+
+        for p_info in poles_layout:
+            if p_info["type"] == "real":
+                s_idx = state_counter
+                state_counter += 1
+                pole_val = p_info["pole"].real
+                pole_idx = p_info["indices"][0]
+
+                r_val = -1.0 / (Cs * pole_val) if pole_val < 0 else 1e12
+                gs = Cs * 5.0 * np.sqrt(2.0) / np.sqrt(z0_j)
+
+                state_lines.append(f"* Real state for port {j_port}, pole {pole_val:.5e}")
+                state_lines.append(f"CS_{s_idx} NS_{s_idx} 0 {Cs:.16e}")
+                state_lines.append(f"RS_{s_idx} NS_{s_idx} 0 {r_val:.16e}")
+                state_lines.append(f"GS_{s_idx} 0 NS_{s_idx} NA_{j_port} 0 {gs:.16e}")
+                state_lines.append("*")
+
+                for i_port in range(1, nports + 1):
+                    i_idx = i_port - 1
+                    z0_i = Z0[i_idx]
+                    res_val = residues[i_idx * nports + j_idx, pole_idx].real
+                    if abs(res_val) > 1e-15:
+                        gc_val = (2.0 * Cs / np.sqrt(z0_i)) * res_val
+                        port_gc_lines[i_port].append(f"GC_{i_port}_{s_idx} ref NI_{i_port} NS_{s_idx} 0 {gc_val:.16e}")
+
+            else:
+                s1 = state_counter
+                s2 = state_counter + 1
+                state_counter += 2
+
+                p_complex = p_info["pole"]
+                sigma = p_complex.real
+                omega = p_complex.imag
+                pole_idx1 = p_info["indices"][0]
+
+                r_val = -1.0 / (Cs * sigma) if sigma < 0 else 1e12
+                g12 = Cs * omega
+                g21 = -Cs * omega
+                gs = Cs * 10.0 * np.sqrt(2.0) / np.sqrt(z0_j)
+
+                state_lines.append(f"* Complex state pair for port {j_port}, pole {sigma:.5e} +/- j{omega:.5e}")
+                state_lines.append(f"CS_{s1} NS_{s1} 0 {Cs:.16e}")
+                state_lines.append(f"RS_{s1} NS_{s1} 0 {r_val:.16e}")
+                state_lines.append(f"CS_{s2} NS_{s2} 0 {Cs:.16e}")
+                state_lines.append(f"RS_{s2} NS_{s2} 0 {r_val:.16e}")
+                state_lines.append(f"GS_{s1}_c 0 NS_{s1} NS_{s2} 0 {g12:.16e}")
+                state_lines.append(f"GS_{s2}_c 0 NS_{s2} NS_{s1} 0 {g21:.16e}")
+                state_lines.append(f"GS_{s1}_in 0 NS_{s1} NA_{j_port} 0 {gs:.16e}")
+                state_lines.append("*")
+
+                for i_port in range(1, nports + 1):
+                    i_idx = i_port - 1
+                    z0_i = Z0[i_idx]
+
+                    res_complex = residues[i_idx * nports + j_idx, pole_idx1]
+                    res_re = res_complex.real
+                    res_im = res_complex.imag
+
+                    if abs(res_re) > 1e-15:
+                        gc_val1 = (2.0 * Cs / np.sqrt(z0_i)) * res_re
+                        port_gc_lines[i_port].append(f"GC_{i_port}_{s1} ref NI_{i_port} NS_{s1} 0 {gc_val1:.16e}")
+                    if abs(res_im) > 1e-15:
+                        gc_val2 = (2.0 * Cs / np.sqrt(z0_i)) * res_im
+                        port_gc_lines[i_port].append(f"GC_{i_port}_{s2} ref NI_{i_port} NS_{s2} 0 {gc_val2:.16e}")
+
+    for i_port in range(1, nports + 1):
+        i_idx = i_port - 1
+        z0_i = Z0[i_idx]
+        for j_port in range(1, nports + 1):
+            j_idx = j_port - 1
+            z0_j = Z0[j_idx]
+            d_val = constant_coeff[i_idx * nports + j_idx].real
+            if abs(d_val) > 1e-15:
+                gd_val = (10.0 * np.sqrt(2.0) / np.sqrt(z0_i * z0_j)) * d_val
+                port_gd_lines[i_port].append(f"GD_{i_port}_{j_port} ref NI_{i_port} NA_{j_port} 0 {gd_val:.16e}")
+
+    for i_port in range(1, nports + 1):
+        i_idx = i_port - 1
+        z0_i = Z0[i_idx]
+        lines.append(f"* Port {i_port}")
+        lines.append(f"VI_{i_port} a_{i_port} NI_{i_port} 0")
+        lines.append(f"RI_{i_port} NI_{i_port} ref {z0_i:.16e}")
+        for line in port_gc_lines[i_port]:
+            lines.append(line)
+        for line in port_gd_lines[i_port]:
+            lines.append(line)
+        lines.append("*")
+
+    lines.append("")
+
+    lines.append("********************************")
+    lines.append("* Synthesis of impinging waves *")
+    lines.append("********************************")
+    for j_port in range(1, nports + 1):
+        j_idx = j_port - 1
+        z0_j = Z0[j_idx]
+        ra_val = z0_j / (10.0 * np.sqrt(2.0))
+        ga_val = 1.0 / z0_j
+        lines.append(f"* Impinging wave, port {j_port}")
+        lines.append(f"RA_{j_port} NA_{j_port} 0 {ra_val:.16e}")
+        lines.append(f"FA_{j_port} 0 NA_{j_port} VI_{j_port} 1.0")
+        lines.append(f"GA_{j_port} 0 NA_{j_port} a_{j_port} ref {ga_val:.16e}")
+        lines.append("*")
+
+    lines.append("")
+
+    lines.append("***************************************")
+    lines.append("* Synthesis of real and complex poles *")
+    lines.append("***************************************")
+    for line in state_lines:
+        lines.append(line)
+
+    lines.append(".ends")
+    lines.append("")
+
+    output_path.write_text("\n".join(lines), encoding="utf-8")
