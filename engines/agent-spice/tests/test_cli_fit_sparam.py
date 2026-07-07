@@ -306,11 +306,15 @@ def test_fit_sparam_cli_can_apply_idem_fast_preset_for_30p():
         mode="auto",
         n_poles_real=2,
         n_poles_cmplx=2,
+        init_pole_spacing="lin",
         fit_max_iterations=None,
         fit_max_frequency_points=None,
         relocation_backend="skrf",
         vector_fit_backend="skrf",
         use_lightweight_network=False,
+        high_frequency_complex_pairs=0,
+        high_frequency_complex_pair_damping=0.03,
+        high_frequency_complex_pair_lower_fraction=0.68,
         auto_model_order_candidates=None,
         auto_target_mean_rms_error=None,
         skip_passivity_enforce=False,
@@ -322,15 +326,61 @@ def test_fit_sparam_cli_can_apply_idem_fast_preset_for_30p():
     assert args.mode == "manual"
     assert args.n_poles_real == 4
     assert args.n_poles_cmplx == 30
+    assert args.init_pole_spacing == "lin"
     assert args.fit_max_iterations == 6
     assert args.fit_max_frequency_points == 256
     assert args.relocation_backend == "streaming-reciprocal"
     assert args.vector_fit_backend == "native"
     assert args.use_lightweight_network is True
+    assert args.high_frequency_complex_pairs == 0
     assert args.auto_model_order_candidates is None
     assert args.auto_target_mean_rms_error is None
     assert args.skip_passivity_enforce is True
     assert args.skip_passivity_check is True
+
+
+def test_fit_sparam_cli_applies_idem_fast_low_order_auto_for_large_ports():
+    from argparse import Namespace
+
+    import agent_spice.cli as cli
+
+    args = Namespace(
+        auto_preset="idem-fast",
+        touchstone=Path("model.s91p"),
+        mode="auto",
+        n_poles_real=2,
+        n_poles_cmplx=2,
+        init_pole_spacing="lin",
+        fit_max_iterations=None,
+        fit_max_frequency_points=None,
+        relocation_backend="skrf",
+        vector_fit_backend="skrf",
+        use_lightweight_network=False,
+        high_frequency_complex_pairs=0,
+        high_frequency_complex_pair_damping=0.01,
+        high_frequency_complex_pair_lower_fraction=0.5,
+        auto_model_order_candidates=None,
+        auto_target_mean_rms_error=None,
+        skip_passivity_enforce=False,
+        skip_passivity_check=False,
+    )
+
+    cli._apply_sparam_auto_preset(args, ["fit-sparam", "model.s91p", "--auto-preset", "idem-fast"])
+
+    assert args.mode == "manual"
+    assert args.n_poles_real == 0
+    assert args.n_poles_cmplx == 2
+    assert args.init_pole_spacing == "log"
+    assert args.fit_max_iterations == 14
+    assert args.fit_max_frequency_points == 256
+    assert args.relocation_backend == "streaming-reciprocal"
+    assert args.vector_fit_backend == "native"
+    assert args.use_lightweight_network is True
+    assert args.high_frequency_complex_pairs == 2
+    assert args.high_frequency_complex_pair_damping == 0.03
+    assert args.high_frequency_complex_pair_lower_fraction == 0.68
+    assert args.auto_model_order_candidates == "9,10,12,14,17,20"
+    assert args.auto_target_mean_rms_error == 0.002
 
 
 def test_fit_sparam_cli_uses_auto_order_runner(tmp_path: Path, monkeypatch):

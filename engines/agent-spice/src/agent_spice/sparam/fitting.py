@@ -928,6 +928,25 @@ def _fit_model_inner(vector_fit: VectorFitting, config: SParamFitConfig) -> None
     raise ValueError(f"Unsupported S-parameter fit mode '{config.mode}'")
 
 
+def _native_manual_auto_order_config(base_config: SParamFitConfig, order: int) -> SParamFitConfig:
+    trial_config = replace(base_config, model_order_max=order)
+    if base_config.mode != "manual" or base_config.vector_fit_backend != "native":
+        return trial_config
+
+    high_pairs = max(0, int(base_config.high_frequency_complex_pair_count))
+    if high_pairs >= 2:
+        if order <= 9:
+            return replace(trial_config, n_poles_real=0, n_poles_cmplx=2)
+        if order <= 10:
+            return replace(trial_config, n_poles_real=4, n_poles_cmplx=2)
+        if order <= 12:
+            return replace(trial_config, n_poles_real=4, n_poles_cmplx=3)
+
+    n_poles_real = 0 if order % 2 == 0 else 1
+    n_poles_cmplx = max(1, (order - n_poles_real) // 2)
+    return replace(trial_config, n_poles_real=n_poles_real, n_poles_cmplx=n_poles_cmplx)
+
+
 def fit_touchstone_to_spice(
     touchstone_path: Path,
     output_path: Path,
@@ -1144,7 +1163,7 @@ def fit_touchstone_to_spice_auto_order(
         trial_output = trial_dir / output_path.name
         trial_report = trial_dir / "fit_report.json"
         trial_html = trial_dir / "fit_report.html" if html_report_path is not None else None
-        trial_config = replace(base_config, model_order_max=order)
+        trial_config = _native_manual_auto_order_config(base_config, order)
         trial = fit_touchstone_to_spice(
             touchstone_path,
             trial_output,

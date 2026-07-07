@@ -492,6 +492,26 @@ def test_fit_touchstone_to_spice_auto_order_stops_at_first_mean_rms_target(tmp_p
     assert (tmp_path / "model.sp").read_text(encoding="utf-8") == "* order 60\n"
 
 
+def test_native_manual_auto_order_maps_large_port_repair_candidates():
+    import agent_spice.sparam.fitting as fitting
+
+    base = SParamFitConfig(
+        mode="manual",
+        vector_fit_backend="native",
+        high_frequency_complex_pair_count=2,
+        n_poles_real=0,
+        n_poles_cmplx=2,
+    )
+
+    order9 = fitting._native_manual_auto_order_config(base, 9)
+    order10 = fitting._native_manual_auto_order_config(base, 10)
+    order12 = fitting._native_manual_auto_order_config(base, 12)
+
+    assert (order9.n_poles_real, order9.n_poles_cmplx) == (0, 2)
+    assert (order10.n_poles_real, order10.n_poles_cmplx) == (4, 2)
+    assert (order12.n_poles_real, order12.n_poles_cmplx) == (4, 3)
+
+
 def test_fit_touchstone_to_spice_can_fit_frequency_subset(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 

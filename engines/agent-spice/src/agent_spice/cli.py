@@ -520,11 +520,13 @@ def _apply_sparam_auto_preset(args: Any, argv: list[str]) -> None:
         if not is_explicit("--mode"):
             args.mode = "manual"
         if not is_explicit("--n-poles-real"):
-            args.n_poles_real = 4
+            args.n_poles_real = 0 if ports >= 60 else 4
         if not is_explicit("--n-poles-cmplx"):
-            args.n_poles_cmplx = 30 if ports >= 30 else 18
+            args.n_poles_cmplx = 2 if ports >= 60 else (30 if ports >= 30 else 18)
+        if ports >= 60 and not is_explicit("--init-pole-spacing"):
+            args.init_pole_spacing = "log"
         if not is_explicit("--fit-max-iterations"):
-            args.fit_max_iterations = 6 if ports >= 30 else 5
+            args.fit_max_iterations = 14 if ports >= 60 else (6 if ports >= 30 else 5)
         if not is_explicit("--fit-max-frequency-points"):
             args.fit_max_frequency_points = 256
         if not is_explicit("--relocation-backend"):
@@ -533,6 +535,15 @@ def _apply_sparam_auto_preset(args: Any, argv: list[str]) -> None:
             args.vector_fit_backend = "native" if ports >= 30 else "skrf"
         if not is_explicit("--use-lightweight-network"):
             args.use_lightweight_network = True
+        if ports >= 60 and not is_explicit("--high-frequency-complex-pairs"):
+            args.high_frequency_complex_pairs = 2
+        if ports >= 60 and not is_explicit("--high-frequency-complex-pair-damping"):
+            args.high_frequency_complex_pair_damping = 0.03
+        if ports >= 60 and not is_explicit("--high-frequency-complex-pair-lower-fraction"):
+            args.high_frequency_complex_pair_lower_fraction = 0.68
+        if ports >= 60:
+            candidates = "9,10,12,14,17,20"
+            target = 0.002
     else:
         raise ValueError(f"Unsupported S-parameter auto preset '{args.auto_preset}'")
 
