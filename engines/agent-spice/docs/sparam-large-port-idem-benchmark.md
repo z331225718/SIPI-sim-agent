@@ -56,9 +56,12 @@ The native passivity path now defaults to the Touchstone data band when `passivi
 
 `Test16.s91p` with band-limited default passivity:
 
-| Run | Selected order | Mean RMS | Passive before | Passive after | Violation bands before | Violation bands after | Time | Peak memory |
-|---|---:|---:|---|---|---:|---:|---:|---:|
-| band-limited default, 1 sparse iteration | 10 | 0.001819411 | false | false | 184 | 184 | 34.38 s selected trial, 87.9 s CLI wall time | 322.8 MB |
+| Run | Selected order | Mean RMS | Max sigma before | Max sigma after | Passive before | Passive after | Violation bands before | Violation bands after | Time | Peak memory |
+|---|---:|---:|---:|---:|---|---|---:|---:|---:|---:|
+| band-limited default, 1 sparse iteration | 10 | 0.001819411 | 1.027606 | 1.027606 | false | false | 184 | 184 | 34.38 s selected trial, 87.9 s CLI wall time | 322.8 MB |
+| fixed order10, 16 samples, 3 iterations, 512 active variables | 10 | 0.001819411 | 1.027606 | 1.027606 | false | false | 184 | 183 | 52.02 s | 343.0 MB |
+| fixed order10, 16 samples, 3 iterations, 2048 active variables | 10 | 0.001821926 | 1.027606 | 1.009571 | false | false | 184 | 183 | 80.85 s | 344.8 MB |
+| fixed order10, 16 samples, 3 iterations, 4096 active variables | 10 | 0.001819411 | 1.027606 | 1.027606 | false | false | 184 | 185 | 80.53 s | 346.4 MB |
 
 Interpretation:
 
@@ -66,10 +69,11 @@ Interpretation:
 - For `Test13.s60p`, the apparent 169 violation bands were above the 2 GHz measured data range; the band-limited default is already passive.
 - For `Test16.s91p`, band-limited passivity still fails with 184 violation bands. This is the next real enforcement target.
 - A rollback guard is required and now active: if a residue perturbation worsens passivity score, the model keeps the best seen residues rather than silently destroying fit accuracy. Before this guard, the same sparse enforcement path could degrade mean RMS from `0.000593962` to `0.0673212` while still remaining non-passive.
+- Increasing the active residue-variable budget can reduce violation amplitude without a major memory increase: 2048 active variables lowers max sigma from `1.027606` to `1.009571` at about `345 MB`. Larger is not automatically better; 4096 active variables regresses because the local QP becomes more ill-conditioned.
 
 Next target:
 
-- Continue from `Test16.s91p`: the current sparse local-QP scaffolding is memory-safe but not yet effective. The next algorithm step should restrict residue variables by pole sensitivity per violation band and include a fit-error damage term, rather than minimizing perturbation norm alone.
+- Continue from `Test16.s91p`: the current sparse local-QP scaffolding is memory-safe but not yet effective. The next algorithm step should keep the active-variable budget adaptive around the best sensitivity window and add a fit-error/passivity damage term, rather than minimizing perturbation norm alone.
 
 ## Test16.s91p Follow-Up
 

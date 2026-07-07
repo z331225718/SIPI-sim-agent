@@ -76,6 +76,7 @@ class SParamFitConfig:
     enforce_passivity: bool = True
     passivity_samples: int = 200
     passivity_max_iterations: int = 1
+    passivity_active_variables: int = 512
     passivity_f_max: float | None = None
     preserve_dc: bool = True
     subckt_name: str = "s_equivalent"
@@ -120,6 +121,10 @@ class SParamFitResult:
     passivity_violations_before: list[list[float]] | None
     passivity_violations_after: list[list[float]] | None
     quality_report: QualityReport
+    passivity_max_sigma_before: float | None = None
+    passivity_max_sigma_after: float | None = None
+    passivity_max_sigma_frequency_hz_before: float | None = None
+    passivity_max_sigma_frequency_hz_after: float | None = None
     comparison_mean_rms_error: float | None = None
     elapsed_seconds: float | None = None
     peak_memory_mb: float | None = None
@@ -175,6 +180,10 @@ class SParamFitResult:
             "passive_after_enforce": self.passive_after_enforce,
             "passivity_violations_before": self.passivity_violations_before,
             "passivity_violations_after": self.passivity_violations_after,
+            "passivity_max_sigma_before": self.passivity_max_sigma_before,
+            "passivity_max_sigma_after": self.passivity_max_sigma_after,
+            "passivity_max_sigma_frequency_hz_before": self.passivity_max_sigma_frequency_hz_before,
+            "passivity_max_sigma_frequency_hz_after": self.passivity_max_sigma_frequency_hz_after,
         }
 
 
@@ -1003,6 +1012,8 @@ def fit_touchstone_to_spice(
             progress.info("passivity checks skipped")
             passive_before = None
             violations_before = None
+            passivity_max_sigma_before = None
+            passivity_max_sigma_frequency_before = None
             if config.enforce_passivity:
                 if use_low_memory_passivity:
                     progress.info("starting passivity enforcement using low-memory residue perturbation")
@@ -1015,6 +1026,7 @@ def fit_touchstone_to_spice(
                         max_iterations=config.passivity_max_iterations,
                         f_max=passivity_f_max,
                         max_violation_samples=config.passivity_samples,
+                        max_active_variables=config.passivity_active_variables,
                     )
                 else:
                     progress.info(
@@ -1033,6 +1045,8 @@ def fit_touchstone_to_spice(
                 progress.info("passivity enforcement skipped")
             passive_after = None
             violations_after = None
+            passivity_max_sigma_after = None
+            passivity_max_sigma_frequency_after = None
         elif use_low_memory_passivity:
             progress.info("checking passivity before enforcement using low-memory Hamiltonian method")
             from .passivity import check_vector_fit_passivity_hamiltonian, enforce_passivity_hamiltonian
@@ -1044,6 +1058,8 @@ def fit_touchstone_to_spice(
             )
             passive_before = (len(report_before.violation_bands_hz) == 0)
             violations_before = report_before.violation_bands_hz
+            passivity_max_sigma_before = report_before.max_sigma
+            passivity_max_sigma_frequency_before = report_before.max_sigma_frequency_hz
             if config.enforce_passivity:
                 progress.info("starting passivity enforcement using low-memory residue perturbation")
                 enforce_passivity_hamiltonian(
@@ -1053,6 +1069,7 @@ def fit_touchstone_to_spice(
                     max_iterations=config.passivity_max_iterations,
                     f_max=passivity_f_max,
                     max_violation_samples=config.passivity_samples,
+                    max_active_variables=config.passivity_active_variables,
                 )
                 progress.info("passivity enforcement finished")
             else:
@@ -1066,10 +1083,14 @@ def fit_touchstone_to_spice(
             )
             passive_after = (len(report_after.violation_bands_hz) == 0)
             violations_after = report_after.violation_bands_hz
+            passivity_max_sigma_after = report_after.max_sigma
+            passivity_max_sigma_frequency_after = report_after.max_sigma_frequency_hz
         else:
             progress.info("checking passivity before enforcement")
             passive_before = _safe_bool(vector_fit.is_passive, parameter_type=config.parameter_type)
             violations_before = _safe_passivity_violations(vector_fit, config.parameter_type)
+            passivity_max_sigma_before = None
+            passivity_max_sigma_frequency_before = None
             if config.enforce_passivity:
                 progress.info(
                     f"starting passivity enforcement: n_samples={config.passivity_samples}, "
@@ -1087,6 +1108,8 @@ def fit_touchstone_to_spice(
                 progress.info("passivity enforcement skipped")
             passive_after = _safe_bool(vector_fit.is_passive, parameter_type=config.parameter_type)
             violations_after = _safe_passivity_violations(vector_fit, config.parameter_type)
+            passivity_max_sigma_after = None
+            passivity_max_sigma_frequency_after = None
 
         rms_error = _safe_rms_error(vector_fit, config.parameter_type)
         comparison_rms_error = _comparison_rms_error(network, vector_fit, config.parameter_type)
@@ -1145,6 +1168,10 @@ def fit_touchstone_to_spice(
             passive_after_enforce=passive_after,
             passivity_violations_before=violations_before,
             passivity_violations_after=violations_after,
+            passivity_max_sigma_before=passivity_max_sigma_before,
+            passivity_max_sigma_after=passivity_max_sigma_after,
+            passivity_max_sigma_frequency_hz_before=passivity_max_sigma_frequency_before,
+            passivity_max_sigma_frequency_hz_after=passivity_max_sigma_frequency_after,
             quality_report=quality_report,
             comparison_mean_rms_error=_mean_rms_error_from_sum_style(comparison_rms_error, network.nports),
             elapsed_seconds=resource_monitor.elapsed_seconds,
