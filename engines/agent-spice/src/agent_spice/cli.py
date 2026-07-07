@@ -15,6 +15,9 @@ from agent_spice.project import prepare_run_directory
 from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice, fit_touchstone_to_spice_auto_order
 
 
+SPARAM_IDEM_FAST_CANDIDATES_LARGE_PORT = "9,10,12,14,17,20"
+SPARAM_IDEM_FAST_TARGET_MEAN_RMS = 0.002
+
 
 if TYPE_CHECKING:
     from agent_spice.backend.xyce import XyceXdmRunResult
@@ -209,6 +212,11 @@ def _parse_choice_list(value: str, allowed: set[str], name: str) -> list[str]:
     if unsupported:
         raise ValueError(f"Unsupported {name}: {', '.join(unsupported)}")
     return items
+
+
+def _add_hidden_argument(parser: argparse.ArgumentParser, *flags: str, **kwargs: Any) -> None:
+    kwargs.setdefault("help", argparse.SUPPRESS)
+    parser.add_argument(*flags, **kwargs)
 
 
 def _expand_model_paths(models: list[Path] | None, model_globs: list[str] | None) -> list[Path]:
@@ -508,52 +516,42 @@ def _apply_sparam_auto_preset(args: Any, argv: list[str]) -> None:
     if match:
         ports = int(match.group(1))
 
-    if args.auto_preset == "compact":
-        candidates = "40,60,75,80,120" if ports >= 30 else "40,60,62,65,70,80,100"
-        target = 0.002
-    elif args.auto_preset == "high-accuracy":
-        candidates = "75,110,115,120" if ports >= 30 else "80,81,85,90,100,120"
-        target = 0.001
-    elif args.auto_preset == "idem-fast":
-        candidates = None
-        target = None
-        if not is_explicit("--mode"):
-            args.mode = "manual"
-        if not is_explicit("--n-poles-real"):
-            args.n_poles_real = 0 if ports >= 60 else 4
-        if not is_explicit("--n-poles-cmplx"):
-            args.n_poles_cmplx = 2 if ports >= 60 else (30 if ports >= 30 else 18)
-        if ports >= 60 and not is_explicit("--init-pole-spacing"):
-            args.init_pole_spacing = "log"
-        if not is_explicit("--fit-max-iterations"):
-            args.fit_max_iterations = 14 if ports >= 60 else (6 if ports >= 30 else 5)
-        if not is_explicit("--fit-max-frequency-points"):
-            args.fit_max_frequency_points = 256
-        if not is_explicit("--relocation-backend"):
-            args.relocation_backend = "streaming-reciprocal" if ports >= 30 else "streaming"
-        if not is_explicit("--vector-fit-backend"):
-            args.vector_fit_backend = "native" if ports >= 30 else "skrf"
-        if not is_explicit("--use-lightweight-network"):
-            args.use_lightweight_network = True
-        if ports >= 60 and not is_explicit("--high-frequency-complex-pairs"):
-            args.high_frequency_complex_pairs = 2
-        if ports >= 60 and not is_explicit("--high-frequency-complex-pair-damping"):
-            args.high_frequency_complex_pair_damping = 0.03
-        if ports >= 60 and not is_explicit("--high-frequency-complex-pair-lower-fraction"):
-            args.high_frequency_complex_pair_lower_fraction = 0.68
-        if ports >= 60:
-            candidates = "9,10,12,14,17,20"
-            target = 0.002
-    else:
+    if args.auto_preset != "idem-fast":
         raise ValueError(f"Unsupported S-parameter auto preset '{args.auto_preset}'")
 
+    candidates = SPARAM_IDEM_FAST_CANDIDATES_LARGE_PORT if ports >= 60 else None
+    target = SPARAM_IDEM_FAST_TARGET_MEAN_RMS if ports >= 60 else None
+    if not is_explicit("--mode"):
+        args.mode = "manual"
+    if not is_explicit("--n-poles-real"):
+        args.n_poles_real = 0 if ports >= 60 else 4
+    if not is_explicit("--n-poles-cmplx"):
+        args.n_poles_cmplx = 2 if ports >= 60 else (30 if ports >= 30 else 18)
+    if not is_explicit("--init-pole-spacing"):
+        args.init_pole_spacing = "log" if ports >= 60 else "lin"
+    if not is_explicit("--fit-max-iterations"):
+        args.fit_max_iterations = 14 if ports >= 60 else (6 if ports >= 30 else 5)
+    if not is_explicit("--fit-max-frequency-points"):
+        args.fit_max_frequency_points = 256
+    if not is_explicit("--relocation-backend"):
+        args.relocation_backend = "streaming-reciprocal" if ports >= 30 else "streaming"
+    if not is_explicit("--vector-fit-backend"):
+        args.vector_fit_backend = "native" if ports >= 30 else "skrf"
+    if not is_explicit("--use-lightweight-network"):
+        args.use_lightweight_network = True
+    if ports >= 60 and not is_explicit("--high-frequency-complex-pairs"):
+        args.high_frequency_complex_pairs = 2
+    if ports >= 60 and not is_explicit("--high-frequency-complex-pair-damping"):
+        args.high_frequency_complex_pair_damping = 0.03
+    if ports >= 60 and not is_explicit("--high-frequency-complex-pair-lower-fraction"):
+        args.high_frequency_complex_pair_lower_fraction = 0.68
     if candidates is not None and not is_explicit("--auto-model-order-candidates"):
         args.auto_model_order_candidates = candidates
     if target is not None and not is_explicit("--auto-target-mean-rms-error"):
         args.auto_target_mean_rms_error = target
-    if not is_explicit("--skip-passivity-enforce"):
+    if not is_explicit("--skip-passivity-enforce") and not is_explicit("--enforce-passivity"):
         args.skip_passivity_enforce = True
-    if not is_explicit("--skip-passivity-check"):
+    if not is_explicit("--skip-passivity-check") and not is_explicit("--check-passivity"):
         args.skip_passivity_check = True
 
 
@@ -600,58 +598,71 @@ def main(argv: list[str] | None = None) -> int:
     run_parser.add_argument("--output-root", type=Path, default=Path("runs"))
     run_parser.add_argument("--execute", action="store_true")
 
-    fit_parser = subparsers.add_parser("fit-sparam")
-    fit_parser.add_argument("touchstone", type=Path)
-    fit_parser.add_argument("--output", type=Path, required=True)
-    fit_parser.add_argument("--report", type=Path)
-    fit_parser.add_argument("--html-report", type=Path)
-    fit_parser.add_argument("--log", type=Path)
-    fit_parser.add_argument("--mode", choices=["auto", "manual"], default="auto")
-    fit_parser.add_argument("--n-poles-real", type=int, default=2)
-    fit_parser.add_argument("--n-poles-cmplx", type=int, default=2)
-    fit_parser.add_argument("--init-pole-spacing", choices=["lin", "log"], default="lin")
-    fit_parser.add_argument("--n-poles-init-real", type=int, default=3)
-    fit_parser.add_argument("--n-poles-init-cmplx", type=int, default=3)
-    fit_parser.add_argument("--n-poles-add", type=int, default=3)
-    fit_parser.add_argument("--iters-start", type=int, default=3)
-    fit_parser.add_argument("--iters-inter", type=int, default=3)
-    fit_parser.add_argument("--iters-final", type=int, default=5)
-    fit_parser.add_argument("--model-order-max", type=int, default=100)
-    fit_parser.add_argument("--target-error", type=float, default=0.01)
-    fit_parser.add_argument("--alpha", type=float, default=0.03)
-    fit_parser.add_argument("--gamma", type=float, default=0.03)
-    fit_parser.add_argument("--nu-samples", type=float, default=1.0)
-    fit_parser.add_argument("--fit-max-iterations", type=int)
-    fit_parser.add_argument("--passivity-samples", type=int, default=200)
-    fit_parser.add_argument("--passivity-f-max", type=float)
-    fit_parser.add_argument("--no-preserve-dc", action="store_true")
-    fit_parser.add_argument("--fit-frequency-stride", type=int, default=1)
-    fit_parser.add_argument("--fit-max-frequency-points", type=int)
-    fit_parser.add_argument("--fit-f-min", type=float)
-    fit_parser.add_argument("--fit-f-max", type=float)
+    fit_parser = subparsers.add_parser(
+        "fit-sparam",
+        description="Fit a Touchstone S-parameter file with the IdEM-fast baseline.",
+    )
+    fit_parser.add_argument("touchstone", type=Path, help="Input .sNp Touchstone file.")
+    fit_parser.add_argument("--output", type=Path, required=True, help="Output SPICE subcircuit path.")
+    fit_parser.add_argument("--report", type=Path, help="JSON fit report path; defaults next to --output.")
+    fit_parser.add_argument("--html-report", type=Path, help="HTML fit report path; defaults next to --output.")
+    fit_parser.add_argument("--log", type=Path, help="Progress log path.")
+    fit_parser.add_argument("--auto-preset", choices=["idem-fast"], default="idem-fast", help=argparse.SUPPRESS)
     fit_parser.add_argument(
+        "--auto-model-order-candidates",
+        help="Comma-separated order candidates for auto-order search; large-port default is 9,10,12,14,17,20.",
+    )
+    fit_parser.add_argument(
+        "--auto-target-mean-rms-error",
+        type=float,
+        help="Mean RMS stop target for auto-order search; large-port default is 0.002.",
+    )
+    fit_parser.add_argument("--quality-profile", choices=["explore", "signoff"], default="explore", help="Report quality profile.")
+    fit_parser.add_argument("--fail-on-quality", action="store_true", help="Return non-zero when the quality report blocks.")
+    fit_parser.add_argument("--allow-quality-warnings", action="store_true", help="Allow WARN quality status with --fail-on-quality.")
+    fit_parser.add_argument("--enforce-passivity", dest="skip_passivity_enforce", action="store_false", help="Run passivity enforcement after fitting.")
+    fit_parser.add_argument("--check-passivity", dest="skip_passivity_check", action="store_false", help="Run passivity checks before/after enforcement.")
+    fit_parser.add_argument("--subckt-name", default="s_equivalent", help="SPICE subcircuit name.")
+    fit_parser.add_argument("--exporter", choices=["idem", "skrf"], default="skrf", help="SPICE exporter format.")
+    _add_hidden_argument(fit_parser, "--mode", choices=["auto", "manual"], default="manual")
+    _add_hidden_argument(fit_parser, "--n-poles-real", type=int, default=0)
+    _add_hidden_argument(fit_parser, "--n-poles-cmplx", type=int, default=2)
+    _add_hidden_argument(fit_parser, "--init-pole-spacing", choices=["lin", "log"], default="log")
+    _add_hidden_argument(fit_parser, "--n-poles-init-real", type=int, default=3)
+    _add_hidden_argument(fit_parser, "--n-poles-init-cmplx", type=int, default=3)
+    _add_hidden_argument(fit_parser, "--n-poles-add", type=int, default=3)
+    _add_hidden_argument(fit_parser, "--iters-start", type=int, default=3)
+    _add_hidden_argument(fit_parser, "--iters-inter", type=int, default=3)
+    _add_hidden_argument(fit_parser, "--iters-final", type=int, default=5)
+    _add_hidden_argument(fit_parser, "--model-order-max", type=int, default=100)
+    _add_hidden_argument(fit_parser, "--target-error", type=float, default=0.01)
+    _add_hidden_argument(fit_parser, "--alpha", type=float, default=0.03)
+    _add_hidden_argument(fit_parser, "--gamma", type=float, default=0.03)
+    _add_hidden_argument(fit_parser, "--nu-samples", type=float, default=1.0)
+    _add_hidden_argument(fit_parser, "--fit-max-iterations", type=int, default=14)
+    _add_hidden_argument(fit_parser, "--passivity-samples", type=int, default=200)
+    _add_hidden_argument(fit_parser, "--passivity-f-max", type=float)
+    _add_hidden_argument(fit_parser, "--no-preserve-dc", action="store_true")
+    _add_hidden_argument(fit_parser, "--fit-frequency-stride", type=int, default=1)
+    _add_hidden_argument(fit_parser, "--fit-max-frequency-points", type=int, default=256)
+    _add_hidden_argument(fit_parser, "--fit-f-min", type=float)
+    _add_hidden_argument(fit_parser, "--fit-f-max", type=float)
+    _add_hidden_argument(
+        fit_parser,
         "--relocation-backend",
         choices=["skrf", "streaming", "streaming-lowmem", "streaming-reciprocal"],
-        default="skrf",
+        default="streaming-reciprocal",
     )
-    fit_parser.add_argument("--vector-fit-backend", choices=["skrf", "native"], default="skrf")
-    fit_parser.add_argument("--high-frequency-complex-pairs", type=int, default=0)
-    fit_parser.add_argument("--high-frequency-complex-pair-damping", type=float, default=0.03)
-    fit_parser.add_argument("--high-frequency-complex-pair-lower-fraction", type=float, default=0.68)
-    fit_parser.add_argument("--use-lightweight-network", action="store_true")
-    fit_parser.add_argument("--skip-passivity-enforce", action="store_true")
-    fit_parser.add_argument("--skip-passivity-check", action="store_true")
-    fit_parser.add_argument("--quality-profile", choices=["explore", "signoff"], default="explore")
-    fit_parser.add_argument("--fail-on-quality", action="store_true")
-    fit_parser.add_argument("--max-comparison-rms-error", type=float, default=0.05)
-    fit_parser.add_argument("--max-passivity-epsilon", type=float, default=1e-6)
-    fit_parser.add_argument("--require-dc", action="store_true")
-    fit_parser.add_argument("--allow-quality-warnings", action="store_true")
-    fit_parser.add_argument("--subckt-name", default="s_equivalent")
-    fit_parser.add_argument("--exporter", choices=["idem", "skrf"], default="skrf")
-    fit_parser.add_argument("--auto-preset", choices=["compact", "high-accuracy", "idem-fast"])
-    fit_parser.add_argument("--auto-model-order-candidates")
-    fit_parser.add_argument("--auto-target-mean-rms-error", type=float)
+    _add_hidden_argument(fit_parser, "--vector-fit-backend", choices=["skrf", "native"], default="native")
+    _add_hidden_argument(fit_parser, "--high-frequency-complex-pairs", type=int, default=2)
+    _add_hidden_argument(fit_parser, "--high-frequency-complex-pair-damping", type=float, default=0.03)
+    _add_hidden_argument(fit_parser, "--high-frequency-complex-pair-lower-fraction", type=float, default=0.68)
+    _add_hidden_argument(fit_parser, "--use-lightweight-network", action="store_true", default=True)
+    _add_hidden_argument(fit_parser, "--skip-passivity-enforce", dest="skip_passivity_enforce", action="store_true", default=True)
+    _add_hidden_argument(fit_parser, "--skip-passivity-check", dest="skip_passivity_check", action="store_true", default=True)
+    _add_hidden_argument(fit_parser, "--max-comparison-rms-error", type=float, default=0.05)
+    _add_hidden_argument(fit_parser, "--max-passivity-epsilon", type=float, default=1e-6)
+    _add_hidden_argument(fit_parser, "--require-dc", action="store_true")
 
     idem_probe_parser = subparsers.add_parser("probe-idem-init")
     idem_probe_parser.add_argument("touchstone", type=Path)

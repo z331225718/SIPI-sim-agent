@@ -130,10 +130,10 @@ def test_fit_sparam_cli_defaults_report_next_to_output(tmp_path: Path, monkeypat
     assert calls[0][3] == tmp_path / "fit_report.json"
     assert calls[0][4] == tmp_path / "fit_report.html"
     assert calls[0][5] is None
-    assert calls[0][2].enforce_passivity is True
+    assert calls[0][2].enforce_passivity is False
 
 
-def test_fit_sparam_cli_can_skip_passivity_enforcement(tmp_path: Path, monkeypatch):
+def test_fit_sparam_cli_can_enable_passivity_enforcement(tmp_path: Path, monkeypatch):
     import agent_spice.cli as cli
 
     calls = []
@@ -150,12 +150,12 @@ def test_fit_sparam_cli_can_skip_passivity_enforcement(tmp_path: Path, monkeypat
             str(tmp_path / "line.s2p"),
             "--output",
             str(tmp_path / "model.sp"),
-            "--skip-passivity-enforce",
+            "--enforce-passivity",
         ]
     )
 
     assert exit_code == 0
-    assert calls[0][2].enforce_passivity is False
+    assert calls[0][2].enforce_passivity is True
 
 
 def test_fit_sparam_cli_reports_value_error_without_traceback(tmp_path: Path, monkeypatch, capsys):
@@ -273,7 +273,7 @@ def test_fit_sparam_cli_supports_idem_exporter(tmp_path: Path, monkeypatch):
     assert exporter_value == ["idem"]
 
 
-def test_fit_sparam_cli_can_apply_compact_auto_preset_for_30p():
+def test_fit_sparam_cli_rejects_retired_auto_preset_for_30p():
     from argparse import Namespace
 
     import agent_spice.cli as cli
@@ -287,12 +287,30 @@ def test_fit_sparam_cli_can_apply_compact_auto_preset_for_30p():
         skip_passivity_check=False,
     )
 
-    cli._apply_sparam_auto_preset(args, ["fit-sparam", "model.s30p", "--auto-preset", "compact"])
+    try:
+        cli._apply_sparam_auto_preset(args, ["fit-sparam", "model.s30p", "--auto-preset", "compact"])
+    except ValueError as exc:
+        assert "Unsupported S-parameter auto preset 'compact'" in str(exc)
+    else:
+        raise AssertionError("compact preset should be retired from fit-sparam")
 
-    assert args.auto_model_order_candidates == "40,60,75,80,120"
-    assert args.auto_target_mean_rms_error == 0.002
-    assert args.skip_passivity_enforce is True
-    assert args.skip_passivity_check is True
+
+def test_fit_sparam_cli_help_is_idem_fast_focused(capsys):
+    import agent_spice.cli as cli
+
+    try:
+        cli.main(["fit-sparam", "--help"])
+    except SystemExit as exc:
+        assert exc.code == 0
+    else:
+        raise AssertionError("--help should exit through argparse")
+
+    captured = capsys.readouterr()
+    assert "IdEM-fast baseline" in captured.out
+    assert "--enforce-passivity" in captured.out
+    assert "--n-poles-real" not in captured.out
+    assert "compact" not in captured.out
+    assert "high-accuracy" not in captured.out
 
 
 def test_fit_sparam_cli_can_apply_idem_fast_preset_for_30p():
@@ -425,6 +443,36 @@ def test_fit_sparam_cli_uses_auto_order_runner(tmp_path: Path, monkeypatch):
     assert exit_code == 0
     assert calls[0][3] == [40, 60]
     assert calls[0][4] == 0.002
+
+
+def test_fit_sparam_cli_defaults_to_idem_fast_auto_for_large_ports(tmp_path: Path, monkeypatch):
+    import agent_spice.cli as cli
+
+    calls = []
+
+    class FakeAutoResult:
+        def __init__(self):
+            self.quality_report = FakeQualityReport(status="PASS")
+
+    def fake_auto(touchstone_path, output_path, *, config, order_candidates, target_mean_rms_error, report_path, html_report_path, log_path):
+        calls.append((touchstone_path, output_path, config, order_candidates, target_mean_rms_error))
+        return FakeAutoResult()
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice_auto_order", fake_auto, raising=False)
+
+    exit_code = cli.main(["fit-sparam", str(tmp_path / "line.s91p"), "--output", str(tmp_path / "model.sp")])
+
+    assert exit_code == 0
+    assert calls[0][3] == [9, 10, 12, 14, 17, 20]
+    assert calls[0][4] == 0.002
+    assert calls[0][2].mode == "manual"
+    assert calls[0][2].n_poles_real == 0
+    assert calls[0][2].n_poles_cmplx == 2
+    assert calls[0][2].init_pole_spacing == "log"
+    assert calls[0][2].vector_fit_backend == "native"
+    assert calls[0][2].high_frequency_complex_pair_count == 2
+    assert calls[0][2].enforce_passivity is False
+    assert calls[0][2].check_passivity is False
 
 
 def test_fit_sparam_cli_idem_fast_preset_uses_single_manual_fit(tmp_path: Path, monkeypatch):
