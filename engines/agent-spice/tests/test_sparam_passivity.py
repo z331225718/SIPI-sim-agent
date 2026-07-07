@@ -4,6 +4,7 @@ import pytest
 from agent_spice.sparam.passivity import (
     _PassivityScore,
     _active_variable_budget_candidates,
+    _best_passivity_snapshot,
     _is_candidate_update_better,
     _evaluate_passivity_score_at_freqs,
     _select_active_variable_indices,
@@ -124,6 +125,33 @@ def test_candidate_update_tie_breaks_equal_passivity_by_smaller_delta_norm():
     assert _is_candidate_update_better(score, 0.5, score, 1.0)
     assert not _is_candidate_update_better(score, 2.0, score, 1.0)
     assert _is_candidate_update_better(_PassivityScore(0, 1.0), 10.0, score, 0.1)
+
+
+def test_best_passivity_snapshot_keeps_accepted_final_iteration_improvement():
+    current = np.array([[1.0]])
+    candidate = np.array([[2.0]])
+    best = np.array([[0.0]])
+
+    best_residues, best_score = _best_passivity_snapshot(
+        candidate,
+        _PassivityScore(1, 1.01),
+        best,
+        _PassivityScore(1, 1.02),
+    )
+
+    assert best_residues is not candidate
+    assert best_residues.tolist() == [[2.0]]
+    assert best_score == _PassivityScore(1, 1.01)
+
+    unchanged_residues, unchanged_score = _best_passivity_snapshot(
+        current,
+        _PassivityScore(2, 1.03),
+        best_residues,
+        best_score,
+    )
+
+    assert unchanged_residues.tolist() == [[2.0]]
+    assert unchanged_score == _PassivityScore(1, 1.01)
 
 
 def test_evaluate_passivity_score_at_freqs_counts_violations_and_max_sigma():

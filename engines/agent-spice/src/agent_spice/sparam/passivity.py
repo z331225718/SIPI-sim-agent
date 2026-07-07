@@ -45,6 +45,17 @@ def _is_candidate_update_better(
     )
 
 
+def _best_passivity_snapshot(
+    candidate_residues: np.ndarray,
+    candidate_score: _PassivityScore,
+    best_residues: np.ndarray,
+    best_score: _PassivityScore | None,
+) -> tuple[np.ndarray, _PassivityScore | None]:
+    if candidate_score.is_better_than(best_score):
+        return candidate_residues.copy(), candidate_score
+    return best_residues, best_score
+
+
 @dataclass(frozen=True)
 class PassivitySampleReport:
     max_sigma: float
@@ -710,6 +721,13 @@ def enforce_passivity_hamiltonian(
         if accepted_residues is None:
             break
         residues = accepted_residues
+        if accepted_score is not None:
+            best_residues, best_score = _best_passivity_snapshot(
+                residues,
+                accepted_score,
+                best_residues,
+                best_score,
+            )
 
     residues = best_residues
     if len(poles) != len(poles_orig):
