@@ -370,6 +370,7 @@ def test_native_fit_uses_low_memory_passivity_engine_without_idem_exporter(tmp_p
     ):
         calls.append(("enforce", vector_fit, max_violation_samples, f_max, max_iterations, max_active_variables))
         vector_fit.enforced = True
+        vector_fit.passivity_enforcement_diagnostics = [{"active_budget": 123, "accepted": True}]
 
     monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
     monkeypatch.setattr(fitting, "_create_vector_fitting", fake_create_vector_fitting)
@@ -403,6 +404,7 @@ def test_native_fit_uses_low_memory_passivity_engine_without_idem_exporter(tmp_p
     assert result.passivity_violations_after == []
     assert result.passivity_max_sigma_before == pytest.approx(1.1)
     assert result.passivity_max_sigma_after == pytest.approx(1.0)
+    assert result.passivity_enforcement_diagnostics == [{"active_budget": 123, "accepted": True}]
 
 
 def test_native_fit_enforces_low_memory_passivity_when_checks_are_skipped(tmp_path: Path, monkeypatch):

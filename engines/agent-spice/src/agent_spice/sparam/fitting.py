@@ -125,6 +125,7 @@ class SParamFitResult:
     passivity_max_sigma_after: float | None = None
     passivity_max_sigma_frequency_hz_before: float | None = None
     passivity_max_sigma_frequency_hz_after: float | None = None
+    passivity_enforcement_diagnostics: list[dict[str, Any]] | None = None
     comparison_mean_rms_error: float | None = None
     elapsed_seconds: float | None = None
     peak_memory_mb: float | None = None
@@ -184,6 +185,7 @@ class SParamFitResult:
             "passivity_max_sigma_after": self.passivity_max_sigma_after,
             "passivity_max_sigma_frequency_hz_before": self.passivity_max_sigma_frequency_hz_before,
             "passivity_max_sigma_frequency_hz_after": self.passivity_max_sigma_frequency_hz_after,
+            "passivity_enforcement_diagnostics": self.passivity_enforcement_diagnostics,
         }
 
 
@@ -1172,6 +1174,7 @@ def fit_touchstone_to_spice(
             passivity_max_sigma_after=passivity_max_sigma_after,
             passivity_max_sigma_frequency_hz_before=passivity_max_sigma_frequency_before,
             passivity_max_sigma_frequency_hz_after=passivity_max_sigma_frequency_after,
+            passivity_enforcement_diagnostics=getattr(vector_fit, "passivity_enforcement_diagnostics", None),
             quality_report=quality_report,
             comparison_mean_rms_error=_mean_rms_error_from_sum_style(comparison_rms_error, network.nports),
             elapsed_seconds=resource_monitor.elapsed_seconds,

@@ -15,6 +15,8 @@ class PassivityQpResult:
     x: np.ndarray
     success: bool
     message: str
+    regularization: float = 0.0
+    dual_condition_number: float = np.inf
 
 
 @dataclass(frozen=True)
@@ -54,6 +56,69 @@ def _best_passivity_snapshot(
     if candidate_score.is_better_than(best_score):
         return candidate_residues.copy(), candidate_score
     return best_residues, best_score
+
+
+def _line_search_eval_frequencies(points: list[float], violating_freqs: list[tuple[float, float]]) -> list[float]:
+    eval_freqs: set[float] = set()
+    for violating_freq, _sigma in violating_freqs:
+        eval_freqs.add(float(violating_freq))
+        for idx in range(len(points) - 1):
+            start = float(points[idx])
+            stop = float(points[idx + 1])
+            if start <= violating_freq <= stop:
+                eval_freqs.add((start + float(violating_freq)) / 2.0)
+                eval_freqs.add((float(violating_freq) + stop) / 2.0)
+                break
+    return sorted(eval_freqs)
+
+
+def _safe_condition_number(matrix: np.ndarray) -> float:
+    if matrix.size == 0:
+        return 0.0
+    try:
+        value = float(np.linalg.cond(matrix))
+    except np.linalg.LinAlgError:
+        return np.inf
+    return value
+
+
+def _qp_attempt_diagnostic(
+    *,
+    iteration: int,
+    active_budget: int,
+    active_matrix: np.ndarray,
+    qp_result: PassivityQpResult,
+    A_ineq: np.ndarray,
+    b_ineq: np.ndarray,
+    x_delta: np.ndarray,
+    scale: float,
+    sampled_score: _PassivityScore,
+    candidate_score: _PassivityScore,
+    accepted: bool,
+    reject_reason: str | None,
+) -> dict[str, Any]:
+    predicted_sigma = float(np.max(1.0 - b_ineq + A_ineq @ (x_delta * scale)))
+    return {
+        "iteration": int(iteration),
+        "active_budget": int(active_budget),
+        "active_rank": int(np.linalg.matrix_rank(active_matrix)),
+        "active_condition_number": float(_safe_condition_number(active_matrix)),
+        "dual_condition_number": float(qp_result.dual_condition_number),
+        "dual_regularization": float(qp_result.regularization),
+        "scale": float(scale),
+        "sampled_max_sigma_before": float(sampled_score.max_sigma),
+        "candidate_max_sigma_after": float(candidate_score.max_sigma),
+        "predicted_max_sigma_after": predicted_sigma,
+        "predicted_improvement": float(sampled_score.max_sigma - predicted_sigma),
+        "actual_improvement": float(sampled_score.max_sigma - candidate_score.max_sigma),
+        "candidate_violation_count_after": int(candidate_score.violation_count),
+        "line_search_accepted": bool(accepted),
+        "selected_for_iteration": False,
+        "accepted": bool(accepted),
+        "reject_reason": reject_reason,
+        "qp_success": bool(qp_result.success),
+        "qp_message": qp_result.message,
+    }
 
 
 @dataclass(frozen=True)
@@ -164,7 +229,12 @@ def sample_vector_fit_passivity(
     )
 
 
-def _solve_min_norm_upper_bound_dual_qp(A_ineq: np.ndarray, b_ineq: np.ndarray) -> PassivityQpResult:
+def _solve_min_norm_upper_bound_dual_qp(
+    A_ineq: np.ndarray,
+    b_ineq: np.ndarray,
+    *,
+    regularization: float = 1e-8,
+) -> PassivityQpResult:
     """Solve min 0.5 ||x||^2 subject to A_ineq x <= b_ineq through its small dual."""
     A_ineq = np.asarray(A_ineq, dtype=float)
     b_ineq = np.asarray(b_ineq, dtype=float)
@@ -176,6 +246,13 @@ def _solve_min_norm_upper_bound_dual_qp(A_ineq: np.ndarray, b_ineq: np.ndarray) 
         return PassivityQpResult(x=np.zeros(A_ineq.shape[1]), success=True, message="no constraints")
 
     K = A_ineq @ A_ineq.T
+    regularization_value = 0.0
+    if regularization > 0.0:
+        scale = float(np.max(np.abs(K))) if K.size else 0.0
+        if scale > 0.0:
+            regularization_value = regularization * scale
+            K = K + regularization_value * np.eye(K.shape[0])
+    dual_condition_number = _safe_condition_number(K)
     result = opt.minimize(
         fun=lambda lmbda: 0.5 * lmbda @ K @ lmbda + b_ineq @ lmbda,
         x0=np.zeros(len(b_ineq)),
@@ -188,11 +265,15 @@ def _solve_min_norm_upper_bound_dual_qp(A_ineq: np.ndarray, b_ineq: np.ndarray) 
             x=np.zeros(A_ineq.shape[1]),
             success=False,
             message=str(result.message),
+            regularization=regularization_value,
+            dual_condition_number=dual_condition_number,
         )
     return PassivityQpResult(
         x=-A_ineq.T @ result.x,
         success=True,
         message=str(result.message),
+        regularization=regularization_value,
+        dual_condition_number=dual_condition_number,
     )
 
 
@@ -580,6 +661,8 @@ def enforce_passivity_hamiltonian(
     n_vars = nports * nports * vars_per_pair
     best_residues = residues.copy()
     best_score: _PassivityScore | None = None
+    diagnostics: list[dict[str, Any]] = []
+    vector_fit.passivity_enforcement_diagnostics = diagnostics
 
     for iteration in range(max_iterations):
         crossover_freqs = check_passivity_hamiltonian_s(poles, residues, constant_coeff, nports, f_max=f_max)
@@ -667,6 +750,7 @@ def enforce_passivity_hamiltonian(
         b_ineq = np.array(b_list)
 
         sampled_freqs = [freq for freq, _sigma in violating_freqs]
+        holdout_freqs = _line_search_eval_frequencies(points, violating_freqs)
         sampled_score = _evaluate_passivity_score_at_freqs(
             poles,
             residues,
@@ -675,13 +759,39 @@ def enforce_passivity_hamiltonian(
             freqs=sampled_freqs,
             epsilon=epsilon,
         )
+        holdout_score = _evaluate_passivity_score_at_freqs(
+            poles,
+            residues,
+            constant_coeff,
+            nports=nports,
+            freqs=holdout_freqs,
+            epsilon=epsilon,
+        )
         accepted_residues = None
         accepted_score: _PassivityScore | None = None
         accepted_delta_norm = np.inf
+        selected_diagnostic: dict[str, Any] | None = None
         for active_budget in _active_variable_budget_candidates(max_active_variables, n_vars):
             active_indices = _select_active_variable_indices(A_ineq, active_budget)
-            qp_result = _solve_min_norm_upper_bound_dual_qp(A_ineq[:, active_indices], b_ineq)
+            active_matrix = A_ineq[:, active_indices]
+            qp_result = _solve_min_norm_upper_bound_dual_qp(active_matrix, b_ineq)
             if not qp_result.success:
+                diagnostics.append(
+                    {
+                        "iteration": iteration,
+                        "active_budget": active_budget,
+                        "active_rank": int(np.linalg.matrix_rank(active_matrix)),
+                        "active_condition_number": _safe_condition_number(active_matrix),
+                        "dual_condition_number": qp_result.dual_condition_number,
+                        "dual_regularization": qp_result.regularization,
+                        "line_search_accepted": False,
+                        "selected_for_iteration": False,
+                        "accepted": False,
+                        "reject_reason": "qp_failed",
+                        "qp_success": False,
+                        "qp_message": qp_result.message,
+                    }
+                )
                 continue
 
             x_opt = np.zeros(n_vars)
@@ -705,16 +815,56 @@ def enforce_passivity_hamiltonian(
                     freqs=sampled_freqs,
                     epsilon=epsilon,
                 )
+                candidate_holdout_score = _evaluate_passivity_score_at_freqs(
+                    poles,
+                    candidate_residues,
+                    constant_coeff,
+                    nports=nports,
+                    freqs=holdout_freqs,
+                    epsilon=epsilon,
+                )
                 candidate_delta_norm = float(np.linalg.norm(candidate_residues - residues))
+                candidate_improves_sample = candidate_score.is_better_than(sampled_score)
+                candidate_preserves_holdout = candidate_holdout_score.max_sigma <= holdout_score.max_sigma + 1e-10
+                candidate_improves_best = _is_candidate_update_better(
+                    candidate_score,
+                    candidate_delta_norm,
+                    accepted_score,
+                    accepted_delta_norm,
+                )
+                accepted_candidate = candidate_improves_sample and candidate_preserves_holdout and candidate_improves_best
+                reject_reason = None
+                if not candidate_improves_sample:
+                    reject_reason = "no_sampled_improvement"
+                elif not candidate_preserves_holdout:
+                    reject_reason = "holdout_regression"
+                elif not candidate_improves_best:
+                    reject_reason = "worse_than_selected_candidate"
+                diagnostic = _qp_attempt_diagnostic(
+                    iteration=iteration,
+                    active_budget=active_budget,
+                    active_matrix=active_matrix,
+                    qp_result=qp_result,
+                    A_ineq=A_ineq,
+                    b_ineq=b_ineq,
+                    x_delta=x_opt,
+                    scale=scale,
+                    sampled_score=sampled_score,
+                    candidate_score=candidate_score,
+                    accepted=accepted_candidate,
+                    reject_reason=reject_reason,
+                )
+                diagnostic["holdout_max_sigma_before"] = float(holdout_score.max_sigma)
+                diagnostic["holdout_max_sigma_after"] = float(candidate_holdout_score.max_sigma)
+                diagnostic["holdout_improvement"] = float(holdout_score.max_sigma - candidate_holdout_score.max_sigma)
+                diagnostics.append(diagnostic)
                 if (
-                    candidate_score.is_better_than(sampled_score)
-                    and _is_candidate_update_better(
-                        candidate_score,
-                        candidate_delta_norm,
-                        accepted_score,
-                        accepted_delta_norm,
-                    )
+                    accepted_candidate
                 ):
+                    if selected_diagnostic is not None:
+                        selected_diagnostic["selected_for_iteration"] = False
+                    diagnostic["selected_for_iteration"] = True
+                    selected_diagnostic = diagnostic
                     accepted_residues = candidate_residues
                     accepted_score = candidate_score
                     accepted_delta_norm = candidate_delta_norm

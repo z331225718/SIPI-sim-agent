@@ -64,6 +64,7 @@ The native passivity path now defaults to the Touchstone data band when `passivi
 | fixed order10, 16 samples, 3 iterations, 4096 active variables | 10 | 0.001819411 | 1.027606 | 1.027606 | false | false | 184 | 185 | 80.53 s | 346.4 MB |
 | adaptive active variables up to 2048, sigma-first score | 10 | 0.001821926 | 1.027606 | 1.009571 | false | false | 184 | 188 | 62.72 s | 342.4 MB |
 | adaptive active variables up to 3072, sigma-first score | 10 | 0.001822875 | 1.027606 | 1.009493 | false | false | 184 | 187 | 57.42 s | 344.7 MB |
+| relative Tikhonov QP + holdout gate diagnostics, active variables up to 3072 | 10 | 0.001823711 | 1.027606 | 1.009509 | false | false | 184 | 182 | 68.48 s | 345.4 MB |
 | adaptive active variables up to 3072, 32 samples | 10 | 0.001838170 | 1.027606 | 1.014153 | false | false | 184 | 181 | 64.64 s | 365.1 MB |
 | local peak refinement, active variables up to 3072 | 10 | 0.001824085 | 1.027606 | 1.009469 | false | false | 184 | 185 | 73.81 s | 344.7 MB |
 | local refinement + global damping fallback | 10 | 0.002169703 | 1.027606 | 1.000169 | false | false | 184 | 5 | 71.10 s | 345.1 MB |
@@ -78,6 +79,7 @@ Interpretation:
 - Increasing the active residue-variable budget can reduce violation amplitude without a major memory increase: 2048 active variables lowers max sigma from `1.027606` to `1.009571` at about `345 MB`. Larger is not automatically better; 4096 active variables regresses because the local QP becomes more ill-conditioned.
 - The passivity acceptance score now prioritizes max singular value before violation-band count. Band count is too sensitive to tiny crossing movements; on `Test16.s91p`, the sigma-first adaptive run preserves the useful 2048/3072 improvement while avoiding the 4096 regression.
 - The current default active-variable cap for explicit native passivity enforcement is `3072`. It is still memory-safe on `Test16.s91p` and gives the best observed max-sigma reduction in this pass.
+- The QP diagnostic pass adds relative Tikhonov regularization and records active/dual conditioning, predicted vs actual improvement, selected line-search candidates, and holdout-neighborhood scores. It reproduces the same `1.0095` max-sigma stall, so the remaining gap is not explained by an unregularized dual solve or a hidden peak-shifting artifact in this configuration.
 - Local peak refinement gives only a tiny max-sigma gain while adding time, so it is not enabled in the default path.
 - Global damping proves that a cheap scalar fallback can nearly remove the remaining violation, but it pushes order10 RMS above the `0.002` target and still leaves a small residual violation. It should remain a diagnostic/fallback idea, not the default algorithm.
 

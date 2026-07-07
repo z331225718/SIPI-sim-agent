@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import pytest
 
@@ -5,6 +7,8 @@ from agent_spice.sparam.passivity import (
     _PassivityScore,
     _active_variable_budget_candidates,
     _best_passivity_snapshot,
+    _line_search_eval_frequencies,
+    _qp_attempt_diagnostic,
     _is_candidate_update_better,
     _evaluate_passivity_score_at_freqs,
     _select_active_variable_indices,
@@ -95,6 +99,8 @@ def test_dual_qp_solves_minimum_norm_upper_bound_constraint():
 
     assert result.success is True
     assert result.x == pytest.approx([-0.2])
+    assert result.regularization > 0.0
+    assert np.isfinite(result.dual_condition_number)
 
 
 def test_dual_qp_leaves_inactive_upper_bound_at_origin():
@@ -102,6 +108,39 @@ def test_dual_qp_leaves_inactive_upper_bound_at_origin():
 
     assert result.success is True
     assert result.x == pytest.approx([0.0])
+
+
+def test_line_search_eval_frequencies_adds_holdout_neighbors():
+    freqs = _line_search_eval_frequencies([0.0, 10.0, 20.0], [(6.0, 1.1)])
+
+    assert freqs == pytest.approx([3.0, 6.0, 8.0])
+
+
+def test_qp_attempt_diagnostic_records_prediction_and_actual_improvement():
+    diagnostic = _qp_attempt_diagnostic(
+        iteration=2,
+        active_budget=4,
+        active_matrix=np.array([[1.0, 0.0], [0.0, 2.0]]),
+        qp_result=_solve_min_norm_upper_bound_dual_qp(np.array([[1.0]]), np.array([-0.2])),
+        A_ineq=np.array([[1.0, 0.0], [0.0, 1.0]]),
+        b_ineq=np.array([-0.2, -0.1]),
+        x_delta=np.array([-0.2, -0.1]),
+        scale=0.5,
+        sampled_score=_PassivityScore(2, 1.2),
+        candidate_score=_PassivityScore(1, 1.1),
+        accepted=True,
+        reject_reason=None,
+    )
+
+    assert diagnostic["iteration"] == 2
+    assert diagnostic["active_budget"] == 4
+    assert diagnostic["active_rank"] == 2
+    assert diagnostic["predicted_improvement"] == pytest.approx(0.1)
+    assert diagnostic["actual_improvement"] == pytest.approx(0.1)
+    assert diagnostic["line_search_accepted"] is True
+    assert diagnostic["selected_for_iteration"] is False
+    assert diagnostic["accepted"] is True
+    json.dumps(diagnostic)
 
 
 def test_singular_violation_modes_keeps_only_worst_mode_by_default():
