@@ -184,6 +184,71 @@ def _singular_violation_modes(
     return modes
 
 
+def _select_active_variable_indices(A_ineq: np.ndarray, max_active_variables: int) -> np.ndarray:
+    if A_ineq.ndim != 2:
+        raise ValueError("A_ineq must be a 2D array")
+    column_count = A_ineq.shape[1]
+    if max_active_variables <= 0 or max_active_variables >= column_count:
+        return np.arange(column_count, dtype=int)
+    sensitivities = np.max(np.abs(A_ineq), axis=0)
+    candidate_indices = np.argpartition(-sensitivities, max_active_variables - 1)[:max_active_variables]
+    return np.array(sorted(candidate_indices, key=lambda idx: (-sensitivities[idx], idx)), dtype=int)
+
+
+def _evaluate_passivity_score_at_freqs(
+    poles: np.ndarray,
+    residues: np.ndarray,
+    constant_coeff: np.ndarray,
+    *,
+    nports: int,
+    freqs: Any,
+    epsilon: float,
+) -> _PassivityScore:
+    max_sigma = 0.0
+    violation_count = 0
+    residue_cube = residues.reshape((nports, nports, len(poles))) if len(poles) else None
+    constant_matrix = constant_coeff.reshape((nports, nports)).astype(complex)
+    for freq in freqs:
+        s_val = 1j * 2.0 * np.pi * float(freq)
+        S_f = constant_matrix.copy()
+        if residue_cube is not None:
+            for pole_index, pole in enumerate(poles):
+                S_f += residue_cube[:, :, pole_index] / (s_val - pole)
+        sigma = float(np.max(la.svd(S_f, compute_uv=False)))
+        max_sigma = max(max_sigma, sigma)
+        if sigma > 1.0 + epsilon:
+            violation_count += 1
+    return _PassivityScore(violation_count=violation_count, max_sigma=max_sigma)
+
+
+def _apply_residue_delta(
+    residues: np.ndarray,
+    x_delta: np.ndarray,
+    *,
+    nports: int,
+    vars_per_pair: int,
+    n_real: int,
+    real_poles: list[tuple[int, float]],
+    complex_pairs: list[tuple[int, int, float, float]],
+    scale: float = 1.0,
+) -> np.ndarray:
+    updated = residues.copy()
+    for i in range(nports):
+        for j in range(nports):
+            r_idx = i * nports + j
+            offset = r_idx * vars_per_pair
+
+            for var_idx, (pole_idx, _val) in enumerate(real_poles):
+                updated[r_idx, pole_idx] += scale * x_delta[offset + var_idx]
+
+            for var_idx, (pole_idx1, pole_idx2, _sigma, _omega) in enumerate(complex_pairs):
+                dx = scale * x_delta[offset + n_real + 2 * var_idx]
+                dy = scale * x_delta[offset + n_real + 2 * var_idx + 1]
+                updated[r_idx, pole_idx1] += dx + 1j * dy
+                updated[r_idx, pole_idx2] += dx - 1j * dy
+    return updated
+
+
 def real_state_space_realization(poles, residues, D_coeff, nports):
     """
     Constructs a real state-space realization (A, B, C, D) from rational poles and residues.
@@ -454,6 +519,7 @@ def enforce_passivity_hamiltonian(
     max_iterations: int = 10,
     f_max: float | None = None,
     max_violation_samples: int = 64,
+    max_active_variables: int = 512,
 ) -> None:
     """
     Enforces passivity of S-parameter model using Hamiltonian crossover checks and SLSQP residue perturbation.
@@ -562,24 +628,48 @@ def enforce_passivity_hamiltonian(
         A_ineq = np.array(A_list)
         b_ineq = np.array(b_list)
 
-        qp_result = _solve_min_norm_upper_bound_dual_qp(A_ineq, b_ineq)
+        active_indices = _select_active_variable_indices(A_ineq, max_active_variables)
+        qp_result = _solve_min_norm_upper_bound_dual_qp(A_ineq[:, active_indices], b_ineq)
         if not qp_result.success:
             break
 
-        x_opt = qp_result.x
-        for i in range(nports):
-            for j in range(nports):
-                r_idx = i * nports + j
-                offset = r_idx * vars_per_pair
-
-                for var_idx, (pole_idx, val) in enumerate(real_poles):
-                    residues[r_idx, pole_idx] += x_opt[offset + var_idx]
-
-                for var_idx, (pole_idx1, pole_idx2, sigma, omega) in enumerate(complex_pairs):
-                    dx = x_opt[offset + n_real + 2 * var_idx]
-                    dy = x_opt[offset + n_real + 2 * var_idx + 1]
-                    residues[r_idx, pole_idx1] += dx + 1j * dy
-                    residues[r_idx, pole_idx2] += dx - 1j * dy
+        x_opt = np.zeros(n_vars)
+        x_opt[active_indices] = qp_result.x
+        sampled_freqs = [freq for freq, _sigma in violating_freqs]
+        sampled_score = _evaluate_passivity_score_at_freqs(
+            poles,
+            residues,
+            constant_coeff,
+            nports=nports,
+            freqs=sampled_freqs,
+            epsilon=epsilon,
+        )
+        accepted_residues = None
+        for scale in (1.0, 0.5, 0.25, 0.125, 0.0625):
+            candidate_residues = _apply_residue_delta(
+                residues,
+                x_opt,
+                nports=nports,
+                vars_per_pair=vars_per_pair,
+                n_real=n_real,
+                real_poles=real_poles,
+                complex_pairs=complex_pairs,
+                scale=scale,
+            )
+            candidate_score = _evaluate_passivity_score_at_freqs(
+                poles,
+                candidate_residues,
+                constant_coeff,
+                nports=nports,
+                freqs=sampled_freqs,
+                epsilon=epsilon,
+            )
+            if candidate_score.is_better_than(sampled_score):
+                accepted_residues = candidate_residues
+                break
+        if accepted_residues is None:
+            break
+        residues = accepted_residues
 
     residues = best_residues
     if len(poles) != len(poles_orig):

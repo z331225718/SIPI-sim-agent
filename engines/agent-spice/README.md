@@ -88,6 +88,7 @@ expands to the current IdEM-fast large-port recipe:
 - auto-order candidates `9,10,12,14,17,20`
 - target mean S-domain RMS `0.002`
 - passivity check/enforcement skipped by default for fitting speed
+- when enabled, native passivity defaults to the Touchstone data band
 
 Example for a large package model:
 
@@ -122,8 +123,11 @@ python -m agent_spice.cli fit-sparam .\path\to\model.s91p `
 ```
 
 Passivity is deliberately off by default in the fast fitting path because the
-current bottleneck work is algorithmic fitting order, speed, and memory. To run
-passivity diagnostics or enforcement explicitly:
+current bottleneck work is algorithmic fitting order, speed, and memory. When
+enabled on the native backend, the low-memory passivity check/enforcement is
+limited to the input Touchstone frequency range unless `--passivity-f-max` is
+provided as an advanced override. To run passivity diagnostics or enforcement
+explicitly:
 
 ```powershell
 python -m agent_spice.cli fit-sparam .\path\to\model.s91p `

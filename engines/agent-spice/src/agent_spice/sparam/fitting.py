@@ -75,6 +75,7 @@ class SParamFitConfig:
     check_passivity: bool = True
     enforce_passivity: bool = True
     passivity_samples: int = 200
+    passivity_max_iterations: int = 1
     passivity_f_max: float | None = None
     preserve_dc: bool = True
     subckt_name: str = "s_equivalent"
@@ -932,6 +933,16 @@ def _uses_low_memory_passivity(config: SParamFitConfig) -> bool:
     return config.parameter_type.lower() == "s" and (config.vector_fit_backend == "native" or config.exporter == "idem")
 
 
+def _effective_passivity_f_max(config: SParamFitConfig, network: Any) -> float | None:
+    if config.passivity_f_max is not None:
+        return config.passivity_f_max
+    if _uses_low_memory_passivity(config):
+        freqs = getattr(network, "f", None)
+        if freqs is not None and len(freqs) > 0:
+            return float(freqs[-1])
+    return None
+
+
 def _native_manual_auto_order_config(base_config: SParamFitConfig, order: int) -> SParamFitConfig:
     trial_config = replace(base_config, model_order_max=order)
     if base_config.mode != "manual" or base_config.vector_fit_backend != "native":
@@ -987,6 +998,7 @@ def fit_touchstone_to_spice(
         _fit_model(vector_fit, config)
         progress.info("vector fit finished")
         use_low_memory_passivity = _uses_low_memory_passivity(config)
+        passivity_f_max = _effective_passivity_f_max(config, network)
         if not config.check_passivity:
             progress.info("passivity checks skipped")
             passive_before = None
@@ -1000,8 +1012,8 @@ def fit_touchstone_to_spice(
                         vector_fit,
                         nports=network.nports,
                         epsilon=config.max_passivity_epsilon,
-                        max_iterations=config.max_iterations or 10,
-                        f_max=config.passivity_f_max,
+                        max_iterations=config.passivity_max_iterations,
+                        f_max=passivity_f_max,
                         max_violation_samples=config.passivity_samples,
                     )
                 else:
@@ -1028,7 +1040,7 @@ def fit_touchstone_to_spice(
                 vector_fit,
                 nports=network.nports,
                 epsilon=config.max_passivity_epsilon,
-                f_max=config.passivity_f_max,
+                f_max=passivity_f_max,
             )
             passive_before = (len(report_before.violation_bands_hz) == 0)
             violations_before = report_before.violation_bands_hz
@@ -1038,8 +1050,8 @@ def fit_touchstone_to_spice(
                     vector_fit,
                     nports=network.nports,
                     epsilon=config.max_passivity_epsilon,
-                    max_iterations=config.max_iterations or 10,
-                    f_max=config.passivity_f_max,
+                    max_iterations=config.passivity_max_iterations,
+                    f_max=passivity_f_max,
                     max_violation_samples=config.passivity_samples,
                 )
                 progress.info("passivity enforcement finished")
@@ -1050,7 +1062,7 @@ def fit_touchstone_to_spice(
                 vector_fit,
                 nports=network.nports,
                 epsilon=config.max_passivity_epsilon,
-                f_max=config.passivity_f_max,
+                f_max=passivity_f_max,
             )
             passive_after = (len(report_after.violation_bands_hz) == 0)
             violations_after = report_after.violation_bands_hz

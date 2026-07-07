@@ -3,6 +3,8 @@ import pytest
 
 from agent_spice.sparam.passivity import (
     _PassivityScore,
+    _evaluate_passivity_score_at_freqs,
+    _select_active_variable_indices,
     _solve_min_norm_upper_bound_dual_qp,
     _singular_violation_modes,
     sample_streaming_singular_values,
@@ -112,3 +114,31 @@ def test_passivity_score_prefers_fewer_violations_then_lower_sigma():
     assert _PassivityScore(1, 10.0).is_better_than(_PassivityScore(2, 1.1))
     assert _PassivityScore(1, 1.1).is_better_than(_PassivityScore(1, 1.2))
     assert not _PassivityScore(2, 1.0).is_better_than(_PassivityScore(1, 100.0))
+
+
+def test_evaluate_passivity_score_at_freqs_counts_violations_and_max_sigma():
+    poles = np.array([], dtype=complex)
+    residues = np.zeros((4, 0), dtype=complex)
+    constant = np.array([1.2, 0.0, 0.0, 0.5], dtype=complex)
+
+    score = _evaluate_passivity_score_at_freqs(poles, residues, constant, nports=2, freqs=[1.0, 2.0], epsilon=1e-6)
+
+    assert score.violation_count == 2
+    assert score.max_sigma == pytest.approx(1.2)
+
+
+def test_select_active_variable_indices_keeps_highest_sensitivity_columns():
+    matrix = np.array(
+        [
+            [0.0, 3.0, -1.0, 0.2],
+            [4.0, 0.1, 0.0, 0.5],
+        ]
+    )
+
+    assert _select_active_variable_indices(matrix, 2).tolist() == [0, 1]
+
+
+def test_select_active_variable_indices_keeps_all_columns_when_limit_is_zero():
+    matrix = np.array([[0.0, 3.0, -1.0]])
+
+    assert _select_active_variable_indices(matrix, 0).tolist() == [0, 1, 2]

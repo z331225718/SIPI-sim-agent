@@ -335,14 +335,14 @@ def test_native_fit_uses_low_memory_passivity_engine_without_idem_exporter(tmp_p
     import agent_spice.sparam.passivity as passivity
 
     FakeVectorFitting.instances.clear()
-    calls: list[tuple[str, object, int | None]] = []
+    calls: list[tuple[str, object, int | None, float | None, int | None]] = []
 
     def fake_create_vector_fitting(network, config):
         return FakeVectorFitting(network)
 
     def fake_check(vector_fit, *, nports, epsilon, f_max=None):
-        calls.append(("check", vector_fit, None))
-        if len([name for name, _, _ in calls if name == "check"]) == 1:
+        calls.append(("check", vector_fit, None, f_max, None))
+        if len([name for name, _, _, _fmax, _iters in calls if name == "check"]) == 1:
             return passivity.PassivitySampleReport(
                 max_sigma=1.1,
                 max_sigma_frequency_hz=1e6,
@@ -359,7 +359,7 @@ def test_native_fit_uses_low_memory_passivity_engine_without_idem_exporter(tmp_p
         )
 
     def fake_enforce(vector_fit, *, nports, epsilon, max_iterations, f_max, max_violation_samples):
-        calls.append(("enforce", vector_fit, max_violation_samples))
+        calls.append(("enforce", vector_fit, max_violation_samples, f_max, max_iterations))
         vector_fit.enforced = True
 
     monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
@@ -381,8 +381,10 @@ def test_native_fit_uses_low_memory_passivity_engine_without_idem_exporter(tmp_p
         ),
     )
 
-    assert [name for name, _, _ in calls] == ["check", "enforce", "check"]
+    assert [name for name, _, _, _, _ in calls] == ["check", "enforce", "check"]
     assert calls[1][2] == 17
+    assert [call[3] for call in calls] == [2e6, 2e6, 2e6]
+    assert calls[1][4] == 1
     assert "passivity_enforce" not in FakeVectorFitting.instances[0].calls
     assert result.passive_before_enforce is False
     assert result.passive_after_enforce is True
@@ -395,13 +397,13 @@ def test_native_fit_enforces_low_memory_passivity_when_checks_are_skipped(tmp_pa
     import agent_spice.sparam.passivity as passivity
 
     FakeVectorFitting.instances.clear()
-    calls: list[tuple[str, object, int | None]] = []
+    calls: list[tuple[str, object, int | None, float | None, int | None]] = []
 
     def fake_create_vector_fitting(network, config):
         return FakeVectorFitting(network)
 
     def fake_check(*args, **kwargs):
-        calls.append(("check", args[0], None))
+        calls.append(("check", args[0], None, kwargs.get("f_max"), None))
         return passivity.PassivitySampleReport(
             max_sigma=1.0,
             max_sigma_frequency_hz=1e6,
@@ -411,7 +413,7 @@ def test_native_fit_enforces_low_memory_passivity_when_checks_are_skipped(tmp_pa
         )
 
     def fake_enforce(vector_fit, *, nports, epsilon, max_iterations, f_max, max_violation_samples):
-        calls.append(("enforce", vector_fit, max_violation_samples))
+        calls.append(("enforce", vector_fit, max_violation_samples, f_max, max_iterations))
         vector_fit.enforced = True
 
     monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
@@ -432,8 +434,10 @@ def test_native_fit_enforces_low_memory_passivity_when_checks_are_skipped(tmp_pa
         ),
     )
 
-    assert [name for name, _, _ in calls] == ["enforce"]
+    assert [name for name, _, _, _, _ in calls] == ["enforce"]
     assert calls[0][2] == 19
+    assert calls[0][3] == 2e6
+    assert calls[0][4] == 1
     assert "passivity_enforce" not in FakeVectorFitting.instances[0].calls
     assert result.passive_before_enforce is None
     assert result.passive_after_enforce is None

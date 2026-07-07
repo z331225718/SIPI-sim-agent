@@ -44,22 +44,32 @@ Some very low-order native real/complex pole configurations currently raise `Ind
 
 The first low-memory passivity integration pass moved native S-parameter fitting away from the native backend's no-op `passivity_enforce()` and onto the local Hamiltonian/residue-perturbation path. The path is now independent of the SPICE exporter, so `fit-sparam --check-passivity --enforce-passivity` uses the same low-memory engine with the default `skrf` exporter.
 
+The native passivity path now defaults to the Touchstone data band when `passivity_f_max` is not explicitly set. This avoids treating unconstrained extrapolation above the measured band as a default signoff blocker. Asymptotic/passivity-beyond-band work remains a separate algorithm target.
+
 `Test13.s60p` with the current IdEM-fast fit and low-memory passivity enabled:
 
 | Run | Selected order | Mean RMS | Passive before | Passive after | Violation bands before | Violation bands after | Time | Peak memory |
 |---|---:|---:|---|---|---:|---:|---:|---:|
 | check only | 9 | 0.000593962 | false | false | 169 | 169 | 8.08 s | 177.9 MB |
 | sparse enforce, 8 samples, rollback | 9 | 0.000593962 | false | false | 169 | 169 | 15.94 s | 181.1 MB |
+| band-limited default | 9 | 0.000593962 | true | true | 0 | 0 | 8.47 s | 178.4 MB |
+
+`Test16.s91p` with band-limited default passivity:
+
+| Run | Selected order | Mean RMS | Passive before | Passive after | Violation bands before | Violation bands after | Time | Peak memory |
+|---|---:|---:|---|---|---:|---:|---:|---:|
+| band-limited default, 1 sparse iteration | 10 | 0.001819411 | false | false | 184 | 184 | 34.38 s selected trial, 87.9 s CLI wall time | 322.8 MB |
 
 Interpretation:
 
-- The memory target is now in the right range: `Test13.s60p` passivity check/enforce peaks around `181 MB`, comparable to or below the IdEM order-6 run's `155.5 MB`.
-- The enforcement algorithm is not yet effective: sparse residue perturbation did not reduce the 169 Hamiltonian violation bands on `Test13.s60p`.
+- The memory target is now in the right range: `Test13.s60p` passivity check/enforce peaks around `178 MB`, and `Test16.s91p` peaks around `323 MB`, below the IdEM `Test16.s91p` peak of `414.2 MB`.
+- For `Test13.s60p`, the apparent 169 violation bands were above the 2 GHz measured data range; the band-limited default is already passive.
+- For `Test16.s91p`, band-limited passivity still fails with 184 violation bands. This is the next real enforcement target.
 - A rollback guard is required and now active: if a residue perturbation worsens passivity score, the model keeps the best seen residues rather than silently destroying fit accuracy. Before this guard, the same sparse enforcement path could degrade mean RMS from `0.000593962` to `0.0673212` while still remaining non-passive.
 
 Next target:
 
-- Replace the current all-pole residue perturbation with a genuinely local violation-band QP: choose the worst few singular vectors, restrict residue variables to the poles with highest sensitivity at those frequencies, and accept updates only when both passivity score improves and mean RMS damage stays bounded.
+- Continue from `Test16.s91p`: the current sparse local-QP scaffolding is memory-safe but not yet effective. The next algorithm step should restrict residue variables by pole sensitivity per violation band and include a fit-error damage term, rather than minimizing perturbation norm alone.
 
 ## Test16.s91p Follow-Up
 

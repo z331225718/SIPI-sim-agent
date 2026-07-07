@@ -641,6 +641,7 @@ def main(argv: list[str] | None = None) -> int:
     _add_hidden_argument(fit_parser, "--nu-samples", type=float, default=1.0)
     _add_hidden_argument(fit_parser, "--fit-max-iterations", type=int, default=14)
     _add_hidden_argument(fit_parser, "--passivity-samples", type=int, default=8)
+    _add_hidden_argument(fit_parser, "--passivity-max-iterations", type=int, default=1)
     _add_hidden_argument(fit_parser, "--passivity-f-max", type=float)
     _add_hidden_argument(fit_parser, "--no-preserve-dc", action="store_true")
     _add_hidden_argument(fit_parser, "--fit-frequency-stride", type=int, default=1)
@@ -924,6 +925,7 @@ def main(argv: list[str] | None = None) -> int:
             check_passivity=not args.skip_passivity_check,
             enforce_passivity=not args.skip_passivity_enforce,
             passivity_samples=args.passivity_samples,
+            passivity_max_iterations=args.passivity_max_iterations,
             passivity_f_max=args.passivity_f_max,
             preserve_dc=not args.no_preserve_dc,
             fit_frequency_stride=args.fit_frequency_stride,
