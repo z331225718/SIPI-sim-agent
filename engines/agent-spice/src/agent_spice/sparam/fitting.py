@@ -96,6 +96,10 @@ class SParamFitConfig:
     max_passivity_epsilon: float = 1e-6
     require_dc: bool = False
     exporter: str = "skrf"
+    passivity_perturb_constant: bool = False
+    passivity_perturb_poles: bool = False
+    passivity_constant_weight: float = 1.0
+    passivity_pole_weight: float = 1.0
 
 
 
@@ -1029,6 +1033,10 @@ def fit_touchstone_to_spice(
                         f_max=passivity_f_max,
                         max_violation_samples=config.passivity_samples,
                         max_active_variables=config.passivity_active_variables,
+                        perturb_constant=config.passivity_perturb_constant,
+                        perturb_poles=config.passivity_perturb_poles,
+                        constant_weight=config.passivity_constant_weight,
+                        pole_weight=config.passivity_pole_weight,
                     )
                 else:
                     progress.info(
@@ -1072,6 +1080,10 @@ def fit_touchstone_to_spice(
                     f_max=passivity_f_max,
                     max_violation_samples=config.passivity_samples,
                     max_active_variables=config.passivity_active_variables,
+                    perturb_constant=config.passivity_perturb_constant,
+                    perturb_poles=config.passivity_perturb_poles,
+                    constant_weight=config.passivity_constant_weight,
+                    pole_weight=config.passivity_pole_weight,
                 )
                 progress.info("passivity enforcement finished")
             else:

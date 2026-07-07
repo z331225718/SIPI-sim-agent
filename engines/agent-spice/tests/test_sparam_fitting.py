@@ -9,6 +9,13 @@ import pytest
 from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice, fit_touchstone_to_spice_auto_order
 
 
+def test_passivity_advanced_perturbations_are_experimental_opt_in():
+    config = SParamFitConfig()
+
+    assert config.passivity_perturb_constant is False
+    assert config.passivity_perturb_poles is False
+
+
 class FakeVectorFitting:
     instances: list["FakeVectorFitting"] = []
     rms_errors: list[float] = []
@@ -367,6 +374,7 @@ def test_native_fit_uses_low_memory_passivity_engine_without_idem_exporter(tmp_p
         f_max,
         max_violation_samples,
         max_active_variables,
+        **kwargs,
     ):
         calls.append(("enforce", vector_fit, max_violation_samples, f_max, max_iterations, max_active_variables))
         vector_fit.enforced = True
@@ -436,6 +444,7 @@ def test_native_fit_enforces_low_memory_passivity_when_checks_are_skipped(tmp_pa
         f_max,
         max_violation_samples,
         max_active_variables,
+        **kwargs,
     ):
         calls.append(("enforce", vector_fit, max_violation_samples, f_max, max_iterations, max_active_variables))
         vector_fit.enforced = True

@@ -19,7 +19,9 @@ This note records the current large-port benchmark against CST IdEM using the sh
 
 ## Interpretation
 
-The native/lightweight path no longer shows a consistent speed or memory disadvantage. On all three cases above it is faster and lower-memory than IdEM at the lowest order that reaches the target.
+The native/lightweight path no longer shows a consistent speed or memory disadvantage under the current sampled-fit benchmark. On all three cases above it is faster and lower-memory than IdEM at the lowest order that reaches the target.
+
+Important caveat recorded after re-checking the reports: the native runs in this table used `fit_frequency_points=256` while the original `Test13/Test16/Test11` files contain 611/611/542 points. The reported comparison RMS is still evaluated on `original_frequency_points`, so the accuracy number is not computed only on the training subset. However, the fitting cost/memory comparison is not apples-to-apples with IdEM if IdEM trains on the full frequency grid. For `Test16.s91p`, the IdEM `.mod.h5` contains `DUM/F` with 611 points and the fitting XML has no down-sampling option, so the conservative interpretation is: our 256-point native path is promising, but the previous fit conclusion does not prove similar performance at similar order and memory under full-frequency training.
 
 The remaining gap is mainly pole/order efficiency, but it is not uniform:
 
