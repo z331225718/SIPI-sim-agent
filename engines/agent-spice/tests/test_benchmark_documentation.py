@@ -29,3 +29,14 @@ def test_historical_benchmark_docs_are_removed_and_readme_points_to_canonical_re
 def test_current_target_driven_contract_docs_are_preserved():
     assert Path("docs/superpowers/specs/2026-07-10-target-driven-sparam-fit-design.md").is_file()
     assert Path("docs/superpowers/plans/2026-07-10-target-driven-sparam-fit.md").is_file()
+
+
+def test_readme_production_sparam_example_uses_native_baseline_only():
+    readme = Path("README.md").read_text(encoding="utf-8")
+    sparam_section = readme.split("## S-Parameter Fitting", 1)[1]
+    sparam_section = sparam_section.split("\n## ", 1)[0]
+
+    assert "native-idem-fast-v1" in sparam_section
+    assert "--vector-fit-backend" not in sparam_section
+    assert "--relocation-backend" not in sparam_section
+    assert "--exporter skrf" not in sparam_section

@@ -59,7 +59,9 @@ python -m pytest tests/test_hspice_corpus_golden.py -v
 
 ## S-Parameter Fitting
 
-`fit-sparam` is a target-driven workflow based on the local IdEM-fast/native VF implementation. The user supplies a final mean S-RMS target and chooses how passivity is handled. The tool searches for the lowest accepted effective common-pole order up to `--max-order`.
+`fit-sparam` is a target-driven workflow based on the local Native IdEM-fast vector-fitting implementation. The production fitting baseline is `native-idem-fast-v1`, and Native is the only production fitting backend. The user supplies a final mean S-RMS target and chooses how passivity is handled. The tool searches for the lowest accepted effective common-pole order up to `--max-order`.
+
+scikit-rf remains a supporting dependency for non-fitting infrastructure such as Touchstone fallback loading, metrics, modal/research workflows, and compatibility investigations. It is not a selectable production fitting backend.
 
 ```powershell
 python -m agent_spice.cli fit-sparam .\path\to\model.s91p `
@@ -115,7 +117,8 @@ Defaults:
 - `--max-order 24` for 60 or more ports.
 - `--max-order 40` below 60 ports.
 - Full original frequency grid for fitting and final evaluation.
-- Native vector fitting and the IdEM-fast topology/pole-relocation profile.
+- Native vector fitting baseline `native-idem-fast-v1`.
+- IdEM-fast topology and pole-relocation profile: models below 30 ports use full streaming relocation; models with 30 or more ports prefer reciprocal relocation and automatically fall back to full streaming when reciprocity is not present.
 
 ### Success And Failure
 
@@ -144,6 +147,6 @@ python -m agent_spice.cli fit-sparam .\path\to\model.s91p `
   --fail-on-quality
 ```
 
-Historical candidate-list and passivity flags remain hidden compatibility aliases. New automation should use only `--rms-target`, `--passivity`, and `--max-order`.
+Historical candidate-list and passivity flags remain hidden compatibility aliases. New automation should use only `--rms-target`, `--passivity`, and `--max-order`. Removed backend choices such as vector-fitting backend selection, relocation backend selection, and `skrf` export selection must not be used in production examples.
 
 The canonical Native/IdEM comparison is recorded in `docs/sparam-idem-full-benchmark.md`.
