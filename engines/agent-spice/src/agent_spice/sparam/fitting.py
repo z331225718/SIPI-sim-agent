@@ -1079,7 +1079,12 @@ def _temporary_relocation_backend(vector_fit: VectorFitting, relocation_backend:
     )
 
     vector_fitting_class = type(vector_fit)
-    original_relocation = getattr(vector_fitting_class, "_pole_relocation")
+    has_own_relocation = "_pole_relocation" in vector_fitting_class.__dict__
+    original_relocation = (
+        vector_fitting_class.__dict__["_pole_relocation"]
+        if has_own_relocation
+        else inspect.getattr_static(vector_fitting_class, "_pole_relocation")
+    )
     replacements = {
         "streaming": streaming_pole_relocation,
         "streaming-lowmem": _legacy_low_memory_pole_relocation,
@@ -1089,7 +1094,10 @@ def _temporary_relocation_backend(vector_fit: VectorFitting, relocation_backend:
     try:
         yield
     finally:
-        setattr(vector_fitting_class, "_pole_relocation", original_relocation)
+        if has_own_relocation:
+            setattr(vector_fitting_class, "_pole_relocation", original_relocation)
+        else:
+            delattr(vector_fitting_class, "_pole_relocation")
 
 
 def _fit_model_inner(vector_fit: VectorFitting, config: SParamFitConfig) -> None:

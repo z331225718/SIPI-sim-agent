@@ -1,5 +1,6 @@
 import json
 import logging
+import inspect
 from pathlib import Path
 import re
 from types import SimpleNamespace
@@ -767,6 +768,7 @@ def test_fit_touchstone_to_spice_can_use_streaming_relocation_backend(tmp_path: 
 
     FakeVectorFittingWithRelocationBackend.instances.clear()
     original = FakeVectorFittingWithRelocationBackend._pole_relocation
+    original_descriptor = inspect.getattr_static(FakeVectorFittingWithRelocationBackend, "_pole_relocation")
     monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
     monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFittingWithRelocationBackend)
 
@@ -785,6 +787,34 @@ def test_fit_touchstone_to_spice_can_use_streaming_relocation_backend(tmp_path: 
     assert result.spice_path == tmp_path / "model.sp"
     assert instance.seen_relocation_backend is not original
     assert FakeVectorFittingWithRelocationBackend._pole_relocation is original
+    assert inspect.getattr_static(FakeVectorFittingWithRelocationBackend, "_pole_relocation") is original_descriptor
+    assert isinstance(original_descriptor, staticmethod)
+    assert FakeVectorFittingWithRelocationBackend._pole_relocation() == "original"
+    assert instance._pole_relocation() == "original"
+
+
+def test_temporary_relocation_backend_restores_inherited_descriptor_without_shadowing():
+    import agent_spice.sparam.fitting as fitting
+    from agent_spice.sparam.pole_relocation import streaming_pole_relocation
+
+    class BaseVectorFittingWithRelocation:
+        _pole_relocation = staticmethod(lambda: "base-original")
+
+    class ChildVectorFittingWithRelocation(BaseVectorFittingWithRelocation):
+        def __init__(self):
+            self.network = None
+
+    vector_fit = ChildVectorFittingWithRelocation()
+    original_descriptor = inspect.getattr_static(ChildVectorFittingWithRelocation, "_pole_relocation")
+    assert "_pole_relocation" not in ChildVectorFittingWithRelocation.__dict__
+
+    with fitting._temporary_relocation_backend(vector_fit, "streaming"):
+        assert ChildVectorFittingWithRelocation._pole_relocation is streaming_pole_relocation
+
+    assert "_pole_relocation" not in ChildVectorFittingWithRelocation.__dict__
+    assert inspect.getattr_static(ChildVectorFittingWithRelocation, "_pole_relocation") is original_descriptor
+    assert ChildVectorFittingWithRelocation._pole_relocation() == "base-original"
+    assert vector_fit._pole_relocation() == "base-original"
 
 
 def test_fit_touchstone_to_spice_legacy_low_memory_backend_uses_low_memory_adapter(tmp_path: Path, monkeypatch):
