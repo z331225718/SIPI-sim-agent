@@ -66,7 +66,53 @@ def test_adaptive_xml_omits_reserved_order_and_bandwidth_and_defaults_enhance_fa
     assert root.findtext(".//f:iterations/f:enhancePolesPlacement", namespaces=namespace) == "false"
     assert root.findtext(".//f:iterations/f:initial", namespaces=namespace) == "3"
     assert root.findtext(".//f:errorControl/f:accuracy/f:guaranteed", namespaces=namespace) == "0.1"
-    assert root.findtext(".//f:outOfBand/f:rejectPoles/f:maxRelativeFrequency", namespaces=namespace) == "INF"
+    reject_poles = root.find(".//f:outOfBand/f:rejectPoles", namespaces=namespace)
+    assert reject_poles is not None
+    assert reject_poles.attrib == {"enabled": "false"}
+    assert len(reject_poles) == 0
+    assert (reject_poles.text or "").strip() == ""
+    assert root.find(".//f:outOfBand/f:rejectPoles/f:maxRelativeFrequency", namespaces=namespace) is None
+
+
+def test_adaptive_xml_golden_contract_matches_official_disabled_defaults():
+    xml_text = render_adaptive_fitting_options_xml(IdemAdaptiveFittingOptions())
+    root = ET.fromstring(xml_text)
+    namespace = {"f": "OptionsFittingSchema.xsd"}
+    expected_text = {
+        "./f:options/f:iterations/f:initial": "3",
+        "./f:options/f:iterations/f:postadding": "1",
+        "./f:options/f:iterations/f:final": "1",
+        "./f:options/f:iterations/f:enhancePolesPlacement": "false",
+        "./f:options/f:errorControl/f:stagnation/f:alpha": "0.05",
+        "./f:options/f:errorControl/f:stagnation/f:nBackSteps": "3",
+        "./f:options/f:errorControl/f:skimming/f:relativeTolerance": "0.001",
+        "./f:options/f:errorControl/f:skimming/f:finalRelativeTolerance": "0.001",
+        "./f:options/f:errorControl/f:accuracy/f:guaranteed": "0.1",
+        "./f:options/f:splitting/f:splits/f:type": "none",
+        "./f:options/f:splitting/f:p4poles/f:type": "all",
+        "./f:options/f:splitting/f:p4poles/f:nLargest": "INF",
+        "./f:options/f:splitting/f:p4res/f:type": "all",
+        "./f:options/f:outOfBand/f:enforceDC": "true",
+        "./f:options/f:outOfBand/f:frequencyProportionalTerm": "false",
+        "./f:options/f:outOfBand/f:enforceAsymptoticPassivity/f:passivityMargin": "0.001",
+        "./f:options/f:outOfBand/f:enforceAsymptoticPassivity/f:relocatePoles": "false",
+    }
+
+    assert root.tag == "{OptionsFittingSchema.xsd}fittingTask"
+    assert root.attrib == {"version": "1.0"}
+    assert root.find("./f:options/f:order", namespaces=namespace) is None
+    assert root.find("./f:options/f:bandwidth", namespaces=namespace) is None
+    assert root.find("./f:options/f:weights/f:frequency", namespaces=namespace).attrib == {"enabled": "false"}
+    assert root.find("./f:options/f:weights/f:responses", namespaces=namespace).attrib == {"enabled": "false"}
+    assert root.find("./f:options/f:outOfBand/f:enforceAsymptoticPassivity", namespaces=namespace).attrib == {
+        "enabled": "true"
+    }
+    reject_poles = root.find("./f:options/f:outOfBand/f:rejectPoles", namespaces=namespace)
+    assert reject_poles.attrib == {"enabled": "false"}
+    assert len(reject_poles) == 0
+    assert root.find("./f:options/f:outOfBand/f:rejectPoles/f:maxRelativeFrequency", namespaces=namespace) is None
+    for path, text in expected_text.items():
+        assert root.findtext(path, namespaces=namespace) == text
 
 
 def test_adaptive_xml_renders_explicit_enhanced_poles_placement_true():
@@ -84,8 +130,21 @@ def test_adaptive_xml_renders_relative_frequency_weights():
 
     assert root.find(".//f:weights/f:frequency[@enabled='true']", namespaces=namespace) is not None
     assert root.findtext(".//f:weights/f:frequency/f:relative/f:alpha", namespaces=namespace) == "1"
-    assert root.findtext(".//f:weights/f:frequency/f:relative/f:relThreshold", namespaces=namespace) == "1e-08"
+    # Real IdEM 2026 parser probe rejects relThreshold and accepts relativeThreshold.
+    assert root.findtext(".//f:weights/f:frequency/f:relative/f:relativeThreshold", namespaces=namespace) == "1e-08"
+    assert root.find(".//f:weights/f:frequency/f:relative/f:relThreshold", namespaces=namespace) is None
     assert root.find(".//f:weights/f:frequency/f:absolute", namespaces=namespace) is None
+
+
+def test_adaptive_xml_renders_reject_poles_bandwidth_only_when_enabled():
+    xml_text = render_adaptive_fitting_options_xml(
+        IdemAdaptiveFittingOptions(reject_poles=True, reject_poles_max_relative_frequency=1.5)
+    )
+    root = ET.fromstring(xml_text)
+    namespace = {"f": "OptionsFittingSchema.xsd"}
+
+    assert root.find(".//f:outOfBand/f:rejectPoles[@enabled='true']", namespaces=namespace) is not None
+    assert root.findtext(".//f:outOfBand/f:rejectPoles/f:maxRelativeFrequency", namespaces=namespace) == "1.5"
 
 
 def test_adaptive_xml_renders_absolute_frequency_weight_points():
@@ -139,6 +198,8 @@ def test_write_adaptive_fitting_options_xml_returns_path_and_writes_well_formed_
         {"absolute_frequency_weight_points": ((0.0, 1.0),)},
         {"absolute_frequency_weight_points": ((0.0, 1.0), (float("nan"), 1.0))},
         {"absolute_frequency_weight_points": ((0.0, 0.0), (1.0, 1.0))},
+        {"absolute_frequency_weight_points": ((False, 1.0), (1.0, 1.0))},
+        {"absolute_frequency_weight_points": ((0.0, True), (1.0, 1.0))},
         {
             "relative_frequency_weight_alpha": 1.0,
             "absolute_frequency_weight_points": ((0.0, 1.0), (1.0, 1.0)),

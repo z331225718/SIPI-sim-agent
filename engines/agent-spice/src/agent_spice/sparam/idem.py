@@ -209,7 +209,7 @@ def render_adaptive_fitting_options_xml(options: IdemAdaptiveFittingOptions) -> 
     if options.relative_frequency_weight_alpha is not None:
         relative = ET.SubElement(frequency, "relative")
         _append_xml_text(relative, "alpha", _format_idem_float(options.relative_frequency_weight_alpha))
-        _append_xml_text(relative, "relThreshold", _format_idem_float(options.relative_frequency_weight_threshold))
+        _append_xml_text(relative, "relativeThreshold", _format_idem_float(options.relative_frequency_weight_threshold))
     elif options.absolute_frequency_weight_points:
         absolute = ET.SubElement(frequency, "absolute")
         for frequency_hz, weight in options.absolute_frequency_weight_points:
@@ -246,11 +246,12 @@ def render_adaptive_fitting_options_xml(options: IdemAdaptiveFittingOptions) -> 
     _append_xml_text(asymptotic, "passivityMargin", _format_idem_float(options.asymptotic_passivity_margin))
     _append_xml_text(asymptotic, "relocatePoles", _xml_bool(options.asymptotic_relocate_poles))
     reject_poles = ET.SubElement(out_of_band, "rejectPoles", {"enabled": _xml_bool(options.reject_poles)})
-    _append_xml_text(
-        reject_poles,
-        "maxRelativeFrequency",
-        _format_idem_float(options.reject_poles_max_relative_frequency),
-    )
+    if options.reject_poles:
+        _append_xml_text(
+            reject_poles,
+            "maxRelativeFrequency",
+            _format_idem_float(options.reject_poles_max_relative_frequency),
+        )
 
     ET.indent(root, space="  ")
     return f"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n{ET.tostring(root, encoding='unicode')}\n"
@@ -3222,6 +3223,8 @@ def _normalize_absolute_frequency_weight_points(
     for point in points:
         if not isinstance(point, tuple) or len(point) != 2:
             raise ValueError("absolute_frequency_weight_points entries must be (frequency, weight)")
+        if isinstance(point[0], bool) or isinstance(point[1], bool):
+            raise ValueError("absolute frequency weight points must use numeric frequency and weight values")
         frequency_hz = float(point[0])
         weight = float(point[1])
         if not math.isfinite(frequency_hz) or frequency_hz < 0.0:
