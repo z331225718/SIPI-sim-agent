@@ -35,8 +35,12 @@ def test_readme_production_sparam_example_uses_native_baseline_only():
     readme = Path("README.md").read_text(encoding="utf-8")
     sparam_section = readme.split("## S-Parameter Fitting", 1)[1]
     sparam_section = sparam_section.split("\n## ", 1)[0]
+    normalized_section = " ".join(sparam_section.split())
 
     assert "native-idem-fast-v1" in sparam_section
+    assert "production SPICE output" in normalized_section
+    assert "Native writer" in normalized_section
+    assert "benchmark/research" in normalized_section
     assert "--vector-fit-backend" not in sparam_section
     assert "--relocation-backend" not in sparam_section
     assert "--exporter" not in sparam_section
