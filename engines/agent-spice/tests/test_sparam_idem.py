@@ -1,4 +1,7 @@
+import json
+import os
 from pathlib import Path
+import subprocess
 import xml.etree.ElementTree as ET
 
 import numpy as np
@@ -245,7 +248,7 @@ def test_run_idem_initial_iteration_probe_writes_xml_per_trial(tmp_path: Path, m
     assert "<bandwidth mode=\"absolute\">5000000000</bandwidth>" in xml_text
 
 
-def test_run_idem_adaptive_fitting_uses_documented_command_and_timeout(tmp_path: Path, monkeypatch):
+def test_run_idem_adaptive_fitting_allows_order_max_cap_and_uses_documented_command(tmp_path: Path, monkeypatch):
     touchstone = tmp_path / "line.s2p"
     model = tmp_path / "out" / "model.mod.h5"
     xml_path = tmp_path / "fitting_options.fopt.xml"
@@ -266,8 +269,8 @@ def test_run_idem_adaptive_fitting_uses_documented_command_and_timeout(tmp_path:
         touchstone,
         model,
         order_min=4,
-        order_step=2,
-        order_max=100,
+        order_step=4,
+        order_max=10,
         target=1e-3,
         bandwidth_hz=2.0e9,
         threads=8,
@@ -287,9 +290,9 @@ def test_run_idem_adaptive_fitting_uses_documented_command_and_timeout(tmp_path:
         "-orderMin",
         "4",
         "-orderStep",
-        "2",
+        "4",
         "-orderMax",
-        "100",
+        "10",
         "-bandwidth",
         "2000000000",
         "-DC",
@@ -320,6 +323,8 @@ def test_run_idem_adaptive_fitting_removes_only_stale_target_model(tmp_path: Pat
     xml_path.write_text("<fittingTask/>", encoding="utf-8")
     model.parent.mkdir()
     model.write_text("stale model", encoding="utf-8")
+    old_mtime = 1_700_000_000
+    os.utime(model, (old_mtime, old_mtime))
     sibling.write_text("do not delete", encoding="utf-8")
 
     def fake_run(command, timeout_seconds=None):
@@ -346,6 +351,8 @@ def test_run_idem_adaptive_fitting_removes_only_stale_target_model(tmp_path: Pat
 
     assert result["status"] == "completed"
     assert sibling.read_text(encoding="utf-8") == "do not delete"
+    assert model.read_text(encoding="utf-8") == "fresh model"
+    assert model.stat().st_mtime > old_mtime
 
 
 @pytest.mark.parametrize("create_zero_model", [False, True])
@@ -381,7 +388,10 @@ def test_run_idem_adaptive_fitting_fails_without_nonempty_model(tmp_path: Path, 
     assert result["model"] == {}
 
 
-def test_run_idem_adaptive_fitting_fails_on_stdout_error_marker(tmp_path: Path, monkeypatch):
+@pytest.mark.parametrize(("stdout", "stderr"), [("Error: failed\nEnd of model build\n", ""), ("End of model build\n", "Error: failed\n")])
+def test_run_idem_adaptive_fitting_fails_on_error_marker_before_inspection(
+    tmp_path: Path, monkeypatch, stdout: str, stderr: str
+):
     touchstone = tmp_path / "line.s2p"
     model = tmp_path / "model.mod.h5"
     xml_path = tmp_path / "fitting_options.fopt.xml"
@@ -390,10 +400,10 @@ def test_run_idem_adaptive_fitting_fails_on_stdout_error_marker(tmp_path: Path, 
 
     def fake_run(command, timeout_seconds=None):
         model.write_text("fake model", encoding="utf-8")
-        return IdemCommandResult(command, 0, "Error: failed\nEnd of model build\n", "", 0.1, None)
+        return IdemCommandResult(command, 0, stdout, stderr, 0.1, None)
 
     monkeypatch.setattr(idem, "_run_command", fake_run)
-    monkeypatch.setattr(idem, "inspect_idem_model", lambda path: {"order": 4})
+    monkeypatch.setattr(idem, "inspect_idem_model", lambda path: pytest.fail("failed run was inspected"))
 
     result = idem.run_idem_adaptive_fitting(
         touchstone,
@@ -409,7 +419,78 @@ def test_run_idem_adaptive_fitting_fails_on_stdout_error_marker(tmp_path: Path, 
     )
 
     assert result["status"] == "failed"
-    assert result["model"] == {"order": 4}
+    assert result["model"] == {}
+
+
+def test_run_idem_adaptive_fitting_does_not_inspect_preliminary_failure(tmp_path: Path, monkeypatch):
+    touchstone = tmp_path / "line.s2p"
+    model = tmp_path / "model.mod.h5"
+    xml_path = tmp_path / "fitting_options.fopt.xml"
+    _write_s2p(touchstone)
+    xml_path.write_text("<fittingTask/>", encoding="utf-8")
+
+    def fake_run(command, timeout_seconds=None):
+        model.write_text("partial model", encoding="utf-8")
+        return IdemCommandResult(command, 2, "partial output\n", "", 0.1, None)
+
+    monkeypatch.setattr(idem, "_run_command", fake_run)
+    monkeypatch.setattr(idem, "inspect_idem_model", lambda path: pytest.fail("preliminary failure was inspected"))
+
+    result = idem.run_idem_adaptive_fitting(
+        touchstone,
+        model,
+        order_min=4,
+        order_step=2,
+        order_max=8,
+        target=1e-3,
+        bandwidth_hz=2.0e9,
+        threads=2,
+        options_xml_path=xml_path,
+        idem_bin_dir=tmp_path,
+    )
+
+    assert result["status"] == "failed"
+    assert result["model"] == {}
+
+
+def test_run_idem_adaptive_fitting_reports_inspection_failure_as_serializable_result(
+    tmp_path: Path, monkeypatch
+):
+    touchstone = tmp_path / "line.s2p"
+    model = tmp_path / "model.mod.h5"
+    xml_path = tmp_path / "fitting_options.fopt.xml"
+    _write_s2p(touchstone)
+    xml_path.write_text("<fittingTask/>", encoding="utf-8")
+
+    def fake_run(command, timeout_seconds=None):
+        model.write_text("fresh model", encoding="utf-8")
+        return IdemCommandResult(command, 1, "End of model build\n", "", 0.1, None)
+
+    def fail_inspection(path):
+        raise RuntimeError("cannot parse hdf5")
+
+    monkeypatch.setattr(idem, "_run_command", fake_run)
+    monkeypatch.setattr(idem, "inspect_idem_model", fail_inspection)
+
+    result = idem.run_idem_adaptive_fitting(
+        touchstone,
+        model,
+        order_min=4,
+        order_step=2,
+        order_max=8,
+        target=1e-3,
+        bandwidth_hz=2.0e9,
+        threads=2,
+        options_xml_path=xml_path,
+        idem_bin_dir=tmp_path,
+    )
+
+    assert result["status"] == "failed"
+    assert result["model"] == {}
+    assert "inspection failure" in result["error"]
+    assert "cannot parse hdf5" in result["error"]
+    assert "Traceback" not in result["error"]
+    json.dumps(result)
 
 
 def test_run_idem_adaptive_fitting_accepts_returncode_one_with_end_marker(tmp_path: Path, monkeypatch):
@@ -452,7 +533,6 @@ def test_run_idem_adaptive_fitting_accepts_returncode_one_with_end_marker(tmp_pa
         {"order_step": False},
         {"order_max": 0},
         {"order_min": 10, "order_step": 2, "order_max": 8},
-        {"order_min": 4, "order_step": 3, "order_max": 9},
         {"target": 0.0},
         {"target": float("nan")},
         {"target": True},
@@ -509,20 +589,34 @@ def test_run_idem_adaptive_fitting_requires_existing_input_files(tmp_path: Path,
         )
 
 
-def test_run_idem_adaptive_fitting_propagates_timeout(tmp_path: Path, monkeypatch):
+@pytest.mark.parametrize(
+    "exception",
+    [
+        TimeoutError("timed out"),
+        subprocess.TimeoutExpired(cmd=["idemmp_fitting.exe"], timeout=0.01),
+    ],
+)
+def test_run_idem_adaptive_fitting_propagates_timeout_and_removes_stale_target(
+    tmp_path: Path, monkeypatch, exception: BaseException
+):
     touchstone = tmp_path / "line.s2p"
     model = tmp_path / "model.mod.h5"
+    sibling = tmp_path / "keep.mod.h5"
     xml_path = tmp_path / "fitting_options.fopt.xml"
     _write_s2p(touchstone)
+    model.write_text("stale model", encoding="utf-8")
+    sibling.write_text("keep", encoding="utf-8")
     xml_path.write_text("<fittingTask/>", encoding="utf-8")
 
     def fake_run(command, timeout_seconds=None):
         assert timeout_seconds == 0.01
-        raise TimeoutError("timed out")
+        assert not model.exists()
+        assert sibling.read_text(encoding="utf-8") == "keep"
+        raise exception
 
     monkeypatch.setattr(idem, "_run_command", fake_run)
 
-    with pytest.raises(TimeoutError):
+    with pytest.raises(type(exception)):
         idem.run_idem_adaptive_fitting(
             touchstone,
             model,
@@ -536,6 +630,8 @@ def test_run_idem_adaptive_fitting_propagates_timeout(tmp_path: Path, monkeypatc
             idem_bin_dir=tmp_path,
             timeout_seconds=0.01,
         )
+    assert not model.exists()
+    assert sibling.read_text(encoding="utf-8") == "keep"
 
 
 def test_parse_idem_passivity_stdout_extracts_soc_ham_progress():
