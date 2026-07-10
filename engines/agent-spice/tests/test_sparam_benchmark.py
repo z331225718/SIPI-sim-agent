@@ -8,7 +8,9 @@ import pytest
 from agent_spice.sparam.benchmark import (
     BenchmarkContract,
     ToolTrial,
+    accuracy_agrees,
     atomic_write_json,
+    audit_touchstone_model,
     benchmark_fingerprint,
     discover_touchstone_corpus,
     load_benchmark_cases,
@@ -197,6 +199,64 @@ def test_trial_serialization_converts_non_finite_metrics_to_null():
 
     assert payload["final_mean_rms"] is None
     assert payload["final_max_sigma"] is None
+
+
+def test_audit_touchstone_model_uses_exact_full_grid(tmp_path: Path):
+    original = Path("tests/fixtures/sparam/simple_through.s2p")
+    exported = tmp_path / "exported.s2p"
+    exported.write_bytes(original.read_bytes())
+
+    audit = audit_touchstone_model(original, exported, chunk_size=2)
+
+    assert audit["status"] == "PASS"
+    assert audit["ports"] == 2
+    assert audit["frequency_points"] == 5
+    assert audit["frequency_grid_match"] is True
+    assert audit["mean_rms"] == pytest.approx(0.0)
+    assert audit["sampled_max_sigma"] < 1.0
+
+
+def test_audit_touchstone_model_rejects_frequency_grid_mismatch(tmp_path: Path):
+    original = Path("tests/fixtures/sparam/simple_through.s2p")
+    exported = tmp_path / "shifted.s2p"
+    exported.write_text(
+        original.read_text(encoding="utf-8").replace("1e8 0.01", "1.0001e8 0.01"),
+        encoding="utf-8",
+    )
+
+    audit = audit_touchstone_model(original, exported, chunk_size=2)
+
+    assert audit["status"] == "INVALID"
+    assert audit["failure_reason"] == "frequency_grid_mismatch"
+    assert audit["frequency_grid_match"] is False
+    assert audit["mean_rms"] is None
+
+
+def test_audit_touchstone_model_rejects_non_finite_samples(tmp_path: Path):
+    original = Path("tests/fixtures/sparam/simple_through.s2p")
+    exported = tmp_path / "nonfinite.s2p"
+    exported.write_text(
+        original.read_text(encoding="utf-8").replace("0.01 0", "nan 0", 1),
+        encoding="utf-8",
+    )
+
+    audit = audit_touchstone_model(original, exported, chunk_size=2)
+
+    assert audit["status"] == "INVALID"
+    assert audit["failure_reason"] == "non_finite_metric"
+
+
+@pytest.mark.parametrize(
+    ("reported", "audited", "expected"),
+    [
+        (0.001, 0.0010000005, True),
+        (0.001, 0.00100002, False),
+        (None, 0.001, False),
+        (0.001, math.nan, False),
+    ],
+)
+def test_accuracy_agreement_gate_is_strict(reported, audited, expected):
+    assert accuracy_agrees(reported, audited, target=0.001) is expected
 
 
 def test_load_benchmark_cases_resolves_paths_and_fit_config(tmp_path: Path):

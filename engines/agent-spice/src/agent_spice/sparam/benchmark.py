@@ -9,8 +9,9 @@ from pathlib import Path
 import re
 import time
 import tracemalloc
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
 
+import numpy as np
 import yaml
 
 from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice
@@ -327,6 +328,170 @@ def benchmark_fingerprint(
     }
     canonical = json.dumps(_json_safe(payload), sort_keys=True, separators=(",", ":"), allow_nan=False)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _iter_touchstone_s_ri_chunks(
+    path: Path,
+    *,
+    ports: int,
+    chunk_size: int,
+) -> Iterator[tuple[np.ndarray, np.ndarray]]:
+    expected_values = 1 + (2 * ports * ports)
+    frequency_scale: float | None = None
+    header_seen = False
+    pending_values: list[float] = []
+    chunk_frequencies: list[float] = []
+    chunk_responses: list[np.ndarray] = []
+
+    with path.open("r", encoding="utf-8", errors="ignore") as handle:
+        for raw_line in handle:
+            line = raw_line.split("!", 1)[0].strip()
+            if not line:
+                continue
+            if line.startswith("["):
+                raise ValueError("Touchstone 2.0 is not supported by the independent audit")
+            if line.startswith("#"):
+                tokens = line[1:].upper().split()
+                if len(tokens) < 3 or tokens[1:3] != ["S", "RI"]:
+                    raise ValueError("Independent audit requires Touchstone S-parameter RI data")
+                frequency_scale = _FREQUENCY_SCALES.get(tokens[0])
+                if frequency_scale is None:
+                    raise ValueError(f"Unsupported Touchstone frequency unit: {tokens[0]}")
+                header_seen = True
+                continue
+            if not header_seen:
+                continue
+
+            try:
+                pending_values.extend(float(token) for token in line.split())
+            except ValueError as exc:
+                raise ValueError(f"Invalid numeric Touchstone data in {path}") from exc
+            while len(pending_values) >= expected_values:
+                point = pending_values[:expected_values]
+                pending_values = pending_values[expected_values:]
+                pairs = np.asarray(point[1:], dtype=float).reshape(-1, 2)
+                response = (pairs[:, 0] + 1j * pairs[:, 1]).reshape(ports, ports)
+                chunk_frequencies.append(point[0] * frequency_scale)
+                chunk_responses.append(response)
+                if len(chunk_frequencies) == chunk_size:
+                    yield np.asarray(chunk_frequencies, dtype=float), np.asarray(chunk_responses)
+                    chunk_frequencies = []
+                    chunk_responses = []
+
+    if pending_values:
+        raise ValueError(f"Incomplete Touchstone data block in {path}")
+    if chunk_frequencies:
+        yield np.asarray(chunk_frequencies, dtype=float), np.asarray(chunk_responses)
+
+
+def _invalid_audit(reason: str, **details: Any) -> dict[str, Any]:
+    return {
+        "status": "INVALID",
+        "failure_reason": reason,
+        "frequency_grid_match": False,
+        "mean_rms": None,
+        "sampled_max_sigma": None,
+        **details,
+    }
+
+
+def audit_touchstone_model(
+    original_path: Path,
+    exported_path: Path,
+    *,
+    chunk_size: int = 32,
+) -> dict[str, Any]:
+    if chunk_size < 1:
+        raise ValueError("chunk_size must be at least 1")
+
+    try:
+        original_metadata = load_touchstone_metadata(original_path)
+        exported_metadata = load_touchstone_metadata(exported_path)
+    except (OSError, ValueError) as exc:
+        return _invalid_audit("touchstone_parse_error", error=str(exc))
+
+    base_details = {
+        "ports": original_metadata.ports,
+        "frequency_points": original_metadata.frequency_points,
+        "exported_ports": exported_metadata.ports,
+        "exported_frequency_points": exported_metadata.frequency_points,
+    }
+    if exported_metadata.ports != original_metadata.ports:
+        return _invalid_audit("port_count_mismatch", **base_details)
+    if exported_metadata.frequency_points != original_metadata.frequency_points:
+        return _invalid_audit("frequency_point_count_mismatch", **base_details)
+
+    original_chunks = _iter_touchstone_s_ri_chunks(
+        original_path,
+        ports=original_metadata.ports,
+        chunk_size=chunk_size,
+    )
+    exported_chunks = _iter_touchstone_s_ri_chunks(
+        exported_path,
+        ports=exported_metadata.ports,
+        chunk_size=chunk_size,
+    )
+    squared_error_sum = 0.0
+    scalar_count = 0
+    sampled_max_sigma = 0.0
+    audited_points = 0
+
+    try:
+        for original_chunk, exported_chunk in zip(original_chunks, exported_chunks, strict=True):
+            original_frequencies, original_s = original_chunk
+            exported_frequencies, exported_s = exported_chunk
+            if not (
+                np.all(np.isfinite(original_frequencies))
+                and np.all(np.isfinite(exported_frequencies))
+                and np.all(np.isfinite(original_s))
+                and np.all(np.isfinite(exported_s))
+            ):
+                return _invalid_audit("non_finite_metric", **base_details)
+            if not np.allclose(original_frequencies, exported_frequencies, rtol=1.0e-12, atol=0.0):
+                return _invalid_audit("frequency_grid_mismatch", **base_details)
+            error = exported_s - original_s
+            squared_error_sum += float(np.sum(np.abs(error) ** 2))
+            scalar_count += int(error.size)
+            audited_points += len(original_frequencies)
+            for matrix in exported_s:
+                sigma = float(np.linalg.svd(matrix, compute_uv=False)[0])
+                sampled_max_sigma = max(sampled_max_sigma, sigma)
+    except (OSError, ValueError) as exc:
+        return _invalid_audit("touchstone_parse_error", error=str(exc), **base_details)
+
+    if audited_points != original_metadata.frequency_points or scalar_count == 0:
+        return _invalid_audit("frequency_point_count_mismatch", **base_details)
+    mean_rms = math.sqrt(squared_error_sum / scalar_count)
+    if not math.isfinite(mean_rms) or not math.isfinite(sampled_max_sigma):
+        return _invalid_audit("non_finite_metric", **base_details)
+    return {
+        "status": "PASS",
+        "failure_reason": None,
+        "frequency_grid_match": True,
+        "ports": original_metadata.ports,
+        "frequency_points": audited_points,
+        "exported_ports": exported_metadata.ports,
+        "exported_frequency_points": exported_metadata.frequency_points,
+        "mean_rms": mean_rms,
+        "sampled_max_sigma": sampled_max_sigma,
+    }
+
+
+def accuracy_agrees(
+    reported: float | None,
+    audited: float | None,
+    target: float,
+) -> bool:
+    if (
+        reported is None
+        or audited is None
+        or not math.isfinite(reported)
+        or not math.isfinite(audited)
+        or not math.isfinite(target)
+        or target <= 0.0
+    ):
+        return False
+    return abs(reported - audited) <= max(1.0e-9, 1.0e-5 * target)
 
 
 @dataclass(frozen=True)
