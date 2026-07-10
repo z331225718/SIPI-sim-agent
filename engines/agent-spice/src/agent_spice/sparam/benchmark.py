@@ -2,17 +2,331 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field, fields, replace
 import csv
+import hashlib
 import json
+import math
 from pathlib import Path
 import re
 import time
 import tracemalloc
-from typing import Any
+from typing import Any, Callable
 
 import yaml
 
 from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice
 from agent_spice.sparam.io import load_touchstone_metadata
+
+
+_TOUCHSTONE_SUFFIX_RE = re.compile(r"\.s(?P<ports>\d+)p$", re.IGNORECASE)
+_FREQUENCY_SCALES = {
+    "HZ": 1.0,
+    "KHZ": 1.0e3,
+    "MHZ": 1.0e6,
+    "GHZ": 1.0e9,
+}
+
+
+@dataclass(frozen=True)
+class BenchmarkContract:
+    contract_version: str = "sparam_full_corpus_v1"
+    rms_target: float = 0.001
+    passivity_epsilon: float = 1.0e-6
+    max_order: int = 100
+    threads: int = 8
+    phase_timeout_seconds: float = 7200.0
+
+    def __post_init__(self) -> None:
+        if not self.contract_version:
+            raise ValueError("contract_version must not be empty")
+        if not math.isfinite(self.rms_target) or self.rms_target <= 0.0:
+            raise ValueError("rms_target must be finite and positive")
+        if not math.isfinite(self.passivity_epsilon) or self.passivity_epsilon < 0.0:
+            raise ValueError("passivity_epsilon must be finite and non-negative")
+        if self.max_order < 1:
+            raise ValueError("max_order must be at least 1")
+        if self.threads < 1:
+            raise ValueError("threads must be at least 1")
+        if not math.isfinite(self.phase_timeout_seconds) or self.phase_timeout_seconds <= 0.0:
+            raise ValueError("phase_timeout_seconds must be finite and positive")
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class CorpusEntry:
+    path: Path
+    relative_path: str
+    sha256: str
+    size_bytes: int
+    ports: int
+    frequency_points: int
+    frequency_min_hz: float
+    frequency_max_hz: float
+    reference_impedance: tuple[float, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return _json_safe(asdict(self))
+
+
+@dataclass
+class ToolTrial:
+    tool: str
+    requested_order: int
+    effective_order: int | None = None
+    pre_mean_rms: float | None = None
+    final_mean_rms: float | None = None
+    authoritative_passive: bool | None = None
+    final_max_sigma: float | None = None
+    sampled_max_sigma: float | None = None
+    fit_seconds: float = 0.0
+    check_seconds: float = 0.0
+    enforce_seconds: float = 0.0
+    validation_seconds: float = 0.0
+    elapsed_seconds: float = 0.0
+    peak_memory_mb: float = 0.0
+    target_met: bool = False
+    status: str = "FAIL"
+    failure_reason: str | None = None
+    fingerprint: str = ""
+    pre_max_sigma: float | None = None
+    artifact_paths: dict[str, str] = field(default_factory=dict)
+
+    def meets_contract(self, contract: BenchmarkContract) -> bool:
+        return bool(
+            self.target_met
+            and self.effective_order is not None
+            and 1 <= self.effective_order <= contract.max_order
+            and _is_finite_at_most(self.final_mean_rms, contract.rms_target)
+            and self.authoritative_passive is True
+            and _is_finite_at_most(
+                self.final_max_sigma,
+                1.0 + contract.passivity_epsilon,
+            )
+            and _is_finite_at_most(
+                self.sampled_max_sigma,
+                1.0 + contract.passivity_epsilon,
+            )
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return _json_safe(asdict(self))
+
+
+@dataclass(frozen=True)
+class ToolSearchResult:
+    contract: BenchmarkContract
+    trials: tuple[ToolTrial, ...]
+    selected_trial: ToolTrial | None
+    stop_reason: str
+
+    @property
+    def selected_order(self) -> int | None:
+        if self.selected_trial is None:
+            return None
+        return self.selected_trial.effective_order
+
+    @property
+    def attempted_orders(self) -> tuple[int, ...]:
+        return tuple(trial.requested_order for trial in self.trials)
+
+    @property
+    def target_met(self) -> bool:
+        return self.selected_trial is not None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "contract": self.contract.to_dict(),
+            "trials": [trial.to_dict() for trial in self.trials],
+            "selected_trial": None if self.selected_trial is None else self.selected_trial.to_dict(),
+            "stop_reason": self.stop_reason,
+        }
+
+
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    return value
+
+
+def _is_finite_at_most(value: float | None, upper_bound: float) -> bool:
+    return value is not None and math.isfinite(value) and value <= upper_bound
+
+
+def _touchstone_frequency_range_hz(path: Path, ports: int) -> tuple[float, float, int]:
+    values_per_frequency = 1 + (2 * ports * ports)
+    token_offset = 0
+    frequencies: list[float] = []
+    frequency_scale: float | None = None
+
+    with path.open("r", encoding="utf-8", errors="ignore") as handle:
+        for line in handle:
+            stripped = line.strip()
+            if not stripped or stripped.startswith("!"):
+                continue
+            if stripped.startswith("["):
+                raise ValueError(f"Touchstone 2.0 frequency scan is not supported: {path}")
+            if stripped.startswith("#"):
+                tokens = stripped[1:].split()
+                if tokens:
+                    frequency_scale = _FREQUENCY_SCALES.get(tokens[0].upper())
+                continue
+
+            data = stripped.split("!", 1)[0].strip()
+            for token in data.split():
+                if token_offset == 0:
+                    try:
+                        frequencies.append(float(token))
+                    except ValueError as exc:
+                        raise ValueError(f"Invalid Touchstone frequency token in {path}: {token}") from exc
+                token_offset = (token_offset + 1) % values_per_frequency
+
+    if frequency_scale is None:
+        raise ValueError(f"Touchstone frequency unit is missing or unsupported: {path}")
+    if not frequencies or token_offset != 0:
+        raise ValueError(f"Touchstone data rows are incomplete: {path}")
+    scaled = [frequency * frequency_scale for frequency in frequencies]
+    if not all(math.isfinite(frequency) and frequency >= 0.0 for frequency in scaled):
+        raise ValueError(f"Touchstone frequencies must be finite and non-negative: {path}")
+    return min(scaled), max(scaled), len(scaled)
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def discover_touchstone_corpus(root: Path) -> tuple[CorpusEntry, ...]:
+    root = root.resolve()
+    entries: list[CorpusEntry] = []
+    for path in root.iterdir():
+        if not path.is_file():
+            continue
+        match = _TOUCHSTONE_SUFFIX_RE.search(path.name)
+        if match is None:
+            continue
+        ports = int(match.group("ports"))
+        metadata = load_touchstone_metadata(path)
+        if metadata.ports != ports:
+            raise ValueError(f"Touchstone suffix/metadata port mismatch: {path}")
+        frequency_min_hz, frequency_max_hz, scanned_points = _touchstone_frequency_range_hz(
+            path,
+            ports,
+        )
+        if scanned_points != metadata.frequency_points:
+            raise ValueError(f"Touchstone frequency count mismatch: {path}")
+        entries.append(
+            CorpusEntry(
+                path=path.resolve(),
+                relative_path=path.relative_to(root).as_posix(),
+                sha256=_sha256_file(path),
+                size_bytes=path.stat().st_size,
+                ports=ports,
+                frequency_points=metadata.frequency_points,
+                frequency_min_hz=frequency_min_hz,
+                frequency_max_hz=frequency_max_hz,
+                reference_impedance=tuple(float(value) for value in metadata.reference_impedance),
+            )
+        )
+    return tuple(sorted(entries, key=lambda entry: (entry.ports, entry.path.name.lower())))
+
+
+def run_benchmark_order_search(
+    contract: BenchmarkContract,
+    evaluate_order: Callable[[int], ToolTrial],
+) -> ToolSearchResult:
+    cache: dict[int, ToolTrial] = {}
+    evaluation_order: list[int] = []
+
+    def evaluate(order: int) -> ToolTrial:
+        if order not in cache:
+            trial = evaluate_order(order)
+            if trial.requested_order != order:
+                raise ValueError("order evaluator returned a mismatched requested_order")
+            cache[order] = trial
+            evaluation_order.append(order)
+        return cache[order]
+
+    if contract.max_order < 4:
+        coarse_orders = list(range(1, contract.max_order + 1))
+    else:
+        coarse_orders = list(range(4, contract.max_order + 1, 2))
+        if contract.max_order % 2 == 1:
+            coarse_orders.append(contract.max_order)
+
+    previous_failed_order = 0 if contract.max_order < 4 else 2
+    first_passing_order: int | None = None
+    for order in coarse_orders:
+        trial = evaluate(order)
+        if trial.meets_contract(contract):
+            first_passing_order = order
+            break
+        previous_failed_order = order
+
+    if first_passing_order is None:
+        return ToolSearchResult(
+            contract=contract,
+            trials=tuple(cache[order] for order in evaluation_order),
+            selected_trial=None,
+            stop_reason="target_not_met_before_max_order",
+        )
+
+    if contract.max_order >= 4:
+        for order in range(previous_failed_order + 1, first_passing_order):
+            evaluate(order)
+
+    passing = [trial for trial in cache.values() if trial.meets_contract(contract)]
+    selected = min(
+        passing,
+        key=lambda trial: (
+            trial.effective_order if trial.effective_order is not None else math.inf,
+            trial.requested_order,
+        ),
+    )
+    return ToolSearchResult(
+        contract=contract,
+        trials=tuple(cache[order] for order in evaluation_order),
+        selected_trial=selected,
+        stop_reason="target_met",
+    )
+
+
+def atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = path.with_name(f"{path.name}.tmp")
+    serialized = json.dumps(_json_safe(payload), indent=2, sort_keys=True, allow_nan=False) + "\n"
+    temporary_path.write_text(serialized, encoding="utf-8")
+    temporary_path.replace(path)
+
+
+def benchmark_fingerprint(
+    *,
+    input_sha256: str,
+    contract: BenchmarkContract,
+    tool: str,
+    tool_identity: str,
+    order: int,
+    options: dict[str, Any],
+) -> str:
+    payload = {
+        "input_sha256": input_sha256,
+        "contract": contract.to_dict(),
+        "tool": tool,
+        "tool_identity": tool_identity,
+        "order": order,
+        "options": options,
+    }
+    canonical = json.dumps(_json_safe(payload), sort_keys=True, separators=(",", ":"), allow_nan=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 @dataclass(frozen=True)
