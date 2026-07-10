@@ -16,6 +16,13 @@ from typing import Any, Callable
 import numpy as np
 
 from agent_spice.sparam.quality import SCHEMA_VERSION, QualityReport, build_quality_report
+from agent_spice.sparam.target_fit import (
+    SParamFitTarget,
+    SParamOrderTrial,
+    SParamTargetSearchResult,
+    run_target_order_search,
+    trial_from_fit_result,
+)
 
 
 class _LazyRf:
@@ -1811,6 +1818,136 @@ def fit_touchstone_to_spice_auto_order(
             encoding="utf-8",
         )
     return result
+
+
+def fit_touchstone_to_spice_target(
+    touchstone_path: Path,
+    output_path: Path,
+    *,
+    target: SParamFitTarget,
+    config: SParamFitConfig | None = None,
+    report_path: Path | None = None,
+    html_report_path: Path | None = None,
+    log_path: Path | None = None,
+) -> SParamTargetSearchResult:
+    base_config = config or SParamFitConfig()
+    policy_config = replace(
+        base_config,
+        check_passivity=target.passivity != "off",
+        enforce_passivity=target.passivity == "enforce",
+        passivity_enforce_rms_target=target.mean_rms if target.passivity == "enforce" else None,
+        max_passivity_epsilon=target.passivity_epsilon,
+        fit_frequency_stride=1,
+        fit_max_frequency_points=None,
+        fit_f_min=None,
+        fit_f_max=None,
+    )
+    output_stem = output_path.stem
+    trial_logs: list[tuple[int, Path]] = []
+
+    def evaluate_order(order: int) -> SParamOrderTrial:
+        trial_dir = output_path.parent / f"{output_stem}_order{order}"
+        trial_output = trial_dir / output_path.name
+        trial_report = trial_dir / "fit_report.json"
+        trial_html = trial_dir / "fit_report.html" if html_report_path is not None else None
+        trial_log = trial_dir / "fit.log" if log_path is not None else None
+        trial_config = _native_manual_auto_order_config(policy_config, order)
+        try:
+            fit_result = fit_touchstone_to_spice(
+                touchstone_path,
+                trial_output,
+                config=trial_config,
+                report_path=trial_report,
+                html_report_path=trial_html,
+                log_path=trial_log,
+            )
+        except Exception as exc:
+            return SParamOrderTrial(
+                requested_order=order,
+                effective_order=order,
+                fit_frequency_points=0,
+                evaluation_frequency_points=0,
+                pre_mean_rms=math.inf,
+                final_mean_rms=math.inf,
+                pre_max_sigma=None,
+                final_max_sigma=None,
+                fit_seconds=0.0,
+                check_seconds=0.0,
+                enforce_seconds=0.0,
+                elapsed_seconds=0.0,
+                peak_memory_mb=0.0,
+                target_met=False,
+                status="FAIL",
+                rejection_reason="fit_failed",
+                payload={"error": str(exc), "trial_dir": str(trial_dir)},
+            )
+        if trial_log is not None:
+            trial_logs.append((order, trial_log))
+        return trial_from_fit_result(target, fit_result, requested_order=order)
+
+    search_result = run_target_order_search(target, evaluate_order)
+    selected_fit_result = None if search_result.selected_trial is None else search_result.selected_trial.payload
+    if selected_fit_result is None:
+        output_path.unlink(missing_ok=True)
+    else:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(Path(selected_fit_result.spice_path), output_path)
+
+    payload = search_result.to_dict()
+    if selected_fit_result is not None and hasattr(selected_fit_result, "to_dict"):
+        selected_payload = selected_fit_result.to_dict()
+        selected_payload["spice_path"] = str(output_path)
+        selected_payload.update(payload)
+        payload = selected_payload
+    payload["rms_formula"] = "mean_s_rms_v1"
+    payload["order_formula"] = "real_plus_twice_complex_v1"
+    payload["touchstone_path"] = str(touchstone_path)
+    payload["spice_path"] = str(output_path) if search_result.target_met else None
+    payload["report_path"] = None if report_path is None else str(report_path)
+    payload["html_report_path"] = None if html_report_path is None else str(html_report_path)
+    payload["log_path"] = None if log_path is None else str(log_path)
+
+    if report_path is not None:
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if html_report_path is not None:
+        html_report_path.parent.mkdir(parents=True, exist_ok=True)
+        rows = "\n".join(
+            "<tr>"
+            f"<td>{trial.requested_order}</td>"
+            f"<td>{trial.effective_order}</td>"
+            f"<td>{_format_float(trial.pre_mean_rms)}</td>"
+            f"<td>{_format_float(trial.final_mean_rms)}</td>"
+            f"<td>{_format_float(trial.final_max_sigma)}</td>"
+            f"<td>{escape(trial.status)}</td>"
+            f"<td>{escape(str(trial.rejection_reason or ''))}</td>"
+            "</tr>"
+            for trial in search_result.trials
+        )
+        html_report_path.write_text(
+            f"""<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Target-Driven S-Parameter Fit</title></head>
+<body>
+  <h1>Target-Driven S-Parameter Fit</h1>
+  <p>Target RMS: {_format_float(target.mean_rms)}; passivity: {escape(target.passivity)}; result: {escape(search_result.stop_reason)}</p>
+  <table>
+    <tr><th>Requested order</th><th>Effective order</th><th>Pre RMS</th><th>Final RMS</th><th>Final sigma</th><th>Status</th><th>Reason</th></tr>
+    {rows}
+  </table>
+</body>
+</html>
+""",
+            encoding="utf-8",
+        )
+    if log_path is not None:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        chunks = []
+        for order, trial_log in trial_logs:
+            if trial_log.exists():
+                chunks.append(f"===== order {order} =====\n{trial_log.read_text(encoding='utf-8')}")
+        log_path.write_text("\n".join(chunks), encoding="utf-8")
+    return search_result
 
 
 def write_idem_spice_subcircuit(

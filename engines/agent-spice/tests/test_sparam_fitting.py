@@ -2,11 +2,13 @@ import json
 import logging
 from pathlib import Path
 import re
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
 from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice, fit_touchstone_to_spice_auto_order
+from agent_spice.sparam.target_fit import SParamFitTarget
 
 
 def test_passivity_advanced_perturbations_are_experimental_opt_in():
@@ -876,6 +878,105 @@ def test_native_manual_auto_order_requests_exact_effective_order(order, real_cou
     assert (trial.n_poles_real, trial.n_poles_cmplx) == (real_count, complex_count)
     assert trial.native_post_relocation_effective_order_max == order
     assert trial.native_effective_complex_pole_count == complex_count
+
+
+def _fake_target_fit_result(output_path: Path, order: int, *, target_met: bool):
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(f"* order {order}\n", encoding="utf-8")
+    result = SimpleNamespace(
+        spice_path=output_path,
+        expanded_model_order=order,
+        fit_frequency_points=611,
+        frequency_points=611,
+        pre_enforcement_mean_rms_error=0.0008 if target_met else 0.002,
+        comparison_mean_rms_error=0.0009 if target_met else 0.002,
+        passivity_max_sigma_before=1.01,
+        passivity_max_sigma_after=0.999 if target_met else 1.01,
+        passive_after_enforce=target_met,
+        fit_seconds=1.0,
+        check_seconds=0.2,
+        enforce_seconds=0.3,
+        elapsed_seconds=1.5,
+        peak_memory_mb=20.0,
+        real_pole_count=max(0, order - 4),
+        complex_pair_count=2,
+        stored_pole_count=max(0, order - 4) + 2,
+        passivity_enforcement_skip_reason=None,
+    )
+    result.to_dict = lambda: {
+        "spice_path": str(output_path),
+        "comparison_mean_rms_error": result.comparison_mean_rms_error,
+        "expanded_model_order": order,
+    }
+    return result
+
+
+def test_target_fit_search_writes_only_selected_model(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    calls = []
+
+    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path):
+        order = config.model_order_max
+        calls.append(order)
+        return _fake_target_fit_result(output_path, order, target_met=order >= 8)
+
+    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+    output = tmp_path / "model.sp"
+    report = tmp_path / "report.json"
+    html = tmp_path / "report.html"
+
+    result = fitting.fit_touchstone_to_spice_target(
+        tmp_path / "line.s91p",
+        output,
+        target=SParamFitTarget(0.001, passivity="enforce", max_order=10),
+        config=SParamFitConfig(mode="manual", vector_fit_backend="native", high_frequency_complex_pair_count=2),
+        report_path=report,
+        html_report_path=html,
+    )
+
+    assert calls == [4, 6, 8, 7]
+    assert result.target_met is True
+    assert result.selected_trial is not None
+    assert result.selected_trial.requested_order == 8
+    assert output.read_text(encoding="utf-8") == "* order 8\n"
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert payload["rms_target"] == pytest.approx(0.001)
+    assert payload["passivity_policy"] == "enforce"
+    assert payload["selected_effective_order"] == 8
+    assert payload["benchmark_contract_version"] == "sparam_target_v1"
+    assert payload["spice_path"] == str(output)
+    assert payload["report_path"] == str(report)
+    assert payload["html_report_path"] == str(html)
+    assert html.exists()
+
+
+def test_target_fit_failure_removes_requested_output_and_keeps_reports(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path):
+        return _fake_target_fit_result(output_path, config.model_order_max, target_met=False)
+
+    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+    output = tmp_path / "model.sp"
+    output.write_text("stale", encoding="utf-8")
+    report = tmp_path / "report.json"
+    html = tmp_path / "report.html"
+
+    result = fitting.fit_touchstone_to_spice_target(
+        tmp_path / "line.s91p",
+        output,
+        target=SParamFitTarget(0.001, passivity="check", max_order=6),
+        config=SParamFitConfig(mode="manual", vector_fit_backend="native", high_frequency_complex_pair_count=2),
+        report_path=report,
+        html_report_path=html,
+    )
+
+    assert result.target_met is False
+    assert result.stop_reason == "target_not_met_before_max_order"
+    assert not output.exists()
+    assert json.loads(report.read_text(encoding="utf-8"))["target_met"] is False
+    assert html.exists()
 
 
 def test_fit_touchstone_to_spice_can_fit_frequency_subset(tmp_path: Path, monkeypatch):

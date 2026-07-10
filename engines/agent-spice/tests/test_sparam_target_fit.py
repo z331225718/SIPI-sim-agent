@@ -1,4 +1,5 @@
 import math
+from types import SimpleNamespace
 
 import pytest
 
@@ -6,6 +7,7 @@ from agent_spice.sparam.target_fit import (
     SParamFitTarget,
     SParamOrderTrial,
     run_target_order_search,
+    trial_from_fit_result,
 )
 
 
@@ -160,3 +162,119 @@ def test_trial_dict_does_not_copy_in_memory_payload():
     trial.payload = Payload()
 
     assert trial.to_dict()["requested_order"] == 8
+
+
+def make_fit_result(
+    *,
+    pre_rms=0.0008,
+    final_rms=0.0009,
+    final_sigma=0.999,
+    passive_after=True,
+    effective_order=8,
+    skip_reason=None,
+):
+    return SimpleNamespace(
+        expanded_model_order=effective_order,
+        fit_frequency_points=611,
+        frequency_points=611,
+        pre_enforcement_mean_rms_error=pre_rms,
+        comparison_mean_rms_error=final_rms,
+        passivity_max_sigma_before=1.01,
+        passivity_max_sigma_after=final_sigma,
+        passive_after_enforce=passive_after,
+        fit_seconds=10.0,
+        check_seconds=2.0,
+        enforce_seconds=3.0,
+        elapsed_seconds=15.0,
+        peak_memory_mb=100.0,
+        real_pole_count=4,
+        complex_pair_count=2,
+        stored_pole_count=6,
+        passivity_enforcement_skip_reason=skip_reason,
+    )
+
+
+def test_off_policy_uses_final_rms_only():
+    trial = trial_from_fit_result(
+        SParamFitTarget(0.001, passivity="off"),
+        make_fit_result(final_sigma=None, passive_after=None),
+        requested_order=8,
+    )
+
+    assert trial.target_met is True
+    assert trial.status == "PASS"
+    assert trial.rejection_reason is None
+
+
+def test_check_policy_accepts_nonpassive_model_with_warning():
+    trial = trial_from_fit_result(
+        SParamFitTarget(0.001, passivity="check"),
+        make_fit_result(final_sigma=1.02, passive_after=False),
+        requested_order=8,
+    )
+
+    assert trial.target_met is True
+    assert trial.status == "PASS_WITH_PASSIVITY_WARNING"
+    assert trial.rejection_reason is None
+
+
+def test_check_policy_rejects_missing_check_metrics():
+    trial = trial_from_fit_result(
+        SParamFitTarget(0.001, passivity="check"),
+        make_fit_result(final_sigma=None, passive_after=None),
+        requested_order=8,
+    )
+
+    assert trial.target_met is False
+    assert trial.rejection_reason == "passivity_check_failed"
+
+
+def test_enforce_policy_requires_final_passivity():
+    trial = trial_from_fit_result(
+        SParamFitTarget(0.001, passivity="enforce"),
+        make_fit_result(final_sigma=1.02, passive_after=False),
+        requested_order=8,
+    )
+
+    assert trial.target_met is False
+    assert trial.rejection_reason == "passivity_enforcement_failed"
+
+
+def test_enforce_policy_rejects_final_rms_regression():
+    trial = trial_from_fit_result(
+        SParamFitTarget(0.001, passivity="enforce"),
+        make_fit_result(pre_rms=0.0008, final_rms=0.0011),
+        requested_order=8,
+    )
+
+    assert trial.target_met is False
+    assert trial.rejection_reason == "final_rms_above_target"
+
+
+def test_enforce_policy_records_pre_rms_cost_gate():
+    trial = trial_from_fit_result(
+        SParamFitTarget(0.001, passivity="enforce"),
+        make_fit_result(
+            pre_rms=0.0011,
+            final_rms=0.0011,
+            final_sigma=1.02,
+            passive_after=False,
+            skip_reason="pre_rms_above_target",
+        ),
+        requested_order=8,
+    )
+
+    assert trial.target_met is False
+    assert trial.rejection_reason == "pre_rms_above_target"
+    assert trial.enforce_seconds == 0.0
+
+
+def test_trial_rejects_effective_order_mismatch():
+    trial = trial_from_fit_result(
+        SParamFitTarget(0.001, passivity="off"),
+        make_fit_result(effective_order=9),
+        requested_order=8,
+    )
+
+    assert trial.target_met is False
+    assert trial.rejection_reason == "effective_order_mismatch"

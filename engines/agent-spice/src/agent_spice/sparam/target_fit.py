@@ -83,6 +83,84 @@ class SParamTargetSearchResult:
         }
 
 
+def trial_from_fit_result(
+    target: SParamFitTarget,
+    fit_result: Any,
+    *,
+    requested_order: int,
+) -> SParamOrderTrial:
+    effective_order = int(getattr(fit_result, "expanded_model_order", 0) or 0)
+    pre_mean_rms = getattr(fit_result, "pre_enforcement_mean_rms_error", None)
+    final_mean_rms = getattr(fit_result, "comparison_mean_rms_error", None)
+    pre_value = float(final_mean_rms if pre_mean_rms is None else pre_mean_rms)
+    final_value = math.inf if final_mean_rms is None else float(final_mean_rms)
+    pre_sigma = getattr(fit_result, "passivity_max_sigma_before", None)
+    final_sigma = getattr(fit_result, "passivity_max_sigma_after", None)
+    passive_after = getattr(fit_result, "passive_after_enforce", None)
+    skip_reason = getattr(fit_result, "passivity_enforcement_skip_reason", None)
+
+    target_met = False
+    status = "FAIL"
+    rejection_reason: str | None = None
+    if effective_order != requested_order:
+        rejection_reason = "effective_order_mismatch"
+    elif not math.isfinite(final_value) or final_value > target.mean_rms:
+        rejection_reason = (
+            "pre_rms_above_target"
+            if target.passivity == "enforce" and skip_reason == "pre_rms_above_target"
+            else "final_rms_above_target"
+        )
+    elif target.passivity == "off":
+        target_met = True
+        status = "PASS"
+    elif target.passivity == "check":
+        if final_sigma is None or passive_after is None:
+            rejection_reason = "passivity_check_failed"
+        else:
+            target_met = True
+            status = (
+                "PASS"
+                if bool(passive_after) and float(final_sigma) <= 1.0 + target.passivity_epsilon
+                else "PASS_WITH_PASSIVITY_WARNING"
+            )
+    elif skip_reason == "pre_rms_above_target":
+        rejection_reason = "pre_rms_above_target"
+    elif (
+        final_sigma is None
+        or passive_after is not True
+        or float(final_sigma) > 1.0 + target.passivity_epsilon
+    ):
+        rejection_reason = "passivity_enforcement_failed"
+    else:
+        target_met = True
+        status = "PASS"
+
+    return SParamOrderTrial(
+        requested_order=int(requested_order),
+        effective_order=effective_order,
+        fit_frequency_points=int(getattr(fit_result, "fit_frequency_points", 0) or 0),
+        evaluation_frequency_points=int(getattr(fit_result, "frequency_points", 0) or 0),
+        pre_mean_rms=pre_value,
+        final_mean_rms=final_value,
+        pre_max_sigma=None if pre_sigma is None else float(pre_sigma),
+        final_max_sigma=None if final_sigma is None else float(final_sigma),
+        fit_seconds=float(getattr(fit_result, "fit_seconds", 0.0) or 0.0),
+        check_seconds=float(getattr(fit_result, "check_seconds", 0.0) or 0.0),
+        enforce_seconds=0.0
+        if skip_reason == "pre_rms_above_target"
+        else float(getattr(fit_result, "enforce_seconds", 0.0) or 0.0),
+        elapsed_seconds=float(getattr(fit_result, "elapsed_seconds", 0.0) or 0.0),
+        peak_memory_mb=float(getattr(fit_result, "peak_memory_mb", 0.0) or 0.0),
+        target_met=target_met,
+        status=status,
+        rejection_reason=rejection_reason,
+        real_pole_count=getattr(fit_result, "real_pole_count", None),
+        complex_pair_count=getattr(fit_result, "complex_pair_count", None),
+        stored_pole_count=getattr(fit_result, "stored_pole_count", None),
+        payload=fit_result,
+    )
+
+
 def run_target_order_search(
     target: SParamFitTarget,
     evaluate_order: Callable[[int], SParamOrderTrial],
