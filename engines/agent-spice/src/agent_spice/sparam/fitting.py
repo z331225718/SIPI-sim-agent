@@ -46,6 +46,37 @@ def _create_vector_fitting(network: Any, config: "SParamFitConfig") -> Any:
         vector_fit.high_frequency_complex_pair_count = config.high_frequency_complex_pair_count
         vector_fit.high_frequency_complex_pair_damping = config.high_frequency_complex_pair_damping
         vector_fit.high_frequency_complex_pair_lower_fraction = config.high_frequency_complex_pair_lower_fraction
+        vector_fit.high_frequency_complex_pair_frequency_gate_enabled = (
+            config.native_high_frequency_complex_pair_frequency_gate
+        )
+        vector_fit.high_frequency_residual_injection_enabled = config.native_high_frequency_residual_injection
+        vector_fit.high_frequency_residual_injection_lower_fraction = (
+            config.native_high_frequency_residual_injection_lower_fraction
+        )
+        vector_fit.high_frequency_residual_injection_damping = config.native_high_frequency_residual_injection_damping
+        vector_fit.high_frequency_complex_pair_anchor_bands_hz = config.high_frequency_complex_pair_anchor_bands_hz
+        vector_fit.high_frequency_complex_pair_anchor_strength = config.high_frequency_complex_pair_anchor_strength
+        vector_fit.high_frequency_complex_pair_anchor_damping = config.high_frequency_complex_pair_anchor_damping
+        vector_fit.effective_order_max = config.native_effective_order_max
+        vector_fit.effective_complex_pole_count = config.native_effective_complex_pole_count
+        vector_fit.effective_order_selection = config.native_effective_order_selection
+        vector_fit.effective_order_passivity_weight = config.native_effective_order_passivity_weight
+        vector_fit.post_relocation_effective_order_max = config.native_post_relocation_effective_order_max
+        vector_fit.high_frequency_relocation_weight_enabled = config.native_high_frequency_relocation_weight
+        vector_fit.high_frequency_relocation_weight_lower_fraction = config.native_high_frequency_relocation_weight_lower_fraction
+        vector_fit.high_frequency_relocation_weight_gain = config.native_high_frequency_relocation_weight_gain
+        vector_fit.out_of_band_pole_regularization_weight = config.native_out_of_band_pole_regularization_weight
+        vector_fit.out_of_band_pole_regularization_start_fraction = (
+            config.native_out_of_band_pole_regularization_start_fraction
+        )
+        vector_fit.dynamic_edge_c_res_regularization_enabled = config.native_dynamic_edge_c_res_regularization
+        vector_fit.dynamic_edge_c_res_regularization_base_weight = config.native_dynamic_edge_c_res_regularization_base_weight
+        vector_fit.dynamic_edge_c_res_regularization_start_fraction = (
+            config.native_dynamic_edge_c_res_regularization_start_fraction
+        )
+        vector_fit.dynamic_edge_c_res_regularization_growth_threshold = (
+            config.native_dynamic_edge_c_res_regularization_growth_threshold
+        )
         return vector_fit
     raise ValueError("vector_fit_backend must be 'skrf' or 'native'")
 
@@ -78,6 +109,7 @@ class SParamFitConfig:
     passivity_max_iterations: int = 1
     passivity_active_variables: int = 3072
     passivity_f_max: float | None = None
+    passivity_enforce_rms_target: float | None = None
     preserve_dc: bool = True
     subckt_name: str = "s_equivalent"
     create_reference_pins: bool = False
@@ -91,6 +123,29 @@ class SParamFitConfig:
     high_frequency_complex_pair_count: int = 0
     high_frequency_complex_pair_damping: float = 0.03
     high_frequency_complex_pair_lower_fraction: float = 0.68
+    native_high_frequency_complex_pair_frequency_gate: bool = False
+    native_high_frequency_residual_injection: bool = False
+    native_high_frequency_residual_injection_lower_fraction: float = 0.68
+    native_high_frequency_residual_injection_damping: float = 0.03
+    high_frequency_complex_pair_anchor_bands_hz: tuple[tuple[float, float], ...] = ()
+    high_frequency_complex_pair_anchor_strength: float = 0.0
+    high_frequency_complex_pair_anchor_damping: float = 0.03
+    native_effective_order_max: int | None = None
+    native_effective_complex_pole_count: int | None = None
+    native_effective_order_selection: str = "frequency_rank"
+    native_effective_order_passivity_weight: float = 1.0
+    native_post_relocation_effective_order_max: int | None = None
+    native_high_frequency_relocation_weight: bool = False
+    native_high_frequency_relocation_weight_lower_fraction: float = 0.68
+    native_high_frequency_relocation_weight_gain: float = 2.0
+    native_out_of_band_pole_regularization_weight: float = 0.0
+    native_out_of_band_pole_regularization_start_fraction: float = 1.0
+    native_dynamic_edge_c_res_regularization: bool = False
+    native_dynamic_edge_c_res_regularization_base_weight: float = 0.0
+    native_dynamic_edge_c_res_regularization_start_fraction: float = 1.0
+    native_dynamic_edge_c_res_regularization_growth_threshold: float = 1.5
+    native_topology_sweep: bool = False
+    native_topology_passivity_weight: float = 1.0
     quality_profile: str = "explore"
     max_comparison_rms_error: float = 0.05
     max_passivity_epsilon: float = 1e-6
@@ -98,6 +153,58 @@ class SParamFitConfig:
     exporter: str = "skrf"
     passivity_perturb_constant: bool = False
     passivity_perturb_poles: bool = False
+    passivity_constant_only_candidates: bool = False
+    passivity_global_damping_fallback: bool = False
+    passivity_global_damping_mode: str = "uniform"
+    passivity_global_damping_selective_min_frequency: float = 5e8
+    passivity_global_damping_safety_margin: float = 1e-5
+    passivity_spectral_projection_fallback: bool = False
+    passivity_spectral_projection_max_delta_norm: float | None = None
+    passivity_spectral_projection_max_response_delta_rms: float | None = None
+    passivity_spectral_projection_max_sigma_regression: float = 0.0
+    passivity_spectral_projection_iterations: int = 1
+    passivity_spectral_projection_reweight_iterations: int = 0
+    passivity_spectral_projection_max_reference_rms_increase: float | None = None
+    passivity_spectral_projection_max_reference_rms_total_increase: float | None = None
+    passivity_spectral_projection_max_reference_rms_per_sigma_improvement: float | None = None
+    passivity_spectral_projection_late_current_clip_max_reference_rms_per_sigma_improvement: float | None = None
+    passivity_spectral_projection_late_current_clip_start_iteration: int = 0
+    passivity_spectral_projection_max_reference_band_sigma_regression: float | None = None
+    passivity_spectral_projection_reference_band_holdout_start_iteration: int = 0
+    passivity_spectral_projection_include_all_reference_violations: bool = False
+    passivity_spectral_projection_weight_mode: str = "none"
+    passivity_spectral_projection_weight_exponent: float = 1.0
+    passivity_spectral_projection_active_mode_candidate: bool = False
+    passivity_spectral_projection_active_mode_start_iteration: int = 0
+    passivity_spectral_projection_non_active_stop_iteration: int | None = None
+    passivity_spectral_projection_active_mode_max_responses: int = 0
+    passivity_spectral_projection_active_mode_singular_modes: int = 1
+    passivity_spectral_projection_active_mode_band_singular_modes: int = 1
+    passivity_spectral_projection_active_mode_band_singular_mode_sample_count: int = 1
+    passivity_spectral_projection_active_mode_solver: str = "min_norm"
+    passivity_spectral_projection_active_mode_target_margin: float = 0.0
+    passivity_spectral_projection_active_mode_target_margin_start_iteration: int = 0
+    passivity_spectral_projection_active_mode_reference_max_points: int = 0
+    passivity_spectral_projection_active_mode_frequency_selection: str = "top"
+    passivity_spectral_projection_active_mode_reference_weight: float = 0.0
+    passivity_spectral_projection_active_mode_reference_weight_mode: str = "none"
+    passivity_spectral_projection_active_mode_reference_weight_candidates: tuple[float, ...] = ()
+    passivity_spectral_projection_active_mode_global_reference_points: int = 0
+    passivity_spectral_projection_active_mode_max_reference_rms_total_increase: float | None = None
+    passivity_spectral_projection_active_mode_extra_scales: tuple[float, ...] = ()
+    passivity_spectral_projection_active_mode_extra_scales_min_sigma: float = 0.0
+    passivity_spectral_projection_current_clip_candidate: bool = False
+    passivity_spectral_projection_current_clip_reference_weight: float = 0.0
+    passivity_spectral_projection_candidate_reference_max_points: int = 0
+    passivity_spectral_projection_frequency_selection: str = "top"
+    passivity_spectral_projection_band_sample_count: int = 8
+    passivity_spectral_projection_reference_rms_scope: str = "projection"
+    passivity_spectral_projection_reference_rms_chunk_size: int = 0
+    passivity_spectral_projection_candidate_selection_metric: str = "passivity"
+    passivity_spectral_projection_post_damping_selection_start_iteration: int = 0
+    passivity_spectral_projection_post_damping_max_sigma_regression: float | None = None
+    passivity_spectral_projection_mode_screen_candidates: int = 0
+    passivity_spectral_projection_mode_screen_modes: int = 2
     passivity_constant_weight: float = 1.0
     passivity_pole_weight: float = 1.0
 
@@ -131,12 +238,19 @@ class SParamFitResult:
     passivity_max_sigma_frequency_hz_after: float | None = None
     passivity_enforcement_diagnostics: list[dict[str, Any]] | None = None
     comparison_mean_rms_error: float | None = None
+    pre_enforcement_mean_rms_error: float | None = None
+    fit_seconds: float = 0.0
+    check_seconds: float = 0.0
+    enforce_seconds: float = 0.0
+    passivity_enforcement_skip_reason: str | None = None
     elapsed_seconds: float | None = None
     peak_memory_mb: float | None = None
     stored_pole_count: int | None = None
     real_pole_count: int | None = None
     complex_pair_count: int | None = None
     expanded_model_order: int | None = None
+    constant_matrix_sigma: float | None = None
+    topology_sweep_diagnostics: list[dict[str, Any]] | None = None
     auto_model_order_trials: list[dict[str, Any]] | None = None
     auto_model_order_selected: int | None = None
     auto_model_order_stop_reason: str | None = None
@@ -172,12 +286,19 @@ class SParamFitResult:
             "comparison_rms_error": self.comparison_rms_error,
             "comparison_rms_error_scope": "original_frequency_points",
             "comparison_mean_rms_error": self.comparison_mean_rms_error,
+            "pre_enforcement_mean_rms_error": self.pre_enforcement_mean_rms_error,
+            "fit_seconds": self.fit_seconds,
+            "check_seconds": self.check_seconds,
+            "enforce_seconds": self.enforce_seconds,
+            "passivity_enforcement_skip_reason": self.passivity_enforcement_skip_reason,
             "elapsed_seconds": self.elapsed_seconds,
             "peak_memory_mb": self.peak_memory_mb,
             "stored_pole_count": self.stored_pole_count,
             "real_pole_count": self.real_pole_count,
             "complex_pair_count": self.complex_pair_count,
             "expanded_model_order": self.expanded_model_order,
+            "constant_matrix_sigma": self.constant_matrix_sigma,
+            "topology_sweep_diagnostics": self.topology_sweep_diagnostics,
             "auto_model_order_trials": self.auto_model_order_trials,
             "auto_model_order_selected": self.auto_model_order_selected,
             "auto_model_order_stop_reason": self.auto_model_order_stop_reason,
@@ -582,6 +703,22 @@ def _pole_summary(vector_fit: Any) -> dict[str, int | None]:
     }
 
 
+def _constant_matrix_sigma(vector_fit: Any, ports: int) -> float | None:
+    if ports <= 0:
+        return None
+    constant_coeff = getattr(vector_fit, "constant_coeff", None)
+    if constant_coeff is None:
+        return None
+    try:
+        matrix = np.asarray(constant_coeff, dtype=complex).reshape(ports, ports)
+        values = np.linalg.svd(matrix, compute_uv=False)
+    except Exception:
+        return None
+    if values.size == 0:
+        return None
+    return float(values[0])
+
+
 def _quality_summary(result: SParamFitResult) -> dict[str, Any]:
     if result.passive_after_enforce is True:
         passivity = "passive"
@@ -930,6 +1067,18 @@ def _fit_model_inner(vector_fit: VectorFitting, config: SParamFitConfig) -> None
         )
         return
     if config.mode == "manual":
+        if config.native_topology_sweep and hasattr(vector_fit, "vector_fit_topology_sweep"):
+            _call_with_supported_kwargs(
+                vector_fit.vector_fit_topology_sweep,
+                candidate_configs=_native_topology_sweep_candidate_configs(config),
+                init_pole_spacing=config.init_pole_spacing,
+                parameter_type=config.parameter_type,
+                fit_constant=config.fit_constant,
+                fit_proportional=config.fit_proportional,
+                enforce_dc=config.enforce_dc,
+                passivity_weight=config.native_topology_passivity_weight,
+            )
+            return
         _call_with_supported_kwargs(
             vector_fit.vector_fit,
             n_poles_real=config.n_poles_real,
@@ -942,6 +1091,39 @@ def _fit_model_inner(vector_fit: VectorFitting, config: SParamFitConfig) -> None
         )
         return
     raise ValueError(f"Unsupported S-parameter fit mode '{config.mode}'")
+
+
+def _native_topology_sweep_candidate_configs(config: SParamFitConfig) -> list[dict[str, Any]]:
+    base = {
+        "n_poles_real": int(config.n_poles_real),
+        "n_poles_cmplx": int(config.n_poles_cmplx),
+        "high_frequency_complex_pair_count": int(config.high_frequency_complex_pair_count),
+        "high_frequency_complex_pair_damping": float(config.high_frequency_complex_pair_damping),
+        "high_frequency_complex_pair_lower_fraction": float(config.high_frequency_complex_pair_lower_fraction),
+    }
+    candidates = [base]
+    richer = {
+        **base,
+        "n_poles_cmplx": int(config.n_poles_cmplx) + 1,
+        "high_frequency_complex_pair_count": max(
+            int(config.high_frequency_complex_pair_count),
+            int(config.n_poles_cmplx) + 1,
+        ),
+    }
+    if richer != base:
+        candidates.append(richer)
+    aggressive = {
+        **base,
+        "n_poles_real": max(0, int(config.n_poles_real) - 2),
+        "n_poles_cmplx": int(config.n_poles_cmplx) + 2,
+        "high_frequency_complex_pair_count": max(
+            int(config.high_frequency_complex_pair_count),
+            int(config.n_poles_cmplx) + 2,
+        ),
+    }
+    if aggressive not in candidates:
+        candidates.append(aggressive)
+    return candidates
 
 
 def _uses_low_memory_passivity(config: SParamFitConfig) -> bool:
@@ -959,22 +1141,22 @@ def _effective_passivity_f_max(config: SParamFitConfig, network: Any) -> float |
 
 
 def _native_manual_auto_order_config(base_config: SParamFitConfig, order: int) -> SParamFitConfig:
+    if order < 1:
+        raise ValueError("order must be >= 1")
     trial_config = replace(base_config, model_order_max=order)
     if base_config.mode != "manual" or base_config.vector_fit_backend != "native":
         return trial_config
 
-    high_pairs = max(0, int(base_config.high_frequency_complex_pair_count))
-    if high_pairs >= 2:
-        if order <= 9:
-            return replace(trial_config, n_poles_real=0, n_poles_cmplx=2)
-        if order <= 10:
-            return replace(trial_config, n_poles_real=4, n_poles_cmplx=2)
-        if order <= 12:
-            return replace(trial_config, n_poles_real=4, n_poles_cmplx=3)
-
-    n_poles_real = 0 if order % 2 == 0 else 1
-    n_poles_cmplx = max(1, (order - n_poles_real) // 2)
-    return replace(trial_config, n_poles_real=n_poles_real, n_poles_cmplx=n_poles_cmplx)
+    preferred_complex_count = max(0, int(base_config.high_frequency_complex_pair_count))
+    n_poles_cmplx = min(preferred_complex_count, order // 2)
+    n_poles_real = order - 2 * n_poles_cmplx
+    return replace(
+        trial_config,
+        n_poles_real=n_poles_real,
+        n_poles_cmplx=n_poles_cmplx,
+        native_post_relocation_effective_order_max=order,
+        native_effective_complex_pole_count=n_poles_cmplx,
+    )
 
 
 def fit_touchstone_to_spice(
@@ -1010,8 +1192,37 @@ def fit_touchstone_to_spice(
             )
         vector_fit = _create_vector_fitting(fit_network, config)
         progress.info(f"starting vector fit: mode={config.mode}, parameter_type={config.parameter_type}")
+        fit_started = time.perf_counter()
         _fit_model(vector_fit, config)
+        fit_seconds = time.perf_counter() - fit_started
         progress.info("vector fit finished")
+        check_seconds = 0.0
+        enforce_seconds = 0.0
+        pre_comparison_rms_error = _comparison_rms_error(network, vector_fit, config.parameter_type)
+        pre_enforcement_mean_rms_error = _mean_rms_error_from_sum_style(
+            pre_comparison_rms_error,
+            network.nports,
+        )
+        if config.passivity_enforce_rms_target is not None and (
+            not math.isfinite(config.passivity_enforce_rms_target)
+            or config.passivity_enforce_rms_target <= 0.0
+        ):
+            raise ValueError("passivity_enforce_rms_target must be finite and > 0")
+        passivity_enforcement_skip_reason = None
+        should_enforce = bool(config.enforce_passivity)
+        if (
+            should_enforce
+            and config.passivity_enforce_rms_target is not None
+            and pre_enforcement_mean_rms_error is not None
+            and pre_enforcement_mean_rms_error > config.passivity_enforce_rms_target
+        ):
+            should_enforce = False
+            passivity_enforcement_skip_reason = "pre_rms_above_target"
+            progress.info(
+                "skipping passivity enforcement because pre-enforcement mean RMS "
+                f"{pre_enforcement_mean_rms_error:.9g} exceeds target "
+                f"{config.passivity_enforce_rms_target:.9g}"
+            )
         use_low_memory_passivity = _uses_low_memory_passivity(config)
         passivity_f_max = _effective_passivity_f_max(config, network)
         if not config.check_passivity:
@@ -1020,7 +1231,8 @@ def fit_touchstone_to_spice(
             violations_before = None
             passivity_max_sigma_before = None
             passivity_max_sigma_frequency_before = None
-            if config.enforce_passivity:
+            if should_enforce:
+                enforce_started = time.perf_counter()
                 if use_low_memory_passivity:
                     progress.info("starting passivity enforcement using low-memory residue perturbation")
                     from .passivity import enforce_passivity_hamiltonian
@@ -1035,6 +1247,146 @@ def fit_touchstone_to_spice(
                         max_active_variables=config.passivity_active_variables,
                         perturb_constant=config.passivity_perturb_constant,
                         perturb_poles=config.passivity_perturb_poles,
+                        constant_only_candidates=config.passivity_constant_only_candidates,
+                        global_damping_fallback=config.passivity_global_damping_fallback,
+                        global_damping_mode=config.passivity_global_damping_mode,
+                        global_damping_selective_min_frequency=(
+                            config.passivity_global_damping_selective_min_frequency
+                        ),
+                        global_damping_safety_margin=config.passivity_global_damping_safety_margin,
+                        spectral_projection_fallback=config.passivity_spectral_projection_fallback,
+                        spectral_projection_max_delta_norm=config.passivity_spectral_projection_max_delta_norm,
+                        spectral_projection_max_response_delta_rms=(
+                            config.passivity_spectral_projection_max_response_delta_rms
+                        ),
+                        spectral_projection_max_sigma_regression=(
+                            config.passivity_spectral_projection_max_sigma_regression
+                        ),
+                        spectral_projection_iterations=config.passivity_spectral_projection_iterations,
+                        spectral_projection_reweight_iterations=(
+                            config.passivity_spectral_projection_reweight_iterations
+                        ),
+                        spectral_projection_reference_freqs=network.f,
+                        spectral_projection_reference_s=network.s,
+                        spectral_projection_max_reference_rms_increase=(
+                            config.passivity_spectral_projection_max_reference_rms_increase
+                        ),
+                        spectral_projection_max_reference_rms_total_increase=(
+                            config.passivity_spectral_projection_max_reference_rms_total_increase
+                        ),
+                        spectral_projection_max_reference_rms_per_sigma_improvement=(
+                            config.passivity_spectral_projection_max_reference_rms_per_sigma_improvement
+                        ),
+                        spectral_projection_late_current_clip_max_reference_rms_per_sigma_improvement=(
+                            config.passivity_spectral_projection_late_current_clip_max_reference_rms_per_sigma_improvement
+                        ),
+                        spectral_projection_late_current_clip_start_iteration=(
+                            config.passivity_spectral_projection_late_current_clip_start_iteration
+                        ),
+                        spectral_projection_max_reference_band_sigma_regression=(
+                            config.passivity_spectral_projection_max_reference_band_sigma_regression
+                        ),
+                        spectral_projection_reference_band_holdout_start_iteration=(
+                            config.passivity_spectral_projection_reference_band_holdout_start_iteration
+                        ),
+                        spectral_projection_include_all_reference_violations=(
+                            config.passivity_spectral_projection_include_all_reference_violations
+                        ),
+                        spectral_projection_weight_mode=config.passivity_spectral_projection_weight_mode,
+                        spectral_projection_weight_exponent=config.passivity_spectral_projection_weight_exponent,
+                        spectral_projection_active_mode_candidate=(
+                            config.passivity_spectral_projection_active_mode_candidate
+                        ),
+                        spectral_projection_active_mode_start_iteration=(
+                            config.passivity_spectral_projection_active_mode_start_iteration
+                        ),
+                        spectral_projection_non_active_stop_iteration=(
+                            config.passivity_spectral_projection_non_active_stop_iteration
+                        ),
+                        spectral_projection_active_mode_max_responses=(
+                            config.passivity_spectral_projection_active_mode_max_responses
+                        ),
+                        spectral_projection_active_mode_singular_modes=(
+                            config.passivity_spectral_projection_active_mode_singular_modes
+                        ),
+                        spectral_projection_active_mode_band_singular_modes=(
+                            config.passivity_spectral_projection_active_mode_band_singular_modes
+                        ),
+                        spectral_projection_active_mode_band_singular_mode_sample_count=(
+                            config.passivity_spectral_projection_active_mode_band_singular_mode_sample_count
+                        ),
+                        spectral_projection_active_mode_solver=(
+                            config.passivity_spectral_projection_active_mode_solver
+                        ),
+                        spectral_projection_active_mode_target_margin=(
+                            config.passivity_spectral_projection_active_mode_target_margin
+                        ),
+                        spectral_projection_active_mode_target_margin_start_iteration=(
+                            config.passivity_spectral_projection_active_mode_target_margin_start_iteration
+                        ),
+                        spectral_projection_active_mode_reference_max_points=(
+                            config.passivity_spectral_projection_active_mode_reference_max_points
+                        ),
+                        spectral_projection_active_mode_frequency_selection=(
+                            config.passivity_spectral_projection_active_mode_frequency_selection
+                        ),
+                        spectral_projection_active_mode_reference_weight=(
+                            config.passivity_spectral_projection_active_mode_reference_weight
+                        ),
+                        spectral_projection_active_mode_reference_weight_mode=(
+                            config.passivity_spectral_projection_active_mode_reference_weight_mode
+                        ),
+                        spectral_projection_active_mode_reference_weight_candidates=(
+                            config.passivity_spectral_projection_active_mode_reference_weight_candidates
+                        ),
+                        spectral_projection_active_mode_global_reference_points=(
+                            config.passivity_spectral_projection_active_mode_global_reference_points
+                        ),
+                        spectral_projection_active_mode_max_reference_rms_total_increase=(
+                            config.passivity_spectral_projection_active_mode_max_reference_rms_total_increase
+                        ),
+                        spectral_projection_active_mode_extra_scales=(
+                            config.passivity_spectral_projection_active_mode_extra_scales
+                        ),
+                        spectral_projection_active_mode_extra_scales_min_sigma=(
+                            config.passivity_spectral_projection_active_mode_extra_scales_min_sigma
+                        ),
+                        spectral_projection_current_clip_candidate=(
+                            config.passivity_spectral_projection_current_clip_candidate
+                        ),
+                        spectral_projection_current_clip_reference_weight=(
+                            config.passivity_spectral_projection_current_clip_reference_weight
+                        ),
+                        spectral_projection_candidate_reference_max_points=(
+                            config.passivity_spectral_projection_candidate_reference_max_points
+                        ),
+                        spectral_projection_frequency_selection=(
+                            config.passivity_spectral_projection_frequency_selection
+                        ),
+                        spectral_projection_band_sample_count=(
+                            config.passivity_spectral_projection_band_sample_count
+                        ),
+                        spectral_projection_reference_rms_scope=(
+                            config.passivity_spectral_projection_reference_rms_scope
+                        ),
+                        spectral_projection_reference_rms_chunk_size=(
+                            config.passivity_spectral_projection_reference_rms_chunk_size
+                        ),
+                        spectral_projection_candidate_selection_metric=(
+                            config.passivity_spectral_projection_candidate_selection_metric
+                        ),
+                        spectral_projection_post_damping_selection_start_iteration=(
+                            config.passivity_spectral_projection_post_damping_selection_start_iteration
+                        ),
+                        spectral_projection_post_damping_max_sigma_regression=(
+                            config.passivity_spectral_projection_post_damping_max_sigma_regression
+                        ),
+                        spectral_projection_mode_screen_candidates=(
+                            config.passivity_spectral_projection_mode_screen_candidates
+                        ),
+                        spectral_projection_mode_screen_modes=(
+                            config.passivity_spectral_projection_mode_screen_modes
+                        ),
                         constant_weight=config.passivity_constant_weight,
                         pole_weight=config.passivity_pole_weight,
                     )
@@ -1050,6 +1402,7 @@ def fit_touchstone_to_spice(
                         parameter_type=config.parameter_type,
                         preserve_dc=config.preserve_dc,
                     )
+                enforce_seconds += time.perf_counter() - enforce_started
                 progress.info("passivity enforcement finished")
             else:
                 progress.info("passivity enforcement skipped")
@@ -1060,18 +1413,21 @@ def fit_touchstone_to_spice(
         elif use_low_memory_passivity:
             progress.info("checking passivity before enforcement using low-memory Hamiltonian method")
             from .passivity import check_vector_fit_passivity_hamiltonian, enforce_passivity_hamiltonian
+            check_started = time.perf_counter()
             report_before = check_vector_fit_passivity_hamiltonian(
                 vector_fit,
                 nports=network.nports,
                 epsilon=config.max_passivity_epsilon,
                 f_max=passivity_f_max,
             )
+            check_seconds += time.perf_counter() - check_started
             passive_before = (len(report_before.violation_bands_hz) == 0)
             violations_before = report_before.violation_bands_hz
             passivity_max_sigma_before = report_before.max_sigma
             passivity_max_sigma_frequency_before = report_before.max_sigma_frequency_hz
-            if config.enforce_passivity:
+            if should_enforce:
                 progress.info("starting passivity enforcement using low-memory residue perturbation")
+                enforce_started = time.perf_counter()
                 enforce_passivity_hamiltonian(
                     vector_fit,
                     nports=network.nports,
@@ -1082,34 +1438,166 @@ def fit_touchstone_to_spice(
                     max_active_variables=config.passivity_active_variables,
                     perturb_constant=config.passivity_perturb_constant,
                     perturb_poles=config.passivity_perturb_poles,
+                    constant_only_candidates=config.passivity_constant_only_candidates,
+                    global_damping_fallback=config.passivity_global_damping_fallback,
+                    global_damping_mode=config.passivity_global_damping_mode,
+                    global_damping_selective_min_frequency=config.passivity_global_damping_selective_min_frequency,
+                    global_damping_safety_margin=config.passivity_global_damping_safety_margin,
+                    spectral_projection_fallback=config.passivity_spectral_projection_fallback,
+                    spectral_projection_max_delta_norm=config.passivity_spectral_projection_max_delta_norm,
+                    spectral_projection_max_response_delta_rms=config.passivity_spectral_projection_max_response_delta_rms,
+                    spectral_projection_max_sigma_regression=(
+                        config.passivity_spectral_projection_max_sigma_regression
+                    ),
+                    spectral_projection_iterations=config.passivity_spectral_projection_iterations,
+                    spectral_projection_reweight_iterations=config.passivity_spectral_projection_reweight_iterations,
+                    spectral_projection_reference_freqs=network.f,
+                    spectral_projection_reference_s=network.s,
+                    spectral_projection_max_reference_rms_increase=(
+                        config.passivity_spectral_projection_max_reference_rms_increase
+                    ),
+                    spectral_projection_max_reference_rms_total_increase=(
+                        config.passivity_spectral_projection_max_reference_rms_total_increase
+                    ),
+                    spectral_projection_max_reference_rms_per_sigma_improvement=(
+                        config.passivity_spectral_projection_max_reference_rms_per_sigma_improvement
+                    ),
+                    spectral_projection_late_current_clip_max_reference_rms_per_sigma_improvement=(
+                        config.passivity_spectral_projection_late_current_clip_max_reference_rms_per_sigma_improvement
+                    ),
+                    spectral_projection_late_current_clip_start_iteration=(
+                        config.passivity_spectral_projection_late_current_clip_start_iteration
+                    ),
+                    spectral_projection_max_reference_band_sigma_regression=(
+                        config.passivity_spectral_projection_max_reference_band_sigma_regression
+                    ),
+                    spectral_projection_reference_band_holdout_start_iteration=(
+                        config.passivity_spectral_projection_reference_band_holdout_start_iteration
+                    ),
+                    spectral_projection_include_all_reference_violations=(
+                        config.passivity_spectral_projection_include_all_reference_violations
+                    ),
+                    spectral_projection_weight_mode=config.passivity_spectral_projection_weight_mode,
+                    spectral_projection_weight_exponent=config.passivity_spectral_projection_weight_exponent,
+                    spectral_projection_active_mode_candidate=(
+                        config.passivity_spectral_projection_active_mode_candidate
+                    ),
+                    spectral_projection_active_mode_start_iteration=(
+                        config.passivity_spectral_projection_active_mode_start_iteration
+                    ),
+                    spectral_projection_non_active_stop_iteration=(
+                        config.passivity_spectral_projection_non_active_stop_iteration
+                    ),
+                    spectral_projection_active_mode_max_responses=(
+                        config.passivity_spectral_projection_active_mode_max_responses
+                    ),
+                    spectral_projection_active_mode_singular_modes=(
+                        config.passivity_spectral_projection_active_mode_singular_modes
+                    ),
+                    spectral_projection_active_mode_band_singular_modes=(
+                        config.passivity_spectral_projection_active_mode_band_singular_modes
+                    ),
+                    spectral_projection_active_mode_band_singular_mode_sample_count=(
+                        config.passivity_spectral_projection_active_mode_band_singular_mode_sample_count
+                    ),
+                    spectral_projection_active_mode_solver=(
+                        config.passivity_spectral_projection_active_mode_solver
+                    ),
+                    spectral_projection_active_mode_target_margin=(
+                        config.passivity_spectral_projection_active_mode_target_margin
+                    ),
+                    spectral_projection_active_mode_target_margin_start_iteration=(
+                        config.passivity_spectral_projection_active_mode_target_margin_start_iteration
+                    ),
+                    spectral_projection_active_mode_reference_max_points=(
+                        config.passivity_spectral_projection_active_mode_reference_max_points
+                    ),
+                    spectral_projection_active_mode_frequency_selection=(
+                        config.passivity_spectral_projection_active_mode_frequency_selection
+                    ),
+                    spectral_projection_active_mode_reference_weight=(
+                        config.passivity_spectral_projection_active_mode_reference_weight
+                    ),
+                    spectral_projection_active_mode_reference_weight_mode=(
+                        config.passivity_spectral_projection_active_mode_reference_weight_mode
+                    ),
+                    spectral_projection_active_mode_reference_weight_candidates=(
+                        config.passivity_spectral_projection_active_mode_reference_weight_candidates
+                    ),
+                    spectral_projection_active_mode_global_reference_points=(
+                        config.passivity_spectral_projection_active_mode_global_reference_points
+                    ),
+                    spectral_projection_active_mode_max_reference_rms_total_increase=(
+                        config.passivity_spectral_projection_active_mode_max_reference_rms_total_increase
+                    ),
+                    spectral_projection_active_mode_extra_scales=(
+                        config.passivity_spectral_projection_active_mode_extra_scales
+                    ),
+                    spectral_projection_active_mode_extra_scales_min_sigma=(
+                        config.passivity_spectral_projection_active_mode_extra_scales_min_sigma
+                    ),
+                    spectral_projection_current_clip_candidate=(
+                        config.passivity_spectral_projection_current_clip_candidate
+                    ),
+                    spectral_projection_current_clip_reference_weight=(
+                        config.passivity_spectral_projection_current_clip_reference_weight
+                    ),
+                    spectral_projection_candidate_reference_max_points=(
+                        config.passivity_spectral_projection_candidate_reference_max_points
+                    ),
+                    spectral_projection_frequency_selection=config.passivity_spectral_projection_frequency_selection,
+                    spectral_projection_band_sample_count=config.passivity_spectral_projection_band_sample_count,
+                    spectral_projection_reference_rms_scope=config.passivity_spectral_projection_reference_rms_scope,
+                    spectral_projection_reference_rms_chunk_size=(
+                        config.passivity_spectral_projection_reference_rms_chunk_size
+                    ),
+                    spectral_projection_candidate_selection_metric=(
+                        config.passivity_spectral_projection_candidate_selection_metric
+                    ),
+                    spectral_projection_post_damping_selection_start_iteration=(
+                        config.passivity_spectral_projection_post_damping_selection_start_iteration
+                    ),
+                    spectral_projection_post_damping_max_sigma_regression=(
+                        config.passivity_spectral_projection_post_damping_max_sigma_regression
+                    ),
+                    spectral_projection_mode_screen_candidates=(
+                        config.passivity_spectral_projection_mode_screen_candidates
+                    ),
+                    spectral_projection_mode_screen_modes=config.passivity_spectral_projection_mode_screen_modes,
                     constant_weight=config.passivity_constant_weight,
                     pole_weight=config.passivity_pole_weight,
                 )
+                enforce_seconds += time.perf_counter() - enforce_started
                 progress.info("passivity enforcement finished")
             else:
                 progress.info("passivity enforcement skipped")
             progress.info("checking passivity after enforcement using low-memory Hamiltonian method")
+            check_started = time.perf_counter()
             report_after = check_vector_fit_passivity_hamiltonian(
                 vector_fit,
                 nports=network.nports,
                 epsilon=config.max_passivity_epsilon,
                 f_max=passivity_f_max,
             )
+            check_seconds += time.perf_counter() - check_started
             passive_after = (len(report_after.violation_bands_hz) == 0)
             violations_after = report_after.violation_bands_hz
             passivity_max_sigma_after = report_after.max_sigma
             passivity_max_sigma_frequency_after = report_after.max_sigma_frequency_hz
         else:
             progress.info("checking passivity before enforcement")
+            check_started = time.perf_counter()
             passive_before = _safe_bool(vector_fit.is_passive, parameter_type=config.parameter_type)
             violations_before = _safe_passivity_violations(vector_fit, config.parameter_type)
+            check_seconds += time.perf_counter() - check_started
             passivity_max_sigma_before = None
             passivity_max_sigma_frequency_before = None
-            if config.enforce_passivity:
+            if should_enforce:
                 progress.info(
                     f"starting passivity enforcement: n_samples={config.passivity_samples}, "
                     f"f_max={config.passivity_f_max}, preserve_dc={config.preserve_dc}"
                 )
+                enforce_started = time.perf_counter()
                 _call_with_supported_kwargs(
                     vector_fit.passivity_enforce,
                     n_samples=config.passivity_samples,
@@ -1117,11 +1605,14 @@ def fit_touchstone_to_spice(
                     parameter_type=config.parameter_type,
                     preserve_dc=config.preserve_dc,
                 )
+                enforce_seconds += time.perf_counter() - enforce_started
                 progress.info("passivity enforcement finished")
             else:
                 progress.info("passivity enforcement skipped")
+            check_started = time.perf_counter()
             passive_after = _safe_bool(vector_fit.is_passive, parameter_type=config.parameter_type)
             violations_after = _safe_passivity_violations(vector_fit, config.parameter_type)
+            check_seconds += time.perf_counter() - check_started
             passivity_max_sigma_after = None
             passivity_max_sigma_frequency_after = None
 
@@ -1189,8 +1680,15 @@ def fit_touchstone_to_spice(
             passivity_enforcement_diagnostics=getattr(vector_fit, "passivity_enforcement_diagnostics", None),
             quality_report=quality_report,
             comparison_mean_rms_error=_mean_rms_error_from_sum_style(comparison_rms_error, network.nports),
+            pre_enforcement_mean_rms_error=pre_enforcement_mean_rms_error,
+            fit_seconds=fit_seconds,
+            check_seconds=check_seconds,
+            enforce_seconds=enforce_seconds,
+            passivity_enforcement_skip_reason=passivity_enforcement_skip_reason,
             elapsed_seconds=resource_monitor.elapsed_seconds,
             peak_memory_mb=resource_monitor.peak_memory_mb,
+            topology_sweep_diagnostics=getattr(vector_fit, "topology_sweep_diagnostics", None) or None,
+            constant_matrix_sigma=_constant_matrix_sigma(vector_fit, network.nports),
             **pole_summary,
         )
         if report_path is not None:

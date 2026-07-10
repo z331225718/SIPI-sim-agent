@@ -14,6 +14,81 @@ def test_passivity_advanced_perturbations_are_experimental_opt_in():
 
     assert config.passivity_perturb_constant is False
     assert config.passivity_perturb_poles is False
+    assert config.passivity_constant_only_candidates is False
+    assert config.passivity_global_damping_fallback is False
+    assert config.passivity_global_damping_mode == "uniform"
+    assert config.passivity_global_damping_selective_min_frequency == 5e8
+    assert config.passivity_global_damping_safety_margin == 1e-5
+    assert config.passivity_spectral_projection_fallback is False
+    assert config.passivity_spectral_projection_max_delta_norm is None
+    assert config.passivity_spectral_projection_max_response_delta_rms is None
+    assert config.passivity_spectral_projection_max_sigma_regression == 0.0
+    assert config.passivity_spectral_projection_iterations == 1
+    assert config.passivity_spectral_projection_reweight_iterations == 0
+    assert config.passivity_spectral_projection_max_reference_rms_increase is None
+    assert config.passivity_spectral_projection_max_reference_rms_total_increase is None
+    assert config.passivity_spectral_projection_max_reference_rms_per_sigma_improvement is None
+    assert config.passivity_spectral_projection_late_current_clip_max_reference_rms_per_sigma_improvement is None
+    assert config.passivity_spectral_projection_late_current_clip_start_iteration == 0
+    assert config.passivity_spectral_projection_max_reference_band_sigma_regression is None
+    assert config.passivity_spectral_projection_reference_band_holdout_start_iteration == 0
+    assert config.passivity_spectral_projection_include_all_reference_violations is False
+    assert config.passivity_spectral_projection_weight_mode == "none"
+    assert config.passivity_spectral_projection_weight_exponent == 1.0
+    assert config.passivity_spectral_projection_active_mode_candidate is False
+    assert config.passivity_spectral_projection_active_mode_start_iteration == 0
+    assert config.passivity_spectral_projection_non_active_stop_iteration is None
+    assert config.passivity_spectral_projection_active_mode_max_responses == 0
+    assert config.passivity_spectral_projection_active_mode_singular_modes == 1
+    assert config.passivity_spectral_projection_active_mode_band_singular_modes == 1
+    assert config.passivity_spectral_projection_active_mode_band_singular_mode_sample_count == 1
+    assert config.passivity_spectral_projection_active_mode_solver == "min_norm"
+    assert config.passivity_spectral_projection_active_mode_target_margin == 0.0
+    assert config.passivity_spectral_projection_active_mode_target_margin_start_iteration == 0
+    assert config.passivity_spectral_projection_active_mode_reference_max_points == 0
+    assert config.passivity_spectral_projection_active_mode_frequency_selection == "top"
+    assert config.passivity_spectral_projection_active_mode_reference_weight == 0.0
+    assert config.passivity_spectral_projection_active_mode_reference_weight_mode == "none"
+    assert config.passivity_spectral_projection_active_mode_reference_weight_candidates == ()
+    assert config.passivity_spectral_projection_active_mode_global_reference_points == 0
+    assert config.passivity_spectral_projection_active_mode_max_reference_rms_total_increase is None
+    assert config.passivity_spectral_projection_active_mode_extra_scales == ()
+    assert config.passivity_spectral_projection_active_mode_extra_scales_min_sigma == 0.0
+    assert config.passivity_spectral_projection_current_clip_candidate is False
+    assert config.passivity_spectral_projection_current_clip_reference_weight == 0.0
+    assert config.passivity_spectral_projection_candidate_reference_max_points == 0
+    assert config.passivity_spectral_projection_frequency_selection == "top"
+    assert config.passivity_spectral_projection_band_sample_count == 8
+    assert config.passivity_spectral_projection_reference_rms_scope == "projection"
+    assert config.passivity_spectral_projection_reference_rms_chunk_size == 0
+    assert config.passivity_spectral_projection_candidate_selection_metric == "passivity"
+    assert config.passivity_spectral_projection_post_damping_selection_start_iteration == 0
+    assert config.passivity_spectral_projection_post_damping_max_sigma_regression is None
+    assert config.passivity_spectral_projection_mode_screen_candidates == 0
+    assert config.passivity_spectral_projection_mode_screen_modes == 2
+    assert config.native_effective_order_max is None
+    assert config.native_effective_complex_pole_count is None
+    assert config.native_effective_order_selection == "frequency_rank"
+    assert config.native_effective_order_passivity_weight == 1.0
+    assert config.native_post_relocation_effective_order_max is None
+    assert config.high_frequency_complex_pair_anchor_bands_hz == ()
+    assert config.high_frequency_complex_pair_anchor_strength == 0.0
+    assert config.high_frequency_complex_pair_anchor_damping == 0.03
+    assert config.native_high_frequency_complex_pair_frequency_gate is False
+    assert config.native_high_frequency_residual_injection is False
+    assert config.native_high_frequency_residual_injection_lower_fraction == 0.68
+    assert config.native_high_frequency_residual_injection_damping == 0.03
+    assert config.native_high_frequency_relocation_weight is False
+    assert config.native_high_frequency_relocation_weight_lower_fraction == 0.68
+    assert config.native_high_frequency_relocation_weight_gain == 2.0
+    assert config.native_out_of_band_pole_regularization_weight == 0.0
+    assert config.native_out_of_band_pole_regularization_start_fraction == 1.0
+    assert config.native_dynamic_edge_c_res_regularization is False
+    assert config.native_dynamic_edge_c_res_regularization_base_weight == 0.0
+    assert config.native_dynamic_edge_c_res_regularization_start_fraction == 1.0
+    assert config.native_dynamic_edge_c_res_regularization_growth_threshold == 1.5
+    assert config.native_topology_sweep is False
+    assert config.passivity_enforce_rms_target is None
 
 
 class FakeVectorFitting:
@@ -26,6 +101,7 @@ class FakeVectorFitting:
         self.auto_fit_kwargs = {}
         self.vector_fit_kwargs = {}
         self.poles = [-1.0 + 0.0j, -2.0 + 3.0j, -4.0 + 0.0j]
+        self.constant_coeff = [0.25 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j]
         self.max_iterations = 100
         self.enforced = False
         self.model_response_freq_lengths: list[int] = []
@@ -40,6 +116,12 @@ class FakeVectorFitting:
     def vector_fit(self, **kwargs):
         self.calls.append("vector_fit")
         self.vector_fit_kwargs = kwargs
+        return None
+
+    def vector_fit_topology_sweep(self, **kwargs):
+        self.calls.append("vector_fit_topology_sweep")
+        self.vector_fit_topology_sweep_kwargs = kwargs
+        self.topology_sweep_diagnostics = [{"selected": True, "combined_score": 0.25}]
         return None
 
     def is_passive(self, parameter_type="s"):
@@ -315,6 +397,37 @@ def test_fit_touchstone_to_spice_reports_elapsed_and_mean_rms(tmp_path: Path, mo
     assert payload["real_pole_count"] == 2
     assert payload["complex_pair_count"] == 1
     assert payload["expanded_model_order"] == 4
+    assert payload["constant_matrix_sigma"] == pytest.approx(0.5)
+
+
+def test_fit_skips_enforcement_when_pre_rms_is_above_target(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFitting)
+    report = tmp_path / "fit_report.json"
+
+    result = fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(
+            enforce_passivity=True,
+            check_passivity=True,
+            passivity_enforce_rms_target=1e-12,
+        ),
+        report_path=report,
+    )
+
+    instance = FakeVectorFitting.instances[0]
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert "passivity_enforce" not in instance.calls
+    assert result.passivity_enforcement_skip_reason == "pre_rms_above_target"
+    assert result.pre_enforcement_mean_rms_error == pytest.approx(result.comparison_mean_rms_error)
+    assert result.fit_seconds >= 0.0
+    assert result.check_seconds >= 0.0
+    assert result.enforce_seconds == 0.0
+    assert payload["passivity_enforcement_skip_reason"] == "pre_rms_above_target"
 
 
 def test_fit_touchstone_to_spice_can_skip_passivity_checks(tmp_path: Path, monkeypatch):
@@ -342,14 +455,14 @@ def test_native_fit_uses_low_memory_passivity_engine_without_idem_exporter(tmp_p
     import agent_spice.sparam.passivity as passivity
 
     FakeVectorFitting.instances.clear()
-    calls: list[tuple[str, object, int | None, float | None, int | None, int | None]] = []
+    calls: list[tuple[str, object, int | None, float | None, int | None, int | None, dict]] = []
 
     def fake_create_vector_fitting(network, config):
         return FakeVectorFitting(network)
 
     def fake_check(vector_fit, *, nports, epsilon, f_max=None):
-        calls.append(("check", vector_fit, None, f_max, None, None))
-        if len([name for name, _, _, _fmax, _iters, _active in calls if name == "check"]) == 1:
+        calls.append(("check", vector_fit, None, f_max, None, None, {}))
+        if len([name for name, *_rest in calls if name == "check"]) == 1:
             return passivity.PassivitySampleReport(
                 max_sigma=1.1,
                 max_sigma_frequency_hz=1e6,
@@ -376,7 +489,7 @@ def test_native_fit_uses_low_memory_passivity_engine_without_idem_exporter(tmp_p
         max_active_variables,
         **kwargs,
     ):
-        calls.append(("enforce", vector_fit, max_violation_samples, f_max, max_iterations, max_active_variables))
+        calls.append(("enforce", vector_fit, max_violation_samples, f_max, max_iterations, max_active_variables, kwargs))
         vector_fit.enforced = True
         vector_fit.passivity_enforcement_diagnostics = [{"active_budget": 123, "accepted": True}]
 
@@ -400,11 +513,24 @@ def test_native_fit_uses_low_memory_passivity_engine_without_idem_exporter(tmp_p
         ),
     )
 
-    assert [name for name, _, _, _, _, _ in calls] == ["check", "enforce", "check"]
+    assert [name for name, *_rest in calls] == ["check", "enforce", "check"]
     assert calls[1][2] == 17
     assert [call[3] for call in calls] == [2e6, 2e6, 2e6]
     assert calls[1][4] == 1
     assert calls[1][5] == 123
+    assert calls[1][6]["spectral_projection_include_all_reference_violations"] is False
+    assert calls[1][6]["spectral_projection_weight_mode"] == "none"
+    assert calls[1][6]["spectral_projection_weight_exponent"] == 1.0
+    assert calls[1][6]["spectral_projection_max_reference_rms_total_increase"] is None
+    assert calls[1][6]["spectral_projection_active_mode_candidate"] is False
+    assert calls[1][6]["spectral_projection_active_mode_max_responses"] == 0
+    assert calls[1][6]["spectral_projection_candidate_reference_max_points"] == 0
+    assert calls[1][6]["spectral_projection_frequency_selection"] == "top"
+    assert calls[1][6]["spectral_projection_band_sample_count"] == 8
+    assert calls[1][6]["spectral_projection_reference_rms_scope"] == "projection"
+    assert calls[1][6]["spectral_projection_reference_rms_chunk_size"] == 0
+    assert calls[1][6]["spectral_projection_mode_screen_candidates"] == 0
+    assert calls[1][6]["spectral_projection_mode_screen_modes"] == 2
     assert "passivity_enforce" not in FakeVectorFitting.instances[0].calls
     assert result.passive_before_enforce is False
     assert result.passive_after_enforce is True
@@ -420,13 +546,13 @@ def test_native_fit_enforces_low_memory_passivity_when_checks_are_skipped(tmp_pa
     import agent_spice.sparam.passivity as passivity
 
     FakeVectorFitting.instances.clear()
-    calls: list[tuple[str, object, int | None, float | None, int | None, int | None]] = []
+    calls: list[tuple[str, object, int | None, float | None, int | None, int | None, dict]] = []
 
     def fake_create_vector_fitting(network, config):
         return FakeVectorFitting(network)
 
     def fake_check(*args, **kwargs):
-        calls.append(("check", args[0], None, kwargs.get("f_max"), None, None))
+        calls.append(("check", args[0], None, kwargs.get("f_max"), None, None, {}))
         return passivity.PassivitySampleReport(
             max_sigma=1.0,
             max_sigma_frequency_hz=1e6,
@@ -446,7 +572,7 @@ def test_native_fit_enforces_low_memory_passivity_when_checks_are_skipped(tmp_pa
         max_active_variables,
         **kwargs,
     ):
-        calls.append(("enforce", vector_fit, max_violation_samples, f_max, max_iterations, max_active_variables))
+        calls.append(("enforce", vector_fit, max_violation_samples, f_max, max_iterations, max_active_variables, kwargs))
         vector_fit.enforced = True
 
     monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
@@ -465,14 +591,104 @@ def test_native_fit_enforces_low_memory_passivity_when_checks_are_skipped(tmp_pa
             max_iterations=3,
             passivity_samples=19,
             passivity_active_variables=321,
+            passivity_global_damping_mode="selective_pole",
+            passivity_global_damping_selective_min_frequency=7.5e8,
+            passivity_global_damping_safety_margin=2e-7,
+            passivity_spectral_projection_include_all_reference_violations=True,
+            passivity_spectral_projection_weight_mode="violation_excess",
+            passivity_spectral_projection_weight_exponent=2.0,
+            passivity_spectral_projection_max_sigma_regression=1e-4,
+            passivity_spectral_projection_reweight_iterations=2,
+            passivity_spectral_projection_max_reference_rms_total_increase=0.001,
+            passivity_spectral_projection_max_reference_rms_per_sigma_improvement=0.25,
+            passivity_spectral_projection_late_current_clip_max_reference_rms_per_sigma_improvement=0.05,
+            passivity_spectral_projection_late_current_clip_start_iteration=7,
+            passivity_spectral_projection_max_reference_band_sigma_regression=0.002,
+            passivity_spectral_projection_reference_band_holdout_start_iteration=5,
+            passivity_spectral_projection_active_mode_candidate=True,
+            passivity_spectral_projection_active_mode_start_iteration=5,
+            passivity_spectral_projection_non_active_stop_iteration=8,
+            passivity_spectral_projection_active_mode_max_responses=128,
+            passivity_spectral_projection_active_mode_singular_modes=3,
+            passivity_spectral_projection_active_mode_band_singular_modes=4,
+            passivity_spectral_projection_active_mode_band_singular_mode_sample_count=2,
+            passivity_spectral_projection_active_mode_solver="minimax_slack",
+            passivity_spectral_projection_active_mode_target_margin=0.002,
+            passivity_spectral_projection_active_mode_target_margin_start_iteration=7,
+            passivity_spectral_projection_active_mode_reference_max_points=96,
+            passivity_spectral_projection_active_mode_frequency_selection="reference_bands",
+            passivity_spectral_projection_active_mode_reference_weight=2.5,
+            passivity_spectral_projection_active_mode_reference_weight_mode="reference_band_equalized",
+            passivity_spectral_projection_active_mode_reference_weight_candidates=(0.03, 0.1),
+            passivity_spectral_projection_active_mode_global_reference_points=128,
+            passivity_spectral_projection_active_mode_max_reference_rms_total_increase=0.0009,
+            passivity_spectral_projection_active_mode_extra_scales=(1.25, 1.5),
+            passivity_spectral_projection_active_mode_extra_scales_min_sigma=1.001,
+            passivity_spectral_projection_current_clip_candidate=True,
+            passivity_spectral_projection_current_clip_reference_weight=0.5,
+            passivity_spectral_projection_candidate_reference_max_points=64,
+            passivity_spectral_projection_frequency_selection="reference_bands",
+            passivity_spectral_projection_band_sample_count=4,
+            passivity_spectral_projection_reference_rms_scope="candidate_validation",
+            passivity_spectral_projection_reference_rms_chunk_size=128,
+            passivity_spectral_projection_candidate_selection_metric="post_damping_reference_rms",
+            passivity_spectral_projection_post_damping_selection_start_iteration=7,
+            passivity_spectral_projection_post_damping_max_sigma_regression=3e-4,
+            passivity_spectral_projection_mode_screen_candidates=2,
+            passivity_spectral_projection_mode_screen_modes=3,
         ),
     )
 
-    assert [name for name, _, _, _, _, _ in calls] == ["enforce"]
+    assert [name for name, *_rest in calls] == ["enforce"]
     assert calls[0][2] == 19
     assert calls[0][3] == 2e6
     assert calls[0][4] == 1
     assert calls[0][5] == 321
+    assert calls[0][6]["global_damping_mode"] == "selective_pole"
+    assert calls[0][6]["global_damping_selective_min_frequency"] == 7.5e8
+    assert calls[0][6]["global_damping_safety_margin"] == 2e-7
+    assert calls[0][6]["spectral_projection_include_all_reference_violations"] is True
+    assert calls[0][6]["spectral_projection_weight_mode"] == "violation_excess"
+    assert calls[0][6]["spectral_projection_weight_exponent"] == 2.0
+    assert calls[0][6]["spectral_projection_max_sigma_regression"] == 1e-4
+    assert calls[0][6]["spectral_projection_reweight_iterations"] == 2
+    assert calls[0][6]["spectral_projection_max_reference_rms_total_increase"] == 0.001
+    assert calls[0][6]["spectral_projection_max_reference_rms_per_sigma_improvement"] == 0.25
+    assert calls[0][6]["spectral_projection_late_current_clip_max_reference_rms_per_sigma_improvement"] == 0.05
+    assert calls[0][6]["spectral_projection_late_current_clip_start_iteration"] == 7
+    assert calls[0][6]["spectral_projection_max_reference_band_sigma_regression"] == 0.002
+    assert calls[0][6]["spectral_projection_reference_band_holdout_start_iteration"] == 5
+    assert calls[0][6]["spectral_projection_active_mode_candidate"] is True
+    assert calls[0][6]["spectral_projection_active_mode_start_iteration"] == 5
+    assert calls[0][6]["spectral_projection_non_active_stop_iteration"] == 8
+    assert calls[0][6]["spectral_projection_active_mode_max_responses"] == 128
+    assert calls[0][6]["spectral_projection_active_mode_singular_modes"] == 3
+    assert calls[0][6]["spectral_projection_active_mode_band_singular_modes"] == 4
+    assert calls[0][6]["spectral_projection_active_mode_band_singular_mode_sample_count"] == 2
+    assert calls[0][6]["spectral_projection_active_mode_solver"] == "minimax_slack"
+    assert calls[0][6]["spectral_projection_active_mode_target_margin"] == 0.002
+    assert calls[0][6]["spectral_projection_active_mode_target_margin_start_iteration"] == 7
+    assert calls[0][6]["spectral_projection_active_mode_reference_max_points"] == 96
+    assert calls[0][6]["spectral_projection_active_mode_frequency_selection"] == "reference_bands"
+    assert calls[0][6]["spectral_projection_active_mode_reference_weight"] == 2.5
+    assert calls[0][6]["spectral_projection_active_mode_reference_weight_mode"] == "reference_band_equalized"
+    assert calls[0][6]["spectral_projection_active_mode_reference_weight_candidates"] == (0.03, 0.1)
+    assert calls[0][6]["spectral_projection_active_mode_global_reference_points"] == 128
+    assert calls[0][6]["spectral_projection_active_mode_max_reference_rms_total_increase"] == 0.0009
+    assert calls[0][6]["spectral_projection_active_mode_extra_scales"] == (1.25, 1.5)
+    assert calls[0][6]["spectral_projection_active_mode_extra_scales_min_sigma"] == 1.001
+    assert calls[0][6]["spectral_projection_current_clip_candidate"] is True
+    assert calls[0][6]["spectral_projection_current_clip_reference_weight"] == 0.5
+    assert calls[0][6]["spectral_projection_candidate_reference_max_points"] == 64
+    assert calls[0][6]["spectral_projection_frequency_selection"] == "reference_bands"
+    assert calls[0][6]["spectral_projection_band_sample_count"] == 4
+    assert calls[0][6]["spectral_projection_reference_rms_scope"] == "candidate_validation"
+    assert calls[0][6]["spectral_projection_reference_rms_chunk_size"] == 128
+    assert calls[0][6]["spectral_projection_candidate_selection_metric"] == "post_damping_reference_rms"
+    assert calls[0][6]["spectral_projection_post_damping_selection_start_iteration"] == 7
+    assert calls[0][6]["spectral_projection_post_damping_max_sigma_regression"] == 3e-4
+    assert calls[0][6]["spectral_projection_mode_screen_candidates"] == 2
+    assert calls[0][6]["spectral_projection_mode_screen_modes"] == 3
     assert "passivity_enforce" not in FakeVectorFitting.instances[0].calls
     assert result.passive_before_enforce is None
     assert result.passive_after_enforce is None
@@ -640,7 +856,11 @@ def test_fit_touchstone_to_spice_auto_order_stops_at_first_mean_rms_target(tmp_p
     assert (tmp_path / "model.sp").read_text(encoding="utf-8") == "* order 60\n"
 
 
-def test_native_manual_auto_order_maps_large_port_repair_candidates():
+@pytest.mark.parametrize(
+    ("order", "real_count", "complex_count"),
+    [(4, 0, 2), (5, 1, 2), (6, 2, 2), (8, 4, 2), (10, 6, 2)],
+)
+def test_native_manual_auto_order_requests_exact_effective_order(order, real_count, complex_count):
     import agent_spice.sparam.fitting as fitting
 
     base = SParamFitConfig(
@@ -651,13 +871,11 @@ def test_native_manual_auto_order_maps_large_port_repair_candidates():
         n_poles_cmplx=2,
     )
 
-    order9 = fitting._native_manual_auto_order_config(base, 9)
-    order10 = fitting._native_manual_auto_order_config(base, 10)
-    order12 = fitting._native_manual_auto_order_config(base, 12)
+    trial = fitting._native_manual_auto_order_config(base, order)
 
-    assert (order9.n_poles_real, order9.n_poles_cmplx) == (0, 2)
-    assert (order10.n_poles_real, order10.n_poles_cmplx) == (4, 2)
-    assert (order12.n_poles_real, order12.n_poles_cmplx) == (4, 3)
+    assert (trial.n_poles_real, trial.n_poles_cmplx) == (real_count, complex_count)
+    assert trial.native_post_relocation_effective_order_max == order
+    assert trial.native_effective_complex_pole_count == complex_count
 
 
 def test_fit_touchstone_to_spice_can_fit_frequency_subset(tmp_path: Path, monkeypatch):
@@ -821,6 +1039,33 @@ def test_manual_fit_uses_vector_fit_parameters(tmp_path: Path, monkeypatch):
     assert "auto_fit" not in instance.calls
     assert instance.vector_fit_kwargs["n_poles_real"] == 4
     assert instance.vector_fit_kwargs["n_poles_cmplx"] == 5
+
+
+def test_manual_fit_uses_topology_sweep_only_when_opted_in(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFitting)
+    report = tmp_path / "fit_report.json"
+    config = SParamFitConfig(
+        mode="manual",
+        native_topology_sweep=True,
+        n_poles_real=4,
+        n_poles_cmplx=2,
+        high_frequency_complex_pair_count=2,
+    )
+
+    result = fit_touchstone_to_spice(tmp_path / "line.s2p", tmp_path / "model.sp", config=config, report_path=report)
+
+    instance = FakeVectorFitting.instances[0]
+    assert "vector_fit_topology_sweep" in instance.calls
+    assert "vector_fit" not in instance.calls
+    assert instance.vector_fit_topology_sweep_kwargs["candidate_configs"][0]["n_poles_real"] == 4
+    assert instance.vector_fit_topology_sweep_kwargs["candidate_configs"][0]["n_poles_cmplx"] == 2
+    assert result.topology_sweep_diagnostics == [{"selected": True, "combined_score": 0.25}]
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert payload["topology_sweep_diagnostics"] == [{"selected": True, "combined_score": 0.25}]
 
 
 def test_create_native_vector_fitting_applies_high_frequency_complex_pair_options():
