@@ -2,6 +2,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 import numpy as np
+import pytest
 
 from agent_spice.sparam import idem
 from agent_spice.sparam.idem import (
@@ -15,6 +16,7 @@ from agent_spice.sparam.idem import (
     fit_s_with_fixed_poles,
     initial_common_poles,
     parse_idem_passivity_stdout,
+    parse_idem_accuracy_report,
     relocate_common_poles,
     render_fitting_options_xml,
     run_idem_passivity,
@@ -117,6 +119,30 @@ Passive: YES
     ]
 
 
+def test_parse_idem_accuracy_report_extracts_full_grid_metrics():
+    report = """** No. of ports: 91
+** No. of samples: 611
+** Max Err: 0.0921744123
+** RMS Err: 0.001174775322
+"""
+
+    parsed = parse_idem_accuracy_report(report)
+
+    assert parsed == {
+        "ports": 91,
+        "frequency_points": 611,
+        "max_error": pytest.approx(0.0921744123),
+        "mean_rms": pytest.approx(0.001174775322),
+    }
+
+
+def test_parse_idem_accuracy_report_rejects_missing_rms():
+    with pytest.raises(ValueError, match="RMS Err"):
+        parse_idem_accuracy_report(
+            "** No. of ports: 91\n** No. of samples: 611\n** Max Err: 0.1\n"
+        )
+
+
 def test_run_idem_passivity_treats_passive_stdout_as_completed(tmp_path: Path, monkeypatch):
     model = tmp_path / "model.mod.h5"
     output_model = tmp_path / "model_passive.mod.h5"
@@ -158,6 +184,133 @@ def test_run_idem_passivity_treats_passive_stdout_as_completed(tmp_path: Path, m
             "4",
         ]
     ]
+
+
+def test_run_idem_accuracy_check_uses_documented_command_and_parses_report(tmp_path: Path, monkeypatch):
+    touchstone = tmp_path / "line.s2p"
+    model = tmp_path / "model.mod.h5"
+    report = tmp_path / "accuracy.txt"
+    touchstone.write_text("raw", encoding="utf-8")
+    model.write_text("model", encoding="utf-8")
+    calls = []
+
+    def fake_run(command, timeout_seconds=None):
+        calls.append((command, timeout_seconds))
+        report.write_text(
+            "** No. of ports: 2\n** No. of samples: 5\n"
+            "** Max Err: 0.02\n** RMS Err: 0.0009\n",
+            encoding="utf-8",
+        )
+        return IdemCommandResult(command, 1, "End of Accuracy check\nResults\n", "", 0.2, 40.0)
+
+    monkeypatch.setattr(idem, "_run_command", fake_run)
+
+    result = idem.run_idem_accuracy_check(
+        touchstone,
+        model,
+        report,
+        idem_bin_dir=tmp_path,
+        timeout_seconds=12.0,
+    )
+
+    assert result["status"] == "completed"
+    assert result["metrics"]["mean_rms"] == pytest.approx(0.0009)
+    assert calls == [
+        (
+            [
+                str(tmp_path / "idemmp_checkaccuracy.exe"),
+                "-its",
+                str(touchstone),
+                "-ih5m",
+                str(model),
+                "-r",
+                str(report),
+            ],
+            12.0,
+        )
+    ]
+
+
+def test_run_idem_touchstone_export_uses_type_2_and_accepts_artifact_success(tmp_path: Path, monkeypatch):
+    model = tmp_path / "model.mod.h5"
+    exported = tmp_path / "model.s2p"
+    model.write_text("model", encoding="utf-8")
+    calls = []
+
+    def fake_run(command, timeout_seconds=None):
+        calls.append(command)
+        exported.write_text("# Hz S RI R 50\n", encoding="utf-8")
+        return IdemCommandResult(command, 1, "Results\nOutput file: model.s2p\n", "", 0.3, 50.0)
+
+    monkeypatch.setattr(idem, "_run_command", fake_run)
+
+    result = idem.run_idem_touchstone_export(model, exported, idem_bin_dir=tmp_path)
+
+    assert result["status"] == "completed"
+    assert calls == [
+        [
+            str(tmp_path / "idemmp_export.exe"),
+            "-ih5",
+            str(model),
+            "-o",
+            str(exported),
+            "-type",
+            "2",
+        ]
+    ]
+
+
+def test_idem_accuracy_and_export_fail_without_required_artifacts(tmp_path: Path, monkeypatch):
+    command_result = IdemCommandResult([], 1, "Results\n", "", 0.1, 1.0)
+    monkeypatch.setattr(idem, "_run_command", lambda *args, **kwargs: command_result)
+
+    accuracy = idem.run_idem_accuracy_check(
+        tmp_path / "line.s2p",
+        tmp_path / "model.mod.h5",
+        tmp_path / "missing.txt",
+        idem_bin_dir=tmp_path,
+    )
+    export = idem.run_idem_touchstone_export(
+        tmp_path / "model.mod.h5",
+        tmp_path / "missing.s2p",
+        idem_bin_dir=tmp_path,
+    )
+
+    assert accuracy["status"] == "failed"
+    assert accuracy["metrics"] is None
+    assert export["status"] == "failed"
+
+
+def test_idem_accuracy_and_export_do_not_reuse_stale_artifacts(tmp_path: Path, monkeypatch):
+    report = tmp_path / "accuracy.txt"
+    exported = tmp_path / "model.s2p"
+    report.write_text(
+        "** No. of ports: 2\n** No. of samples: 5\n"
+        "** Max Err: 0.02\n** RMS Err: 0.0009\n",
+        encoding="utf-8",
+    )
+    exported.write_text("# Hz S RI R 50\n", encoding="utf-8")
+
+    def fake_run(command, timeout_seconds=None):
+        assert not report.exists() if "idemmp_checkaccuracy.exe" in command[0] else not exported.exists()
+        return IdemCommandResult(command, 2, "failed\n", "error", 0.1, 1.0)
+
+    monkeypatch.setattr(idem, "_run_command", fake_run)
+
+    accuracy = idem.run_idem_accuracy_check(
+        tmp_path / "line.s2p",
+        tmp_path / "model.mod.h5",
+        report,
+        idem_bin_dir=tmp_path,
+    )
+    export = idem.run_idem_touchstone_export(
+        tmp_path / "model.mod.h5",
+        exported,
+        idem_bin_dir=tmp_path,
+    )
+
+    assert accuracy["status"] == "failed"
+    assert export["status"] == "failed"
 
 
 def test_decode_idem_split_poles_expands_real_state_space_pairs():

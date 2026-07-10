@@ -211,6 +211,105 @@ def run_idem_fitting(
     return _run_command(command, timeout_seconds=timeout_seconds)
 
 
+def parse_idem_accuracy_report(text: str) -> dict[str, Any]:
+    def required(pattern: str, label: str) -> str:
+        match = re.search(pattern, text, flags=re.MULTILINE)
+        if match is None:
+            raise ValueError(f"IdEM accuracy report is missing {label}")
+        return match.group(1)
+
+    ports = int(required(r"^\s*\*\*\s*No\. of ports:\s*(\d+)\s*$", "No. of ports"))
+    frequency_points = int(required(r"^\s*\*\*\s*No\. of samples:\s*(\d+)\s*$", "No. of samples"))
+    max_error = float(required(r"^\s*\*\*\s*Max Err:\s*([-+0-9.eE]+)\s*$", "Max Err"))
+    mean_rms = float(required(r"^\s*\*\*\s*RMS Err:\s*([-+0-9.eE]+)\s*$", "RMS Err"))
+    if ports < 1 or frequency_points < 1:
+        raise ValueError("IdEM accuracy report contains non-positive dimensions")
+    if not math.isfinite(max_error) or max_error < 0.0:
+        raise ValueError("IdEM accuracy report contains an invalid Max Err")
+    if not math.isfinite(mean_rms) or mean_rms < 0.0:
+        raise ValueError("IdEM accuracy report contains an invalid RMS Err")
+    return {
+        "ports": ports,
+        "frequency_points": frequency_points,
+        "max_error": max_error,
+        "mean_rms": mean_rms,
+    }
+
+
+def run_idem_accuracy_check(
+    touchstone_path: Path,
+    model_path: Path,
+    report_path: Path,
+    *,
+    idem_bin_dir: Path | None = None,
+    timeout_seconds: float | None = None,
+) -> dict[str, Any]:
+    idem_bin_dir = _resolve_idem_bin_dir(idem_bin_dir)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.unlink(missing_ok=True)
+    command = [
+        str(idem_bin_dir / "idemmp_checkaccuracy.exe"),
+        "-its",
+        str(touchstone_path),
+        "-ih5m",
+        str(model_path),
+        "-r",
+        str(report_path),
+    ]
+    command_result = _run_command(command, timeout_seconds=timeout_seconds)
+    metrics = None
+    error = None
+    if report_path.is_file() and report_path.stat().st_size > 0:
+        try:
+            metrics = parse_idem_accuracy_report(report_path.read_text(encoding="utf-8", errors="replace"))
+        except ValueError as exc:
+            error = str(exc)
+    else:
+        error = "IdEM accuracy report was not created"
+    return {
+        "probe": "idem_accuracy_check",
+        "touchstone_path": str(touchstone_path),
+        "model_path": str(model_path),
+        "report_path": str(report_path),
+        "status": "completed" if metrics is not None else "failed",
+        "metrics": metrics,
+        "error": error,
+        "command": command_result.to_dict(),
+    }
+
+
+def run_idem_touchstone_export(
+    model_path: Path,
+    output_path: Path,
+    *,
+    idem_bin_dir: Path | None = None,
+    timeout_seconds: float | None = None,
+) -> dict[str, Any]:
+    idem_bin_dir = _resolve_idem_bin_dir(idem_bin_dir)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.unlink(missing_ok=True)
+    command = [
+        str(idem_bin_dir / "idemmp_export.exe"),
+        "-ih5",
+        str(model_path),
+        "-o",
+        str(output_path),
+        "-type",
+        "2",
+    ]
+    command_result = _run_command(command, timeout_seconds=timeout_seconds)
+    artifact_exists = output_path.is_file() and output_path.stat().st_size > 0
+    completed = artifact_exists and "Results" in command_result.stdout
+    return {
+        "probe": "idem_touchstone_export",
+        "model_path": str(model_path),
+        "output_path": str(output_path),
+        "status": "completed" if completed else "failed",
+        "error": None if completed else "IdEM Touchstone export did not create a valid artifact",
+        "command": command_result.to_dict(),
+    }
+
+
 def parse_idem_passivity_stdout(stdout: str) -> dict[str, Any]:
     max_singular_values: list[dict[str, Any]] = []
     current_soc_iteration: int | None = None
