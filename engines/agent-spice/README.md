@@ -146,4 +146,4 @@ python -m agent_spice.cli fit-sparam .\path\to\model.s91p `
 
 Historical candidate-list and passivity flags remain hidden compatibility aliases. New automation should use only `--rms-target`, `--passivity`, and `--max-order`.
 
-IdEM comparison results and the fixed fairness contract are recorded in `docs/sparam-large-port-idem-benchmark.md`.
+The canonical Native/IdEM comparison is recorded in `docs/sparam-idem-full-benchmark.md`.
