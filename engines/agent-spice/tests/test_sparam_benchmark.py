@@ -12,11 +12,14 @@ from agent_spice.sparam.benchmark import (
     atomic_write_json,
     audit_touchstone_model,
     benchmark_fingerprint,
+    build_corpus_summary,
     discover_touchstone_corpus,
     load_benchmark_cases,
     run_order_sweep,
     run_benchmark_order_search,
     run_sparam_benchmarks,
+    render_benchmark_markdown,
+    write_full_benchmark_csv,
     write_benchmark_reports,
 )
 
@@ -257,6 +260,118 @@ def test_audit_touchstone_model_rejects_non_finite_samples(tmp_path: Path):
 )
 def test_accuracy_agreement_gate_is_strict(reported, audited, expected):
     assert accuracy_agrees(reported, audited, target=0.001) is expected
+
+
+def _completed_tool_search(
+    tool: str,
+    *,
+    order: int,
+    rms: float = 0.0009,
+    sigma: float = 0.999,
+    seconds: float = 10.0,
+    memory_mb: float = 100.0,
+):
+    trial = _trial(order, target_met=True)
+    trial.tool = tool
+    trial.final_mean_rms = rms
+    trial.final_max_sigma = sigma
+    trial.sampled_max_sigma = sigma
+    trial.elapsed_seconds = seconds
+    trial.peak_memory_mb = memory_mb
+    return {
+        "status": "completed",
+        "search": {
+            "contract": BenchmarkContract().to_dict(),
+            "trials": [trial.to_dict()],
+            "selected_trial": trial.to_dict(),
+            "stop_reason": "target_met",
+        },
+    }
+
+
+def _raw_comparison_case(index: int, *, native=None, idem=None):
+    case = {
+        "input": {
+            "path": f"C:/data/case{index}.s2p",
+            "relative_path": f"case{index}.s2p",
+            "sha256": f"sha-{index}",
+            "ports": 2,
+            "frequency_points": 5,
+        },
+        "native": native or _completed_tool_search("native", order=10, seconds=20.0, memory_mb=120.0),
+        "idem": idem or _completed_tool_search("idem", order=8, seconds=10.0, memory_mb=100.0),
+    }
+    for tool in (case["native"], case["idem"]):
+        tool.setdefault("input_sha256", f"sha-{index}")
+        tool.setdefault("frequency_points", 5)
+    return case
+
+
+def test_corpus_summary_applies_exact_parity_gates_and_requires_six_valid_cells():
+    raw = {
+        "contract": BenchmarkContract().to_dict(),
+        "cases": [_raw_comparison_case(index) for index in range(1, 7)],
+    }
+
+    summary = build_corpus_summary(raw)
+
+    assert summary["cases"][0]["comparison"]["status"] == "PASS"
+    assert summary["cases"][0]["comparison"]["order_ratio"] == pytest.approx(1.25)
+    assert summary["cases"][0]["comparison"]["time_ratio"] == pytest.approx(2.0)
+    assert summary["cases"][0]["comparison"]["memory_ratio"] == pytest.approx(1.2)
+    assert summary["overall_parity"] is True
+
+
+def test_corpus_summary_marks_missing_or_failed_tool_invalid_not_parity_failure():
+    raw = {
+        "contract": BenchmarkContract().to_dict(),
+        "cases": [
+            _raw_comparison_case(
+                1,
+                idem={"status": "completed", "search": {"trials": [], "selected_trial": None}},
+            )
+        ],
+    }
+
+    summary = build_corpus_summary(raw)
+
+    comparison = summary["cases"][0]["comparison"]
+    assert comparison["status"] == "INVALID"
+    assert comparison["invalid_comparison"] is True
+    assert comparison["order_ratio"] is None
+    assert summary["overall_parity"] is False
+
+
+def test_corpus_summary_rejects_tool_input_hash_mismatch():
+    case = _raw_comparison_case(1)
+    case["idem"]["input_sha256"] = "wrong-sha"
+
+    summary = build_corpus_summary({"contract": BenchmarkContract().to_dict(), "cases": [case]})
+
+    assert summary["cases"][0]["idem_metrics"]["status"] == "INVALID"
+    assert summary["cases"][0]["comparison"]["status"] == "INVALID"
+
+
+def test_canonical_csv_and_markdown_are_deterministic_and_explicit(tmp_path: Path):
+    raw = {
+        "contract": BenchmarkContract().to_dict(),
+        "cases": [_raw_comparison_case(1)],
+    }
+    summary = build_corpus_summary(raw)
+    csv_path = tmp_path / "summary.csv"
+
+    write_full_benchmark_csv(summary, csv_path)
+    markdown = render_benchmark_markdown(summary)
+
+    csv_text = csv_path.read_text(encoding="utf-8")
+    assert "input_sha256,native_status,idem_status,comparison_status" in csv_text
+    assert "sha-1,PASS,PASS,PASS" in csv_text
+    assert "<!-- GENERATED FROM summary.json; DO NOT EDIT -->" in markdown
+    assert "Mean S-RMS target" in markdown
+    assert "0.001" in markdown
+    assert "--passivity enforce" in markdown
+    assert "summary.json" in markdown
+    assert "case1.s2p" in markdown
 
 
 def test_load_benchmark_cases_resolves_paths_and_fit_config(tmp_path: Path):

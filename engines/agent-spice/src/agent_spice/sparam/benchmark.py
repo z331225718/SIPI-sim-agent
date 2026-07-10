@@ -494,6 +494,310 @@ def accuracy_agrees(
     return abs(reported - audited) <= max(1.0e-9, 1.0e-5 * target)
 
 
+def _finite_non_negative(value: Any) -> float | None:
+    try:
+        converted = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(converted) or converted < 0.0:
+        return None
+    return converted
+
+
+def _summarize_tool_cell(
+    cell: Any,
+    contract: BenchmarkContract,
+    *,
+    input_sha256: Any,
+    frequency_points: Any,
+) -> dict[str, Any]:
+    base = {
+        "status": "INVALID",
+        "target_met": False,
+        "selected_order": None,
+        "final_mean_rms": None,
+        "final_max_sigma": None,
+        "sampled_max_sigma": None,
+        "total_search_seconds": None,
+        "peak_memory_mb": None,
+        "failure_reason": "missing_tool_result",
+    }
+    if not isinstance(cell, dict) or cell.get("status") != "completed":
+        if isinstance(cell, dict):
+            base["failure_reason"] = str(cell.get("status") or "invalid_tool_result")
+        return base
+    if cell.get("input_sha256") != input_sha256:
+        base["failure_reason"] = "input_hash_mismatch"
+        return base
+    if cell.get("frequency_points") != frequency_points:
+        base["failure_reason"] = "frequency_point_count_mismatch"
+        return base
+    search = cell.get("search")
+    if not isinstance(search, dict):
+        base["failure_reason"] = "missing_search_result"
+        return base
+    selected = search.get("selected_trial")
+    if not isinstance(selected, dict):
+        base.update(status="FAIL", failure_reason=str(search.get("stop_reason") or "target_not_met"))
+        return base
+
+    order = selected.get("effective_order")
+    final_rms = _finite_non_negative(selected.get("final_mean_rms"))
+    final_sigma = _finite_non_negative(selected.get("final_max_sigma"))
+    sampled_sigma = _finite_non_negative(selected.get("sampled_max_sigma"))
+    trials = search.get("trials")
+    if (
+        not isinstance(order, int)
+        or order < 1
+        or not isinstance(trials, list)
+        or final_rms is None
+        or final_sigma is None
+        or sampled_sigma is None
+    ):
+        base["failure_reason"] = "invalid_selected_metrics"
+        return base
+    elapsed_values = [_finite_non_negative(trial.get("elapsed_seconds")) for trial in trials if isinstance(trial, dict)]
+    memory_values = [_finite_non_negative(trial.get("peak_memory_mb")) for trial in trials if isinstance(trial, dict)]
+    if len(elapsed_values) != len(trials) or len(memory_values) != len(trials):
+        base["failure_reason"] = "invalid_search_resource_metrics"
+        return base
+    if any(value is None for value in elapsed_values + memory_values):
+        base["failure_reason"] = "invalid_search_resource_metrics"
+        return base
+    target_met = bool(
+        selected.get("target_met") is True
+        and selected.get("status") == "PASS"
+        and selected.get("authoritative_passive") is True
+        and order <= contract.max_order
+        and final_rms <= contract.rms_target
+        and final_sigma <= 1.0 + contract.passivity_epsilon
+        and sampled_sigma <= 1.0 + contract.passivity_epsilon
+    )
+    base.update(
+        status="PASS" if target_met else "FAIL",
+        target_met=target_met,
+        selected_order=order,
+        final_mean_rms=final_rms,
+        final_max_sigma=final_sigma,
+        sampled_max_sigma=sampled_sigma,
+        total_search_seconds=sum(value for value in elapsed_values if value is not None),
+        peak_memory_mb=max((value for value in memory_values if value is not None), default=0.0),
+        failure_reason=None if target_met else str(selected.get("failure_reason") or "target_contract_failed"),
+    )
+    return base
+
+
+def _positive_ratio(numerator: Any, denominator: Any) -> float | None:
+    top = _finite_non_negative(numerator)
+    bottom = _finite_non_negative(denominator)
+    if top is None or bottom is None or bottom <= 0.0:
+        return None
+    return top / bottom
+
+
+def build_corpus_summary(raw_summary: dict[str, Any]) -> dict[str, Any]:
+    contract_payload = raw_summary.get("contract") or {}
+    contract_fields = {field.name for field in fields(BenchmarkContract)}
+    contract = BenchmarkContract(
+        **{name: contract_payload[name] for name in contract_fields if name in contract_payload}
+    )
+    normalized_cases = []
+    for raw_case in raw_summary.get("cases") or []:
+        input_payload = raw_case.get("input") or {}
+        provenance = {
+            "input_sha256": input_payload.get("sha256"),
+            "frequency_points": input_payload.get("frequency_points"),
+        }
+        native_metrics = _summarize_tool_cell(raw_case.get("native"), contract, **provenance)
+        idem_metrics = _summarize_tool_cell(raw_case.get("idem"), contract, **provenance)
+        valid = native_metrics["status"] == "PASS" and idem_metrics["status"] == "PASS"
+        order_ratio = _positive_ratio(native_metrics["selected_order"], idem_metrics["selected_order"]) if valid else None
+        time_ratio = _positive_ratio(native_metrics["total_search_seconds"], idem_metrics["total_search_seconds"]) if valid else None
+        memory_ratio = _positive_ratio(native_metrics["peak_memory_mb"], idem_metrics["peak_memory_mb"]) if valid else None
+        ratio_metrics_valid = all(value is not None for value in (order_ratio, time_ratio, memory_ratio))
+        comparison_pass = bool(
+            valid
+            and ratio_metrics_valid
+            and order_ratio <= 1.25
+            and time_ratio <= 2.0
+            and memory_ratio <= 1.5
+        )
+        comparison_status = "INVALID" if not valid or not ratio_metrics_valid else ("PASS" if comparison_pass else "FAIL")
+        normalized_cases.append(
+            {
+                "input": input_payload,
+                "native": raw_case.get("native"),
+                "idem": raw_case.get("idem"),
+                "native_metrics": native_metrics,
+                "idem_metrics": idem_metrics,
+                "comparison": {
+                    "status": comparison_status,
+                    "invalid_comparison": comparison_status == "INVALID",
+                    "order_ratio": order_ratio,
+                    "time_ratio": time_ratio,
+                    "memory_ratio": memory_ratio,
+                    "gates": {
+                        "order_ratio_max": 1.25,
+                        "time_ratio_max": 2.0,
+                        "memory_ratio_max": 1.5,
+                    },
+                },
+            }
+        )
+    normalized_cases.sort(
+        key=lambda case: (
+            int(case["input"].get("ports") or 0),
+            str(case["input"].get("relative_path") or "").lower(),
+        )
+    )
+    valid_cells = sum(case["comparison"]["status"] != "INVALID" for case in normalized_cases)
+    passing_cells = sum(case["comparison"]["status"] == "PASS" for case in normalized_cases)
+    return {
+        "benchmark_contract_version": contract.contract_version,
+        "contract": contract.to_dict(),
+        "comparison_gates": {
+            "order_ratio_max": 1.25,
+            "time_ratio_max": 2.0,
+            "memory_ratio_max": 1.5,
+            "required_case_count": 6,
+        },
+        "case_count": len(normalized_cases),
+        "valid_comparison_count": valid_cells,
+        "passing_comparison_count": passing_cells,
+        "overall_parity": len(normalized_cases) == 6 and passing_cells == 6,
+        "cases": normalized_cases,
+    }
+
+
+def write_full_benchmark_csv(summary: dict[str, Any], path: Path) -> None:
+    fieldnames = [
+        "input_sha256",
+        "native_status",
+        "idem_status",
+        "comparison_status",
+        "input",
+        "ports",
+        "frequency_points",
+        "native_order",
+        "idem_order",
+        "native_final_mean_rms",
+        "idem_final_mean_rms",
+        "native_final_max_sigma",
+        "idem_final_max_sigma",
+        "native_total_search_seconds",
+        "idem_total_search_seconds",
+        "native_peak_memory_mb",
+        "idem_peak_memory_mb",
+        "order_ratio",
+        "time_ratio",
+        "memory_ratio",
+    ]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for case in summary.get("cases") or []:
+            raw = case["input"]
+            native = case["native_metrics"]
+            idem = case["idem_metrics"]
+            comparison = case["comparison"]
+            writer.writerow(
+                {
+                    "input_sha256": raw.get("sha256"),
+                    "native_status": native["status"],
+                    "idem_status": idem["status"],
+                    "comparison_status": comparison["status"],
+                    "input": raw.get("relative_path"),
+                    "ports": raw.get("ports"),
+                    "frequency_points": raw.get("frequency_points"),
+                    "native_order": native["selected_order"],
+                    "idem_order": idem["selected_order"],
+                    "native_final_mean_rms": native["final_mean_rms"],
+                    "idem_final_mean_rms": idem["final_mean_rms"],
+                    "native_final_max_sigma": native["final_max_sigma"],
+                    "idem_final_max_sigma": idem["final_max_sigma"],
+                    "native_total_search_seconds": native["total_search_seconds"],
+                    "idem_total_search_seconds": idem["total_search_seconds"],
+                    "native_peak_memory_mb": native["peak_memory_mb"],
+                    "idem_peak_memory_mb": idem["peak_memory_mb"],
+                    "order_ratio": comparison["order_ratio"],
+                    "time_ratio": comparison["time_ratio"],
+                    "memory_ratio": comparison["memory_ratio"],
+                }
+            )
+
+
+def _markdown_metric(value: Any) -> str:
+    if value is None:
+        return "N/A"
+    if isinstance(value, float):
+        return f"{value:.9g}"
+    return str(value)
+
+
+def render_benchmark_markdown(summary: dict[str, Any]) -> str:
+    contract = summary["contract"]
+    lines = [
+        "<!-- GENERATED FROM summary.json; DO NOT EDIT -->",
+        "# Native vs IdEM Full-Corpus S-Parameter Benchmark",
+        "",
+        "Canonical data: `runs-sparam/full-corpus-target-0p001/summary.json`",
+        "",
+        "## Contract",
+        "",
+        f"- Mean S-RMS target: `{contract['rms_target']}` on every original frequency and port pair.",
+        f"- Passivity: enforced; authoritative check plus sampled `max_sigma <= {1.0 + contract['passivity_epsilon']}`.",
+        f"- Maximum effective order: `{contract['max_order']}`; computational threads: `{contract['threads']}`.",
+        "- Search: even orders from 4, then adjacent odd-order backfill after the first even pass.",
+        "- Parity gates: Native/IdEM order `<= 1.25`, time `<= 2.0`, memory `<= 1.5`.",
+        "",
+        f"Native command: `python -m agent_spice.cli fit-sparam <INPUT> --rms-target {contract['rms_target']} --passivity enforce --max-order {contract['max_order']} --resume-target-search`",
+        "",
+        f"Benchmark command: `python scripts/sparam_full_corpus_benchmark.py --corpus-root user_input/spara --rms-target {contract['rms_target']} --passivity-epsilon {contract['passivity_epsilon']} --max-order {contract['max_order']} --threads {contract['threads']} --resume`",
+        "",
+        "IdEM enforcement/check options: `idemmp_passivity.exe -hamSolver 3 -DC 1 -nThreads <THREADS>` followed by `-onlyCheck 1`; accepted models are exported with `idemmp_export.exe -type 2` and independently audited.",
+        "",
+        "## Results",
+        "",
+        "| Input | SHA-256 | Native | IdEM | Native order | IdEM order | Native RMS | IdEM RMS | Native sigma | IdEM sigma | Native time (s) | IdEM time (s) | Native peak (MiB) | IdEM peak (MiB) | Order ratio | Time ratio | Memory ratio | Comparison |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    for case in summary.get("cases") or []:
+        raw = case["input"]
+        native = case["native_metrics"]
+        idem = case["idem_metrics"]
+        comparison = case["comparison"]
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    str(raw.get("relative_path")),
+                    str(raw.get("sha256")),
+                    native["status"],
+                    idem["status"],
+                    _markdown_metric(native["selected_order"]),
+                    _markdown_metric(idem["selected_order"]),
+                    _markdown_metric(native["final_mean_rms"]),
+                    _markdown_metric(idem["final_mean_rms"]),
+                    _markdown_metric(native["final_max_sigma"]),
+                    _markdown_metric(idem["final_max_sigma"]),
+                    _markdown_metric(native["total_search_seconds"]),
+                    _markdown_metric(idem["total_search_seconds"]),
+                    _markdown_metric(native["peak_memory_mb"]),
+                    _markdown_metric(idem["peak_memory_mb"]),
+                    _markdown_metric(comparison["order_ratio"]),
+                    _markdown_metric(comparison["time_ratio"]),
+                    _markdown_metric(comparison["memory_ratio"]),
+                    comparison["status"],
+                ]
+            )
+            + " |"
+        )
+    overall = "PASS" if summary.get("overall_parity") else "FAIL"
+    lines.extend(["", f"Overall six-case parity: **{overall}**.", ""])
+    return "\n".join(lines)
+
+
 @dataclass(frozen=True)
 class SParamBenchmarkCase:
     id: str
