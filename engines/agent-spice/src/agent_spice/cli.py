@@ -12,11 +12,27 @@ from agent_spice.deck.builder import write_case_artifacts
 from agent_spice.hspice.alter import split_alter_cases
 from agent_spice.hspice.converter import convert_hspice_deck
 from agent_spice.project import prepare_run_directory
-from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice, fit_touchstone_to_spice_auto_order
+from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice_target
+from agent_spice.sparam.target_fit import SParamFitTarget
 
 
 SPARAM_IDEM_FAST_CANDIDATES_LARGE_PORT = "9,10,12,14,17,20"
 SPARAM_IDEM_FAST_TARGET_MEAN_RMS = 0.002
+SPARAM_IDEM_FAST_PASSIVITY_PROFILE_LARGE_PORT = {
+    "passivity_samples": 64,
+    "passivity_max_iterations": 0,
+    "passivity_perturb_constant": False,
+    "passivity_global_damping_fallback": True,
+    "passivity_global_damping_safety_margin": 1e-7,
+    "passivity_spectral_projection_fallback": False,
+    "passivity_spectral_projection_iterations": 0,
+}
+SPARAM_IDEM_FAST_PASSIVITY_OPTION_FLAGS = {
+    "passivity_samples": "--passivity-samples",
+    "passivity_max_iterations": "--passivity-max-iterations",
+    "passivity_active_variables": "--passivity-active-variables",
+    "passivity_f_max": "--passivity-f-max",
+}
 
 
 if TYPE_CHECKING:
@@ -313,6 +329,33 @@ def _parse_tuple_float(val: Any) -> tuple[float, ...] | None:
     return tuple(float(x) for x in val_str.split(","))
 
 
+def _parse_frequency_bands(value: Any) -> tuple[tuple[float, float], ...]:
+    if value is None:
+        return ()
+    if isinstance(value, tuple):
+        return value
+    text = str(value).strip()
+    if not text:
+        return ()
+    bands: list[tuple[float, float]] = []
+    for item in text.split(","):
+        part = item.strip()
+        if not part:
+            continue
+        if ":" not in part:
+            raise ValueError(f"Expected frequency band LO:HI, got '{part}'")
+        lo_text, hi_text = part.split(":", 1)
+        try:
+            lo = float(lo_text.strip())
+            hi = float(hi_text.strip())
+        except ValueError as exc:
+            raise ValueError(f"Expected numeric frequency band, got '{part}'") from exc
+        if not lo < hi:
+            raise ValueError(f"Expected frequency band LO < HI, got '{part}'")
+        bands.append((lo, hi))
+    return tuple(bands)
+
+
 def check_modal_quality(result: Any, args: Any) -> dict[str, Any]:
     checks = []
     blocking_reasons = []
@@ -523,20 +566,20 @@ def _apply_sparam_auto_preset(args: Any, argv: list[str]) -> None:
     if args.auto_preset != "idem-fast":
         raise ValueError(f"Unsupported S-parameter auto preset '{args.auto_preset}'")
 
-    candidates = SPARAM_IDEM_FAST_CANDIDATES_LARGE_PORT if ports >= 60 else None
-    target = SPARAM_IDEM_FAST_TARGET_MEAN_RMS if ports >= 60 else None
+    candidates = None
+    target = None
     if not is_explicit("--mode"):
         args.mode = "manual"
     if not is_explicit("--n-poles-real"):
-        args.n_poles_real = 0 if ports >= 60 else 4
+        args.n_poles_real = 4
     if not is_explicit("--n-poles-cmplx"):
         args.n_poles_cmplx = 2 if ports >= 60 else (30 if ports >= 30 else 18)
     if not is_explicit("--init-pole-spacing"):
-        args.init_pole_spacing = "log" if ports >= 60 else "lin"
+        args.init_pole_spacing = "lin"
     if not is_explicit("--fit-max-iterations"):
         args.fit_max_iterations = 14 if ports >= 60 else (6 if ports >= 30 else 5)
     if not is_explicit("--fit-max-frequency-points"):
-        args.fit_max_frequency_points = 256
+        args.fit_max_frequency_points = None if ports >= 60 else 256
     if not is_explicit("--relocation-backend"):
         args.relocation_backend = "streaming-reciprocal" if ports >= 30 else "streaming"
     if not is_explicit("--vector-fit-backend"):
@@ -549,6 +592,12 @@ def _apply_sparam_auto_preset(args: Any, argv: list[str]) -> None:
         args.high_frequency_complex_pair_damping = 0.03
     if ports >= 60 and not is_explicit("--high-frequency-complex-pair-lower-fraction"):
         args.high_frequency_complex_pair_lower_fraction = 0.68
+    if ports >= 60 and not (
+        is_explicit("--no-fit-dc") or is_explicit("--fit-enforce-dc")
+    ):
+        args.no_fit_dc = True
+    if ports >= 60 and not is_explicit("--native-post-relocation-effective-order-max"):
+        args.native_post_relocation_effective_order_max = 8
     if candidates is not None and not is_explicit("--auto-model-order-candidates"):
         args.auto_model_order_candidates = candidates
     if target is not None and not is_explicit("--auto-target-mean-rms-error"):
@@ -556,7 +605,79 @@ def _apply_sparam_auto_preset(args: Any, argv: list[str]) -> None:
     if not is_explicit("--skip-passivity-enforce") and not is_explicit("--enforce-passivity"):
         args.skip_passivity_enforce = True
     if not is_explicit("--skip-passivity-check") and not is_explicit("--check-passivity"):
-        args.skip_passivity_check = True
+        args.skip_passivity_check = bool(args.skip_passivity_enforce)
+    if ports >= 60 and not args.skip_passivity_enforce:
+        for attr, value in SPARAM_IDEM_FAST_PASSIVITY_PROFILE_LARGE_PORT.items():
+            option = SPARAM_IDEM_FAST_PASSIVITY_OPTION_FLAGS.get(attr)
+            if option is not None and is_explicit(option):
+                continue
+            setattr(args, attr, value)
+
+
+def _sparam_cli_advanced_passivity_kwargs(args: Any) -> dict[str, Any]:
+    names = (
+        "passivity_perturb_constant",
+        "passivity_perturb_poles",
+        "passivity_constant_only_candidates",
+        "passivity_global_damping_fallback",
+        "passivity_global_damping_mode",
+        "passivity_global_damping_selective_min_frequency",
+        "passivity_global_damping_safety_margin",
+        "passivity_spectral_projection_fallback",
+        "passivity_spectral_projection_max_delta_norm",
+        "passivity_spectral_projection_max_response_delta_rms",
+        "passivity_spectral_projection_max_sigma_regression",
+        "passivity_spectral_projection_iterations",
+        "passivity_spectral_projection_reweight_iterations",
+        "passivity_spectral_projection_max_reference_rms_increase",
+        "passivity_spectral_projection_max_reference_rms_total_increase",
+        "passivity_spectral_projection_max_reference_rms_per_sigma_improvement",
+        "passivity_spectral_projection_late_current_clip_max_reference_rms_per_sigma_improvement",
+        "passivity_spectral_projection_late_current_clip_start_iteration",
+        "passivity_spectral_projection_max_reference_band_sigma_regression",
+        "passivity_spectral_projection_reference_band_holdout_start_iteration",
+        "passivity_spectral_projection_include_all_reference_violations",
+        "passivity_spectral_projection_weight_mode",
+        "passivity_spectral_projection_weight_exponent",
+        "passivity_spectral_projection_active_mode_candidate",
+        "passivity_spectral_projection_active_mode_start_iteration",
+        "passivity_spectral_projection_non_active_stop_iteration",
+        "passivity_spectral_projection_active_mode_max_responses",
+        "passivity_spectral_projection_active_mode_singular_modes",
+        "passivity_spectral_projection_active_mode_band_singular_modes",
+        "passivity_spectral_projection_active_mode_band_singular_mode_sample_count",
+        "passivity_spectral_projection_active_mode_solver",
+        "passivity_spectral_projection_active_mode_target_margin",
+        "passivity_spectral_projection_active_mode_target_margin_start_iteration",
+        "passivity_spectral_projection_active_mode_reference_max_points",
+        "passivity_spectral_projection_active_mode_frequency_selection",
+        "passivity_spectral_projection_active_mode_reference_weight",
+        "passivity_spectral_projection_active_mode_reference_weight_mode",
+        "passivity_spectral_projection_active_mode_reference_weight_candidates",
+        "passivity_spectral_projection_active_mode_global_reference_points",
+        "passivity_spectral_projection_active_mode_max_reference_rms_total_increase",
+        "passivity_spectral_projection_active_mode_extra_scales",
+        "passivity_spectral_projection_active_mode_extra_scales_min_sigma",
+        "passivity_spectral_projection_current_clip_candidate",
+        "passivity_spectral_projection_current_clip_reference_weight",
+        "passivity_spectral_projection_candidate_reference_max_points",
+        "passivity_spectral_projection_frequency_selection",
+        "passivity_spectral_projection_band_sample_count",
+        "passivity_spectral_projection_reference_rms_scope",
+        "passivity_spectral_projection_reference_rms_chunk_size",
+        "passivity_spectral_projection_candidate_selection_metric",
+        "passivity_spectral_projection_post_damping_selection_start_iteration",
+        "passivity_spectral_projection_post_damping_max_sigma_regression",
+        "passivity_spectral_projection_mode_screen_candidates",
+        "passivity_spectral_projection_mode_screen_modes",
+        "passivity_constant_weight",
+        "passivity_pole_weight",
+    )
+    fields = SParamFitConfig.__dataclass_fields__
+    return {
+        name: getattr(args, name, fields[name].default)
+        for name in names
+    }
 
 
 def run_hspice(deck_path: Path, backend_name: str, output_root: Path, execute: bool = False) -> int:
@@ -611,27 +732,39 @@ def main(argv: list[str] | None = None) -> int:
     fit_parser.add_argument("--report", type=Path, help="JSON fit report path; defaults next to --output.")
     fit_parser.add_argument("--html-report", type=Path, help="HTML fit report path; defaults next to --output.")
     fit_parser.add_argument("--log", type=Path, help="Progress log path.")
+    fit_parser.add_argument("--rms-target", type=float, help="Required final mean S-RMS target.")
+    fit_parser.add_argument(
+        "--passivity",
+        choices=["off", "check", "enforce"],
+        default=None,
+        help="Passivity policy; defaults to check.",
+    )
+    fit_parser.add_argument(
+        "--max-order",
+        type=int,
+        help="Maximum effective common-pole order; defaults to 24 for 60+ ports and 40 otherwise.",
+    )
     fit_parser.add_argument("--auto-preset", choices=["idem-fast"], default="idem-fast", help=argparse.SUPPRESS)
     fit_parser.add_argument(
         "--auto-model-order-candidates",
-        help="Comma-separated order candidates for auto-order search; large-port default is 9,10,12,14,17,20.",
+        help=argparse.SUPPRESS,
     )
     fit_parser.add_argument(
         "--auto-target-mean-rms-error",
         type=float,
-        help="Mean RMS stop target for auto-order search; large-port default is 0.002.",
+        help=argparse.SUPPRESS,
     )
     fit_parser.add_argument("--quality-profile", choices=["explore", "signoff"], default="explore", help="Report quality profile.")
     fit_parser.add_argument("--fail-on-quality", action="store_true", help="Return non-zero when the quality report blocks.")
     fit_parser.add_argument("--allow-quality-warnings", action="store_true", help="Allow WARN quality status with --fail-on-quality.")
-    fit_parser.add_argument("--enforce-passivity", dest="skip_passivity_enforce", action="store_false", help="Run passivity enforcement after fitting.")
-    fit_parser.add_argument("--check-passivity", dest="skip_passivity_check", action="store_false", help="Run passivity checks before/after enforcement.")
+    fit_parser.add_argument("--enforce-passivity", dest="skip_passivity_enforce", action="store_false", help=argparse.SUPPRESS)
+    fit_parser.add_argument("--check-passivity", dest="skip_passivity_check", action="store_false", help=argparse.SUPPRESS)
     fit_parser.add_argument("--subckt-name", default="s_equivalent", help="SPICE subcircuit name.")
     fit_parser.add_argument("--exporter", choices=["idem", "skrf"], default="skrf", help="SPICE exporter format.")
     _add_hidden_argument(fit_parser, "--mode", choices=["auto", "manual"], default="manual")
     _add_hidden_argument(fit_parser, "--n-poles-real", type=int, default=0)
     _add_hidden_argument(fit_parser, "--n-poles-cmplx", type=int, default=2)
-    _add_hidden_argument(fit_parser, "--init-pole-spacing", choices=["lin", "log"], default="log")
+    _add_hidden_argument(fit_parser, "--init-pole-spacing", choices=["lin", "log", "resonance"], default="log")
     _add_hidden_argument(fit_parser, "--n-poles-init-real", type=int, default=3)
     _add_hidden_argument(fit_parser, "--n-poles-init-cmplx", type=int, default=3)
     _add_hidden_argument(fit_parser, "--n-poles-add", type=int, default=3)
@@ -648,6 +781,8 @@ def main(argv: list[str] | None = None) -> int:
     _add_hidden_argument(fit_parser, "--passivity-max-iterations", type=int, default=1)
     _add_hidden_argument(fit_parser, "--passivity-active-variables", type=int, default=3072)
     _add_hidden_argument(fit_parser, "--passivity-f-max", type=float)
+    _add_hidden_argument(fit_parser, "--no-fit-dc", action="store_true")
+    _add_hidden_argument(fit_parser, "--fit-enforce-dc", dest="no_fit_dc", action="store_false")
     _add_hidden_argument(fit_parser, "--no-preserve-dc", action="store_true")
     _add_hidden_argument(fit_parser, "--fit-frequency-stride", type=int, default=1)
     _add_hidden_argument(fit_parser, "--fit-max-frequency-points", type=int, default=256)
@@ -663,6 +798,32 @@ def main(argv: list[str] | None = None) -> int:
     _add_hidden_argument(fit_parser, "--high-frequency-complex-pairs", type=int, default=2)
     _add_hidden_argument(fit_parser, "--high-frequency-complex-pair-damping", type=float, default=0.03)
     _add_hidden_argument(fit_parser, "--high-frequency-complex-pair-lower-fraction", type=float, default=0.68)
+    _add_hidden_argument(fit_parser, "--native-high-frequency-complex-pair-frequency-gate", action="store_true")
+    _add_hidden_argument(fit_parser, "--native-high-frequency-residual-injection", action="store_true")
+    _add_hidden_argument(fit_parser, "--native-high-frequency-residual-injection-lower-fraction", type=float, default=0.68)
+    _add_hidden_argument(fit_parser, "--native-high-frequency-residual-injection-damping", type=float, default=0.03)
+    _add_hidden_argument(fit_parser, "--high-frequency-complex-pair-anchor-bands", default="")
+    _add_hidden_argument(fit_parser, "--high-frequency-complex-pair-anchor-strength", type=float, default=0.0)
+    _add_hidden_argument(fit_parser, "--high-frequency-complex-pair-anchor-damping", type=float, default=0.03)
+    _add_hidden_argument(fit_parser, "--native-effective-order-max", type=int)
+    _add_hidden_argument(fit_parser, "--native-effective-complex-pole-count", type=int)
+    _add_hidden_argument(
+        fit_parser,
+        "--native-effective-order-selection",
+        choices=["frequency_rank", "contribution_score"],
+        default="frequency_rank",
+    )
+    _add_hidden_argument(fit_parser, "--native-effective-order-passivity-weight", type=float, default=1.0)
+    _add_hidden_argument(fit_parser, "--native-post-relocation-effective-order-max", type=int)
+    _add_hidden_argument(fit_parser, "--native-high-frequency-relocation-weight", action="store_true")
+    _add_hidden_argument(fit_parser, "--native-high-frequency-relocation-weight-lower-fraction", type=float, default=0.68)
+    _add_hidden_argument(fit_parser, "--native-high-frequency-relocation-weight-gain", type=float, default=2.0)
+    _add_hidden_argument(fit_parser, "--native-out-of-band-pole-regularization-weight", type=float, default=0.0)
+    _add_hidden_argument(fit_parser, "--native-out-of-band-pole-regularization-start-fraction", type=float, default=1.0)
+    _add_hidden_argument(fit_parser, "--native-dynamic-edge-c-res-regularization", action="store_true")
+    _add_hidden_argument(fit_parser, "--native-dynamic-edge-c-res-regularization-base-weight", type=float, default=0.0)
+    _add_hidden_argument(fit_parser, "--native-dynamic-edge-c-res-regularization-start-fraction", type=float, default=1.0)
+    _add_hidden_argument(fit_parser, "--native-dynamic-edge-c-res-regularization-growth-threshold", type=float, default=1.5)
     _add_hidden_argument(fit_parser, "--use-lightweight-network", action="store_true", default=True)
     _add_hidden_argument(fit_parser, "--skip-passivity-enforce", dest="skip_passivity_enforce", action="store_true", default=True)
     _add_hidden_argument(fit_parser, "--skip-passivity-check", dest="skip_passivity_check", action="store_true", default=True)
@@ -922,6 +1083,58 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
+        explicit_passivity = _argument_was_explicit(effective_argv, "--passivity")
+        legacy_enforce = _argument_was_explicit(effective_argv, "--enforce-passivity")
+        legacy_check = _argument_was_explicit(effective_argv, "--check-passivity")
+        legacy_skip_check = _argument_was_explicit(effective_argv, "--skip-passivity-check")
+        legacy_skip_enforce = _argument_was_explicit(effective_argv, "--skip-passivity-enforce")
+        if explicit_passivity and (legacy_enforce or legacy_check or legacy_skip_check or legacy_skip_enforce):
+            print("error: --passivity cannot be combined with legacy passivity flags", file=sys.stderr)
+            return 1
+        if explicit_passivity:
+            passivity_policy = args.passivity
+        elif legacy_enforce:
+            passivity_policy = "enforce"
+        elif legacy_skip_check:
+            passivity_policy = "off"
+        else:
+            passivity_policy = "check"
+        args.skip_passivity_enforce = passivity_policy != "enforce"
+        args.skip_passivity_check = passivity_policy == "off"
+
+        ports = 2
+        port_match = re.search(r"\.s(\d+)p$", str(args.touchstone).lower())
+        if port_match:
+            ports = int(port_match.group(1))
+        if ports >= 60 and passivity_policy == "enforce":
+            for attr, value in SPARAM_IDEM_FAST_PASSIVITY_PROFILE_LARGE_PORT.items():
+                option = SPARAM_IDEM_FAST_PASSIVITY_OPTION_FLAGS.get(attr)
+                if option is not None and _argument_was_explicit(effective_argv, option):
+                    continue
+                setattr(args, attr, value)
+
+        rms_target = args.rms_target
+        if rms_target is None:
+            rms_target = args.auto_target_mean_rms_error
+        if rms_target is None:
+            print("error: --rms-target is required", file=sys.stderr)
+            return 1
+        max_order = args.max_order
+        if max_order is None and args.auto_model_order_candidates:
+            compatibility_orders = _parse_int_list(args.auto_model_order_candidates)
+            max_order = max(compatibility_orders) if compatibility_orders else None
+        if max_order is None:
+            max_order = 24 if ports >= 60 else 40
+        try:
+            target = SParamFitTarget(
+                mean_rms=rms_target,
+                passivity=passivity_policy,
+                max_order=max_order,
+                passivity_epsilon=args.max_passivity_epsilon,
+            )
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
         config = SParamFitConfig(
             mode=args.mode,
             n_poles_real=args.n_poles_real,
@@ -939,8 +1152,9 @@ def main(argv: list[str] | None = None) -> int:
             gamma=args.gamma,
             nu_samples=args.nu_samples,
             max_iterations=args.fit_max_iterations,
-            check_passivity=not args.skip_passivity_check,
-            enforce_passivity=not args.skip_passivity_enforce,
+            enforce_dc=not args.no_fit_dc,
+            check_passivity=passivity_policy != "off",
+            enforce_passivity=passivity_policy == "enforce",
             passivity_samples=args.passivity_samples,
             passivity_max_iterations=args.passivity_max_iterations,
             passivity_active_variables=args.passivity_active_variables,
@@ -956,44 +1170,74 @@ def main(argv: list[str] | None = None) -> int:
             high_frequency_complex_pair_count=args.high_frequency_complex_pairs,
             high_frequency_complex_pair_damping=args.high_frequency_complex_pair_damping,
             high_frequency_complex_pair_lower_fraction=args.high_frequency_complex_pair_lower_fraction,
+            native_high_frequency_complex_pair_frequency_gate=args.native_high_frequency_complex_pair_frequency_gate,
+            native_high_frequency_residual_injection=args.native_high_frequency_residual_injection,
+            native_high_frequency_residual_injection_lower_fraction=(
+                args.native_high_frequency_residual_injection_lower_fraction
+            ),
+            native_high_frequency_residual_injection_damping=args.native_high_frequency_residual_injection_damping,
+            high_frequency_complex_pair_anchor_bands_hz=_parse_frequency_bands(
+                args.high_frequency_complex_pair_anchor_bands
+            ),
+            high_frequency_complex_pair_anchor_strength=args.high_frequency_complex_pair_anchor_strength,
+            high_frequency_complex_pair_anchor_damping=args.high_frequency_complex_pair_anchor_damping,
+            native_effective_order_max=args.native_effective_order_max,
+            native_effective_complex_pole_count=args.native_effective_complex_pole_count,
+            native_effective_order_selection=args.native_effective_order_selection,
+            native_effective_order_passivity_weight=args.native_effective_order_passivity_weight,
+            native_post_relocation_effective_order_max=args.native_post_relocation_effective_order_max,
+            native_high_frequency_relocation_weight=args.native_high_frequency_relocation_weight,
+            native_high_frequency_relocation_weight_lower_fraction=(
+                args.native_high_frequency_relocation_weight_lower_fraction
+            ),
+            native_high_frequency_relocation_weight_gain=args.native_high_frequency_relocation_weight_gain,
+            native_out_of_band_pole_regularization_weight=args.native_out_of_band_pole_regularization_weight,
+            native_out_of_band_pole_regularization_start_fraction=(
+                args.native_out_of_band_pole_regularization_start_fraction
+            ),
+            native_dynamic_edge_c_res_regularization=args.native_dynamic_edge_c_res_regularization,
+            native_dynamic_edge_c_res_regularization_base_weight=(
+                args.native_dynamic_edge_c_res_regularization_base_weight
+            ),
+            native_dynamic_edge_c_res_regularization_start_fraction=(
+                args.native_dynamic_edge_c_res_regularization_start_fraction
+            ),
+            native_dynamic_edge_c_res_regularization_growth_threshold=(
+                args.native_dynamic_edge_c_res_regularization_growth_threshold
+            ),
             quality_profile=args.quality_profile,
             max_comparison_rms_error=args.max_comparison_rms_error,
             max_passivity_epsilon=args.max_passivity_epsilon,
             require_dc=args.require_dc,
             subckt_name=args.subckt_name,
             exporter=args.exporter,
+            **_sparam_cli_advanced_passivity_kwargs(args),
         )
 
         report_path = args.report or (args.output.parent / "fit_report.json")
         html_report_path = args.html_report or (args.output.parent / "fit_report.html")
         try:
-            if args.auto_model_order_candidates:
-                if args.auto_target_mean_rms_error is None:
-                    raise ValueError("--auto-target-mean-rms-error is required with --auto-model-order-candidates")
-                result = fit_touchstone_to_spice_auto_order(
-                    args.touchstone,
-                    args.output,
-                    config=config,
-                    order_candidates=_parse_int_list(args.auto_model_order_candidates),
-                    target_mean_rms_error=args.auto_target_mean_rms_error,
-                    report_path=report_path,
-                    html_report_path=html_report_path,
-                    log_path=args.log,
-                )
-            else:
-                result = fit_touchstone_to_spice(
-                    args.touchstone,
-                    args.output,
-                    config=config,
-                    report_path=report_path,
-                    html_report_path=html_report_path,
-                    log_path=args.log,
-                )
+            result = fit_touchstone_to_spice_target(
+                args.touchstone,
+                args.output,
+                target=target,
+                config=config,
+                report_path=report_path,
+                html_report_path=html_report_path,
+                log_path=args.log,
+            )
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
+        if not result.target_met:
+            print("error: requested RMS/passivity target was not met before max order", file=sys.stderr)
+            return 1
         if args.fail_on_quality:
-            failure = _quality_gate_failure(result, allow_warnings=args.allow_quality_warnings)
+            selected_result = None if result.selected_trial is None else result.selected_trial.payload
+            failure = None if selected_result is None else _quality_gate_failure(
+                selected_result,
+                allow_warnings=args.allow_quality_warnings,
+            )
             if failure is not None:
                 print(f"error: {failure}", file=sys.stderr)
                 return 1
