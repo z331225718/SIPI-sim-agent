@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
 from dataclasses import asdict, dataclass, fields, replace
 from html import escape
 import hashlib
@@ -13,10 +12,12 @@ import re
 import shutil
 import threading
 import time
-from typing import Any, Callable, Iterator
+from typing import Any, Callable, Literal
 
 import numpy as np
 
+from agent_spice.sparam.native_vf import NativeVectorFitting
+from agent_spice.sparam.pole_relocation import streaming_pole_relocation, streaming_reciprocal_pole_relocation
 from agent_spice.sparam.quality import SCHEMA_VERSION, QualityReport, build_quality_report
 from agent_spice.sparam.target_fit import (
     SParamFitTarget,
@@ -34,15 +35,7 @@ class _LazyRf:
         return rf.Network(*args, **kwargs)
 
 
-class _LazyVectorFitting:
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        from skrf.vectorFitting import VectorFitting as SkRfVectorFitting
-
-        return SkRfVectorFitting(*args, **kwargs)
-
-
 rf = _LazyRf()
-VectorFitting = _LazyVectorFitting()
 NATIVE_BASELINE_VERSION = "native-idem-fast-v1"
 
 
@@ -60,49 +53,56 @@ class _ResumedTargetFitPayload:
         return dict(self.data)
 
 
-def _create_vector_fitting(network: Any, config: "SParamFitConfig") -> Any:
-    if config.vector_fit_backend == "skrf":
-        return VectorFitting(network)
-    if config.vector_fit_backend == "native":
-        from .native_vf import NativeVectorFitting
+def _native_relocation_mode(nports: int) -> Literal["streaming", "streaming-reciprocal"]:
+    return "streaming-reciprocal" if nports >= 30 else "streaming"
 
-        vector_fit = NativeVectorFitting(network)
-        vector_fit.high_frequency_complex_pair_count = config.high_frequency_complex_pair_count
-        vector_fit.high_frequency_complex_pair_damping = config.high_frequency_complex_pair_damping
-        vector_fit.high_frequency_complex_pair_lower_fraction = config.high_frequency_complex_pair_lower_fraction
-        vector_fit.high_frequency_complex_pair_frequency_gate_enabled = (
-            config.native_high_frequency_complex_pair_frequency_gate
-        )
-        vector_fit.high_frequency_residual_injection_enabled = config.native_high_frequency_residual_injection
-        vector_fit.high_frequency_residual_injection_lower_fraction = (
-            config.native_high_frequency_residual_injection_lower_fraction
-        )
-        vector_fit.high_frequency_residual_injection_damping = config.native_high_frequency_residual_injection_damping
-        vector_fit.high_frequency_complex_pair_anchor_bands_hz = config.high_frequency_complex_pair_anchor_bands_hz
-        vector_fit.high_frequency_complex_pair_anchor_strength = config.high_frequency_complex_pair_anchor_strength
-        vector_fit.high_frequency_complex_pair_anchor_damping = config.high_frequency_complex_pair_anchor_damping
-        vector_fit.effective_order_max = config.native_effective_order_max
-        vector_fit.effective_complex_pole_count = config.native_effective_complex_pole_count
-        vector_fit.effective_order_selection = config.native_effective_order_selection
-        vector_fit.effective_order_passivity_weight = config.native_effective_order_passivity_weight
-        vector_fit.post_relocation_effective_order_max = config.native_post_relocation_effective_order_max
-        vector_fit.high_frequency_relocation_weight_enabled = config.native_high_frequency_relocation_weight
-        vector_fit.high_frequency_relocation_weight_lower_fraction = config.native_high_frequency_relocation_weight_lower_fraction
-        vector_fit.high_frequency_relocation_weight_gain = config.native_high_frequency_relocation_weight_gain
-        vector_fit.out_of_band_pole_regularization_weight = config.native_out_of_band_pole_regularization_weight
-        vector_fit.out_of_band_pole_regularization_start_fraction = (
-            config.native_out_of_band_pole_regularization_start_fraction
-        )
-        vector_fit.dynamic_edge_c_res_regularization_enabled = config.native_dynamic_edge_c_res_regularization
-        vector_fit.dynamic_edge_c_res_regularization_base_weight = config.native_dynamic_edge_c_res_regularization_base_weight
-        vector_fit.dynamic_edge_c_res_regularization_start_fraction = (
-            config.native_dynamic_edge_c_res_regularization_start_fraction
-        )
-        vector_fit.dynamic_edge_c_res_regularization_growth_threshold = (
-            config.native_dynamic_edge_c_res_regularization_growth_threshold
-        )
-        return vector_fit
-    raise ValueError("vector_fit_backend must be 'skrf' or 'native'")
+
+def _configure_native_vector_fitting(vector_fit: Any, config: "SParamFitConfig", nports: int) -> None:
+    vector_fit.high_frequency_complex_pair_count = config.high_frequency_complex_pair_count
+    vector_fit.high_frequency_complex_pair_damping = config.high_frequency_complex_pair_damping
+    vector_fit.high_frequency_complex_pair_lower_fraction = config.high_frequency_complex_pair_lower_fraction
+    vector_fit.high_frequency_complex_pair_frequency_gate_enabled = (
+        config.native_high_frequency_complex_pair_frequency_gate
+    )
+    vector_fit.high_frequency_residual_injection_enabled = config.native_high_frequency_residual_injection
+    vector_fit.high_frequency_residual_injection_lower_fraction = (
+        config.native_high_frequency_residual_injection_lower_fraction
+    )
+    vector_fit.high_frequency_residual_injection_damping = config.native_high_frequency_residual_injection_damping
+    vector_fit.high_frequency_complex_pair_anchor_bands_hz = config.high_frequency_complex_pair_anchor_bands_hz
+    vector_fit.high_frequency_complex_pair_anchor_strength = config.high_frequency_complex_pair_anchor_strength
+    vector_fit.high_frequency_complex_pair_anchor_damping = config.high_frequency_complex_pair_anchor_damping
+    vector_fit.effective_order_max = config.native_effective_order_max
+    vector_fit.effective_complex_pole_count = config.native_effective_complex_pole_count
+    vector_fit.effective_order_selection = config.native_effective_order_selection
+    vector_fit.effective_order_passivity_weight = config.native_effective_order_passivity_weight
+    vector_fit.post_relocation_effective_order_max = config.native_post_relocation_effective_order_max
+    vector_fit.high_frequency_relocation_weight_enabled = config.native_high_frequency_relocation_weight
+    vector_fit.high_frequency_relocation_weight_lower_fraction = config.native_high_frequency_relocation_weight_lower_fraction
+    vector_fit.high_frequency_relocation_weight_gain = config.native_high_frequency_relocation_weight_gain
+    vector_fit.out_of_band_pole_regularization_weight = config.native_out_of_band_pole_regularization_weight
+    vector_fit.out_of_band_pole_regularization_start_fraction = (
+        config.native_out_of_band_pole_regularization_start_fraction
+    )
+    vector_fit.dynamic_edge_c_res_regularization_enabled = config.native_dynamic_edge_c_res_regularization
+    vector_fit.dynamic_edge_c_res_regularization_base_weight = config.native_dynamic_edge_c_res_regularization_base_weight
+    vector_fit.dynamic_edge_c_res_regularization_start_fraction = (
+        config.native_dynamic_edge_c_res_regularization_start_fraction
+    )
+    vector_fit.dynamic_edge_c_res_regularization_growth_threshold = (
+        config.native_dynamic_edge_c_res_regularization_growth_threshold
+    )
+    vector_fit._pole_relocation = (
+        streaming_reciprocal_pole_relocation
+        if _native_relocation_mode(nports) == "streaming-reciprocal"
+        else streaming_pole_relocation
+    )
+
+
+def _create_vector_fitting(network: Any, config: "SParamFitConfig") -> NativeVectorFitting:
+    vector_fit = NativeVectorFitting(network)
+    _configure_native_vector_fitting(vector_fit, config, int(getattr(network, "nports", 0)))
+    return vector_fit
 
 
 @dataclass(frozen=True)
@@ -142,9 +142,7 @@ class SParamFitConfig:
     fit_max_frequency_points: int | None = None
     fit_f_min: float | None = None
     fit_f_max: float | None = None
-    relocation_backend: str = "skrf"
     use_lightweight_network: bool = False
-    vector_fit_backend: str = "skrf"
     high_frequency_complex_pair_count: int = 0
     high_frequency_complex_pair_damping: float = 0.03
     high_frequency_complex_pair_lower_fraction: float = 0.68
@@ -579,7 +577,7 @@ class _ProgressLog:
         self.handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
         self.loggers = [
             self.progress_logger,
-            logging.getLogger("skrf.vectorFitting"),
+            logging.getLogger("agent_spice.sparam.native_vf"),
         ]
         for logger in self.loggers:
             self.old_levels[logger] = logger.level
@@ -610,7 +608,7 @@ class _ProgressLog:
         self.handler.flush()
 
 
-def _safe_passivity_violations(vector_fit: VectorFitting, parameter_type: str) -> list[list[float]] | None:
+def _safe_passivity_violations(vector_fit: Any, parameter_type: str) -> list[list[float]] | None:
     try:
         violations = _call_with_supported_kwargs(vector_fit.passivity_test, parameter_type=parameter_type)
     except Exception:
@@ -626,7 +624,7 @@ def _safe_passivity_violations(vector_fit: VectorFitting, parameter_type: str) -
     return [[float(value) for value in band] for band in violations]
 
 
-def _safe_rms_error(vector_fit: VectorFitting, parameter_type: str) -> float | None:
+def _safe_rms_error(vector_fit: Any, parameter_type: str) -> float | None:
     try:
         return float(_call_with_supported_kwargs(vector_fit.get_rms_error, parameter_type=parameter_type))
     except Exception:
@@ -634,7 +632,7 @@ def _safe_rms_error(vector_fit: VectorFitting, parameter_type: str) -> float | N
 
 
 def _model_response_at_frequencies(
-    vector_fit: VectorFitting,
+    vector_fit: Any,
     row: int,
     column: int,
     freqs: Any,
@@ -677,7 +675,7 @@ def _model_response_at_frequencies(
     return fitted_values
 
 
-def _comparison_rms_error(network: Any, vector_fit: VectorFitting, parameter_type: str) -> float | None:
+def _comparison_rms_error(network: Any, vector_fit: Any, parameter_type: str) -> float | None:
     network_values = getattr(network, parameter_type.lower(), None)
     if network_values is None or not hasattr(network, "f") or not hasattr(network, "nports"):
         return None
@@ -815,7 +813,7 @@ def _to_db(value: complex) -> float:
     return 20.0 * math.log10(magnitude)
 
 
-def _comparison_traces(network: Any, vector_fit: VectorFitting, max_traces: int = 16) -> list[dict[str, Any]]:
+def _comparison_traces(network: Any, vector_fit: Any, max_traces: int = 16) -> list[dict[str, Any]]:
     if not hasattr(network, "s") or not hasattr(vector_fit, "get_model_response"):
         return []
     traces: list[dict[str, Any]] = []
@@ -1042,11 +1040,7 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
 """
 
 
-def _fit_model(vector_fit: VectorFitting, config: SParamFitConfig) -> None:
-    if config.relocation_backend not in {"skrf", "streaming", "streaming-lowmem", "streaming-reciprocal"}:
-        raise ValueError(
-            "relocation_backend must be 'skrf', 'streaming', 'streaming-lowmem', or 'streaming-reciprocal'"
-        )
+def _fit_model(vector_fit: Any, config: SParamFitConfig) -> None:
     if config.max_iterations is not None and hasattr(vector_fit, "max_iterations"):
         vector_fit.max_iterations = config.max_iterations
     network = getattr(vector_fit, "network", None)
@@ -1057,11 +1051,7 @@ def _fit_model(vector_fit: VectorFitting, config: SParamFitConfig) -> None:
         except Exception:
             original_is_passive = None
     try:
-        if config.relocation_backend in {"streaming", "streaming-lowmem", "streaming-reciprocal"}:
-            with _temporary_relocation_backend(vector_fit, config.relocation_backend):
-                _fit_model_inner(vector_fit, config)
-        else:
-            _fit_model_inner(vector_fit, config)
+        _fit_model_inner(vector_fit, config)
     finally:
         if original_is_passive is not None:
             try:
@@ -1070,37 +1060,7 @@ def _fit_model(vector_fit: VectorFitting, config: SParamFitConfig) -> None:
                 pass
 
 
-@contextmanager
-def _temporary_relocation_backend(vector_fit: VectorFitting, relocation_backend: str) -> Iterator[None]:
-    from .pole_relocation import (
-        _legacy_low_memory_pole_relocation,
-        streaming_pole_relocation,
-        streaming_reciprocal_pole_relocation,
-    )
-
-    vector_fitting_class = type(vector_fit)
-    has_own_relocation = "_pole_relocation" in vector_fitting_class.__dict__
-    original_relocation = (
-        vector_fitting_class.__dict__["_pole_relocation"]
-        if has_own_relocation
-        else inspect.getattr_static(vector_fitting_class, "_pole_relocation")
-    )
-    replacements = {
-        "streaming": streaming_pole_relocation,
-        "streaming-lowmem": _legacy_low_memory_pole_relocation,
-        "streaming-reciprocal": streaming_reciprocal_pole_relocation,
-    }
-    setattr(vector_fitting_class, "_pole_relocation", staticmethod(replacements[relocation_backend]))
-    try:
-        yield
-    finally:
-        if has_own_relocation:
-            setattr(vector_fitting_class, "_pole_relocation", original_relocation)
-        else:
-            delattr(vector_fitting_class, "_pole_relocation")
-
-
-def _fit_model_inner(vector_fit: VectorFitting, config: SParamFitConfig) -> None:
+def _fit_model_inner(vector_fit: Any, config: SParamFitConfig) -> None:
     if config.mode == "auto":
         _call_with_supported_kwargs(
             vector_fit.auto_fit,
@@ -1180,7 +1140,7 @@ def _native_topology_sweep_candidate_configs(config: SParamFitConfig) -> list[di
 
 
 def _uses_low_memory_passivity(config: SParamFitConfig) -> bool:
-    return config.parameter_type.lower() == "s" and (config.vector_fit_backend == "native" or config.exporter == "idem")
+    return config.parameter_type.lower() == "s"
 
 
 def _effective_passivity_f_max(config: SParamFitConfig, network: Any) -> float | None:
@@ -1197,7 +1157,7 @@ def _native_manual_auto_order_config(base_config: SParamFitConfig, order: int) -
     if order < 1:
         raise ValueError("order must be >= 1")
     trial_config = replace(base_config, model_order_max=order)
-    if base_config.mode != "manual" or base_config.vector_fit_backend != "native":
+    if base_config.mode != "manual":
         return trial_config
 
     preferred_complex_count = 2

@@ -580,10 +580,6 @@ def _apply_sparam_auto_preset(args: Any, argv: list[str]) -> None:
         args.fit_max_iterations = 14 if ports >= 60 else (6 if ports >= 30 else 5)
     if not is_explicit("--fit-max-frequency-points"):
         args.fit_max_frequency_points = None if ports >= 60 else 256
-    if not is_explicit("--relocation-backend"):
-        args.relocation_backend = "streaming-reciprocal" if ports >= 30 else "streaming"
-    if not is_explicit("--vector-fit-backend"):
-        args.vector_fit_backend = "native"
     if not is_explicit("--use-lightweight-network"):
         args.use_lightweight_network = True
     if ports >= 60 and not is_explicit("--high-frequency-complex-pairs"):
@@ -788,13 +784,6 @@ def main(argv: list[str] | None = None) -> int:
     _add_hidden_argument(fit_parser, "--fit-max-frequency-points", type=int, default=256)
     _add_hidden_argument(fit_parser, "--fit-f-min", type=float)
     _add_hidden_argument(fit_parser, "--fit-f-max", type=float)
-    _add_hidden_argument(
-        fit_parser,
-        "--relocation-backend",
-        choices=["skrf", "streaming", "streaming-lowmem", "streaming-reciprocal"],
-        default="streaming-reciprocal",
-    )
-    _add_hidden_argument(fit_parser, "--vector-fit-backend", choices=["skrf", "native"], default="native")
     _add_hidden_argument(fit_parser, "--high-frequency-complex-pairs", type=int, default=2)
     _add_hidden_argument(fit_parser, "--high-frequency-complex-pair-damping", type=float, default=0.03)
     _add_hidden_argument(fit_parser, "--high-frequency-complex-pair-lower-fraction", type=float, default=0.68)
@@ -1165,9 +1154,7 @@ def main(argv: list[str] | None = None) -> int:
             fit_max_frequency_points=args.fit_max_frequency_points,
             fit_f_min=args.fit_f_min,
             fit_f_max=args.fit_f_max,
-            relocation_backend=args.relocation_backend,
             use_lightweight_network=args.use_lightweight_network,
-            vector_fit_backend=args.vector_fit_backend,
             high_frequency_complex_pair_count=args.high_frequency_complex_pairs,
             high_frequency_complex_pair_damping=args.high_frequency_complex_pair_damping,
             high_frequency_complex_pair_lower_fraction=args.high_frequency_complex_pair_lower_fraction,

@@ -58,7 +58,6 @@ fit_touchstone_to_spice(
         check_passivity=False,
         enforce_passivity=False,
         use_lightweight_network=True,
-        vector_fit_backend='native',
     ),
 )
 print(json.dumps({{'skrf_loaded': 'skrf' in sys.modules, 'vectorfitting_loaded': 'skrf.vectorFitting' in sys.modules}}))

@@ -1,7 +1,6 @@
 import numpy as np
 
 from agent_spice.sparam.pole_relocation import (
-    _legacy_low_memory_pole_relocation,
     streaming_pole_relocation,
     streaming_reciprocal_pole_relocation,
 )
@@ -133,42 +132,6 @@ def test_streaming_pole_relocation_avoids_stacked_real_imag_temp(monkeypatch):
         True,
         False,
     )
-
-
-def test_legacy_low_memory_relocation_avoids_large_temp_and_matches_default(monkeypatch):
-    poles, freqs, responses, weights = _sample_relocation_inputs()
-    expected = streaming_pole_relocation(
-        poles,
-        freqs,
-        responses,
-        weights,
-        True,
-        False,
-    )
-    original_empty = np.empty
-
-    def fail_vstack(*args, **kwargs):
-        raise AssertionError("legacy low-memory relocation should reuse a real work buffer instead of vstack")
-
-    def guarded_empty(shape, *args, **kwargs):
-        if shape == (9, 4):
-            raise AssertionError("legacy low-memory relocation should not allocate response-scaled A_fast")
-        return original_empty(shape, *args, **kwargs)
-
-    monkeypatch.setattr(np, "vstack", fail_vstack)
-    monkeypatch.setattr(np, "empty", guarded_empty)
-
-    actual = _legacy_low_memory_pole_relocation(
-        poles,
-        freqs,
-        responses,
-        weights,
-        True,
-        False,
-    )
-
-    for actual_value, expected_value in zip(actual, expected):
-        np.testing.assert_allclose(actual_value, expected_value, rtol=1e-10, atol=1e-10)
 
 
 def test_streaming_reciprocal_pole_relocation_matches_symmetric_full_matrix():

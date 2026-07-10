@@ -445,6 +445,27 @@ def test_fit_sparam_cli_help_is_idem_fast_focused(capsys):
     assert "high-accuracy" not in captured.out
 
 
+@pytest.mark.parametrize("flag", ["--vector-fit-backend", "--relocation-backend"])
+def test_fit_sparam_cli_rejects_removed_backend_flags(tmp_path: Path, flag: str):
+    import agent_spice.cli as cli
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(
+            [
+                "fit-sparam",
+                str(tmp_path / "line.s2p"),
+                "--output",
+                str(tmp_path / "model.sp"),
+                "--rms-target",
+                "0.1",
+                flag,
+                "skrf",
+            ]
+        )
+
+    assert exc_info.value.code == 2
+
+
 def test_fit_sparam_cli_can_apply_idem_fast_preset_for_30p():
     from argparse import Namespace
 
@@ -459,8 +480,6 @@ def test_fit_sparam_cli_can_apply_idem_fast_preset_for_30p():
         init_pole_spacing="lin",
         fit_max_iterations=None,
         fit_max_frequency_points=None,
-        relocation_backend="skrf",
-        vector_fit_backend="skrf",
         use_lightweight_network=False,
         high_frequency_complex_pairs=0,
         high_frequency_complex_pair_damping=0.03,
@@ -479,8 +498,6 @@ def test_fit_sparam_cli_can_apply_idem_fast_preset_for_30p():
     assert args.init_pole_spacing == "lin"
     assert args.fit_max_iterations == 6
     assert args.fit_max_frequency_points == 256
-    assert args.relocation_backend == "streaming-reciprocal"
-    assert args.vector_fit_backend == "native"
     assert args.use_lightweight_network is True
     assert args.high_frequency_complex_pairs == 0
     assert args.auto_model_order_candidates is None
@@ -503,8 +520,6 @@ def test_fit_sparam_cli_applies_idem_fast_low_order_auto_for_large_ports():
         init_pole_spacing="lin",
         fit_max_iterations=None,
         fit_max_frequency_points=None,
-        relocation_backend="skrf",
-        vector_fit_backend="skrf",
         use_lightweight_network=False,
         high_frequency_complex_pairs=0,
         high_frequency_complex_pair_damping=0.01,
@@ -525,8 +540,6 @@ def test_fit_sparam_cli_applies_idem_fast_low_order_auto_for_large_ports():
     assert args.init_pole_spacing == "lin"
     assert args.fit_max_iterations == 14
     assert args.fit_max_frequency_points is None
-    assert args.relocation_backend == "streaming-reciprocal"
-    assert args.vector_fit_backend == "native"
     assert args.use_lightweight_network is True
     assert args.high_frequency_complex_pairs == 2
     assert args.high_frequency_complex_pair_damping == 0.03
@@ -587,7 +600,8 @@ def test_fit_sparam_cli_defaults_to_full_grid_no_dc_order8_for_large_ports(tmp_p
     assert calls[0][2].fit_max_frequency_points is None
     assert calls[0][2].enforce_dc is False
     assert calls[0][2].native_post_relocation_effective_order_max == 8
-    assert calls[0][2].vector_fit_backend == "native"
+    assert not hasattr(calls[0][2], "vector_fit_backend")
+    assert not hasattr(calls[0][2], "relocation_backend")
     assert calls[0][2].high_frequency_complex_pair_count == 2
     assert calls[0][2].passivity_samples == 8
     assert calls[0][2].passivity_max_iterations == 1
@@ -632,8 +646,8 @@ def test_fit_sparam_cli_idem_fast_preset_uses_single_manual_fit(tmp_path: Path, 
     assert fit_calls[0].n_poles_cmplx == 30
     assert fit_calls[0].max_iterations == 6
     assert fit_calls[0].fit_max_frequency_points == 256
-    assert fit_calls[0].relocation_backend == "streaming-reciprocal"
-    assert fit_calls[0].vector_fit_backend == "native"
+    assert not hasattr(fit_calls[0], "relocation_backend")
+    assert not hasattr(fit_calls[0], "vector_fit_backend")
     assert fit_calls[0].use_lightweight_network is True
     assert fit_calls[0].check_passivity is True
     assert fit_calls[0].enforce_passivity is False
@@ -723,34 +737,6 @@ def test_fit_sparam_cli_auto_preset_respects_explicit_options_when_argv_is_none(
     assert fit_calls[0].fit_max_frequency_points == 320
 
 
-def test_fit_sparam_cli_auto_preset_respects_explicit_vector_fit_backend(tmp_path: Path, monkeypatch):
-    import agent_spice.cli as cli
-
-    fit_calls = []
-
-    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None, log_path=None):
-        fit_calls.append(config)
-        return FakeFitResult(FakeQualityReport(status="PASS"))
-
-    monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
-
-    exit_code = cli.main(
-        [
-            "fit-sparam",
-            str(tmp_path / "line.s30p"),
-            "--output",
-            str(tmp_path / "model.sp"),
-            "--auto-preset",
-            "idem-fast",
-            "--vector-fit-backend",
-            "skrf",
-        ]
-    )
-
-    assert exit_code == 0
-    assert fit_calls[0].vector_fit_backend == "skrf"
-
-
 def test_fit_sparam_cli_can_skip_passivity_check(tmp_path: Path, monkeypatch):
     import agent_spice.cli as cli
 
@@ -774,32 +760,6 @@ def test_fit_sparam_cli_can_skip_passivity_check(tmp_path: Path, monkeypatch):
 
     assert exit_code == 0
     assert calls[0].check_passivity is False
-
-
-def test_fit_sparam_cli_can_select_native_vector_fit_backend(tmp_path: Path, monkeypatch):
-    import agent_spice.cli as cli
-
-    calls = []
-
-    def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None, log_path=None):
-        calls.append(config)
-        return FakeFitResult(FakeQualityReport(status="PASS"))
-
-    monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
-
-    exit_code = cli.main(
-        [
-            "fit-sparam",
-            str(tmp_path / "line.s2p"),
-            "--output",
-            str(tmp_path / "model.sp"),
-            "--vector-fit-backend",
-            "native",
-        ]
-    )
-
-    assert exit_code == 0
-    assert calls[0].vector_fit_backend == "native"
 
 
 def test_fit_sparam_cli_requires_rms_target(tmp_path: Path, monkeypatch):
@@ -912,7 +872,7 @@ def test_fit_sparam_cli_defaults_to_check_and_large_port_max_order(tmp_path: Pat
     assert config.enforce_passivity is False
 
 
-def test_fit_sparam_cli_uses_native_backend_for_small_port_target_search(tmp_path: Path, monkeypatch):
+def test_fit_sparam_cli_builds_backend_free_config_for_small_port_target_search(tmp_path: Path, monkeypatch):
     import agent_spice.cli as cli
 
     calls = []
@@ -935,7 +895,8 @@ def test_fit_sparam_cli_uses_native_backend_for_small_port_target_search(tmp_pat
     )
 
     assert exit_code == 0
-    assert calls[0].vector_fit_backend == "native"
+    assert not hasattr(calls[0], "vector_fit_backend")
+    assert not hasattr(calls[0], "relocation_backend")
 
 
 def test_fit_sparam_cli_returns_failure_when_target_is_not_met(tmp_path: Path, monkeypatch):
