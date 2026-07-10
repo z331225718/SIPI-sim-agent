@@ -91,7 +91,7 @@ Touchstone
   -> Native streaming/reciprocal pole relocation
   -> Native residue solve
   -> Hamiltonian passivity check/enforcement
-  -> Native 或 IdEM-style SPICE exporter
+  -> Native SPICE writer
   -> full-grid report
 ```
 
@@ -139,10 +139,9 @@ s19 input + input SHA
 
 ### 5.3 exporter 命名
 
-- 将 `exporter="skrf"` 重命名为 `exporter="native"`。
-- `native` exporter 调用 `NativeVectorFitting.write_spice_subcircuit_s()`。
-- 保留 `idem` exporter，用于生成 IdEM 风格状态空间 SPICE 拓扑。
-- exporter 名称只描述输出拓扑/实现，不再暗示 fitting backend。
+- 生产 API/CLI 不提供 exporter 选择，固定调用 `NativeVectorFitting.write_spice_subcircuit_s()`。
+- 删除原 `skrf`/`native`/`idem` exporter 配置字段和 CLI flag。
+- 外部 IdEM adapter 仅保留给 benchmark 和算法研究，不进入生产运行时路径。
 
 ### 5.4 基线版本
 
@@ -353,7 +352,7 @@ IdEM 返回码 1 继续使用 artifact-based 成功判定，不将返回码本�
 - API 不接受已删除 backend 字段。
 - 小/大端口内部 relocation 策略与当前生产版本一致。
 - Native fitting 进程不导入 skrf。
-- native/idem-style exporter 都可生成有效 SPICE。
+- Native writer 可生成有效 SPICE，生产路径不依赖 IdEM。
 - baseline version 出现在报告和 fingerprint。
 - 现有 target order、passivity、resume 和 full-corpus tests 全部通过。
 

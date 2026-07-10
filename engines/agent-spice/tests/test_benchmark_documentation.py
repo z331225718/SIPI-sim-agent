@@ -39,4 +39,4 @@ def test_readme_production_sparam_example_uses_native_baseline_only():
     assert "native-idem-fast-v1" in sparam_section
     assert "--vector-fit-backend" not in sparam_section
     assert "--relocation-backend" not in sparam_section
-    assert "--exporter skrf" not in sparam_section
+    assert "--exporter" not in sparam_section

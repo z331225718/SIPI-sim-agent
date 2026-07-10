@@ -183,7 +183,6 @@ class SParamFitConfig:
     max_comparison_rms_error: float = 0.05
     max_passivity_epsilon: float = 1e-6
     require_dc: bool = False
-    exporter: Literal["native", "idem"] = "native"
     passivity_perturb_constant: bool = False
     passivity_perturb_poles: bool = False
     passivity_constant_only_candidates: bool = False
@@ -240,12 +239,6 @@ class SParamFitConfig:
     passivity_spectral_projection_mode_screen_modes: int = 2
     passivity_constant_weight: float = 1.0
     passivity_pole_weight: float = 1.0
-
-    def __post_init__(self) -> None:
-        if self.exporter not in {"native", "idem"}:
-            raise ValueError("exporter must be one of: native, idem")
-
-
 
 @dataclass(frozen=True)
 class SParamFitResult:
@@ -1681,24 +1674,13 @@ def fit_touchstone_to_spice(
         )
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        if config.exporter == "idem":
-            progress.info(f"writing IDEM-style SPICE subcircuit: {output_path}")
-            write_idem_spice_subcircuit(
-                vector_fit,
-                output_path,
-                subcircuit_name=config.subckt_name,
-                Z0=_reference_impedance(network),
-            )
-        elif config.exporter == "native":
-            progress.info(f"writing SPICE subcircuit: {output_path}")
-            _call_with_supported_kwargs(
-                vector_fit.write_spice_subcircuit_s,
-                str(output_path),
-                fitted_model_name=config.subckt_name,
-                create_reference_pins=config.create_reference_pins,
-            )
-        else:
-            raise ValueError("exporter must be one of: native, idem")
+        progress.info(f"writing SPICE subcircuit: {output_path}")
+        _call_with_supported_kwargs(
+            vector_fit.write_spice_subcircuit_s,
+            str(output_path),
+            fitted_model_name=config.subckt_name,
+            create_reference_pins=config.create_reference_pins,
+        )
         resource_monitor.__exit__(None, None, None)
 
         pole_summary = _pole_summary(vector_fit)
@@ -2231,187 +2213,3 @@ def fit_touchstone_to_spice_target(
                 chunks.append(f"===== order {order} =====\n{trial_log.read_text(encoding='utf-8')}")
         log_path.write_text("\n".join(chunks), encoding="utf-8")
     return search_result
-
-
-def write_idem_spice_subcircuit(
-    vector_fit: Any,
-    output_path: Path,
-    subcircuit_name: str,
-    Z0: list[float],
-) -> None:
-    """Writes equivalent circuit in IDEM's State-Space Realization topology."""
-    poles = np.asarray(getattr(vector_fit, "poles", []), dtype=complex)
-    residues = np.asarray(getattr(vector_fit, "residues", []), dtype=complex)
-    constant_coeff = np.asarray(getattr(vector_fit, "constant_coeff", []), dtype=complex)
-
-    nports = len(Z0)
-    if residues.size == 0 and len(poles) > 0:
-        residues = np.zeros((nports * nports, len(poles)), dtype=complex)
-    if constant_coeff.size == 0:
-        constant_coeff = np.zeros(nports * nports, dtype=complex)
-
-    lines = []
-    lines.append("**********************************************************")
-    lines.append("** STATE-SPACE REALIZATION")
-    lines.append("** IN SPICE LANGUAGE (IDEM-COMPATIBLE STYLE)")
-    lines.append("** Generated automatically by agent-spice")
-    lines.append("**********************************************************")
-    lines.append("")
-    lines.append(".subckt {} {}".format(subcircuit_name, " ".join(f"a_{i}" for i in range(1, nports + 1)) + " ref"))
-    lines.append("")
-
-    # 1. Synthesis of port interface (Main circuit connected to output nodes)
-    lines.append("******************************************")
-    lines.append("* Main circuit connected to output nodes *")
-    lines.append("******************************************")
-
-    # Map poles layout to identify complex conjugate pairs
-    visited_poles = set()
-    poles_layout = []
-    for idx, p in enumerate(poles):
-        if idx in visited_poles:
-            continue
-        if p.imag == 0.0:
-            poles_layout.append({"type": "real", "pole": p, "indices": [idx]})
-            visited_poles.add(idx)
-        else:
-            conj_idx = None
-            for other_idx, other_p in enumerate(poles):
-                if other_idx not in visited_poles and other_idx != idx:
-                    if np.isclose(other_p.real, p.real) and np.isclose(other_p.imag, -p.imag):
-                        conj_idx = other_idx
-                        break
-            if conj_idx is not None:
-                poles_layout.append({"type": "complex", "pole": p if p.imag > 0 else other_p, "indices": [idx, conj_idx]})
-                visited_poles.add(idx)
-                visited_poles.add(conj_idx)
-            else:
-                poles_layout.append({"type": "real", "pole": p, "indices": [idx]})
-                visited_poles.add(idx)
-
-    Cs = 1e-12  # 1 pF scaling capacitor
-    state_counter = 1
-
-    port_gc_lines = {i: [] for i in range(1, nports + 1)}
-    port_gd_lines = {i: [] for i in range(1, nports + 1)}
-    state_lines = []
-
-    for j_port in range(1, nports + 1):
-        j_idx = j_port - 1
-        z0_j = Z0[j_idx]
-
-        for p_info in poles_layout:
-            if p_info["type"] == "real":
-                s_idx = state_counter
-                state_counter += 1
-                pole_val = p_info["pole"].real
-                pole_idx = p_info["indices"][0]
-
-                r_val = -1.0 / (Cs * pole_val) if pole_val < 0 else 1e12
-                gs = Cs * 5.0 * np.sqrt(2.0) / np.sqrt(z0_j)
-
-                state_lines.append(f"* Real state for port {j_port}, pole {pole_val:.5e}")
-                state_lines.append(f"CS_{s_idx} NS_{s_idx} 0 {Cs:.16e}")
-                state_lines.append(f"RS_{s_idx} NS_{s_idx} 0 {r_val:.16e}")
-                state_lines.append(f"GS_{s_idx} 0 NS_{s_idx} NA_{j_port} 0 {gs:.16e}")
-                state_lines.append("*")
-
-                for i_port in range(1, nports + 1):
-                    i_idx = i_port - 1
-                    z0_i = Z0[i_idx]
-                    res_val = residues[i_idx * nports + j_idx, pole_idx].real
-                    if abs(res_val) > 1e-15:
-                        gc_val = (2.0 * Cs / np.sqrt(z0_i)) * res_val
-                        port_gc_lines[i_port].append(f"GC_{i_port}_{s_idx} ref NI_{i_port} NS_{s_idx} 0 {gc_val:.16e}")
-
-            else:
-                s1 = state_counter
-                s2 = state_counter + 1
-                state_counter += 2
-
-                p_complex = p_info["pole"]
-                sigma = p_complex.real
-                omega = p_complex.imag
-                pole_idx1 = p_info["indices"][0]
-
-                r_val = -1.0 / (Cs * sigma) if sigma < 0 else 1e12
-                g12 = Cs * omega
-                g21 = -Cs * omega
-                gs = Cs * 10.0 * np.sqrt(2.0) / np.sqrt(z0_j)
-
-                state_lines.append(f"* Complex state pair for port {j_port}, pole {sigma:.5e} +/- j{omega:.5e}")
-                state_lines.append(f"CS_{s1} NS_{s1} 0 {Cs:.16e}")
-                state_lines.append(f"RS_{s1} NS_{s1} 0 {r_val:.16e}")
-                state_lines.append(f"CS_{s2} NS_{s2} 0 {Cs:.16e}")
-                state_lines.append(f"RS_{s2} NS_{s2} 0 {r_val:.16e}")
-                state_lines.append(f"GS_{s1}_c 0 NS_{s1} NS_{s2} 0 {g12:.16e}")
-                state_lines.append(f"GS_{s2}_c 0 NS_{s2} NS_{s1} 0 {g21:.16e}")
-                state_lines.append(f"GS_{s1}_in 0 NS_{s1} NA_{j_port} 0 {gs:.16e}")
-                state_lines.append("*")
-
-                for i_port in range(1, nports + 1):
-                    i_idx = i_port - 1
-                    z0_i = Z0[i_idx]
-
-                    res_complex = residues[i_idx * nports + j_idx, pole_idx1]
-                    res_re = res_complex.real
-                    res_im = res_complex.imag
-
-                    if abs(res_re) > 1e-15:
-                        gc_val1 = (2.0 * Cs / np.sqrt(z0_i)) * res_re
-                        port_gc_lines[i_port].append(f"GC_{i_port}_{s1} ref NI_{i_port} NS_{s1} 0 {gc_val1:.16e}")
-                    if abs(res_im) > 1e-15:
-                        gc_val2 = (2.0 * Cs / np.sqrt(z0_i)) * res_im
-                        port_gc_lines[i_port].append(f"GC_{i_port}_{s2} ref NI_{i_port} NS_{s2} 0 {gc_val2:.16e}")
-
-    for i_port in range(1, nports + 1):
-        i_idx = i_port - 1
-        z0_i = Z0[i_idx]
-        for j_port in range(1, nports + 1):
-            j_idx = j_port - 1
-            z0_j = Z0[j_idx]
-            d_val = constant_coeff[i_idx * nports + j_idx].real
-            if abs(d_val) > 1e-15:
-                gd_val = (10.0 * np.sqrt(2.0) / np.sqrt(z0_i * z0_j)) * d_val
-                port_gd_lines[i_port].append(f"GD_{i_port}_{j_port} ref NI_{i_port} NA_{j_port} 0 {gd_val:.16e}")
-
-    for i_port in range(1, nports + 1):
-        i_idx = i_port - 1
-        z0_i = Z0[i_idx]
-        lines.append(f"* Port {i_port}")
-        lines.append(f"VI_{i_port} a_{i_port} NI_{i_port} 0")
-        lines.append(f"RI_{i_port} NI_{i_port} ref {z0_i:.16e}")
-        for line in port_gc_lines[i_port]:
-            lines.append(line)
-        for line in port_gd_lines[i_port]:
-            lines.append(line)
-        lines.append("*")
-
-    lines.append("")
-
-    lines.append("********************************")
-    lines.append("* Synthesis of impinging waves *")
-    lines.append("********************************")
-    for j_port in range(1, nports + 1):
-        j_idx = j_port - 1
-        z0_j = Z0[j_idx]
-        ra_val = z0_j / (10.0 * np.sqrt(2.0))
-        ga_val = 1.0 / z0_j
-        lines.append(f"* Impinging wave, port {j_port}")
-        lines.append(f"RA_{j_port} NA_{j_port} 0 {ra_val:.16e}")
-        lines.append(f"FA_{j_port} 0 NA_{j_port} VI_{j_port} 1.0")
-        lines.append(f"GA_{j_port} 0 NA_{j_port} a_{j_port} ref {ga_val:.16e}")
-        lines.append("*")
-
-    lines.append("")
-
-    lines.append("***************************************")
-    lines.append("* Synthesis of real and complex poles *")
-    lines.append("***************************************")
-    for line in state_lines:
-        lines.append(line)
-
-    lines.append(".ends")
-    lines.append("")
-
-    output_path.write_text("\n".join(lines), encoding="utf-8")

@@ -14,7 +14,7 @@
 - 小于 30 端口使用 streaming relocation；大于等于 30 端口使用 streaming reciprocal relocation。
 - 不改变当前 pole placement、residue solve、passivity 参数及 target-driven order search 行为。
 - 删除 skrf VectorFitting 和 skrf reference relocation 的生产入口。
-- 将 exporter `skrf` 重命名为 `native`；保留 `idem` exporter。
+- 生产 SPICE 输出固定使用 Native writer，不保留 exporter 选择面。
 - 保留 skrf 包和非 fitting 功能。
 - Native 主路径不得导入 `skrf` 或 `skrf.vectorFitting`。
 - 使用 TDD，每个任务完成后代码审查并独立提交。
@@ -259,7 +259,7 @@ Expected: `rg` 无命中。
 
 ---
 
-### Task 4: 重命名 Native exporter 并保持 IdEM-style exporter
+### Task 4: 重命名 Native exporter 并保持 IdEM-style exporter（已被 Task 6 取代）
 
 **Files:**
 - Modify: `src/agent_spice/sparam/fitting.py`
@@ -366,12 +366,25 @@ git add README.md docs/sparam-fit-performance.md docs/sparam-idem-full-benchmark
 git commit -m "docs: establish Native S-parameter production baseline"
 ```
 
+---
+
+### Task 6: 删除生产 IdEM exporter 选择面
+
+用户确认真实生产环境不提供 IdEM。本任务取代 Task 4 的中间状态：
+
+- 删除 `SParamFitConfig.exporter`。
+- 删除 CLI `--exporter`。
+- 生产 fitting 固定调用 Native SPICE writer。
+- 删除本地 IdEM-style SPICE writer。
+- 保留外部 IdEM benchmark/tuning adapter，供后续算法对标。
+- 更新 README、性能文档和兼容测试。
+
 ## Completion Gate
 
 - Native 是唯一 fitting backend。
 - CLI/API 不再接受 skrf fitting 或 relocation 选择。
 - Native relocation 数值代码不位于 skrf 命名模块。
-- 默认 exporter 为 native。
+- 生产 SPICE 输出固定为 Native writer，API/CLI 无 exporter 选择。
 - Native 主路径不导入 skrf。
 - 基线版本进入报告和 fingerprint。
 - 2-port smoke 与全仓测试通过。

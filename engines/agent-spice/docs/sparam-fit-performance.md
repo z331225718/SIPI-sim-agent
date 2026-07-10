@@ -41,7 +41,7 @@ python -m agent_spice.cli fit-sparam .\path\to\model.s30p `
   --fail-on-quality
 ```
 
-当前 CLI 仍支持 `--exporter native|idem`，它只选择 SPICE 输出拓扑/格式，不选择 fitting backend。默认 `native` exporter 和 `idem` exporter 都消费同一套 Native fit 结果。
+生产 SPICE 输出固定使用 Native writer，不提供 exporter 选择。外部 IdEM 只用于开发侧 benchmark 和算法研究，不是生产运行时依赖。
 
 ## Progress And Debug
 

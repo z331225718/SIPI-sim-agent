@@ -756,7 +756,6 @@ def main(argv: list[str] | None = None) -> int:
     fit_parser.add_argument("--enforce-passivity", dest="skip_passivity_enforce", action="store_false", help=argparse.SUPPRESS)
     fit_parser.add_argument("--check-passivity", dest="skip_passivity_check", action="store_false", help=argparse.SUPPRESS)
     fit_parser.add_argument("--subckt-name", default="s_equivalent", help="SPICE subcircuit name.")
-    fit_parser.add_argument("--exporter", choices=["native", "idem"], default="native", help="SPICE exporter format.")
     _add_hidden_argument(fit_parser, "--mode", choices=["auto", "manual"], default="manual")
     _add_hidden_argument(fit_parser, "--n-poles-real", type=int, default=0)
     _add_hidden_argument(fit_parser, "--n-poles-cmplx", type=int, default=2)
@@ -1198,7 +1197,6 @@ def main(argv: list[str] | None = None) -> int:
             max_passivity_epsilon=args.max_passivity_epsilon,
             require_dc=args.require_dc,
             subckt_name=args.subckt_name,
-            exporter=args.exporter,
             **_sparam_cli_advanced_passivity_kwargs(args),
         )
 

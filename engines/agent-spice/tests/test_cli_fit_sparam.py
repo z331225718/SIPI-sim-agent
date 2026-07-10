@@ -376,46 +376,23 @@ def test_fit_sparam_cli_fail_on_quality_rejects_blocking_failures(tmp_path: Path
     assert "passivity_after_enforce" in captured.err
 
 
-def test_fit_sparam_cli_supports_idem_exporter(tmp_path: Path, monkeypatch):
+def test_fit_sparam_cli_rejects_removed_exporter_flag(tmp_path: Path, monkeypatch):
     import agent_spice.cli as cli
 
-    exporter_value = []
-
     def fake_fit(touchstone_path, output_path, config=None, report_path=None, html_report_path=None, log_path=None):
-        exporter_value.append(config.exporter)
         return FakeFitResult(FakeQualityReport(status="PASS"))
 
     monkeypatch.setattr(cli, "fit_touchstone_to_spice", fake_fit, raising=False)
-
-    exit_code = cli.main(
-        [
-            "fit-sparam",
-            str(tmp_path / "line.s2p"),
-            "--output",
-            str(tmp_path / "model.sp"),
-            "--exporter",
-            "idem",
-        ]
-    )
-
-    assert exit_code == 0
-    assert exporter_value == ["idem"]
-
-
-def test_cli_rejects_removed_skrf_exporter(tmp_path: Path):
-    import agent_spice.cli as cli
 
     with pytest.raises(SystemExit) as exc_info:
         cli.main(
             [
                 "fit-sparam",
-                str(tmp_path / "x.s2p"),
+                str(tmp_path / "line.s2p"),
                 "--output",
-                str(tmp_path / "x.sp"),
-                "--rms-target",
-                "0.1",
+                str(tmp_path / "model.sp"),
                 "--exporter",
-                "skrf",
+                "idem",
             ]
         )
 

@@ -31,13 +31,9 @@ def test_sparam_config_no_longer_accepts_relocation_backend():
         SParamFitConfig(relocation_backend="streaming")
 
 
-def test_default_exporter_is_native():
-    assert SParamFitConfig().exporter == "native"
-
-
-def test_sparam_config_rejects_removed_skrf_exporter():
-    with pytest.raises(ValueError, match="exporter"):
-        SParamFitConfig(exporter="skrf")
+def test_sparam_config_no_longer_accepts_exporter():
+    with pytest.raises(TypeError):
+        SParamFitConfig(exporter="idem")
 
 
 def test_passivity_advanced_perturbations_are_experimental_opt_in():
@@ -474,7 +470,7 @@ def test_fit_touchstone_to_spice_can_skip_passivity_checks(tmp_path: Path, monke
     assert result.passive_after_enforce is None
 
 
-def test_native_fit_uses_low_memory_passivity_engine_without_idem_exporter(tmp_path: Path, monkeypatch):
+def test_native_fit_uses_low_memory_passivity_engine(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
     import agent_spice.sparam.passivity as passivity
 
@@ -527,7 +523,6 @@ def test_native_fit_uses_low_memory_passivity_engine_without_idem_exporter(tmp_p
         tmp_path / "model.sp",
         config=SParamFitConfig(
             mode="manual",
-            exporter="native",
             check_passivity=True,
             enforce_passivity=True,
             max_iterations=7,
@@ -1386,31 +1381,3 @@ def test_fit_touchstone_to_spice_smoke_with_fixture(tmp_path: Path):
     assert payload["frequency_points"] > 0
     assert payload["spice_path"] == str(output)
     assert "<svg" in html_report.read_text(encoding="utf-8")
-
-
-def test_fit_touchstone_to_spice_with_idem_exporter(tmp_path: Path):
-    fixture = Path("tests/fixtures/sparam/simple_through.s2p")
-    output = tmp_path / "simple_through_idem.sp"
-    report = tmp_path / "fit_report_idem.json"
-    html_report = tmp_path / "fit_report_idem.html"
-
-    result = fit_touchstone_to_spice(
-        fixture,
-        output,
-        config=SParamFitConfig(
-            model_order_max=20,
-            target_error=0.05,
-            exporter="idem",
-            enforce_passivity=True,
-        ),
-        report_path=report,
-        html_report_path=html_report,
-    )
-
-    assert result.spice_path == output
-    content = output.read_text(encoding="utf-8")
-    assert ".subckt s_equivalent" in content
-    assert "** STATE-SPACE REALIZATION" in content
-    assert "CS_" in content
-    assert "RS_" in content
-    assert "GS_" in content
