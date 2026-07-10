@@ -88,8 +88,9 @@ def generate_data_only_candidates(
     candidates = []
     log_frequency = np.geomspace(lower, upper, topology.real_count + topology.complex_pair_count)
     candidates.append(
-        _candidate_from_frequencies(
-            log_frequency,
+        _candidate_from_components(
+            log_frequency[: topology.real_count],
+            log_frequency[topology.real_count :],
             topology,
             source="log_grid",
             seed_index=0,
@@ -100,22 +101,31 @@ def generate_data_only_candidates(
     remaining = candidate_count - 1
     activity_count = (remaining + 1) // 2
     activity = np.sqrt(np.mean(np.abs(np.diff(response_array, axis=1)) ** 2, axis=0))
-    activity_cdf = _activity_cdf(activity)
-    log_lower = float(np.log(lower))
-    log_upper = float(np.log(upper))
-    log_span = log_upper - log_lower
-    total_poles = topology.real_count + topology.complex_pair_count
+    activity_frequencies = _activity_frequency_centers(freqs, lower)
+    positive_freqs = freqs[freqs > 0.0]
 
     for offset in range(activity_count):
-        quantile = (offset + 0.5 + rng.uniform(-0.2, 0.2)) / max(activity_count, 1)
-        center_index = int(np.searchsorted(activity_cdf, np.clip(quantile, 0.0, 1.0), side="left"))
-        center_index = min(center_index, len(activity) - 1)
-        center = float(np.sqrt(freqs[center_index] * freqs[center_index + 1]))
-        offsets = np.linspace(-0.55, 0.55, total_poles) + rng.uniform(-0.08, 0.08, total_poles)
-        frequencies = np.exp(np.clip(np.log(center) + offsets * log_span, log_lower, log_upper))
+        phase = (offset + rng.uniform(0.1, 0.9)) / activity_count
+        real_frequencies = _activity_stratified_frequencies(
+            activity_frequencies,
+            activity,
+            topology.real_count,
+            phase=phase,
+            rng=rng,
+            minimum_log_separation=0.02,
+        )
+        complex_frequencies = _activity_stratified_frequencies(
+            activity_frequencies,
+            activity,
+            topology.complex_pair_count,
+            phase=phase + 0.5,
+            rng=rng,
+            minimum_log_separation=0.05,
+        )
         candidates.append(
-            _candidate_from_frequencies(
-                np.sort(frequencies),
+            _candidate_from_components(
+                real_frequencies,
+                complex_frequencies,
                 topology,
                 source="response_activity",
                 seed_index=len(candidates),
@@ -125,12 +135,19 @@ def generate_data_only_candidates(
 
     while len(candidates) < candidate_count:
         index = len(candidates)
-        strata = (np.arange(total_poles, dtype=float) + rng.uniform(0.0, 1.0, total_poles)) / total_poles
-        rng.shuffle(strata)
-        frequencies = np.exp(log_lower + np.sort(strata) * log_span)
+        real_frequencies = _empirical_stratified_frequencies(positive_freqs, topology.real_count, rng=rng)
+        complex_frequencies = _activity_stratified_frequencies(
+            activity_frequencies,
+            activity,
+            topology.complex_pair_count,
+            phase=rng.uniform(0.0, 1.0),
+            rng=rng,
+            minimum_log_separation=0.05,
+        )
         candidates.append(
-            _candidate_from_frequencies(
-                frequencies,
+            _candidate_from_components(
+                real_frequencies,
+                complex_frequencies,
                 topology,
                 source="stratified",
                 seed_index=index,
@@ -244,19 +261,76 @@ def _activity_cdf(activity: np.ndarray) -> np.ndarray:
     return np.cumsum(weights) / float(np.sum(weights))
 
 
-def _candidate_from_frequencies(
-    frequencies: np.ndarray,
+def _activity_frequency_centers(freqs_hz: np.ndarray, lower_hz: float) -> np.ndarray:
+    lower = np.maximum(np.asarray(freqs_hz[:-1], dtype=float), lower_hz)
+    upper = np.maximum(np.asarray(freqs_hz[1:], dtype=float), lower_hz)
+    return np.sqrt(lower * upper)
+
+
+def _empirical_stratified_frequencies(
+    samples_hz: np.ndarray,
+    count: int,
+    *,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    if count == 0:
+        return np.array([], dtype=float)
+    samples = np.asarray(samples_hz, dtype=float).reshape(-1)
+    quantiles = (np.arange(count, dtype=float) + rng.uniform(0.1, 0.9, count)) / count
+    indices = np.minimum((quantiles * len(samples)).astype(int), len(samples) - 1)
+    return np.sort(samples[indices])
+
+
+def _activity_stratified_frequencies(
+    frequencies_hz: np.ndarray,
+    activity: np.ndarray,
+    count: int,
+    *,
+    phase: float,
+    rng: np.random.Generator,
+    minimum_log_separation: float,
+) -> np.ndarray:
+    if count == 0:
+        return np.array([], dtype=float)
+    frequencies = np.asarray(frequencies_hz, dtype=float).reshape(-1)
+    cdf = _activity_cdf(activity)
+    phase_offset = float(phase) % 1.0
+    targets = (np.arange(count, dtype=float) + phase_offset + rng.uniform(-0.12, 0.12, count)) / count
+    targets = np.mod(targets, 1.0)
+    selected: list[int] = []
+    for target in targets:
+        candidate_indices = [
+            index
+            for index, frequency in enumerate(frequencies)
+            if index not in selected
+            and all(abs(float(np.log(frequency / frequencies[existing]))) >= minimum_log_separation for existing in selected)
+        ]
+        if not candidate_indices:
+            candidate_indices = [index for index in range(len(frequencies)) if index not in selected]
+        chosen = min(
+            candidate_indices,
+            key=lambda index: (abs(float(cdf[index]) - float(target)), -float(activity[index]), index),
+        )
+        selected.append(chosen)
+    return np.sort(frequencies[np.asarray(selected, dtype=int)])
+
+
+def _candidate_from_components(
+    real_frequencies: np.ndarray,
+    complex_frequencies: np.ndarray,
     topology: PoleTopology,
     *,
     source: str,
     seed_index: int,
     damping: np.ndarray,
 ) -> PoleCandidate:
-    frequency_array = np.asarray(frequencies, dtype=float).reshape(-1)
-    real_count = topology.real_count
+    real_frequency_array = np.asarray(real_frequencies, dtype=float).reshape(-1)
+    complex_frequency_array = np.asarray(complex_frequencies, dtype=float).reshape(-1)
+    if real_frequency_array.size != topology.real_count or complex_frequency_array.size != topology.complex_pair_count:
+        raise ValueError("candidate frequencies must match the requested topology")
     poles = make_stable_poles(
-        real_decay_hz=frequency_array[:real_count],
-        complex_frequency_hz=frequency_array[real_count:],
+        real_decay_hz=real_frequency_array,
+        complex_frequency_hz=complex_frequency_array,
         damping_ratio=damping,
     )
     poles.setflags(write=False)

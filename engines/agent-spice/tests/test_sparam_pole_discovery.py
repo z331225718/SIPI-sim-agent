@@ -13,6 +13,19 @@ RESPONSES = np.vstack(
     ]
 )
 TOPOLOGY = pole_discovery.PoleTopology(real_count=4, complex_pair_count=2)
+TEST16_LIKE_FREQS = np.concatenate(
+    (
+        np.array([0.0]),
+        np.geomspace(0.1, 1.0e7, 31),
+        np.geomspace(1.1e7, 2.0e9, 121),
+    )
+)
+TEST16_LIKE_RESPONSES = np.vstack(
+    [
+        0.1 / (1.0 + 1j * TEST16_LIKE_FREQS / 9.0e7),
+        0.04 / (1.0 + 1j * TEST16_LIKE_FREQS / 1.4e9),
+    ]
+)
 
 
 def test_make_stable_poles_preserves_requested_topology():
@@ -57,9 +70,46 @@ def test_generator_keeps_every_pole_within_raw_frequency_bounds():
         complex_poles = poles[np.abs(poles.imag) > 1e-15]
         damping = -complex_poles.real / np.maximum(np.abs(complex_poles.imag), np.finfo(float).tiny)
         assert np.all((lower * (1.0 - 1e-12) <= frequencies) & (frequencies <= upper * (1.0 + 1e-12)))
-        assert np.all((0.01 <= damping) & (damping <= 0.20))
+        assert np.all((0.01 - 1e-12 <= damping) & (damping <= 0.20 + 1e-12))
         assert np.all(poles.real < 0.0)
         assert pole_discovery.effective_order(poles) == TOPOLOGY.effective_order
+
+
+def test_wide_grid_candidates_avoid_endpoint_collapse_and_cover_high_real_poles():
+    first = pole_discovery.generate_data_only_candidates(
+        TEST16_LIKE_FREQS, TEST16_LIKE_RESPONSES, TOPOLOGY, candidate_count=32, seed=20260710
+    )
+    second = pole_discovery.generate_data_only_candidates(
+        TEST16_LIKE_FREQS, TEST16_LIKE_RESPONSES, TOPOLOGY, candidate_count=32, seed=20260710
+    )
+    upper = float(np.max(TEST16_LIKE_FREQS))
+    activity_candidates = [candidate for candidate in first if candidate.source == "response_activity"]
+    stratified_candidates = [candidate for candidate in first if candidate.source == "stratified"]
+
+    assert [candidate.fingerprint for candidate in first] == [candidate.fingerprint for candidate in second]
+    assert len(activity_candidates) == 16
+    assert all(
+        not np.allclose(np.abs(candidate.poles[4:].imag) / (2.0 * np.pi), upper, rtol=0.0, atol=upper * 1e-12)
+        for candidate in activity_candidates
+    )
+    assert all(
+        np.log(np.max(np.abs(candidate.poles[4:].imag)) / np.min(np.abs(candidate.poles[4:].imag))) >= 0.05
+        for candidate in activity_candidates
+    )
+    activity_complex_frequencies = np.concatenate(
+        [np.abs(candidate.poles[4:].imag) / (2.0 * np.pi) for candidate in activity_candidates]
+    )
+    assert len(np.unique(np.round(activity_complex_frequencies, decimals=3))) >= 12
+    assert any(np.any(np.abs(candidate.poles[:4].real) / (2.0 * np.pi) > 1.0e7) for candidate in stratified_candidates)
+
+    for candidate in first:
+        poles = candidate.poles
+        complex_poles = poles[np.abs(poles.imag) > 1e-15]
+        damping = -complex_poles.real / np.abs(complex_poles.imag)
+        assert len(poles) == 6
+        assert np.all(poles.real < 0.0)
+        assert pole_discovery.effective_order(poles) == 8
+        assert np.all((0.01 - 1e-12 <= damping) & (damping <= 0.20 + 1e-12))
 
 
 def test_discovery_api_does_not_accept_idem_or_oracle_inputs():
