@@ -1,0 +1,153 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field, fields
+import math
+from typing import Any, Callable, Literal
+
+
+PassivityPolicy = Literal["off", "check", "enforce"]
+
+
+@dataclass(frozen=True)
+class SParamFitTarget:
+    mean_rms: float
+    passivity: PassivityPolicy = "check"
+    max_order: int = 40
+    passivity_epsilon: float = 1e-6
+
+    def __post_init__(self) -> None:
+        if not math.isfinite(self.mean_rms) or self.mean_rms <= 0.0:
+            raise ValueError("mean_rms must be finite and > 0")
+        if self.passivity not in {"off", "check", "enforce"}:
+            raise ValueError("passivity must be 'off', 'check', or 'enforce'")
+        if self.max_order < 1:
+            raise ValueError("max_order must be >= 1")
+        if not math.isfinite(self.passivity_epsilon) or self.passivity_epsilon < 0.0:
+            raise ValueError("passivity_epsilon must be finite and >= 0")
+
+
+@dataclass
+class SParamOrderTrial:
+    requested_order: int
+    effective_order: int
+    fit_frequency_points: int
+    evaluation_frequency_points: int
+    pre_mean_rms: float
+    final_mean_rms: float
+    pre_max_sigma: float | None
+    final_max_sigma: float | None
+    fit_seconds: float
+    check_seconds: float
+    enforce_seconds: float
+    elapsed_seconds: float
+    peak_memory_mb: float
+    target_met: bool
+    status: str
+    rejection_reason: str | None
+    real_pole_count: int | None = None
+    complex_pair_count: int | None = None
+    stored_pole_count: int | None = None
+    payload: Any = field(default=None, repr=False, compare=False)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            item.name: getattr(self, item.name)
+            for item in fields(self)
+            if item.name != "payload"
+        }
+
+
+@dataclass(frozen=True)
+class SParamTargetSearchResult:
+    target: SParamFitTarget
+    trials: tuple[SParamOrderTrial, ...]
+    selected_trial: SParamOrderTrial | None
+    stop_reason: str
+
+    @property
+    def target_met(self) -> bool:
+        return self.selected_trial is not None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "rms_target": float(self.target.mean_rms),
+            "passivity_policy": self.target.passivity,
+            "max_order": int(self.target.max_order),
+            "selected_effective_order": None
+            if self.selected_trial is None
+            else int(self.selected_trial.effective_order),
+            "target_met": bool(self.target_met),
+            "target_stop_reason": self.stop_reason,
+            "order_trials": [trial.to_dict() for trial in self.trials],
+            "benchmark_contract_version": "sparam_target_v1",
+        }
+
+
+def run_target_order_search(
+    target: SParamFitTarget,
+    evaluate_order: Callable[[int], SParamOrderTrial],
+) -> SParamTargetSearchResult:
+    cache: dict[int, SParamOrderTrial] = {}
+    evaluation_order: list[int] = []
+
+    def evaluate(order: int) -> SParamOrderTrial:
+        if order not in cache:
+            trial = evaluate_order(order)
+            if trial.requested_order != order:
+                raise ValueError("order evaluator returned a mismatched requested_order")
+            cache[order] = trial
+            evaluation_order.append(order)
+        return cache[order]
+
+    if target.max_order < 4:
+        for order in range(1, target.max_order + 1):
+            trial = evaluate(order)
+            if trial.target_met:
+                return SParamTargetSearchResult(
+                    target=target,
+                    trials=tuple(cache[item] for item in evaluation_order),
+                    selected_trial=trial,
+                    stop_reason="target_met",
+                )
+        return SParamTargetSearchResult(
+            target=target,
+            trials=tuple(cache[item] for item in evaluation_order),
+            selected_trial=None,
+            stop_reason="target_not_met_before_max_order",
+        )
+
+    coarse_orders = list(range(4, target.max_order + 1, 2))
+    if coarse_orders[-1] != target.max_order and target.max_order % 2 == 1:
+        coarse_orders.append(target.max_order)
+
+    previous_failed_order = 2
+    first_passing_order: int | None = None
+    for order in coarse_orders:
+        trial = evaluate(order)
+        if trial.target_met:
+            first_passing_order = order
+            break
+        previous_failed_order = order
+
+    if first_passing_order is None:
+        return SParamTargetSearchResult(
+            target=target,
+            trials=tuple(cache[item] for item in evaluation_order),
+            selected_trial=None,
+            stop_reason="target_not_met_before_max_order",
+        )
+
+    for order in range(previous_failed_order + 1, first_passing_order):
+        evaluate(order)
+
+    passing_trials = [trial for trial in cache.values() if trial.target_met]
+    selected = min(
+        passing_trials,
+        key=lambda trial: (trial.effective_order, trial.requested_order),
+    )
+    return SParamTargetSearchResult(
+        target=target,
+        trials=tuple(cache[item] for item in evaluation_order),
+        selected_trial=selected,
+        stop_reason="target_met",
+    )
