@@ -104,6 +104,57 @@ class IdemAdaptiveFittingOptions:
 
 
 @dataclass(frozen=True)
+class IdemAdaptiveRuntimeContract:
+    order_min: int
+    order_step: int
+    order_max: int
+    target: float
+    bandwidth_hz: float
+    threads: int
+    requested_order_step: int | None = None
+    warnings: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        _validate_positive_int("order_min", self.order_min)
+        _validate_positive_int("order_step", self.order_step)
+        _validate_positive_int("order_max", self.order_max)
+        if self.order_step < 2:
+            raise ValueError("order_step must be >= 2 for the IdEM runtime parser envelope")
+        if self.order_min > self.order_max:
+            raise ValueError("order_min must be <= order_max")
+        _validate_positive_finite("target", self.target)
+        _validate_positive_finite("bandwidth_hz", self.bandwidth_hz)
+        _validate_positive_int("threads", self.threads)
+        if self.requested_order_step is None:
+            object.__setattr__(self, "requested_order_step", self.order_step)
+        else:
+            _validate_positive_int("requested_order_step", self.requested_order_step)
+        if isinstance(self.warnings, str):
+            raise ValueError("warnings must be a sequence of strings")
+        warnings = tuple(self.warnings)
+        if not all(isinstance(item, str) for item in warnings):
+            raise ValueError("warnings must be a sequence of strings")
+        object.__setattr__(self, "warnings", warnings)
+
+    @property
+    def effective_order_step(self) -> int:
+        return self.order_step
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "order_min": self.order_min,
+            "order_step": self.order_step,
+            "order_max": self.order_max,
+            "target": float(self.target),
+            "bandwidth_hz": float(self.bandwidth_hz),
+            "threads": self.threads,
+            "requested_order_step": self.requested_order_step,
+            "effective_order_step": self.effective_order_step,
+            "warnings": list(self.warnings),
+        }
+
+
+@dataclass(frozen=True)
 class IdemCommandResult:
     command: list[str]
     returncode: int
@@ -201,16 +252,34 @@ def render_adaptive_fitting_options_xml(
     bandwidth_hz: float | None = None,
     threads: int | None = None,
 ) -> str:
+    return _render_adaptive_options_xml(options, runtime_contract=None)
+
+
+def render_adaptive_runtime_parser_envelope_xml(
+    options: IdemAdaptiveFittingOptions,
+    runtime_contract: IdemAdaptiveRuntimeContract,
+) -> str:
+    return _render_adaptive_options_xml(options, runtime_contract=runtime_contract)
+
+
+def _render_adaptive_options_xml(
+    options: IdemAdaptiveFittingOptions,
+    *,
+    runtime_contract: IdemAdaptiveRuntimeContract | None,
+) -> str:
     root = ET.Element("fittingTask", {"version": "1.0", "xmlns": "OptionsFittingSchema.xsd"})
     options_node = ET.SubElement(root, "options")
-    if threads is not None:
-        _append_xml_text(options_node, "threads", _format_idem_float(threads))
-    if bandwidth_hz is not None:
-        _append_xml_text(options_node, "bandwidth", _format_idem_float(bandwidth_hz)).set("mode", "absolute")
-    if order_max is not None:
+    if runtime_contract is not None:
+        _append_xml_text(options_node, "threads", str(runtime_contract.threads))
+        _append_xml_text(options_node, "bandwidth", _format_idem_float(runtime_contract.bandwidth_hz)).set(
+            "mode",
+            "absolute",
+        )
         order = ET.SubElement(options_node, "order")
-        _append_xml_text(order, "type", "fixed")
-        _append_xml_text(order, "value", _format_idem_float(order_max))
+        _append_xml_text(order, "type", "custom")
+        _append_xml_text(order, "min", str(runtime_contract.order_min))
+        _append_xml_text(order, "increment", str(runtime_contract.order_step))
+        _append_xml_text(order, "max", str(runtime_contract.order_max))
 
     iterations = ET.SubElement(options_node, "iterations")
     _append_xml_text(iterations, "initial", _format_idem_float(options.initial_iterations))
@@ -245,8 +314,8 @@ def render_adaptive_fitting_options_xml(
     _append_xml_text(skimming, "relativeTolerance", _format_idem_float(options.skimming_tolerance))
     _append_xml_text(skimming, "finalRelativeTolerance", _format_idem_float(options.final_skimming_tolerance))
     accuracy = ET.SubElement(error_control, "accuracy")
-    if target is not None:
-        _append_xml_text(accuracy, "target", _format_idem_float(target))
+    if runtime_contract is not None:
+        _append_xml_text(accuracy, "target", _format_idem_float(runtime_contract.target))
     _append_xml_text(accuracy, "guaranteed", _format_idem_float(options.guaranteed_accuracy))
 
     splitting = ET.SubElement(options_node, "splitting")
@@ -293,15 +362,20 @@ def write_adaptive_fitting_options_xml(
 ) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        render_adaptive_fitting_options_xml(
-            options,
-            order_min=order_min,
-            order_step=order_step,
-            order_max=order_max,
-            target=target,
-            bandwidth_hz=bandwidth_hz,
-            threads=threads,
-        ),
+        render_adaptive_fitting_options_xml(options),
+        encoding="utf-8",
+    )
+    return path
+
+
+def write_adaptive_runtime_parser_envelope_xml(
+    options: IdemAdaptiveFittingOptions,
+    path: Path,
+    runtime_contract: IdemAdaptiveRuntimeContract,
+) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        render_adaptive_runtime_parser_envelope_xml(options, runtime_contract),
         encoding="utf-8",
     )
     return path

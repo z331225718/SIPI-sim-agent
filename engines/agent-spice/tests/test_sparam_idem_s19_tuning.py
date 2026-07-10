@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import inspect
 import subprocess
+import xml.etree.ElementTree as ET
 
 import pytest
 
@@ -71,6 +72,12 @@ def _fit_payload(
     model_path: Path,
     *,
     options_xml_path: Path | None = None,
+    order_min: int = 4,
+    order_step: int = 2,
+    order_max: int = 8,
+    target: float = 0.001,
+    bandwidth_hz: float = 2e6,
+    threads: int = 8,
     order: int = 8,
     error_history=None,
     orders_history=None,
@@ -89,7 +96,36 @@ def _fit_payload(
             "orders_history": [4, order] if orders_history is None else orders_history,
             "pole_blocks": [{"order": order}],
         },
-        "command": _command(),
+        "command": IdemCommandResult(
+            [
+                "idemmp_fitting.exe",
+                "-its",
+                "line.s2p",
+                "-o",
+                str(model_path),
+                "-tol",
+                f"{target:.16g}",
+                "-orderMin",
+                str(order_min),
+                "-orderStep",
+                str(order_step),
+                "-orderMax",
+                str(order_max),
+                "-bandwidth",
+                f"{bandwidth_hz:.16g}",
+                "-DC",
+                "1",
+                "-nThreads",
+                str(threads),
+                "-xml",
+                str(options_xml_path),
+            ],
+            0,
+            "Results\n",
+            "",
+            0.1,
+            2.0,
+        ).to_dict(),
     }
 
 
@@ -163,6 +199,7 @@ class FakePhases:
         self.error_history = error_history
         self.orders_history = orders_history
         self.calls: list[str] = []
+        self.fit_kwargs: dict[str, object] | None = None
 
     def fit(
         self,
@@ -180,9 +217,24 @@ class FakePhases:
         timeout_seconds: float | None = None,
     ):
         self.calls.append("fit")
+        self.fit_kwargs = {
+            "order_min": order_min,
+            "order_step": order_step,
+            "order_max": order_max,
+            "target": target,
+            "bandwidth_hz": bandwidth_hz,
+            "threads": threads,
+            "options_xml_path": options_xml_path,
+        }
         return _fit_payload(
             model_path,
             options_xml_path=options_xml_path,
+            order_min=order_min,
+            order_step=order_step,
+            order_max=order_max,
+            target=target,
+            bandwidth_hz=bandwidth_hz,
+            threads=threads,
             order=self.order,
             error_history=self.error_history,
             orders_history=self.orders_history,
@@ -265,6 +317,7 @@ def _write_cached_trial(
     artifact_paths: dict[str, str] | None = None,
 ) -> ToolTrial:
     fingerprint = tuning.adaptive_trial_fingerprint(entry, config, idem_bin_dir=None)
+    runtime_contract = tuning._adaptive_runtime_contract(entry, config)
     selected_model = output_dir / "passive.mod.h5"
     exported_touchstone = output_dir / f"passive.s{entry.ports}p"
     selected_model.write_text("model", encoding="utf-8")
@@ -272,6 +325,8 @@ def _write_cached_trial(
     trial = ToolTrial(
         tool="idem-adaptive",
         requested_order=config.order_max,
+        requested_order_step=runtime_contract.requested_order_step,
+        effective_order_step=runtime_contract.effective_order_step,
         effective_order=8,
         pre_mean_rms=0.0008,
         final_mean_rms=0.0008,
@@ -287,6 +342,7 @@ def _write_cached_trial(
             "selected_model": str(selected_model),
             "exported_touchstone": str(exported_touchstone),
         },
+        warnings=list(runtime_contract.warnings),
     )
     atomic_write_json(output_dir / "trial.json", trial.to_dict())
     return trial
@@ -571,7 +627,61 @@ def test_run_one_cli_executes_brief_parameterized_trial(tmp_path: Path, monkeypa
     payload = json.loads(capsys.readouterr().out)
     assert payload["status"] == "PASS"
     assert payload["requested_order"] == 8
+    assert payload["requested_order_step"] == 1
+    assert payload["effective_order_step"] == 2
     assert json.loads((tmp_path / "runs" / "history.json").read_text(encoding="utf-8"))["final_order"] == 8
+
+
+def test_run_adaptive_trial_uses_one_canonical_runtime_contract_for_command_xml_and_reports(
+    tmp_path: Path, monkeypatch
+):
+    entry = _entry(tmp_path)
+    fake = FakePhases(tmp_path, entry)
+    _patch_phases(monkeypatch, fake)
+    config = tuning.IdemAdaptiveTrialConfig(order_min=2, order_step=1, order_max=8, rms_target=0.5, threads=3)
+    output_dir = tmp_path / "trial"
+
+    trial = tuning.run_adaptive_trial(entry, config, output_dir)
+
+    assert trial.status == "PASS"
+    assert trial.requested_order_step == 1
+    assert trial.effective_order_step == 2
+    assert fake.fit_kwargs == {
+        "order_min": 2,
+        "order_step": 2,
+        "order_max": 8,
+        "target": 0.5,
+        "bandwidth_hz": 2e6,
+        "threads": 3,
+        "options_xml_path": output_dir / "adaptive_options.fopt.xml",
+    }
+    fit = json.loads((output_dir / "fit.json").read_text(encoding="utf-8"))
+    trial_report = json.loads((output_dir / "trial.json").read_text(encoding="utf-8"))
+    assert fit["requested_order_step"] == 1
+    assert fit["effective_order_step"] == 2
+    assert fit["order_step"] == 2
+    assert fit["warnings"] == ["order_step_1_canonicalized_to_2_for_idem_runtime"]
+    assert trial_report["requested_order_step"] == 1
+    assert trial_report["effective_order_step"] == 2
+    assert trial_report["warnings"] == ["order_step_1_canonicalized_to_2_for_idem_runtime"]
+
+    command = fit["command"]["command"]
+    cli = {flag: command[command.index(flag) + 1] for flag in ["-orderMin", "-orderStep", "-orderMax", "-tol", "-bandwidth", "-nThreads"]}
+    root = ET.fromstring((output_dir / "adaptive_options.fopt.xml").read_text(encoding="utf-8"))
+    namespace = {"f": "OptionsFittingSchema.xsd"}
+    assert root.findtext("./f:options/f:order/f:type", namespaces=namespace) == "custom"
+    assert root.findtext("./f:options/f:order/f:min", namespaces=namespace) == cli["-orderMin"] == "2"
+    assert root.findtext("./f:options/f:order/f:increment", namespaces=namespace) == cli["-orderStep"] == "2"
+    assert root.findtext("./f:options/f:order/f:max", namespaces=namespace) == cli["-orderMax"] == "8"
+    assert root.find("./f:options/f:order/f:value", namespaces=namespace) is None
+    assert root.findtext("./f:options/f:errorControl/f:accuracy/f:target", namespaces=namespace) == cli["-tol"] == "0.5"
+    assert root.findtext("./f:options/f:bandwidth", namespaces=namespace) == cli["-bandwidth"] == "2000000"
+    assert root.findtext("./f:options/f:threads", namespaces=namespace) == cli["-nThreads"] == "3"
+
+    fingerprint_payload = tuning.adaptive_trial_fingerprint_payload(entry, config, idem_bin_dir=None)
+    assert fingerprint_payload["trial_config"]["order_step"] == 2
+    assert fingerprint_payload["trial_config"]["requested_order_step"] == 1
+    assert fingerprint_payload["trial_config"]["effective_order_step"] == 2
 
 
 def test_pre_rms_above_target_stops_before_passivity_and_saves_history(tmp_path: Path, monkeypatch):
@@ -805,6 +915,17 @@ def test_fingerprint_payload_uses_adaptive_contract_and_complete_config(tmp_path
         "idem_identity": "idem-test",
         "validation_identity": "validation-test",
         "trial_config": config.to_dict(),
+        "runtime_contract": {
+            "order_min": 4,
+            "order_step": 4,
+            "order_max": 12,
+            "target": 0.001,
+            "bandwidth_hz": 2e6,
+            "threads": 3,
+            "requested_order_step": 4,
+            "effective_order_step": 4,
+            "warnings": [],
+        },
     }
     assert "order" not in payload["trial_config"]["adaptive_options"]
 

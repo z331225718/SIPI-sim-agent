@@ -14,6 +14,7 @@ from agent_spice.sparam.idem import (
     export_local_idem_like_touchstone,
     export_local_idem_like_state_space,
     IdemAdaptiveFittingOptions,
+    IdemAdaptiveRuntimeContract,
     IdemCommandResult,
     IdemFittingOptions,
     fit_matrix_with_idem_real_basis,
@@ -23,10 +24,12 @@ from agent_spice.sparam.idem import (
     parse_idem_accuracy_report,
     relocate_common_poles,
     render_adaptive_fitting_options_xml,
+    render_adaptive_runtime_parser_envelope_xml,
     render_fitting_options_xml,
     run_idem_passivity,
     run_local_idem_like_fit,
     write_adaptive_fitting_options_xml,
+    write_adaptive_runtime_parser_envelope_xml,
 )
 
 
@@ -77,6 +80,25 @@ def test_adaptive_xml_omits_reserved_order_and_bandwidth_and_defaults_enhance_fa
     assert root.find(".//f:outOfBand/f:rejectPoles/f:maxRelativeFrequency", namespaces=namespace) is None
 
 
+def test_adaptive_public_renderer_ignores_runtime_parser_fields_to_preserve_advanced_contract():
+    xml_text = render_adaptive_fitting_options_xml(
+        IdemAdaptiveFittingOptions(),
+        order_min=2,
+        order_step=2,
+        order_max=8,
+        target=0.5,
+        bandwidth_hz=5.0e9,
+        threads=8,
+    )
+    root = ET.fromstring(xml_text)
+    namespace = {"f": "OptionsFittingSchema.xsd"}
+
+    assert root.find("./f:options/f:threads", namespaces=namespace) is None
+    assert root.find("./f:options/f:bandwidth", namespaces=namespace) is None
+    assert root.find("./f:options/f:order", namespaces=namespace) is None
+    assert root.find("./f:options/f:errorControl/f:accuracy/f:target", namespaces=namespace) is None
+
+
 def test_adaptive_xml_golden_contract_matches_official_disabled_defaults():
     xml_text = render_adaptive_fitting_options_xml(IdemAdaptiveFittingOptions())
     root = ET.fromstring(xml_text)
@@ -115,6 +137,16 @@ def test_adaptive_xml_golden_contract_matches_official_disabled_defaults():
     assert root.find("./f:options/f:outOfBand/f:rejectPoles/f:maxRelativeFrequency", namespaces=namespace) is None
     for path, text in expected_text.items():
         assert root.findtext(path, namespaces=namespace) == text
+
+
+def test_adaptive_xml_omits_disabled_weights_static_parser_contract():
+    xml_text = render_adaptive_fitting_options_xml(IdemAdaptiveFittingOptions())
+    root = ET.fromstring(xml_text)
+    namespace = {"f": "OptionsFittingSchema.xsd"}
+
+    assert root.find("./f:options/f:weights", namespaces=namespace) is None
+    assert root.find("./f:options/f:weights/f:frequency", namespaces=namespace) is None
+    assert root.find("./f:options/f:weights/f:responses", namespaces=namespace) is None
 
 
 def test_adaptive_xml_renders_explicit_enhanced_poles_placement_true():
@@ -172,28 +204,46 @@ def test_write_adaptive_fitting_options_xml_returns_path_and_writes_well_formed_
     assert root.tag == "{OptionsFittingSchema.xsd}fittingTask"
 
 
-def test_write_adaptive_fitting_options_xml_can_emit_runtime_schema_fields_for_real_idem(tmp_path: Path):
+def test_write_adaptive_runtime_parser_envelope_xml_mirrors_custom_runtime_contract(tmp_path: Path):
     output = tmp_path / "adaptive" / "fitting_options.fopt.xml"
-
-    write_adaptive_fitting_options_xml(
-        IdemAdaptiveFittingOptions(),
-        output,
+    contract = IdemAdaptiveRuntimeContract(
         order_min=2,
-        order_step=1,
+        order_step=2,
         order_max=8,
         target=0.5,
         bandwidth_hz=5.0e9,
         threads=8,
     )
 
+    write_adaptive_runtime_parser_envelope_xml(
+        IdemAdaptiveFittingOptions(),
+        output,
+        contract,
+    )
+
     root = ET.fromstring(output.read_text(encoding="utf-8"))
     namespace = {"f": "OptionsFittingSchema.xsd"}
     assert root.findtext("./f:options/f:threads", namespaces=namespace) == "8"
     assert root.findtext("./f:options/f:bandwidth", namespaces=namespace) == "5000000000"
-    assert root.findtext("./f:options/f:order/f:type", namespaces=namespace) == "fixed"
-    assert root.findtext("./f:options/f:order/f:value", namespaces=namespace) == "8"
+    assert root.findtext("./f:options/f:order/f:type", namespaces=namespace) == "custom"
+    assert root.findtext("./f:options/f:order/f:min", namespaces=namespace) == "2"
+    assert root.findtext("./f:options/f:order/f:increment", namespaces=namespace) == "2"
+    assert root.findtext("./f:options/f:order/f:max", namespaces=namespace) == "8"
+    assert root.find("./f:options/f:order/f:value", namespaces=namespace) is None
     assert root.findtext("./f:options/f:errorControl/f:accuracy/f:target", namespaces=namespace) == "0.5"
     assert root.find("./f:options/f:weights", namespaces=namespace) is None
+
+
+def test_render_adaptive_runtime_parser_envelope_xml_requires_complete_contract():
+    with pytest.raises(ValueError):
+        IdemAdaptiveRuntimeContract(
+            order_min=2,
+            order_step=1,
+            order_max=8,
+            target=0.5,
+            bandwidth_hz=5.0e9,
+            threads=8,
+        )
 
 
 @pytest.mark.parametrize(

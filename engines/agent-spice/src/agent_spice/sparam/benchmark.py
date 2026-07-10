@@ -78,6 +78,8 @@ class CorpusEntry:
 class ToolTrial:
     tool: str
     requested_order: int
+    requested_order_step: int | None = None
+    effective_order_step: int | None = None
     effective_order: int | None = None
     pre_mean_rms: float | None = None
     final_mean_rms: float | None = None
@@ -96,6 +98,7 @@ class ToolTrial:
     fingerprint: str = ""
     pre_max_sigma: float | None = None
     artifact_paths: dict[str, str] = field(default_factory=dict)
+    warnings: list[str] = field(default_factory=list)
 
     def meets_contract(self, contract: BenchmarkContract) -> bool:
         return bool(
