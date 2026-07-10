@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 import time
 import warnings
 from typing import Any
@@ -7,6 +8,15 @@ from typing import Any
 import numpy as np
 
 from .skrf_streaming import streaming_pole_relocation
+
+
+@dataclass(frozen=True)
+class PoleCandidateScore:
+    poles: np.ndarray
+    rms_error: float
+    max_sigma: float
+    passivity_excess: float
+    score: float
 
 
 class NativeVectorFitting:
@@ -28,6 +38,32 @@ class NativeVectorFitting:
         self.high_frequency_complex_pair_count = 0
         self.high_frequency_complex_pair_damping = 0.03
         self.high_frequency_complex_pair_lower_fraction = 0.68
+        self.high_frequency_complex_pair_frequency_gate_enabled = False
+        self.high_frequency_residual_injection_enabled = False
+        self.high_frequency_residual_injection_lower_fraction = 0.68
+        self.high_frequency_residual_injection_damping = 0.03
+        self.high_frequency_complex_pair_anchor_bands_hz = ()
+        self.high_frequency_complex_pair_anchor_strength = 0.0
+        self.high_frequency_complex_pair_anchor_damping = 0.03
+        self.effective_order_max = None
+        self.effective_complex_pole_count = None
+        self.effective_order_selection = "frequency_rank"
+        self.effective_order_passivity_weight = 1.0
+        self.post_relocation_effective_order_max = None
+        self.high_frequency_relocation_weight_enabled = False
+        self.high_frequency_relocation_weight_lower_fraction = 0.68
+        self.high_frequency_relocation_weight_gain = 2.0
+        self.out_of_band_pole_regularization_weight = 0.0
+        self.out_of_band_pole_regularization_start_fraction = 1.0
+        self.dynamic_edge_c_res_regularization_enabled = False
+        self.dynamic_edge_c_res_regularization_base_weight = 0.0
+        self.dynamic_edge_c_res_regularization_start_fraction = 1.0
+        self.dynamic_edge_c_res_regularization_growth_threshold = 1.5
+        self.topology_sweep_diagnostics = []
+        self.high_frequency_repair_diagnostics = []
+        self.high_frequency_residual_injection_diagnostics = []
+        self.pole_relocation_history = []
+        self.post_relocation_order_diagnostics = []
 
     @staticmethod
     def get_model_order(poles: np.ndarray) -> int:
@@ -70,29 +106,388 @@ class NativeVectorFitting:
         pair_count: int,
         damping: float,
         lower_fraction: float,
+        frequency_gate: bool = True,
     ) -> np.ndarray:
         if pair_count <= 0:
             return poles
         pole_array = np.asarray(poles, dtype=complex).copy()
-        complex_mask = np.abs(pole_array.imag) > 0.0
-        existing_pairs = int(np.count_nonzero(complex_mask))
-        missing_pairs = pair_count - existing_pairs
-        if missing_pairs <= 0:
+        if not frequency_gate:
+            complex_mask = np.abs(pole_array.imag) > 0.0
+            existing_pairs = int(np.count_nonzero(complex_mask))
+            missing_pairs = pair_count - existing_pairs
+            if missing_pairs <= 0:
+                return pole_array
+
+            real_indices = np.nonzero(~complex_mask)[0]
+            if len(real_indices) == 0:
+                return pole_array
+
+            fmax = float(np.max(freqs))
+            lower = max(0.0, min(float(lower_fraction), 1.0))
+            anchors = np.linspace(lower * fmax, fmax, pair_count)
+            replacement_anchors = anchors[-missing_pairs:]
+            replacement_indices = sorted(real_indices, key=lambda idx: abs(pole_array[idx]), reverse=True)[:missing_pairs]
+            for idx, anchor in zip(replacement_indices, replacement_anchors):
+                omega = 2.0 * np.pi * anchor
+                pole_array[idx] = complex(-abs(damping) * omega, omega)
             return pole_array
 
-        real_indices = np.nonzero(~complex_mask)[0]
-        if len(real_indices) == 0:
+        valid_pairs, invalid_pairs = NativeVectorFitting._high_frequency_complex_pair_frequencies(
+            pole_array,
+            freqs,
+            lower_fraction,
+        )
+        missing_pairs = pair_count - len(valid_pairs)
+        if missing_pairs <= 0:
+            for idx, _ in invalid_pairs:
+                pole_array[idx] = NativeVectorFitting._demote_complex_pair_to_real(pole_array[idx])
             return pole_array
 
         fmax = float(np.max(freqs))
         lower = max(0.0, min(float(lower_fraction), 1.0))
         anchors = np.linspace(lower * fmax, fmax, pair_count)
-        replacement_anchors = anchors[-missing_pairs:]
-        replacement_indices = sorted(real_indices, key=lambda idx: abs(pole_array[idx]), reverse=True)[:missing_pairs]
+        replacement_anchors = NativeVectorFitting._missing_high_frequency_anchors(
+            [frequency for _, frequency in valid_pairs],
+            anchors,
+            missing_pairs,
+        )
+        if not replacement_anchors:
+            return pole_array
+
+        complex_mask = np.abs(pole_array.imag) > 0.0
+        real_indices = list(np.nonzero(~complex_mask)[0])
+        invalid_complex_indices = [idx for idx, _ in sorted(invalid_pairs, key=lambda item: item[1])]
+        real_replacement_indices = sorted(real_indices, key=lambda idx: abs(pole_array[idx]), reverse=True)
+        replacement_indices = (invalid_complex_indices + real_replacement_indices)[: len(replacement_anchors)]
+        if len(replacement_indices) < len(replacement_anchors):
+            return pole_array
+
         for idx, anchor in zip(replacement_indices, replacement_anchors):
             omega = 2.0 * np.pi * anchor
             pole_array[idx] = complex(-abs(damping) * omega, omega)
+        replaced = set(replacement_indices)
+        for idx, _ in invalid_pairs:
+            if idx not in replaced:
+                pole_array[idx] = NativeVectorFitting._demote_complex_pair_to_real(pole_array[idx])
         return pole_array
+
+    @staticmethod
+    def _demote_complex_pair_to_real(pole: complex) -> complex:
+        magnitude = max(float(abs(pole)), np.finfo(float).tiny)
+        return complex(-magnitude, 0.0)
+
+    @staticmethod
+    def _high_frequency_complex_pair_frequencies(
+        poles: np.ndarray,
+        freqs: np.ndarray,
+        lower_fraction: float,
+    ) -> tuple[list[tuple[int, float]], list[tuple[int, float]]]:
+        pole_array = np.asarray(poles, dtype=complex)
+        fmax = float(np.max(freqs))
+        lower = max(0.0, min(float(lower_fraction), 1.0))
+        min_frequency = lower * fmax
+        valid: list[tuple[int, float]] = []
+        invalid: list[tuple[int, float]] = []
+        for idx, pole in enumerate(pole_array):
+            if abs(pole.imag) == 0.0:
+                continue
+            pole_frequency = abs(float(pole.imag)) / (2.0 * np.pi)
+            target = valid if pole_frequency >= min_frequency else invalid
+            target.append((idx, pole_frequency))
+        return valid, invalid
+
+    @staticmethod
+    def _missing_high_frequency_anchors(
+        valid_frequencies_hz: list[float],
+        anchors_hz: np.ndarray,
+        missing_count: int,
+    ) -> list[float]:
+        if missing_count <= 0:
+            return []
+        remaining = [float(anchor) for anchor in np.asarray(anchors_hz, dtype=float)]
+        for valid_frequency in valid_frequencies_hz:
+            if not remaining:
+                break
+            closest = min(range(len(remaining)), key=lambda idx: abs(remaining[idx] - valid_frequency))
+            remaining.pop(closest)
+        return remaining[-missing_count:]
+
+    @staticmethod
+    def _edge_residual_seed_frequency(
+        freqs_hz: np.ndarray,
+        raw_responses: np.ndarray,
+        fitted_responses: np.ndarray,
+        lower_fraction: float,
+    ) -> float:
+        freq_array = np.asarray(freqs_hz, dtype=float)
+        residual = np.asarray(raw_responses, dtype=complex) - np.asarray(fitted_responses, dtype=complex)
+        residual_power = np.abs(residual) ** 2 if residual.ndim == 1 else np.sum(np.abs(residual) ** 2, axis=0)
+        lower = max(0.0, min(float(lower_fraction), 1.0))
+        mask = freq_array >= lower * float(np.max(freq_array))
+        if not np.any(mask):
+            return float(freq_array[-1])
+        high_indices = np.nonzero(mask)[0]
+        chosen = high_indices[int(np.argmax(residual_power[high_indices]))]
+        return float(freq_array[chosen])
+
+    @staticmethod
+    def _soft_anchor_high_frequency_complex_pairs(
+        poles: np.ndarray,
+        *,
+        freqs_hz: np.ndarray,
+        anchor_bands_hz: tuple[tuple[float, float], ...],
+        damping: float,
+        strength: float,
+    ) -> np.ndarray:
+        pole_array = np.asarray(poles, dtype=complex).copy()
+        if not anchor_bands_hz or strength <= 0.0:
+            return pole_array
+        blend = min(max(float(strength), 0.0), 1.0)
+        used: set[int] = set()
+        for lo_hz, hi_hz in anchor_bands_hz:
+            target_hz = 0.5 * (float(lo_hz) + float(hi_hz))
+            target_omega = 2.0 * np.pi * target_hz
+            target = complex(-abs(float(damping)) * target_omega, target_omega)
+            unused_complex = [
+                idx
+                for idx, pole in enumerate(pole_array)
+                if idx not in used and abs(pole.imag) > 0.0
+            ]
+            unused_real = [
+                idx
+                for idx, pole in enumerate(pole_array)
+                if idx not in used and abs(pole.imag) == 0.0
+            ]
+            candidates = unused_complex or unused_real
+            if not candidates:
+                break
+            chosen = min(
+                candidates,
+                key=lambda idx: abs(
+                    (
+                        abs(float(pole_array[idx].imag))
+                        if abs(pole_array[idx].imag) > 0.0
+                        else abs(float(pole_array[idx].real))
+                    )
+                    / (2.0 * np.pi)
+                    - target_hz
+                ),
+            )
+            pole_array[chosen] = (1.0 - blend) * pole_array[chosen] + blend * target
+            used.add(chosen)
+        return pole_array
+
+    @staticmethod
+    def _limit_effective_order(
+        poles: np.ndarray,
+        max_order: int,
+        *,
+        preferred_complex_count: int = 0,
+    ) -> np.ndarray:
+        pole_array = np.asarray(poles, dtype=complex)
+        if max_order <= 0 or NativeVectorFitting.get_model_order(pole_array) <= max_order:
+            return pole_array
+
+        complex_indices = [idx for idx, pole in enumerate(pole_array) if abs(pole.imag) > 0.0]
+        real_indices = [idx for idx, pole in enumerate(pole_array) if abs(pole.imag) == 0.0]
+        selected: list[int] = []
+        budget = int(max_order)
+
+        complex_target = min(max(0, int(preferred_complex_count)), len(complex_indices), budget // 2)
+        complex_by_frequency = sorted(complex_indices, key=lambda idx: abs(pole_array[idx].imag), reverse=True)
+        for idx in complex_by_frequency[:complex_target]:
+            selected.append(idx)
+            budget -= 2
+
+        real_by_frequency = sorted(real_indices, key=lambda idx: abs(pole_array[idx].real))
+        for idx in real_by_frequency:
+            if budget < 1:
+                break
+            selected.append(idx)
+            budget -= 1
+
+        selected_set = set(selected)
+        for idx in complex_by_frequency:
+            if budget < 2:
+                break
+            if idx in selected_set:
+                continue
+            selected.append(idx)
+            selected_set.add(idx)
+            budget -= 2
+
+        if not selected:
+            return pole_array[:1]
+        return pole_array[sorted(selected)]
+
+    @staticmethod
+    def _trim_low_frequency_real_poles(
+        poles: np.ndarray,
+        max_order: int,
+        preferred_complex_count: int | None = None,
+    ) -> np.ndarray:
+        pole_array = np.asarray(poles, dtype=complex)
+        if max_order <= 0 or NativeVectorFitting.get_model_order(pole_array) <= max_order:
+            return pole_array
+
+        complex_indices = sorted(
+            (idx for idx, pole in enumerate(pole_array) if abs(pole.imag) > 0.0),
+            key=lambda idx: abs(pole_array[idx].imag),
+            reverse=True,
+        )
+        real_indices = sorted(
+            (idx for idx, pole in enumerate(pole_array) if abs(pole.imag) == 0.0),
+            key=lambda idx: abs(pole_array[idx].real),
+            reverse=True,
+        )
+        complex_limit = max_order // 2
+        if preferred_complex_count is not None:
+            complex_limit = min(complex_limit, max(0, int(preferred_complex_count)))
+        selected_complex = complex_indices[:complex_limit]
+        remaining = max_order - 2 * len(selected_complex)
+        selected = set(selected_complex)
+        selected.update(real_indices[: max(0, remaining)])
+        if not selected:
+            return pole_array[:1]
+        return pole_array[[idx for idx in range(len(pole_array)) if idx in selected]]
+
+    @staticmethod
+    def score_pole_candidate(
+        poles: np.ndarray,
+        freqs: np.ndarray,
+        freq_responses: np.ndarray,
+        *,
+        nports: int,
+        fit_constant: bool,
+        fit_proportional: bool,
+        enforce_dc: bool,
+        passivity_weight: float = 1.0,
+    ) -> PoleCandidateScore:
+        pole_array = np.asarray(poles, dtype=complex)
+        freq_array = np.asarray(freqs, dtype=float)
+        response_array = np.asarray(freq_responses, dtype=complex)
+        residues, constant_coeff, proportional_coeff, *_ = NativeVectorFitting._fit_residues(
+            pole_array,
+            freq_array,
+            response_array,
+            fit_constant,
+            fit_proportional,
+            enforce_dc,
+        )
+        fitted = NativeVectorFitting._evaluate_residue_model(
+            pole_array,
+            residues,
+            constant_coeff,
+            proportional_coeff,
+            freq_array,
+        )
+        rms_error = float(np.sqrt(np.mean(np.abs(fitted - response_array) ** 2)))
+        max_sigma = NativeVectorFitting._max_sigma_from_responses(fitted, nports)
+        passivity_excess = max(0.0, max_sigma - 1.0)
+        combined = rms_error + float(passivity_weight) * passivity_excess
+        return PoleCandidateScore(
+            poles=pole_array.copy(),
+            rms_error=rms_error,
+            max_sigma=max_sigma,
+            passivity_excess=passivity_excess,
+            score=float(combined),
+        )
+
+    @staticmethod
+    def _select_poles_by_contribution_score(
+        poles: np.ndarray,
+        freqs: np.ndarray,
+        freq_responses: np.ndarray,
+        *,
+        nports: int,
+        max_order: int,
+        fit_constant: bool,
+        fit_proportional: bool,
+        enforce_dc: bool,
+        passivity_weight: float,
+    ) -> np.ndarray:
+        selected = np.asarray(poles, dtype=complex).copy()
+        while NativeVectorFitting.get_model_order(selected) > int(max_order) and len(selected) > 1:
+            candidates = []
+            for remove_index in range(len(selected)):
+                candidate = np.delete(selected, remove_index)
+                score = NativeVectorFitting.score_pole_candidate(
+                    candidate,
+                    freqs,
+                    freq_responses,
+                    nports=nports,
+                    fit_constant=fit_constant,
+                    fit_proportional=fit_proportional,
+                    enforce_dc=enforce_dc,
+                    passivity_weight=passivity_weight,
+                )
+                candidates.append((float(score.score), remove_index, candidate))
+            if not candidates:
+                break
+            candidates.sort(key=lambda item: (item[0], item[1]))
+            selected = candidates[0][2]
+        return selected
+
+    @staticmethod
+    def _evaluate_residue_model(
+        poles: np.ndarray,
+        residues: np.ndarray,
+        constant_coeff: np.ndarray,
+        proportional_coeff: np.ndarray,
+        freqs: np.ndarray,
+    ) -> np.ndarray:
+        s = 2j * np.pi * np.asarray(freqs, dtype=float)
+        fitted = np.tile(np.asarray(constant_coeff, dtype=complex)[:, None], (1, len(s)))
+        if len(proportional_coeff):
+            fitted += np.asarray(proportional_coeff, dtype=complex)[:, None] * s[None, :]
+        for pole_index, pole in enumerate(np.asarray(poles, dtype=complex)):
+            residue = residues[:, pole_index]
+            if np.imag(pole) == 0.0:
+                fitted += residue[:, None] / (s[None, :] - pole)
+            else:
+                fitted += residue[:, None] / (s[None, :] - pole) + np.conj(residue)[:, None] / (s[None, :] - np.conj(pole))
+        return fitted
+
+    @staticmethod
+    def _max_sigma_from_responses(freq_responses: np.ndarray, nports: int) -> float:
+        response_array = np.asarray(freq_responses, dtype=complex)
+        max_sigma = 0.0
+        for freq_index in range(response_array.shape[1]):
+            matrix = response_array[:, freq_index].reshape((nports, nports))
+            max_sigma = max(max_sigma, float(np.max(np.linalg.svd(matrix, compute_uv=False))))
+        return max_sigma
+
+    @staticmethod
+    def _resonance_seed_frequencies(freqs: np.ndarray, freq_responses: np.ndarray, count: int) -> np.ndarray:
+        freq_array = np.asarray(freqs, dtype=float)
+        response_array = np.asarray(freq_responses, dtype=complex)
+        if count <= 0 or freq_array.size == 0:
+            return np.array([], dtype=float)
+        energy = np.linalg.norm(response_array, axis=0)
+        peak_indices: list[int] = []
+        if len(energy) == 1:
+            peak_indices = [0]
+        else:
+            if energy[0] >= energy[1]:
+                peak_indices.append(0)
+            for idx in range(1, len(energy) - 1):
+                if energy[idx] >= energy[idx - 1] and energy[idx] >= energy[idx + 1]:
+                    peak_indices.append(idx)
+            if energy[-1] >= energy[-2]:
+                peak_indices.append(len(energy) - 1)
+        if not peak_indices:
+            peak_indices = list(np.argsort(energy)[::-1][:count])
+        selected = sorted(peak_indices, key=lambda idx: energy[idx], reverse=True)[:count]
+        if len(selected) < count:
+            selected_set = set(selected)
+            for idx in np.argsort(energy)[::-1]:
+                if int(idx) in selected_set:
+                    continue
+                selected.append(int(idx))
+                selected_set.add(int(idx))
+                if len(selected) >= count:
+                    break
+        return np.sort(freq_array[np.asarray(selected[:count], dtype=int)])
 
     def vector_fit(
         self,
@@ -107,11 +502,6 @@ class NativeVectorFitting:
         started = time.perf_counter()
         norm = np.average(self.network.f)
         freqs_norm = np.array(self.network.f) / norm
-        poles = self._init_poles(freqs_norm, n_poles_real, n_poles_cmplx, init_pole_spacing)
-        if poles is None:
-            if self.poles is None or len(self.poles) == 0:
-                raise ValueError("Initial poles must be provided when init_pole_spacing='custom'")
-            poles = self.poles / norm
 
         if parameter_type.lower() != "s":
             raise ValueError("NativeVectorFitting currently supports only S-parameter fitting")
@@ -119,6 +509,31 @@ class NativeVectorFitting:
         freq_responses = np.array(
             [nw_responses[:, i, j] for i in range(self.network.nports) for j in range(self.network.nports)]
         )
+        if init_pole_spacing.lower() == "resonance":
+            positive_freqs = np.asarray(self.network.f, dtype=float)
+            positive_freqs = positive_freqs[positive_freqs > 0.0]
+            real_freqs = (
+                np.geomspace(max(float(np.min(positive_freqs)), 1.0), float(np.max(self.network.f)), int(n_poles_real))
+                if int(n_poles_real) > 0 and positive_freqs.size
+                else np.array([], dtype=float)
+            )
+            resonance_freqs = self._resonance_seed_frequencies(
+                np.asarray(self.network.f, dtype=float),
+                freq_responses,
+                count=int(n_poles_cmplx),
+            )
+            poles = np.concatenate(
+                [
+                    -2.0 * np.pi * real_freqs / norm,
+                    (-0.03 + 1j) * 2.0 * np.pi * resonance_freqs / norm,
+                ]
+            )
+        else:
+            poles = self._init_poles(freqs_norm, n_poles_real, n_poles_cmplx, init_pole_spacing)
+        if poles is None:
+            if self.poles is None or len(self.poles) == 0:
+                raise ValueError("Initial poles must be provided when init_pole_spacing='custom'")
+            poles = self.poles / norm
         weights_responses = np.linalg.norm(freq_responses, axis=1)
 
         max_singular = 1.0
@@ -126,32 +541,193 @@ class NativeVectorFitting:
         self.delta_max_history = []
         self.history_cond_A = []
         self.history_rank_deficiency = []
+        self.high_frequency_repair_diagnostics = []
+        self.high_frequency_residual_injection_diagnostics = []
+        self.pole_relocation_history = []
+        self.post_relocation_order_diagnostics = []
 
         iterations = self.max_iterations
+        iteration = 0
+        previous_input_complex_rows: list[tuple[float, float]] = []
         while iterations > 0:
-            poles, d_res, cond, rank_deficiency, _residuals, singular_vals = self._pole_relocation(
+            frequency_relocation_weights = None
+            if self.high_frequency_relocation_weight_enabled:
+                frequency_relocation_weights = np.ones_like(freqs_norm, dtype=float)
+                high_mask = np.asarray(self.network.f, dtype=float) >= (
+                    self.high_frequency_relocation_weight_lower_fraction * float(np.max(self.network.f))
+                )
+                frequency_relocation_weights[high_mask] = float(self.high_frequency_relocation_weight_gain)
+            pole_regularization_weights = self._dynamic_edge_c_res_regularization_weights(
+                poles,
+                norm,
+                previous_input_complex_rows,
+            )
+            relocation_result = self._pole_relocation(
                 poles,
                 freqs_norm,
                 freq_responses,
                 weights_responses,
                 fit_constant,
                 fit_proportional,
+                frequency_relocation_weights=frequency_relocation_weights,
+                return_diagnostics=True,
+                out_of_band_pole_regularization_weight=float(self.out_of_band_pole_regularization_weight),
+                out_of_band_pole_regularization_start_fraction=float(
+                    self.out_of_band_pole_regularization_start_fraction
+                ),
+                pole_regularization_weights=pole_regularization_weights,
             )
+            relocation_diagnostics = {}
+            if len(relocation_result) == 7:
+                poles, d_res, cond, rank_deficiency, _residuals, singular_vals, relocation_diagnostics = relocation_result
+            else:
+                poles, d_res, cond, rank_deficiency, _residuals, singular_vals = relocation_result
             self.history_cond_A.append(cond)
             self.history_rank_deficiency.append(rank_deficiency)
             self.d_res_history.append(d_res)
-            poles = self._ensure_high_frequency_complex_pairs(
+            if self.high_frequency_complex_pair_anchor_bands_hz:
+                poles = self._soft_anchor_high_frequency_complex_pairs(
+                    poles * norm,
+                    freqs_hz=np.asarray(self.network.f, dtype=float),
+                    anchor_bands_hz=tuple(self.high_frequency_complex_pair_anchor_bands_hz),
+                    damping=float(self.high_frequency_complex_pair_anchor_damping),
+                    strength=float(self.high_frequency_complex_pair_anchor_strength),
+                ) / norm
+            repaired_poles = self._ensure_high_frequency_complex_pairs(
                 poles,
                 freqs_norm,
                 self.high_frequency_complex_pair_count,
                 self.high_frequency_complex_pair_damping,
                 self.high_frequency_complex_pair_lower_fraction,
+                frequency_gate=bool(self.high_frequency_complex_pair_frequency_gate_enabled),
             )
+            if not self.high_frequency_complex_pair_frequency_gate_enabled:
+                poles = repaired_poles
+            elif np.allclose(repaired_poles, poles):
+                poles = repaired_poles
+            else:
+                current_score = self.score_pole_candidate(
+                    poles,
+                    freqs_norm,
+                    freq_responses,
+                    nports=self.network.nports,
+                    fit_constant=fit_constant,
+                    fit_proportional=fit_proportional,
+                    enforce_dc=enforce_dc,
+                    passivity_weight=float(self.effective_order_passivity_weight),
+                )
+                repaired_score = self.score_pole_candidate(
+                    repaired_poles,
+                    freqs_norm,
+                    freq_responses,
+                    nports=self.network.nports,
+                    fit_constant=fit_constant,
+                    fit_proportional=fit_proportional,
+                    enforce_dc=enforce_dc,
+                    passivity_weight=float(self.effective_order_passivity_weight),
+                )
+                accepted = repaired_score.score <= current_score.score
+                self.high_frequency_repair_diagnostics.append(
+                    {
+                        "accepted": bool(accepted),
+                        "current_score": float(current_score.score),
+                        "current_rms_error": float(current_score.rms_error),
+                        "current_max_sigma": float(current_score.max_sigma),
+                        "repaired_score": float(repaired_score.score),
+                        "repaired_rms_error": float(repaired_score.rms_error),
+                        "repaired_max_sigma": float(repaired_score.max_sigma),
+                    }
+                )
+                poles = repaired_poles if accepted else poles
+            complex_pair_frequencies = [
+                abs(float(pole.imag)) * norm / (2.0 * np.pi)
+                for pole in np.asarray(poles, dtype=complex)
+                if abs(pole.imag) > 0.0
+            ]
+            input_poles = np.asarray(relocation_diagnostics.get("input_poles", []), dtype=complex)
+            c_res_by_pole = np.asarray(relocation_diagnostics.get("c_res_by_pole", []), dtype=float)
+            input_complex_rows = [
+                (idx, abs(float(pole.imag)) * norm / (2.0 * np.pi))
+                for idx, pole in enumerate(input_poles)
+                if abs(pole.imag) > 0.0
+            ]
+            input_complex_c_res = [
+                float(c_res_by_pole[idx]) if idx < len(c_res_by_pole) else 0.0
+                for idx, _ in input_complex_rows
+            ]
+            self.pole_relocation_history.append(
+                {
+                    "iteration": int(iteration),
+                    "d_res": [float(np.real(d_res)), float(np.imag(d_res))],
+                    "d_res_abs": float(abs(d_res)),
+                    "rank_deficiency": int(rank_deficiency),
+                    "condition_number": float(cond),
+                    "singular_value_min": float(np.min(singular_vals)) if len(singular_vals) else 0.0,
+                    "singular_value_max": float(np.max(singular_vals)) if len(singular_vals) else 0.0,
+                    "input_complex_pair_frequencies_hz": [float(freq) for _, freq in input_complex_rows],
+                    "input_complex_pair_c_res_magnitudes": input_complex_c_res,
+                    "pole_regularization_weights": [float(value) for value in pole_regularization_weights],
+                    "complex_pair_frequencies_hz": sorted(complex_pair_frequencies),
+                    "real_pole_count": int(np.count_nonzero(np.abs(np.asarray(poles).imag) == 0.0)),
+                }
+            )
+            previous_input_complex_rows = [
+                (float(freq), float(c_res))
+                for (_, freq), c_res in zip(input_complex_rows, input_complex_c_res)
+            ]
+            if self.effective_order_max is not None:
+                preferred_complex_count = (
+                    int(self.effective_complex_pole_count)
+                    if self.effective_complex_pole_count is not None
+                    else max(int(n_poles_cmplx), int(self.high_frequency_complex_pair_count))
+                )
+                if self.effective_order_selection == "contribution_score":
+                    poles = self._select_poles_by_contribution_score(
+                        poles,
+                        freqs_norm,
+                        freq_responses,
+                        nports=self.network.nports,
+                        max_order=int(self.effective_order_max),
+                        fit_constant=fit_constant,
+                        fit_proportional=fit_proportional,
+                        enforce_dc=enforce_dc,
+                        passivity_weight=float(self.effective_order_passivity_weight),
+                    )
+                else:
+                    poles = self._limit_effective_order(
+                        poles,
+                        int(self.effective_order_max),
+                        preferred_complex_count=preferred_complex_count,
+                    )
             new_max_singular = np.amax(singular_vals)
             delta_max = np.abs(1 - new_max_singular / max_singular)
             self.delta_max_history.append(delta_max)
             max_singular = new_max_singular
             iterations -= 1
+            iteration += 1
+
+        if self.post_relocation_effective_order_max is not None:
+            order_before = self.get_model_order(poles)
+            trimmed_poles = self._trim_low_frequency_real_poles(
+                poles,
+                int(self.post_relocation_effective_order_max),
+                preferred_complex_count=(
+                    int(self.effective_complex_pole_count)
+                    if self.effective_complex_pole_count is not None
+                    else int(n_poles_cmplx)
+                ),
+            )
+            poles = trimmed_poles
+            self.post_relocation_order_diagnostics.append(
+                {
+                    "max_order": int(self.post_relocation_effective_order_max),
+                    "order_before": int(order_before),
+                    "order_after": int(self.get_model_order(poles)),
+                    "stored_pole_count_after": int(len(poles)),
+                    "complex_pair_count_after": int(np.count_nonzero(np.abs(np.asarray(poles).imag) > 0.0)),
+                    "real_pole_count_after": int(np.count_nonzero(np.abs(np.asarray(poles).imag) == 0.0)),
+                }
+            )
 
         residues, constant_coeff, proportional_coeff, _residuals, _rank, _singular_vals = self._fit_residues(
             poles,
@@ -161,13 +737,192 @@ class NativeVectorFitting:
             fit_proportional,
             enforce_dc,
         )
+        if self.high_frequency_residual_injection_enabled:
+            fitted_responses = self._evaluate_residue_model(
+                poles,
+                residues,
+                constant_coeff,
+                proportional_coeff,
+                freqs_norm,
+            )
+            seed_frequency = self._edge_residual_seed_frequency(
+                freqs_norm,
+                freq_responses,
+                fitted_responses,
+                self.high_frequency_residual_injection_lower_fraction,
+            )
+            omega = 2.0 * np.pi * seed_frequency
+            injected = complex(-abs(self.high_frequency_residual_injection_damping) * omega, omega)
+            candidate_poles = np.asarray([*np.asarray(poles, dtype=complex), injected], dtype=complex)
+            current_score = self.score_pole_candidate(
+                poles,
+                freqs_norm,
+                freq_responses,
+                nports=self.network.nports,
+                fit_constant=fit_constant,
+                fit_proportional=fit_proportional,
+                enforce_dc=enforce_dc,
+                passivity_weight=float(self.effective_order_passivity_weight),
+            )
+            candidate_score = self.score_pole_candidate(
+                candidate_poles,
+                freqs_norm,
+                freq_responses,
+                nports=self.network.nports,
+                fit_constant=fit_constant,
+                fit_proportional=fit_proportional,
+                enforce_dc=enforce_dc,
+                passivity_weight=float(self.effective_order_passivity_weight),
+            )
+            accepted = candidate_score.score <= current_score.score
+            self.high_frequency_residual_injection_diagnostics.append(
+                {
+                    "accepted": bool(accepted),
+                    "seed_frequency_hz": float(seed_frequency * norm),
+                    "current_score": float(current_score.score),
+                    "current_rms_error": float(current_score.rms_error),
+                    "current_max_sigma": float(current_score.max_sigma),
+                    "candidate_score": float(candidate_score.score),
+                    "candidate_rms_error": float(candidate_score.rms_error),
+                    "candidate_max_sigma": float(candidate_score.max_sigma),
+                }
+            )
+            if accepted:
+                poles = candidate_poles
+                residues, constant_coeff, proportional_coeff, _residuals, _rank, _singular_vals = self._fit_residues(
+                    poles,
+                    freqs_norm,
+                    freq_responses,
+                    fit_constant,
+                    fit_proportional,
+                    enforce_dc,
+                )
         self.poles = poles * norm
         self.residues = np.array(residues) * norm
         self.constant_coeff = np.array(constant_coeff)
         self.proportional_coeff = np.array(proportional_coeff) / norm
         self.wall_clock_time = time.perf_counter() - started
 
+    def _dynamic_edge_c_res_regularization_weights(
+        self,
+        poles: np.ndarray,
+        norm: float,
+        previous_input_complex_rows: list[tuple[float, float]],
+    ) -> np.ndarray:
+        pole_array = np.asarray(poles, dtype=complex)
+        weights = np.zeros(len(pole_array), dtype=float)
+        if not self.dynamic_edge_c_res_regularization_enabled:
+            return weights
+        base_weight = max(0.0, float(self.dynamic_edge_c_res_regularization_base_weight))
+        if base_weight <= 0.0:
+            return weights
+        fmax = float(np.max(self.network.f))
+        start_hz = max(0.0, float(self.dynamic_edge_c_res_regularization_start_fraction)) * fmax
+        if not previous_input_complex_rows:
+            return weights
+        threshold = max(1.0, float(self.dynamic_edge_c_res_regularization_growth_threshold))
+        for idx, pole in enumerate(pole_array):
+            if abs(pole.imag) == 0.0:
+                continue
+            pole_frequency_hz = abs(float(pole.imag)) * norm / (2.0 * np.pi)
+            if pole_frequency_hz <= start_hz:
+                continue
+            nearest_frequency, previous_c_res = min(
+                previous_input_complex_rows,
+                key=lambda item: abs(float(item[0]) - pole_frequency_hz),
+            )
+            if previous_c_res <= 0.0:
+                continue
+            growth_proxy = max(1.0, pole_frequency_hz / max(float(nearest_frequency), np.finfo(float).tiny))
+            if growth_proxy < threshold:
+                continue
+            overrun = max(0.0, pole_frequency_hz / max(fmax, np.finfo(float).tiny) - 1.0)
+            weights[idx] = base_weight * overrun * growth_proxy
+        return weights
+
     auto_fit = vector_fit
+
+    def vector_fit_topology_sweep(
+        self,
+        *,
+        candidate_configs: list[dict[str, Any]],
+        init_pole_spacing: str = "lin",
+        parameter_type: str = "s",
+        fit_constant: bool = True,
+        fit_proportional: bool = False,
+        enforce_dc: bool = True,
+        passivity_weight: float = 1.0,
+    ) -> None:
+        if not candidate_configs:
+            raise ValueError("candidate_configs must contain at least one topology")
+        started = time.perf_counter()
+        freq_responses = np.array(
+            [self.network.s[:, i, j] for i in range(self.network.nports) for j in range(self.network.nports)]
+        )
+        best_fit: NativeVectorFitting | None = None
+        best_score: PoleCandidateScore | None = None
+        diagnostics: list[dict[str, Any]] = []
+
+        for candidate in candidate_configs:
+            candidate_fit = NativeVectorFitting(self.network)
+            candidate_fit.max_iterations = self.max_iterations
+            candidate_fit.max_tol = self.max_tol
+            candidate_fit.high_frequency_complex_pair_count = int(candidate.get("high_frequency_complex_pair_count", 0))
+            candidate_fit.high_frequency_complex_pair_damping = float(
+                candidate.get("high_frequency_complex_pair_damping", self.high_frequency_complex_pair_damping)
+            )
+            candidate_fit.high_frequency_complex_pair_lower_fraction = float(
+                candidate.get("high_frequency_complex_pair_lower_fraction", self.high_frequency_complex_pair_lower_fraction)
+            )
+            candidate_fit.effective_order_max = self.effective_order_max
+            candidate_fit.effective_complex_pole_count = self.effective_complex_pole_count
+            candidate_fit.vector_fit(
+                n_poles_real=int(candidate["n_poles_real"]),
+                n_poles_cmplx=int(candidate["n_poles_cmplx"]),
+                init_pole_spacing=init_pole_spacing,
+                parameter_type=parameter_type,
+                fit_constant=fit_constant,
+                fit_proportional=fit_proportional,
+                enforce_dc=enforce_dc,
+            )
+            score = self.score_pole_candidate(
+                candidate_fit.poles,
+                np.asarray(self.network.f, dtype=float),
+                freq_responses,
+                nports=self.network.nports,
+                fit_constant=fit_constant,
+                fit_proportional=fit_proportional,
+                enforce_dc=enforce_dc,
+                passivity_weight=passivity_weight,
+            )
+            diagnostic = {
+                **candidate,
+                "rms_error": float(score.rms_error),
+                "max_sigma": float(score.max_sigma),
+                "passivity_excess": float(score.passivity_excess),
+                "combined_score": float(score.score),
+                "stored_pole_count": int(len(candidate_fit.poles)),
+                "effective_order": int(self.get_model_order(candidate_fit.poles)),
+                "selected": False,
+            }
+            diagnostics.append(diagnostic)
+            if best_score is None or score.score < best_score.score:
+                best_score = score
+                best_fit = candidate_fit
+
+        assert best_fit is not None
+        for diagnostic in diagnostics:
+            diagnostic["selected"] = bool(diagnostic["combined_score"] == float(best_score.score))
+        self.poles = best_fit.poles
+        self.residues = best_fit.residues
+        self.constant_coeff = best_fit.constant_coeff
+        self.proportional_coeff = best_fit.proportional_coeff
+        self.d_res_history = best_fit.d_res_history
+        self.delta_max_history = best_fit.delta_max_history
+        self.history_cond_A = best_fit.history_cond_A
+        self.history_rank_deficiency = best_fit.history_rank_deficiency
+        self.topology_sweep_diagnostics = diagnostics
+        self.wall_clock_time = time.perf_counter() - started
 
     @staticmethod
     def _fit_residues(poles, freqs, freq_responses, fit_constant, fit_proportional, enforce_dc):

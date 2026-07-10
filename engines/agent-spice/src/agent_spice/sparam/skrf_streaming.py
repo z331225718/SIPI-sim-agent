@@ -18,7 +18,13 @@ def streaming_pole_relocation(
     weights_responses: np.ndarray,
     fit_constant: bool,
     fit_proportional: bool,
-) -> tuple[np.ndarray, complex, float, int, np.ndarray, np.ndarray]:
+    *,
+    frequency_relocation_weights: np.ndarray | None = None,
+    return_diagnostics: bool = False,
+    out_of_band_pole_regularization_weight: float = 0.0,
+    out_of_band_pole_regularization_start_fraction: float = 1.0,
+    pole_regularization_weights: np.ndarray | None = None,
+) -> tuple[Any, ...]:
     return _streaming_pole_relocation_impl(
         poles,
         freqs,
@@ -27,6 +33,11 @@ def streaming_pole_relocation(
         fit_constant,
         fit_proportional,
         low_memory=False,
+        frequency_relocation_weights=frequency_relocation_weights,
+        return_diagnostics=return_diagnostics,
+        out_of_band_pole_regularization_weight=out_of_band_pole_regularization_weight,
+        out_of_band_pole_regularization_start_fraction=out_of_band_pole_regularization_start_fraction,
+        pole_regularization_weights=pole_regularization_weights,
     )
 
 
@@ -37,7 +48,13 @@ def streaming_lowmem_pole_relocation(
     weights_responses: np.ndarray,
     fit_constant: bool,
     fit_proportional: bool,
-) -> tuple[np.ndarray, complex, float, int, np.ndarray, np.ndarray]:
+    *,
+    frequency_relocation_weights: np.ndarray | None = None,
+    return_diagnostics: bool = False,
+    out_of_band_pole_regularization_weight: float = 0.0,
+    out_of_band_pole_regularization_start_fraction: float = 1.0,
+    pole_regularization_weights: np.ndarray | None = None,
+) -> tuple[Any, ...]:
     return _streaming_pole_relocation_impl(
         poles,
         freqs,
@@ -46,6 +63,11 @@ def streaming_lowmem_pole_relocation(
         fit_constant,
         fit_proportional,
         low_memory=True,
+        frequency_relocation_weights=frequency_relocation_weights,
+        return_diagnostics=return_diagnostics,
+        out_of_band_pole_regularization_weight=out_of_band_pole_regularization_weight,
+        out_of_band_pole_regularization_start_fraction=out_of_band_pole_regularization_start_fraction,
+        pole_regularization_weights=pole_regularization_weights,
     )
 
 
@@ -56,7 +78,13 @@ def streaming_reciprocal_pole_relocation(
     weights_responses: np.ndarray,
     fit_constant: bool,
     fit_proportional: bool,
-) -> tuple[np.ndarray, complex, float, int, np.ndarray, np.ndarray]:
+    *,
+    frequency_relocation_weights: np.ndarray | None = None,
+    return_diagnostics: bool = False,
+    out_of_band_pole_regularization_weight: float = 0.0,
+    out_of_band_pole_regularization_start_fraction: float = 1.0,
+    pole_regularization_weights: np.ndarray | None = None,
+) -> tuple[Any, ...]:
     compressed_responses, compressed_weights, multiplicities = _compress_reciprocal_responses(
         freq_responses,
         weights_responses,
@@ -70,6 +98,11 @@ def streaming_reciprocal_pole_relocation(
         fit_proportional,
         low_memory=False,
         response_multiplicities=multiplicities,
+        frequency_relocation_weights=frequency_relocation_weights,
+        return_diagnostics=return_diagnostics,
+        out_of_band_pole_regularization_weight=out_of_band_pole_regularization_weight,
+        out_of_band_pole_regularization_start_fraction=out_of_band_pole_regularization_start_fraction,
+        pole_regularization_weights=pole_regularization_weights,
     )
 
 
@@ -104,8 +137,19 @@ def _streaming_pole_relocation_impl(
     *,
     low_memory: bool,
     response_multiplicities: np.ndarray | None = None,
-) -> tuple[np.ndarray, complex, float, int, np.ndarray, np.ndarray]:
+    frequency_relocation_weights: np.ndarray | None = None,
+    return_diagnostics: bool = False,
+    out_of_band_pole_regularization_weight: float = 0.0,
+    out_of_band_pole_regularization_start_fraction: float = 1.0,
+    pole_regularization_weights: np.ndarray | None = None,
+) -> tuple[Any, ...]:
     n_responses, n_freqs = np.shape(freq_responses)
+    if frequency_relocation_weights is None:
+        frequency_weight = None
+    else:
+        frequency_weight = np.asarray(frequency_relocation_weights, dtype=float)
+        if frequency_weight.shape != (n_freqs,):
+            raise ValueError("frequency_relocation_weights must have one value per frequency sample")
     if response_multiplicities is None:
         response_multiplicities = np.ones(n_responses, dtype=float)
     else:
@@ -138,6 +182,33 @@ def _streaming_pole_relocation_impl(
     idx_res_real = np.arange(n_real)
     idx_res_complex_re = n_real + 2 * np.arange(n_cmplx)
     idx_res_complex_im = idx_res_complex_re + 1
+    regularization_columns: list[tuple[int, float]] = []
+    regularization_weight = max(0.0, float(out_of_band_pole_regularization_weight))
+    pole_regularization = (
+        np.zeros(len(poles), dtype=float)
+        if pole_regularization_weights is None
+        else np.asarray(pole_regularization_weights, dtype=float)
+    )
+    if pole_regularization.shape != (len(poles),):
+        raise ValueError("pole_regularization_weights must have one value per stored pole")
+    if regularization_weight > 0.0 and n_cmplx:
+        start_fraction = max(0.0, float(out_of_band_pole_regularization_start_fraction))
+        fmax = float(np.max(freqs))
+        for pole_position, pole in enumerate(poles[idx_poles_complex]):
+            pole_frequency = abs(float(pole.imag)) / (2.0 * np.pi)
+            if pole_frequency > start_fraction * fmax:
+                regularization_columns.extend([
+                    (int(idx_res_complex_re[pole_position]), regularization_weight),
+                    (int(idx_res_complex_im[pole_position]), regularization_weight),
+                ])
+    for pole_position, pole_index in enumerate(idx_poles_complex):
+        local_weight = max(0.0, float(pole_regularization[pole_index]))
+        if local_weight > 0.0:
+            regularization_columns.extend([
+                (int(idx_res_complex_re[pole_position]), local_weight),
+                (int(idx_res_complex_im[pole_position]), local_weight),
+            ])
+    n_regularization_rows = len(regularization_columns)
 
     coeff_real = 1 / (s[:, None] - poles[None, idx_poles_real])
     coeff_complex_re = (
@@ -159,7 +230,8 @@ def _streaming_pole_relocation_impl(
         n_rows_r12 = n_cols_unused
         n_rows_r22 = n_cols_used
 
-    dim0 = n_responses * n_rows_r22 + 1
+    dim0 = n_responses * n_rows_r22 + 1 + n_regularization_rows
+    data_rows = n_responses * n_rows_r22
     a_fast = None if low_memory else np.empty((dim0, n_cols_used))
     r_aug = np.empty((0, n_cols_used + 1), dtype=float) if low_memory else None
     work = np.empty((n_freqs, dim_n), dtype=complex)
@@ -179,6 +251,9 @@ def _streaming_pole_relocation_impl(
         work[:, -1] = -response
         work_ri[:n_freqs, :] = work.real
         work_ri[n_freqs:, :] = work.imag
+        if frequency_weight is not None:
+            work_ri[:n_freqs, :] *= frequency_weight[:, None]
+            work_ri[n_freqs:, :] *= frequency_weight[:, None]
         r_matrix = np.linalg.qr(work_ri, mode="r")
         r22 = weights_responses[response_index] * r_matrix[n_rows_r12:, n_cols_unused:]
         if low_memory:
@@ -200,6 +275,9 @@ def _streaming_pole_relocation_impl(
         extra_row *= weight_extra
         b_extra = weight_extra * n_samples
         column_norm_sq += np.square(extra_row)
+        if n_regularization_rows:
+            for col, local_weight in regularization_columns:
+                column_norm_sq[col] += max(0.0, float(local_weight))
         column_norms = np.sqrt(column_norm_sq)
         scaling = np.divide(1.0, column_norms, out=np.ones_like(column_norms), where=column_norms != 0.0)
 
@@ -216,6 +294,9 @@ def _streaming_pole_relocation_impl(
             work[:, -1] = -response
             work_ri[:n_freqs, :] = work.real
             work_ri[n_freqs:, :] = work.imag
+            if frequency_weight is not None:
+                work_ri[:n_freqs, :] *= frequency_weight[:, None]
+                work_ri[n_freqs:, :] *= frequency_weight[:, None]
             r_matrix = np.linalg.qr(work_ri, mode="r")
             r22 = weights_responses[response_index] * r_matrix[n_rows_r12:, n_cols_unused:]
             r22 = scaling * r22
@@ -226,10 +307,17 @@ def _streaming_pole_relocation_impl(
             qr_update_work[previous_rows : previous_rows + n_rows_r22, -1] = 0.0
             r_aug = np.linalg.qr(qr_update_work[: previous_rows + n_rows_r22, :], mode="r")
 
-        qr_update_work = np.empty((r_aug.shape[0] + 1, n_cols_used + 1), dtype=float)
-        qr_update_work[:-1, :] = r_aug
-        qr_update_work[-1, :-1] = scaling * extra_row
-        qr_update_work[-1, -1] = b_extra
+        n_constraint_rows = 1 + n_regularization_rows
+        qr_update_work = np.empty((r_aug.shape[0] + n_constraint_rows, n_cols_used + 1), dtype=float)
+        qr_update_work[: r_aug.shape[0], :] = r_aug
+        constraint_start = r_aug.shape[0]
+        qr_update_work[constraint_start:, :] = 0.0
+        qr_update_work[constraint_start, :-1] = scaling * extra_row
+        qr_update_work[constraint_start, -1] = b_extra
+        if n_regularization_rows:
+            for offset, (col, local_weight) in enumerate(regularization_columns, start=1):
+                reg_weight = np.sqrt(max(0.0, float(local_weight)))
+                qr_update_work[constraint_start + offset, col] = scaling[col] * reg_weight
         r_aug = np.linalg.qr(qr_update_work, mode="r")
 
         r_matrix = r_aug[:n_cols_used, :n_cols_used]
@@ -246,17 +334,23 @@ def _streaming_pole_relocation_impl(
         residuals = np.array([float(np.sum(np.square(residual_tail)))])
     else:
         assert a_fast is not None
-        a_fast[-1, idx_res_real] = np.sum(coeff_real.real, axis=0)
-        a_fast[-1, idx_res_complex_re] = np.sum(coeff_complex_re.real, axis=0)
-        a_fast[-1, idx_res_complex_im] = np.sum(coeff_complex_im.real, axis=0)
-        a_fast[-1, -1] = n_freqs
-        a_fast[-1, :] = weight_extra * a_fast[-1, :]
+        extra_row_index = data_rows
+        a_fast[extra_row_index, idx_res_real] = np.sum(coeff_real.real, axis=0)
+        a_fast[extra_row_index, idx_res_complex_re] = np.sum(coeff_complex_re.real, axis=0)
+        a_fast[extra_row_index, idx_res_complex_im] = np.sum(coeff_complex_im.real, axis=0)
+        a_fast[extra_row_index, -1] = n_freqs
+        a_fast[extra_row_index, :] = weight_extra * a_fast[extra_row_index, :]
+        if n_regularization_rows:
+            a_fast[extra_row_index + 1 :, :] = 0.0
+            for offset, (col, local_weight) in enumerate(regularization_columns, start=1):
+                reg_weight = np.sqrt(max(0.0, float(local_weight)))
+                a_fast[extra_row_index + offset, col] = reg_weight
 
         scaling = 1 / np.linalg.norm(a_fast, axis=0)
         a_fast = scaling * a_fast
 
         b = np.zeros(dim0)
-        b[-1] = weight_extra * n_samples
+        b[extra_row_index] = weight_extra * n_samples
 
         cond = np.linalg.cond(a_fast)
         full_rank = min(dim0, n_cols_used)
@@ -266,6 +360,14 @@ def _streaming_pole_relocation_impl(
 
     c_res = x[:-1]
     d_res = x[-1]
+    input_poles = np.asarray(poles, dtype=complex)
+    c_res_by_pole = np.zeros(len(input_poles), dtype=float)
+    for pole_position, pole_index in enumerate(idx_poles_real):
+        c_res_by_pole[pole_index] = abs(float(c_res[idx_res_real[pole_position]]))
+    for pole_position, pole_index in enumerate(idx_poles_complex):
+        real_part = float(c_res[idx_res_complex_re[pole_position]])
+        imag_part = float(c_res[idx_res_complex_im[pole_position]])
+        c_res_by_pole[pole_index] = float(np.hypot(real_part, imag_part))
     tol_res = 1e-8
     if np.abs(d_res) < tol_res:
         d_res = tol_res * (d_res / np.abs(d_res))
@@ -285,7 +387,16 @@ def _streaming_pole_relocation_impl(
     poles_new = np.linalg.eigvals(h_matrix)
     relocated = poles_new[np.nonzero(poles_new.imag >= 0)]
     relocated.real = -1 * np.abs(relocated.real)
-    return relocated, d_res, cond, int(rank_deficiency), residuals, singular_vals
+    result = (relocated, d_res, cond, int(rank_deficiency), residuals, singular_vals)
+    if not return_diagnostics:
+        return result
+    diagnostics = {
+        "input_poles": input_poles.copy(),
+        "c_res": np.asarray(c_res, dtype=complex).copy(),
+        "c_res_by_pole": c_res_by_pole,
+        "d_res": complex(d_res),
+    }
+    return (*result, diagnostics)
 
 
 @contextmanager
