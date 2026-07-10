@@ -259,7 +259,9 @@ Expected: `rg` 无命中。
 
 ---
 
-### Task 4: 重命名 Native exporter 并保持 IdEM-style exporter（已被 Task 6 取代）
+### Task 4: 过渡方案：重命名 Native exporter 并保持 IdEM-style exporter（历史步骤，已被 Task 6 取代）
+
+Task 4 记录的是已经执行过的中间迁移步骤，用于保留审计轨迹。用户随后确认真实生产环境不提供 IdEM；Task 6 supersede 该过渡设计。最终生产状态不是 `native | idem` exporter，而是没有 exporter 字段或 CLI flag，生产 SPICE 输出固定由 Native writer 生成；外部 IdEM 仅保留给 benchmark/research。
 
 **Files:**
 - Modify: `src/agent_spice/sparam/fitting.py`
@@ -268,10 +270,13 @@ Expected: `rg` 无命中。
 - Modify: `tests/test_cli_fit_sparam.py`
 
 **Interfaces:**
-- Changes: `SParamFitConfig.exporter` choices 为 `"native" | "idem"`，默认 `"native"`。
-- Removes: exporter value `"skrf"`。
+- Historical transition: `SParamFitConfig.exporter` choices 曾为 `"native" | "idem"`，默认 `"native"`。
+- Historical transition: exporter value `"skrf"` 曾在此步骤移除。
+- Final after Task 6: `SParamFitConfig.exporter`、CLI `--exporter` 和本地 IdEM-style writer 均已移除；生产路径固定调用 Native writer，外部 IdEM 仅用于 benchmark/research。
 
-- [ ] **Step 1: 写 exporter 失败测试**
+- [ ] **Step 1: 写 exporter 失败测试（历史过渡，非最终测试合同）**
+
+以下测试片段记录 Task 4 当时的 RED 目标；Task 6 后当前测试合同改为验证 `SParamFitConfig(exporter=...)` 和 CLI `--exporter` 均被拒绝。
 
 ```python
 def test_default_exporter_is_native():
@@ -289,7 +294,7 @@ def test_cli_rejects_removed_skrf_exporter(tmp_path):
 python -m pytest tests/test_sparam_fitting.py tests/test_cli_fit_sparam.py -q
 ```
 
-- [ ] **Step 3: 重命名配置和 CLI choice**
+- [ ] **Step 3: 重命名配置和 CLI choice（历史过渡，非最终设计）**
 
 默认分支直接调用：
 
@@ -297,7 +302,7 @@ python -m pytest tests/test_sparam_fitting.py tests/test_cli_fit_sparam.py -q
 vector_fit.write_spice_subcircuit_s(...)
 ```
 
-`exporter == "idem"` 继续调用现有 `write_idem_spice_subcircuit()`。
+Task 4 过渡期曾让 `exporter == "idem"` 继续调用当时存在的 `write_idem_spice_subcircuit()`；该 production writer 选择面已由 Task 6 删除，最终生产路径不再调用本地 IdEM-style writer。
 
 - [ ] **Step 4: 运行 GREEN 和 SPICE smoke**
 
@@ -385,6 +390,7 @@ git commit -m "docs: establish Native S-parameter production baseline"
 - CLI/API 不再接受 skrf fitting 或 relocation 选择。
 - Native relocation 数值代码不位于 skrf 命名模块。
 - 生产 SPICE 输出固定为 Native writer，API/CLI 无 exporter 选择。
+- 外部 IdEM 仅用于 benchmark/research，不作为生产 exporter 或 writer。
 - Native 主路径不导入 skrf。
 - 基线版本进入报告和 fingerprint。
 - 2-port smoke 与全仓测试通过。

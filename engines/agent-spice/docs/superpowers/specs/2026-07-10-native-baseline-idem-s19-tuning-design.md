@@ -59,7 +59,7 @@ IdEM 的内部自适应过程在一次 fitting 中从 minimum order 开始，通
 - 将 Native fitting 固化为 `fit-sparam` 和 Python fitting API 的唯一生产算法。
 - 删除 skrf VectorFitting 和 skrf 原版 pole relocation 的可选入口。
 - 将当前 Native 依赖的自研 streaming relocation 从 `skrf_streaming.py` 迁移到中性 Native 模块。
-- 将当前名为 `skrf`、实际由 Native 对象执行的 SPICE exporter 重命名为 `native`。
+- 移除生产 SPICE exporter 选择面：生产路径固定使用 Native writer，不提供 exporter 字段或 CLI flag；外部 IdEM 仅作为 benchmark/research adapter 保留。
 - 保留 skrf 作为非 fitting 基础设施和研究功能的可选依赖。
 - 给生产基线增加显式版本号、配置快照和回归测试。
 - 增加 IdEM adaptive fitting 适配器、可恢复实验 runner 和结果报告。
