@@ -13,6 +13,31 @@ from agent_spice.sparam.idem import IdemCommandResult
 import scripts.sparam_idem_s19_tuning as tuning
 
 
+STAGE1_TRIAL_IDS = [
+    "baseline-adaptive",
+    "enhanced-placement",
+    "postadding-2",
+    "postadding-3",
+    "iterations-initial5-final3",
+    "stagnation-alpha0p01",
+    "stagnation-alpha0p001",
+    "stagnation-back5",
+    "guaranteed-0p01",
+    "guaranteed-0p001",
+    "skimming-1e-4",
+    "skimming-1e-5",
+    "final-skimming-1e-4",
+    "final-skimming-1e-5",
+    "reject-poles-1p0",
+    "reject-poles-1p2",
+    "reject-poles-2p0",
+    "asymptotic-relocate",
+    "p4poles-eye",
+    "p4poles-largest4",
+    "p4poles-largest8",
+]
+
+
 def _write_s2p(path: Path) -> None:
     path.write_text(
         "# Hz S RI R 50\n"
@@ -274,6 +299,243 @@ def _assert_no_var_kwargs_and_matching_signature(fake_method, real_function) -> 
     for fake_param, real_param in zip(fake_signature.parameters.values(), real_signature.parameters.values()):
         assert fake_param.kind == real_param.kind
         assert fake_param.kind is not inspect.Parameter.VAR_KEYWORD
+
+
+def _changed_adaptive_option_fields(
+    baseline: tuning.IdemAdaptiveTrialConfig,
+    candidate: tuning.IdemAdaptiveTrialConfig,
+) -> set[str]:
+    baseline_options = baseline.to_dict()["adaptive_options"]
+    candidate_options = candidate.to_dict()["adaptive_options"]
+    return {key for key in sorted(baseline_options) if baseline_options[key] != candidate_options[key]}
+
+
+def test_build_stage1_manifest_has_all_fixed_ids_stable_order_and_single_mechanism_changes():
+    trials = tuning.build_stage1_trials()
+
+    assert [trial.trial_id for trial in trials] == STAGE1_TRIAL_IDS
+    assert [trial.trial_id for trial in tuning.build_stage1_trials()] == STAGE1_TRIAL_IDS
+    assert len({trial.trial_id for trial in trials}) == len(STAGE1_TRIAL_IDS)
+    assert all(tuning._safe_trial_dir_name(trial.trial_id) == trial.trial_id for trial in trials)
+
+    baseline = trials[0]
+    assert baseline.trial_id == "baseline-adaptive"
+    assert baseline.order_min == 4
+    assert baseline.order_step == 2
+    assert baseline.order_max == 100
+    assert baseline.rms_target == pytest.approx(0.001)
+    assert baseline.passivity_epsilon == pytest.approx(1.0e-6)
+    assert baseline.threads == 8
+    assert baseline.phase_timeout_seconds == pytest.approx(7200.0)
+    assert baseline.adaptive_options.split_type == "none"
+    assert baseline.adaptive_options.p4poles_n_largest == "INF"
+
+    expected_groups = {
+        "enhanced-placement": {"enhance_poles_placement"},
+        "postadding-2": {"postadding_iterations"},
+        "postadding-3": {"postadding_iterations"},
+        "iterations-initial5-final3": {"initial_iterations", "final_iterations"},
+        "stagnation-alpha0p01": {"stagnation_alpha"},
+        "stagnation-alpha0p001": {"stagnation_alpha"},
+        "stagnation-back5": {"stagnation_back_steps"},
+        "guaranteed-0p01": {"guaranteed_accuracy"},
+        "guaranteed-0p001": {"guaranteed_accuracy"},
+        "skimming-1e-4": {"skimming_tolerance"},
+        "skimming-1e-5": {"skimming_tolerance"},
+        "final-skimming-1e-4": {"final_skimming_tolerance"},
+        "final-skimming-1e-5": {"final_skimming_tolerance"},
+        "reject-poles-1p0": {"reject_poles", "reject_poles_max_relative_frequency"},
+        "reject-poles-1p2": {"reject_poles", "reject_poles_max_relative_frequency"},
+        "reject-poles-2p0": {"reject_poles", "reject_poles_max_relative_frequency"},
+        "asymptotic-relocate": {"asymptotic_relocate_poles"},
+        "p4poles-eye": {"p4poles_type"},
+        "p4poles-largest4": {"p4poles_n_largest"},
+        "p4poles-largest8": {"p4poles_n_largest"},
+    }
+
+    baseline_global = {
+        key: value
+        for key, value in baseline.to_dict().items()
+        if key not in {"trial_id", "adaptive_options"}
+    }
+    for trial in trials[1:]:
+        trial_global = {
+            key: value
+            for key, value in trial.to_dict().items()
+            if key not in {"trial_id", "adaptive_options"}
+        }
+        assert trial_global == baseline_global
+        assert _changed_adaptive_option_fields(baseline, trial) == expected_groups[trial.trial_id]
+
+
+def test_stage1_manifest_file_roundtrips_from_builder_without_dual_source_drift():
+    manifest_path = Path("configs/idem-s19-adaptive-v1.json")
+
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    assert payload["contract_version"] == tuning.CONTRACT_VERSION
+    assert payload["stage"] == "stage1"
+    assert payload["source_of_truth"] == "scripts.sparam_idem_s19_tuning:build_stage1_trials"
+    assert payload["trials"] == [trial.to_dict() for trial in tuning.build_stage1_trials()]
+    assert json.loads(json.dumps(payload, sort_keys=True, allow_nan=False)) == payload
+
+
+def test_run_experiment_runs_trials_sequentially_and_writes_partial_summary_after_each(
+    tmp_path: Path, monkeypatch
+):
+    input_path = tmp_path / "line.s2p"
+    _write_s2p(input_path)
+    active: list[str] = []
+    calls: list[str] = []
+    partial_counts: list[int] = []
+    real_atomic_write_json = tuning.atomic_write_json
+
+    def fake_run_adaptive_trial(entry, config, output_dir, *, resume=True, idem_bin_dir=None):
+        assert active == []
+        active.append(config.trial_id)
+        calls.append(config.trial_id)
+        assert output_dir.name == config.trial_id
+        trial = ToolTrial(
+            tool="idem-adaptive",
+            requested_order=config.order_max,
+            effective_order=8,
+            pre_mean_rms=0.0008,
+            final_mean_rms=0.0007,
+            target_met=True,
+            status="PASS",
+            elapsed_seconds=float(len(calls)),
+            peak_memory_mb=10.0 + len(calls),
+        )
+        active.pop()
+        return trial
+
+    def tracking_atomic_write_json(path: Path, payload: dict) -> None:
+        if path.name == "summary.partial.json":
+            partial_counts.append(payload["completed_trial_count"])
+        real_atomic_write_json(path, payload)
+
+    monkeypatch.setattr(tuning, "run_adaptive_trial", fake_run_adaptive_trial)
+    monkeypatch.setattr(tuning, "atomic_write_json", tracking_atomic_write_json)
+
+    summary = tuning.run_experiment(input_path, tmp_path / "runs", stage="stage1", resume=True)
+
+    assert calls == STAGE1_TRIAL_IDS
+    assert partial_counts == list(range(1, len(STAGE1_TRIAL_IDS) + 1))
+    assert summary["completed_trial_count"] == len(STAGE1_TRIAL_IDS)
+    assert [row["trial_id"] for row in summary["trials"]] == STAGE1_TRIAL_IDS
+    assert json.loads((tmp_path / "runs" / "summary.partial.json").read_text(encoding="utf-8")) == summary
+
+
+def test_run_experiment_rejects_unsafe_trial_id_before_creating_escape_directory(tmp_path: Path, monkeypatch):
+    input_path = tmp_path / "line.s2p"
+    _write_s2p(input_path)
+    unsafe = tuning.IdemAdaptiveTrialConfig(trial_id="../escape")
+    monkeypatch.setattr(tuning, "build_stage1_trials", lambda: (unsafe,))
+
+    with pytest.raises(ValueError, match="unsafe trial id"):
+        tuning.run_experiment(input_path, tmp_path / "runs", stage="stage1")
+
+    assert not (tmp_path / "escape").exists()
+
+
+def test_summarize_trials_ranks_by_target_rms_order_time_and_keeps_json_finite():
+    records = [
+        {
+            "trial_id": "baseline-adaptive",
+            "trial": {
+                "status": "PASS",
+                "target_met": True,
+                "pre_mean_rms": 0.01,
+                "final_mean_rms": 0.001,
+                "effective_order": 10,
+                "elapsed_seconds": 5.0,
+                "peak_memory_mb": 50.0,
+            },
+        },
+        {
+            "trial_id": "improved",
+            "trial": {
+                "status": "PASS",
+                "target_met": True,
+                "pre_mean_rms": 0.005,
+                "final_mean_rms": 0.0005,
+                "effective_order": 12,
+                "elapsed_seconds": 8.0,
+                "peak_memory_mb": 60.0,
+            },
+        },
+        {
+            "trial_id": "missing-rms",
+            "trial": {
+                "status": "PASS",
+                "target_met": True,
+                "pre_mean_rms": float("nan"),
+                "final_mean_rms": float("nan"),
+                "effective_order": None,
+                "elapsed_seconds": None,
+                "peak_memory_mb": None,
+            },
+        },
+        {
+            "trial_id": "failed-low-rms",
+            "trial": {
+                "status": "FAIL",
+                "target_met": False,
+                "pre_mean_rms": 0.002,
+                "final_mean_rms": 0.0001,
+                "effective_order": 1,
+                "elapsed_seconds": 1.0,
+                "peak_memory_mb": 1.0,
+            },
+        },
+    ]
+
+    summary = tuning.summarize_trials(records)
+
+    assert [row["trial_id"] for row in summary["ranking"]] == [
+        "improved",
+        "baseline-adaptive",
+        "missing-rms",
+        "failed-low-rms",
+    ]
+    improved = next(row for row in summary["trials"] if row["trial_id"] == "improved")
+    assert improved["delta_vs_baseline"]["pre_rms_improvement_ratio"] == pytest.approx(0.5)
+    assert improved["delta_vs_baseline"]["effective_order_delta"] == 2
+    assert improved["delta_vs_baseline"]["elapsed_seconds_delta"] == pytest.approx(3.0)
+    assert improved["delta_vs_baseline"]["peak_memory_mb_delta"] == pytest.approx(10.0)
+    missing = next(row for row in summary["trials"] if row["trial_id"] == "missing-rms")
+    assert missing["trial"]["pre_mean_rms"] is None
+    assert missing["sort_key"] == [False, None, None, None]
+    assert json.loads(json.dumps(summary, allow_nan=False)) == summary
+
+
+def test_summarize_trials_leaves_pre_rms_improvement_missing_when_baseline_denominator_is_zero():
+    summary = tuning.summarize_trials(
+        [
+            {
+                "trial_id": "baseline-adaptive",
+                "trial": {"target_met": True, "pre_mean_rms": 0.0, "final_mean_rms": 0.0},
+            },
+            {
+                "trial_id": "candidate",
+                "trial": {"target_met": True, "pre_mean_rms": 0.001, "final_mean_rms": 0.0},
+            },
+        ]
+    )
+
+    candidate = next(row for row in summary["trials"] if row["trial_id"] == "candidate")
+    assert candidate["delta_vs_baseline"]["pre_rms_improvement_ratio"] is None
+
+
+def test_cli_help_mentions_task4_stage_commands(capsys):
+    with pytest.raises(SystemExit) as exc:
+        tuning.main(["--help"])
+
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert "run-one" in out
+    assert "run-stage" in out
+    assert "--help-config" in out
 
 
 def test_pre_rms_above_target_stops_before_passivity_and_saves_history(tmp_path: Path, monkeypatch):
