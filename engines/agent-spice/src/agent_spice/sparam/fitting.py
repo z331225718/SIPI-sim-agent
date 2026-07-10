@@ -42,6 +42,7 @@ class _LazyVectorFitting:
 
 rf = _LazyRf()
 VectorFitting = _LazyVectorFitting()
+NATIVE_BASELINE_VERSION = "native-idem-fast-v1"
 
 
 @dataclass
@@ -278,6 +279,7 @@ class SParamFitResult:
     auto_model_order_trials: list[dict[str, Any]] | None = None
     auto_model_order_selected: int | None = None
     auto_model_order_stop_reason: str | None = None
+    native_baseline_version: str = NATIVE_BASELINE_VERSION
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Path):
@@ -290,6 +292,7 @@ class SParamFitResult:
         quality = _quality_summary(self)
         return {
             "schema_version": SCHEMA_VERSION,
+            "native_baseline_version": self.native_baseline_version,
             "touchstone_path": str(self.touchstone_path),
             "spice_path": str(self.spice_path),
             "report_path": None if self.report_path is None else str(self.report_path),
@@ -1724,6 +1727,7 @@ def fit_touchstone_to_spice(
             passivity_max_sigma_frequency_hz_after=passivity_max_sigma_frequency_after,
             passivity_enforcement_diagnostics=getattr(vector_fit, "passivity_enforcement_diagnostics", None),
             quality_report=quality_report,
+            native_baseline_version=NATIVE_BASELINE_VERSION,
             comparison_mean_rms_error=_mean_rms_error_from_sum_style(comparison_rms_error, network.nports),
             pre_enforcement_mean_rms_error=pre_enforcement_mean_rms_error,
             fit_seconds=fit_seconds,
@@ -1932,6 +1936,7 @@ def _target_trial_fingerprint(
         "input_sha256": input_sha256,
         "target": asdict(target),
         "requested_order": order,
+        "options": {"native_baseline_version": NATIVE_BASELINE_VERSION},
         "config_fingerprint": config_fingerprint,
         "tool_identity": tool_identity,
     }

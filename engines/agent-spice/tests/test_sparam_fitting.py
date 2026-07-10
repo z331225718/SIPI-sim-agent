@@ -244,6 +244,30 @@ class LegacyVectorFitting:
         Path(filename).write_text(".subckt legacy 1 2\n.ends legacy\n", encoding="utf-8")
 
 
+def _run_small_native_fit(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(
+        fitting,
+        "_create_vector_fitting",
+        lambda network, config: FakeVectorFitting(network),
+    )
+    return fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(vector_fit_backend="native"),
+        report_path=tmp_path / "fit_report.json",
+    )
+
+
+def test_native_baseline_version_is_stored_in_fit_report(tmp_path, monkeypatch):
+    result = _run_small_native_fit(tmp_path, monkeypatch)
+    payload = result.to_dict()
+    assert payload["native_baseline_version"] == "native-idem-fast-v1"
+
+
 def test_fit_touchstone_to_spice_writes_report_with_auto_fit_summary(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 

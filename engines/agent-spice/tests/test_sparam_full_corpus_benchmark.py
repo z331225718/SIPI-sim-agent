@@ -356,6 +356,11 @@ def test_native_target_search_runs_public_cli_and_resumes_without_process_work(t
     entry = _entry(tmp_path)
     output_dir = tmp_path / "native"
     calls = []
+    fingerprint_options = []
+
+    def fake_fingerprint(*, options, **kwargs):
+        fingerprint_options.append(options)
+        return "native-fingerprint"
 
     def fake_process(command, *, env, cwd, timeout_seconds, stdout_path, stderr_path):
         calls.append((command, env, cwd, timeout_seconds))
@@ -367,6 +372,7 @@ def test_native_target_search_runs_public_cli_and_resumes_without_process_work(t
         )
         return {"status": "completed", "returncode": 0, "elapsed_seconds": 2.0, "peak_memory_mb": 25.0}
 
+    monkeypatch.setattr(full_benchmark, "benchmark_fingerprint", fake_fingerprint)
     monkeypatch.setattr(full_benchmark, "_run_monitored_process", fake_process)
     contract = BenchmarkContract(max_order=4, threads=8)
 
@@ -380,6 +386,8 @@ def test_native_target_search_runs_public_cli_and_resumes_without_process_work(t
     assert "enforce" in calls[0][0]
     assert "--resume-target-search" in calls[0][0]
     assert calls[0][1]["OMP_NUM_THREADS"] == "8"
+    assert fingerprint_options
+    assert all(options["native_baseline_version"] == "native-idem-fast-v1" for options in fingerprint_options)
 
 
 def test_native_target_search_does_not_accept_stale_top_report_after_failed_rerun(tmp_path: Path, monkeypatch):

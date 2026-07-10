@@ -14,7 +14,7 @@ from typing import Any, Callable, Iterator
 import numpy as np
 import yaml
 
-from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice
+from agent_spice.sparam.fitting import NATIVE_BASELINE_VERSION, SParamFitConfig, fit_touchstone_to_spice
 from agent_spice.sparam.io import load_touchstone_metadata
 
 
@@ -25,6 +25,10 @@ _FREQUENCY_SCALES = {
     "MHZ": 1.0e6,
     "GHZ": 1.0e9,
 }
+
+
+def native_baseline_fingerprint_options() -> dict[str, str]:
+    return {"native_baseline_version": NATIVE_BASELINE_VERSION}
 
 
 @dataclass(frozen=True)
