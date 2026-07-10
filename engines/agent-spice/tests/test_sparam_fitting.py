@@ -31,6 +31,15 @@ def test_sparam_config_no_longer_accepts_relocation_backend():
         SParamFitConfig(relocation_backend="streaming")
 
 
+def test_default_exporter_is_native():
+    assert SParamFitConfig().exporter == "native"
+
+
+def test_sparam_config_rejects_removed_skrf_exporter():
+    with pytest.raises(ValueError, match="exporter"):
+        SParamFitConfig(exporter="skrf")
+
+
 def test_passivity_advanced_perturbations_are_experimental_opt_in():
     config = SParamFitConfig()
 
@@ -518,7 +527,7 @@ def test_native_fit_uses_low_memory_passivity_engine_without_idem_exporter(tmp_p
         tmp_path / "model.sp",
         config=SParamFitConfig(
             mode="manual",
-            exporter="skrf",
+            exporter="native",
             check_passivity=True,
             enforce_passivity=True,
             max_iterations=7,

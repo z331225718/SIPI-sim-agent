@@ -402,6 +402,26 @@ def test_fit_sparam_cli_supports_idem_exporter(tmp_path: Path, monkeypatch):
     assert exporter_value == ["idem"]
 
 
+def test_cli_rejects_removed_skrf_exporter(tmp_path: Path):
+    import agent_spice.cli as cli
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(
+            [
+                "fit-sparam",
+                str(tmp_path / "x.s2p"),
+                "--output",
+                str(tmp_path / "x.sp"),
+                "--rms-target",
+                "0.1",
+                "--exporter",
+                "skrf",
+            ]
+        )
+
+    assert exc_info.value.code == 2
+
+
 def test_fit_sparam_cli_rejects_retired_auto_preset_for_30p():
     from argparse import Namespace
 

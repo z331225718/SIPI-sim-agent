@@ -183,7 +183,7 @@ class SParamFitConfig:
     max_comparison_rms_error: float = 0.05
     max_passivity_epsilon: float = 1e-6
     require_dc: bool = False
-    exporter: str = "skrf"
+    exporter: Literal["native", "idem"] = "native"
     passivity_perturb_constant: bool = False
     passivity_perturb_poles: bool = False
     passivity_constant_only_candidates: bool = False
@@ -240,6 +240,10 @@ class SParamFitConfig:
     passivity_spectral_projection_mode_screen_modes: int = 2
     passivity_constant_weight: float = 1.0
     passivity_pole_weight: float = 1.0
+
+    def __post_init__(self) -> None:
+        if self.exporter not in {"native", "idem"}:
+            raise ValueError("exporter must be one of: native, idem")
 
 
 
@@ -1685,7 +1689,7 @@ def fit_touchstone_to_spice(
                 subcircuit_name=config.subckt_name,
                 Z0=_reference_impedance(network),
             )
-        else:
+        elif config.exporter == "native":
             progress.info(f"writing SPICE subcircuit: {output_path}")
             _call_with_supported_kwargs(
                 vector_fit.write_spice_subcircuit_s,
@@ -1693,6 +1697,8 @@ def fit_touchstone_to_spice(
                 fitted_model_name=config.subckt_name,
                 create_reference_pins=config.create_reference_pins,
             )
+        else:
+            raise ValueError("exporter must be one of: native, idem")
         resource_monitor.__exit__(None, None, None)
 
         pole_summary = _pole_summary(vector_fit)
