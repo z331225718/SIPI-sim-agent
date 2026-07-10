@@ -210,6 +210,16 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def source_file_identity(path: Path) -> str:
+    resolved = Path(path).resolve()
+    try:
+        stat = resolved.stat()
+        digest = _sha256_file(resolved)
+    except OSError:
+        return f"{resolved}|missing"
+    return f"{resolved}|size={stat.st_size}|sha256={digest}"
+
+
 def discover_touchstone_corpus(root: Path) -> tuple[CorpusEntry, ...]:
     root = root.resolve()
     entries: list[CorpusEntry] = []
