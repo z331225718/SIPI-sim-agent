@@ -16,6 +16,29 @@ TRUE_POLES = np.array(
 )
 TRUE_RESIDUES = np.array([0.2, 0.03 + 0.05j, 0.03 - 0.05j], dtype=complex)
 TRUE_HALF_PAIR_POLES = TRUE_POLES[[0, 1]]
+TRUE_ORDER6_POLES = np.array(
+    [
+        -2.0 * np.pi * 1.0e6,
+        -2.0 * np.pi * 8.0e6,
+        (-0.05 + 1j) * 2.0 * np.pi * 30.0e6,
+        (-0.05 - 1j) * 2.0 * np.pi * 30.0e6,
+        (-0.08 + 1j) * 2.0 * np.pi * 90.0e6,
+        (-0.08 - 1j) * 2.0 * np.pi * 90.0e6,
+    ],
+    dtype=complex,
+)
+TRUE_ORDER6_RESIDUES = np.array(
+    [
+        0.20,
+        -0.08,
+        0.03 + 0.05j,
+        0.03 - 0.05j,
+        -0.02 + 0.04j,
+        -0.02 - 0.04j,
+    ],
+    dtype=complex,
+)
+TRUE_ORDER6_HALF_PAIR_POLES = TRUE_ORDER6_POLES[[0, 1, 2, 4]]
 FREQS = np.array([0.0, 1.0e6, 3.0e6], dtype=float)
 S_MATRIX = np.array(
     [
@@ -148,6 +171,8 @@ def test_random_projections_use_unit_vectors_and_bilinear_trace_evaluation():
 
     np.testing.assert_allclose(np.linalg.norm(left_vectors, axis=1), 1.0)
     np.testing.assert_allclose(np.linalg.norm(right_vectors, axis=1), 1.0)
+    assert np.isrealobj(left_vectors)
+    assert np.isrealobj(right_vectors)
     np.testing.assert_allclose(traces, expected)
 
 
@@ -200,7 +225,9 @@ def test_discovery_tries_every_partition_order_pair_deterministically():
     freqs = np.concatenate(([0.0], np.geomspace(1.0e4, 1.0e8, 80)))
     samples = evaluate_real_rational_response(freqs, TRUE_POLES, TRUE_RESIDUES)
     s_parameters = samples[:, np.newaxis, np.newaxis]
-    config = pole_loewner.LoewnerConfig(requested_orders=(3, 4), probe_count=2, partition_count=3, seed=7)
+    config = pole_loewner.LoewnerConfig(
+        requested_orders=(6, 8, 10), probe_count=2, partition_count=3, seed=7
+    )
 
     first = pole_loewner.discover_loewner_candidates(freqs, s_parameters, config=config)
     second = pole_loewner.discover_loewner_candidates(freqs, s_parameters, config=config)
@@ -211,6 +238,47 @@ def test_discovery_tries_every_partition_order_pair_deterministically():
     ]
     assert all(item.requested_order in config.requested_orders for item in first)
     assert all(item.poles.size == 0 for item in first if not item.accepted)
+
+
+def test_discovery_recovers_a_real_multiport_order6_system_with_default_orders():
+    freqs = np.concatenate(([0.0], np.geomspace(1.0e4, 2.0e8, 120)))
+    scalar_response = evaluate_real_rational_response(
+        freqs, TRUE_ORDER6_POLES, TRUE_ORDER6_RESIDUES
+    )
+    real_port_coupling = np.array([[1.0, 0.25], [-0.4, 0.7]], dtype=float)
+    s_parameters = scalar_response[:, np.newaxis, np.newaxis] * real_port_coupling
+
+    diagnostics = pole_loewner.discover_loewner_candidates(
+        freqs,
+        s_parameters,
+        config=pole_loewner.LoewnerConfig(
+            requested_orders=(6, 8, 10),
+            probe_count=4,
+            partition_count=4,
+            seed=20260710,
+        ),
+    )
+
+    accepted_order6 = [
+        item for item in diagnostics if item.accepted and item.requested_order == 6
+    ]
+    assert accepted_order6
+    assert min(
+        nearest_relative_pole_error(item.poles, TRUE_ORDER6_HALF_PAIR_POLES)
+        for item in accepted_order6
+    ) < 0.05
+
+
+def test_discovery_rejects_orders_outside_the_research_contract():
+    freqs = np.concatenate(([0.0], np.geomspace(1.0e4, 1.0e8, 40)))
+    samples = evaluate_real_rational_response(freqs, TRUE_POLES, TRUE_RESIDUES)
+
+    with np.testing.assert_raises_regex(ValueError, "exactly 6, 8, and 10"):
+        pole_loewner.discover_loewner_candidates(
+            freqs,
+            samples[:, np.newaxis, np.newaxis],
+            config=pole_loewner.LoewnerConfig(requested_orders=(3, 6)),
+        )
 
 
 def test_public_api_does_not_accept_idem_or_oracle_inputs():

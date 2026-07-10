@@ -67,8 +67,9 @@ def _deterministic_probe_vectors(*, nports: int, probe_count: int, seed: int) ->
         raise ValueError("probe_count must be positive")
 
     rng = np.random.default_rng(seed)
-    left_vectors = rng.normal(size=(probe_count, nports)) + 1j * rng.normal(size=(probe_count, nports))
-    right_vectors = rng.normal(size=(probe_count, nports)) + 1j * rng.normal(size=(probe_count, nports))
+    # Real tangential directions preserve H(-jw) = conj(H(jw)) for real systems.
+    left_vectors = rng.normal(size=(probe_count, nports))
+    right_vectors = rng.normal(size=(probe_count, nports))
     left_vectors /= np.linalg.norm(left_vectors, axis=1, keepdims=True)
     right_vectors /= np.linalg.norm(right_vectors, axis=1, keepdims=True)
     return left_vectors, right_vectors
@@ -232,8 +233,13 @@ def discover_loewner_candidates(
     *,
     config: LoewnerConfig = LoewnerConfig(),
 ) -> list[LoewnerCandidateDiagnostics]:
-    if not config.requested_orders or any(order < 1 for order in config.requested_orders):
-        raise ValueError("requested_orders must contain positive orders")
+    allowed_orders = {6, 8, 10}
+    if (
+        not config.requested_orders
+        or len(set(config.requested_orders)) != len(config.requested_orders)
+        or any(order not in allowed_orders for order in config.requested_orders)
+    ):
+        raise ValueError("requested_orders must contain only unique orders from exactly 6, 8, and 10")
     if config.partition_count < 1:
         raise ValueError("partition_count must be positive")
     if config.conjugate_tolerance < 0.0 or config.duplicate_tolerance < 0.0:
