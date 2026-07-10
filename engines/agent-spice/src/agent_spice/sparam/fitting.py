@@ -57,6 +57,16 @@ def _native_relocation_mode(nports: int) -> Literal["streaming", "streaming-reci
     return "streaming-reciprocal" if nports >= 30 else "streaming"
 
 
+def _validated_network_nports(network: Any) -> int:
+    raw_nports = getattr(network, "nports", None)
+    if isinstance(raw_nports, (bool, np.bool_)) or not isinstance(raw_nports, (int, np.integer)):
+        raise ValueError("network.nports must be a positive integer")
+    nports = int(raw_nports)
+    if nports <= 0:
+        raise ValueError("network.nports must be a positive integer")
+    return nports
+
+
 def _configure_native_vector_fitting(vector_fit: Any, config: "SParamFitConfig", nports: int) -> None:
     vector_fit.high_frequency_complex_pair_count = config.high_frequency_complex_pair_count
     vector_fit.high_frequency_complex_pair_damping = config.high_frequency_complex_pair_damping
@@ -101,7 +111,7 @@ def _configure_native_vector_fitting(vector_fit: Any, config: "SParamFitConfig",
 
 def _create_vector_fitting(network: Any, config: "SParamFitConfig") -> NativeVectorFitting:
     vector_fit = NativeVectorFitting(network)
-    _configure_native_vector_fitting(vector_fit, config, int(getattr(network, "nports", 0)))
+    _configure_native_vector_fitting(vector_fit, config, _validated_network_nports(network))
     return vector_fit
 
 

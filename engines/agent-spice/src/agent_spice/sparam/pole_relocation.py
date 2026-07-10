@@ -5,6 +5,10 @@ from typing import Any
 import numpy as np
 
 
+RECIPROCAL_RELATIVE_TOLERANCE = 1e-12
+RECIPROCAL_ABSOLUTE_TOLERANCE = 1e-12
+
+
 def _get_model_order(poles: np.ndarray) -> int:
     pole_array = np.asarray(poles)
     return int(np.count_nonzero(pole_array.imag == 0.0) + 2 * np.count_nonzero(pole_array.imag != 0.0))
@@ -83,6 +87,26 @@ def _compress_reciprocal_responses(
     n_ports = int(round(np.sqrt(n_responses)))
     if n_ports * n_ports != n_responses:
         return freq_responses, weights_responses, np.ones(n_responses)
+    response_array = np.asarray(freq_responses)
+    weight_array = np.asarray(weights_responses)
+    for row in range(n_ports):
+        for column in range(row + 1, n_ports):
+            upper_index = row * n_ports + column
+            lower_index = column * n_ports + row
+            if not np.allclose(
+                response_array[upper_index],
+                response_array[lower_index],
+                rtol=RECIPROCAL_RELATIVE_TOLERANCE,
+                atol=RECIPROCAL_ABSOLUTE_TOLERANCE,
+            ):
+                return freq_responses, weights_responses, np.ones(n_responses)
+            if not np.isclose(
+                weight_array[upper_index],
+                weight_array[lower_index],
+                rtol=RECIPROCAL_RELATIVE_TOLERANCE,
+                atol=RECIPROCAL_ABSOLUTE_TOLERANCE,
+            ):
+                return freq_responses, weights_responses, np.ones(n_responses)
     selected_indices = []
     multiplicities = []
     for row in range(n_ports):
@@ -90,8 +114,8 @@ def _compress_reciprocal_responses(
             selected_indices.append(row * n_ports + column)
             multiplicities.append(1.0 if row == column else 2.0)
     return (
-        np.asarray(freq_responses)[selected_indices],
-        np.asarray(weights_responses)[selected_indices],
+        response_array[selected_indices],
+        weight_array[selected_indices],
         np.asarray(multiplicities, dtype=float),
     )
 

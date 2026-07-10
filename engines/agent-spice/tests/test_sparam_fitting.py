@@ -735,6 +735,36 @@ def test_create_native_vector_fitting_uses_streaming_reciprocal_relocation_for_3
     assert vector_fit._pole_relocation is streaming_reciprocal_pole_relocation
 
 
+@pytest.mark.parametrize("nports", [1, np.int64(30)])
+def test_create_native_vector_fitting_accepts_positive_integer_nports(nports):
+    import agent_spice.sparam.fitting as fitting
+
+    network = SimpleNamespace(nports=nports)
+
+    vector_fit = fitting._create_vector_fitting(network, SParamFitConfig())
+
+    assert vector_fit.network is network
+
+
+@pytest.mark.parametrize(
+    "network",
+    [
+        SimpleNamespace(),
+        SimpleNamespace(nports=True),
+        SimpleNamespace(nports=np.bool_(True)),
+        SimpleNamespace(nports="30"),
+        SimpleNamespace(nports=30.0),
+        SimpleNamespace(nports=0),
+        SimpleNamespace(nports=-1),
+    ],
+)
+def test_create_native_vector_fitting_rejects_invalid_nports(network):
+    import agent_spice.sparam.fitting as fitting
+
+    with pytest.raises(ValueError, match="network.nports must be a positive integer"):
+        fitting._create_vector_fitting(network, SParamFitConfig())
+
+
 def test_fit_touchstone_to_spice_auto_order_stops_at_first_mean_rms_target(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 
