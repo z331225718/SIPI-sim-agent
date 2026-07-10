@@ -338,6 +338,7 @@ def _iter_touchstone_s_ri_chunks(
 ) -> Iterator[tuple[np.ndarray, np.ndarray]]:
     expected_values = 1 + (2 * ports * ports)
     frequency_scale: float | None = None
+    data_format: str | None = None
     header_seen = False
     pending_values: list[float] = []
     chunk_frequencies: list[float] = []
@@ -352,11 +353,12 @@ def _iter_touchstone_s_ri_chunks(
                 raise ValueError("Touchstone 2.0 is not supported by the independent audit")
             if line.startswith("#"):
                 tokens = line[1:].upper().split()
-                if len(tokens) < 3 or tokens[1:3] != ["S", "RI"]:
-                    raise ValueError("Independent audit requires Touchstone S-parameter RI data")
+                if len(tokens) < 3 or tokens[1] != "S" or tokens[2] not in {"RI", "MA", "DB"}:
+                    raise ValueError("Independent audit requires Touchstone S-parameter RI, MA, or DB data")
                 frequency_scale = _FREQUENCY_SCALES.get(tokens[0])
                 if frequency_scale is None:
                     raise ValueError(f"Unsupported Touchstone frequency unit: {tokens[0]}")
+                data_format = tokens[2]
                 header_seen = True
                 continue
             if not header_seen:
@@ -370,7 +372,12 @@ def _iter_touchstone_s_ri_chunks(
                 point = pending_values[:expected_values]
                 pending_values = pending_values[expected_values:]
                 pairs = np.asarray(point[1:], dtype=float).reshape(-1, 2)
-                response = (pairs[:, 0] + 1j * pairs[:, 1]).reshape(ports, ports)
+                if data_format == "RI":
+                    values = pairs[:, 0] + 1j * pairs[:, 1]
+                else:
+                    magnitude = pairs[:, 0] if data_format == "MA" else np.power(10.0, pairs[:, 0] / 20.0)
+                    values = magnitude * np.exp(1j * np.deg2rad(pairs[:, 1]))
+                response = values.reshape(ports, ports)
                 chunk_frequencies.append(point[0] * frequency_scale)
                 chunk_responses.append(response)
                 if len(chunk_frequencies) == chunk_size:

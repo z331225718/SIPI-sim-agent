@@ -16,7 +16,6 @@ from typing import Any, Callable
 
 import numpy as np
 
-from agent_spice.sparam.io import load_touchstone_metadata
 from agent_spice.sparam.quality import SCHEMA_VERSION, QualityReport, build_quality_report
 from agent_spice.sparam.target_fit import (
     SParamFitTarget,
@@ -1871,6 +1870,28 @@ def _target_trial_input_sha256(path: Path) -> str | None:
     return digest.hexdigest()
 
 
+def _target_trial_frequency_points(path: Path) -> int | None:
+    match = re.search(r"\.s(\d+)p$", path.name, flags=re.IGNORECASE)
+    if match is None:
+        return None
+    ports = int(match.group(1))
+    values_per_frequency = 1 + (2 * ports * ports)
+    token_count = 0
+    try:
+        with path.open("r", encoding="utf-8", errors="ignore") as handle:
+            for raw_line in handle:
+                line = raw_line.split("!", 1)[0].strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.startswith("["):
+                    return None
+                token_count += len(line.split())
+    except OSError:
+        return None
+    points, remainder = divmod(token_count, values_per_frequency)
+    return points if points > 0 and remainder == 0 else None
+
+
 def _target_trial_json_safe(value: Any) -> Any:
     if isinstance(value, float):
         return value if math.isfinite(value) else None
@@ -2067,10 +2088,7 @@ def fit_touchstone_to_spice_target(
     output_stem = output_path.stem
     trial_logs: list[tuple[int, Path]] = []
     input_sha256 = _target_trial_input_sha256(touchstone_path)
-    try:
-        expected_frequency_points = load_touchstone_metadata(touchstone_path).frequency_points
-    except (OSError, ValueError):
-        expected_frequency_points = None
+    expected_frequency_points = _target_trial_frequency_points(touchstone_path)
 
     def evaluate_order(order: int) -> SParamOrderTrial:
         trial_dir = output_path.parent / f"{output_stem}_order{order}"

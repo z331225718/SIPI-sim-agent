@@ -219,6 +219,21 @@ def test_audit_touchstone_model_uses_exact_full_grid(tmp_path: Path):
     assert audit["sampled_max_sigma"] < 1.0
 
 
+def test_audit_touchstone_model_accepts_idem_ma_export_format(tmp_path: Path):
+    original = tmp_path / "original.s2p"
+    exported = tmp_path / "exported.s2p"
+    _write_s2p(original, scale=0.5)
+    exported.write_text(
+        original.read_text(encoding="utf-8").replace("# Hz S RI", "# Hz S MA"),
+        encoding="utf-8",
+    )
+
+    audit = audit_touchstone_model(original, exported)
+
+    assert audit["status"] == "PASS"
+    assert audit["mean_rms"] == pytest.approx(0.0)
+
+
 def test_audit_touchstone_model_rejects_frequency_grid_mismatch(tmp_path: Path):
     original = Path("tests/fixtures/sparam/simple_through.s2p")
     exported = tmp_path / "shifted.s2p"
