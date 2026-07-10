@@ -10,6 +10,7 @@ from agent_spice.sparam.idem import (
     evaluate_local_idem_like_state_space,
     export_local_idem_like_touchstone,
     export_local_idem_like_state_space,
+    IdemAdaptiveFittingOptions,
     IdemCommandResult,
     IdemFittingOptions,
     fit_matrix_with_idem_real_basis,
@@ -18,9 +19,11 @@ from agent_spice.sparam.idem import (
     parse_idem_passivity_stdout,
     parse_idem_accuracy_report,
     relocate_common_poles,
+    render_adaptive_fitting_options_xml,
     render_fitting_options_xml,
     run_idem_passivity,
     run_local_idem_like_fit,
+    write_adaptive_fitting_options_xml,
 )
 
 
@@ -50,6 +53,101 @@ def test_render_fitting_options_xml_sets_initial_iteration_knob():
     assert root.findtext(".//f:threads", namespaces=namespace) == "2"
     assert root.findtext(".//f:accuracy/f:target", namespaces=namespace) == "0.0001"
     assert root.findtext(".//f:bandwidth", namespaces=namespace) == "2000000000"
+
+
+def test_adaptive_xml_omits_reserved_order_and_bandwidth_and_defaults_enhance_false():
+    options = IdemAdaptiveFittingOptions()
+    xml_text = render_adaptive_fitting_options_xml(options)
+    root = ET.fromstring(xml_text)
+    namespace = {"f": "OptionsFittingSchema.xsd"}
+
+    assert root.find(".//f:order", namespaces=namespace) is None
+    assert root.find(".//f:bandwidth", namespaces=namespace) is None
+    assert root.findtext(".//f:iterations/f:enhancePolesPlacement", namespaces=namespace) == "false"
+    assert root.findtext(".//f:iterations/f:initial", namespaces=namespace) == "3"
+    assert root.findtext(".//f:errorControl/f:accuracy/f:guaranteed", namespaces=namespace) == "0.1"
+    assert root.findtext(".//f:outOfBand/f:rejectPoles/f:maxRelativeFrequency", namespaces=namespace) == "INF"
+
+
+def test_adaptive_xml_renders_explicit_enhanced_poles_placement_true():
+    xml_text = render_adaptive_fitting_options_xml(IdemAdaptiveFittingOptions(enhance_poles_placement=True))
+
+    assert "<enhancePolesPlacement>true</enhancePolesPlacement>" in xml_text
+
+
+def test_adaptive_xml_renders_relative_frequency_weights():
+    xml_text = render_adaptive_fitting_options_xml(
+        IdemAdaptiveFittingOptions(relative_frequency_weight_alpha=1.0, relative_frequency_weight_threshold=1e-8)
+    )
+    root = ET.fromstring(xml_text)
+    namespace = {"f": "OptionsFittingSchema.xsd"}
+
+    assert root.find(".//f:weights/f:frequency[@enabled='true']", namespaces=namespace) is not None
+    assert root.findtext(".//f:weights/f:frequency/f:relative/f:alpha", namespaces=namespace) == "1"
+    assert root.findtext(".//f:weights/f:frequency/f:relative/f:relThreshold", namespaces=namespace) == "1e-08"
+    assert root.find(".//f:weights/f:frequency/f:absolute", namespaces=namespace) is None
+
+
+def test_adaptive_xml_renders_absolute_frequency_weight_points():
+    xml_text = render_adaptive_fitting_options_xml(
+        IdemAdaptiveFittingOptions(absolute_frequency_weight_points=((0.0, 1.0), (5.0e9, 1e-3)))
+    )
+    root = ET.fromstring(xml_text)
+    namespace = {"f": "OptionsFittingSchema.xsd"}
+    points = root.findall(".//f:weights/f:frequency/f:absolute/f:point", namespaces=namespace)
+
+    assert root.find(".//f:weights/f:frequency[@enabled='true']", namespaces=namespace) is not None
+    assert [point.text for point in points] == ["0 1", "5000000000 0.001"]
+    assert root.find(".//f:weights/f:frequency/f:relative", namespaces=namespace) is None
+
+
+def test_write_adaptive_fitting_options_xml_returns_path_and_writes_well_formed_xml(tmp_path: Path):
+    output = tmp_path / "adaptive" / "fitting_options.fopt.xml"
+
+    written = write_adaptive_fitting_options_xml(IdemAdaptiveFittingOptions(), output)
+
+    assert written == output
+    root = ET.fromstring(output.read_text(encoding="utf-8"))
+    assert root.tag == "{OptionsFittingSchema.xsd}fittingTask"
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"initial_iterations": -1},
+        {"postadding_iterations": 0},
+        {"final_iterations": False},
+        {"enhance_poles_placement": 1},
+        {"stagnation_alpha": 0.0},
+        {"stagnation_alpha": float("nan")},
+        {"stagnation_back_steps": 0},
+        {"skimming_tolerance": -1.0},
+        {"final_skimming_tolerance": float("inf")},
+        {"guaranteed_accuracy": 0.0},
+        {"split_type": "puzzle"},
+        {"p4poles_type": "largest"},
+        {"p4poles_n_largest": "nan"},
+        {"p4poles_n_largest": 0},
+        {"p4res_type": "column"},
+        {"enforce_dc": 1},
+        {"asymptotic_passivity_margin": -0.1},
+        {"asymptotic_passivity_margin": 1.1},
+        {"reject_poles": 0},
+        {"reject_poles_max_relative_frequency": 0.0},
+        {"relative_frequency_weight_alpha": -1.0},
+        {"relative_frequency_weight_threshold": 0.0},
+        {"absolute_frequency_weight_points": ((0.0, 1.0),)},
+        {"absolute_frequency_weight_points": ((0.0, 1.0), (float("nan"), 1.0))},
+        {"absolute_frequency_weight_points": ((0.0, 0.0), (1.0, 1.0))},
+        {
+            "relative_frequency_weight_alpha": 1.0,
+            "absolute_frequency_weight_points": ((0.0, 1.0), (1.0, 1.0)),
+        },
+    ],
+)
+def test_adaptive_options_fail_closed(kwargs):
+    with pytest.raises(ValueError):
+        IdemAdaptiveFittingOptions(**kwargs)
 
 
 def test_run_idem_initial_iteration_probe_writes_xml_per_trial(tmp_path: Path, monkeypatch):

@@ -39,6 +39,71 @@ class IdemFittingOptions:
 
 
 @dataclass(frozen=True)
+class IdemAdaptiveFittingOptions:
+    initial_iterations: int = 3
+    postadding_iterations: int = 1
+    final_iterations: int = 1
+    enhance_poles_placement: bool = False
+    stagnation_alpha: float = 0.05
+    stagnation_back_steps: int = 3
+    skimming_tolerance: float = 1e-3
+    final_skimming_tolerance: float = 1e-3
+    guaranteed_accuracy: float = 0.1
+    split_type: str = "none"
+    p4poles_type: str = "all"
+    p4poles_n_largest: str = "INF"
+    p4res_type: str = "all"
+    enforce_dc: bool = True
+    enforce_asymptotic_passivity: bool = True
+    asymptotic_passivity_margin: float = 1e-3
+    asymptotic_relocate_poles: bool = False
+    reject_poles: bool = False
+    reject_poles_max_relative_frequency: float = math.inf
+    relative_frequency_weight_alpha: float | None = None
+    relative_frequency_weight_threshold: float = 1e-10
+    absolute_frequency_weight_points: tuple[tuple[float, float], ...] = ()
+
+    def __post_init__(self) -> None:
+        _validate_nonnegative_int("initial_iterations", self.initial_iterations)
+        _validate_positive_int("postadding_iterations", self.postadding_iterations)
+        _validate_positive_int("final_iterations", self.final_iterations)
+        _validate_bool("enhance_poles_placement", self.enhance_poles_placement)
+        _validate_positive_finite("stagnation_alpha", self.stagnation_alpha)
+        _validate_positive_int("stagnation_back_steps", self.stagnation_back_steps)
+        _validate_positive_finite("skimming_tolerance", self.skimming_tolerance)
+        _validate_positive_finite("final_skimming_tolerance", self.final_skimming_tolerance)
+        _validate_positive_finite("guaranteed_accuracy", self.guaranteed_accuracy)
+        _validate_choice("split_type", self.split_type, {"none", "column", "row", "all"})
+        _validate_choice("p4poles_type", self.p4poles_type, {"all", "eye"})
+        object.__setattr__(
+            self,
+            "p4poles_n_largest",
+            _normalize_positive_integer_or_inf("p4poles_n_largest", self.p4poles_n_largest),
+        )
+        _validate_choice("p4res_type", self.p4res_type, {"all", "eye"})
+        _validate_bool("enforce_dc", self.enforce_dc)
+        _validate_bool("enforce_asymptotic_passivity", self.enforce_asymptotic_passivity)
+        _validate_unit_interval_positive("asymptotic_passivity_margin", self.asymptotic_passivity_margin)
+        _validate_bool("asymptotic_relocate_poles", self.asymptotic_relocate_poles)
+        _validate_bool("reject_poles", self.reject_poles)
+        object.__setattr__(
+            self,
+            "reject_poles_max_relative_frequency",
+            _normalize_positive_float_or_inf(
+                "reject_poles_max_relative_frequency",
+                self.reject_poles_max_relative_frequency,
+            ),
+        )
+        if self.relative_frequency_weight_alpha is not None:
+            _validate_nonnegative_finite("relative_frequency_weight_alpha", self.relative_frequency_weight_alpha)
+        _validate_positive_finite("relative_frequency_weight_threshold", self.relative_frequency_weight_threshold)
+        normalized_points = _normalize_absolute_frequency_weight_points(self.absolute_frequency_weight_points)
+        object.__setattr__(self, "absolute_frequency_weight_points", normalized_points)
+        if self.relative_frequency_weight_alpha is not None and normalized_points:
+            raise ValueError("relative and absolute frequency weights are mutually exclusive")
+
+
+@dataclass(frozen=True)
 class IdemCommandResult:
     command: list[str]
     returncode: int
@@ -123,6 +188,77 @@ def render_fitting_options_xml(options: IdemFittingOptions) -> str:
 def write_fitting_options_xml(options: IdemFittingOptions, path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(render_fitting_options_xml(options), encoding="utf-8")
+    return path
+
+
+def render_adaptive_fitting_options_xml(options: IdemAdaptiveFittingOptions) -> str:
+    root = ET.Element("fittingTask", {"version": "1.0", "xmlns": "OptionsFittingSchema.xsd"})
+    options_node = ET.SubElement(root, "options")
+
+    iterations = ET.SubElement(options_node, "iterations")
+    _append_xml_text(iterations, "initial", _format_idem_float(options.initial_iterations))
+    _append_xml_text(iterations, "postadding", _format_idem_float(options.postadding_iterations))
+    _append_xml_text(iterations, "final", _format_idem_float(options.final_iterations))
+    _append_xml_text(iterations, "enhancePolesPlacement", _xml_bool(options.enhance_poles_placement))
+
+    weights = ET.SubElement(options_node, "weights")
+    frequency_weights_enabled = options.relative_frequency_weight_alpha is not None or bool(
+        options.absolute_frequency_weight_points
+    )
+    frequency = ET.SubElement(weights, "frequency", {"enabled": _xml_bool(frequency_weights_enabled)})
+    if options.relative_frequency_weight_alpha is not None:
+        relative = ET.SubElement(frequency, "relative")
+        _append_xml_text(relative, "alpha", _format_idem_float(options.relative_frequency_weight_alpha))
+        _append_xml_text(relative, "relThreshold", _format_idem_float(options.relative_frequency_weight_threshold))
+    elif options.absolute_frequency_weight_points:
+        absolute = ET.SubElement(frequency, "absolute")
+        for frequency_hz, weight in options.absolute_frequency_weight_points:
+            _append_xml_text(absolute, "point", f"{_format_idem_float(frequency_hz)} {_format_idem_float(weight)}")
+    ET.SubElement(weights, "responses", {"enabled": "false"})
+
+    error_control = ET.SubElement(options_node, "errorControl")
+    stagnation = ET.SubElement(error_control, "stagnation")
+    _append_xml_text(stagnation, "alpha", _format_idem_float(options.stagnation_alpha))
+    _append_xml_text(stagnation, "nBackSteps", _format_idem_float(options.stagnation_back_steps))
+    skimming = ET.SubElement(error_control, "skimming")
+    _append_xml_text(skimming, "relativeTolerance", _format_idem_float(options.skimming_tolerance))
+    _append_xml_text(skimming, "finalRelativeTolerance", _format_idem_float(options.final_skimming_tolerance))
+    accuracy = ET.SubElement(error_control, "accuracy")
+    _append_xml_text(accuracy, "guaranteed", _format_idem_float(options.guaranteed_accuracy))
+
+    splitting = ET.SubElement(options_node, "splitting")
+    splits = ET.SubElement(splitting, "splits")
+    _append_xml_text(splits, "type", options.split_type)
+    p4poles = ET.SubElement(splitting, "p4poles")
+    _append_xml_text(p4poles, "type", options.p4poles_type)
+    _append_xml_text(p4poles, "nLargest", options.p4poles_n_largest)
+    p4res = ET.SubElement(splitting, "p4res")
+    _append_xml_text(p4res, "type", options.p4res_type)
+
+    out_of_band = ET.SubElement(options_node, "outOfBand")
+    _append_xml_text(out_of_band, "enforceDC", _xml_bool(options.enforce_dc))
+    _append_xml_text(out_of_band, "frequencyProportionalTerm", "false")
+    asymptotic = ET.SubElement(
+        out_of_band,
+        "enforceAsymptoticPassivity",
+        {"enabled": _xml_bool(options.enforce_asymptotic_passivity)},
+    )
+    _append_xml_text(asymptotic, "passivityMargin", _format_idem_float(options.asymptotic_passivity_margin))
+    _append_xml_text(asymptotic, "relocatePoles", _xml_bool(options.asymptotic_relocate_poles))
+    reject_poles = ET.SubElement(out_of_band, "rejectPoles", {"enabled": _xml_bool(options.reject_poles)})
+    _append_xml_text(
+        reject_poles,
+        "maxRelativeFrequency",
+        _format_idem_float(options.reject_poles_max_relative_frequency),
+    )
+
+    ET.indent(root, space="  ")
+    return f"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n{ET.tostring(root, encoding='unicode')}\n"
+
+
+def write_adaptive_fitting_options_xml(options: IdemAdaptiveFittingOptions, path: Path) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(render_adaptive_fitting_options_xml(options), encoding="utf-8")
     return path
 
 
@@ -2986,6 +3122,114 @@ def _last_value(values: Any) -> Any:
 
 def _xml_bool(value: bool) -> str:
     return "true" if value else "false"
+
+
+def _append_xml_text(parent: ET.Element, tag: str, text: str) -> ET.Element:
+    element = ET.SubElement(parent, tag)
+    element.text = text
+    return element
+
+
+def _format_idem_float(value: Any) -> str:
+    if isinstance(value, str) and value.strip().upper() == "INF":
+        return "INF"
+    if isinstance(value, float) and math.isinf(value):
+        return "INF"
+    return f"{float(value):.16g}"
+
+
+def _validate_bool(name: str, value: bool) -> None:
+    if type(value) is not bool:
+        raise ValueError(f"{name} must be a bool")
+
+
+def _validate_nonnegative_int(name: str, value: int) -> None:
+    if type(value) is not int or value < 0:
+        raise ValueError(f"{name} must be a non-negative integer")
+
+
+def _validate_positive_int(name: str, value: int) -> None:
+    if type(value) is not int or value < 1:
+        raise ValueError(f"{name} must be a positive integer")
+
+
+def _validate_positive_finite(name: str, value: float) -> None:
+    if isinstance(value, bool) or not math.isfinite(float(value)) or float(value) <= 0.0:
+        raise ValueError(f"{name} must be a positive finite number")
+
+
+def _validate_nonnegative_finite(name: str, value: float) -> None:
+    if isinstance(value, bool) or not math.isfinite(float(value)) or float(value) < 0.0:
+        raise ValueError(f"{name} must be a non-negative finite number")
+
+
+def _validate_unit_interval_positive(name: str, value: float) -> None:
+    _validate_positive_finite(name, value)
+    if float(value) > 1.0:
+        raise ValueError(f"{name} must be between 0 and 1")
+
+
+def _validate_choice(name: str, value: str, choices: set[str]) -> None:
+    if not isinstance(value, str) or value not in choices:
+        expected = ", ".join(sorted(choices))
+        raise ValueError(f"{name} must be one of: {expected}")
+
+
+def _normalize_positive_integer_or_inf(name: str, value: Any) -> str:
+    if isinstance(value, bool):
+        raise ValueError(f"{name} must be a positive integer or INF")
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped.upper() == "INF":
+            return "INF"
+        if stripped.isdecimal() and int(stripped) >= 1:
+            return str(int(stripped))
+        raise ValueError(f"{name} must be a positive integer or INF")
+    if isinstance(value, int) and value >= 1:
+        return str(value)
+    if isinstance(value, float) and math.isinf(value):
+        return "INF"
+    raise ValueError(f"{name} must be a positive integer or INF")
+
+
+def _normalize_positive_float_or_inf(name: str, value: Any) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{name} must be a positive number or INF")
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped.upper() == "INF":
+            return math.inf
+        try:
+            value = float(stripped)
+        except ValueError as exc:
+            raise ValueError(f"{name} must be a positive number or INF") from exc
+    numeric = float(value)
+    if math.isinf(numeric) and numeric > 0.0:
+        return math.inf
+    if not math.isfinite(numeric) or numeric <= 0.0:
+        raise ValueError(f"{name} must be a positive number or INF")
+    return numeric
+
+
+def _normalize_absolute_frequency_weight_points(
+    points: tuple[tuple[float, float], ...],
+) -> tuple[tuple[float, float], ...]:
+    if not points:
+        return ()
+    if len(points) < 2:
+        raise ValueError("absolute_frequency_weight_points must contain at least two points")
+    normalized: list[tuple[float, float]] = []
+    for point in points:
+        if not isinstance(point, tuple) or len(point) != 2:
+            raise ValueError("absolute_frequency_weight_points entries must be (frequency, weight)")
+        frequency_hz = float(point[0])
+        weight = float(point[1])
+        if not math.isfinite(frequency_hz) or frequency_hz < 0.0:
+            raise ValueError("absolute frequency weight frequencies must be finite and non-negative")
+        if not math.isfinite(weight) or weight <= 0.0:
+            raise ValueError("absolute frequency weights must be positive finite numbers")
+        normalized.append((frequency_hz, weight))
+    return tuple(normalized)
 
 
 def _escape_xml_text(value: str) -> str:
