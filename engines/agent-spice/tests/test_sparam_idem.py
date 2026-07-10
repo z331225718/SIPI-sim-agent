@@ -105,8 +105,7 @@ def test_adaptive_xml_golden_contract_matches_official_disabled_defaults():
     assert root.attrib == {"version": "1.0"}
     assert root.find("./f:options/f:order", namespaces=namespace) is None
     assert root.find("./f:options/f:bandwidth", namespaces=namespace) is None
-    assert root.find("./f:options/f:weights/f:frequency", namespaces=namespace).attrib == {"enabled": "false"}
-    assert root.find("./f:options/f:weights/f:responses", namespaces=namespace).attrib == {"enabled": "false"}
+    assert root.find("./f:options/f:weights", namespaces=namespace) is None
     assert root.find("./f:options/f:outOfBand/f:enforceAsymptoticPassivity", namespaces=namespace).attrib == {
         "enabled": "true"
     }
@@ -171,6 +170,30 @@ def test_write_adaptive_fitting_options_xml_returns_path_and_writes_well_formed_
     assert written == output
     root = ET.fromstring(output.read_text(encoding="utf-8"))
     assert root.tag == "{OptionsFittingSchema.xsd}fittingTask"
+
+
+def test_write_adaptive_fitting_options_xml_can_emit_runtime_schema_fields_for_real_idem(tmp_path: Path):
+    output = tmp_path / "adaptive" / "fitting_options.fopt.xml"
+
+    write_adaptive_fitting_options_xml(
+        IdemAdaptiveFittingOptions(),
+        output,
+        order_min=2,
+        order_step=1,
+        order_max=8,
+        target=0.5,
+        bandwidth_hz=5.0e9,
+        threads=8,
+    )
+
+    root = ET.fromstring(output.read_text(encoding="utf-8"))
+    namespace = {"f": "OptionsFittingSchema.xsd"}
+    assert root.findtext("./f:options/f:threads", namespaces=namespace) == "8"
+    assert root.findtext("./f:options/f:bandwidth", namespaces=namespace) == "5000000000"
+    assert root.findtext("./f:options/f:order/f:type", namespaces=namespace) == "fixed"
+    assert root.findtext("./f:options/f:order/f:value", namespaces=namespace) == "8"
+    assert root.findtext("./f:options/f:errorControl/f:accuracy/f:target", namespaces=namespace) == "0.5"
+    assert root.find("./f:options/f:weights", namespaces=namespace) is None
 
 
 @pytest.mark.parametrize(

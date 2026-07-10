@@ -191,9 +191,26 @@ def write_fitting_options_xml(options: IdemFittingOptions, path: Path) -> Path:
     return path
 
 
-def render_adaptive_fitting_options_xml(options: IdemAdaptiveFittingOptions) -> str:
+def render_adaptive_fitting_options_xml(
+    options: IdemAdaptiveFittingOptions,
+    *,
+    order_min: int | None = None,
+    order_step: int | None = None,
+    order_max: int | None = None,
+    target: float | None = None,
+    bandwidth_hz: float | None = None,
+    threads: int | None = None,
+) -> str:
     root = ET.Element("fittingTask", {"version": "1.0", "xmlns": "OptionsFittingSchema.xsd"})
     options_node = ET.SubElement(root, "options")
+    if threads is not None:
+        _append_xml_text(options_node, "threads", _format_idem_float(threads))
+    if bandwidth_hz is not None:
+        _append_xml_text(options_node, "bandwidth", _format_idem_float(bandwidth_hz)).set("mode", "absolute")
+    if order_max is not None:
+        order = ET.SubElement(options_node, "order")
+        _append_xml_text(order, "type", "fixed")
+        _append_xml_text(order, "value", _format_idem_float(order_max))
 
     iterations = ET.SubElement(options_node, "iterations")
     _append_xml_text(iterations, "initial", _format_idem_float(options.initial_iterations))
@@ -201,20 +218,24 @@ def render_adaptive_fitting_options_xml(options: IdemAdaptiveFittingOptions) -> 
     _append_xml_text(iterations, "final", _format_idem_float(options.final_iterations))
     _append_xml_text(iterations, "enhancePolesPlacement", _xml_bool(options.enhance_poles_placement))
 
-    weights = ET.SubElement(options_node, "weights")
     frequency_weights_enabled = options.relative_frequency_weight_alpha is not None or bool(
         options.absolute_frequency_weight_points
     )
-    frequency = ET.SubElement(weights, "frequency", {"enabled": _xml_bool(frequency_weights_enabled)})
-    if options.relative_frequency_weight_alpha is not None:
-        relative = ET.SubElement(frequency, "relative")
-        _append_xml_text(relative, "alpha", _format_idem_float(options.relative_frequency_weight_alpha))
-        _append_xml_text(relative, "relativeThreshold", _format_idem_float(options.relative_frequency_weight_threshold))
-    elif options.absolute_frequency_weight_points:
-        absolute = ET.SubElement(frequency, "absolute")
-        for frequency_hz, weight in options.absolute_frequency_weight_points:
-            _append_xml_text(absolute, "point", f"{_format_idem_float(frequency_hz)} {_format_idem_float(weight)}")
-    ET.SubElement(weights, "responses", {"enabled": "false"})
+    if frequency_weights_enabled:
+        weights = ET.SubElement(options_node, "weights")
+        frequency = ET.SubElement(weights, "frequency", {"enabled": "true"})
+        if options.relative_frequency_weight_alpha is not None:
+            relative = ET.SubElement(frequency, "relative")
+            _append_xml_text(relative, "alpha", _format_idem_float(options.relative_frequency_weight_alpha))
+            _append_xml_text(
+                relative,
+                "relativeThreshold",
+                _format_idem_float(options.relative_frequency_weight_threshold),
+            )
+        else:
+            absolute = ET.SubElement(frequency, "absolute")
+            for frequency_hz, weight in options.absolute_frequency_weight_points:
+                _append_xml_text(absolute, "point", f"{_format_idem_float(frequency_hz)} {_format_idem_float(weight)}")
 
     error_control = ET.SubElement(options_node, "errorControl")
     stagnation = ET.SubElement(error_control, "stagnation")
@@ -224,6 +245,8 @@ def render_adaptive_fitting_options_xml(options: IdemAdaptiveFittingOptions) -> 
     _append_xml_text(skimming, "relativeTolerance", _format_idem_float(options.skimming_tolerance))
     _append_xml_text(skimming, "finalRelativeTolerance", _format_idem_float(options.final_skimming_tolerance))
     accuracy = ET.SubElement(error_control, "accuracy")
+    if target is not None:
+        _append_xml_text(accuracy, "target", _format_idem_float(target))
     _append_xml_text(accuracy, "guaranteed", _format_idem_float(options.guaranteed_accuracy))
 
     splitting = ET.SubElement(options_node, "splitting")
@@ -257,9 +280,30 @@ def render_adaptive_fitting_options_xml(options: IdemAdaptiveFittingOptions) -> 
     return f"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n{ET.tostring(root, encoding='unicode')}\n"
 
 
-def write_adaptive_fitting_options_xml(options: IdemAdaptiveFittingOptions, path: Path) -> Path:
+def write_adaptive_fitting_options_xml(
+    options: IdemAdaptiveFittingOptions,
+    path: Path,
+    *,
+    order_min: int | None = None,
+    order_step: int | None = None,
+    order_max: int | None = None,
+    target: float | None = None,
+    bandwidth_hz: float | None = None,
+    threads: int | None = None,
+) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(render_adaptive_fitting_options_xml(options), encoding="utf-8")
+    path.write_text(
+        render_adaptive_fitting_options_xml(
+            options,
+            order_min=order_min,
+            order_step=order_step,
+            order_max=order_max,
+            target=target,
+            bandwidth_hz=bandwidth_hz,
+            threads=threads,
+        ),
+        encoding="utf-8",
+    )
     return path
 
 

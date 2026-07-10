@@ -538,6 +538,42 @@ def test_cli_help_mentions_task4_stage_commands(capsys):
     assert "--help-config" in out
 
 
+def test_run_one_cli_executes_brief_parameterized_trial(tmp_path: Path, monkeypatch, capsys):
+    entry = _entry(tmp_path)
+    fake = FakePhases(tmp_path, entry, order=8, pre_rms=0.2, final_rms=0.2)
+    _patch_phases(monkeypatch, fake)
+    monkeypatch.setattr(tuning, "idem_tool_identity", lambda idem_bin_dir=None: "idem-test")
+    monkeypatch.setattr(tuning, "benchmark_implementation_identity", lambda: "validation-test")
+
+    exit_code = tuning.main(
+        [
+            "run-one",
+            "--input",
+            str(entry.path),
+            "--output-root",
+            str(tmp_path / "runs"),
+            "--order-min",
+            "2",
+            "--order-step",
+            "1",
+            "--order-max",
+            "8",
+            "--target",
+            "0.5",
+            "--threads",
+            "8",
+            "--resume",
+        ]
+    )
+
+    assert exit_code == 0
+    assert fake.calls == ["fit", "pre_accuracy", "enforce", "final_accuracy", "final_check", "export", "audit"]
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "PASS"
+    assert payload["requested_order"] == 8
+    assert json.loads((tmp_path / "runs" / "history.json").read_text(encoding="utf-8"))["final_order"] == 8
+
+
 def test_pre_rms_above_target_stops_before_passivity_and_saves_history(tmp_path: Path, monkeypatch):
     entry = _entry(tmp_path)
     fake = FakePhases(tmp_path, entry, pre_rms=0.002)
