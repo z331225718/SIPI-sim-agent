@@ -2,6 +2,7 @@ from pathlib import Path
 import json
 import math
 import subprocess
+from types import SimpleNamespace
 
 import pytest
 
@@ -388,6 +389,49 @@ def test_native_target_search_runs_public_cli_and_resumes_without_process_work(t
     assert calls[0][1]["OMP_NUM_THREADS"] == "8"
     assert fingerprint_options
     assert all(options["native_baseline_version"] == "native-idem-fast-v1" for options in fingerprint_options)
+
+
+def test_native_target_search_process_fingerprint_changes_with_pole_relocation_identity(
+    tmp_path: Path,
+    monkeypatch,
+):
+    entry = _entry(tmp_path)
+    output_dir = tmp_path / "native"
+    calls = []
+
+    def fake_process(command, *, env, cwd, timeout_seconds, stdout_path, stderr_path):
+        calls.append(command)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "model.sp").write_text("model", encoding="utf-8")
+        (output_dir / "fit_report.json").write_text(
+            json.dumps(_native_report(entry)),
+            encoding="utf-8",
+        )
+        return {"status": "completed", "returncode": 0, "elapsed_seconds": 1.0, "peak_memory_mb": 1.0}
+
+    monkeypatch.setattr(full_benchmark, "_run_monitored_process", fake_process)
+    contract = BenchmarkContract(max_order=4)
+
+    first = full_benchmark.run_native_target_search(entry, contract, output_dir, resume=True)
+    first_state = json.loads((output_dir / "native_search.json").read_text(encoding="utf-8"))
+    assert first.target_met is True
+    assert "pole_relocation.py" in full_benchmark.native_tool_identity()
+
+    original_stat = Path.stat
+
+    def stat_with_changed_pole_relocation(path, *args, **kwargs):
+        result = original_stat(path, *args, **kwargs)
+        if path.name == "pole_relocation.py" and path.parent.name == "sparam":
+            return SimpleNamespace(st_size=result.st_size + 1, st_mtime_ns=result.st_mtime_ns + 1)
+        return result
+
+    monkeypatch.setattr(Path, "stat", stat_with_changed_pole_relocation)
+    resumed = full_benchmark.run_native_target_search(entry, contract, output_dir, resume=True)
+    second_state = json.loads((output_dir / "native_search.json").read_text(encoding="utf-8"))
+
+    assert resumed.target_met is True
+    assert len(calls) == 2
+    assert second_state["fingerprint"] != first_state["fingerprint"]
 
 
 def test_native_target_search_does_not_accept_stale_top_report_after_failed_rerun(tmp_path: Path, monkeypatch):

@@ -37,6 +37,7 @@ class _LazyRf:
 
 rf = _LazyRf()
 NATIVE_BASELINE_VERSION = "native-idem-fast-v1"
+NATIVE_SOURCE_IDENTITY_FILES = ("fitting.py", "native_vf.py", "passivity.py", "pole_relocation.py")
 
 
 @dataclass
@@ -1903,7 +1904,7 @@ def _target_trial_fingerprint(
     config_fingerprint = hashlib.sha256(config_canonical.encode("utf-8")).hexdigest()
     source_identities = []
     source_root = Path(__file__).resolve().parent
-    for name in ("fitting.py", "native_vf.py", "passivity.py"):
+    for name in NATIVE_SOURCE_IDENTITY_FILES:
         source_path = source_root / name
         try:
             stat = source_path.stat()

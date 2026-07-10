@@ -1062,6 +1062,58 @@ def test_target_fit_trial_fingerprint_includes_native_baseline_version(tmp_path:
     assert trial_payload["target_trial_fingerprint"] == hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def test_target_fit_resume_invalidates_when_pole_relocation_identity_changes(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    touchstone = tmp_path / "line.s2p"
+    touchstone.write_bytes(Path("tests/fixtures/sparam/simple_through.s2p").read_bytes())
+    calls = []
+
+    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path):
+        calls.append(config.model_order_max)
+        result = _fake_target_fit_result(output_path, config.model_order_max, target_met=True)
+        result.fit_frequency_points = 5
+        result.frequency_points = 5
+        return result
+
+    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+    output = tmp_path / "model.sp"
+    target = SParamFitTarget(0.001, passivity="enforce", max_order=4)
+    config = SParamFitConfig(mode="manual")
+    fitting.fit_touchstone_to_spice_target(
+        touchstone,
+        output,
+        target=target,
+        config=config,
+        resume_trials=True,
+    )
+    first_payload = json.loads((tmp_path / "model_order4" / "fit_report.json").read_text(encoding="utf-8"))
+    assert "pole_relocation.py" in first_payload["target_tool_identity"]
+    calls.clear()
+
+    original_stat = Path.stat
+
+    def stat_with_changed_pole_relocation(path, *args, **kwargs):
+        result = original_stat(path, *args, **kwargs)
+        if path.name == "pole_relocation.py" and path.parent.name == "sparam":
+            return SimpleNamespace(st_size=result.st_size + 1, st_mtime_ns=result.st_mtime_ns + 1)
+        return result
+
+    monkeypatch.setattr(Path, "stat", stat_with_changed_pole_relocation)
+    fitting.fit_touchstone_to_spice_target(
+        touchstone,
+        output,
+        target=target,
+        config=config,
+        resume_trials=True,
+    )
+
+    second_payload = json.loads((tmp_path / "model_order4" / "fit_report.json").read_text(encoding="utf-8"))
+    assert calls
+    assert 4 in calls
+    assert second_payload["target_trial_fingerprint"] != first_payload["target_trial_fingerprint"]
+
+
 def test_target_fit_resume_invalidates_when_target_changes(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 
