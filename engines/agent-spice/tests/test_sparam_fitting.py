@@ -787,9 +787,9 @@ def test_fit_touchstone_to_spice_can_use_streaming_relocation_backend(tmp_path: 
     assert FakeVectorFittingWithRelocationBackend._pole_relocation is original
 
 
-def test_fit_touchstone_to_spice_legacy_low_memory_backend_uses_streaming_relocation(tmp_path: Path, monkeypatch):
+def test_fit_touchstone_to_spice_legacy_low_memory_backend_uses_low_memory_adapter(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
-    from agent_spice.sparam.pole_relocation import streaming_pole_relocation
+    from agent_spice.sparam.pole_relocation import _legacy_low_memory_pole_relocation
 
     FakeVectorFittingWithRelocationBackend.instances.clear()
     original = FakeVectorFittingWithRelocationBackend._pole_relocation
@@ -808,7 +808,7 @@ def test_fit_touchstone_to_spice_legacy_low_memory_backend_uses_streaming_reloca
     )
 
     instance = FakeVectorFittingWithRelocationBackend.instances[0]
-    assert instance.seen_relocation_backend is streaming_pole_relocation
+    assert instance.seen_relocation_backend is _legacy_low_memory_pole_relocation
     assert FakeVectorFittingWithRelocationBackend._pole_relocation is original
 
 

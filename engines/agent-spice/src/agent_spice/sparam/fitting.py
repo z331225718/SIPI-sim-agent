@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, fields, replace
 from html import escape
 import hashlib
@@ -12,7 +13,7 @@ import re
 import shutil
 import threading
 import time
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
 
 import numpy as np
 
@@ -1057,20 +1058,8 @@ def _fit_model(vector_fit: VectorFitting, config: SParamFitConfig) -> None:
             original_is_passive = None
     try:
         if config.relocation_backend in {"streaming", "streaming-lowmem", "streaming-reciprocal"}:
-            from .pole_relocation import streaming_pole_relocation, streaming_reciprocal_pole_relocation
-
-            vector_fitting_class = type(vector_fit)
-            original_relocation = getattr(vector_fitting_class, "_pole_relocation")
-            replacement = (
-                streaming_reciprocal_pole_relocation
-                if config.relocation_backend == "streaming-reciprocal"
-                else streaming_pole_relocation
-            )
-            setattr(vector_fitting_class, "_pole_relocation", staticmethod(replacement))
-            try:
+            with _temporary_relocation_backend(vector_fit, config.relocation_backend):
                 _fit_model_inner(vector_fit, config)
-            finally:
-                setattr(vector_fitting_class, "_pole_relocation", original_relocation)
         else:
             _fit_model_inner(vector_fit, config)
     finally:
@@ -1079,6 +1068,28 @@ def _fit_model(vector_fit: VectorFitting, config: SParamFitConfig) -> None:
                 setattr(network, "is_passive", original_is_passive)
             except Exception:
                 pass
+
+
+@contextmanager
+def _temporary_relocation_backend(vector_fit: VectorFitting, relocation_backend: str) -> Iterator[None]:
+    from .pole_relocation import (
+        _legacy_low_memory_pole_relocation,
+        streaming_pole_relocation,
+        streaming_reciprocal_pole_relocation,
+    )
+
+    vector_fitting_class = type(vector_fit)
+    original_relocation = getattr(vector_fitting_class, "_pole_relocation")
+    replacements = {
+        "streaming": streaming_pole_relocation,
+        "streaming-lowmem": _legacy_low_memory_pole_relocation,
+        "streaming-reciprocal": streaming_reciprocal_pole_relocation,
+    }
+    setattr(vector_fitting_class, "_pole_relocation", staticmethod(replacements[relocation_backend]))
+    try:
+        yield
+    finally:
+        setattr(vector_fitting_class, "_pole_relocation", original_relocation)
 
 
 def _fit_model_inner(vector_fit: VectorFitting, config: SParamFitConfig) -> None:

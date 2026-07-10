@@ -40,6 +40,36 @@ def streaming_pole_relocation(
     )
 
 
+def _legacy_low_memory_pole_relocation(
+    poles: np.ndarray,
+    freqs: np.ndarray,
+    freq_responses: np.ndarray,
+    weights_responses: np.ndarray,
+    fit_constant: bool,
+    fit_proportional: bool,
+    *,
+    frequency_relocation_weights: np.ndarray | None = None,
+    return_diagnostics: bool = False,
+    out_of_band_pole_regularization_weight: float = 0.0,
+    out_of_band_pole_regularization_start_fraction: float = 1.0,
+    pole_regularization_weights: np.ndarray | None = None,
+) -> tuple[Any, ...]:
+    return _streaming_pole_relocation_impl(
+        poles,
+        freqs,
+        freq_responses,
+        weights_responses,
+        fit_constant,
+        fit_proportional,
+        low_memory=True,
+        frequency_relocation_weights=frequency_relocation_weights,
+        return_diagnostics=return_diagnostics,
+        out_of_band_pole_regularization_weight=out_of_band_pole_regularization_weight,
+        out_of_band_pole_regularization_start_fraction=out_of_band_pole_regularization_start_fraction,
+        pole_regularization_weights=pole_regularization_weights,
+    )
+
+
 def streaming_reciprocal_pole_relocation(
     poles: np.ndarray,
     freqs: np.ndarray,
