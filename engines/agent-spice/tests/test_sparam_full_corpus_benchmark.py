@@ -11,6 +11,7 @@ import scripts.sparam_full_corpus_benchmark as full_benchmark
 
 
 def _entry(tmp_path: Path) -> CorpusEntry:
+    tmp_path.mkdir(parents=True, exist_ok=True)
     touchstone = tmp_path / "line.s2p"
     touchstone.write_text(
         "# Hz S RI R 50\n"
@@ -315,3 +316,141 @@ def test_idem_target_search_keeps_passing_models_for_zero_work_resume(tmp_path: 
     assert not (output_root / "order6" / "fit.mod.h5").exists()
     assert (output_root / "order7" / "passive.mod.h5").exists()
     assert (output_root / "order8" / "passive.mod.h5").exists()
+
+
+def _native_report(entry: CorpusEntry, *, target_met: bool = True) -> dict:
+    trial = {
+        "requested_order": 4,
+        "effective_order": 4,
+        "fit_frequency_points": entry.frequency_points,
+        "evaluation_frequency_points": entry.frequency_points,
+        "pre_mean_rms": 0.0008 if target_met else 0.002,
+        "final_mean_rms": 0.0009 if target_met else 0.002,
+        "pre_max_sigma": 1.01,
+        "final_max_sigma": 0.999 if target_met else 1.01,
+        "fit_seconds": 1.0,
+        "check_seconds": 0.2,
+        "enforce_seconds": 0.3,
+        "elapsed_seconds": 1.5,
+        "peak_memory_mb": 20.0,
+        "target_met": target_met,
+        "status": "PASS" if target_met else "FAIL",
+        "rejection_reason": None if target_met else "final_rms_above_target",
+        "real_pole_count": 0,
+        "complex_pair_count": 2,
+        "stored_pole_count": 2,
+    }
+    return {
+        "benchmark_contract_version": "sparam_target_v1",
+        "rms_target": 0.001,
+        "passivity_policy": "enforce",
+        "max_order": 4,
+        "selected_effective_order": 4 if target_met else None,
+        "target_met": target_met,
+        "target_stop_reason": "target_met" if target_met else "target_not_met_before_max_order",
+        "order_trials": [trial],
+    }
+
+
+def test_native_target_search_runs_public_cli_and_resumes_without_process_work(tmp_path: Path, monkeypatch):
+    entry = _entry(tmp_path)
+    output_dir = tmp_path / "native"
+    calls = []
+
+    def fake_process(command, *, env, cwd, timeout_seconds, stdout_path, stderr_path):
+        calls.append((command, env, cwd, timeout_seconds))
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "model.sp").write_text("model", encoding="utf-8")
+        (output_dir / "fit_report.json").write_text(
+            json.dumps(_native_report(entry)),
+            encoding="utf-8",
+        )
+        return {"status": "completed", "returncode": 0, "elapsed_seconds": 2.0, "peak_memory_mb": 25.0}
+
+    monkeypatch.setattr(full_benchmark, "_run_monitored_process", fake_process)
+    contract = BenchmarkContract(max_order=4, threads=8)
+
+    first = full_benchmark.run_native_target_search(entry, contract, output_dir, resume=True)
+    resumed = full_benchmark.run_native_target_search(entry, contract, output_dir, resume=True)
+
+    assert first.selected_order == 4
+    assert resumed.selected_order == 4
+    assert len(calls) == 1
+    assert "--passivity" in calls[0][0]
+    assert "enforce" in calls[0][0]
+    assert "--resume-target-search" in calls[0][0]
+    assert calls[0][1]["OMP_NUM_THREADS"] == "8"
+
+
+def test_native_target_search_does_not_accept_stale_top_report_after_failed_rerun(tmp_path: Path, monkeypatch):
+    entry = _entry(tmp_path)
+    output_dir = tmp_path / "native"
+    should_write = True
+
+    def fake_process(command, *, env, cwd, timeout_seconds, stdout_path, stderr_path):
+        if should_write:
+            output_dir.mkdir(parents=True, exist_ok=True)
+            (output_dir / "model.sp").write_text("model", encoding="utf-8")
+            (output_dir / "fit_report.json").write_text(
+                json.dumps(_native_report(entry)),
+                encoding="utf-8",
+            )
+            return {"status": "completed", "returncode": 0, "elapsed_seconds": 1.0, "peak_memory_mb": 1.0}
+        return {"status": "completed", "returncode": 2, "elapsed_seconds": 1.0, "peak_memory_mb": 1.0}
+
+    monkeypatch.setattr(full_benchmark, "_run_monitored_process", fake_process)
+    contract = BenchmarkContract(max_order=4)
+    first = full_benchmark.run_native_target_search(
+        entry,
+        contract,
+        output_dir,
+        tool_identity="native-v1",
+    )
+    assert first.target_met is True
+
+    should_write = False
+    rerun = full_benchmark.run_native_target_search(
+        entry,
+        contract,
+        output_dir,
+        tool_identity="native-v2",
+    )
+
+    assert rerun.target_met is False
+    assert rerun.stop_reason.startswith("invalid_native_report:")
+
+
+def test_full_corpus_runner_is_sequential_and_continues_after_tool_timeout(tmp_path: Path, monkeypatch):
+    first = _entry(tmp_path / "first")
+    second = _entry(tmp_path / "second")
+    events = []
+
+    monkeypatch.setattr(full_benchmark, "discover_touchstone_corpus", lambda root: (first, second))
+
+    def fake_native(entry, contract, output_dir, **kwargs):
+        events.append((entry.path.parent.name, "native"))
+        return full_benchmark.ToolSearchResult(contract, (), None, "target_not_met_before_max_order")
+
+    def fake_idem(entry, contract, output_dir, **kwargs):
+        events.append((entry.path.parent.name, "idem"))
+        if entry is first:
+            raise subprocess.TimeoutExpired("idem", 1.0)
+        return full_benchmark.ToolSearchResult(contract, (), None, "target_not_met_before_max_order")
+
+    monkeypatch.setattr(full_benchmark, "run_native_target_search", fake_native)
+    monkeypatch.setattr(full_benchmark, "run_idem_target_search", fake_idem)
+
+    summary = full_benchmark.run_full_corpus(
+        tmp_path,
+        tmp_path / "output",
+        BenchmarkContract(max_order=4),
+    )
+
+    assert events == [
+        ("first", "native"),
+        ("first", "idem"),
+        ("second", "native"),
+        ("second", "idem"),
+    ]
+    assert summary["cases"][0]["idem"]["status"] == "timeout"
+    assert summary["cases"][1]["idem"]["status"] == "completed"

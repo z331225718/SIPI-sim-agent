@@ -855,6 +855,33 @@ def test_fit_sparam_cli_builds_explicit_target_and_enforce_policy(tmp_path: Path
     assert config.fit_max_frequency_points is None
 
 
+def test_fit_sparam_cli_hidden_resume_flag_reaches_target_search(tmp_path: Path, monkeypatch):
+    import agent_spice.cli as cli
+
+    calls = []
+
+    def fake_target_fit(touchstone_path, output_path, **kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(target_met=True, selected_trial=SimpleNamespace(payload=None))
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice_target", fake_target_fit, raising=False)
+
+    exit_code = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "line.s2p"),
+            "--output",
+            str(tmp_path / "model.sp"),
+            "--rms-target",
+            "0.001",
+            "--resume-target-search",
+        ]
+    )
+
+    assert exit_code == 0
+    assert calls[0]["resume_trials"] is True
+
+
 def test_fit_sparam_cli_defaults_to_check_and_large_port_max_order(tmp_path: Path, monkeypatch):
     import agent_spice.cli as cli
 

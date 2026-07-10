@@ -830,6 +830,7 @@ def main(argv: list[str] | None = None) -> int:
     _add_hidden_argument(fit_parser, "--max-comparison-rms-error", type=float, default=0.05)
     _add_hidden_argument(fit_parser, "--max-passivity-epsilon", type=float, default=1e-6)
     _add_hidden_argument(fit_parser, "--require-dc", action="store_true")
+    _add_hidden_argument(fit_parser, "--resume-target-search", action="store_true")
 
     idem_probe_parser = subparsers.add_parser("probe-idem-init")
     idem_probe_parser.add_argument("touchstone", type=Path)
@@ -1217,14 +1218,19 @@ def main(argv: list[str] | None = None) -> int:
         report_path = args.report or (args.output.parent / "fit_report.json")
         html_report_path = args.html_report or (args.output.parent / "fit_report.html")
         try:
+            target_fit_kwargs = {
+                "target": target,
+                "config": config,
+                "report_path": report_path,
+                "html_report_path": html_report_path,
+                "log_path": args.log,
+            }
+            if args.resume_target_search:
+                target_fit_kwargs["resume_trials"] = True
             result = fit_touchstone_to_spice_target(
                 args.touchstone,
                 args.output,
-                target=target,
-                config=config,
-                report_path=report_path,
-                html_report_path=html_report_path,
-                log_path=args.log,
+                **target_fit_kwargs,
             )
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)

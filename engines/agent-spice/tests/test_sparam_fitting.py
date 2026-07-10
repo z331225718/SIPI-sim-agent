@@ -1019,6 +1019,135 @@ def test_target_fit_failure_removes_requested_output_and_keeps_reports(tmp_path:
     assert html.exists()
 
 
+def test_target_fit_resumes_exact_per_order_trials(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    touchstone = tmp_path / "line.s2p"
+    touchstone.write_bytes(Path("tests/fixtures/sparam/simple_through.s2p").read_bytes())
+    calls = []
+
+    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path):
+        order = config.model_order_max
+        calls.append(order)
+        result = _fake_target_fit_result(output_path, order, target_met=order >= 8)
+        result.fit_frequency_points = 5
+        result.frequency_points = 5
+        return result
+
+    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+    output = tmp_path / "model.sp"
+    report = tmp_path / "report.json"
+    target = SParamFitTarget(0.001, passivity="enforce", max_order=8)
+    config = SParamFitConfig(mode="manual", vector_fit_backend="native")
+
+    first = fitting.fit_touchstone_to_spice_target(
+        touchstone,
+        output,
+        target=target,
+        config=config,
+        report_path=report,
+        resume_trials=True,
+    )
+    calls.clear()
+    resumed = fitting.fit_touchstone_to_spice_target(
+        touchstone,
+        output,
+        target=target,
+        config=config,
+        report_path=report,
+        resume_trials=True,
+    )
+
+    assert first.target_met is True
+    assert resumed.target_met is True
+    assert calls == []
+    assert output.read_text(encoding="utf-8") == "* order 8\n"
+    trial_report = tmp_path / "model_order8" / "fit_report.json"
+    payload = json.loads(trial_report.read_text(encoding="utf-8"))
+    assert payload["target_trial_contract_version"] == "sparam_target_trial_v1"
+    assert payload["input_sha256"]
+    assert payload["target_order_trial"]["requested_order"] == 8
+
+
+def test_target_fit_resume_invalidates_when_target_changes(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    touchstone = tmp_path / "line.s2p"
+    touchstone.write_bytes(Path("tests/fixtures/sparam/simple_through.s2p").read_bytes())
+    calls = []
+
+    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path):
+        calls.append(config.model_order_max)
+        result = _fake_target_fit_result(output_path, config.model_order_max, target_met=True)
+        result.fit_frequency_points = 5
+        result.frequency_points = 5
+        return result
+
+    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+    output = tmp_path / "model.sp"
+    config = SParamFitConfig(mode="manual", vector_fit_backend="native")
+    fitting.fit_touchstone_to_spice_target(
+        touchstone,
+        output,
+        target=SParamFitTarget(0.001, passivity="enforce", max_order=4),
+        config=config,
+        resume_trials=True,
+    )
+    calls.clear()
+
+    fitting.fit_touchstone_to_spice_target(
+        touchstone,
+        output,
+        target=SParamFitTarget(0.0005, passivity="enforce", max_order=4),
+        config=config,
+        resume_trials=True,
+    )
+
+    assert calls == [4]
+
+
+def test_target_fit_resume_rejects_semantically_invalid_pass(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    touchstone = tmp_path / "line.s2p"
+    touchstone.write_bytes(Path("tests/fixtures/sparam/simple_through.s2p").read_bytes())
+    calls = []
+
+    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path):
+        calls.append(config.model_order_max)
+        result = _fake_target_fit_result(output_path, config.model_order_max, target_met=True)
+        result.fit_frequency_points = 5
+        result.frequency_points = 5
+        return result
+
+    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+    output = tmp_path / "model.sp"
+    target = SParamFitTarget(0.001, passivity="enforce", max_order=4)
+    config = SParamFitConfig(mode="manual", vector_fit_backend="native")
+    fitting.fit_touchstone_to_spice_target(
+        touchstone,
+        output,
+        target=target,
+        config=config,
+        resume_trials=True,
+    )
+    trial_report = tmp_path / "model_order4" / "fit_report.json"
+    payload = json.loads(trial_report.read_text(encoding="utf-8"))
+    payload["target_order_trial"]["final_mean_rms"] = None
+    trial_report.write_text(json.dumps(payload), encoding="utf-8")
+    calls.clear()
+
+    fitting.fit_touchstone_to_spice_target(
+        touchstone,
+        output,
+        target=target,
+        config=config,
+        resume_trials=True,
+    )
+
+    assert calls == [4]
+
+
 def test_fit_touchstone_to_spice_can_fit_frequency_subset(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 

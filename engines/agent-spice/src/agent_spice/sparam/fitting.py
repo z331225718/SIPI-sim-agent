@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, fields, replace
 from html import escape
+import hashlib
 import inspect
 import json
 import logging
@@ -15,6 +16,7 @@ from typing import Any, Callable
 
 import numpy as np
 
+from agent_spice.sparam.io import load_touchstone_metadata
 from agent_spice.sparam.quality import SCHEMA_VERSION, QualityReport, build_quality_report
 from agent_spice.sparam.target_fit import (
     SParamFitTarget,
@@ -41,6 +43,20 @@ class _LazyVectorFitting:
 
 rf = _LazyRf()
 VectorFitting = _LazyVectorFitting()
+
+
+@dataclass
+class _ResumedTargetFitPayload:
+    data: dict[str, Any]
+    spice_path: Path
+
+    def __getattr__(self, name: str) -> Any:
+        if name in self.data:
+            return self.data[name]
+        raise AttributeError(name)
+
+    def to_dict(self) -> dict[str, Any]:
+        return dict(self.data)
 
 
 def _create_vector_fitting(network: Any, config: "SParamFitConfig") -> Any:
@@ -1844,6 +1860,186 @@ def fit_touchstone_to_spice_auto_order(
     return result
 
 
+def _target_trial_input_sha256(path: Path) -> str | None:
+    digest = hashlib.sha256()
+    try:
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+    except OSError:
+        return None
+    return digest.hexdigest()
+
+
+def _target_trial_json_safe(value: Any) -> Any:
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {str(key): _target_trial_json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_target_trial_json_safe(item) for item in value]
+    return value
+
+
+def _target_trial_fingerprint(
+    *,
+    input_sha256: str | None,
+    target: SParamFitTarget,
+    order: int,
+    config: SParamFitConfig,
+) -> tuple[str, str, str]:
+    config_payload = _target_trial_json_safe(asdict(config))
+    config_canonical = json.dumps(config_payload, sort_keys=True, separators=(",", ":"))
+    config_fingerprint = hashlib.sha256(config_canonical.encode("utf-8")).hexdigest()
+    source_identities = []
+    source_root = Path(__file__).resolve().parent
+    for name in ("fitting.py", "native_vf.py", "passivity.py"):
+        source_path = source_root / name
+        try:
+            stat = source_path.stat()
+        except OSError:
+            source_identities.append(str(source_path))
+        else:
+            source_identities.append(
+                f"{source_path}|size={stat.st_size}|mtime_ns={stat.st_mtime_ns}"
+            )
+    tool_identity = "|".join(source_identities)
+    payload = {
+        "contract_version": "sparam_target_trial_v1",
+        "input_sha256": input_sha256,
+        "target": asdict(target),
+        "requested_order": order,
+        "config_fingerprint": config_fingerprint,
+        "tool_identity": tool_identity,
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest(), config_fingerprint, tool_identity
+
+
+def _write_target_trial_report(
+    path: Path,
+    fit_result: Any,
+    trial: SParamOrderTrial,
+    *,
+    input_sha256: str | None,
+    fingerprint: str,
+    config_fingerprint: str,
+    tool_identity: str,
+    target: SParamFitTarget,
+) -> None:
+    payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else {}
+    payload.update(
+        {
+            "target_trial_contract_version": "sparam_target_trial_v1",
+            "input_sha256": input_sha256,
+            "target_trial_fingerprint": fingerprint,
+            "target_config_fingerprint": config_fingerprint,
+            "target_tool_identity": tool_identity,
+            "target_contract": asdict(target),
+            "target_order_trial": trial.to_dict(),
+            "full_grid_frequency_points": trial.evaluation_frequency_points,
+        }
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f"{path.name}.tmp")
+    temporary.write_text(
+        json.dumps(_target_trial_json_safe(payload), indent=2, sort_keys=True, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )
+    temporary.replace(path)
+
+
+def _resume_target_trial(
+    report_path: Path,
+    output_path: Path,
+    *,
+    fingerprint: str,
+    input_sha256: str | None,
+    requested_order: int,
+    expected_frequency_points: int | None,
+    target: SParamFitTarget,
+) -> SParamOrderTrial | None:
+    if input_sha256 is None or not report_path.is_file() or not output_path.is_file():
+        return None
+    try:
+        payload = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if payload.get("target_trial_contract_version") != "sparam_target_trial_v1":
+        return None
+    if payload.get("input_sha256") != input_sha256:
+        return None
+    if payload.get("target_trial_fingerprint") != fingerprint:
+        return None
+    raw_trial = payload.get("target_order_trial")
+    if not isinstance(raw_trial, dict):
+        return None
+    required = {
+        "requested_order",
+        "effective_order",
+        "fit_frequency_points",
+        "evaluation_frequency_points",
+        "pre_mean_rms",
+        "final_mean_rms",
+        "fit_seconds",
+        "check_seconds",
+        "enforce_seconds",
+        "elapsed_seconds",
+        "peak_memory_mb",
+        "target_met",
+        "status",
+        "rejection_reason",
+    }
+    if not required.issubset(raw_trial):
+        return None
+    if raw_trial.get("requested_order") != requested_order:
+        return None
+    full_grid_points = payload.get("full_grid_frequency_points")
+    if not isinstance(full_grid_points, int) or full_grid_points < 1:
+        return None
+    if raw_trial.get("evaluation_frequency_points") != full_grid_points:
+        return None
+    trial_fields = {item.name for item in fields(SParamOrderTrial) if item.name != "payload"}
+    try:
+        trial_data = {name: raw_trial.get(name) for name in trial_fields}
+        resumed_payload = _ResumedTargetFitPayload(payload, output_path)
+        trial = SParamOrderTrial(**trial_data, payload=resumed_payload)
+    except (TypeError, ValueError):
+        return None
+    numeric_non_negative = (
+        trial.fit_seconds,
+        trial.check_seconds,
+        trial.enforce_seconds,
+        trial.elapsed_seconds,
+        trial.peak_memory_mb,
+    )
+    if not all(isinstance(value, (int, float)) and math.isfinite(value) and value >= 0.0 for value in numeric_non_negative):
+        return None
+    if trial.fit_frequency_points != trial.evaluation_frequency_points:
+        return None
+    if expected_frequency_points is not None and trial.evaluation_frequency_points != expected_frequency_points:
+        return None
+    if trial.target_met:
+        if trial.effective_order != requested_order or trial.status != "PASS":
+            return None
+        if (
+            not isinstance(trial.final_mean_rms, (int, float))
+            or not math.isfinite(trial.final_mean_rms)
+            or trial.final_mean_rms > target.mean_rms
+        ):
+            return None
+        if target.passivity == "enforce":
+            if (
+                not isinstance(trial.final_max_sigma, (int, float))
+                or not math.isfinite(trial.final_max_sigma)
+                or trial.final_max_sigma > 1.0 + target.passivity_epsilon
+            ):
+                return None
+    return trial
+
+
 def fit_touchstone_to_spice_target(
     touchstone_path: Path,
     output_path: Path,
@@ -1853,6 +2049,7 @@ def fit_touchstone_to_spice_target(
     report_path: Path | None = None,
     html_report_path: Path | None = None,
     log_path: Path | None = None,
+    resume_trials: bool = False,
 ) -> SParamTargetSearchResult:
     base_config = config or SParamFitConfig()
     policy_config = replace(
@@ -1869,6 +2066,11 @@ def fit_touchstone_to_spice_target(
     )
     output_stem = output_path.stem
     trial_logs: list[tuple[int, Path]] = []
+    input_sha256 = _target_trial_input_sha256(touchstone_path)
+    try:
+        expected_frequency_points = load_touchstone_metadata(touchstone_path).frequency_points
+    except (OSError, ValueError):
+        expected_frequency_points = None
 
     def evaluate_order(order: int) -> SParamOrderTrial:
         trial_dir = output_path.parent / f"{output_stem}_order{order}"
@@ -1877,6 +2079,24 @@ def fit_touchstone_to_spice_target(
         trial_html = trial_dir / "fit_report.html" if html_report_path is not None else None
         trial_log = trial_dir / "fit.log" if log_path is not None else None
         trial_config = _native_manual_auto_order_config(policy_config, order)
+        fingerprint, config_fingerprint, tool_identity = _target_trial_fingerprint(
+            input_sha256=input_sha256,
+            target=target,
+            order=order,
+            config=trial_config,
+        )
+        if resume_trials:
+            resumed = _resume_target_trial(
+                trial_report,
+                trial_output,
+                fingerprint=fingerprint,
+                input_sha256=input_sha256,
+                requested_order=order,
+                expected_frequency_points=expected_frequency_points,
+                target=target,
+            )
+            if resumed is not None:
+                return resumed
         try:
             fit_result = fit_touchstone_to_spice(
                 touchstone_path,
@@ -1908,7 +2128,18 @@ def fit_touchstone_to_spice_target(
             )
         if trial_log is not None:
             trial_logs.append((order, trial_log))
-        return trial_from_fit_result(target, fit_result, requested_order=order)
+        trial = trial_from_fit_result(target, fit_result, requested_order=order)
+        _write_target_trial_report(
+            trial_report,
+            fit_result,
+            trial,
+            input_sha256=input_sha256,
+            fingerprint=fingerprint,
+            config_fingerprint=config_fingerprint,
+            tool_identity=tool_identity,
+            target=target,
+        )
+        return trial
 
     search_result = run_target_order_search(target, evaluate_order)
     selected_fit_result = None if search_result.selected_trial is None else search_result.selected_trial.payload
@@ -1968,7 +2199,7 @@ def fit_touchstone_to_spice_target(
 """,
             encoding="utf-8",
         )
-    if log_path is not None:
+    if log_path is not None and trial_logs:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         chunks = []
         for order, trial_log in trial_logs:
