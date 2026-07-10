@@ -1057,14 +1057,20 @@ def _fit_model(vector_fit: VectorFitting, config: SParamFitConfig) -> None:
             original_is_passive = None
     try:
         if config.relocation_backend in {"streaming", "streaming-lowmem", "streaming-reciprocal"}:
-            from .skrf_streaming import streaming_relocation_patch
+            from .pole_relocation import streaming_pole_relocation, streaming_reciprocal_pole_relocation
 
-            with streaming_relocation_patch(
-                type(vector_fit),
-                low_memory=config.relocation_backend == "streaming-lowmem",
-                reciprocal=config.relocation_backend == "streaming-reciprocal",
-            ):
+            vector_fitting_class = type(vector_fit)
+            original_relocation = getattr(vector_fitting_class, "_pole_relocation")
+            replacement = (
+                streaming_reciprocal_pole_relocation
+                if config.relocation_backend == "streaming-reciprocal"
+                else streaming_pole_relocation
+            )
+            setattr(vector_fitting_class, "_pole_relocation", staticmethod(replacement))
+            try:
                 _fit_model_inner(vector_fit, config)
+            finally:
+                setattr(vector_fitting_class, "_pole_relocation", original_relocation)
         else:
             _fit_model_inner(vector_fit, config)
     finally:

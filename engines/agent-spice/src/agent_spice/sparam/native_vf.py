@@ -7,7 +7,7 @@ from typing import Any
 
 import numpy as np
 
-from .skrf_streaming import streaming_pole_relocation
+from .pole_relocation import streaming_pole_relocation
 
 
 @dataclass(frozen=True)

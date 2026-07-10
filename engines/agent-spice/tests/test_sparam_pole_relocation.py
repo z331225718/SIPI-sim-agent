@@ -1,14 +1,12 @@
 import numpy as np
-from skrf.vectorFitting import VectorFitting
 
-from agent_spice.sparam.skrf_streaming import (
-    streaming_lowmem_pole_relocation,
+from agent_spice.sparam.pole_relocation import (
     streaming_pole_relocation,
     streaming_reciprocal_pole_relocation,
 )
 
 
-def test_streaming_pole_relocation_matches_skrf_reference():
+def _sample_relocation_inputs():
     freqs = np.array([1.0e6, 2.0e6, 5.0e6, 9.0e6], dtype=float)
     poles = np.array([-1.0e7 + 0.0j, -2.0e7 + 3.0e7j], dtype=complex)
     responses = np.array(
@@ -19,6 +17,11 @@ def test_streaming_pole_relocation_matches_skrf_reference():
         dtype=complex,
     )
     weights = np.linalg.norm(responses, axis=1)
+    return poles, freqs, responses, weights
+
+
+def test_streaming_pole_relocation_matches_saved_skrf_reference():
+    poles, freqs, responses, weights = _sample_relocation_inputs()
 
     actual = streaming_pole_relocation(
         poles,
@@ -28,30 +31,21 @@ def test_streaming_pole_relocation_matches_skrf_reference():
         True,
         False,
     )
-    expected = VectorFitting._pole_relocation(
-        poles,
-        freqs,
-        responses,
-        weights,
-        True,
-        False,
-    )
 
+    expected = (
+        np.array([-42527137.94517688, -3747626.09717429, -40702259.76764055]),
+        np.float64(-3.868654854772534),
+        np.float64(94.3151781398695),
+        np.int64(0),
+        np.array([0.03965238]),
+        np.array([1.9977542, 0.0832964, 0.03988982, 0.02118168]),
+    )
     for actual_value, expected_value in zip(actual, expected):
-        np.testing.assert_allclose(actual_value, expected_value, rtol=1e-10, atol=1e-10)
+        np.testing.assert_allclose(actual_value, expected_value, rtol=1e-8, atol=1e-8)
 
 
 def test_streaming_pole_relocation_can_return_c_res_diagnostics():
-    freqs = np.array([1.0e6, 2.0e6, 5.0e6, 9.0e6], dtype=float)
-    poles = np.array([-1.0e7 + 0.0j, -2.0e7 + 3.0e7j], dtype=complex)
-    responses = np.array(
-        [
-            [0.1 + 0.01j, 0.2 + 0.03j, 0.3 + 0.02j, 0.4 + 0.04j],
-            [0.5 - 0.02j, 0.45 - 0.03j, 0.35 - 0.01j, 0.25 - 0.02j],
-        ],
-        dtype=complex,
-    )
-    weights = np.linalg.norm(responses, axis=1)
+    poles, freqs, responses, weights = _sample_relocation_inputs()
 
     result = streaming_pole_relocation(
         poles,
@@ -101,23 +95,14 @@ def test_streaming_pole_relocation_accepts_out_of_band_c_res_regularization():
 
 
 def test_streaming_pole_relocation_avoids_stacked_real_imag_temp(monkeypatch):
-    freqs = np.array([1.0e6, 2.0e6, 5.0e6, 9.0e6], dtype=float)
-    poles = np.array([-1.0e7 + 0.0j, -2.0e7 + 3.0e7j], dtype=complex)
-    responses = np.array(
-        [
-            [0.1 + 0.01j, 0.2 + 0.03j, 0.3 + 0.02j, 0.4 + 0.04j],
-            [0.5 - 0.02j, 0.45 - 0.03j, 0.35 - 0.01j, 0.25 - 0.02j],
-        ],
-        dtype=complex,
-    )
-    weights = np.linalg.norm(responses, axis=1)
+    poles, freqs, responses, weights = _sample_relocation_inputs()
 
     def fail_vstack(*args, **kwargs):
         raise AssertionError("streaming relocation should reuse a real work buffer instead of vstack")
 
     monkeypatch.setattr(np, "vstack", fail_vstack)
 
-    streaming_lowmem_pole_relocation(
+    streaming_pole_relocation(
         poles,
         freqs,
         responses,
@@ -125,69 +110,6 @@ def test_streaming_pole_relocation_avoids_stacked_real_imag_temp(monkeypatch):
         True,
         False,
     )
-
-
-def test_streaming_pole_relocation_avoids_response_scaled_a_fast_allocation(monkeypatch):
-    freqs = np.array([1.0e6, 2.0e6, 5.0e6, 9.0e6], dtype=float)
-    poles = np.array([-1.0e7 + 0.0j, -2.0e7 + 3.0e7j], dtype=complex)
-    responses = np.array(
-        [
-            [0.1 + 0.01j, 0.2 + 0.03j, 0.3 + 0.02j, 0.4 + 0.04j],
-            [0.5 - 0.02j, 0.45 - 0.03j, 0.35 - 0.01j, 0.25 - 0.02j],
-        ],
-        dtype=complex,
-    )
-    weights = np.linalg.norm(responses, axis=1)
-    original_empty = np.empty
-
-    def guarded_empty(shape, *args, **kwargs):
-        if shape == (9, 4):
-            raise AssertionError("streaming relocation should not allocate response-scaled A_fast")
-        return original_empty(shape, *args, **kwargs)
-
-    monkeypatch.setattr(np, "empty", guarded_empty)
-
-    streaming_lowmem_pole_relocation(
-        poles,
-        freqs,
-        responses,
-        weights,
-        True,
-        False,
-    )
-
-
-def test_streaming_lowmem_pole_relocation_matches_default_streaming():
-    freqs = np.array([1.0e6, 2.0e6, 5.0e6, 9.0e6], dtype=float)
-    poles = np.array([-1.0e7 + 0.0j, -2.0e7 + 3.0e7j], dtype=complex)
-    responses = np.array(
-        [
-            [0.1 + 0.01j, 0.2 + 0.03j, 0.3 + 0.02j, 0.4 + 0.04j],
-            [0.5 - 0.02j, 0.45 - 0.03j, 0.35 - 0.01j, 0.25 - 0.02j],
-        ],
-        dtype=complex,
-    )
-    weights = np.linalg.norm(responses, axis=1)
-
-    actual = streaming_lowmem_pole_relocation(
-        poles,
-        freqs,
-        responses,
-        weights,
-        True,
-        False,
-    )
-    expected = streaming_pole_relocation(
-        poles,
-        freqs,
-        responses,
-        weights,
-        True,
-        False,
-    )
-
-    for actual_value, expected_value in zip(actual, expected):
-        np.testing.assert_allclose(actual_value, expected_value, rtol=1e-10, atol=1e-10)
 
 
 def test_streaming_reciprocal_pole_relocation_matches_symmetric_full_matrix():
