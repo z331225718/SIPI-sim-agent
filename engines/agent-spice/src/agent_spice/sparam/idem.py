@@ -348,6 +348,82 @@ def run_idem_fitting(
     return _run_command(command, timeout_seconds=timeout_seconds)
 
 
+def run_idem_adaptive_fitting(
+    touchstone_path: Path,
+    model_path: Path,
+    *,
+    order_min: int,
+    order_step: int,
+    order_max: int,
+    target: float,
+    bandwidth_hz: float,
+    threads: int,
+    options_xml_path: Path,
+    idem_bin_dir: Path | None = None,
+    timeout_seconds: float | None = None,
+) -> dict[str, Any]:
+    touchstone_path = Path(touchstone_path)
+    model_path = Path(model_path)
+    options_xml_path = Path(options_xml_path)
+    _validate_adaptive_fitting_inputs(
+        touchstone_path,
+        options_xml_path,
+        order_min=order_min,
+        order_step=order_step,
+        order_max=order_max,
+        target=target,
+        bandwidth_hz=bandwidth_hz,
+        threads=threads,
+    )
+
+    idem_bin_dir = _resolve_idem_bin_dir(idem_bin_dir)
+    model_path.parent.mkdir(parents=True, exist_ok=True)
+    model_path.unlink(missing_ok=True)
+    command = [
+        str(idem_bin_dir / "idemmp_fitting.exe"),
+        "-its",
+        str(touchstone_path),
+        "-o",
+        str(model_path),
+        "-tol",
+        _format_idem_float(target),
+        "-orderMin",
+        str(order_min),
+        "-orderStep",
+        str(order_step),
+        "-orderMax",
+        str(order_max),
+        "-bandwidth",
+        _format_idem_float(bandwidth_hz),
+        "-DC",
+        "1",
+        "-nThreads",
+        str(threads),
+        "-xml",
+        str(options_xml_path),
+    ]
+    command_result = _run_command(command, timeout_seconds=timeout_seconds)
+    model_exists = model_path.is_file() and model_path.stat().st_size > 0
+    model = inspect_idem_model(model_path) if model_exists else {}
+    completed = _idem_adaptive_fit_completed(command_result, model_path)
+    return {
+        "probe": "idem_adaptive_fitting",
+        "touchstone_path": str(touchstone_path),
+        "model_path": str(model_path),
+        "xml_path": str(options_xml_path),
+        "order_min": order_min,
+        "order_step": order_step,
+        "order_max": order_max,
+        "target": float(target),
+        "bandwidth_hz": float(bandwidth_hz),
+        "threads": threads,
+        "status": "completed" if completed else "failed",
+        "error": None if completed else "IdEM adaptive fitting did not complete successfully",
+        "command": command_result.to_dict(),
+        "model": model,
+    }
+
+
 def parse_idem_accuracy_report(text: str) -> dict[str, Any]:
     def required(pattern: str, label: str) -> str:
         match = re.search(pattern, text, flags=re.MULTILINE)
@@ -2540,6 +2616,14 @@ def _idem_fit_completed(result: IdemCommandResult, model_path: Path) -> bool:
     return result.returncode == 0 or "End of model build" in result.stdout
 
 
+def _idem_adaptive_fit_completed(result: IdemCommandResult, model_path: Path) -> bool:
+    if not model_path.is_file() or model_path.stat().st_size <= 0:
+        return False
+    if "Error:" in result.stdout:
+        return False
+    return result.returncode == 0 or "End of model build" in result.stdout
+
+
 def _idem_passivity_completed(result: IdemCommandResult, output_model_path: Path) -> bool:
     if "Passive:" in result.stdout:
         return True
@@ -3174,6 +3258,33 @@ def _validate_choice(name: str, value: str, choices: set[str]) -> None:
     if not isinstance(value, str) or value not in choices:
         expected = ", ".join(sorted(choices))
         raise ValueError(f"{name} must be one of: {expected}")
+
+
+def _validate_adaptive_fitting_inputs(
+    touchstone_path: Path,
+    options_xml_path: Path,
+    *,
+    order_min: int,
+    order_step: int,
+    order_max: int,
+    target: float,
+    bandwidth_hz: float,
+    threads: int,
+) -> None:
+    if not touchstone_path.is_file():
+        raise FileNotFoundError(f"Touchstone input does not exist: {touchstone_path}")
+    if not options_xml_path.is_file():
+        raise FileNotFoundError(f"IdEM adaptive options XML does not exist: {options_xml_path}")
+    _validate_positive_int("order_min", order_min)
+    _validate_positive_int("order_step", order_step)
+    _validate_positive_int("order_max", order_max)
+    if order_min > order_max:
+        raise ValueError("order_min must be <= order_max")
+    if (order_max - order_min) % order_step != 0:
+        raise ValueError("order_max must be reachable from order_min using order_step")
+    _validate_positive_finite("target", target)
+    _validate_positive_finite("bandwidth_hz", bandwidth_hz)
+    _validate_positive_int("threads", threads)
 
 
 def _normalize_positive_integer_or_inf(name: str, value: Any) -> str:
