@@ -660,10 +660,10 @@ def test_run_adaptive_trial_uses_one_canonical_runtime_contract_for_command_xml_
     assert fit["requested_order_step"] == 1
     assert fit["effective_order_step"] == 2
     assert fit["order_step"] == 2
-    assert fit["warnings"] == ["order_step_1_canonicalized_to_2_for_idem_runtime"]
+    assert fit["warnings"] == ["odd_order_step_canonicalized_to_next_even_for_idem_runtime"]
     assert trial_report["requested_order_step"] == 1
     assert trial_report["effective_order_step"] == 2
-    assert trial_report["warnings"] == ["order_step_1_canonicalized_to_2_for_idem_runtime"]
+    assert trial_report["warnings"] == ["odd_order_step_canonicalized_to_next_even_for_idem_runtime"]
 
     command = fit["command"]["command"]
     cli = {flag: command[command.index(flag) + 1] for flag in ["-orderMin", "-orderStep", "-orderMax", "-tol", "-bandwidth", "-nThreads"]}
@@ -682,6 +682,62 @@ def test_run_adaptive_trial_uses_one_canonical_runtime_contract_for_command_xml_
     assert fingerprint_payload["trial_config"]["order_step"] == 2
     assert fingerprint_payload["trial_config"]["requested_order_step"] == 1
     assert fingerprint_payload["trial_config"]["effective_order_step"] == 2
+
+
+def test_run_adaptive_trial_canonicalizes_odd_order_step_to_next_even_number(tmp_path: Path, monkeypatch):
+    entry = _entry(tmp_path)
+    fake = FakePhases(tmp_path, entry)
+    _patch_phases(monkeypatch, fake)
+    config = tuning.IdemAdaptiveTrialConfig(order_min=2, order_step=3, order_max=9, rms_target=0.5, threads=4)
+    output_dir = tmp_path / "trial"
+
+    trial = tuning.run_adaptive_trial(entry, config, output_dir)
+
+    assert trial.status == "PASS"
+    assert trial.requested_order_step == 3
+    assert trial.effective_order_step == 4
+    assert fake.fit_kwargs["order_step"] == 4
+    assert trial.warnings == ["odd_order_step_canonicalized_to_next_even_for_idem_runtime"]
+    fit = json.loads((output_dir / "fit.json").read_text(encoding="utf-8"))
+    assert fit["requested_order_step"] == 3
+    assert fit["effective_order_step"] == 4
+    assert fit["order_step"] == 4
+    assert fit["warnings"] == ["odd_order_step_canonicalized_to_next_even_for_idem_runtime"]
+    command = fit["command"]["command"]
+    assert command[command.index("-orderStep") + 1] == "4"
+    root = ET.fromstring((output_dir / "adaptive_options.fopt.xml").read_text(encoding="utf-8"))
+    namespace = {"f": "OptionsFittingSchema.xsd"}
+    assert root.findtext("./f:options/f:order/f:increment", namespaces=namespace) == "4"
+    fingerprint_payload = tuning.adaptive_trial_fingerprint_payload(entry, config, idem_bin_dir=None)
+    assert fingerprint_payload["trial_config"]["order_step"] == 4
+    assert fingerprint_payload["trial_config"]["requested_order_step"] == 3
+    assert fingerprint_payload["trial_config"]["effective_order_step"] == 4
+
+
+def test_run_adaptive_trial_keeps_even_order_step_unchanged_without_warning(tmp_path: Path, monkeypatch):
+    entry = _entry(tmp_path)
+    fake = FakePhases(tmp_path, entry)
+    _patch_phases(monkeypatch, fake)
+    config = tuning.IdemAdaptiveTrialConfig(order_min=2, order_step=6, order_max=12, rms_target=0.5, threads=4)
+    output_dir = tmp_path / "trial"
+
+    trial = tuning.run_adaptive_trial(entry, config, output_dir)
+
+    assert trial.status == "PASS"
+    assert trial.requested_order_step == 6
+    assert trial.effective_order_step == 6
+    assert fake.fit_kwargs["order_step"] == 6
+    assert trial.warnings == []
+    fit = json.loads((output_dir / "fit.json").read_text(encoding="utf-8"))
+    assert fit["requested_order_step"] == 6
+    assert fit["effective_order_step"] == 6
+    assert fit["order_step"] == 6
+    assert fit["warnings"] == []
+    command = fit["command"]["command"]
+    assert command[command.index("-orderStep") + 1] == "6"
+    root = ET.fromstring((output_dir / "adaptive_options.fopt.xml").read_text(encoding="utf-8"))
+    namespace = {"f": "OptionsFittingSchema.xsd"}
+    assert root.findtext("./f:options/f:order/f:increment", namespaces=namespace) == "6"
 
 
 def test_pre_rms_above_target_stops_before_passivity_and_saves_history(tmp_path: Path, monkeypatch):
