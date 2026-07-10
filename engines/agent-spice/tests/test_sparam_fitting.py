@@ -266,6 +266,8 @@ def test_native_baseline_version_is_stored_in_fit_report(tmp_path, monkeypatch):
     result = _run_small_native_fit(tmp_path, monkeypatch)
     payload = result.to_dict()
     assert payload["native_baseline_version"] == "native-idem-fast-v1"
+    report_payload = json.loads(result.report_path.read_text(encoding="utf-8"))
+    assert report_payload["native_baseline_version"] == "native-idem-fast-v1"
 
 
 def test_fit_touchstone_to_spice_writes_report_with_auto_fit_summary(tmp_path: Path, monkeypatch):
@@ -1091,6 +1093,43 @@ def test_target_fit_resumes_exact_per_order_trials(tmp_path: Path, monkeypatch):
     assert payload["target_trial_contract_version"] == "sparam_target_trial_v1"
     assert payload["input_sha256"]
     assert payload["target_order_trial"]["requested_order"] == 8
+
+
+def test_target_fit_trial_fingerprint_includes_native_baseline_version(tmp_path: Path, monkeypatch):
+    import hashlib
+    import agent_spice.sparam.fitting as fitting
+
+    touchstone = tmp_path / "line.s2p"
+    touchstone.write_bytes(Path("tests/fixtures/sparam/simple_through.s2p").read_bytes())
+
+    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path):
+        result = _fake_target_fit_result(output_path, config.model_order_max, target_met=True)
+        result.fit_frequency_points = 5
+        result.frequency_points = 5
+        return result
+
+    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+    target = SParamFitTarget(0.001, passivity="enforce", max_order=4)
+    fitting.fit_touchstone_to_spice_target(
+        touchstone,
+        tmp_path / "model.sp",
+        target=target,
+        config=SParamFitConfig(mode="manual", vector_fit_backend="native"),
+        resume_trials=True,
+    )
+
+    trial_payload = json.loads((tmp_path / "model_order4" / "fit_report.json").read_text(encoding="utf-8"))
+    fingerprint_payload = {
+        "contract_version": "sparam_target_trial_v1",
+        "input_sha256": trial_payload["input_sha256"],
+        "target": trial_payload["target_contract"],
+        "requested_order": trial_payload["target_order_trial"]["requested_order"],
+        "options": {"native_baseline_version": "native-idem-fast-v1"},
+        "config_fingerprint": trial_payload["target_config_fingerprint"],
+        "tool_identity": trial_payload["target_tool_identity"],
+    }
+    canonical = json.dumps(fingerprint_payload, sort_keys=True, separators=(",", ":"))
+    assert trial_payload["target_trial_fingerprint"] == hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def test_target_fit_resume_invalidates_when_target_changes(tmp_path: Path, monkeypatch):
