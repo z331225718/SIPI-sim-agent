@@ -130,6 +130,8 @@ The JSON report includes:
 - Requested/effective order and pole topology counts.
 - `rms_formula=mean_s_rms_v1` and `order_formula=real_plus_twice_complex_v1`.
 
+Top-level time covers every attempted order in the target search, and top-level peak RSS is the maximum across those trials. Per-order costs remain available in `order_trials`.
+
 For CI or signoff, add the quality gate:
 
 ```powershell

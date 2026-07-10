@@ -164,6 +164,41 @@ def test_trial_dict_does_not_copy_in_memory_payload():
     assert trial.to_dict()["requested_order"] == 8
 
 
+def test_trial_dict_serializes_non_finite_metrics_as_null():
+    trial = make_trial(8, target_met=False)
+    trial.pre_mean_rms = math.inf
+    trial.final_mean_rms = math.nan
+
+    serialized = trial.to_dict()
+
+    assert serialized["pre_mean_rms"] is None
+    assert serialized["final_mean_rms"] is None
+
+
+def test_search_report_aggregates_all_trial_time_and_peak_memory():
+    def evaluate(order):
+        trial = make_trial(order, target_met=order == 8)
+        trial.fit_seconds = float(order)
+        trial.check_seconds = float(order) / 10.0
+        trial.enforce_seconds = float(order) / 20.0
+        trial.elapsed_seconds = float(order) + 0.5
+        trial.peak_memory_mb = float(order * 10)
+        return trial
+
+    result = run_target_order_search(
+        SParamFitTarget(mean_rms=0.001, max_order=8),
+        evaluate,
+    )
+
+    payload = result.to_dict()
+    assert [trial["requested_order"] for trial in payload["order_trials"]] == [4, 6, 8, 7]
+    assert payload["fit_seconds"] == pytest.approx(25.0)
+    assert payload["check_seconds"] == pytest.approx(2.5)
+    assert payload["enforce_seconds"] == pytest.approx(1.25)
+    assert payload["elapsed_seconds"] == pytest.approx(27.0)
+    assert payload["peak_memory_mb"] == pytest.approx(80.0)
+
+
 def make_fit_result(
     *,
     pre_rms=0.0008,

@@ -583,7 +583,7 @@ def _apply_sparam_auto_preset(args: Any, argv: list[str]) -> None:
     if not is_explicit("--relocation-backend"):
         args.relocation_backend = "streaming-reciprocal" if ports >= 30 else "streaming"
     if not is_explicit("--vector-fit-backend"):
-        args.vector_fit_backend = "native" if ports >= 30 else "skrf"
+        args.vector_fit_backend = "native"
     if not is_explicit("--use-lightweight-network"):
         args.use_lightweight_network = True
     if ports >= 60 and not is_explicit("--high-frequency-complex-pairs"):

@@ -117,6 +117,7 @@ class SParamFitConfig:
     passivity_active_variables: int = 3072
     passivity_f_max: float | None = None
     passivity_enforce_rms_target: float | None = None
+    passivity_check_rms_target: float | None = None
     preserve_dc: bool = True
     subckt_name: str = "s_equivalent"
     create_reference_pins: bool = False
@@ -250,6 +251,7 @@ class SParamFitResult:
     check_seconds: float = 0.0
     enforce_seconds: float = 0.0
     passivity_enforcement_skip_reason: str | None = None
+    passivity_check_skip_reason: str | None = None
     elapsed_seconds: float | None = None
     peak_memory_mb: float | None = None
     stored_pole_count: int | None = None
@@ -298,6 +300,7 @@ class SParamFitResult:
             "check_seconds": self.check_seconds,
             "enforce_seconds": self.enforce_seconds,
             "passivity_enforcement_skip_reason": self.passivity_enforcement_skip_reason,
+            "passivity_check_skip_reason": self.passivity_check_skip_reason,
             "elapsed_seconds": self.elapsed_seconds,
             "peak_memory_mb": self.peak_memory_mb,
             "stored_pole_count": self.stored_pole_count,
@@ -1154,7 +1157,7 @@ def _native_manual_auto_order_config(base_config: SParamFitConfig, order: int) -
     if base_config.mode != "manual" or base_config.vector_fit_backend != "native":
         return trial_config
 
-    preferred_complex_count = max(0, int(base_config.high_frequency_complex_pair_count))
+    preferred_complex_count = 2
     n_poles_cmplx = min(preferred_complex_count, order // 2)
     n_poles_real = order - 2 * n_poles_cmplx
     return replace(
@@ -1215,8 +1218,15 @@ def fit_touchstone_to_spice(
             or config.passivity_enforce_rms_target <= 0.0
         ):
             raise ValueError("passivity_enforce_rms_target must be finite and > 0")
+        if config.passivity_check_rms_target is not None and (
+            not math.isfinite(config.passivity_check_rms_target)
+            or config.passivity_check_rms_target <= 0.0
+        ):
+            raise ValueError("passivity_check_rms_target must be finite and > 0")
         passivity_enforcement_skip_reason = None
+        passivity_check_skip_reason = None
         should_enforce = bool(config.enforce_passivity)
+        should_check = bool(config.check_passivity)
         if (
             should_enforce
             and config.passivity_enforce_rms_target is not None
@@ -1230,9 +1240,22 @@ def fit_touchstone_to_spice(
                 f"{pre_enforcement_mean_rms_error:.9g} exceeds target "
                 f"{config.passivity_enforce_rms_target:.9g}"
             )
+        if (
+            should_check
+            and config.passivity_check_rms_target is not None
+            and pre_enforcement_mean_rms_error is not None
+            and pre_enforcement_mean_rms_error > config.passivity_check_rms_target
+        ):
+            should_check = False
+            passivity_check_skip_reason = "pre_rms_above_target"
+            progress.info(
+                "skipping passivity check because pre-enforcement mean RMS "
+                f"{pre_enforcement_mean_rms_error:.9g} exceeds target "
+                f"{config.passivity_check_rms_target:.9g}"
+            )
         use_low_memory_passivity = _uses_low_memory_passivity(config)
         passivity_f_max = _effective_passivity_f_max(config, network)
-        if not config.check_passivity:
+        if not should_check:
             progress.info("passivity checks skipped")
             passive_before = None
             violations_before = None
@@ -1692,6 +1715,7 @@ def fit_touchstone_to_spice(
             check_seconds=check_seconds,
             enforce_seconds=enforce_seconds,
             passivity_enforcement_skip_reason=passivity_enforcement_skip_reason,
+            passivity_check_skip_reason=passivity_check_skip_reason,
             elapsed_seconds=resource_monitor.elapsed_seconds,
             peak_memory_mb=resource_monitor.peak_memory_mb,
             topology_sweep_diagnostics=getattr(vector_fit, "topology_sweep_diagnostics", None) or None,
@@ -1836,6 +1860,7 @@ def fit_touchstone_to_spice_target(
         check_passivity=target.passivity != "off",
         enforce_passivity=target.passivity == "enforce",
         passivity_enforce_rms_target=target.mean_rms if target.passivity == "enforce" else None,
+        passivity_check_rms_target=target.mean_rms if target.passivity != "off" else None,
         max_passivity_epsilon=target.passivity_epsilon,
         fit_frequency_stride=1,
         fit_max_frequency_points=None,
@@ -1909,7 +1934,10 @@ def fit_touchstone_to_spice_target(
 
     if report_path is not None:
         report_path.parent.mkdir(parents=True, exist_ok=True)
-        report_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        report_path.write_text(
+            json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n",
+            encoding="utf-8",
+        )
     if html_report_path is not None:
         html_report_path.parent.mkdir(parents=True, exist_ok=True)
         rows = "\n".join(

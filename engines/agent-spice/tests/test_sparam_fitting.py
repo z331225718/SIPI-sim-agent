@@ -432,6 +432,30 @@ def test_fit_skips_enforcement_when_pre_rms_is_above_target(tmp_path: Path, monk
     assert payload["passivity_enforcement_skip_reason"] == "pre_rms_above_target"
 
 
+def test_fit_skips_passivity_check_when_pre_rms_is_above_target(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "VectorFitting", FakeVectorFitting)
+
+    result = fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(
+            enforce_passivity=False,
+            check_passivity=True,
+            passivity_check_rms_target=1e-12,
+        ),
+    )
+
+    instance = FakeVectorFitting.instances[0]
+    assert "is_passive" not in instance.calls
+    assert "passivity_test" not in instance.calls
+    assert result.passivity_check_skip_reason == "pre_rms_above_target"
+    assert result.check_seconds == 0.0
+
+
 def test_fit_touchstone_to_spice_can_skip_passivity_checks(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 
@@ -878,6 +902,22 @@ def test_native_manual_auto_order_requests_exact_effective_order(order, real_cou
     assert (trial.n_poles_real, trial.n_poles_cmplx) == (real_count, complex_count)
     assert trial.native_post_relocation_effective_order_max == order
     assert trial.native_effective_complex_pole_count == complex_count
+
+
+def test_native_manual_auto_order_uses_standard_complex_topology_when_base_has_no_hf_pairs():
+    import agent_spice.sparam.fitting as fitting
+
+    trial = fitting._native_manual_auto_order_config(
+        SParamFitConfig(
+            mode="manual",
+            vector_fit_backend="native",
+            high_frequency_complex_pair_count=0,
+        ),
+        8,
+    )
+
+    assert (trial.n_poles_real, trial.n_poles_cmplx) == (4, 2)
+    assert trial.native_effective_complex_pole_count == 2
 
 
 def _fake_target_fit_result(output_path: Path, order: int, *, target_met: bool):

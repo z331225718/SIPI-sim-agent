@@ -50,11 +50,17 @@ class SParamOrderTrial:
     payload: Any = field(default=None, repr=False, compare=False)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            item.name: getattr(self, item.name)
-            for item in fields(self)
-            if item.name != "payload"
-        }
+        serialized: dict[str, Any] = {}
+        for item in fields(self):
+            if item.name == "payload":
+                continue
+            value = getattr(self, item.name)
+            serialized[item.name] = (
+                None
+                if isinstance(value, float) and not math.isfinite(value)
+                else value
+            )
+        return serialized
 
 
 @dataclass(frozen=True)
@@ -78,6 +84,14 @@ class SParamTargetSearchResult:
             else int(self.selected_trial.effective_order),
             "target_met": bool(self.target_met),
             "target_stop_reason": self.stop_reason,
+            "fit_seconds": sum(trial.fit_seconds for trial in self.trials),
+            "check_seconds": sum(trial.check_seconds for trial in self.trials),
+            "enforce_seconds": sum(trial.enforce_seconds for trial in self.trials),
+            "elapsed_seconds": sum(trial.elapsed_seconds for trial in self.trials),
+            "peak_memory_mb": max(
+                (trial.peak_memory_mb for trial in self.trials),
+                default=0.0,
+            ),
             "order_trials": [trial.to_dict() for trial in self.trials],
             "benchmark_contract_version": "sparam_target_v1",
         }

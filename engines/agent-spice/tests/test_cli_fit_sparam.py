@@ -885,6 +885,32 @@ def test_fit_sparam_cli_defaults_to_check_and_large_port_max_order(tmp_path: Pat
     assert config.enforce_passivity is False
 
 
+def test_fit_sparam_cli_uses_native_backend_for_small_port_target_search(tmp_path: Path, monkeypatch):
+    import agent_spice.cli as cli
+
+    calls = []
+
+    def fake_target_fit(touchstone_path, output_path, *, target, config, report_path, html_report_path, log_path):
+        calls.append(config)
+        return SimpleNamespace(target_met=True, selected_trial=SimpleNamespace(payload=None))
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice_target", fake_target_fit, raising=False)
+
+    exit_code = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "line.s2p"),
+            "--output",
+            str(tmp_path / "model.sp"),
+            "--rms-target",
+            "0.1",
+        ]
+    )
+
+    assert exit_code == 0
+    assert calls[0].vector_fit_backend == "native"
+
+
 def test_fit_sparam_cli_returns_failure_when_target_is_not_met(tmp_path: Path, monkeypatch):
     import agent_spice.cli as cli
 
