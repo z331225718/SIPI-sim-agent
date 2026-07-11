@@ -6,7 +6,7 @@
 
 **Architecture:** Implement the MATLAB-equivalent mathematics in a focused `agent_spice.sparam.mft_nnls` package, expose it through a thin adapter, and reuse the existing target-fit scheduler and quality contract. Run promotion cases in isolated child processes so minimum passing order, process-tree peak RSS, and wall-clock time are comparable.
 
-**Tech Stack:** Python 3.11+, NumPy 1.26+, SciPy 1.11+, scikit-rf 1.6+, PyYAML 6+, pytest.
+**Tech Stack:** Python 3.11+, NumPy 1.26+, SciPy 1.13+, scikit-rf 1.6+, PyYAML 6+, pytest.
 
 ## Global Constraints
 
