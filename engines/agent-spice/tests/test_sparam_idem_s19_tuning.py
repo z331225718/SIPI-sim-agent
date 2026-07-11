@@ -1684,3 +1684,219 @@ def test_history_normalization_warns_without_aligning_mismatched_or_nonfinite_li
     assert history["error_history"] == [0.2, None]
     assert history["orders_history"] == [4]
     assert set(history["warnings"]) == {"history_length_mismatch", "history_non_finite"}
+
+
+def _canonical_report_summary() -> dict:
+    return {
+        "sources": {
+            "baseline_summary": "runs-sparam/idem-s19-adaptive-v1-pipe-drain/summary.json",
+            "old_baseline_summary": "runs-sparam/idem-s19-adaptive-v1/summary.json",
+            "order58_diagnostic_summary": "runs-sparam/idem-s19-order58-diagnostic/summary.json",
+            "combination_summary": "runs-sparam/idem-s19-combinations-v1/summary.json",
+            "weighting_summary": "runs-sparam/idem-s19-weighting-v1/summary.json",
+        },
+        "input": {
+            "sha256": "87fccc96196d8c149d1b3ba985701dd56a78f5d9904984f55f8161c39cdd7c7e",
+            "frequency_points": 826,
+            "ports": 19,
+            "frequency_min_hz": 0.0,
+            "frequency_max_hz": 2_000_000_000.0,
+        },
+        "contract": {
+            "contract_version": "idem_s19_adaptive_v1",
+            "threads": 8,
+            "order": "4:2:100",
+            "target": 0.001,
+            "phase_timeout_seconds": 1800.0,
+            "fit_idle_timeout_seconds": 300.0,
+            "splitting": "none",
+        },
+        "fixed_order_control": {
+            "trial_id": "fixed-order-order100",
+            "status": "FAIL",
+            "failure_reason": "pre_rms_above_target",
+            "effective_order": 100,
+            "final_mean_rms": 0.01496172037,
+            "elapsed_seconds": 6.061134000075981,
+            "peak_memory_mb": 91.60546875,
+        },
+        "old_order58_observation": {
+            "status": "ERROR",
+            "failure_reason": "adaptive_fit_failed",
+            "effective_order": None,
+            "elapsed_seconds": 1301.5000721998513,
+            "peak_memory_mb": 67.33984375,
+        },
+        "order58_diagnostic": {
+            "decision": {
+                "stable_reproduction": False,
+                "next_phase": "stop_order58_diagnostic_original_stall_not_stably_reproduced",
+            },
+            "trials": [
+                {
+                    "trial_id": "baseline-cap56",
+                    "status": "FAIL",
+                    "failure_reason": "pre_rms_above_target",
+                    "effective_order": 56,
+                    "final_mean_rms": 0.001452594546,
+                    "elapsed_seconds": 65.08048240002245,
+                },
+                {
+                    "trial_id": "baseline-cap58",
+                    "status": "FAIL",
+                    "failure_reason": "pre_rms_above_target",
+                    "effective_order": 58,
+                    "final_mean_rms": 0.001397860094,
+                    "elapsed_seconds": 70.15553370001726,
+                },
+                {
+                    "trial_id": "baseline-cap60",
+                    "status": "FAIL",
+                    "failure_reason": "pre_rms_above_target",
+                    "effective_order": 60,
+                    "final_mean_rms": 0.001244555245,
+                    "elapsed_seconds": 75.60521820001304,
+                },
+            ],
+        },
+        "single_variable": {
+            "completed_trial_count": 6,
+            "stop_rule": {
+                "triggered": True,
+                "trial_id": "stagnation-alpha0p01",
+                "reason": "splitting_none_trial_met_final_contract",
+            },
+            "trials": [
+                {
+                    "trial_id": "baseline-adaptive",
+                    "status": "FAIL",
+                    "failure_reason": "pre_rms_above_target",
+                    "effective_order": 70,
+                    "final_mean_rms": 0.001025020608,
+                    "elapsed_seconds": 102.36535029998049,
+                    "peak_memory_mb": 75.3984375,
+                },
+                {
+                    "trial_id": "stagnation-alpha0p01",
+                    "status": "PASS",
+                    "failure_reason": None,
+                    "target_met": True,
+                    "effective_order": 74,
+                    "final_mean_rms": 0.0009369159680584244,
+                    "authoritative_passive": True,
+                    "sampled_max_sigma": 0.9999999944613438,
+                    "elapsed_seconds": 118.46026999992318,
+                    "peak_memory_mb": 88.29296875,
+                    "fingerprint": "3f573f18841d9978f8f8df7304b542c3d7e35652df711df519a0ef83509b1845",
+                },
+            ],
+        },
+        "accepted_model": {
+            "trial_id": "stagnation-alpha0p01",
+            "effective_order": 74,
+            "final_mean_rms": 0.0009369159680584244,
+            "authoritative_passive": True,
+            "sampled_max_sigma": 0.9999999944613438,
+            "elapsed_seconds": 118.46026999992318,
+            "peak_memory_mb": 88.29296875,
+            "fingerprint": "3f573f18841d9978f8f8df7304b542c3d7e35652df711df519a0ef83509b1845",
+        },
+        "combination": {
+            "local_best_trial_id": "combination-b-alpha0p01-initial5-final3",
+            "best_trial_id": "combination-b-alpha0p01-initial5-final3",
+            "combination_decision": {"a_improves": False, "b_improves": False, "run_c": False},
+            "trials": [
+                {
+                    "trial_id": "combination-a-alpha0p01-postadding3",
+                    "status": "FAIL",
+                    "failure_reason": "final_rms_above_target",
+                    "effective_order": 68,
+                    "final_mean_rms": 0.001037690482,
+                    "elapsed_seconds": 136.75867230002768,
+                },
+                {
+                    "trial_id": "combination-b-alpha0p01-initial5-final3",
+                    "status": "PASS",
+                    "failure_reason": None,
+                    "effective_order": 74,
+                    "final_mean_rms": 0.0009970539140490779,
+                    "elapsed_seconds": 123.74417429999448,
+                    "sampled_max_sigma": 0.9999999944613451,
+                },
+            ],
+        },
+        "weighting": {
+            "completed_trial_count": 0,
+            "best_trial_id": "stagnation-alpha0p01",
+            "best_trial_id_scope": "overall_reference_inclusive",
+            "overall_best": {
+                "source": "external_reference",
+                "trial_id": "stagnation-alpha0p01",
+                "effective_order": 74,
+                "final_mean_rms": 0.0009369159680584244,
+            },
+            "weighting": {
+                "skip_reason": "weighting_not_justified",
+                "trials_run": 0,
+                "eligibility": {
+                    "eligible": False,
+                    "reason": "worst_band_below_50_percent",
+                    "threshold": 0.5,
+                },
+                "residual": {
+                    "mean_rms": 0.0009369159680584245,
+                    "frequency_points": 826,
+                    "ports": 19,
+                    "total_squared_error": 0.2617511092432544,
+                    "worst_contiguous_band": {
+                        "selection_rule": "aggregate_squared_error_gt_mean",
+                        "threshold": 0.0003168899627642306,
+                        "start_index": 117,
+                        "end_index": 195,
+                        "start_frequency_hz": 4786.30092322638,
+                        "end_frequency_hz": 6309573.44480193,
+                        "squared_error": 0.12485886611607,
+                        "contribution_ratio": 0.4770137038847629,
+                    },
+                },
+                "s19_reciprocity": {
+                    "reciprocal": True,
+                    "splitting": "disallowed",
+                    "split_type": "none",
+                },
+            },
+        },
+    }
+
+
+def test_render_s19_tuning_markdown_pins_canonical_conclusions_and_labels():
+    text = tuning.render_s19_tuning_markdown(_canonical_report_summary())
+
+    assert text.endswith("\n")
+    assert "## Evidence Labels" in text
+    assert "[FACT] Accepted model: `stagnation-alpha0p01`" in text
+    assert "final independent RMS `0.0009369159680584244`" in text
+    assert "authoritative passive `true`" in text
+    assert "sigma `0.9999999944613438`" in text
+    assert "peak `88.29296875` MiB" in text
+    assert "Task 7 root-local B is not the overall best" in text
+    assert "above-mean contiguous segment" in text
+    assert "`47.70137038847629%` < `50%`; weighting trials were skipped" in text
+    assert "old runner pipe backpressure is more likely" in text
+    assert "IdEM algorithm defect" not in text
+    assert "`combination-b-alpha0p01-initial5-final3`" in text
+    assert "overall accepted=stagnation-alpha0p01" in text
+
+
+def test_render_s19_tuning_markdown_is_byte_stable_and_renders_missing_values_as_na():
+    summary = _canonical_report_summary()
+    summary["accepted_model"]["sampled_max_sigma"] = None
+    summary["combination"]["trials"][1]["elapsed_seconds"] = None
+
+    first = tuning.render_s19_tuning_markdown(summary).encode("utf-8")
+    second = tuning.render_s19_tuning_markdown(summary).encode("utf-8")
+
+    assert first == second
+    text = first.decode("utf-8")
+    assert "sigma `N/A`" in text
+    assert "| `combination-b-alpha0p01-initial5-final3` | PASS | 74 | 0.0009970539140490779 | N/A | N/A |" in text

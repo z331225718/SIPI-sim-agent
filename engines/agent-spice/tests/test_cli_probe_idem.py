@@ -134,6 +134,50 @@ def test_probe_idem_init_cli_writes_reports(tmp_path: Path, monkeypatch, capsys)
     assert "last_rms_error" in csv_path.read_text(encoding="utf-8")
 
 
+def test_report_idem_s19_tuning_cli_writes_markdown_twice_byte_identical(tmp_path: Path, monkeypatch, capsys):
+    import agent_spice.cli as cli
+
+    calls = []
+
+    def fake_load(**paths):
+        calls.append(paths)
+        return {"accepted_model": {"trial_id": "stagnation-alpha0p01"}}
+
+    def fake_render(summary):
+        assert summary["accepted_model"]["trial_id"] == "stagnation-alpha0p01"
+        return "# Canonical\n\n[FACT] Accepted model: `stagnation-alpha0p01`.\n"
+
+    monkeypatch.setattr(cli, "load_s19_tuning_report_summary", fake_load)
+    monkeypatch.setattr(cli, "render_s19_tuning_markdown", fake_render)
+
+    output = tmp_path / "s19.md"
+    argv = [
+        "report-idem-s19-tuning",
+        "--output",
+        str(output),
+        "--baseline-summary",
+        str(tmp_path / "baseline.json"),
+        "--old-baseline-summary",
+        str(tmp_path / "old.json"),
+        "--order58-diagnostic-summary",
+        str(tmp_path / "diag.json"),
+        "--combination-summary",
+        str(tmp_path / "combo.json"),
+        "--weighting-summary",
+        str(tmp_path / "weight.json"),
+    ]
+
+    assert main(argv) == 0
+    first = output.read_bytes()
+    assert main(argv) == 0
+
+    captured = capsys.readouterr()
+    assert output.read_bytes() == first
+    assert "report-idem-s19-tuning output=" in captured.out
+    assert calls[0]["baseline_summary_path"] == tmp_path / "baseline.json"
+    assert first.endswith(b"\n")
+
+
 def test_probe_idem_residue_cli_writes_json_report(tmp_path: Path, monkeypatch, capsys):
     import agent_spice.cli as cli
 

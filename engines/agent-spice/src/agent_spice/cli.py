@@ -189,6 +189,24 @@ def run_idem_order58_diagnostic(*args: Any, **kwargs: Any) -> Any:
     return run_diagnostic(*args, **kwargs)
 
 
+def load_s19_tuning_report_summary(*args: Any, **kwargs: Any) -> Any:
+    try:
+        from scripts.sparam_idem_s19_tuning import load_s19_tuning_report_summary as impl
+    except ModuleNotFoundError:
+        from sparam_idem_s19_tuning import load_s19_tuning_report_summary as impl
+
+    return impl(*args, **kwargs)
+
+
+def render_s19_tuning_markdown(*args: Any, **kwargs: Any) -> Any:
+    try:
+        from scripts.sparam_idem_s19_tuning import render_s19_tuning_markdown as impl
+    except ModuleNotFoundError:
+        from sparam_idem_s19_tuning import render_s19_tuning_markdown as impl
+
+    return impl(*args, **kwargs)
+
+
 def write_json_report(*args: Any, **kwargs: Any) -> Any:
     return _idem_tool("write_json_report")(*args, **kwargs)
 
@@ -854,6 +872,34 @@ def main(argv: list[str] | None = None) -> int:
     stall_diagnostic_parser.add_argument("--resume", dest="resume", action="store_true", default=True)
     stall_diagnostic_parser.add_argument("--no-resume", dest="resume", action="store_false")
 
+    idem_s19_report_parser = subparsers.add_parser("report-idem-s19-tuning")
+    idem_s19_report_parser.add_argument("--output", type=Path, default=Path("docs/sparam-idem-s19-tuning.md"))
+    idem_s19_report_parser.add_argument(
+        "--baseline-summary",
+        type=Path,
+        default=Path("runs-sparam/idem-s19-adaptive-v1-pipe-drain/summary.json"),
+    )
+    idem_s19_report_parser.add_argument(
+        "--old-baseline-summary",
+        type=Path,
+        default=Path("runs-sparam/idem-s19-adaptive-v1/summary.json"),
+    )
+    idem_s19_report_parser.add_argument(
+        "--order58-diagnostic-summary",
+        type=Path,
+        default=Path("runs-sparam/idem-s19-order58-diagnostic/summary.json"),
+    )
+    idem_s19_report_parser.add_argument(
+        "--combination-summary",
+        type=Path,
+        default=Path("runs-sparam/idem-s19-combinations-v1/summary.json"),
+    )
+    idem_s19_report_parser.add_argument(
+        "--weighting-summary",
+        type=Path,
+        default=Path("runs-sparam/idem-s19-weighting-v1/summary.json"),
+    )
+
     idem_residue_parser = subparsers.add_parser("probe-idem-residue")
     idem_residue_parser.add_argument("touchstone", type=Path)
     idem_residue_parser.add_argument("--model", type=Path, required=True)
@@ -1096,6 +1142,23 @@ def main(argv: list[str] | None = None) -> int:
             f"run-stall-diagnostic trials={summary.get('completed_trial_count')} "
             f"decision={decision.get('next_phase')}"
         )
+        return 0
+    if args.command == "report-idem-s19-tuning":
+        try:
+            summary = load_s19_tuning_report_summary(
+                baseline_summary_path=args.baseline_summary,
+                old_baseline_summary_path=args.old_baseline_summary,
+                order58_diagnostic_summary_path=args.order58_diagnostic_summary,
+                combination_summary_path=args.combination_summary,
+                weighting_summary_path=args.weighting_summary,
+            )
+            text = render_s19_tuning_markdown(summary)
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(text, encoding="utf-8")
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(f"report-idem-s19-tuning output={args.output}")
         return 0
     if args.command == "fit-sparam":
         try:
