@@ -5,6 +5,8 @@ import pytest
 
 from agent_spice.sparam.mft_nnls.model import evaluate
 from agent_spice.sparam.mft_nnls.passivity import (
+    PassivityAssessment,
+    ViolationBand,
     assess_s_passivity,
     assess_y_passivity,
     select_violation_extrema,
@@ -95,6 +97,24 @@ def test_extrema_reports_mode_vectors_and_model_value() -> None:
     assert np.linalg.norm(extrema[0].left_vector) == pytest.approx(1.0)
     assert np.linalg.norm(extrema[0].right_vector) == pytest.approx(1.0)
     assert abs(evaluate(model, np.array([0.0j]))[0, 0, 0]) == pytest.approx(extrema[0].value)
+
+
+def test_extrema_global_mode_keeps_only_the_worst_violation() -> None:
+    model = _scalar_model(residue=2.0)
+    assessment = PassivityAssessment(
+        "S",
+        (ViolationBand(0.0, 0.1, "sweep"), ViolationBand(0.1, 0.2, "sweep")),
+        2.0,
+        "sweep",
+        np.array([0.0, 0.2]),
+    )
+
+    local = select_violation_extrema(model, assessment, local=True)
+    global_extrema = select_violation_extrema(model, assessment, local=False)
+
+    assert len(local) == 2
+    assert len(global_extrema) == 1
+    assert global_extrema[0].frequency_hz == pytest.approx(0.0)
 
 
 @pytest.mark.parametrize(

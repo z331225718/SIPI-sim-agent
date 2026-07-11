@@ -181,7 +181,6 @@ def select_violation_extrema(
     assessment: PassivityAssessment,
     local: bool,
 ) -> tuple[ViolationExtremum, ...]:
-    del local  # One worst extremum per violation band is the bounded RPdriver input.
     extrema: list[ViolationExtremum] = []
     for band in assessment.bands:
         frequencies = np.linspace(band.start_hz, band.end_hz, 129)
@@ -197,4 +196,7 @@ def select_violation_extrema(
         else:
             values_y, vectors = np.linalg.eigh(0.5 * (matrix + matrix.conj().T))
             extrema.append(ViolationExtremum(frequency, float(values_y[0]), _normalize_vector(vectors[:, 0]), None, band.band_source))
-    return tuple(extrema)
+    if local or not extrema:
+        return tuple(extrema)
+    selector = max if assessment.parameter_type == "S" else min
+    return (selector(extrema, key=lambda extremum: extremum.value),)

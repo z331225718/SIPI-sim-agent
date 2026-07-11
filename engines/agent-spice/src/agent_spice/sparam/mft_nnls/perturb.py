@@ -24,6 +24,7 @@ class ResiduePerturbationConfig:
     passivity_tolerance: float = 1.0e-6
     alpha: float = 1.0
     local_violations: bool = True
+    weight_mode: int = 1
 
     def __post_init__(self) -> None:
         if self.parameter_type not in {"S", "Y"}:
@@ -36,6 +37,8 @@ class ResiduePerturbationConfig:
             raise ValueError("passivity_tolerance must be finite and positive")
         if not np.isfinite(self.alpha) or self.alpha <= 0.0:
             raise ValueError("alpha must be finite and positive")
+        if self.weight_mode != 1:
+            raise ValueError("weight_mode must be 1; other RPdriver weighting modes are not implemented")
 
 
 @dataclass(frozen=True)
@@ -78,12 +81,18 @@ def build_residue_perturbation_system(
     rows, columns = _matlab_lower_triangle_indices(model.ports)
     qr_blocks: list[NDArray[np.float64]] = []
     column_scales: list[NDArray[np.float64]] = []
-    for _ in rows:
+    for row, column in zip(rows, columns, strict=True):
         design = np.concatenate((basis[:, :local_columns].real, basis[:, :local_columns].imag), axis=0)
-        scale = np.linalg.norm(design, axis=0)
-        if np.any(scale == 0.0):
+        qr_scale = np.linalg.norm(design, axis=0)
+        if row != column:
+            # MATLAB packs symmetric off-diagonal responses with sqrt(2)
+            # in the QR objective while their passivity derivative is doubled.
+            scale = np.sqrt(2.0) * qr_scale
+        else:
+            scale = qr_scale
+        if np.any(qr_scale == 0.0):
             raise ValueError("residue LS column scale is zero")
-        _, r = qr(design / scale, mode="economic", pivoting=False, check_finite=False)
+        _, r = qr(design / qr_scale, mode="economic", pivoting=False, check_finite=False)
         if np.linalg.matrix_rank(r) < local_columns:
             raise ValueError("residue QR block is rank deficient")
         qr_blocks.append(r)

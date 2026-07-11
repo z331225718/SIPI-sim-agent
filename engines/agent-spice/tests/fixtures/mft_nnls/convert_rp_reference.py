@@ -20,7 +20,12 @@ def main() -> int:
         s=np.asarray(reference["s"]).reshape(-1),
         s_residue=np.asarray(reference["out_s"]["R"]).reshape(()),
         s_constant=np.asarray(reference["out_s"]["D"]).reshape(()),
+        sd_residue=np.asarray(reference["out_sd"]["R"]).reshape(()),
+        sd_constant=np.asarray(reference["out_sd"]["D"]).reshape(()),
         s2_residues=np.asarray(reference["out_s2"]["R"]),
+        s2off_residues=np.asarray(reference["out_s2off"]["R"]),
+        y_residue=np.asarray(reference["out_y"]["R"]).reshape(()),
+        y_constant=np.asarray(reference["out_y"]["D"]).reshape(()),
     )
     return 0
 

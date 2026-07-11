@@ -34,6 +34,11 @@ def test_s_perturbation_system_uses_qr_compressed_constraints() -> None:
     assert system.constraint_rhs[0] < 0.0
 
 
+def test_rp_config_rejects_weight_modes_not_yet_implemented() -> None:
+    with pytest.raises(ValueError, match="weight_mode"):
+        ResiduePerturbationConfig(weight_mode=2)
+
+
 def test_s_residue_perturbation_reduces_sigma_without_nonfinite_response() -> None:
     model = _active_scalar_s_model()
     frequencies = np.linspace(0.0, 1.0, 81)
@@ -62,6 +67,20 @@ def test_s_one_step_update_matches_matlab_rp_qrnnls_fixture() -> None:
         assert result.model.residues[0, 0, 0] == pytest.approx(fixture["s_residue"].item(), rel=1.0e-6)
 
 
+def test_s_one_step_perturbs_nonpassive_constant_like_matlab() -> None:
+    with np.load("tests/fixtures/mft_nnls/rp_reference.npz") as fixture:
+        frequencies = fixture["s"].imag / (2.0 * np.pi)
+        model = PoleResidueModel(
+            poles=np.array([-1.0 + 0.0j]),
+            residues=np.array([[[0.0 + 0.0j]]]),
+            constant=np.array([[1.2 + 0.0j]]),
+            proportional=np.array([[0.0 + 0.0j]]),
+        )
+        result = enforce_passivity(model, frequencies, ResiduePerturbationConfig(parameter_type="S", outer_iterations=1))
+
+        assert result.model.constant[0, 0] == pytest.approx(fixture["sd_constant"].item(), rel=1.0e-6)
+
+
 def test_y_residue_perturbation_reduces_negative_real_part() -> None:
     model = PoleResidueModel(
         poles=np.array([-1.0 + 0.0j]),
@@ -80,6 +99,20 @@ def test_y_residue_perturbation_reduces_negative_real_part() -> None:
     assert result.diagnostics.details["final_assessment"].min_value >= -1.0e-6
 
 
+def test_y_one_step_update_matches_matlab_rp_qrnnls_fixture() -> None:
+    with np.load("tests/fixtures/mft_nnls/rp_reference.npz") as fixture:
+        frequencies = fixture["s"].imag / (2.0 * np.pi)
+        model = PoleResidueModel(
+            poles=np.array([-1.0 + 0.0j]),
+            residues=np.array([[[-2.0 + 0.0j]]]),
+            constant=np.array([[1.0 + 0.0j]]),
+            proportional=np.array([[0.0 + 0.0j]]),
+        )
+        result = enforce_passivity(model, frequencies, ResiduePerturbationConfig(parameter_type="Y", outer_iterations=1))
+
+        assert result.model.residues[0, 0, 0] == pytest.approx(fixture["y_residue"].item(), rel=1.0e-6)
+
+
 def test_two_port_s_update_matches_matlab_residue_coordinates() -> None:
     with np.load("tests/fixtures/mft_nnls/rp_reference.npz") as fixture:
         frequencies = fixture["s"].imag / (2.0 * np.pi)
@@ -92,3 +125,17 @@ def test_two_port_s_update_matches_matlab_residue_coordinates() -> None:
         result = enforce_passivity(model, frequencies, ResiduePerturbationConfig(parameter_type="S", outer_iterations=1))
 
         assert result.model.residues[:, :, 0] == pytest.approx(fixture["s2_residues"], rel=1.0e-6)
+
+
+def test_two_port_s_offdiagonal_update_matches_matlab_coordinates() -> None:
+    with np.load("tests/fixtures/mft_nnls/rp_reference.npz") as fixture:
+        frequencies = fixture["s"].imag / (2.0 * np.pi)
+        model = PoleResidueModel(
+            poles=np.array([-1.0 + 0.0j]),
+            residues=np.array([[[2.0], [0.3]], [[0.3], [0.5]]], dtype=complex),
+            constant=np.zeros((2, 2), dtype=complex),
+            proportional=np.zeros((2, 2), dtype=complex),
+        )
+        result = enforce_passivity(model, frequencies, ResiduePerturbationConfig(parameter_type="S", outer_iterations=1))
+
+        assert result.model.residues[:, :, 0] == pytest.approx(fixture["s2off_residues"], rel=1.0e-6)
