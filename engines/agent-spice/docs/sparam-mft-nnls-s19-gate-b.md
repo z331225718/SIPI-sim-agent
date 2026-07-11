@@ -2,7 +2,7 @@
 
 ## Result
 
-**FIT_FAILURE** on the frozen 19-port promotion input. No tested order met the
+**FIT_FAILURE** on a bounded diagnostic over the frozen 19-port promotion input. No tested order met the
 full-grid RMS target of `0.001`, so this gate stops before any promotion or
 default-backend decision.
 
@@ -27,7 +27,10 @@ default-backend decision.
 | 14 | 0.027758 | 0.029740 | 1.072926 | FIT_FAILURE |
 | 16 | 0.035920 | 0.035920 | 1.403148 | FIT_FAILURE |
 
-All tested models had stable poles. RP-NNLS reduced the passivity excess in
+All tested models had stable poles. The runner records the maximum singular
+value on all 826 input samples and a separate 801-point sweep; it uses the
+larger value. It is not yet an independent/adaptive all-band passivity oracle.
+RP-NNLS reduced the passivity excess in
 some trials, but none reached the passivity target and all were already far
 above the RMS target. The observed failure is therefore fitting quality first,
 not evidence that passivity correction alone can rescue the collapse path.

@@ -18,7 +18,7 @@ remaining RPdriver parity limitation were resolved.
 | MATLAB-style one-step VF response parity | Passed on the well-conditioned fixture |
 | Test16 91-port relocation collapse | Reproduced, not avoided |
 | QR-NNLS scalar / 2-port S/Y one-step fixtures | Passed |
-| S19 full-grid Gate B | `FIT_FAILURE` |
+| S19 bounded full-input-grid diagnostic | `FIT_FAILURE` |
 | Promotion benchmark | Not run; Gate B failure stops it |
 
 The detailed S19 trial table and local artifact command are in
