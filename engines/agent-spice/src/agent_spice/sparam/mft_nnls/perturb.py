@@ -74,6 +74,7 @@ class PerturbationSystem:
     fit_weights: NDArray[np.float64]
     dynamic_columns: tuple[Literal["constant", "proportional"], ...]
     coordinate_count: int
+    violation_count: int
 
 
 def _assessment(model: PoleResidueModel, frequencies_hz: NDArray[np.float64], parameter_type: str) -> PassivityAssessment:
@@ -315,6 +316,7 @@ def build_residue_perturbation_system(
         fit_weights=fit_weights,
         dynamic_columns=dynamic_columns,
         coordinate_count=coordinate_count,
+        violation_count=len(extrema),
     )
 
 
@@ -387,8 +389,21 @@ def enforce_passivity(
         accepted = False
         candidate_excess = excess
         solution = None
+        seen_extrema: set[tuple[float, float]] = set()
         for _ in range(config.inner_iterations):
+            if config.parameter_type == "S" and inner_count:
+                break
             current_extrema = select_violation_extrema(current, assessment, local=config.local_violations)
+            if config.parameter_type == "Y":
+                new_extrema = []
+                for extremum in current_extrema:
+                    key = (round(extremum.frequency_hz, 6), round(extremum.value, 10))
+                    if key not in seen_extrema:
+                        seen_extrema.add(key)
+                        new_extrema.append(extremum)
+                current_extrema = tuple(new_extrema)
+            elif not seen_extrema:
+                seen_extrema = {(round(extremum.frequency_hz, 6), round(extremum.value, 10)) for extremum in current_extrema}
             system = build_residue_perturbation_system(
                 outer_base,
                 frequencies,
@@ -407,8 +422,14 @@ def enforce_passivity(
             if not len(system.constraint_rhs):
                 break
             base_system = system if base_system is None else base_system
-            accumulated_matrix = system.constraint_matrix if accumulated_matrix is None else np.vstack((accumulated_matrix, system.constraint_matrix))
-            accumulated_rhs = system.constraint_rhs if accumulated_rhs is None else np.concatenate((accumulated_rhs, system.constraint_rhs))
+            if accumulated_matrix is None:
+                accumulated_matrix = system.constraint_matrix
+                accumulated_rhs = system.constraint_rhs
+            else:
+                # RPdriver rebuilds D/E asymptotic rows once per total solve;
+                # only newly discovered Y violation rows are appended.
+                accumulated_matrix = np.vstack((accumulated_matrix, system.constraint_matrix[: system.violation_count]))
+                accumulated_rhs = np.concatenate((accumulated_rhs, system.constraint_rhs[: system.violation_count]))
             solution = solve_homogeneous_nnls(accumulated_matrix, accumulated_rhs, tolerance=config.tolerance)
             delta = _recover_delta(base_system, solution.x)
             candidate = _apply_residue_delta(outer_base, base_system, delta)
