@@ -10,6 +10,8 @@ from numpy.typing import NDArray
 from scipy.linalg import lstsq, qr
 
 from agent_spice.sparam.mft_nnls.model import canonicalize_poles, stabilize_poles
+from agent_spice.sparam.mft_nnls.poles import initialize_poles
+from agent_spice.sparam.mft_nnls.types import MFTConfig, MFTDiagnostics, MFTResult, PoleResidueModel
 from agent_spice.sparam.mft_nnls.weights import build_weights
 
 
@@ -173,18 +175,208 @@ def fit_fixed_poles(
     if matrix_weights.shape != values.shape or not np.isfinite(matrix_weights).all() or np.any(matrix_weights <= 0.0):
         raise ValueError("weights must be finite, positive, and match response shape")
 
+    fitted, _, _, _, _ = _fit_fixed_poles_parameters(
+        frequencies,
+        values,
+        fixed_poles,
+        matrix_weights,
+        asymptotic_order=asymptotic_order,
+    )
+    return fitted
+
+
+def _fit_fixed_poles_parameters(
+    frequencies: NDArray[np.float64],
+    values: NDArray[np.complex128],
+    fixed_poles: NDArray[np.complex128],
+    matrix_weights: NDArray[np.float64],
+    *,
+    asymptotic_order: int,
+) -> tuple[NDArray[np.complex128], NDArray[np.complex128], NDArray[np.complex128], NDArray[np.complex128], int]:
+    """Return fitted response and pole-residue coordinates, reusing a common QR."""
+
+    s = 2j * np.pi * frequencies
+    basis, pair_index = _basis(s, fixed_poles, asymptotic_order)
+    left_count = len(fixed_poles) + asymptotic_order - 1
     fitted = np.empty_like(values)
+    ports = values.shape[1]
+    residues = np.zeros((ports, ports, len(fixed_poles)), dtype=complex)
+    constant = np.zeros((ports, ports), dtype=complex)
+    proportional = np.zeros((ports, ports), dtype=complex)
     rows, columns = _matlab_lower_triangle_indices(values.shape[1])
+    packed_weights = matrix_weights[:, rows, columns].T
+    common_weight = bool(np.allclose(packed_weights, packed_weights[0], rtol=0.0, atol=0.0))
+    shared_q: NDArray[np.float64] | None = None
+    shared_r: NDArray[np.float64] | None = None
+    if common_weight:
+        weighted_basis = packed_weights[0, :, None] * basis[:, :left_count]
+        shared_q, shared_r = qr(
+            np.concatenate((weighted_basis.real, weighted_basis.imag), axis=0),
+            mode="economic",
+            pivoting=False,
+            check_finite=False,
+        )
     for row, column in zip(rows, columns, strict=True):
         weight = matrix_weights[:, row, column]
         design = weight[:, None] * basis[:, :left_count]
         target = weight * values[:, row, column]
         real_design = np.concatenate((design.real, design.imag), axis=0)
         real_target = np.concatenate((target.real, target.imag))
-        coefficients, *_ = lstsq(real_design, real_target, lapack_driver="gelsy")
+        if shared_q is not None and shared_r is not None:
+            coefficients, *_ = lstsq(shared_r, shared_q.T @ real_target, lapack_driver="gelsy")
+        else:
+            coefficients, *_ = lstsq(real_design, real_target, lapack_driver="gelsy")
         fitted[:, row, column] = basis[:, :left_count] @ coefficients
         fitted[:, column, row] = fitted[:, row, column]
-    return fitted
+        for index, kind in enumerate(pair_index):
+            if kind == 0:
+                residues[row, column, index] = coefficients[index]
+                residues[column, row, index] = coefficients[index]
+            elif kind == 1:
+                residue = coefficients[index] + 1j * coefficients[index + 1]
+                residues[row, column, index] = residue
+                residues[row, column, index + 1] = residue.conjugate()
+                residues[column, row, index] = residue
+                residues[column, row, index + 1] = residue.conjugate()
+        if asymptotic_order >= 2:
+            constant[row, column] = constant[column, row] = coefficients[len(fixed_poles)]
+        if asymptotic_order == 3:
+            proportional[row, column] = proportional[column, row] = coefficients[len(fixed_poles) + 1]
+    return fitted, residues, constant, proportional, 1 if common_weight else len(rows)
+
+
+def _relocate_rows(
+    frequencies: NDArray[np.float64],
+    rows: NDArray[np.complex128],
+    row_weights: NDArray[np.float64],
+    poles: NDArray[np.complex128],
+    *,
+    options: RelocationOptions,
+) -> RelocationResult:
+    """Run the common-pole QR reduction for pre-packed response rows."""
+
+    if rows.ndim != 2 or rows.shape != row_weights.shape or rows.shape[1] != len(frequencies):
+        raise ValueError("response rows and weights must have shape (responses, frequencies)")
+    s = 2j * np.pi * frequencies
+    pair_index = _complex_pair_index(poles)
+    basis, _ = _basis(s, poles, options.asymptotic_order)
+    scale = np.sqrt(sum(np.linalg.norm(row_weights[row] * rows[row]) ** 2 for row in range(len(rows)))) / len(frequencies)
+    if not np.isfinite(scale) or scale == 0.0:
+        raise ValueError("relocation scale must be finite and non-zero")
+    sigma_count = len(poles) + (1 if options.relaxed else 0)
+    compressed = np.zeros((len(rows) * sigma_count, sigma_count), dtype=float)
+    rhs = np.zeros(len(rows) * sigma_count, dtype=float)
+    for row, (response_row, weight_row) in enumerate(zip(rows, row_weights, strict=True)):
+        block, block_rhs = _weighted_qr_right_block(
+            basis,
+            response_row,
+            weight_row,
+            asymptotic_order=options.asymptotic_order,
+            relaxed=options.relaxed,
+            scale=scale,
+            add_integral_row=options.relaxed and row == len(rows) - 1,
+        )
+        start = row * sigma_count
+        compressed[start : start + sigma_count] = block
+        rhs[start : start + sigma_count] = block_rhs
+    norms = np.linalg.norm(compressed, axis=0)
+    if np.any(norms == 0.0):
+        raise ValueError("rank-deficient relocation compression")
+    scaled = compressed / norms[None, :]
+    solution, _, rank, _ = lstsq(scaled, rhs, lapack_driver="gelsy")
+    solution = solution / norms
+    if options.relaxed:
+        coefficients, constant = solution[:-1], float(solution[-1])
+    else:
+        coefficients, constant = solution, 1.0
+    relocated = _realize_sigma(poles, coefficients, pair_index, constant, options.stable)
+    sigma_residue_magnitudes = np.abs(coefficients)
+    for index, kind in enumerate(pair_index):
+        if kind == 1:
+            magnitude = float(np.hypot(coefficients[index], coefficients[index + 1]))
+            sigma_residue_magnitudes[index : index + 2] = magnitude
+    return RelocationResult(
+        poles=relocated,
+        diagnostics={
+            "relaxed": options.relaxed,
+            "rank": int(rank),
+            "condition_number": float(np.linalg.cond(scaled)),
+            "scale": float(scale),
+            "sigma_constant": float(constant),
+            "response_count": int(len(rows)),
+            "sigma_residue_magnitudes": sigma_residue_magnitudes.tolist(),
+        },
+    )
+
+
+def fit_matrix(
+    response: NDArray[np.complex128],
+    frequencies_hz: NDArray[np.float64],
+    config: MFTConfig,
+    initial_poles: NDArray[np.complex128] | None = None,
+) -> MFTResult:
+    """Run VFdriver-style diagonal prefit, matrix relocation, and residue solve."""
+
+    frequencies = np.asarray(frequencies_hz, dtype=float).reshape(-1)
+    values = np.asarray(response, dtype=complex)
+    if values.ndim != 3 or values.shape[0] != len(frequencies) or values.shape[1] != values.shape[2]:
+        raise ValueError("response must have shape (frequency, ports, ports)")
+    if len(frequencies) < 2 or not np.isfinite(frequencies).all() or not np.isfinite(values).all():
+        raise ValueError("frequencies and response must be finite with at least two samples")
+    if not np.allclose(values, np.swapaxes(values, 1, 2), rtol=1.0e-10, atol=1.0e-12):
+        if not config.enforce_symmetry:
+            raise ValueError("response must be symmetric unless enforce_symmetry is enabled")
+        values = 0.5 * (values + np.swapaxes(values, 1, 2))
+    poles = (
+        initialize_poles(frequencies, config.order, config.pole_type)
+        if initial_poles is None
+        else np.asarray(initial_poles, dtype=complex).reshape(-1)
+    )
+    if len(poles) == 0 or not np.isfinite(poles).all():
+        raise ValueError("initial_poles must be finite and non-empty")
+    asymptotic_order = 3 if config.fit_proportional else 2 if config.fit_constant else 1
+    options = RelocationOptions(asymptotic_order=asymptotic_order)
+    matrix_weights = build_weights(values, config.weight_mode)
+    last_relocation: RelocationResult | None = None
+    if config.diagonal_iterations:
+        diagonal = np.diagonal(values, axis1=1, axis2=2).T
+        diagonal_weights = np.diagonal(matrix_weights, axis1=1, axis2=2).T
+        for _ in range(config.diagonal_iterations):
+            last_relocation = _relocate_rows(frequencies, diagonal, diagonal_weights, poles, options=options)
+            poles = last_relocation.poles
+    rows, columns = _matlab_lower_triangle_indices(values.shape[1])
+    packed = values[:, rows, columns].T
+    packed_weights = matrix_weights[:, rows, columns].T
+    for _ in range(config.matrix_iterations):
+        last_relocation = _relocate_rows(frequencies, packed, packed_weights, poles, options=options)
+        poles = last_relocation.poles
+    fitted, residues, constant, proportional, factorization_count = _fit_fixed_poles_parameters(
+        frequencies,
+        values,
+        poles,
+        matrix_weights,
+        asymptotic_order=asymptotic_order,
+    )
+    model = PoleResidueModel(poles=poles, residues=residues, constant=constant, proportional=proportional)
+    rms = float(np.sqrt(np.mean(np.abs(fitted - values) ** 2)))
+    details = {
+        "diagonal_iterations": config.diagonal_iterations,
+        "matrix_iterations": config.matrix_iterations,
+        "residue_factorization_count": factorization_count,
+    }
+    if last_relocation is not None:
+        details["last_relocation"] = last_relocation.diagnostics
+    return MFTResult(
+        model=model,
+        diagnostics=MFTDiagnostics(
+            stage="vector_fit",
+            iterations=config.diagonal_iterations + config.matrix_iterations,
+            rank=None if last_relocation is None else last_relocation.diagnostics["rank"],
+            condition_number=None if last_relocation is None else last_relocation.diagnostics["condition_number"],
+            details=details,
+        ),
+        rms_error=rms,
+    )
 
 
 def relocate_once(

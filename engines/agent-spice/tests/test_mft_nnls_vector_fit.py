@@ -4,7 +4,9 @@ import numpy as np
 import pytest
 
 from agent_spice.sparam.mft_nnls.model import canonicalize_poles
-from agent_spice.sparam.mft_nnls.vector_fit import RelocationOptions, fit_fixed_poles, relocate_iterations, relocate_once
+from agent_spice.sparam.mft_nnls.model import evaluate
+from agent_spice.sparam.mft_nnls.types import MFTConfig
+from agent_spice.sparam.mft_nnls.vector_fit import RelocationOptions, fit_fixed_poles, fit_matrix, relocate_iterations, relocate_once
 
 
 def _response(freqs_hz: np.ndarray) -> np.ndarray:
@@ -145,3 +147,70 @@ def test_raw_ex4_one_step_fixtures_are_not_response_quality_gates() -> None:
         rms = np.array([fixture[f"relocation_rms_{order}"].item() for order in (4, 5, 6, 7, 9, 13)])
 
     assert np.all(rms > 0.01)
+
+
+def test_fit_matrix_runs_diagonal_prefit_then_full_matrix_residue_fit() -> None:
+    with np.load("tests/fixtures/mft_nnls/ex4_s_small.npz") as fixture:
+        result = fit_matrix(
+            fixture["medium_response"],
+            fixture["medium_frequencies_hz"],
+            MFTConfig(diagonal_iterations=1, matrix_iterations=1),
+            initial_poles=fixture["medium_initial_poles"],
+        )
+        fitted = evaluate(result.model, 2j * np.pi * fixture["medium_frequencies_hz"])
+        expected = fixture["medium_fitted_response"].copy()
+
+    assert fitted == pytest.approx(expected, rel=1.0e-7, abs=1.0e-10)
+    assert result.diagnostics.stage == "vector_fit"
+    assert result.diagnostics.details["diagonal_iterations"] == 1
+    assert result.diagnostics.details["matrix_iterations"] == 1
+    assert result.diagnostics.details["residue_factorization_count"] == 1
+
+
+def test_fit_matrix_matches_matlab_vfdriver_final_response_fixture() -> None:
+    with np.load("tests/fixtures/mft_nnls/ex4_s_small.npz") as fixture:
+        frequencies = fixture["s"].imag / (2.0 * np.pi)
+        result = fit_matrix(
+            fixture["response"],
+            frequencies,
+            MFTConfig(order=4, diagonal_iterations=1, matrix_iterations=1),
+            initial_poles=fixture["relocation_initial_poles_4"],
+        )
+        fitted = evaluate(result.model, fixture["s"])
+        expected = fixture["fitted_response"].copy()
+
+    assert fitted == pytest.approx(expected, rel=1.0e-7, abs=1.0e-10)
+
+
+def test_fit_matrix_rejects_nonreciprocal_response_unless_symmetry_is_requested() -> None:
+    frequencies = np.geomspace(1.0e5, 1.0e7, 21)
+    response = np.zeros((len(frequencies), 2, 2), dtype=complex)
+    response[:, 0, 0] = 0.1
+    response[:, 1, 1] = 0.1
+    response[:, 0, 1] = 0.2
+    response[:, 1, 0] = 0.3
+    poles = np.array([-2.0e6 - 2j * np.pi * 3.0e6, -2.0e6 + 2j * np.pi * 3.0e6])
+
+    with pytest.raises(ValueError, match="symmetric"):
+        fit_matrix(response, frequencies, MFTConfig(), initial_poles=poles)
+
+    result = fit_matrix(response, frequencies, MFTConfig(enforce_symmetry=True), initial_poles=poles)
+
+    assert result.model.ports == 2
+
+
+def test_fit_matrix_preserves_proportional_asymptote_in_final_model() -> None:
+    frequencies = np.geomspace(1.0e5, 1.0e7, 61)
+    s = 2j * np.pi * frequencies
+    poles = np.array([-2.0e6 - 2j * np.pi * 3.0e6, -2.0e6 + 2j * np.pi * 3.0e6])
+    response = (0.1 + 2.0e-10 * s + 4.0 / (s - poles[0]) + 4.0 / (s - poles[1]))[:, None, None]
+
+    result = fit_matrix(
+        response,
+        frequencies,
+        MFTConfig(fit_proportional=True, diagonal_iterations=0, matrix_iterations=1),
+        initial_poles=poles,
+    )
+
+    assert evaluate(result.model, s) == pytest.approx(response, rel=1.0e-7, abs=1.0e-10)
+    assert abs(result.model.proportional[0, 0]) > 0.0

@@ -76,3 +76,9 @@ def test_result_and_fixture_contract_are_immutable() -> None:
         result.rms_error = 1.0  # type: ignore[misc]
     assert MFTConfig().parameter_type == "S"
     assert Path("tests/fixtures/mft_nnls/ex4_s_small.npz").is_file()
+
+
+def test_package_exports_full_matrix_vector_fit() -> None:
+    from agent_spice.sparam.mft_nnls import fit_matrix
+
+    assert callable(fit_matrix)

@@ -31,12 +31,27 @@ class MFTConfig:
     fit_proportional: bool = False
     enforce_symmetry: bool = False
     tolerance: float = 1.0e-8
+    order: int = 8
+    pole_type: Literal["lincmplx", "logcmplx", "linlogcmplx"] = "linlogcmplx"
+    diagonal_iterations: int = 1
+    matrix_iterations: int = 1
+    weight_mode: int = 1
 
     def __post_init__(self) -> None:
         if self.parameter_type not in {"S", "Y"}:
             raise ValueError("parameter_type must be 'S' or 'Y'")
         if not np.isfinite(self.tolerance) or self.tolerance <= 0.0:
             raise ValueError("tolerance must be finite and positive")
+        if self.order < 1:
+            raise ValueError("order must be at least one")
+        if self.pole_type not in {"lincmplx", "logcmplx", "linlogcmplx"}:
+            raise ValueError("pole_type must be a supported MFT pole distribution")
+        if self.diagonal_iterations < 0 or self.matrix_iterations < 0:
+            raise ValueError("relocation iteration counts must be non-negative")
+        if self.diagonal_iterations + self.matrix_iterations == 0:
+            raise ValueError("at least one diagonal or matrix iteration is required")
+        if self.weight_mode not in {1, 2, 3, 4, 5}:
+            raise ValueError("weight_mode must be between 1 and 5")
 
 
 @dataclass(frozen=True)
