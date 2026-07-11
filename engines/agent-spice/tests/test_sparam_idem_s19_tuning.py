@@ -1929,18 +1929,12 @@ def test_render_s19_tuning_markdown_pins_canonical_conclusions_and_labels():
 def test_load_s19_tuning_report_summary_derives_accepted_model_from_loaded_pass_reference(
     tmp_path: Path,
 ):
-    accepted_trial = {
-        "trial_id": "alternate-pass",
-        "status": "PASS",
-        "target_met": True,
-        "effective_order": 42,
-        "final_mean_rms": 0.00042,
-        "authoritative_passive": True,
-        "sampled_max_sigma": 0.999,
-        "elapsed_seconds": 12.5,
-        "peak_memory_mb": 34.0,
-        "fingerprint": "alt-fingerprint",
-    }
+    accepted_trial = _synthetic_accepted_trial(
+        "alternate-pass",
+        final_mean_rms=0.00042,
+        effective_order=42,
+        fingerprint="alt-fingerprint",
+    )
     config = {
         "threads": 8,
         "order_min": 4,
@@ -2010,6 +2004,210 @@ def test_load_s19_tuning_report_summary_derives_accepted_model_from_loaded_pass_
         "fingerprint": "alt-fingerprint",
         "acceptance_failure": None,
     }
+
+
+def test_load_s19_tuning_report_summary_selects_verified_combination_overall_best(
+    tmp_path: Path,
+):
+    config = _synthetic_report_config()
+    baseline_trial = _synthetic_accepted_trial(
+        "baseline-pass",
+        final_mean_rms=0.0008,
+        effective_order=50,
+        fingerprint="baseline-fingerprint",
+    )
+    combination_trial = _synthetic_accepted_trial(
+        "combination-z-alt",
+        final_mean_rms=0.0004,
+        effective_order=48,
+        fingerprint="combination-fingerprint",
+    )
+    paths = _write_synthetic_report_sources(
+        tmp_path,
+        baseline_summary={
+            "contract_version": "idem_s19_adaptive_v1",
+            "input": _canonical_report_summary()["input"],
+            "best_trial_id": "baseline-pass",
+            "completed_trial_count": 1,
+            "fixed_order_control": {"trial_id": "fixed-order-order100", "trial": {}},
+            "trials": [{"trial_id": "baseline-pass", "config": config, "trial": baseline_trial}],
+        },
+        combination_summary={
+            "best_trial_id": "combination-z-alt",
+            "local_best_trial_id": "combination-z-alt",
+            "combination_decision": {"a_improves": True, "b_improves": True, "run_c": True},
+            "overall_best": {
+                "source": "local_trial",
+                "trial_id": "combination-z-alt",
+                "status": "PASS",
+                "target_met": True,
+                "effective_order": 1,
+                "final_mean_rms": 0.000001,
+                "elapsed_seconds": 1.0,
+            },
+            "trials": [{"trial_id": "combination-z-alt", "config": config, "trial": combination_trial}],
+        },
+    )
+
+    summary = tuning.load_s19_tuning_report_summary(
+        baseline_summary_path=paths["baseline"],
+        old_baseline_summary_path=paths["old"],
+        order58_diagnostic_summary_path=paths["diagnostic"],
+        combination_summary_path=paths["combination"],
+        weighting_summary_path=paths["weighting"],
+    )
+
+    assert summary["accepted_model"]["trial_id"] == "combination-z-alt"
+    assert summary["accepted_model"]["final_mean_rms"] == 0.0004
+    assert summary["accepted_model"]["effective_order"] == 48
+    assert summary["accepted_model"]["fingerprint"] == "combination-fingerprint"
+    assert "Accepted model: `combination-z-alt`" in tuning.render_s19_tuning_markdown(summary)
+
+
+def test_load_s19_tuning_report_summary_selects_verified_weighting_overall_best(
+    tmp_path: Path,
+):
+    config = _synthetic_report_config()
+    baseline_trial = _synthetic_accepted_trial(
+        "baseline-pass",
+        final_mean_rms=0.0008,
+        effective_order=50,
+        fingerprint="baseline-fingerprint",
+    )
+    combination_trial = _synthetic_accepted_trial(
+        "combination-pass",
+        final_mean_rms=0.0006,
+        effective_order=46,
+        fingerprint="combination-fingerprint",
+    )
+    weighting_trial = _synthetic_accepted_trial(
+        "weighting-pass",
+        final_mean_rms=0.0003,
+        effective_order=44,
+        fingerprint="weighting-fingerprint",
+    )
+    paths = _write_synthetic_report_sources(
+        tmp_path,
+        baseline_summary={
+            "contract_version": "idem_s19_adaptive_v1",
+            "input": _canonical_report_summary()["input"],
+            "best_trial_id": "baseline-pass",
+            "completed_trial_count": 1,
+            "fixed_order_control": {"trial_id": "fixed-order-order100", "trial": {}},
+            "trials": [{"trial_id": "baseline-pass", "config": config, "trial": baseline_trial}],
+        },
+        combination_summary={
+            "best_trial_id": "combination-pass",
+            "local_best_trial_id": "combination-pass",
+            "combination_decision": {"a_improves": True, "b_improves": True, "run_c": True},
+            "overall_best": {"source": "local_trial", "trial_id": "combination-pass"},
+            "trials": [{"trial_id": "combination-pass", "config": config, "trial": combination_trial}],
+        },
+        weighting_summary={
+            "completed_trial_count": 1,
+            "best_trial_id": "weighting-pass",
+            "best_trial_id_scope": "overall_reference_inclusive",
+            "overall_best": {
+                "source": "local_trial",
+                "trial_id": "weighting-pass",
+                "status": "PASS",
+                "target_met": True,
+                "final_mean_rms": 0.000001,
+            },
+            "weighting": {"eligibility": {"eligible": True, "threshold": 0.5}, "residual": {}},
+            "trials": [{"trial_id": "weighting-pass", "config": config, "trial": weighting_trial}],
+        },
+    )
+
+    summary = tuning.load_s19_tuning_report_summary(
+        baseline_summary_path=paths["baseline"],
+        old_baseline_summary_path=paths["old"],
+        order58_diagnostic_summary_path=paths["diagnostic"],
+        combination_summary_path=paths["combination"],
+        weighting_summary_path=paths["weighting"],
+    )
+
+    assert summary["accepted_model"]["trial_id"] == "weighting-pass"
+    assert summary["accepted_model"]["final_mean_rms"] == 0.0003
+    assert summary["accepted_model"]["effective_order"] == 44
+    assert summary["accepted_model"]["fingerprint"] == "weighting-fingerprint"
+    assert "Accepted model: `weighting-pass`" in tuning.render_s19_tuning_markdown(summary)
+
+
+def _synthetic_report_config() -> dict:
+    return {
+        "threads": 8,
+        "order_min": 4,
+        "order_step": 2,
+        "order_max": 100,
+        "rms_target": 0.001,
+        "phase_timeout_seconds": 1800.0,
+        "fit_idle_timeout_seconds": 300.0,
+        "adaptive_options": {"split_type": "none"},
+    }
+
+
+def _synthetic_accepted_trial(
+    trial_id: str,
+    *,
+    final_mean_rms: float,
+    effective_order: int,
+    fingerprint: str,
+) -> dict:
+    return {
+        "trial_id": trial_id,
+        "status": "PASS",
+        "target_met": True,
+        "effective_order": effective_order,
+        "final_mean_rms": final_mean_rms,
+        "authoritative_passive": True,
+        "sampled_max_sigma": 0.999,
+        "elapsed_seconds": 12.5,
+        "peak_memory_mb": 34.0,
+        "fingerprint": fingerprint,
+        "artifact_paths": {
+            "selected_model": f"runs-sparam/synthetic/{trial_id}/passive.mod.h5",
+            "exported_touchstone": f"runs-sparam/synthetic/{trial_id}/passive.s19p",
+            "final_accuracy_report": f"runs-sparam/synthetic/{trial_id}/final_accuracy.txt",
+        },
+    }
+
+
+def _write_synthetic_report_sources(
+    tmp_path: Path,
+    *,
+    baseline_summary: dict,
+    combination_summary: dict | None = None,
+    weighting_summary: dict | None = None,
+) -> dict[str, Path]:
+    payloads = {
+        "baseline": baseline_summary,
+        "old": {"trials": []},
+        "diagnostic": {"decision": {"next_phase": "synthetic_stop"}, "trials": []},
+        "combination": combination_summary
+        or {
+            "best_trial_id": None,
+            "local_best_trial_id": None,
+            "combination_decision": {},
+            "trials": [],
+        },
+        "weighting": weighting_summary
+        or {
+            "completed_trial_count": 0,
+            "best_trial_id": baseline_summary.get("best_trial_id"),
+            "best_trial_id_scope": "overall_reference_inclusive",
+            "overall_reference": {},
+            "overall_best": {},
+            "weighting": {"eligibility": {"eligible": False, "threshold": 0.5}, "residual": {}},
+            "trials": [],
+        },
+    }
+    paths = {}
+    for name, payload in payloads.items():
+        path = tmp_path / f"{name}.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        paths[name] = path
+    return paths
 
 
 def test_render_s19_tuning_markdown_uses_summary_values_for_alternate_evidence():
