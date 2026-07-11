@@ -2740,6 +2740,19 @@ def _kill_process_tree(process: subprocess.Popen[Any], psutil_process: Any) -> N
         process.kill()
     except OSError:
         pass
+    try:
+        process.wait(timeout=5.0)
+    except subprocess.TimeoutExpired:
+        try:
+            process.kill()
+        except OSError:
+            pass
+        try:
+            process.wait(timeout=5.0)
+        except Exception:
+            pass
+    except Exception:
+        pass
 
 
 def _process_tree_cpu_seconds(process: Any) -> float | None:

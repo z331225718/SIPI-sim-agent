@@ -750,6 +750,7 @@ def test_run_command_kills_stalled_process_after_idle_timeout(monkeypatch):
     class FakeProcess:
         pid = 1234
         returncode = None
+        waited = False
 
         def poll(self):
             return None
@@ -757,6 +758,10 @@ def test_run_command_kills_stalled_process_after_idle_timeout(monkeypatch):
         def kill(self):
             killed.append(self.pid)
             self.returncode = -9
+
+        def wait(self, timeout=None):
+            self.waited = True
+            return self.returncode
 
         def communicate(self):
             return ("partial stdout", "")
@@ -789,6 +794,44 @@ def test_run_command_kills_stalled_process_after_idle_timeout(monkeypatch):
         idem._run_command(["idemmp_fitting.exe"], timeout_seconds=10.0, idle_timeout_seconds=0.1)
 
     assert process.pid in killed
+    assert process.waited is True
+
+
+def test_run_command_waits_after_total_timeout_kill(monkeypatch):
+    killed = []
+
+    class FakeProcess:
+        pid = 4321
+        returncode = None
+        waited = False
+
+        def poll(self):
+            return None
+
+        def kill(self):
+            killed.append(self.pid)
+            self.returncode = -9
+
+        def wait(self, timeout=None):
+            self.waited = True
+            return self.returncode
+
+        def communicate(self):
+            return ("", "")
+
+    process = FakeProcess()
+    ticks = iter([0.0, 0.2, 0.25])
+
+    monkeypatch.setattr(idem.subprocess, "Popen", lambda *args, **kwargs: process)
+    monkeypatch.setitem(sys.modules, "psutil", SimpleNamespace(Process=lambda pid: None))
+    monkeypatch.setattr(idem.time, "perf_counter", lambda: next(ticks))
+    monkeypatch.setattr(idem.time, "sleep", lambda seconds: None)
+
+    with pytest.raises(TimeoutError, match="timed out after 0.1 seconds"):
+        idem._run_command(["idemmp_fitting.exe"], timeout_seconds=0.1)
+
+    assert killed == [process.pid]
+    assert process.waited is True
 
 
 def test_parse_idem_passivity_stdout_extracts_soc_ham_progress():
