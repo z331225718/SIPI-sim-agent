@@ -101,6 +101,7 @@ def test_s_system_includes_constant_coordinates_when_feedthrough_is_nonpassive()
 
     assert system.dynamic_columns == ("constant",)
     assert system.constraint_matrix.shape[1] == 2
+    assert system.constraint_matrix.shape[0] == 2
 
 
 def test_s_residue_perturbation_reduces_sigma_without_nonfinite_response() -> None:

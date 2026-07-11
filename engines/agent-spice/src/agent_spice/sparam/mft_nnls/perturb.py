@@ -202,6 +202,7 @@ def build_residue_perturbation_system(
         column_scales.append(scale)
     gradients = np.zeros((len(extrema), len(rows) * coordinate_count), dtype=float)
     rhs = np.zeros(len(extrema), dtype=float)
+    signs = np.full(len(extrema), -1.0 if parameter_type == "S" else 1.0)
     for index, extremum in enumerate(extrema):
         s = 2j * np.pi * extremum.frequency_hz
         local_basis, _ = _basis(np.asarray([s]), selected_poles, 3)
@@ -221,13 +222,56 @@ def build_residue_perturbation_system(
         else:
             # MATLAB RP_QRNNLS_Y: c=-TOLG+alpha*lambda_min.
             rhs[index] = -passivity_tolerance + alpha * extremum.value
+    asymptotic_gradients: list[NDArray[np.float64]] = []
+    asymptotic_rhs: list[float] = []
+    if "constant" in dynamic_columns:
+        constant_coordinate = local_columns + dynamic_columns.index("constant")
+        if parameter_type == "S":
+            left, values, right_h = np.linalg.svd(model.constant)
+            modes = ((values[index], left[:, index], right_h[index].conj()) for index in range(model.ports))
+        else:
+            values, vectors = np.linalg.eigh(0.5 * (model.constant + model.constant.conj().T))
+            modes = ((values[index], vectors[:, index], None) for index in range(model.ports))
+        for value, left_vector, right_vector in modes:
+            row_gradient = np.zeros(len(rows) * coordinate_count, dtype=float)
+            for element, (row, column) in enumerate(zip(rows, columns, strict=True)):
+                derivative = np.zeros((model.ports, model.ports), dtype=complex)
+                derivative[row, column] = derivative[column, row] = 1.0
+                sensitivity = (
+                    float(np.real(np.vdot(left_vector, derivative @ right_vector)))
+                    if right_vector is not None
+                    else float(np.real(np.vdot(left_vector, derivative @ left_vector)))
+                )
+                row_gradient[element * coordinate_count + constant_coordinate] = sensitivity
+            if parameter_type == "S":
+                excess = float(value - 1.0)
+                asymptotic_rhs.append(-passivity_tolerance + (alpha * excess if excess > 0.0 else excess))
+            else:
+                asymptotic_rhs.append(-passivity_tolerance + (alpha * float(value) if value < 0.0 else float(value)))
+            asymptotic_gradients.append(row_gradient)
+    if "proportional" in dynamic_columns:
+        proportional_coordinate = local_columns + dynamic_columns.index("proportional")
+        values, vectors = np.linalg.eigh(0.5 * (model.proportional + model.proportional.conj().T))
+        for index, value in enumerate(values):
+            vector = vectors[:, index]
+            row_gradient = np.zeros(len(rows) * coordinate_count, dtype=float)
+            for element, (row, column) in enumerate(zip(rows, columns, strict=True)):
+                derivative = np.zeros((model.ports, model.ports), dtype=complex)
+                derivative[row, column] = derivative[column, row] = 1.0
+                row_gradient[element * coordinate_count + proportional_coordinate] = float(np.real(np.vdot(vector, derivative @ vector)))
+            asymptotic_gradients.append(row_gradient)
+            asymptotic_rhs.append(-1.0e-12 + alpha * float(value))
+    if asymptotic_gradients:
+        gradients = np.vstack((gradients, np.asarray(asymptotic_gradients)))
+        rhs = np.concatenate((rhs, np.asarray(asymptotic_rhs)))
+        signs = np.concatenate((signs, np.ones(len(asymptotic_gradients))))
     transformed = np.zeros_like(gradients)
     for element, block in enumerate(qr_blocks):
         start = element * coordinate_count
         stop = start + coordinate_count
         scaled_gradient = gradients[:, start:stop] / column_scales[element]
         transformed[:, start:stop] = solve_triangular(block.T, scaled_gradient.T, lower=True).T
-    constraint_matrix = -transformed if parameter_type == "S" else transformed
+    constraint_matrix = signs[:, None] * transformed
     return PerturbationSystem(
         constraint_matrix=constraint_matrix,
         constraint_rhs=rhs,
