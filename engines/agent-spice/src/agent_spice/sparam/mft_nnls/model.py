@@ -25,6 +25,14 @@ def canonicalize_poles(poles: NDArray[np.complex128], *, atol: float = 1.0e-12) 
         (complex(value.real, abs(value.imag)) for value in values if value.imag > atol),
         key=lambda value: (value.imag, value.real),
     )
+    for lower in (value for value in values if value.imag < -atol):
+        paired = any(
+            np.isclose(candidate.real, lower.real, rtol=0.0, atol=atol)
+            and np.isclose(candidate.imag, -lower.imag, rtol=0.0, atol=atol)
+            for candidate in upper
+        )
+        if not paired:
+            raise ValueError(f"unpaired lower-half-plane pole: {lower}")
     pairs = [pole for value in upper for pole in (value, value.conjugate())]
     return np.asarray([*real_poles, *pairs], dtype=complex)
 

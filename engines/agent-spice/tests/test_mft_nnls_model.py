@@ -37,6 +37,11 @@ def test_canonicalize_poles_orders_real_poles_then_conjugate_pairs() -> None:
     assert canonical == pytest.approx(np.array([-4.0 + 0.0j, -1.0 + 0.0j, -2.0 + 3.0j, -2.0 - 3.0j]))
 
 
+def test_canonicalize_poles_rejects_an_unpaired_lower_half_plane_pole() -> None:
+    with pytest.raises(ValueError, match="unpaired lower-half-plane pole"):
+        canonicalize_poles(np.array([-2.0 - 3.0j]))
+
+
 def test_reconstruct_symmetric_residues_averages_port_axes() -> None:
     residues = np.array([[[1.0], [3.0]], [[5.0], [7.0]]], dtype=complex)
 
