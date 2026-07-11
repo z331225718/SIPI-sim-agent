@@ -11,7 +11,7 @@ from scipy.linalg import qr, solve_triangular
 
 from agent_spice.sparam.mft_nnls.model import evaluate
 from agent_spice.sparam.mft_nnls.nnls import solve_homogeneous_nnls
-from agent_spice.sparam.mft_nnls.passivity import PassivityAssessment, assess_s_passivity, assess_y_passivity, select_violation_extrema
+from agent_spice.sparam.mft_nnls.passivity import PassivityAssessment, ViolationExtremum, assess_s_passivity, assess_y_passivity, select_violation_extrema
 from agent_spice.sparam.mft_nnls.types import MFTDiagnostics, MFTResult, PoleResidueModel
 from agent_spice.sparam.mft_nnls.vector_fit import _basis, _complex_pair_index, _matlab_lower_triangle_indices
 
@@ -84,6 +84,20 @@ def _assessment(model: PoleResidueModel, frequencies_hz: NDArray[np.float64], pa
 
 def _metric_excess(value: float, parameter_type: str) -> float:
     return value - 1.0 if parameter_type == "S" else -value
+
+
+def _extremum_at_frequency(
+    model: PoleResidueModel,
+    frequency_hz: float,
+    parameter_type: Literal["S", "Y"],
+    band_source: str,
+) -> ViolationExtremum:
+    matrix = evaluate(model, np.asarray([2j * np.pi * frequency_hz]))[0]
+    if parameter_type == "S":
+        left, values, right_h = np.linalg.svd(matrix)
+        return ViolationExtremum(frequency_hz, float(values[0]), left[:, 0], right_h[0].conj(), band_source)  # type: ignore[arg-type]
+    values, vectors = np.linalg.eigh(0.5 * (matrix + matrix.conj().T))
+    return ViolationExtremum(frequency_hz, float(values[0]), vectors[:, 0], None, band_source)  # type: ignore[arg-type]
 
 
 def _rp_auxiliary_frequencies(
@@ -176,7 +190,11 @@ def build_residue_perturbation_system(
     _, pair_index = _basis(2j * np.pi * frequencies, selected_poles, 1)
     dynamic_columns = _dynamic_columns(model, parameter_type)
     assessment = _assessment(model, frequencies, parameter_type)
-    extrema = select_violation_extrema(model, assessment, local=local_violations) if extrema_override is None else extrema_override
+    extrema = (
+        select_violation_extrema(model, assessment, local=local_violations)
+        if extrema_override is None
+        else tuple(_extremum_at_frequency(model, extremum.frequency_hz, parameter_type, extremum.band_source) for extremum in extrema_override)
+    )
     fit_frequencies = _rp_auxiliary_frequencies(
         frequencies,
         selected_poles,
