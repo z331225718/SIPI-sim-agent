@@ -1121,6 +1121,10 @@ def main(argv: list[str] | None = None) -> int:
     benchmark_parser.add_argument("--case", action="append")
     benchmark_parser.add_argument("--order-sweep")
 
+    preflight_parser = subparsers.add_parser("preflight-sparam-corpus")
+    preflight_parser.add_argument("--manifest", type=Path, required=True)
+    preflight_parser.add_argument("--report", type=Path, required=True)
+
     band_parser = subparsers.add_parser("compare-sparam-bands")
     band_parser.add_argument("raw", type=Path)
     band_parser.add_argument("--model", action="append", required=True, help="Model Touchstone as LABEL=PATH")
@@ -1829,6 +1833,16 @@ def main(argv: list[str] | None = None) -> int:
         if args.fail_on_quality and quality_info["status"] == "FAIL":
             print(f"error: modal-z quality gate failed: {quality_info['blocking_reasons']}", file=sys.stderr)
             return 1
+        return 0
+    if args.command == "preflight-sparam-corpus":
+        from agent_spice.sparam.corpus_preflight import preflight_promotion_corpus
+
+        try:
+            report = preflight_promotion_corpus(args.manifest, args.report)
+        except Exception as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(f"PASS: {report.case_count} corpus inputs validated; report={args.report}")
         return 0
     if args.command == "benchmark-sparam":
         if args.order_sweep and not args.run_fit:
