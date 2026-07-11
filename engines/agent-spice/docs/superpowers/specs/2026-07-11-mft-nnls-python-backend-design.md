@@ -38,6 +38,21 @@ Equivalence is established at intermediate boundaries rather than only final RMS
 
 Numerical comparisons use scale-aware tolerances. Pole sets are matched independent of ordering, conjugate pairs are canonicalized, and equivalent state-space realizations are compared by frequency response rather than raw eigenvector signs.
 
+| Boundary | Acceptance rule |
+| --- | --- |
+| Poles | Conjugate/order canonicalization, then `abs(delta) <= max(1e-8 * max(abs(reference), 1.0), 2*pi*1e-3)` rad/s. |
+| Fitted response and RMS | `rtol=1e-7`, `atol=1e-10` for normalized S values; use frequency-response comparison rather than realization coordinates. |
+| Passivity bands | Matched band endpoints must agree within `max(1e-6 * f_endpoint, 1.0)` Hz; extrema must be in the matched bands. |
+| NNLS solve | Primal residual norm within `1e-7` relative to MATLAB; KKT stationarity infinity norm at most `1e-8` after the same system scaling. |
+
+Every fixture documents its source values, MATLAB release, toolbox-file SHA-256 values, and the applicable row in this table. A toolbox hash change invalidates the fixture until it is regenerated with `generate_reference.m` and its tolerance rationale is reviewed.
+
+## Pole Collapse Gate
+
+MFT-NNLS uses Gustavsen `vectfit4`, which is also a relaxed vector-fitting relocation method. This does not establish that it avoids the existing native 2 GHz complex-pair collapse. The implementation must retain the reference algorithm's column scaling, QR elimination order, and post-relocation stability logic exactly where they differ from native, then measure the difference rather than assume one exists.
+
+After the single-step relocation parity work, run a Test16 trajectory probe on the full 611-point grid. It records each iteration's pole frequencies, real parts, relocation condition estimate, and complex-residue magnitude. The port cannot proceed to full-corpus promotion work until this probe states whether the MFT trajectory avoids, reproduces, or mitigates the native 2 GHz collapse.
+
 ## Auto Integration
 
 The shared auto scheduler supplies the same order trial sequence, full input frequency grid, RMS threshold, and passivity policy to both backends. A backend trial is successful only when:
@@ -66,6 +81,8 @@ Before a comparison run, preflight must:
 
 No fitting starts unless all six cases pass preflight.
 
+The frozen manifest declares `reference_impedance_ohm: 0.1`. Each case must use this real, frequency-invariant impedance for every port; preflight rejects a mismatch. S-parameter passivity remains evaluated in the source Touchstone normalization, and MFT Y/S conversions must carry this impedance explicitly rather than assume 50 ohm.
+
 ## Benchmark And Promotion Rules
 
 Each backend runs in a fresh child process per case/order. Measurements include wall-clock time and process-tree peak resident memory (RSS), not only Python allocation tracking. Inputs, order schedules, BLAS thread limits, process affinity policy, warm-up policy, and environment metadata are identical and recorded.
@@ -78,9 +95,15 @@ Comparison is lexicographic per case:
 
 MFT-NNLS is not promoted automatically. A promotion report may recommend changing the default only if all six cases pass both backends, MFT-NNLS has no higher minimum passing order on any case, has a lower order on at least one case, and geometric-mean peak RSS and wall-clock time are both lower. A later reviewed change is required to alter the default.
 
+Additionally, no case may have peak RSS or wall time more than 20% above native at its selected passing order. This per-case guard prevents a small-input improvement from masking a large-port regression.
+
 ## Error Handling And Diagnostics
 
 Public errors identify the stage (`preflight`, `vector_fit`, `passivity_assessment`, `nnls`, `validation`, or `export`) and preserve the attempted order and backend. Linear algebra failures include rank, condition estimate, matrix shape, solver status, and iteration without dumping large arrays. All diagnostic JSON remains bounded in size.
+
+`PassivityAssessment` records `band_source` for every violation band (`half_size` or `sweep`). The adapter writes that field into its diagnostics JSON so a sweep fallback cannot be mistaken for an analytic half-size detection.
+
+On Windows, Task 8 measures process-tree RSS with `psutil.Process(...).children(recursive=True)` polling and records the polling interval. Its child/grandchild test must prove peak capture and teardown before the metric can participate in promotion.
 
 ## Testing
 

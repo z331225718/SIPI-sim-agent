@@ -37,6 +37,7 @@ class PromotionCorpusReport:
     """Successful promotion-corpus preflight result."""
 
     manifest: str
+    manifest_sha256: str
     status: str
     case_count: int
     cases: tuple[PromotionCorpusCase, ...]
@@ -44,6 +45,7 @@ class PromotionCorpusReport:
     def to_dict(self) -> dict[str, Any]:
         return {
             "manifest": self.manifest,
+            "manifest_sha256": self.manifest_sha256,
             "status": self.status,
             "case_count": self.case_count,
             "cases": [asdict(case) for case in self.cases],
@@ -94,17 +96,20 @@ def _raw_frequency_axis(path: Path, ports: int) -> np.ndarray:
 
     values_per_sample = 1 + 2 * ports * ports
     values: list[float] = []
-    with path.open("r", encoding="utf-8", errors="ignore") as handle:
-        for raw_line in handle:
-            line = raw_line.split("!", 1)[0].strip()
-            if not line or line.startswith("#"):
-                continue
-            if line.startswith("["):
-                raise ValueError(f"Touchstone 2.0 is not supported by promotion preflight: {path}")
-            try:
-                values.extend(float(token) for token in line.split())
-            except ValueError as exc:
-                raise ValueError(f"Invalid Touchstone numeric data: {path}") from exc
+    try:
+        with path.open("r", encoding="ascii", errors="strict") as handle:
+            for raw_line in handle:
+                line = raw_line.split("!", 1)[0].strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.startswith("["):
+                    raise ValueError(f"Touchstone 2.0 is not supported by promotion preflight: {path}")
+                try:
+                    values.extend(float(token) for token in line.split())
+                except ValueError as exc:
+                    raise ValueError(f"Invalid Touchstone numeric data: {path}") from exc
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"Touchstone must be ASCII text: {path}") from exc
     if len(values) % values_per_sample != 0:
         raise ValueError(f"Touchstone data rows are incomplete: {path}")
     return np.asarray(values[::values_per_sample], dtype=float)
@@ -141,6 +146,8 @@ def _validate_network(case_id: str, path: Path) -> PromotionCorpusCase:
     if not np.allclose(z0.imag, 0.0):
         raise ValueError(f"Touchstone reference impedance must be real: {path}")
     reference_impedance = tuple(float(value) for value in z0[0].real)
+    if not np.allclose(z0.real, reference_impedance, rtol=0.0, atol=0.0):
+        raise ValueError(f"Touchstone reference impedance must not vary by frequency: {path}")
     return PromotionCorpusCase(
         id=case_id,
         path=str(path),
@@ -170,6 +177,11 @@ def preflight_promotion_corpus(manifest: Path, report_path: Path) -> PromotionCo
     if not isinstance(raw_cases, list) or not raw_cases:
         raise ValueError("Promotion manifest must contain at least one case")
     base_dir = payload.get("base_dir", ".")
+    expected_reference_impedance = payload.get("reference_impedance_ohm")
+    if expected_reference_impedance is not None:
+        if not isinstance(expected_reference_impedance, (int, float)) or not np.isfinite(expected_reference_impedance):
+            raise ValueError("Promotion manifest reference_impedance_ohm must be finite")
+        expected_reference_impedance = float(expected_reference_impedance)
     cases: list[PromotionCorpusCase] = []
     ids: set[str] = set()
     hashes: set[str] = set()
@@ -189,6 +201,13 @@ def preflight_promotion_corpus(manifest: Path, report_path: Path) -> PromotionCo
         if not path.is_file():
             raise ValueError(f"Touchstone file not found: {path}")
         case = _validate_network(case_id, path)
+        if expected_reference_impedance is not None and not np.allclose(
+            case.reference_impedance_by_port,
+            expected_reference_impedance,
+            rtol=0.0,
+            atol=0.0,
+        ):
+            raise ValueError(f"Promotion input does not match manifest reference impedance: {path}")
         if case.sha256 in hashes:
             raise ValueError(f"duplicate input SHA-256 in promotion corpus: {path}")
         hashes.add(case.sha256)
@@ -197,6 +216,7 @@ def preflight_promotion_corpus(manifest: Path, report_path: Path) -> PromotionCo
     cases.sort(key=lambda case: (case.ports, Path(case.path).name.lower()))
     result = PromotionCorpusReport(
         manifest=str(manifest),
+        manifest_sha256=_sha256_file(manifest),
         status="PASS",
         case_count=len(cases),
         cases=tuple(cases),

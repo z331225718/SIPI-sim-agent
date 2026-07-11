@@ -80,7 +80,7 @@
 - [ ] **Step 4: Run both test files plus `tests/test_mft_nnls_model.py`** and expect pass.
 - [ ] **Step 5: Commit** with `git commit -m "feat(sparam): port MFT weighting and pole initialization"`.
 
-### Task 4: Port Matrix Vector Fitting
+### Task 4a: Port And Prove One Relocation Step
 
 **Files:**
 - Create: `src/agent_spice/sparam/mft_nnls/vector_fit.py`
@@ -94,9 +94,40 @@
 - [ ] **Step 2: Run `python -m pytest tests/test_mft_nnls_vector_fit.py -q`** and confirm failures identify absent fitting behavior.
 - [ ] **Step 3: Implement one relocation step** with scaled least squares, QR elimination, eigenvalue pole update, conjugate normalization, and rank diagnostics.
 - [ ] **Step 4: Run the single-step parity tests** and make them pass before adding iteration control.
-- [ ] **Step 5: Implement `VFdriver`-equivalent diagonal prefit and full matrix iterations**, reusing factorization across matrix elements and avoiding a full block-diagonal allocation.
-- [ ] **Step 6: Run vector-fit tests and existing `tests/test_sparam_native_vf.py tests/test_sparam_fitting.py`**; both old and new suites must pass.
-- [ ] **Step 7: Commit** with `git commit -m "feat(sparam): port MFT matrix vector fitting"`.
+- [ ] **Step 5: Commit** with `git commit -m "feat(sparam): port MFT relocation step"`.
+
+### Task 4b: Add Relocation Iteration Control And Collapse Probe
+
+**Files:**
+- Modify: `src/agent_spice/sparam/mft_nnls/vector_fit.py`
+- Modify: `tests/test_mft_nnls_vector_fit.py`
+- Create: `scripts/sparam_mft_pole_trajectory.py`
+- Create: `tests/test_sparam_mft_pole_trajectory.py`
+
+**Interfaces:**
+- Produces: `fit_matrix(..., relocation_iterations=N) -> MFTResult` with per-iteration trajectory diagnostics.
+- Produces: `probe_mft_pole_trajectory(touchstone: Path, ...) -> dict[str, Any]`.
+
+- [ ] **Step 1: Write failing tests** for deterministic multi-step relocation, stable-pole reflection, convergence stopping, and trajectory records containing pole frequencies, real parts, condition estimate, and complex-residue magnitudes.
+- [ ] **Step 2: Run the focused tests** and verify they fail because iteration control and trajectory reporting are absent.
+- [ ] **Step 3: Implement iteration control** without changing the verified one-step algebra, preserving MATLAB column scaling and QR elimination order.
+- [ ] **Step 4: Run the full Test16 611-point trajectory probe** and explicitly classify 2 GHz behavior as avoided, reproduced, or mitigated relative to the native trajectory.
+- [ ] **Step 5: Commit** with `git commit -m "feat(sparam): add MFT relocation trajectory diagnostics"`.
+
+### Task 4c: Add Diagonal Prefit And Full Matrix Vector Fitting
+
+**Files:**
+- Modify: `src/agent_spice/sparam/mft_nnls/vector_fit.py`
+- Modify: `tests/test_mft_nnls_vector_fit.py`
+
+**Interfaces:**
+- Produces: complete `fit_matrix(response, frequencies_hz, config, initial_poles=None) -> MFTResult`.
+
+- [ ] **Step 1: Write failing tests** for diagonal prefit, full matrix iterations, factorization reuse, and MATLAB parity of final response and RMS.
+- [ ] **Step 2: Run focused vector-fit tests** and confirm only the new full-fitting expectations fail.
+- [ ] **Step 3: Implement diagonal prefit and full matrix iterations**, avoiding a full block-diagonal allocation.
+- [ ] **Step 4: Run vector-fit tests and existing `tests/test_sparam_native_vf.py tests/test_sparam_fitting.py`**; both old and new suites must pass.
+- [ ] **Step 5: Commit** with `git commit -m "feat(sparam): port MFT matrix vector fitting"`.
 
 ### Task 5: Port Y And S Passivity Assessment
 
@@ -113,7 +144,7 @@
 - [ ] **Step 2: Write failing MATLAB parity tests** for Y eigenvalue and S singular-value violation bands, eigen/singular-vector continuity, and global/local extrema selection.
 - [ ] **Step 3: Run the new tests** and observe missing assessment behavior.
 - [ ] **Step 4: Implement half-size/state-space passivity tests and robust crossover filtering**, retaining a bounded sweep fallback and recording which path produced each band.
-- [ ] **Step 5: Implement extrema selection and vector continuity** without relying on raw eigenvector sign.
+- [ ] **Step 5: Implement extrema selection and vector continuity** without relying on raw eigenvector sign; every returned band records `band_source="half_size"` or `"sweep"` for adapter diagnostics.
 - [ ] **Step 6: Run new tests plus `tests/test_sparam_passivity.py -q`** and expect all pass.
 - [ ] **Step 7: Commit** with `git commit -m "feat(sparam): port MFT passivity assessment"`.
 
@@ -162,6 +193,22 @@
 - [ ] **Step 5: Run all focused tests and snapshot native reports** to prove defaults and existing output keys are unchanged.
 - [ ] **Step 6: Commit** with `git commit -m "feat(sparam): integrate optional MFT-NNLS backend"`.
 
+### Task 7b: Meet Or Diagnose The S19 Gate B Milestone
+
+**Files:**
+- Create: `scripts/sparam_mft_s19_gate_b.py`
+- Create: `tests/test_sparam_mft_s19_gate_b.py`
+- Create: `docs/sparam-mft-nnls-s19-gate-b.md`
+
+**Interfaces:**
+- Produces: an S19 report stating `PASS`, `FIT_FAILURE`, `PASSIVITY_FAILURE`, or `COLLAPSE_DIAGNOSIS`.
+
+- [ ] **Step 1: Write failing tests** for the Gate B contract: full-grid RMS at most `0.001`, authoritative `max_sigma <= 1 + 1e-6`, stable poles, and explicit failure classification.
+- [ ] **Step 2: Run the Gate B tests** and verify they fail because the milestone runner is absent.
+- [ ] **Step 3: Implement an isolated S19 runner** using the MFT backend and frozen promotion configuration, retaining the VF trajectory and RP-NNLS diagnostics.
+- [ ] **Step 4: Execute Gate B before any full-corpus performance sweep**. On failure, publish the classified diagnosis and stop before Task 8; do not infer promotion potential from MATLAB parity alone.
+- [ ] **Step 5: Commit** with `git commit -m "test(sparam): add MFT S19 Gate B milestone"`.
+
 ### Task 8: Build Isolated Performance Harness And Promotion Report
 
 **Files:**
@@ -175,13 +222,14 @@
 - Produces: `run_isolated_trial(spec: TrialSpec) -> TrialMetrics`.
 - Produces: JSON/CSV/Markdown reports with minimum passing order, process-tree peak RSS, wall time, RMS, passivity margin, hashes, and environment.
 
-- [ ] **Step 1: Write failing process tests** using a child/grandchild allocator to prove process-tree RSS capture and timeout cleanup on Windows.
-- [ ] **Step 2: Write failing scheduler tests** for identical order ladders, cold/warm policy, BLAS thread limits, resumable artifacts keyed by input hash/backend/order/config hash, and no cross-backend cache reuse.
-- [ ] **Step 3: Write failing promotion-rule tests** requiring six-six success, no order regression, at least one lower order, and lower geometric-mean RSS and time; ties and missing metrics must not promote.
-- [ ] **Step 4: Implement isolated trial execution and metrics capture** with bounded polling overhead and explicit process-tree termination on timeout.
-- [ ] **Step 5: Implement report generation and the lexicographic comparator** without changing any runtime default.
-- [ ] **Step 6: Run `python -m pytest tests/test_sparam_process_metrics.py tests/test_sparam_backend_promotion.py -q`** and expect pass.
-- [ ] **Step 7: Commit** with `git commit -m "feat(sparam): add backend promotion benchmark"`.
+- [ ] **Step 1: Write failing process tests** using `psutil` and a child/grandchild allocator to prove process-tree RSS capture and timeout cleanup on Windows.
+- [ ] **Step 2: Implement and verify process-tree polling** before any benchmark: use `psutil.Process(pid).children(recursive=True)`, sample parent plus descendants at a recorded interval, and terminate the tree on timeout.
+- [ ] **Step 3: Write failing scheduler tests** for identical order ladders, cold/warm policy, BLAS thread limits, resumable artifacts at `runs-sparam/mft-nnls-promotion/<input-sha256>/<backend>/<order>/<config-sha256>/`, retained failure diagnostics, and no cross-backend cache reuse. Config hash must include target error, passivity policy, BLAS thread limit, SciPy version, and MFT configuration.
+- [ ] **Step 4: Write failing promotion-rule tests** requiring six-six success, no order regression, at least one lower order, lower geometric-mean RSS and time, and no single-case RSS or time regression above 20%; ties and missing metrics must not promote.
+- [ ] **Step 5: Implement isolated trial execution and metrics capture** with bounded polling overhead and explicit process-tree termination on timeout.
+- [ ] **Step 6: Implement report generation and the lexicographic comparator** without changing any runtime default.
+- [ ] **Step 7: Run `python -m pytest tests/test_sparam_process_metrics.py tests/test_sparam_backend_promotion.py -q`** and expect pass.
+- [ ] **Step 8: Commit** with `git commit -m "feat(sparam): add backend promotion benchmark"`.
 
 ### Task 9: Verify MATLAB Parity, Full Regression, And Corpus Results
 
@@ -195,7 +243,7 @@
 - Produces reproducible parity and promotion evidence; does not change backend defaults.
 
 - [ ] **Step 1: Run all compact parity tests** with `python -m pytest tests/test_mft_nnls_*.py -q` and record fixture hashes, tolerances, and results.
-- [ ] **Step 2: Run the complete regression suite** with `python -m pytest -q`; require zero failures and no new warnings.
+- [ ] **Step 2: Run the complete regression suite** with `python -m pytest -q`; require zero failures and no new warnings attributable to this change compared with the recorded baseline.
 - [ ] **Step 3: Run promotion preflight** and require all six unique hashes to pass before launching fits.
 - [ ] **Step 4: Run the isolated native and MFT-NNLS promotion benchmark** using the same frozen preflight report and environment.
 - [ ] **Step 5: Audit every passing model** on the full frequency grid for RMS, passivity, stability, non-finite values, and exported response consistency.
