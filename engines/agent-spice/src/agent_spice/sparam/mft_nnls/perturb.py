@@ -143,6 +143,7 @@ def build_residue_perturbation_system(
     auxiliary_weight_factor: float = 1.0e-3,
     proportional_tolerance: float = 1.0e-12,
     qr_reference: PerturbationSystem | None = None,
+    extrema_override: tuple | None = None,
 ) -> PerturbationSystem:
     """Build ``B R^-1`` constraints for residue-only RP-NNLS perturbation."""
 
@@ -168,7 +169,7 @@ def build_residue_perturbation_system(
     _, pair_index = _basis(2j * np.pi * frequencies, selected_poles, 1)
     dynamic_columns = _dynamic_columns(model, parameter_type)
     assessment = _assessment(model, frequencies, parameter_type)
-    extrema = select_violation_extrema(model, assessment, local=local_violations)
+    extrema = select_violation_extrema(model, assessment, local=local_violations) if extrema_override is None else extrema_override
     fit_frequencies = _rp_auxiliary_frequencies(
         frequencies,
         selected_poles,
@@ -373,6 +374,7 @@ def enforce_passivity(
         if excess <= 1.0e-6:
             break
         base_system: PerturbationSystem | None = None
+        outer_base = current
         accumulated_matrix: NDArray[np.float64] | None = None
         accumulated_rhs: NDArray[np.float64] | None = None
         inner_count = 0
@@ -380,8 +382,9 @@ def enforce_passivity(
         candidate_excess = excess
         solution = None
         for _ in range(config.inner_iterations):
+            current_extrema = select_violation_extrema(current, assessment, local=config.local_violations)
             system = build_residue_perturbation_system(
-                current,
+                outer_base,
                 frequencies,
                 parameter_type=config.parameter_type,
                 local_violations=config.local_violations,
@@ -392,6 +395,7 @@ def enforce_passivity(
                 auxiliary_weight_factor=config.auxiliary_weight_factor,
                 proportional_tolerance=config.proportional_tolerance,
                 qr_reference=base_system,
+                extrema_override=current_extrema,
             )
             if not len(system.constraint_rhs):
                 break
@@ -400,7 +404,7 @@ def enforce_passivity(
             accumulated_rhs = system.constraint_rhs if accumulated_rhs is None else np.concatenate((accumulated_rhs, system.constraint_rhs))
             solution = solve_homogeneous_nnls(accumulated_matrix, accumulated_rhs, tolerance=config.tolerance)
             delta = _recover_delta(base_system, solution.x)
-            candidate = _apply_residue_delta(current, base_system, delta)
+            candidate = _apply_residue_delta(outer_base, base_system, delta)
             candidate_assessment = _assessment(candidate, frequencies, config.parameter_type)
             candidate_excess = _metric_excess(candidate_assessment.worst_value, config.parameter_type)
             inner_count += 1
