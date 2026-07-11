@@ -64,6 +64,10 @@ class NativeVectorFitting:
         self.high_frequency_residual_injection_diagnostics = []
         self.pole_relocation_history = []
         self.post_relocation_order_diagnostics = []
+        self.relocation_frontier_enabled = False
+        self.relocation_frontier_passivity_weight = 1.0
+        self.relocation_frontier_max_candidates = 0
+        self.relocation_frontier_diagnostics = []
 
     @staticmethod
     def get_model_order(poles: np.ndarray) -> int:
@@ -545,6 +549,8 @@ class NativeVectorFitting:
         self.high_frequency_residual_injection_diagnostics = []
         self.pole_relocation_history = []
         self.post_relocation_order_diagnostics = []
+        self.relocation_frontier_diagnostics = []
+        relocation_frontier_checkpoints: list[tuple[int, np.ndarray]] = []
 
         iterations = self.max_iterations
         iteration = 0
@@ -699,6 +705,8 @@ class NativeVectorFitting:
                         int(self.effective_order_max),
                         preferred_complex_count=preferred_complex_count,
                     )
+            if self.relocation_frontier_enabled:
+                relocation_frontier_checkpoints.append((int(iteration), np.asarray(poles, dtype=complex).copy()))
             new_max_singular = np.amax(singular_vals)
             delta_max = np.abs(1 - new_max_singular / max_singular)
             self.delta_max_history.append(delta_max)
@@ -728,6 +736,66 @@ class NativeVectorFitting:
                     "real_pole_count_after": int(np.count_nonzero(np.abs(np.asarray(poles).imag) == 0.0)),
                 }
             )
+
+        if self.relocation_frontier_enabled and relocation_frontier_checkpoints:
+            max_candidates = int(self.relocation_frontier_max_candidates)
+            checkpoints = relocation_frontier_checkpoints
+            if max_candidates > 0:
+                checkpoints = checkpoints[-max_candidates:]
+            selected_index = 0
+            selected_score: PoleCandidateScore | None = None
+            for checkpoint_index, (checkpoint_iteration, checkpoint_poles) in enumerate(checkpoints):
+                candidate_poles = checkpoint_poles
+                if self.post_relocation_effective_order_max is not None:
+                    candidate_poles = self._trim_low_frequency_real_poles(
+                        checkpoint_poles,
+                        int(self.post_relocation_effective_order_max),
+                        preferred_complex_count=(
+                            int(self.effective_complex_pole_count)
+                            if self.effective_complex_pole_count is not None
+                            else int(n_poles_cmplx)
+                        ),
+                    )
+                score = self.score_pole_candidate(
+                    candidate_poles,
+                    freqs_norm,
+                    freq_responses,
+                    nports=self.network.nports,
+                    fit_constant=fit_constant,
+                    fit_proportional=fit_proportional,
+                    enforce_dc=enforce_dc,
+                    passivity_weight=float(self.relocation_frontier_passivity_weight),
+                )
+                if selected_score is None or score.score < selected_score.score:
+                    selected_index = checkpoint_index
+                    selected_score = score
+                self.relocation_frontier_diagnostics.append(
+                    {
+                        "iteration": int(checkpoint_iteration),
+                        "rms_error": float(score.rms_error),
+                        "max_sigma": float(score.max_sigma),
+                        "passivity_excess": float(score.passivity_excess),
+                        "combined_score": float(score.score),
+                        "effective_order": int(self.get_model_order(candidate_poles)),
+                        "selected": False,
+                    }
+                )
+            assert selected_score is not None
+            selected_checkpoint_poles = checkpoints[selected_index][1]
+            poles = (
+                self._trim_low_frequency_real_poles(
+                    selected_checkpoint_poles,
+                    int(self.post_relocation_effective_order_max),
+                    preferred_complex_count=(
+                        int(self.effective_complex_pole_count)
+                        if self.effective_complex_pole_count is not None
+                        else int(n_poles_cmplx)
+                    ),
+                )
+                if self.post_relocation_effective_order_max is not None
+                else selected_checkpoint_poles.copy()
+            )
+            self.relocation_frontier_diagnostics[selected_index]["selected"] = True
 
         residues, constant_coeff, proportional_coeff, _residuals, _rank, _singular_vals = self._fit_residues(
             poles,

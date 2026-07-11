@@ -269,6 +269,61 @@ def test_relocation_history_records_complex_pair_frequencies(monkeypatch):
     assert row["real_pole_count"] == 1
 
 
+def test_relocation_frontier_keeps_an_earlier_more_passive_checkpoint(monkeypatch):
+    network = _LightweightSNetwork(
+        f=np.array([0.0, 1.0e9, 2.0e9]),
+        s=np.zeros((3, 1, 1), dtype=complex),
+        z0=np.array([[50.0], [50.0], [50.0]], dtype=complex),
+        name="one_port",
+    )
+    relocation_outputs = iter([
+        np.array([-1.0 + 0.0j]),
+        np.array([-2.0 + 0.0j]),
+    ])
+
+    def fake_relocation(*_args, **_kwargs):
+        return next(relocation_outputs), 0.0, 1.0, 0, None, np.ones(1)
+
+    def fake_score(poles, *_args, **_kwargs):
+        pole = float(np.real(np.asarray(poles)[0]))
+        if pole == -1.0:
+            return PoleCandidateScore(np.asarray(poles), 0.0011, 1.0, 0.0, 0.0011)
+        return PoleCandidateScore(np.asarray(poles), 0.0005, 1.02, 0.02, 0.0205)
+
+    monkeypatch.setattr(NativeVectorFitting, "_pole_relocation", staticmethod(fake_relocation))
+    monkeypatch.setattr(NativeVectorFitting, "score_pole_candidate", staticmethod(fake_score))
+    vector_fit = NativeVectorFitting(network)
+    vector_fit.max_iterations = 2
+    vector_fit.relocation_frontier_enabled = True
+
+    vector_fit.vector_fit(n_poles_real=1, n_poles_cmplx=0)
+
+    assert vector_fit.poles == pytest.approx(np.array([-1.0e9 + 0.0j]))
+    assert [row["selected"] for row in vector_fit.relocation_frontier_diagnostics] == [True, False]
+
+
+def test_relocation_frontier_preserves_post_relocation_order_limit(monkeypatch):
+    network = _LightweightSNetwork(
+        f=np.array([0.0, 1.0e9, 2.0e9]),
+        s=np.zeros((3, 1, 1), dtype=complex),
+        z0=np.array([[50.0], [50.0], [50.0]], dtype=complex),
+        name="one_port",
+    )
+
+    def fake_relocation(*_args, **_kwargs):
+        return np.array([-1.0 + 0.0j, -2.0 + 0.0j]), 0.0, 1.0, 0, None, np.ones(1)
+
+    monkeypatch.setattr(NativeVectorFitting, "_pole_relocation", staticmethod(fake_relocation))
+    vector_fit = NativeVectorFitting(network)
+    vector_fit.max_iterations = 1
+    vector_fit.relocation_frontier_enabled = True
+    vector_fit.post_relocation_effective_order_max = 1
+
+    vector_fit.vector_fit(n_poles_real=2, n_poles_cmplx=0)
+
+    assert NativeVectorFitting.get_model_order(vector_fit.poles) == 1
+
+
 def test_high_frequency_relocation_weight_passes_sample_weights(monkeypatch):
     captured = {}
     network = _LightweightSNetwork(

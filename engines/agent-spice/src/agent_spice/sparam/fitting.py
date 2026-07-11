@@ -103,6 +103,9 @@ def _configure_native_vector_fitting(vector_fit: Any, config: "SParamFitConfig",
     vector_fit.dynamic_edge_c_res_regularization_growth_threshold = (
         config.native_dynamic_edge_c_res_regularization_growth_threshold
     )
+    vector_fit.relocation_frontier_enabled = config.native_relocation_frontier_enabled
+    vector_fit.relocation_frontier_passivity_weight = config.native_relocation_frontier_passivity_weight
+    vector_fit.relocation_frontier_max_candidates = config.native_relocation_frontier_max_candidates
     vector_fit._pole_relocation = (
         streaming_reciprocal_pole_relocation
         if _native_relocation_mode(nports) == "streaming-reciprocal"
@@ -180,6 +183,9 @@ class SParamFitConfig:
     native_dynamic_edge_c_res_regularization_growth_threshold: float = 1.5
     native_topology_sweep: bool = False
     native_topology_passivity_weight: float = 1.0
+    native_relocation_frontier_enabled: bool = False
+    native_relocation_frontier_passivity_weight: float = 1.0
+    native_relocation_frontier_max_candidates: int = 0
     quality_profile: str = "explore"
     max_comparison_rms_error: float = 0.05
     max_passivity_epsilon: float = 1e-6
@@ -283,6 +289,7 @@ class SParamFitResult:
     expanded_model_order: int | None = None
     constant_matrix_sigma: float | None = None
     topology_sweep_diagnostics: list[dict[str, Any]] | None = None
+    relocation_frontier_diagnostics: list[dict[str, Any]] | None = None
     auto_model_order_trials: list[dict[str, Any]] | None = None
     auto_model_order_selected: int | None = None
     auto_model_order_stop_reason: str | None = None
@@ -334,6 +341,7 @@ class SParamFitResult:
             "expanded_model_order": self.expanded_model_order,
             "constant_matrix_sigma": self.constant_matrix_sigma,
             "topology_sweep_diagnostics": self.topology_sweep_diagnostics,
+            "relocation_frontier_diagnostics": self.relocation_frontier_diagnostics,
             "auto_model_order_trials": self.auto_model_order_trials,
             "auto_model_order_selected": self.auto_model_order_selected,
             "auto_model_order_stop_reason": self.auto_model_order_stop_reason,
@@ -1722,6 +1730,7 @@ def fit_touchstone_to_spice(
             elapsed_seconds=resource_monitor.elapsed_seconds,
             peak_memory_mb=resource_monitor.peak_memory_mb,
             topology_sweep_diagnostics=getattr(vector_fit, "topology_sweep_diagnostics", None) or None,
+            relocation_frontier_diagnostics=getattr(vector_fit, "relocation_frontier_diagnostics", None) or None,
             constant_matrix_sigma=_constant_matrix_sigma(vector_fit, network.nports),
             **pole_summary,
         )

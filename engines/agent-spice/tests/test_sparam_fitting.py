@@ -81,6 +81,9 @@ def test_passivity_advanced_perturbations_are_experimental_opt_in():
     assert config.passivity_spectral_projection_active_mode_max_reference_rms_total_increase is None
     assert config.passivity_spectral_projection_active_mode_extra_scales == ()
     assert config.passivity_spectral_projection_active_mode_extra_scales_min_sigma == 0.0
+    assert config.native_relocation_frontier_enabled is False
+    assert config.native_relocation_frontier_passivity_weight == 1.0
+    assert config.native_relocation_frontier_max_candidates == 0
     assert config.passivity_spectral_projection_current_clip_candidate is False
     assert config.passivity_spectral_projection_current_clip_reference_weight == 0.0
     assert config.passivity_spectral_projection_candidate_reference_max_points == 0

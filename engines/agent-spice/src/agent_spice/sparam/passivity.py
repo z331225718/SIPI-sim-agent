@@ -22,6 +22,53 @@ class PassivityQpResult:
 
 
 @dataclass(frozen=True)
+class ActiveModeResidueSensitivitySystem:
+    """Linearized active singular-mode constraints for residue perturbations."""
+
+    A_ineq: np.ndarray
+    b_ineq: np.ndarray
+    constraint_frequencies_hz: tuple[float, ...]
+    constraint_sigmas: tuple[float, ...]
+    constraint_mode_indices: tuple[int, ...]
+    real_poles: tuple[tuple[int, float], ...]
+    complex_pairs: tuple[tuple[int, int, float, float], ...]
+    response_indices: tuple[int, ...]
+    full_variable_indices: np.ndarray
+    full_variable_count: int
+    residue_variable_count: int
+    constant_variable_count: int
+    perturb_constant: bool
+
+    @property
+    def constraint_count(self) -> int:
+        return int(self.A_ineq.shape[0])
+
+    @property
+    def variable_count(self) -> int:
+        return int(self.A_ineq.shape[1])
+
+    @property
+    def vars_per_response(self) -> int:
+        return len(self.real_poles) + (2 * len(self.complex_pairs))
+
+    def diagnostics(self) -> dict[str, Any]:
+        return {
+            "constraint_count": self.constraint_count,
+            "variable_count": self.variable_count,
+            "full_variable_count": int(self.full_variable_count),
+            "response_count": len(self.response_indices),
+            "response_indices": list(self.response_indices),
+            "residue_variable_count": int(self.residue_variable_count),
+            "constant_variable_count": int(self.constant_variable_count),
+            "constraint_rank": int(np.linalg.matrix_rank(self.A_ineq)),
+            "constraint_condition_number": float(_safe_condition_number(self.A_ineq)),
+            "finite": bool(np.all(np.isfinite(self.A_ineq)) and np.all(np.isfinite(self.b_ineq))),
+            "constraint_frequencies_hz": list(self.constraint_frequencies_hz),
+            "constraint_mode_indices": list(self.constraint_mode_indices),
+        }
+
+
+@dataclass(frozen=True)
 class _PassivityScore:
     violation_count: int
     max_sigma: float
@@ -600,6 +647,78 @@ def _solve_min_norm_upper_bound_dual_qp(
     )
 
 
+def _solve_min_norm_upper_bound_nnls(
+    A_ineq: np.ndarray,
+    b_ineq: np.ndarray,
+    *,
+    regularization: float = 1e-8,
+    variable_weights: np.ndarray | None = None,
+) -> PassivityQpResult:
+    """Solve the min-norm upper-bound problem through its NNLS dual form.
+
+    For ``min 0.5 x' W x`` subject to ``A x <= b``, the nonnegative dual
+    is a least-squares problem after a Cholesky factorization of
+    ``A W^-1 A'``. The Gram matrix is only constraint-sized; response-space
+    compression must therefore happen before this solver is called.
+    """
+    A_ineq = np.asarray(A_ineq, dtype=float)
+    b_ineq = np.asarray(b_ineq, dtype=float)
+    if A_ineq.ndim != 2:
+        raise ValueError("A_ineq must be a 2D array")
+    if b_ineq.ndim != 1 or b_ineq.shape[0] != A_ineq.shape[0]:
+        raise ValueError("b_ineq must be a vector with one entry per constraint")
+    if variable_weights is None:
+        inverse_weights = np.ones(A_ineq.shape[1], dtype=float)
+    else:
+        weights = np.asarray(variable_weights, dtype=float)
+        if weights.ndim != 1 or weights.shape[0] != A_ineq.shape[1]:
+            raise ValueError("variable_weights must contain one positive entry per variable")
+        if np.any(weights <= 0.0) or not np.all(np.isfinite(weights)):
+            raise ValueError("variable_weights must contain finite positive values")
+        inverse_weights = 1.0 / weights
+    if A_ineq.shape[0] == 0:
+        return PassivityQpResult(x=np.zeros(A_ineq.shape[1]), success=True, message="no constraints")
+
+    gram = A_ineq @ (inverse_weights[:, None] * A_ineq.T)
+    regularization_value = 0.0
+    if regularization > 0.0:
+        scale = float(np.max(np.abs(gram))) if gram.size else 0.0
+        if scale > 0.0:
+            regularization_value = float(regularization) * scale
+            gram = gram + regularization_value * np.eye(gram.shape[0])
+    dual_condition_number = _safe_condition_number(gram)
+    if not np.all(np.isfinite(gram)):
+        return PassivityQpResult(
+            x=np.zeros(A_ineq.shape[1]),
+            success=False,
+            message="non-finite NNLS dual Gram matrix",
+            regularization=regularization_value,
+            dual_condition_number=dual_condition_number,
+        )
+    try:
+        lower = la.cholesky(gram, lower=True, check_finite=False)
+        rhs = -la.solve_triangular(lower, b_ineq, lower=True, check_finite=False)
+        dual, residual_norm = opt.nnls(lower.T, rhs)
+    except (la.LinAlgError, ValueError) as exc:
+        return PassivityQpResult(
+            x=np.zeros(A_ineq.shape[1]),
+            success=False,
+            message=f"NNLS dual factorization failed: {exc}",
+            regularization=regularization_value,
+            dual_condition_number=dual_condition_number,
+        )
+    x_value = -(inverse_weights * (A_ineq.T @ dual))
+    slack = max(float(np.max(A_ineq @ x_value - b_ineq)), 0.0)
+    return PassivityQpResult(
+        x=x_value,
+        success=bool(np.all(np.isfinite(x_value))),
+        message=f"nnls residual={float(residual_norm):.6g}",
+        regularization=regularization_value,
+        dual_condition_number=dual_condition_number,
+        slack=slack,
+    )
+
+
 def _minimax_step_regularization(
     A_ineq: np.ndarray,
     b_ineq: np.ndarray,
@@ -797,6 +916,109 @@ def _solve_reference_regularized_upper_bound_dual_qp(
     )
 
 
+def _solve_reference_regularized_upper_bound_nnls(
+    A_ineq: np.ndarray,
+    b_ineq: np.ndarray,
+    C_ref: np.ndarray,
+    d_ref: np.ndarray,
+    *,
+    reference_weight: float,
+    regularization: float = 1e-8,
+    variable_weights: np.ndarray | None = None,
+) -> PassivityQpResult:
+    """Reference-regularized upper-bound solve using a nonnegative LS dual."""
+    A_ineq = np.asarray(A_ineq, dtype=float)
+    b_ineq = np.asarray(b_ineq, dtype=float)
+    C_ref = np.asarray(C_ref, dtype=float)
+    d_ref = np.asarray(d_ref, dtype=float)
+    if A_ineq.ndim != 2:
+        raise ValueError("A_ineq must be a 2D array")
+    if b_ineq.ndim != 1 or b_ineq.shape[0] != A_ineq.shape[0]:
+        raise ValueError("b_ineq must be a vector with one entry per constraint")
+    if C_ref.ndim != 2 or C_ref.shape[1] != A_ineq.shape[1]:
+        raise ValueError("C_ref must be a 2D matrix with one column per variable")
+    if d_ref.ndim != 1 or d_ref.shape[0] != C_ref.shape[0]:
+        raise ValueError("d_ref must be a vector with one entry per reference row")
+    if reference_weight <= 0.0 or not np.isfinite(reference_weight):
+        raise ValueError("reference_weight must be finite and positive")
+    if variable_weights is None:
+        weights = np.ones(A_ineq.shape[1], dtype=float)
+    else:
+        weights = np.asarray(variable_weights, dtype=float)
+        if weights.ndim != 1 or weights.shape[0] != A_ineq.shape[1]:
+            raise ValueError("variable_weights must contain one positive entry per variable")
+        if np.any(weights <= 0.0) or not np.all(np.isfinite(weights)):
+            raise ValueError("variable_weights must contain finite positive values")
+
+    hessian = np.diag(weights) + float(reference_weight) * (C_ref.T @ C_ref)
+    linear = float(reference_weight) * (C_ref.T @ d_ref)
+    regularization_value = 0.0
+    if regularization > 0.0:
+        scale = max(float(np.max(np.abs(hessian))) if hessian.size else 0.0, 1.0)
+        regularization_value = float(regularization) * scale
+        hessian = hessian + regularization_value * np.eye(hessian.shape[0])
+    try:
+        unconstrained = la.solve(hessian, linear, assume_a="pos")
+        hessian_inverse_a_t = la.solve(hessian, A_ineq.T, assume_a="pos")
+    except Exception as exc:
+        return PassivityQpResult(
+            x=np.zeros(A_ineq.shape[1]),
+            success=False,
+            message=f"reference regularized NNLS solve failed: {exc}",
+            regularization=regularization_value,
+            dual_condition_number=_safe_condition_number(hessian),
+        )
+    if A_ineq.shape[0] == 0:
+        return PassivityQpResult(
+            x=unconstrained,
+            success=True,
+            message="no constraints",
+            regularization=regularization_value,
+            dual_condition_number=_safe_condition_number(hessian),
+        )
+
+    dual_gram = A_ineq @ hessian_inverse_a_t
+    dual_linear = b_ineq - A_ineq @ unconstrained
+    dual_regularization = 0.0
+    try:
+        lower = la.cholesky(dual_gram, lower=True, check_finite=False)
+    except la.LinAlgError:
+        scale = max(float(np.max(np.abs(dual_gram))) if dual_gram.size else 0.0, 1.0)
+        dual_regularization = float(regularization) * scale
+        dual_gram = dual_gram + dual_regularization * np.eye(dual_gram.shape[0])
+        try:
+            lower = la.cholesky(dual_gram, lower=True, check_finite=False)
+        except la.LinAlgError as exc:
+            return PassivityQpResult(
+                x=np.zeros(A_ineq.shape[1]),
+                success=False,
+                message=f"reference regularized NNLS dual factorization failed: {exc}",
+                regularization=regularization_value + dual_regularization,
+                dual_condition_number=_safe_condition_number(dual_gram),
+            )
+    try:
+        rhs = -la.solve_triangular(lower, dual_linear, lower=True, check_finite=False)
+        dual, residual_norm = opt.nnls(lower.T, rhs)
+    except (la.LinAlgError, ValueError) as exc:
+        return PassivityQpResult(
+            x=np.zeros(A_ineq.shape[1]),
+            success=False,
+            message=f"reference regularized NNLS failed: {exc}",
+            regularization=regularization_value + dual_regularization,
+            dual_condition_number=_safe_condition_number(dual_gram),
+        )
+    x_value = unconstrained - hessian_inverse_a_t @ dual
+    slack = max(float(np.max(A_ineq @ x_value - b_ineq)), 0.0)
+    return PassivityQpResult(
+        x=x_value,
+        success=bool(np.all(np.isfinite(x_value))),
+        message=f"reference nnls residual={float(residual_norm):.6g}",
+        regularization=regularization_value + dual_regularization,
+        dual_condition_number=_safe_condition_number(dual_gram),
+        slack=slack,
+    )
+
+
 def _solve_reference_regularized_peak_minimax_dual_qp(
     A_ineq: np.ndarray,
     b_ineq: np.ndarray,
@@ -903,6 +1125,141 @@ def _singular_violation_modes(
     for idx in violating_indices[:max_modes_per_frequency]:
         modes.append((float(singular_values[idx]), U[:, idx], Vh[idx, :].conj()))
     return modes
+
+
+def build_active_mode_residue_sensitivity_system(
+    poles: np.ndarray,
+    residues: np.ndarray,
+    constant_coeff: np.ndarray,
+    *,
+    nports: int,
+    freqs: Any,
+    epsilon: float,
+    perturb_constant: bool,
+    safety_margin: float = 0.0,
+    max_modes_per_frequency: int = 1,
+    max_mode_responses: int = 0,
+) -> ActiveModeResidueSensitivitySystem:
+    """Build first-order upper-bound constraints for active S-parameter modes.
+
+    The variables follow ``_apply_residue_delta``: one real variable per
+    real-pole residue and two real variables per conjugate-pair residue.
+    """
+    if nports < 1:
+        raise ValueError("nports must be positive")
+    if max_modes_per_frequency < 1:
+        raise ValueError("max_modes_per_frequency must be positive")
+    if max_mode_responses < 0:
+        raise ValueError("max_mode_responses must be non-negative")
+    pole_array = np.asarray(poles, dtype=complex).reshape(-1)
+    residue_array = np.asarray(residues, dtype=complex)
+    constant_array = np.asarray(constant_coeff, dtype=complex).reshape(-1)
+    expected_residue_shape = (nports * nports, len(pole_array))
+    if residue_array.shape != expected_residue_shape:
+        raise ValueError(f"residues shape {residue_array.shape}, expected {expected_residue_shape}")
+    if constant_array.shape != (nports * nports,):
+        raise ValueError(f"constant_coeff shape {constant_array.shape}, expected {(nports * nports,)}")
+
+    real_poles, complex_pairs = partition_poles(pole_array)
+    vars_per_pair = len(real_poles) + (2 * len(complex_pairs))
+    full_residue_variable_count = nports * nports * vars_per_pair
+    full_constant_variable_count = nports * nports if perturb_constant else 0
+    full_variable_count = full_residue_variable_count + full_constant_variable_count
+    target_norm = max(0.0, 1.0 - float(epsilon) - float(safety_margin))
+
+    active_modes: list[tuple[float, float, int, np.ndarray, np.ndarray]] = []
+    selected_responses: set[int] = set()
+    for raw_freq in np.asarray(freqs, dtype=float).reshape(-1):
+        freq = float(raw_freq)
+        current = _evaluate_s_matrix_at_freq(
+            pole_array,
+            residue_array,
+            constant_array,
+            nports=nports,
+            freq=freq,
+        )
+        left_all, singular_values, right_all = la.svd(current)
+        active_indices = [
+            index for index, sigma in enumerate(singular_values) if float(sigma) > target_norm
+        ]
+        active_indices.sort(key=lambda index: float(singular_values[index]), reverse=True)
+        for mode_index in active_indices[:max_modes_per_frequency]:
+            u_vec = left_all[:, mode_index]
+            v_vec = right_all[mode_index, :].conj()
+            active_modes.append((freq, float(singular_values[mode_index]), mode_index, u_vec, v_vec))
+            if max_mode_responses > 0:
+                selected_responses.update(
+                    _dominant_response_indices_from_singular_vectors(
+                        u_vec,
+                        v_vec,
+                        nports=nports,
+                        max_responses=max_mode_responses,
+                    )
+                )
+
+    if max_mode_responses == 0:
+        response_indices = tuple(range(nports * nports))
+    else:
+        response_indices = tuple(sorted(selected_responses))
+    response_to_offset = {response_index: offset for offset, response_index in enumerate(response_indices)}
+    residue_variable_count = len(response_indices) * vars_per_pair
+    constant_variable_count = len(response_indices) if perturb_constant else 0
+    variable_count = residue_variable_count + constant_variable_count
+    full_variable_indices: list[int] = []
+    for response_index in response_indices:
+        start = response_index * vars_per_pair
+        full_variable_indices.extend(range(start, start + vars_per_pair))
+    if perturb_constant:
+        full_variable_indices.extend(
+            full_residue_variable_count + response_index for response_index in response_indices
+        )
+
+    rows: list[np.ndarray] = []
+    bounds: list[float] = []
+    frequencies: list[float] = []
+    sigmas: list[float] = []
+    mode_indices: list[int] = []
+    for freq, sigma, mode_index, u_vec, v_vec in active_modes:
+        row = np.zeros(variable_count, dtype=float)
+        s_value = 1j * 2.0 * np.pi * freq
+        for response_index in response_indices:
+            i = response_index // nports
+            j = response_index % nports
+            u_term = np.conj(u_vec[i]) * v_vec[j]
+            offset = response_to_offset[response_index] * vars_per_pair
+            for variable_index, (_pole_index, pole_value) in enumerate(real_poles):
+                row[offset + variable_index] = float(np.real(u_term / (s_value - pole_value)))
+            for variable_index, (pole_index_1, pole_index_2, _sigma_p, _omega_p) in enumerate(complex_pairs):
+                basis_1 = 1.0 / (s_value - pole_array[pole_index_1])
+                basis_2 = 1.0 / (s_value - pole_array[pole_index_2])
+                pair_offset = offset + len(real_poles) + (2 * variable_index)
+                row[pair_offset] = float(np.real(u_term * (basis_1 + basis_2)))
+                row[pair_offset + 1] = float(np.real(u_term * (1j * (basis_1 - basis_2))))
+            if perturb_constant:
+                row[residue_variable_count + response_to_offset[response_index]] = float(np.real(u_term))
+        rows.append(row)
+        bounds.append(float(target_norm - sigma))
+        frequencies.append(freq)
+        sigmas.append(float(sigma))
+        mode_indices.append(mode_index)
+
+    A_ineq = np.asarray(rows, dtype=float) if rows else np.empty((0, variable_count), dtype=float)
+    b_ineq = np.asarray(bounds, dtype=float)
+    return ActiveModeResidueSensitivitySystem(
+        A_ineq=A_ineq,
+        b_ineq=b_ineq,
+        constraint_frequencies_hz=tuple(frequencies),
+        constraint_sigmas=tuple(sigmas),
+        constraint_mode_indices=tuple(mode_indices),
+        real_poles=tuple(real_poles),
+        complex_pairs=tuple(complex_pairs),
+        response_indices=response_indices,
+        full_variable_indices=np.asarray(full_variable_indices, dtype=int),
+        full_variable_count=int(full_variable_count),
+        residue_variable_count=int(residue_variable_count),
+        constant_variable_count=int(constant_variable_count),
+        perturb_constant=bool(perturb_constant),
+    )
 
 
 def _select_active_variable_indices(
@@ -1649,18 +2006,26 @@ def _compact_projection_candidate_diagnostic(
             "active_mode_band_singular_frequency_count",
             "reference_row_count",
             "active_variable_count",
+            "compressed",
+            "full_variable_count",
+            "variable_count",
+            "response_count",
+            "allowed_response_count",
         )
-        diagnostic["source_diagnostic"] = {
-            key: (
-                float(source_diagnostic[key])
-                if isinstance(source_diagnostic.get(key), (np.floating, float))
-                else int(source_diagnostic[key])
-                if isinstance(source_diagnostic.get(key), (np.integer, int))
-                else source_diagnostic[key]
-            )
-            for key in source_keys
-            if key in source_diagnostic
-        }
+        compact_source: dict[str, Any] = {}
+        for key in source_keys:
+            if key not in source_diagnostic:
+                continue
+            value = source_diagnostic[key]
+            if isinstance(value, (bool, np.bool_)):
+                compact_source[key] = bool(value)
+            elif isinstance(value, (np.floating, float)):
+                compact_source[key] = float(value)
+            elif isinstance(value, (np.integer, int)):
+                compact_source[key] = int(value)
+            else:
+                compact_source[key] = value
+        diagnostic["source_diagnostic"] = compact_source
     return diagnostic
 
 
@@ -2487,8 +2852,10 @@ def real_state_space_realization(poles, residues, D_coeff, nports):
                         conj_idx = other_idx
                         break
             if conj_idx is not None:
-                p_comp = p if p.imag > 0 else other_p
-                complex_pairs.append((idx, conj_idx, p_comp.real, p_comp.imag))
+                positive_index = idx if p.imag > 0 else conj_idx
+                negative_index = conj_idx if p.imag > 0 else idx
+                positive_pole = poles[positive_index]
+                complex_pairs.append((positive_index, negative_index, positive_pole.real, positive_pole.imag))
                 visited.add(idx)
                 visited.add(conj_idx)
             else:
@@ -2730,8 +3097,10 @@ def partition_poles(poles):
                         conj_idx = other_idx
                         break
             if conj_idx is not None:
-                p_comp = p if p.imag > 0 else other_p
-                complex_pairs.append((idx, conj_idx, p_comp.real, p_comp.imag))
+                positive_index = idx if p.imag > 0 else conj_idx
+                negative_index = conj_idx if p.imag > 0 else idx
+                positive_pole = poles[positive_index]
+                complex_pairs.append((positive_index, negative_index, positive_pole.real, positive_pole.imag))
                 visited.add(idx)
                 visited.add(conj_idx)
             else:
@@ -3199,6 +3568,112 @@ def _active_mode_residue_constant_delta(
         }
 
     active_target_margin = max(0.0, float(target_margin))
+    # NNLS is the production candidate for the sparse RP path.  Build it in
+    # compressed response coordinates before the legacy full-width path below.
+    # Band-specific extra modes remain on that legacy path until their compact
+    # representation is implemented and independently benchmarked.
+    no_extra_band_modes = (
+        band_singular_mode_freqs is None
+        or np.asarray(band_singular_mode_freqs, dtype=float).size == 0
+        or int(band_singular_modes) <= int(singular_modes)
+    )
+    if solver == "nnls" and no_extra_band_modes:
+        system = build_active_mode_residue_sensitivity_system(
+            pole_array,
+            residue_array,
+            constant_array,
+            nports=nports,
+            freqs=freq_list,
+            epsilon=epsilon,
+            perturb_constant=perturb_constant,
+            safety_margin=float(safety_margin) + active_target_margin,
+            max_modes_per_frequency=max(1, int(singular_modes)),
+            max_mode_responses=max(0, int(max_mode_responses)),
+        )
+        if system.constraint_count == 0:
+            return residue_array.copy(), constant_array.copy(), {
+                "success": False,
+                "solver": solver,
+                "constraint_count": 0,
+                "message": "no active violating modes",
+                "target_margin": float(active_target_margin),
+                "compressed": True,
+                **system.diagnostics(),
+            }
+        local_indices = np.arange(system.variable_count, dtype=int)
+        if max_active_variables is not None and 0 < int(max_active_variables) < system.variable_count:
+            compressed_weights = (
+                None
+                if variable_weights is None
+                else np.asarray(variable_weights, dtype=float)[system.full_variable_indices]
+            )
+            local_indices = _select_active_variable_indices(
+                system.A_ineq,
+                int(max_active_variables),
+                variable_weights=compressed_weights,
+            )
+        active_weights = (
+            None
+            if variable_weights is None
+            else np.asarray(variable_weights, dtype=float)[system.full_variable_indices[local_indices]]
+        )
+        qp_result = _solve_min_norm_upper_bound_nnls(
+            system.A_ineq[:, local_indices],
+            system.b_ineq,
+            variable_weights=active_weights,
+        )
+        base_diagnostics = {
+            "solver": solver,
+            "constraint_count": system.constraint_count,
+            "allowed_response_count": len(system.response_indices),
+            "active_variable_count": int(len(local_indices)),
+            "max_mode_responses": int(max_mode_responses),
+            "singular_modes": max(1, int(singular_modes)),
+            "target_margin": float(active_target_margin),
+            "compressed": True,
+            **system.diagnostics(),
+        }
+        if not qp_result.success:
+            return residue_array.copy(), constant_array.copy(), {
+                "success": False,
+                "message": qp_result.message,
+                "dual_condition_number": qp_result.dual_condition_number,
+                "dual_regularization": qp_result.regularization,
+                **base_diagnostics,
+            }
+        x_full = np.zeros(n_vars, dtype=float)
+        x_full[system.full_variable_indices[local_indices]] = qp_result.x
+        updated_residues = _apply_residue_delta(
+            residue_array,
+            x_full,
+            nports=nports,
+            vars_per_pair=vars_per_pair,
+            n_real=n_real,
+            real_poles=real_poles,
+            complex_pairs=complex_pairs,
+            scale=1.0,
+        )
+        updated_constant = (
+            _apply_constant_delta(
+                constant_array,
+                x_full,
+                nports=nports,
+                offset=n_residue_vars,
+                scale=1.0,
+            )
+            if perturb_constant
+            else constant_array.copy()
+        )
+        return updated_residues, updated_constant, {
+            "success": True,
+            "active_rank": int(np.linalg.matrix_rank(system.A_ineq[:, local_indices])),
+            "active_condition_number": _safe_condition_number(system.A_ineq[:, local_indices]),
+            "dual_condition_number": qp_result.dual_condition_number,
+            "dual_regularization": qp_result.regularization,
+            "step_norm": float(np.linalg.norm(x_full)),
+            **base_diagnostics,
+        }
+
     target_norm = max(0.0, 1.0 - float(epsilon) - float(safety_margin) - active_target_margin)
     A_rows: list[np.ndarray] = []
     b_values: list[float] = []
@@ -3298,6 +3773,12 @@ def _active_mode_residue_constant_delta(
             b_ineq,
             variable_weights=active_weights,
         )
+    elif solver == "nnls":
+        qp_result = _solve_min_norm_upper_bound_nnls(
+            A_ineq[:, active_indices],
+            b_ineq,
+            variable_weights=active_weights,
+        )
     elif solver == "minimax_slack":
         step_regularization = _minimax_step_regularization(
             A_ineq[:, active_indices],
@@ -3313,6 +3794,7 @@ def _active_mode_residue_constant_delta(
         )
     elif solver in {
         "reference_regularized_min_norm",
+        "reference_regularized_nnls",
         "reference_regularized_peak_minimax",
         "reference_compensated_min_norm",
     }:
@@ -3363,6 +3845,15 @@ def _active_mode_residue_constant_delta(
                 reference_weight=reference_weight,
                 variable_weights=active_weights,
             )
+        elif solver == "reference_regularized_nnls":
+            qp_result = _solve_reference_regularized_upper_bound_nnls(
+                A_ineq[:, active_indices],
+                b_ineq,
+                C_ref,
+                d_ref,
+                reference_weight=reference_weight,
+                variable_weights=active_weights,
+            )
         else:
             qp_result = _solve_reference_regularized_upper_bound_dual_qp(
                 A_ineq[:, active_indices],
@@ -3374,8 +3865,9 @@ def _active_mode_residue_constant_delta(
             )
     else:
         raise ValueError(
-            "active-mode solver must be 'min_norm', 'minimax_slack', "
-            "'reference_regularized_min_norm', 'reference_regularized_peak_minimax', "
+            "active-mode solver must be 'min_norm', 'nnls', 'minimax_slack', "
+            "'reference_regularized_min_norm', 'reference_regularized_nnls', "
+            "'reference_regularized_peak_minimax', "
             "or 'reference_compensated_min_norm'"
         )
     if not qp_result.success:
