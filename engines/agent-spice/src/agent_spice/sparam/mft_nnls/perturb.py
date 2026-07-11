@@ -27,6 +27,7 @@ class ResiduePerturbationConfig:
     weight_mode: int = 1
     pole_indices: tuple[int, ...] | None = None
     bandwidth: int | None = None
+    auxiliary_weight_factor: float = 1.0e-3
 
     def __post_init__(self) -> None:
         if self.parameter_type not in {"S", "Y"}:
@@ -45,6 +46,8 @@ class ResiduePerturbationConfig:
             raise ValueError("pole_indices must be a non-empty tuple of non-negative indices")
         if self.bandwidth is not None and self.bandwidth < 0:
             raise ValueError("bandwidth must be non-negative")
+        if not np.isfinite(self.auxiliary_weight_factor) or self.auxiliary_weight_factor <= 0.0:
+            raise ValueError("auxiliary_weight_factor must be finite and positive")
 
 
 @dataclass(frozen=True)
@@ -59,6 +62,9 @@ class PerturbationSystem:
     pole_indices: NDArray[np.int_]
     active_column_count: int
     fit_frequencies_hz: NDArray[np.float64]
+    fit_weights: NDArray[np.float64]
+    dynamic_columns: tuple[Literal["constant", "proportional"], ...]
+    coordinate_count: int
 
 
 def _assessment(model: PoleResidueModel, frequencies_hz: NDArray[np.float64], parameter_type: str) -> PassivityAssessment:
@@ -76,6 +82,7 @@ def _rp_auxiliary_frequencies(
     pair_index: NDArray[np.int_],
     parameter_type: Literal["S", "Y"],
     extrema_hz: NDArray[np.float64],
+    include_proportional: bool,
 ) -> NDArray[np.float64]:
     """Reproduce RP_QRNNLS's auxiliary LS samples for weight mode 1."""
 
@@ -95,11 +102,26 @@ def _rp_auxiliary_frequencies(
         # the reference function does not append it to s either.
         extra = outside + [0.0]
     else:
-        # RP_QRNLLS_Y adds each violation frequency and s_ekstra (DC plus
-        # the same frequencies), followed by another DC point when E is not
-        # being perturbed.  The current residue-only path has Eflag == 0.
-        extra = outside + extrema_hz.tolist() + [0.0] + extrema_hz.tolist() + [0.0]
+        # RP_QRNLLS_Y adds the unique violation frequencies and one DC point
+        # when E is not being perturbed.  ``s_ekstra`` belongs to the driver
+        # sweep path and is deliberately a separate later-stage input.
+        extra = outside + np.unique(extrema_hz).tolist()
+        if not include_proportional:
+            extra.append(0.0)
     return np.concatenate((frequencies_hz, np.asarray(extra, dtype=float)))
+
+
+def _dynamic_columns(model: PoleResidueModel, parameter_type: Literal["S", "Y"]) -> tuple[Literal["constant", "proportional"], ...]:
+    constant = 0.5 * (model.constant + model.constant.conj().T)
+    proportional = 0.5 * (model.proportional + model.proportional.conj().T)
+    if parameter_type == "S":
+        return ("constant",) if np.any(np.linalg.svd(constant, compute_uv=False) > 1.0) else ()
+    columns: list[Literal["constant", "proportional"]] = []
+    if np.any(np.abs(constant) > 0.0) and np.min(np.linalg.eigvalsh(constant).real) < 0.0:
+        columns.append("constant")
+    if np.any(np.abs(proportional) > 0.0) and np.min(np.linalg.eigvalsh(proportional).real) < 0.0:
+        columns.append("proportional")
+    return tuple(columns)
 
 
 def build_residue_perturbation_system(
@@ -112,12 +134,15 @@ def build_residue_perturbation_system(
     alpha: float = 1.0,
     pole_indices: tuple[int, ...] | None = None,
     bandwidth: int | None = None,
+    auxiliary_weight_factor: float = 1.0e-3,
 ) -> PerturbationSystem:
     """Build ``B R^-1`` constraints for residue-only RP-NNLS perturbation."""
 
     frequencies = np.asarray(frequencies_hz, dtype=float).reshape(-1)
     if len(frequencies) < 2 or not np.isfinite(frequencies).all() or np.any(frequencies < 0.0):
         raise ValueError("frequencies_hz must contain finite non-negative samples")
+    if not np.isfinite(auxiliary_weight_factor) or auxiliary_weight_factor <= 0.0:
+        raise ValueError("auxiliary_weight_factor must be finite and positive")
     selected_indices = np.arange(len(model.poles), dtype=int) if pole_indices is None else np.asarray(pole_indices, dtype=int)
     if len(selected_indices) == 0 or np.any(selected_indices < 0) or np.any(selected_indices >= len(model.poles)) or len(np.unique(selected_indices)) != len(selected_indices):
         raise ValueError("pole_indices must be unique valid model pole indices")
@@ -131,6 +156,7 @@ def build_residue_perturbation_system(
     selected_poles = model.poles[selected_indices]
     local_columns = len(selected_poles)
     _, pair_index = _basis(2j * np.pi * frequencies, selected_poles, 1)
+    dynamic_columns = _dynamic_columns(model, parameter_type)
     assessment = _assessment(model, frequencies, parameter_type)
     extrema = select_violation_extrema(model, assessment, local=local_violations)
     fit_frequencies = _rp_auxiliary_frequencies(
@@ -139,8 +165,17 @@ def build_residue_perturbation_system(
         pair_index,
         parameter_type,
         np.asarray([extremum.frequency_hz for extremum in extrema], dtype=float),
+        "proportional" in dynamic_columns,
     )
-    basis, _ = _basis(2j * np.pi * fit_frequencies, selected_poles, 1)
+    fit_weights = np.ones(len(fit_frequencies), dtype=float)
+    fit_weights[len(frequencies) :] = auxiliary_weight_factor
+    basis, _ = _basis(2j * np.pi * fit_frequencies, selected_poles, 3)
+    basis_columns = list(range(local_columns))
+    if "constant" in dynamic_columns:
+        basis_columns.append(local_columns)
+    if "proportional" in dynamic_columns:
+        basis_columns.append(local_columns + 1)
+    coordinate_count = len(basis_columns)
     rows, columns = _matlab_lower_triangle_indices(model.ports)
     if bandwidth is not None:
         within_band = rows - columns <= bandwidth
@@ -149,7 +184,8 @@ def build_residue_perturbation_system(
     qr_blocks: list[NDArray[np.float64]] = []
     column_scales: list[NDArray[np.float64]] = []
     for row, column in zip(rows, columns, strict=True):
-        design = np.concatenate((basis[:, :local_columns].real, basis[:, :local_columns].imag), axis=0)
+        weighted_basis = fit_weights[:, None] * basis[:, basis_columns]
+        design = np.concatenate((weighted_basis.real, weighted_basis.imag), axis=0)
         qr_scale = np.linalg.norm(design, axis=0)
         if row != column:
             # MATLAB packs symmetric off-diagonal responses with sqrt(2)
@@ -160,26 +196,26 @@ def build_residue_perturbation_system(
         if np.any(qr_scale == 0.0):
             raise ValueError("residue LS column scale is zero")
         _, r = qr(design / qr_scale, mode="economic", pivoting=False, check_finite=False)
-        if np.linalg.matrix_rank(r) < local_columns:
+        if np.linalg.matrix_rank(r) < coordinate_count:
             raise ValueError("residue QR block is rank deficient")
         qr_blocks.append(r)
         column_scales.append(scale)
-    gradients = np.zeros((len(extrema), len(rows) * local_columns), dtype=float)
+    gradients = np.zeros((len(extrema), len(rows) * coordinate_count), dtype=float)
     rhs = np.zeros(len(extrema), dtype=float)
     for index, extremum in enumerate(extrema):
         s = 2j * np.pi * extremum.frequency_hz
-        local_basis, _ = _basis(np.asarray([s]), selected_poles, 1)
+        local_basis, _ = _basis(np.asarray([s]), selected_poles, 3)
         for element, (row, column) in enumerate(zip(rows, columns, strict=True)):
-            for pole_column in range(local_columns):
+            for coordinate, basis_column in enumerate(basis_columns):
                 derivative = np.zeros((model.ports, model.ports), dtype=complex)
-                derivative[row, column] = local_basis[0, pole_column]
-                derivative[column, row] = local_basis[0, pole_column]
+                derivative[row, column] = local_basis[0, basis_column]
+                derivative[column, row] = local_basis[0, basis_column]
                 if parameter_type == "S":
                     assert extremum.right_vector is not None
                     sensitivity = float(np.real(np.vdot(extremum.left_vector, derivative @ extremum.right_vector)))
                 else:
                     sensitivity = float(np.real(np.vdot(extremum.left_vector, derivative @ extremum.left_vector)))
-                gradients[index, element * local_columns + pole_column] = sensitivity
+                gradients[index, element * coordinate_count + coordinate] = sensitivity
         if parameter_type == "S":
             rhs[index] = -(passivity_tolerance + alpha * max(extremum.value - 1.0, 0.0))
         else:
@@ -187,8 +223,8 @@ def build_residue_perturbation_system(
             rhs[index] = -passivity_tolerance + alpha * extremum.value
     transformed = np.zeros_like(gradients)
     for element, block in enumerate(qr_blocks):
-        start = element * local_columns
-        stop = start + local_columns
+        start = element * coordinate_count
+        stop = start + coordinate_count
         scaled_gradient = gradients[:, start:stop] / column_scales[element]
         transformed[:, start:stop] = solve_triangular(block.T, scaled_gradient.T, lower=True).T
     constraint_matrix = -transformed if parameter_type == "S" else transformed
@@ -203,11 +239,14 @@ def build_residue_perturbation_system(
         pole_indices=selected_indices,
         active_column_count=int(np.count_nonzero(np.any(np.abs(transformed) > 0.0, axis=0))),
         fit_frequencies_hz=fit_frequencies,
+        fit_weights=fit_weights,
+        dynamic_columns=dynamic_columns,
+        coordinate_count=coordinate_count,
     )
 
 
 def _recover_delta(system: PerturbationSystem, xbar: NDArray[np.float64]) -> NDArray[np.float64]:
-    local_columns = len(system.pair_index)
+    local_columns = system.coordinate_count
     delta = np.empty_like(xbar)
     for element, block in enumerate(system.qr_blocks):
         start = element * local_columns
@@ -218,7 +257,8 @@ def _recover_delta(system: PerturbationSystem, xbar: NDArray[np.float64]) -> NDA
 
 def _apply_residue_delta(model: PoleResidueModel, system: PerturbationSystem, delta: NDArray[np.float64]) -> PoleResidueModel:
     residues = np.array(model.residues, copy=True)
-    local_columns = len(system.pair_index)
+    local_columns = system.coordinate_count
+    residue_columns = len(system.pair_index)
     for element, (row, column) in enumerate(zip(system.lower_rows, system.lower_columns, strict=True)):
         values = delta[element * local_columns : (element + 1) * local_columns]
         for pole_column, kind in enumerate(system.pair_index):
@@ -237,7 +277,16 @@ def _apply_residue_delta(model: PoleResidueModel, system: PerturbationSystem, de
                 residues[row, column, conjugate_column] += change.conjugate()
                 if row != column:
                     residues[column, row, conjugate_column] += change.conjugate()
-    return PoleResidueModel(model.poles, residues, model.constant, model.proportional)
+    constant = np.array(model.constant, copy=True)
+    proportional = np.array(model.proportional, copy=True)
+    for element, (row, column) in enumerate(zip(system.lower_rows, system.lower_columns, strict=True)):
+        values = delta[element * local_columns : (element + 1) * local_columns]
+        for offset, dynamic in enumerate(system.dynamic_columns, start=residue_columns):
+            target = constant if dynamic == "constant" else proportional
+            target[row, column] += values[offset]
+            if row != column:
+                target[column, row] += values[offset]
+    return PoleResidueModel(model.poles, residues, constant, proportional)
 
 
 def enforce_passivity(
@@ -265,6 +314,7 @@ def enforce_passivity(
             alpha=config.alpha,
             pole_indices=config.pole_indices,
             bandwidth=config.bandwidth,
+            auxiliary_weight_factor=config.auxiliary_weight_factor,
         )
         if not len(system.constraint_rhs):
             break

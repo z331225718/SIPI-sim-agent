@@ -51,6 +51,21 @@ def test_s_qr_objective_adds_out_of_band_pole_and_dc_auxiliary_samples() -> None
 
     assert system.fit_frequencies_hz[-1] == pytest.approx(0.0)
     assert system.fit_frequencies_hz[-2] == pytest.approx(10.0 / (2.0 * np.pi))
+    assert system.fit_weights[-2:] == pytest.approx([1.0e-3, 1.0e-3])
+
+
+def test_y_qr_objective_adds_unique_violation_frequency_and_dc_once_each() -> None:
+    model = PoleResidueModel(
+        poles=np.array([-1.0 + 0.0j]),
+        residues=np.array([[[-2.0 + 0.0j]]]),
+        constant=np.array([[1.0 + 0.0j]]),
+        proportional=np.array([[0.0 + 0.0j]]),
+    )
+
+    system = build_residue_perturbation_system(model, np.linspace(0.0, 1.0, 41), parameter_type="Y")
+
+    assert system.fit_frequencies_hz[-2:] == pytest.approx([0.0, 0.0])
+    assert system.fit_weights[-2:] == pytest.approx([1.0e-3, 1.0e-3])
 
 
 def test_perturbation_system_honors_selected_poles_and_bandwidth() -> None:
@@ -71,6 +86,20 @@ def test_perturbation_system_honors_selected_poles_and_bandwidth() -> None:
 
     assert system.pole_indices.tolist() == [1]
     assert list(zip(system.lower_rows, system.lower_columns, strict=True)) == [(0, 0), (1, 1)]
+    assert system.constraint_matrix.shape[1] == 2
+
+
+def test_s_system_includes_constant_coordinates_when_feedthrough_is_nonpassive() -> None:
+    model = PoleResidueModel(
+        poles=np.array([-1.0 + 0.0j]),
+        residues=np.array([[[0.0 + 0.0j]]]),
+        constant=np.array([[1.2 + 0.0j]]),
+        proportional=np.array([[0.0 + 0.0j]]),
+    )
+
+    system = build_residue_perturbation_system(model, np.linspace(0.0, 1.0, 41), parameter_type="S")
+
+    assert system.dynamic_columns == ("constant",)
     assert system.constraint_matrix.shape[1] == 2
 
 
