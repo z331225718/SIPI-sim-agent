@@ -120,6 +120,20 @@ def test_s_residue_perturbation_reduces_sigma_without_nonfinite_response() -> No
     assert result.rms_error < 1.0
 
 
+def test_rp_outer_iteration_accumulates_inner_violation_constraints() -> None:
+    model = _active_scalar_s_model()
+
+    result = enforce_passivity(
+        model,
+        np.linspace(0.0, 1.0, 81),
+        ResiduePerturbationConfig(parameter_type="S", outer_iterations=1, inner_iterations=2),
+    )
+
+    history = result.diagnostics.details["history"]
+    assert history[0]["inner_iterations"] >= 1
+    assert history[0]["accumulated_constraint_count"] >= history[0]["constraint_count"]
+
+
 def test_s_one_step_update_matches_matlab_rp_qrnnls_fixture() -> None:
     with np.load("tests/fixtures/mft_nnls/rp_reference.npz") as fixture:
         frequencies = fixture["s"].imag / (2.0 * np.pi)

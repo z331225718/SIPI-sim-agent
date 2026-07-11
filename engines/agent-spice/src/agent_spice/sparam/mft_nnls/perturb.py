@@ -20,6 +20,7 @@ from agent_spice.sparam.mft_nnls.vector_fit import _basis, _complex_pair_index, 
 class ResiduePerturbationConfig:
     parameter_type: Literal["S", "Y"] = "S"
     outer_iterations: int = 10
+    inner_iterations: int = 1
     tolerance: float = 1.0e-8
     passivity_tolerance: float = 1.0e-6
     alpha: float = 1.0
@@ -28,12 +29,15 @@ class ResiduePerturbationConfig:
     pole_indices: tuple[int, ...] | None = None
     bandwidth: int | None = None
     auxiliary_weight_factor: float = 1.0e-3
+    proportional_tolerance: float = 1.0e-12
 
     def __post_init__(self) -> None:
         if self.parameter_type not in {"S", "Y"}:
             raise ValueError("parameter_type must be 'S' or 'Y'")
         if self.outer_iterations < 1:
             raise ValueError("outer_iterations must be positive")
+        if self.inner_iterations < 1:
+            raise ValueError("inner_iterations must be positive")
         if not np.isfinite(self.tolerance) or self.tolerance <= 0.0:
             raise ValueError("tolerance must be finite and positive")
         if not np.isfinite(self.passivity_tolerance) or self.passivity_tolerance <= 0.0:
@@ -48,6 +52,8 @@ class ResiduePerturbationConfig:
             raise ValueError("bandwidth must be non-negative")
         if not np.isfinite(self.auxiliary_weight_factor) or self.auxiliary_weight_factor <= 0.0:
             raise ValueError("auxiliary_weight_factor must be finite and positive")
+        if not np.isfinite(self.proportional_tolerance) or self.proportional_tolerance <= 0.0:
+            raise ValueError("proportional_tolerance must be finite and positive")
 
 
 @dataclass(frozen=True)
@@ -135,6 +141,8 @@ def build_residue_perturbation_system(
     pole_indices: tuple[int, ...] | None = None,
     bandwidth: int | None = None,
     auxiliary_weight_factor: float = 1.0e-3,
+    proportional_tolerance: float = 1.0e-12,
+    qr_reference: PerturbationSystem | None = None,
 ) -> PerturbationSystem:
     """Build ``B R^-1`` constraints for residue-only RP-NNLS perturbation."""
 
@@ -143,6 +151,8 @@ def build_residue_perturbation_system(
         raise ValueError("frequencies_hz must contain finite non-negative samples")
     if not np.isfinite(auxiliary_weight_factor) or auxiliary_weight_factor <= 0.0:
         raise ValueError("auxiliary_weight_factor must be finite and positive")
+    if not np.isfinite(proportional_tolerance) or proportional_tolerance <= 0.0:
+        raise ValueError("proportional_tolerance must be finite and positive")
     selected_indices = np.arange(len(model.poles), dtype=int) if pole_indices is None else np.asarray(pole_indices, dtype=int)
     if len(selected_indices) == 0 or np.any(selected_indices < 0) or np.any(selected_indices >= len(model.poles)) or len(np.unique(selected_indices)) != len(selected_indices):
         raise ValueError("pole_indices must be unique valid model pole indices")
@@ -200,6 +210,15 @@ def build_residue_perturbation_system(
             raise ValueError("residue QR block is rank deficient")
         qr_blocks.append(r)
         column_scales.append(scale)
+    if qr_reference is not None:
+        if (
+            qr_reference.coordinate_count != coordinate_count
+            or not np.array_equal(qr_reference.lower_rows, rows)
+            or not np.array_equal(qr_reference.lower_columns, columns)
+        ):
+            raise ValueError("QR reference does not match the current RP coordinate layout")
+        qr_blocks = list(qr_reference.qr_blocks)
+        column_scales = list(qr_reference.column_scales)
     gradients = np.zeros((len(extrema), len(rows) * coordinate_count), dtype=float)
     rhs = np.zeros(len(extrema), dtype=float)
     signs = np.full(len(extrema), -1.0 if parameter_type == "S" else 1.0)
@@ -222,6 +241,9 @@ def build_residue_perturbation_system(
         else:
             # MATLAB RP_QRNNLS_Y: c=-TOLG+alpha*lambda_min.
             rhs[index] = -passivity_tolerance + alpha * extremum.value
+            if rhs[index] > 0.0:
+                rhs[index] = (passivity_tolerance + rhs[index]) / alpha
+                rhs[index] = (2.0 - alpha) * rhs[index] - passivity_tolerance
     asymptotic_gradients: list[NDArray[np.float64]] = []
     asymptotic_rhs: list[float] = []
     if "constant" in dynamic_columns:
@@ -260,7 +282,7 @@ def build_residue_perturbation_system(
                 derivative[row, column] = derivative[column, row] = 1.0
                 row_gradient[element * coordinate_count + proportional_coordinate] = float(np.real(np.vdot(vector, derivative @ vector)))
             asymptotic_gradients.append(row_gradient)
-            asymptotic_rhs.append(-1.0e-12 + alpha * float(value))
+            asymptotic_rhs.append(-proportional_tolerance + alpha * float(value))
     if asymptotic_gradients:
         gradients = np.vstack((gradients, np.asarray(asymptotic_gradients)))
         rhs = np.concatenate((rhs, np.asarray(asymptotic_rhs)))
@@ -347,41 +369,63 @@ def enforce_passivity(
     assessment = _assessment(current, frequencies, config.parameter_type)
     for iteration in range(config.outer_iterations):
         excess = _metric_excess(assessment.worst_value, config.parameter_type)
+        excess_before = excess
         if excess <= 1.0e-6:
             break
-        system = build_residue_perturbation_system(
-            current,
-            frequencies,
-            parameter_type=config.parameter_type,
-            local_violations=config.local_violations,
-            passivity_tolerance=config.passivity_tolerance,
-            alpha=config.alpha,
-            pole_indices=config.pole_indices,
-            bandwidth=config.bandwidth,
-            auxiliary_weight_factor=config.auxiliary_weight_factor,
-        )
-        if not len(system.constraint_rhs):
-            break
-        solution = solve_homogeneous_nnls(system.constraint_matrix, system.constraint_rhs, tolerance=config.tolerance)
-        delta = _recover_delta(system, solution.x)
-        candidate = _apply_residue_delta(current, system, delta)
-        candidate_assessment = _assessment(candidate, frequencies, config.parameter_type)
-        candidate_excess = _metric_excess(candidate_assessment.worst_value, config.parameter_type)
-        accepted = bool(np.isfinite(candidate_excess) and candidate_excess < excess)
+        base_system: PerturbationSystem | None = None
+        accumulated_matrix: NDArray[np.float64] | None = None
+        accumulated_rhs: NDArray[np.float64] | None = None
+        inner_count = 0
+        accepted = False
+        candidate_excess = excess
+        solution = None
+        for _ in range(config.inner_iterations):
+            system = build_residue_perturbation_system(
+                current,
+                frequencies,
+                parameter_type=config.parameter_type,
+                local_violations=config.local_violations,
+                passivity_tolerance=config.passivity_tolerance,
+                alpha=config.alpha,
+                pole_indices=config.pole_indices,
+                bandwidth=config.bandwidth,
+                auxiliary_weight_factor=config.auxiliary_weight_factor,
+                proportional_tolerance=config.proportional_tolerance,
+                qr_reference=base_system,
+            )
+            if not len(system.constraint_rhs):
+                break
+            base_system = system if base_system is None else base_system
+            accumulated_matrix = system.constraint_matrix if accumulated_matrix is None else np.vstack((accumulated_matrix, system.constraint_matrix))
+            accumulated_rhs = system.constraint_rhs if accumulated_rhs is None else np.concatenate((accumulated_rhs, system.constraint_rhs))
+            solution = solve_homogeneous_nnls(accumulated_matrix, accumulated_rhs, tolerance=config.tolerance)
+            delta = _recover_delta(base_system, solution.x)
+            candidate = _apply_residue_delta(current, base_system, delta)
+            candidate_assessment = _assessment(candidate, frequencies, config.parameter_type)
+            candidate_excess = _metric_excess(candidate_assessment.worst_value, config.parameter_type)
+            inner_count += 1
+            if not np.isfinite(candidate_excess) or candidate_excess >= excess:
+                break
+            accepted = True
+            current = candidate
+            assessment = candidate_assessment
+            excess = candidate_excess
+            if excess <= 1.0e-6:
+                break
         history.append(
             {
                 "iteration": iteration + 1,
-                "constraint_count": int(len(system.constraint_rhs)),
-                "kkt_stationarity_inf_norm": solution.kkt_stationarity_inf_norm,
-                "excess_before": excess,
+                "constraint_count": 0 if base_system is None else int(len(base_system.constraint_rhs)),
+                "accumulated_constraint_count": 0 if accumulated_rhs is None else int(len(accumulated_rhs)),
+                "inner_iterations": inner_count,
+                "kkt_stationarity_inf_norm": float("nan") if solution is None else solution.kkt_stationarity_inf_norm,
+                "excess_before": excess_before,
                 "excess_after": candidate_excess,
                 "accepted": accepted,
             }
         )
         if not accepted:
             break
-        current = candidate
-        assessment = candidate_assessment
     response = evaluate(current, 2j * np.pi * frequencies)
     rms = float(np.sqrt(np.mean(np.abs(response - reference) ** 2)))
     return MFTResult(
