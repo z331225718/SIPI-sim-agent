@@ -21,6 +21,7 @@ class ResiduePerturbationConfig:
     parameter_type: Literal["S", "Y"] = "S"
     outer_iterations: int = 10
     tolerance: float = 1.0e-8
+    passivity_tolerance: float = 1.0e-6
     alpha: float = 1.0
     local_violations: bool = True
 
@@ -31,6 +32,8 @@ class ResiduePerturbationConfig:
             raise ValueError("outer_iterations must be positive")
         if not np.isfinite(self.tolerance) or self.tolerance <= 0.0:
             raise ValueError("tolerance must be finite and positive")
+        if not np.isfinite(self.passivity_tolerance) or self.passivity_tolerance <= 0.0:
+            raise ValueError("passivity_tolerance must be finite and positive")
         if not np.isfinite(self.alpha) or self.alpha <= 0.0:
             raise ValueError("alpha must be finite and positive")
 
@@ -40,6 +43,7 @@ class PerturbationSystem:
     constraint_matrix: NDArray[np.float64]
     constraint_rhs: NDArray[np.float64]
     qr_blocks: tuple[NDArray[np.float64], ...]
+    column_scales: tuple[NDArray[np.float64], ...]
     pair_index: NDArray[np.int_]
     lower_rows: NDArray[np.int_]
     lower_columns: NDArray[np.int_]
@@ -61,6 +65,8 @@ def build_residue_perturbation_system(
     *,
     parameter_type: Literal["S", "Y"],
     local_violations: bool = True,
+    passivity_tolerance: float = 1.0e-6,
+    alpha: float = 1.0,
 ) -> PerturbationSystem:
     """Build ``B R^-1`` constraints for residue-only RP-NNLS perturbation."""
 
@@ -71,12 +77,17 @@ def build_residue_perturbation_system(
     basis, pair_index = _basis(2j * np.pi * frequencies, model.poles, 1)
     rows, columns = _matlab_lower_triangle_indices(model.ports)
     qr_blocks: list[NDArray[np.float64]] = []
+    column_scales: list[NDArray[np.float64]] = []
     for _ in rows:
         design = np.concatenate((basis[:, :local_columns].real, basis[:, :local_columns].imag), axis=0)
-        _, r = qr(design, mode="economic", pivoting=False, check_finite=False)
+        scale = np.linalg.norm(design, axis=0)
+        if np.any(scale == 0.0):
+            raise ValueError("residue LS column scale is zero")
+        _, r = qr(design / scale, mode="economic", pivoting=False, check_finite=False)
         if np.linalg.matrix_rank(r) < local_columns:
             raise ValueError("residue QR block is rank deficient")
         qr_blocks.append(r)
+        column_scales.append(scale)
     assessment = _assessment(model, frequencies, parameter_type)
     extrema = select_violation_extrema(model, assessment, local=local_violations)
     gradients = np.zeros((len(extrema), len(rows) * local_columns), dtype=float)
@@ -95,17 +106,23 @@ def build_residue_perturbation_system(
                 else:
                     sensitivity = float(np.real(np.vdot(extremum.left_vector, derivative @ extremum.left_vector)))
                 gradients[index, element * local_columns + pole_column] = sensitivity
-        rhs[index] = -max(_metric_excess(extremum.value, parameter_type), 0.0)
+        if parameter_type == "S":
+            rhs[index] = -(passivity_tolerance + alpha * max(extremum.value - 1.0, 0.0))
+        else:
+            # MATLAB RP_QRNNLS_Y: c=-TOLG+alpha*lambda_min.
+            rhs[index] = -passivity_tolerance + alpha * extremum.value
     transformed = np.zeros_like(gradients)
     for element, block in enumerate(qr_blocks):
         start = element * local_columns
         stop = start + local_columns
-        transformed[:, start:stop] = solve_triangular(block.T, gradients[:, start:stop].T, lower=True).T
+        scaled_gradient = gradients[:, start:stop] / column_scales[element]
+        transformed[:, start:stop] = solve_triangular(block.T, scaled_gradient.T, lower=True).T
     constraint_matrix = -transformed if parameter_type == "S" else transformed
     return PerturbationSystem(
         constraint_matrix=constraint_matrix,
         constraint_rhs=rhs,
         qr_blocks=tuple(qr_blocks),
+        column_scales=tuple(column_scales),
         pair_index=pair_index,
         lower_rows=rows,
         lower_columns=columns,
@@ -119,7 +136,7 @@ def _recover_delta(system: PerturbationSystem, xbar: NDArray[np.float64]) -> NDA
     for element, block in enumerate(system.qr_blocks):
         start = element * local_columns
         stop = start + local_columns
-        delta[start:stop] = solve_triangular(block, xbar[start:stop], lower=False)
+        delta[start:stop] = solve_triangular(block, xbar[start:stop], lower=False) / system.column_scales[element]
     return delta
 
 
@@ -131,13 +148,16 @@ def _apply_residue_delta(model: PoleResidueModel, system: PerturbationSystem, de
         for pole_column, kind in enumerate(system.pair_index):
             if kind == 0:
                 residues[row, column, pole_column] += values[pole_column]
-                residues[column, row, pole_column] += values[pole_column]
+                if row != column:
+                    residues[column, row, pole_column] += values[pole_column]
             elif kind == 1:
                 change = values[pole_column] + 1j * values[pole_column + 1]
                 residues[row, column, pole_column] += change
-                residues[column, row, pole_column] += change
+                if row != column:
+                    residues[column, row, pole_column] += change
                 residues[row, column, pole_column + 1] += change.conjugate()
-                residues[column, row, pole_column + 1] += change.conjugate()
+                if row != column:
+                    residues[column, row, pole_column + 1] += change.conjugate()
     return PoleResidueModel(model.poles, residues, model.constant, model.proportional)
 
 
@@ -162,11 +182,13 @@ def enforce_passivity(
             frequencies,
             parameter_type=config.parameter_type,
             local_violations=config.local_violations,
+            passivity_tolerance=config.passivity_tolerance,
+            alpha=config.alpha,
         )
         if not len(system.constraint_rhs):
             break
         solution = solve_homogeneous_nnls(system.constraint_matrix, system.constraint_rhs, tolerance=config.tolerance)
-        delta = _recover_delta(system, solution.x) * config.alpha
+        delta = _recover_delta(system, solution.x)
         candidate = _apply_residue_delta(current, system, delta)
         candidate_assessment = _assessment(candidate, frequencies, config.parameter_type)
         candidate_excess = _metric_excess(candidate_assessment.worst_value, config.parameter_type)

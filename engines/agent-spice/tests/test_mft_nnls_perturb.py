@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from agent_spice.sparam.mft_nnls.model import evaluate
 from agent_spice.sparam.mft_nnls.perturb import (
@@ -49,6 +50,18 @@ def test_s_residue_perturbation_reduces_sigma_without_nonfinite_response() -> No
     assert result.rms_error < 1.0
 
 
+def test_s_one_step_update_matches_matlab_rp_qrnnls_fixture() -> None:
+    with np.load("tests/fixtures/mft_nnls/rp_reference.npz") as fixture:
+        frequencies = fixture["s"].imag / (2.0 * np.pi)
+        result = enforce_passivity(
+            _active_scalar_s_model(),
+            frequencies,
+            ResiduePerturbationConfig(parameter_type="S", outer_iterations=1, tolerance=1.0e-8),
+        )
+
+        assert result.model.residues[0, 0, 0] == pytest.approx(fixture["s_residue"].item(), rel=1.0e-6)
+
+
 def test_y_residue_perturbation_reduces_negative_real_part() -> None:
     model = PoleResidueModel(
         poles=np.array([-1.0 + 0.0j]),
@@ -65,3 +78,17 @@ def test_y_residue_perturbation_reduces_negative_real_part() -> None:
     )
 
     assert result.diagnostics.details["final_assessment"].min_value >= -1.0e-6
+
+
+def test_two_port_s_update_matches_matlab_residue_coordinates() -> None:
+    with np.load("tests/fixtures/mft_nnls/rp_reference.npz") as fixture:
+        frequencies = fixture["s"].imag / (2.0 * np.pi)
+        model = PoleResidueModel(
+            poles=np.array([-1.0 + 0.0j]),
+            residues=np.array([[[2.0], [0.0]], [[0.0], [0.5]]], dtype=complex),
+            constant=np.zeros((2, 2), dtype=complex),
+            proportional=np.zeros((2, 2), dtype=complex),
+        )
+        result = enforce_passivity(model, frequencies, ResiduePerturbationConfig(parameter_type="S", outer_iterations=1))
+
+        assert result.model.residues[:, :, 0] == pytest.approx(fixture["s2_residues"], rel=1.0e-6)
