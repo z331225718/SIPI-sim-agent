@@ -588,6 +588,11 @@ def test_combination_stage_runs_ab_only_when_not_both_improve_and_never_runs_fix
     assert summary["combination_decision"]["b_improves"] is False
     assert summary["combination_decision"]["run_c"] is False
     assert "fixed_order_control" not in summary
+    assert summary["local_best_trial_id"] == "combination-a-alpha0p01-postadding3"
+    assert summary["overall_reference_trial_id"] == "stagnation-alpha0p01"
+    assert summary["overall_best"]["source"] == "local_trial"
+    assert summary["overall_best"]["trial_id"] == "combination-a-alpha0p01-postadding3"
+    assert summary["best_trial_id"] == "combination-a-alpha0p01-postadding3"
     assert json.loads((tmp_path / "runs" / "manifest.json").read_text(encoding="utf-8"))["baseline_reference"][
         "fingerprint"
     ] == tuning.COMBINATION_BASELINE_REFERENCE["fingerprint"]
@@ -627,6 +632,176 @@ def test_combination_stage_runs_c_only_after_a_and_b_both_improve(tmp_path: Path
     assert summary["combination_decision"]["a_improves"] is True
     assert summary["combination_decision"]["b_improves"] is True
     assert summary["combination_decision"]["run_c"] is True
+
+
+def test_combination_summary_keeps_external_reference_from_looking_like_local_best(
+    tmp_path: Path, monkeypatch
+):
+    input_path = tmp_path / "line.s2p"
+    _write_s2p(input_path)
+
+    def fake_run_adaptive_trial(entry, config, output_dir, *, resume=True, idem_bin_dir=None):
+        return ToolTrial(
+            tool="idem-adaptive",
+            requested_order=config.order_max,
+            effective_order=tuning.COMBINATION_BASELINE_REFERENCE["effective_order"],
+            final_mean_rms=tuning.COMBINATION_BASELINE_REFERENCE["final_mean_rms"] + 1e-5,
+            elapsed_seconds=tuning.COMBINATION_BASELINE_REFERENCE["elapsed_seconds"] + 1.0,
+            target_met=True,
+            status="PASS",
+            authoritative_passive=True,
+            sampled_max_sigma=0.999,
+        )
+
+    monkeypatch.setattr(tuning, "run_adaptive_trial", fake_run_adaptive_trial)
+
+    summary = tuning.run_experiment(input_path, tmp_path / "runs", stage="combination", resume=False)
+
+    assert summary["local_best_trial_id"] == "combination-a-alpha0p01-postadding3"
+    assert summary["overall_reference_trial_id"] == "stagnation-alpha0p01"
+    assert summary["overall_best"]["source"] == "external_reference"
+    assert summary["overall_best"]["trial_id"] == "stagnation-alpha0p01"
+    assert summary["best_trial_id"] == "stagnation-alpha0p01"
+
+
+def test_residual_by_frequency_streams_exact_input_frequencies_and_finds_worst_band(tmp_path: Path):
+    original = tmp_path / "original.s2p"
+    exported = tmp_path / "exported.s2p"
+    original.write_text(
+        "# Hz S RI R 50\n"
+        "1 0 0 0 0 0 0 0 0\n"
+        "2 0 0 0 0 0 0 0 0\n"
+        "3 0 0 0 0 0 0 0 0\n"
+        "4 0 0 0 0 0 0 0 0\n",
+        encoding="utf-8",
+    )
+    exported.write_text(
+        "# Hz S RI R 50\n"
+        "1 1 0 0 0 0 0 0 0\n"
+        "2 3 0 0 0 0 0 0 0\n"
+        "3 4 0 0 0 0 0 0 0\n"
+        "4 1 0 0 0 0 0 0 0\n",
+        encoding="utf-8",
+    )
+
+    evidence = tuning.compute_residual_by_frequency(original, exported, tmp_path / "residual_by_frequency.csv")
+
+    rows = (tmp_path / "residual_by_frequency.csv").read_text(encoding="utf-8").splitlines()
+    assert rows[0] == "frequency_hz,aggregate_squared_error,mean_rms,max_error"
+    assert [line.split(",", 1)[0] for line in rows[1:]] == ["1", "2", "3", "4"]
+    assert evidence["total_squared_error"] == pytest.approx(27.0)
+    assert evidence["mean_rms"] == pytest.approx(math.sqrt(27.0 / 4.0) / 2.0)
+    assert evidence["worst_contiguous_band"]["start_frequency_hz"] == pytest.approx(2.0)
+    assert evidence["worst_contiguous_band"]["end_frequency_hz"] == pytest.approx(3.0)
+    assert evidence["worst_contiguous_band"]["contribution_ratio"] == pytest.approx(25.0 / 27.0)
+    assert evidence["eligibility"]["eligible"] is True
+
+
+def test_weighting_stage_skips_idem_when_worst_band_below_half(tmp_path: Path, monkeypatch):
+    input_path = tmp_path / "line.s2p"
+    baseline_export = tmp_path / "baseline.s2p"
+    _write_s2p(input_path)
+    _write_s2p(baseline_export)
+
+    def not_eligible(original_path, exported_path, csv_path):
+        csv_path.write_text("frequency_hz,aggregate_squared_error,mean_rms,max_error\n1,1,0.5,1\n", encoding="utf-8")
+        return {
+            "reference": {"baseline_exported_touchstone": str(exported_path)},
+            "frequency_points": 1,
+            "total_squared_error": 1.0,
+            "mean_rms": 0.5,
+            "max_error": 1.0,
+            "worst_contiguous_band": {"contribution_ratio": 0.49},
+            "eligibility": {"eligible": False, "reason": "worst_band_below_50_percent"},
+        }
+
+    monkeypatch.setattr(tuning, "compute_residual_by_frequency", not_eligible)
+    monkeypatch.setattr(tuning, "run_adaptive_trial", lambda *args, **kwargs: pytest.fail("ineligible must skip IdEM"))
+
+    summary = tuning.run_weighting_experiment(
+        input_path,
+        tmp_path / "runs",
+        baseline_exported_touchstone=baseline_export,
+        resume=False,
+    )
+
+    assert summary["completed_trial_count"] == 0
+    assert summary["weighting"]["eligibility"]["eligible"] is False
+    assert summary["weighting"]["skip_reason"] == "weighting_not_justified"
+    assert summary["weighting"]["trials_run"] == 0
+    assert (tmp_path / "runs" / "weighting_not_justified").read_text(encoding="utf-8").strip()
+    assert (tmp_path / "runs" / "residual_by_frequency.csv").is_file()
+
+
+def test_weighting_stage_builds_two_weighted_trials_only_when_eligible(tmp_path: Path, monkeypatch):
+    input_path = tmp_path / "line.s2p"
+    baseline_export = tmp_path / "baseline.s2p"
+    _write_s2p(input_path)
+    _write_s2p(baseline_export)
+    calls: list[tuple[str, tuple[tuple[float, float], ...], str]] = []
+
+    def eligible(original_path, exported_path, csv_path):
+        csv_path.write_text(
+            "frequency_hz,aggregate_squared_error,mean_rms,max_error\n"
+            "1,1,0.5,1\n2,9,1.5,3\n3,16,2,4\n4,1,0.5,1\n",
+            encoding="utf-8",
+        )
+        return {
+            "reference": {"baseline_exported_touchstone": str(exported_path)},
+            "frequency_points": 4,
+            "total_squared_error": 27.0,
+            "mean_rms": 1.299,
+            "max_error": 4.0,
+            "rows": [
+                {"frequency_hz": 1.0, "aggregate_squared_error": 1.0},
+                {"frequency_hz": 2.0, "aggregate_squared_error": 9.0},
+                {"frequency_hz": 3.0, "aggregate_squared_error": 16.0},
+                {"frequency_hz": 4.0, "aggregate_squared_error": 1.0},
+            ],
+            "worst_contiguous_band": {
+                "start_index": 1,
+                "end_index": 2,
+                "start_frequency_hz": 2.0,
+                "end_frequency_hz": 3.0,
+                "contribution_ratio": 25.0 / 27.0,
+            },
+            "eligibility": {"eligible": True, "reason": "worst_band_at_least_50_percent"},
+        }
+
+    def fake_run_adaptive_trial(entry, config, output_dir, *, resume=True, idem_bin_dir=None):
+        points = config.adaptive_options.absolute_frequency_weight_points
+        calls.append((config.trial_id, points, config.adaptive_options.split_type))
+        return ToolTrial(
+            tool="idem-adaptive",
+            requested_order=config.order_max,
+            effective_order=76,
+            final_mean_rms=0.00095,
+            elapsed_seconds=140.0,
+            target_met=True,
+            status="PASS",
+            authoritative_passive=True,
+            sampled_max_sigma=0.999,
+        )
+
+    monkeypatch.setattr(tuning, "compute_residual_by_frequency", eligible)
+    monkeypatch.setattr(tuning, "run_adaptive_trial", fake_run_adaptive_trial)
+
+    summary = tuning.run_weighting_experiment(
+        input_path,
+        tmp_path / "runs",
+        baseline_exported_touchstone=baseline_export,
+        resume=False,
+    )
+
+    assert [call[0] for call in calls] == ["weighting-baseline-strength", "weighting-stronger"]
+    assert all(split_type == "none" for _, _, split_type in calls)
+    assert all(2 <= len(points) <= 4 for _, points, _ in calls)
+    assert all(1.0e-3 <= weight <= 1.0 for _, points, _ in calls for _, weight in points)
+    assert summary["completed_trial_count"] == 2
+    assert summary["weighting"]["eligibility"]["eligible"] is True
+    assert summary["weighting"]["trials_run"] == 2
+    assert summary["weighting"]["s19_reciprocity"]["splitting"] == "disallowed"
+    assert summary["overall_reference_trial_id"] == "stagnation-alpha0p01"
 
 
 def test_baseline_stage_runs_fixed_order_control_and_adaptive_baseline(tmp_path: Path, monkeypatch):
