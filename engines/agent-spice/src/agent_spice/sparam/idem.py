@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import threading
 import time
 from typing import Any
 import xml.etree.ElementTree as ET
@@ -162,9 +163,25 @@ class IdemCommandResult:
     stderr: str
     elapsed_seconds: float
     peak_memory_mb: float | None
+    telemetry: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        payload = asdict(self)
+        if payload["telemetry"] is None:
+            del payload["telemetry"]
+        return payload
+
+
+class CommandIdleStallError(TimeoutError):
+    """Raised when a command is killed after the idle-progress watchdog fires."""
+
+    def __init__(self, command_result: IdemCommandResult):
+        telemetry = command_result.telemetry or {}
+        idle_limit = telemetry.get("idle_limit")
+        message = f"Command stalled after {idle_limit} idle seconds: {' '.join(command_result.command)}"
+        super().__init__(message)
+        self.command_result = command_result
+        self.telemetry = telemetry
 
 
 @dataclass(frozen=True)
@@ -524,6 +541,7 @@ def run_idem_adaptive_fitting(
     run_kwargs: dict[str, Any] = {"timeout_seconds": timeout_seconds}
     if idle_timeout_seconds is not None:
         run_kwargs["idle_timeout_seconds"] = idle_timeout_seconds
+        run_kwargs["progress_paths"] = [model_path]
     command_result = _run_command(command, **run_kwargs)
     completed = _idem_adaptive_fit_completed(command_result, model_path)
     model: dict[str, Any] = {}
@@ -2667,11 +2685,14 @@ def _run_command(
     command: list[str],
     timeout_seconds: float | None,
     idle_timeout_seconds: float | None = None,
+    progress_paths: list[Path] | tuple[Path, ...] | None = None,
 ) -> IdemCommandResult:
     started = time.perf_counter()
     last_progress = started
     last_cpu_seconds: float | None = None
     peak_memory_mb: float | None = None
+    termination_reason = "completed"
+    elapsed: float | None = None
     try:
         import psutil
     except ImportError:
@@ -2685,60 +2706,203 @@ def _run_command(
         encoding="utf-8",
         errors="replace",
     )
-    psutil_process = psutil.Process(process.pid) if psutil is not None else None
-    stdout = ""
-    stderr = ""
+    try:
+        psutil_process = psutil.Process(process.pid) if psutil is not None else None
+    except Exception:
+        psutil_process = None
+    stdout_chunks: list[str] = []
+    stderr_chunks: list[str] = []
+    stdout_counter = {"bytes": 0}
+    stderr_counter = {"bytes": 0}
+    reader_errors: list[BaseException] = []
+    stdout_thread = _start_pipe_reader(getattr(process, "stdout", None), stdout_chunks, stdout_counter, reader_errors)
+    stderr_thread = _start_pipe_reader(getattr(process, "stderr", None), stderr_chunks, stderr_counter, reader_errors)
+    artifacts = [Path(path) for path in (progress_paths or [])]
+    artifact_snapshot = _artifact_progress_snapshot(artifacts)
+    last_output_bytes = 0
+    cleanup: dict[str, Any] = {}
+    child_pids: list[int] = []
+    cpu_seconds: float | None = None
     try:
         while process.poll() is None:
             now = time.perf_counter()
             if timeout_seconds is not None and now - started > timeout_seconds:
-                _kill_process_tree(process, psutil_process)
-                stdout, stderr = process.communicate()
+                termination_reason = "timeout"
+                cleanup = _kill_process_tree(process, psutil_process, psutil)
+                _join_pipe_readers((stdout_thread, stderr_thread))
                 raise TimeoutError(f"Command timed out after {timeout_seconds} seconds: {' '.join(command)}")
             cpu_seconds = _process_tree_cpu_seconds(psutil_process)
             if cpu_seconds is not None:
                 if last_cpu_seconds is None or cpu_seconds > last_cpu_seconds + 1.0e-6:
                     last_progress = now
                 last_cpu_seconds = cpu_seconds
+            output_bytes = stdout_counter["bytes"] + stderr_counter["bytes"]
+            if output_bytes > last_output_bytes:
+                last_output_bytes = output_bytes
+                last_progress = now
+            next_artifact_snapshot = _artifact_progress_snapshot(artifacts)
+            if _artifact_snapshot_changed(artifact_snapshot, next_artifact_snapshot):
+                last_progress = now
+            artifact_snapshot = next_artifact_snapshot
+            child_pids = _process_tree_child_pids(psutil_process)
             if (
                 idle_timeout_seconds is not None
-                and cpu_seconds is not None
                 and now - last_progress > idle_timeout_seconds
             ):
-                _kill_process_tree(process, psutil_process)
-                stdout, stderr = process.communicate()
-                raise TimeoutError(
-                    f"Command stalled after {idle_timeout_seconds} idle seconds: {' '.join(command)}"
+                termination_reason = "idle_stall"
+                cleanup = _kill_process_tree(process, psutil_process, psutil)
+                _join_pipe_readers((stdout_thread, stderr_thread))
+                elapsed = time.perf_counter() - started
+                telemetry = _command_telemetry(
+                    idle_limit=idle_timeout_seconds,
+                    elapsed=elapsed,
+                    last_progress_age=elapsed - (last_progress - started),
+                    cpu_seconds=cpu_seconds,
+                    stdout_bytes=stdout_counter["bytes"],
+                    stderr_bytes=stderr_counter["bytes"],
+                    artifacts=artifacts,
+                    pid=process.pid,
+                    child_pids=child_pids,
+                    termination_reason=termination_reason,
+                    cleanup=cleanup,
+                )
+                raise CommandIdleStallError(
+                    IdemCommandResult(
+                        command=command,
+                        returncode=int(process.returncode or -9),
+                        stdout="".join(stdout_chunks),
+                        stderr="".join(stderr_chunks),
+                        elapsed_seconds=elapsed,
+                        peak_memory_mb=peak_memory_mb,
+                        telemetry=telemetry,
+                    )
                 )
             peak_memory_mb = _sample_peak_memory_mb(psutil_process, peak_memory_mb)
             time.sleep(0.05)
-        stdout, stderr = process.communicate()
+        _join_pipe_readers((stdout_thread, stderr_thread))
         peak_memory_mb = _sample_peak_memory_mb(psutil_process, peak_memory_mb)
+    except BaseException:
+        if process.poll() is None and termination_reason == "completed":
+            termination_reason = "interrupted"
+            cleanup = _kill_process_tree(process, psutil_process, psutil)
+            _join_pipe_readers((stdout_thread, stderr_thread))
+        raise
     finally:
-        elapsed = time.perf_counter() - started
+        if elapsed is None:
+            elapsed = time.perf_counter() - started
+        _close_process_pipes(process)
+    if reader_errors:
+        raise RuntimeError(f"command pipe reader failed: {type(reader_errors[0]).__name__}: {reader_errors[0]}")
+    telemetry = _command_telemetry(
+        idle_limit=idle_timeout_seconds,
+        elapsed=elapsed,
+        last_progress_age=elapsed - (last_progress - started),
+        cpu_seconds=cpu_seconds,
+        stdout_bytes=stdout_counter["bytes"],
+        stderr_bytes=stderr_counter["bytes"],
+        artifacts=artifacts,
+        pid=process.pid,
+        child_pids=child_pids,
+        termination_reason=termination_reason,
+        cleanup=cleanup,
+    )
     return IdemCommandResult(
         command=command,
         returncode=int(process.returncode),
-        stdout=stdout,
-        stderr=stderr,
+        stdout="".join(stdout_chunks),
+        stderr="".join(stderr_chunks),
         elapsed_seconds=elapsed,
         peak_memory_mb=peak_memory_mb,
+        telemetry=telemetry,
     )
 
 
-def _kill_process_tree(process: subprocess.Popen[Any], psutil_process: Any) -> None:
-    if psutil_process is not None:
+def _start_pipe_reader(
+    stream: Any,
+    chunks: list[str],
+    counter: dict[str, int],
+    errors: list[BaseException],
+) -> threading.Thread | None:
+    if stream is None:
+        return None
+
+    def read_stream() -> None:
         try:
-            for child in psutil_process.children(recursive=True):
-                try:
-                    child.kill()
-                except Exception:
-                    continue
+            while True:
+                chunk = stream.read(4096)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                counter["bytes"] += len(chunk.encode("utf-8", errors="replace"))
+        except BaseException as exc:
+            errors.append(exc)
+
+    thread = threading.Thread(target=read_stream, name="idem-command-pipe-reader", daemon=True)
+    thread.start()
+    return thread
+
+
+def _join_pipe_readers(threads: tuple[threading.Thread | None, ...]) -> None:
+    for thread in threads:
+        if thread is not None:
+            thread.join(timeout=5.0)
+
+
+def _close_process_pipes(process: subprocess.Popen[Any]) -> None:
+    for stream in (getattr(process, "stdout", None), getattr(process, "stderr", None)):
+        try:
+            if stream is not None:
+                stream.close()
+        except Exception:
+            pass
+
+
+def _kill_process_tree(process: subprocess.Popen[Any], psutil_process: Any, psutil_module: Any = None) -> dict[str, Any]:
+    cleanup: dict[str, Any] = {
+        "owned_pids_before_kill": [],
+        "owned_pids_alive_after_kill": [],
+    }
+    if psutil_process is not None and psutil_module is not None:
+        try:
+            known = _known_process_tree(psutil_process)
+            known_by_pid = {int(item.pid): item for item in known}
+            cleanup["owned_pids_before_kill"] = [item.pid for item in known]
+            for proc in reversed(known[1:]):
+                _psutil_terminate(proc)
+            _psutil_terminate(psutil_process)
+            _, alive = psutil_module.wait_procs(known, timeout=5.0)
+            for proc in alive:
+                _psutil_kill(proc)
+            if alive:
+                psutil_module.wait_procs(alive, timeout=5.0)
+            try:
+                if psutil_process.is_running():
+                    new_processes = []
+                    for proc in _known_process_tree(psutil_process):
+                        pid = int(proc.pid)
+                        if pid not in known_by_pid:
+                            known_by_pid[pid] = proc
+                            new_processes.append(proc)
+                            cleanup["owned_pids_before_kill"].append(proc.pid)
+                        _psutil_kill(proc)
+                    if new_processes:
+                        psutil_module.wait_procs(new_processes, timeout=5.0)
+            except Exception:
+                pass
+            cleanup["owned_pids_alive_after_kill"] = [
+                proc.pid for proc in known_by_pid.values() if _psutil_is_owned_process_alive(proc)
+            ]
         except Exception:
             pass
     try:
-        process.kill()
-    except OSError:
+        if process.poll() is None:
+            process.terminate()
+    except AttributeError:
+        try:
+            process.kill()
+        except OSError:
+            pass
+    except Exception:
         pass
     try:
         process.wait(timeout=5.0)
@@ -2753,6 +2917,126 @@ def _kill_process_tree(process: subprocess.Popen[Any], psutil_process: Any) -> N
             pass
     except Exception:
         pass
+    if process.pid not in cleanup["owned_pids_before_kill"]:
+        cleanup["owned_pids_before_kill"].insert(0, process.pid)
+    if process.poll() is None and process.pid not in cleanup["owned_pids_alive_after_kill"]:
+        cleanup["owned_pids_alive_after_kill"].append(process.pid)
+    return cleanup
+
+
+def _known_process_tree(psutil_process: Any) -> list[Any]:
+    known = [psutil_process]
+    try:
+        known.extend(psutil_process.children(recursive=True))
+    except Exception:
+        pass
+    deduped: dict[int, Any] = {}
+    for proc in known:
+        try:
+            deduped[int(proc.pid)] = proc
+        except Exception:
+            continue
+    return list(deduped.values())
+
+
+def _psutil_terminate(process: Any) -> None:
+    try:
+        process.terminate()
+    except AttributeError:
+        _psutil_kill(process)
+    except Exception:
+        pass
+
+
+def _psutil_kill(process: Any) -> None:
+    try:
+        process.kill()
+    except Exception:
+        pass
+
+
+def _psutil_is_owned_process_alive(process: Any) -> bool:
+    try:
+        if not process.is_running():
+            return False
+        status = process.status()
+        return status != "zombie"
+    except Exception:
+        return False
+
+
+def _process_tree_child_pids(process: Any) -> list[int]:
+    if process is None:
+        return []
+    try:
+        return [int(child.pid) for child in process.children(recursive=True)]
+    except Exception:
+        return []
+
+
+def _artifact_progress_snapshot(paths: list[Path]) -> list[dict[str, Any]]:
+    snapshot: list[dict[str, Any]] = []
+    for path in paths:
+        try:
+            stat = path.stat()
+        except OSError:
+            snapshot.append({"path": str(path), "exists": False, "size": None, "mtime": None})
+            continue
+        snapshot.append(
+            {
+                "path": str(path),
+                "exists": True,
+                "size": int(stat.st_size),
+                "mtime": float(stat.st_mtime),
+            }
+        )
+    return snapshot
+
+
+def _artifact_snapshot_changed(before: list[dict[str, Any]], after: list[dict[str, Any]]) -> bool:
+    if len(before) != len(after):
+        return True
+    for left, right in zip(before, after):
+        if (
+            left.get("exists") != right.get("exists")
+            or left.get("size") != right.get("size")
+            or left.get("mtime") != right.get("mtime")
+        ):
+            return True
+    return False
+
+
+def _command_telemetry(
+    *,
+    idle_limit: float | None,
+    elapsed: float,
+    last_progress_age: float,
+    cpu_seconds: float | None,
+    stdout_bytes: int,
+    stderr_bytes: int,
+    artifacts: list[Path],
+    pid: int,
+    child_pids: list[int],
+    termination_reason: str,
+    cleanup: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "idle_limit": None if idle_limit is None else float(idle_limit),
+        "elapsed": float(elapsed),
+        "last_progress_age": float(max(0.0, last_progress_age)),
+        "cpu": {"process_tree_seconds": None if cpu_seconds is None else float(cpu_seconds)},
+        "output_bytes": {
+            "stdout": int(stdout_bytes),
+            "stderr": int(stderr_bytes),
+            "total": int(stdout_bytes + stderr_bytes),
+        },
+        "artifacts": _artifact_progress_snapshot(artifacts),
+        "pid": int(pid),
+        "child_pids": [int(child_pid) for child_pid in child_pids],
+        "termination_reason": termination_reason,
+        "owned_pids_before_kill": [int(item) for item in cleanup.get("owned_pids_before_kill", [])],
+        "owned_pids_alive_after_kill": [int(item) for item in cleanup.get("owned_pids_alive_after_kill", [])],
+    }
 
 
 def _process_tree_cpu_seconds(process: Any) -> float | None:

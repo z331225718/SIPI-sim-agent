@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import time
 from types import SimpleNamespace
 import xml.etree.ElementTree as ET
 
@@ -397,8 +398,8 @@ def test_run_idem_adaptive_fitting_passes_idle_timeout_to_command(tmp_path: Path
     xml_path.write_text("<fittingTask/>", encoding="utf-8")
     seen = []
 
-    def fake_run(command, timeout_seconds=None, idle_timeout_seconds=None):
-        seen.append((timeout_seconds, idle_timeout_seconds))
+    def fake_run(command, timeout_seconds=None, idle_timeout_seconds=None, progress_paths=None):
+        seen.append((timeout_seconds, idle_timeout_seconds, progress_paths))
         model.write_text("fake model", encoding="utf-8")
         return IdemCommandResult(command, 0, "Results\n", "", 0.1, None)
 
@@ -421,7 +422,7 @@ def test_run_idem_adaptive_fitting_passes_idle_timeout_to_command(tmp_path: Path
     )
 
     assert result["status"] == "completed"
-    assert seen == [(12.0, 90.0)]
+    assert seen == [(12.0, 90.0, [model])]
 
 
 def test_run_idem_adaptive_fitting_removes_only_stale_target_model(tmp_path: Path, monkeypatch):
@@ -832,6 +833,66 @@ def test_run_command_waits_after_total_timeout_kill(monkeypatch):
 
     assert killed == [process.pid]
     assert process.waited is True
+
+
+def test_run_command_drains_large_pipes_and_reaps_child_on_idle_timeout(tmp_path: Path):
+    psutil = pytest.importorskip("psutil")
+    child_pid_path = tmp_path / "child.pid"
+    script = (
+        "import os, subprocess, sys, time\n"
+        f"child_pid_path = {str(child_pid_path)!r}\n"
+        "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])\n"
+        "open(child_pid_path, 'w', encoding='utf-8').write(str(child.pid))\n"
+        "sys.stdout.write('O' * 200000)\n"
+        "sys.stdout.flush()\n"
+        "sys.stderr.write('E' * 200000)\n"
+        "sys.stderr.flush()\n"
+        "time.sleep(30)\n"
+    )
+
+    with pytest.raises(idem.CommandIdleStallError) as exc_info:
+        idem._run_command([sys.executable, "-c", script], timeout_seconds=10.0, idle_timeout_seconds=0.3)
+
+    child_pid = int(child_pid_path.read_text(encoding="utf-8"))
+    result = exc_info.value.command_result
+    telemetry = exc_info.value.telemetry
+    assert len(result.stdout) == 200000
+    assert len(result.stderr) == 200000
+    assert telemetry["termination_reason"] == "idle_stall"
+    assert telemetry["output_bytes"]["stdout"] >= 200000
+    assert telemetry["output_bytes"]["stderr"] >= 200000
+    assert telemetry["pid"] not in telemetry["owned_pids_alive_after_kill"]
+    assert child_pid not in telemetry["owned_pids_alive_after_kill"]
+
+    deadline = time.monotonic() + 3.0
+    while (psutil.pid_exists(telemetry["pid"]) or psutil.pid_exists(child_pid)) and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert not psutil.pid_exists(telemetry["pid"])
+    assert not psutil.pid_exists(child_pid)
+
+
+def test_run_command_treats_artifact_mtime_growth_as_idle_progress(tmp_path: Path):
+    artifact = tmp_path / "model.mod.h5"
+    script = (
+        "from pathlib import Path\n"
+        "import sys, time\n"
+        f"artifact = Path({str(artifact)!r})\n"
+        "for index in range(3):\n"
+        "    artifact.write_text(str(index), encoding='utf-8')\n"
+        "    time.sleep(0.15)\n"
+    )
+
+    result = idem._run_command(
+        [sys.executable, "-c", script],
+        timeout_seconds=5.0,
+        idle_timeout_seconds=0.25,
+        progress_paths=[artifact],
+    )
+
+    assert result.returncode == 0
+    assert artifact.read_text(encoding="utf-8") == "2"
+    assert result.telemetry["termination_reason"] == "completed"
+    assert result.telemetry["artifacts"][0]["size"] == 1
 
 
 def test_parse_idem_passivity_stdout_extracts_soc_ham_progress():

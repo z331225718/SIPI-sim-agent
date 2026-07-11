@@ -11,7 +11,7 @@ from types import SimpleNamespace
 import pytest
 
 from agent_spice.sparam.benchmark import CorpusEntry, ToolTrial, atomic_write_json
-from agent_spice.sparam.idem import IdemCommandResult
+from agent_spice.sparam.idem import CommandIdleStallError, IdemCommandResult
 
 import scripts.sparam_idem_s19_tuning as tuning
 
@@ -670,6 +670,7 @@ def test_summarize_trials_ranks_by_target_rms_order_time_and_keeps_json_finite()
 
     summary = tuning.summarize_trials(records)
 
+    assert summary["best_trial_id"] == "improved"
     assert [row["trial_id"] for row in summary["ranking"]] == [
         "improved",
         "baseline-adaptive",
@@ -703,6 +704,29 @@ def test_summarize_trials_leaves_pre_rms_improvement_missing_when_baseline_denom
 
     candidate = next(row for row in summary["trials"] if row["trial_id"] == "candidate")
     assert candidate["delta_vs_baseline"]["pre_rms_improvement_ratio"] is None
+
+
+def test_summarize_trials_has_no_best_without_pass_target_valid_candidate():
+    summary = tuning.summarize_trials(
+        [
+            {
+                "trial_id": "baseline-adaptive",
+                "trial": {"status": "ERROR", "target_met": False, "failure_reason": "phase_stalled:fit"},
+            },
+            {
+                "trial_id": "failed-low-rms",
+                "trial": {
+                    "status": "FAIL",
+                    "target_met": False,
+                    "final_mean_rms": 0.0001,
+                    "effective_order": 1,
+                    "elapsed_seconds": 1.0,
+                },
+            },
+        ]
+    )
+
+    assert summary["best_trial_id"] is None
 
 
 def test_cli_help_mentions_task4_stage_commands(capsys):
@@ -912,7 +936,27 @@ def test_run_adaptive_trial_records_stalled_fit_from_idle_watchdog(tmp_path: Pat
     entry = _entry(tmp_path)
 
     def stalled_fit(*args, **kwargs):
-        raise TimeoutError("Command stalled after 900.0 idle seconds: idemmp_fitting.exe")
+        command_result = IdemCommandResult(
+            ["idemmp_fitting.exe"],
+            -9,
+            "stdout before stall",
+            "stderr before stall",
+            901.0,
+            123.0,
+            telemetry={
+                "idle_limit": 900.0,
+                "elapsed": 901.0,
+                "last_progress_age": 900.5,
+                "cpu": {"process_tree_seconds": 184.0},
+                "output_bytes": {"stdout": 19, "stderr": 19, "total": 38},
+                "artifacts": [{"path": "fit.mod.h5", "exists": False, "size": None, "mtime": None}],
+                "pid": 1234,
+                "child_pids": [5678],
+                "termination_reason": "idle_stall",
+                "owned_pids_alive_after_kill": [],
+            },
+        )
+        raise CommandIdleStallError(command_result)
 
     monkeypatch.setattr(tuning, "run_idem_adaptive_fitting", stalled_fit)
     monkeypatch.setattr(tuning, "idem_tool_identity", lambda idem_bin_dir=None: "idem-test")
@@ -924,7 +968,10 @@ def test_run_adaptive_trial_records_stalled_fit_from_idle_watchdog(tmp_path: Pat
     assert trial.failure_reason == "phase_stalled:fit"
     fit = json.loads((tmp_path / "trial" / "fit.json").read_text(encoding="utf-8"))
     assert fit["status"] == "stalled"
-    assert "stalled after 900.0 idle seconds" in fit["error"]
+    assert fit["command"]["stdout"] == "stdout before stall"
+    assert fit["telemetry"]["termination_reason"] == "idle_stall"
+    assert fit["telemetry"]["pid"] == 1234
+    assert json.loads(json.dumps(fit["telemetry"], allow_nan=False)) == fit["telemetry"]
 
 
 def test_pre_rms_above_target_stops_before_passivity_and_saves_history(tmp_path: Path, monkeypatch):
