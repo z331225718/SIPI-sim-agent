@@ -523,6 +523,112 @@ def test_single_variable_stage_applies_stop_rule_after_first_passing_splitting_n
     assert summary["stop_rule"]["trial_id"] == "enhanced-placement"
 
 
+def test_combination_trials_encode_ab_then_c_configs_and_task7_runtime_contract():
+    trials = tuning.build_combination_trials()
+
+    assert [trial.trial_id for trial in trials] == [
+        "combination-a-alpha0p01-postadding3",
+        "combination-b-alpha0p01-initial5-final3",
+        "combination-c-alpha0p01-postadding3-initial5-final3",
+    ]
+    assert all(trial.phase_timeout_seconds == pytest.approx(1800.0) for trial in trials)
+    assert all(trial.fit_idle_timeout_seconds == pytest.approx(300.0) for trial in trials)
+    assert all(trial.adaptive_options.stagnation_alpha == pytest.approx(0.01) for trial in trials)
+    assert [trial.adaptive_options.postadding_iterations for trial in trials] == [3, 1, 3]
+    assert [trial.adaptive_options.initial_iterations for trial in trials] == [3, 5, 5]
+    assert [trial.adaptive_options.final_iterations for trial in trials] == [1, 3, 3]
+    assert all(trial.adaptive_options.split_type == "none" for trial in trials)
+
+
+def test_combination_stage_runs_ab_only_when_not_both_improve_and_never_runs_fixed_baseline(
+    tmp_path: Path, monkeypatch
+):
+    input_path = tmp_path / "line.s2p"
+    _write_s2p(input_path)
+    calls: list[str] = []
+
+    def fake_run_adaptive_trial(entry, config, output_dir, *, resume=True, idem_bin_dir=None):
+        calls.append(config.trial_id)
+        assert output_dir.name == config.trial_id
+        if config.trial_id.startswith("combination-a-"):
+            return ToolTrial(
+                tool="idem-adaptive",
+                requested_order=config.order_max,
+                effective_order=72,
+                final_mean_rms=0.0009,
+                elapsed_seconds=130.0,
+                target_met=True,
+                status="PASS",
+                authoritative_passive=True,
+                sampled_max_sigma=0.999,
+            )
+        return ToolTrial(
+            tool="idem-adaptive",
+            requested_order=config.order_max,
+            effective_order=72,
+            final_mean_rms=0.0011,
+            elapsed_seconds=90.0,
+            target_met=False,
+            status="FAIL",
+            failure_reason="final_rms_above_target",
+        )
+
+    monkeypatch.setattr(tuning, "run_adaptive_trial", fake_run_adaptive_trial)
+    monkeypatch.setattr(
+        tuning,
+        "run_fixed_order_control",
+        lambda *args, **kwargs: pytest.fail("combination stage must not rerun fixed baseline"),
+    )
+
+    summary = tuning.run_experiment(input_path, tmp_path / "runs", stage="combination", resume=False)
+
+    assert calls == ["combination-a-alpha0p01-postadding3", "combination-b-alpha0p01-initial5-final3"]
+    assert summary["completed_trial_count"] == 2
+    assert summary["combination_decision"]["a_improves"] is True
+    assert summary["combination_decision"]["b_improves"] is False
+    assert summary["combination_decision"]["run_c"] is False
+    assert "fixed_order_control" not in summary
+    assert json.loads((tmp_path / "runs" / "manifest.json").read_text(encoding="utf-8"))["baseline_reference"][
+        "fingerprint"
+    ] == tuning.COMBINATION_BASELINE_REFERENCE["fingerprint"]
+
+
+def test_combination_stage_runs_c_only_after_a_and_b_both_improve(tmp_path: Path, monkeypatch):
+    input_path = tmp_path / "line.s2p"
+    _write_s2p(input_path)
+    calls: list[str] = []
+
+    def fake_run_adaptive_trial(entry, config, output_dir, *, resume=True, idem_bin_dir=None):
+        if config.trial_id.startswith("combination-c-"):
+            assert calls == ["combination-a-alpha0p01-postadding3", "combination-b-alpha0p01-initial5-final3"]
+        calls.append(config.trial_id)
+        return ToolTrial(
+            tool="idem-adaptive",
+            requested_order=config.order_max,
+            effective_order=72 if not config.trial_id.startswith("combination-c-") else 68,
+            final_mean_rms=0.0009,
+            elapsed_seconds=130.0,
+            target_met=True,
+            status="PASS",
+            authoritative_passive=True,
+            sampled_max_sigma=0.999,
+        )
+
+    monkeypatch.setattr(tuning, "run_adaptive_trial", fake_run_adaptive_trial)
+
+    summary = tuning.run_experiment(input_path, tmp_path / "runs", stage="combination", resume=False)
+
+    assert calls == [
+        "combination-a-alpha0p01-postadding3",
+        "combination-b-alpha0p01-initial5-final3",
+        "combination-c-alpha0p01-postadding3-initial5-final3",
+    ]
+    assert summary["completed_trial_count"] == 3
+    assert summary["combination_decision"]["a_improves"] is True
+    assert summary["combination_decision"]["b_improves"] is True
+    assert summary["combination_decision"]["run_c"] is True
+
+
 def test_baseline_stage_runs_fixed_order_control_and_adaptive_baseline(tmp_path: Path, monkeypatch):
     input_path = tmp_path / "line.s2p"
     _write_s2p(input_path)
