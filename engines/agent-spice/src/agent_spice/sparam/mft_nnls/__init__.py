@@ -7,6 +7,8 @@ from agent_spice.sparam.mft_nnls.model import (
     stabilize_poles,
 )
 from agent_spice.sparam.mft_nnls.types import MFTConfig, MFTDiagnostics, MFTResult, PoleResidueModel
+from agent_spice.sparam.mft_nnls.poles import initialize_poles
+from agent_spice.sparam.mft_nnls.weights import build_weights
 
 __all__ = [
     "MFTConfig",
@@ -14,7 +16,9 @@ __all__ = [
     "MFTResult",
     "PoleResidueModel",
     "canonicalize_poles",
+    "build_weights",
     "evaluate",
+    "initialize_poles",
     "reconstruct_symmetric_residues",
     "stabilize_poles",
 ]
