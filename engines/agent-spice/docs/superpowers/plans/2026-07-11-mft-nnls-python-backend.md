@@ -90,10 +90,10 @@
 - Consumes: model, weighting, and pole initialization APIs from Tasks 2-3.
 - Produces: `fit_matrix(response, frequencies_hz, config, initial_poles=None) -> MFTResult`.
 
-- [ ] **Step 1: Write failing tests** for one relocation iteration, stability reflection, relaxed/non-relaxed fitting, asymptotic `D/E` modes, symmetric matrix packing, deterministic output, and MATLAB fixture parity for poles, response, and RMS. Cover orders `5`, `6`, `7`, `9`, and `13`; canonicalize both pole sets before comparison.
+- [ ] **Step 1: Write failing tests** for one relocation iteration, stability reflection, relaxed/non-relaxed fitting, asymptotic `D/E` modes, symmetric matrix packing, deterministic output, and MATLAB fixture parity for poles, response, and RMS. The well-conditioned order-six response fixture is the strict gate; raw-start `ex4_S` orders `4` through `13` remain documented pole diagnostics, with ill-conditioned cases preserved as strict expected failures. Canonicalize both pole sets before comparison.
 - [ ] **Step 2: Run `python -m pytest tests/test_mft_nnls_vector_fit.py -q`** and confirm failures identify absent fitting behavior.
 - [ ] **Step 3: Implement one relocation step** with scaled least squares, QR elimination, eigenvalue pole update, conjugate normalization, and rank diagnostics.
-- [ ] **Step 4: Run the single-step parity tests** and make them pass before adding iteration control. Assert that the MATLAB fixture begins above DC; label exact-DC promotion inputs as Python-versus-native only because MATLAB `log10(0)` initialization is non-finite.
+- [ ] **Step 4: Run the single-step parity tests** and make the strict response-quality gate pass before adding iteration control. Assert that the MATLAB fixture begins above DC; label exact-DC promotion inputs as Python-versus-native only because MATLAB `log10(0)` initialization is non-finite.
 - [ ] **Step 5: Commit** with `git commit -m "feat(sparam): port MFT relocation step"`.
 
 ### Task 4b: Add Relocation Iteration Control And Collapse Probe

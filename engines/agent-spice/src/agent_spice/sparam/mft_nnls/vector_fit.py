@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
+from scipy.linalg import lstsq, qr
 
 from agent_spice.sparam.mft_nnls.model import stabilize_poles
 from agent_spice.sparam.mft_nnls.weights import build_weights
@@ -49,7 +50,9 @@ def _complex_pair_index(poles: NDArray[np.complex128], atol: float = 1.0e-8) -> 
 
 def _basis(s: NDArray[np.complex128], poles: NDArray[np.complex128], asymptotic_order: int) -> tuple[NDArray[np.complex128], NDArray[np.int_]]:
     pair_index = _complex_pair_index(poles)
-    basis = np.zeros((len(s), len(poles) + asymptotic_order - 1), dtype=complex)
+    # The relaxed sigma right block always includes a constant, even when
+    # asymptotic_order=1 excludes it from the fitted-response left block.
+    basis = np.zeros((len(s), len(poles) + max(asymptotic_order - 1, 1)), dtype=complex)
     for column, pole in enumerate(poles):
         if pair_index[column] == 0:
             basis[:, column] = 1.0 / (s - pole)
@@ -60,6 +63,14 @@ def _basis(s: NDArray[np.complex128], poles: NDArray[np.complex128], asymptotic_
     if asymptotic_order == 3:
         basis[:, len(poles) + 1] = s
     return basis, pair_index
+
+
+def _matlab_lower_triangle_indices(ports: int) -> tuple[NDArray[np.int_], NDArray[np.int_]]:
+    """Return the column-major lower-triangle order used by VFdriver."""
+
+    rows = np.concatenate([np.arange(column, ports) for column in range(ports)])
+    columns = np.concatenate([np.full(ports - column, column) for column in range(ports)])
+    return rows, columns
 
 
 def _weighted_qr_right_block(
@@ -85,7 +96,7 @@ def _weighted_qr_right_block(
         row = np.zeros(matrix.shape[1], dtype=float)
         row[left_count:] = scale * np.real(np.sum(right_basis, axis=0))
         matrix = np.vstack((matrix, row))
-    q, r = np.linalg.qr(matrix, mode="reduced")
+    q, r = qr(matrix, mode="economic", pivoting=False, check_finite=False)
     right_block = r[left_count : left_count + sigma_count, left_count : left_count + sigma_count]
     if relaxed and add_integral_row:
         rhs = q[-1, left_count : left_count + sigma_count] * len(response) * scale
@@ -127,8 +138,53 @@ def _realize_sigma(
     if stable:
         relocated = stabilize_poles(relocated)
     real = np.sort(relocated[np.abs(relocated.imag) <= 1.0e-8].real).astype(complex)
-    complex_values = np.sort_complex(relocated[np.abs(relocated.imag) > 1.0e-8])
-    return np.concatenate((real, np.conjugate(complex_values)))
+    upper = np.sort_complex(relocated[relocated.imag > 1.0e-8])
+    paired = np.asarray([pole for value in upper for pole in (value.conjugate(), value)], dtype=complex)
+    return np.concatenate((real, paired))
+
+
+def fit_fixed_poles(
+    frequencies_hz: NDArray[np.float64],
+    response: NDArray[np.complex128],
+    poles: NDArray[np.complex128],
+    *,
+    weights: NDArray[np.float64] | None = None,
+    asymptotic_order: int = 2,
+) -> NDArray[np.complex128]:
+    """Fit real pole-residue coefficients for a fixed common pole set.
+
+    This is the `vectfit4` residue phase: it uses the real conjugate-pair
+    coordinates and stacked real/imaginary equations used by MATLAB.
+    """
+
+    frequencies = np.asarray(frequencies_hz, dtype=float).reshape(-1)
+    values = np.asarray(response, dtype=complex)
+    fixed_poles = np.asarray(poles, dtype=complex).reshape(-1)
+    if values.ndim != 3 or values.shape[0] != len(frequencies) or values.shape[1] != values.shape[2]:
+        raise ValueError("response must have shape (frequency, ports, ports)")
+    if asymptotic_order not in {1, 2, 3}:
+        raise ValueError("asymptotic_order must be 1, 2, or 3")
+    if len(fixed_poles) == 0 or not np.isfinite(frequencies).all() or not np.isfinite(values).all() or not np.isfinite(fixed_poles).all():
+        raise ValueError("frequencies, response, and poles must be finite and non-empty")
+    s = 2j * np.pi * frequencies
+    basis, _ = _basis(s, fixed_poles, asymptotic_order)
+    left_count = len(fixed_poles) + asymptotic_order - 1
+    matrix_weights = build_weights(values, 1) if weights is None else np.asarray(weights, dtype=float)
+    if matrix_weights.shape != values.shape or not np.isfinite(matrix_weights).all() or np.any(matrix_weights <= 0.0):
+        raise ValueError("weights must be finite, positive, and match response shape")
+
+    fitted = np.empty_like(values)
+    rows, columns = _matlab_lower_triangle_indices(values.shape[1])
+    for row, column in zip(rows, columns, strict=True):
+        weight = matrix_weights[:, row, column]
+        design = weight[:, None] * basis[:, :left_count]
+        target = weight * values[:, row, column]
+        real_design = np.concatenate((design.real, design.imag), axis=0)
+        real_target = np.concatenate((target.real, target.imag))
+        coefficients, *_ = lstsq(real_design, real_target, lapack_driver="gelsy")
+        fitted[:, row, column] = basis[:, :left_count] @ coefficients
+        fitted[:, column, row] = fitted[:, row, column]
+    return fitted
 
 
 def relocate_once(
@@ -158,7 +214,7 @@ def relocate_once(
     matrix_weights = build_weights(values, 1) if weights is None else np.asarray(weights, dtype=float)
     if matrix_weights.shape != values.shape or not np.isfinite(matrix_weights).all() or np.any(matrix_weights <= 0.0):
         raise ValueError("weights must be finite, positive, and match response shape")
-    lower = np.tril_indices(values.shape[1])
+    lower = _matlab_lower_triangle_indices(values.shape[1])
     flattened = values[:, lower[0], lower[1]].T
     flattened_weights = matrix_weights[:, lower[0], lower[1]].T
     scale = np.sqrt(sum(np.linalg.norm(flattened_weights[row] * flattened[row]) ** 2 for row in range(len(flattened)))) / len(frequencies)
@@ -184,14 +240,14 @@ def relocate_once(
     if np.any(norms == 0.0):
         raise ValueError("rank-deficient relocation compression")
     scaled = compressed / norms[None, :]
-    solution, _, rank, singular_values = np.linalg.lstsq(scaled, rhs, rcond=None)
+    solution, _, rank, singular_values = lstsq(scaled, rhs, lapack_driver="gelsy")
     solution = solution / norms
     if options.relaxed:
         coefficients, constant = solution[:-1], float(solution[-1])
     else:
         coefficients, constant = solution, 1.0
     relocated = _realize_sigma(poles, coefficients, pair_index, constant, options.stable)
-    condition = float(np.inf if len(singular_values) == 0 or singular_values[-1] == 0.0 else singular_values[0] / singular_values[-1])
+    condition = float(np.linalg.cond(scaled))
     return RelocationResult(
         poles=relocated,
         diagnostics={

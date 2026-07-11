@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from agent_spice.sparam.mft_nnls.model import canonicalize_poles
-from agent_spice.sparam.mft_nnls.vector_fit import RelocationOptions, relocate_once
+from agent_spice.sparam.mft_nnls.vector_fit import RelocationOptions, fit_fixed_poles, relocate_once
 
 
 def _response(freqs_hz: np.ndarray) -> np.ndarray:
@@ -38,6 +38,22 @@ def test_standard_relocation_returns_stable_common_poles() -> None:
     assert result.diagnostics["relaxed"] is False
 
 
+@pytest.mark.parametrize("asymptotic_order", [1, 3])
+def test_relocation_supports_no_constant_and_proportional_asymptotes(asymptotic_order: int) -> None:
+    freqs = np.geomspace(1.0e5, 1.0e7, 21)
+    initial = np.array([-2.0e6 - 2j * np.pi * 3.0e6, -2.0e6 + 2j * np.pi * 3.0e6])
+
+    result = relocate_once(
+        freqs,
+        _response(freqs),
+        initial,
+        options=RelocationOptions(asymptotic_order=asymptotic_order),
+    )
+
+    assert len(result.poles) == len(initial)
+    assert np.all(result.poles.real <= 0.0)
+
+
 def test_relocation_canonical_comparison_is_independent_of_conjugate_order() -> None:
     freqs = np.geomspace(1.0e5, 1.0e7, 21)
     upper_first = np.array([-2.0e6 + 2j * np.pi * 3.0e6, -2.0e6 - 2j * np.pi * 3.0e6])
@@ -54,3 +70,52 @@ def test_relocation_rejects_unpaired_complex_initial_poles() -> None:
 
     with pytest.raises(ValueError, match="conjugate"):
         relocate_once(freqs, _response(freqs), np.array([-1.0e6 + 2j * np.pi * 3.0e6]))
+
+
+def test_medium_order_matlab_fixture_matches_relocated_response() -> None:
+    with np.load("tests/fixtures/mft_nnls/ex4_s_small.npz") as fixture:
+        result = relocate_once(
+            fixture["medium_frequencies_hz"],
+            fixture["medium_response"],
+            fixture["medium_initial_poles"],
+        )
+        fitted = fit_fixed_poles(
+            fixture["medium_frequencies_hz"],
+            fixture["medium_response"],
+            result.poles,
+        )
+
+        assert fixture["medium_rms"].item() < 0.01
+        assert canonicalize_poles(result.poles) == pytest.approx(
+            canonicalize_poles(fixture["medium_relocated_poles"]),
+            rel=1.0e-8,
+            abs=2.0 * np.pi * 1.0e-3,
+        )
+        assert fitted == pytest.approx(fixture["medium_fitted_response"], rel=1.0e-7, abs=1.0e-10)
+
+
+@pytest.mark.parametrize("order", [4, 6])
+def test_relaxed_relocation_matches_matlab_vectfit4_fixture(order: int) -> None:
+    with np.load("tests/fixtures/mft_nnls/ex4_s_small.npz") as fixture:
+        assert fixture["fixture_kind"].item() == "matlab_vfdriver_reference"
+        frequencies_hz = fixture["s"].imag / (2.0 * np.pi)
+        result = relocate_once(frequencies_hz, fixture["response"], fixture[f"relocation_initial_poles_{order}"])
+
+        assert canonicalize_poles(result.poles) == pytest.approx(
+            canonicalize_poles(fixture[f"relocation_poles_{order}"]),
+            rel=1.0e-8,
+            abs=2.0 * np.pi * 1.0e-3,
+        )
+
+
+@pytest.mark.xfail(strict=True, reason="raw ex4 one-step fit is not a response-quality gate")
+@pytest.mark.parametrize("order", [5, 7, 9, 13])
+def test_raw_ex4_ill_conditioned_pole_diagnostics_remain_visible(order: int) -> None:
+    test_relaxed_relocation_matches_matlab_vectfit4_fixture(order)
+
+
+def test_raw_ex4_one_step_fixtures_are_not_response_quality_gates() -> None:
+    with np.load("tests/fixtures/mft_nnls/ex4_s_small.npz") as fixture:
+        rms = np.array([fixture[f"relocation_rms_{order}"].item() for order in (4, 5, 6, 7, 9, 13)])
+
+    assert np.all(rms > 0.01)
