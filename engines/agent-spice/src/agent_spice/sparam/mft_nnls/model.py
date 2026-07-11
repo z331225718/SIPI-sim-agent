@@ -27,8 +27,8 @@ def canonicalize_poles(poles: NDArray[np.complex128], *, atol: float = 1.0e-12) 
     )
     for lower in (value for value in values if value.imag < -atol):
         paired = any(
-            np.isclose(candidate.real, lower.real, rtol=0.0, atol=atol)
-            and np.isclose(candidate.imag, -lower.imag, rtol=0.0, atol=atol)
+            np.isclose(candidate.real, lower.real, rtol=1.0e-12, atol=atol)
+            and np.isclose(candidate.imag, -lower.imag, rtol=1.0e-12, atol=atol)
             for candidate in upper
         )
         if not paired:
