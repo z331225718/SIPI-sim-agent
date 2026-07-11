@@ -47,6 +47,8 @@ Numerical comparisons use scale-aware tolerances. Pole sets are matched independ
 
 Every fixture documents its source values, MATLAB release, toolbox-file SHA-256 values, and the applicable row in this table. A toolbox hash change invalidates the fixture until it is regenerated with `generate_reference.m` and its tolerance rationale is reviewed.
 
+MATLAB `VFdriver` directly applies `log10(s(1)/i)` when constructing logarithmic initial poles. Its behavior at an exact DC first sample is non-finite and is therefore outside MATLAB parity scope. The Python backend uses the first positive frequency as its logarithmic lower bound. The supplied `ex4_S` reference begins at 10 Hz and is eligible for MATLAB parity; promotion inputs with an exact DC sample are validated Python-versus-native only, with this exception recorded in their report.
+
 ## Pole Collapse Gate
 
 MFT-NNLS uses Gustavsen `vectfit4`, which is also a relaxed vector-fitting relocation method. This does not establish that it avoids the existing native 2 GHz complex-pair collapse. The implementation must retain the reference algorithm's column scaling, QR elimination order, and post-relocation stability logic exactly where they differ from native, then measure the difference rather than assume one exists.
