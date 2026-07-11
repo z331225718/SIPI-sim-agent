@@ -415,6 +415,8 @@ python scripts/sparam_idem_s19_tuning.py run-stage `
   --stage combinations --threads 8 --resume
 ```
 
+`combinations` 是 CLI 兼容 alias，等价于 canonical stage 名 `combination`；两种拼写均应保持可复现。
+
 - [ ] **Step 4: 决策**
 
 若成功，进入 Task 9。若最佳 RMS 仍大于 `0.001`，但 residual 集中于稳定频段，进入 Task 8 weighting；否则直接进入 splitting eligibility 检查。

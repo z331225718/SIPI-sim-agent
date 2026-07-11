@@ -1104,6 +1104,44 @@ def test_run_stage_cli_accepts_brief_flags_threads_resume_and_single_variable_st
     assert json.loads(capsys.readouterr().out)["stage"] == "single-variable"
 
 
+def test_run_stage_cli_accepts_combinations_alias_for_plan_compatibility(
+    tmp_path: Path, monkeypatch, capsys
+):
+    input_path = tmp_path / "line.s2p"
+    _write_s2p(input_path)
+    seen: dict[str, object] = {}
+
+    def fake_run_experiment(input_arg, output_arg, *, stage, resume=True, idem_bin_dir=None):
+        seen.update({"input": Path(input_arg), "output": Path(output_arg), "stage": stage, "resume": resume})
+        return {"stage": stage, "completed_trial_count": 0}
+
+    monkeypatch.setattr(tuning, "run_experiment", fake_run_experiment)
+
+    exit_code = tuning.main(
+        [
+            "run-stage",
+            "--input",
+            str(input_path),
+            "--output-root",
+            str(tmp_path / "runs"),
+            "--stage",
+            "combinations",
+            "--threads",
+            "8",
+            "--resume",
+        ]
+    )
+
+    assert exit_code == 0
+    assert seen == {
+        "input": input_path,
+        "output": tmp_path / "runs",
+        "stage": "combination",
+        "resume": True,
+    }
+    assert json.loads(capsys.readouterr().out)["stage"] == "combination"
+
+
 def test_run_adaptive_trial_uses_one_canonical_runtime_contract_for_command_xml_and_reports(
     tmp_path: Path, monkeypatch
 ):
@@ -1886,6 +1924,130 @@ def test_render_s19_tuning_markdown_pins_canonical_conclusions_and_labels():
     assert "IdEM algorithm defect" not in text
     assert "`combination-b-alpha0p01-initial5-final3`" in text
     assert "overall accepted=stagnation-alpha0p01" in text
+
+
+def test_load_s19_tuning_report_summary_derives_accepted_model_from_loaded_pass_reference(
+    tmp_path: Path,
+):
+    accepted_trial = {
+        "trial_id": "alternate-pass",
+        "status": "PASS",
+        "target_met": True,
+        "effective_order": 42,
+        "final_mean_rms": 0.00042,
+        "authoritative_passive": True,
+        "sampled_max_sigma": 0.999,
+        "elapsed_seconds": 12.5,
+        "peak_memory_mb": 34.0,
+        "fingerprint": "alt-fingerprint",
+    }
+    config = {
+        "threads": 8,
+        "order_min": 4,
+        "order_step": 2,
+        "order_max": 100,
+        "rms_target": 0.001,
+        "phase_timeout_seconds": 1800.0,
+        "fit_idle_timeout_seconds": 300.0,
+        "adaptive_options": {"split_type": "none"},
+    }
+    baseline_summary = {
+        "contract_version": "idem_s19_adaptive_v1",
+        "input": _canonical_report_summary()["input"],
+        "completed_trial_count": 1,
+        "stop_rule": {"triggered": True, "trial_id": "alternate-pass", "reason": "synthetic_pass"},
+        "fixed_order_control": {"trial_id": "fixed-order-order100", "trial": {}},
+        "trials": [{"trial_id": "alternate-pass", "config": config, "trial": accepted_trial}],
+    }
+    old_baseline_summary = {"trials": []}
+    diagnostic_summary = {"decision": {"next_phase": "synthetic_stop"}, "trials": []}
+    combination_summary = {
+        "best_trial_id": "combo-alt",
+        "local_best_trial_id": "combo-alt",
+        "combination_decision": {"a_improves": True, "b_improves": True, "run_c": True},
+        "trials": [],
+    }
+    weighting_summary = {
+        "completed_trial_count": 0,
+        "best_trial_id": "alternate-pass",
+        "best_trial_id_scope": "overall_reference_inclusive",
+        "overall_reference_trial_id": "alternate-pass",
+        "overall_reference": accepted_trial,
+        "overall_best": {"source": "external_reference", **accepted_trial},
+        "weighting": {"eligibility": {"eligible": True, "threshold": 0.5}, "residual": {}},
+    }
+
+    paths = {}
+    for name, payload in {
+        "baseline": baseline_summary,
+        "old": old_baseline_summary,
+        "diagnostic": diagnostic_summary,
+        "combination": combination_summary,
+        "weighting": weighting_summary,
+    }.items():
+        path = tmp_path / f"{name}.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        paths[name] = path
+
+    summary = tuning.load_s19_tuning_report_summary(
+        baseline_summary_path=paths["baseline"],
+        old_baseline_summary_path=paths["old"],
+        order58_diagnostic_summary_path=paths["diagnostic"],
+        combination_summary_path=paths["combination"],
+        weighting_summary_path=paths["weighting"],
+    )
+
+    assert summary["accepted_model"] == {
+        "trial_id": "alternate-pass",
+        "status": "PASS",
+        "target_met": True,
+        "effective_order": 42,
+        "final_mean_rms": 0.00042,
+        "authoritative_passive": True,
+        "sampled_max_sigma": 0.999,
+        "elapsed_seconds": 12.5,
+        "peak_memory_mb": 34.0,
+        "fingerprint": "alt-fingerprint",
+        "acceptance_failure": None,
+    }
+
+
+def test_render_s19_tuning_markdown_uses_summary_values_for_alternate_evidence():
+    summary = json.loads(
+        json.dumps(_canonical_report_summary())
+        .replace("stagnation-alpha0p01", "alternate-pass")
+        .replace("combination-b-alpha0p01-initial5-final3", "combination-z-alt")
+    )
+    summary["accepted_model"].update(
+        {
+            "trial_id": "alternate-pass",
+            "effective_order": 42,
+            "final_mean_rms": 0.00042,
+            "elapsed_seconds": 12.5,
+            "peak_memory_mb": 34.0,
+            "fingerprint": "alt-fingerprint",
+        }
+    )
+    summary["combination"]["local_best_trial_id"] = "combination-z-alt"
+    summary["combination"]["best_trial_id"] = "combination-z-alt"
+    summary["combination"]["combination_decision"] = {"a_improves": True, "b_improves": True, "run_c": True}
+    summary["weighting"]["weighting"]["eligibility"] = {
+        "eligible": True,
+        "reason": "synthetic_band_above_gate",
+        "threshold": 0.6,
+    }
+    summary["weighting"]["weighting"]["skip_reason"] = None
+    summary["weighting"]["weighting"]["trials_run"] = 2
+    summary["weighting"]["weighting"]["residual"]["worst_contiguous_band"]["contribution_ratio"] = 0.625
+
+    text = tuning.render_s19_tuning_markdown(summary)
+
+    assert "Accepted model: `alternate-pass`" in text
+    assert "stagnation-alpha0p01" not in text
+    assert "47.70137038847629" not in text
+    assert "Task 7 combination B PASSed locally" not in text
+    assert "Task 8 skipped weighting because `47.70137038847629%`" not in text
+    assert "`62.5%` >= `60.0%`; weighting trials run `2`." in text
 
 
 def test_render_s19_tuning_markdown_is_byte_stable_and_renders_missing_values_as_na():
