@@ -9,7 +9,7 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.linalg import lstsq, qr
 
-from agent_spice.sparam.mft_nnls.model import stabilize_poles
+from agent_spice.sparam.mft_nnls.model import canonicalize_poles, stabilize_poles
 from agent_spice.sparam.mft_nnls.weights import build_weights
 
 
@@ -247,6 +247,11 @@ def relocate_once(
     else:
         coefficients, constant = solution, 1.0
     relocated = _realize_sigma(poles, coefficients, pair_index, constant, options.stable)
+    sigma_residue_magnitudes = np.abs(coefficients)
+    for index, kind in enumerate(pair_index):
+        if kind == 1:
+            magnitude = float(np.hypot(coefficients[index], coefficients[index + 1]))
+            sigma_residue_magnitudes[index : index + 2] = magnitude
     condition = float(np.linalg.cond(scaled))
     return RelocationResult(
         poles=relocated,
@@ -257,5 +262,56 @@ def relocate_once(
             "scale": float(scale),
             "sigma_constant": float(constant),
             "response_count": int(len(flattened)),
+            "sigma_residue_magnitudes": sigma_residue_magnitudes.tolist(),
         },
     )
+
+
+def relocate_iterations(
+    frequencies_hz: NDArray[np.float64],
+    response: NDArray[np.complex128],
+    initial_poles: NDArray[np.complex128],
+    *,
+    iterations: int,
+    convergence_rtol: float = 1.0e-6,
+    weights: NDArray[np.float64] | None = None,
+    options: RelocationOptions = RelocationOptions(),
+) -> RelocationResult:
+    """Repeat common-pole relocation while retaining bounded trajectory diagnostics."""
+
+    if iterations < 1:
+        raise ValueError("iterations must be at least one")
+    if not np.isfinite(convergence_rtol) or convergence_rtol <= 0.0:
+        raise ValueError("convergence_rtol must be finite and positive")
+    frequencies = np.asarray(frequencies_hz, dtype=float).reshape(-1)
+    poles = np.asarray(initial_poles, dtype=complex).reshape(-1)
+    trajectory: list[dict[str, Any]] = []
+    converged = False
+    last_result: RelocationResult | None = None
+    for iteration in range(iterations):
+        previous = poles
+        last_result = relocate_once(frequencies, response, previous, weights=weights, options=options)
+        poles = last_result.poles
+        previous_canonical = canonicalize_poles(previous)
+        poles_canonical = canonicalize_poles(poles)
+        denominator = max(float(np.max(np.abs(previous_canonical))), 1.0)
+        delta_relative = float(np.max(np.abs(poles_canonical - previous_canonical)) / denominator)
+        trajectory.append(
+            {
+                "iteration": iteration + 1,
+                "input_pole_frequencies_hz": (np.abs(previous.imag) / (2.0 * np.pi)).tolist(),
+                "input_pole_real_parts": previous.real.tolist(),
+                "pole_frequencies_hz": (np.abs(poles.imag) / (2.0 * np.pi)).tolist(),
+                "pole_real_parts": poles.real.tolist(),
+                "condition_number": float(last_result.diagnostics["condition_number"]),
+                "input_sigma_residue_magnitudes": list(last_result.diagnostics["sigma_residue_magnitudes"]),
+                "delta_relative": delta_relative,
+            }
+        )
+        if delta_relative <= convergence_rtol:
+            converged = True
+            break
+    assert last_result is not None
+    diagnostics = dict(last_result.diagnostics)
+    diagnostics.update({"iterations": len(trajectory), "converged": converged, "trajectory": trajectory})
+    return RelocationResult(poles=poles, diagnostics=diagnostics)

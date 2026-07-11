@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from agent_spice.sparam.mft_nnls.model import canonicalize_poles
-from agent_spice.sparam.mft_nnls.vector_fit import RelocationOptions, fit_fixed_poles, relocate_once
+from agent_spice.sparam.mft_nnls.vector_fit import RelocationOptions, fit_fixed_poles, relocate_iterations, relocate_once
 
 
 def _response(freqs_hz: np.ndarray) -> np.ndarray:
@@ -63,6 +63,32 @@ def test_relocation_canonical_comparison_is_independent_of_conjugate_order() -> 
     lower_result = relocate_once(freqs, _response(freqs), lower_first)
 
     assert canonicalize_poles(upper_result.poles) == pytest.approx(canonicalize_poles(lower_result.poles))
+
+
+def test_relocation_iterations_record_stable_deterministic_trajectory() -> None:
+    freqs = np.geomspace(1.0e5, 1.0e7, 21)
+    initial = np.array([-2.0e6 - 2j * np.pi * 3.0e6, -2.0e6 + 2j * np.pi * 3.0e6])
+
+    first = relocate_iterations(freqs, _response(freqs), initial, iterations=3)
+    second = relocate_iterations(freqs, _response(freqs), initial, iterations=3)
+
+    assert first.poles == pytest.approx(second.poles)
+    assert np.all(first.poles.real <= 0.0)
+    assert 1 <= len(first.diagnostics["trajectory"]) <= 3
+    record = first.diagnostics["trajectory"][0]
+    assert {"iteration", "pole_frequencies_hz", "pole_real_parts", "condition_number", "input_sigma_residue_magnitudes"} <= record.keys()
+    assert len(record["pole_frequencies_hz"]) == len(initial)
+    assert len(record["input_sigma_residue_magnitudes"]) == len(initial)
+
+
+def test_relocation_iterations_stop_when_delta_is_within_configured_tolerance() -> None:
+    freqs = np.geomspace(1.0e5, 1.0e7, 21)
+    initial = np.array([-2.0e6 - 2j * np.pi * 3.0e6, -2.0e6 + 2j * np.pi * 3.0e6])
+
+    result = relocate_iterations(freqs, _response(freqs), initial, iterations=3, convergence_rtol=2.0)
+
+    assert result.diagnostics["converged"] is True
+    assert result.diagnostics["iterations"] == 1
 
 
 def test_relocation_rejects_unpaired_complex_initial_poles() -> None:
