@@ -479,6 +479,7 @@ def run_idem_adaptive_fitting(
     options_xml_path: Path,
     idem_bin_dir: Path | None = None,
     timeout_seconds: float | None = None,
+    idle_timeout_seconds: float | None = None,
 ) -> dict[str, Any]:
     touchstone_path = Path(touchstone_path)
     model_path = Path(model_path)
@@ -520,7 +521,10 @@ def run_idem_adaptive_fitting(
         "-xml",
         str(options_xml_path),
     ]
-    command_result = _run_command(command, timeout_seconds=timeout_seconds)
+    run_kwargs: dict[str, Any] = {"timeout_seconds": timeout_seconds}
+    if idle_timeout_seconds is not None:
+        run_kwargs["idle_timeout_seconds"] = idle_timeout_seconds
+    command_result = _run_command(command, **run_kwargs)
     completed = _idem_adaptive_fit_completed(command_result, model_path)
     model: dict[str, Any] = {}
     error = None if completed else "IdEM adaptive fitting did not complete successfully"
@@ -2659,8 +2663,14 @@ def write_jsonl_report(results: list[dict[str, Any]], path: Path) -> None:
             handle.write(json.dumps(result, sort_keys=True) + "\n")
 
 
-def _run_command(command: list[str], timeout_seconds: float | None) -> IdemCommandResult:
+def _run_command(
+    command: list[str],
+    timeout_seconds: float | None,
+    idle_timeout_seconds: float | None = None,
+) -> IdemCommandResult:
     started = time.perf_counter()
+    last_progress = started
+    last_cpu_seconds: float | None = None
     peak_memory_mb: float | None = None
     try:
         import psutil
@@ -2680,10 +2690,26 @@ def _run_command(command: list[str], timeout_seconds: float | None) -> IdemComma
     stderr = ""
     try:
         while process.poll() is None:
-            if timeout_seconds is not None and time.perf_counter() - started > timeout_seconds:
-                process.kill()
+            now = time.perf_counter()
+            if timeout_seconds is not None and now - started > timeout_seconds:
+                _kill_process_tree(process, psutil_process)
                 stdout, stderr = process.communicate()
                 raise TimeoutError(f"Command timed out after {timeout_seconds} seconds: {' '.join(command)}")
+            cpu_seconds = _process_tree_cpu_seconds(psutil_process)
+            if cpu_seconds is not None:
+                if last_cpu_seconds is None or cpu_seconds > last_cpu_seconds + 1.0e-6:
+                    last_progress = now
+                last_cpu_seconds = cpu_seconds
+            if (
+                idle_timeout_seconds is not None
+                and cpu_seconds is not None
+                and now - last_progress > idle_timeout_seconds
+            ):
+                _kill_process_tree(process, psutil_process)
+                stdout, stderr = process.communicate()
+                raise TimeoutError(
+                    f"Command stalled after {idle_timeout_seconds} idle seconds: {' '.join(command)}"
+                )
             peak_memory_mb = _sample_peak_memory_mb(psutil_process, peak_memory_mb)
             time.sleep(0.05)
         stdout, stderr = process.communicate()
@@ -2698,6 +2724,45 @@ def _run_command(command: list[str], timeout_seconds: float | None) -> IdemComma
         elapsed_seconds=elapsed,
         peak_memory_mb=peak_memory_mb,
     )
+
+
+def _kill_process_tree(process: subprocess.Popen[Any], psutil_process: Any) -> None:
+    if psutil_process is not None:
+        try:
+            for child in psutil_process.children(recursive=True):
+                try:
+                    child.kill()
+                except Exception:
+                    continue
+        except Exception:
+            pass
+    try:
+        process.kill()
+    except OSError:
+        pass
+
+
+def _process_tree_cpu_seconds(process: Any) -> float | None:
+    if process is None:
+        return None
+    total = 0.0
+    try:
+        cpu = process.cpu_times()
+        total += float(getattr(cpu, "user", 0.0) or 0.0)
+        total += float(getattr(cpu, "system", 0.0) or 0.0)
+        total += float(getattr(cpu, "children_user", 0.0) or 0.0)
+        total += float(getattr(cpu, "children_system", 0.0) or 0.0)
+        children = process.children(recursive=True)
+    except Exception:
+        return None
+    for child in children:
+        try:
+            cpu = child.cpu_times()
+            total += float(getattr(cpu, "user", 0.0) or 0.0)
+            total += float(getattr(cpu, "system", 0.0) or 0.0)
+        except Exception:
+            continue
+    return total
 
 
 def _sample_peak_memory_mb(process: Any, current_peak: float | None) -> float | None:

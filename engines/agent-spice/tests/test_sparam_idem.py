@@ -2,6 +2,8 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
+from types import SimpleNamespace
 import xml.etree.ElementTree as ET
 
 import numpy as np
@@ -387,6 +389,41 @@ def test_run_idem_adaptive_fitting_allows_order_max_cap_and_uses_documented_comm
     assert result["model"] == {"order": 4, "total_pole_count": 4}
 
 
+def test_run_idem_adaptive_fitting_passes_idle_timeout_to_command(tmp_path: Path, monkeypatch):
+    touchstone = tmp_path / "line.s2p"
+    model = tmp_path / "out" / "model.mod.h5"
+    xml_path = tmp_path / "fitting_options.fopt.xml"
+    _write_s2p(touchstone)
+    xml_path.write_text("<fittingTask/>", encoding="utf-8")
+    seen = []
+
+    def fake_run(command, timeout_seconds=None, idle_timeout_seconds=None):
+        seen.append((timeout_seconds, idle_timeout_seconds))
+        model.write_text("fake model", encoding="utf-8")
+        return IdemCommandResult(command, 0, "Results\n", "", 0.1, None)
+
+    monkeypatch.setattr(idem, "_run_command", fake_run)
+    monkeypatch.setattr(idem, "inspect_idem_model", lambda path: {"order": 4})
+
+    result = idem.run_idem_adaptive_fitting(
+        touchstone,
+        model,
+        order_min=4,
+        order_step=2,
+        order_max=8,
+        target=1e-3,
+        bandwidth_hz=2.0e9,
+        threads=2,
+        options_xml_path=xml_path,
+        idem_bin_dir=tmp_path,
+        timeout_seconds=12.0,
+        idle_timeout_seconds=90.0,
+    )
+
+    assert result["status"] == "completed"
+    assert seen == [(12.0, 90.0)]
+
+
 def test_run_idem_adaptive_fitting_removes_only_stale_target_model(tmp_path: Path, monkeypatch):
     touchstone = tmp_path / "line.s2p"
     model = tmp_path / "out" / "model.mod.h5"
@@ -705,6 +742,53 @@ def test_run_idem_adaptive_fitting_propagates_timeout_and_removes_stale_target(
         )
     assert not model.exists()
     assert sibling.read_text(encoding="utf-8") == "keep"
+
+
+def test_run_command_kills_stalled_process_after_idle_timeout(monkeypatch):
+    killed = []
+
+    class FakeProcess:
+        pid = 1234
+        returncode = None
+
+        def poll(self):
+            return None
+
+        def kill(self):
+            killed.append(self.pid)
+            self.returncode = -9
+
+        def communicate(self):
+            return ("partial stdout", "")
+
+    class FakePsutilProcess:
+        def __init__(self, pid):
+            self.pid = pid
+
+        def cpu_times(self):
+            return SimpleNamespace(user=1.0, system=0.0, children_user=0.0, children_system=0.0)
+
+        def children(self, recursive=True):
+            return []
+
+        def memory_info(self):
+            return SimpleNamespace(rss=1024 * 1024)
+
+        def kill(self):
+            killed.append(self.pid)
+
+    process = FakeProcess()
+    ticks = iter([0.0, 0.05, 0.2, 0.25])
+
+    monkeypatch.setattr(idem.subprocess, "Popen", lambda *args, **kwargs: process)
+    monkeypatch.setitem(sys.modules, "psutil", SimpleNamespace(Process=FakePsutilProcess, Error=Exception))
+    monkeypatch.setattr(idem.time, "perf_counter", lambda: next(ticks))
+    monkeypatch.setattr(idem.time, "sleep", lambda seconds: None)
+
+    with pytest.raises(TimeoutError, match="stalled after 0.1 idle seconds"):
+        idem._run_command(["idemmp_fitting.exe"], timeout_seconds=10.0, idle_timeout_seconds=0.1)
+
+    assert process.pid in killed
 
 
 def test_parse_idem_passivity_stdout_extracts_soc_ham_progress():

@@ -217,6 +217,7 @@ class FakePhases:
         options_xml_path: Path,
         idem_bin_dir: Path | None = None,
         timeout_seconds: float | None = None,
+        idle_timeout_seconds: float | None = None,
     ):
         self.calls.append("fit")
         self.fit_kwargs = {
@@ -227,6 +228,7 @@ class FakePhases:
             "bandwidth_hz": bandwidth_hz,
             "threads": threads,
             "options_xml_path": options_xml_path,
+            "idle_timeout_seconds": idle_timeout_seconds,
         }
         return _fit_payload(
             model_path,
@@ -819,6 +821,7 @@ def test_run_adaptive_trial_uses_one_canonical_runtime_contract_for_command_xml_
         "bandwidth_hz": 2e6,
         "threads": 3,
         "options_xml_path": output_dir / "adaptive_options.fopt.xml",
+        "idle_timeout_seconds": 900.0,
     }
     fit = json.loads((output_dir / "fit.json").read_text(encoding="utf-8"))
     trial_report = json.loads((output_dir / "trial.json").read_text(encoding="utf-8"))
@@ -903,6 +906,25 @@ def test_run_adaptive_trial_keeps_even_order_step_unchanged_without_warning(tmp_
     root = ET.fromstring((output_dir / "adaptive_options.fopt.xml").read_text(encoding="utf-8"))
     namespace = {"f": "OptionsFittingSchema.xsd"}
     assert root.findtext("./f:options/f:order/f:increment", namespaces=namespace) == "6"
+
+
+def test_run_adaptive_trial_records_stalled_fit_from_idle_watchdog(tmp_path: Path, monkeypatch):
+    entry = _entry(tmp_path)
+
+    def stalled_fit(*args, **kwargs):
+        raise TimeoutError("Command stalled after 900.0 idle seconds: idemmp_fitting.exe")
+
+    monkeypatch.setattr(tuning, "run_idem_adaptive_fitting", stalled_fit)
+    monkeypatch.setattr(tuning, "idem_tool_identity", lambda idem_bin_dir=None: "idem-test")
+    monkeypatch.setattr(tuning, "benchmark_implementation_identity", lambda: "validation-test")
+
+    trial = tuning.run_adaptive_trial(entry, tuning.IdemAdaptiveTrialConfig(), tmp_path / "trial")
+
+    assert trial.status == "ERROR"
+    assert trial.failure_reason == "phase_stalled:fit"
+    fit = json.loads((tmp_path / "trial" / "fit.json").read_text(encoding="utf-8"))
+    assert fit["status"] == "stalled"
+    assert "stalled after 900.0 idle seconds" in fit["error"]
 
 
 def test_pre_rms_above_target_stops_before_passivity_and_saves_history(tmp_path: Path, monkeypatch):
@@ -1251,11 +1273,12 @@ def test_adapter_timeouts_are_terminal_phase_timeout_errors_and_rerun_on_resume(
         target: float,
         bandwidth_hz: float,
         threads: int,
-        options_xml_path: Path,
-        idem_bin_dir: Path | None = None,
-        timeout_seconds: float | None = None,
-    ):
-        raise exception
+            options_xml_path: Path,
+            idem_bin_dir: Path | None = None,
+            timeout_seconds: float | None = None,
+            idle_timeout_seconds: float | None = None,
+        ):
+            raise exception
 
     monkeypatch.setattr(tuning, "run_idem_adaptive_fitting", timeout_fit)
 
@@ -1291,11 +1314,12 @@ def test_base_exceptions_are_not_swallowed_by_phase_error_handler(tmp_path: Path
         target: float,
         bandwidth_hz: float,
         threads: int,
-        options_xml_path: Path,
-        idem_bin_dir: Path | None = None,
-        timeout_seconds: float | None = None,
-    ):
-        raise exception
+            options_xml_path: Path,
+            idem_bin_dir: Path | None = None,
+            timeout_seconds: float | None = None,
+            idle_timeout_seconds: float | None = None,
+        ):
+            raise exception
 
     monkeypatch.setattr(tuning, "run_idem_adaptive_fitting", interrupted_fit)
 
