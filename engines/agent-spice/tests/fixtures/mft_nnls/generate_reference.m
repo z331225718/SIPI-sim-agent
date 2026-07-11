@@ -46,6 +46,7 @@ end
 relocation_initial_poles = relocation_cases.order_4.initial_poles;
 relocation_poles = relocation_cases.order_4.poles;
 [medium_frequencies_hz, medium_response, medium_initial_poles, medium_relocated_poles, medium_fitted_response, medium_rms] = medium_case(relocation_opts);
+[passivity_sweep_frequencies_hz, passivity_s_bands_hz, passivity_y_bands_hz] = passivity_sweep_case();
 
 s = loaded.s(1:sampleCount);
 response = permute(loaded.bigS(:,:,1:sampleCount), [3 1 2]);
@@ -59,7 +60,18 @@ matlab_version = version;
 source_sha256 = sha256(sourcePath);
 vfdriver_sha256 = sha256(fullfile(toolboxRoot, 'code', 'VFdriver.m'));
 vectfit4_sha256 = sha256(fullfile(toolboxRoot, 'code', 'auxiliary', 'vectfit4.m'));
-save(outputPath, 's', 'response', 'fitted_response', 'poles', 'residues', 'constant', 'proportional', 'weightparam', 'matlab_version', 'source_sha256', 'vfdriver_sha256', 'vectfit4_sha256', 'relocation_response', 'relocation_weight', 'relocation_initial_poles', 'relocation_poles', 'relocation_cases', 'medium_frequencies_hz', 'medium_response', 'medium_initial_poles', 'medium_relocated_poles', 'medium_fitted_response', 'medium_rms');
+save(outputPath, 's', 'response', 'fitted_response', 'poles', 'residues', 'constant', 'proportional', 'weightparam', 'matlab_version', 'source_sha256', 'vfdriver_sha256', 'vectfit4_sha256', 'relocation_response', 'relocation_weight', 'relocation_initial_poles', 'relocation_poles', 'relocation_cases', 'medium_frequencies_hz', 'medium_response', 'medium_initial_poles', 'medium_relocated_poles', 'medium_fitted_response', 'medium_rms', 'passivity_sweep_frequencies_hz', 'passivity_s_bands_hz', 'passivity_y_bands_hz');
+end
+
+function [frequencies_hz, s_bands_hz, y_bands_hz] = passivity_sweep_case()
+frequencies_hz = linspace(0, 1, 801);
+s = 2i*pi*frequencies_hz;
+SER = struct('A', -1, 'B', 1, 'C', 2, 'D', 0, 'E', 0);
+[s_bands, ~] = pass_check_S_sweep_new(0, SER, s);
+SER = struct('A', -1, 'B', 1, 'C', -2, 'D', 1, 'E', 0);
+[y_bands, ~] = pass_check_Y_sweep_new(0, SER, s);
+s_bands_hz = s_bands.' / (2*pi);
+y_bands_hz = y_bands.' / (2*pi);
 end
 
 function [frequencies_hz, response, initial_poles, relocated_poles, fitted_response, rms] = medium_case(relocation_opts)

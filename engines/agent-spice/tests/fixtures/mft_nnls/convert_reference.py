@@ -45,6 +45,9 @@ def main() -> int:
         medium_relocated_poles=np.asarray(source["medium_relocated_poles"]).reshape(-1),
         medium_fitted_response=np.moveaxis(np.asarray(source["medium_fitted_response"]), -1, 0),
         medium_rms=np.asarray(source["medium_rms"]).reshape(()),
+        passivity_sweep_frequencies_hz=np.asarray(source["passivity_sweep_frequencies_hz"]).reshape(-1),
+        passivity_s_bands_hz=np.asarray(source["passivity_s_bands_hz"]),
+        passivity_y_bands_hz=np.asarray(source["passivity_y_bands_hz"]),
         **{
             f"relocation_initial_poles_{order}": np.asarray(source["relocation_cases"][f"order_{order}"]["initial_poles"]).reshape(-1)
             for order in (4, 5, 6, 7, 9, 13)
