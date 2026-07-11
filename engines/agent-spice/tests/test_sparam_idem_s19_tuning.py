@@ -3,8 +3,10 @@ import math
 import os
 from pathlib import Path
 import inspect
+import importlib
 import subprocess
 import xml.etree.ElementTree as ET
+from types import SimpleNamespace
 
 import pytest
 
@@ -457,8 +459,9 @@ def test_run_experiment_runs_trials_sequentially_and_writes_partial_summary_afte
             effective_order=8,
             pre_mean_rms=0.0008,
             final_mean_rms=0.0007,
-            target_met=True,
-            status="PASS",
+            target_met=False,
+            status="FAIL",
+            failure_reason="pre_rms_above_target",
             elapsed_seconds=float(len(calls)),
             peak_memory_mb=10.0 + len(calls),
         )
@@ -480,6 +483,123 @@ def test_run_experiment_runs_trials_sequentially_and_writes_partial_summary_afte
     assert summary["completed_trial_count"] == len(STAGE1_TRIAL_IDS)
     assert [row["trial_id"] for row in summary["trials"]] == STAGE1_TRIAL_IDS
     assert json.loads((tmp_path / "runs" / "summary.partial.json").read_text(encoding="utf-8")) == summary
+    assert json.loads((tmp_path / "runs" / "manifest.json").read_text(encoding="utf-8"))["stage"] == "stage1"
+    assert json.loads((tmp_path / "runs" / "summary.json").read_text(encoding="utf-8")) == summary
+    assert (tmp_path / "runs" / "summary.csv").read_text(encoding="utf-8").splitlines()[0].startswith("trial_id,")
+
+
+def test_single_variable_stage_applies_stop_rule_after_first_passing_splitting_none_trial(
+    tmp_path: Path, monkeypatch
+):
+    input_path = tmp_path / "line.s2p"
+    _write_s2p(input_path)
+    calls: list[str] = []
+
+    def fake_run_adaptive_trial(entry, config, output_dir, *, resume=True, idem_bin_dir=None):
+        calls.append(config.trial_id)
+        target_met = config.trial_id == "enhanced-placement"
+        return ToolTrial(
+            tool="idem-adaptive",
+            requested_order=config.order_max,
+            effective_order=8,
+            pre_mean_rms=0.0008,
+            final_mean_rms=0.0007,
+            authoritative_passive=target_met,
+            sampled_max_sigma=0.999 if target_met else None,
+            target_met=target_met,
+            status="PASS" if target_met else "FAIL",
+            failure_reason=None if target_met else "pre_rms_above_target",
+        )
+
+    monkeypatch.setattr(tuning, "run_adaptive_trial", fake_run_adaptive_trial)
+
+    summary = tuning.run_experiment(input_path, tmp_path / "runs", stage="single-variable", resume=True)
+
+    assert calls == ["baseline-adaptive", "enhanced-placement"]
+    assert summary["completed_trial_count"] == 2
+    assert summary["stop_rule"]["triggered"] is True
+    assert summary["stop_rule"]["trial_id"] == "enhanced-placement"
+
+
+def test_baseline_stage_runs_fixed_order_control_and_adaptive_baseline(tmp_path: Path, monkeypatch):
+    input_path = tmp_path / "line.s2p"
+    _write_s2p(input_path)
+    adaptive_calls: list[str] = []
+    fixed_calls: list[int] = []
+
+    def fake_entry(path):
+        return _entry(tmp_path)
+
+    def fake_fixed(entry, order, contract, output_dir, *, resume=False, idem_bin_dir=None, tool_identity=None):
+        fixed_calls.append(order)
+        assert contract.max_order == 100
+        assert contract.threads == 8
+        assert output_dir.name == "fixed-order-order100"
+        return ToolTrial(
+            tool="idem",
+            requested_order=order,
+            effective_order=order,
+            pre_mean_rms=0.014961,
+            final_mean_rms=0.014961,
+            target_met=False,
+            status="FAIL",
+            failure_reason="pre_rms_above_target",
+        )
+
+    def fake_adaptive(entry, config, output_dir, *, resume=True, idem_bin_dir=None):
+        adaptive_calls.append(config.trial_id)
+        return ToolTrial(
+            tool="idem-adaptive",
+            requested_order=config.order_max,
+            effective_order=100,
+            pre_mean_rms=0.002,
+            final_mean_rms=0.002,
+            target_met=False,
+            status="FAIL",
+            failure_reason="pre_rms_above_target",
+        )
+
+    monkeypatch.setattr(tuning, "_entry_from_input_path", fake_entry)
+    monkeypatch.setattr(tuning, "run_fixed_order_control", fake_fixed)
+    monkeypatch.setattr(tuning, "run_adaptive_trial", fake_adaptive)
+
+    summary = tuning.run_experiment(input_path, tmp_path / "runs", stage="baseline", resume=True)
+
+    assert fixed_calls == [100]
+    assert adaptive_calls == ["baseline-adaptive"]
+    assert summary["fixed_order_control"]["trial"]["pre_mean_rms"] == pytest.approx(0.014961)
+    assert [row["trial_id"] for row in summary["trials"]] == ["baseline-adaptive"]
+    assert (tmp_path / "runs" / "summary.csv").is_file()
+
+
+def test_fixed_order_control_imports_sibling_benchmark_when_script_package_is_unavailable(
+    tmp_path: Path, monkeypatch
+):
+    entry = _entry(tmp_path)
+    calls: list[int] = []
+
+    def fake_import_module(name: str):
+        if name == "scripts.sparam_full_corpus_benchmark":
+            raise ModuleNotFoundError("No module named 'scripts'", name="scripts")
+        if name == "sparam_full_corpus_benchmark":
+            return SimpleNamespace(
+                run_idem_order_trial=lambda entry, order, contract, output_dir, **kwargs: calls.append(order)
+                or ToolTrial(tool="idem", requested_order=order, status="FAIL")
+            )
+        raise AssertionError(name)
+
+    monkeypatch.setattr(importlib, "import_module", fake_import_module)
+
+    trial = tuning.run_fixed_order_control(
+        entry,
+        100,
+        tuning.IdemAdaptiveTrialConfig().benchmark_contract(),
+        tmp_path / "fixed-order-order100",
+        resume=True,
+    )
+
+    assert calls == [100]
+    assert trial.tool == "idem"
 
 
 def test_run_experiment_rejects_unsafe_trial_id_before_creating_escape_directory(tmp_path: Path, monkeypatch):
@@ -630,6 +750,51 @@ def test_run_one_cli_executes_brief_parameterized_trial(tmp_path: Path, monkeypa
     assert payload["requested_order_step"] == 1
     assert payload["effective_order_step"] == 2
     assert json.loads((tmp_path / "runs" / "history.json").read_text(encoding="utf-8"))["final_order"] == 8
+
+
+def test_run_stage_cli_accepts_brief_flags_threads_resume_and_single_variable_stage(
+    tmp_path: Path, monkeypatch, capsys
+):
+    input_path = tmp_path / "line.s2p"
+    _write_s2p(input_path)
+    seen: dict[str, object] = {}
+
+    def fake_run_experiment(input_arg, output_arg, *, stage, resume=True, idem_bin_dir=None):
+        seen.update(
+            {
+                "input": Path(input_arg),
+                "output": Path(output_arg),
+                "stage": stage,
+                "resume": resume,
+            }
+        )
+        return {"stage": stage, "completed_trial_count": 0}
+
+    monkeypatch.setattr(tuning, "run_experiment", fake_run_experiment)
+
+    exit_code = tuning.main(
+        [
+            "run-stage",
+            "--input",
+            str(input_path),
+            "--output-root",
+            str(tmp_path / "runs"),
+            "--stage",
+            "single-variable",
+            "--threads",
+            "8",
+            "--resume",
+        ]
+    )
+
+    assert exit_code == 0
+    assert seen == {
+        "input": input_path,
+        "output": tmp_path / "runs",
+        "stage": "single-variable",
+        "resume": True,
+    }
+    assert json.loads(capsys.readouterr().out)["stage"] == "single-variable"
 
 
 def test_run_adaptive_trial_uses_one_canonical_runtime_contract_for_command_xml_and_reports(
