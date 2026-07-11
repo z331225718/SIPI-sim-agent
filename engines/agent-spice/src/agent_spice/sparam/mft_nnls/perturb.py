@@ -30,6 +30,7 @@ class ResiduePerturbationConfig:
     bandwidth: int | None = None
     auxiliary_weight_factor: float = 1.0e-3
     proportional_tolerance: float = 1.0e-12
+    constant_tolerance: float = 1.0e-6
 
     def __post_init__(self) -> None:
         if self.parameter_type not in {"S", "Y"}:
@@ -54,6 +55,8 @@ class ResiduePerturbationConfig:
             raise ValueError("auxiliary_weight_factor must be finite and positive")
         if not np.isfinite(self.proportional_tolerance) or self.proportional_tolerance <= 0.0:
             raise ValueError("proportional_tolerance must be finite and positive")
+        if not np.isfinite(self.constant_tolerance) or self.constant_tolerance <= 0.0:
+            raise ValueError("constant_tolerance must be finite and positive")
 
 
 @dataclass(frozen=True)
@@ -142,6 +145,7 @@ def build_residue_perturbation_system(
     bandwidth: int | None = None,
     auxiliary_weight_factor: float = 1.0e-3,
     proportional_tolerance: float = 1.0e-12,
+    constant_tolerance: float = 1.0e-6,
     qr_reference: PerturbationSystem | None = None,
     extrema_override: tuple | None = None,
 ) -> PerturbationSystem:
@@ -154,6 +158,8 @@ def build_residue_perturbation_system(
         raise ValueError("auxiliary_weight_factor must be finite and positive")
     if not np.isfinite(proportional_tolerance) or proportional_tolerance <= 0.0:
         raise ValueError("proportional_tolerance must be finite and positive")
+    if not np.isfinite(constant_tolerance) or constant_tolerance <= 0.0:
+        raise ValueError("constant_tolerance must be finite and positive")
     selected_indices = np.arange(len(model.poles), dtype=int) if pole_indices is None else np.asarray(pole_indices, dtype=int)
     if len(selected_indices) == 0 or np.any(selected_indices < 0) or np.any(selected_indices >= len(model.poles)) or len(np.unique(selected_indices)) != len(selected_indices):
         raise ValueError("pole_indices must be unique valid model pole indices")
@@ -268,9 +274,9 @@ def build_residue_perturbation_system(
                 row_gradient[element * coordinate_count + constant_coordinate] = sensitivity
             if parameter_type == "S":
                 excess = float(value - 1.0)
-                asymptotic_rhs.append(-passivity_tolerance + (alpha * excess if excess > 0.0 else excess))
+                asymptotic_rhs.append(-constant_tolerance + (alpha * excess if excess > 0.0 else excess))
             else:
-                asymptotic_rhs.append(-passivity_tolerance + (alpha * float(value) if value < 0.0 else float(value)))
+                asymptotic_rhs.append(-constant_tolerance + (alpha * float(value) if value < 0.0 else float(value)))
             asymptotic_gradients.append(row_gradient)
     if "proportional" in dynamic_columns:
         proportional_coordinate = local_columns + dynamic_columns.index("proportional")
@@ -394,6 +400,7 @@ def enforce_passivity(
                 bandwidth=config.bandwidth,
                 auxiliary_weight_factor=config.auxiliary_weight_factor,
                 proportional_tolerance=config.proportional_tolerance,
+                constant_tolerance=config.constant_tolerance,
                 qr_reference=base_system,
                 extrema_override=current_extrema,
             )
