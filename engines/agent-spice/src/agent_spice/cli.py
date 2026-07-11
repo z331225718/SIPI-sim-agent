@@ -180,6 +180,15 @@ def evaluate_local_idem_like_state_space(*args: Any, **kwargs: Any) -> Any:
     return _idem_tool("evaluate_local_idem_like_state_space")(*args, **kwargs)
 
 
+def run_idem_order58_diagnostic(*args: Any, **kwargs: Any) -> Any:
+    try:
+        from scripts.sparam_idem_order58_diagnostic import run_diagnostic
+    except ModuleNotFoundError:
+        from sparam_idem_order58_diagnostic import run_diagnostic
+
+    return run_diagnostic(*args, **kwargs)
+
+
 def write_json_report(*args: Any, **kwargs: Any) -> Any:
     return _idem_tool("write_json_report")(*args, **kwargs)
 
@@ -835,6 +844,16 @@ def main(argv: list[str] | None = None) -> int:
     idem_probe_parser.add_argument("--enhance-poles-placement", action="store_true")
     idem_probe_parser.add_argument("--timeout-seconds", type=float)
 
+    stall_diagnostic_parser = subparsers.add_parser("run-stall-diagnostic")
+    stall_diagnostic_parser.add_argument("--input", required=True, type=Path)
+    stall_diagnostic_parser.add_argument(
+        "--output-root",
+        type=Path,
+        default=Path("runs-sparam/idem-s19-order58-diagnostic"),
+    )
+    stall_diagnostic_parser.add_argument("--resume", dest="resume", action="store_true", default=True)
+    stall_diagnostic_parser.add_argument("--no-resume", dest="resume", action="store_false")
+
     idem_residue_parser = subparsers.add_parser("probe-idem-residue")
     idem_residue_parser.add_argument("touchstone", type=Path)
     idem_residue_parser.add_argument("--model", type=Path, required=True)
@@ -1066,6 +1085,18 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(effective_argv)
     if args.command == "run-hspice":
         return run_hspice(args.deck, args.backend, args.output_root, args.execute)
+    if args.command == "run-stall-diagnostic":
+        try:
+            summary = run_idem_order58_diagnostic(args.input, args.output_root, resume=args.resume)
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        decision = summary.get("decision") or {}
+        print(
+            f"run-stall-diagnostic trials={summary.get('completed_trial_count')} "
+            f"decision={decision.get('next_phase')}"
+        )
+        return 0
     if args.command == "fit-sparam":
         try:
             _apply_sparam_auto_preset(args, effective_argv)
