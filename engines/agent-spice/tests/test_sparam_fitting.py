@@ -410,19 +410,45 @@ def test_readable_html_report_summarizes_configuration_and_collapses_diagnostics
 
     html = html_report.read_text(encoding="utf-8")
     summary, advanced = html.split("<details>", maxsplit=1)
-    assert "运行方式" in summary
-    assert "RMS 目标" in summary
-    assert "最大 order" in summary
-    assert "最大步长" in summary
-    assert "选中 order" in summary
-    assert "passivity 策略" in summary
-    assert "保留 DC" in summary
-    assert "输出文件" in summary
+    assert summary.count("<tr><td>") == 8
+    assert all(
+        label in summary
+        for label in (
+            "运行方式",
+            "RMS 目标",
+            "最大 order",
+            "最大步长",
+            "选中 order",
+            "passivity 策略",
+            "保留 DC",
+            "输出文件",
+        )
+    )
     assert summary.count("n/a") >= 4
     assert "n_poles_real" not in summary
     assert "<summary>高级诊断配置</summary>" in advanced
     assert "n_poles_real" in advanced
     assert "dc_coverage" in advanced
+    diagnostics, post_diagnostics = advanced.split("</details>", maxsplit=1)
+    assert "Passive before enforcement" in diagnostics
+    assert "Enforcement enabled" in diagnostics
+    assert "Violation band start" in diagnostics
+    assert all(
+        field not in post_diagnostics
+        for field in (
+            "质量门",
+            "dc_coverage",
+            "被动性状态",
+            "Passive before enforcement",
+            "Passive after enforcement",
+            "Enforcement enabled",
+            "Violation band start",
+            "Violation band end",
+            "passive_before_enforce",
+            "passive_after_enforce",
+            "enforce_passivity",
+        )
+    )
 
 
 def test_comparison_traces_keeps_missing_response_reason() -> None:

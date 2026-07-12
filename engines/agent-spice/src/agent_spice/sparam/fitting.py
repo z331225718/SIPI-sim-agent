@@ -1171,8 +1171,6 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     <div class="card"><div class="label">拟合频点数</div><div class="value">{result.fit_frequency_points}</div></div>
     <div class="card"><div class="label">拟合采样 RMS 误差</div><div class="value">{_format_float(result.rms_error)}</div></div>
     <div class="card"><div class="label">原始频点 RMS 误差</div><div class="value">{_format_float(result.comparison_rms_error)}</div></div>
-    <div class="card"><div class="label">质量状态</div><div class="value">{escape(str(quality["status"]))}</div></div>
-    <div class="card"><div class="label">被动性</div><div class="value">{escape(str(quality["passivity"]))}</div></div>
   </div>
 
   <h2>拟合配置</h2>
@@ -1201,6 +1199,18 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
       <tr><th>诊断项</th><th>状态</th><th>严重度</th><th>指标</th><th>阈值</th><th>说明</th><th>建议</th></tr>
       {diagnostic_rows}
     </table>
+    <h2>被动性</h2>
+    <table>
+      <tr><th>Check</th><th>Value</th></tr>
+      <tr><td>被动性状态</td><td>{escape(str(quality["passivity"]))}</td></tr>
+      <tr><td>Passive before enforcement</td><td>{_format_bool(result.passive_before_enforce)}</td></tr>
+      <tr><td>Passive after enforcement</td><td>{_format_bool(result.passive_after_enforce)}</td></tr>
+      <tr><td>Enforcement enabled</td><td>{_format_bool(result.config.enforce_passivity)}</td></tr>
+    </table>
+    <table>
+      <tr><th>Violation band start</th><th>Violation band end</th></tr>
+      {violation_rows}
+    </table>
   </details>
 
   <h2>输入与输出</h2>
@@ -1222,18 +1232,6 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     <tr><td>拟合采样 RMS 误差</td><td>{_format_float(result.rms_error)}</td></tr>
     <tr><td>原始频点 RMS 误差</td><td>{_format_float(result.comparison_rms_error)}</td></tr>
     {selection_rows}
-  </table>
-
-  <h2>被动性</h2>
-  <table>
-    <tr><th>Check</th><th>Value</th></tr>
-    <tr><td>Passive before enforcement</td><td>{_format_bool(result.passive_before_enforce)}</td></tr>
-    <tr><td>Passive after enforcement</td><td>{_format_bool(result.passive_after_enforce)}</td></tr>
-    <tr><td>Enforcement enabled</td><td>{_format_bool(result.config.enforce_passivity)}</td></tr>
-  </table>
-  <table>
-    <tr><th>Violation band start</th><th>Violation band end</th></tr>
-    {violation_rows}
   </table>
 
   <h2>最差 RMS 元素</h2>
