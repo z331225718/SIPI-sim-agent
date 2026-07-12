@@ -994,12 +994,18 @@ def test_target_fit_search_writes_only_selected_model(tmp_path: Path, monkeypatc
 
     calls = []
 
-    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path, **kwargs):
+    def fake_execution(touchstone_path, output_path, *, config, log_path):
         order = config.model_order_max
         calls.append(order)
-        return _fake_target_fit_result(output_path, order, target_met=order >= 8)
+        result = _fake_target_fit_result(output_path, order, target_met=order >= 8)
+        return fitting._FitExecution(result=result, network=None, vector_fit=None)
 
-    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+    monkeypatch.setattr(fitting, "_fit_touchstone_execution", fake_execution)
+    def write_outputs(execution, output_path, **kwargs):
+        output_path.write_text(f"* order {execution.result.expanded_model_order}\n", encoding="utf-8")
+        return execution.result
+
+    monkeypatch.setattr(fitting, "_write_fit_outputs", write_outputs)
     output = tmp_path / "model.sp"
     report = tmp_path / "report.json"
     html = tmp_path / "report.html"
@@ -1013,7 +1019,7 @@ def test_target_fit_search_writes_only_selected_model(tmp_path: Path, monkeypatc
         html_report_path=html,
     )
 
-    assert calls == [4, 6, 8, 7, 8]
+    assert calls == [4, 6, 8, 7]
     assert result.target_met is True
     assert result.selected_trial is not None
     assert result.selected_trial.requested_order == 8
@@ -1029,82 +1035,148 @@ def test_target_fit_search_writes_only_selected_model(tmp_path: Path, monkeypatc
     assert html.exists()
 
 
-def test_target_fit_exports_the_selected_execution_without_refitting(tmp_path: Path, monkeypatch):
+def test_target_fit_exports_only_selected_execution_artifacts(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 
-    calls_by_order: dict[int, int] = {}
-    first_rms = 0.000986339
+    writes: list[tuple[str, int]] = []
 
-    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path, **kwargs):
+    class ExportVectorFit:
+        def __init__(self, order: int):
+            self.order = order
+
+        def write_spice_subcircuit_s(self, output_path, **kwargs):
+            writes.append(("spice", self.order))
+            Path(output_path).write_text(f"spice order {self.order}\n", encoding="utf-8")
+
+    def fake_execution(touchstone_path, output_path, *, config, log_path):
         order = config.model_order_max
-        calls_by_order[order] = calls_by_order.get(order, 0) + 1
-        rms = first_rms if order == 78 and calls_by_order[order] == 1 else 0.0295902
-        result = _fake_target_fit_result(output_path, order, target_met=order == 78)
-        result.comparison_mean_rms_error = rms
-        result.pre_enforcement_mean_rms_error = rms
-        result.to_dict = lambda: {
-            "spice_path": str(output_path),
-            "comparison_mean_rms_error": rms,
-            "expanded_model_order": order,
-        }
-        result._fit_execution = SimpleNamespace(result=result, network=None, vector_fit=None)
-        return result
+        result = fitting.SParamFitResult(
+            touchstone_path=touchstone_path,
+            spice_path=output_path,
+            report_path=None,
+            html_report_path=None,
+            log_path=log_path,
+            ports=2,
+            frequency_points=2,
+            frequency_range_hz=[1e6, 2e6],
+            fit_frequency_points=2,
+            fit_frequency_range_hz=[1e6, 2e6],
+            fit_frequency_selection={},
+            reference_impedance=[50.0, 50.0],
+            config=config,
+            rms_error=0.0005 if order >= 8 else 0.002,
+            comparison_rms_error=0.0005 if order >= 8 else 0.002,
+            passive_before_enforce=True,
+            passive_after_enforce=True,
+            passivity_violations_before=[],
+            passivity_violations_after=[],
+            quality_report=fitting.QualityReport("default", "PASS", "tran_candidate", [], [], []),
+            comparison_mean_rms_error=0.0005 if order >= 8 else 0.002,
+            pre_enforcement_mean_rms_error=0.0005 if order >= 8 else 0.002,
+            expanded_model_order=order,
+        )
+        network = SimpleNamespace(
+            f=np.array([1e6, 2e6]),
+            z0=np.array([[50.0, 50.0], [50.0, 50.0]]),
+            nports=2,
+        )
+        return fitting._FitExecution(result=result, network=network, vector_fit=ExportVectorFit(order))
 
-    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
-    monkeypatch.setattr(fitting, "_write_fit_outputs", lambda execution, output_path, **kwargs: execution.result, raising=False)
+    def write_touchstone(path, frequencies, fitted_s, z0):
+        writes.append(("touchstone", 8))
+        Path(path).write_text("touchstone order 8\n", encoding="utf-8")
+
+    def write_rfm(vector_fit, path, z0):
+        writes.append(("rfm", vector_fit.order))
+        Path(path).write_text(f"rfm order {vector_fit.order}\n", encoding="utf-8")
+
+    def write_wrapper(path, rfm_path, *, nports, subcircuit_name):
+        writes.append(("wrapper", 8))
+        Path(path).write_text("wrapper order 8\n", encoding="utf-8")
+
+    monkeypatch.setattr(fitting, "_fit_touchstone_execution", fake_execution)
+    monkeypatch.setattr(fitting, "evaluate_fitted_s", lambda vector_fit, frequencies: np.zeros((2, 2, 2)))
+    monkeypatch.setattr(fitting, "write_fitted_touchstone", write_touchstone)
+    monkeypatch.setattr(fitting, "write_cadence_rfm", write_rfm)
+    monkeypatch.setattr(fitting, "write_cadence_rfm_wrapper", write_wrapper)
     output = tmp_path / "model.sp"
     report = tmp_path / "report.json"
     html = tmp_path / "report.html"
+    fitted = tmp_path / "model.s2p"
+    rfm = tmp_path / "model.rfm"
+    wrapper = tmp_path / "model_wrapper.sp"
+    report_writes: list[tuple[Path, str]] = []
+    original_write_text = Path.write_text
+
+    def record_report_writes(path, data, *args, **kwargs):
+        if path in {report, html}:
+            report_writes.append((path, data))
+        return original_write_text(path, data, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "write_text", record_report_writes)
 
     result = fitting.fit_touchstone_to_spice_target(
         tmp_path / "line.s2p",
         output,
-        target=SParamFitTarget(0.001, passivity="off", max_order=78),
+        target=SParamFitTarget(0.001, passivity="off", max_order=8),
         config=SParamFitConfig(mode="manual"),
         report_path=report,
         html_report_path=html,
+        fitted_touchstone_path=fitted,
+        rfm_path=rfm,
+        rfm_wrapper_path=wrapper,
     )
 
     assert result.target_met is True
-    assert calls_by_order[78] == 1
-    payload = json.loads(report.read_text(encoding="utf-8"))
-    assert payload["comparison_mean_rms_error"] == pytest.approx(first_rms)
-    assert f"{first_rms:.9g}" in html.read_text(encoding="utf-8")
+    assert writes == [("spice", 8), ("touchstone", 8), ("rfm", 8), ("wrapper", 8)]
+    assert output.read_text(encoding="utf-8") == "spice order 8\n"
+    assert fitted.read_text(encoding="utf-8") == "touchstone order 8\n"
+    assert rfm.read_text(encoding="utf-8") == "rfm order 8\n"
+    assert wrapper.read_text(encoding="utf-8") == "wrapper order 8\n"
+    assert json.loads(report.read_text(encoding="utf-8"))["expanded_model_order"] == 8
+    assert "8" in html.read_text(encoding="utf-8")
+    assert [path for path, _ in report_writes] == [report, html, report, html]
+    assert all("8" in data for _, data in report_writes)
+
+
+def test_target_fit_fails_when_selected_trial_lacks_execution(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    selected_trial = SimpleNamespace(requested_order=4, payload=None)
+    search_result = SimpleNamespace(
+        target_met=True,
+        selected_trial=selected_trial,
+        stop_reason="target_met",
+        to_dict=lambda: {"target_met": True},
+    )
+    monkeypatch.setattr(fitting, "run_target_order_search", lambda target, evaluate: search_result)
+
+    with pytest.raises(RuntimeError, match="missing its internal fit execution"):
+        fitting.fit_touchstone_to_spice_target(
+            tmp_path / "line.s2p",
+            tmp_path / "model.sp",
+            target=SParamFitTarget(0.001, passivity="off", max_order=4),
+            config=SParamFitConfig(mode="manual"),
+        )
 
 
 def test_target_fit_copies_requested_product_exports_to_final_paths(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 
-    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path, **kwargs):
+    def fake_execution(touchstone_path, output_path, *, config, log_path):
         result = _fake_target_fit_result(output_path, config.model_order_max, target_met=True)
-        result.ports = 2
-        if not kwargs.get("write_outputs", True):
-            return result
-        result.report_path = report_path
-        result.html_report_path = html_report_path
-        result.fitted_touchstone_path = kwargs["fitted_touchstone_path"]
-        result.rfm_path = kwargs["rfm_path"]
-        result.rfm_wrapper_path = None
-        result.fitted_touchstone_path.parent.mkdir(parents=True, exist_ok=True)
-        result.fitted_touchstone_path.write_text("fitted\n", encoding="ascii")
-        result.rfm_path.parent.mkdir(parents=True, exist_ok=True)
-        result.rfm_path.write_text("VERSION 200600\n", encoding="ascii")
-        kwargs["rfm_wrapper_path"].write_text(".subckt fixture_model n1 n2 ref\n.ends\n", encoding="ascii")
-        result.html_report_path.write_text(
-            "<body>" + " ".join(
-                str(path)
-                for path in (
-                    result.spice_path,
-                    result.report_path,
-                    result.fitted_touchstone_path,
-                    result.rfm_path,
-                )
-            ) + "</body>",
-            encoding="utf-8",
-        )
-        return result
+        return fitting._FitExecution(result=result, network=None, vector_fit=None)
 
-    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+    def write_outputs(execution, output_path, **kwargs):
+        output_path.write_text("spice\n", encoding="ascii")
+        for key, content in (("fitted_touchstone_path", "fitted\n"), ("rfm_path", "VERSION 200600\n"), ("rfm_wrapper_path", ".subckt fixture_model n1 n2 ref\n.ends\n")):
+            path = kwargs[key]
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding="ascii")
+        return execution.result
+
+    monkeypatch.setattr(fitting, "_fit_touchstone_execution", fake_execution)
+    monkeypatch.setattr(fitting, "_write_fit_outputs", write_outputs)
     output = tmp_path / "model.sp"
     fitted = tmp_path / "exports" / "fitted.s2p"
     rfm = tmp_path / "exports" / "fitted.rfm"
@@ -1132,10 +1204,7 @@ def test_target_fit_copies_requested_product_exports_to_final_paths(tmp_path: Pa
     assert payload["fitted_touchstone_path"] == str(fitted)
     assert payload["rfm_path"] == str(rfm)
     assert payload["rfm_wrapper_path"] == str(wrapper)
-    html = html_report.read_text(encoding="utf-8")
-    assert str(fitted) in html
-    assert str(rfm) in html
-    assert str(wrapper) in html
+    assert html_report.exists()
 
 
 def test_target_fit_failure_removes_requested_output_and_keeps_reports(tmp_path: Path, monkeypatch):
@@ -1172,11 +1241,13 @@ def test_target_fit_appends_progress_log_while_each_order_runs(tmp_path: Path, m
     log_path = tmp_path / "board.log"
     observed_log_text = []
 
-    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path, **kwargs):
+    def fake_execution(touchstone_path, output_path, *, config, log_path):
         observed_log_text.append((tmp_path / "board.log").read_text(encoding="utf-8"))
-        return _fake_target_fit_result(output_path, config.model_order_max, target_met=True)
+        result = _fake_target_fit_result(output_path, config.model_order_max, target_met=True)
+        return fitting._FitExecution(result=result, network=None, vector_fit=None)
 
-    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+    monkeypatch.setattr(fitting, "_fit_touchstone_execution", fake_execution)
+    monkeypatch.setattr(fitting, "_write_fit_outputs", lambda execution, output_path, **kwargs: execution.result)
 
     result = fitting.fit_touchstone_to_spice_target(
         tmp_path / "line.s2p",

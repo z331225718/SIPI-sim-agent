@@ -1350,33 +1350,13 @@ def _write_fit_outputs(
     return result
 
 
-def fit_touchstone_to_spice(
+def _fit_touchstone_execution(
     touchstone_path: Path,
     output_path: Path,
+    *,
     config: SParamFitConfig | None = None,
-    report_path: Path | None = None,
-    html_report_path: Path | None = None,
     log_path: Path | None = None,
-    fitted_touchstone_path: Path | None = None,
-    rfm_path: Path | None = None,
-    rfm_wrapper_path: Path | None = None,
-    report_top_rms: int = 6,
-    write_outputs: bool = True,
-    return_execution: bool = False,
-) -> SParamFitResult | _FitExecution:
-    if report_top_rms < 0:
-        raise ValueError("report_top_rms must be >= 0")
-    if rfm_wrapper_path is not None and rfm_path is None:
-        raise ValueError("rfm_wrapper_path requires rfm_path")
-    _validate_distinct_output_paths(
-        spice=output_path,
-        report=report_path,
-        html_report=html_report_path,
-        log=log_path,
-        fitted_touchstone=fitted_touchstone_path,
-        rfm=rfm_path,
-        rfm_wrapper=rfm_wrapper_path,
-    )
+) -> _FitExecution:
     config = config or SParamFitConfig()
     resource_monitor = _FitResourceMonitor()
     resource_monitor.__enter__()
@@ -1869,12 +1849,12 @@ def fit_touchstone_to_spice(
         result = SParamFitResult(
             touchstone_path=touchstone_path,
             spice_path=output_path,
-            report_path=report_path,
-            html_report_path=html_report_path,
+            report_path=None,
+            html_report_path=None,
             log_path=log_path,
-            fitted_touchstone_path=fitted_touchstone_path,
-            rfm_path=rfm_path,
-            rfm_wrapper_path=rfm_wrapper_path,
+            fitted_touchstone_path=None,
+            rfm_path=None,
+            rfm_wrapper_path=None,
             ports=network.nports,
             frequency_points=len(network.f),
             frequency_range_hz=_frequency_range(network),
@@ -1911,21 +1891,55 @@ def fit_touchstone_to_spice(
             **pole_summary,
         )
         execution = _FitExecution(result=result, network=network, vector_fit=vector_fit)
-        if write_outputs:
-            progress.info(f"writing SPICE subcircuit: {output_path}")
-            result = _write_fit_outputs(
-                execution,
-                output_path,
-                report_path=report_path,
-                html_report_path=html_report_path,
-                fitted_touchstone_path=fitted_touchstone_path,
-                rfm_path=rfm_path,
-                rfm_wrapper_path=rfm_wrapper_path,
-                report_top_rms=report_top_rms,
-            )
-            execution = _FitExecution(result=result, network=network, vector_fit=vector_fit)
         progress.info("fit-sparam completed")
-        return execution if return_execution else result
+        return execution
+
+
+def fit_touchstone_to_spice(
+    touchstone_path: Path,
+    output_path: Path,
+    config: SParamFitConfig | None = None,
+    report_path: Path | None = None,
+    html_report_path: Path | None = None,
+    log_path: Path | None = None,
+    fitted_touchstone_path: Path | None = None,
+    rfm_path: Path | None = None,
+    rfm_wrapper_path: Path | None = None,
+    report_top_rms: int = 6,
+) -> SParamFitResult:
+    """Fit one Touchstone network and write its requested product artifacts."""
+    if report_top_rms < 0:
+        raise ValueError("report_top_rms must be >= 0")
+    if rfm_wrapper_path is not None and rfm_path is None:
+        raise ValueError("rfm_wrapper_path requires rfm_path")
+    _validate_distinct_output_paths(
+        spice=output_path,
+        report=report_path,
+        html_report=html_report_path,
+        log=log_path,
+        fitted_touchstone=fitted_touchstone_path,
+        rfm=rfm_path,
+        rfm_wrapper=rfm_wrapper_path,
+    )
+    execution = _fit_touchstone_execution(
+        touchstone_path,
+        output_path,
+        config=config,
+        log_path=log_path,
+    )
+    if log_path is not None:
+        with log_path.open("a", encoding="utf-8") as handle:
+            handle.write(f"writing SPICE subcircuit: {output_path}\n")
+    return _write_fit_outputs(
+        execution,
+        output_path,
+        report_path=report_path,
+        html_report_path=html_report_path,
+        fitted_touchstone_path=fitted_touchstone_path,
+        rfm_path=rfm_path,
+        rfm_wrapper_path=rfm_wrapper_path,
+        report_top_rms=report_top_rms,
+    )
 
 
 def fit_touchstone_to_spice_auto_order(
@@ -2302,15 +2316,11 @@ def fit_touchstone_to_spice_target(
         trial_config = _native_manual_auto_order_config(policy_config, order)
         write_progress(f"order={order} status=START")
         try:
-            fit_output = fit_touchstone_to_spice(
+            execution = _fit_touchstone_execution(
                 touchstone_path,
                 output_path,
                 config=trial_config,
-                report_path=None,
-                html_report_path=None,
                 log_path=None,
-                write_outputs=False,
-                return_execution=True,
             )
         except Exception as exc:
             write_progress(f"order={order} status=FAIL reason=fit_failed error={exc}")
@@ -2333,15 +2343,8 @@ def fit_touchstone_to_spice_target(
                 rejection_reason="fit_failed",
                 payload={"error": str(exc)},
             )
-        execution = (
-            fit_output
-            if isinstance(fit_output, _FitExecution)
-            else getattr(fit_output, "_fit_execution", None)
-        )
-        fit_result = fit_output.result if isinstance(fit_output, _FitExecution) else fit_output
-        trial = trial_from_fit_result(target, fit_result, requested_order=order)
-        if isinstance(execution, _FitExecution) or hasattr(execution, "result"):
-            trial.payload = execution
+        trial = trial_from_fit_result(target, execution.result, requested_order=order)
+        trial.payload = execution
         write_progress(
             f"order={order} effective_order={trial.effective_order} "
             f"rms={_format_float(trial.final_mean_rms)} status={trial.status} "
@@ -2362,33 +2365,18 @@ def fit_touchstone_to_spice_target(
         selected_order = search_result.selected_trial.requested_order
         write_progress(f"target-search selected_order={selected_order}; writing final artifacts")
         selected_execution = search_result.selected_trial.payload
-        if isinstance(selected_execution, _FitExecution) or hasattr(selected_execution, "result"):
-            selected_fit_result = _write_fit_outputs(
-                selected_execution,
-                output_path,
-                report_path=report_path,
-                html_report_path=html_report_path,
-                fitted_touchstone_path=fitted_touchstone_path,
-                rfm_path=rfm_path,
-                rfm_wrapper_path=rfm_wrapper_path,
-                report_top_rms=report_top_rms,
-            )
-        else:
-            # Preserve compatibility with test doubles and third-party wrappers that
-            # cannot provide the private execution context.
-            selected_config = _native_manual_auto_order_config(policy_config, selected_order)
-            selected_fit_result = fit_touchstone_to_spice(
-                touchstone_path,
-                output_path,
-                config=selected_config,
-                report_path=report_path,
-                html_report_path=html_report_path,
-                log_path=None,
-                fitted_touchstone_path=fitted_touchstone_path,
-                rfm_path=rfm_path,
-                rfm_wrapper_path=rfm_wrapper_path,
-                report_top_rms=report_top_rms,
-            )
+        if not isinstance(selected_execution, _FitExecution):
+            raise RuntimeError("selected target trial is missing its internal fit execution")
+        selected_fit_result = _write_fit_outputs(
+            selected_execution,
+            output_path,
+            report_path=report_path,
+            html_report_path=html_report_path,
+            fitted_touchstone_path=fitted_touchstone_path,
+            rfm_path=rfm_path,
+            rfm_wrapper_path=rfm_wrapper_path,
+            report_top_rms=report_top_rms,
+        )
         write_progress("target-search finished status=PASS")
 
     payload = search_result.to_dict()
