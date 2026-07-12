@@ -1,7 +1,6 @@
 import inspect
 import json
 import logging
-from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -388,7 +387,7 @@ def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plo
     assert "data:image/png" not in html
     assert "拟合采样选择" in html
     assert "拟合频点数" in html
-    assert "目标判定 RMS（mean_s_rms_v1）" in html
+    assert "目标判定值（mean_s_rms_v1）" in html
     assert "质量门" in html
     assert "dc_coverage" in html
     assert "RMS 误差" in html
@@ -399,32 +398,62 @@ def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plo
     assert "get_model_response" in FakeVectorFitting.instances[0].calls
 
 
-def test_html_report_uses_target_mean_rms_in_primary_summary_for_30_ports(tmp_path: Path, monkeypatch):
+def test_html_report_labels_sum_style_comparison_error_for_30_port_target(tmp_path: Path):
     import agent_spice.sparam.fitting as fitting
-
-    FakeVectorFitting.instances.clear()
-    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
-    monkeypatch.setattr(fitting, "NativeVectorFitting", FakeVectorFitting)
-    result = fit_touchstone_to_spice(tmp_path / "line.s2p", tmp_path / "model.sp")
+    from agent_spice.sparam.quality import build_quality_report
 
     raw_rms = 0.02959017
     mean_rms = 0.000986339
+    ports = 30
+    network = SimpleNamespace(
+        f=np.array([1e6, 2e6]),
+        s=np.zeros((2, ports, ports), dtype=complex),
+    )
+    quality_report = build_quality_report(
+        network=network,
+        frequency_points=2,
+        fit_frequency_points=2,
+        comparison_rms_error=raw_rms,
+        passive_after_enforce=True,
+        passivity_violations_after=[],
+        enforce_passivity=False,
+        poles=np.array([-1.0]),
+    )
+    result = fitting.SParamFitResult(
+        touchstone_path=tmp_path / "line.s30p",
+        spice_path=tmp_path / "model.sp",
+        report_path=None,
+        html_report_path=None,
+        log_path=None,
+        ports=ports,
+        frequency_points=2,
+        frequency_range_hz=[1e6, 2e6],
+        fit_frequency_points=2,
+        fit_frequency_range_hz=[1e6, 2e6],
+        fit_frequency_selection={},
+        reference_impedance=[50.0] * ports,
+        config=SParamFitConfig(enforce_passivity=False),
+        rms_error=raw_rms,
+        comparison_rms_error=raw_rms,
+        passive_before_enforce=True,
+        passive_after_enforce=True,
+        passivity_violations_before=[],
+        passivity_violations_after=[],
+        quality_report=quality_report,
+        comparison_mean_rms_error=mean_rms,
+    )
     html = fitting._render_html_report(
-        replace(
-            result,
-            ports=30,
-            rms_error=raw_rms,
-            comparison_rms_error=raw_rms,
-            comparison_mean_rms_error=mean_rms,
-        ),
+        result,
         [],
     )
 
-    assert "目标判定 RMS（mean_s_rms_v1）" in html
+    assert "目标判定值（mean_s_rms_v1）" in html
     assert "0.000986339" in html
+    assert "0.02959017" in html
+    assert "sqrt(sum_ij mean |ΔSij|²)" in html
+    assert "mean_s_rms_v1 = raw / ports" in html
     assert "拟合采样 RMS 误差" not in html
     assert "原始频点 RMS 误差" not in html
-    assert "0.02959017" not in html
 
 
 def test_readable_html_report_summarizes_configuration_and_collapses_diagnostics(tmp_path: Path, monkeypatch):

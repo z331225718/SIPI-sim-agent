@@ -873,6 +873,28 @@ def _format_hz(value: float | None) -> str:
     return f"{value:.6g} Hz"
 
 
+def _html_diagnostic_cells(diagnostic: dict[str, Any]) -> tuple[Any, ...]:
+    if diagnostic["id"] != "comparison_rms_error":
+        return tuple(
+            diagnostic[key]
+            for key in ("id", "status", "severity", "metric", "threshold", "message", "recommendation")
+        )
+
+    metric = (
+        f"{_format_cell(diagnostic['metric'])}（原始总和式：sqrt(sum_ij mean |ΔSij|²)；"
+        "目标判定值 mean_s_rms_v1 = raw / ports）"
+    )
+    return (
+        "comparison_rms_error（原始总和式）",
+        diagnostic["status"],
+        diagnostic["severity"],
+        metric,
+        diagnostic["threshold"],
+        diagnostic["message"],
+        diagnostic["recommendation"],
+    )
+
+
 def _format_bool(value: bool | None) -> str:
     if value is True:
         return "yes"
@@ -1093,14 +1115,8 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
         violation_rows = "<tr><td colspan=\"2\">No violation bands reported after enforcement.</td></tr>"
     diagnostic_rows = "\n".join(
         "<tr>"
-        f"<td>{escape(_format_cell(diagnostic['id']))}</td>"
-        f"<td>{escape(_format_cell(diagnostic['status']))}</td>"
-        f"<td>{escape(_format_cell(diagnostic['severity']))}</td>"
-        f"<td>{escape(_format_cell(diagnostic['metric']))}</td>"
-        f"<td>{escape(_format_cell(diagnostic['threshold']))}</td>"
-        f"<td>{escape(_format_cell(diagnostic['message']))}</td>"
-        f"<td>{escape(_format_cell(diagnostic['recommendation']))}</td>"
-        "</tr>"
+        + "".join(f"<td>{escape(_format_cell(value))}</td>" for value in _html_diagnostic_cells(diagnostic))
+        + "</tr>"
         for diagnostic in quality["diagnostics"]
     )
     if not diagnostic_rows:
@@ -1169,7 +1185,7 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     <div class="card"><div class="label">端口数</div><div class="value">{result.ports}</div></div>
     <div class="card"><div class="label">频点数</div><div class="value">{result.frequency_points}</div></div>
     <div class="card"><div class="label">拟合频点数</div><div class="value">{result.fit_frequency_points}</div></div>
-    <div class="card"><div class="label">目标判定 RMS（mean_s_rms_v1）</div><div class="value">{_format_float(result.comparison_mean_rms_error)}</div></div>
+    <div class="card"><div class="label">目标判定值（mean_s_rms_v1）</div><div class="value">{_format_float(result.comparison_mean_rms_error)}</div></div>
   </div>
 
   <h2>拟合配置</h2>
@@ -1228,7 +1244,7 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     <tr><td>拟合频点数</td><td>{result.fit_frequency_points}</td></tr>
     <tr><td>原始频率范围</td><td>{_format_hz(freq_start)} 至 {_format_hz(freq_end)}</td></tr>
     <tr><td>拟合频率范围</td><td>{_format_hz(fit_freq_start)} 至 {_format_hz(fit_freq_end)}</td></tr>
-    <tr><td>目标判定 RMS（mean_s_rms_v1）</td><td>{_format_float(result.comparison_mean_rms_error)}</td></tr>
+    <tr><td>目标判定值（mean_s_rms_v1）</td><td>{_format_float(result.comparison_mean_rms_error)}</td></tr>
     {selection_rows}
   </table>
 
