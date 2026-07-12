@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent-Spice S 参数 Benchmark</title>
+  <style>
+    :root { --ink:#17202a; --muted:#5d6b78; --line:#d9e2ec; --paper:#ffffff; --ground:#f4f7f9; --blue:#1479b8; --green:#16855b; --amber:#b76e00; --red:#c64a3b; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:"Segoe UI",Arial,sans-serif; color:var(--ink); background:var(--ground); line-height:1.55; }
+    header { background:#123247; color:#fff; padding:42px 24px 34px; }
+    header > div, main { max-width:1120px; margin:0 auto; }
+    h1 { margin:0; font-size:32px; font-weight:700; }
+    header p { margin:8px 0 0; color:#d9edf8; max-width:780px; }
+    main { padding:28px 24px 56px; }
+    h2 { margin:38px 0 12px; font-size:21px; }
+    .lead { max-width:900px; color:#334e68; margin:0; }
+    .metrics { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); border:1px solid var(--line); background:var(--paper); margin-top:22px; }
+    .metric { padding:17px; border-right:1px solid var(--line); min-height:112px; }
+    .metric:last-child { border:0; }
+    .metric b { display:block; font-size:27px; line-height:1.1; }
+    .metric span { display:block; margin-top:8px; color:var(--muted); font-size:13px; }
+    .notice { border-left:4px solid var(--amber); padding:12px 14px; background:#fff9e8; color:#5a3a00; margin-top:20px; }
+    .table-wrap { overflow:auto; border:1px solid var(--line); background:var(--paper); }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th, td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap; }
+    th { background:#edf3f7; font-weight:650; }
+    tr:last-child td { border-bottom:0; }
+    .pass { color:var(--green); font-weight:700; }
+    .fail { color:var(--red); font-weight:700; }
+    .chart { border:1px solid var(--line); background:var(--paper); padding:18px; }
+    .chart svg { width:100%; height:auto; display:block; }
+    .caption { color:var(--muted); font-size:13px; margin:9px 0 0; }
+    .split { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    .panel { border:1px solid var(--line); background:var(--paper); padding:18px; }
+    .panel h3 { margin:0 0 8px; font-size:17px; }
+    .panel p { margin:0; color:#334e68; }
+    .evidence { margin:0; padding:0; list-style:none; }
+    .evidence li { padding:11px 0; border-bottom:1px solid var(--line); }
+    .evidence li:last-child { border:0; }
+    a { color:#075985; }
+    .small { color:var(--muted); font-size:13px; }
+    footer { color:var(--muted); font-size:13px; padding-top:28px; }
+    @media (max-width:760px) { .metrics,.split { grid-template-columns:1fr; } .metric { border-right:0; border-bottom:1px solid var(--line); } .metric:last-child { border-bottom:0; } h1 { font-size:27px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Agent-Spice S 参数 Benchmark</h1>
+      <p>面向电源完整性与高速互连的受约束 S 参数拟合。此页只汇总可复核的基准结论，不把探索性调参结果包装成产品性能。</p>
+    </div>
+  </header>
+  <main>
+    <p class="lead">统一全语料契约：原始频率与端口对上的 mean S-RMS 不超过 <code>0.001</code>，并通过权威被动性检查。所有数值均来自仓库内已提交的原始 benchmark 报告。</p>
+    <section class="metrics" aria-label="基准概览">
+      <div class="metric"><b>6</b><span>全语料输入</span></div>
+      <div class="metric"><b>5 / 6</b><span>Native 达成完整目标</span></div>
+      <div class="metric"><b>4 / 6</b><span>IdEM 达成完整目标</span></div>
+      <div class="metric"><b>8–166</b><span>已覆盖端口数范围</span></div>
+    </section>
+    <div class="notice"><strong>边界说明：</strong>完整六例严格 parity 未通过。高端口公共通过用例中，Native 在 order 或时间上并非全面占优；此结果用于确定适用边界，而非声称单向胜出。</div>
+
+    <h2>全语料结果</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>输入</th><th>端口</th><th>Native</th><th>IdEM</th><th>Native order</th><th>IdEM order</th><th>Native RMS</th><th>IdEM RMS</th><th>结论</th></tr></thead>
+        <tbody>
+          <tr><td>5power withcap</td><td>19</td><td class="fail">FAIL</td><td class="fail">FAIL</td><td>–</td><td>–</td><td>–</td><td>–</td><td>双方均未达标</td></tr>
+          <tr><td>5power wocap</td><td>30</td><td class="pass">PASS</td><td class="fail">FAIL</td><td>83</td><td>–</td><td>0.000918</td><td>–</td><td>Native 达标</td></tr>
+          <tr><td>Test13</td><td>60</td><td class="pass">PASS</td><td class="pass">PASS</td><td>8</td><td>7</td><td>0.000516</td><td>0.000737</td><td>双方达标</td></tr>
+          <tr><td>Test16</td><td>91</td><td class="pass">PASS</td><td class="pass">PASS</td><td>13</td><td>10</td><td>0.000707</td><td>0.000598</td><td>双方达标</td></tr>
+          <tr><td>Test11</td><td>163</td><td class="pass">PASS</td><td class="pass">PASS</td><td>10</td><td>6</td><td>0.000197</td><td>0.000697</td><td>双方达标</td></tr>
+          <tr><td>Test3</td><td>166</td><td class="pass">PASS</td><td class="pass">PASS</td><td>9</td><td>4</td><td>0.000271</td><td>0.000902</td><td>双方达标</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>公共通过用例的时间与内存</h2>
+    <div class="chart">
+      <svg viewBox="0 0 920 270" role="img" aria-label="Native 与 IdEM 在四个公共通过用例上的端到端时间对比">
+        <text x="0" y="18" fill="#52606d" font-size="13">端到端时间，秒</text>
+        <g font-family="Segoe UI, Arial" font-size="12" fill="#334e68">
+          <text x="0" y="61">60P</text><rect x="70" y="44" width="43" height="12" fill="#1479b8"/><rect x="70" y="60" width="29" height="12" fill="#16855b"/><text x="120" y="54">52.8</text><text x="106" y="70">35.4</text>
+          <text x="0" y="119">91P</text><rect x="70" y="102" width="274" height="12" fill="#1479b8"/><rect x="70" y="118" width="65" height="12" fill="#16855b"/><text x="351" y="112">336.0</text><text x="142" y="128">79.6</text>
+          <text x="0" y="177">163P</text><rect x="70" y="160" width="497" height="12" fill="#1479b8"/><rect x="70" y="176" width="172" height="12" fill="#16855b"/><text x="574" y="170">608.6</text><text x="249" y="186">211.1</text>
+          <text x="0" y="235">166P</text><rect x="70" y="218" width="537" height="12" fill="#1479b8"/><rect x="70" y="234" width="163" height="12" fill="#16855b"/><text x="614" y="228">656.7</text><text x="240" y="244">199.8</text>
+          <rect x="700" y="40" width="14" height="14" fill="#1479b8"/><text x="721" y="52">Native</text><rect x="790" y="40" width="14" height="14" fill="#16855b"/><text x="811" y="52">IdEM</text>
+        </g>
+      </svg>
+      <p class="caption">这四个用例均通过目标与被动性；Native 峰值内存为 206–1128 MiB，IdEM 为 197–1173 MiB。完整资源数据见下方证据。</p>
+    </div>
+
+    <h2>补充验证</h2>
+    <div class="split">
+      <section class="panel">
+        <h3>IdEM S19 自适应调优</h3>
+        <p>在 19 端口数据上，IdEM 的 `stagnation-alpha0p01` 配置以 order 74 达成 RMS <code>0.000936916</code>，并通过权威被动性检查。该结果说明外部工具在适当的停滞阈值下可以继续收敛，也为 Native 的适用边界提供了独立参照。</p>
+      </section>
+      <section class="panel">
+        <h3>MATLAB MFT-NNLS 边界</h3>
+        <p>在 S19 上，原始 MATLAB 参考工具箱即使采用更有利的无 DC 拟合和加强配置，在 order 80 以内也没有达到 RMS <code>0.001</code>。因此未将该 port 作为产品路径推广。</p>
+      </section>
+    </div>
+
+    <h2>可复核证据</h2>
+    <ul class="evidence">
+      <li><a href="sparam-idem-full-benchmark.md">全语料 Native vs IdEM 基准</a><div class="small">统一 RMS、被动性、order、时间与峰值内存契约。</div></li>
+      <li><a href="sparam-idem-s19-tuning.md">IdEM S19 自适应调优报告</a><div class="small">包含 accepted model、阶段性失败与停止规则。</div></li>
+      <li><a href="sparam-matlab-mft-s19-benchmark.md">MATLAB MFT-NNLS S19 基准</a><div class="small">记录未推广该 port 的可复核理由。</div></li>
+      <li><a href="../README.md">产品 CLI 与交付物说明</a><div class="small">`fit-sparam` 默认输出 SPICE、RFM、fitted Touchstone、JSON、HTML 与实时日志。</div></li>
+    </ul>
+    <footer>生成日期：2026-07-12。外部 IdEM 与 MATLAB 仅作为黑盒或参考实现基准；本报告不包含原始客户网络数据。</footer>
+  </main>
+</body>
+</html>

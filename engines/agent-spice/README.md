@@ -7,6 +7,8 @@ Agent-Spice 是面向电源完整性与高速互连场景的命令行工具。�
 
 仓库内还保留了 IdEM、极点、模态和基准探针命令，供算法研究使用；它们不是稳定产品接口，参数与输出契约可能变化，因此不在本 README 中逐项承诺。可用 `python -m agent_spice.cli --help` 查看完整命令索引，以及 `python -m agent_spice.cli <命令> --help` 查看探针命令的即时帮助。
 
+可公开复核的基准结论见 [S 参数 Benchmark](docs/sparam-benchmark.html)。
+
 ## 安装与验证
 
 建议使用项目的 Python 环境安装依赖，然后运行测试：
