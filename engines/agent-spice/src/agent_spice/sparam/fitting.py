@@ -1169,8 +1169,7 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     <div class="card"><div class="label">端口数</div><div class="value">{result.ports}</div></div>
     <div class="card"><div class="label">频点数</div><div class="value">{result.frequency_points}</div></div>
     <div class="card"><div class="label">拟合频点数</div><div class="value">{result.fit_frequency_points}</div></div>
-    <div class="card"><div class="label">拟合采样 RMS 误差</div><div class="value">{_format_float(result.rms_error)}</div></div>
-    <div class="card"><div class="label">原始频点 RMS 误差</div><div class="value">{_format_float(result.comparison_rms_error)}</div></div>
+    <div class="card"><div class="label">目标判定 RMS（mean_s_rms_v1）</div><div class="value">{_format_float(result.comparison_mean_rms_error)}</div></div>
   </div>
 
   <h2>拟合配置</h2>
@@ -1229,8 +1228,7 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     <tr><td>拟合频点数</td><td>{result.fit_frequency_points}</td></tr>
     <tr><td>原始频率范围</td><td>{_format_hz(freq_start)} 至 {_format_hz(freq_end)}</td></tr>
     <tr><td>拟合频率范围</td><td>{_format_hz(fit_freq_start)} 至 {_format_hz(fit_freq_end)}</td></tr>
-    <tr><td>拟合采样 RMS 误差</td><td>{_format_float(result.rms_error)}</td></tr>
-    <tr><td>原始频点 RMS 误差</td><td>{_format_float(result.comparison_rms_error)}</td></tr>
+    <tr><td>目标判定 RMS（mean_s_rms_v1）</td><td>{_format_float(result.comparison_mean_rms_error)}</td></tr>
     {selection_rows}
   </table>
 

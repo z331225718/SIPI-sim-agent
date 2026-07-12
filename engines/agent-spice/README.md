@@ -139,7 +139,7 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 优先打开 HTML 报告：其中提供输入、SPICE、fitted Touchstone、RFM 和 wrapper 的本地链接，并展示最差 RMS 曲线。JSON 中建议重点检查：
 
 - `target_met`：是否满足目标。
-- `comparison_rms_error`：最终模型在原始频率网格上的 RMS。
+- `comparison_mean_rms_error`：与 `--rms-target` 使用同一 `mean_s_rms_v1` 公式的目标判定 RMS。
 - `passivity_max_sigma_after`：最终被动性最大奇异值。
 - `selected_effective_order`：选中的有效阶次。
 - `order_trials`：搜索过程中的每个试探阶次及其结果。

@@ -1,6 +1,7 @@
 import inspect
 import json
 import logging
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -387,16 +388,43 @@ def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plo
     assert "data:image/png" not in html
     assert "拟合采样选择" in html
     assert "拟合频点数" in html
-    assert "拟合采样 RMS 误差" in html
-    assert "原始频点 RMS 误差" in html
+    assert "目标判定 RMS（mean_s_rms_v1）" in html
     assert "质量门" in html
     assert "dc_coverage" in html
     assert "RMS 误差" in html
-    assert "0.125" in html
+    assert f"{result.comparison_mean_rms_error:.6g}" in html
     assert "S11" in html
     assert "S21" in html
     assert html.count("<polyline") >= 3
     assert "get_model_response" in FakeVectorFitting.instances[0].calls
+
+
+def test_html_report_uses_target_mean_rms_in_primary_summary_for_30_ports(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "NativeVectorFitting", FakeVectorFitting)
+    result = fit_touchstone_to_spice(tmp_path / "line.s2p", tmp_path / "model.sp")
+
+    raw_rms = 0.02959017
+    mean_rms = 0.000986339
+    html = fitting._render_html_report(
+        replace(
+            result,
+            ports=30,
+            rms_error=raw_rms,
+            comparison_rms_error=raw_rms,
+            comparison_mean_rms_error=mean_rms,
+        ),
+        [],
+    )
+
+    assert "目标判定 RMS（mean_s_rms_v1）" in html
+    assert "0.000986339" in html
+    assert "拟合采样 RMS 误差" not in html
+    assert "原始频点 RMS 误差" not in html
+    assert "0.02959017" not in html
 
 
 def test_readable_html_report_summarizes_configuration_and_collapses_diagnostics(tmp_path: Path, monkeypatch):
