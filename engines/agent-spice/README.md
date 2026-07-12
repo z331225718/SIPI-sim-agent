@@ -97,7 +97,7 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 | `--log PATH` | 不写日志 | 写入逐阶次搜索摘要，包括阶次、RMS、状态和失败原因。 |
 | `--rms-target FLOAT` | 必填 | 最终平均 S-RMS 上限，必须为正数。 |
 | `--passivity {off,check,enforce}` | `check` | 被动性处理策略，见上表。 |
-| `--max-order N` | 60 端口及以上为 `24`，否则为 `40` | 允许尝试的最大有效公共极点阶次。 |
+| `--max-order N` | `100` | 允许尝试的最大有效公共极点阶次；与端口数量无关。 |
 | `--max-order-step N` | `8` | RMS 明显未达标时允许的最大自适应阶次步长；必须为正整数。 |
 | `--quality-profile {explore,signoff}` | `explore` | 报告质量门配置。`explore` 用于日常探索；`signoff` 用于更严格的交付检查。 |
 | `--fail-on-quality` | 关闭 | 质量报告出现阻断项时，以非零退出码结束。 |

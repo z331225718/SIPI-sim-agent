@@ -782,7 +782,7 @@ def main(argv: list[str] | None = None) -> int:
     fit_parser.add_argument(
         "--max-order",
         type=int,
-        help="Maximum effective common-pole order; defaults to 24 for 60+ ports and 40 otherwise.",
+        help="Maximum effective common-pole order; defaults to 100.",
     )
     fit_parser.add_argument(
         "--max-order-step",
@@ -1234,7 +1234,7 @@ def main(argv: list[str] | None = None) -> int:
             compatibility_orders = _parse_int_list(args.auto_model_order_candidates)
             max_order = max(compatibility_orders) if compatibility_orders else None
         if max_order is None:
-            max_order = 24 if ports >= 60 else 40
+            max_order = 100
         try:
             target = SParamFitTarget(
                 mean_rms=rms_target,

@@ -928,7 +928,7 @@ def test_fit_sparam_cli_hidden_resume_flag_reaches_target_search(tmp_path: Path,
     assert calls[0]["resume_trials"] is True
 
 
-def test_fit_sparam_cli_defaults_to_check_and_large_port_max_order(tmp_path: Path, monkeypatch):
+def test_fit_sparam_cli_defaults_to_check_and_port_independent_max_order(tmp_path: Path, monkeypatch):
     import agent_spice.cli as cli
 
     calls = []
@@ -953,7 +953,7 @@ def test_fit_sparam_cli_defaults_to_check_and_large_port_max_order(tmp_path: Pat
     assert exit_code == 0
     target, config = calls[0]
     assert target.passivity == "check"
-    assert target.max_order == 24
+    assert target.max_order == 100
     assert config.check_passivity is True
     assert config.enforce_passivity is False
 
