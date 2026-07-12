@@ -71,6 +71,7 @@
 | 未编号：stabAAA projections | 非 VF，候选 | s19 / 74 | S-RMS `0.0247999` / `0.9999989` / enforce `83.50s` | NO-GO | 质量门与 seed-overlap 门均失败 |
 | 未编号：Tangential Loewner | 非 VF，候选 | s19 / 56,60,68,74 | final N/A | NO-GO | 40/40 pencils 有 RHP poles |
 | 未编号：RKFIT | 非 VF，候选 | s19 / 74 | internal misfit `0.00035024`; final N/A; `22.30s` | NO-GO | 最好初始化仍有 1 个 RHP pole |
+| 未编号：全局模态 pole initializer | modal projection + scalar Native VF，候选 | s19 / 56,60,68,74 | order74 raw S-RMS `0.00769684` / sigma `1.04463` | NO-GO | 48/48 scalar fits成功，但完整矩阵 residue/condition 爆炸 |
 | 未编号：modal-Z / orthogonal basis | 降维诊断 | s19、s30、60-166p | **Z-log metric，不能与 S-RMS 横比** | 未产品化 | s19 fit-limited，163/166p basis-limited |
 
 ## 5. 已编号 D4-D11/D15 与早期未编号支线
@@ -228,6 +229,16 @@
 **[FACT] 验证数据：** `log_damped`：16 RHP poles、internal misfit `0.00793432`、`23.50s`；`linear_damped`：1 RHP pole、misfit `0.000350241`、`22.30s`。二者都未形成完整共轭稳定集合；internal misfit 不是最终 S-RMS。
 
 **[FACT] 冻结门结果：** 原始稳定 pole discovery NO-GO；`stable=1` 的事后反射不属于冻结主路径。[结果报告](sparam-rkfit-s19-validation-results.md)
+
+### 全局模态 Pole Initializer
+
+**[HYPOTHESIS] 假设：** 随机标量投影没有保留矩阵主模态权重；由全频左右协方差得到频率无关 rank-8 模态基，再对24条主 modal traces 分别发现 poles，可能产生更接近 IdEM 的紧凑共享分母。
+
+**[FACT] 实现：** 8条对角与16条非对角 modal traces，每条使用 linear/log 两种 Native scalar VF 初始化，共48次 effective-order-12 discovery；聚类后严格选择 orders `56/60/68/74`，统一进入完整826点 fixed-pole residue LS。逐频 SVD、IdEM/Native pole oracle、pole flipping 和人工补极点均禁止。
+
+**[FACT] 验证数据：** 48/48 scalar fits成功；order `56/60/68/74` raw S-RMS 分别为 `0.0106232/0.00867724/0.00774594/0.00769684`。order74 raw sigma为 `1.04463`，condition为 `9.407e12`，最大 residue/input 幅值比为 `2.076e17`；相同阶数 canonical Native raw RMS为 `0.00172184`。
+
+**[FACT] 冻结门结果：** Phase A promotion gate失败并触发 condition/residue explosion；未运行 enforcement 或 trust-region，路线 NO-GO。**[STRONG INFERENCE]** 模态投影改善了候选的物理针对性，但当前“独立标量发现后取并集/聚类”的共享分母形成步骤仍不能保持完整矩阵的数值质量。[结果报告](sparam-modal-pole-initializer-s19-results.md)
 
 ## 9. 为什么 Test16 不能单独区分算法，s19 如何校准
 
