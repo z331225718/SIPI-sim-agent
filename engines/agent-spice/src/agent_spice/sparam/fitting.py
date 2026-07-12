@@ -1294,6 +1294,7 @@ def fit_touchstone_to_spice(
     rfm_path: Path | None = None,
     rfm_wrapper_path: Path | None = None,
     report_top_rms: int = 6,
+    write_outputs: bool = True,
 ) -> SParamFitResult:
     if report_top_rms < 0:
         raise ValueError("report_top_rms must be >= 0")
@@ -1794,33 +1795,34 @@ def fit_touchstone_to_spice(
             require_dc=config.require_dc,
         )
 
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        progress.info(f"writing SPICE subcircuit: {output_path}")
-        _call_with_supported_kwargs(
-            vector_fit.write_spice_subcircuit_s,
-            str(output_path),
-            fitted_model_name=config.subckt_name,
-            create_reference_pins=config.create_reference_pins,
-        )
-        if fitted_touchstone_path is not None:
-            progress.info(f"writing fitted Touchstone: {fitted_touchstone_path}")
-            write_fitted_touchstone(
-                fitted_touchstone_path,
-                network.f,
-                evaluate_fitted_s(vector_fit, network.f),
-                network.z0,
+        if write_outputs:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            progress.info(f"writing SPICE subcircuit: {output_path}")
+            _call_with_supported_kwargs(
+                vector_fit.write_spice_subcircuit_s,
+                str(output_path),
+                fitted_model_name=config.subckt_name,
+                create_reference_pins=config.create_reference_pins,
             )
-        if rfm_path is not None:
-            progress.info(f"writing Cadence RFM: {rfm_path}")
-            write_cadence_rfm(vector_fit, rfm_path, network.z0)
-            if rfm_wrapper_path is not None:
-                progress.info(f"writing Cadence RFM wrapper: {rfm_wrapper_path}")
-                write_cadence_rfm_wrapper(
-                    rfm_wrapper_path,
-                    rfm_path,
-                    nports=network.nports,
-                    subcircuit_name=_cadence_subcircuit_name(config.subckt_name),
+            if fitted_touchstone_path is not None:
+                progress.info(f"writing fitted Touchstone: {fitted_touchstone_path}")
+                write_fitted_touchstone(
+                    fitted_touchstone_path,
+                    network.f,
+                    evaluate_fitted_s(vector_fit, network.f),
+                    network.z0,
                 )
+            if rfm_path is not None:
+                progress.info(f"writing Cadence RFM: {rfm_path}")
+                write_cadence_rfm(vector_fit, rfm_path, network.z0)
+                if rfm_wrapper_path is not None:
+                    progress.info(f"writing Cadence RFM wrapper: {rfm_wrapper_path}")
+                    write_cadence_rfm_wrapper(
+                        rfm_wrapper_path,
+                        rfm_path,
+                        nports=network.nports,
+                        subcircuit_name=_cadence_subcircuit_name(config.subckt_name),
+                    )
         resource_monitor.__exit__(None, None, None)
 
         pole_summary = _pole_summary(vector_fit)
@@ -1868,11 +1870,11 @@ def fit_touchstone_to_spice(
             constant_matrix_sigma=_constant_matrix_sigma(vector_fit, network.nports),
             **pole_summary,
         )
-        if report_path is not None:
+        if write_outputs and report_path is not None:
             progress.info(f"writing JSON report: {report_path}")
             report_path.parent.mkdir(parents=True, exist_ok=True)
             report_path.write_text(json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        if html_report_path is not None:
+        if write_outputs and html_report_path is not None:
             progress.info(f"writing HTML report: {html_report_path}")
             html_report_path.parent.mkdir(parents=True, exist_ok=True)
             html_report_path.write_text(
@@ -2206,10 +2208,13 @@ def fit_touchstone_to_spice_target(
     rfm_path: Path | None = None,
     rfm_wrapper_path: Path | None = None,
     report_top_rms: int = 6,
+    max_order_step: int = 8,
     resume_trials: bool = False,
 ) -> SParamTargetSearchResult:
     if report_top_rms < 0:
         raise ValueError("report_top_rms must be >= 0")
+    if resume_trials:
+        raise ValueError("resume_trials is unavailable because target search no longer persists per-order artifacts")
     if rfm_wrapper_path is not None and rfm_path is None:
         raise ValueError("rfm_wrapper_path requires rfm_path")
     _validate_distinct_output_paths(
@@ -2234,57 +2239,22 @@ def fit_touchstone_to_spice_target(
         fit_f_min=None,
         fit_f_max=None,
     )
-    output_stem = output_path.stem
-    trial_logs: list[tuple[int, Path]] = []
-    input_sha256 = _target_trial_input_sha256(touchstone_path)
-    expected_frequency_points = _target_trial_frequency_points(touchstone_path)
+    trial_logs: list[str] = []
 
     def evaluate_order(order: int) -> SParamOrderTrial:
-        trial_dir = output_path.parent / f"{output_stem}_order{order}"
-        trial_output = trial_dir / output_path.name
-        trial_report = trial_dir / "fit_report.json"
-        trial_html = trial_dir / "fit_report.html" if html_report_path is not None else None
-        trial_log = trial_dir / "fit.log" if log_path is not None else None
-        trial_fitted = None if fitted_touchstone_path is None else trial_dir / fitted_touchstone_path.name
-        trial_rfm = None if rfm_path is None else trial_dir / rfm_path.name
         trial_config = _native_manual_auto_order_config(policy_config, order)
-        fingerprint, config_fingerprint, tool_identity = _target_trial_fingerprint(
-            input_sha256=input_sha256,
-            target=target,
-            order=order,
-            config=trial_config,
-        )
-        if resume_trials and trial_fitted is None and trial_rfm is None:
-            resumed = _resume_target_trial(
-                trial_report,
-                trial_output,
-                fingerprint=fingerprint,
-                input_sha256=input_sha256,
-                requested_order=order,
-                expected_frequency_points=expected_frequency_points,
-                target=target,
-            )
-            if resumed is not None:
-                return resumed
         try:
-            fit_kwargs: dict[str, Any] = {
-                "config": trial_config,
-                "report_path": trial_report,
-                "html_report_path": trial_html,
-                "log_path": trial_log,
-            }
-            if trial_fitted is not None or trial_rfm is not None or report_top_rms != 6:
-                fit_kwargs.update(
-                    {
-                        "fitted_touchstone_path": trial_fitted,
-                        "rfm_path": trial_rfm,
-                        "report_top_rms": report_top_rms,
-                    }
-                )
-            fit_result = fit_touchstone_to_spice(touchstone_path, trial_output, **fit_kwargs)
+            fit_result = fit_touchstone_to_spice(
+                touchstone_path,
+                output_path,
+                config=trial_config,
+                report_path=None,
+                html_report_path=None,
+                log_path=None,
+                write_outputs=False,
+            )
         except Exception as exc:
-            if trial_fitted is not None or trial_rfm is not None:
-                raise
+            trial_logs.append(f"order={order} status=FAIL reason=fit_failed error={exc}")
             return SParamOrderTrial(
                 requested_order=order,
                 effective_order=order,
@@ -2302,49 +2272,39 @@ def fit_touchstone_to_spice_target(
                 target_met=False,
                 status="FAIL",
                 rejection_reason="fit_failed",
-                payload={"error": str(exc), "trial_dir": str(trial_dir)},
+                payload={"error": str(exc)},
             )
-        if trial_log is not None:
-            trial_logs.append((order, trial_log))
         trial = trial_from_fit_result(target, fit_result, requested_order=order)
-        _write_target_trial_report(
-            trial_report,
-            fit_result,
-            trial,
-            input_sha256=input_sha256,
-            fingerprint=fingerprint,
-            config_fingerprint=config_fingerprint,
-            tool_identity=tool_identity,
-            target=target,
+        trial_logs.append(
+            f"order={order} effective_order={trial.effective_order} "
+            f"rms={_format_float(trial.final_mean_rms)} status={trial.status} "
+            f"reason={trial.rejection_reason or ''}"
         )
         return trial
 
-    search_result = run_target_order_search(target, evaluate_order)
-    selected_fit_result = None if search_result.selected_trial is None else search_result.selected_trial.payload
-    if selected_fit_result is None:
+    search_target = replace(target, max_order_step=max_order_step)
+    search_result = run_target_order_search(search_target, evaluate_order)
+    selected_fit_result = None
+    if not search_result.target_met:
         output_path.unlink(missing_ok=True)
+        for artifact_path in (fitted_touchstone_path, rfm_path, rfm_wrapper_path):
+            if artifact_path is not None:
+                artifact_path.unlink(missing_ok=True)
     else:
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(Path(selected_fit_result.spice_path), output_path)
-        if fitted_touchstone_path is not None:
-            source = selected_fit_result.fitted_touchstone_path
-            if source is None:
-                raise RuntimeError("selected fit did not produce the requested fitted Touchstone")
-            fitted_touchstone_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source, fitted_touchstone_path)
-        if rfm_path is not None:
-            source = selected_fit_result.rfm_path
-            if source is None:
-                raise RuntimeError("selected fit did not produce the requested Cadence RFM")
-            rfm_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source, rfm_path)
-            if rfm_wrapper_path is not None:
-                write_cadence_rfm_wrapper(
-                    rfm_wrapper_path,
-                    rfm_path,
-                    nports=selected_fit_result.ports,
-                    subcircuit_name=_cadence_subcircuit_name(policy_config.subckt_name),
-                )
+        selected_order = search_result.selected_trial.requested_order
+        selected_config = _native_manual_auto_order_config(policy_config, selected_order)
+        selected_fit_result = fit_touchstone_to_spice(
+            touchstone_path,
+            output_path,
+            config=selected_config,
+            report_path=report_path,
+            html_report_path=html_report_path,
+            log_path=None,
+            fitted_touchstone_path=fitted_touchstone_path,
+            rfm_path=rfm_path,
+            rfm_wrapper_path=rfm_wrapper_path,
+            report_top_rms=report_top_rms,
+        )
 
     payload = search_result.to_dict()
     if selected_fit_result is not None and hasattr(selected_fit_result, "to_dict"):
@@ -2444,9 +2404,5 @@ def fit_touchstone_to_spice_target(
             )
     if log_path is not None and trial_logs:
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        chunks = []
-        for order, trial_log in trial_logs:
-            if trial_log.exists():
-                chunks.append(f"===== order {order} =====\n{trial_log.read_text(encoding='utf-8')}")
-        log_path.write_text("\n".join(chunks), encoding="utf-8")
+        log_path.write_text("\n".join(trial_logs) + "\n", encoding="utf-8")
     return search_result

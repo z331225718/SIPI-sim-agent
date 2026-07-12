@@ -784,6 +784,12 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         help="Maximum effective common-pole order; defaults to 24 for 60+ ports and 40 otherwise.",
     )
+    fit_parser.add_argument(
+        "--max-order-step",
+        type=int,
+        default=8,
+        help="Largest adaptive order-search step when RMS is far above target (default: 8).",
+    )
     fit_parser.add_argument("--auto-preset", choices=["idem-fast"], default="idem-fast", help=argparse.SUPPRESS)
     fit_parser.add_argument(
         "--auto-model-order-candidates",
@@ -1234,6 +1240,7 @@ def main(argv: list[str] | None = None) -> int:
                 mean_rms=rms_target,
                 passivity=passivity_policy,
                 max_order=max_order,
+                max_order_step=args.max_order_step,
                 passivity_epsilon=args.max_passivity_epsilon,
             )
         except ValueError as exc:
@@ -1345,6 +1352,7 @@ def main(argv: list[str] | None = None) -> int:
                 "rfm_path": rfm_path,
                 "rfm_wrapper_path": rfm_wrapper_path,
                 "report_top_rms": args.report_top_rms,
+                "max_order_step": args.max_order_step,
             }
             if args.resume_target_search:
                 target_fit_kwargs["resume_trials"] = True

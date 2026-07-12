@@ -78,6 +78,8 @@ python -m agent_spice.cli fit-sparam .\board.s19p --rms-target 0.001
 | `board_fitted_report.json` | 面向自动化的完整拟合、阶次、RMS、被动性和产物路径记录。 |
 | `board_fitted_report.html` | 中文质量报告，默认绘制 RMS 最大的 5 个 S 参数元素。 |
 
+搜索过程不会为每个候选阶次写出 SPICE、Touchstone、RFM 或 HTML 文件。每次试探的阶次、RMS、被动性和拒绝原因只记录在最终 JSON 的 `order_trials`；传入 `--log fit.log` 时，也会写入一份简洁的逐阶次文本日志。只有选中的最终阶次才生成上表交付物。
+
 默认被动性策略是 `check`：模型会被检查，但即使发现非被动也会保留产物并在报告中标注。需要最终模型严格被动时，将策略改为 `enforce`：
 
 ```powershell
@@ -93,6 +95,7 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
   --rms-target 0.001 `
   --output .\deliverables\board.sp `
   --rfm .\deliverables\cadence\board.rfm `
+  --max-order-step 12 `
   --report-top-rms 8
 ```
 
@@ -154,7 +157,7 @@ Enforcement is judged from the final model. A good pre-enforcement RMS does not 
 
 ### Order Search
 
-Vector-fitting error is not strictly monotonic in order, so the production scheduler does not use binary search. It evaluates an ascending even-order ladder and, after the first passing order, backfills the adjacent untested integer orders. Every requested order is evaluated at most once.
+Vector-fitting error is not strictly monotonic in order, so the production scheduler does not use binary search. It starts at low order and increases the step only while RMS remains far above the requested target; after the first passing probe, it backfills the last skipped interval to choose the best passing order found there. Every requested order is evaluated at most once. `--max-order-step` caps the adaptive jump and defaults to `8`; set it to `2` to retain the former conservative two-order ladder.
 
 Defaults:
 

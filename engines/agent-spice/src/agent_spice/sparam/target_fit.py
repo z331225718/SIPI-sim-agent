@@ -13,6 +13,7 @@ class SParamFitTarget:
     mean_rms: float
     passivity: PassivityPolicy = "check"
     max_order: int = 40
+    max_order_step: int = 8
     passivity_epsilon: float = 1e-6
 
     def __post_init__(self) -> None:
@@ -22,6 +23,8 @@ class SParamFitTarget:
             raise ValueError("passivity must be 'off', 'check', or 'enforce'")
         if self.max_order < 1:
             raise ValueError("max_order must be >= 1")
+        if self.max_order_step < 1:
+            raise ValueError("max_order_step must be >= 1")
         if not math.isfinite(self.passivity_epsilon) or self.passivity_epsilon < 0.0:
             raise ValueError("passivity_epsilon must be finite and >= 0")
 
@@ -79,6 +82,7 @@ class SParamTargetSearchResult:
             "rms_target": float(self.target.mean_rms),
             "passivity_policy": self.target.passivity,
             "max_order": int(self.target.max_order),
+            "max_order_step": int(self.target.max_order_step),
             "selected_effective_order": None
             if self.selected_trial is None
             else int(self.selected_trial.effective_order),
@@ -208,18 +212,27 @@ def run_target_order_search(
             stop_reason="target_not_met_before_max_order",
         )
 
-    coarse_orders = list(range(4, target.max_order + 1, 2))
-    if coarse_orders[-1] != target.max_order and target.max_order % 2 == 1:
-        coarse_orders.append(target.max_order)
-
     previous_failed_order = 2
     first_passing_order: int | None = None
-    for order in coarse_orders:
+    order = 4
+    while order <= target.max_order:
         trial = evaluate(order)
         if trial.target_met:
             first_passing_order = order
             break
         previous_failed_order = order
+        ratio = trial.final_mean_rms / target.mean_rms
+        if not math.isfinite(ratio) or ratio >= 100.0:
+            step = target.max_order_step
+        elif ratio >= 10.0:
+            step = min(target.max_order_step, 4)
+        elif ratio >= 3.0:
+            step = min(target.max_order_step, 3)
+        else:
+            step = min(target.max_order_step, 2)
+        order = min(order + max(1, step), target.max_order)
+        if order == previous_failed_order:
+            break
 
     if first_passing_order is None:
         return SParamTargetSearchResult(

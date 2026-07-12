@@ -269,8 +269,9 @@ def test_fit_sparam_cli_passes_requested_product_exports(tmp_path: Path, monkeyp
         {
             "fitted_touchstone_path": fitted,
             "rfm_path": rfm,
-            "rfm_wrapper_path": rfm.with_name("model_rfm_wrapper.sp"),
-            "report_top_rms": 3,
+                "rfm_wrapper_path": rfm.with_name("model_rfm_wrapper.sp"),
+                "report_top_rms": 3,
+                "max_order_step": 8,
         }
     ]
 
@@ -297,9 +298,29 @@ def test_fit_sparam_cli_defaults_to_complete_delivery_bundle(tmp_path: Path, mon
     assert kwargs == {
         "fitted_touchstone_path": tmp_path / "board_fitted.s19p",
         "rfm_path": tmp_path / "board_fitted.rfm",
-        "rfm_wrapper_path": tmp_path / "board_fitted_rfm_wrapper.sp",
-        "report_top_rms": 5,
+            "rfm_wrapper_path": tmp_path / "board_fitted_rfm_wrapper.sp",
+            "report_top_rms": 5,
+            "max_order_step": 8,
     }
+
+
+def test_fit_sparam_cli_passes_max_adaptive_order_step(tmp_path: Path, monkeypatch):
+    import agent_spice.cli as cli
+
+    calls = []
+
+    def fake_target(*args, **kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(target_met=True, selected_trial=SimpleNamespace(payload=None))
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice_target", fake_target)
+
+    exit_code = cli.main(
+        ["fit-sparam", str(tmp_path / "board.s19p"), "--rms-target", "0.001", "--max-order-step", "12"]
+    )
+
+    assert exit_code == 0
+    assert calls[0]["max_order_step"] == 12
 
 
 def test_fit_sparam_cli_can_enable_passivity_enforcement(tmp_path: Path, monkeypatch):

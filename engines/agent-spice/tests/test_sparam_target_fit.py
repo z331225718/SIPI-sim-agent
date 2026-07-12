@@ -42,6 +42,7 @@ def make_trial(order: int, *, target_met: bool, effective_order: int | None = No
         {"mean_rms": math.nan},
         {"mean_rms": 0.001, "passivity": "repair"},
         {"mean_rms": 0.001, "max_order": 0},
+        {"mean_rms": 0.001, "max_order_step": 0},
         {"mean_rms": 0.001, "passivity_epsilon": -1.0},
     ],
 )
@@ -55,6 +56,7 @@ def test_target_defaults_to_check_policy():
 
     assert target.passivity == "check"
     assert target.max_order == 40
+    assert target.max_order_step == 8
     assert target.passivity_epsilon == pytest.approx(1e-6)
 
 
@@ -125,6 +127,26 @@ def test_scheduler_reports_target_not_met():
     assert result.selected_trial is None
     assert result.target_met is False
     assert result.stop_reason == "target_not_met_before_max_order"
+
+
+def test_scheduler_uses_larger_steps_when_rms_is_far_above_target():
+    calls = []
+
+    def evaluate(order):
+        calls.append(order)
+        trial = make_trial(order, target_met=order >= 20)
+        if not trial.target_met:
+            trial.final_mean_rms = 0.2
+        return trial
+
+    result = run_target_order_search(
+        SParamFitTarget(mean_rms=0.001, max_order=24, max_order_step=8),
+        evaluate,
+    )
+
+    assert calls[:3] == [4, 12, 20]
+    assert result.selected_trial is not None
+    assert result.selected_trial.requested_order == 20
 
 
 def test_scheduler_supports_small_synthetic_max_order():
