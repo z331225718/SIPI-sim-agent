@@ -311,19 +311,23 @@ def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plo
 
     assert result.html_report_path == html_report
     html = html_report.read_text(encoding="utf-8")
-    assert "<h1>S-Parameter Fit Report</h1>" in html
-    assert "Original vs Fitted" in html
-    assert "Fit Sample Selection" in html
-    assert "Fit Frequency Points" in html
-    assert "Fit-Sample RMS Error" in html
-    assert "Original-Point RMS Error" in html
-    assert "Quality Gate" in html
+    assert "<h1>S 参数拟合质量报告</h1>" in html
+    assert "最差 RMS 元素" in html
+    assert "原始数据" in html
+    assert "拟合模型" in html
+    assert "绝对误差" in html
+    assert "data:image/png;base64," in html
+    assert "拟合采样选择" in html
+    assert "拟合频点数" in html
+    assert "拟合采样 RMS 误差" in html
+    assert "原始频点 RMS 误差" in html
+    assert "质量门" in html
     assert "dc_coverage" in html
-    assert "RMS Error" in html
+    assert "RMS 误差" in html
     assert "0.125" in html
     assert "S11" in html
     assert "S21" in html
-    assert re.search(r"<svg[^>]*>.*</svg>", html, flags=re.DOTALL)
+    assert re.search(r'<img src="data:image/png;base64,[A-Za-z0-9+/=]+"', html)
     assert "get_model_response" in FakeVectorFitting.instances[0].calls
 
 
@@ -1226,8 +1230,8 @@ def test_fit_touchstone_to_spice_can_fit_frequency_subset(tmp_path: Path, monkey
     assert payload["fit_frequency_selection"]["stride"] == 2
     assert payload["fit_frequency_selection"]["max_points"] == 2
     html = html_report.read_text(encoding="utf-8")
-    assert "Fit Sample Selection" in html
-    assert "Fit frequency points</td><td>2" in html
+    assert "拟合采样选择" in html
+    assert "拟合频点数</td><td>2" in html
 
 
 def test_lightweight_s_network_preserves_lightweight_frequency_subset():
@@ -1435,4 +1439,4 @@ def test_fit_touchstone_to_spice_smoke_with_fixture(tmp_path: Path):
     assert payload["ports"] == 2
     assert payload["frequency_points"] > 0
     assert payload["spice_path"] == str(output)
-    assert "<svg" in html_report.read_text(encoding="utf-8")
+    assert "data:image/png;base64," in html_report.read_text(encoding="utf-8")

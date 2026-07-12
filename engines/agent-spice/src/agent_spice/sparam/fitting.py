@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, fields, replace
+import base64
 from html import escape
 import hashlib
+from io import BytesIO
 import inspect
 import json
 import logging
@@ -16,6 +18,7 @@ from typing import Any, Callable, Literal
 
 import numpy as np
 
+from agent_spice.sparam.artifacts import rank_element_rms
 from agent_spice.sparam.native_vf import NativeVectorFitting
 from agent_spice.sparam.pole_relocation import streaming_pole_relocation, streaming_reciprocal_pole_relocation
 from agent_spice.sparam.quality import SCHEMA_VERSION, QualityReport, build_quality_report
@@ -829,93 +832,108 @@ def _to_db(value: complex) -> float:
     return 20.0 * math.log10(magnitude)
 
 
-def _comparison_traces(network: Any, vector_fit: Any, max_traces: int = 16) -> list[dict[str, Any]]:
+def _comparison_traces(network: Any, vector_fit: Any, max_traces: int = 6) -> list[dict[str, Any]]:
     if not hasattr(network, "s") or not hasattr(vector_fit, "get_model_response"):
         return []
-    traces: list[dict[str, Any]] = []
     freqs = [float(value) for value in network.f]
+    if not freqs:
+        return []
+    nports = _validated_network_nports(network)
+    original = np.empty((len(freqs), nports, nports), dtype=complex)
+    fitted = np.empty_like(original)
     for row in range(network.nports):
         for column in range(network.nports):
-            if len(traces) >= max_traces:
-                return traces
             try:
-                fitted = _model_response_at_frequencies(vector_fit, row, column, network.f)
-                if fitted is None:
+                response = _model_response_at_frequencies(vector_fit, row, column, network.f)
+                if response is None or len(response) != len(freqs):
                     continue
-                original_db = [_to_db(_network_s_value(network, idx, row, column)) for idx in range(len(freqs))]
-                fitted_db = [_to_db(value) for value in fitted]
+                original[:, row, column] = [
+                    _network_s_value(network, index, row, column) for index in range(len(freqs))
+                ]
+                fitted[:, row, column] = response
             except Exception:
-                continue
-            traces.append(
-                {
-                    "label": f"S{row + 1}{column + 1}",
-                    "frequencies_hz": freqs,
-                    "original_db": original_db,
-                    "fitted_db": fitted_db,
-                }
-            )
+                return []
+
+    try:
+        ranking = rank_element_rms(original, fitted)
+    except ValueError:
+        return []
+    traces: list[dict[str, Any]] = []
+    for item in ranking[:max(0, max_traces)]:
+        row, column = item.row, item.column
+        trace = {
+            "label": f"S{row + 1}{column + 1}",
+            "row": row + 1,
+            "column": column + 1,
+            "rms": item.rms,
+            "frequencies_hz": freqs,
+            "original": original[:, row, column],
+            "fitted": fitted[:, row, column],
+        }
+        trace["image_data_uri"] = _render_trace_png_data_uri(trace)
+        traces.append(trace)
     return traces
 
 
-def _svg_polyline(points: list[tuple[float, float]]) -> str:
-    return " ".join(f"{x:.2f},{y:.2f}" for x, y in points)
+def _render_trace_png_data_uri(trace: dict[str, Any]) -> str | None:
+    """Render the three comparison series as a self-contained PNG data URI."""
+
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg", force=True)
+        from matplotlib import pyplot as plt
+    except Exception:
+        return None
+
+    frequencies = np.asarray(trace["frequencies_hz"], dtype=float)
+    original = np.asarray(trace["original"], dtype=complex)
+    fitted = np.asarray(trace["fitted"], dtype=complex)
+    if (
+        frequencies.ndim != 1
+        or frequencies.size == 0
+        or original.shape != frequencies.shape
+        or fitted.shape != frequencies.shape
+        or not np.isfinite(frequencies).all()
+        or not np.isfinite(original).all()
+        or not np.isfinite(fitted).all()
+    ):
+        return None
+
+    figure, axes = plt.subplots(3, 1, figsize=(8.4, 6.4), sharex=True, constrained_layout=True)
+    plot = axes[0].semilogx if np.all(frequencies > 0.0) else axes[0].plot
+    plot(frequencies, np.abs(original), color="#1f77b4", linewidth=1.7)
+    axes[0].set_ylabel("original magnitude")
+    plot = axes[1].semilogx if np.all(frequencies > 0.0) else axes[1].plot
+    plot(frequencies, np.abs(fitted), color="#d62728", linewidth=1.5, linestyle="--")
+    axes[1].set_ylabel("fitted magnitude")
+    plot = axes[2].semilogx if np.all(frequencies > 0.0) else axes[2].plot
+    plot(frequencies, np.abs(fitted - original), color="#7b2cbf", linewidth=1.5)
+    axes[2].set_ylabel("absolute error")
+    axes[2].set_xlabel("frequency (Hz)")
+    for axis in axes:
+        axis.grid(True, alpha=0.25)
+    buffer = BytesIO()
+    try:
+        figure.savefig(buffer, format="png", dpi=140)
+    finally:
+        plt.close(figure)
+    return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("ascii")
 
 
 def _render_trace_chart(trace: dict[str, Any]) -> str:
-    width = 760
-    height = 320
-    left = 64
-    right = 24
-    top = 24
-    bottom = 48
-    plot_width = width - left - right
-    plot_height = height - top - bottom
-    freqs = trace["frequencies_hz"]
-    values = trace["original_db"] + trace["fitted_db"]
-    y_min = min(values)
-    y_max = max(values)
-    if math.isclose(y_min, y_max):
-        y_min -= 1.0
-        y_max += 1.0
-    padding = max((y_max - y_min) * 0.08, 0.5)
-    y_min -= padding
-    y_max += padding
-    positive_freqs = [max(freq, 1e-300) for freq in freqs]
-    x_min = math.log10(min(positive_freqs))
-    x_max = math.log10(max(positive_freqs))
-    if math.isclose(x_min, x_max):
-        x_max += 1.0
-
-    def map_points(series: list[float]) -> list[tuple[float, float]]:
-        points = []
-        for freq, value in zip(positive_freqs, series):
-            x = left + ((math.log10(freq) - x_min) / (x_max - x_min)) * plot_width
-            y = top + ((y_max - value) / (y_max - y_min)) * plot_height
-            points.append((x, y))
-        return points
-
-    original_points = _svg_polyline(map_points(trace["original_db"]))
-    fitted_points = _svg_polyline(map_points(trace["fitted_db"]))
-    x_start = _format_hz(min(freqs))
-    x_end = _format_hz(max(freqs))
-    y_top = _format_float(y_max)
-    y_bottom = _format_float(y_min)
     label = escape(trace["label"])
+    image = trace.get("image_data_uri")
+    image_html = (
+        f'<img src="{image}" alt="{label} 原始数据、拟合模型和绝对误差" />'
+        if image is not None
+        else "<p class=\"muted\">图像渲染不可用。</p>"
+    )
     return f"""
 <section class="chart">
-  <h3>{label} Original vs Fitted</h3>
-  <svg viewBox="0 0 {width} {height}" role="img" aria-label="{label} original vs fitted magnitude">
-    <rect x="0" y="0" width="{width}" height="{height}" class="plot-bg" />
-    <line x1="{left}" y1="{top}" x2="{left}" y2="{height - bottom}" class="axis" />
-    <line x1="{left}" y1="{height - bottom}" x2="{width - right}" y2="{height - bottom}" class="axis" />
-    <text x="12" y="{top + 4}" class="tick">{y_top} dB</text>
-    <text x="12" y="{height - bottom}" class="tick">{y_bottom} dB</text>
-    <text x="{left}" y="{height - 18}" class="tick">{escape(x_start)}</text>
-    <text x="{width - right - 92}" y="{height - 18}" class="tick">{escape(x_end)}</text>
-    <polyline points="{original_points}" class="line original" />
-    <polyline points="{fitted_points}" class="line fitted" />
-  </svg>
-  <div class="legend"><span class="swatch original"></span>Original Touchstone <span class="swatch fitted"></span>Fitted model</div>
+  <h3>{label}，元素 RMS = {_format_float(trace["rms"])}</h3>
+  <p class="legend">三轨对比：原始数据幅值、拟合模型幅值、绝对误差。</p>
+  {image_html}
 </section>
 """
 
@@ -952,12 +970,17 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
         diagnostic_rows = "<tr><td colspan=\"7\">No quality diagnostics reported.</td></tr>"
     trace_sections = "\n".join(_render_trace_chart(trace) for trace in traces)
     if not trace_sections:
-        trace_sections = "<p class=\"muted\">Comparison plot unavailable for this scikit-rf version or input.</p>"
+        trace_sections = "<p class=\"muted\">当前输入无法生成原始与拟合对比图。</p>"
+    worst_rms_rows = "\n".join(
+        f"<tr><td>{escape(trace['label'])}</td><td>{_format_float(trace['rms'])}</td></tr>" for trace in traces
+    )
+    if not worst_rms_rows:
+        worst_rms_rows = "<tr><td colspan=\"2\">无法计算逐元素 RMS。</td></tr>"
     return f"""<!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <title>S-Parameter Fit Report</title>
+  <title>S 参数拟合质量报告</title>
   <style>
     body {{ font-family: Segoe UI, Arial, sans-serif; margin: 32px; color: #17202a; background: #f7f9fb; }}
     h1, h2, h3 {{ color: #102a43; }}
@@ -969,7 +992,7 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     th, td {{ text-align: left; padding: 8px 10px; border-bottom: 1px solid #d9e2ec; }}
     th {{ background: #eef2f7; }}
     .chart {{ background: white; border: 1px solid #d9e2ec; border-radius: 8px; padding: 16px; margin: 14px 0; }}
-    svg {{ width: 100%; max-width: 900px; height: auto; }}
+    svg, img {{ width: 100%; max-width: 900px; height: auto; }}
     .plot-bg {{ fill: #fbfdff; }}
     .axis {{ stroke: #829ab1; stroke-width: 1.2; }}
     .tick {{ fill: #52606d; font-size: 12px; }}
@@ -984,60 +1007,60 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
   </style>
 </head>
 <body>
-  <h1>S-Parameter Fit Report</h1>
+  <h1>S 参数拟合质量报告</h1>
   <div class="cards">
-    <div class="card"><div class="label">Ports</div><div class="value">{result.ports}</div></div>
-    <div class="card"><div class="label">Frequency Points</div><div class="value">{result.frequency_points}</div></div>
-    <div class="card"><div class="label">Fit Frequency Points</div><div class="value">{result.fit_frequency_points}</div></div>
-    <div class="card"><div class="label">Fit-Sample RMS Error</div><div class="value">{_format_float(result.rms_error)}</div></div>
-    <div class="card"><div class="label">Original-Point RMS Error</div><div class="value">{_format_float(result.comparison_rms_error)}</div></div>
-    <div class="card"><div class="label">Quality</div><div class="value">{escape(str(quality["status"]))}</div></div>
-    <div class="card"><div class="label">Passivity</div><div class="value">{escape(str(quality["passivity"]))}</div></div>
+    <div class="card"><div class="label">端口数</div><div class="value">{result.ports}</div></div>
+    <div class="card"><div class="label">频点数</div><div class="value">{result.frequency_points}</div></div>
+    <div class="card"><div class="label">拟合频点数</div><div class="value">{result.fit_frequency_points}</div></div>
+    <div class="card"><div class="label">拟合采样 RMS 误差</div><div class="value">{_format_float(result.rms_error)}</div></div>
+    <div class="card"><div class="label">原始频点 RMS 误差</div><div class="value">{_format_float(result.comparison_rms_error)}</div></div>
+    <div class="card"><div class="label">质量状态</div><div class="value">{escape(str(quality["status"]))}</div></div>
+    <div class="card"><div class="label">被动性</div><div class="value">{escape(str(quality["passivity"]))}</div></div>
   </div>
 
-  <h2>Quality Gate</h2>
+  <h2>质量门</h2>
   <table>
-    <tr><th>Item</th><th>Value</th></tr>
-    <tr><td>Profile</td><td>{escape(str(quality["profile"]))}</td></tr>
-    <tr><td>Status</td><td>{escape(str(quality["status"]))}</td></tr>
-    <tr><td>Allowed for</td><td>{escape(str(quality["allowed_for"]))}</td></tr>
-    <tr><td>Blocking reasons</td><td>{escape(', '.join(quality["blocking_reasons"]))}</td></tr>
-    <tr><td>Warnings</td><td>{escape(', '.join(quality["warnings"]))}</td></tr>
+    <tr><th>项目</th><th>值</th></tr>
+    <tr><td>质量配置</td><td>{escape(str(quality["profile"]))}</td></tr>
+    <tr><td>状态</td><td>{escape(str(quality["status"]))}</td></tr>
+    <tr><td>允许用途</td><td>{escape(str(quality["allowed_for"]))}</td></tr>
+    <tr><td>阻断原因</td><td>{escape(', '.join(quality["blocking_reasons"]))}</td></tr>
+    <tr><td>警告</td><td>{escape(', '.join(quality["warnings"]))}</td></tr>
   </table>
   <table>
-    <tr><th>Diagnostic</th><th>Status</th><th>Severity</th><th>Metric</th><th>Threshold</th><th>Message</th><th>Recommendation</th></tr>
+    <tr><th>诊断项</th><th>状态</th><th>严重度</th><th>指标</th><th>阈值</th><th>说明</th><th>建议</th></tr>
     {diagnostic_rows}
   </table>
 
-  <h2>Input And Output</h2>
+  <h2>输入与输出</h2>
   <table>
-    <tr><th>Item</th><th>Value</th></tr>
-    <tr><td>Touchstone</td><td>{escape(str(result.touchstone_path))}</td></tr>
-    <tr><td>SPICE subcircuit</td><td>{escape(str(result.spice_path))}</td></tr>
-    <tr><td>JSON report</td><td>{escape(str(result.report_path))}</td></tr>
-    <tr><td>Frequency span</td><td>{_format_hz(freq_start)} to {_format_hz(freq_end)}</td></tr>
-    <tr><td>Reference impedance</td><td>{escape(', '.join(_format_float(value) for value in result.reference_impedance))}</td></tr>
+    <tr><th>项目</th><th>值</th></tr>
+    <tr><td>Touchstone 输入</td><td>{escape(str(result.touchstone_path))}</td></tr>
+    <tr><td>SPICE 子电路</td><td>{escape(str(result.spice_path))}</td></tr>
+    <tr><td>JSON 报告</td><td>{escape(str(result.report_path))}</td></tr>
+    <tr><td>频率范围</td><td>{_format_hz(freq_start)} 至 {_format_hz(freq_end)}</td></tr>
+    <tr><td>参考阻抗</td><td>{escape(', '.join(_format_float(value) for value in result.reference_impedance))}</td></tr>
   </table>
 
-  <h2>Fit Sample Selection</h2>
+  <h2>拟合采样选择</h2>
   <table>
-    <tr><th>Item</th><th>Value</th></tr>
-    <tr><td>Original frequency points</td><td>{result.frequency_points}</td></tr>
-    <tr><td>Fit frequency points</td><td>{result.fit_frequency_points}</td></tr>
-    <tr><td>Original frequency span</td><td>{_format_hz(freq_start)} to {_format_hz(freq_end)}</td></tr>
-    <tr><td>Fit frequency span</td><td>{_format_hz(fit_freq_start)} to {_format_hz(fit_freq_end)}</td></tr>
-    <tr><td>Fit-sample RMS error</td><td>{_format_float(result.rms_error)}</td></tr>
-    <tr><td>Original-point comparison RMS error</td><td>{_format_float(result.comparison_rms_error)}</td></tr>
+    <tr><th>项目</th><th>值</th></tr>
+    <tr><td>原始频点数</td><td>{result.frequency_points}</td></tr>
+    <tr><td>拟合频点数</td><td>{result.fit_frequency_points}</td></tr>
+    <tr><td>原始频率范围</td><td>{_format_hz(freq_start)} 至 {_format_hz(freq_end)}</td></tr>
+    <tr><td>拟合频率范围</td><td>{_format_hz(fit_freq_start)} 至 {_format_hz(fit_freq_end)}</td></tr>
+    <tr><td>拟合采样 RMS 误差</td><td>{_format_float(result.rms_error)}</td></tr>
+    <tr><td>原始频点 RMS 误差</td><td>{_format_float(result.comparison_rms_error)}</td></tr>
     {selection_rows}
   </table>
 
-  <h2>Fit Configuration</h2>
+  <h2>拟合配置</h2>
   <table>
     <tr><th>Field</th><th>Value</th></tr>
     {''.join(f'<tr><td>{escape(key)}</td><td>{escape(_format_cell(value))}</td></tr>' for key, value in asdict(result.config).items())}
   </table>
 
-  <h2>Passivity</h2>
+  <h2>被动性</h2>
   <table>
     <tr><th>Check</th><th>Value</th></tr>
     <tr><td>Passive before enforcement</td><td>{_format_bool(result.passive_before_enforce)}</td></tr>
@@ -1049,7 +1072,13 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     {violation_rows}
   </table>
 
-  <h2>Original vs Fitted</h2>
+  <h2>最差 RMS 元素</h2>
+  <table>
+    <tr><th>S 参数元素</th><th>RMS 误差</th></tr>
+    {worst_rms_rows}
+  </table>
+
+  <h2>原始数据、拟合模型与绝对误差</h2>
   {trace_sections}
 </body>
 </html>
