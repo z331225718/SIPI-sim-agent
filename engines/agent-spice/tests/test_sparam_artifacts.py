@@ -6,6 +6,8 @@ import pytest
 from agent_spice.sparam.artifacts import (
     evaluate_fitted_s,
     rank_element_rms,
+    write_cadence_rfm,
+    write_cadence_rfm_wrapper,
     write_fitted_touchstone,
 )
 
@@ -90,3 +92,47 @@ def test_rank_element_rms_rejects_nonfinite_s_data(nonfinite: complex) -> None:
 
     with pytest.raises(ValueError, match="finite"):
         rank_element_rms(original, fitted)
+
+
+def test_write_cadence_rfm_writes_bbs_s_blocks_for_real_and_complex_poles(tmp_path) -> None:
+    model = _SmallVectorFit()
+    output = tmp_path / "fitted.rfm"
+
+    written = write_cadence_rfm(model, output, z0=50.0)
+
+    assert written == output
+    text = output.read_text(encoding="ascii")
+    assert text.startswith("VERSION 200600\nNPORT 2\nMATRIX_TYPE S\nZ0 5.000000000000e+01\n")
+    assert text.count("BEGIN ") == 4
+    assert text.count("BEGIN_REAL 1") == 4
+    assert text.count("BEGIN_COMPLEX 1") == 4
+    assert "BEGIN 1 1\nConst 1.000000000000e-01\n" in text
+    assert "  2.000000000000e+00  1.000000000000e+00\n" in text
+    assert "  3.000000000000e+00  4.000000000000e+00  2.000000000000e-01  3.000000000000e-01\n" in text
+    assert text.endswith("END\n")
+
+
+def test_write_cadence_rfm_wrapper_uses_relative_rfm_reference(tmp_path) -> None:
+    rfm = tmp_path / "models" / "fitted.rfm"
+    output = tmp_path / "netlists" / "fitted_for_RFM.txt"
+
+    written = write_cadence_rfm_wrapper(output, rfm, nports=2, subcircuit_name="fitted_model")
+
+    assert written == output
+    text = output.read_text(encoding="ascii")
+    assert ".subckt fitted_model n1 n2 ref\n" in text
+    assert "S1 n1 n2 ref mname=s_model\n" in text
+    assert ".model s_model S n=2\n+ rfmfile='../models/fitted.rfm'\n.ends\n" in text
+
+
+def test_write_cadence_rfm_rejects_proportional_or_noncanonical_poles(tmp_path) -> None:
+    model = _SmallVectorFit()
+    model.proportional_coeff[0] = 1.0
+
+    with pytest.raises(ValueError, match="proportional"):
+        write_cadence_rfm(model, tmp_path / "proportional.rfm", z0=50.0)
+
+    model = _SmallVectorFit()
+    model.poles[1] = -3.0 - 4.0j
+    with pytest.raises(ValueError, match="positive imaginary"):
+        write_cadence_rfm(model, tmp_path / "noncanonical.rfm", z0=50.0)

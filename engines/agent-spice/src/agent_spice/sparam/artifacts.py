@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import Any
 
@@ -109,4 +110,138 @@ def write_fitted_touchstone(path: str | Path, frequencies_hz: Any, fitted_s: Any
         raise RuntimeError("scikit-rf did not return Touchstone contents")
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(content, encoding="utf-8")
+    return output
+
+
+def _rfm_real(value: complex, *, label: str) -> float:
+    """Return an RFM scalar after rejecting coefficients it cannot represent."""
+
+    scalar = complex(value)
+    if not np.isfinite(scalar):
+        raise ValueError(f"Cadence RFM cannot represent non-finite {label}")
+    if not np.isclose(scalar.imag, 0.0, atol=1e-12, rtol=0.0):
+        raise ValueError(f"Cadence RFM requires real {label}")
+    return float(scalar.real)
+
+
+def _rfm_reference_impedance(z0: Any) -> float:
+    """RFM has one Z0 field, unlike Touchstone's potentially per-port Z0."""
+
+    values = np.asarray(z0, dtype=complex).reshape(-1)
+    if values.size == 0:
+        raise ValueError("Cadence RFM requires a reference impedance")
+    if not np.isfinite(values).all():
+        raise ValueError("Cadence RFM requires finite reference impedance")
+    if not np.allclose(values, values[0], rtol=0.0, atol=1e-12):
+        raise ValueError("Cadence RFM supports only one shared reference impedance")
+    reference = _rfm_real(values[0], label="reference impedance")
+    if reference <= 0.0:
+        raise ValueError("Cadence RFM requires a positive reference impedance")
+    return reference
+
+
+def _rfm_pole_groups(model: Any, response_count: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Validate native canonical poles and return RFM real/complex pole indices."""
+
+    poles = np.asarray(getattr(model, "poles", None), dtype=complex).reshape(-1)
+    residues = np.asarray(getattr(model, "residues", None), dtype=complex)
+    proportional = np.asarray(
+        getattr(model, "proportional_coeff", np.zeros(response_count, dtype=complex)), dtype=complex
+    ).reshape(-1)
+    if residues.shape != (response_count, poles.size):
+        raise ValueError("Native vector-fit residues must have shape (ports * ports, poles)")
+    if proportional.size != response_count:
+        raise ValueError("Native vector-fit proportional coefficients have invalid length")
+    if not np.isfinite(poles).all() or not np.isfinite(residues).all() or not np.isfinite(proportional).all():
+        raise ValueError("Cadence RFM cannot represent non-finite vector-fit coefficients")
+    if np.any(np.abs(proportional) > 1e-12):
+        raise ValueError("Cadence RFM does not support proportional coefficients")
+    if np.any(poles.real >= -1e-12):
+        raise ValueError("Cadence RFM requires stable poles with negative real part")
+
+    real_indices = np.flatnonzero(np.isclose(poles.imag, 0.0, atol=1e-12, rtol=0.0))
+    complex_indices = np.flatnonzero(poles.imag > 1e-12)
+    if real_indices.size + complex_indices.size != poles.size:
+        raise ValueError("Cadence RFM complex poles must use the positive imaginary representative")
+    for index in real_indices:
+        if np.any(np.abs(residues[:, index].imag) > 1e-12):
+            raise ValueError("Cadence RFM requires real residues for real poles")
+    return poles, residues, real_indices, complex_indices
+
+
+def write_cadence_rfm(model: Any, path: str | Path, z0: Any) -> Path:
+    """Write a Cadence Broadband SPICE ``VERSION 200600`` S-parameter RFM.
+
+    The native vector-fit representation stores one positive-imaginary member of
+    each complex conjugate pole pair.  RFM's ``BEGIN_COMPLEX`` block uses that
+    same representative.  Proportional terms and non-canonical pole sets are
+    rejected rather than silently exported with changed transfer behaviour.
+    """
+
+    output = Path(path)
+    ports = _model_port_count(model)
+    response_count = ports * ports
+    constants = np.asarray(getattr(model, "constant_coeff", None), dtype=complex).reshape(-1)
+    if constants.size != response_count:
+        raise ValueError("Native vector-fit constant coefficients have invalid length")
+    poles, residues, real_indices, complex_indices = _rfm_pole_groups(model, response_count)
+    reference = _rfm_reference_impedance(z0)
+
+    lines = [
+        "VERSION 200600",
+        f"NPORT {ports}",
+        "MATRIX_TYPE S",
+        f"Z0 {reference:.12e}",
+    ]
+    for row in range(ports):
+        for column in range(ports):
+            response_index = row * ports + column
+            lines.extend((f"BEGIN {row + 1} {column + 1}", f"Const {_rfm_real(constants[response_index], label='constant coefficient'):.12e}"))
+            lines.append(f"BEGIN_REAL {real_indices.size}")
+            for pole_index in real_indices:
+                lines.append(f"  {-poles[pole_index].real:.12e}  {residues[response_index, pole_index].real:.12e}")
+            lines.append(f"BEGIN_COMPLEX {complex_indices.size}")
+            for pole_index in complex_indices:
+                pole = poles[pole_index]
+                residue = residues[response_index, pole_index]
+                lines.append(
+                    f"  {-pole.real:.12e}  {pole.imag:.12e}  {residue.real:.12e}  {residue.imag:.12e}"
+                )
+            lines.append("END")
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text("\n".join(lines) + "\n", encoding="ascii")
+    return output
+
+
+def write_cadence_rfm_wrapper(
+    path: str | Path,
+    rfm_path: str | Path,
+    *,
+    nports: int,
+    subcircuit_name: str | None = None,
+) -> Path:
+    """Write a minimal HSPICE/Sigrity wrapper referring to an RFM relatively."""
+
+    output = Path(path)
+    reference = Path(rfm_path)
+    if not isinstance(nports, (int, np.integer)) or isinstance(nports, (bool, np.bool_)) or nports <= 0:
+        raise ValueError("nports must be a positive integer")
+    name = subcircuit_name if subcircuit_name is not None else output.stem
+    if not name or any(character.isspace() for character in name):
+        raise ValueError("subcircuit_name must be a non-empty SPICE token")
+    relative_rfm = os.path.relpath(reference, start=output.parent).replace("\\", "/")
+    nodes = " ".join(f"n{index}" for index in range(1, int(nports) + 1))
+    content = "\n".join(
+        (
+            f".subckt {name} {nodes} ref",
+            f"S1 {nodes} ref mname=s_model",
+            f".model s_model S n={int(nports)}",
+            f"+ rfmfile='{relative_rfm}'",
+            ".ends",
+            "",
+        )
+    )
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(content, encoding="ascii")
     return output
