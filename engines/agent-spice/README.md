@@ -106,7 +106,7 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 
 `fit-sparam` is a target-driven workflow based on the local Native IdEM-fast vector-fitting implementation. The production fitting baseline is `native-idem-fast-v1`, and Native is the only production fitting backend. The user supplies a final mean S-RMS target and chooses how passivity is handled. The tool searches for the lowest accepted effective common-pole order up to `--max-order`.
 
-Production SPICE output is always emitted by the Native writer; there is no exporter selection. External IdEM integration is limited to benchmark/research tooling and is not a production runtime dependency.
+The production SPICE output is always emitted by the Native writer; there is no exporter selection. External IdEM integration is limited to benchmark/research tooling and is not a production runtime dependency.
 
 scikit-rf remains a supporting dependency for non-fitting infrastructure such as Touchstone fallback loading, metrics, modal/research workflows, and compatibility investigations. It is not a selectable production fitting backend.
 
