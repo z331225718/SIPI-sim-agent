@@ -138,12 +138,15 @@ def test_write_cadence_rfm_rejects_proportional_or_noncanonical_poles(tmp_path) 
         write_cadence_rfm(model, tmp_path / "noncanonical.rfm", z0=50.0)
 
 
-def test_write_cadence_rfm_does_not_silently_demote_tiny_complex_poles(tmp_path) -> None:
+def test_write_cadence_rfm_preserves_tiny_complex_poles(tmp_path) -> None:
     model = _SmallVectorFit()
     model.poles[1] = -3.0 + 1.0e-14j
 
-    with pytest.raises(ValueError, match="positive imaginary"):
-        write_cadence_rfm(model, tmp_path / "tiny_complex.rfm", z0=50.0)
+    output = tmp_path / "tiny_complex.rfm"
+    write_cadence_rfm(model, output, z0=50.0)
+
+    assert "BEGIN_REAL 1" in output.read_text(encoding="ascii")
+    assert "BEGIN_COMPLEX 1" in output.read_text(encoding="ascii")
 
 
 def test_cadence_rfm_first_element_reconstructs_native_response(tmp_path) -> None:
