@@ -303,6 +303,7 @@ class SParamFitResult:
     rfm_path: Path | None = None
     rfm_wrapper_path: Path | None = None
     native_baseline_version: str = NATIVE_BASELINE_VERSION
+    report_configuration: dict[str, Any] | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Path):
@@ -1042,6 +1043,38 @@ def _render_trace_chart(trace: dict[str, Any]) -> str:
 """
 
 
+def _report_configuration_summary(result: SParamFitResult) -> list[tuple[str, str]]:
+    """Return the small, delivery-oriented configuration table for HTML reports."""
+
+    config = result.config
+    target = result.report_configuration
+    if target is not None:
+        rms_target = target["rms_target"]
+        max_order = target["max_order"]
+        max_order_step = target["max_order_step"]
+        selected_order = target["selected_order"]
+        passivity_strategy = target["passivity"]
+    elif config.mode == "manual":
+        rms_target = max_order = max_order_step = selected_order = "n/a"
+        passivity_strategy = "enforce" if config.enforce_passivity else "check" if config.check_passivity else "off"
+    else:
+        rms_target = config.target_error
+        max_order = config.model_order_max
+        max_order_step = config.n_poles_add
+        selected_order = result.auto_model_order_selected or result.expanded_model_order or "n/a"
+        passivity_strategy = "enforce" if config.enforce_passivity else "check" if config.check_passivity else "off"
+    return [
+        ("运行方式", config.mode),
+        ("RMS 目标", _format_cell(rms_target)),
+        ("最大 order", _format_cell(max_order)),
+        ("最大步长", _format_cell(max_order_step)),
+        ("选中 order", _format_cell(selected_order)),
+        ("passivity 策略", _format_cell(passivity_strategy)),
+        ("保留 DC", _format_bool(config.preserve_dc)),
+        ("输出文件", str(result.spice_path)),
+    ]
+
+
 def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -> str:
     quality = _quality_summary(result)
     freq_start = None if result.frequency_range_hz is None else result.frequency_range_hz[0]
@@ -1080,6 +1113,14 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     )
     if not worst_rms_rows:
         worst_rms_rows = "<tr><td colspan=\"2\">无法计算逐元素 RMS。</td></tr>"
+    configuration_rows = "\n".join(
+        f"<tr><td>{escape(label)}</td><td>{escape(value)}</td></tr>"
+        for label, value in _report_configuration_summary(result)
+    )
+    advanced_configuration_rows = "\n".join(
+        f"<tr><td>{escape(key)}</td><td>{escape(_format_cell(value))}</td></tr>"
+        for key, value in asdict(result.config).items()
+    )
     artifact_rows = "\n    ".join(
         row
         for row in (
@@ -1134,19 +1175,33 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     <div class="card"><div class="label">被动性</div><div class="value">{escape(str(quality["passivity"]))}</div></div>
   </div>
 
-  <h2>质量门</h2>
+  <h2>拟合配置</h2>
   <table>
     <tr><th>项目</th><th>值</th></tr>
-    <tr><td>质量配置</td><td>{escape(str(quality["profile"]))}</td></tr>
-    <tr><td>状态</td><td>{escape(str(quality["status"]))}</td></tr>
-    <tr><td>允许用途</td><td>{escape(str(quality["allowed_for"]))}</td></tr>
-    <tr><td>阻断原因</td><td>{escape(', '.join(quality["blocking_reasons"]))}</td></tr>
-    <tr><td>警告</td><td>{escape(', '.join(quality["warnings"]))}</td></tr>
+    {configuration_rows}
   </table>
-  <table>
-    <tr><th>诊断项</th><th>状态</th><th>严重度</th><th>指标</th><th>阈值</th><th>说明</th><th>建议</th></tr>
-    {diagnostic_rows}
-  </table>
+
+  <details>
+    <summary>高级诊断配置</summary>
+    <h2>完整内部配置与诊断</h2>
+    <table>
+      <tr><th>Field</th><th>Value</th></tr>
+      {advanced_configuration_rows}
+    </table>
+    <h2>质量门</h2>
+    <table>
+      <tr><th>项目</th><th>值</th></tr>
+      <tr><td>质量配置</td><td>{escape(str(quality["profile"]))}</td></tr>
+      <tr><td>状态</td><td>{escape(str(quality["status"]))}</td></tr>
+      <tr><td>允许用途</td><td>{escape(str(quality["allowed_for"]))}</td></tr>
+      <tr><td>阻断原因</td><td>{escape(', '.join(quality["blocking_reasons"]))}</td></tr>
+      <tr><td>警告</td><td>{escape(', '.join(quality["warnings"]))}</td></tr>
+    </table>
+    <table>
+      <tr><th>诊断项</th><th>状态</th><th>严重度</th><th>指标</th><th>阈值</th><th>说明</th><th>建议</th></tr>
+      {diagnostic_rows}
+    </table>
+  </details>
 
   <h2>输入与输出</h2>
   <table>
@@ -1167,12 +1222,6 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     <tr><td>拟合采样 RMS 误差</td><td>{_format_float(result.rms_error)}</td></tr>
     <tr><td>原始频点 RMS 误差</td><td>{_format_float(result.comparison_rms_error)}</td></tr>
     {selection_rows}
-  </table>
-
-  <h2>拟合配置</h2>
-  <table>
-    <tr><th>Field</th><th>Value</th></tr>
-    {''.join(f'<tr><td>{escape(key)}</td><td>{escape(_format_cell(value))}</td></tr>' for key, value in asdict(result.config).items())}
   </table>
 
   <h2>被动性</h2>
@@ -1373,6 +1422,7 @@ def _write_fit_outputs(
     rfm_path: Path | None,
     rfm_wrapper_path: Path | None,
     report_top_rms: int,
+    report_configuration: dict[str, Any] | None = None,
 ) -> SParamFitResult:
     result = replace(
         execution.result,
@@ -1382,6 +1432,7 @@ def _write_fit_outputs(
         fitted_touchstone_path=fitted_touchstone_path,
         rfm_path=rfm_path,
         rfm_wrapper_path=rfm_wrapper_path,
+        report_configuration=report_configuration,
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     _call_with_supported_kwargs(
@@ -2448,6 +2499,13 @@ def fit_touchstone_to_spice_target(
             rfm_path=rfm_path,
             rfm_wrapper_path=rfm_wrapper_path,
             report_top_rms=report_top_rms,
+            report_configuration={
+                "rms_target": target.mean_rms,
+                "max_order": target.max_order,
+                "max_order_step": max_order_step,
+                "selected_order": selected_order,
+                "passivity": target.passivity,
+            },
         )
         write_progress("target-search finished status=PASS")
 

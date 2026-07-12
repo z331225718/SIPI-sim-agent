@@ -46,7 +46,7 @@ python -m agent_spice.cli fit-sparam .\board.s19p --rms-target 0.001
 | `board_fitted.rfm` | Cadence Broadband SPICE RFM 模型。 |
 | `board_fitted_rfm_wrapper.sp` | 引用 RFM 的 HSPICE/Sigrity wrapper。 |
 | `board_fitted_report.json` | 机器可读的拟合、阶次、误差、被动性和产物路径报告。 |
-| `board_fitted_report.html` | 中文质量报告，默认显示 RMS 最大的 5 个 S 参数元素。 |
+| `board_fitted_report.html` | 中文质量报告，默认显示最终交付摘要和 RMS 最大的 5 个 S 参数元素；完整内部配置与质量诊断在折叠区，JSON 保留全部配置。 |
 | `board.log` | 搜索过程的逐阶次文本日志。 |
 
 搜索阶段不会生成每个阶次的 SPICE、RFM、Touchstone 或 HTML 文件。每次试探仅记录到最终 JSON 的 `order_trials`；默认日志会在每个阶次开始和结束时立即追加并刷新。只有最终选中的阶次才会生成交付物。

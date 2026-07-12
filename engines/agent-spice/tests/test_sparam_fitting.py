@@ -392,6 +392,39 @@ def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plo
     assert "get_model_response" in FakeVectorFitting.instances[0].calls
 
 
+def test_readable_html_report_summarizes_configuration_and_collapses_diagnostics(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "NativeVectorFitting", FakeVectorFitting)
+    html_report = tmp_path / "fit_report.html"
+    output = tmp_path / "model.sp"
+
+    fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        output,
+        config=SParamFitConfig(mode="manual", preserve_dc=True),
+        html_report_path=html_report,
+    )
+
+    html = html_report.read_text(encoding="utf-8")
+    summary, advanced = html.split("<details>", maxsplit=1)
+    assert "运行方式" in summary
+    assert "RMS 目标" in summary
+    assert "最大 order" in summary
+    assert "最大步长" in summary
+    assert "选中 order" in summary
+    assert "passivity 策略" in summary
+    assert "保留 DC" in summary
+    assert "输出文件" in summary
+    assert summary.count("n/a") >= 4
+    assert "n_poles_real" not in summary
+    assert "<summary>高级诊断配置</summary>" in advanced
+    assert "n_poles_real" in advanced
+    assert "dc_coverage" in advanced
+
+
 def test_comparison_traces_keeps_missing_response_reason() -> None:
     import agent_spice.sparam.fitting as fitting
 
