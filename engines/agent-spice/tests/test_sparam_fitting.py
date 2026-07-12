@@ -131,6 +131,15 @@ class FakeVectorFitting:
         self.auto_fit_kwargs = {}
         self.vector_fit_kwargs = {}
         self.poles = [-1.0 + 0.0j, -2.0 + 3.0j, -4.0 + 0.0j]
+        self.residues = np.array(
+            [
+                [0.1 + 0.0j, 0.01 + 0.02j, 0.2 + 0.0j],
+                [0.2 + 0.0j, 0.02 + 0.01j, 0.1 + 0.0j],
+                [0.2 + 0.0j, 0.02 + 0.01j, 0.1 + 0.0j],
+                [0.1 + 0.0j, 0.01 + 0.02j, 0.2 + 0.0j],
+            ],
+            dtype=complex,
+        )
         self.constant_coeff = [0.25 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j]
         self.max_iterations = 100
         self.enforced = False
@@ -242,6 +251,40 @@ def test_native_baseline_version_is_stored_in_fit_report(tmp_path, monkeypatch):
     assert payload["native_baseline_version"] == "native-idem-fast-v1"
     report_payload = json.loads(result.report_path.read_text(encoding="utf-8"))
     assert report_payload["native_baseline_version"] == "native-idem-fast-v1"
+
+
+def test_fit_touchstone_to_spice_writes_requested_product_exports(tmp_path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "_create_vector_fitting", lambda network, config: FakeVectorFitting(network))
+    report = tmp_path / "fit_report.json"
+    fitted = tmp_path / "fitted.s2p"
+    rfm = tmp_path / "cadence" / "fitted.rfm"
+    wrapper = tmp_path / "cadence" / "fitted_wrapper.sp"
+
+    result = fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(subckt_name="fixture.model"),
+        report_path=report,
+        fitted_touchstone_path=fitted,
+        rfm_path=rfm,
+        rfm_wrapper_path=wrapper,
+        report_top_rms=1,
+    )
+
+    assert result.fitted_touchstone_path == fitted
+    assert result.rfm_path == rfm
+    assert result.rfm_wrapper_path == wrapper
+    assert fitted.is_file()
+    assert rfm.is_file()
+    assert ".subckt fixture_model" in wrapper.read_text(encoding="ascii")
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert payload["fitted_touchstone_path"] == str(fitted)
+    assert payload["rfm_path"] == str(rfm)
+    assert payload["rfm_wrapper_path"] == str(wrapper)
 
 
 def test_fit_touchstone_to_spice_writes_report_with_auto_fit_summary(tmp_path: Path, monkeypatch):
@@ -966,6 +1009,48 @@ def test_target_fit_search_writes_only_selected_model(tmp_path: Path, monkeypatc
     assert payload["report_path"] == str(report)
     assert payload["html_report_path"] == str(html)
     assert html.exists()
+
+
+def test_target_fit_copies_requested_product_exports_to_final_paths(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path, **kwargs):
+        result = _fake_target_fit_result(output_path, config.model_order_max, target_met=True)
+        result.ports = 2
+        result.fitted_touchstone_path = kwargs["fitted_touchstone_path"]
+        result.rfm_path = kwargs["rfm_path"]
+        result.fitted_touchstone_path.parent.mkdir(parents=True, exist_ok=True)
+        result.fitted_touchstone_path.write_text("fitted\n", encoding="ascii")
+        result.rfm_path.parent.mkdir(parents=True, exist_ok=True)
+        result.rfm_path.write_text("VERSION 200600\n", encoding="ascii")
+        return result
+
+    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+    output = tmp_path / "model.sp"
+    fitted = tmp_path / "exports" / "fitted.s2p"
+    rfm = tmp_path / "exports" / "fitted.rfm"
+    wrapper = tmp_path / "exports" / "fitted_wrapper.sp"
+    report = tmp_path / "fit_report.json"
+
+    result = fitting.fit_touchstone_to_spice_target(
+        tmp_path / "line.s2p",
+        output,
+        target=SParamFitTarget(0.001, passivity="enforce", max_order=4),
+        config=SParamFitConfig(mode="manual", subckt_name="fixture.model"),
+        report_path=report,
+        fitted_touchstone_path=fitted,
+        rfm_path=rfm,
+        rfm_wrapper_path=wrapper,
+    )
+
+    assert result.target_met is True
+    assert fitted.read_text(encoding="ascii") == "fitted\n"
+    assert rfm.read_text(encoding="ascii") == "VERSION 200600\n"
+    assert ".subckt fixture_model" in wrapper.read_text(encoding="ascii")
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert payload["fitted_touchstone_path"] == str(fitted)
+    assert payload["rfm_path"] == str(rfm)
+    assert payload["rfm_wrapper_path"] == str(wrapper)
 
 
 def test_target_fit_failure_removes_requested_output_and_keeps_reports(tmp_path: Path, monkeypatch):

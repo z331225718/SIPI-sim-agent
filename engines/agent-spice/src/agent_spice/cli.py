@@ -754,6 +754,19 @@ def main(argv: list[str] | None = None) -> int:
     fit_parser.add_argument("--output", type=Path, required=True, help="Output SPICE subcircuit path.")
     fit_parser.add_argument("--report", type=Path, help="JSON fit report path; defaults next to --output.")
     fit_parser.add_argument("--html-report", type=Path, help="HTML fit report path; defaults next to --output.")
+    fit_parser.add_argument(
+        "--fitted-touchstone",
+        type=Path,
+        help="Optional fitted .sNp Touchstone export for direct comparison with the input.",
+    )
+    fit_parser.add_argument("--rfm", type=Path, help="Optional Cadence Broadband SPICE RFM export path.")
+    fit_parser.add_argument("--rfm-wrapper", type=Path, help="Optional SPICE wrapper path for --rfm.")
+    fit_parser.add_argument(
+        "--report-top-rms",
+        type=int,
+        default=6,
+        help="Number of worst RMS S-parameter elements to plot in the HTML report (default: 6).",
+    )
     fit_parser.add_argument("--log", type=Path, help="Progress log path.")
     fit_parser.add_argument("--rms-target", type=float, help="Required final mean S-RMS target.")
     fit_parser.add_argument(
@@ -1300,6 +1313,15 @@ def main(argv: list[str] | None = None) -> int:
 
         report_path = args.report or (args.output.parent / "fit_report.json")
         html_report_path = args.html_report or (args.output.parent / "fit_report.html")
+        if args.report_top_rms < 0:
+            print("error: --report-top-rms must be >= 0", file=sys.stderr)
+            return 1
+        if args.rfm_wrapper is not None and args.rfm is None:
+            print("error: --rfm-wrapper requires --rfm", file=sys.stderr)
+            return 1
+        rfm_wrapper_path = args.rfm_wrapper
+        if args.rfm is not None and rfm_wrapper_path is None:
+            rfm_wrapper_path = args.rfm.with_name(f"{args.rfm.stem}_rfm_wrapper.sp")
         try:
             target_fit_kwargs = {
                 "target": target,
@@ -1308,6 +1330,15 @@ def main(argv: list[str] | None = None) -> int:
                 "html_report_path": html_report_path,
                 "log_path": args.log,
             }
+            if args.fitted_touchstone is not None or args.rfm is not None or args.report_top_rms != 6:
+                target_fit_kwargs.update(
+                    {
+                        "fitted_touchstone_path": args.fitted_touchstone,
+                        "rfm_path": args.rfm,
+                        "rfm_wrapper_path": rfm_wrapper_path,
+                        "report_top_rms": args.report_top_rms,
+                    }
+                )
             if args.resume_target_search:
                 target_fit_kwargs["resume_trials"] = True
             result = fit_touchstone_to_spice_target(
