@@ -2311,6 +2311,7 @@ def fit_touchstone_to_spice_target(
         f"target-search start rms_target={target.mean_rms:.12g} "
         f"passivity={target.passivity} max_order={target.max_order} max_order_step={max_order_step}"
     )
+    executions_by_order: dict[int, _FitExecution] = {}
 
     def evaluate_order(order: int) -> SParamOrderTrial:
         trial_config = _native_manual_auto_order_config(policy_config, order)
@@ -2344,7 +2345,7 @@ def fit_touchstone_to_spice_target(
                 payload={"error": str(exc)},
             )
         trial = trial_from_fit_result(target, execution.result, requested_order=order)
-        trial.payload = execution
+        executions_by_order[order] = execution
         write_progress(
             f"order={order} effective_order={trial.effective_order} "
             f"rms={_format_float(trial.final_mean_rms)} status={trial.status} "
@@ -2364,8 +2365,8 @@ def fit_touchstone_to_spice_target(
     else:
         selected_order = search_result.selected_trial.requested_order
         write_progress(f"target-search selected_order={selected_order}; writing final artifacts")
-        selected_execution = search_result.selected_trial.payload
-        if not isinstance(selected_execution, _FitExecution):
+        selected_execution = executions_by_order.get(selected_order)
+        if selected_execution is None:
             raise RuntimeError("selected target trial is missing its internal fit execution")
         selected_fit_result = _write_fit_outputs(
             selected_execution,

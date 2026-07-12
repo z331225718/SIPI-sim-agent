@@ -1035,6 +1035,58 @@ def test_target_fit_search_writes_only_selected_model(tmp_path: Path, monkeypatc
     assert html.exists()
 
 
+def test_target_fit_reuses_first_order_78_execution_for_public_reports_and_export(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    order_78_results = []
+
+    def fake_execution(touchstone_path, output_path, *, config, log_path):
+        order = config.model_order_max
+        rms = 0.000986339 if order == 78 and not order_78_results else 0.0295902 if order == 78 else 0.1
+        result = _fake_target_fit_result(output_path, order, target_met=rms <= 0.001)
+        result.pre_enforcement_mean_rms_error = rms
+        result.comparison_mean_rms_error = rms
+        result.to_dict = lambda: {
+            "comparison_mean_rms_error": result.comparison_mean_rms_error,
+            "expanded_model_order": order,
+        }
+        result.export_marker = f"first-order-{order}" if order == 78 and not order_78_results else f"rerun-order-{order}"
+        if order == 78:
+            order_78_results.append(result)
+        return fitting._FitExecution(result=result, network=None, vector_fit=None)
+
+    exported_markers = []
+
+    def write_outputs(execution, output_path, **kwargs):
+        exported_markers.append(execution.result.export_marker)
+        output_path.write_text(execution.result.export_marker, encoding="utf-8")
+        return execution.result
+
+    monkeypatch.setattr(fitting, "_fit_touchstone_execution", fake_execution)
+    monkeypatch.setattr(fitting, "_write_fit_outputs", write_outputs)
+    output = tmp_path / "model.sp"
+    report = tmp_path / "report.json"
+    html = tmp_path / "report.html"
+
+    result = fitting.fit_touchstone_to_spice_target(
+        tmp_path / "line.s2p",
+        output,
+        target=SParamFitTarget(0.001, passivity="off", max_order=78),
+        config=SParamFitConfig(mode="manual"),
+        report_path=report,
+        html_report_path=html,
+    )
+
+    assert len(order_78_results) == 1
+    assert result.selected_trial is not None
+    assert result.selected_trial.payload is order_78_results[0]
+    assert not isinstance(result.selected_trial.payload, fitting._FitExecution)
+    assert exported_markers == ["first-order-78"]
+    assert output.read_text(encoding="utf-8") == "first-order-78"
+    assert json.loads(report.read_text(encoding="utf-8"))["comparison_mean_rms_error"] == pytest.approx(0.000986339)
+    assert "0.000986339" in html.read_text(encoding="utf-8")
+
+
 def test_target_fit_exports_only_selected_execution_artifacts(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 
@@ -1210,10 +1262,11 @@ def test_target_fit_copies_requested_product_exports_to_final_paths(tmp_path: Pa
 def test_target_fit_failure_removes_requested_output_and_keeps_reports(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 
-    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path):
-        return _fake_target_fit_result(output_path, config.model_order_max, target_met=False)
+    def fake_execution(touchstone_path, output_path, *, config, log_path):
+        result = _fake_target_fit_result(output_path, config.model_order_max, target_met=False)
+        return fitting._FitExecution(result=result, network=None, vector_fit=None)
 
-    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+    monkeypatch.setattr(fitting, "_fit_touchstone_execution", fake_execution)
     output = tmp_path / "model.sp"
     output.write_text("stale", encoding="utf-8")
     report = tmp_path / "report.json"
