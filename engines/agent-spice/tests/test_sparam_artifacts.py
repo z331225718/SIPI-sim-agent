@@ -136,3 +136,36 @@ def test_write_cadence_rfm_rejects_proportional_or_noncanonical_poles(tmp_path) 
     model.poles[1] = -3.0 - 4.0j
     with pytest.raises(ValueError, match="positive imaginary"):
         write_cadence_rfm(model, tmp_path / "noncanonical.rfm", z0=50.0)
+
+
+def test_write_cadence_rfm_does_not_silently_demote_tiny_complex_poles(tmp_path) -> None:
+    model = _SmallVectorFit()
+    model.poles[1] = -3.0 + 1.0e-14j
+
+    with pytest.raises(ValueError, match="positive imaginary"):
+        write_cadence_rfm(model, tmp_path / "tiny_complex.rfm", z0=50.0)
+
+
+def test_cadence_rfm_first_element_reconstructs_native_response(tmp_path) -> None:
+    model = _SmallVectorFit()
+    output = tmp_path / "fitted.rfm"
+    write_cadence_rfm(model, output, z0=50.0)
+    lines = output.read_text(encoding="ascii").splitlines()
+    start = lines.index("BEGIN 1 1")
+    end = lines.index("END", start)
+    block = lines[start:end]
+    constant = float(block[1].split()[1])
+    real_start = block.index("BEGIN_REAL 1") + 1
+    real_pole, real_residue = map(float, block[real_start].split())
+    complex_start = block.index("BEGIN_COMPLEX 1") + 1
+    damping, omega, residue_real, residue_imag = map(float, block[complex_start].split())
+    frequencies_hz = np.array([0.0, 1.0])
+    s = 2j * np.pi * frequencies_hz
+    reconstructed = (
+        constant
+        + real_residue / (s + real_pole)
+        + (residue_real + 1j * residue_imag) / (s + damping - 1j * omega)
+        + (residue_real - 1j * residue_imag) / (s + damping + 1j * omega)
+    )
+
+    np.testing.assert_allclose(reconstructed, evaluate_fitted_s(model, frequencies_hz)[:, 0, 0])

@@ -119,7 +119,7 @@ def _rfm_real(value: complex, *, label: str) -> float:
     scalar = complex(value)
     if not np.isfinite(scalar):
         raise ValueError(f"Cadence RFM cannot represent non-finite {label}")
-    if not np.isclose(scalar.imag, 0.0, atol=1e-12, rtol=0.0):
+    if scalar.imag != 0.0:
         raise ValueError(f"Cadence RFM requires real {label}")
     return float(scalar.real)
 
@@ -154,17 +154,17 @@ def _rfm_pole_groups(model: Any, response_count: int) -> tuple[np.ndarray, np.nd
         raise ValueError("Native vector-fit proportional coefficients have invalid length")
     if not np.isfinite(poles).all() or not np.isfinite(residues).all() or not np.isfinite(proportional).all():
         raise ValueError("Cadence RFM cannot represent non-finite vector-fit coefficients")
-    if np.any(np.abs(proportional) > 1e-12):
+    if np.any(proportional != 0.0):
         raise ValueError("Cadence RFM does not support proportional coefficients")
-    if np.any(poles.real >= -1e-12):
+    if np.any(poles.real >= 0.0):
         raise ValueError("Cadence RFM requires stable poles with negative real part")
 
-    real_indices = np.flatnonzero(np.isclose(poles.imag, 0.0, atol=1e-12, rtol=0.0))
-    complex_indices = np.flatnonzero(poles.imag > 1e-12)
+    real_indices = np.flatnonzero(poles.imag == 0.0)
+    complex_indices = np.flatnonzero(poles.imag > 0.0)
     if real_indices.size + complex_indices.size != poles.size:
         raise ValueError("Cadence RFM complex poles must use the positive imaginary representative")
     for index in real_indices:
-        if np.any(np.abs(residues[:, index].imag) > 1e-12):
+        if np.any(residues[:, index].imag != 0.0):
             raise ValueError("Cadence RFM requires real residues for real poles")
     return poles, residues, real_indices, complex_indices
 
