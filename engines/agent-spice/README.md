@@ -49,7 +49,7 @@ python -m agent_spice.cli fit-sparam .\board.s19p --rms-target 0.001
 | `board_fitted_report.html` | 中文质量报告，默认显示 RMS 最大的 5 个 S 参数元素。 |
 | `board.log` | 搜索过程的逐阶次文本日志。 |
 
-搜索阶段不会生成每个阶次的 SPICE、RFM、Touchstone 或 HTML 文件。每次试探仅记录到最终 JSON 的 `order_trials`；传入 `--log` 时，也会写入逐阶次文本日志。只有最终选中的阶次才会生成交付物。
+搜索阶段不会生成每个阶次的 SPICE、RFM、Touchstone 或 HTML 文件。每次试探仅记录到最终 JSON 的 `order_trials`；默认日志会在每个阶次开始和结束时立即追加并刷新。只有最终选中的阶次才会生成交付物。
 
 ### RMS 与阶次
 

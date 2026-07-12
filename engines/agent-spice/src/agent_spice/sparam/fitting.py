@@ -2239,10 +2239,25 @@ def fit_touchstone_to_spice_target(
         fit_f_min=None,
         fit_f_max=None,
     )
-    trial_logs: list[str] = []
+    def write_progress(message: str) -> None:
+        if log_path is None:
+            return
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with log_path.open("a", encoding="utf-8") as handle:
+            handle.write(message + "\n")
+            handle.flush()
+
+    if log_path is not None:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text("", encoding="utf-8")
+    write_progress(
+        f"target-search start rms_target={target.mean_rms:.12g} "
+        f"passivity={target.passivity} max_order={target.max_order} max_order_step={max_order_step}"
+    )
 
     def evaluate_order(order: int) -> SParamOrderTrial:
         trial_config = _native_manual_auto_order_config(policy_config, order)
+        write_progress(f"order={order} status=START")
         try:
             fit_result = fit_touchstone_to_spice(
                 touchstone_path,
@@ -2254,7 +2269,7 @@ def fit_touchstone_to_spice_target(
                 write_outputs=False,
             )
         except Exception as exc:
-            trial_logs.append(f"order={order} status=FAIL reason=fit_failed error={exc}")
+            write_progress(f"order={order} status=FAIL reason=fit_failed error={exc}")
             return SParamOrderTrial(
                 requested_order=order,
                 effective_order=order,
@@ -2275,7 +2290,7 @@ def fit_touchstone_to_spice_target(
                 payload={"error": str(exc)},
             )
         trial = trial_from_fit_result(target, fit_result, requested_order=order)
-        trial_logs.append(
+        write_progress(
             f"order={order} effective_order={trial.effective_order} "
             f"rms={_format_float(trial.final_mean_rms)} status={trial.status} "
             f"reason={trial.rejection_reason or ''}"
@@ -2286,12 +2301,14 @@ def fit_touchstone_to_spice_target(
     search_result = run_target_order_search(search_target, evaluate_order)
     selected_fit_result = None
     if not search_result.target_met:
+        write_progress(f"target-search finished status=FAIL reason={search_result.stop_reason}")
         output_path.unlink(missing_ok=True)
         for artifact_path in (fitted_touchstone_path, rfm_path, rfm_wrapper_path):
             if artifact_path is not None:
                 artifact_path.unlink(missing_ok=True)
     else:
         selected_order = search_result.selected_trial.requested_order
+        write_progress(f"target-search selected_order={selected_order}; writing final artifacts")
         selected_config = _native_manual_auto_order_config(policy_config, selected_order)
         selected_fit_result = fit_touchstone_to_spice(
             touchstone_path,
@@ -2305,6 +2322,7 @@ def fit_touchstone_to_spice_target(
             rfm_wrapper_path=rfm_wrapper_path,
             report_top_rms=report_top_rms,
         )
+        write_progress("target-search finished status=PASS")
 
     payload = search_result.to_dict()
     if selected_fit_result is not None and hasattr(selected_fit_result, "to_dict"):
@@ -2402,7 +2420,4 @@ def fit_touchstone_to_spice_target(
 """,
                 encoding="utf-8",
             )
-    if log_path is not None and trial_logs:
-        log_path.parent.mkdir(parents=True, exist_ok=True)
-        log_path.write_text("\n".join(trial_logs) + "\n", encoding="utf-8")
     return search_result

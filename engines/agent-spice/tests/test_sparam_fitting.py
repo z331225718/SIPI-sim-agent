@@ -1123,6 +1123,33 @@ def test_target_fit_failure_removes_requested_output_and_keeps_reports(tmp_path:
     assert html.exists()
 
 
+def test_target_fit_appends_progress_log_while_each_order_runs(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    log_path = tmp_path / "board.log"
+    observed_log_text = []
+
+    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path, **kwargs):
+        observed_log_text.append((tmp_path / "board.log").read_text(encoding="utf-8"))
+        return _fake_target_fit_result(output_path, config.model_order_max, target_met=True)
+
+    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+
+    result = fitting.fit_touchstone_to_spice_target(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        target=SParamFitTarget(0.001, passivity="off", max_order=4),
+        config=SParamFitConfig(mode="manual"),
+        log_path=log_path,
+    )
+
+    assert result.target_met is True
+    assert "order=4 status=START" in observed_log_text[0]
+    log_text = log_path.read_text(encoding="utf-8")
+    assert "order=4 effective_order=4" in log_text
+    assert "target-search finished status=PASS" in log_text
+
+
 @pytest.mark.skip(reason="target search no longer persists per-order artifacts")
 def test_target_fit_resumes_exact_per_order_trials(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
