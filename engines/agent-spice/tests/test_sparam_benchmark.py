@@ -385,6 +385,7 @@ def test_canonical_csv_and_markdown_are_deterministic_and_explicit(tmp_path: Pat
     assert "Mean S-RMS target" in markdown
     assert "0.001" in markdown
     assert "--passivity enforce" in markdown
+    assert "--resume-target-search" not in markdown
     assert "summary.json" in markdown
     assert "case1.s2p" in markdown
 

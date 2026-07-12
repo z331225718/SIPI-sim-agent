@@ -2386,12 +2386,9 @@ def fit_touchstone_to_spice_target(
     rfm_wrapper_path: Path | None = None,
     report_top_rms: int = 6,
     max_order_step: int = 8,
-    resume_trials: bool = False,
 ) -> SParamTargetSearchResult:
     if report_top_rms < 0:
         raise ValueError("report_top_rms must be >= 0")
-    if resume_trials:
-        raise ValueError("resume_trials is unavailable because target search no longer persists per-order artifacts")
     if rfm_wrapper_path is not None and rfm_path is None:
         raise ValueError("rfm_wrapper_path requires rfm_path")
     _validate_distinct_output_paths(

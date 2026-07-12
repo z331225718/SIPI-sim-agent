@@ -11,7 +11,7 @@ Canonical data: `runs-sparam/full-corpus-target-0p001/summary.json`
 - Search: even orders from 4, then adjacent odd-order backfill after the first even pass.
 - Parity gates: Native/IdEM order `<= 1.25`, time `<= 2.0`, memory `<= 1.5`.
 
-Native command: `python -m agent_spice.cli fit-sparam <INPUT> --rms-target 0.001 --passivity enforce --max-order 100 --resume-target-search`
+Native command: `python -m agent_spice.cli fit-sparam <INPUT> --rms-target 0.001 --passivity enforce --max-order 100`
 
 Benchmark command: `python scripts/sparam_full_corpus_benchmark.py --corpus-root user_input/spara --rms-target 0.001 --passivity-epsilon 1e-06 --max-order 100 --threads 8 --resume`
 

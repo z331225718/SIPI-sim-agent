@@ -775,7 +775,7 @@ def render_benchmark_markdown(summary: dict[str, Any]) -> str:
         "- Search: even orders from 4, then adjacent odd-order backfill after the first even pass.",
         "- Parity gates: Native/IdEM order `<= 1.25`, time `<= 2.0`, memory `<= 1.5`.",
         "",
-        f"Native command: `python -m agent_spice.cli fit-sparam <INPUT> --rms-target {contract['rms_target']} --passivity enforce --max-order {contract['max_order']} --resume-target-search`",
+        f"Native command: `python -m agent_spice.cli fit-sparam <INPUT> --rms-target {contract['rms_target']} --passivity enforce --max-order {contract['max_order']}`",
         "",
         f"Benchmark command: `python scripts/sparam_full_corpus_benchmark.py --corpus-root user_input/spara --rms-target {contract['rms_target']} --passivity-epsilon {contract['passivity_epsilon']} --max-order {contract['max_order']} --threads {contract['threads']} --resume`",
         "",

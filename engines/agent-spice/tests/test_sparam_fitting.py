@@ -1,3 +1,4 @@
+import inspect
 import json
 import logging
 from pathlib import Path
@@ -33,6 +34,12 @@ def test_sparam_config_no_longer_accepts_relocation_backend():
 def test_sparam_config_no_longer_accepts_exporter():
     with pytest.raises(TypeError):
         SParamFitConfig(exporter="idem")
+
+
+def test_target_fit_no_longer_exposes_unimplemented_resume_trials():
+    import agent_spice.sparam.fitting as fitting
+
+    assert "resume_trials" not in inspect.signature(fitting.fit_touchstone_to_spice_target).parameters
 
 
 def test_passivity_advanced_perturbations_are_experimental_opt_in():
@@ -1463,7 +1470,6 @@ def test_target_fit_resumes_exact_per_order_trials(tmp_path: Path, monkeypatch):
         target=target,
         config=config,
         report_path=report,
-        resume_trials=True,
     )
     calls.clear()
     resumed = fitting.fit_touchstone_to_spice_target(
@@ -1472,7 +1478,6 @@ def test_target_fit_resumes_exact_per_order_trials(tmp_path: Path, monkeypatch):
         target=target,
         config=config,
         report_path=report,
-        resume_trials=True,
     )
 
     assert first.target_met is True
@@ -1507,7 +1512,6 @@ def test_target_fit_trial_fingerprint_includes_native_baseline_version(tmp_path:
         tmp_path / "model.sp",
         target=target,
         config=SParamFitConfig(mode="manual"),
-        resume_trials=True,
     )
 
     trial_payload = json.loads((tmp_path / "model_order4" / "fit_report.json").read_text(encoding="utf-8"))
@@ -1548,7 +1552,6 @@ def test_target_fit_resume_invalidates_when_pole_relocation_identity_changes(tmp
         output,
         target=target,
         config=config,
-        resume_trials=True,
     )
     first_payload = json.loads((tmp_path / "model_order4" / "fit_report.json").read_text(encoding="utf-8"))
     assert "pole_relocation.py" in first_payload["target_tool_identity"]
@@ -1568,7 +1571,6 @@ def test_target_fit_resume_invalidates_when_pole_relocation_identity_changes(tmp
         output,
         target=target,
         config=config,
-        resume_trials=True,
     )
 
     second_payload = json.loads((tmp_path / "model_order4" / "fit_report.json").read_text(encoding="utf-8"))
@@ -1600,7 +1602,6 @@ def test_target_fit_resume_invalidates_when_target_changes(tmp_path: Path, monke
         output,
         target=SParamFitTarget(0.001, passivity="enforce", max_order=4),
         config=config,
-        resume_trials=True,
     )
     calls.clear()
 
@@ -1609,7 +1610,6 @@ def test_target_fit_resume_invalidates_when_target_changes(tmp_path: Path, monke
         output,
         target=SParamFitTarget(0.0005, passivity="enforce", max_order=4),
         config=config,
-        resume_trials=True,
     )
 
     assert calls == [4]
@@ -1639,7 +1639,6 @@ def test_target_fit_resume_rejects_semantically_invalid_pass(tmp_path: Path, mon
         output,
         target=target,
         config=config,
-        resume_trials=True,
     )
     trial_report = tmp_path / "model_order4" / "fit_report.json"
     payload = json.loads(trial_report.read_text(encoding="utf-8"))
@@ -1652,7 +1651,6 @@ def test_target_fit_resume_rejects_semantically_invalid_pass(tmp_path: Path, mon
         output,
         target=target,
         config=config,
-        resume_trials=True,
     )
 
     assert calls == [4]

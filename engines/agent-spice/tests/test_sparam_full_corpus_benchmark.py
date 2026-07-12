@@ -385,7 +385,7 @@ def test_native_target_search_runs_public_cli_and_resumes_without_process_work(t
     assert len(calls) == 1
     assert "--passivity" in calls[0][0]
     assert "enforce" in calls[0][0]
-    assert "--resume-target-search" in calls[0][0]
+    assert "--resume-target-search" not in calls[0][0]
     assert calls[0][1]["OMP_NUM_THREADS"] == "8"
     assert fingerprint_options
     assert all(options["native_baseline_version"] == "native-idem-fast-v1" for options in fingerprint_options)

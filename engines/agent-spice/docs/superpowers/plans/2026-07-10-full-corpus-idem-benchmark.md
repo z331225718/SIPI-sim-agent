@@ -382,8 +382,7 @@ git commit -m "feat: run resumable IdEM target search"
 - Modify: `tests/test_sparam_full_corpus_benchmark.py`
 
 **Interfaces:**
-- Adds hidden CLI option: `--resume-target-search`.
-- Updates: `fit_touchstone_to_spice_target(..., resume_trials: bool = False)`.
+- Removes the obsolete per-order target-search resume option because trials are no longer persisted.
 - Produces: `run_native_target_search(entry, contract, output_dir, *, resume=True) -> ToolSearchResult`.
 - Produces: `run_full_corpus(corpus_root, output_root, contract, *, resume=True) -> dict[str, Any]`.
 
@@ -404,8 +403,7 @@ config fingerprint. Resume only exact matches and parse metrics through
 
 - [ ] **Step 3: Add hidden CLI wiring and tests**
 
-`--resume-target-search` is absent from normal help but passes
-`resume_trials=True`. Public defaults and target semantics remain unchanged.
+The per-order target-search resume option is removed. Public defaults and target semantics remain unchanged.
 
 - [ ] **Step 4: Write failing sequential-corpus tests**
 

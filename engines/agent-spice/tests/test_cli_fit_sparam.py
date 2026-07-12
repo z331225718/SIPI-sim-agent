@@ -902,7 +902,7 @@ def test_fit_sparam_cli_builds_explicit_target_and_enforce_policy(tmp_path: Path
     assert config.fit_max_frequency_points is None
 
 
-def test_fit_sparam_cli_hidden_resume_flag_reaches_target_search(tmp_path: Path, monkeypatch):
+def test_fit_sparam_cli_rejects_removed_resume_target_search_flag(tmp_path: Path, monkeypatch):
     import agent_spice.cli as cli
 
     calls = []
@@ -913,20 +913,21 @@ def test_fit_sparam_cli_hidden_resume_flag_reaches_target_search(tmp_path: Path,
 
     monkeypatch.setattr(cli, "fit_touchstone_to_spice_target", fake_target_fit, raising=False)
 
-    exit_code = cli.main(
-        [
-            "fit-sparam",
-            str(tmp_path / "line.s2p"),
-            "--output",
-            str(tmp_path / "model.sp"),
-            "--rms-target",
-            "0.001",
-            "--resume-target-search",
-        ]
-    )
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(
+            [
+                "fit-sparam",
+                str(tmp_path / "line.s2p"),
+                "--output",
+                str(tmp_path / "model.sp"),
+                "--rms-target",
+                "0.001",
+                "--resume-target-search",
+            ]
+        )
 
-    assert exit_code == 0
-    assert calls[0]["resume_trials"] is True
+    assert exc_info.value.code == 2
+    assert calls == []
 
 
 def test_fit_sparam_cli_defaults_to_check_and_port_independent_max_order(tmp_path: Path, monkeypatch):
