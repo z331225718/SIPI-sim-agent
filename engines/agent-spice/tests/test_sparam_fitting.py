@@ -392,7 +392,7 @@ def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plo
     assert "get_model_response" in FakeVectorFitting.instances[0].calls
 
 
-def test_comparison_traces_returns_no_ranking_when_one_response_is_missing() -> None:
+def test_comparison_traces_keeps_missing_response_reason() -> None:
     import agent_spice.sparam.fitting as fitting
 
     network = FakeNetwork("line.s2p")
@@ -403,7 +403,34 @@ def test_comparison_traces_returns_no_ranking_when_one_response_is_missing() -> 
                 return None
             return np.zeros(len(freqs), dtype=complex)
 
-    assert fitting._comparison_traces(network, MissingResponseModel()) == []
+    traces = fitting._comparison_traces(network, MissingResponseModel())
+
+    assert traces == [{"label": "S12", "rms": None, "render_error": "S12 model response is unavailable"}]
+
+
+def test_fit_report_shows_escaped_reason_when_response_raises(tmp_path: Path, monkeypatch) -> None:
+    import agent_spice.sparam.fitting as fitting
+
+    class RaisingResponseVectorFitting(FakeVectorFitting):
+        def get_model_response(self, i, j, freqs=None):
+            if (i, j) == (0, 1):
+                raise RuntimeError("response <unavailable>&")
+            return super().get_model_response(i, j, freqs)
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "NativeVectorFitting", RaisingResponseVectorFitting)
+    html_report = tmp_path / "fit_report.html"
+
+    fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        html_report_path=html_report,
+    )
+
+    html = html_report.read_text(encoding="utf-8")
+    assert "曲线不可用：S12 model response failed: response &lt;unavailable&gt;&amp;" in html
+    assert "response <unavailable>&" not in html
 
 
 def test_render_trace_svg_rejects_non_finite_data_with_reason() -> None:

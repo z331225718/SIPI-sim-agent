@@ -714,6 +714,54 @@ def _model_response_at_frequencies(
     return fitted_values
 
 
+def _comparison_trace_response(
+    vector_fit: Any,
+    row: int,
+    column: int,
+    freqs: Any,
+) -> tuple[list[complex] | None, str | None]:
+    """Return a model response with a report-safe diagnostic when it is unavailable."""
+
+    if not hasattr(vector_fit, "get_model_response"):
+        return None, "model response is unavailable"
+    method = vector_fit.get_model_response
+    try:
+        signature = inspect.signature(method)
+    except (TypeError, ValueError):
+        try:
+            fitted = method(row, column, freqs=freqs)
+        except Exception as exc:
+            return None, f"model response failed: {exc}"
+    else:
+        parameters = list(signature.parameters.values())
+        supports_freqs_keyword = "freqs" in signature.parameters or any(
+            parameter.kind == inspect.Parameter.VAR_KEYWORD for parameter in parameters
+        )
+        supports_third_positional = any(parameter.kind == inspect.Parameter.VAR_POSITIONAL for parameter in parameters)
+        supports_third_positional = supports_third_positional or sum(
+            parameter.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            for parameter in parameters
+        ) >= 3
+        try:
+            if supports_freqs_keyword:
+                fitted = method(row, column, freqs=freqs)
+            elif supports_third_positional:
+                fitted = method(row, column, freqs)
+            else:
+                return None, "model response does not accept frequencies"
+        except Exception as exc:
+            return None, f"model response failed: {exc}"
+    if fitted is None:
+        return None, "model response is unavailable"
+    try:
+        fitted_values = [complex(value) for value in fitted]
+    except Exception as exc:
+        return None, f"model response is invalid: {exc}"
+    if len(fitted_values) != len(freqs):
+        return None, "model response length does not match frequency points"
+    return fitted_values, None
+
+
 def _comparison_rms_error(network: Any, vector_fit: Any, parameter_type: str) -> float | None:
     network_values = getattr(network, parameter_type.lower(), None)
     if network_values is None or not hasattr(network, "f") or not hasattr(network, "nports"):
@@ -853,48 +901,63 @@ def _to_db(value: complex) -> float:
 
 
 def _comparison_traces(network: Any, vector_fit: Any, max_traces: int = 6) -> list[dict[str, Any]]:
+    def diagnostic(label: str, reason: str) -> list[dict[str, Any]]:
+        return [{"label": label, "rms": None, "render_error": reason}]
+
     if not hasattr(network, "s") or not hasattr(vector_fit, "get_model_response"):
-        return []
-    freqs = [float(value) for value in network.f]
+        return diagnostic("曲线对比", "network S-parameter data or model response is unavailable")
+    try:
+        freqs = [float(value) for value in network.f]
+    except Exception as exc:
+        return diagnostic("曲线对比", f"frequency data is invalid: {exc}")
     if not freqs:
-        return []
-    nports = _validated_network_nports(network)
+        return diagnostic("曲线对比", "trace contains no frequency points")
+    try:
+        nports = _validated_network_nports(network)
+    except Exception as exc:
+        return diagnostic("曲线对比", f"port data is invalid: {exc}")
     squared_error = np.empty((nports, nports), dtype=float)
     for row in range(nports):
         for column in range(nports):
+            label = f"S{row + 1}{column + 1}"
             try:
-                response = _model_response_at_frequencies(vector_fit, row, column, network.f)
-                if response is None or len(response) != len(freqs):
-                    return []
+                response, response_error = _comparison_trace_response(vector_fit, row, column, network.f)
+                if response is None:
+                    return diagnostic(label, f"{label} {response_error}")
                 original = np.asarray(
                     [_network_s_value(network, index, row, column) for index in range(len(freqs))], dtype=complex
                 )
                 fitted = np.asarray(response, dtype=complex)
-                if not np.isfinite(original).all() or not np.isfinite(fitted).all():
-                    return []
+                if not np.isfinite(original).all():
+                    return diagnostic(label, f"{label} original response contains non-finite values")
+                if not np.isfinite(fitted).all():
+                    return diagnostic(label, f"{label} model response contains non-finite values")
                 squared_error[row, column] = float(np.mean(np.abs(fitted - original) ** 2))
-            except Exception:
-                return []
+            except Exception as exc:
+                return diagnostic(label, f"{label} comparison failed: {exc}")
     ranking = sorted(
         ((float(np.sqrt(squared_error[row, column])), row, column) for row in range(nports) for column in range(nports)),
         key=lambda item: (-item[0], item[1], item[2]),
     )
     traces: list[dict[str, Any]] = []
     for rms, row, column in ranking[:max(0, max_traces)]:
+        label = f"S{row + 1}{column + 1}"
         try:
-            response = _model_response_at_frequencies(vector_fit, row, column, network.f)
-            if response is None or len(response) != len(freqs):
-                return []
+            response, response_error = _comparison_trace_response(vector_fit, row, column, network.f)
+            if response is None:
+                return diagnostic(label, f"{label} {response_error}")
             original = np.asarray(
                 [_network_s_value(network, index, row, column) for index in range(len(freqs))], dtype=complex
             )
             fitted = np.asarray(response, dtype=complex)
-            if not np.isfinite(original).all() or not np.isfinite(fitted).all():
-                return []
-        except Exception:
-            return []
+            if not np.isfinite(original).all():
+                return diagnostic(label, f"{label} original response contains non-finite values")
+            if not np.isfinite(fitted).all():
+                return diagnostic(label, f"{label} model response contains non-finite values")
+        except Exception as exc:
+            return diagnostic(label, f"{label} comparison failed: {exc}")
         trace = {
-            "label": f"S{row + 1}{column + 1}",
+            "label": label,
             "row": row + 1,
             "column": column + 1,
             "rms": rms,
@@ -967,7 +1030,8 @@ def _render_trace_svg(trace: dict[str, Any]) -> tuple[str | None, str | None]:
 
 def _render_trace_chart(trace: dict[str, Any]) -> str:
     label = escape(trace["label"])
-    svg, reason = _render_trace_svg(trace)
+    render_error = trace.get("render_error")
+    svg, reason = (None, str(render_error)) if render_error is not None else _render_trace_svg(trace)
     image_html = svg if svg is not None else f'<p class="muted">曲线不可用：{escape(reason or "unknown error")}</p>'
     return f"""
 <section class="chart">
