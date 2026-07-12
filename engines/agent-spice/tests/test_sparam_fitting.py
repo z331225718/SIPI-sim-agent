@@ -297,6 +297,8 @@ def test_fit_touchstone_to_spice_writes_requested_product_exports(tmp_path, monk
     assert str(fitted) in html
     assert str(rfm) in html
     assert str(wrapper) in html
+    assert "Cadence RFM" not in html
+    assert "RFM 包装网表" in html
 
 
 def test_fit_touchstone_to_spice_rejects_colliding_product_output_paths(tmp_path: Path):
@@ -395,6 +397,10 @@ def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plo
     assert "S11" in html
     assert "S21" in html
     assert html.count("<polyline") >= 3
+    assert 'class="line original"' in html
+    assert 'class="line fitted"' in html
+    assert "幅值 |S|" in html
+    assert "绝对误差 |ΔS|" in html
     assert "get_model_response" in FakeVectorFitting.instances[0].calls
 
 

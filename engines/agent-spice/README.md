@@ -2,7 +2,7 @@
 
 Agent-Spice 是面向电源完整性与高速互连场景的命令行工具。当前稳定的用户工作流有两类：
 
-- `fit-sparam`：将 Touchstone S 参数拟合为 SPICE 子电路、Cadence RFM 和可核验的 fitted Touchstone。
+- `fit-sparam`：将 Touchstone S 参数拟合为 SPICE 子电路、RFM 和可核验的 fitted Touchstone。
 - `run-hspice`：解析 HSPICE 网表，展开 `.alter`，并生成兼容性报告与后端输入文件。
 
 仓库内还保留了 IdEM、极点、模态和基准探针命令，供算法研究使用；它们不是稳定产品接口，参数与输出契约可能变化，因此不在本 README 中逐项承诺。可用 `python -m agent_spice.cli --help` 查看完整命令索引，以及 `python -m agent_spice.cli <命令> --help` 查看探针命令的即时帮助。
@@ -43,8 +43,8 @@ python -m agent_spice.cli fit-sparam .\board.s19p --rms-target 0.001
 | --- | --- |
 | `board_fitted.sp` | Native SPICE 子电路。 |
 | `board_fitted.s19p` | 与原始频率网格相同的 fitted S 参数，用于外部核验。 |
-| `board_fitted.rfm` | Cadence Broadband SPICE RFM 模型。 |
-| `board_fitted_rfm_wrapper.sp` | 引用 RFM 的 HSPICE/Sigrity wrapper。 |
+| `board_fitted.rfm` | RFM 模型。 |
+| `board_fitted_rfm_wrapper.sp` | 引用 RFM 的 wrapper 网表。 |
 | `board_fitted_report.json` | 机器可读的拟合、阶次、误差、被动性和产物路径报告。 |
 | `board_fitted_report.html` | 中文质量报告，默认显示最终交付摘要和 RMS 最大的 5 个 S 参数元素；完整内部配置与质量诊断在折叠区，JSON 保留全部配置。 |
 | `board.log` | 搜索过程的逐阶次文本日志。 |
@@ -92,7 +92,7 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 | `--report PATH` | 自动生成 | JSON 报告路径。未指定 `--output` 时为 `<输入名>_fitted_report.json`；指定 `--output` 时为输出目录的 `fit_report.json`。 |
 | `--html-report PATH` | 自动生成 | 中文 HTML 报告路径；命名规则与 JSON 报告一致。 |
 | `--fitted-touchstone PATH` | 自动生成 | fitted `.sNp` 输出路径。默认与 SPICE 输出同名，仅扩展名使用输入 Touchstone 的 `.sNp` 后缀。 |
-| `--rfm PATH` | 自动生成 | Cadence RFM 输出路径。默认与 SPICE 输出同名，扩展名为 `.rfm`。 |
+| `--rfm PATH` | 自动生成 | RFM 输出路径。默认与 SPICE 输出同名，扩展名为 `.rfm`。 |
 | `--rfm-wrapper PATH` | 自动生成 | RFM wrapper 路径，默认 `<rfm 名称>_rfm_wrapper.sp`。 |
 | `--report-top-rms N` | `5` | HTML 中绘制 RMS 最大的 S 参数元素数量。`0` 表示不绘制曲线。 |
 | `--log PATH` | `<输入名>.log`，位于 JSON 报告目录 | 写入逐阶次搜索摘要，包括阶次、RMS、状态和失败原因。 |

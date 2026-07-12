@@ -993,7 +993,7 @@ def _comparison_traces(network: Any, vector_fit: Any, max_traces: int = 6) -> li
 
 
 def _render_trace_svg(trace: dict[str, Any]) -> tuple[str | None, str | None]:
-    """Render original magnitude, fitted magnitude, and absolute error as inline SVG."""
+    """Render overlaid magnitude and absolute-error panels as inline SVG."""
 
     try:
         frequencies = np.asarray(trace["frequencies_hz"], dtype=float)
@@ -1012,40 +1012,53 @@ def _render_trace_svg(trace: dict[str, Any]) -> tuple[str | None, str | None]:
 
     x_scale = "log10" if np.all(frequencies > 0.0) else "linear"
     x_values = np.log10(frequencies) if x_scale == "log10" else frequencies
-    left, right, top, bottom = 116.0, 868.0, 26.0, 454.0
+    left, right = 116.0, 868.0
     x_min, x_max = float(np.min(x_values)), float(np.max(x_values))
     if x_min == x_max:
         x_points = np.full(frequencies.size, (left + right) / 2.0)
     else:
         x_points = left + (x_values - x_min) * (right - left) / (x_max - x_min)
 
-    series = (
-        ("original", "原始幅值", np.abs(original)),
-        ("fitted", "拟合幅值", np.abs(fitted)),
-        ("error", "绝对误差", np.abs(fitted - original)),
-    )
-    track_height = (bottom - top) / len(series)
-    polylines: list[str] = []
-    labels: list[str] = []
-    grid_lines: list[str] = []
-    for index, (css_class, label, values) in enumerate(series):
-        y_top = top + index * track_height + 8.0
-        y_bottom = top + (index + 1) * track_height - 22.0
-        value_min, value_max = float(np.min(values)), float(np.max(values))
+    def panel(values: np.ndarray, *, y_top: float, y_bottom: float, minimum: float | None = None) -> tuple[np.ndarray, str]:
+        value_min = float(np.min(values)) if minimum is None else minimum
+        value_max = float(np.max(values))
         if value_min == value_max:
             y_points = np.full(values.size, (y_top + y_bottom) / 2.0)
         else:
             y_points = y_bottom - (values - value_min) * (y_bottom - y_top) / (value_max - value_min)
-        points = " ".join(f"{x:.2f},{y:.2f}" for x, y in zip(x_points, y_points, strict=True))
-        polylines.append(f'<polyline class="line {css_class}" points="{points}" />')
-        labels.append(f'<text class="tick" x="10" y="{y_top + 13.0:.2f}">{label}</text>')
-        grid_lines.append(f'<line class="axis" x1="{left:.2f}" y1="{y_bottom:.2f}" x2="{right:.2f}" y2="{y_bottom:.2f}" />')
+        ticks = []
+        for ratio in (0.0, 0.5, 1.0):
+            y = y_bottom - ratio * (y_bottom - y_top)
+            value = value_min + ratio * (value_max - value_min)
+            ticks.append(
+                f'<line class="grid" x1="{left:.2f}" y1="{y:.2f}" x2="{right:.2f}" y2="{y:.2f}" />'
+                f'<text class="tick y-tick" x="{left - 10.0:.2f}" y="{y + 4.0:.2f}">{_format_float(value)}</text>'
+            )
+        return y_points, "".join(ticks)
+
+    magnitude = np.concatenate((np.abs(original), np.abs(fitted)))
+    magnitude_y, magnitude_grid = panel(magnitude, y_top=30.0, y_bottom=270.0)
+    original_y = magnitude_y[: frequencies.size]
+    fitted_y = magnitude_y[frequencies.size :]
+    error_y, error_grid = panel(np.abs(fitted - original), y_top=330.0, y_bottom=430.0, minimum=0.0)
+
+    def points(values: np.ndarray) -> str:
+        return " ".join(f"{x:.2f},{y:.2f}" for x, y in zip(x_points, values, strict=True))
 
     return (
         f'<svg class="trace-svg" viewBox="0 0 900 480" role="img" '
-        f'aria-label="原始幅值、拟合幅值和绝对误差" data-x-scale="{x_scale}">'
+        f'aria-label="原始和拟合幅值叠加比较，以及绝对误差" data-x-scale="{x_scale}">'
         f'<rect class="plot-bg" x="0" y="0" width="900" height="480" />'
-        f'{"".join(grid_lines)}{"".join(labels)}{"".join(polylines)}'
+        f'{magnitude_grid}{error_grid}'
+        f'<line class="axis" x1="{left:.2f}" y1="30" x2="{left:.2f}" y2="270" />'
+        f'<line class="axis" x1="{left:.2f}" y1="270" x2="{right:.2f}" y2="270" />'
+        f'<line class="axis" x1="{left:.2f}" y1="330" x2="{left:.2f}" y2="430" />'
+        f'<line class="axis" x1="{left:.2f}" y1="430" x2="{right:.2f}" y2="430" />'
+        f'<polyline class="line original" points="{points(original_y)}" />'
+        f'<polyline class="line fitted" points="{points(fitted_y)}" />'
+        f'<polyline class="line error" points="{points(error_y)}" />'
+        f'<text class="tick axis-label" x="12" y="22">幅值 |S|</text>'
+        f'<text class="tick axis-label" x="12" y="322">绝对误差 |ΔS|</text>'
         f'<text class="tick" x="{left:.2f}" y="474">频率 (Hz, {x_scale})</text></svg>',
         None,
     )
@@ -1059,7 +1072,7 @@ def _render_trace_chart(trace: dict[str, Any]) -> str:
     return f"""
 <section class="chart">
   <h3>{label}，元素 RMS = {_format_float(trace["rms"])}</h3>
-  <p class="legend">三轨对比：原始数据幅值、拟合模型幅值、绝对误差。</p>
+  <p class="legend">上图叠加原始与拟合幅值；下图为绝对误差。</p>
   {image_html}
 </section>
 """
@@ -1143,8 +1156,8 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
             _html_artifact_row("SPICE 子电路", result.spice_path),
             _html_artifact_row("JSON 报告", result.report_path),
             _html_artifact_row("拟合 Touchstone", result.fitted_touchstone_path),
-            _html_artifact_row("Cadence RFM", result.rfm_path),
-            _html_artifact_row("Cadence RFM 包装网表", result.rfm_wrapper_path),
+            _html_artifact_row("RFM", result.rfm_path),
+            _html_artifact_row("RFM 包装网表", result.rfm_wrapper_path),
         )
         if row
     )
@@ -1167,7 +1180,9 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     svg, img {{ width: 100%; max-width: 900px; height: auto; }}
     .plot-bg {{ fill: #fbfdff; }}
     .axis {{ stroke: #829ab1; stroke-width: 1.2; }}
+    .grid {{ stroke: #d9e2ec; stroke-width: 1; }}
     .tick {{ fill: #52606d; font-size: 12px; }}
+    .y-tick {{ text-anchor: end; }}
     .line {{ fill: none; stroke-width: 2.4; }}
     .original {{ stroke: #1f77b4; }}
     .fitted {{ stroke: #d62728; stroke-dasharray: 6 4; }}
@@ -2573,8 +2588,8 @@ def fit_touchstone_to_spice_target(
                     _html_artifact_row("SPICE 子电路", output_path),
                     _html_artifact_row("JSON 报告", report_path),
                     _html_artifact_row("拟合 Touchstone", fitted_touchstone_path),
-                    _html_artifact_row("Cadence RFM", rfm_path),
-                    _html_artifact_row("Cadence RFM 包装网表", rfm_wrapper_path),
+                    _html_artifact_row("RFM", rfm_path),
+                    _html_artifact_row("RFM 包装网表", rfm_wrapper_path),
                 )
                 if row
             )
