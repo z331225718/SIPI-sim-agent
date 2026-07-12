@@ -1,18 +1,21 @@
 # Agent-Spice
 
-Agent-Spice is an early PI simulation middleware prototype focused on HSPICE legacy deck compatibility and future S-parameter/CPM workflows.
+Agent-Spice 是面向电源完整性与高速互连场景的命令行工具。当前稳定的用户工作流有两类：
 
-Current checkpoint:
+- `fit-sparam`：将 Touchstone S 参数拟合为 SPICE 子电路、Cadence RFM 和可核验的 fitted Touchstone。
+- `run-hspice`：解析 HSPICE 网表，展开 `.alter`，并生成兼容性报告与后端输入文件。
 
-- HSPICE project manifest parsing.
-- HSPICE deck audit for directives, includes, libraries, and unsupported commands.
-- `.alter` expansion into independent cases.
-- `.measure/.probe/.print` normalization.
-- Compatibility report and basic HSPICE-to-backend conversion.
-- Backend command adapters for ngspice, Xyce, and XDM-assisted Xyce translation.
-- Target-driven Touchstone fitting with truthful passivity checking and enforcement.
+仓库内还保留了 IdEM、极点、模态和基准探针命令，供算法研究使用；它们不是稳定产品接口，参数与输出契约可能变化，因此不在本 README 中逐项承诺。可用 `python -m agent_spice.cli --help` 查看完整命令索引，以及 `python -m agent_spice.cli <命令> --help` 查看探针命令的即时帮助。
 
-Install and verify local solver tools:
+## 安装与验证
+
+建议使用项目的 Python 环境安装依赖，然后运行测试：
+
+```powershell
+python -m pytest -q
+```
+
+HSPICE 后端需要本地安装求解器时，可执行：
 
 ```powershell
 git lfs pull
@@ -20,67 +23,58 @@ git lfs pull
 .\tools\doctor-solvers.ps1 -Smoke
 ```
 
-Open a new terminal after installation, or refresh the current shell:
+若脚本安装了本地求解器，重新打开终端，或在当前 PowerShell 中刷新 `PATH`：
 
 ```powershell
 $env:Path = "$env:USERPROFILE\tools\agent-spice-solvers\bin;$env:Path"
 ```
 
-## Verify The MVP
+## S 参数拟合
 
-Run the unit and smoke suite:
-
-```powershell
-python -m pytest -v
-```
-
-Generate HSPICE case artifacts without running a simulator:
-
-```powershell
-python -m agent_spice.cli run-hspice tests/fixtures/hspice/simple_pi.sp --backend ngspice --output-root runs-smoke
-Test-Path runs-smoke/simple_pi/simple_pi__base/case.cir
-Test-Path runs-smoke/simple_pi/simple_pi__base/compat_report.json
-```
-
-Verify `.alter` case expansion:
-
-```powershell
-python -m agent_spice.cli run-hspice tests/fixtures/hspice/alter_pi.sp --backend ngspice --output-root runs-smoke-alter
-Test-Path runs-smoke-alter/alter_pi/alter_pi__base/case.cir
-Test-Path runs-smoke-alter/alter_pi/alter_pi__alter_001_high_decap/case.cir
-Test-Path runs-smoke-alter/alter_pi/alter_pi__alter_002_low_decap/case.cir
-```
-
-Verify the synthetic-real HSPICE corpus golden reports:
-
-```powershell
-python -m pytest tests/test_hspice_corpus_golden.py -v
-```
-
-## S-Parameter Fitting
-
-### 快速开始
-
-`fit-sparam` 面向常规 S 参数建模：给定 Touchstone 和目标 RMS，工具会搜索满足目标的最小有效阶次，并默认交付可仿真的 SPICE、Cadence RFM 与可独立核验的拟合 Touchstone。最短命令如下：
+### 最短命令
 
 ```powershell
 python -m agent_spice.cli fit-sparam .\board.s19p --rms-target 0.001
 ```
 
-不指定 `--output` 时，产物写在输入文件旁。对 `board.s19p`，成功后会得到：
+输入应为 Touchstone `.sNp` 文件。未指定 `--output` 时，交付物写在输入文件旁。以 `board.s19p` 为例：
 
-| 文件 | 用途 |
+| 文件 | 含义 |
 | --- | --- |
 | `board_fitted.sp` | Native SPICE 子电路。 |
-| `board_fitted.s19p` | 在原始频率网格上重采样的 fitted S 参数，用于与输入直接比对。 |
+| `board_fitted.s19p` | 与原始频率网格相同的 fitted S 参数，用于外部核验。 |
 | `board_fitted.rfm` | Cadence Broadband SPICE RFM 模型。 |
 | `board_fitted_rfm_wrapper.sp` | 引用 RFM 的 HSPICE/Sigrity wrapper。 |
-| `board_fitted_report.json` | 面向自动化的完整拟合、阶次、RMS、被动性和产物路径记录。 |
-| `board_fitted_report.html` | 中文质量报告，默认绘制 RMS 最大的 5 个 S 参数元素。 |
+| `board_fitted_report.json` | 机器可读的拟合、阶次、误差、被动性和产物路径报告。 |
+| `board_fitted_report.html` | 中文质量报告，默认显示 RMS 最大的 5 个 S 参数元素。 |
 
-搜索过程不会为每个候选阶次写出 SPICE、Touchstone、RFM 或 HTML 文件。每次试探的阶次、RMS、被动性和拒绝原因只记录在最终 JSON 的 `order_trials`；传入 `--log fit.log` 时，也会写入一份简洁的逐阶次文本日志。只有选中的最终阶次才生成上表交付物。
+搜索阶段不会生成每个阶次的 SPICE、RFM、Touchstone 或 HTML 文件。每次试探仅记录到最终 JSON 的 `order_trials`；传入 `--log` 时，也会写入逐阶次文本日志。只有最终选中的阶次才会生成交付物。
 
-默认被动性策略是 `check`：模型会被检查，但即使发现非被动也会保留产物并在报告中标注。需要最终模型严格被动时，将策略改为 `enforce`：
+### RMS 与阶次
+
+验收 RMS 定义为：
+
+```text
+sqrt(mean(abs(S_fit - S_raw) ** 2))
+```
+
+该值在全部原始频点和全部 S 参数通道上计算。有效阶次定义为：
+
+```text
+实极点数 + 2 * 复极点对数
+```
+
+搜索从低阶开始。误差远高于目标时会增大阶次步长；接近目标时缩小步长。`--max-order-step` 限制最大跳步，默认值为 `8`；设为 `2` 可使用较保守的两阶步进。由于矢量拟合误差不严格单调，跳步模式只回填最后一个跨越目标的区间；若必须优先检查每个偶数阶次，使用 `--max-order-step 2`。
+
+### 被动性策略
+
+| `--passivity` 值 | 行为 |
+| --- | --- |
+| `off` | 只验证 RMS，不做被动性检查。 |
+| `check`（默认） | 检查被动性；即使非被动，也会保留拟合产物，并在报告中标记警告。 |
+| `enforce` | 仅接受同时满足 RMS 目标和被动性目标的最终模型。若修复被动性后 RMS 超标，则该阶次失败。 |
+
+要求最终模型被动的示例：
 
 ```powershell
 python -m agent_spice.cli fit-sparam .\board.s19p `
@@ -88,113 +82,108 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
   --passivity enforce
 ```
 
-当需要控制输出目录或文件名时，只覆盖需要改动的路径；其余工件仍会自动生成：
+### `fit-sparam` 全部公开参数
+
+| 参数 | 默认值 | 含义 |
+| --- | --- | --- |
+| `touchstone` | 必填位置参数 | 输入 Touchstone `.sNp` 文件。 |
+| `--output PATH` | `<输入名>_fitted.sp` | 最终 SPICE 子电路路径。指定后，未显式覆盖的报告默认写在该目录。 |
+| `--report PATH` | 自动生成 | JSON 报告路径。未指定 `--output` 时为 `<输入名>_fitted_report.json`；指定 `--output` 时为输出目录的 `fit_report.json`。 |
+| `--html-report PATH` | 自动生成 | 中文 HTML 报告路径；命名规则与 JSON 报告一致。 |
+| `--fitted-touchstone PATH` | 自动生成 | fitted `.sNp` 输出路径。默认与 SPICE 输出同名，仅扩展名使用输入 Touchstone 的 `.sNp` 后缀。 |
+| `--rfm PATH` | 自动生成 | Cadence RFM 输出路径。默认与 SPICE 输出同名，扩展名为 `.rfm`。 |
+| `--rfm-wrapper PATH` | 自动生成 | RFM wrapper 路径，默认 `<rfm 名称>_rfm_wrapper.sp`。 |
+| `--report-top-rms N` | `5` | HTML 中绘制 RMS 最大的 S 参数元素数量。`0` 表示不绘制曲线。 |
+| `--log PATH` | 不写日志 | 写入逐阶次搜索摘要，包括阶次、RMS、状态和失败原因。 |
+| `--rms-target FLOAT` | 必填 | 最终平均 S-RMS 上限，必须为正数。 |
+| `--passivity {off,check,enforce}` | `check` | 被动性处理策略，见上表。 |
+| `--max-order N` | 60 端口及以上为 `24`，否则为 `40` | 允许尝试的最大有效公共极点阶次。 |
+| `--max-order-step N` | `8` | RMS 明显未达标时允许的最大自适应阶次步长；必须为正整数。 |
+| `--quality-profile {explore,signoff}` | `explore` | 报告质量门配置。`explore` 用于日常探索；`signoff` 用于更严格的交付检查。 |
+| `--fail-on-quality` | 关闭 | 质量报告出现阻断项时，以非零退出码结束。 |
+| `--allow-quality-warnings` | 关闭 | 仅与 `--fail-on-quality` 组合使用；允许 `WARN`，但仍拒绝 `FAIL`。 |
+| `--subckt-name NAME` | `s_equivalent` | SPICE 子电路名称；RFM wrapper 会使用其安全化后的名称。 |
+| `-h`、`--help` | - | 显示命令帮助。 |
+
+所有输出路径必须不同；重复路径会在拟合前报错，避免产物互相覆盖。RFM 路径不能包含单引号，因为 HSPICE/Sigrity wrapper 使用单引号引用该文件。
+
+### 常用示例
+
+指定交付目录并扩大搜索步长：
 
 ```powershell
 python -m agent_spice.cli fit-sparam .\board.s19p `
   --rms-target 0.001 `
+  --passivity enforce `
   --output .\deliverables\board.sp `
   --rfm .\deliverables\cadence\board.rfm `
+  --max-order 80 `
   --max-order-step 12 `
-  --report-top-rms 8
+  --report-top-rms 8 `
+  --log .\deliverables\fit.log
 ```
 
-这里会默认同时写出 `deliverables\board.s19p`、`deliverables\cadence\board_rfm_wrapper.sp`、`deliverables\fit_report.json` 与 `deliverables\fit_report.html`。`--fitted-touchstone`、`--rfm-wrapper`、`--report`、`--html-report` 可分别覆盖默认路径。所有请求的输出路径必须不同；重复路径会在拟合开始前直接报错，避免覆盖工件。
-
-### 如何验收结果
-
-优先打开 HTML 报告：它列出输入、SPICE、fitted Touchstone、RFM 与 wrapper 的本地链接，并展示默认 5 条 RMS 最大曲线。用 fitted Touchstone 与原始 Touchstone 做外部工具比较时，必须使用同一频率网格和参考阻抗；JSON 内的 `comparison_rms_error`、`rms_target`、`target_met` 和 `passivity_max_sigma_after` 是自动化验收的权威字段。
-
-成功表示所选最低阶模型满足用户给定的 RMS 目标，并在 `--passivity enforce` 时也满足被动性。若失败，顶层 JSON/HTML 与各阶次 trial 目录仍会保留，便于判断是阶次上限不足、RMS 未达标，还是被动性修复使最终 RMS 超标；不会把最接近的失败模型伪装成成功交付。
-
-`fit-sparam` is a target-driven workflow based on the local Native IdEM-fast vector-fitting implementation. The production fitting baseline is `native-idem-fast-v1`, and Native is the only production fitting backend. The user supplies a final mean S-RMS target and chooses how passivity is handled. The tool searches for the lowest accepted effective common-pole order up to `--max-order`.
-
-The production SPICE output is always emitted by the Native writer; there is no exporter selection. External IdEM integration is limited to benchmark/research tooling and is not a production runtime dependency.
-
-scikit-rf remains a supporting dependency for non-fitting infrastructure such as Touchstone fallback loading, metrics, modal/research workflows, and compatibility investigations. It is not a selectable production fitting backend.
+用于 CI 或签核：
 
 ```powershell
-python -m agent_spice.cli fit-sparam .\path\to\model.s91p `
-  --rms-target 0.001 `
-  --passivity check `
-  --max-order 24 `
-  --output runs-sparam\model.sp
-```
-
-The RMS target is:
-
-```text
-sqrt(mean(abs(S_fit - S_raw) ** 2))
-```
-
-It is evaluated over every original frequency point and every S-parameter channel, so it does not grow with port count.
-
-Effective order is reported as:
-
-```text
-real pole count + 2 * complex pole-pair count
-```
-
-### Passivity Policies
-
-`--passivity check` is the default.
-
-- `off`: fit and evaluate RMS without passivity work.
-- `check`: select order from RMS, run the Hamiltonian/adaptive full-frequency checker, and emit a non-passive model as `PASS_WITH_PASSIVITY_WARNING`.
-- `enforce`: run enforcement only for orders whose pre-enforcement RMS can meet the target. An order passes only when the post-enforcement model meets both the RMS target and `max_sigma <= 1 + 1e-6`.
-
-Example requiring a passive final model:
-
-```powershell
-python -m agent_spice.cli fit-sparam .\path\to\model.s91p `
+python -m agent_spice.cli fit-sparam .\board.s19p `
   --rms-target 0.001 `
   --passivity enforce `
-  --max-order 24 `
-  --output runs-sparam\model_passive.sp
-```
-
-Enforcement is judged from the final model. A good pre-enforcement RMS does not satisfy the target if passivity repair pushes the final RMS above the requested value.
-
-### Order Search
-
-Vector-fitting error is not strictly monotonic in order, so the production scheduler does not use binary search. It starts at low order and increases the step only while RMS remains far above the requested target; after the first passing probe, it backfills the last skipped interval to choose the best passing order found there. Every requested order is evaluated at most once. `--max-order-step` caps the adaptive jump and defaults to `8`; set it to `2` to retain the former conservative two-order ladder.
-
-Defaults:
-
-- `--max-order 24` for 60 or more ports.
-- `--max-order 40` below 60 ports.
-- Full original frequency grid for fitting and final evaluation.
-- Native vector fitting baseline `native-idem-fast-v1`.
-- IdEM-fast topology and pole-relocation profile: models below 30 ports use full streaming relocation; models with 30 or more ports prefer reciprocal relocation and automatically fall back to full streaming when reciprocity is not present.
-
-### Success And Failure
-
-On success, the requested SPICE output, fitted Touchstone, RFM, RFM wrapper, and JSON/HTML reports are written. On failure, trial reports and the top-level audit report remain available, but the requested production model exports are absent. The tool never promotes the closest failed model as a successful result.
-
-The JSON report includes:
-
-- `rms_target`, `passivity_policy`, and `max_order`.
-- `selected_effective_order`, `target_met`, and `target_stop_reason`.
-- Per-order pre/final RMS and pre/final max sigma.
-- Fit, check, enforcement, total time, and peak RSS.
-- Requested/effective order and pole topology counts.
-- `rms_formula=mean_s_rms_v1` and `order_formula=real_plus_twice_complex_v1`.
-
-Top-level time covers every attempted order in the target search, and top-level peak RSS is the maximum across those trials. Per-order costs remain available in `order_trials`.
-
-For CI or signoff, add the quality gate:
-
-```powershell
-python -m agent_spice.cli fit-sparam .\path\to\model.s91p `
-  --rms-target 0.001 `
-  --passivity enforce `
-  --max-order 24 `
-  --output runs-sparam\model.sp `
   --quality-profile signoff `
   --fail-on-quality
 ```
 
-Historical candidate-list and passivity flags remain hidden compatibility aliases. New automation should use only `--rms-target`, `--passivity`, and `--max-order`. Removed backend choices such as vector-fitting backend selection, relocation backend selection, and `skrf` export selection must not be used in production examples.
+### 如何验收
 
-The canonical Native/IdEM comparison is recorded in `docs/sparam-idem-full-benchmark.md`.
-The canonical IdEM S19 tuning report is recorded in `docs/sparam-idem-s19-tuning.md`.
+优先打开 HTML 报告：其中提供输入、SPICE、fitted Touchstone、RFM 和 wrapper 的本地链接，并展示最差 RMS 曲线。JSON 中建议重点检查：
+
+- `target_met`：是否满足目标。
+- `comparison_rms_error`：最终模型在原始频率网格上的 RMS。
+- `passivity_max_sigma_after`：最终被动性最大奇异值。
+- `selected_effective_order`：选中的有效阶次。
+- `order_trials`：搜索过程中的每个试探阶次及其结果。
+
+失败时不会把最接近的模型当作成功交付。最终 JSON/HTML 会保留搜索记录，方便判断是最大阶次不足、RMS 未达标，还是被动性修复后 RMS 超标。
+
+## HSPICE 网表处理
+
+`run-hspice` 用于网表兼容性分析、`.alter` 展开及后端输入生成。默认只生成文件，不运行求解器：
+
+```powershell
+python -m agent_spice.cli run-hspice .\design.sp `
+  --backend ngspice `
+  --output-root .\runs
+```
+
+### `run-hspice` 全部公开参数
+
+| 参数 | 默认值 | 含义 |
+| --- | --- | --- |
+| `deck` | 必填位置参数 | 输入 HSPICE 网表。 |
+| `--backend {ngspice,xyce,xyce-xdm}` | `ngspice` | 生成目标后端格式。 |
+| `--output-root PATH` | `runs` | 输出根目录。 |
+| `--execute` | 关闭 | 在生成后调用已配置的后端求解器执行。未指定时只生成工件。 |
+| `-h`、`--help` | - | 显示命令帮助。 |
+
+典型输出包括每个 case 的 `case.cir`、兼容性报告，以及 `.alter` 展开后的独立目录。快速核验示例：
+
+```powershell
+python -m agent_spice.cli run-hspice tests\fixtures\hspice\alter_pi.sp --output-root runs-smoke
+Test-Path runs-smoke\alter_pi\alter_pi__base\case.cir
+Test-Path runs-smoke\alter_pi\alter_pi__alter_001_high_decap\case.cir
+```
+
+## 完整命令索引与研究命令
+
+顶层 CLI 还包含 `probe-idem-*`、`fit-idem-like`、`fit-modal-z`、`benchmark-sparam`、`preflight-sparam-corpus` 和 `compare-sparam-bands` 等研究、诊断和基准命令。这些命令的参数面较大，且会随算法实验演进；使用前必须以当前版本的帮助为准：
+
+```powershell
+python -m agent_spice.cli --help
+python -m agent_spice.cli benchmark-sparam --help
+```
+
+## 版本与范围
+
+生产 S 参数拟合基线为 `native-idem-fast-v1`。Native 是唯一的生产拟合与 SPICE 导出路径；外部 IdEM 仅用于基准和研究，不是运行时依赖。scikit-rf 用于 Touchstone 读取回退、指标和研究辅助，不是可选择的生产拟合后端。
+
+历史性能对比可参阅 [IdEM 全量基准](docs/sparam-idem-full-benchmark.md) 与 [S19 调优记录](docs/sparam-idem-s19-tuning.md)。

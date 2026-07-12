@@ -33,14 +33,13 @@ def test_current_target_driven_contract_docs_are_preserved():
 
 def test_readme_production_sparam_example_uses_native_baseline_only():
     readme = Path("README.md").read_text(encoding="utf-8")
-    sparam_section = readme.split("## S-Parameter Fitting", 1)[1]
+    sparam_section = readme.split("## S \u53c2\u6570\u62df\u5408", 1)[1]
     sparam_section = sparam_section.split("\n## ", 1)[0]
     normalized_section = " ".join(sparam_section.split())
 
-    assert "native-idem-fast-v1" in sparam_section
-    assert "production SPICE output" in normalized_section
-    assert "Native writer" in normalized_section
-    assert "benchmark/research" in normalized_section
+    assert "native-idem-fast-v1" in readme
+    assert "Native \u662f\u552f\u4e00\u7684\u751f\u4ea7\u62df\u5408\u4e0e SPICE \u5bfc\u51fa\u8def\u5f84" in readme
+    assert "\u57fa\u51c6\u548c\u7814\u7a76" in readme
     assert "--vector-fit-backend" not in sparam_section
     assert "--relocation-backend" not in sparam_section
     assert "--exporter" not in sparam_section
