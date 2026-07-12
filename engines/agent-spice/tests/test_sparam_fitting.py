@@ -331,6 +331,20 @@ def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plo
     assert "get_model_response" in FakeVectorFitting.instances[0].calls
 
 
+def test_comparison_traces_returns_no_ranking_when_one_response_is_missing() -> None:
+    import agent_spice.sparam.fitting as fitting
+
+    network = FakeNetwork("line.s2p")
+
+    class MissingResponseModel:
+        def get_model_response(self, row, column, freqs):
+            if (row, column) == (0, 1):
+                return None
+            return np.zeros(len(freqs), dtype=complex)
+
+    assert fitting._comparison_traces(network, MissingResponseModel()) == []
+
+
 def test_fit_touchstone_to_spice_writes_progress_log_and_uses_tuning_options(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 

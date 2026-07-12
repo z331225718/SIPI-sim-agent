@@ -18,7 +18,6 @@ from typing import Any, Callable, Literal
 
 import numpy as np
 
-from agent_spice.sparam.artifacts import rank_element_rms
 from agent_spice.sparam.native_vf import NativeVectorFitting
 from agent_spice.sparam.pole_relocation import streaming_pole_relocation, streaming_reciprocal_pole_relocation
 from agent_spice.sparam.quality import SCHEMA_VERSION, QualityReport, build_quality_report
@@ -839,36 +838,48 @@ def _comparison_traces(network: Any, vector_fit: Any, max_traces: int = 6) -> li
     if not freqs:
         return []
     nports = _validated_network_nports(network)
-    original = np.empty((len(freqs), nports, nports), dtype=complex)
-    fitted = np.empty_like(original)
-    for row in range(network.nports):
-        for column in range(network.nports):
+    squared_error = np.empty((nports, nports), dtype=float)
+    for row in range(nports):
+        for column in range(nports):
             try:
                 response = _model_response_at_frequencies(vector_fit, row, column, network.f)
                 if response is None or len(response) != len(freqs):
-                    continue
-                original[:, row, column] = [
-                    _network_s_value(network, index, row, column) for index in range(len(freqs))
-                ]
-                fitted[:, row, column] = response
+                    return []
+                original = np.asarray(
+                    [_network_s_value(network, index, row, column) for index in range(len(freqs))], dtype=complex
+                )
+                fitted = np.asarray(response, dtype=complex)
+                if not np.isfinite(original).all() or not np.isfinite(fitted).all():
+                    return []
+                squared_error[row, column] = float(np.mean(np.abs(fitted - original) ** 2))
             except Exception:
                 return []
-
-    try:
-        ranking = rank_element_rms(original, fitted)
-    except ValueError:
-        return []
+    ranking = sorted(
+        ((float(np.sqrt(squared_error[row, column])), row, column) for row in range(nports) for column in range(nports)),
+        key=lambda item: (-item[0], item[1], item[2]),
+    )
     traces: list[dict[str, Any]] = []
-    for item in ranking[:max(0, max_traces)]:
-        row, column = item.row, item.column
+    for rms, row, column in ranking[:max(0, max_traces)]:
+        try:
+            response = _model_response_at_frequencies(vector_fit, row, column, network.f)
+            if response is None or len(response) != len(freqs):
+                return []
+            original = np.asarray(
+                [_network_s_value(network, index, row, column) for index in range(len(freqs))], dtype=complex
+            )
+            fitted = np.asarray(response, dtype=complex)
+            if not np.isfinite(original).all() or not np.isfinite(fitted).all():
+                return []
+        except Exception:
+            return []
         trace = {
             "label": f"S{row + 1}{column + 1}",
             "row": row + 1,
             "column": column + 1,
-            "rms": item.rms,
+            "rms": rms,
             "frequencies_hz": freqs,
-            "original": original[:, row, column],
-            "fitted": fitted[:, row, column],
+            "original": original,
+            "fitted": fitted,
         }
         trace["image_data_uri"] = _render_trace_png_data_uri(trace)
         traces.append(trace)
