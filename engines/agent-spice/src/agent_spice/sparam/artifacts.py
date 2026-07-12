@@ -70,6 +70,8 @@ def rank_element_rms(original_s: Any, fitted_s: Any) -> list[ElementRms]:
         raise ValueError("original_s and fitted_s must have identical (frequency, port, port) shapes")
     if original.shape[0] == 0:
         raise ValueError("At least one frequency point is required to calculate RMS")
+    if not np.isfinite(original).all() or not np.isfinite(fitted).all():
+        raise ValueError("original_s and fitted_s must contain only finite values")
 
     rms = np.sqrt(np.mean(np.abs(fitted - original) ** 2, axis=0))
     ranking = [

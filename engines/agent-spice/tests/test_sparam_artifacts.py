@@ -80,3 +80,13 @@ def test_rank_element_rms_is_descending_with_stable_row_column_ties() -> None:
         (1, 0, pytest.approx(1.0)),
         (1, 1, pytest.approx(0.0)),
     ]
+
+
+@pytest.mark.parametrize("nonfinite", [np.nan + 0j, np.inf + 0j])
+def test_rank_element_rms_rejects_nonfinite_s_data(nonfinite: complex) -> None:
+    original = np.zeros((1, 1, 1), dtype=complex)
+    fitted = np.zeros_like(original)
+    fitted[0, 0, 0] = nonfinite
+
+    with pytest.raises(ValueError, match="finite"):
+        rank_element_rms(original, fitted)
