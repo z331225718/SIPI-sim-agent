@@ -1029,6 +1029,49 @@ def test_target_fit_search_writes_only_selected_model(tmp_path: Path, monkeypatc
     assert html.exists()
 
 
+def test_target_fit_exports_the_selected_execution_without_refitting(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    calls_by_order: dict[int, int] = {}
+    first_rms = 0.000986339
+
+    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path, **kwargs):
+        order = config.model_order_max
+        calls_by_order[order] = calls_by_order.get(order, 0) + 1
+        rms = first_rms if order == 78 and calls_by_order[order] == 1 else 0.0295902
+        result = _fake_target_fit_result(output_path, order, target_met=order == 78)
+        result.comparison_mean_rms_error = rms
+        result.pre_enforcement_mean_rms_error = rms
+        result.to_dict = lambda: {
+            "spice_path": str(output_path),
+            "comparison_mean_rms_error": rms,
+            "expanded_model_order": order,
+        }
+        result._fit_execution = SimpleNamespace(result=result, network=None, vector_fit=None)
+        return result
+
+    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+    monkeypatch.setattr(fitting, "_write_fit_outputs", lambda execution, output_path, **kwargs: execution.result, raising=False)
+    output = tmp_path / "model.sp"
+    report = tmp_path / "report.json"
+    html = tmp_path / "report.html"
+
+    result = fitting.fit_touchstone_to_spice_target(
+        tmp_path / "line.s2p",
+        output,
+        target=SParamFitTarget(0.001, passivity="off", max_order=78),
+        config=SParamFitConfig(mode="manual"),
+        report_path=report,
+        html_report_path=html,
+    )
+
+    assert result.target_met is True
+    assert calls_by_order[78] == 1
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert payload["comparison_mean_rms_error"] == pytest.approx(first_rms)
+    assert f"{first_rms:.9g}" in html.read_text(encoding="utf-8")
+
+
 def test_target_fit_copies_requested_product_exports_to_final_paths(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 
