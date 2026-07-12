@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, fields, replace
-import base64
 from html import escape
 import hashlib
-from io import BytesIO
 import inspect
 import json
 import logging
@@ -904,65 +902,73 @@ def _comparison_traces(network: Any, vector_fit: Any, max_traces: int = 6) -> li
             "original": original,
             "fitted": fitted,
         }
-        trace["image_data_uri"] = _render_trace_png_data_uri(trace)
         traces.append(trace)
     return traces
 
 
-def _render_trace_png_data_uri(trace: dict[str, Any]) -> str | None:
-    """Render the three comparison series as a self-contained PNG data URI."""
+def _render_trace_svg(trace: dict[str, Any]) -> tuple[str | None, str | None]:
+    """Render original magnitude, fitted magnitude, and absolute error as inline SVG."""
 
     try:
-        import matplotlib
+        frequencies = np.asarray(trace["frequencies_hz"], dtype=float)
+        original = np.asarray(trace["original"], dtype=complex)
+        fitted = np.asarray(trace["fitted"], dtype=complex)
+    except (KeyError, TypeError, ValueError) as exc:
+        return None, f"invalid trace data ({exc})"
+    if frequencies.ndim != 1 or original.ndim != 1 or fitted.ndim != 1:
+        return None, "trace series must be one-dimensional"
+    if frequencies.size == 0:
+        return None, "trace contains no frequency points"
+    if original.shape != frequencies.shape or fitted.shape != frequencies.shape:
+        return None, "trace series lengths do not match"
+    if not np.isfinite(frequencies).all() or not np.isfinite(original).all() or not np.isfinite(fitted).all():
+        return None, "non-finite frequency or response value"
 
-        matplotlib.use("Agg", force=True)
-        from matplotlib import pyplot as plt
-    except Exception:
-        return None
+    x_scale = "log10" if np.all(frequencies > 0.0) else "linear"
+    x_values = np.log10(frequencies) if x_scale == "log10" else frequencies
+    left, right, top, bottom = 116.0, 868.0, 26.0, 454.0
+    x_min, x_max = float(np.min(x_values)), float(np.max(x_values))
+    if x_min == x_max:
+        x_points = np.full(frequencies.size, (left + right) / 2.0)
+    else:
+        x_points = left + (x_values - x_min) * (right - left) / (x_max - x_min)
 
-    frequencies = np.asarray(trace["frequencies_hz"], dtype=float)
-    original = np.asarray(trace["original"], dtype=complex)
-    fitted = np.asarray(trace["fitted"], dtype=complex)
-    if (
-        frequencies.ndim != 1
-        or frequencies.size == 0
-        or original.shape != frequencies.shape
-        or fitted.shape != frequencies.shape
-        or not np.isfinite(frequencies).all()
-        or not np.isfinite(original).all()
-        or not np.isfinite(fitted).all()
-    ):
-        return None
+    series = (
+        ("original", "原始幅值", np.abs(original)),
+        ("fitted", "拟合幅值", np.abs(fitted)),
+        ("error", "绝对误差", np.abs(fitted - original)),
+    )
+    track_height = (bottom - top) / len(series)
+    polylines: list[str] = []
+    labels: list[str] = []
+    grid_lines: list[str] = []
+    for index, (css_class, label, values) in enumerate(series):
+        y_top = top + index * track_height + 8.0
+        y_bottom = top + (index + 1) * track_height - 22.0
+        value_min, value_max = float(np.min(values)), float(np.max(values))
+        if value_min == value_max:
+            y_points = np.full(values.size, (y_top + y_bottom) / 2.0)
+        else:
+            y_points = y_bottom - (values - value_min) * (y_bottom - y_top) / (value_max - value_min)
+        points = " ".join(f"{x:.2f},{y:.2f}" for x, y in zip(x_points, y_points, strict=True))
+        polylines.append(f'<polyline class="line {css_class}" points="{points}" />')
+        labels.append(f'<text class="tick" x="10" y="{y_top + 13.0:.2f}">{label}</text>')
+        grid_lines.append(f'<line class="axis" x1="{left:.2f}" y1="{y_bottom:.2f}" x2="{right:.2f}" y2="{y_bottom:.2f}" />')
 
-    figure, axes = plt.subplots(3, 1, figsize=(8.4, 6.4), sharex=True, constrained_layout=True)
-    plot = axes[0].semilogx if np.all(frequencies > 0.0) else axes[0].plot
-    plot(frequencies, np.abs(original), color="#1f77b4", linewidth=1.7)
-    axes[0].set_ylabel("original magnitude")
-    plot = axes[1].semilogx if np.all(frequencies > 0.0) else axes[1].plot
-    plot(frequencies, np.abs(fitted), color="#d62728", linewidth=1.5, linestyle="--")
-    axes[1].set_ylabel("fitted magnitude")
-    plot = axes[2].semilogx if np.all(frequencies > 0.0) else axes[2].plot
-    plot(frequencies, np.abs(fitted - original), color="#7b2cbf", linewidth=1.5)
-    axes[2].set_ylabel("absolute error")
-    axes[2].set_xlabel("frequency (Hz)")
-    for axis in axes:
-        axis.grid(True, alpha=0.25)
-    buffer = BytesIO()
-    try:
-        figure.savefig(buffer, format="png", dpi=140)
-    finally:
-        plt.close(figure)
-    return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("ascii")
+    return (
+        f'<svg class="trace-svg" viewBox="0 0 900 480" role="img" '
+        f'aria-label="原始幅值、拟合幅值和绝对误差" data-x-scale="{x_scale}">'
+        f'<rect class="plot-bg" x="0" y="0" width="900" height="480" />'
+        f'{"".join(grid_lines)}{"".join(labels)}{"".join(polylines)}'
+        f'<text class="tick" x="{left:.2f}" y="474">频率 (Hz, {x_scale})</text></svg>',
+        None,
+    )
 
 
 def _render_trace_chart(trace: dict[str, Any]) -> str:
     label = escape(trace["label"])
-    image = trace.get("image_data_uri")
-    image_html = (
-        f'<img src="{image}" alt="{label} 原始数据、拟合模型和绝对误差" />'
-        if image is not None
-        else "<p class=\"muted\">图像渲染不可用。</p>"
-    )
+    svg, reason = _render_trace_svg(trace)
+    image_html = svg if svg is not None else f'<p class="muted">曲线不可用：{escape(reason or "unknown error")}</p>'
     return f"""
 <section class="chart">
   <h3>{label}，元素 RMS = {_format_float(trace["rms"])}</h3>
@@ -1044,6 +1050,7 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     .line {{ fill: none; stroke-width: 2.4; }}
     .original {{ stroke: #1f77b4; }}
     .fitted {{ stroke: #d62728; stroke-dasharray: 6 4; }}
+    .error {{ stroke: #7b2cbf; }}
     .legend {{ color: #52606d; font-size: 13px; }}
     .swatch {{ display: inline-block; width: 22px; height: 3px; margin: 0 6px 3px 14px; vertical-align: middle; }}
     .swatch.original {{ background: #1f77b4; }}

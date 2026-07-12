@@ -1,7 +1,6 @@
 import json
 import logging
 from pathlib import Path
-import re
 from types import SimpleNamespace
 
 import numpy as np
@@ -377,7 +376,8 @@ def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plo
     assert "原始数据" in html
     assert "拟合模型" in html
     assert "绝对误差" in html
-    assert "data:image/png;base64," in html
+    assert "<svg" in html
+    assert "data:image/png" not in html
     assert "拟合采样选择" in html
     assert "拟合频点数" in html
     assert "拟合采样 RMS 误差" in html
@@ -388,7 +388,7 @@ def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plo
     assert "0.125" in html
     assert "S11" in html
     assert "S21" in html
-    assert re.search(r'<img src="data:image/png;base64,[A-Za-z0-9+/=]+"', html)
+    assert html.count("<polyline") >= 3
     assert "get_model_response" in FakeVectorFitting.instances[0].calls
 
 
@@ -404,6 +404,38 @@ def test_comparison_traces_returns_no_ranking_when_one_response_is_missing() -> 
             return np.zeros(len(freqs), dtype=complex)
 
     assert fitting._comparison_traces(network, MissingResponseModel()) == []
+
+
+def test_render_trace_svg_rejects_non_finite_data_with_reason() -> None:
+    import agent_spice.sparam.fitting as fitting
+
+    svg, reason = fitting._render_trace_svg(
+        {
+            "frequencies_hz": [1.0, 2.0],
+            "original": [1.0 + 0.0j, complex(float("nan"), 0.0)],
+            "fitted": [1.0 + 0.0j, 2.0 + 0.0j],
+        }
+    )
+
+    assert svg is None
+    assert reason is not None
+    assert "non-finite" in reason
+
+
+def test_render_trace_svg_uses_log_scale_only_for_positive_frequencies() -> None:
+    import agent_spice.sparam.fitting as fitting
+
+    positive_svg, positive_reason = fitting._render_trace_svg(
+        {"frequencies_hz": [1.0, 10.0], "original": [1.0, 2.0], "fitted": [1.5, 2.5]}
+    )
+    linear_svg, linear_reason = fitting._render_trace_svg(
+        {"frequencies_hz": [0.0, 10.0], "original": [1.0, 2.0], "fitted": [1.5, 2.5]}
+    )
+
+    assert positive_reason is None
+    assert 'data-x-scale="log10"' in positive_svg
+    assert linear_reason is None
+    assert 'data-x-scale="linear"' in linear_svg
 
 
 def test_fit_touchstone_to_spice_writes_progress_log_and_uses_tuning_options(tmp_path: Path, monkeypatch):
@@ -1779,4 +1811,4 @@ def test_fit_touchstone_to_spice_smoke_with_fixture(tmp_path: Path):
     assert payload["ports"] == 2
     assert payload["frequency_points"] > 0
     assert payload["spice_path"] == str(output)
-    assert "data:image/png;base64," in html_report.read_text(encoding="utf-8")
+    assert "<svg" in html_report.read_text(encoding="utf-8")
