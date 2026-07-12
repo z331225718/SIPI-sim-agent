@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, fields, replace
+import base64
 from html import escape
 import hashlib
+from io import BytesIO
 import inspect
 import json
 import logging
@@ -17,6 +19,12 @@ from typing import Any, Callable, Literal
 import numpy as np
 
 from agent_spice.sparam.native_vf import NativeVectorFitting
+from agent_spice.sparam.artifacts import (
+    evaluate_fitted_s,
+    write_cadence_rfm,
+    write_cadence_rfm_wrapper,
+    write_fitted_touchstone,
+)
 from agent_spice.sparam.pole_relocation import streaming_pole_relocation, streaming_reciprocal_pole_relocation
 from agent_spice.sparam.quality import SCHEMA_VERSION, QualityReport, build_quality_report
 from agent_spice.sparam.target_fit import (
@@ -293,6 +301,9 @@ class SParamFitResult:
     auto_model_order_trials: list[dict[str, Any]] | None = None
     auto_model_order_selected: int | None = None
     auto_model_order_stop_reason: str | None = None
+    fitted_touchstone_path: Path | None = None
+    rfm_path: Path | None = None
+    rfm_wrapper_path: Path | None = None
     native_baseline_version: str = NATIVE_BASELINE_VERSION
 
     def __eq__(self, other: object) -> bool:
@@ -312,6 +323,11 @@ class SParamFitResult:
             "report_path": None if self.report_path is None else str(self.report_path),
             "html_report_path": None if self.html_report_path is None else str(self.html_report_path),
             "log_path": None if self.log_path is None else str(self.log_path),
+            "fitted_touchstone_path": (
+                None if self.fitted_touchstone_path is None else str(self.fitted_touchstone_path)
+            ),
+            "rfm_path": None if self.rfm_path is None else str(self.rfm_path),
+            "rfm_wrapper_path": None if self.rfm_wrapper_path is None else str(self.rfm_wrapper_path),
             "ports": self.ports,
             "frequency_points": self.frequency_points,
             "frequency_range_hz": self.frequency_range_hz,
@@ -829,93 +845,120 @@ def _to_db(value: complex) -> float:
     return 20.0 * math.log10(magnitude)
 
 
-def _comparison_traces(network: Any, vector_fit: Any, max_traces: int = 16) -> list[dict[str, Any]]:
+def _comparison_traces(network: Any, vector_fit: Any, max_traces: int = 6) -> list[dict[str, Any]]:
     if not hasattr(network, "s") or not hasattr(vector_fit, "get_model_response"):
         return []
-    traces: list[dict[str, Any]] = []
     freqs = [float(value) for value in network.f]
-    for row in range(network.nports):
-        for column in range(network.nports):
-            if len(traces) >= max_traces:
-                return traces
+    if not freqs:
+        return []
+    nports = _validated_network_nports(network)
+    squared_error = np.empty((nports, nports), dtype=float)
+    for row in range(nports):
+        for column in range(nports):
             try:
-                fitted = _model_response_at_frequencies(vector_fit, row, column, network.f)
-                if fitted is None:
-                    continue
-                original_db = [_to_db(_network_s_value(network, idx, row, column)) for idx in range(len(freqs))]
-                fitted_db = [_to_db(value) for value in fitted]
+                response = _model_response_at_frequencies(vector_fit, row, column, network.f)
+                if response is None or len(response) != len(freqs):
+                    return []
+                original = np.asarray(
+                    [_network_s_value(network, index, row, column) for index in range(len(freqs))], dtype=complex
+                )
+                fitted = np.asarray(response, dtype=complex)
+                if not np.isfinite(original).all() or not np.isfinite(fitted).all():
+                    return []
+                squared_error[row, column] = float(np.mean(np.abs(fitted - original) ** 2))
             except Exception:
-                continue
-            traces.append(
-                {
-                    "label": f"S{row + 1}{column + 1}",
-                    "frequencies_hz": freqs,
-                    "original_db": original_db,
-                    "fitted_db": fitted_db,
-                }
+                return []
+    ranking = sorted(
+        ((float(np.sqrt(squared_error[row, column])), row, column) for row in range(nports) for column in range(nports)),
+        key=lambda item: (-item[0], item[1], item[2]),
+    )
+    traces: list[dict[str, Any]] = []
+    for rms, row, column in ranking[:max(0, max_traces)]:
+        try:
+            response = _model_response_at_frequencies(vector_fit, row, column, network.f)
+            if response is None or len(response) != len(freqs):
+                return []
+            original = np.asarray(
+                [_network_s_value(network, index, row, column) for index in range(len(freqs))], dtype=complex
             )
+            fitted = np.asarray(response, dtype=complex)
+            if not np.isfinite(original).all() or not np.isfinite(fitted).all():
+                return []
+        except Exception:
+            return []
+        trace = {
+            "label": f"S{row + 1}{column + 1}",
+            "row": row + 1,
+            "column": column + 1,
+            "rms": rms,
+            "frequencies_hz": freqs,
+            "original": original,
+            "fitted": fitted,
+        }
+        trace["image_data_uri"] = _render_trace_png_data_uri(trace)
+        traces.append(trace)
     return traces
 
 
-def _svg_polyline(points: list[tuple[float, float]]) -> str:
-    return " ".join(f"{x:.2f},{y:.2f}" for x, y in points)
+def _render_trace_png_data_uri(trace: dict[str, Any]) -> str | None:
+    """Render the three comparison series as a self-contained PNG data URI."""
+
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg", force=True)
+        from matplotlib import pyplot as plt
+    except Exception:
+        return None
+
+    frequencies = np.asarray(trace["frequencies_hz"], dtype=float)
+    original = np.asarray(trace["original"], dtype=complex)
+    fitted = np.asarray(trace["fitted"], dtype=complex)
+    if (
+        frequencies.ndim != 1
+        or frequencies.size == 0
+        or original.shape != frequencies.shape
+        or fitted.shape != frequencies.shape
+        or not np.isfinite(frequencies).all()
+        or not np.isfinite(original).all()
+        or not np.isfinite(fitted).all()
+    ):
+        return None
+
+    figure, axes = plt.subplots(3, 1, figsize=(8.4, 6.4), sharex=True, constrained_layout=True)
+    plot = axes[0].semilogx if np.all(frequencies > 0.0) else axes[0].plot
+    plot(frequencies, np.abs(original), color="#1f77b4", linewidth=1.7)
+    axes[0].set_ylabel("original magnitude")
+    plot = axes[1].semilogx if np.all(frequencies > 0.0) else axes[1].plot
+    plot(frequencies, np.abs(fitted), color="#d62728", linewidth=1.5, linestyle="--")
+    axes[1].set_ylabel("fitted magnitude")
+    plot = axes[2].semilogx if np.all(frequencies > 0.0) else axes[2].plot
+    plot(frequencies, np.abs(fitted - original), color="#7b2cbf", linewidth=1.5)
+    axes[2].set_ylabel("absolute error")
+    axes[2].set_xlabel("frequency (Hz)")
+    for axis in axes:
+        axis.grid(True, alpha=0.25)
+    buffer = BytesIO()
+    try:
+        figure.savefig(buffer, format="png", dpi=140)
+    finally:
+        plt.close(figure)
+    return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("ascii")
 
 
 def _render_trace_chart(trace: dict[str, Any]) -> str:
-    width = 760
-    height = 320
-    left = 64
-    right = 24
-    top = 24
-    bottom = 48
-    plot_width = width - left - right
-    plot_height = height - top - bottom
-    freqs = trace["frequencies_hz"]
-    values = trace["original_db"] + trace["fitted_db"]
-    y_min = min(values)
-    y_max = max(values)
-    if math.isclose(y_min, y_max):
-        y_min -= 1.0
-        y_max += 1.0
-    padding = max((y_max - y_min) * 0.08, 0.5)
-    y_min -= padding
-    y_max += padding
-    positive_freqs = [max(freq, 1e-300) for freq in freqs]
-    x_min = math.log10(min(positive_freqs))
-    x_max = math.log10(max(positive_freqs))
-    if math.isclose(x_min, x_max):
-        x_max += 1.0
-
-    def map_points(series: list[float]) -> list[tuple[float, float]]:
-        points = []
-        for freq, value in zip(positive_freqs, series):
-            x = left + ((math.log10(freq) - x_min) / (x_max - x_min)) * plot_width
-            y = top + ((y_max - value) / (y_max - y_min)) * plot_height
-            points.append((x, y))
-        return points
-
-    original_points = _svg_polyline(map_points(trace["original_db"]))
-    fitted_points = _svg_polyline(map_points(trace["fitted_db"]))
-    x_start = _format_hz(min(freqs))
-    x_end = _format_hz(max(freqs))
-    y_top = _format_float(y_max)
-    y_bottom = _format_float(y_min)
     label = escape(trace["label"])
+    image = trace.get("image_data_uri")
+    image_html = (
+        f'<img src="{image}" alt="{label} 原始数据、拟合模型和绝对误差" />'
+        if image is not None
+        else "<p class=\"muted\">图像渲染不可用。</p>"
+    )
     return f"""
 <section class="chart">
-  <h3>{label} Original vs Fitted</h3>
-  <svg viewBox="0 0 {width} {height}" role="img" aria-label="{label} original vs fitted magnitude">
-    <rect x="0" y="0" width="{width}" height="{height}" class="plot-bg" />
-    <line x1="{left}" y1="{top}" x2="{left}" y2="{height - bottom}" class="axis" />
-    <line x1="{left}" y1="{height - bottom}" x2="{width - right}" y2="{height - bottom}" class="axis" />
-    <text x="12" y="{top + 4}" class="tick">{y_top} dB</text>
-    <text x="12" y="{height - bottom}" class="tick">{y_bottom} dB</text>
-    <text x="{left}" y="{height - 18}" class="tick">{escape(x_start)}</text>
-    <text x="{width - right - 92}" y="{height - 18}" class="tick">{escape(x_end)}</text>
-    <polyline points="{original_points}" class="line original" />
-    <polyline points="{fitted_points}" class="line fitted" />
-  </svg>
-  <div class="legend"><span class="swatch original"></span>Original Touchstone <span class="swatch fitted"></span>Fitted model</div>
+  <h3>{label}，元素 RMS = {_format_float(trace["rms"])}</h3>
+  <p class="legend">三轨对比：原始数据幅值、拟合模型幅值、绝对误差。</p>
+  {image_html}
 </section>
 """
 
@@ -952,12 +995,28 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
         diagnostic_rows = "<tr><td colspan=\"7\">No quality diagnostics reported.</td></tr>"
     trace_sections = "\n".join(_render_trace_chart(trace) for trace in traces)
     if not trace_sections:
-        trace_sections = "<p class=\"muted\">Comparison plot unavailable for this scikit-rf version or input.</p>"
+        trace_sections = "<p class=\"muted\">当前输入无法生成原始与拟合对比图。</p>"
+    worst_rms_rows = "\n".join(
+        f"<tr><td>{escape(trace['label'])}</td><td>{_format_float(trace['rms'])}</td></tr>" for trace in traces
+    )
+    if not worst_rms_rows:
+        worst_rms_rows = "<tr><td colspan=\"2\">无法计算逐元素 RMS。</td></tr>"
+    artifact_rows = "\n    ".join(
+        row
+        for row in (
+            _html_artifact_row("SPICE 子电路", result.spice_path),
+            _html_artifact_row("JSON 报告", result.report_path),
+            _html_artifact_row("拟合 Touchstone", result.fitted_touchstone_path),
+            _html_artifact_row("Cadence RFM", result.rfm_path),
+            _html_artifact_row("Cadence RFM 包装网表", result.rfm_wrapper_path),
+        )
+        if row
+    )
     return f"""<!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <title>S-Parameter Fit Report</title>
+  <title>S 参数拟合质量报告</title>
   <style>
     body {{ font-family: Segoe UI, Arial, sans-serif; margin: 32px; color: #17202a; background: #f7f9fb; }}
     h1, h2, h3 {{ color: #102a43; }}
@@ -969,7 +1028,7 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     th, td {{ text-align: left; padding: 8px 10px; border-bottom: 1px solid #d9e2ec; }}
     th {{ background: #eef2f7; }}
     .chart {{ background: white; border: 1px solid #d9e2ec; border-radius: 8px; padding: 16px; margin: 14px 0; }}
-    svg {{ width: 100%; max-width: 900px; height: auto; }}
+    svg, img {{ width: 100%; max-width: 900px; height: auto; }}
     .plot-bg {{ fill: #fbfdff; }}
     .axis {{ stroke: #829ab1; stroke-width: 1.2; }}
     .tick {{ fill: #52606d; font-size: 12px; }}
@@ -984,60 +1043,59 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
   </style>
 </head>
 <body>
-  <h1>S-Parameter Fit Report</h1>
+  <h1>S 参数拟合质量报告</h1>
   <div class="cards">
-    <div class="card"><div class="label">Ports</div><div class="value">{result.ports}</div></div>
-    <div class="card"><div class="label">Frequency Points</div><div class="value">{result.frequency_points}</div></div>
-    <div class="card"><div class="label">Fit Frequency Points</div><div class="value">{result.fit_frequency_points}</div></div>
-    <div class="card"><div class="label">Fit-Sample RMS Error</div><div class="value">{_format_float(result.rms_error)}</div></div>
-    <div class="card"><div class="label">Original-Point RMS Error</div><div class="value">{_format_float(result.comparison_rms_error)}</div></div>
-    <div class="card"><div class="label">Quality</div><div class="value">{escape(str(quality["status"]))}</div></div>
-    <div class="card"><div class="label">Passivity</div><div class="value">{escape(str(quality["passivity"]))}</div></div>
+    <div class="card"><div class="label">端口数</div><div class="value">{result.ports}</div></div>
+    <div class="card"><div class="label">频点数</div><div class="value">{result.frequency_points}</div></div>
+    <div class="card"><div class="label">拟合频点数</div><div class="value">{result.fit_frequency_points}</div></div>
+    <div class="card"><div class="label">拟合采样 RMS 误差</div><div class="value">{_format_float(result.rms_error)}</div></div>
+    <div class="card"><div class="label">原始频点 RMS 误差</div><div class="value">{_format_float(result.comparison_rms_error)}</div></div>
+    <div class="card"><div class="label">质量状态</div><div class="value">{escape(str(quality["status"]))}</div></div>
+    <div class="card"><div class="label">被动性</div><div class="value">{escape(str(quality["passivity"]))}</div></div>
   </div>
 
-  <h2>Quality Gate</h2>
+  <h2>质量门</h2>
   <table>
-    <tr><th>Item</th><th>Value</th></tr>
-    <tr><td>Profile</td><td>{escape(str(quality["profile"]))}</td></tr>
-    <tr><td>Status</td><td>{escape(str(quality["status"]))}</td></tr>
-    <tr><td>Allowed for</td><td>{escape(str(quality["allowed_for"]))}</td></tr>
-    <tr><td>Blocking reasons</td><td>{escape(', '.join(quality["blocking_reasons"]))}</td></tr>
-    <tr><td>Warnings</td><td>{escape(', '.join(quality["warnings"]))}</td></tr>
+    <tr><th>项目</th><th>值</th></tr>
+    <tr><td>质量配置</td><td>{escape(str(quality["profile"]))}</td></tr>
+    <tr><td>状态</td><td>{escape(str(quality["status"]))}</td></tr>
+    <tr><td>允许用途</td><td>{escape(str(quality["allowed_for"]))}</td></tr>
+    <tr><td>阻断原因</td><td>{escape(', '.join(quality["blocking_reasons"]))}</td></tr>
+    <tr><td>警告</td><td>{escape(', '.join(quality["warnings"]))}</td></tr>
   </table>
   <table>
-    <tr><th>Diagnostic</th><th>Status</th><th>Severity</th><th>Metric</th><th>Threshold</th><th>Message</th><th>Recommendation</th></tr>
+    <tr><th>诊断项</th><th>状态</th><th>严重度</th><th>指标</th><th>阈值</th><th>说明</th><th>建议</th></tr>
     {diagnostic_rows}
   </table>
 
-  <h2>Input And Output</h2>
+  <h2>输入与输出</h2>
   <table>
-    <tr><th>Item</th><th>Value</th></tr>
-    <tr><td>Touchstone</td><td>{escape(str(result.touchstone_path))}</td></tr>
-    <tr><td>SPICE subcircuit</td><td>{escape(str(result.spice_path))}</td></tr>
-    <tr><td>JSON report</td><td>{escape(str(result.report_path))}</td></tr>
-    <tr><td>Frequency span</td><td>{_format_hz(freq_start)} to {_format_hz(freq_end)}</td></tr>
-    <tr><td>Reference impedance</td><td>{escape(', '.join(_format_float(value) for value in result.reference_impedance))}</td></tr>
+    <tr><th>项目</th><th>值</th></tr>
+    <tr><td>Touchstone 输入</td><td>{escape(str(result.touchstone_path))}</td></tr>
+    {artifact_rows}
+    <tr><td>频率范围</td><td>{_format_hz(freq_start)} 至 {_format_hz(freq_end)}</td></tr>
+    <tr><td>参考阻抗</td><td>{escape(', '.join(_format_float(value) for value in result.reference_impedance))}</td></tr>
   </table>
 
-  <h2>Fit Sample Selection</h2>
+  <h2>拟合采样选择</h2>
   <table>
-    <tr><th>Item</th><th>Value</th></tr>
-    <tr><td>Original frequency points</td><td>{result.frequency_points}</td></tr>
-    <tr><td>Fit frequency points</td><td>{result.fit_frequency_points}</td></tr>
-    <tr><td>Original frequency span</td><td>{_format_hz(freq_start)} to {_format_hz(freq_end)}</td></tr>
-    <tr><td>Fit frequency span</td><td>{_format_hz(fit_freq_start)} to {_format_hz(fit_freq_end)}</td></tr>
-    <tr><td>Fit-sample RMS error</td><td>{_format_float(result.rms_error)}</td></tr>
-    <tr><td>Original-point comparison RMS error</td><td>{_format_float(result.comparison_rms_error)}</td></tr>
+    <tr><th>项目</th><th>值</th></tr>
+    <tr><td>原始频点数</td><td>{result.frequency_points}</td></tr>
+    <tr><td>拟合频点数</td><td>{result.fit_frequency_points}</td></tr>
+    <tr><td>原始频率范围</td><td>{_format_hz(freq_start)} 至 {_format_hz(freq_end)}</td></tr>
+    <tr><td>拟合频率范围</td><td>{_format_hz(fit_freq_start)} 至 {_format_hz(fit_freq_end)}</td></tr>
+    <tr><td>拟合采样 RMS 误差</td><td>{_format_float(result.rms_error)}</td></tr>
+    <tr><td>原始频点 RMS 误差</td><td>{_format_float(result.comparison_rms_error)}</td></tr>
     {selection_rows}
   </table>
 
-  <h2>Fit Configuration</h2>
+  <h2>拟合配置</h2>
   <table>
     <tr><th>Field</th><th>Value</th></tr>
     {''.join(f'<tr><td>{escape(key)}</td><td>{escape(_format_cell(value))}</td></tr>' for key, value in asdict(result.config).items())}
   </table>
 
-  <h2>Passivity</h2>
+  <h2>被动性</h2>
   <table>
     <tr><th>Check</th><th>Value</th></tr>
     <tr><td>Passive before enforcement</td><td>{_format_bool(result.passive_before_enforce)}</td></tr>
@@ -1049,7 +1107,13 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     {violation_rows}
   </table>
 
-  <h2>Original vs Fitted</h2>
+  <h2>最差 RMS 元素</h2>
+  <table>
+    <tr><th>S 参数元素</th><th>RMS 误差</th></tr>
+    {worst_rms_rows}
+  </table>
+
+  <h2>原始数据、拟合模型与绝对误差</h2>
   {trace_sections}
 </body>
 </html>
@@ -1188,6 +1252,37 @@ def _native_manual_auto_order_config(base_config: SParamFitConfig, order: int) -
     )
 
 
+def _cadence_subcircuit_name(name: str) -> str:
+    """Return a conservative SPICE identifier for an automatically written RFM wrapper."""
+
+    normalized = re.sub(r"[^A-Za-z0-9_$]", "_", name)
+    if not normalized:
+        return "rfm_model"
+    if normalized[0].isdigit():
+        return f"rfm_{normalized}"
+    return normalized
+
+
+def _validate_distinct_output_paths(**paths: Path | None) -> None:
+    seen: dict[str, str] = {}
+    for label, path in paths.items():
+        if path is None:
+            continue
+        normalized = str(Path(path).resolve(strict=False)).casefold()
+        previous = seen.get(normalized)
+        if previous is not None:
+            raise ValueError(f"output paths must be distinct: {previous} and {label}")
+        seen[normalized] = label
+
+
+def _html_artifact_row(label: str, path: Path | None) -> str:
+    if path is None:
+        return ""
+    display = escape(str(path))
+    href = escape(path.resolve(strict=False).as_uri(), quote=True)
+    return f'<tr><td>{escape(label)}</td><td><a href="{href}">{display}</a></td></tr>'
+
+
 def fit_touchstone_to_spice(
     touchstone_path: Path,
     output_path: Path,
@@ -1195,7 +1290,24 @@ def fit_touchstone_to_spice(
     report_path: Path | None = None,
     html_report_path: Path | None = None,
     log_path: Path | None = None,
+    fitted_touchstone_path: Path | None = None,
+    rfm_path: Path | None = None,
+    rfm_wrapper_path: Path | None = None,
+    report_top_rms: int = 6,
 ) -> SParamFitResult:
+    if report_top_rms < 0:
+        raise ValueError("report_top_rms must be >= 0")
+    if rfm_wrapper_path is not None and rfm_path is None:
+        raise ValueError("rfm_wrapper_path requires rfm_path")
+    _validate_distinct_output_paths(
+        spice=output_path,
+        report=report_path,
+        html_report=html_report_path,
+        log=log_path,
+        fitted_touchstone=fitted_touchstone_path,
+        rfm=rfm_path,
+        rfm_wrapper=rfm_wrapper_path,
+    )
     config = config or SParamFitConfig()
     resource_monitor = _FitResourceMonitor()
     resource_monitor.__enter__()
@@ -1690,6 +1802,25 @@ def fit_touchstone_to_spice(
             fitted_model_name=config.subckt_name,
             create_reference_pins=config.create_reference_pins,
         )
+        if fitted_touchstone_path is not None:
+            progress.info(f"writing fitted Touchstone: {fitted_touchstone_path}")
+            write_fitted_touchstone(
+                fitted_touchstone_path,
+                network.f,
+                evaluate_fitted_s(vector_fit, network.f),
+                network.z0,
+            )
+        if rfm_path is not None:
+            progress.info(f"writing Cadence RFM: {rfm_path}")
+            write_cadence_rfm(vector_fit, rfm_path, network.z0)
+            if rfm_wrapper_path is not None:
+                progress.info(f"writing Cadence RFM wrapper: {rfm_wrapper_path}")
+                write_cadence_rfm_wrapper(
+                    rfm_wrapper_path,
+                    rfm_path,
+                    nports=network.nports,
+                    subcircuit_name=_cadence_subcircuit_name(config.subckt_name),
+                )
         resource_monitor.__exit__(None, None, None)
 
         pole_summary = _pole_summary(vector_fit)
@@ -1699,6 +1830,9 @@ def fit_touchstone_to_spice(
             report_path=report_path,
             html_report_path=html_report_path,
             log_path=log_path,
+            fitted_touchstone_path=fitted_touchstone_path,
+            rfm_path=rfm_path,
+            rfm_wrapper_path=rfm_wrapper_path,
             ports=network.nports,
             frequency_points=len(network.f),
             frequency_range_hz=_frequency_range(network),
@@ -1742,7 +1876,7 @@ def fit_touchstone_to_spice(
             progress.info(f"writing HTML report: {html_report_path}")
             html_report_path.parent.mkdir(parents=True, exist_ok=True)
             html_report_path.write_text(
-                _render_html_report(result, _comparison_traces(network, vector_fit)),
+                _render_html_report(result, _comparison_traces(network, vector_fit, max_traces=report_top_rms)),
                 encoding="utf-8",
             )
         progress.info("fit-sparam completed")
@@ -2068,8 +2202,25 @@ def fit_touchstone_to_spice_target(
     report_path: Path | None = None,
     html_report_path: Path | None = None,
     log_path: Path | None = None,
+    fitted_touchstone_path: Path | None = None,
+    rfm_path: Path | None = None,
+    rfm_wrapper_path: Path | None = None,
+    report_top_rms: int = 6,
     resume_trials: bool = False,
 ) -> SParamTargetSearchResult:
+    if report_top_rms < 0:
+        raise ValueError("report_top_rms must be >= 0")
+    if rfm_wrapper_path is not None and rfm_path is None:
+        raise ValueError("rfm_wrapper_path requires rfm_path")
+    _validate_distinct_output_paths(
+        spice=output_path,
+        report=report_path,
+        html_report=html_report_path,
+        log=log_path,
+        fitted_touchstone=fitted_touchstone_path,
+        rfm=rfm_path,
+        rfm_wrapper=rfm_wrapper_path,
+    )
     base_config = config or SParamFitConfig()
     policy_config = replace(
         base_config,
@@ -2094,6 +2245,8 @@ def fit_touchstone_to_spice_target(
         trial_report = trial_dir / "fit_report.json"
         trial_html = trial_dir / "fit_report.html" if html_report_path is not None else None
         trial_log = trial_dir / "fit.log" if log_path is not None else None
+        trial_fitted = None if fitted_touchstone_path is None else trial_dir / fitted_touchstone_path.name
+        trial_rfm = None if rfm_path is None else trial_dir / rfm_path.name
         trial_config = _native_manual_auto_order_config(policy_config, order)
         fingerprint, config_fingerprint, tool_identity = _target_trial_fingerprint(
             input_sha256=input_sha256,
@@ -2101,7 +2254,7 @@ def fit_touchstone_to_spice_target(
             order=order,
             config=trial_config,
         )
-        if resume_trials:
+        if resume_trials and trial_fitted is None and trial_rfm is None:
             resumed = _resume_target_trial(
                 trial_report,
                 trial_output,
@@ -2114,15 +2267,24 @@ def fit_touchstone_to_spice_target(
             if resumed is not None:
                 return resumed
         try:
-            fit_result = fit_touchstone_to_spice(
-                touchstone_path,
-                trial_output,
-                config=trial_config,
-                report_path=trial_report,
-                html_report_path=trial_html,
-                log_path=trial_log,
-            )
+            fit_kwargs: dict[str, Any] = {
+                "config": trial_config,
+                "report_path": trial_report,
+                "html_report_path": trial_html,
+                "log_path": trial_log,
+            }
+            if trial_fitted is not None or trial_rfm is not None or report_top_rms != 6:
+                fit_kwargs.update(
+                    {
+                        "fitted_touchstone_path": trial_fitted,
+                        "rfm_path": trial_rfm,
+                        "report_top_rms": report_top_rms,
+                    }
+                )
+            fit_result = fit_touchstone_to_spice(touchstone_path, trial_output, **fit_kwargs)
         except Exception as exc:
+            if trial_fitted is not None or trial_rfm is not None:
+                raise
             return SParamOrderTrial(
                 requested_order=order,
                 effective_order=order,
@@ -2164,11 +2326,35 @@ def fit_touchstone_to_spice_target(
     else:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(Path(selected_fit_result.spice_path), output_path)
+        if fitted_touchstone_path is not None:
+            source = selected_fit_result.fitted_touchstone_path
+            if source is None:
+                raise RuntimeError("selected fit did not produce the requested fitted Touchstone")
+            fitted_touchstone_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, fitted_touchstone_path)
+        if rfm_path is not None:
+            source = selected_fit_result.rfm_path
+            if source is None:
+                raise RuntimeError("selected fit did not produce the requested Cadence RFM")
+            rfm_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, rfm_path)
+            if rfm_wrapper_path is not None:
+                write_cadence_rfm_wrapper(
+                    rfm_wrapper_path,
+                    rfm_path,
+                    nports=selected_fit_result.ports,
+                    subcircuit_name=_cadence_subcircuit_name(policy_config.subckt_name),
+                )
 
     payload = search_result.to_dict()
     if selected_fit_result is not None and hasattr(selected_fit_result, "to_dict"):
         selected_payload = selected_fit_result.to_dict()
         selected_payload["spice_path"] = str(output_path)
+        selected_payload["fitted_touchstone_path"] = (
+            None if fitted_touchstone_path is None else str(fitted_touchstone_path)
+        )
+        selected_payload["rfm_path"] = None if rfm_path is None else str(rfm_path)
+        selected_payload["rfm_wrapper_path"] = None if rfm_wrapper_path is None else str(rfm_wrapper_path)
         selected_payload.update(payload)
         payload = selected_payload
     payload["rms_formula"] = "mean_s_rms_v1"
@@ -2178,6 +2364,9 @@ def fit_touchstone_to_spice_target(
     payload["report_path"] = None if report_path is None else str(report_path)
     payload["html_report_path"] = None if html_report_path is None else str(html_report_path)
     payload["log_path"] = None if log_path is None else str(log_path)
+    payload["fitted_touchstone_path"] = None if fitted_touchstone_path is None else str(fitted_touchstone_path)
+    payload["rfm_path"] = None if rfm_path is None else str(rfm_path)
+    payload["rfm_wrapper_path"] = None if rfm_wrapper_path is None else str(rfm_wrapper_path)
 
     if report_path is not None:
         report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -2187,20 +2376,58 @@ def fit_touchstone_to_spice_target(
         )
     if html_report_path is not None:
         html_report_path.parent.mkdir(parents=True, exist_ok=True)
-        rows = "\n".join(
-            "<tr>"
-            f"<td>{trial.requested_order}</td>"
-            f"<td>{trial.effective_order}</td>"
-            f"<td>{_format_float(trial.pre_mean_rms)}</td>"
-            f"<td>{_format_float(trial.final_mean_rms)}</td>"
-            f"<td>{_format_float(trial.final_max_sigma)}</td>"
-            f"<td>{escape(trial.status)}</td>"
-            f"<td>{escape(str(trial.rejection_reason or ''))}</td>"
-            "</tr>"
-            for trial in search_result.trials
-        )
-        html_report_path.write_text(
-            f"""<!doctype html>
+        selected_html = None if selected_fit_result is None else getattr(selected_fit_result, "html_report_path", None)
+        if selected_html is not None and Path(selected_html).is_file():
+            selected_html_text = Path(selected_html).read_text(encoding="utf-8")
+            for trial_path, final_path in (
+                (getattr(selected_fit_result, "spice_path", None), output_path),
+                (getattr(selected_fit_result, "report_path", None), report_path),
+                (getattr(selected_fit_result, "fitted_touchstone_path", None), fitted_touchstone_path),
+                (getattr(selected_fit_result, "rfm_path", None), rfm_path),
+                (getattr(selected_fit_result, "rfm_wrapper_path", None), rfm_wrapper_path),
+            ):
+                if trial_path is not None and final_path is not None:
+                    selected_html_text = selected_html_text.replace(
+                        escape(str(trial_path)),
+                        escape(str(final_path)),
+                    )
+                    selected_html_text = selected_html_text.replace(
+                        escape(Path(trial_path).resolve(strict=False).as_uri(), quote=True),
+                        escape(Path(final_path).resolve(strict=False).as_uri(), quote=True),
+                    )
+            final_artifact_rows = "\n".join(
+                row
+                for row in (
+                    _html_artifact_row("SPICE 子电路", output_path),
+                    _html_artifact_row("JSON 报告", report_path),
+                    _html_artifact_row("拟合 Touchstone", fitted_touchstone_path),
+                    _html_artifact_row("Cadence RFM", rfm_path),
+                    _html_artifact_row("Cadence RFM 包装网表", rfm_wrapper_path),
+                )
+                if row
+            )
+            delivery_section = (
+                "\n<h2>最终交付物</h2>\n<table>\n"
+                "  <tr><th>项目</th><th>值</th></tr>\n"
+                f"  {final_artifact_rows}\n</table>\n"
+            )
+            selected_html_text = selected_html_text.replace("</body>", delivery_section + "</body>")
+            html_report_path.write_text(selected_html_text, encoding="utf-8")
+        else:
+            rows = "\n".join(
+                "<tr>"
+                f"<td>{trial.requested_order}</td>"
+                f"<td>{trial.effective_order}</td>"
+                f"<td>{_format_float(trial.pre_mean_rms)}</td>"
+                f"<td>{_format_float(trial.final_mean_rms)}</td>"
+                f"<td>{_format_float(trial.final_max_sigma)}</td>"
+                f"<td>{escape(trial.status)}</td>"
+                f"<td>{escape(str(trial.rejection_reason or ''))}</td>"
+                "</tr>"
+                for trial in search_result.trials
+            )
+            html_report_path.write_text(
+                f"""<!doctype html>
 <html>
 <head><meta charset="utf-8"><title>Target-Driven S-Parameter Fit</title></head>
 <body>
@@ -2213,8 +2440,8 @@ def fit_touchstone_to_spice_target(
 </body>
 </html>
 """,
-            encoding="utf-8",
-        )
+                encoding="utf-8",
+            )
     if log_path is not None and trial_logs:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         chunks = []

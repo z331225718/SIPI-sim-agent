@@ -131,6 +131,15 @@ class FakeVectorFitting:
         self.auto_fit_kwargs = {}
         self.vector_fit_kwargs = {}
         self.poles = [-1.0 + 0.0j, -2.0 + 3.0j, -4.0 + 0.0j]
+        self.residues = np.array(
+            [
+                [0.1 + 0.0j, 0.01 + 0.02j, 0.2 + 0.0j],
+                [0.2 + 0.0j, 0.02 + 0.01j, 0.1 + 0.0j],
+                [0.2 + 0.0j, 0.02 + 0.01j, 0.1 + 0.0j],
+                [0.1 + 0.0j, 0.01 + 0.02j, 0.2 + 0.0j],
+            ],
+            dtype=complex,
+        )
         self.constant_coeff = [0.25 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j]
         self.max_iterations = 100
         self.enforced = False
@@ -244,6 +253,58 @@ def test_native_baseline_version_is_stored_in_fit_report(tmp_path, monkeypatch):
     assert report_payload["native_baseline_version"] == "native-idem-fast-v1"
 
 
+def test_fit_touchstone_to_spice_writes_requested_product_exports(tmp_path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    FakeVectorFitting.instances.clear()
+    monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
+    monkeypatch.setattr(fitting, "_create_vector_fitting", lambda network, config: FakeVectorFitting(network))
+    report = tmp_path / "fit_report.json"
+    html_report = tmp_path / "fit_report.html"
+    fitted = tmp_path / "fitted.s2p"
+    rfm = tmp_path / "cadence" / "fitted.rfm"
+    wrapper = tmp_path / "cadence" / "fitted_wrapper.sp"
+
+    result = fit_touchstone_to_spice(
+        tmp_path / "line.s2p",
+        tmp_path / "model.sp",
+        config=SParamFitConfig(subckt_name="fixture.model"),
+        report_path=report,
+        html_report_path=html_report,
+        fitted_touchstone_path=fitted,
+        rfm_path=rfm,
+        rfm_wrapper_path=wrapper,
+        report_top_rms=1,
+    )
+
+    assert result.fitted_touchstone_path == fitted
+    assert result.rfm_path == rfm
+    assert result.rfm_wrapper_path == wrapper
+    assert fitted.is_file()
+    assert rfm.is_file()
+    assert ".subckt fixture_model" in wrapper.read_text(encoding="ascii")
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert payload["fitted_touchstone_path"] == str(fitted)
+    assert payload["rfm_path"] == str(rfm)
+    assert payload["rfm_wrapper_path"] == str(wrapper)
+    html = html_report.read_text(encoding="utf-8")
+    assert str(fitted) in html
+    assert str(rfm) in html
+    assert str(wrapper) in html
+
+
+def test_fit_touchstone_to_spice_rejects_colliding_product_output_paths(tmp_path: Path):
+    path = tmp_path / "same.rfm"
+
+    with pytest.raises(ValueError, match="must be distinct"):
+        fit_touchstone_to_spice(
+            tmp_path / "line.s2p",
+            tmp_path / "model.sp",
+            rfm_path=path,
+            rfm_wrapper_path=path,
+        )
+
+
 def test_fit_touchstone_to_spice_writes_report_with_auto_fit_summary(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 
@@ -311,20 +372,38 @@ def test_fit_touchstone_to_spice_writes_readable_html_report_with_comparison_plo
 
     assert result.html_report_path == html_report
     html = html_report.read_text(encoding="utf-8")
-    assert "<h1>S-Parameter Fit Report</h1>" in html
-    assert "Original vs Fitted" in html
-    assert "Fit Sample Selection" in html
-    assert "Fit Frequency Points" in html
-    assert "Fit-Sample RMS Error" in html
-    assert "Original-Point RMS Error" in html
-    assert "Quality Gate" in html
+    assert "<h1>S 参数拟合质量报告</h1>" in html
+    assert "最差 RMS 元素" in html
+    assert "原始数据" in html
+    assert "拟合模型" in html
+    assert "绝对误差" in html
+    assert "data:image/png;base64," in html
+    assert "拟合采样选择" in html
+    assert "拟合频点数" in html
+    assert "拟合采样 RMS 误差" in html
+    assert "原始频点 RMS 误差" in html
+    assert "质量门" in html
     assert "dc_coverage" in html
-    assert "RMS Error" in html
+    assert "RMS 误差" in html
     assert "0.125" in html
     assert "S11" in html
     assert "S21" in html
-    assert re.search(r"<svg[^>]*>.*</svg>", html, flags=re.DOTALL)
+    assert re.search(r'<img src="data:image/png;base64,[A-Za-z0-9+/=]+"', html)
     assert "get_model_response" in FakeVectorFitting.instances[0].calls
+
+
+def test_comparison_traces_returns_no_ranking_when_one_response_is_missing() -> None:
+    import agent_spice.sparam.fitting as fitting
+
+    network = FakeNetwork("line.s2p")
+
+    class MissingResponseModel:
+        def get_model_response(self, row, column, freqs):
+            if (row, column) == (0, 1):
+                return None
+            return np.zeros(len(freqs), dtype=complex)
+
+    assert fitting._comparison_traces(network, MissingResponseModel()) == []
 
 
 def test_fit_touchstone_to_spice_writes_progress_log_and_uses_tuning_options(tmp_path: Path, monkeypatch):
@@ -950,6 +1029,69 @@ def test_target_fit_search_writes_only_selected_model(tmp_path: Path, monkeypatc
     assert html.exists()
 
 
+def test_target_fit_copies_requested_product_exports_to_final_paths(tmp_path: Path, monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path, **kwargs):
+        result = _fake_target_fit_result(output_path, config.model_order_max, target_met=True)
+        result.ports = 2
+        result.report_path = report_path
+        result.html_report_path = html_report_path
+        result.fitted_touchstone_path = kwargs["fitted_touchstone_path"]
+        result.rfm_path = kwargs["rfm_path"]
+        result.rfm_wrapper_path = None
+        result.fitted_touchstone_path.parent.mkdir(parents=True, exist_ok=True)
+        result.fitted_touchstone_path.write_text("fitted\n", encoding="ascii")
+        result.rfm_path.parent.mkdir(parents=True, exist_ok=True)
+        result.rfm_path.write_text("VERSION 200600\n", encoding="ascii")
+        result.html_report_path.write_text(
+            "<body>" + " ".join(
+                str(path)
+                for path in (
+                    result.spice_path,
+                    result.report_path,
+                    result.fitted_touchstone_path,
+                    result.rfm_path,
+                )
+            ) + "</body>",
+            encoding="utf-8",
+        )
+        return result
+
+    monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
+    output = tmp_path / "model.sp"
+    fitted = tmp_path / "exports" / "fitted.s2p"
+    rfm = tmp_path / "exports" / "fitted.rfm"
+    wrapper = tmp_path / "exports" / "fitted_wrapper.sp"
+    report = tmp_path / "fit_report.json"
+    html_report = tmp_path / "fit_report.html"
+
+    result = fitting.fit_touchstone_to_spice_target(
+        tmp_path / "line.s2p",
+        output,
+        target=SParamFitTarget(0.001, passivity="enforce", max_order=4),
+        config=SParamFitConfig(mode="manual", subckt_name="fixture.model"),
+        report_path=report,
+        html_report_path=html_report,
+        fitted_touchstone_path=fitted,
+        rfm_path=rfm,
+        rfm_wrapper_path=wrapper,
+    )
+
+    assert result.target_met is True
+    assert fitted.read_text(encoding="ascii") == "fitted\n"
+    assert rfm.read_text(encoding="ascii") == "VERSION 200600\n"
+    assert ".subckt fixture_model" in wrapper.read_text(encoding="ascii")
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert payload["fitted_touchstone_path"] == str(fitted)
+    assert payload["rfm_path"] == str(rfm)
+    assert payload["rfm_wrapper_path"] == str(wrapper)
+    html = html_report.read_text(encoding="utf-8")
+    assert str(fitted) in html
+    assert str(rfm) in html
+    assert str(wrapper) in html
+
+
 def test_target_fit_failure_removes_requested_output_and_keeps_reports(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 
@@ -1226,8 +1368,8 @@ def test_fit_touchstone_to_spice_can_fit_frequency_subset(tmp_path: Path, monkey
     assert payload["fit_frequency_selection"]["stride"] == 2
     assert payload["fit_frequency_selection"]["max_points"] == 2
     html = html_report.read_text(encoding="utf-8")
-    assert "Fit Sample Selection" in html
-    assert "Fit frequency points</td><td>2" in html
+    assert "拟合采样选择" in html
+    assert "拟合频点数</td><td>2" in html
 
 
 def test_lightweight_s_network_preserves_lightweight_frequency_subset():
@@ -1435,4 +1577,4 @@ def test_fit_touchstone_to_spice_smoke_with_fixture(tmp_path: Path):
     assert payload["ports"] == 2
     assert payload["frequency_points"] > 0
     assert payload["spice_path"] == str(output)
-    assert "<svg" in html_report.read_text(encoding="utf-8")
+    assert "data:image/png;base64," in html_report.read_text(encoding="utf-8")

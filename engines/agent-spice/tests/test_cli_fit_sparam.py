@@ -31,7 +31,7 @@ def bridge_legacy_single_fit_tests(monkeypatch, request):
         ):
             args.rms_target = 0.001
 
-    def target_bridge(touchstone_path, output_path, *, target, config, report_path, html_report_path, log_path):
+    def target_bridge(touchstone_path, output_path, *, target, config, report_path, html_report_path, log_path, **kwargs):
         fit = getattr(cli, "fit_touchstone_to_spice", None)
         if fit is None:
             raise AssertionError("test must patch fit_touchstone_to_spice_target or legacy fit_touchstone_to_spice")
@@ -232,6 +232,74 @@ def test_fit_sparam_cli_defaults_report_next_to_output(tmp_path: Path, monkeypat
     assert calls[0][5] is None
     assert calls[0][2].enforce_dc is True
     assert calls[0][2].enforce_passivity is False
+
+
+def test_fit_sparam_cli_passes_requested_product_exports(tmp_path: Path, monkeypatch):
+    import agent_spice.cli as cli
+
+    calls = []
+
+    def fake_target(touchstone_path, output_path, *, target, config, report_path, html_report_path, log_path, **kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(target_met=True, selected_trial=SimpleNamespace(payload=None))
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice_target", fake_target)
+
+    fitted = tmp_path / "verification.s2p"
+    rfm = tmp_path / "cadence" / "model.rfm"
+    exit_code = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "line.s2p"),
+            "--output",
+            str(tmp_path / "model.sp"),
+            "--rms-target",
+            "0.001",
+            "--fitted-touchstone",
+            str(fitted),
+            "--rfm",
+            str(rfm),
+            "--report-top-rms",
+            "3",
+        ]
+    )
+
+    assert exit_code == 0
+    assert calls == [
+        {
+            "fitted_touchstone_path": fitted,
+            "rfm_path": rfm,
+            "rfm_wrapper_path": rfm.with_name("model_rfm_wrapper.sp"),
+            "report_top_rms": 3,
+        }
+    ]
+
+
+def test_fit_sparam_cli_defaults_to_complete_delivery_bundle(tmp_path: Path, monkeypatch):
+    import agent_spice.cli as cli
+
+    calls = []
+
+    def fake_target(touchstone_path, output_path, *, target, config, report_path, html_report_path, log_path, **kwargs):
+        calls.append((touchstone_path, output_path, report_path, html_report_path, kwargs))
+        return SimpleNamespace(target_met=True, selected_trial=SimpleNamespace(payload=None))
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice_target", fake_target)
+    touchstone = tmp_path / "board.s19p"
+
+    exit_code = cli.main(["fit-sparam", str(touchstone), "--rms-target", "0.001"])
+
+    assert exit_code == 0
+    _, output, report, html_report, kwargs = calls[0]
+    assert output == tmp_path / "board_fitted.sp"
+    assert report == tmp_path / "board_fitted_report.json"
+    assert html_report == tmp_path / "board_fitted_report.html"
+    assert kwargs == {
+        "fitted_touchstone_path": tmp_path / "board_fitted.s19p",
+        "rfm_path": tmp_path / "board_fitted.rfm",
+        "rfm_wrapper_path": tmp_path / "board_fitted_rfm_wrapper.sp",
+        "report_top_rms": 5,
+    }
 
 
 def test_fit_sparam_cli_can_enable_passivity_enforcement(tmp_path: Path, monkeypatch):
@@ -552,7 +620,7 @@ def test_fit_sparam_cli_uses_auto_order_runner(tmp_path: Path, monkeypatch):
 
     calls = []
 
-    def fake_target(touchstone_path, output_path, *, target, config, report_path, html_report_path, log_path):
+    def fake_target(touchstone_path, output_path, *, target, config, report_path, html_report_path, log_path, **kwargs):
         calls.append((target, config))
         return SimpleNamespace(target_met=True, selected_trial=SimpleNamespace(payload=None))
 
@@ -781,7 +849,7 @@ def test_fit_sparam_cli_builds_explicit_target_and_enforce_policy(tmp_path: Path
 
     calls = []
 
-    def fake_target_fit(touchstone_path, output_path, *, target, config, report_path, html_report_path, log_path):
+    def fake_target_fit(touchstone_path, output_path, *, target, config, report_path, html_report_path, log_path, **kwargs):
         calls.append((target, config))
         return SimpleNamespace(target_met=True, selected_trial=SimpleNamespace(payload=None))
 
@@ -844,7 +912,7 @@ def test_fit_sparam_cli_defaults_to_check_and_large_port_max_order(tmp_path: Pat
 
     calls = []
 
-    def fake_target_fit(touchstone_path, output_path, *, target, config, report_path, html_report_path, log_path):
+    def fake_target_fit(touchstone_path, output_path, *, target, config, report_path, html_report_path, log_path, **kwargs):
         calls.append((target, config))
         return SimpleNamespace(target_met=True, selected_trial=SimpleNamespace(payload=None))
 
@@ -874,7 +942,7 @@ def test_fit_sparam_cli_builds_backend_free_config_for_small_port_target_search(
 
     calls = []
 
-    def fake_target_fit(touchstone_path, output_path, *, target, config, report_path, html_report_path, log_path):
+    def fake_target_fit(touchstone_path, output_path, *, target, config, report_path, html_report_path, log_path, **kwargs):
         calls.append(config)
         return SimpleNamespace(target_met=True, selected_trial=SimpleNamespace(payload=None))
 
