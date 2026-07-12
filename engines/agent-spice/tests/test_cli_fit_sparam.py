@@ -229,7 +229,7 @@ def test_fit_sparam_cli_defaults_report_next_to_output(tmp_path: Path, monkeypat
     assert exit_code == 0
     assert calls[0][3] == tmp_path / "fit_report.json"
     assert calls[0][4] == tmp_path / "fit_report.html"
-    assert calls[0][5] is None
+    assert calls[0][5] == tmp_path / "line.log"
     assert calls[0][2].enforce_dc is True
     assert calls[0][2].enforce_passivity is False
 
@@ -282,7 +282,7 @@ def test_fit_sparam_cli_defaults_to_complete_delivery_bundle(tmp_path: Path, mon
     calls = []
 
     def fake_target(touchstone_path, output_path, *, target, config, report_path, html_report_path, log_path, **kwargs):
-        calls.append((touchstone_path, output_path, report_path, html_report_path, kwargs))
+        calls.append((touchstone_path, output_path, report_path, html_report_path, log_path, kwargs))
         return SimpleNamespace(target_met=True, selected_trial=SimpleNamespace(payload=None))
 
     monkeypatch.setattr(cli, "fit_touchstone_to_spice_target", fake_target)
@@ -291,10 +291,11 @@ def test_fit_sparam_cli_defaults_to_complete_delivery_bundle(tmp_path: Path, mon
     exit_code = cli.main(["fit-sparam", str(touchstone), "--rms-target", "0.001"])
 
     assert exit_code == 0
-    _, output, report, html_report, kwargs = calls[0]
+    _, output, report, html_report, log_path, kwargs = calls[0]
     assert output == tmp_path / "board_fitted.sp"
     assert report == tmp_path / "board_fitted_report.json"
     assert html_report == tmp_path / "board_fitted_report.html"
+    assert log_path == tmp_path / "board.log"
     assert kwargs == {
         "fitted_touchstone_path": tmp_path / "board_fitted.s19p",
         "rfm_path": tmp_path / "board_fitted.rfm",

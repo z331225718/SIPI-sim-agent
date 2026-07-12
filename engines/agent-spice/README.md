@@ -47,6 +47,7 @@ python -m agent_spice.cli fit-sparam .\board.s19p --rms-target 0.001
 | `board_fitted_rfm_wrapper.sp` | 引用 RFM 的 HSPICE/Sigrity wrapper。 |
 | `board_fitted_report.json` | 机器可读的拟合、阶次、误差、被动性和产物路径报告。 |
 | `board_fitted_report.html` | 中文质量报告，默认显示 RMS 最大的 5 个 S 参数元素。 |
+| `board.log` | 搜索过程的逐阶次文本日志。 |
 
 搜索阶段不会生成每个阶次的 SPICE、RFM、Touchstone 或 HTML 文件。每次试探仅记录到最终 JSON 的 `order_trials`；传入 `--log` 时，也会写入逐阶次文本日志。只有最终选中的阶次才会生成交付物。
 
@@ -94,7 +95,7 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 | `--rfm PATH` | 自动生成 | Cadence RFM 输出路径。默认与 SPICE 输出同名，扩展名为 `.rfm`。 |
 | `--rfm-wrapper PATH` | 自动生成 | RFM wrapper 路径，默认 `<rfm 名称>_rfm_wrapper.sp`。 |
 | `--report-top-rms N` | `5` | HTML 中绘制 RMS 最大的 S 参数元素数量。`0` 表示不绘制曲线。 |
-| `--log PATH` | 不写日志 | 写入逐阶次搜索摘要，包括阶次、RMS、状态和失败原因。 |
+| `--log PATH` | `<输入名>.log`，位于 JSON 报告目录 | 写入逐阶次搜索摘要，包括阶次、RMS、状态和失败原因。 |
 | `--rms-target FLOAT` | 必填 | 最终平均 S-RMS 上限，必须为正数。 |
 | `--passivity {off,check,enforce}` | `check` | 被动性处理策略，见上表。 |
 | `--max-order N` | `100` | 允许尝试的最大有效公共极点阶次；与端口数量无关。 |

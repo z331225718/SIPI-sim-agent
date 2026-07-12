@@ -771,7 +771,7 @@ def main(argv: list[str] | None = None) -> int:
         default=5,
         help="Number of worst RMS S-parameter elements to plot in the HTML report (default: 5).",
     )
-    fit_parser.add_argument("--log", type=Path, help="Progress log path.")
+    fit_parser.add_argument("--log", type=Path, help="Progress log path; defaults next to the JSON report as <input>.log.")
     fit_parser.add_argument("--rms-target", type=float, help="Required final mean S-RMS target.")
     fit_parser.add_argument(
         "--passivity",
@@ -1335,6 +1335,7 @@ def main(argv: list[str] | None = None) -> int:
             if output_was_defaulted
             else args.output.parent / "fit_report.html"
         )
+        log_path = args.log or (report_path.parent / f"{args.touchstone.stem}.log")
         if args.report_top_rms < 0:
             print("error: --report-top-rms must be >= 0", file=sys.stderr)
             return 1
@@ -1347,7 +1348,7 @@ def main(argv: list[str] | None = None) -> int:
                 "config": config,
                 "report_path": report_path,
                 "html_report_path": html_report_path,
-                "log_path": args.log,
+                "log_path": log_path,
                 "fitted_touchstone_path": fitted_touchstone_path,
                 "rfm_path": rfm_path,
                 "rfm_wrapper_path": rfm_wrapper_path,
