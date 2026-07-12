@@ -1001,6 +1001,17 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     )
     if not worst_rms_rows:
         worst_rms_rows = "<tr><td colspan=\"2\">无法计算逐元素 RMS。</td></tr>"
+    artifact_rows = "\n    ".join(
+        row
+        for row in (
+            _html_artifact_row("SPICE 子电路", result.spice_path),
+            _html_artifact_row("JSON 报告", result.report_path),
+            _html_artifact_row("拟合 Touchstone", result.fitted_touchstone_path),
+            _html_artifact_row("Cadence RFM", result.rfm_path),
+            _html_artifact_row("Cadence RFM 包装网表", result.rfm_wrapper_path),
+        )
+        if row
+    )
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -1061,8 +1072,7 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
   <table>
     <tr><th>项目</th><th>值</th></tr>
     <tr><td>Touchstone 输入</td><td>{escape(str(result.touchstone_path))}</td></tr>
-    <tr><td>SPICE 子电路</td><td>{escape(str(result.spice_path))}</td></tr>
-    <tr><td>JSON 报告</td><td>{escape(str(result.report_path))}</td></tr>
+    {artifact_rows}
     <tr><td>频率范围</td><td>{_format_hz(freq_start)} 至 {_format_hz(freq_end)}</td></tr>
     <tr><td>参考阻抗</td><td>{escape(', '.join(_format_float(value) for value in result.reference_impedance))}</td></tr>
   </table>
@@ -1253,6 +1263,26 @@ def _cadence_subcircuit_name(name: str) -> str:
     return normalized
 
 
+def _validate_distinct_output_paths(**paths: Path | None) -> None:
+    seen: dict[str, str] = {}
+    for label, path in paths.items():
+        if path is None:
+            continue
+        normalized = str(Path(path).resolve(strict=False)).casefold()
+        previous = seen.get(normalized)
+        if previous is not None:
+            raise ValueError(f"output paths must be distinct: {previous} and {label}")
+        seen[normalized] = label
+
+
+def _html_artifact_row(label: str, path: Path | None) -> str:
+    if path is None:
+        return ""
+    display = escape(str(path))
+    href = escape(path.resolve(strict=False).as_uri(), quote=True)
+    return f'<tr><td>{escape(label)}</td><td><a href="{href}">{display}</a></td></tr>'
+
+
 def fit_touchstone_to_spice(
     touchstone_path: Path,
     output_path: Path,
@@ -1269,6 +1299,15 @@ def fit_touchstone_to_spice(
         raise ValueError("report_top_rms must be >= 0")
     if rfm_wrapper_path is not None and rfm_path is None:
         raise ValueError("rfm_wrapper_path requires rfm_path")
+    _validate_distinct_output_paths(
+        spice=output_path,
+        report=report_path,
+        html_report=html_report_path,
+        log=log_path,
+        fitted_touchstone=fitted_touchstone_path,
+        rfm=rfm_path,
+        rfm_wrapper=rfm_wrapper_path,
+    )
     config = config or SParamFitConfig()
     resource_monitor = _FitResourceMonitor()
     resource_monitor.__enter__()
@@ -2173,6 +2212,15 @@ def fit_touchstone_to_spice_target(
         raise ValueError("report_top_rms must be >= 0")
     if rfm_wrapper_path is not None and rfm_path is None:
         raise ValueError("rfm_wrapper_path requires rfm_path")
+    _validate_distinct_output_paths(
+        spice=output_path,
+        report=report_path,
+        html_report=html_report_path,
+        log=log_path,
+        fitted_touchstone=fitted_touchstone_path,
+        rfm=rfm_path,
+        rfm_wrapper=rfm_wrapper_path,
+    )
     base_config = config or SParamFitConfig()
     policy_config = replace(
         base_config,
@@ -2330,7 +2378,41 @@ def fit_touchstone_to_spice_target(
         html_report_path.parent.mkdir(parents=True, exist_ok=True)
         selected_html = None if selected_fit_result is None else getattr(selected_fit_result, "html_report_path", None)
         if selected_html is not None and Path(selected_html).is_file():
-            shutil.copyfile(selected_html, html_report_path)
+            selected_html_text = Path(selected_html).read_text(encoding="utf-8")
+            for trial_path, final_path in (
+                (getattr(selected_fit_result, "spice_path", None), output_path),
+                (getattr(selected_fit_result, "report_path", None), report_path),
+                (getattr(selected_fit_result, "fitted_touchstone_path", None), fitted_touchstone_path),
+                (getattr(selected_fit_result, "rfm_path", None), rfm_path),
+                (getattr(selected_fit_result, "rfm_wrapper_path", None), rfm_wrapper_path),
+            ):
+                if trial_path is not None and final_path is not None:
+                    selected_html_text = selected_html_text.replace(
+                        escape(str(trial_path)),
+                        escape(str(final_path)),
+                    )
+                    selected_html_text = selected_html_text.replace(
+                        escape(Path(trial_path).resolve(strict=False).as_uri(), quote=True),
+                        escape(Path(final_path).resolve(strict=False).as_uri(), quote=True),
+                    )
+            final_artifact_rows = "\n".join(
+                row
+                for row in (
+                    _html_artifact_row("SPICE 子电路", output_path),
+                    _html_artifact_row("JSON 报告", report_path),
+                    _html_artifact_row("拟合 Touchstone", fitted_touchstone_path),
+                    _html_artifact_row("Cadence RFM", rfm_path),
+                    _html_artifact_row("Cadence RFM 包装网表", rfm_wrapper_path),
+                )
+                if row
+            )
+            delivery_section = (
+                "\n<h2>最终交付物</h2>\n<table>\n"
+                "  <tr><th>项目</th><th>值</th></tr>\n"
+                f"  {final_artifact_rows}\n</table>\n"
+            )
+            selected_html_text = selected_html_text.replace("</body>", delivery_section + "</body>")
+            html_report_path.write_text(selected_html_text, encoding="utf-8")
         else:
             rows = "\n".join(
                 "<tr>"

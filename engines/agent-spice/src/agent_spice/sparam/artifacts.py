@@ -231,6 +231,8 @@ def write_cadence_rfm_wrapper(
     if not name or any(character.isspace() for character in name):
         raise ValueError("subcircuit_name must be a non-empty SPICE token")
     relative_rfm = os.path.relpath(reference, start=output.parent).replace("\\", "/")
+    if "'" in relative_rfm:
+        raise ValueError("rfm_path must not contain a single quote")
     nodes = " ".join(f"n{index}" for index in range(1, int(nports) + 1))
     content = "\n".join(
         (

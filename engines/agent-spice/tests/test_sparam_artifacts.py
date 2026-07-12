@@ -125,6 +125,15 @@ def test_write_cadence_rfm_wrapper_uses_relative_rfm_reference(tmp_path) -> None
     assert ".model s_model S n=2\n+ rfmfile='../models/fitted.rfm'\n.ends\n" in text
 
 
+def test_write_cadence_rfm_wrapper_rejects_single_quote_in_rfm_filename(tmp_path) -> None:
+    with pytest.raises(ValueError, match="single quote"):
+        write_cadence_rfm_wrapper(
+            tmp_path / "netlist.sp",
+            tmp_path / "model's.rmf",
+            nports=2,
+        )
+
+
 def test_write_cadence_rfm_rejects_proportional_or_noncanonical_poles(tmp_path) -> None:
     model = _SmallVectorFit()
     model.proportional_coeff[0] = 1.0

@@ -260,6 +260,7 @@ def test_fit_touchstone_to_spice_writes_requested_product_exports(tmp_path, monk
     monkeypatch.setattr(fitting.rf, "Network", FakeNetwork)
     monkeypatch.setattr(fitting, "_create_vector_fitting", lambda network, config: FakeVectorFitting(network))
     report = tmp_path / "fit_report.json"
+    html_report = tmp_path / "fit_report.html"
     fitted = tmp_path / "fitted.s2p"
     rfm = tmp_path / "cadence" / "fitted.rfm"
     wrapper = tmp_path / "cadence" / "fitted_wrapper.sp"
@@ -269,6 +270,7 @@ def test_fit_touchstone_to_spice_writes_requested_product_exports(tmp_path, monk
         tmp_path / "model.sp",
         config=SParamFitConfig(subckt_name="fixture.model"),
         report_path=report,
+        html_report_path=html_report,
         fitted_touchstone_path=fitted,
         rfm_path=rfm,
         rfm_wrapper_path=wrapper,
@@ -285,6 +287,22 @@ def test_fit_touchstone_to_spice_writes_requested_product_exports(tmp_path, monk
     assert payload["fitted_touchstone_path"] == str(fitted)
     assert payload["rfm_path"] == str(rfm)
     assert payload["rfm_wrapper_path"] == str(wrapper)
+    html = html_report.read_text(encoding="utf-8")
+    assert str(fitted) in html
+    assert str(rfm) in html
+    assert str(wrapper) in html
+
+
+def test_fit_touchstone_to_spice_rejects_colliding_product_output_paths(tmp_path: Path):
+    path = tmp_path / "same.rfm"
+
+    with pytest.raises(ValueError, match="must be distinct"):
+        fit_touchstone_to_spice(
+            tmp_path / "line.s2p",
+            tmp_path / "model.sp",
+            rfm_path=path,
+            rfm_wrapper_path=path,
+        )
 
 
 def test_fit_touchstone_to_spice_writes_report_with_auto_fit_summary(tmp_path: Path, monkeypatch):
@@ -1017,12 +1035,27 @@ def test_target_fit_copies_requested_product_exports_to_final_paths(tmp_path: Pa
     def fake_fit(touchstone_path, output_path, *, config, report_path, html_report_path, log_path, **kwargs):
         result = _fake_target_fit_result(output_path, config.model_order_max, target_met=True)
         result.ports = 2
+        result.report_path = report_path
+        result.html_report_path = html_report_path
         result.fitted_touchstone_path = kwargs["fitted_touchstone_path"]
         result.rfm_path = kwargs["rfm_path"]
+        result.rfm_wrapper_path = None
         result.fitted_touchstone_path.parent.mkdir(parents=True, exist_ok=True)
         result.fitted_touchstone_path.write_text("fitted\n", encoding="ascii")
         result.rfm_path.parent.mkdir(parents=True, exist_ok=True)
         result.rfm_path.write_text("VERSION 200600\n", encoding="ascii")
+        result.html_report_path.write_text(
+            "<body>" + " ".join(
+                str(path)
+                for path in (
+                    result.spice_path,
+                    result.report_path,
+                    result.fitted_touchstone_path,
+                    result.rfm_path,
+                )
+            ) + "</body>",
+            encoding="utf-8",
+        )
         return result
 
     monkeypatch.setattr(fitting, "fit_touchstone_to_spice", fake_fit)
@@ -1031,6 +1064,7 @@ def test_target_fit_copies_requested_product_exports_to_final_paths(tmp_path: Pa
     rfm = tmp_path / "exports" / "fitted.rfm"
     wrapper = tmp_path / "exports" / "fitted_wrapper.sp"
     report = tmp_path / "fit_report.json"
+    html_report = tmp_path / "fit_report.html"
 
     result = fitting.fit_touchstone_to_spice_target(
         tmp_path / "line.s2p",
@@ -1038,6 +1072,7 @@ def test_target_fit_copies_requested_product_exports_to_final_paths(tmp_path: Pa
         target=SParamFitTarget(0.001, passivity="enforce", max_order=4),
         config=SParamFitConfig(mode="manual", subckt_name="fixture.model"),
         report_path=report,
+        html_report_path=html_report,
         fitted_touchstone_path=fitted,
         rfm_path=rfm,
         rfm_wrapper_path=wrapper,
@@ -1051,6 +1086,10 @@ def test_target_fit_copies_requested_product_exports_to_final_paths(tmp_path: Pa
     assert payload["fitted_touchstone_path"] == str(fitted)
     assert payload["rfm_path"] == str(rfm)
     assert payload["rfm_wrapper_path"] == str(wrapper)
+    html = html_report.read_text(encoding="utf-8")
+    assert str(fitted) in html
+    assert str(rfm) in html
+    assert str(wrapper) in html
 
 
 def test_target_fit_failure_removes_requested_output_and_keeps_reports(tmp_path: Path, monkeypatch):
