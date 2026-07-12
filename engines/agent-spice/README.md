@@ -59,6 +59,51 @@ python -m pytest tests/test_hspice_corpus_golden.py -v
 
 ## S-Parameter Fitting
 
+### 快速开始
+
+`fit-sparam` 面向常规 S 参数建模：给定 Touchstone 和目标 RMS，工具会搜索满足目标的最小有效阶次，并默认交付可仿真的 SPICE、Cadence RFM 与可独立核验的拟合 Touchstone。最短命令如下：
+
+```powershell
+python -m agent_spice.cli fit-sparam .\board.s19p --rms-target 0.001
+```
+
+不指定 `--output` 时，产物写在输入文件旁。对 `board.s19p`，成功后会得到：
+
+| 文件 | 用途 |
+| --- | --- |
+| `board_fitted.sp` | Native SPICE 子电路。 |
+| `board_fitted.s19p` | 在原始频率网格上重采样的 fitted S 参数，用于与输入直接比对。 |
+| `board_fitted.rfm` | Cadence Broadband SPICE RFM 模型。 |
+| `board_fitted_rfm_wrapper.sp` | 引用 RFM 的 HSPICE/Sigrity wrapper。 |
+| `board_fitted_report.json` | 面向自动化的完整拟合、阶次、RMS、被动性和产物路径记录。 |
+| `board_fitted_report.html` | 中文质量报告，默认绘制 RMS 最大的 5 个 S 参数元素。 |
+
+默认被动性策略是 `check`：模型会被检查，但即使发现非被动也会保留产物并在报告中标注。需要最终模型严格被动时，将策略改为 `enforce`：
+
+```powershell
+python -m agent_spice.cli fit-sparam .\board.s19p `
+  --rms-target 0.001 `
+  --passivity enforce
+```
+
+当需要控制输出目录或文件名时，只覆盖需要改动的路径；其余工件仍会自动生成：
+
+```powershell
+python -m agent_spice.cli fit-sparam .\board.s19p `
+  --rms-target 0.001 `
+  --output .\deliverables\board.sp `
+  --rfm .\deliverables\cadence\board.rfm `
+  --report-top-rms 8
+```
+
+这里会默认同时写出 `deliverables\board.s19p`、`deliverables\cadence\board_rfm_wrapper.sp`、`deliverables\fit_report.json` 与 `deliverables\fit_report.html`。`--fitted-touchstone`、`--rfm-wrapper`、`--report`、`--html-report` 可分别覆盖默认路径。所有请求的输出路径必须不同；重复路径会在拟合开始前直接报错，避免覆盖工件。
+
+### 如何验收结果
+
+优先打开 HTML 报告：它列出输入、SPICE、fitted Touchstone、RFM 与 wrapper 的本地链接，并展示默认 5 条 RMS 最大曲线。用 fitted Touchstone 与原始 Touchstone 做外部工具比较时，必须使用同一频率网格和参考阻抗；JSON 内的 `comparison_rms_error`、`rms_target`、`target_met` 和 `passivity_max_sigma_after` 是自动化验收的权威字段。
+
+成功表示所选最低阶模型满足用户给定的 RMS 目标，并在 `--passivity enforce` 时也满足被动性。若失败，顶层 JSON/HTML 与各阶次 trial 目录仍会保留，便于判断是阶次上限不足、RMS 未达标，还是被动性修复使最终 RMS 超标；不会把最接近的失败模型伪装成成功交付。
+
 `fit-sparam` is a target-driven workflow based on the local Native IdEM-fast vector-fitting implementation. The production fitting baseline is `native-idem-fast-v1`, and Native is the only production fitting backend. The user supplies a final mean S-RMS target and chooses how passivity is handled. The tool searches for the lowest accepted effective common-pole order up to `--max-order`.
 
 Production SPICE output is always emitted by the Native writer; there is no exporter selection. External IdEM integration is limited to benchmark/research tooling and is not a production runtime dependency.
@@ -70,10 +115,7 @@ python -m agent_spice.cli fit-sparam .\path\to\model.s91p `
   --rms-target 0.001 `
   --passivity check `
   --max-order 24 `
-  --output runs-sparam\model.sp `
-  --report runs-sparam\model.json `
-  --html-report runs-sparam\model.html `
-  --log runs-sparam\model.log
+  --output runs-sparam\model.sp
 ```
 
 The RMS target is:
@@ -124,7 +166,7 @@ Defaults:
 
 ### Success And Failure
 
-On success, the requested SPICE output and JSON/HTML reports are written. On failure, trial reports and the top-level audit report remain available, but the requested production SPICE output is absent. The tool never promotes the closest failed model as a successful result.
+On success, the requested SPICE output, fitted Touchstone, RFM, RFM wrapper, and JSON/HTML reports are written. On failure, trial reports and the top-level audit report remain available, but the requested production model exports are absent. The tool never promotes the closest failed model as a successful result.
 
 The JSON report includes:
 
