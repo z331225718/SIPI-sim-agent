@@ -22,7 +22,7 @@ def _positive_threads(value: str) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="agent-spice-native",
+        prog="agent-spice",
         description="Run agent-spice in a fresh process with an explicit BLAS thread budget.",
     )
     parser.add_argument(

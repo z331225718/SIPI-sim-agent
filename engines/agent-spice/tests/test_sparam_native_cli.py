@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -27,3 +28,9 @@ def test_native_cli_starts_fit_in_fresh_process_with_explicit_blas_budget(monkey
 def test_native_cli_rejects_non_positive_blas_thread_budget():
     with pytest.raises(SystemExit, match="2"):
         native_cli.main(["--blas-threads", "0", "fit-sparam", "case.s2p"])
+
+
+def test_primary_console_entry_uses_the_one_thread_blas_launcher():
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+
+    assert 'agent-spice = "agent_spice.sparam.native_cli:main"' in pyproject.read_text(encoding="utf-8")

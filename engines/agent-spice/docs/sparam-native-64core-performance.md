@@ -4,12 +4,12 @@
 
 ## 结论
 
-Native 已具备可控的 BLAS 多线程启动器，但在当前算法与数据形状下，**不要把单个 large-port fit 配置为 64 个 BLAS 线程**。在本机的三组完整矩阵中，`1` 线程始终最快；相对于当前 OpenBLAS 默认 `16` 线程，设为 `1` 线程可缩短总墙钟时间 `23%` 至 `37%`。
+Native 生产 CLI 的默认 BLAS 线程数已固定为 `1`；在当前算法与数据形状下，**不要把单个 large-port fit 配置为 64 个 BLAS 线程**。在本机的三组完整矩阵中，`1` 线程始终最快；相对于此前 OpenBLAS 默认 `16` 线程，设为 `1` 线程可缩短总墙钟时间 `23%` 至 `37%`。
 
 生产命令应使用新启动器，并从 `1` 开始：
 
 ```powershell
-agent-spice-native --blas-threads 1 fit-sparam .\path\to\model.s166p `
+agent-spice fit-sparam .\path\to\model.s166p `
   --rms-target 0.001 `
   --passivity enforce `
   --max-order 100 `
@@ -19,7 +19,7 @@ agent-spice-native --blas-threads 1 fit-sparam .\path\to\model.s166p `
   --log runs-sparam\fit.log
 ```
 
-该命令在新 Python 子进程启动前同时固定 `OMP_NUM_THREADS`、`MKL_NUM_THREADS`、`OPENBLAS_NUM_THREADS` 和 `NUMEXPR_NUM_THREADS`，因此不会受到已导入 NumPy 后环境变量失效的问题影响。`agent-spice-native` 的默认值就是 `1`。
+该命令在新 Python 子进程启动前同时固定 `OMP_NUM_THREADS`、`MKL_NUM_THREADS`、`OPENBLAS_NUM_THREADS` 和 `NUMEXPR_NUM_THREADS`，因此不会受到已导入 NumPy 后环境变量失效的问题影响。默认值为 `1`；仅在经过矩阵验证后才显式覆盖，例如 `agent-spice --blas-threads 8 fit-sparam ...`。`agent-spice-native` 保留为同一启动器的兼容别名。
 
 ## 测量方法
 
@@ -53,7 +53,7 @@ agent-spice-native --blas-threads 1 fit-sparam .\path\to\model.s166p `
 
 ## 决策
 
-1. 当前收益已经落地为可控的 `agent-spice-native --blas-threads 1`。在这台机器上，避免默认 16-thread OpenBLAS 比尝试 64 线程更快。
+1. 当前收益已经落地为默认 `agent-spice` 的 `--blas-threads 1`。在这台机器上，避免此前的 16-thread OpenBLAS 比尝试 64 线程更快。
 2. 不做 Python 改写、response-block 多进程或 C++/Rust 重写。三组数据中 fit 阶段虽然最大，但请求 8--64 线程反而从约 `89--193 s` 增至约 `191--416 s`；CPU 也只升到约 1.3--2.2 个核心，没有可供外层并行直接收割的证据。response-block 还会重复矩阵分解，并改变数值归约路径。
 3. 64-core 生产机仍应复跑相同矩阵后再改变策略。本机只有 16 logical processors，不能把本机的 32/64 oversubscription 误称为 64-core 可扩展性证明。当前可安全部署的初始策略是每个并发 fit 一个 BLAS 线程；64 核吞吐应来自最多 64 个独立作业，而不是一个 fit 内开 64 个线程。
 4. 若生产 workload 是单个超大模型且必须进一步降低单 job 延迟，下一个研究必须先用 profiler 定位具体 NumPy/SciPy 调用，再独立实现并验收一个 compiled kernel；这不是当前证据支持的直接重写任务。
