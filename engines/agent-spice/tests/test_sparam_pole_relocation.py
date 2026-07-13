@@ -2,6 +2,7 @@ import numpy as np
 
 from agent_spice.sparam.pole_relocation import (
     _compress_reciprocal_responses,
+    _streaming_reciprocal_pole_relocation_precompressed,
     streaming_pole_relocation,
     streaming_reciprocal_pole_relocation,
 )
@@ -174,6 +175,25 @@ def test_streaming_reciprocal_pole_relocation_matches_symmetric_full_matrix():
     for actual_value, expected_value in zip(actual, expected):
         np.testing.assert_allclose(actual_value, expected_value, rtol=1e-10, atol=1e-10)
     for actual_value, expected_value in zip(actual, expected_baseline):
+        np.testing.assert_allclose(actual_value, expected_value, rtol=1e-10, atol=1e-10)
+
+
+def test_precompressed_reciprocal_relocation_matches_public_path():
+    freqs = np.array([1.0e6, 2.0e6, 5.0e6, 9.0e6], dtype=float)
+    poles = np.array([-1.0e7 + 0.0j, -2.0e7 + 3.0e7j], dtype=complex)
+    s11 = np.array([0.1 + 0.01j, 0.2 + 0.03j, 0.3 + 0.02j, 0.4 + 0.04j])
+    s12 = np.array([0.5 - 0.02j, 0.45 - 0.03j, 0.35 - 0.01j, 0.25 - 0.02j])
+    s22 = np.array([0.05 + 0.02j, 0.07 + 0.01j, 0.09 - 0.02j, 0.11 - 0.03j])
+    responses = np.array([s11, s12, s12, s22], dtype=complex)
+    weights = np.linalg.norm(responses, axis=1)
+    compressed_responses, compressed_weights, multiplicities = _compress_reciprocal_responses(responses, weights)
+
+    actual = _streaming_reciprocal_pole_relocation_precompressed(
+        poles, freqs, compressed_responses, compressed_weights, multiplicities, True, False
+    )
+    expected = streaming_reciprocal_pole_relocation(poles, freqs, responses, weights, True, False)
+
+    for actual_value, expected_value in zip(actual, expected):
         np.testing.assert_allclose(actual_value, expected_value, rtol=1e-10, atol=1e-10)
 
 

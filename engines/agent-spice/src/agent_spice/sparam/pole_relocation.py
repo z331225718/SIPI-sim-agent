@@ -62,6 +62,38 @@ def streaming_reciprocal_pole_relocation(
         freq_responses,
         weights_responses,
     )
+    return _streaming_reciprocal_pole_relocation_precompressed(
+        poles,
+        freqs,
+        compressed_responses,
+        compressed_weights,
+        multiplicities,
+        fit_constant,
+        fit_proportional,
+        frequency_relocation_weights=frequency_relocation_weights,
+        return_diagnostics=return_diagnostics,
+        out_of_band_pole_regularization_weight=out_of_band_pole_regularization_weight,
+        out_of_band_pole_regularization_start_fraction=out_of_band_pole_regularization_start_fraction,
+        pole_regularization_weights=pole_regularization_weights,
+    )
+
+
+def _streaming_reciprocal_pole_relocation_precompressed(
+    poles: np.ndarray,
+    freqs: np.ndarray,
+    compressed_responses: np.ndarray,
+    compressed_weights: np.ndarray,
+    multiplicities: np.ndarray,
+    fit_constant: bool,
+    fit_proportional: bool,
+    *,
+    frequency_relocation_weights: np.ndarray | None = None,
+    return_diagnostics: bool = False,
+    out_of_band_pole_regularization_weight: float = 0.0,
+    out_of_band_pole_regularization_start_fraction: float = 1.0,
+    pole_regularization_weights: np.ndarray | None = None,
+) -> tuple[Any, ...]:
+    """Relocate using a reciprocity reduction prepared outside the iteration loop."""
     return _streaming_pole_relocation_impl(
         poles,
         freqs,

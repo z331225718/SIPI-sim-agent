@@ -537,6 +537,50 @@ def test_comparison_traces_keeps_missing_response_reason() -> None:
     assert traces == [{"label": "S12", "rms": None, "render_error": "S12 model response is unavailable"}]
 
 
+def test_comparison_rms_uses_native_matrix_evaluation_without_per_channel_callbacks(monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    frequencies = np.array([1.0, 2.0])
+    original = np.array(
+        [
+            [[1.0 + 0.0j, 2.0 + 0.0j], [3.0 + 0.0j, 4.0 + 0.0j]],
+            [[2.0 + 0.0j, 3.0 + 0.0j], [4.0 + 0.0j, 5.0 + 0.0j]],
+        ]
+    )
+    fitted = original + 0.5
+    network = SimpleNamespace(s=original, f=frequencies, nports=2)
+    model = SimpleNamespace()
+    calls: list[object] = []
+
+    def fake_evaluate(candidate, candidate_frequencies):
+        calls.append((candidate, candidate_frequencies))
+        return fitted
+
+    monkeypatch.setattr(fitting, "evaluate_fitted_s", fake_evaluate)
+    monkeypatch.setattr(fitting, "_supports_vectorized_s_evaluation", lambda candidate: candidate is model)
+
+    rms = fitting._comparison_rms_error(network, model, "s")
+
+    assert rms == pytest.approx(1.0)
+    assert calls == [(model, frequencies)]
+
+
+def test_comparison_traces_uses_native_matrix_evaluation_without_per_channel_callbacks(monkeypatch):
+    import agent_spice.sparam.fitting as fitting
+
+    network = FakeNetwork("line.s2p")
+    fitted = np.zeros_like(network.s)
+    model = SimpleNamespace()
+    monkeypatch.setattr(fitting, "evaluate_fitted_s", lambda candidate, frequencies: fitted)
+    monkeypatch.setattr(fitting, "_supports_vectorized_s_evaluation", lambda candidate: candidate is model)
+
+    traces = fitting._comparison_traces(network, model, max_traces=1)
+
+    assert len(traces) == 1
+    assert traces[0]["label"] in {"S11", "S12", "S21", "S22"}
+    assert np.asarray(traces[0]["fitted"]).shape == np.asarray(network.f).shape
+
+
 def test_fit_report_shows_escaped_reason_when_response_raises(tmp_path: Path, monkeypatch) -> None:
     import agent_spice.sparam.fitting as fitting
 

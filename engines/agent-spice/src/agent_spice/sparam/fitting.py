@@ -44,6 +44,7 @@ class _LazyRf:
 rf = _LazyRf()
 NATIVE_BASELINE_VERSION = "native-idem-fast-v1"
 NATIVE_SOURCE_IDENTITY_FILES = ("fitting.py", "native_vf.py", "passivity.py", "pole_relocation.py")
+_NATIVE_VECTOR_FIT_TYPE = NativeVectorFitting
 
 
 @dataclass
@@ -62,6 +63,10 @@ class _ResumedTargetFitPayload:
 
 def _native_relocation_mode(nports: int) -> Literal["streaming", "streaming-reciprocal"]:
     return "streaming-reciprocal" if nports >= 30 else "streaming"
+
+
+def _supports_vectorized_s_evaluation(vector_fit: Any) -> bool:
+    return isinstance(vector_fit, _NATIVE_VECTOR_FIT_TYPE)
 
 
 def _validated_network_nports(network: Any) -> int:
@@ -769,6 +774,14 @@ def _comparison_rms_error(network: Any, vector_fit: Any, parameter_type: str) ->
         return None
     try:
         network_array = np.asarray(network_values)
+        if parameter_type.lower() == "s" and _supports_vectorized_s_evaluation(vector_fit):
+            try:
+                fitted_matrix = np.asarray(evaluate_fitted_s(vector_fit, network.f), dtype=complex)
+                if fitted_matrix.shape == network_array.shape:
+                    squared_error = np.mean(np.square(np.abs(network_array.astype(complex) - fitted_matrix)), axis=0)
+                    return float(np.sqrt(np.sum(squared_error)))
+            except Exception:
+                pass
         error_mean_squared = 0.0
         for row in range(network.nports):
             for column in range(network.nports):
@@ -927,7 +940,7 @@ def _comparison_traces(network: Any, vector_fit: Any, max_traces: int = 6) -> li
     def diagnostic(label: str, reason: str) -> list[dict[str, Any]]:
         return [{"label": label, "rms": None, "render_error": reason}]
 
-    if not hasattr(network, "s") or not hasattr(vector_fit, "get_model_response"):
+    if not hasattr(network, "s"):
         return diagnostic("曲线对比", "network S-parameter data or model response is unavailable")
     try:
         freqs = [float(value) for value in network.f]
@@ -939,6 +952,32 @@ def _comparison_traces(network: Any, vector_fit: Any, max_traces: int = 6) -> li
         nports = _validated_network_nports(network)
     except Exception as exc:
         return diagnostic("曲线对比", f"port data is invalid: {exc}")
+    if _supports_vectorized_s_evaluation(vector_fit):
+        try:
+            fitted_matrix = np.asarray(evaluate_fitted_s(vector_fit, network.f), dtype=complex)
+            original_matrix = np.asarray(network.s, dtype=complex)
+            if fitted_matrix.shape == original_matrix.shape:
+                squared_error = np.mean(np.abs(fitted_matrix - original_matrix) ** 2, axis=0)
+                ranking = sorted(
+                    ((float(np.sqrt(squared_error[row, column])), row, column) for row in range(nports) for column in range(nports)),
+                    key=lambda item: (-item[0], item[1], item[2]),
+                )
+                return [
+                    {
+                        "label": f"S{row + 1}{column + 1}",
+                        "row": row + 1,
+                        "column": column + 1,
+                        "rms": rms,
+                        "frequencies_hz": freqs,
+                        "original": original_matrix[:, row, column],
+                        "fitted": fitted_matrix[:, row, column],
+                    }
+                    for rms, row, column in ranking[:max(0, max_traces)]
+                ]
+        except Exception:
+            pass
+    if not hasattr(vector_fit, "get_model_response"):
+        return diagnostic("曲线对比", "network S-parameter data or model response is unavailable")
     squared_error = np.empty((nports, nports), dtype=float)
     for row in range(nports):
         for column in range(nports):
@@ -2526,6 +2565,7 @@ def fit_touchstone_to_spice_target(
             report_configuration={
                 "rms_target": target.mean_rms,
                 "max_order": target.max_order,
+                "min_order": target.min_order,
                 "max_order_step": max_order_step,
                 "selected_order": selected_order,
                 "passivity": target.passivity,

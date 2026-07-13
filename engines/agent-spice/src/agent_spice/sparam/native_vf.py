@@ -7,7 +7,12 @@ from typing import Any
 
 import numpy as np
 
-from .pole_relocation import streaming_pole_relocation
+from .pole_relocation import (
+    _compress_reciprocal_responses,
+    _streaming_reciprocal_pole_relocation_precompressed,
+    streaming_pole_relocation,
+    streaming_reciprocal_pole_relocation,
+)
 
 
 @dataclass(frozen=True)
@@ -539,6 +544,12 @@ class NativeVectorFitting:
                 raise ValueError("Initial poles must be provided when init_pole_spacing='custom'")
             poles = self.poles / norm
         weights_responses = np.linalg.norm(freq_responses, axis=1)
+        use_precompressed_reciprocal = self._pole_relocation is streaming_reciprocal_pole_relocation
+        if use_precompressed_reciprocal:
+            relocation_responses, relocation_weights, relocation_multiplicities = _compress_reciprocal_responses(
+                freq_responses,
+                weights_responses,
+            )
 
         max_singular = 1.0
         self.d_res_history = []
@@ -568,21 +579,36 @@ class NativeVectorFitting:
                 norm,
                 previous_input_complex_rows,
             )
-            relocation_result = self._pole_relocation(
-                poles,
-                freqs_norm,
-                freq_responses,
-                weights_responses,
-                fit_constant,
-                fit_proportional,
-                frequency_relocation_weights=frequency_relocation_weights,
-                return_diagnostics=True,
-                out_of_band_pole_regularization_weight=float(self.out_of_band_pole_regularization_weight),
-                out_of_band_pole_regularization_start_fraction=float(
+            relocation_kwargs = {
+                "frequency_relocation_weights": frequency_relocation_weights,
+                "return_diagnostics": True,
+                "out_of_band_pole_regularization_weight": float(self.out_of_band_pole_regularization_weight),
+                "out_of_band_pole_regularization_start_fraction": float(
                     self.out_of_band_pole_regularization_start_fraction
                 ),
-                pole_regularization_weights=pole_regularization_weights,
-            )
+                "pole_regularization_weights": pole_regularization_weights,
+            }
+            if use_precompressed_reciprocal:
+                relocation_result = _streaming_reciprocal_pole_relocation_precompressed(
+                    poles,
+                    freqs_norm,
+                    relocation_responses,
+                    relocation_weights,
+                    relocation_multiplicities,
+                    fit_constant,
+                    fit_proportional,
+                    **relocation_kwargs,
+                )
+            else:
+                relocation_result = self._pole_relocation(
+                    poles,
+                    freqs_norm,
+                    freq_responses,
+                    weights_responses,
+                    fit_constant,
+                    fit_proportional,
+                    **relocation_kwargs,
+                )
             relocation_diagnostics = {}
             if len(relocation_result) == 7:
                 poles, d_res, cond, rank_deficiency, _residuals, singular_vals, relocation_diagnostics = relocation_result

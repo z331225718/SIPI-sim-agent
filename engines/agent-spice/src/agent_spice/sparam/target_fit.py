@@ -15,6 +15,7 @@ class SParamFitTarget:
     max_order: int = 40
     max_order_step: int = 8
     passivity_epsilon: float = 1e-6
+    min_order: int = 1
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.mean_rms) or self.mean_rms <= 0.0:
@@ -23,6 +24,8 @@ class SParamFitTarget:
             raise ValueError("passivity must be 'off', 'check', or 'enforce'")
         if self.max_order < 1:
             raise ValueError("max_order must be >= 1")
+        if self.min_order < 1 or self.min_order > self.max_order:
+            raise ValueError("min_order must be between 1 and max_order")
         if self.max_order_step < 1:
             raise ValueError("max_order_step must be >= 1")
         if not math.isfinite(self.passivity_epsilon) or self.passivity_epsilon < 0.0:
@@ -82,6 +85,7 @@ class SParamTargetSearchResult:
             "rms_target": float(self.target.mean_rms),
             "passivity_policy": self.target.passivity,
             "max_order": int(self.target.max_order),
+            "min_order": int(self.target.min_order),
             "max_order_step": int(self.target.max_order_step),
             "selected_effective_order": None
             if self.selected_trial is None
@@ -195,7 +199,7 @@ def run_target_order_search(
             evaluation_order.append(order)
         return cache[order]
 
-    if target.max_order < 4:
+    if target.min_order == 1 and target.max_order < 4:
         for order in range(1, target.max_order + 1):
             trial = evaluate(order)
             if trial.target_met:
@@ -212,9 +216,13 @@ def run_target_order_search(
             stop_reason="target_not_met_before_max_order",
         )
 
-    previous_failed_order = 2
+    if target.min_order == 1:
+        previous_failed_order = 2
+        order = 4
+    else:
+        previous_failed_order = target.min_order - 1
+        order = target.min_order
     first_passing_order: int | None = None
-    order = 4
     while order <= target.max_order:
         trial = evaluate(order)
         if trial.target_met:
