@@ -56,6 +56,16 @@ Touchstone S(jw)
   -> 导出 SPICE / RFM / fitted Touchstone / JSON / HTML / log
 ```
 
+实现模块边界如下：
+
+| 层 | 主要模块 | 职责 |
+| --- | --- | --- |
+| 输入和交付 | `fitting.py`、`artifacts.py` | Touchstone、拟合编排、SPICE/RFM/Touchstone 输出、JSON/HTML 报告。 |
+| 有理近似核心 | `native_vf.py`、`pole_relocation.py` | 共享极点初始化、SK/VF relocation、稳定性/共轭结构、固定极点 residue LS。 |
+| 阶数决策 | `target_fit.py` | 自适应阶数试探、临界区间回填、最低有效阶次选择、FAIL 时 best-effort 选择。 |
+| 被动性 | `passivity.py` | 奇异值采样、Hamiltonian 检查、违规模态、受限 residue/constant 扰动、候选筛选和回退。 |
+| 质量和性能 | `quality.py`、`performance.py` | signoff/explore 质量诊断、全频评价、资源与 BLAS 线程约束。 |
+
 ### 3.1 共享极点多响应 Vector Fitting
 
 核心近似算法是 Vector Fitting（VF）。每轮在当前公共极点下构造 Sanathanan-Koerner 型线性最小二乘问题，求得辅助分母，然后由其零点更新极点。全部矩阵元素共同参与极点 relocation，因此输出是一个公共分母的 MIMO 宏模型，而不是 $m^2$ 个彼此无关的标量拟合。
@@ -82,19 +92,46 @@ CLI 从低阶开始试探。误差远高于目标时扩大阶数步长；接近�
 
 该机制的原则是：被动性修复是安全网，不是用来掩盖错误极点集合的手段。
 
-## 4. 算法继承与本项目创新
+## 4. 理论继承与差异化设计
 
 | 类别 | 内容 |
 | --- | --- |
 | 理论基础 | Gustavsen–Semlyen 的 Vector Fitting、共享极点多响应有理近似、固定极点 residue LS。 |
 | 被动性基础 | bounded-real 条件、最大奇异值检查、Hamiltonian 型定位、residue perturbation 与 NNLS/QP 类最小扰动。 |
-| Native 的算法组织 | 将公共极点发现、固定极点 LS、被动性修复和全频矩阵验收放在同一质量契约中。 |
-| Native 的工程创新 | 自适应阶数搜索与回填、effective-order 核验、FAIL 时 best-effort 导出、候选修复的 holdout 筛选、互易响应压缩、统一全频评估路径。 |
-| 性能纪律 | 默认 BLAS 线程为 1，避免单个 dense fit 多层并行导致过度订阅；64 核环境更适合并发多个独立 fit 以提高吞吐。 |
 
-准确边界：Native 的理论核心仍属于 VF 家族；当前并不声称已超过或复现商业 IdEM 的共享极点发现机制。已有 modal、Loewner、RKFIT、stabAAA、MFT-NNLS 等研究路线均未进入生产默认路径。
+### 4.1 差异化创新组合
 
-## 5. S 参数交付物与使用方式
+以下内容是本项目的差异化实现重点。它们是在公开 VF 与无源性理论基础上的系统集成和约束设计。
+
+1. **端到端公共极点质量契约**：将共享极点发现、全矩阵固定极点 LS、被动性修复和最终全频 RMS 置于同一接受链。局部 residual、内部拟合分数或局部 sigma 的改善不能独立构成成功。
+2. **被动性修复的多候选与留出频带决策**：不接受单一 QP/投影输出；围绕违规奇异模态生成 candidate，以 reference regularization、活动变量预算、扰动预算、频带 holdout 和全频回验共同决定接受，明确限制“压 sigma 换来 RMS 崩坏”。
+3. **互易 MIMO relocation 的等价结构压缩**：对冗余响应预压缩，同时保留 multiplicity，目标是在不改变联合极点搜索统计目标的前提下减少计算量。
+4. **阶数与拓扑的可审计一致性**：请求阶数、实/复极点拓扑和实际 effective order 必须一致；禁止将“请求低阶、实际导出更高阶”的结果计为低阶成功。
+5. **质量约束下的离散阶数选择**：以 RMS、被动性和 effective order 而非内部 VF 停止信号决定最终模型；跨越目标后回填临界区间，降低非单调误差造成的错误低阶结论。
+6. **失败仍可交付诊断资产**：最大阶数耗尽时自动导出 best-effort 模型和完整 provenance，同时 CLI 明确返回 `FAIL`，将可用诊断产物与生产接受状态严格分离。
+7. **统一模型表达式的全频评价**：拟合评价、RMS、HTML 图表、最终 Touchstone 和导出模型由同一有理模型表达式产生，避免逐端口调用或不同评估路径造成的性能重复与指标漂移。
+
+## 5. 研究结论、局限性与可审计性
+
+### 5.1 研究结论
+
+现有 source-attribution 结果支持如下工程判断：给定 IdEM 产生的极点，本地固定极点 residue LS 与 enforcement 能形成合格模型；以 Native 极点开始的相同后半链路则明显更差。因此当前剩余差距主要在**稳定、紧凑且适合矩阵值数据的共享极点发现**，不是单纯增加 residue solver 或 enforcement 旋钮能够消除的问题。
+
+高频 pole injection/weight sweep、data-only pole dictionary、全局 modal initializer、stabAAA、Tangential Loewner、RKFIT、MFT-NNLS 与 modal-Z 均是已运行的研究资产，但未在固定阶数、全矩阵 S-RMS 和被动性闭环上优于生产 Native；不得在产品介绍中写成 Native 默认能力。
+
+### 5.2 局限性
+
+1. Native 的理论核心仍是 VF，不应声称已在公共极点发现上超过或复现 IdEM；modal、Loewner、RKFIT、stabAAA、MFT-NNLS 等研究路线均未进入生产默认路径。
+2. 被动性修复是安全网，不保证从错误极点集合恢复缺失动态；修复后 RMS 超标的 trial 仍为失败。
+3. 大端口成本主要来自 dense linear algebra、全频矩阵评价和被动性候选验证；Python 是编排层和部分数值实现，替换语言本身不保证线性加速。
+4. `--min-order` 仅适用于同一输入、已有完整验证的重复运行，不能作为未知输入的通用阶数预测器。
+5. 所有结论必须绑定输入 hash、全频点、RMS 定义、被动性策略、实际 effective order 和最终 artifact。
+
+### 5.3 质量报告审计字段
+
+JSON 报告应至少核验：`status`、`order_trials`、`comparison_mean_rms_error`、`passivity_max_sigma_after`、`expanded_model_order`、`best_effort_exported` 和实际输出路径。交付物只有在 `PASS` 且所选被动性策略对应的门全部满足时，才可视为生产接受模型。
+
+## 6. S 参数交付物与使用方式
 
 ```powershell
 python -m agent_spice.cli fit-sparam .\board.s19p `
@@ -116,7 +153,17 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 
 对于特殊难例，可通过受控专家参数调整初始极点布局、VF 轮数、高频复极点预算和被动性预算。未传专家参数时，默认 auto 行为不变。
 
-## 6. PI 网表仿真：实验性功能
+### 6.1 开放调试接口与 Agent 协作
+
+相较于商业黑盒拟合器，Native 的优势不只在于可以替换算法实现，也在于将关键诊断和调节面以稳定接口显化：每次 trial 的阶数、极点拓扑、RMS、最大奇异值、被动性修复结果、耗时、配置和拒绝原因都会写入 JSON、HTML 与日志。工程人员可以据此定位问题，而不是仅得到“成功/失败”结果。
+
+公开的专家参数采用白名单控制，覆盖初始极点布局、VF relocation 轮数、高频复极点预算、无源性修复轮数、违规采样数和活动变量预算。它们不会改变默认 auto 的质量契约；每个覆盖值都会写入 `tuning_overrides` 和 `effective_base_config`，因而可以复现、审计和回退。
+
+项目还提供 `sparam-fit-tuning` Agent skill，可供 Codex、Claude Code 等具备本地文件与命令执行能力的 Agent 使用。该 skill 读取 auto fit 的 JSON/HTML/log，将失败分类为阶数不足、极点初始化不足、relocation 未收敛或被动性修复冲突；随后只在公开白名单内提出并运行少量单变量候选，保留原始 artifact，最终以同一 RMS/passivity 契约判定 `PASS/FAIL`。它不允许通过降低 RMS 目标、关闭被动性或降采样来伪造通过结果。
+
+这种“算法可观测性 + 受控调参接口 + Agent 诊断工作流”的组合，使项目在**可调试性、可扩展性和自动化调优空间**上具有明显优势；这不等同于宣称所有输入上的拟合精度或速度都高于商业软件。
+
+## 7. PI 网表仿真：实验性功能
 
 ### 6.1 定位与默认后端
 
@@ -202,7 +249,7 @@ python -m agent_spice.cli run-hspice .\design.sp `
 | `waveform.csv` | 从 `.print` 输出解析的可移植波形。 |
 | `run_summary.json` | 退出码、日志索引、波形状态、`.measure` 结果和错误信息。 |
 
-## 7. 交付状态总结
+## 8. 交付状态总结
 
 | 能力 | 状态 | 说明 |
 | --- | --- | --- |
@@ -212,10 +259,10 @@ python -m agent_spice.cli run-hspice .\design.sp `
 | Xyce/XDM | 可选实验性 | 仅显式选择时使用；不属于默认 Windows 离线链。 |
 | 大规模 PDN/MPI、完整 HSPICE 兼容 | 未生产化 | 后续研究和工程化范围。 |
 
-## 8. 参考资料
+## 9. 参考资料
 
 1. Gustavsen, B.; Semlyen, A. *Rational Approximation of Frequency Domain Responses by Vector Fitting*, IEEE Transactions on Power Delivery, 1999. DOI: https://doi.org/10.1109/61.772353
 2. Gustavsen, B. *Fast Passivity Enforcement for S-Parameter Models by Perturbation of Residue Matrix Eigenvalues*, IEEE Transactions on Advanced Packaging, 2010. DOI: https://doi.org/10.1109/TADVP.2008.2010508
 3. Gustavsen, B. *Passivity Enforcement by Residue Perturbation via Constrained Non-Negative Least Squares*, IEEE Transactions on Power Delivery, 2021. DOI: https://doi.org/10.1109/TPWRD.2020.3026385
-4. 项目内详细算法报告：`docs/native-fit-algorithm-academic-report.md`
+4. 项目内独立学术报告：`docs/native-fit-algorithm-academic-report.md`，用于文献核对和技术写作。
 5. 项目内仿真器工具链说明：`docs/solver-toolchain.md`
