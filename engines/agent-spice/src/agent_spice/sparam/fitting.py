@@ -2454,6 +2454,7 @@ def fit_touchstone_to_spice_target(
     rfm_wrapper_path: Path | None = None,
     report_top_rms: int = 6,
     max_order_step: int = 8,
+    tuning_overrides: dict[str, Any] | None = None,
 ) -> SParamTargetSearchResult:
     if report_top_rms < 0:
         raise ValueError("report_top_rms must be >= 0")
@@ -2577,6 +2578,7 @@ def fit_touchstone_to_spice_target(
                     "selected_order": None,
                     "best_effort_order": best_trial.requested_order,
                     "passivity": target.passivity,
+                    "tuning_overrides": tuning_overrides,
                 },
             )
             best_effort_exported = True
@@ -2602,6 +2604,7 @@ def fit_touchstone_to_spice_target(
                 "max_order_step": max_order_step,
                 "selected_order": selected_order,
                 "passivity": target.passivity,
+                "tuning_overrides": tuning_overrides,
             },
         )
         write_progress("target-search finished status=PASS")
@@ -2621,6 +2624,8 @@ def fit_touchstone_to_spice_target(
     payload["order_formula"] = "real_plus_twice_complex_v1"
     payload["touchstone_path"] = str(touchstone_path)
     payload["best_effort_exported"] = best_effort_exported
+    payload["tuning_overrides"] = tuning_overrides
+    payload["effective_base_config"] = _target_trial_json_safe(asdict(policy_config))
     payload["spice_path"] = str(output_path) if selected_fit_result is not None else None
     payload["report_path"] = None if report_path is None else str(report_path)
     payload["html_report_path"] = None if html_report_path is None else str(html_report_path)

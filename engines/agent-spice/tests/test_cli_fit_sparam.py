@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -526,6 +527,9 @@ def test_fit_sparam_cli_help_is_idem_fast_focused(capsys):
     assert "--rms-target" in captured.out
     assert "--passivity {off,check,enforce}" in captured.out
     assert "--max-order" in captured.out
+    assert "Expert tuning" in captured.out
+    assert "--tuning-profile" in captured.out
+    assert "--pole-spacing" in captured.out
     assert "--enforce-passivity" not in captured.out
     assert "--n-poles-real" not in captured.out
     assert "compact" not in captured.out
@@ -1039,3 +1043,82 @@ def test_fit_sparam_cli_prints_explicit_pass_when_target_is_met(tmp_path: Path, 
 
     assert exit_code == 0
     assert f"fit-sparam status=PASS selected_order=8 output={output}" in capsys.readouterr().out
+
+
+def test_fit_sparam_cli_applies_profile_then_explicit_expert_override(tmp_path: Path, monkeypatch):
+    import agent_spice.cli as cli
+
+    profile = tmp_path / "special-case.json"
+    profile.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "overrides": {
+                    "init_pole_spacing": "resonance",
+                    "fit_max_iterations": 21,
+                    "high_frequency_complex_pairs": 4,
+                    "high_frequency_complex_pair_damping": 0.08,
+                    "high_frequency_complex_pair_lower_fraction": 0.72,
+                    "passivity_max_iterations": 2,
+                    "passivity_samples": 16,
+                    "passivity_active_variables": 4096,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    calls = []
+
+    def fake_target(touchstone_path, output_path, *, target, config, **kwargs):
+        calls.append((config, kwargs["tuning_overrides"]))
+        return SimpleNamespace(target_met=True, selected_trial=SimpleNamespace(requested_order=8, payload=None))
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice_target", fake_target)
+    exit_code = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "line.s2p"),
+            "--output",
+            str(tmp_path / "model.sp"),
+            "--rms-target",
+            "0.001",
+            "--tuning-profile",
+            str(profile),
+            "--fit-iterations",
+            "11",
+        ]
+    )
+
+    assert exit_code == 0
+    config, overrides = calls[0]
+    assert config.init_pole_spacing == "resonance"
+    assert config.max_iterations == 11
+    assert config.high_frequency_complex_pair_count == 4
+    assert config.high_frequency_complex_pair_damping == pytest.approx(0.08)
+    assert config.high_frequency_complex_pair_lower_fraction == pytest.approx(0.72)
+    assert config.passivity_max_iterations == 2
+    assert config.passivity_samples == 16
+    assert config.passivity_active_variables == 4096
+    assert overrides["profile_path"] == str(profile)
+    assert overrides["values"]["fit_max_iterations"] == 11
+
+
+def test_fit_sparam_cli_rejects_unknown_tuning_profile_field(tmp_path: Path, capsys):
+    import agent_spice.cli as cli
+
+    profile = tmp_path / "invalid.json"
+    profile.write_text('{"version": 1, "overrides": {"not_a_knob": 1}}', encoding="utf-8")
+
+    exit_code = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "line.s2p"),
+            "--rms-target",
+            "0.001",
+            "--tuning-profile",
+            str(profile),
+        ]
+    )
+
+    assert exit_code == 1
+    assert "Unsupported tuning profile override(s): not_a_knob" in capsys.readouterr().err

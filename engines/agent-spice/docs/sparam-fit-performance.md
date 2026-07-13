@@ -94,6 +94,42 @@ python -m agent_spice.cli fit-sparam .\model.s2p `
 - `--fail-on-quality`：质量不是 PASS 时返回非零码；配合 CI 使用。
 - `--allow-quality-warnings`：允许 WARN 返回 0，但 FAIL 仍然返回非零码。
 
+## Expert Tuning
+
+默认 `auto` 已是生产基线。只有某个输入在默认参数和合理 `--max-order` 下仍不能达到 RMS 时，才使用专家调参；所有覆盖值会写入 JSON 的 `tuning_overrides` 和 `effective_base_config`，因此结果可复现。
+
+公开的专家参数只覆盖当前 target-search 会实际生效的内容：
+
+- `--pole-spacing lin|log|resonance`
+- `--fit-iterations N`
+- `--hf-complex-pairs N`、`--hf-pair-damping R`、`--hf-pair-start-fraction R`
+- `--passivity-max-iterations N`、`--passivity-samples N`、`--passivity-active-variables N`
+
+也可以把可复用的特殊 case 配置放入严格 JSON profile：
+
+```json
+{
+  "version": 1,
+  "overrides": {
+    "init_pole_spacing": "resonance",
+    "fit_max_iterations": 20,
+    "high_frequency_complex_pairs": 4,
+    "high_frequency_complex_pair_damping": 0.06,
+    "high_frequency_complex_pair_lower_fraction": 0.72,
+    "passivity_max_iterations": 2,
+    "passivity_samples": 16,
+    "passivity_active_variables": 4096
+  }
+}
+```
+
+```powershell
+agent-spice fit-sparam .\special.s166p --rms-target 0.001 --passivity enforce `
+  --max-order 100 --tuning-profile .\special-tuning.json --fit-iterations 24
+```
+
+profile 只接受上述字段，未知字段会失败；同名 CLI 参数优先于 profile。频率降采样和实验性 passivity 机制不在该接口内，因为 target-search 必须保持全频点和统一签核契约。
+
 ## Performance Guidance
 
 当前生产调优应优先围绕目标、阶数和 passivity policy，而不是切换 fitting backend：

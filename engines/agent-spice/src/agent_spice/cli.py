@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 import re
 import sys
@@ -33,6 +34,79 @@ SPARAM_IDEM_FAST_PASSIVITY_OPTION_FLAGS = {
     "passivity_active_variables": "--passivity-active-variables",
     "passivity_f_max": "--passivity-f-max",
 }
+
+_EXPERT_TUNING_OPTION_FLAGS = {
+    "init_pole_spacing": ("--pole-spacing", "--init-pole-spacing"),
+    "fit_max_iterations": ("--fit-iterations", "--fit-max-iterations"),
+    "high_frequency_complex_pairs": ("--hf-complex-pairs", "--high-frequency-complex-pairs"),
+    "high_frequency_complex_pair_damping": ("--hf-pair-damping", "--high-frequency-complex-pair-damping"),
+    "high_frequency_complex_pair_lower_fraction": (
+        "--hf-pair-start-fraction",
+        "--high-frequency-complex-pair-lower-fraction",
+    ),
+    "passivity_max_iterations": ("--passivity-max-iterations",),
+    "passivity_samples": ("--passivity-samples",),
+    "passivity_active_variables": ("--passivity-active-variables",),
+}
+
+
+def _load_expert_tuning_profile(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise ValueError(f"Cannot read tuning profile {path}: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid tuning profile JSON {path}: {exc.msg}") from exc
+    if not isinstance(payload, dict) or set(payload) != {"version", "overrides"}:
+        raise ValueError("tuning profile must contain exactly 'version' and 'overrides'")
+    if payload["version"] != 1 or isinstance(payload["version"], bool):
+        raise ValueError("tuning profile version must be 1")
+    overrides = payload["overrides"]
+    if not isinstance(overrides, dict):
+        raise ValueError("tuning profile overrides must be an object")
+    unknown = sorted(set(overrides) - set(_EXPERT_TUNING_OPTION_FLAGS))
+    if unknown:
+        raise ValueError(f"Unsupported tuning profile override(s): {', '.join(unknown)}")
+
+    validated: dict[str, Any] = {}
+    for name, value in overrides.items():
+        if name == "init_pole_spacing":
+            if value not in {"lin", "log", "resonance"}:
+                raise ValueError("init_pole_spacing must be lin, log, or resonance")
+        elif name in {"fit_max_iterations", "high_frequency_complex_pairs", "passivity_samples", "passivity_active_variables"}:
+            minimum = 0 if name == "high_frequency_complex_pairs" else 1
+            if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
+                raise ValueError(f"{name} must be an integer >= {minimum}")
+        elif name == "passivity_max_iterations":
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise ValueError("passivity_max_iterations must be an integer >= 0")
+        else:
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+                raise ValueError(f"{name} must be a finite number")
+            if not 0.0 < float(value) <= 1.0:
+                raise ValueError(f"{name} must be in (0, 1]")
+        validated[name] = value
+    return validated
+
+
+def _apply_expert_tuning_overrides(args: Any, argv: list[str]) -> dict[str, Any] | None:
+    direct = {
+        name: getattr(args, name)
+        for name, flags in _EXPERT_TUNING_OPTION_FLAGS.items()
+        if any(_argument_was_explicit(argv, flag) for flag in flags)
+    }
+    profile_values: dict[str, Any] = {}
+    if args.tuning_profile is not None:
+        profile_values = _load_expert_tuning_profile(args.tuning_profile)
+        for name, value in profile_values.items():
+            if name not in direct:
+                setattr(args, name, value)
+    if not direct and not profile_values:
+        return None
+    return {
+        "profile_path": None if args.tuning_profile is None else str(args.tuning_profile),
+        "values": {**profile_values, **direct},
+    }
 
 
 if TYPE_CHECKING:
@@ -583,6 +657,9 @@ def _apply_sparam_auto_preset(args: Any, argv: list[str]) -> None:
         return
 
     def is_explicit(opt: str) -> bool:
+        for flags in _EXPERT_TUNING_OPTION_FLAGS.values():
+            if opt in flags:
+                return any(_argument_was_explicit(argv, flag) for flag in flags)
         return _argument_was_explicit(argv, opt)
 
     ports = 2
@@ -815,10 +892,42 @@ def main(argv: list[str] | None = None) -> int:
     fit_parser.add_argument("--enforce-passivity", dest="skip_passivity_enforce", action="store_false", help=argparse.SUPPRESS)
     fit_parser.add_argument("--check-passivity", dest="skip_passivity_check", action="store_false", help=argparse.SUPPRESS)
     fit_parser.add_argument("--subckt-name", default="s_equivalent", help="SPICE subcircuit name.")
+    expert_tuning = fit_parser.add_argument_group(
+        "Expert tuning",
+        "Optional Native algorithm overrides for difficult cases; every applied value is recorded in the report.",
+    )
+    expert_tuning.add_argument(
+        "--tuning-profile",
+        type=Path,
+        help="Strict JSON profile with version=1 and an overrides object; CLI options take precedence.",
+    )
+    expert_tuning.add_argument(
+        "--pole-spacing", "--init-pole-spacing", dest="init_pole_spacing",
+        choices=["lin", "log", "resonance"], default="log",
+        help="Initial pole spacing (default: log).",
+    )
+    expert_tuning.add_argument(
+        "--fit-iterations", "--fit-max-iterations", dest="fit_max_iterations", type=int, default=14,
+        help="Maximum Native vector-fitting iterations (default: 14).",
+    )
+    expert_tuning.add_argument(
+        "--hf-complex-pairs", "--high-frequency-complex-pairs", dest="high_frequency_complex_pairs", type=int, default=2,
+        help="Additional high-frequency complex pole pairs (default: 2).",
+    )
+    expert_tuning.add_argument(
+        "--hf-pair-damping", "--high-frequency-complex-pair-damping", dest="high_frequency_complex_pair_damping", type=float, default=0.03,
+        help="High-frequency complex-pair damping ratio (default: 0.03).",
+    )
+    expert_tuning.add_argument(
+        "--hf-pair-start-fraction", "--high-frequency-complex-pair-lower-fraction", dest="high_frequency_complex_pair_lower_fraction", type=float, default=0.68,
+        help="Lowest normalized frequency for high-frequency pairs (default: 0.68).",
+    )
+    expert_tuning.add_argument("--passivity-max-iterations", type=int, default=1, help="Maximum passivity-enforcement iterations (default: 1).")
+    expert_tuning.add_argument("--passivity-samples", type=int, default=8, help="Maximum passivity violation samples per enforcement iteration (default: 8).")
+    expert_tuning.add_argument("--passivity-active-variables", type=int, default=3072, help="Maximum active variables for passivity enforcement (default: 3072).")
     _add_hidden_argument(fit_parser, "--mode", choices=["auto", "manual"], default="manual")
     _add_hidden_argument(fit_parser, "--n-poles-real", type=int, default=0)
     _add_hidden_argument(fit_parser, "--n-poles-cmplx", type=int, default=2)
-    _add_hidden_argument(fit_parser, "--init-pole-spacing", choices=["lin", "log", "resonance"], default="log")
     _add_hidden_argument(fit_parser, "--n-poles-init-real", type=int, default=3)
     _add_hidden_argument(fit_parser, "--n-poles-init-cmplx", type=int, default=3)
     _add_hidden_argument(fit_parser, "--n-poles-add", type=int, default=3)
@@ -830,10 +939,6 @@ def main(argv: list[str] | None = None) -> int:
     _add_hidden_argument(fit_parser, "--alpha", type=float, default=0.03)
     _add_hidden_argument(fit_parser, "--gamma", type=float, default=0.03)
     _add_hidden_argument(fit_parser, "--nu-samples", type=float, default=1.0)
-    _add_hidden_argument(fit_parser, "--fit-max-iterations", type=int, default=14)
-    _add_hidden_argument(fit_parser, "--passivity-samples", type=int, default=8)
-    _add_hidden_argument(fit_parser, "--passivity-max-iterations", type=int, default=1)
-    _add_hidden_argument(fit_parser, "--passivity-active-variables", type=int, default=3072)
     _add_hidden_argument(fit_parser, "--passivity-f-max", type=float)
     _add_hidden_argument(fit_parser, "--no-fit-dc", action="store_true")
     _add_hidden_argument(fit_parser, "--fit-enforce-dc", dest="no_fit_dc", action="store_false")
@@ -842,9 +947,6 @@ def main(argv: list[str] | None = None) -> int:
     _add_hidden_argument(fit_parser, "--fit-max-frequency-points", type=int, default=256)
     _add_hidden_argument(fit_parser, "--fit-f-min", type=float)
     _add_hidden_argument(fit_parser, "--fit-f-max", type=float)
-    _add_hidden_argument(fit_parser, "--high-frequency-complex-pairs", type=int, default=2)
-    _add_hidden_argument(fit_parser, "--high-frequency-complex-pair-damping", type=float, default=0.03)
-    _add_hidden_argument(fit_parser, "--high-frequency-complex-pair-lower-fraction", type=float, default=0.68)
     _add_hidden_argument(fit_parser, "--native-high-frequency-complex-pair-frequency-gate", action="store_true")
     _add_hidden_argument(fit_parser, "--native-high-frequency-residual-injection", action="store_true")
     _add_hidden_argument(fit_parser, "--native-high-frequency-residual-injection-lower-fraction", type=float, default=0.68)
@@ -1198,6 +1300,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "fit-sparam":
         try:
             _apply_sparam_auto_preset(args, effective_argv)
+            tuning_overrides = _apply_expert_tuning_overrides(args, effective_argv)
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
@@ -1364,6 +1467,8 @@ def main(argv: list[str] | None = None) -> int:
                 "report_top_rms": args.report_top_rms,
                 "max_order_step": args.max_order_step,
             }
+            if tuning_overrides is not None:
+                target_fit_kwargs["tuning_overrides"] = tuning_overrides
             result = fit_touchstone_to_spice_target(
                 args.touchstone,
                 args.output,
