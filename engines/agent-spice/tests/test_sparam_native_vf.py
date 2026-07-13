@@ -3,6 +3,7 @@ import pytest
 
 from agent_spice.sparam.fitting import _LightweightSNetwork
 from agent_spice.sparam.native_vf import NativeVectorFitting, PoleCandidateScore
+from agent_spice.sparam.pole_relocation import _batched_qr_r_factors
 
 
 def test_native_vector_fitting_writes_s_parameter_spice_subcircuit(tmp_path):
@@ -97,6 +98,15 @@ def test_native_residue_fit_handles_all_real_poles():
     assert residues.shape == (1, 2)
     assert constant_coeff.shape == (1,)
     assert proportional_coeff.shape == (1,)
+
+
+def test_batched_qr_r_factors_matches_one_response_at_a_time():
+    matrices = np.random.default_rng(7).normal(size=(5, 11, 4))
+
+    actual = _batched_qr_r_factors(matrices, block_size=2)
+    expected = np.stack([np.linalg.qr(matrix, mode="r") for matrix in matrices])
+
+    assert np.array_equal(actual, expected)
 
 
 def test_native_high_frequency_complex_pair_repair_converts_largest_real_pole():

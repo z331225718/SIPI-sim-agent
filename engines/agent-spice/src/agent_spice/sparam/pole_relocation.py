@@ -7,11 +7,27 @@ import numpy as np
 
 RECIPROCAL_RELATIVE_TOLERANCE = 1e-12
 RECIPROCAL_ABSOLUTE_TOLERANCE = 1e-12
+RELOCATION_QR_BLOCK_SIZE = 64
 
 
 def _get_model_order(poles: np.ndarray) -> int:
     pole_array = np.asarray(poles)
     return int(np.count_nonzero(pole_array.imag == 0.0) + 2 * np.count_nonzero(pole_array.imag != 0.0))
+
+
+def _batched_qr_r_factors(matrices: np.ndarray, *, block_size: int = RELOCATION_QR_BLOCK_SIZE) -> np.ndarray:
+    """Return R factors for many small least-squares matrices without Python-call overhead."""
+    matrix_array = np.asarray(matrices, dtype=float)
+    if matrix_array.ndim != 3:
+        raise ValueError("matrices must have shape (responses, rows, columns)")
+    if block_size < 1:
+        raise ValueError("block_size must be >= 1")
+    count, rows, columns = matrix_array.shape
+    factors = np.empty((count, min(rows, columns), columns), dtype=float)
+    for start in range(0, count, block_size):
+        stop = min(count, start + block_size)
+        factors[start:stop] = np.linalg.qr(matrix_array[start:stop], mode="r")
+    return factors
 
 
 def streaming_pole_relocation(
@@ -227,39 +243,64 @@ def _streaming_pole_relocation_impl(
     data_rows = n_responses * n_rows_r22
     a_fast = None if low_memory else np.empty((dim0, n_cols_used))
     r_aug = np.empty((0, n_cols_used + 1), dtype=float) if low_memory else None
-    work = np.empty((n_freqs, dim_n), dtype=complex)
-    work_ri = np.empty((dim_m, dim_n), dtype=float)
+    work = np.empty((n_freqs, dim_n), dtype=complex) if low_memory else None
+    work_ri = np.empty((dim_m, dim_n), dtype=float) if low_memory else None
     column_norm_sq = np.zeros(n_cols_used, dtype=float) if low_memory else None
 
-    for response_index in range(n_responses):
-        response = freq_responses[response_index]
-        work[:, idx_res_real] = coeff_real
-        work[:, idx_res_complex_re] = coeff_complex_re
-        work[:, idx_res_complex_im] = coeff_complex_im
-        work[:, idx_constant] = 1
-        work[:, idx_proportional] = s[:, None]
-        work[:, n_cols_unused + idx_res_real] = -response[:, None] * coeff_real
-        work[:, n_cols_unused + idx_res_complex_re] = -response[:, None] * coeff_complex_re
-        work[:, n_cols_unused + idx_res_complex_im] = -response[:, None] * coeff_complex_im
-        work[:, -1] = -response
-        work_ri[:n_freqs, :] = work.real
-        work_ri[n_freqs:, :] = work.imag
-        if frequency_weight is not None:
-            work_ri[:n_freqs, :] *= frequency_weight[:, None]
-            work_ri[n_freqs:, :] *= frequency_weight[:, None]
-        r_matrix = np.linalg.qr(work_ri, mode="r")
-        r22 = weights_responses[response_index] * r_matrix[n_rows_r12:, n_cols_unused:]
-        if low_memory:
+    if low_memory:
+        assert work is not None
+        assert work_ri is not None
+        for response_index in range(n_responses):
+            response = freq_responses[response_index]
+            work[:, idx_res_real] = coeff_real
+            work[:, idx_res_complex_re] = coeff_complex_re
+            work[:, idx_res_complex_im] = coeff_complex_im
+            work[:, idx_constant] = 1
+            work[:, idx_proportional] = s[:, None]
+            work[:, n_cols_unused + idx_res_real] = -response[:, None] * coeff_real
+            work[:, n_cols_unused + idx_res_complex_re] = -response[:, None] * coeff_complex_re
+            work[:, n_cols_unused + idx_res_complex_im] = -response[:, None] * coeff_complex_im
+            work[:, -1] = -response
+            work_ri[:n_freqs, :] = work.real
+            work_ri[n_freqs:, :] = work.imag
+            if frequency_weight is not None:
+                work_ri[:n_freqs, :] *= frequency_weight[:, None]
+                work_ri[n_freqs:, :] *= frequency_weight[:, None]
+            r_matrix = np.linalg.qr(work_ri, mode="r")
+            r22 = weights_responses[response_index] * r_matrix[n_rows_r12:, n_cols_unused:]
             assert column_norm_sq is not None
             column_norm_sq += np.sum(np.square(r22), axis=0)
-        else:
-            assert a_fast is not None
-            row_slice = slice(response_index * n_rows_r22, (response_index + 1) * n_rows_r22)
-            a_fast[row_slice, :] = r22
+    else:
+        assert a_fast is not None
+        base_work = np.empty((n_freqs, n_cols_unused), dtype=complex)
+        base_work[:, idx_res_real] = coeff_real
+        base_work[:, idx_res_complex_re] = coeff_complex_re
+        base_work[:, idx_res_complex_im] = coeff_complex_im
+        base_work[:, idx_constant] = 1
+        base_work[:, idx_proportional] = s[:, None]
+        a_fast_rows = a_fast[:data_rows].reshape(n_responses, n_rows_r22, n_cols_used)
+        for start in range(0, n_responses, RELOCATION_QR_BLOCK_SIZE):
+            stop = min(n_responses, start + RELOCATION_QR_BLOCK_SIZE)
+            responses = freq_responses[start:stop]
+            block_work = np.empty((stop - start, n_freqs, dim_n), dtype=complex)
+            block_work[:, :, :n_cols_unused] = base_work
+            block_work[:, :, n_cols_unused + idx_res_real] = -responses[:, :, None] * coeff_real
+            block_work[:, :, n_cols_unused + idx_res_complex_re] = -responses[:, :, None] * coeff_complex_re
+            block_work[:, :, n_cols_unused + idx_res_complex_im] = -responses[:, :, None] * coeff_complex_im
+            block_work[:, :, -1] = -responses
+            block_work_ri = np.concatenate((block_work.real, block_work.imag), axis=1)
+            if frequency_weight is not None:
+                block_work_ri[:, :n_freqs, :] *= frequency_weight[None, :, None]
+                block_work_ri[:, n_freqs:, :] *= frequency_weight[None, :, None]
+            r_factors = _batched_qr_r_factors(block_work_ri)
+            r22 = r_factors[:, n_rows_r12:, n_cols_unused:]
+            a_fast_rows[start:stop] = weights_responses[start:stop, None, None] * r22
 
     if low_memory:
         assert r_aug is not None
         assert column_norm_sq is not None
+        assert work is not None
+        assert work_ri is not None
         extra_row = np.zeros(n_cols_used, dtype=float)
         extra_row[idx_res_real] = np.sum(coeff_real.real, axis=0)
         extra_row[idx_res_complex_re] = np.sum(coeff_complex_re.real, axis=0)
