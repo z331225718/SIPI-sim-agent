@@ -11,7 +11,7 @@ def _write_report(path: Path, *, order: int = 9, quality: str = "PASS") -> None:
     path.write_text(
         json.dumps(
             {
-                "quality": {"overall_status": quality},
+                "quality": {"status": quality},
                 "expanded_model_order": order,
                 "fit_seconds": 4.0,
                 "check_seconds": 1.0,
