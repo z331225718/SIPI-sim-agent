@@ -33,6 +33,15 @@ def test_build_child_environment_preserves_parent_and_sets_exact_thread_budget()
     assert {environment[name] for name in benchmark.BLAS_THREAD_ENVIRONMENT} == {"64"}
 
 
+def test_command_preserves_signoff_diagnostics_without_treating_input_warnings_as_process_failure(tmp_path: Path):
+    command = benchmark._command(
+        benchmark.ThreadBenchmarkCase("case", tmp_path / "case.s2p", 2, 0.001), tmp_path, "python"
+    )
+
+    assert "--quality-profile" in command
+    assert "--fail-on-quality" not in command
+
+
 def test_collect_trial_rejects_quality_or_order_drift_from_single_thread_reference(tmp_path: Path, monkeypatch):
     source = tmp_path / "case.s2p"
     source.write_text("test", encoding="utf-8")
