@@ -177,6 +177,26 @@ def test_scheduler_supports_small_synthetic_max_order():
     assert result.selected_trial.requested_order == 2
 
 
+def test_search_exposes_lowest_rms_trial_when_target_is_not_met():
+    outcomes = {
+        4: make_trial(4, target_met=False),
+        6: make_trial(6, target_met=False),
+    }
+    outcomes[4].final_mean_rms = 0.004
+    outcomes[6].final_mean_rms = 0.002
+
+    result = run_target_order_search(
+        SParamFitTarget(mean_rms=0.001, max_order=6),
+        lambda order: outcomes[order],
+    )
+
+    assert result.target_met is False
+    assert result.best_trial is outcomes[6]
+    assert result.to_dict()["best_effort_effective_order"] == 6
+    assert result.to_dict()["best_effort_requested_order"] == 6
+    assert result.to_dict()["best_effort_final_mean_rms"] == pytest.approx(0.002)
+
+
 def test_scheduler_honors_a_validated_minimum_order_bound():
     calls = []
 

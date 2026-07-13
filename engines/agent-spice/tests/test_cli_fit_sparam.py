@@ -987,7 +987,7 @@ def test_fit_sparam_cli_builds_backend_free_config_for_small_port_target_search(
     assert not hasattr(calls[0], "relocation_backend")
 
 
-def test_fit_sparam_cli_returns_failure_when_target_is_not_met(tmp_path: Path, monkeypatch):
+def test_fit_sparam_cli_returns_explicit_fail_when_target_is_not_met(tmp_path: Path, monkeypatch, capsys):
     import agent_spice.cli as cli
 
     monkeypatch.setattr(
@@ -1009,3 +1009,33 @@ def test_fit_sparam_cli_returns_failure_when_target_is_not_met(tmp_path: Path, m
     )
 
     assert exit_code == 1
+    assert "fit-sparam status=FAIL" in capsys.readouterr().err
+
+
+def test_fit_sparam_cli_prints_explicit_pass_when_target_is_met(tmp_path: Path, monkeypatch, capsys):
+    import agent_spice.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "fit_touchstone_to_spice_target",
+        lambda *args, **kwargs: SimpleNamespace(
+            target_met=True,
+            selected_trial=SimpleNamespace(requested_order=8, payload=None),
+        ),
+        raising=False,
+    )
+
+    output = tmp_path / "model.sp"
+    exit_code = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "line.s2p"),
+            "--output",
+            str(output),
+            "--rms-target",
+            "0.001",
+        ]
+    )
+
+    assert exit_code == 0
+    assert f"fit-sparam status=PASS selected_order=8 output={output}" in capsys.readouterr().out

@@ -80,6 +80,20 @@ class SParamTargetSearchResult:
     def target_met(self) -> bool:
         return self.selected_trial is not None
 
+    @property
+    def best_trial(self) -> SParamOrderTrial | None:
+        """Return the finite-RMS trial to export when the target search fails."""
+        candidates = [
+            trial
+            for trial in self.trials
+            if math.isfinite(trial.final_mean_rms)
+        ]
+        return min(
+            candidates,
+            key=lambda trial: (trial.final_mean_rms, trial.effective_order, trial.requested_order),
+            default=None,
+        )
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "rms_target": float(self.target.mean_rms),
@@ -90,6 +104,15 @@ class SParamTargetSearchResult:
             "selected_effective_order": None
             if self.selected_trial is None
             else int(self.selected_trial.effective_order),
+            "best_effort_effective_order": None
+            if self.best_trial is None
+            else int(self.best_trial.effective_order),
+            "best_effort_requested_order": None
+            if self.best_trial is None
+            else int(self.best_trial.requested_order),
+            "best_effort_final_mean_rms": None
+            if self.best_trial is None
+            else float(self.best_trial.final_mean_rms),
             "target_met": bool(self.target_met),
             "target_stop_reason": self.stop_reason,
             "fit_seconds": sum(trial.fit_seconds for trial in self.trials),

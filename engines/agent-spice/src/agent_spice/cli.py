@@ -754,7 +754,10 @@ def main(argv: list[str] | None = None) -> int:
     fit_parser.add_argument(
         "--output",
         type=Path,
-        help="Output SPICE subcircuit path; defaults to <input>_fitted.sp next to the input.",
+        help=(
+            "Output SPICE subcircuit path; defaults to <input>_fitted.sp next to the input. "
+            "On a target-search FAIL, exports the lowest-RMS candidate but returns FAIL."
+        ),
     )
     fit_parser.add_argument("--report", type=Path, help="Override the default JSON fit report path.")
     fit_parser.add_argument("--html-report", type=Path, help="Override the default HTML fit report path.")
@@ -1370,7 +1373,18 @@ def main(argv: list[str] | None = None) -> int:
             print(f"error: {exc}", file=sys.stderr)
             return 1
         if not result.target_met:
-            print("error: requested RMS/passivity target was not met before max order", file=sys.stderr)
+            best_trial = getattr(result, "best_trial", None)
+            details = ""
+            if best_trial is not None:
+                details = (
+                    f" best_order={best_trial.requested_order}"
+                    f" best_rms={best_trial.final_mean_rms:.12g}"
+                    f" output={args.output}"
+                )
+            print(
+                "fit-sparam status=FAIL reason=target_not_met_before_max_order" + details,
+                file=sys.stderr,
+            )
             return 1
         if args.fail_on_quality:
             selected_result = None if result.selected_trial is None else result.selected_trial.payload
@@ -1381,6 +1395,9 @@ def main(argv: list[str] | None = None) -> int:
             if failure is not None:
                 print(f"error: {failure}", file=sys.stderr)
                 return 1
+        selected_trial = result.selected_trial
+        selected_order = None if selected_trial is None else getattr(selected_trial, "requested_order", None)
+        print(f"fit-sparam status=PASS selected_order={selected_order} output={args.output}")
         return 0
     if args.command == "probe-idem-init":
         try:

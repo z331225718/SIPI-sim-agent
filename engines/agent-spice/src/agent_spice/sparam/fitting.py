@@ -2541,12 +2541,45 @@ def fit_touchstone_to_spice_target(
     search_target = replace(target, max_order_step=max_order_step)
     search_result = run_target_order_search(search_target, evaluate_order)
     selected_fit_result = None
+    best_effort_exported = False
     if not search_result.target_met:
         write_progress(f"target-search finished status=FAIL reason={search_result.stop_reason}")
-        output_path.unlink(missing_ok=True)
-        for artifact_path in (fitted_touchstone_path, rfm_path, rfm_wrapper_path):
-            if artifact_path is not None:
-                artifact_path.unlink(missing_ok=True)
+        best_trial = search_result.best_trial
+        best_execution = (
+            None
+            if best_trial is None
+            else executions_by_order.get(best_trial.requested_order)
+        )
+        if best_trial is None or best_execution is None:
+            output_path.unlink(missing_ok=True)
+            for artifact_path in (fitted_touchstone_path, rfm_path, rfm_wrapper_path):
+                if artifact_path is not None:
+                    artifact_path.unlink(missing_ok=True)
+        else:
+            write_progress(
+                "target-search exporting best-effort "
+                f"order={best_trial.requested_order} rms={_format_float(best_trial.final_mean_rms)}"
+            )
+            selected_fit_result = _write_fit_outputs(
+                best_execution,
+                output_path,
+                report_path=report_path,
+                html_report_path=html_report_path,
+                fitted_touchstone_path=fitted_touchstone_path,
+                rfm_path=rfm_path,
+                rfm_wrapper_path=rfm_wrapper_path,
+                report_top_rms=report_top_rms,
+                report_configuration={
+                    "rms_target": target.mean_rms,
+                    "max_order": target.max_order,
+                    "min_order": target.min_order,
+                    "max_order_step": max_order_step,
+                    "selected_order": None,
+                    "best_effort_order": best_trial.requested_order,
+                    "passivity": target.passivity,
+                },
+            )
+            best_effort_exported = True
     else:
         selected_order = search_result.selected_trial.requested_order
         write_progress(f"target-search selected_order={selected_order}; writing final artifacts")
@@ -2587,7 +2620,8 @@ def fit_touchstone_to_spice_target(
     payload["rms_formula"] = "mean_s_rms_v1"
     payload["order_formula"] = "real_plus_twice_complex_v1"
     payload["touchstone_path"] = str(touchstone_path)
-    payload["spice_path"] = str(output_path) if search_result.target_met else None
+    payload["best_effort_exported"] = best_effort_exported
+    payload["spice_path"] = str(output_path) if selected_fit_result is not None else None
     payload["report_path"] = None if report_path is None else str(report_path)
     payload["html_report_path"] = None if html_report_path is None else str(html_report_path)
     payload["log_path"] = None if log_path is None else str(log_path)
@@ -2633,8 +2667,17 @@ def fit_touchstone_to_spice_target(
                 )
                 if row
             )
+            delivery_heading = "最终交付物" if search_result.target_met else "最佳可得输出（未达目标）"
+            failure_notice = ""
+            if not search_result.target_met:
+                failure_notice = (
+                    "\n<p><strong>FAIL:</strong> RMS/passivity 目标未在最大 order 前达成；"
+                    "以下为 RMS 最低候选的诊断输出，不可视为签核通过。</p>\n"
+                )
             delivery_section = (
-                "\n<h2>最终交付物</h2>\n<table>\n"
+                failure_notice
+                +
+                f"\n<h2>{delivery_heading}</h2>\n<table>\n"
                 "  <tr><th>项目</th><th>值</th></tr>\n"
                 f"  {final_artifact_rows}\n</table>\n"
             )
@@ -2653,6 +2696,12 @@ def fit_touchstone_to_spice_target(
                 "</tr>"
                 for trial in search_result.trials
             )
+            failure_summary = ""
+            if not search_result.target_met and best_effort_exported:
+                failure_summary = (
+                    "\n  <p><strong>FAIL:</strong> RMS/passivity 目标未在最大 order 前达成；"
+                    "最佳可得输出已导出，不能视为签核通过。</p>"
+                )
             html_report_path.write_text(
                 f"""<!doctype html>
 <html>
@@ -2660,6 +2709,7 @@ def fit_touchstone_to_spice_target(
 <body>
   <h1>Target-Driven S-Parameter Fit</h1>
   <p>Target RMS: {_format_float(target.mean_rms)}; passivity: {escape(target.passivity)}; result: {escape(search_result.stop_reason)}</p>
+  {failure_summary}
   <table>
     <tr><th>Requested order</th><th>Effective order</th><th>Pre RMS</th><th>Final RMS</th><th>Final sigma</th><th>Status</th><th>Reason</th></tr>
     {rows}

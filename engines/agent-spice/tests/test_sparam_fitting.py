@@ -1491,14 +1491,23 @@ def test_target_fit_copies_requested_product_exports_to_final_paths(tmp_path: Pa
     assert html_report.exists()
 
 
-def test_target_fit_failure_removes_requested_output_and_keeps_reports(tmp_path: Path, monkeypatch):
+def test_target_fit_failure_exports_lowest_rms_execution_and_keeps_fail_status(tmp_path: Path, monkeypatch):
     import agent_spice.sparam.fitting as fitting
 
     def fake_execution(touchstone_path, output_path, *, config, log_path):
         result = _fake_target_fit_result(output_path, config.model_order_max, target_met=False)
+        result.comparison_mean_rms_error = 0.004 if config.model_order_max == 4 else 0.002
+        result.pre_enforcement_mean_rms_error = result.comparison_mean_rms_error
         return fitting._FitExecution(result=result, network=None, vector_fit=None)
 
     monkeypatch.setattr(fitting, "_fit_touchstone_execution", fake_execution)
+    def write_outputs(execution, output_path, **kwargs):
+        output_path.write_text(
+            f"* best order {execution.result.expanded_model_order}\n", encoding="utf-8"
+        )
+        return execution.result
+
+    monkeypatch.setattr(fitting, "_write_fit_outputs", write_outputs)
     output = tmp_path / "model.sp"
     output.write_text("stale", encoding="utf-8")
     report = tmp_path / "report.json"
@@ -1515,9 +1524,14 @@ def test_target_fit_failure_removes_requested_output_and_keeps_reports(tmp_path:
 
     assert result.target_met is False
     assert result.stop_reason == "target_not_met_before_max_order"
-    assert not output.exists()
-    assert json.loads(report.read_text(encoding="utf-8"))["target_met"] is False
+    assert output.exists()
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert payload["target_met"] is False
+    assert payload["best_effort_exported"] is True
+    assert payload["best_effort_effective_order"] == 6
+    assert payload["spice_path"] == str(output)
     assert html.exists()
+    assert "最佳可得输出" in html.read_text(encoding="utf-8")
 
 
 def test_target_fit_appends_progress_log_while_each_order_runs(tmp_path: Path, monkeypatch):
