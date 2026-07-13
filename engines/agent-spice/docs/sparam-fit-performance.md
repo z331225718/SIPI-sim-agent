@@ -110,5 +110,6 @@ agent-spice fit-sparam .\path\to\model.s166p --rms-target 0.001 --passivity enfo
 - 对 30-port 以上模型保留 Native 默认策略，让 reciprocal 检测和 full streaming fallback 自动选择路径。
 - 用 `--max-order` 控制搜索上限；报告中的 `order_trials` 会记录每个 order 的 RMS、max sigma、耗时和内存。
 - 对 CI/signoff 固定 `--rms-target`、`--passivity`、`--max-order` 和 `--quality-profile signoff`，避免依赖隐藏兼容参数。
+- 对同一输入的重复生产拟合，只有在上一次完整报告已经证明低阶失败时，才传入 `--min-order N` 跳过这些已知失败 trial；输入、质量门或 Native 代码变更后必须恢复默认 `--min-order 1`。单任务 50% 提速的验证见 [Native 单任务 50% 提速结果](sparam-native-single-fit-50pct.md)。
 
 完整 Native/IdEM 语料 benchmark 见 `docs/sparam-idem-full-benchmark.md`。
