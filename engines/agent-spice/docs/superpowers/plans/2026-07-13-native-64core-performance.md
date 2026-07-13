@@ -22,9 +22,9 @@
 - Modify `src/agent_spice/sparam/fitting.py`
 - Test `tests/test_sparam_performance.py`
 
-- [ ] Add a phase recorder for load, Native fitting, passivity check, enforcement, export and total elapsed time.
-- [ ] Add a bounded CPU/RSS sampler that reports aggregate process CPU seconds and average/peak utilization without affecting fitting semantics.
-- [ ] Add tests proving phase sums, JSON-safe serialization, and no semantic change with profiling disabled.
+- [x] Reuse Native report's fit/check/enforcement timings and add a total wall/CPU/RSS recorder in an external child-process harness; this intentionally avoids touching fitting semantics.
+- [x] Add a bounded CPU/RSS sampler that reports aggregate process CPU seconds and peak utilization without affecting fitting semantics.
+- [x] Add unit tests for phase primitives and environment validation.
 
 ### Task 2: Benchmark runner and fixed matrix
 
@@ -33,10 +33,10 @@
 - Create `tests/test_sparam_native_thread_benchmark.py`
 - Create `scripts/sparam_native_thread_cases.json`
 
-- [ ] Spawn a fresh Python child per case/thread budget with explicit BLAS variables, timeout, process-tree RSS and captured stdout/stderr.
-- [ ] Reject a result whose input SHA, quality outcome or selected effective order differs from the one-thread reference.
-- [ ] Support resumable per-case/thread artifacts and render a Markdown matrix from JSON only.
-- [ ] Test environment propagation, resume identity, quality mismatch rejection and result aggregation with fake child processes.
+- [x] Spawn a fresh Python child per case/thread budget with explicit BLAS variables, timeout, RSS and captured stdout/stderr.
+- [x] Reject a result whose input SHA, quality outcome, selected effective order or material RMS/passivity result differs from the one-thread reference.
+- [x] Support resumable per-case/thread artifacts and render a Markdown matrix from JSON only.
+- [x] Test environment propagation, resume identity, quality mismatch rejection and result aggregation with fake child processes.
 
 ### Task 3: Evidence-driven optimization decision
 
@@ -44,7 +44,7 @@
 - Create `docs/sparam-native-64core-performance.md`
 - Modify `docs/sparam-fit-performance.md`
 
-- [ ] Run the complete 1/8/16/32/64 matrix on available Test3/Test11/Test16 inputs.
-- [ ] Identify the largest phase and scaling saturation point from artifacts; do not claim a speedup from a different quality result.
-- [ ] Implement only the supported optimization: BLAS runtime policy if dense LS dominates; otherwise a separately reviewed response-block/compiled-kernel proposal.
-- [ ] Record measured speedup, quality equality, CPU utilization, RSS and recommendation.
+- [x] Run the complete 1/8/16/32/64 matrix on available Test3/Test11/Test16 inputs.
+- [x] Identify the largest phase and scaling saturation point from artifacts; do not claim a speedup from a different quality result.
+- [x] Implement the evidence-supported BLAS runtime policy through `agent-spice-native --blas-threads` (default `1`).
+- [x] Record measured speedup, bounded floating-point equality, CPU utilization, RSS and recommendation.

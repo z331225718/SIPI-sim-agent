@@ -98,6 +98,14 @@ python -m agent_spice.cli fit-sparam .\model.s2p `
 
 当前生产调优应优先围绕目标、阶数和 passivity policy，而不是切换 fitting backend：
 
+对 large-port Native fit，显式限制单个子进程的 BLAS 线程数。实测 Test3 s166、Test11 s163、Test16 s91 的 `1/8/16/32/64` 矩阵中，`1` 线程始终最快；默认 16-thread OpenBLAS 比 1-thread 慢 `23%` 至 `37%`。使用：
+
+```powershell
+agent-spice-native --blas-threads 1 fit-sparam .\path\to\model.s166p --rms-target 0.001 --passivity enforce --max-order 100
+```
+
+该启动器在导入 NumPy 前启动新进程并固定 `OMP_NUM_THREADS`、`MKL_NUM_THREADS`、`OPENBLAS_NUM_THREADS`、`NUMEXPR_NUM_THREADS`。64-core 主机应优先并发多个独立 fit；不要为单个 fit 直接设为 64。完整证据与可恢复 benchmark 方法见 [Native 线程性能结论](sparam-native-64core-performance.md)。
+
 - 先用 `--passivity check` 建立 order/RMS/passivity 风险，再用 `--passivity enforce` 做签核。
 - 对 30-port 以上模型保留 Native 默认策略，让 reciprocal 检测和 full streaming fallback 自动选择路径。
 - 用 `--max-order` 控制搜索上限；报告中的 `order_trials` 会记录每个 order 的 RMS、max sigma、耗时和内存。
