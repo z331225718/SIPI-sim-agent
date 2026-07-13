@@ -785,6 +785,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Maximum effective common-pole order; defaults to 100.",
     )
     fit_parser.add_argument(
+        "--min-order",
+        type=int,
+        default=1,
+        help="Validated lower bound for target-order search; skips lower orders (default: 1).",
+    )
+    fit_parser.add_argument(
         "--max-order-step",
         type=int,
         default=8,
@@ -1239,6 +1245,7 @@ def main(argv: list[str] | None = None) -> int:
                 mean_rms=rms_target,
                 passivity=passivity_policy,
                 max_order=max_order,
+                min_order=args.min_order,
                 max_order_step=args.max_order_step,
                 passivity_epsilon=args.max_passivity_epsilon,
             )

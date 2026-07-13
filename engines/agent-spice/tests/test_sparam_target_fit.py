@@ -42,6 +42,8 @@ def make_trial(order: int, *, target_met: bool, effective_order: int | None = No
         {"mean_rms": math.nan},
         {"mean_rms": 0.001, "passivity": "repair"},
         {"mean_rms": 0.001, "max_order": 0},
+        {"mean_rms": 0.001, "min_order": 0},
+        {"mean_rms": 0.001, "min_order": 9, "max_order": 8},
         {"mean_rms": 0.001, "max_order_step": 0},
         {"mean_rms": 0.001, "passivity_epsilon": -1.0},
     ],
@@ -56,6 +58,7 @@ def test_target_defaults_to_check_policy():
 
     assert target.passivity == "check"
     assert target.max_order == 40
+    assert target.min_order == 1
     assert target.max_order_step == 8
     assert target.passivity_epsilon == pytest.approx(1e-6)
 
@@ -164,6 +167,23 @@ def test_scheduler_supports_small_synthetic_max_order():
     assert calls == [1, 2]
     assert result.selected_trial is not None
     assert result.selected_trial.requested_order == 2
+
+
+def test_scheduler_honors_a_validated_minimum_order_bound():
+    calls = []
+
+    def evaluate(order):
+        calls.append(order)
+        return make_trial(order, target_met=order == 9)
+
+    result = run_target_order_search(
+        SParamFitTarget(mean_rms=0.001, min_order=9, max_order=20),
+        evaluate,
+    )
+
+    assert calls == [9]
+    assert result.selected_trial is not None
+    assert result.selected_trial.requested_order == 9
 
 
 def test_trial_dict_excludes_in_memory_payload():

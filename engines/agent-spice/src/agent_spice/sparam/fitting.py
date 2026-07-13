@@ -2565,6 +2565,7 @@ def fit_touchstone_to_spice_target(
             report_configuration={
                 "rms_target": target.mean_rms,
                 "max_order": target.max_order,
+                "min_order": target.min_order,
                 "max_order_step": max_order_step,
                 "selected_order": selected_order,
                 "passivity": target.passivity,
