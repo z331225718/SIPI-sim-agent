@@ -16,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 agent-spice = "agent_spice.cli:main"
+agent-spice-native = "agent_spice.sparam.native_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
