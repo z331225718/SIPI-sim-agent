@@ -108,6 +108,18 @@ def write_fitted_touchstone(path: str | Path, frequencies_hz: Any, fitted_s: Any
     content = network.write_touchstone(return_string=True, form="ri", write_z0=True)
     if not isinstance(content, str):
         raise RuntimeError("scikit-rf did not return Touchstone contents")
+    reference = complex(network.z0[0, 0])
+    if not np.isfinite(reference) or reference.real <= 0.0:
+        raise ValueError("Touchstone reference impedance must have a positive, finite real part")
+    lines = content.splitlines(keepends=True)
+    for index, line in enumerate(lines):
+        tokens = line.split()
+        if tokens and tokens[0] == "#":
+            if len(tokens) == 5 and tokens[-1].upper() == "R":
+                newline = "\r\n" if line.endswith("\r\n") else "\n"
+                lines[index] = f"{line.rstrip()} {reference.real:.12g}{newline}"
+            break
+    content = "".join(lines)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(content, encoding="utf-8")
     return output

@@ -62,6 +62,8 @@ def test_write_fitted_touchstone_round_trips_frequencies_values_and_z0(tmp_path)
     reread = rf.Network(str(written))
 
     assert written == output
+    option_line = next(line for line in written.read_text(encoding="utf-8").splitlines() if line.startswith("#"))
+    assert option_line == "# Hz S RI R 75"
     np.testing.assert_allclose(reread.f, frequencies_hz)
     np.testing.assert_allclose(reread.s, fitted)
     np.testing.assert_allclose(reread.z0, np.broadcast_to(z0, (len(frequencies_hz), 2)))
