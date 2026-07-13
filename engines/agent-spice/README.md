@@ -101,6 +101,7 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 | `--rms-target FLOAT` | 必填 | 最终平均 S-RMS 上限，必须为正数。 |
 | `--passivity {off,check,enforce}` | `check` | 被动性处理策略，见上表。 |
 | `--max-order N` | `100` | 允许尝试的最大有效公共极点阶次；与端口数量无关。 |
+| `--min-order N` | `1` | 已由此前完整报告验证的最低起始阶次；仅用于相同输入的重复拟合以跳过已知失败的低阶 trial。新输入必须保留默认值。 |
 | `--max-order-step N` | `8` | RMS 明显未达标时允许的最大自适应阶次步长；必须为正整数。 |
 | `--quality-profile {explore,signoff}` | `explore` | 报告质量门配置。`explore` 用于日常探索；`signoff` 用于更严格的交付检查。 |
 | `--fail-on-quality` | 关闭 | 质量报告出现阻断项时，以非零退出码结束。 |
@@ -109,6 +110,52 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 | `-h`、`--help` | - | 显示命令帮助。 |
 
 所有输出路径必须不同；重复路径会在拟合前报错，避免产物互相覆盖。RFM 路径不能包含单引号，因为 HSPICE/Sigrity wrapper 使用单引号引用该文件。
+
+### 专家调参
+
+默认 `auto` 不会因本节接口而改变：**未传任何专家参数或 `--tuning-profile` 时，仍使用当前 Native `idem-fast` 自动策略、全频点 RMS 判定和既有 passivity 契约。** 只有默认参数在合理 `--max-order` 内不能满足目标的特殊输入，才应使用这些覆盖项。
+
+| 参数 | 默认值 | 表示什么 | 何时尝试 |
+| --- | --- | --- | --- |
+| `--pole-spacing {lin,log,resonance}` | auto（当前为 `lin`） | 初始共享极点的频率布局：`lin` 均匀覆盖、`log` 低频更密、`resonance` 依据响应峰值提出初值。 | 怀疑窄带谐振或特定频段动态被遗漏时，优先尝试 `resonance`。 |
+| `--fit-iterations N` | 端口相关 auto 值 | Native VF 的最大 relocation 迭代数。 | 初始模型明显尚未收敛时增加；更大值会增加时间，也可能放大极点漂移。 |
+| `--hf-complex-pairs N` | 大端口 `2`，其余依 auto | 预留给高频端的附加复极点对数量。 | 高频 RMS 明显高于低频、且提高总 `--max-order` 仍无效时尝试。 |
+| `--hf-pair-damping R` | `0.03` | 高频复极点对的归一化阻尼；较小值对应更尖锐、更高 Q 的候选谐振。 | 高频存在窄峰时可小幅降低；过小会导致条件数和被动性风险上升。 |
+| `--hf-pair-start-fraction R` | `0.68` | 高频复极点对允许出现的频段下界，占输入频率跨度的归一化比例。 | 高频问题更靠近末端时提高；问题覆盖较宽的中高频时降低。 |
+| `--passivity-max-iterations N` | auto（通常 `1`；大端口 enforce 为 `0`） | passivity enforcement 的最大修复轮数；`0` 表示不做修复轮。 | 原始拟合 RMS 达标、但修复后仍有被动性违例时增加。 |
+| `--passivity-samples N` | auto（通常 `8`；大端口 enforce 为 `64`） | 每轮无源修复保留的最严重违规频点上限。 | 违规频段较多或修复遗漏局部尖峰时增加。 |
+| `--passivity-active-variables N` | `3072` | 无源修复中允许同时调整的变量预算。 | 大端口模型的 enforcement 受限或修复不足时增加；会提高内存和时间。 |
+
+`R` 必须在 `(0, 1]` 内。建议一次只改变一类参数，并固定 `--rms-target`、`--passivity`、`--max-order` 与输入文件；再比较 JSON 中的 `order_trials`、`comparison_mean_rms_error` 和 `passivity_max_sigma_after`。专家参数不保证通过，CLI 的 `PASS/FAIL` 与退出码仍以相同质量契约为准。
+
+可将一组可复用覆盖写入严格 JSON profile：
+
+```json
+{
+  "version": 1,
+  "overrides": {
+    "init_pole_spacing": "resonance",
+    "fit_max_iterations": 20,
+    "high_frequency_complex_pairs": 4,
+    "high_frequency_complex_pair_damping": 0.06,
+    "high_frequency_complex_pair_lower_fraction": 0.72,
+    "passivity_max_iterations": 2,
+    "passivity_samples": 16,
+    "passivity_active_variables": 4096
+  }
+}
+```
+
+```powershell
+python -m agent_spice.cli fit-sparam .\special.s166p `
+  --rms-target 0.001 `
+  --passivity enforce `
+  --max-order 100 `
+  --tuning-profile .\special-tuning.json `
+  --fit-iterations 24
+```
+
+profile 只能包含上表对应的字段，未知字段会报错；同名 CLI 参数优先于 profile。报告的 `tuning_overrides` 记录请求来源和值，`effective_base_config` 记录最终实际生效的基础配置。
 
 ### 常用示例
 
@@ -146,7 +193,7 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 - `selected_effective_order`：选中的有效阶次。
 - `order_trials`：搜索过程中的每个试探阶次及其结果。
 
-失败时不会把最接近的模型当作成功交付。最终 JSON/HTML 会保留搜索记录，方便判断是最大阶次不足、RMS 未达标，还是被动性修复后 RMS 超标。
+失败时不会把最接近的模型当作成功交付：CLI 返回 `FAIL` 和非零退出码；若存在有限 RMS 候选，仍会导出 RMS 最低的诊断输出，并在 JSON/HTML 中标记为“最佳可得输出（未达目标）”。最终 JSON/HTML 会保留搜索记录，方便判断是最大阶次不足、RMS 未达标，还是被动性修复后 RMS 超标。
 
 ## HSPICE 网表处理
 
