@@ -13,9 +13,9 @@ class SParamFitTarget:
     mean_rms: float
     passivity: PassivityPolicy = "check"
     max_order: int = 40
-    min_order: int = 1
     max_order_step: int = 8
     passivity_epsilon: float = 1e-6
+    min_order: int = 1
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.mean_rms) or self.mean_rms <= 0.0:

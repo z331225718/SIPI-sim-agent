@@ -63,6 +63,14 @@ def test_target_defaults_to_check_policy():
     assert target.passivity_epsilon == pytest.approx(1e-6)
 
 
+def test_target_keeps_existing_positional_argument_order():
+    target = SParamFitTarget(0.001, "enforce", 20, 3, 1e-5)
+
+    assert target.max_order_step == 3
+    assert target.passivity_epsilon == pytest.approx(1e-5)
+    assert target.min_order == 1
+
+
 def test_scheduler_backfills_odd_order_after_first_even_pass():
     outcomes = {4: False, 6: False, 8: True, 7: True}
     calls = []
