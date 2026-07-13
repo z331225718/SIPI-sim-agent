@@ -23,13 +23,21 @@ class ProcessBackend:
         raise NotImplementedError
 
     def run(self, deck_path: Path, cwd: Path | None = None) -> BackendResult:
-        completed = subprocess.run(
-            self.command_for(deck_path.resolve()),
-            cwd=cwd,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
+        command = self.command_for(deck_path.resolve())
+        try:
+            completed = subprocess.run(
+                command,
+                cwd=cwd,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+        except OSError as exc:
+            return BackendResult(
+                returncode=127,
+                stdout="",
+                stderr=f"Failed to start backend command {command[0]!r}: {exc}\n",
+            )
         return BackendResult(
             returncode=completed.returncode,
             stdout=completed.stdout,

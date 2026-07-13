@@ -22,6 +22,55 @@ def test_run_hspice_writes_cases_without_executing(tmp_path: Path):
     assert exit_code == 0
     assert ".print tran v(vdd)" in case_deck.read_text(encoding="utf-8")
     assert report.exists()
+    assert (case_deck.parent / "case.source.sp").read_text(encoding="utf-8") == ".probe tran v(vdd)\n.tran 1p 1n\n.end\n"
+
+
+def test_run_hspice_stages_relative_include_for_generated_case(tmp_path: Path):
+    deps = tmp_path / "deps"
+    deps.mkdir()
+    (deps / "model.inc").write_text("C1 load 0 1u\n", encoding="utf-8")
+    deck = tmp_path / "legacy.sp"
+    deck.write_text(".include 'deps/model.inc'\nV1 load 0 1\n.tran 1p 1n\n.end\n", encoding="utf-8")
+
+    exit_code = run_hspice(deck, backend_name="ngspice", output_root=tmp_path / "runs", execute=False)
+
+    run_dir = tmp_path / "runs" / "legacy" / "legacy__base"
+    assert exit_code == 0
+    assert (run_dir / "deps" / "model.inc").read_text(encoding="utf-8") == "C1 load 0 1u\n"
+
+
+def test_run_hspice_converts_current_pwl_repeat_in_included_netlist(tmp_path: Path):
+    deps = tmp_path / "deps"
+    deps.mkdir()
+    (deps / "current.inc").write_text(
+        "Icursig vdd 0 pwl(\n+ 0ps 1 3500ps 2 6000ps 3\n+ R=3500ps )\n",
+        encoding="utf-8",
+    )
+    deck = tmp_path / "legacy.sp"
+    deck.write_text(".include 'deps/current.inc'\nR1 vdd 0 1\n.tran 1p 8n\n.end\n", encoding="utf-8")
+
+    exit_code = run_hspice(deck, backend_name="ngspice", output_root=tmp_path / "runs", execute=False)
+
+    staged = tmp_path / "runs" / "legacy" / "legacy__base" / "deps" / "current.inc"
+    assert exit_code == 0
+    assert "Bcursig vdd 0 I = pwl(" in staged.read_text(encoding="utf-8")
+    assert "R=3500ps" not in staged.read_text(encoding="utf-8")
+
+
+def test_run_hspice_writes_ngspice_summary_on_backend_failure(tmp_path: Path, monkeypatch):
+    from agent_spice.backend.base import BackendResult
+
+    deck = tmp_path / "legacy.sp"
+    deck.write_text(".end\n", encoding="utf-8")
+    monkeypatch.setattr("agent_spice.cli._run_backend", lambda *args: BackendResult(2, "", "parse failed"))
+
+    exit_code = run_hspice(deck, backend_name="ngspice", output_root=tmp_path / "runs", execute=True)
+
+    summary = json.loads((tmp_path / "runs" / "legacy" / "legacy__base" / "run_summary.json").read_text())
+    assert exit_code == 2
+    assert summary["ok"] is False
+    assert summary["error"] == "parse failed"
+    assert summary["waveform"] == {"path": "waveform.csv", "format": "csv", "exists": False, "rows": 0}
 
 
 def test_run_hspice_expands_alter_cases(tmp_path: Path):

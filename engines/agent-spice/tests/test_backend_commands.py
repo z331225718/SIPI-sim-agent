@@ -179,3 +179,13 @@ def test_backend_run_resolves_deck_path_before_changing_cwd(tmp_path: Path, monk
     assert result.ok
     assert recorded["command"] == ["sim", str(deck.resolve())]
     assert recorded["cwd"] == run_dir
+
+
+def test_backend_run_returns_actionable_error_when_executable_is_missing(tmp_path: Path):
+    deck = tmp_path / "case.cir"
+    deck.write_text(".end\n", encoding="utf-8")
+
+    result = NgspiceBackend(executable="definitely-missing-agent-spice-backend").run(deck, cwd=tmp_path)
+
+    assert result.returncode == 127
+    assert "Failed to start backend command" in result.stderr

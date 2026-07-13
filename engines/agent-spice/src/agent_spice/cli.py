@@ -6,15 +6,19 @@ import json
 import math
 from pathlib import Path
 import re
+import shutil
 import sys
 from typing import TYPE_CHECKING, Any
 
 from agent_spice.deck.builder import write_case_artifacts
 from agent_spice.hspice.alter import split_alter_cases
+from agent_spice.hspice.audit import audit_deck
 from agent_spice.hspice.converter import convert_hspice_deck
+from agent_spice.hspice.results import parse_ngspice_measurements, write_ngspice_waveform_csv
 from agent_spice.project import prepare_run_directory
 from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice_target
 from agent_spice.sparam.target_fit import SParamFitTarget
+from agent_spice.sparam.io import load_touchstone_metadata
 
 
 SPARAM_IDEM_FAST_CANDIDATES_LARGE_PORT = "9,10,12,14,17,20"
@@ -150,6 +154,74 @@ def _write_xyce_xdm_summary(run_dir: Path, result: "XyceXdmRunResult") -> None:
     (run_dir / "run_summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def _write_backend_summary(run_dir: Path, backend_name: str, result: Any) -> None:
+    waveform = run_dir / "waveform.csv"
+    summary: dict[str, Any] = {
+        "schema_version": 1,
+        "backend": backend_name,
+        "ok": result.ok,
+        "returncode": result.returncode,
+        "logs": {"stdout": "stdout.log", "stderr": "stderr.log"},
+        "waveform": None,
+        "measurements": [],
+        "error": None if result.ok else result.stderr.strip() or result.stdout.strip() or "backend failed without output",
+    }
+    if backend_name == "ngspice":
+        waveform_rows = write_ngspice_waveform_csv(result.stdout, waveform)
+        summary["waveform"] = {
+            "path": "waveform.csv",
+            "format": "csv",
+            "exists": waveform.exists(),
+            "rows": waveform_rows,
+        }
+        summary["measurements"] = parse_ngspice_measurements(result.stdout)
+    (run_dir / "run_summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _stage_local_dependencies(source_root: Path, run_dir: Path, text: str, report: Any, backend_name: str) -> None:
+    """Stage relative dependencies, converting each included netlist for ngspice."""
+    source_root = source_root.resolve()
+    run_root = run_dir.resolve()
+    root_audit = audit_deck(text)
+    pending = [(source_root, path, True) for path in (*root_audit.includes, *(item[0] for item in root_audit.libraries))]
+    seen: set[Path] = set()
+    while pending:
+        parent, reference, report_missing = pending.pop()
+        ref_path = Path(reference)
+        if ref_path.is_absolute():
+            report.add_unsupported(reference, "absolute_include_path_not_staged")
+            continue
+        source = (parent / ref_path).resolve()
+        if source in seen:
+            continue
+        seen.add(source)
+        try:
+            relative = source.relative_to(source_root)
+        except ValueError:
+            report.add_unsupported(reference, "include_outside_source_directory")
+            continue
+        target = (run_root / relative).resolve()
+        if not target.is_relative_to(run_root):
+            report.add_unsupported(reference, "include_path_escapes_run_directory")
+            continue
+        if not source.is_file():
+            if report_missing:
+                report.add_unsupported(reference, "include_not_found")
+            continue
+        source_text = source.read_text(encoding="utf-8")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if backend_name == "ngspice":
+            conversion = convert_hspice_deck(source_text, backend=backend_name)
+            target.write_text(conversion.deck_text, encoding="utf-8")
+            report.actions.extend(conversion.report.actions)
+            report.unsupported.extend(conversion.report.unsupported)
+        else:
+            target.write_text(source_text, encoding="utf-8")
+        nested = audit_deck(source_text)
+        pending.extend((source.parent, nested_ref, False) for nested_ref in nested.includes)
+        pending.extend((source.parent, nested_ref, False) for nested_ref, _ in nested.libraries)
+
+
 def _stable_source_path(deck_path: Path) -> str:
     if not deck_path.is_absolute():
         return deck_path.as_posix()
@@ -167,6 +239,54 @@ def _case_metadata(deck_id: str, case_name: str) -> tuple[str, str | None]:
     if match:
         return "alter", match.group("label")
     return "case", suffix or None
+
+
+_HSPICE_S_ELEMENT = re.compile(r"(?ims)^\s*(S\S+)\s+([^\n]+(?:\n\s*\+[^\n]+)*)")
+_TSTONE_FILE = re.compile(r"\bTSTONEFILE\s*=\s*(['\"]?)([^\s'\"]+)\1", re.IGNORECASE)
+
+
+def _compile_touchstone_s_elements(text: str, source_dir: Path, run_dir: Path, report: Any) -> tuple[str, list[str]]:
+    """Replace HSPICE S-elements with fitted ngspice subcircuits for TRAN."""
+    messages: list[str] = []
+
+    def replace(match: re.Match[str]) -> str:
+        instance, raw_body = match.group(1), match.group(2)
+        tstone = _TSTONE_FILE.search(raw_body)
+        if tstone is None:
+            return match.group(0)
+        path = (source_dir / tstone.group(2)).resolve()
+        if not path.is_file():
+            report.add_unsupported(match.group(0).splitlines()[0], "touchstone_file_not_found")
+            return match.group(0)
+        metadata = load_touchstone_metadata(path)
+        tokens = raw_body.replace("\n", " ").replace("+", " ").split()
+        nodes = [token for token in tokens if "=" not in token][: metadata.ports + 1]
+        if len(nodes) != metadata.ports + 1 or nodes[-1] != "0":
+            report.add_unsupported(match.group(0).splitlines()[0], "touchstone_s_element_requires_common_ground_reference")
+            return match.group(0)
+        safe_name = re.sub(r"[^A-Za-z0-9_]", "_", instance)
+        subckt_name = f"auto_sparam_{safe_name}"
+        output_dir = run_dir / "sparam"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        spice_path = output_dir / f"{safe_name}.sp"
+        fit_log = output_dir / f"{safe_name}.fit.log"
+        target = SParamFitTarget(mean_rms=0.001, passivity="enforce", max_order=100)
+        result = fit_touchstone_to_spice_target(
+            path, spice_path, target=target,
+            config=SParamFitConfig(mode="auto", model_order_max=100, target_error=0.001, subckt_name=subckt_name),
+            report_path=output_dir / f"{safe_name}.fit_report.json",
+            html_report_path=output_dir / f"{safe_name}.fit_report.html",
+            log_path=fit_log,
+            fitted_touchstone_path=output_dir / f"{safe_name}_fitted{path.suffix.lower()}",
+        )
+        best = getattr(result, "best_trial", None)
+        actual_rms = None if best is None else best.final_mean_rms
+        status = "FIT_PASS" if result.target_met else "FIT_FALLBACK_BEST_RMS"
+        messages.append(f"S-PARAM AUTO-FIT {status} instance={instance} file={path.name} target_rms=0.001 actual_rms={actual_rms} output={spice_path.name}")
+        report.add_action("rewrite_touchstone_s_element", instance, f"{status}; subckt={subckt_name}; rms={actual_rms}")
+        return f".include '{spice_path.as_posix()}'\nX{instance[1:]} {' '.join(nodes[:-1])} {subckt_name}"
+
+    return _HSPICE_S_ELEMENT.sub(replace, text), messages
 
 
 def _quality_gate_failure(result: Any, allow_warnings: bool) -> str | None:
@@ -252,33 +372,6 @@ def export_local_idem_like_state_space(*args: Any, **kwargs: Any) -> Any:
 
 def evaluate_local_idem_like_state_space(*args: Any, **kwargs: Any) -> Any:
     return _idem_tool("evaluate_local_idem_like_state_space")(*args, **kwargs)
-
-
-def run_idem_order58_diagnostic(*args: Any, **kwargs: Any) -> Any:
-    try:
-        from scripts.sparam_idem_order58_diagnostic import run_diagnostic
-    except ModuleNotFoundError:
-        from sparam_idem_order58_diagnostic import run_diagnostic
-
-    return run_diagnostic(*args, **kwargs)
-
-
-def load_s19_tuning_report_summary(*args: Any, **kwargs: Any) -> Any:
-    try:
-        from scripts.sparam_idem_s19_tuning import load_s19_tuning_report_summary as impl
-    except ModuleNotFoundError:
-        from sparam_idem_s19_tuning import load_s19_tuning_report_summary as impl
-
-    return impl(*args, **kwargs)
-
-
-def render_s19_tuning_markdown(*args: Any, **kwargs: Any) -> Any:
-    try:
-        from scripts.sparam_idem_s19_tuning import render_s19_tuning_markdown as impl
-    except ModuleNotFoundError:
-        from sparam_idem_s19_tuning import render_s19_tuning_markdown as impl
-
-    return impl(*args, **kwargs)
 
 
 def write_json_report(*args: Any, **kwargs: Any) -> Any:
@@ -787,12 +880,22 @@ def run_hspice(deck_path: Path, backend_name: str, output_root: Path, execute: b
     source_path = _stable_source_path(deck_path)
     cases = split_alter_cases(source, stem=deck_path.stem)
     for case in cases:
-        conversion = convert_hspice_deck(case.text, backend=backend_name)
         case_kind, alter_label = _case_metadata(deck_id, case.name)
+        run_dir = prepare_run_directory(output_root, project_name=deck_id, case_name=case.name)
+        prepared_text, preflight_messages = (
+            _compile_touchstone_s_elements(case.text, deck_path.parent, run_dir, convert_hspice_deck(case.text, backend=backend_name).report)
+            if backend_name == "ngspice" else (case.text, [])
+        )
+        conversion = convert_hspice_deck(prepared_text, backend=backend_name)
+        for message in preflight_messages:
+            conversion.report.add_action("auto_fit_touchstone", message)
         conversion.report.set_deck(deck_id=deck_id, source=source_path, sha256=source_hash)
         conversion.report.set_case(name=case.name, kind=case_kind, alter_label=alter_label)
-        run_dir = prepare_run_directory(output_root, project_name=deck_id, case_name=case.name)
-        artifacts = write_case_artifacts(run_dir, conversion.deck_text, conversion.report)
+        _stage_local_dependencies(deck_path.parent, run_dir, prepared_text, conversion.report, backend_name)
+        conversion.report.finalize_summary()
+        artifacts = write_case_artifacts(run_dir, conversion.deck_text, conversion.report, source_text=case.text)
+        if preflight_messages:
+            (run_dir / "preflight.log").write_text("\n".join(preflight_messages) + "\n", encoding="utf-8")
         hspice_case_path = run_dir / "case.sp"
         if backend_name == "xyce-xdm":
             hspice_case_path.write_text(case.text, encoding="utf-8")
@@ -806,8 +909,9 @@ def run_hspice(deck_path: Path, backend_name: str, output_root: Path, execute: b
                     return result.returncode
                 continue
             result = _run_backend(backend_name, artifacts.deck_path, run_dir)
-            (run_dir / "stdout.log").write_text(result.stdout, encoding="utf-8")
+            (run_dir / "stdout.log").write_text("\n".join(preflight_messages) + ("\n" if preflight_messages else "") + result.stdout, encoding="utf-8")
             (run_dir / "stderr.log").write_text(result.stderr, encoding="utf-8")
+            _write_backend_summary(run_dir, backend_name, result)
             if not result.ok:
                 return result.returncode
     return 0
@@ -994,44 +1098,6 @@ def main(argv: list[str] | None = None) -> int:
     idem_probe_parser.add_argument("--asymptotic-relocate-poles", action="store_true")
     idem_probe_parser.add_argument("--enhance-poles-placement", action="store_true")
     idem_probe_parser.add_argument("--timeout-seconds", type=float)
-
-    stall_diagnostic_parser = subparsers.add_parser("run-stall-diagnostic")
-    stall_diagnostic_parser.add_argument("--input", required=True, type=Path)
-    stall_diagnostic_parser.add_argument(
-        "--output-root",
-        type=Path,
-        default=Path("runs-sparam/idem-s19-order58-diagnostic"),
-    )
-    stall_diagnostic_parser.add_argument("--resume", dest="resume", action="store_true", default=True)
-    stall_diagnostic_parser.add_argument("--no-resume", dest="resume", action="store_false")
-
-    idem_s19_report_parser = subparsers.add_parser("report-idem-s19-tuning")
-    idem_s19_report_parser.add_argument("--output", type=Path, default=Path("docs/sparam-idem-s19-tuning.md"))
-    idem_s19_report_parser.add_argument(
-        "--baseline-summary",
-        type=Path,
-        default=Path("runs-sparam/idem-s19-adaptive-v1-pipe-drain/summary.json"),
-    )
-    idem_s19_report_parser.add_argument(
-        "--old-baseline-summary",
-        type=Path,
-        default=Path("runs-sparam/idem-s19-adaptive-v1/summary.json"),
-    )
-    idem_s19_report_parser.add_argument(
-        "--order58-diagnostic-summary",
-        type=Path,
-        default=Path("runs-sparam/idem-s19-order58-diagnostic/summary.json"),
-    )
-    idem_s19_report_parser.add_argument(
-        "--combination-summary",
-        type=Path,
-        default=Path("runs-sparam/idem-s19-combinations-v1/summary.json"),
-    )
-    idem_s19_report_parser.add_argument(
-        "--weighting-summary",
-        type=Path,
-        default=Path("runs-sparam/idem-s19-weighting-v1/summary.json"),
-    )
 
     idem_residue_parser = subparsers.add_parser("probe-idem-residue")
     idem_residue_parser.add_argument("touchstone", type=Path)
@@ -1268,35 +1334,6 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(effective_argv)
     if args.command == "run-hspice":
         return run_hspice(args.deck, args.backend, args.output_root, args.execute)
-    if args.command == "run-stall-diagnostic":
-        try:
-            summary = run_idem_order58_diagnostic(args.input, args.output_root, resume=args.resume)
-        except ValueError as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return 1
-        decision = summary.get("decision") or {}
-        print(
-            f"run-stall-diagnostic trials={summary.get('completed_trial_count')} "
-            f"decision={decision.get('next_phase')}"
-        )
-        return 0
-    if args.command == "report-idem-s19-tuning":
-        try:
-            summary = load_s19_tuning_report_summary(
-                baseline_summary_path=args.baseline_summary,
-                old_baseline_summary_path=args.old_baseline_summary,
-                order58_diagnostic_summary_path=args.order58_diagnostic_summary,
-                combination_summary_path=args.combination_summary,
-                weighting_summary_path=args.weighting_summary,
-            )
-            text = render_s19_tuning_markdown(summary)
-            args.output.parent.mkdir(parents=True, exist_ok=True)
-            args.output.write_text(text, encoding="utf-8")
-        except ValueError as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return 1
-        print(f"report-idem-s19-tuning output={args.output}")
-        return 0
     if args.command == "fit-sparam":
         try:
             _apply_sparam_auto_preset(args, effective_argv)

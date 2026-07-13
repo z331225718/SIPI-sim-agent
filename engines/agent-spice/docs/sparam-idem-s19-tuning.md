@@ -90,15 +90,9 @@
 [FACT] Weighting eligibility: `false`, reason `worst_band_below_50_percent`, skip `weighting_not_justified`.
 [FACT] S19 reciprocity: splitting `disallowed`, split_type `none`.
 
-## Reproducible Commands
+## Historical Reproduction Context
 
-```powershell
-python scripts/sparam_idem_s19_tuning.py run-stage --input user_input/spara/5power_19port_withcap_122324_202459_11476_DCfitted.s19p --output-root runs-sparam/idem-s19-adaptive-v1-pipe-drain --stage single-variable --no-resume
-agent-spice run-stall-diagnostic --input user_input/spara/5power_19port_withcap_122324_202459_11476_DCfitted.s19p --output-root runs-sparam/idem-s19-order58-diagnostic --no-resume
-python scripts/sparam_idem_s19_tuning.py run-stage --input user_input/spara/5power_19port_withcap_122324_202459_11476_DCfitted.s19p --output-root runs-sparam/idem-s19-combinations-v1 --stage combination --no-resume
-python scripts/sparam_idem_s19_tuning.py run-stage --input user_input/spara/5power_19port_withcap_122324_202459_11476_DCfitted.s19p --output-root runs-sparam/idem-s19-weighting-v1 --stage weighting --no-resume
-agent-spice report-idem-s19-tuning --output docs/sparam-idem-s19-tuning.md
-```
+This report preserves the original IdEM tuning evidence. Its one-off tuning scripts and diagnostic CLI commands were removed during repository cleanup; the current supported production path is the Native `fit-sparam` workflow.
 
 [FACT] Resume behavior: completed PASS trials are reused only when fingerprint, contract, provenance, and required artifacts match; non-PASS terminal trials rerun on resume.
 

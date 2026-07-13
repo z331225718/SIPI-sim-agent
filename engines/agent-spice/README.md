@@ -215,13 +215,55 @@ python -m agent_spice.cli run-hspice .\design.sp `
 | `--execute` | 关闭 | 在生成后调用已配置的后端求解器执行。未指定时只生成工件。 |
 | `-h`、`--help` | - | 显示命令帮助。 |
 
-典型输出包括每个 case 的 `case.cir`、兼容性报告，以及 `.alter` 展开后的独立目录。快速核验示例：
+典型输出包括每个 case 的 `case.source.sp`、`case.cir`、兼容性报告，以及 `.alter` 展开后的独立目录。`case.source.sp` 永远保留用户输入的原始 case；`case.cir` 是 converter 处理后实际交给后端的网表。带相对 `.include` 或 `.lib` 的本地模型文件会按原相对路径暂存到 case 目录，并在目标为 ngspice 时递归转换，因此生成的网表可在该目录直接运行。
+
+### ngspice 前置转换与 SIPI/PI 范围
+
+选择 `--backend ngspice` 时，converter 是仿真前的固定步骤，而不是可选的格式化工具。它会扫描顶层网表和相对 include/lib 依赖，记录转换、阻断项和输出请求到 `compat_report.json`，再执行 `case.cir`。目前面向无源 SIPI/PI：R/L/C/K、传输线、理想 V/I 激励、PWL/PULSE/SIN/EXP、CPM/UPM、VRM/decap 与拟合后的 S 参数宏模型。
+
+已处理的常见差异包括 `.inc -> .include`、`.probe -> .print`、`.alter` case 展开、Cadence/HSPICE 电流 PWL 的 `R=<time>` 重复语义，以及电流源/电容的 `M=<N>` 并联倍数。对于 ngspice 不存在等价物的输入，converter 必须在报告中阻断，不能静默删改。工艺有源模型、专有 `.model` 参数、Verilog-A、加密 PDK 不属于当前自动转换范围。
+
+### 直接 S 参数实例的自动拟合
+
+历史 HSPICE 网表可以使用 S 元件直接挂载 Touchstone，例如：
+
+```spice
+S1 pkg_in cpm_top 0 TSTONEFILE='package.s2p' TYPE=S
+```
+
+ngspice 不能将多端口 Touchstone 直接用于 `.tran`。在 ngspice 路径中，converter 会识别带 `TSTONEFILE=<*.sNp>` 的 S 元件，并自动执行：
+
+```text
+HSPICE S 元件 -> Touchstone 读取 -> auto fit (RMS=0.001, passivity=enforce)
+-> 生成 SPICE 子电路 -> 替换为 X 子电路实例 -> ngspice TRAN
+```
+
+拟合产物位于每个 case 的 `sparam/` 目录，包括 `.sp`、拟合后的 Touchstone、JSON/HTML 报告和 `*.fit.log`。预处理日志会写入 `preflight.log`，执行时同样会出现在 `stdout.log`。拟合达到目标时会记录 `FIT_PASS`；未达到 `0.001` 但已有最低 RMS 候选时，仍使用该候选继续仿真，并记录 `FIT_FALLBACK_BEST_RMS`、实际 RMS、实例名和输出路径。没有任何可导出候选时才阻断。
+
+当前自动映射要求 S 元件为最常见的公共地参考形式：`N` 个信号节点加末尾 `0` 参考节点。非公共地或端口数不匹配会报告阻断，避免错误连接。
+
+快速核验示例：
 
 ```powershell
 python -m agent_spice.cli run-hspice tests\fixtures\hspice\alter_pi.sp --output-root runs-smoke
 Test-Path runs-smoke\alter_pi\alter_pi__base\case.cir
 Test-Path runs-smoke\alter_pi\alter_pi__alter_001_high_decap\case.cir
 ```
+
+指定 `--execute` 时，默认 `ngspice` 路径会额外生成：
+
+- `stdout.log`、`stderr.log`：后端完整输出与诊断；
+- `waveform.csv`：由 `.print` 输出解析出的波形；
+- `run_summary.json`：退出码、日志索引、CSV 波形状态，以及已解析的 `.measure` 数值和失败信息。
+
+例如：
+
+```powershell
+python -m agent_spice.cli run-hspice tests\fixtures\hspice\simple_pi.sp --output-root runs-pi --execute
+Get-Content runs-pi\simple_pi\simple_pi__base\run_summary.json
+```
+
+Windows 离线生产默认只需 ngspice：`tools\install-solvers.ps1` 与 `tools\doctor-solvers.ps1 -Smoke` 均不会要求 Xyce 或 XDM。仅在显式选择 `--backend xyce-xdm` 时，才需要通过 `-IncludeXyce` 安装并检查这两个本地可选工具。
 
 ## 完整命令索引与研究命令
 

@@ -32,6 +32,36 @@ def test_option_post_token_after_other_options_is_dropped():
     assert result.report.actions[0]["kind"] == "drop_option"
 
 
+def test_ngspice_rewrites_cadence_current_pwl_repeat_to_behavioral_source():
+    result = convert_hspice_deck(
+        "Icursig vdd 0 pwl(\n"
+        "+ 0ps 1 3500ps 2 6000ps 3\n"
+        "+ R=3500ps )\n"
+        ".end\n",
+        backend="ngspice",
+    )
+
+    assert "Bcursig vdd 0 I = pwl(" in result.deck_text
+    assert "floor((time - 3500ps) / 2500ps)" in result.deck_text
+    assert "R=3500ps" not in result.deck_text
+    assert result.report.actions[0]["kind"] == "rewrite_current_pwl_repeat"
+    assert result.report.summary["status"] == "auto_converted"
+    assert result.report.summary["rewrites"] == 1
+
+
+def test_ngspice_current_pwl_repeat_rewrite_preserves_multiplicity():
+    result = convert_hspice_deck(
+        "Icursig vdd 0 pwl(\n"
+        "+ 0ps 1 3500ps 2 6000ps 3\n"
+        "+ R=3500ps ) M=4\n"
+        ".end\n",
+        backend="ngspice",
+    )
+
+    assert "Bcursig vdd 0 I = (4) * pwl(" in result.deck_text
+    assert "M=4" in result.report.actions[0]["target"]
+
+
 def test_compat_report_serializes_to_json():
     result = convert_hspice_deck(".end\n", backend="xyce")
 

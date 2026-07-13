@@ -46,7 +46,7 @@ class CompatReport:
         self.outputs = {"probes": probes, "measures": measures}
 
     def finalize_summary(self) -> None:
-        rewrites = sum(1 for action in self.actions if action["kind"] == "rewrite")
+        rewrites = sum(1 for action in self.actions if action["kind"].startswith("rewrite"))
         drops = sum(1 for action in self.actions if action["kind"].startswith("drop"))
         unsupported = len(self.unsupported)
         if unsupported:
