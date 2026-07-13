@@ -72,6 +72,7 @@
 | 未编号：Tangential Loewner | 非 VF，候选 | s19 / 56,60,68,74 | final N/A | NO-GO | 40/40 pencils 有 RHP poles |
 | 未编号：RKFIT | 非 VF，候选 | s19 / 74 | internal misfit `0.00035024`; final N/A; `22.30s` | NO-GO | 最好初始化仍有 1 个 RHP pole |
 | 未编号：全局模态 pole initializer | modal projection + scalar Native VF，候选 | s19 / 56,60,68,74 | order74 raw S-RMS `0.00769684` / sigma `1.04463` | NO-GO | 48/48 scalar fits成功，但完整矩阵 residue/condition 爆炸 |
+| 未编号：多源 Pole Dictionary | group-OMP 子集选择 | s19 / 56,60,68,74 | order74 raw S-RMS `0.00593317` / sigma `1.02442` | NO-GO | Native+再生modal共71 blocks；condition `4.51e13`、residue爆炸 |
 | 未编号：modal-Z / orthogonal basis | 降维诊断 | s19、s30、60-166p | **Z-log metric，不能与 S-RMS 横比** | 未产品化 | s19 fit-limited，163/166p basis-limited |
 
 ## 5. 已编号 D4-D11/D15 与早期未编号支线
