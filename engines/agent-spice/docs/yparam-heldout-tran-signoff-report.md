@@ -87,6 +87,8 @@ Y-fit Norton/MNA 宏没有通过 TRAN：三路网表在约 `4.2 ns` 中止，未
 
 该试跑的 `passivity_max_sigma` 在 enforcement 前后均约 `0.995113`；它验证了 S-domain 路径可执行，而非证明 Y 已 enforcement。命令、字段定义与门槛见 `docs/yderived-s-enforcement-workflow.md`。
 
+该 Y-derived S-RFM 也已完成 HSPICE 14 ns TRAN：相对原始 sampled-Touchstone reference 的波形 RMS 差为 `3.474 mV`，峰值差为 `5.169 mV`。它避开了 Y Norton/MNA 宏在 4.2 ns 的数值中止，但在这个 CPM 场景中仍明显劣于直接 S-fit RFM 的 `0.6793 mV` RMS；因此它是可运行的交付路径验证，不是质量签核通过。
+
 ## 下一步
 
 1. 为 Y 有理模型实现真正的连续频带正实 enforcement（例如 KYP/LMI 或等价有理 PR 判定与受约束校正），并将未完成 enforcement 作为硬失败而非 warning。
