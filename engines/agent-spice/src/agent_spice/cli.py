@@ -1087,7 +1087,7 @@ def main(argv: list[str] | None = None) -> int:
         "--hf-pair-start-fraction", "--high-frequency-complex-pair-lower-fraction", dest="high_frequency_complex_pair_lower_fraction", type=float, default=0.68,
         help="Lowest normalized frequency for high-frequency pairs (default: 0.68).",
     )
-    expert_tuning.add_argument("--passivity-max-iterations", type=int, default=1, help="Maximum passivity-enforcement iterations (default: 1).")
+    expert_tuning.add_argument("--passivity-max-iterations", type=int, default=3, help="Maximum passivity-enforcement iterations (default: 3).")
     expert_tuning.add_argument("--passivity-samples", type=int, default=8, help="Maximum passivity violation samples per enforcement iteration (default: 8).")
     expert_tuning.add_argument("--passivity-active-variables", type=int, default=3072, help="Maximum active variables for passivity enforcement (default: 3072).")
     _add_hidden_argument(fit_parser, "--mode", choices=["auto", "manual"], default="manual")

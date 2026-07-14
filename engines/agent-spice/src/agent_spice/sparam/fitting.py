@@ -155,7 +155,7 @@ class SParamFitConfig:
     check_passivity: bool = True
     enforce_passivity: bool = True
     passivity_samples: int = 200
-    passivity_max_iterations: int = 1
+    passivity_max_iterations: int = 3
     passivity_active_variables: int = 3072
     passivity_f_max: float | None = None
     passivity_enforce_rms_target: float | None = None
@@ -801,6 +801,110 @@ def _mean_rms_error_from_sum_style(value: float | None, ports: int) -> float | N
     if ports <= 0:
         return float(value)
     return float(value) / float(ports)
+
+
+def _merge_enforcement_final_validation(
+    vector_fit: Any,
+    *,
+    passive_after: bool,
+    violations_after: Any,
+    max_sigma_after: float | None,
+    max_sigma_frequency_after: float | None,
+) -> tuple[bool, Any, float | None, float | None, bool]:
+    """Conservatively merge the enforcer's denser final validation into the outer check."""
+
+    diagnostics = getattr(vector_fit, "passivity_enforcement_diagnostics", None)
+    if not isinstance(diagnostics, list):
+        return (
+            passive_after,
+            violations_after,
+            max_sigma_after,
+            max_sigma_frequency_after,
+            False,
+        )
+    final_validation = next(
+        (
+            item
+            for item in reversed(diagnostics)
+            if isinstance(item, dict) and item.get("type") == "final_validation"
+        ),
+        None,
+    )
+    if final_validation is None:
+        return (
+            passive_after,
+            violations_after,
+            max_sigma_after,
+            max_sigma_frequency_after,
+            False,
+        )
+
+    diagnostic_sigma = final_validation.get("final_validation_max_sigma")
+    diagnostic_frequency = final_validation.get("final_validation_max_sigma_frequency_hz")
+    diagnostic_passed = bool(final_validation.get("final_validation_passed", False))
+    if isinstance(diagnostic_sigma, (int, float)) and math.isfinite(float(diagnostic_sigma)):
+        if max_sigma_after is None or float(diagnostic_sigma) > float(max_sigma_after):
+            max_sigma_after = float(diagnostic_sigma)
+            if isinstance(diagnostic_frequency, (int, float)) and math.isfinite(float(diagnostic_frequency)):
+                max_sigma_frequency_after = float(diagnostic_frequency)
+    if diagnostic_passed:
+        return (
+            passive_after,
+            violations_after,
+            max_sigma_after,
+            max_sigma_frequency_after,
+            False,
+        )
+
+    passive_after = False
+    if not violations_after:
+        frequency = (
+            float(diagnostic_frequency)
+            if isinstance(diagnostic_frequency, (int, float)) and math.isfinite(float(diagnostic_frequency))
+            else 0.0
+        )
+        violations_after = [[frequency, frequency]]
+    return (
+        passive_after,
+        violations_after,
+        max_sigma_after,
+        max_sigma_frequency_after,
+        True,
+    )
+
+
+def _asymptotic_compensation_log_messages(vector_fit: Any) -> list[str]:
+    diagnostics = getattr(vector_fit, "passivity_enforcement_diagnostics", None)
+    if not isinstance(diagnostics, list):
+        return []
+    compensation = next(
+        (
+            item
+            for item in diagnostics
+            if isinstance(item, dict) and item.get("type") == "asymptotic_residue_compensation"
+        ),
+        None,
+    )
+    if compensation is None:
+        return []
+    return [
+        "detected non-passive RFM asymptote; evaluated strict D projection with "
+        "fixed-pole residue compensation",
+        "asymptotic compensation "
+        f"{'accepted' if compensation.get('accepted') else 'rejected'}: "
+        f"sigma(D)={float(compensation['sigma_before']):.9g}->"
+        f"{float(compensation['sigma_after']):.9g}, "
+        f"reference_rms={float(compensation['reference_rms_before']):.9g}->"
+        f"{float(compensation['reference_rms_after']):.9g}, "
+        f"basis={int(compensation['basis_rows'])}x{int(compensation['basis_columns'])}, "
+        f"rank={int(compensation['rank'])}, rhs_blocks={int(compensation['rhs_blocks'])}, "
+        f"reason={compensation.get('reject_reason') or 'accepted'}",
+    ]
+
+
+def _log_asymptotic_compensation(progress: _ProgressLog, vector_fit: Any) -> None:
+    for message in _asymptotic_compensation_log_messages(vector_fit):
+        progress.info(message)
 
 
 def _pole_summary(vector_fit: Any) -> dict[str, int | None]:
@@ -1787,6 +1891,8 @@ def _fit_touchstone_execution(
                         ),
                         constant_weight=config.passivity_constant_weight,
                         pole_weight=config.passivity_pole_weight,
+                        asymptotic_compensation_rms_target=config.passivity_enforce_rms_target,
+                        preserve_dc=config.preserve_dc,
                     )
                 else:
                     progress.info(
@@ -1801,6 +1907,7 @@ def _fit_touchstone_execution(
                         preserve_dc=config.preserve_dc,
                     )
                 enforce_seconds += time.perf_counter() - enforce_started
+                _log_asymptotic_compensation(progress, vector_fit)
                 progress.info("passivity enforcement finished")
             else:
                 progress.info("passivity enforcement skipped")
@@ -1964,8 +2071,11 @@ def _fit_touchstone_execution(
                     spectral_projection_mode_screen_modes=config.passivity_spectral_projection_mode_screen_modes,
                     constant_weight=config.passivity_constant_weight,
                     pole_weight=config.passivity_pole_weight,
+                    asymptotic_compensation_rms_target=config.passivity_enforce_rms_target,
+                    preserve_dc=config.preserve_dc,
                 )
                 enforce_seconds += time.perf_counter() - enforce_started
+                _log_asymptotic_compensation(progress, vector_fit)
                 progress.info("passivity enforcement finished")
             else:
                 progress.info("passivity enforcement skipped")
@@ -1982,6 +2092,25 @@ def _fit_touchstone_execution(
             violations_after = report_after.violation_bands_hz
             passivity_max_sigma_after = report_after.max_sigma
             passivity_max_sigma_frequency_after = report_after.max_sigma_frequency_hz
+            if should_enforce:
+                (
+                    passive_after,
+                    violations_after,
+                    passivity_max_sigma_after,
+                    passivity_max_sigma_frequency_after,
+                    enforcement_validation_overrode_check,
+                ) = _merge_enforcement_final_validation(
+                    vector_fit,
+                    passive_after=passive_after,
+                    violations_after=violations_after,
+                    max_sigma_after=passivity_max_sigma_after,
+                    max_sigma_frequency_after=passivity_max_sigma_frequency_after,
+                )
+                if enforcement_validation_overrode_check:
+                    progress.info(
+                        "passivity enforcement final validation remains non-passive; "
+                        "overriding the sparser post-enforcement check"
+                    )
         else:
             progress.info("checking passivity before enforcement")
             check_started = time.perf_counter()
@@ -2004,6 +2133,7 @@ def _fit_touchstone_execution(
                     preserve_dc=config.preserve_dc,
                 )
                 enforce_seconds += time.perf_counter() - enforce_started
+                _log_asymptotic_compensation(progress, vector_fit)
                 progress.info("passivity enforcement finished")
             else:
                 progress.info("passivity enforcement skipped")
@@ -2541,6 +2671,8 @@ def fit_touchstone_to_spice_target(
                 rejection_reason="fit_failed",
                 payload={"error": str(exc)},
             )
+        for message in _asymptotic_compensation_log_messages(execution.vector_fit):
+            write_progress(f"order={order} {message}")
         trial = trial_from_fit_result(target, execution.result, requested_order=order)
         executions_by_order[order] = execution
         write_progress(

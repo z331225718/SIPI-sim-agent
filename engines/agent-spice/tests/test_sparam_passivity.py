@@ -6,12 +6,14 @@ import pytest
 
 import agent_spice.sparam.passivity as passivity
 from agent_spice.sparam.passivity import (
+    AsymptoticCompensationResult,
     _PassivityScore,
     _active_variable_budget_candidates,
     _active_mode_reference_regularization_freqs,
     _active_mode_reference_regularization_sample_weights,
     _adaptive_passivity_samples,
     _adaptive_violation_frequencies_for_enforcement,
+    _apply_dc_preserving_uniform_damping,
     _apply_selective_pole_damping,
     _optimized_pole_damping_candidate,
     _optimized_pole_damping_global_energy_weights,
@@ -24,6 +26,7 @@ from agent_spice.sparam.passivity import (
     _is_candidate_update_better,
     _evaluate_passivity_score_at_freqs,
     _edge_constraint_row_indices,
+    _merge_reference_grid_violation_frequencies,
     _minimax_slack_weight_candidates,
     _residue_variable_fit_weights,
     _should_try_fit_weighted_qp,
@@ -37,7 +40,9 @@ from agent_spice.sparam.passivity import (
     _variable_fit_weights,
     _model_based_variable_weights,
     _projection_residue_constant_delta,
+    _build_real_residue_compensation_basis,
     _project_asymptotic_constant_strictly_passive,
+    _solve_asymptotic_residue_compensation,
     _reference_response_rms_at_freqs,
     _response_delta_rms_at_freqs,
     _select_projection_candidate,
@@ -473,6 +478,22 @@ def test_adaptive_violation_frequencies_for_enforcement_keeps_top_violations():
     assert violating == pytest.approx([(10.0, 2.0)])
 
 
+def test_reference_grid_violations_are_merged_into_enforcement_constraints():
+    violating = _merge_reference_grid_violation_frequencies(
+        [],
+        poles=np.array([], dtype=complex),
+        residues=np.zeros((1, 0), dtype=complex),
+        constant_coeff=np.array([1.1], dtype=complex),
+        nports=1,
+        reference_freqs=np.array([0.0, 1.0, 2.0]),
+        epsilon=1e-6,
+        max_violation_samples=2,
+        f_max=2.0,
+    )
+
+    assert violating == pytest.approx([(0.0, 1.1), (1.0, 1.1)])
+
+
 def test_singular_violation_modes_can_keep_multiple_modes():
     U = np.eye(3, dtype=complex)
     Vh = np.eye(3, dtype=complex)
@@ -501,6 +522,28 @@ def test_dual_qp_leaves_inactive_upper_bound_at_origin():
 
     assert result.success is True
     assert result.x == pytest.approx([0.0])
+
+
+def test_dual_qp_normalizes_small_residue_sensitivity_constraints():
+    result = _solve_min_norm_upper_bound_dual_qp(
+        np.array([[1e-12]]),
+        np.array([-2e-6]),
+    )
+
+    assert result.success is True
+    assert result.x == pytest.approx([-2e6], rel=1e-5)
+    assert float((np.array([[1e-12]]) @ result.x).item()) <= -2e-6 + 1e-12
+
+
+def test_dual_qp_falls_back_when_optimizer_success_is_primal_infeasible():
+    result = _solve_min_norm_upper_bound_dual_qp(
+        np.array([[1.0]]),
+        np.array([-1.5e-6]),
+    )
+
+    assert result.success is True
+    assert result.x == pytest.approx([-1.5e-6], rel=1e-6)
+    assert "primal check failed" in result.message
 
 
 def test_dual_qp_uses_variable_weights_as_fit_impact_penalty():
@@ -673,6 +716,39 @@ def test_global_damping_factor_leaves_passive_model_unchanged():
     assert _global_damping_factor(max_sigma=0.99, epsilon=1e-6) == pytest.approx(1.0)
 
 
+def test_global_damping_factor_closes_strict_gap_below_one_plus_epsilon():
+    factor = _global_damping_factor(max_sigma=1.0 + 0.5e-6, epsilon=1e-6)
+
+    assert factor < 1.0
+    assert factor * (1.0 + 0.5e-6) < 1.0
+
+
+def test_dc_preserving_uniform_damping_restores_dc_with_slowest_real_pole():
+    poles = np.array([-1.0, -10.0], dtype=complex)
+    residues = np.array([[0.2, -0.1]], dtype=complex)
+    constant = np.array([0.9], dtype=complex)
+    dc_before = passivity._evaluate_s_matrices_at_freqs(
+        poles, residues, constant, nports=1, freqs=[0.0]
+    )
+
+    damped_residues, damped_constant, diagnostic = _apply_dc_preserving_uniform_damping(
+        poles,
+        residues,
+        constant,
+        nports=1,
+        damping_factor=0.99,
+    )
+    dc_after = passivity._evaluate_s_matrices_at_freqs(
+        poles, damped_residues, damped_constant, nports=1, freqs=[0.0]
+    )
+
+    assert diagnostic["success"] is True
+    assert diagnostic["dc_restore_pole_index"] == 0
+    assert diagnostic["dc_error"] < 1e-14
+    assert dc_after == pytest.approx(dc_before)
+    assert abs(damped_constant[0]) < abs(constant[0])
+
+
 def test_asymptotic_constant_projection_is_strict_and_matrix_level():
     constant = np.array([1.2, 0.4, 0.4, 1.2], dtype=complex)
 
@@ -686,6 +762,143 @@ def test_asymptotic_constant_projection_is_strict_and_matrix_level():
     assert target == pytest.approx(0.999999)
     assert sigma_after < 1.0
     assert np.max(np.linalg.svd(projected.reshape(2, 2), compute_uv=False)) < 1.0
+
+
+def test_real_residue_compensation_basis_matches_expanded_response():
+    poles = np.array([-2.0, -3.0 + 4.0j, -3.0 - 4.0j], dtype=complex)
+    freqs = np.array([0.0, 0.5, 2.0])
+    basis, real_poles, complex_pairs = _build_real_residue_compensation_basis(poles, freqs)
+    variables = np.array([0.7, -0.2, 0.35])
+    residues = np.array(
+        [[variables[0], variables[1] + 1j * variables[2], variables[1] - 1j * variables[2]]]
+    )
+    direct = passivity._evaluate_s_matrices_at_freqs(
+        poles,
+        residues,
+        np.zeros(1, dtype=complex),
+        nports=1,
+        freqs=freqs,
+    ).reshape(-1)
+
+    assert len(real_poles) == 1
+    assert len(complex_pairs) == 1
+    assert basis[0::2] @ variables == pytest.approx(direct.real)
+    assert basis[1::2] @ variables == pytest.approx(direct.imag)
+
+
+def test_asymptotic_residue_compensation_exact_at_dc_for_real_pole():
+    poles = np.array([-1.0], dtype=complex)
+    residues = np.array([[-0.3]], dtype=complex)
+    constant = np.array([1.2], dtype=complex)
+    projected = np.array([0.9], dtype=complex)
+
+    result = _solve_asymptotic_residue_compensation(
+        poles,
+        residues,
+        constant,
+        projected,
+        nports=1,
+        freqs=[0.0],
+    )
+
+    assert isinstance(result, AsymptoticCompensationResult)
+    assert result.constant_coeff == pytest.approx(projected)
+    assert result.residues[0, 0] == pytest.approx(0.0)
+    assert result.diagnostics["compensation_residual_rms"] < 1e-14
+    assert result.diagnostics["rank"] == 1
+
+
+def test_asymptotic_residue_compensation_solves_multiple_rhs_in_blocks():
+    poles = np.array([-1.0], dtype=complex)
+    residues = np.zeros((4, 1), dtype=complex)
+    constant = np.array([1.2, 0.2, -0.1, 1.1], dtype=complex)
+    projected = np.array([0.9, 0.1, -0.2, 0.8], dtype=complex)
+
+    blocked = _solve_asymptotic_residue_compensation(
+        poles,
+        residues,
+        constant,
+        projected,
+        nports=2,
+        freqs=[0.0],
+        response_block_size=1,
+    )
+    unblocked = _solve_asymptotic_residue_compensation(
+        poles,
+        residues,
+        constant,
+        projected,
+        nports=2,
+        freqs=[0.0],
+        response_block_size=None,
+    )
+
+    assert blocked.residues == pytest.approx(unblocked.residues)
+    assert blocked.diagnostics["rhs_blocks"] == 4
+    assert unblocked.diagnostics["rhs_blocks"] == 1
+    assert blocked.diagnostics["compensation_residual_rms"] < 1e-14
+
+
+def test_asymptotic_residue_compensation_preserves_conjugate_residues():
+    poles = np.array([-2.0 + 3.0j, -2.0 - 3.0j], dtype=complex)
+    residues = np.zeros((1, 2), dtype=complex)
+
+    result = _solve_asymptotic_residue_compensation(
+        poles,
+        residues,
+        np.array([1.2], dtype=complex),
+        np.array([0.9], dtype=complex),
+        nports=1,
+        freqs=[0.0, 0.2],
+    )
+
+    assert result.residues[0, 1] == pytest.approx(result.residues[0, 0].conjugate())
+
+
+def test_asymptotic_residue_compensation_preserves_dynamic_cancellation():
+    poles = np.array([-1.0e9], dtype=complex)
+    residues = np.array([[-0.3e9]], dtype=complex)
+    constant = np.array([1.2], dtype=complex)
+    projected = np.array([0.999999], dtype=complex)
+    freqs = np.linspace(0.0, 1.0e4, 9)
+
+    result = _solve_asymptotic_residue_compensation(
+        poles,
+        residues,
+        constant,
+        projected,
+        nports=1,
+        freqs=freqs,
+    )
+
+    assert abs(result.constant_coeff[0]) < 1.0
+    assert result.diagnostics["compensation_residual_rms"] < 1e-5
+    assert result.diagnostics["residue_delta_norm"] > 1.0e8
+
+
+def test_asymptotic_residue_compensation_can_preserve_dc_with_nonzero_reference_grid():
+    poles = np.array([-1.0], dtype=complex)
+    residues = np.array([[-0.3]], dtype=complex)
+    constant = np.array([1.2], dtype=complex)
+    projected = np.array([0.9], dtype=complex)
+
+    result = _solve_asymptotic_residue_compensation(
+        poles,
+        residues,
+        constant,
+        projected,
+        nports=1,
+        freqs=[0.1, 1.0, 10.0],
+        preserve_dc=True,
+    )
+
+    assert result.diagnostics["preserve_dc"] is True
+    assert result.diagnostics["dc_error"] < 1e-10
+
+
+def test_real_residue_compensation_basis_rejects_unpaired_complex_pole():
+    with pytest.raises(ValueError, match="must include their conjugates"):
+        _build_real_residue_compensation_basis(np.array([-1.0 + 2.0j]), [0.0, 1.0])
 
 
 def test_enforcement_projects_nonpassive_const_even_without_iterative_repairs():
@@ -703,6 +916,158 @@ def test_enforcement_projects_nonpassive_const_even_without_iterative_repairs():
     assert diagnostic["projected"] is True
     assert diagnostic["sigma_before"] == pytest.approx(1.6)
     assert diagnostic["sigma_after"] < 1.0
+
+
+def test_enforcement_does_not_blindly_project_far_nonpassive_const_with_dynamic_terms():
+    vector_fit = type("VectorFit", (), {})()
+    vector_fit.poles = np.array([-1.0], dtype=complex)
+    vector_fit.residues = np.array([[-0.3]], dtype=complex)
+    vector_fit.constant_coeff = np.array([1.2], dtype=complex)
+
+    enforce_passivity_hamiltonian(vector_fit, nports=1, epsilon=1e-6, max_iterations=0)
+
+    diagnostic = vector_fit.passivity_enforcement_diagnostics[0]
+    final_validation = vector_fit.passivity_enforcement_diagnostics[-1]
+    assert vector_fit.constant_coeff[0] == pytest.approx(1.2)
+    assert diagnostic["projected"] is False
+    assert final_validation["final_validation_passed"] is False
+    assert final_validation["final_validation_max_sigma"] == pytest.approx(1.2)
+
+
+def test_enforcement_compensates_far_nonpassive_asymptote_with_reference_grid():
+    vector_fit = type("VectorFit", (), {})()
+    vector_fit.poles = np.array([-1.0e9], dtype=complex)
+    vector_fit.residues = np.array([[-0.3e9]], dtype=complex)
+    vector_fit.constant_coeff = np.array([1.2], dtype=complex)
+    reference_freqs = np.linspace(0.0, 1.0e4, 9)
+    reference_s = passivity._evaluate_s_matrices_at_freqs(
+        vector_fit.poles,
+        vector_fit.residues,
+        vector_fit.constant_coeff,
+        nports=1,
+        freqs=reference_freqs,
+    )
+
+    enforce_passivity_hamiltonian(
+        vector_fit,
+        nports=1,
+        epsilon=1e-6,
+        max_iterations=0,
+        f_max=1.0e10,
+        spectral_projection_reference_freqs=reference_freqs,
+        spectral_projection_reference_s=reference_s,
+        asymptotic_compensation_rms_target=1e-3,
+        preserve_dc=True,
+    )
+
+    compensation = next(
+        item
+        for item in vector_fit.passivity_enforcement_diagnostics
+        if item["type"] == "asymptotic_residue_compensation"
+    )
+    final_validation = vector_fit.passivity_enforcement_diagnostics[-1]
+    assert compensation["accepted"] is True
+    assert compensation["reference_rms_after"] <= 1e-3
+    assert compensation["dc_error"] <= compensation["dc_tolerance"]
+    assert abs(vector_fit.constant_coeff[0]) < 1.0
+    assert final_validation["final_validation_passed"] is True
+
+
+def test_enforcement_rejects_asymptotic_compensation_that_misses_rms_target():
+    vector_fit = type("VectorFit", (), {})()
+    vector_fit.poles = np.array([-1.0], dtype=complex)
+    vector_fit.residues = np.array([[-0.3]], dtype=complex)
+    vector_fit.constant_coeff = np.array([1.2], dtype=complex)
+    original_residues = vector_fit.residues.copy()
+    reference_freqs = np.array([0.0, 1.0, 10.0])
+    reference_s = passivity._evaluate_s_matrices_at_freqs(
+        vector_fit.poles,
+        vector_fit.residues,
+        vector_fit.constant_coeff,
+        nports=1,
+        freqs=reference_freqs,
+    )
+
+    enforce_passivity_hamiltonian(
+        vector_fit,
+        nports=1,
+        epsilon=1e-6,
+        max_iterations=0,
+        f_max=10.0,
+        spectral_projection_reference_freqs=reference_freqs,
+        spectral_projection_reference_s=reference_s,
+        asymptotic_compensation_rms_target=1e-6,
+        preserve_dc=True,
+    )
+
+    compensation = next(
+        item
+        for item in vector_fit.passivity_enforcement_diagnostics
+        if item["type"] == "asymptotic_residue_compensation"
+    )
+    assert compensation["accepted"] is False
+    assert compensation["reject_reason"] == "reference_rms"
+    assert vector_fit.constant_coeff[0] == pytest.approx(1.2)
+    assert vector_fit.residues == pytest.approx(original_residues)
+
+
+def test_global_damping_does_not_overwrite_model_when_rms_target_would_fail():
+    vector_fit = type("VectorFit", (), {})()
+    vector_fit.poles = np.array([-1.0], dtype=complex)
+    vector_fit.residues = np.array([[-0.3]], dtype=complex)
+    vector_fit.constant_coeff = np.array([1.2], dtype=complex)
+    original_residues = vector_fit.residues.copy()
+    reference_freqs = np.array([0.0, 1.0, 10.0])
+    reference_s = passivity._evaluate_s_matrices_at_freqs(
+        vector_fit.poles,
+        vector_fit.residues,
+        vector_fit.constant_coeff,
+        nports=1,
+        freqs=reference_freqs,
+    )
+
+    enforce_passivity_hamiltonian(
+        vector_fit,
+        nports=1,
+        epsilon=1e-6,
+        max_iterations=0,
+        f_max=10.0,
+        global_damping_fallback=True,
+        spectral_projection_reference_freqs=reference_freqs,
+        spectral_projection_reference_s=reference_s,
+        asymptotic_compensation_rms_target=1e-6,
+        preserve_dc=True,
+    )
+
+    damping = next(
+        item
+        for item in vector_fit.passivity_enforcement_diagnostics
+        if item["type"] == "global_damping_fallback"
+    )
+    assert damping["accepted"] is False
+    assert damping["damping_history"][-1]["reject_reason"] == "reference_rms_target"
+    assert vector_fit.constant_coeff[0] == pytest.approx(1.2)
+    assert vector_fit.residues == pytest.approx(original_residues)
+
+
+def test_final_validation_rejects_finite_sigma_inside_legacy_epsilon_gap():
+    vector_fit = type("VectorFit", (), {})()
+    vector_fit.poles = np.array([-1.0], dtype=complex)
+    vector_fit.residues = np.array([[0.5000005]], dtype=complex)
+    vector_fit.constant_coeff = np.array([0.5], dtype=complex)
+
+    enforce_passivity_hamiltonian(
+        vector_fit,
+        nports=1,
+        epsilon=1e-6,
+        max_iterations=0,
+        f_max=1.0,
+    )
+
+    final_validation = vector_fit.passivity_enforcement_diagnostics[-1]
+    assert 1.0 < final_validation["final_validation_max_sigma"] < 1.0 + 1e-6
+    assert final_validation["final_validation_passed"] is False
+    assert final_validation["final_validation_violation_count"] >= 1
 
 
 @pytest.mark.parametrize("constant_value", [1.0, 1.0 + 0.5e-6, 1.0 + 1.0e-6])
@@ -2730,6 +3095,33 @@ def test_enforce_passivity_hamiltonian_records_final_validation():
     assert "final_validation_passed" in final_records[-1]
 
 
+def test_enforce_repairs_violation_below_numeric_epsilon_to_strictly_passive():
+    class FakeVectorFit:
+        def __init__(self):
+            self.poles = np.array([-1.0])
+            self.residues = np.array([[1.0000005]])
+            self.constant_coeff = np.array([0.0])
+
+    vf = FakeVectorFit()
+    enforce_passivity_hamiltonian(
+        vf,
+        nports=1,
+        epsilon=1e-6,
+        max_iterations=1,
+        f_max=1.0,
+        max_violation_samples=1,
+        spectral_projection_reference_freqs=np.array([0.0]),
+        spectral_projection_reference_s=np.array([[[1.0000005]]]),
+    )
+
+    sigma_at_dc = abs(complex(vf.constant_coeff[0] + vf.residues[0, 0]))
+    final_validation = vf.passivity_enforcement_diagnostics[-1]
+    assert sigma_at_dc < 1.0
+    assert final_validation["type"] == "final_validation"
+    assert final_validation["final_validation_passed"] is True
+    assert final_validation["final_validation_max_sigma"] < 1.0
+
+
 def test_enforce_rejects_qp_candidate_with_full_frequency_regression(monkeypatch):
     class FakeVectorFit:
         def __init__(self):
@@ -2828,6 +3220,7 @@ def test_enforce_full_frequency_line_search_selects_best_post_damping_reference_
         max_iterations=1,
         f_max=10.0,
         perturb_constant=True,
+        global_damping_fallback=True,
         spectral_projection_reference_freqs=np.array([0.0, 10.0]),
         spectral_projection_reference_s=np.zeros((2, 1, 1), dtype=complex),
     )
@@ -2841,6 +3234,48 @@ def test_enforce_full_frequency_line_search_selects_best_post_damping_reference_
     assert selected["selected_scale"] == pytest.approx(0.25)
     assert selected["selected_post_damping_reference_rms"] == pytest.approx(0.03)
     assert selected["baseline_post_damping_reference_rms"] == pytest.approx(0.05)
+
+
+def test_enforce_does_not_rank_hypothetical_post_damping_when_fallback_is_disabled(monkeypatch):
+    class FakeVectorFit:
+        def __init__(self):
+            self.poles = np.array([-1.0])
+            self.residues = np.array([[1.1]])
+            self.constant_coeff = np.array([1.2])
+
+    scores = iter([1.01, 1.02, 1.03, 1.04, 1.05])
+    monkeypatch.setattr(
+        passivity,
+        "_full_frequency_passivity_score",
+        lambda *args, **kwargs: _PassivityScore(1, next(scores)),
+    )
+
+    def unexpected_post_damping_rms(*args, **kwargs):
+        raise AssertionError("post-damping RMS must not run without global damping fallback")
+
+    monkeypatch.setattr(passivity, "_reference_response_rms_chunked", unexpected_post_damping_rms)
+    monkeypatch.setattr(passivity, "_reference_response_rms_candidates_chunked", unexpected_post_damping_rms)
+    vf = FakeVectorFit()
+
+    enforce_passivity_hamiltonian(
+        vf,
+        nports=1,
+        max_iterations=1,
+        f_max=10.0,
+        perturb_constant=True,
+        global_damping_fallback=False,
+        spectral_projection_reference_freqs=np.array([0.0, 10.0]),
+        spectral_projection_reference_s=np.zeros((2, 1, 1), dtype=complex),
+    )
+
+    selected = [
+        diagnostic
+        for diagnostic in vf.passivity_enforcement_diagnostics
+        if diagnostic.get("type") == "full_frequency_line_search"
+    ][-1]
+    assert selected["selected_scale"] == pytest.approx(1.0)
+    assert selected["max_sigma_after"] == pytest.approx(1.01)
+    assert selected["baseline_post_damping_reference_rms"] is None
 
 
 def test_enforce_passivity_global_damping_fallback_scales_model_below_one():
@@ -2867,6 +3302,29 @@ def test_enforce_passivity_global_damping_fallback_scales_model_below_one():
     ]
     assert damping_records
     assert damping_records[-1]["safety_margin"] == 1e-5
+
+
+def test_global_damping_includes_nonpassive_asymptote_when_finite_band_is_passive():
+    class FakeVectorFit:
+        def __init__(self):
+            self.poles = np.array([-1e9])
+            self.residues = np.array([[-0.3e9]], dtype=complex)
+            self.constant_coeff = np.array([1.2])
+
+    vf = FakeVectorFit()
+    enforce_passivity_hamiltonian(
+        vf,
+        nports=1,
+        epsilon=1e-6,
+        max_iterations=0,
+        f_max=1.0,
+        global_damping_fallback=True,
+    )
+
+    final_validation = vf.passivity_enforcement_diagnostics[-1]
+    assert abs(vf.constant_coeff[0]) < 1.0
+    assert final_validation["final_validation_passed"] is True
+    assert final_validation["final_validation_max_sigma"] < 1.0
 
 
 def test_enforce_passivity_global_damping_revalidates_until_sampled_passive(monkeypatch):

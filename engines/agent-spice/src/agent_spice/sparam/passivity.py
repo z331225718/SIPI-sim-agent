@@ -22,6 +22,13 @@ class PassivityQpResult:
 
 
 @dataclass(frozen=True)
+class AsymptoticCompensationResult:
+    residues: np.ndarray
+    constant_coeff: np.ndarray
+    diagnostics: dict[str, Any]
+
+
+@dataclass(frozen=True)
 class ActiveModeResidueSensitivitySystem:
     """Linearized active singular-mode constraints for residue perturbations."""
 
@@ -159,12 +166,64 @@ def _global_damping_factor(
     safety_margin: float = 1e-5,
 ) -> float:
     sigma = float(max_sigma)
-    if sigma <= 1.0 + float(epsilon):
+    if sigma < 1.0:
         return 1.0
     target = max(0.0, 1.0 - float(epsilon) - float(safety_margin))
     if target <= 0.0 or not np.isfinite(sigma) or sigma <= 0.0:
         return 1.0
     return min(1.0, target / sigma)
+
+
+def _apply_dc_preserving_uniform_damping(
+    poles: np.ndarray,
+    residues: np.ndarray,
+    constant_coeff: np.ndarray,
+    *,
+    nports: int,
+    damping_factor: float,
+) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+    """Damp the model while restoring DC through its slowest real pole."""
+
+    pole_array = np.asarray(poles, dtype=complex).reshape(-1)
+    residue_array = np.asarray(residues, dtype=complex)
+    constant_array = np.asarray(constant_coeff, dtype=complex)
+    factor = float(damping_factor)
+    real_poles, _complex_pairs = partition_poles(pole_array)
+    stable_real_poles = [item for item in real_poles if item[1] < 0.0]
+    if not stable_real_poles or not (0.0 < factor < 1.0):
+        return residue_array.copy(), constant_array.copy(), {
+            "success": False,
+            "message": "a stable real pole and a damping factor inside (0, 1) are required",
+        }
+
+    slowest_index, slowest_pole = min(stable_real_poles, key=lambda item: abs(item[1]))
+    dc_before = _evaluate_s_matrices_at_freqs(
+        pole_array,
+        residue_array,
+        constant_array,
+        nports=nports,
+        freqs=[0.0],
+    ).reshape(-1)
+    damped_residues = residue_array * factor
+    damped_constant = constant_array * factor
+    damped_residues[:, slowest_index] += (
+        -float(slowest_pole) * (1.0 - factor) * dc_before
+    )
+    dc_after = _evaluate_s_matrices_at_freqs(
+        pole_array,
+        damped_residues,
+        damped_constant,
+        nports=nports,
+        freqs=[0.0],
+    ).reshape(-1)
+    return damped_residues, damped_constant, {
+        "success": True,
+        "message": "ok",
+        "damping_factor": factor,
+        "dc_restore_pole_index": int(slowest_index),
+        "dc_restore_pole": float(slowest_pole),
+        "dc_error": float(np.max(np.abs(dc_after - dc_before))),
+    }
 
 
 def _apply_selective_pole_damping(
@@ -364,6 +423,7 @@ def _full_frequency_passivity_score(
     epsilon: float,
     f_max: float | None,
     max_violation_samples: int,
+    reference_freqs: Any | None = None,
 ) -> _PassivityScore:
     crossover_freqs = check_passivity_hamiltonian_s(
         poles,
@@ -389,6 +449,17 @@ def _full_frequency_passivity_score(
         f_max=f_max,
         max_depth=2,
         curvature_tol=1e-3,
+    )
+    violating_freqs = _merge_reference_grid_violation_frequencies(
+        violating_freqs,
+        poles=poles,
+        residues=residues,
+        constant_coeff=constant_coeff,
+        nports=nports,
+        reference_freqs=reference_freqs,
+        epsilon=epsilon,
+        max_violation_samples=max_violation_samples,
+        f_max=f_max,
     )
     if not violating_freqs:
         return _PassivityScore(0, 1.0)
@@ -614,6 +685,19 @@ def _solve_min_norm_upper_bound_dual_qp(
     if A_ineq.shape[0] == 0:
         return PassivityQpResult(x=np.zeros(A_ineq.shape[1]), success=True, message="no constraints")
 
+    original_A = A_ineq.copy()
+    original_b = b_ineq.copy()
+
+    # Residue sensitivities commonly have magnitudes around 1 / |pole|.  For
+    # SI-frequency models this can put the dual gradient below SLSQP's stopping
+    # scale even when the primal constraint is materially violated.  Positive
+    # row scaling leaves every upper-bound constraint exactly equivalent while
+    # keeping the small dual problem numerically visible to the optimizer.
+    weighted_row_norms = np.sqrt(np.sum((A_ineq * A_ineq) * inverse_weights[None, :], axis=1))
+    row_scales = np.where(weighted_row_norms > 0.0, weighted_row_norms, 1.0)
+    A_ineq = A_ineq / row_scales[:, None]
+    b_ineq = b_ineq / row_scales
+
     weighted_A_t = inverse_weights[:, None] * A_ineq.T
     K = A_ineq @ weighted_A_t
     regularization_value = 0.0
@@ -638,8 +722,28 @@ def _solve_min_norm_upper_bound_dual_qp(
             regularization=regularization_value,
             dual_condition_number=dual_condition_number,
         )
+    x_value = -(inverse_weights * (A_ineq.T @ result.x))
+    primal_violation = max(float(np.max(original_A @ x_value - original_b)), 0.0)
+    primal_tolerance = max(1e-12, 1e-8 * max(1.0, float(np.max(np.abs(original_b)))))
+    if primal_violation > primal_tolerance:
+        fallback = _solve_min_norm_upper_bound_nnls(
+            original_A,
+            original_b,
+            regularization=regularization,
+            variable_weights=variable_weights,
+        )
+        fallback_violation = max(float(np.max(original_A @ fallback.x - original_b)), 0.0)
+        if fallback.success and fallback_violation < primal_violation:
+            return PassivityQpResult(
+                x=fallback.x,
+                success=True,
+                message=f"SLSQP primal check failed ({primal_violation:.6g}); {fallback.message}",
+                regularization=fallback.regularization,
+                dual_condition_number=fallback.dual_condition_number,
+                slack=fallback.slack,
+            )
     return PassivityQpResult(
-        x=-(inverse_weights * (A_ineq.T @ result.x)),
+        x=x_value,
         success=True,
         message=str(result.message),
         regularization=regularization_value,
@@ -2500,6 +2604,52 @@ def _adaptive_violation_frequencies_for_enforcement(
     return violating
 
 
+def _merge_reference_grid_violation_frequencies(
+    violating_freqs: list[tuple[float, float]],
+    *,
+    poles: np.ndarray,
+    residues: np.ndarray,
+    constant_coeff: np.ndarray,
+    nports: int,
+    reference_freqs: Any | None,
+    epsilon: float,
+    max_violation_samples: int,
+    f_max: float | None,
+) -> list[tuple[float, float]]:
+    if reference_freqs is None:
+        return violating_freqs
+    filtered_freqs = [
+        float(freq)
+        for freq in np.asarray(reference_freqs, dtype=float).reshape(-1)
+        if float(freq) >= 0.0 and (f_max is None or float(freq) <= float(f_max))
+    ]
+    if not filtered_freqs:
+        return violating_freqs
+
+    reference_basis = _rational_basis_at_freqs(poles, filtered_freqs)
+    reference_samples = _singular_samples_at_freqs(
+        poles,
+        residues,
+        constant_coeff,
+        nports=nports,
+        freqs=filtered_freqs,
+        epsilon=epsilon,
+        source="reference_grid_constraint",
+        basis=reference_basis,
+    )
+    merged = {float(freq): float(sigma) for freq, sigma in violating_freqs}
+    for sample in reference_samples:
+        if not bool(sample["violates"]):
+            continue
+        freq = float(sample["frequency_hz"])
+        sigma = float(sample["max_sigma"])
+        merged[freq] = max(sigma, merged.get(freq, -math.inf))
+    result = sorted(merged.items(), key=lambda item: (-item[1], item[0]))
+    if max_violation_samples > 0:
+        result = result[:max_violation_samples]
+    return result
+
+
 def _residue_variable_fit_weights(
     poles: np.ndarray,
     *,
@@ -3140,6 +3290,245 @@ def _project_asymptotic_constant_strictly_passive(
         projected = projected.real.astype(complex)
     sigma_after = float(clipped[0]) if len(clipped) else 0.0
     return projected.reshape(-1), sigma_before, sigma_after, target_norm
+
+
+def _build_real_residue_compensation_basis(
+    poles: np.ndarray,
+    freqs: Any,
+    *,
+    sample_weights: Any | None = None,
+) -> tuple[
+    np.ndarray,
+    list[tuple[int, float]],
+    list[tuple[int, int, float, float]],
+]:
+    """Build the shared real basis for fixed-pole residue compensation."""
+
+    pole_array = np.asarray(poles, dtype=complex).reshape(-1)
+    freq_array = np.asarray(list(freqs), dtype=float).reshape(-1)
+    if freq_array.size == 0:
+        raise ValueError("freqs must contain at least one compensation frequency")
+    if not np.all(np.isfinite(freq_array)) or np.any(freq_array < 0.0):
+        raise ValueError("compensation frequencies must be finite and non-negative")
+
+    if sample_weights is None:
+        weights = np.ones(freq_array.size, dtype=float)
+    else:
+        weights = np.asarray(list(sample_weights), dtype=float).reshape(-1)
+        if weights.size != freq_array.size:
+            raise ValueError("sample_weights must contain one value per compensation frequency")
+        if not np.all(np.isfinite(weights)) or np.any(weights < 0.0):
+            raise ValueError("sample_weights must be finite and non-negative")
+        if not np.any(weights > 0.0):
+            raise ValueError("sample_weights must contain at least one positive value")
+
+    real_poles, complex_pairs = partition_poles(pole_array)
+    for pole_idx, _pole_real in real_poles:
+        if abs(pole_array[pole_idx].imag) >= 1e-15:
+            raise ValueError("complex compensation poles must include their conjugates")
+
+    columns = len(real_poles) + 2 * len(complex_pairs)
+    basis = np.zeros((2 * freq_array.size, columns), dtype=float)
+    for freq_idx, (freq, weight) in enumerate(zip(freq_array, weights)):
+        s_val = 1j * 2.0 * np.pi * freq
+        complex_row: list[complex] = []
+        for _pole_idx, pole_real in real_poles:
+            complex_row.append(1.0 / (s_val - pole_real))
+        for _positive_idx, _negative_idx, sigma, omega in complex_pairs:
+            positive_basis = 1.0 / (s_val - (sigma + 1j * omega))
+            negative_basis = 1.0 / (s_val - (sigma - 1j * omega))
+            complex_row.append(positive_basis + negative_basis)
+            complex_row.append(1j * (positive_basis - negative_basis))
+
+        row_scale = math.sqrt(float(weight))
+        basis[2 * freq_idx, :] = row_scale * np.real(complex_row)
+        basis[2 * freq_idx + 1, :] = row_scale * np.imag(complex_row)
+
+    return basis, real_poles, complex_pairs
+
+
+def _solve_asymptotic_residue_compensation(
+    poles: np.ndarray,
+    residues: np.ndarray,
+    constant_coeff: np.ndarray,
+    projected_constant: np.ndarray,
+    *,
+    nports: int,
+    freqs: Any,
+    sample_weights: Any | None = None,
+    ridge: float = 0.0,
+    response_block_size: int | None = 1024,
+    preserve_dc: bool = False,
+    dc_weight: float = 1.0e12,
+) -> AsymptoticCompensationResult:
+    """Compensate a strict D projection without relocating the fitted poles."""
+
+    if nports <= 0:
+        raise ValueError("nports must be positive")
+    if not np.isfinite(ridge) or ridge < 0.0:
+        raise ValueError("ridge must be finite and non-negative")
+    if not np.isfinite(dc_weight) or dc_weight <= 0.0:
+        raise ValueError("dc_weight must be finite and positive")
+
+    pole_array = np.asarray(poles, dtype=complex).reshape(-1)
+    residue_array = np.asarray(residues, dtype=complex)
+    response_count = nports * nports
+    if residue_array.shape != (response_count, pole_array.size):
+        raise ValueError("residues must have shape (nports * nports, npoles)")
+    constant_array = np.asarray(constant_coeff, dtype=complex).reshape(-1)
+    projected_array = np.asarray(projected_constant, dtype=complex).reshape(-1)
+    if constant_array.size != response_count or projected_array.size != response_count:
+        raise ValueError("constant coefficients must contain nports * nports values")
+
+    freq_array = np.asarray(list(freqs), dtype=float).reshape(-1)
+    weight_array = (
+        np.ones(freq_array.size, dtype=float)
+        if sample_weights is None
+        else np.asarray(list(sample_weights), dtype=float).reshape(-1)
+    )
+    if preserve_dc:
+        dc_indices = np.flatnonzero(np.isclose(freq_array, 0.0, rtol=0.0, atol=0.0))
+        if dc_indices.size:
+            weight_array = weight_array.copy()
+            dc_idx = int(dc_indices[0])
+            weight_array[dc_idx] = max(float(weight_array[dc_idx]), 1.0) * float(dc_weight)
+        else:
+            freq_array = np.concatenate((np.array([0.0]), freq_array))
+            weight_array = np.concatenate((np.array([float(dc_weight)]), weight_array))
+    basis, real_poles, complex_pairs = _build_real_residue_compensation_basis(
+        pole_array,
+        freq_array,
+        sample_weights=weight_array,
+    )
+    compensation = constant_array - projected_array
+    row_scales = np.sqrt(weight_array)
+
+    def compensation_rhs(block_start: int, block_end: int) -> np.ndarray:
+        block = compensation[block_start:block_end]
+        block_rhs = np.empty((2 * freq_array.size, block_end - block_start), dtype=float)
+        block_rhs[0::2, :] = row_scales[:, None] * np.real(block)[None, :]
+        block_rhs[1::2, :] = row_scales[:, None] * np.imag(block)[None, :]
+        return block_rhs
+
+    variable_count = basis.shape[1]
+    if response_block_size is None:
+        block_size = response_count
+    else:
+        block_size = int(response_block_size)
+        if block_size <= 0:
+            raise ValueError("response_block_size must be positive or None")
+        block_size = min(block_size, response_count)
+    block_count = int(math.ceil(response_count / block_size))
+
+    delta_matrix = np.zeros((variable_count, response_count), dtype=float)
+    rank = 0
+    condition_number = math.inf
+    singular_values = np.zeros(0, dtype=float)
+    if variable_count > 0:
+        column_norms = la.norm(basis, axis=0)
+        usable_columns = column_norms > np.finfo(float).tiny
+        if np.any(usable_columns):
+            scaled_basis = basis[:, usable_columns] / column_norms[usable_columns][None, :]
+            U, singular_values, Vh = la.svd(scaled_basis, full_matrices=False)
+            tolerance = max(scaled_basis.shape) * np.finfo(float).eps * singular_values[0]
+            active = singular_values > tolerance
+            rank = int(np.count_nonzero(active))
+            if rank:
+                condition_number = float(singular_values[0] / singular_values[active][-1])
+            if ridge > 0.0:
+                gains = singular_values / (singular_values * singular_values + float(ridge))
+            else:
+                gains = np.zeros_like(singular_values)
+                gains[active] = 1.0 / singular_values[active]
+
+            for block_start in range(0, response_count, block_size):
+                block_end = min(block_start + block_size, response_count)
+                block_rhs = compensation_rhs(block_start, block_end)
+                projected_rhs = U.conj().T @ block_rhs
+                scaled_solution = Vh.conj().T @ (gains[:, None] * projected_rhs)
+                delta_matrix[usable_columns, block_start:block_end] = (
+                    scaled_solution / column_norms[usable_columns, None]
+                )
+
+    candidate_residues = residue_array.copy()
+    n_real = len(real_poles)
+    for variable_idx, (pole_idx, _pole_real) in enumerate(real_poles):
+        candidate_residues[:, pole_idx] += delta_matrix[variable_idx, :]
+    for pair_idx, (positive_idx, negative_idx, _sigma, _omega) in enumerate(complex_pairs):
+        offset = n_real + 2 * pair_idx
+        delta_real = delta_matrix[offset, :]
+        delta_imag = delta_matrix[offset + 1, :]
+        candidate_residues[:, positive_idx] += delta_real + 1j * delta_imag
+        candidate_residues[:, negative_idx] += delta_real - 1j * delta_imag
+
+    response_error_sum = 0.0
+    response_error_count = 0
+    residue_delta = candidate_residues - residue_array
+    constant_delta = projected_array - constant_array
+    for freq_start in range(0, freq_array.size, 128):
+        chunk_freqs = freq_array[freq_start : freq_start + 128]
+        response_delta = _evaluate_s_matrices_from_basis(
+            residue_delta,
+            constant_delta,
+            nports=nports,
+            basis=_rational_basis_at_freqs(pole_array, chunk_freqs),
+        )
+        response_error_sum += float(np.sum(np.abs(response_delta) ** 2))
+        response_error_count += int(response_delta.size)
+    residual_rms = float(math.sqrt(response_error_sum / response_error_count))
+    original_dc = _evaluate_s_matrices_at_freqs(
+        pole_array,
+        residue_array,
+        constant_array,
+        nports=nports,
+        freqs=[0.0],
+    )
+    candidate_dc = _evaluate_s_matrices_at_freqs(
+        pole_array,
+        candidate_residues,
+        projected_array,
+        nports=nports,
+        freqs=[0.0],
+    )
+    dc_error = float(np.max(np.abs(candidate_dc - original_dc)))
+    weighted_error_sum = 0.0
+    weighted_error_count = 0
+    for block_start in range(0, response_count, block_size):
+        block_end = min(block_start + block_size, response_count)
+        weighted_residual = (
+            basis @ delta_matrix[:, block_start:block_end]
+            - compensation_rhs(block_start, block_end)
+        )
+        weighted_error_sum += float(np.sum(weighted_residual**2))
+        weighted_error_count += int(weighted_residual.size)
+    weighted_residual_rms = float(math.sqrt(weighted_error_sum / weighted_error_count))
+    diagnostics = {
+        "solver": "column_scaled_svd_multi_rhs",
+        "basis_rows": int(basis.shape[0]),
+        "basis_columns": int(basis.shape[1]),
+        "rank": rank,
+        "condition_number": float(condition_number) if np.isfinite(condition_number) else None,
+        "regularization": float(ridge),
+        "response_count": response_count,
+        "response_block_size": block_size,
+        "rhs_blocks": block_count,
+        "residue_delta_norm": float(la.norm(candidate_residues - residue_array)),
+        "compensation_delta_norm": float(la.norm(compensation)),
+        "compensation_residual_rms": residual_rms,
+        "weighted_compensation_residual_rms": weighted_residual_rms,
+        "preserve_dc": bool(preserve_dc),
+        "dc_weight": float(dc_weight) if preserve_dc else None,
+        "dc_error": dc_error,
+        "singular_value_max": float(singular_values[0]) if singular_values.size else 0.0,
+        "singular_value_min_active": (
+            float(singular_values[rank - 1]) if rank and singular_values.size else 0.0
+        ),
+    }
+    return AsymptoticCompensationResult(
+        residues=candidate_residues,
+        constant_coeff=projected_array.copy(),
+        diagnostics=diagnostics,
+    )
 
 
 def _projection_residue_constant_delta(
@@ -4562,6 +4951,8 @@ def enforce_passivity_hamiltonian(
     constant_weight: float = 1.0,
     pole_weight: float = 1.0,
     max_modes_per_frequency: int = 2,
+    asymptotic_compensation_rms_target: float | None = None,
+    preserve_dc: bool = True,
 ) -> None:
     """
     Enforces passivity of S-parameter model using Hamiltonian crossover checks and SLSQP residue, constant, and pole perturbations.
@@ -4577,23 +4968,131 @@ def enforce_passivity_hamiltonian(
 
     poles, residues = _expand_poles_and_residues(poles_orig, residues_orig)
 
+    if asymptotic_compensation_rms_target is not None and (
+        not np.isfinite(asymptotic_compensation_rms_target)
+        or asymptotic_compensation_rms_target <= 0.0
+    ):
+        raise ValueError("asymptotic_compensation_rms_target must be finite and positive")
+
     asymptotic_target = max(
         0.0,
         1.0 - max(float(epsilon), 64.0 * np.finfo(float).eps),
     )
 
-    # Fix an invalid asymptote before the expensive frequency-domain work when
-    # no configured repair path can perturb D. Also close the previous
-    # tolerance gap in global damping: that fallback triggers above 1+epsilon,
-    # while the exported RFM quality gate correctly requires sigma(D) < 1.
+    constant_matrix = constant_coeff.reshape(nports, nports)
+    asymptotic_singular_values = la.svd(constant_matrix, compute_uv=False)
+    asymptotic_sigma_before = (
+        float(asymptotic_singular_values[0]) if len(asymptotic_singular_values) else 0.0
+    )
+    asymptotic_sigma_after = asymptotic_sigma_before
+    asymptotic_preprojection_enabled = False
+    asymptotic_constant_projected = False
+    asymptotic_compensation_diagnostic: dict[str, Any] | None = None
+
+    can_compensate_asymptote = (
+        asymptotic_sigma_before >= 1.0
+        and len(poles) > 0
+        and not perturb_constant
+        and not spectral_projection_fallback
+        and spectral_projection_reference_freqs is not None
+        and spectral_projection_reference_s is not None
+    )
+    if can_compensate_asymptote:
+        projected_constant, _sigma_before, projected_sigma, asymptotic_target = (
+            _project_asymptotic_constant_strictly_passive(
+                constant_coeff,
+                nports=nports,
+                epsilon=epsilon,
+            )
+        )
+        reference_freq_array = np.asarray(spectral_projection_reference_freqs, dtype=float).reshape(-1)
+        original_reference_rms = _reference_response_rms_chunked(
+            poles,
+            residues,
+            constant_coeff,
+            nports=nports,
+            freqs=reference_freq_array,
+            reference_freqs=spectral_projection_reference_freqs,
+            reference_s=spectral_projection_reference_s,
+            chunk_size=128,
+        )
+        compensation_result = _solve_asymptotic_residue_compensation(
+            poles,
+            residues,
+            constant_coeff,
+            projected_constant,
+            nports=nports,
+            freqs=reference_freq_array,
+            ridge=0.0,
+            response_block_size=1024,
+            preserve_dc=preserve_dc,
+        )
+        compensated_reference_rms = _reference_response_rms_chunked(
+            poles,
+            compensation_result.residues,
+            compensation_result.constant_coeff,
+            nports=nports,
+            freqs=reference_freq_array,
+            reference_freqs=spectral_projection_reference_freqs,
+            reference_s=spectral_projection_reference_s,
+            chunk_size=128,
+        )
+        if asymptotic_compensation_rms_target is None:
+            rms_limit = original_reference_rms + max(1e-9, 0.01 * original_reference_rms)
+        else:
+            rms_limit = float(asymptotic_compensation_rms_target)
+        dc_tolerance = max(1e-9, 0.1 * float(epsilon))
+        compensation_accepted = bool(
+            np.isfinite(compensated_reference_rms)
+            and compensated_reference_rms <= rms_limit
+            and (
+                not preserve_dc
+                or float(compensation_result.diagnostics["dc_error"]) <= dc_tolerance
+            )
+        )
+        asymptotic_compensation_diagnostic = {
+            "type": "asymptotic_residue_compensation",
+            **compensation_result.diagnostics,
+            "sigma_before": float(asymptotic_sigma_before),
+            "sigma_after": float(projected_sigma),
+            "reference_rms_before": float(original_reference_rms),
+            "reference_rms_after": float(compensated_reference_rms),
+            "reference_rms_limit": float(rms_limit),
+            "dc_tolerance": float(dc_tolerance),
+            "accepted": compensation_accepted,
+            "reject_reason": (
+                None
+                if compensation_accepted
+                else (
+                    "dc_error"
+                    if preserve_dc
+                    and float(compensation_result.diagnostics["dc_error"]) > dc_tolerance
+                    else "reference_rms"
+                )
+            ),
+        }
+        if compensation_accepted:
+            residues = compensation_result.residues
+            constant_coeff = compensation_result.constant_coeff
+            asymptotic_sigma_after = float(projected_sigma)
+            asymptotic_preprojection_enabled = True
+            asymptotic_constant_projected = True
+
+    # Keep the conservative direct projection for pure constants and for the
+    # narrow numerical gap around one. Far-nonpassive dynamic models require
+    # the compensated path above instead of destroying finite-band accuracy.
     asymptotic_preprojection_available = not (perturb_constant or spectral_projection_fallback)
-    if asymptotic_preprojection_available:
+    if not asymptotic_constant_projected and asymptotic_preprojection_available:
         constant_coeff, asymptotic_sigma_before, asymptotic_sigma_after, asymptotic_target = (
             _project_asymptotic_constant_strictly_passive(
                 constant_coeff,
                 nports=nports,
                 epsilon=epsilon,
-                maximum_sigma_to_project=(1.0 + epsilon) if global_damping_fallback else None,
+                maximum_sigma_to_project=(
+                    (1.0 + epsilon)
+                    if global_damping_fallback or len(poles) > 0
+                    else None
+                ),
             )
         )
         asymptotic_preprojection_enabled = (
@@ -4602,15 +5101,8 @@ def enforce_passivity_hamiltonian(
         asymptotic_constant_projected = (
             asymptotic_sigma_before >= 1.0 and asymptotic_sigma_after < asymptotic_sigma_before
         )
-    else:
-        constant_matrix = constant_coeff.reshape(nports, nports)
-        asymptotic_singular_values = la.svd(constant_matrix, compute_uv=False)
-        asymptotic_sigma_before = (
-            float(asymptotic_singular_values[0]) if len(asymptotic_singular_values) else 0.0
-        )
-        asymptotic_sigma_after = asymptotic_sigma_before
+    elif not asymptotic_constant_projected:
         asymptotic_preprojection_enabled = False
-        asymptotic_constant_projected = False
 
     best_residues = residues.copy()
     best_constant = constant_coeff.copy()
@@ -4628,6 +5120,8 @@ def enforce_passivity_hamiltonian(
             "target_norm": float(asymptotic_target),
         }
     )
+    if asymptotic_compensation_diagnostic is not None:
+        diagnostics.append(asymptotic_compensation_diagnostic)
 
     for iteration in range(max_iterations):
         crossover_freqs = check_passivity_hamiltonian_s(poles, residues, constant_coeff, nports, f_max=f_max)
@@ -4645,11 +5139,22 @@ def enforce_passivity_hamiltonian(
             constant_coeff,
             nports=nports,
             points=points,
-            epsilon=epsilon,
+            epsilon=0.0,
             max_violation_samples=max_violation_samples,
             f_max=f_max,
             max_depth=1,
             curvature_tol=1e-3,
+        )
+        violating_freqs = _merge_reference_grid_violation_frequencies(
+            violating_freqs,
+            poles=poles,
+            residues=residues,
+            constant_coeff=constant_coeff,
+            nports=nports,
+            reference_freqs=spectral_projection_reference_freqs,
+            epsilon=0.0,
+            max_violation_samples=max_violation_samples,
+            f_max=f_max,
         )
 
         if len(violating_freqs) == 0:
@@ -4663,6 +5168,24 @@ def enforce_passivity_hamiltonian(
             violation_count=len(violating_freqs),
             max_sigma=max(sigma for _freq, sigma in violating_freqs),
         )
+        if (
+            asymptotic_compensation_diagnostic is not None
+            and bool(asymptotic_compensation_diagnostic.get("accepted"))
+            and global_damping_fallback
+            and preserve_dc
+            and nports >= 16
+            and current_score.max_sigma <= 1.001
+        ):
+            diagnostics.append(
+                {
+                    "type": "asymptotic_compensation_micro_damping_deferred",
+                    "iteration": int(iteration),
+                    "max_sigma": float(current_score.max_sigma),
+                    "violation_count": int(current_score.violation_count),
+                    "reason": "avoid_large_port_qp_for_small_post_compensation_violation",
+                }
+            )
+            break
         if current_score.is_better_than(best_score):
             best_score = current_score
             best_residues = residues.copy()
@@ -4700,11 +5223,14 @@ def enforce_passivity_hamiltonian(
                 U,
                 s_values,
                 Vh,
-                epsilon=epsilon,
+                epsilon=0.0,
                 max_modes_per_frequency=max_modes_per_frequency,
             ):
                 A_row = np.zeros(n_vars)
-                b_val = 1.0 - sm
+                # Aim below the physical passivity boundary instead of merely
+                # landing on it; an exactly unit singular value is too fragile
+                # after RFM serialization and for transient simulation.
+                b_val = 1.0 - float(epsilon) - sm
 
                 for i in range(nports):
                     for j in range(nports):
@@ -4781,7 +5307,7 @@ def enforce_passivity_hamiltonian(
             constant_coeff,
             nports=nports,
             freqs=sampled_freqs,
-            epsilon=epsilon,
+            epsilon=0.0,
         )
         holdout_score = _evaluate_passivity_score_at_freqs(
             poles,
@@ -4789,7 +5315,7 @@ def enforce_passivity_hamiltonian(
             constant_coeff,
             nports=nports,
             freqs=holdout_freqs,
-            epsilon=epsilon,
+            epsilon=0.0,
         )
         variable_fit_weights: np.ndarray | None = None
         accepted_residues = None
@@ -4991,7 +5517,7 @@ def enforce_passivity_hamiltonian(
                         candidate_constant,
                         nports=nports,
                         freqs=sampled_freqs,
-                        epsilon=epsilon,
+                        epsilon=0.0,
                     )
                     candidate_holdout_score = _evaluate_passivity_score_at_freqs(
                         candidate_poles,
@@ -4999,7 +5525,7 @@ def enforce_passivity_hamiltonian(
                         candidate_constant,
                         nports=nports,
                         freqs=holdout_freqs,
-                        epsilon=epsilon,
+                        epsilon=0.0,
                     )
 
                     candidate_delta_norm_value = _candidate_delta_norm(
@@ -5091,9 +5617,10 @@ def enforce_passivity_hamiltonian(
                     trial_residues,
                     trial_constant,
                     nports=nports,
-                    epsilon=epsilon,
+                    epsilon=0.0,
                     f_max=f_max,
                     max_violation_samples=max_violation_samples,
+                    reference_freqs=spectral_projection_reference_freqs,
                 )
                 improves = trial_score.max_sigma < current_score.max_sigma - 1e-10
                 full_line_search.append(
@@ -5123,7 +5650,11 @@ def enforce_passivity_hamiltonian(
 
             baseline_post_damping_reference_rms = None
             selected_post_damping_reference_rms = None
-            if spectral_projection_reference_freqs is not None and spectral_projection_reference_s is not None:
+            if (
+                global_damping_fallback
+                and spectral_projection_reference_freqs is not None
+                and spectral_projection_reference_s is not None
+            ):
                 reference_freq_array = np.asarray(spectral_projection_reference_freqs, dtype=float).reshape(-1)
                 rms_chunk_size = max(
                     1,
@@ -5305,7 +5836,7 @@ def enforce_passivity_hamiltonian(
         nports=nports,
         intervals=validation_intervals,
         f_max=f_max,
-        epsilon=epsilon,
+        epsilon=0.0,
         max_depth=2,
         curvature_tol=1e-3,
         reference_freqs=spectral_projection_reference_freqs
@@ -6118,7 +6649,19 @@ def enforce_passivity_hamiltonian(
             validation_violation_count = int(selected_projection["violation_count"])
             validation_samples = selected_projection["samples"]
 
-    if global_damping_fallback and validation_max_sigma > 1.0 + epsilon:
+    asymptotic_values = la.svd(constant_coeff.reshape(nports, nports), compute_uv=False)
+    validation_asymptotic_sigma = float(asymptotic_values[0]) if len(asymptotic_values) else 0.0
+    validation_max_sigma_at_asymptote = False
+    if validation_max_sigma >= 1.0 and validation_violation_count == 0:
+        validation_violation_count = 1
+    if validation_asymptotic_sigma >= 1.0:
+        validation_violation_count += 1
+    if validation_asymptotic_sigma > validation_max_sigma:
+        validation_max_sigma = validation_asymptotic_sigma
+        validation_max_sigma_frequency = float(validation_f_limit)
+        validation_max_sigma_at_asymptote = True
+
+    if global_damping_fallback and validation_max_sigma >= 1.0:
         if global_damping_mode not in {"uniform", "selective_pole", "optimized_pole"}:
             raise ValueError("global_damping_mode must be 'uniform', 'selective_pole', or 'optimized_pole'")
         validation_max_sigma_before_damping = float(validation_max_sigma)
@@ -6127,7 +6670,7 @@ def enforce_passivity_hamiltonian(
         damping_history = []
         validation_max_sigma_after = float(validation_max_sigma)
         for _damping_iteration in range(3):
-            if validation_max_sigma <= 1.0 + epsilon:
+            if validation_max_sigma < 1.0:
                 break
             damping_factor = _global_damping_factor(
                 max_sigma=validation_max_sigma,
@@ -6138,11 +6681,32 @@ def enforce_passivity_hamiltonian(
                 break
             cumulative_damping_factor *= float(damping_factor)
             damping_iterations += 1
+            uniform_residues = residues * damping_factor
+            uniform_constant = constant_coeff * damping_factor
             damping_candidates = [
-                ("uniform", residues * damping_factor, constant_coeff * damping_factor),
+                ("uniform", uniform_residues, uniform_constant),
             ]
-            uniform_residues = damping_candidates[0][1]
-            uniform_constant = damping_candidates[0][2]
+            dc_preserving_diagnostic: dict[str, Any] | None = None
+            if preserve_dc:
+                (
+                    dc_preserving_residues,
+                    dc_preserving_constant,
+                    dc_preserving_diagnostic,
+                ) = _apply_dc_preserving_uniform_damping(
+                    poles,
+                    residues,
+                    constant_coeff,
+                    nports=nports,
+                    damping_factor=damping_factor,
+                )
+                if dc_preserving_diagnostic.get("success"):
+                    damping_candidates = [
+                        (
+                            "dc_preserving_uniform",
+                            dc_preserving_residues,
+                            dc_preserving_constant,
+                        )
+                    ]
             if global_damping_mode == "selective_pole":
                 selective_residues, selective_constant = _apply_selective_pole_damping(
                     poles,
@@ -6234,6 +6798,22 @@ def enforce_passivity_hamiltonian(
                     candidate_max_sigma = 0.0
                     candidate_max_sigma_frequency = 0.0
                     candidate_violation_count = 0
+                candidate_max_sigma_at_asymptote = False
+                candidate_asymptotic_values = la.svd(
+                    candidate_constant.reshape(nports, nports),
+                    compute_uv=False,
+                )
+                candidate_asymptotic_sigma = (
+                    float(candidate_asymptotic_values[0])
+                    if len(candidate_asymptotic_values)
+                    else 0.0
+                )
+                if candidate_asymptotic_sigma >= 1.0:
+                    candidate_violation_count += 1
+                if candidate_asymptotic_sigma > candidate_max_sigma:
+                    candidate_max_sigma = candidate_asymptotic_sigma
+                    candidate_max_sigma_frequency = float(validation_f_limit)
+                    candidate_max_sigma_at_asymptote = True
                 candidate_reference_rms = math.inf
                 if spectral_projection_reference_freqs is not None and spectral_projection_reference_s is not None:
                     reference_freq_array = np.asarray(spectral_projection_reference_freqs, dtype=float).reshape(-1)
@@ -6271,6 +6851,7 @@ def enforce_passivity_hamiltonian(
                     "intervals": candidate_intervals,
                     "max_sigma": float(candidate_max_sigma),
                     "max_sigma_frequency_hz": float(candidate_max_sigma_frequency),
+                    "max_sigma_at_asymptote": bool(candidate_max_sigma_at_asymptote),
                     "violation_count": int(candidate_violation_count),
                     "reference_rms": float(candidate_reference_rms),
                 }
@@ -6300,12 +6881,20 @@ def enforce_passivity_hamiltonian(
                         micro_candidate["micro_uniform_factor"] = float(micro_factor)
                         candidate_results.append(micro_candidate)
 
-            damping_acceptance_sigma = 1.0 - max(float(epsilon), float(global_damping_safety_margin))
+            damping_acceptance_sigma = 1.0 - max(
+                float(epsilon),
+                64.0 * np.finfo(float).eps,
+            )
             passive_candidates = [
                 candidate
                 for candidate in candidate_results
                 if int(candidate["violation_count"]) == 0
                 and float(candidate["max_sigma"]) <= damping_acceptance_sigma
+                and (
+                    asymptotic_compensation_rms_target is None
+                    or float(candidate["reference_rms"])
+                    <= float(asymptotic_compensation_rms_target)
+                )
             ]
             if passive_candidates:
                 selected_damping = min(
@@ -6315,6 +6904,31 @@ def enforce_passivity_hamiltonian(
                         float(candidate["max_sigma"]),
                     ),
                 )
+            elif asymptotic_compensation_rms_target is not None:
+                damping_history.append(
+                    {
+                        "iteration": int(damping_iterations),
+                        "damping_factor": float(damping_factor),
+                        "cumulative_damping_factor": float(cumulative_damping_factor),
+                        "mode": None,
+                        "max_sigma_after": float(validation_max_sigma),
+                        "violation_count_after": int(validation_violation_count),
+                        "reference_rms_after": None,
+                        "candidate_modes": [
+                            {
+                                "mode": candidate["mode"],
+                                "max_sigma": float(candidate["max_sigma"]),
+                                "violation_count": int(candidate["violation_count"]),
+                                "reference_rms": float(candidate["reference_rms"]),
+                            }
+                            for candidate in candidate_results
+                        ],
+                        "dc_preserving_diagnostic": dc_preserving_diagnostic,
+                        "rejected": True,
+                        "reject_reason": "reference_rms_target",
+                    }
+                )
+                break
             else:
                 selected_damping = min(
                     candidate_results,
@@ -6330,6 +6944,9 @@ def enforce_passivity_hamiltonian(
             validation_intervals = selected_damping["intervals"]
             validation_max_sigma_after = float(selected_damping["max_sigma"])
             validation_max_sigma_frequency = float(selected_damping["max_sigma_frequency_hz"])
+            validation_max_sigma_at_asymptote = bool(
+                selected_damping.get("max_sigma_at_asymptote", False)
+            )
             validation_violation_count = int(selected_damping["violation_count"])
             damping_history.append(
                 {
@@ -6349,6 +6966,7 @@ def enforce_passivity_hamiltonian(
                         }
                         for candidate in candidate_results
                     ],
+                    "dc_preserving_diagnostic": dc_preserving_diagnostic,
                 }
             )
             validation_max_sigma = validation_max_sigma_after
@@ -6368,11 +6986,17 @@ def enforce_passivity_hamiltonian(
         )
         validation_max_sigma = validation_max_sigma_after
 
+    if validation_max_sigma >= 1.0 and validation_violation_count == 0:
+        validation_violation_count = 1
+
     diagnostics.append(
         {
             "type": "final_validation",
             "final_validation_max_sigma": validation_max_sigma,
             "final_validation_max_sigma_frequency_hz": validation_max_sigma_frequency,
+            "final_validation_max_sigma_at_asymptote": bool(
+                validation_max_sigma_at_asymptote
+            ),
             "final_validation_violation_count": int(validation_violation_count),
             "final_validation_sample_count": int(len(validation_samples)),
             "final_validation_passed": bool(validation_violation_count == 0),

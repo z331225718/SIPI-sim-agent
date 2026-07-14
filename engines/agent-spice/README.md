@@ -98,6 +98,10 @@ sqrt(mean(abs(S_fit - S_raw) ** 2))
 | `check`（默认） | 检查被动性；即使非被动，也会保留拟合产物，并在报告中标记警告。 |
 | `enforce` | 仅接受同时满足 RMS 目标和被动性目标的最终模型。若修复被动性后 RMS 超标，则该阶次失败。 |
 
+`enforce` 使用严格边界：原始频带、自适应频点和 `f -> infinity` 的常数矩阵 `D` 都必须满足 `sigma_max < 1`，不是 `1 + epsilon`。如果有限频带已拟合良好但 `D` 非无源，程序会先严格投影 `D`，再固定已有极点、用共享 SVD 分块求解残数补偿，以保持原始频带 RMS。大端口补偿后若只剩很小的局部超限，会优先使用 DC 保持微阻尼，而不是直接进入耗时的大规模 QP。补偿或微阻尼只有在最终 RMS 仍不超过 `--rms-target` 时才能通过。
+
+逐阶次日志会明确记录是否检测到非无源 D、补偿基大小和秩、RMS 前后值以及候选接受/拒绝原因。详细算法、跨端口实测和剩余性能工作见 [S 参数渐近无源补偿算法设计](docs/sparam-passivity-asymptotic-compensation-design.md)。
+
 要求最终模型被动的示例：
 
 ```powershell
@@ -118,7 +122,7 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 | `--rfm PATH` | 自动生成 | RFM 输出路径。默认与 SPICE 输出同名，扩展名为 `.rfm`。 |
 | `--rfm-wrapper PATH` | 自动生成 | RFM wrapper 路径，默认 `<rfm 名称>_rfm_wrapper.sp`。 |
 | `--report-top-rms N` | `5` | HTML 中绘制 RMS 最大的 S 参数元素数量。`0` 表示不绘制曲线。 |
-| `--log PATH` | `<输入名>.log`，位于 JSON 报告目录 | 写入逐阶次搜索摘要，包括阶次、RMS、状态和失败原因。 |
+| `--log PATH` | `<输入名>.log`，位于 JSON 报告目录 | 写入逐阶次搜索摘要、渐近补偿过程、阶次、RMS、状态和失败原因。 |
 | `--rms-target FLOAT` | 必填 | 最终平均 S-RMS 上限，必须为正数。 |
 | `--passivity {off,check,enforce}` | `check` | 被动性处理策略，见上表。 |
 | `--max-order N` | `100` | 允许尝试的最大有效公共极点阶次；与端口数量无关。 |
@@ -143,7 +147,7 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 | `--hf-complex-pairs N` | 大端口 `2`，其余依 auto | 预留给高频端的附加复极点对数量。 | 高频 RMS 明显高于低频、且提高总 `--max-order` 仍无效时尝试。 |
 | `--hf-pair-damping R` | `0.03` | 高频复极点对的归一化阻尼；较小值对应更尖锐、更高 Q 的候选谐振。 | 高频存在窄峰时可小幅降低；过小会导致条件数和被动性风险上升。 |
 | `--hf-pair-start-fraction R` | `0.68` | 高频复极点对允许出现的频段下界，占输入频率跨度的归一化比例。 | 高频问题更靠近末端时提高；问题覆盖较宽的中高频时降低。 |
-| `--passivity-max-iterations N` | auto（通常 `1`；大端口 enforce 为 `0`） | passivity enforcement 的最大修复轮数；`0` 表示不做修复轮。 | 原始拟合 RMS 达标、但修复后仍有被动性违例时增加。 |
+| `--passivity-max-iterations N` | auto（通常 `3`；特定大端口快速预设为 `0`） | passivity enforcement 的最大修复轮数；`0` 表示不做修复轮。每轮会重新扫描原始频点，逐批处理窄带违规。 | 原始拟合 RMS 达标、但修复后仍有被动性违例时增加。 |
 | `--passivity-samples N` | auto（通常 `8`；大端口 enforce 为 `64`） | 每轮无源修复保留的最严重违规频点上限。 | 违规频段较多或修复遗漏局部尖峰时增加。 |
 | `--passivity-active-variables N` | `3072` | 无源修复中允许同时调整的变量预算。 | 大端口模型的 enforcement 受限或修复不足时增加；会提高内存和时间。 |
 
@@ -211,6 +215,8 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 - `target_met`：是否满足目标。
 - `comparison_mean_rms_error`：与 `--rms-target` 使用同一 `mean_s_rms_v1` 公式的目标判定 RMS。
 - `passivity_max_sigma_after`：最终被动性最大奇异值。
+- `constant_matrix_sigma`：RFM 渐近常数矩阵 D 的最大奇异值，严格验收时必须小于 `1`。
+- `passivity_enforcement_diagnostics`：D 投影、固定极点补偿、DC 保持微阻尼和最终密集验证的可审计记录。
 - `selected_effective_order`：选中的有效阶次。
 - `order_trials`：搜索过程中的每个试探阶次及其结果。
 

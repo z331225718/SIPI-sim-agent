@@ -848,7 +848,7 @@ def test_native_fit_uses_low_memory_passivity_engine(tmp_path: Path, monkeypatch
     assert [name for name, *_rest in calls] == ["check", "enforce", "check"]
     assert calls[1][2] == 17
     assert [call[3] for call in calls] == [2e6, 2e6, 2e6]
-    assert calls[1][4] == 1
+    assert calls[1][4] == 3
     assert calls[1][5] == 123
     assert calls[1][6]["spectral_projection_include_all_reference_violations"] is False
     assert calls[1][6]["spectral_projection_weight_mode"] == "none"
@@ -871,6 +871,32 @@ def test_native_fit_uses_low_memory_passivity_engine(tmp_path: Path, monkeypatch
     assert result.passivity_max_sigma_before == pytest.approx(1.1)
     assert result.passivity_max_sigma_after == pytest.approx(1.0)
     assert result.passivity_enforcement_diagnostics == [{"active_budget": 123, "accepted": True}]
+
+
+def test_enforcement_final_validation_cannot_be_overridden_by_sparser_check():
+    import agent_spice.sparam.fitting as fitting
+
+    vector_fit = SimpleNamespace(
+        passivity_enforcement_diagnostics=[
+            {
+                "type": "final_validation",
+                "final_validation_max_sigma": 1.0000088,
+                "final_validation_max_sigma_frequency_hz": 75857.0,
+                "final_validation_violation_count": 20,
+                "final_validation_passed": False,
+            }
+        ]
+    )
+
+    merged = fitting._merge_enforcement_final_validation(
+        vector_fit,
+        passive_after=True,
+        violations_after=[],
+        max_sigma_after=1.000000004,
+        max_sigma_frequency_after=0.0,
+    )
+
+    assert merged == (False, [[75857.0, 75857.0]], 1.0000088, 75857.0, True)
 
 
 def test_native_fit_enforces_low_memory_passivity_when_checks_are_skipped(tmp_path: Path, monkeypatch):
@@ -973,7 +999,7 @@ def test_native_fit_enforces_low_memory_passivity_when_checks_are_skipped(tmp_pa
     assert [name for name, *_rest in calls] == ["enforce"]
     assert calls[0][2] == 19
     assert calls[0][3] == 2e6
-    assert calls[0][4] == 1
+    assert calls[0][4] == 3
     assert calls[0][5] == 321
     assert calls[0][6]["global_damping_mode"] == "selective_pole"
     assert calls[0][6]["global_damping_selective_min_frequency"] == 7.5e8

@@ -695,7 +695,7 @@ def test_fit_sparam_cli_defaults_to_full_grid_no_dc_order8_for_large_ports(tmp_p
     assert not hasattr(calls[0][2], "relocation_backend")
     assert calls[0][2].high_frequency_complex_pair_count == 2
     assert calls[0][2].passivity_samples == 8
-    assert calls[0][2].passivity_max_iterations == 1
+    assert calls[0][2].passivity_max_iterations == 3
     assert calls[0][2].passivity_active_variables == 3072
     assert calls[0][2].enforce_passivity is False
     assert calls[0][2].check_passivity is True
