@@ -41,3 +41,11 @@ PDN 输入的简单拒绝门；报告会同时保留原始与拟合条件数。
 S30 的改善尤其明显。但这只是表示域基准，不等同于生产替代：尚未做 held-out
 频点、Y 正实性 enforcement、互易约束或完整 SPICE/TRAN 签核。当前 `fit-yparam`
 已经输出 Z log RMS 与条件数，因此可直接用于这两份输入的可复现诊断拟合。
+
+## Held-out 更新
+
+基准脚本现在默认采用 `--holdout-stride 5`：保留第 2、7、12… 个频点，共 165/826
+点，只用其余 661 点拟合。S19、effective order 20、6 次最大 relocation 的 held-out
+Z log RMS 为 S-fit `1.45682`、Y-fit `1.20810`，Y 的改善为 `17.1%`。这证明前述
+Y 优势并非只由同一训练网格的评分产生；S30 的 held-out 运行仍待 HSPICE/签核阶段
+一并执行。
