@@ -11,7 +11,44 @@
 
 `.rfm` 不是 ngspice 原生可读取格式。实际读取它的是随 Agent-Spice 发布的 XSPICE code model。
 
-## 2. 电路写法
+## 2. RFM 格式与复极点约定
+
+HSPICE `VERSION 200600` 的最小 S 矩阵 RFM 由四个全局头和每个矩阵元素的系数块组成：
+
+```text
+VERSION 200600
+NPORT 1
+MATRIX_TYPE S
+Z0 50
+BEGIN 1 1
+CONST 0.1
+C 0
+DELAY 0
+BEGIN_REAL 1
+2.0e9 5.0e8
+BEGIN_COMPLEX 1
+3.0e9 -4.0e9 2.0e8 3.0e8
+END
+```
+
+`BEGIN row column` 使用从 1 开始的矩阵下标，表示从 `port[column]` 到 `port[row]` 的响应。`C` 和 `DELAY` 为零时可以省略；Agent-Spice 导出时显式写零，读取第三方文件时两种形式都接受。当前实现拒绝非零 `C`、非零 `DELAY` 和非 S 矩阵，避免静默改变模型。
+
+最容易写错的是 `BEGIN_COMPLEX`。一行四个数 `a b cr ci` 不是直接写系统极点，而是：
+
+```text
+omega_c = a + j*b
+A_c     = cr + j*ci
+term(s) = A_c/(s + omega_c) + conj(A_c)/(s + conj(omega_c))
+system pole p = -omega_c
+```
+
+因此 Native 模型若保存正虚部代表 `p=sigma+j*beta` 及其 residue `R`，正确输出是 `-sigma -beta Re(R) Im(R)`；不能把 `R` 再共轭。RFM 可以选择共轭对中的任一成员，所以第二列正负都合法，但 residue 必须与所选成员配对。Python importer 和 XSPICE device 都会将两种方向规范化到正虚部系统极点。
+
+这是 HSPICE S-element 的格式语义，不是 Agent-Spice 自定义约定。修复前由本项目生成的旧 RFM 可能被内部旧 parser “错误抵消”而通过回读测试，但在 HSPICE 中得到错误响应；这些文件必须用当前版本从原拟合结果重新导出，不能只改文件扩展名或 wrapper。
+
+格式依据：[HSPICE Signal Integrity User Guide](https://ece.iisc.ac.in/~dipanjan/E8_262/hspice_si.pdf)、[Cadence PowerSI/Sigrity Broadband SPICE 输出说明](https://www.cadence.com/content/dam/cadence-www/global/en_US/documents/tools/ic-package-design-analysis/sigrity-resources/sigrity-powersi-extraction-best-practices-an.pdf)。
+
+## 3. 电路写法
 
 用户电路只需要实例化 CLI 将要生成的子电路。二端口示例：
 
@@ -34,7 +71,7 @@ Xpackage p1 p2 p3 p4 0 rfm_direct
 
 不要在用户电路中自行 `.include rfm_direct_wrapper.sp`；CLI 会在运行副本中自动注入，原始输入保持不变。
 
-## 3. 准备与执行
+## 4. 准备与执行
 
 只生成可复现运行目录，不启动 ngspice：
 
@@ -64,7 +101,7 @@ python -m agent_spice.cli run-rfm .\channel-tran.sp `
 
 `--subckt-name` 必须与电路中的 X 实例一致。输出根目录的绝对路径当前不能含空白字符，这是 ngspice `codemodel` 命令在 Windows 上的加载限制。
 
-## 4. Code model 选择
+## 5. Code model 选择
 
 默认使用 Python 包内的 `agent_spice/lib/ngspice/rfm.cm`。临时覆盖：
 
@@ -85,7 +122,7 @@ $env:AGENT_SPICE_RFM_CODE_MODEL = "C:\models\rfm.cm"
 
 **[实验验证]** 当前随包 DLL 与 ngspice-46 的 `--with-wingui --enable-xspice --enable-cider` ABI 匹配。其他 ngspice 版本或自行编译的不同配置没有兼容保证，应先做加载和 TRAN smoke test。
 
-## 5. 运行产物
+## 6. 运行产物
 
 默认目录为 `runs/<deck stem>/rfm_direct/`：
 
@@ -103,7 +140,7 @@ $env:AGENT_SPICE_RFM_CODE_MODEL = "C:\models\rfm.cm"
 
 相对 `.include`/`.lib` 会递归暂存并转换；逃出电路目录的相对路径会被拒绝。绝对 include 保持原样。
 
-## 6. 数值与步长
+## 7. 数值与步长
 
 **[实现事实]** device 使用 scattering-wave 状态空间和梯形伴随模型，每个 transient step 更新 pole states，并向 ngspice MNA 写入端口电流及完整 N x N Jacobian。状态留在 code model 内部，不成为 MNA 未知量。
 
@@ -117,7 +154,7 @@ $env:AGENT_SPICE_RFM_CODE_MODEL = "C:\models\rfm.cm"
 
 `run-rfm` 不修改输入模型的被动性。生产使用应优先输入已验证稳定且被动的 RFM；项目自身生成 RFM 时，应在 `fit-sparam` 阶段完成相应质量门。
 
-## 7. 已知限制
+## 8. 已知限制
 
 - 仅支持 `VERSION 200600`、S 矩阵、单一实数正 `Z0`、稳定实极点或复共轭极点代表。
 - 当前 wrapper 是 N 个单端端口加一个公共参考 pin；差分和多参考 incidence mapping 尚未实现。
@@ -125,7 +162,7 @@ $env:AGENT_SPICE_RFM_CODE_MODEL = "C:\models\rfm.cm"
 - Windows 随包 DLL 只签核 ngspice-46 ABI；Linux/macOS 需要针对目标 ngspice 自行构建 `.cm`。
 - 运行目录路径不能含空白字符。
 
-## 8. 从源码构建 Windows DLL
+## 9. 从源码构建 Windows DLL
 
 构建只需要在发布/开发机运行，最终用户不需要 compiler、CMPP 或 Docker：
 

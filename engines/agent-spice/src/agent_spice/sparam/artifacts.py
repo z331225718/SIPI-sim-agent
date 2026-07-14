@@ -184,10 +184,11 @@ def _rfm_pole_groups(model: Any, response_count: int) -> tuple[np.ndarray, np.nd
 def write_cadence_rfm(model: Any, path: str | Path, z0: Any) -> Path:
     """Write a Cadence Broadband SPICE ``VERSION 200600`` S-parameter RFM.
 
-    The native vector-fit representation stores one positive-imaginary member of
-    each complex conjugate pole pair.  RFM's ``BEGIN_COMPLEX`` block uses that
-    same representative.  Proportional terms and non-canonical pole sets are
-    rejected rather than silently exported with changed transfer behaviour.
+    The native vector-fit representation stores one positive-imaginary system
+    pole ``p`` from each conjugate pair.  RFM stores the denominator coefficient
+    ``omega_c = -p`` for ``A_c / (s + omega_c)``.  Proportional terms and
+    non-canonical pole sets are rejected rather than silently exported with
+    changed transfer behaviour.
     """
 
     output = Path(path)
@@ -208,19 +209,24 @@ def write_cadence_rfm(model: Any, path: str | Path, z0: Any) -> Path:
     for row in range(ports):
         for column in range(ports):
             response_index = row * ports + column
-            lines.extend((f"BEGIN {row + 1} {column + 1}", f"Const {_rfm_real(constants[response_index], label='constant coefficient'):.12e}"))
+            lines.extend(
+                (
+                    f"BEGIN {row + 1} {column + 1}",
+                    f"CONST {_rfm_real(constants[response_index], label='constant coefficient'):.12e}",
+                    "C 0.000000000000e+00",
+                    "DELAY 0.000000000000e+00",
+                )
+            )
             lines.append(f"BEGIN_REAL {real_indices.size}")
             for pole_index in real_indices:
                 lines.append(f"  {-poles[pole_index].real:.12e}  {residues[response_index, pole_index].real:.12e}")
             lines.append(f"BEGIN_COMPLEX {complex_indices.size}")
             for pole_index in complex_indices:
                 pole = poles[pole_index]
-                # IdEM's HSPICE RFM export writes the negative-imaginary member
-                # of each conjugate pair.  Emit the same member (and its
-                # matching residue) so the file follows the de-facto producer
-                # convention instead of relying on an S-element implementation
-                # to normalize the pair orientation.
-                residue = residues[response_index, pole_index].conjugate()
+                # HSPICE stores omega_c, not the system pole p. Since
+                # omega_c=-p, a positive-imaginary native pole is written with
+                # negative omega and its residue must not be conjugated.
+                residue = residues[response_index, pole_index]
                 lines.append(
                     f"  {-pole.real:.12e}  {-pole.imag:.12e}  {residue.real:.12e}  {residue.imag:.12e}"
                 )

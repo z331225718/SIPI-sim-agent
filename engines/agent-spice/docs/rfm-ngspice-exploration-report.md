@@ -29,6 +29,7 @@
 ### 3.1 RFM 读取与频响重构
 
 - `src/agent_spice/sparam/rfm.py` 读取项目兼容的 `VERSION 200600`、`MATRIX_TYPE S`、共享 `Z0`、实 pole、复共轭 pole 和 residue。
+- `BEGIN_COMPLEX` 按 HSPICE 方程读取分母系数 `omega_c`，内部系统极点为 `p=-omega_c`；正负虚部方向都会连同匹配 residue 一起规范化。
 - Python importer 支持 response-specific pole set，并提升到 pole union；缺失 residue 补零。
 - `RfmModel.evaluate_s()` 直接计算 `S(j2*pi*f)`，不拟合。
 - `RfmModel.write_spice_subcircuit()` 仅用于 oracle/基准，不是推荐执行路径。
@@ -58,7 +59,8 @@
 
 - 支持项目自身生成的共享 pole set RFM；
 - 只支持 `MATRIX_TYPE S`、共享标量 `Z0`；
-- 暂不支持 response-specific pole set、proportional term 和第三方扩展 header；
+- 接受大小写关键字、可省略或显式为零的 `C`/`DELAY`，并接受复共轭代表的两种符号方向；
+- 暂不支持 response-specific pole set、非零 proportional term、非零 delay 和第三方扩展 header；
 - 这些限制会显式报错，不会静默重拟合。
 
 ### 3.3 状态更新算法
@@ -159,7 +161,7 @@ TRAN 最大差出现在 PULSE 下降沿附近，相对约 `0.4 V` 峰值为 `3.3
 
 - ngspice-46 官方源码 SHA-256：`a0d1699af1940b06649276dcd6ff5a566c8c0cad01b2f7b5e99dedbb4d64c19b`。
 - 编译器：`x86_64-w64-mingw32-gcc 12-win32`。
-- 产品化加固后的 `rfm.cm` SHA-256：`166dbcd5dbdf7859d69608f8aacb21a13004ac3288de786d4495640060254d2c`。
+- 修正 HSPICE 复极点方向及标准关键字兼容后的 `rfm.cm` SHA-256：`a23fa36d39328c8a000eb405a66cd293dae6015f3f50df09c4ea887faa104bab`。
 - 输出 DLL 只导入 `KERNEL32.dll` 与 `msvcrt.dll`，导出标准 `CMdevs/CMdevNum/CMudns/CMudnNum/CMgetCoreItfPtr`。
 
 **[实验验证]** 构建工具只存在于 Docker 发布流程；运行端仍只需要默认离线 ngspice 和随 Agent-Spice 发布的 `rfm.cm`，不要求用户安装 Xyce/XDM、C compiler 或 `cmpp`。
@@ -208,14 +210,16 @@ TRAN 最大差出现在 PULSE 下降沿附近，相对约 `0.4 V` 峰值为 `3.3
 
 ## 9. 测试与复现
 
-- **[实验验证]** 新增聚焦测试：`10 passed`，覆盖 RFM parser、无重拟合重构、pole union、Schur 公式、block-diagonal 扩展和动态 vector deck。
+- **[实验验证]** 当前 RFM 与相关拟合/无源性回归：`300 passed, 5 skipped`，覆盖 RFM parser、独立 HSPICE 公式重构、无重拟合 pole union、Schur 公式、真实 ngspice AC/TRAN、block-diagonal 扩展和动态 vector deck。
 - **[实验验证]** Windows `rfm.cm` 构建成功；direct AC、direct TRAN、direct-vs-macro AC/TRAN 均 return code 0。
 - **[实验验证]** 规模基准 2/8/16-port，各模式 5 次，全部成功。
 - **[实验验证]** `compileall` 与 `git diff --check` 通过。
-- **[实验验证]** 产品化增量后的全量测试为 `825 passed, 5 skipped, 4 xfailed, 3 failed`；三个失败均为本分支开始前已存在的 CLI 能力缺口，详见 `artifacts/rfm-ngspice-poc/product-run/full-test-results.txt`。
+- **[实验验证]** 当前全量测试为 `856 passed, 5 skipped, 4 xfailed, 3 failed`；三个失败仍是本工作开始前已有的 CLI 能力缺口：缺少两个研究命令，以及 CLI import 提前加载 skrf；与 RFM 改动无关。
 
 产品化增量回归（2026-07-14）：
 
+- **[实验验证]** 按 HSPICE 方程修正 `BEGIN_COMPLEX` 后，IdEM 30-port RFM 对原始 S30P 的全网格 RMS 为 `0.0015123166`；旧错误解释为 `0.11788839`。修正后重写文件再由独立公式计算，与内存模型最大差 `5.37e-12`。
+- **[实验验证]** 随包 DLL 的真实 ngspice-46 AC 结果与解析端口导纳一致；TRAN 对同源普通 SPICE 宏模型共 `1032` 点，插值后波形 RMS 差 `2.24e-7 V`、最大差 `2.51e-6 V`。
 - **[实验验证]** `run-rfm` 使用随包 DLL 在官方 Windows ngspice-46 完成真实 TRAN，return code `0`，输出 `1029` 行 waveform；runtime RFM 65 点无损规范化最大误差 `0`。
 - **[实验验证]** 最新 direct-vs-macro TRAN 共 `1033` 点，输出 RMS 差 `1.42739e-6 V`，最大差 `5.1e-6 V`。
 - **[实验验证]** 最新 2/8/16-port 五次中位数加速为 `1.52x`、`2.23x`、`2.11x`；16-port MNA unknowns 为 direct `18`、macro `146`。

@@ -79,7 +79,7 @@ END
     np.testing.assert_allclose(imported.poles, [-2.0 + 0.0j, -3.0 + 4.0j])
     np.testing.assert_allclose(
         imported.residues,
-        [[1.0, 0.0], [0.0, 0.2 + 0.3j], [0.0, 0.0], [0.5, 0.0]],
+        [[1.0, 0.0], [0.0, 0.2 - 0.3j], [0.0, 0.0], [0.5, 0.0]],
     )
 
 
@@ -105,7 +105,7 @@ END
     imported = parse_cadence_rfm(rfm)
 
     np.testing.assert_allclose(imported.poles, [-3.0 + 4.0j])
-    np.testing.assert_allclose(imported.residues, [[0.2 + 0.3j]])
+    np.testing.assert_allclose(imported.residues, [[0.2 - 0.3j]])
 
 
 def test_imported_rfm_uses_existing_spice_exporter_without_calling_fit(tmp_path: Path, monkeypatch) -> None:

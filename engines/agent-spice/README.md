@@ -50,6 +50,8 @@ python -m agent_spice.cli run-rfm .\channel-tran.sp `
 
 该路径读取现有 pole/residue，生成的 `.sp` 仅含一个 XSPICE wrapper，不是展开后的有理函数宏模型。默认加载随 Agent-Spice 发布、与 Windows ngspice-46 ABI 匹配的 `rfm.cm`；不会修改全局 `spinit`，也不要求 Xyce/XDM。完整接口、产物、步长建议、限制和源码构建方法见 [RFM 直接仿真使用说明](docs/rfm-ngspice-usage.md)。
 
+RFM 的复数行保存的是 `A_c/(s+omega_c)` 中的分母系数 `omega_c`，系统极点是 `p=-omega_c`；第二列不是系统极点虚部的直接副本。当前导出器、importer 和随包 XSPICE device 均按该 HSPICE 约定实现。由修复前版本生成的 RFM 即使能被 HSPICE 读入，也可能产生错误频响，必须从原拟合结果重新生成。
+
 ## S 参数拟合
 
 ### 最短命令

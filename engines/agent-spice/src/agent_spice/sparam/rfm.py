@@ -260,11 +260,12 @@ def parse_cadence_rfm(path: str | Path) -> RfmModel:
                 raise RfmParseError(
                     f"{source}:{line.number}: complex-pole damping must be positive and omega must be non-zero"
                 )
-            pole = complex(-damping, omega)
+            # The file stores omega_c in A_c/(s+omega_c), whereas the
+            # canonical model stores the system pole p=-omega_c.
+            pole = complex(-damping, -omega)
             residue = complex(residue_real, residue_imag)
-            # Normalize to the native positive-imaginary representative.  IdEM
-            # exports the negative member while older RFM producers may export
-            # the positive one; both represent the same conjugate pair.
+            # Normalize the resulting system pole to the native
+            # positive-imaginary representative.
             if pole.imag < 0.0:
                 pole = pole.conjugate()
                 residue = residue.conjugate()

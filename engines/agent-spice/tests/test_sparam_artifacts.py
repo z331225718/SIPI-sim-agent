@@ -108,9 +108,14 @@ def test_write_cadence_rfm_writes_bbs_s_blocks_for_real_and_complex_poles(tmp_pa
     assert text.count("BEGIN ") == 4
     assert text.count("BEGIN_REAL 1") == 4
     assert text.count("BEGIN_COMPLEX 1") == 4
-    assert "BEGIN 1 1\nConst 1.000000000000e-01\n" in text
+    assert (
+        "BEGIN 1 1\n"
+        "CONST 1.000000000000e-01\n"
+        "C 0.000000000000e+00\n"
+        "DELAY 0.000000000000e+00\n"
+    ) in text
     assert "  2.000000000000e+00  1.000000000000e+00\n" in text
-    assert "  3.000000000000e+00  -4.000000000000e+00  2.000000000000e-01  -3.000000000000e-01\n" in text
+    assert "  3.000000000000e+00  -4.000000000000e+00  2.000000000000e-01  3.000000000000e-01\n" in text
     assert text.endswith("END\n")
 
 
@@ -178,8 +183,8 @@ def test_cadence_rfm_first_element_reconstructs_native_response(tmp_path) -> Non
     reconstructed = (
         constant
         + real_residue / (s + real_pole)
-        + (residue_real + 1j * residue_imag) / (s + damping - 1j * omega)
-        + (residue_real - 1j * residue_imag) / (s + damping + 1j * omega)
+        + (residue_real + 1j * residue_imag) / (s + damping + 1j * omega)
+        + (residue_real - 1j * residue_imag) / (s + damping - 1j * omega)
     )
 
     np.testing.assert_allclose(reconstructed, evaluate_fitted_s(model, frequencies_hz)[:, 0, 0])
