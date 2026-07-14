@@ -3115,6 +3115,33 @@ def _spectral_norm_project_matrix(matrix: np.ndarray, *, target_norm: float) -> 
     return (U * clipped[None, :]) @ Vh
 
 
+def _project_asymptotic_constant_strictly_passive(
+    constant_coeff: np.ndarray,
+    *,
+    nports: int,
+    epsilon: float,
+    maximum_sigma_to_project: float | None = None,
+) -> tuple[np.ndarray, float, float, float]:
+    """Project the RFM feedthrough matrix inside the strict passive boundary."""
+
+    constant = np.asarray(constant_coeff, dtype=complex).reshape(nports, nports)
+    U, singular_values, Vh = la.svd(constant)
+    sigma_before = float(singular_values[0]) if len(singular_values) else 0.0
+    strict_margin = max(float(epsilon), 64.0 * np.finfo(float).eps)
+    target_norm = max(0.0, 1.0 - strict_margin)
+    if sigma_before < 1.0 or (
+        maximum_sigma_to_project is not None and sigma_before > maximum_sigma_to_project
+    ):
+        return constant.reshape(-1).copy(), sigma_before, sigma_before, target_norm
+
+    clipped = np.minimum(singular_values, target_norm)
+    projected = (U * clipped[None, :]) @ Vh
+    if np.all(constant.imag == 0.0):
+        projected = projected.real.astype(complex)
+    sigma_after = float(clipped[0]) if len(clipped) else 0.0
+    return projected.reshape(-1), sigma_before, sigma_after, target_norm
+
+
 def _projection_residue_constant_delta(
     poles: np.ndarray,
     residues: np.ndarray,
@@ -4550,12 +4577,57 @@ def enforce_passivity_hamiltonian(
 
     poles, residues = _expand_poles_and_residues(poles_orig, residues_orig)
 
+    asymptotic_target = max(
+        0.0,
+        1.0 - max(float(epsilon), 64.0 * np.finfo(float).eps),
+    )
+
+    # Fix an invalid asymptote before the expensive frequency-domain work when
+    # no configured repair path can perturb D. Also close the previous
+    # tolerance gap in global damping: that fallback triggers above 1+epsilon,
+    # while the exported RFM quality gate correctly requires sigma(D) < 1.
+    asymptotic_preprojection_available = not (perturb_constant or spectral_projection_fallback)
+    if asymptotic_preprojection_available:
+        constant_coeff, asymptotic_sigma_before, asymptotic_sigma_after, asymptotic_target = (
+            _project_asymptotic_constant_strictly_passive(
+                constant_coeff,
+                nports=nports,
+                epsilon=epsilon,
+                maximum_sigma_to_project=(1.0 + epsilon) if global_damping_fallback else None,
+            )
+        )
+        asymptotic_preprojection_enabled = (
+            not global_damping_fallback or asymptotic_sigma_before <= 1.0 + epsilon
+        )
+        asymptotic_constant_projected = (
+            asymptotic_sigma_before >= 1.0 and asymptotic_sigma_after < asymptotic_sigma_before
+        )
+    else:
+        constant_matrix = constant_coeff.reshape(nports, nports)
+        asymptotic_singular_values = la.svd(constant_matrix, compute_uv=False)
+        asymptotic_sigma_before = (
+            float(asymptotic_singular_values[0]) if len(asymptotic_singular_values) else 0.0
+        )
+        asymptotic_sigma_after = asymptotic_sigma_before
+        asymptotic_preprojection_enabled = False
+        asymptotic_constant_projected = False
+
     best_residues = residues.copy()
     best_constant = constant_coeff.copy()
     best_poles = poles.copy()
     best_score: _PassivityScore | None = None
     diagnostics: list[dict[str, Any]] = []
     vector_fit.passivity_enforcement_diagnostics = diagnostics
+    diagnostics.append(
+        {
+            "type": "asymptotic_constant_projection",
+            "enabled": bool(asymptotic_preprojection_enabled),
+            "projected": bool(asymptotic_constant_projected),
+            "sigma_before": float(asymptotic_sigma_before),
+            "sigma_after": float(asymptotic_sigma_after),
+            "target_norm": float(asymptotic_target),
+        }
+    )
 
     for iteration in range(max_iterations):
         crossover_freqs = check_passivity_hamiltonian_s(poles, residues, constant_coeff, nports, f_max=f_max)
@@ -6323,7 +6395,7 @@ def enforce_passivity_hamiltonian(
             vector_fit.poles = poles
 
     # Update constant_coeff in vector_fit
-    if perturb_constant or global_damping_fallback or spectral_projection_fallback:
+    if asymptotic_constant_projected or perturb_constant or global_damping_fallback or spectral_projection_fallback:
         vector_fit.constant_coeff = constant_coeff
 
     # Update residues in vector_fit

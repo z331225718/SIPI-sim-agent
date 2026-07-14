@@ -37,6 +37,7 @@ from agent_spice.sparam.passivity import (
     _variable_fit_weights,
     _model_based_variable_weights,
     _projection_residue_constant_delta,
+    _project_asymptotic_constant_strictly_passive,
     _reference_response_rms_at_freqs,
     _response_delta_rms_at_freqs,
     _select_projection_candidate,
@@ -670,6 +671,63 @@ def test_global_damping_factor_targets_below_passivity_limit():
 
 def test_global_damping_factor_leaves_passive_model_unchanged():
     assert _global_damping_factor(max_sigma=0.99, epsilon=1e-6) == pytest.approx(1.0)
+
+
+def test_asymptotic_constant_projection_is_strict_and_matrix_level():
+    constant = np.array([1.2, 0.4, 0.4, 1.2], dtype=complex)
+
+    projected, sigma_before, sigma_after, target = _project_asymptotic_constant_strictly_passive(
+        constant,
+        nports=2,
+        epsilon=1e-6,
+    )
+
+    assert sigma_before == pytest.approx(1.6)
+    assert target == pytest.approx(0.999999)
+    assert sigma_after < 1.0
+    assert np.max(np.linalg.svd(projected.reshape(2, 2), compute_uv=False)) < 1.0
+
+
+def test_enforcement_projects_nonpassive_const_even_without_iterative_repairs():
+    vector_fit = type("VectorFit", (), {})()
+    vector_fit.poles = np.array([], dtype=complex)
+    vector_fit.residues = np.zeros((4, 0), dtype=complex)
+    vector_fit.constant_coeff = np.array([1.2, 0.4, 0.4, 1.2], dtype=complex)
+
+    enforce_passivity_hamiltonian(vector_fit, nports=2, epsilon=1e-6, max_iterations=0)
+
+    sigma = np.max(np.linalg.svd(vector_fit.constant_coeff.reshape(2, 2), compute_uv=False))
+    diagnostic = vector_fit.passivity_enforcement_diagnostics[0]
+    assert sigma < 1.0
+    assert diagnostic["type"] == "asymptotic_constant_projection"
+    assert diagnostic["projected"] is True
+    assert diagnostic["sigma_before"] == pytest.approx(1.6)
+    assert diagnostic["sigma_after"] < 1.0
+
+
+@pytest.mark.parametrize("constant_value", [1.0, 1.0 + 0.5e-6, 1.0 + 1.0e-6])
+def test_enforcement_closes_strict_const_gap_before_global_damping(constant_value):
+    vector_fit = type("VectorFit", (), {})()
+    vector_fit.poles = np.array([], dtype=complex)
+    vector_fit.residues = np.zeros((1, 0), dtype=complex)
+    vector_fit.constant_coeff = np.array([constant_value], dtype=complex)
+
+    enforce_passivity_hamiltonian(
+        vector_fit,
+        nports=1,
+        epsilon=1e-6,
+        max_iterations=0,
+        global_damping_fallback=True,
+    )
+
+    diagnostic = vector_fit.passivity_enforcement_diagnostics[0]
+    assert abs(vector_fit.constant_coeff[0]) < 1.0
+    assert diagnostic["enabled"] is True
+    assert diagnostic["projected"] is True
+    assert not any(
+        item.get("type") == "global_damping_fallback"
+        for item in vector_fit.passivity_enforcement_diagnostics
+    )
 
 
 def test_apply_selective_pole_damping_scales_only_high_frequency_poles_and_constant():
