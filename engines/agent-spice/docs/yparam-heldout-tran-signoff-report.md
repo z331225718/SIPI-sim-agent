@@ -81,6 +81,12 @@ Y-fit Norton/MNA 宏没有通过 TRAN：三路网表在约 `4.2 ns` 中止，未
 
 因此本功能的研究性目标已经验证：Y-fit 对 held-out Z 指标有提升；生产签核目标尚未完成，不能把本轮结果宣称为 “enforced” 或 “TRAN signed off”。
 
+## Y-derived S enforcement 试跑
+
+按后续确定的交付路线，已在同一 2-port 上执行 `Y fit -> 严格 LFT 采样 S -> S refit + --passivity enforce`。中间 S 与最终 S-RFM 的平均 RMS 为 `0.0070106`，S-RFM 相对原始 S 的平均 RMS 为 `0.252786`，而 Y-derived S 相对原始 S 为 `0.252912`。因此 enforcement/refit 没有显著恶化转换后的原始 S 误差（变化 `-0.000126`），但两者相对原始 S 都过大，绝不能以“前后接近”取代绝对质量门。
+
+该试跑的 `passivity_max_sigma` 在 enforcement 前后均约 `0.995113`；它验证了 S-domain 路径可执行，而非证明 Y 已 enforcement。命令、字段定义与门槛见 `docs/yderived-s-enforcement-workflow.md`。
+
 ## 下一步
 
 1. 为 Y 有理模型实现真正的连续频带正实 enforcement（例如 KYP/LMI 或等价有理 PR 判定与受约束校正），并将未完成 enforcement 作为硬失败而非 warning。

@@ -1152,6 +1152,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     y_fit_parser.add_argument("touchstone", type=Path, help="Input .sNp Touchstone file.")
     y_fit_parser.add_argument("--output", type=Path, help="Output Y-domain SPICE subcircuit path.")
+    y_fit_parser.add_argument(
+        "--derived-s-touchstone",
+        type=Path,
+        help="Optional sampled S Touchstone obtained from the fitted Y rational model; feed it to fit-sparam for S-domain delivery/enforcement.",
+    )
     y_fit_parser.add_argument("--report", type=Path, help="JSON report path.")
     y_fit_parser.add_argument("--html-report", type=Path, help="Optional HTML report path.")
     y_fit_parser.add_argument("--log", type=Path, help="Progress log path.")
@@ -1655,6 +1660,7 @@ def main(argv: list[str] | None = None) -> int:
                 report_path=report_path,
                 html_report_path=html_report_path,
                 log_path=log_path,
+                derived_s_touchstone_path=args.derived_s_touchstone,
             )
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)

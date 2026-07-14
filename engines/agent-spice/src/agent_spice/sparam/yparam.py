@@ -10,7 +10,7 @@ from typing import Any, Literal
 
 import numpy as np
 
-from .artifacts import evaluate_fitted_y, rank_element_rms, write_spice_subcircuit_y
+from .artifacts import evaluate_fitted_y, rank_element_rms, write_fitted_touchstone, write_spice_subcircuit_y
 from .native_vf import NativeVectorFitting
 from .z_metrics import invert_y_strict, z_log_metric_summary
 
@@ -160,6 +160,34 @@ def _hermitian_minimum(values: np.ndarray, ports: int) -> float:
     return float(np.linalg.eigvalsh(0.5 * (matrix + matrix.conj().T))[0])
 
 
+def convert_y_to_s_strict(y_values: np.ndarray, z0: float, *, condition_limit: float) -> tuple[np.ndarray, np.ndarray]:
+    """Convert common-reference Y samples to S without a pseudo-inverse."""
+
+    y = np.asarray(y_values, dtype=complex)
+    if y.ndim != 3 or y.shape[1] != y.shape[2] or y.shape[0] == 0 or not np.isfinite(y).all():
+        raise ValueError("y_values must be a non-empty finite (frequency, port, port) array")
+    if not np.isfinite(z0) or z0 <= 0.0:
+        raise ValueError("z0 must be a finite positive real value")
+    if not np.isfinite(condition_limit) or condition_limit <= 1.0:
+        raise ValueError("condition_limit must be finite and > 1")
+
+    identity = np.eye(y.shape[1], dtype=complex)
+    converted = np.empty_like(y)
+    conditions = np.empty(y.shape[0], dtype=float)
+    for index, value in enumerate(y):
+        denominator = identity + z0 * value
+        condition = float(np.linalg.cond(denominator))
+        if not np.isfinite(condition) or condition > condition_limit:
+            raise ValueError(
+                f"Y-to-S conversion is ill-conditioned at sample {index} "
+                f"(cond(I+z0Y)={condition:.12g}; limit={condition_limit:.12g})"
+            )
+        # Solve S(I+z0Y)=I-z0Y on the right; never use an inverse/pseudo-inverse.
+        converted[index] = np.linalg.solve(denominator.T, (identity - z0 * value).T).T
+        conditions[index] = condition
+    return converted, conditions
+
+
 def fit_touchstone_to_y_spice(
     touchstone_path: str | Path,
     spice_path: str | Path,
@@ -168,6 +196,7 @@ def fit_touchstone_to_y_spice(
     report_path: str | Path | None = None,
     html_report_path: str | Path | None = None,
     log_path: str | Path | None = None,
+    derived_s_touchstone_path: str | Path | None = None,
 ) -> YParamFitResult:
     """Fit Touchstone-derived Y data and write a common-ground SPICE model."""
 
@@ -209,6 +238,27 @@ def fit_touchstone_to_y_spice(
     element_rms = np.sqrt(np.mean(np.abs(y_values - fitted) ** 2, axis=0))
     rms = float(np.sqrt(np.sum(element_rms**2)))
     mean_rms = rms / network.nports
+    derived_s_path = None if derived_s_touchstone_path is None else Path(derived_s_touchstone_path)
+    if derived_s_path is not None:
+        z0 = float(np.asarray(network.z0, dtype=complex)[0, 0].real)
+        derived_s, derived_s_conditions = convert_y_to_s_strict(
+            fitted,
+            z0,
+            condition_limit=cfg.conversion_condition_limit,
+        )
+        write_fitted_touchstone(derived_s_path, network.f, derived_s, network.z0)
+        derived_s_element_rms = np.sqrt(np.mean(np.abs(np.asarray(network.s, dtype=complex) - derived_s) ** 2, axis=0))
+        derived_s_metrics: dict[str, Any] | None = {
+            "path": str(derived_s_path),
+            "matrix": "S=(I-z0Y)(I+z0Y)^-1",
+            "condition_matrix": "I+z0Y",
+            "condition_max": float(np.max(derived_s_conditions)),
+            "rms_error_against_input": float(np.sqrt(np.sum(derived_s_element_rms**2))),
+            "mean_rms_error_against_input": float(np.sqrt(np.sum(derived_s_element_rms**2)) / network.nports),
+            "element_rms": [item.__dict__ for item in rank_element_rms(np.asarray(network.s, dtype=complex), derived_s)],
+        }
+    else:
+        derived_s_metrics = None
     try:
         fitted_z, fitted_y_conditions = invert_y_strict(fitted)
         z_log_metrics = z_log_metric_summary(np.asarray(network.z, dtype=complex), fitted_z)
@@ -263,6 +313,7 @@ def fit_touchstone_to_y_spice(
     )
     payload = result.to_dict()
     payload["element_rms_siemens"] = [item.__dict__ for item in rank_element_rms(y_values, fitted)]
+    payload["y_derived_s"] = derived_s_metrics
     if result.report_path is not None:
         result.report_path.parent.mkdir(parents=True, exist_ok=True)
         result.report_path.write_text(json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")

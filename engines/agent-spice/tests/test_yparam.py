@@ -10,7 +10,7 @@ import pytest
 
 from agent_spice.sparam.artifacts import evaluate_fitted_y, write_spice_subcircuit_y
 from agent_spice.sparam.native_vf import NativeVectorFitting
-from agent_spice.sparam.yparam import YParamFitConfig, fit_touchstone_to_y_spice
+from agent_spice.sparam.yparam import YParamFitConfig, convert_y_to_s_strict, fit_touchstone_to_y_spice
 
 
 def _write_y_touchstone(path: Path, frequencies: np.ndarray, y: np.ndarray) -> Path:
@@ -60,6 +60,36 @@ def test_fit_yparam_writes_y_report_and_checks_positive_real_rc(tmp_path: Path) 
     assert "Fy1_1" in (tmp_path / "rc.y.sp").read_text(encoding="ascii")
 
 
+def test_fit_yparam_can_export_y_derived_s_touchstone(tmp_path: Path) -> None:
+    frequencies = np.array([1.0e6, 2.0e6, 5.0e6, 1.0e7, 2.0e7, 5.0e7])
+    y = 0.02 + 2j * np.pi * frequencies[:, None, None] * 1.0e-9
+    touchstone = _write_y_touchstone(tmp_path / "rc.s1p", frequencies, y)
+    derived_s = tmp_path / "rc.y-derived.s1p"
+    report = tmp_path / "rc.y.json"
+
+    fit_touchstone_to_y_spice(
+        touchstone,
+        tmp_path / "rc.y.sp",
+        config=YParamFitConfig(n_poles_real=1, n_poles_cmplx=1, max_iterations=8),
+        report_path=report,
+        derived_s_touchstone_path=derived_s,
+    )
+
+    import skrf as rf
+
+    exported = rf.Network(str(derived_s))
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert derived_s.is_file()
+    np.testing.assert_allclose(exported.s, rf.Network(str(touchstone)).s, rtol=1e-6, atol=1e-8)
+    assert payload["y_derived_s"]["rms_error_against_input"] < 1e-8
+    assert payload["y_derived_s"]["condition_max"] > 0.0
+
+
+def test_convert_y_to_s_rejects_ill_conditioned_mapping() -> None:
+    with pytest.raises(ValueError, match="ill-conditioned"):
+        convert_y_to_s_strict(np.array([[[-0.02 + 0j]]]), 50.0, condition_limit=1e6)
+
+
 def test_fit_yparam_reports_non_positive_real_negative_conductance(tmp_path: Path) -> None:
     frequencies = np.array([1.0e6, 2.0e6, 5.0e6, 1.0e7])
     touchstone = _write_y_touchstone(tmp_path / "negative.s1p", frequencies, np.full((4, 1, 1), -0.01 + 0j))
@@ -96,13 +126,14 @@ def test_fit_yparam_cli_writes_default_y_artifacts(tmp_path: Path) -> None:
 
     exit_code = cli.main([
         "fit-yparam", str(touchstone), "--n-poles-real", "1", "--n-poles-cmplx", "1", "--fit-iterations", "8",
-        "--max-y-rms-siemens", "1e-6",
+        "--max-y-rms-siemens", "1e-6", "--derived-s-touchstone", str(tmp_path / "line.y-derived.s1p"),
     ])
 
     assert exit_code == 0
     assert (tmp_path / "line_fitted.y.sp").is_file()
     assert (tmp_path / "line_fitted.y.json").is_file()
     assert (tmp_path / "line_fitted.y.html").is_file()
+    assert (tmp_path / "line.y-derived.s1p").is_file()
 
 
 def test_fit_yparam_cli_fails_positive_real_check(tmp_path: Path) -> None:
