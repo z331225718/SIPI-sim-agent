@@ -4,6 +4,7 @@ Agent-Spice 是面向电源完整性与高速互连场景的命令行工具。�
 
 - `fit-sparam`：将 Touchstone S 参数拟合为 SPICE 子电路、RFM 和可核验的 fitted Touchstone。
 - `run-hspice`：解析 HSPICE 网表，展开 `.alter`，并生成兼容性报告与后端输入文件。
+- `run-rfm`：不重新拟合、不展开普通 SPICE 状态子电路，直接用 XSPICE N-port device 执行 RFM 瞬态仿真。
 
 仓库内还保留了 IdEM、极点、模态和基准探针命令，供算法研究使用；它们不是稳定产品接口，参数与输出契约可能变化，因此不在本 README 中逐项承诺。可用 `python -m agent_spice.cli --help` 查看完整命令索引，以及 `python -m agent_spice.cli <命令> --help` 查看探针命令的即时帮助。
 
@@ -30,6 +31,24 @@ git lfs pull
 ```powershell
 $env:Path = "$env:USERPROFILE\tools\agent-spice-solvers\bin;$env:Path"
 ```
+
+## RFM 直接瞬态仿真
+
+电路中用 `X` 实例连接 N 个端口和最后一个公共参考端，例如二端口：
+
+```spice
+Xchannel in out 0 rfm_direct
+```
+
+直接执行项目生成或兼容的 `VERSION 200600` RFM：
+
+```powershell
+python -m agent_spice.cli run-rfm .\channel-tran.sp `
+  --rfm .\channel.rfm `
+  --execute
+```
+
+该路径读取现有 pole/residue，生成的 `.sp` 仅含一个 XSPICE wrapper，不是展开后的有理函数宏模型。默认加载随 Agent-Spice 发布、与 Windows ngspice-46 ABI 匹配的 `rfm.cm`；不会修改全局 `spinit`，也不要求 Xyce/XDM。完整接口、产物、步长建议、限制和源码构建方法见 [RFM 直接仿真使用说明](docs/rfm-ngspice-usage.md)。
 
 ## S 参数拟合
 

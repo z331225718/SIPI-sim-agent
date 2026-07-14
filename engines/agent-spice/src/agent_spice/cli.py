@@ -917,6 +917,48 @@ def run_hspice(deck_path: Path, backend_name: str, output_root: Path, execute: b
     return 0
 
 
+def run_rfm(
+    deck_path: Path,
+    rfm_path: Path,
+    output_root: Path,
+    subcircuit_name: str,
+    *,
+    execute: bool = False,
+    ngspice_executable: str = "ngspice",
+    code_model: Path | None = None,
+) -> int:
+    """Prepare and optionally execute an RFM without vector fitting or macro expansion."""
+
+    from agent_spice.sparam.rfm import RfmParseError
+    from agent_spice.sparam.rfm_ngspice import (
+        RfmNgspiceError,
+        execute_rfm_run,
+        prepare_rfm_run,
+    )
+
+    try:
+        artifacts = prepare_rfm_run(
+            deck_path,
+            rfm_path,
+            output_root=output_root,
+            subcircuit_name=subcircuit_name,
+        )
+        if not execute:
+            print(f"run-rfm status=PREPARED output={artifacts.run_dir}")
+            return 0
+        result = execute_rfm_run(
+            artifacts,
+            ngspice_executable=ngspice_executable,
+            code_model=code_model,
+        )
+    except (OSError, ValueError, RfmParseError, RfmNgspiceError) as exc:
+        print(f"run-rfm status=FAIL reason={exc}", file=sys.stderr)
+        return 1
+    status = "PASS" if result.ok else "FAIL"
+    print(f"run-rfm status={status} returncode={result.returncode} output={artifacts.run_dir}")
+    return 0 if result.ok else result.returncode or 1
+
+
 def main(argv: list[str] | None = None) -> int:
     effective_argv = sys.argv[1:] if argv is None else argv
     parser = argparse.ArgumentParser(prog="agent-spice")
@@ -926,6 +968,25 @@ def main(argv: list[str] | None = None) -> int:
     run_parser.add_argument("--backend", choices=["ngspice", "xyce", "xyce-xdm"], default="ngspice")
     run_parser.add_argument("--output-root", type=Path, default=Path("runs"))
     run_parser.add_argument("--execute", action="store_true")
+
+    rfm_parser = subparsers.add_parser(
+        "run-rfm",
+        description=(
+            "Run a Cadence/HSPICE RFM directly through the Agent-Spice XSPICE N-port device; "
+            "no vector fitting or expanded SPICE macro-model is used."
+        ),
+    )
+    rfm_parser.add_argument("deck", type=Path, help="Circuit deck instantiating the generated subcircuit.")
+    rfm_parser.add_argument("--rfm", type=Path, required=True, help="Input VERSION 200600 S-matrix RFM.")
+    rfm_parser.add_argument("--subckt-name", default="rfm_direct")
+    rfm_parser.add_argument("--output-root", type=Path, default=Path("runs"))
+    rfm_parser.add_argument("--ngspice", default="ngspice", help="ngspice executable or absolute path.")
+    rfm_parser.add_argument(
+        "--code-model",
+        type=Path,
+        help="Override bundled rfm.cm (or set AGENT_SPICE_RFM_CODE_MODEL).",
+    )
+    rfm_parser.add_argument("--execute", action="store_true")
 
     fit_parser = subparsers.add_parser(
         "fit-sparam",
@@ -1334,6 +1395,16 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(effective_argv)
     if args.command == "run-hspice":
         return run_hspice(args.deck, args.backend, args.output_root, args.execute)
+    if args.command == "run-rfm":
+        return run_rfm(
+            args.deck,
+            args.rfm,
+            args.output_root,
+            args.subckt_name,
+            execute=args.execute,
+            ngspice_executable=args.ngspice,
+            code_model=args.code_model,
+        )
     if args.command == "fit-sparam":
         try:
             _apply_sparam_auto_preset(args, effective_argv)

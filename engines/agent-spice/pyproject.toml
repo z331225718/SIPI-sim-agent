@@ -21,6 +21,9 @@ agent-spice-native = "agent_spice.sparam.native_cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+agent_spice = ["lib/ngspice/*.cm", "lib/ngspice/*.txt"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
