@@ -78,6 +78,19 @@ class NativeVectorFitting:
     def get_model_order(poles: np.ndarray) -> int:
         return int(np.sum((np.asarray(poles).imag != 0) + 1))
 
+    def _response_matrix(self, parameter_type: str) -> np.ndarray:
+        normalized = parameter_type.lower()
+        if normalized not in {"s", "y"}:
+            raise ValueError("NativeVectorFitting supports only S- or Y-parameter fitting")
+        values = getattr(self.network, normalized, None)
+        if values is None:
+            raise ValueError(f"network does not provide {normalized.upper()}-parameter data")
+        matrix = np.asarray(values, dtype=complex)
+        expected_shape = (len(self.network.f), self.network.nports, self.network.nports)
+        if matrix.shape != expected_shape or not np.isfinite(matrix).all():
+            raise ValueError(f"network {normalized.upper()}-parameter data must be finite with shape {expected_shape}")
+        return matrix
+
     @staticmethod
     def _init_poles(freqs: np.ndarray, n_poles_real: int, n_poles_cmplx: int, init_pole_spacing: str):
         fmin = np.amin(freqs)
@@ -512,9 +525,7 @@ class NativeVectorFitting:
         norm = np.average(self.network.f)
         freqs_norm = np.array(self.network.f) / norm
 
-        if parameter_type.lower() != "s":
-            raise ValueError("NativeVectorFitting currently supports only S-parameter fitting")
-        nw_responses = self.network.s
+        nw_responses = self._response_matrix(parameter_type)
         freq_responses = np.array(
             [nw_responses[:, i, j] for i in range(self.network.nports) for j in range(self.network.nports)]
         )
@@ -950,8 +961,9 @@ class NativeVectorFitting:
         if not candidate_configs:
             raise ValueError("candidate_configs must contain at least one topology")
         started = time.perf_counter()
+        response_matrix = self._response_matrix(parameter_type)
         freq_responses = np.array(
-            [self.network.s[:, i, j] for i in range(self.network.nports) for j in range(self.network.nports)]
+            [response_matrix[:, i, j] for i in range(self.network.nports) for j in range(self.network.nports)]
         )
         best_fit: NativeVectorFitting | None = None
         best_score: PoleCandidateScore | None = None
@@ -1116,10 +1128,11 @@ class NativeVectorFitting:
         return response
 
     def get_rms_error(self, parameter_type: str = "s") -> float:
+        original_matrix = self._response_matrix(parameter_type)
         total = 0.0
         for row in range(self.network.nports):
             for column in range(self.network.nports):
-                original = self.network.s[:, row, column]
+                original = original_matrix[:, row, column]
                 fitted = self.get_model_response(row, column, self.network.f)
                 total += float(np.mean(np.square(np.abs(original - fitted))))
         return float(np.sqrt(total))

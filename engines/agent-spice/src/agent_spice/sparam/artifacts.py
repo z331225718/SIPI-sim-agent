@@ -62,6 +62,102 @@ def evaluate_fitted_s(model: Any, frequencies_hz: Any) -> np.ndarray:
     return response.reshape(frequencies.size, ports, ports)
 
 
+def evaluate_fitted_y(model: Any, frequencies_hz: Any) -> np.ndarray:
+    """Evaluate a native vector fit as a Y matrix in Siemens."""
+
+    return evaluate_fitted_s(model, frequencies_hz)
+
+
+def _spice_real(value: complex, *, label: str) -> float:
+    scalar = complex(value)
+    if not np.isfinite(scalar) or abs(scalar.imag) > 1.0e-10 * max(1.0, abs(scalar.real)):
+        raise ValueError(f"Y SPICE export requires a finite real {label}")
+    return float(scalar.real)
+
+
+def write_spice_subcircuit_y(
+    model: Any,
+    path: str | Path,
+    *,
+    fitted_model_name: str = "y_equivalent",
+) -> Path:
+    """Write a common-ground Norton/MNA subcircuit for ``I = Y(s)V``.
+
+    Currents are positive into the subcircuit at each ``pN`` pin.  The exporter
+    intentionally uses only linear controlled sources, capacitors, and
+    resistors so ngspice can simulate the same pole-residue model in AC/TRAN.
+    """
+
+    output = Path(path)
+    ports = _model_port_count(model)
+    response_count = ports * ports
+    poles = np.asarray(getattr(model, "poles", None), dtype=complex).reshape(-1)
+    residues = np.asarray(getattr(model, "residues", None), dtype=complex)
+    constant = np.asarray(getattr(model, "constant_coeff", None), dtype=complex).reshape(-1)
+    proportional = np.asarray(getattr(model, "proportional_coeff", None), dtype=complex).reshape(-1)
+    if residues.shape != (response_count, poles.size) or constant.size != response_count or proportional.size != response_count:
+        raise ValueError("Native vector-fit coefficients have invalid dimensions")
+    if np.any(poles.real >= 0.0):
+        raise ValueError("Y SPICE export requires stable poles")
+
+    lines = [
+        "* Y-PARAMETER NORTON/MNA EQUIVALENT",
+        "* Current is positive flowing into pN; all ports reference global ground.",
+        f".SUBCKT {fitted_model_name} {' '.join(f'p{i + 1}' for i in range(ports))}",
+    ]
+    for row in range(ports):
+        for column in range(ports):
+            index = row * ports + column
+            d_value = _spice_real(constant[index], label="constant coefficient")
+            e_value = _spice_real(proportional[index], label="proportional coefficient")
+            if d_value != 0.0:
+                lines.append(f"Gd{row + 1}_{column + 1} p{row + 1} 0 p{column + 1} 0 {d_value:.16g}")
+            if e_value != 0.0:
+                lines.append(f"Fy{row + 1}_{column + 1} p{row + 1} 0 Vdy{column + 1} {e_value:.16g}")
+            for pole_index, pole in enumerate(poles):
+                residue = residues[index, pole_index]
+                if pole.imag == 0.0:
+                    value = _spice_real(residue, label="real-pole residue")
+                    if value != 0.0:
+                        lines.append(f"Gr{pole_index + 1}_{row + 1}_{column + 1} p{row + 1} 0 x{pole_index + 1}_a{column + 1} 0 {value:.16g}")
+                else:
+                    real = _spice_real(residue.real, label="complex-pole residue real part")
+                    imag = _spice_real(residue.imag, label="complex-pole residue imaginary part")
+                    if real != 0.0:
+                        lines.append(f"Gr{pole_index + 1}_re_{row + 1}_{column + 1} p{row + 1} 0 x{pole_index + 1}_re_a{column + 1} 0 {real:.16g}")
+                    if imag != 0.0:
+                        lines.append(f"Gr{pole_index + 1}_im_{row + 1}_{column + 1} p{row + 1} 0 x{pole_index + 1}_im_a{column + 1} 0 {imag:.16g}")
+
+    for column in range(ports):
+        for pole_index, pole in enumerate(poles):
+            if pole.imag == 0.0:
+                lines.extend((
+                    f"Cx{pole_index + 1}_a{column + 1} x{pole_index + 1}_a{column + 1} 0 1",
+                    f"Gx{pole_index + 1}_a{column + 1} 0 x{pole_index + 1}_a{column + 1} p{column + 1} 0 1",
+                    f"Rp{pole_index + 1}_a{column + 1} x{pole_index + 1}_a{column + 1} 0 {-1.0 / pole.real:.16g}",
+                ))
+            else:
+                lines.extend((
+                    f"Cx{pole_index + 1}_re_a{column + 1} x{pole_index + 1}_re_a{column + 1} 0 1",
+                    f"Gx{pole_index + 1}_re_a{column + 1} 0 x{pole_index + 1}_re_a{column + 1} p{column + 1} 0 2",
+                    f"Rp{pole_index + 1}_re_a{column + 1} x{pole_index + 1}_re_a{column + 1} 0 {-1.0 / pole.real:.16g}",
+                    f"Gp{pole_index + 1}_re_im_a{column + 1} 0 x{pole_index + 1}_re_a{column + 1} x{pole_index + 1}_im_a{column + 1} 0 {pole.imag:.16g}",
+                    f"Cx{pole_index + 1}_im_a{column + 1} x{pole_index + 1}_im_a{column + 1} 0 1",
+                    f"Gp{pole_index + 1}_im_re_a{column + 1} 0 x{pole_index + 1}_im_a{column + 1} x{pole_index + 1}_re_a{column + 1} 0 {-pole.imag:.16g}",
+                    f"Rp{pole_index + 1}_im_a{column + 1} x{pole_index + 1}_im_a{column + 1} 0 {-1.0 / pole.real:.16g}",
+                ))
+        if np.any(proportional[np.arange(column, response_count, ports)] != 0.0):
+            lines.extend((
+                f"Edy{column + 1} dy{column + 1}_u 0 p{column + 1} 0 1",
+                f"Cdy{column + 1} dy{column + 1}_u dy{column + 1}_sense 1",
+                f"Vdy{column + 1} dy{column + 1}_sense 0 0",
+            ))
+    lines.append(f".ENDS {fitted_model_name}")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text("\n".join(lines) + "\n", encoding="ascii")
+    return output
+
+
 def rank_element_rms(original_s: Any, fitted_s: Any) -> list[ElementRms]:
     """Return all S-parameter element RMS values, descending and deterministically tied."""
 

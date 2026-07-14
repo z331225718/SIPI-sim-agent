@@ -19,6 +19,7 @@ from agent_spice.project import prepare_run_directory
 from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice_target
 from agent_spice.sparam.target_fit import SParamFitTarget
 from agent_spice.sparam.io import load_touchstone_metadata
+from agent_spice.sparam.yparam import YParamFitConfig, fit_touchstone_to_y_spice
 
 
 SPARAM_IDEM_FAST_CANDIDATES_LARGE_PORT = "9,10,12,14,17,20"
@@ -1145,6 +1146,25 @@ def main(argv: list[str] | None = None) -> int:
     _add_hidden_argument(fit_parser, "--max-passivity-epsilon", type=float, default=1e-6)
     _add_hidden_argument(fit_parser, "--require-dc", action="store_true")
 
+    y_fit_parser = subparsers.add_parser(
+        "fit-yparam",
+        description="Fit Touchstone-derived Y parameters and write a common-ground Norton/MNA subcircuit.",
+    )
+    y_fit_parser.add_argument("touchstone", type=Path, help="Input .sNp Touchstone file.")
+    y_fit_parser.add_argument("--output", type=Path, help="Output Y-domain SPICE subcircuit path.")
+    y_fit_parser.add_argument("--report", type=Path, help="JSON report path.")
+    y_fit_parser.add_argument("--html-report", type=Path, help="Optional HTML report path.")
+    y_fit_parser.add_argument("--log", type=Path, help="Progress log path.")
+    y_fit_parser.add_argument("--subckt-name", default="y_equivalent", help="SPICE subcircuit name.")
+    y_fit_parser.add_argument("--n-poles-real", type=int, default=1, help="Initial real pole count (default: 1).")
+    y_fit_parser.add_argument("--n-poles-cmplx", type=int, default=3, help="Initial complex-pair count (default: 3).")
+    y_fit_parser.add_argument("--pole-spacing", choices=["lin", "log"], default="log")
+    y_fit_parser.add_argument("--fit-iterations", type=int, default=20)
+    y_fit_parser.add_argument("--max-y-rms-siemens", type=float, help="Maximum absolute Y RMS error in Siemens.")
+    y_fit_parser.add_argument("--passivity", choices=["off", "check"], default="check", help="Y positive-real check policy; enforcement is intentionally unavailable.")
+    y_fit_parser.add_argument("--passivity-epsilon", type=float, default=1e-9)
+    y_fit_parser.add_argument("--conversion-condition-limit", type=float, default=1e12)
+
     idem_probe_parser = subparsers.add_parser("probe-idem-init")
     idem_probe_parser.add_argument("touchstone", type=Path)
     idem_probe_parser.add_argument("--output-root", type=Path, default=Path("runs-sparam/idem-init-probe"))
@@ -1611,6 +1631,44 @@ def main(argv: list[str] | None = None) -> int:
         selected_trial = result.selected_trial
         selected_order = None if selected_trial is None else getattr(selected_trial, "requested_order", None)
         print(f"fit-sparam status=PASS selected_order={selected_order} output={args.output}")
+        return 0
+    if args.command == "fit-yparam":
+        output = args.output or args.touchstone.with_name(f"{args.touchstone.stem}_fitted.y.sp")
+        report_path = args.report or output.with_suffix(".json")
+        html_report_path = args.html_report or output.with_suffix(".html")
+        log_path = args.log or output.with_suffix(".log")
+        try:
+            result = fit_touchstone_to_y_spice(
+                args.touchstone,
+                output,
+                config=YParamFitConfig(
+                    n_poles_real=args.n_poles_real,
+                    n_poles_cmplx=args.n_poles_cmplx,
+                    init_pole_spacing=args.pole_spacing,
+                    max_iterations=args.fit_iterations,
+                    max_y_rms_siemens=args.max_y_rms_siemens,
+                    passivity=args.passivity,
+                    passivity_epsilon=args.passivity_epsilon,
+                    conversion_condition_limit=args.conversion_condition_limit,
+                    subckt_name=args.subckt_name,
+                ),
+                report_path=report_path,
+                html_report_path=html_report_path,
+                log_path=log_path,
+            )
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        if not result.target_met:
+            reason = "y_rms_target_not_met"
+            if args.passivity == "check" and result.passivity_violation_count:
+                reason = "y_not_positive_real"
+            print(
+                f"fit-yparam status=FAIL reason={reason} rms_siemens={result.y_rms_siemens:.12g} output={output}",
+                file=sys.stderr,
+            )
+            return 1
+        print(f"fit-yparam status=PASS rms_siemens={result.y_rms_siemens:.12g} output={output}")
         return 0
     if args.command == "probe-idem-init":
         try:
