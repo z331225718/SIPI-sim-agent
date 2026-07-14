@@ -70,6 +70,8 @@ python -m agent_spice.cli fit-sparam .\board.s19p --rms-target 0.001
 | `board_fitted_report.html` | 中文质量报告，默认显示最终交付摘要和 RMS 最大的 5 个 S 参数元素；完整内部配置与质量诊断在折叠区，JSON 保留全部配置。 |
 | `board.log` | 搜索过程的逐阶次文本日志。 |
 
+`*_rfm_wrapper.sp` 是供 HSPICE/Sigrity S 元件使用的 wrapper：每个 RFM port 都有一对端子 `nK nK_ref`，因此 N-port 子电路有 `2N` 个外部节点。实例化时必须按端子对连接，例如二端口为 `Xpkg p1 p1_ref p2 p2_ref s_equivalent`；不要把它误接成 `p1 p2 0`。这与 `run-rfm` 的 ngspice XSPICE wrapper（N 个信号节点加一个公共参考）是两条不同的接口。
+
 搜索阶段不会生成每个阶次的 SPICE、RFM、Touchstone 或 HTML 文件。每次试探仅记录到最终 JSON 的 `order_trials`；默认日志会在每个阶次开始和结束时立即追加并刷新。只有最终选中的阶次才会生成交付物。
 
 ### RMS 与阶次

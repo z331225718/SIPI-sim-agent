@@ -141,6 +141,7 @@ def trial_from_fit_result(
     final_value = math.inf if final_mean_rms is None else float(final_mean_rms)
     pre_sigma = getattr(fit_result, "passivity_max_sigma_before", None)
     final_sigma = getattr(fit_result, "passivity_max_sigma_after", None)
+    constant_sigma = getattr(fit_result, "constant_matrix_sigma", None)
     passive_after = getattr(fit_result, "passive_after_enforce", None)
     skip_reason = getattr(fit_result, "passivity_enforcement_skip_reason", None)
 
@@ -170,6 +171,11 @@ def trial_from_fit_result(
             )
     elif skip_reason == "pre_rms_above_target":
         rejection_reason = "pre_rms_above_target"
+    elif (
+        constant_sigma is not None
+        and float(constant_sigma) >= 1.0
+    ):
+        rejection_reason = "asymptotic_passivity_failed"
     elif (
         final_sigma is None
         or passive_after is not True

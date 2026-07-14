@@ -110,7 +110,7 @@ def test_write_cadence_rfm_writes_bbs_s_blocks_for_real_and_complex_poles(tmp_pa
     assert text.count("BEGIN_COMPLEX 1") == 4
     assert "BEGIN 1 1\nConst 1.000000000000e-01\n" in text
     assert "  2.000000000000e+00  1.000000000000e+00\n" in text
-    assert "  3.000000000000e+00  4.000000000000e+00  2.000000000000e-01  3.000000000000e-01\n" in text
+    assert "  3.000000000000e+00  -4.000000000000e+00  2.000000000000e-01  -3.000000000000e-01\n" in text
     assert text.endswith("END\n")
 
 
@@ -122,8 +122,8 @@ def test_write_cadence_rfm_wrapper_uses_relative_rfm_reference(tmp_path) -> None
 
     assert written == output
     text = output.read_text(encoding="ascii")
-    assert ".subckt fitted_model n1 n2 ref\n" in text
-    assert "S1 n1 n2 ref mname=s_model\n" in text
+    assert ".subckt fitted_model\n+ n1 n1_ref\n+ n2 n2_ref\n" in text
+    assert "S1\n+ n1 n1_ref\n+ n2 n2_ref\n+ mname=s_model\n" in text
     assert ".model s_model S n=2\n+ rfmfile='../models/fitted.rfm'\n.ends\n" in text
 
 

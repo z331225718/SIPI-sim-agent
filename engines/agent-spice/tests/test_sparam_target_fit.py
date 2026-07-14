@@ -277,6 +277,7 @@ def make_fit_result(
     passive_after=True,
     effective_order=8,
     skip_reason=None,
+    constant_matrix_sigma=None,
 ):
     return SimpleNamespace(
         expanded_model_order=effective_order,
@@ -296,6 +297,7 @@ def make_fit_result(
         complex_pair_count=2,
         stored_pole_count=6,
         passivity_enforcement_skip_reason=skip_reason,
+        constant_matrix_sigma=constant_matrix_sigma,
     )
 
 
@@ -343,6 +345,17 @@ def test_enforce_policy_requires_final_passivity():
 
     assert trial.target_met is False
     assert trial.rejection_reason == "passivity_enforcement_failed"
+
+
+def test_enforce_policy_rejects_nonpassive_asymptotic_feedthrough():
+    trial = trial_from_fit_result(
+        SParamFitTarget(0.001, passivity="enforce"),
+        make_fit_result(constant_matrix_sigma=1.0),
+        requested_order=8,
+    )
+
+    assert trial.target_met is False
+    assert trial.rejection_reason == "asymptotic_passivity_failed"
 
 
 def test_enforce_policy_rejects_final_rms_regression():

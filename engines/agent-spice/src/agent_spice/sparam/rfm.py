@@ -200,6 +200,21 @@ def parse_cadence_rfm(path: str | Path) -> RfmModel:
         )
         terms: list[tuple[complex, complex]] = []
 
+        # IdEM emits these optional RFM fields even when both are zero.  The
+        # current state-space importer has no representation for a non-zero
+        # proportional term or delay, so accept the lossless zero form and
+        # reject any behaviour we cannot preserve.
+        if index < len(lines) and lines[index].text.split()[0].upper() == "C":
+            c_line, c_tokens, index = _expect_tokens(lines, index, "C", 2, path=source)
+            c_value = _float_token(c_tokens[1], path=source, line=c_line, label="C")
+            if c_value != 0.0:
+                raise RfmParseError(f"{source}:{c_line.number}: non-zero C is not supported")
+        if index < len(lines) and lines[index].text.split()[0].upper() == "DELAY":
+            delay_line, delay_tokens, index = _expect_tokens(lines, index, "DELAY", 2, path=source)
+            delay = _float_token(delay_tokens[1], path=source, line=delay_line, label="DELAY")
+            if delay != 0.0:
+                raise RfmParseError(f"{source}:{delay_line.number}: non-zero DELAY is not supported")
+
         real_line, real_tokens, index = _expect_tokens(lines, index, "BEGIN_REAL", 2, path=source)
         real_count = _integer_token(
             real_tokens[1], path=source, line=real_line, label="BEGIN_REAL count"
@@ -241,11 +256,19 @@ def parse_cadence_rfm(path: str | Path) -> RfmModel:
             omega = _float_token(tokens[1], path=source, line=line, label="complex-pole omega")
             residue_real = _float_token(tokens[2], path=source, line=line, label="complex residue real")
             residue_imag = _float_token(tokens[3], path=source, line=line, label="complex residue imag")
-            if damping <= 0.0 or omega <= 0.0:
+            if damping <= 0.0 or omega == 0.0:
                 raise RfmParseError(
-                    f"{source}:{line.number}: complex-pole damping and omega must be positive"
+                    f"{source}:{line.number}: complex-pole damping must be positive and omega must be non-zero"
                 )
-            terms.append((complex(-damping, omega), complex(residue_real, residue_imag)))
+            pole = complex(-damping, omega)
+            residue = complex(residue_real, residue_imag)
+            # Normalize to the native positive-imaginary representative.  IdEM
+            # exports the negative member while older RFM producers may export
+            # the positive one; both represent the same conjugate pair.
+            if pole.imag < 0.0:
+                pole = pole.conjugate()
+                residue = residue.conjugate()
+            terms.append((pole, residue))
             index += 1
 
         _, _, index = _expect_tokens(lines, index, "END", 1, path=source)

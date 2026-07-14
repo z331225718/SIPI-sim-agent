@@ -2016,6 +2016,16 @@ def _fit_touchstone_execution(
 
         rms_error = _safe_rms_error(vector_fit, config.parameter_type)
         comparison_rms_error = _comparison_rms_error(network, vector_fit, config.parameter_type)
+        constant_matrix_sigma = _constant_matrix_sigma(vector_fit, network.nports)
+        if (
+            config.enforce_passivity
+            and constant_matrix_sigma is not None
+            and constant_matrix_sigma >= 1.0
+        ):
+            progress.info(
+                "asymptotic passivity failed: "
+                f"sigma_max(Const)={constant_matrix_sigma:.9g} must be strictly less than 1"
+            )
         quality_report = build_quality_report(
             network=network,
             frequency_points=len(network.f),
@@ -2029,6 +2039,7 @@ def _fit_touchstone_execution(
             comparison_rms_limit=config.max_comparison_rms_error,
             passivity_epsilon=config.max_passivity_epsilon,
             require_dc=config.require_dc,
+            constant_matrix_sigma=constant_matrix_sigma,
         )
 
         resource_monitor.__exit__(None, None, None)
@@ -2075,7 +2086,7 @@ def _fit_touchstone_execution(
             peak_memory_mb=resource_monitor.peak_memory_mb,
             topology_sweep_diagnostics=getattr(vector_fit, "topology_sweep_diagnostics", None) or None,
             relocation_frontier_diagnostics=getattr(vector_fit, "relocation_frontier_diagnostics", None) or None,
-            constant_matrix_sigma=_constant_matrix_sigma(vector_fit, network.nports),
+            constant_matrix_sigma=constant_matrix_sigma,
             **pole_summary,
         )
         execution = _FitExecution(result=result, network=network, vector_fit=vector_fit)

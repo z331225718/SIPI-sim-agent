@@ -46,6 +46,29 @@ def test_build_quality_report_marks_clean_explore_case_pass():
     }
 
 
+def test_build_quality_report_blocks_nonpassive_asymptotic_feedthrough_outside_checked_band():
+    report = build_quality_report(
+        network=QualityNetwork(),
+        frequency_points=3,
+        fit_frequency_points=3,
+        comparison_rms_error=0.01,
+        passive_after_enforce=True,
+        passivity_violations_after=[],
+        enforce_passivity=True,
+        poles=np.array([-1e6 + 0j]),
+        passivity_check_f_max=2e6,
+        constant_matrix_sigma=1.0,
+    )
+
+    payload = report.to_dict()
+    asymptotic = next(item for item in payload["diagnostics"] if item["id"] == "asymptotic_passivity")
+    assert payload["status"] == "FAIL"
+    assert payload["allowed_for"] == "report_only"
+    assert "asymptotic_passivity" in payload["blocking_reasons"]
+    assert asymptotic["status"] == "FAIL"
+    assert asymptotic["metric"] == 1.0
+
+
 def test_build_quality_report_warns_for_preview_subset_and_missing_dc():
     report = build_quality_report(
         network=QualityNetwork(freqs=[1e6, 2e6, 3e6]),

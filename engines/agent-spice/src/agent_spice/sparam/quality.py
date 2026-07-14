@@ -576,6 +576,7 @@ def build_quality_report(
     stability_epsilon: float = 1e-12,
     require_dc: bool = False,
     passivity_check_f_max: float | None = None,
+    constant_matrix_sigma: float | None = None,
 ) -> QualityReport:
     if profile not in {"explore", "signoff"}:
         raise ValueError(f"Unsupported quality profile '{profile}'")
@@ -603,6 +604,39 @@ def build_quality_report(
             passivity_check_f_max=passivity_check_f_max,
         )
     )
+    if enforce_passivity and constant_matrix_sigma is not None:
+        # RFM Const is the high-frequency S-matrix itself.  Do not grant it
+        # the finite-frequency numerical epsilon: equality is not a passive
+        # delivery margin and must be rejected for transient use.
+        asymptotic_threshold = 1.0
+        if not np.isfinite(constant_matrix_sigma):
+            diagnostics.append(
+                QualityDiagnostic(
+                    id="asymptotic_passivity",
+                    status="UNKNOWN",
+                    severity="warning",
+                    threshold=asymptotic_threshold,
+                    message="The high-frequency S-matrix feedthrough passivity metric is unavailable.",
+                    recommendation="Inspect the RFM Const matrix before using this model in transient simulation.",
+                )
+            )
+        else:
+            asymptotically_passive = constant_matrix_sigma < asymptotic_threshold
+            diagnostics.append(
+                QualityDiagnostic(
+                    id="asymptotic_passivity",
+                    status="PASS" if asymptotically_passive else "FAIL",
+                    severity="info" if asymptotically_passive else "error",
+                    metric=float(constant_matrix_sigma),
+                    threshold=asymptotic_threshold,
+                    message="The high-frequency S-matrix feedthrough is passive."
+                    if asymptotically_passive
+                    else "The high-frequency S-matrix feedthrough is non-passive; RFM Const cannot be delivered for transient use.",
+                    recommendation=None
+                    if asymptotically_passive
+                    else "Refit or enforce passivity with the complete Const matrix constrained; do not use element-wise clipping.",
+                )
+            )
 
     status = _status_from_diagnostics(diagnostics, profile)
     blocking_reasons = [diagnostic.id for diagnostic in diagnostics if diagnostic.status == "FAIL"]

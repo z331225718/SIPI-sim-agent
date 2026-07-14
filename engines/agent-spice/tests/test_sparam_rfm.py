@@ -83,6 +83,31 @@ END
     )
 
 
+def test_parse_idem_hspice_zero_c_delay_and_negative_complex_pole(tmp_path: Path) -> None:
+    rfm = tmp_path / "idem.rfm"
+    rfm.write_text(
+        """VERSION 200600
+NPORT 1
+MATRIX_TYPE S
+Z0 0.1
+BEGIN 1 1
+CONST 0.5
+C 0
+DELAY 0
+BEGIN_REAL 0
+BEGIN_COMPLEX 1
+  3 -4 0.2 -0.3
+END
+""",
+        encoding="ascii",
+    )
+
+    imported = parse_cadence_rfm(rfm)
+
+    np.testing.assert_allclose(imported.poles, [-3.0 + 4.0j])
+    np.testing.assert_allclose(imported.residues, [[0.2 + 0.3j]])
+
+
 def test_imported_rfm_uses_existing_spice_exporter_without_calling_fit(tmp_path: Path, monkeypatch) -> None:
     source = _ProjectRfmSource()
     rfm = tmp_path / "project_generated.rfm"

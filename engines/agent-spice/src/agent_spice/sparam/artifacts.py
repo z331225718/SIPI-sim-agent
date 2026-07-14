@@ -215,9 +215,14 @@ def write_cadence_rfm(model: Any, path: str | Path, z0: Any) -> Path:
             lines.append(f"BEGIN_COMPLEX {complex_indices.size}")
             for pole_index in complex_indices:
                 pole = poles[pole_index]
-                residue = residues[response_index, pole_index]
+                # IdEM's HSPICE RFM export writes the negative-imaginary member
+                # of each conjugate pair.  Emit the same member (and its
+                # matching residue) so the file follows the de-facto producer
+                # convention instead of relying on an S-element implementation
+                # to normalize the pair orientation.
+                residue = residues[response_index, pole_index].conjugate()
                 lines.append(
-                    f"  {-pole.real:.12e}  {pole.imag:.12e}  {residue.real:.12e}  {residue.imag:.12e}"
+                    f"  {-pole.real:.12e}  {-pole.imag:.12e}  {residue.real:.12e}  {residue.imag:.12e}"
                 )
             lines.append("END")
 
@@ -245,11 +250,19 @@ def write_cadence_rfm_wrapper(
     relative_rfm = os.path.relpath(reference, start=output.parent).replace("\\", "/")
     if "'" in relative_rfm:
         raise ValueError("rfm_path must not contain a single quote")
-    nodes = " ".join(f"n{index}" for index in range(1, int(nports) + 1))
+    # An HSPICE S element takes a positive/negative node pair for *each*
+    # port.  It does not take N signal nodes followed by one shared reference.
+    # The latter silently changes port pairing and can make an otherwise valid
+    # RFM behave like an open or a short in a transient deck.
+    port_pairs = tuple((f"n{index}", f"n{index}_ref") for index in range(1, int(nports) + 1))
+    continuation_pairs = tuple(f"+ {positive} {reference}" for positive, reference in port_pairs)
     content = "\n".join(
         (
-            f".subckt {name} {nodes} ref",
-            f"S1 {nodes} ref mname=s_model",
+            f".subckt {name}",
+            *continuation_pairs,
+            "S1",
+            *continuation_pairs,
+            "+ mname=s_model",
             f".model s_model S n={int(nports)}",
             f"+ rfmfile='{relative_rfm}'",
             ".ends",
