@@ -55,6 +55,8 @@ def test_fit_yparam_writes_y_report_and_checks_positive_real_rc(tmp_path: Path) 
     assert payload["passivity"]["constant_hermitian_min_eigenvalue"] > 0.0
     assert payload["fit_proportional"] is True
     assert payload["s_to_y_conversion"]["matrix"] == "I+S"
+    assert payload["z_log_magnitude_rms_error"] < 1e-8
+    assert payload["fitted_y_condition_max"] is not None
     assert "Fy1_1" in (tmp_path / "rc.y.sp").read_text(encoding="ascii")
 
 

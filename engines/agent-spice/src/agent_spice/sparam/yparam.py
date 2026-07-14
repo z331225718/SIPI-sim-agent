@@ -12,6 +12,7 @@ import numpy as np
 
 from .artifacts import evaluate_fitted_y, rank_element_rms, write_spice_subcircuit_y
 from .native_vf import NativeVectorFitting
+from .z_metrics import invert_y_strict, z_log_metric_summary
 
 
 YPassivityPolicy = Literal["off", "check"]
@@ -45,6 +46,9 @@ class YParamFitResult:
     s_def: str
     y_rms_siemens: float
     y_mean_rms_siemens: float
+    z_log_metrics: dict[str, float | None]
+    fitted_y_condition_max: float | None
+    original_y_condition_max: float
     passivity_min_eigenvalue: float | None
     passivity_min_frequency_hz: float | None
     passivity_violation_count: int | None
@@ -75,6 +79,9 @@ class YParamFitResult:
             "s_def": self.s_def,
             "y_rms_siemens": self.y_rms_siemens,
             "y_mean_rms_siemens": self.y_mean_rms_siemens,
+            **self.z_log_metrics,
+            "fitted_y_condition_max": self.fitted_y_condition_max,
+            "original_y_condition_max": self.original_y_condition_max,
             "passivity": {
                 "policy": self.config.passivity,
                 "criterion": "lambda_min((Y+Y^H)/2) >= -epsilon",
@@ -202,6 +209,17 @@ def fit_touchstone_to_y_spice(
     element_rms = np.sqrt(np.mean(np.abs(y_values - fitted) ** 2, axis=0))
     rms = float(np.sqrt(np.sum(element_rms**2)))
     mean_rms = rms / network.nports
+    try:
+        fitted_z, fitted_y_conditions = invert_y_strict(fitted)
+        z_log_metrics = z_log_metric_summary(np.asarray(network.z, dtype=complex), fitted_z)
+        fitted_y_condition_max: float | None = float(np.max(fitted_y_conditions))
+    except ValueError:
+        z_log_metrics = {
+            "z_log_magnitude_rms_error": None,
+            "diagonal_z_log_magnitude_rms_error": None,
+            "offdiagonal_z_log_magnitude_rms_error": None,
+        }
+        fitted_y_condition_max = None
     if cfg.passivity == "check":
         minimum, minimum_frequency, violations, passivity_samples = _assess_y_passivity(vector_fit, np.asarray(network.f, dtype=float), cfg.passivity_epsilon)
         constant_minimum = _hermitian_minimum(vector_fit.constant_coeff, network.nports)
@@ -228,6 +246,9 @@ def fit_touchstone_to_y_spice(
         s_def=str(getattr(network, "s_def", "power")),
         y_rms_siemens=rms,
         y_mean_rms_siemens=mean_rms,
+        z_log_metrics=z_log_metrics,
+        fitted_y_condition_max=fitted_y_condition_max,
+        original_y_condition_max=float(np.max([np.linalg.cond(value) for value in y_values])),
         passivity_min_eigenvalue=minimum,
         passivity_min_frequency_hz=minimum_frequency,
         passivity_violation_count=violations,

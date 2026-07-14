@@ -1668,7 +1668,12 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             return 1
-        print(f"fit-yparam status=PASS rms_siemens={result.y_rms_siemens:.12g} output={output}")
+        z_log = result.z_log_metrics["z_log_magnitude_rms_error"]
+        z_log_text = "unavailable" if z_log is None else f"{z_log:.12g}"
+        print(
+            f"fit-yparam status=PASS rms_siemens={result.y_rms_siemens:.12g} "
+            f"z_log_rms={z_log_text} output={output}"
+        )
         return 0
     if args.command == "probe-idem-init":
         try:
