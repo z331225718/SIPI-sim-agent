@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
@@ -101,7 +103,12 @@ def test_target_order_trial_requires_priority_and_full_band_targets():
     )
 
     trial = trial_from_fit_result(
-        SParamFitTarget(mean_rms=0.03, passivity="off", max_order=4),
+        SParamFitTarget(
+            mean_rms=0.03,
+            passivity="off",
+            max_order=4,
+            priority_bands_hz=((3.0, 4.0, 0.01),),
+        ),
         fit_result,
         requested_order=4,
     )
@@ -130,7 +137,12 @@ def test_target_order_trial_rejects_full_band_regression_even_when_priority_band
     )
 
     trial = trial_from_fit_result(
-        SParamFitTarget(mean_rms=0.03, passivity="off", max_order=4),
+        SParamFitTarget(
+            mean_rms=0.03,
+            passivity="off",
+            max_order=4,
+            priority_bands_hz=((3.0, 4.0, 0.01),),
+        ),
         fit_result,
         requested_order=4,
     )
@@ -156,7 +168,12 @@ def test_target_order_trial_rejects_priority_band_when_full_band_passes():
     )
 
     trial = trial_from_fit_result(
-        SParamFitTarget(mean_rms=0.03, passivity="off", max_order=4),
+        SParamFitTarget(
+            mean_rms=0.03,
+            passivity="off",
+            max_order=4,
+            priority_bands_hz=((3.0, 4.0, 0.01),),
+        ),
         fit_result,
         requested_order=4,
     )
@@ -206,7 +223,9 @@ def test_fit_sparam_cli_passes_priority_band_configuration(tmp_path, monkeypatch
         (4e6, 5e6, 0.005, 1.0),
     )
     assert config.outside_band_weight == 0.2
-    assert captured["target"].mean_rms == pytest.approx(0.009)
+    assert captured["target"].mean_rms == pytest.approx(0.003)
+    assert captured["target"].gate_full_band_rms is False
+    assert config.priority_band_fit_only is True
 
 
 def test_fit_sparam_cli_explicit_rms_target_is_full_band_gate(tmp_path, monkeypatch):
@@ -235,6 +254,8 @@ def test_fit_sparam_cli_explicit_rms_target_is_full_band_gate(tmp_path, monkeypa
 
     assert result == 0
     assert captured["target"].mean_rms == pytest.approx(0.002)
+    assert captured["target"].gate_full_band_rms is True
+    assert captured["config"].priority_band_fit_only is False
 
 
 def test_fit_sparam_cli_rejects_priority_band_without_rms_target(tmp_path, capsys):
@@ -251,3 +272,84 @@ def test_fit_sparam_cli_rejects_priority_band_without_rms_target(tmp_path, capsy
 
     assert result == 1
     assert "F_MIN:F_MAX:RMS_TARGET" in capsys.readouterr().err
+
+
+def test_priority_only_mode_fits_selected_band_and_postchecks_full_band(tmp_path: Path):
+    import agent_spice.cli as cli
+
+    output = tmp_path / "priority-only" / "model.sp"
+    result = cli.main(
+        [
+            "fit-sparam",
+            "tests/fixtures/sparam/simple_through.s2p",
+            "--output",
+            str(output),
+            "--priority-band",
+            "1e6:1e9:0.2",
+            "--passivity",
+            "off",
+            "--max-order",
+            "4",
+            "--max-order-step",
+            "1",
+        ]
+    )
+
+    assert result == 0
+    report = json.loads((output.parent / "fit_report.json").read_text(encoding="utf-8"))
+    assert report["priority_band_fit_mode"] == "priority_only_full_band_postcheck"
+    assert report["full_band_rms_target"] is None
+    assert report["full_band_rms_blocking"] is False
+    assert report["passivity_frequency_scope"] == "zero_to_highest_priority_frequency"
+    assert report["passivity_reference_sample_scope"] == "priority_band_samples"
+    assert report["full_band_postcheck"] == {
+        "blocking": False,
+        "calculation_stage": "post_fit",
+        "frequency_range_hz": [1e6, 5e9],
+        "frequency_points": 5,
+        "mean_rms_error": report["comparison_mean_rms_error"],
+    }
+    assert report["fit_frequency_points"] == 4
+    assert report["frequency_points"] == 5
+    assert report["frequency_band_metrics"][0]["target_met"] is True
+    assert report["comparison_mean_rms_error"] > report["frequency_band_metrics"][0]["rms_target"]
+
+
+def test_guarded_mode_falls_back_when_priority_candidate_is_worse(tmp_path: Path):
+    import agent_spice.cli as cli
+
+    output = tmp_path / "guarded" / "model.sp"
+    result = cli.main(
+        [
+            "fit-sparam",
+            "tests/fixtures/sparam/simple_through.s2p",
+            "--output",
+            str(output),
+            "--rms-target",
+            "0.2",
+            "--priority-band",
+            "1e6:1e9:0.2",
+            "--passivity",
+            "off",
+            "--max-order",
+            "4",
+            "--max-order-step",
+            "1",
+        ]
+    )
+
+    assert result == 0
+    report = json.loads((output.parent / "fit_report.json").read_text(encoding="utf-8"))
+    selection = report["candidate_selection"]
+    assert report["priority_band_fit_mode"] == "baseline_vs_priority_guarded"
+    assert report["full_band_rms_target"] == pytest.approx(0.2)
+    assert report["full_band_rms_blocking"] is True
+    assert report["passivity_frequency_scope"] == "zero_to_full_input_max_frequency"
+    assert report["passivity_reference_sample_scope"] == "full_input_samples"
+    assert report["full_band_postcheck"] is None
+    assert selection["selected_candidate"] == "baseline"
+    assert selection["priority_improved_every_band"] is False
+    assert (
+        selection["priority"]["priority_band_mean_rms_errors"][0]
+        > selection["baseline"]["priority_band_mean_rms_errors"][0]
+    )

@@ -32,6 +32,7 @@ class CascadeBlockSpec:
     touchstone: Path
     rms_target: float
     max_order: int
+    gate_full_band_rms: bool = True
 
 
 @dataclass(frozen=True)
@@ -48,6 +49,8 @@ class CascadeFitConfig:
     minimum_scale: float = 0.8
     priority_bands_hz: tuple[tuple[float, float, float, float], ...] = ()
     outside_band_weight: float = 0.1
+    gate_full_band_rms: bool = True
+    priority_band_fit_only: bool = False
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.rms_target) or self.rms_target <= 0.0:
@@ -70,6 +73,14 @@ class CascadeFitConfig:
             raise ValueError("adjustment_iterations must be >= 1")
         if not math.isfinite(self.minimum_scale) or not 0.0 < self.minimum_scale <= 1.0:
             raise ValueError("minimum_scale must satisfy 0 < minimum_scale <= 1")
+        if self.priority_band_fit_only and not self.priority_bands_hz:
+            raise ValueError(
+                "priority_bands_hz is required when priority_band_fit_only is enabled"
+            )
+        if not self.gate_full_band_rms and not self.priority_band_fit_only:
+            raise ValueError(
+                "priority_band_fit_only must be enabled when full-band RMS is non-blocking"
+            )
 
 
 @dataclass
@@ -131,6 +142,7 @@ def _load_manifest(path: Path, config: CascadeFitConfig) -> tuple[list[CascadeBl
             raise ValueError(f"cascade block '{name}' Touchstone does not exist: {touchstone}")
         if re.search(r"\.s2p$", touchstone.name, re.IGNORECASE) is None:
             raise ValueError(f"cascade block '{name}' must be a 2-port .s2p file")
+        rms_target_explicit = "rms_target" in raw
         rms_target = float(raw.get("rms_target", config.rms_target))
         max_order = int(raw.get("max_order", config.max_order))
         if not math.isfinite(rms_target) or rms_target <= 0.0:
@@ -138,7 +150,15 @@ def _load_manifest(path: Path, config: CascadeFitConfig) -> tuple[list[CascadeBl
         if max_order < config.min_order:
             raise ValueError(f"cascade block '{name}' max_order must be >= min_order")
         names.add(name)
-        specs.append(CascadeBlockSpec(name, touchstone, rms_target, max_order))
+        specs.append(
+            CascadeBlockSpec(
+                name,
+                touchstone,
+                rms_target,
+                max_order,
+                gate_full_band_rms=config.gate_full_band_rms or rms_target_explicit,
+            )
+        )
 
     if len(set(raw_order)) != len(raw_order):
         raise ValueError("cascade order cannot repeat a block")
@@ -179,6 +199,7 @@ def _fit_config(config: CascadeFitConfig, name: str) -> SParamFitConfig:
         passivity_global_damping_safety_margin=max(1e-7, config.cascade_passivity_epsilon),
         priority_bands_hz=config.priority_bands_hz,
         outside_band_weight=config.outside_band_weight,
+        priority_band_fit_only=config.priority_band_fit_only,
         subckt_name=f"cascade_{re.sub(r'[^A-Za-z0-9_$]', '_', name)}",
     )
 
@@ -200,13 +221,23 @@ def _fit_block(spec: CascadeBlockSpec, output_root: Path, config: CascadeFitConf
         min_order=config.min_order,
         max_order_step=config.max_order_step,
         passivity_epsilon=config.passivity_epsilon,
+        gate_full_band_rms=spec.gate_full_band_rms,
+        priority_bands_hz=tuple(
+            (band[0], band[1], band[2]) for band in config.priority_bands_hz
+        ),
     )
     selected: list[_FitExecution] = []
+    block_fit_config = replace(
+        _fit_config(config, spec.name),
+        priority_band_fit_only=(
+            config.priority_band_fit_only and not spec.gate_full_band_rms
+        ),
+    )
     search_result = fit_touchstone_to_spice_target(
         spec.touchstone,
         spice_path,
         target=target,
-        config=_fit_config(config, spec.name),
+        config=block_fit_config,
         report_path=report_path,
         html_report_path=html_report_path,
         log_path=log_path,
@@ -252,6 +283,37 @@ def _evaluation_frequencies(states: list[_CascadeBlockState], sample_count: int)
     if not positive:
         return np.linspace(f_min, f_max, sample_count)
     return np.concatenate(([0.0], np.geomspace(max(min(positive), np.finfo(float).tiny), f_max, sample_count - 1)))
+
+
+def _priority_evaluation_frequencies(
+    states: list[_CascadeBlockState],
+    sample_count: int,
+    priority_bands: tuple[tuple[float, float, float, float], ...],
+) -> np.ndarray:
+    full = _evaluation_frequencies(states, sample_count)
+    f_min = float(full[0])
+    f_max = float(full[-1])
+    clipped = [
+        (max(f_min, float(band[0])), min(f_max, float(band[1])))
+        for band in priority_bands
+        if max(f_min, float(band[0])) < min(f_max, float(band[1]))
+    ]
+    if not clipped:
+        raise ValueError("priority bands do not overlap the cascade frequency intersection")
+    points_per_band = max(2, math.ceil(sample_count / len(clipped)))
+    pieces = []
+    for lower, upper in clipped:
+        if lower > 0.0:
+            pieces.append(np.geomspace(lower, upper, points_per_band))
+        else:
+            positive = full[full > 0.0]
+            first_positive = float(positive[0]) if positive.size else upper / points_per_band
+            pieces.append(
+                np.concatenate(
+                    ([0.0], np.geomspace(max(first_positive, np.finfo(float).tiny), upper, points_per_band - 1))
+                )
+            )
+    return np.unique(np.concatenate(pieces))
 
 
 def _rf_module() -> Any:
@@ -305,12 +367,25 @@ def _rms_gate_metrics(state: _CascadeBlockState) -> dict[str, Any]:
     result = state.execution.result
     comparison = _comparison_rms_error(state.execution.network, state.execution.vector_fit, "s")
     global_mean = _mean_rms_error_from_sum_style(comparison, state.execution.network.nports)
-    metrics = _comparison_frequency_metrics(state.execution.network, state.execution.vector_fit, result.config)
+    metrics_config = replace(
+        result.config,
+        priority_bands_hz=tuple(
+            (band[0], band[1], band[2], 1.0)
+            for band in state.target.priority_bands_hz
+        ),
+    )
+    metrics = _comparison_frequency_metrics(
+        state.execution.network,
+        state.execution.vector_fit,
+        metrics_config,
+    )
     full_value = math.inf if global_mean is None else float(global_mean)
     bands = [] if metrics is None else metrics["bands"]
-    expected_band_count = len(result.config.priority_bands_hz)
+    expected_band_count = len(state.target.priority_bands_hz)
     band_metrics_available = len(bands) == expected_band_count
-    ratios = [full_value / state.target.mean_rms]
+    ratios = []
+    if state.target.gate_full_band_rms:
+        ratios.append(full_value / state.target.mean_rms)
     if not band_metrics_available:
         ratios.append(math.inf)
     ratios.extend(
@@ -321,11 +396,17 @@ def _rms_gate_metrics(state: _CascadeBlockState) -> dict[str, Any]:
     )
     return {
         "full_band_mean_rms_error": full_value,
-        "full_band_rms_target": state.target.mean_rms,
+        "full_band_rms_target": (
+            state.target.mean_rms if state.target.gate_full_band_rms else None
+        ),
+        "full_band_rms_blocking": state.target.gate_full_band_rms,
         "priority_bands": bands,
         "target_met": bool(
             math.isfinite(full_value)
-            and full_value <= state.target.mean_rms
+            and (
+                not state.target.gate_full_band_rms
+                or full_value <= state.target.mean_rms
+            )
             and band_metrics_available
             and all(band["target_met"] for band in bands)
         ),
@@ -454,7 +535,14 @@ def _refresh_adjusted_block(
     network = state.execution.network
     comparison = _comparison_rms_error(network, vector_fit, "s")
     comparison_mean = _mean_rms_error_from_sum_style(comparison, network.nports)
-    frequency_metrics = _comparison_frequency_metrics(network, vector_fit, state.execution.result.config)
+    metrics_config = replace(
+        state.execution.result.config,
+        priority_bands_hz=tuple(
+            (band[0], band[1], band[2], 1.0)
+            for band in state.target.priority_bands_hz
+        ),
+    )
+    frequency_metrics = _comparison_frequency_metrics(network, vector_fit, metrics_config)
     target_mean = comparison_mean if frequency_metrics is None else frequency_metrics["priority_mean_rms_error"]
     passivity = check_vector_fit_passivity_hamiltonian(
         vector_fit,
@@ -559,7 +647,21 @@ def fit_sparam_cascade(
             return payload
 
     states = [states_by_name[name] for name in order]
-    freqs = _evaluation_frequencies(states, config.cascade_samples)
+    full_freqs = _evaluation_frequencies(states, config.cascade_samples)
+    priority_only = bool(
+        config.priority_band_fit_only
+        and config.priority_bands_hz
+        and all(not state.target.gate_full_band_rms for state in states)
+    )
+    freqs = (
+        _priority_evaluation_frequencies(
+            states,
+            config.cascade_samples,
+            config.priority_bands_hz,
+        )
+        if priority_only
+        else full_freqs
+    )
     raw_networks = []
     fitted_networks = []
     for state in states:
@@ -599,12 +701,42 @@ def fit_sparam_cascade(
         if scale < 1.0:
             _refresh_adjusted_block(state, scale, config)
 
+    if priority_only:
+        full_raw_networks = []
+        full_fitted_networks = []
+        for state in states:
+            raw, fitted = _sample_block_networks(
+                state,
+                full_freqs,
+                config.reference_impedance_ohm,
+            )
+            full_raw_networks.append(raw)
+            full_fitted_networks.append(fitted)
+        full_raw_cascade = _cascade_networks(full_raw_networks)
+        full_fitted_cascade = _cascade_networks(full_fitted_networks)
+        full_band_postcheck = {
+            "blocking": False,
+            "frequency_range_hz": [float(full_freqs[0]), float(full_freqs[-1])],
+            "frequency_points": len(full_freqs),
+            "cascade_mean_rms_error": _cascade_mean_rms(
+                full_raw_cascade,
+                full_fitted_cascade,
+            ),
+            "passivity": _passivity_metrics(full_fitted_cascade),
+        }
+        export_freqs = full_freqs
+        export_cascade = full_fitted_cascade
+    else:
+        full_band_postcheck = None
+        export_freqs = freqs
+        export_cascade = fitted_cascade
+
     cascade_touchstone = output_root / "cascade_fitted.s2p"
     write_fitted_touchstone(
         cascade_touchstone,
-        freqs,
-        fitted_cascade.s,
-        np.full((len(freqs), 2), config.reference_impedance_ohm, dtype=float),
+        export_freqs,
+        export_cascade.s,
+        np.full((len(export_freqs), 2), config.reference_impedance_ohm, dtype=float),
     )
     block_payloads = []
     for state, scale in zip(states, selected_scales, strict=True):
@@ -638,10 +770,15 @@ def fit_sparam_cascade(
         "reference_impedance_ohm": config.reference_impedance_ohm,
         "frequency_range_hz": [float(freqs[0]), float(freqs[-1])],
         "frequency_points": len(freqs),
-        "evaluation_scope": "intersection_only_no_extrapolation",
+        "evaluation_scope": (
+            "priority_band_union_only_no_extrapolation"
+            if priority_only
+            else "intersection_only_no_extrapolation"
+        ),
         "cascade_mean_rms_error": _cascade_mean_rms(raw_cascade, fitted_cascade),
         "passivity_before_adjustment": before,
         "passivity_after_adjustment": after,
+        "full_band_postcheck": full_band_postcheck,
         "cascade_passivity_epsilon": config.cascade_passivity_epsilon,
         "adjustment_method": "none" if all(scale == 1.0 for scale in selected_scales) else "uniform_s_contraction",
         "selected_scales": dict(zip(order, selected_scales, strict=True)),

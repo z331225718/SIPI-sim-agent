@@ -16,6 +16,8 @@ class SParamFitTarget:
     max_order_step: int = 8
     passivity_epsilon: float = 1e-6
     min_order: int = 1
+    gate_full_band_rms: bool = True
+    priority_bands_hz: tuple[tuple[float, float, float], ...] = ()
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.mean_rms) or self.mean_rms <= 0.0:
@@ -30,6 +32,20 @@ class SParamFitTarget:
             raise ValueError("max_order_step must be >= 1")
         if not math.isfinite(self.passivity_epsilon) or self.passivity_epsilon < 0.0:
             raise ValueError("passivity_epsilon must be finite and >= 0")
+        if not self.gate_full_band_rms and not self.priority_bands_hz:
+            raise ValueError(
+                "priority_bands_hz is required when full-band RMS is non-blocking"
+            )
+        for index, band in enumerate(self.priority_bands_hz, start=1):
+            if len(band) != 3:
+                raise ValueError(f"priority band {index} must contain f_min, f_max, and rms_target")
+            f_min, f_max, rms_target = (float(value) for value in band)
+            if not all(math.isfinite(value) for value in (f_min, f_max, rms_target)):
+                raise ValueError(f"priority band {index} values must be finite")
+            if f_min < 0.0 or f_min >= f_max:
+                raise ValueError(f"priority band {index} must satisfy 0 <= f_min < f_max")
+            if rms_target <= 0.0:
+                raise ValueError(f"priority band {index} rms_target must be > 0")
 
 
 @dataclass
@@ -107,12 +123,21 @@ class SParamTargetSearchResult:
         reference_trial = self.selected_trial or self.best_trial
         return {
             "rms_target": float(self.target.mean_rms),
-            "full_band_rms_target": float(self.target.mean_rms),
-            "priority_band_rms_targets": (
-                list(reference_trial.priority_band_rms_targets)
-                if reference_trial is not None
-                else []
+            "full_band_rms_target": (
+                float(self.target.mean_rms) if self.target.gate_full_band_rms else None
             ),
+            "full_band_rms_blocking": self.target.gate_full_band_rms,
+            "priority_band_targets_hz": [
+                {
+                    "f_min_hz": band[0],
+                    "f_max_hz": band[1],
+                    "rms_target": band[2],
+                }
+                for band in self.target.priority_bands_hz
+            ],
+            "priority_band_rms_targets": list(reference_trial.priority_band_rms_targets)
+            if reference_trial is not None
+            else [],
             "passivity_policy": self.target.passivity,
             "max_order": int(self.target.max_order),
             "min_order": int(self.target.min_order),
@@ -150,9 +175,11 @@ def _trial_rms_target_ratio(trial: SParamOrderTrial, fallback_target: float) -> 
     if full_value is None:
         full_value = trial.final_mean_rms
     full_target = trial.full_band_rms_target
-    if full_target is None:
+    if full_target is None and not trial.priority_band_rms_targets:
         full_target = fallback_target
-    ratios = [float(full_value) / float(full_target)]
+    ratios = []
+    if full_target is not None:
+        ratios.append(float(full_value) / float(full_target))
     ratios.extend(
         math.inf if value is None else float(value) / float(limit)
         for value, limit in zip(
@@ -179,9 +206,7 @@ def trial_from_fit_result(
         final_mean_rms = getattr(fit_result, "target_mean_rms_error", None)
     pre_value = float(final_mean_rms if pre_mean_rms is None else pre_mean_rms)
     final_value = math.inf if final_mean_rms is None else float(final_mean_rms)
-    configured_bands = tuple(
-        getattr(getattr(fit_result, "config", None), "priority_bands_hz", ()) or ()
-    )
+    configured_bands = target.priority_bands_hz
     raw_band_metrics = tuple(getattr(fit_result, "frequency_band_metrics", ()) or ())
     priority_band_targets = tuple(float(band[2]) for band in configured_bands)
     priority_band_errors: tuple[float | None, ...]
@@ -204,7 +229,9 @@ def trial_from_fit_result(
     rejection_reason: str | None = None
     if effective_order != requested_order:
         rejection_reason = "effective_order_mismatch"
-    elif not math.isfinite(final_value) or final_value > target.mean_rms:
+    elif target.gate_full_band_rms and (
+        not math.isfinite(final_value) or final_value > target.mean_rms
+    ):
         rejection_reason = (
             "pre_rms_above_target"
             if target.passivity == "enforce" and skip_reason == "pre_rms_above_target"
@@ -270,7 +297,7 @@ def trial_from_fit_result(
         complex_pair_count=getattr(fit_result, "complex_pair_count", None),
         stored_pole_count=getattr(fit_result, "stored_pole_count", None),
         full_band_mean_rms=final_value,
-        full_band_rms_target=float(target.mean_rms),
+        full_band_rms_target=float(target.mean_rms) if target.gate_full_band_rms else None,
         priority_band_mean_rms_errors=priority_band_errors,
         priority_band_rms_targets=priority_band_targets,
         payload=fit_result,

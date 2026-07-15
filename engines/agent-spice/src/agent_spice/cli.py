@@ -597,18 +597,6 @@ def _parse_priority_bands(values: Any) -> tuple[tuple[float, float, float, float
     return tuple(bands)
 
 
-def _resolve_full_band_rms_target(
-    explicit_target: float | None,
-    auto_target: float | None,
-    priority_bands: tuple[tuple[float, float, float, float], ...],
-) -> float | None:
-    if explicit_target is not None:
-        return explicit_target
-    if priority_bands:
-        return 3.0 * min(band[2] for band in priority_bands)
-    return auto_target
-
-
 def check_modal_quality(result: Any, args: Any) -> dict[str, Any]:
     checks = []
     blocking_reasons = []
@@ -1080,8 +1068,8 @@ def main(argv: list[str] | None = None) -> int:
         "--rms-target",
         type=float,
         help=(
-            "Full-band mean S-RMS target. Required without --priority-band; when omitted with "
-            "priority bands, defaults to 3x the strictest band RMS target."
+            "Blocking full-band mean S-RMS target. Required without --priority-band. When omitted "
+            "with priority bands, full-band RMS is post-checked but does not block delivery."
         ),
     )
     fit_parser.add_argument(
@@ -1237,8 +1225,8 @@ def main(argv: list[str] | None = None) -> int:
         "--rms-target",
         type=float,
         help=(
-            "Default per-block full-band mean S-RMS target. Required without --priority-band; "
-            "otherwise defaults to 3x the strictest band RMS target."
+            "Default blocking per-block full-band mean S-RMS target. Required without "
+            "--priority-band; omission selects priority-band-only fit/enforcement."
         ),
     )
     cascade_fit_parser.add_argument("--max-order", type=int, default=100)
@@ -1579,7 +1567,12 @@ def main(argv: list[str] | None = None) -> int:
         output_root = args.output_root or args.manifest.with_name(f"{args.manifest.stem}_fit")
         try:
             priority_bands = _parse_priority_bands(args.priority_band)
-            rms_target = _resolve_full_band_rms_target(args.rms_target, None, priority_bands)
+            gate_full_band_rms = args.rms_target is not None
+            rms_target = (
+                args.rms_target
+                if gate_full_band_rms
+                else min((band[2] for band in priority_bands), default=None)
+            )
             if rms_target is None:
                 raise ValueError("--rms-target is required without --priority-band")
             payload = fit_sparam_cascade(
@@ -1598,6 +1591,8 @@ def main(argv: list[str] | None = None) -> int:
                     minimum_scale=args.minimum_scale,
                     priority_bands_hz=priority_bands,
                     outside_band_weight=args.outside_band_weight,
+                    gate_full_band_rms=gate_full_band_rms,
+                    priority_band_fit_only=bool(priority_bands and not gate_full_band_rms),
                 ),
                 report_path=args.report,
             )
@@ -1652,11 +1647,14 @@ def main(argv: list[str] | None = None) -> int:
             max_order = 100
         try:
             priority_bands = _parse_priority_bands(args.priority_band)
-            rms_target = _resolve_full_band_rms_target(
-                args.rms_target,
-                args.auto_target_mean_rms_error,
-                priority_bands,
-            )
+            gate_full_band_rms = not priority_bands or args.rms_target is not None
+            rms_target = args.rms_target
+            if rms_target is None:
+                rms_target = (
+                    min((band[2] for band in priority_bands), default=None)
+                    if priority_bands
+                    else args.auto_target_mean_rms_error
+                )
             if rms_target is None:
                 raise ValueError("--rms-target is required without --priority-band")
             target = SParamFitTarget(
@@ -1666,6 +1664,10 @@ def main(argv: list[str] | None = None) -> int:
                 min_order=args.min_order,
                 max_order_step=args.max_order_step,
                 passivity_epsilon=args.max_passivity_epsilon,
+                gate_full_band_rms=gate_full_band_rms,
+                priority_bands_hz=tuple(
+                    (band[0], band[1], band[2]) for band in priority_bands
+                ),
             )
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
@@ -1701,6 +1703,7 @@ def main(argv: list[str] | None = None) -> int:
             fit_f_max=args.fit_f_max,
             priority_bands_hz=priority_bands,
             outside_band_weight=args.outside_band_weight,
+            priority_band_fit_only=bool(priority_bands and not gate_full_band_rms),
             use_lightweight_network=args.use_lightweight_network,
             high_frequency_complex_pair_count=args.high_frequency_complex_pairs,
             high_frequency_complex_pair_damping=args.high_frequency_complex_pair_damping,

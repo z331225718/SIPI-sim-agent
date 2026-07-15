@@ -21,9 +21,14 @@ python -m agent_spice.cli fit-sparam .\channel.s2p `
 
 `--priority-band` 的格式为 `F_MIN:F_MAX:RMS_TARGET[:WEIGHT]`，频率单位为 Hz，区间包含两个端点。频率范围与正数 `RMS_TARGET` 必须在同一个参数中出现；省略 `WEIGHT` 时段内权重为 `1`。该选项可重复，重叠频段的拟合权重取最大值，但每个频段的 RMS 门限仍分别验收。
 
-原有 `--rms-target` 现在明确表示全频段门限。指定优先频段但省略它时，全频段门限默认为最严格频段目标的 3 倍。上例因此要求 0-10MHz RMS 不超过 `0.001`、1.2-1.5GHz RMS 不超过 `0.002`，同时全频段 RMS 不超过 `0.003`。显式传 `--rms-target 0.0025` 可覆盖这个默认值。
+原有 `--rms-target` 现在明确表示全频段门限，并形成两个截然不同的执行模式：
 
-`--outside-band-weight` 必须大于 `0`，默认 `0.1`。它不是删除带外数据：带外样本仍参与拟合和完整频带被动性检查，只是在最小二乘目标中的约束被放松。
+- 省略 `--rms-target`：只使用指定频段的数据拟合、做 RMS 验收和被动性修复；全频段不参与阶数搜索，也不阻止输出。拟合结束后仍会在完整输入频点上计算一次 RMS，作为非阻塞后检查。
+- 显式传 `--rms-target`：全频段门限参与验收。程序同时计算不加优先频段的全频段基线候选，以及由优先频段拟合结果提供极点初值的加权全频段候选。优先候选只有在满足所有绝对门限，并且每个指定频段都不劣于基线、至少一个频段严格改善时才会被选择；否则回退基线。
+
+因此上例要求 0-10MHz RMS 不超过 `0.001`、1.2-1.5GHz RMS 不超过 `0.002`，但完整频带 RMS 只是后检查。增加 `--rms-target 0.0025` 后，完整频带 RMS 也必须不超过 `0.0025`。
+
+`--outside-band-weight` 必须大于 `0`，默认 `0.1`。它只在显式给出 `--rms-target` 的加权全频段候选中生效；省略全频段目标时，带外样本本来就不参与拟合。
 
 ### 1.2 权重实际作用的位置
 
@@ -40,15 +45,19 @@ python -m agent_spice.cli fit-sparam .\channel.s2p `
 指定优先频段后：
 
 - 每个频段的 `RMS_TARGET` 单独参与阶数搜索和 PASS/FAIL。
-- `--rms-target` 是全频段门限；未指定时自动取最严格频段目标的 3 倍。
-- 只有每个指定频段和全频段同时达标，当前阶次才满足 RMS 验收。
+- 省略 `--rms-target` 时，只有逐频段目标阻塞输出；`full_band_rms_target` 为 `null`，`full_band_rms_blocking` 为 `false`，最终完整频带 RMS 位于 `full_band_postcheck`。
+- 显式给出 `--rms-target` 时，只有每个指定频段和全频段同时达标，当前阶次才满足 RMS 验收。
 - `target_mean_rms_error` 保留为优先频段并集 RMS 诊断值，不再单独决定 PASS/FAIL。
 - `comparison_mean_rms_error` 始终是所有原始频点、所有 S 元素的全带 RMS。
 - `outside_band_mean_rms_error` 是所有优先频段以外的 RMS。
 - `weighted_mean_rms_error` 使用拟合权重计算。
 - `frequency_band_metrics` 逐段记录频率范围、目标、权重、频点数、实测 RMS 和 `target_met`。
 
-因此，目标频段达标但全带 RMS 超标，或全带达标但任一目标频段超标，都会继续搜索更高阶次并最终在未找到双门限解时返回 `FAIL`。被动性没有随带外误差一起放松；`--passivity enforce` 仍对完整模型和渐近常数矩阵生效。
+无全频段目标时，目标频段达标即可通过 RMS 门；全带 RMS 超标只写入报告。有全频段目标时，目标频段达标但全带 RMS 超标，或全带达标但任一目标频段超标，都会继续搜索更高阶次并最终在未找到双门限解时返回 `FAIL`。两种模式都保留对有理模型渐近常数矩阵的严格检查。
+
+报告中的 `priority_band_fit_mode` 分别为 `priority_only_full_band_postcheck` 和 `baseline_vs_priority_guarded`。后者的 `candidate_selection` 给出两个候选的逐频段 RMS、最终选择和回退原因，便于确认优先频段没有被优化得更差。
+
+Hamiltonian 连续被动性检查目前以 `0 Hz` 为下界。仅优先频段模式把上界收缩到最高优先频率，并且修复算法的参考样本只取指定频段；因此不会检查更高的完整输入频带，但若首个频段从非零频率开始，`0 Hz` 到该频段之间仍在连续被动性检查内。报告通过 `passivity_frequency_scope` 和 `passivity_reference_sample_scope` 明示这个范围，避免把离散优先频段并集误读成可任意切开的 Hamiltonian 区间。
 
 ## 2. 有序二端口级联
 
@@ -103,19 +112,19 @@ python -m agent_spice.cli fit-sparam-cascade .\cascade.json `
   --outside-band-weight 0.1
 ```
 
-级联命令沿用相同双门限语义：每个 block 的全带门限默认是最严格频段目标的 3 倍；显式 `--rms-target` 或 manifest 中 block 的 `rms_target` 可覆盖全带门限。级联被动性收缩候选也必须保持每个 block 的全带与逐频段 RMS 同时达标。
+级联命令沿用相同的双模式语义。省略全局 `--rms-target` 且 manifest 中所有 block 都没有 `rms_target` 时，每个 block 只在优先频段并集内拟合和验收，级联 RMS 与被动性也只在该并集内阻塞；程序随后在各输入完整频率交集上生成 `full_band_postcheck`，但它不改变 `PASS`。显式 `--rms-target`，或任一 manifest block 显式设置 `rms_target` 时，相应全频段门限恢复为阻塞门限。级联被动性收缩候选必须保持所有实际启用的全频段及逐频段 RMS 门限。
 
 ### 2.3 执行流程
 
 1. 验证 manifest、二端口数量和级联顺序。
 2. 对每个 block 独立运行目标阶数搜索，策略固定为 `passivity=enforce`。
 3. 每个 block 生成 SPICE、fitted Touchstone、RFM、RFM wrapper、JSON、HTML 和日志。
-4. 取所有输入频率范围的交集；交集为空时失败，不做带外延拓。
+4. 取所有输入频率范围的交集；交集为空时失败，不做带外延拓。仅优先频段模式再把阻塞评估网格限制到目标频段并集。
 5. 在 `--reference-impedance` 指定的共同参考阻抗下重归一化，默认 `50 ohm`。
 6. 按 manifest 顺序级联原始样本和 fitted 模型，报告级联 RMS 与最大奇异值。
 7. 若级联最大奇异值超过 `1 + --cascade-passivity-epsilon`，进入受约束修复。
 
-每个 block 已通过连续频率 Hamiltonian 被动性检查。级联检查使用共同频段内的密集采样，主要用于发现参考阻抗、数值容差和组合后的局部越界；报告中的 `evaluation_scope` 固定标明 `intersection_only_no_extrapolation`。
+每个 block 都经过 Hamiltonian 被动性检查。级联检查使用实际验收范围内的密集采样，主要用于发现参考阻抗、数值容差和组合后的局部越界。全频段门限模式的 `evaluation_scope` 为 `intersection_only_no_extrapolation`；仅优先频段模式为 `priority_band_union_only_no_extrapolation`，并额外报告非阻塞的完整交集后检查。
 
 ### 2.4 级联修复算法
 
@@ -159,6 +168,8 @@ cascade-fit/
 
 - `status`：全部 block 达标且级联被动性达标时为 `PASS`。
 - `cascade_mean_rms_error`：原始 block 级联与 fitted block 级联的平均 S-RMS。
+- `evaluation_scope`：阻塞级联检查使用完整交集还是优先频段并集。
+- `full_band_postcheck`：仅优先频段模式下的完整交集 RMS 与被动性诊断，`blocking` 固定为 `false`。
 - `passivity_before_adjustment` / `passivity_after_adjustment`：级联最大奇异值及频率。
 - `selected_scales`：每个 block 的最终收缩系数；未调整为 `1.0`。
 - `adjustment_trials`：候选 block、系数、级联最大奇异值和各 block RMS。
@@ -172,7 +183,7 @@ cascade-fit/
 
 - manifest 版本、名称、路径或顺序无效。
 - 输入不是二端口 `.s2p`。
-- 任一 block 在最大阶次内未同时满足 RMS 和被动性目标。
+- 任一 block 在最大阶次内未满足当前模式实际启用的 RMS 和被动性目标。
 - 各 block 没有共同覆盖频段。
 - 级联被动性越界，且所有允许的收缩候选都会突破 block RMS 门限。
 

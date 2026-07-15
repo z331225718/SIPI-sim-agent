@@ -46,6 +46,15 @@ def make_trial(order: int, *, target_met: bool, effective_order: int | None = No
         {"mean_rms": 0.001, "min_order": 9, "max_order": 8},
         {"mean_rms": 0.001, "max_order_step": 0},
         {"mean_rms": 0.001, "passivity_epsilon": -1.0},
+        {"mean_rms": 0.001, "gate_full_band_rms": False},
+        {
+            "mean_rms": 0.001,
+            "priority_bands_hz": ((2.0, 1.0, 0.001),),
+        },
+        {
+            "mean_rms": 0.001,
+            "priority_bands_hz": ((1.0, 2.0, 0.0),),
+        },
     ],
 )
 def test_target_rejects_invalid_values(kwargs):

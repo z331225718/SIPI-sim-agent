@@ -176,6 +176,7 @@ class SParamFitConfig:
     fit_f_max: float | None = None
     priority_bands_hz: tuple[tuple[float, float, float, float], ...] = ()
     outside_band_weight: float = 0.1
+    priority_band_fit_only: bool = False
     use_lightweight_network: bool = False
     high_frequency_complex_pair_count: int = 0
     high_frequency_complex_pair_damping: float = 0.03
@@ -324,6 +325,7 @@ class SParamFitResult:
     rfm_wrapper_path: Path | None = None
     native_baseline_version: str = NATIVE_BASELINE_VERSION
     report_configuration: dict[str, Any] | None = None
+    candidate_selection: dict[str, Any] | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Path):
@@ -365,7 +367,7 @@ class SParamFitResult:
             "pre_enforcement_mean_rms_error": self.pre_enforcement_mean_rms_error,
             "target_mean_rms_error": self.target_mean_rms_error,
             "target_mean_rms_error_scope": (
-                "priority_band_union" if self.config.priority_bands_hz else "original_frequency_points"
+                "priority_band_union" if self.frequency_band_metrics else "original_frequency_points"
             ),
             "pre_enforcement_target_mean_rms_error": self.pre_enforcement_target_mean_rms_error,
             "priority_band_mean_rms_error": self.priority_band_mean_rms_error,
@@ -398,6 +400,7 @@ class SParamFitResult:
             "passivity_max_sigma_frequency_hz_before": self.passivity_max_sigma_frequency_hz_before,
             "passivity_max_sigma_frequency_hz_after": self.passivity_max_sigma_frequency_hz_after,
             "passivity_enforcement_diagnostics": self.passivity_enforcement_diagnostics,
+            "candidate_selection": self.candidate_selection,
         }
 
 
@@ -567,6 +570,7 @@ def _frequency_selection_summary(config: SParamFitConfig) -> dict[str, Any]:
         "f_max": config.fit_f_max,
         "priority_bands_hz": [list(band) for band in config.priority_bands_hz],
         "outside_band_weight": config.outside_band_weight,
+        "priority_band_fit_only": config.priority_band_fit_only,
     }
 
 
@@ -643,6 +647,14 @@ def _select_fit_network(network: Any, config: SParamFitConfig) -> Any:
         indices = indices[network.f[indices] >= config.fit_f_min]
     if config.fit_f_max is not None:
         indices = indices[network.f[indices] <= config.fit_f_max]
+    if config.priority_band_fit_only:
+        if not config.priority_bands_hz:
+            raise ValueError("priority_band_fit_only requires at least one priority band")
+        priority_mask = np.zeros(len(indices), dtype=bool)
+        selected_frequencies = np.asarray(network.f, dtype=float)[indices]
+        for f_min, f_max, _rms_target, _weight in config.priority_bands_hz:
+            priority_mask |= (selected_frequencies >= f_min) & (selected_frequencies <= f_max)
+        indices = indices[priority_mask]
     if len(indices) == 0:
         raise ValueError("Frequency selection produced no samples for vector fitting")
 
@@ -1374,21 +1386,30 @@ def _report_configuration_summary(result: SParamFitResult) -> list[tuple[str, st
     config = result.config
     target = result.report_configuration
     if target is not None:
-        rms_target = target["rms_target"]
+        rms_target = target.get("full_band_rms_target")
+        priority_mode = (
+            "priority-only; full-band post-check"
+            if target.get("priority_band_fit_only")
+            else "baseline-vs-priority guarded"
+            if target.get("priority_band_targets_hz")
+            else "full-band"
+        )
         max_order = target["max_order"]
         max_order_step = target["max_order_step"]
         selected_order = target["selected_order"]
         passivity_strategy = target["passivity"]
     elif config.mode == "manual":
         rms_target = max_order = max_order_step = selected_order = "n/a"
+        priority_mode = "n/a"
         passivity_strategy = "enforce" if config.enforce_passivity else "check" if config.check_passivity else "off"
     else:
         rms_target = config.target_error
         max_order = config.model_order_max
         max_order_step = config.n_poles_add
         selected_order = result.auto_model_order_selected or result.expanded_model_order or "n/a"
+        priority_mode = "n/a"
         passivity_strategy = "enforce" if config.enforce_passivity else "check" if config.check_passivity else "off"
-    return [
+    rows = [
         ("运行方式", config.mode),
         ("全带 RMS 目标", _format_cell(rms_target)),
         ("最大 order", _format_cell(max_order)),
@@ -1398,6 +1419,9 @@ def _report_configuration_summary(result: SParamFitResult) -> list[tuple[str, st
         ("保留 DC", _format_bool(config.preserve_dc)),
         ("输出文件", str(result.spice_path)),
     ]
+    if priority_mode != "n/a" and target is not None and target.get("priority_band_targets_hz"):
+        rows.insert(2, ("优先频段模式", priority_mode))
+    return rows
 
 
 def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -> str:
@@ -1822,6 +1846,7 @@ def _fit_touchstone_execution(
     *,
     config: SParamFitConfig | None = None,
     log_path: Path | None = None,
+    _initial_poles: np.ndarray | None = None,
 ) -> _FitExecution:
     config = config or SParamFitConfig()
     resource_monitor = _FitResourceMonitor()
@@ -1846,7 +1871,11 @@ def _fit_touchstone_execution(
                 f"using frequency subset for vector fit: {len(fit_network.f)} of {len(network.f)} points, "
                 f"range={_frequency_range(fit_network)}, selection={_frequency_selection_summary(config)}"
             )
+        passivity_network = fit_network if config.priority_band_fit_only else network
         vector_fit = _create_vector_fitting(fit_network, config)
+        if _initial_poles is not None:
+            vector_fit.poles = np.asarray(_initial_poles, dtype=complex).copy()
+            config = replace(config, init_pole_spacing="custom")
         progress.info(f"starting vector fit: mode={config.mode}, parameter_type={config.parameter_type}")
         fit_started = time.perf_counter()
         _fit_model(vector_fit, config)
@@ -1906,7 +1935,7 @@ def _fit_touchstone_execution(
                 f"{config.passivity_check_rms_target:.9g}"
             )
         use_low_memory_passivity = _uses_low_memory_passivity(config)
-        passivity_f_max = _effective_passivity_f_max(config, network)
+        passivity_f_max = _effective_passivity_f_max(config, passivity_network)
         if not should_check:
             progress.info("passivity checks skipped")
             passive_before = None
@@ -1948,8 +1977,8 @@ def _fit_touchstone_execution(
                         spectral_projection_reweight_iterations=(
                             config.passivity_spectral_projection_reweight_iterations
                         ),
-                        spectral_projection_reference_freqs=network.f,
-                        spectral_projection_reference_s=network.s,
+                        spectral_projection_reference_freqs=passivity_network.f,
+                        spectral_projection_reference_s=passivity_network.s,
                         spectral_projection_max_reference_rms_increase=(
                             config.passivity_spectral_projection_max_reference_rms_increase
                         ),
@@ -2136,8 +2165,8 @@ def _fit_touchstone_execution(
                     ),
                     spectral_projection_iterations=config.passivity_spectral_projection_iterations,
                     spectral_projection_reweight_iterations=config.passivity_spectral_projection_reweight_iterations,
-                    spectral_projection_reference_freqs=network.f,
-                    spectral_projection_reference_s=network.s,
+                    spectral_projection_reference_freqs=passivity_network.f,
+                    spectral_projection_reference_s=passivity_network.s,
                     spectral_projection_max_reference_rms_increase=(
                         config.passivity_spectral_projection_max_reference_rms_increase
                     ),
@@ -2767,9 +2796,14 @@ def _resume_target_trial(
         if (
             not isinstance(trial.final_mean_rms, (int, float))
             or not math.isfinite(trial.final_mean_rms)
-            or trial.full_band_mean_rms is None
-            or trial.full_band_rms_target is None
-            or trial.full_band_mean_rms > trial.full_band_rms_target
+            or (
+                target.gate_full_band_rms
+                and (
+                    trial.full_band_mean_rms is None
+                    or trial.full_band_rms_target is None
+                    or trial.full_band_mean_rms > trial.full_band_rms_target
+                )
+            )
             or any(
                 value is None or value > limit
                 for value, limit in zip(
@@ -2788,6 +2822,82 @@ def _resume_target_trial(
             ):
                 return None
     return trial
+
+
+def _execution_with_priority_metrics(
+    execution: _FitExecution,
+    evaluation_config: SParamFitConfig,
+) -> _FitExecution:
+    metrics = _comparison_frequency_metrics(
+        execution.network,
+        execution.vector_fit,
+        evaluation_config,
+    )
+    if metrics is None:
+        return execution
+    result = replace(
+        execution.result,
+        target_mean_rms_error=metrics["priority_mean_rms_error"],
+        priority_band_mean_rms_error=metrics["priority_mean_rms_error"],
+        outside_band_mean_rms_error=metrics["outside_mean_rms_error"],
+        weighted_mean_rms_error=metrics["weighted_mean_rms_error"],
+        frequency_band_metrics=metrics["bands"],
+    )
+    return replace(execution, result=result)
+
+
+def _priority_candidate_improves_baseline(
+    priority_trial: SParamOrderTrial,
+    baseline_trial: SParamOrderTrial,
+) -> bool:
+    priority = priority_trial.priority_band_mean_rms_errors
+    baseline = baseline_trial.priority_band_mean_rms_errors
+    if not priority or len(priority) != len(baseline):
+        return False
+    non_worse = True
+    strictly_better = False
+    for priority_value, baseline_value in zip(priority, baseline, strict=True):
+        if priority_value is None or baseline_value is None:
+            return False
+        tolerance = max(1e-15, abs(float(baseline_value)) * 1e-9)
+        if float(priority_value) > float(baseline_value) + tolerance:
+            non_worse = False
+            break
+        if float(priority_value) < float(baseline_value) - tolerance:
+            strictly_better = True
+    return non_worse and strictly_better
+
+
+def _trial_gate_ratio(trial: SParamOrderTrial) -> float:
+    ratios = []
+    if trial.full_band_rms_target is not None:
+        if trial.full_band_mean_rms is None:
+            ratios.append(math.inf)
+        else:
+            ratios.append(float(trial.full_band_mean_rms) / float(trial.full_band_rms_target))
+    ratios.extend(
+        math.inf if value is None else float(value) / float(limit)
+        for value, limit in zip(
+            trial.priority_band_mean_rms_errors,
+            trial.priority_band_rms_targets,
+            strict=True,
+        )
+    )
+    return max(ratios, default=math.inf)
+
+
+def _aggregate_candidate_costs(
+    trial: SParamOrderTrial,
+    candidates: list[SParamOrderTrial],
+) -> SParamOrderTrial:
+    return replace(
+        trial,
+        fit_seconds=sum(item.fit_seconds for item in candidates),
+        check_seconds=sum(item.check_seconds for item in candidates),
+        enforce_seconds=sum(item.enforce_seconds for item in candidates),
+        elapsed_seconds=sum(item.elapsed_seconds for item in candidates),
+        peak_memory_mb=max((item.peak_memory_mb for item in candidates), default=0.0),
+    )
 
 
 def fit_touchstone_to_spice_target(
@@ -2821,12 +2931,29 @@ def fit_touchstone_to_spice_target(
         rfm_wrapper=rfm_wrapper_path,
     )
     base_config = config or SParamFitConfig()
+    if base_config.priority_bands_hz and not target.priority_bands_hz:
+        target = replace(
+            target,
+            priority_bands_hz=tuple(
+                (band[0], band[1], band[2]) for band in base_config.priority_bands_hz
+            ),
+        )
+    if base_config.priority_band_fit_only and target.gate_full_band_rms:
+        target = replace(target, gate_full_band_rms=False)
     policy_config = replace(
         base_config,
         check_passivity=target.passivity != "off",
         enforce_passivity=target.passivity == "enforce",
-        passivity_enforce_rms_target=target.mean_rms if target.passivity == "enforce" else None,
-        passivity_check_rms_target=target.mean_rms if target.passivity != "off" else None,
+        passivity_enforce_rms_target=(
+            target.mean_rms
+            if target.passivity == "enforce" and target.gate_full_band_rms
+            else None
+        ),
+        passivity_check_rms_target=(
+            target.mean_rms
+            if target.passivity != "off" and target.gate_full_band_rms
+            else None
+        ),
         max_passivity_epsilon=target.passivity_epsilon,
         fit_frequency_stride=1,
         fit_max_frequency_points=None,
@@ -2845,14 +2972,214 @@ def fit_touchstone_to_spice_target(
         log_path.parent.mkdir(parents=True, exist_ok=True)
         log_path.write_text("", encoding="utf-8")
     write_progress(
-        f"target-search start full_band_rms_target={target.mean_rms:.12g} "
+        "target-search start "
+        f"full_band_rms_target={target.mean_rms if target.gate_full_band_rms else 'non_blocking'} "
+        f"priority_band_fit_only={policy_config.priority_band_fit_only} "
         f"passivity={target.passivity} max_order={target.max_order} max_order_step={max_order_step}"
     )
     executions_by_order: dict[int, _FitExecution] = {}
 
+    def failed_trial(order: int, reason: str, error: Exception | None = None) -> SParamOrderTrial:
+        return SParamOrderTrial(
+            requested_order=order,
+            effective_order=order,
+            fit_frequency_points=0,
+            evaluation_frequency_points=0,
+            pre_mean_rms=math.inf,
+            final_mean_rms=math.inf,
+            pre_max_sigma=None,
+            final_max_sigma=None,
+            fit_seconds=0.0,
+            check_seconds=0.0,
+            enforce_seconds=0.0,
+            elapsed_seconds=0.0,
+            peak_memory_mb=0.0,
+            target_met=False,
+            status="FAIL",
+            rejection_reason=reason,
+            payload={} if error is None else {"error": str(error)},
+        )
+
     def evaluate_order(order: int) -> SParamOrderTrial:
         trial_config = _native_manual_auto_order_config(policy_config, order)
         write_progress(f"order={order} status=START")
+        guarded_dual_candidate = bool(
+            target.gate_full_band_rms
+            and target.priority_bands_hz
+            and not trial_config.priority_band_fit_only
+        )
+        if guarded_dual_candidate:
+            baseline_config = replace(
+                trial_config,
+                priority_bands_hz=(),
+                priority_band_fit_only=False,
+            )
+            try:
+                baseline_execution = _fit_touchstone_execution(
+                    touchstone_path,
+                    output_path,
+                    config=baseline_config,
+                    log_path=None,
+                )
+            except Exception as exc:
+                write_progress(
+                    f"order={order} candidate=baseline status=FAIL reason=fit_failed error={exc}"
+                )
+                return failed_trial(order, "baseline_fit_failed", exc)
+            baseline_execution = _execution_with_priority_metrics(
+                baseline_execution,
+                trial_config,
+            )
+            baseline_trial = trial_from_fit_result(
+                target,
+                baseline_execution.result,
+                requested_order=order,
+            )
+
+            seed_config = replace(
+                trial_config,
+                priority_band_fit_only=True,
+                check_passivity=False,
+                enforce_passivity=False,
+                passivity_enforce_rms_target=None,
+                passivity_check_rms_target=None,
+            )
+            seed_execution = None
+            seed_trial = None
+            seed_error = None
+            try:
+                seed_execution = _fit_touchstone_execution(
+                    touchstone_path,
+                    output_path,
+                    config=seed_config,
+                    log_path=None,
+                )
+                seed_target = replace(
+                    target,
+                    passivity="off",
+                    gate_full_band_rms=False,
+                )
+                seed_trial = trial_from_fit_result(
+                    seed_target,
+                    seed_execution.result,
+                    requested_order=order,
+                )
+            except Exception as exc:
+                seed_error = str(exc)
+                write_progress(
+                    f"order={order} candidate=priority_seed status=FAIL reason=fit_failed error={exc}"
+                )
+
+            try:
+                priority_execution = _fit_touchstone_execution(
+                    touchstone_path,
+                    output_path,
+                    config=trial_config,
+                    log_path=None,
+                    _initial_poles=(
+                        None
+                        if seed_execution is None
+                        else np.asarray(seed_execution.vector_fit.poles, dtype=complex)
+                    ),
+                )
+            except Exception as exc:
+                write_progress(
+                    f"order={order} candidate=priority status=FAIL reason=fit_failed error={exc}"
+                )
+                if baseline_trial.target_met:
+                    selection = {
+                        "mode": "baseline_vs_priority_guarded",
+                        "selected_candidate": "baseline",
+                        "selection_reason": "priority_fit_failed",
+                        "priority_seed_error": seed_error,
+                        "baseline": baseline_trial.to_dict(),
+                        "priority": None,
+                    }
+                    baseline_execution = replace(
+                        baseline_execution,
+                        result=replace(
+                            baseline_execution.result,
+                            candidate_selection=selection,
+                        ),
+                    )
+                    executions_by_order[order] = baseline_execution
+                    return baseline_trial
+                return failed_trial(order, "priority_fit_failed", exc)
+
+            priority_trial = trial_from_fit_result(
+                target,
+                priority_execution.result,
+                requested_order=order,
+            )
+            improved = _priority_candidate_improves_baseline(
+                priority_trial,
+                baseline_trial,
+            )
+            if priority_trial.target_met and improved:
+                chosen_name = "priority"
+                chosen_execution = priority_execution
+                chosen_trial = priority_trial
+                reason = "priority_improved_every_band_and_met_all_targets"
+            elif baseline_trial.target_met:
+                chosen_name = "baseline"
+                chosen_execution = baseline_execution
+                chosen_trial = baseline_trial
+                reason = (
+                    "priority_not_better_than_baseline"
+                    if priority_trial.target_met
+                    else "priority_target_not_met_baseline_fallback"
+                )
+            else:
+                priority_score = _trial_gate_ratio(priority_trial)
+                baseline_score = _trial_gate_ratio(baseline_trial)
+                if priority_score < baseline_score:
+                    chosen_name = "priority"
+                    chosen_execution = priority_execution
+                    chosen_trial = priority_trial
+                else:
+                    chosen_name = "baseline"
+                    chosen_execution = baseline_execution
+                    chosen_trial = baseline_trial
+                reason = "no_candidate_met_all_targets"
+                if priority_trial.target_met and not improved:
+                    chosen_name = "priority"
+                    chosen_execution = priority_execution
+                    chosen_trial = replace(
+                        priority_trial,
+                        target_met=False,
+                        status="FAIL",
+                        rejection_reason="priority_candidate_not_better_than_baseline",
+                    )
+                    reason = "priority_met_targets_but_did_not_improve_every_band"
+
+            cost_trials = [baseline_trial, priority_trial]
+            if seed_trial is not None:
+                cost_trials.append(seed_trial)
+            chosen_trial = _aggregate_candidate_costs(chosen_trial, cost_trials)
+            selection = {
+                "mode": "baseline_vs_priority_guarded",
+                "selected_candidate": chosen_name,
+                "selection_reason": reason,
+                "priority_improved_every_band": improved,
+                "priority_seed_error": seed_error,
+                "baseline": baseline_trial.to_dict(),
+                "priority": priority_trial.to_dict(),
+                "priority_seed": None if seed_trial is None else seed_trial.to_dict(),
+            }
+            chosen_execution = replace(
+                chosen_execution,
+                result=replace(
+                    chosen_execution.result,
+                    candidate_selection=selection,
+                ),
+            )
+            executions_by_order[order] = chosen_execution
+            write_progress(
+                f"order={order} candidate={chosen_name} status={chosen_trial.status} "
+                f"reason={chosen_trial.rejection_reason or reason}"
+            )
+            return chosen_trial
+
         try:
             execution = _fit_touchstone_execution(
                 touchstone_path,
@@ -2862,25 +3189,7 @@ def fit_touchstone_to_spice_target(
             )
         except Exception as exc:
             write_progress(f"order={order} status=FAIL reason=fit_failed error={exc}")
-            return SParamOrderTrial(
-                requested_order=order,
-                effective_order=order,
-                fit_frequency_points=0,
-                evaluation_frequency_points=0,
-                pre_mean_rms=math.inf,
-                final_mean_rms=math.inf,
-                pre_max_sigma=None,
-                final_max_sigma=None,
-                fit_seconds=0.0,
-                check_seconds=0.0,
-                enforce_seconds=0.0,
-                elapsed_seconds=0.0,
-                peak_memory_mb=0.0,
-                target_met=False,
-                status="FAIL",
-                rejection_reason="fit_failed",
-                payload={"error": str(exc)},
-            )
+            return failed_trial(order, "fit_failed", exc)
         for message in _asymptotic_compensation_log_messages(execution.vector_fit):
             write_progress(f"order={order} {message}")
         trial = trial_from_fit_result(target, execution.result, requested_order=order)
@@ -2927,7 +3236,11 @@ def fit_touchstone_to_spice_target(
                 report_top_rms=report_top_rms,
                 report_configuration={
                     "rms_target": target.mean_rms,
-                    "full_band_rms_target": target.mean_rms,
+                    "full_band_rms_target": (
+                        target.mean_rms if target.gate_full_band_rms else None
+                    ),
+                    "full_band_rms_blocking": target.gate_full_band_rms,
+                    "priority_band_fit_only": policy_config.priority_band_fit_only,
                     "priority_band_targets_hz": [
                         list(band[:3]) for band in policy_config.priority_bands_hz
                     ],
@@ -2960,7 +3273,11 @@ def fit_touchstone_to_spice_target(
             report_top_rms=report_top_rms,
             report_configuration={
                 "rms_target": target.mean_rms,
-                "full_band_rms_target": target.mean_rms,
+                "full_band_rms_target": (
+                    target.mean_rms if target.gate_full_band_rms else None
+                ),
+                "full_band_rms_blocking": target.gate_full_band_rms,
+                "priority_band_fit_only": policy_config.priority_band_fit_only,
                 "priority_band_targets_hz": [
                     list(band[:3]) for band in policy_config.priority_bands_hz
                 ],
@@ -2986,7 +3303,38 @@ def fit_touchstone_to_spice_target(
         selected_payload.update(payload)
         payload = selected_payload
     payload["rms_formula"] = "mean_s_rms_v1"
-    payload["full_band_rms_target"] = target.mean_rms
+    payload["full_band_rms_target"] = (
+        target.mean_rms if target.gate_full_band_rms else None
+    )
+    payload["full_band_rms_blocking"] = target.gate_full_band_rms
+    payload["priority_band_fit_mode"] = (
+        "priority_only_full_band_postcheck"
+        if policy_config.priority_band_fit_only
+        else "baseline_vs_priority_guarded"
+        if target.priority_bands_hz
+        else "full_band_only"
+    )
+    payload["passivity_frequency_scope"] = (
+        "zero_to_highest_priority_frequency"
+        if policy_config.priority_band_fit_only
+        else "zero_to_full_input_max_frequency"
+    )
+    payload["passivity_reference_sample_scope"] = (
+        "priority_band_samples"
+        if policy_config.priority_band_fit_only
+        else "full_input_samples"
+    )
+    payload["full_band_postcheck"] = (
+        {
+            "blocking": False,
+            "calculation_stage": "post_fit",
+            "frequency_range_hz": selected_fit_result.frequency_range_hz,
+            "frequency_points": selected_fit_result.frequency_points,
+            "mean_rms_error": selected_fit_result.comparison_mean_rms_error,
+        }
+        if policy_config.priority_band_fit_only and selected_fit_result is not None
+        else None
+    )
     payload["priority_band_targets_hz"] = [
         {
             "f_min_hz": band[0],

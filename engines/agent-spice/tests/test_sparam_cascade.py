@@ -2,6 +2,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
 from agent_spice.sparam.artifacts import write_fitted_touchstone
 from agent_spice.sparam.cascade import (
@@ -98,6 +99,39 @@ def test_fit_sparam_cascade_writes_block_and_chain_artifacts(tmp_path: Path):
         assert Path(block["rfm_wrapper_path"]).is_file()
 
 
+def test_priority_only_cascade_postchecks_full_band_without_blocking(tmp_path: Path):
+    payload = fit_sparam_cascade(
+        Path("tests/fixtures/sparam/cascade_two_through.json"),
+        tmp_path / "cascade-priority-only",
+        config=CascadeFitConfig(
+            rms_target=0.2,
+            max_order=4,
+            cascade_samples=21,
+            priority_bands_hz=((1e6, 1e9, 0.2, 1.0),),
+            gate_full_band_rms=False,
+            priority_band_fit_only=True,
+        ),
+    )
+
+    assert payload["status"] == "PASS"
+    assert payload["evaluation_scope"] == "priority_band_union_only_no_extrapolation"
+    assert payload["full_band_postcheck"]["blocking"] is False
+    assert payload["full_band_postcheck"]["frequency_range_hz"] == [1e6, 5e9]
+    assert all(block["full_band_rms_target"] is None for block in payload["blocks"])
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"priority_band_fit_only": True},
+        {"gate_full_band_rms": False},
+    ],
+)
+def test_cascade_config_rejects_incomplete_priority_only_mode(overrides):
+    with pytest.raises(ValueError):
+        CascadeFitConfig(rms_target=0.01, **overrides)
+
+
 def test_fit_sparam_cascade_cli_builds_public_configuration(tmp_path: Path, monkeypatch):
     import agent_spice.cli as cli
 
@@ -137,7 +171,7 @@ def test_fit_sparam_cascade_cli_builds_public_configuration(tmp_path: Path, monk
     assert captured["config"].reference_impedance_ohm == 75.0
 
 
-def test_fit_sparam_cascade_cli_defaults_full_band_target_from_priority_band(
+def test_fit_sparam_cascade_cli_uses_priority_only_mode_without_full_band_target(
     tmp_path: Path,
     monkeypatch,
 ):
@@ -160,4 +194,6 @@ def test_fit_sparam_cascade_cli_defaults_full_band_target_from_priority_band(
     )
 
     assert result == 0
-    assert captured["config"].rms_target == 0.003
+    assert captured["config"].rms_target == 0.001
+    assert captured["config"].gate_full_band_rms is False
+    assert captured["config"].priority_band_fit_only is True
