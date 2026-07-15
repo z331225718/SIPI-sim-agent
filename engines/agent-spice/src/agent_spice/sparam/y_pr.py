@@ -121,13 +121,19 @@ def enforce_y_positive_real_kyp(
         raise ValueError(f"KYP Y enforcement supports 1..{max_states} dense states; got {states}")
     # A feasible certificate means the original fit is already continuous-time
     # positive real.  Preserve it exactly instead of running a correction SDP.
+    # Normalize the Laplace variable.  KYP is invariant under s'=s/omega,
+    # while the normalization avoids SDP matrices that mix 1e9 pole entries
+    # with 1e-2 Siemens feedthroughs.
+    omega_scale = max(1.0, float(np.max(np.abs(np.linalg.eigvals(a)))))
+    a_scaled = a / omega_scale
+    c0_scaled = c0 / omega_scale
     p_check = cp.Variable((states, states), symmetric=True)
-    kyp_check = cp.bmat(((a.T @ p_check + p_check @ a, p_check @ b - c0.T), (b.T @ p_check - c0, -(d0 + d0.T))))
+    kyp_check = cp.bmat(((a_scaled.T @ p_check + p_check @ a_scaled, p_check @ b - c0_scaled.T), (b.T @ p_check - c0_scaled, -(d0 + d0.T))))
     check_problem = cp.Problem(cp.Minimize(0), [p_check >> margin * np.eye(states), kyp_check << -margin * np.eye(states + ports)])
     check_problem.solve(solver=solver)
     if check_problem.status in {cp.OPTIMAL, cp.OPTIMAL_INACCURATE} and p_check.value is not None:
         p_value = np.asarray(p_check.value, dtype=float)
-        kyp_value = np.block([[a.T @ p_value + p_value @ a, p_value @ b - c0.T], [b.T @ p_value - c0, -(d0 + d0.T)]])
+        kyp_value = np.block([[a_scaled.T @ p_value + p_value @ a_scaled, p_value @ b - c0_scaled.T], [b.T @ p_value - c0_scaled, -(d0 + d0.T)]])
         kyp_max = float(np.max(np.linalg.eigvalsh(0.5 * (kyp_value + kyp_value.T))))
         p_min = float(np.min(np.linalg.eigvalsh(0.5 * (p_value + p_value.T))))
         certificate_tolerance = max(1.0e-7, 10.0 * margin)
@@ -143,8 +149,8 @@ def enforce_y_positive_real_kyp(
     p = cp.Variable((states, states), symmetric=True)
     c = cp.Variable((ports, states))
     d = cp.Variable((ports, ports))
-    kyp = cp.bmat(((a.T @ p + p @ a, p @ b - c.T), (b.T @ p - c, -(d + d.T))))
-    c_scale = max(1.0, float(np.linalg.norm(c0, ord="fro")))
+    kyp = cp.bmat(((a_scaled.T @ p + p @ a_scaled, p @ b - c.T), (b.T @ p - c, -(d + d.T))))
+    c_scale = max(1.0e-12, float(np.linalg.norm(c0_scaled, ord="fro")))
     d_scale = max(1.0, float(np.linalg.norm(d0, ord="fro")))
     constraints = [p >> margin * np.eye(states), kyp << -margin * np.eye(states + ports)]
     problem = cp.Problem(cp.Minimize(cp.sum_squares((c - c0) / c_scale) + cp.sum_squares((d - d0) / d_scale)), constraints)
@@ -154,7 +160,7 @@ def enforce_y_positive_real_kyp(
     p_value = np.asarray(p.value, dtype=float)
     c_value = np.asarray(c.value, dtype=float)
     d_value = np.asarray(d.value, dtype=float)
-    kyp_value = np.block([[a.T @ p_value + p_value @ a, p_value @ b - c_value.T], [b.T @ p_value - c_value, -(d_value + d_value.T)]])
+    kyp_value = np.block([[a_scaled.T @ p_value + p_value @ a_scaled, p_value @ b - c_value.T], [b.T @ p_value - c_value, -(d_value + d_value.T)]])
     kyp_max = float(np.max(np.linalg.eigvalsh(0.5 * (kyp_value + kyp_value.T))))
     p_min = float(np.min(np.linalg.eigvalsh(0.5 * (p_value + p_value.T))))
     certificate_tolerance = max(1.0e-7, 10.0 * margin)
@@ -164,12 +170,12 @@ def enforce_y_positive_real_kyp(
     residues = np.asarray(getattr(model, "residues"), dtype=complex).copy()
     for kind, offset, index in blocks:
         if kind == "real":
-            residues[:, index] = c_value[:, offset : offset + ports].reshape(-1)
+            residues[:, index] = (c_value[:, offset : offset + ports] * omega_scale).reshape(-1)
         else:
             real = c_value[:, offset : offset + ports]
             imag = c_value[:, offset + ports : offset + 2 * ports]
-            residues[:, index] = (real + 1j * imag).reshape(-1)
-    correction = float(np.sqrt(np.linalg.norm(c_value - c0, ord="fro") ** 2 + np.linalg.norm(d_value - d0, ord="fro") ** 2))
+            residues[:, index] = (omega_scale * (real + 1j * imag)).reshape(-1)
+    correction = float(np.sqrt(np.linalg.norm((c_value - c0_scaled) * omega_scale, ord="fro") ** 2 + np.linalg.norm(d_value - d0, ord="fro") ** 2))
     baseline = max(1.0, float(np.sqrt(np.linalg.norm(c0, ord="fro") ** 2 + np.linalg.norm(d0, ord="fro") ** 2)))
     if correction > max_relative_correction * baseline:
         raise ValueError(

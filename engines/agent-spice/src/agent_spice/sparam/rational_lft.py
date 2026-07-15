@@ -86,7 +86,8 @@ def _canonicalize_state_space(a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np
         scale = max(1.0, abs(pole))
         if abs(pole.imag) <= tolerance * scale:
             used[index] = True
-            entries.append((complex(pole.real, 0.0), np.outer(output_vectors[:, index], input_vectors[index, :])))
+            residue = np.outer(output_vectors[:, index], input_vectors[index, :])
+            entries.append((complex(pole.real, 0.0), residue.real.astype(complex)))
             continue
         distances = np.abs(poles - pole.conjugate())
         distances[used] = np.inf

@@ -19,6 +19,9 @@ from agent_spice.project import prepare_run_directory
 from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice_target
 from agent_spice.sparam.target_fit import SParamFitTarget
 from agent_spice.sparam.io import load_touchstone_metadata
+from agent_spice.sparam.artifacts import evaluate_fitted_s, write_cadence_rfm, write_cadence_rfm_wrapper, write_fitted_touchstone
+from agent_spice.sparam.rational_lft import exact_y_to_s_rational
+from agent_spice.sparam.y_pr import enforce_y_positive_real_kyp
 from agent_spice.sparam.yparam import YParamFitConfig, fit_touchstone_to_y_spice
 
 
@@ -1174,6 +1177,13 @@ def main(argv: list[str] | None = None) -> int:
     y_fit_parser.add_argument("--passivity", choices=["off", "check"], default="check", help="Y positive-real check policy; enforcement is intentionally unavailable.")
     y_fit_parser.add_argument("--passivity-epsilon", type=float, default=1e-9)
     y_fit_parser.add_argument("--conversion-condition-limit", type=float, default=1e12)
+    y_fit_parser.add_argument("--exact-s-rfm", type=Path, help="Run KYP Y enforcement and write the exact-LFT S RFM delivery artifact.")
+    y_fit_parser.add_argument("--exact-s-touchstone", type=Path, help="Write the exact-LFT S Touchstone used to audit the RFM.")
+    y_fit_parser.add_argument("--exact-s-rfm-wrapper", type=Path, help="Optional HSPICE wrapper for --exact-s-rfm.")
+    y_fit_parser.add_argument("--kyp-max-states", type=int, default=128, help="Maximum dense KYP state count (default: 128).")
+    y_fit_parser.add_argument("--kyp-margin", type=float, default=1e-8, help="KYP positive-real margin (default: 1e-8).")
+    y_fit_parser.add_argument("--kyp-max-relative-correction", type=float, default=0.05, help="Maximum accepted KYP correction relative to the Y model (default: 0.05).")
+    y_fit_parser.add_argument("--kyp-solver", default="CLARABEL", help="CVXPY PSD-cone solver for KYP enforcement (default: CLARABEL).")
 
     idem_probe_parser = subparsers.add_parser("probe-idem-init")
     idem_probe_parser.add_argument("touchstone", type=Path)
@@ -1668,6 +1678,39 @@ def main(argv: list[str] | None = None) -> int:
                 log_path=log_path,
                 derived_s_touchstone_path=args.derived_s_touchstone,
             )
+            if args.exact_s_rfm is not None:
+                if not args.no_fit_proportional:
+                    raise ValueError("--exact-s-rfm requires --no-fit-proportional; descriptor Y-to-S is not implemented")
+                enforced_y, certificate = enforce_y_positive_real_kyp(
+                    result.fitted_model,
+                    margin=args.kyp_margin,
+                    max_states=args.kyp_max_states,
+                    max_relative_correction=args.kyp_max_relative_correction,
+                    solver=args.kyp_solver,
+                )
+                z0 = float(result.reference_impedance[0])
+                exact_s = exact_y_to_s_rational(enforced_y, z0)
+                write_cadence_rfm(exact_s, args.exact_s_rfm, z0)
+                exact_touchstone = args.exact_s_touchstone or args.exact_s_rfm.with_suffix(args.touchstone.suffix.lower())
+                write_fitted_touchstone(exact_touchstone, result.fitted_model.network.f, evaluate_fitted_s(exact_s, result.fitted_model.network.f), result.fitted_model.network.z0)
+                if args.exact_s_rfm_wrapper is not None:
+                    write_cadence_rfm_wrapper(
+                        args.exact_s_rfm_wrapper,
+                        args.exact_s_rfm,
+                        nports=result.ports,
+                        subcircuit_name=f"{args.subckt_name}_exact_s",
+                    )
+                payload = json.loads(report_path.read_text(encoding="utf-8"))
+                payload["passivity"]["enforcement"] = "KYP continuous-frequency certificate"
+                payload["passivity"]["kyp_certificate"] = certificate.__dict__
+                payload["exact_y_to_s"] = {
+                    "method": "state-space rational LFT; no sampled S refit",
+                    "matrix": "S=(I-z0Y)(I+z0Y)^-1",
+                    "rfm_path": str(args.exact_s_rfm),
+                    "touchstone_path": str(exact_touchstone),
+                    "stored_pole_count": int(len(exact_s.poles)),
+                }
+                report_path.write_text(json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1

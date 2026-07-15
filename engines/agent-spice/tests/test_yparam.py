@@ -158,6 +158,26 @@ def test_fit_yparam_cli_fails_positive_real_check(tmp_path: Path) -> None:
     assert cli.main(["fit-yparam", str(touchstone), "--n-poles-real", "1", "--n-poles-cmplx", "1", "--fit-iterations", "8"]) == 1
 
 
+def test_fit_yparam_cli_exports_kyp_enforced_exact_s_rfm(tmp_path: Path) -> None:
+    from agent_spice import cli
+
+    frequencies = np.array([1.0e6, 2.0e6, 5.0e6, 1.0e7])
+    touchstone = _write_y_touchstone(tmp_path / "passive.s1p", frequencies, np.full((4, 1, 1), 0.02 + 0j))
+    rfm = tmp_path / "passive.exact.rfm"
+    report = tmp_path / "passive.y.json"
+
+    assert cli.main([
+        "fit-yparam", str(touchstone), "--output", str(tmp_path / "passive.y.sp"), "--report", str(report),
+        "--n-poles-real", "1", "--n-poles-cmplx", "1", "--fit-iterations", "8", "--no-fit-proportional",
+        "--exact-s-rfm", str(rfm),
+    ]) == 0
+
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert rfm.is_file()
+    assert payload["passivity"]["enforcement"] == "KYP continuous-frequency certificate"
+    assert payload["exact_y_to_s"]["method"] == "state-space rational LFT; no sampled S refit"
+
+
 def test_y_spice_export_ac_matches_conductance_and_capacitance(tmp_path: Path) -> None:
     ngspice = shutil.which("ngspice")
     if ngspice is None:
