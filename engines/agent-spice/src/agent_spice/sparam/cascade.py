@@ -51,10 +51,16 @@ class CascadeFitConfig:
     outside_band_weight: float = 0.1
     gate_full_band_rms: bool = True
     priority_band_fit_only: bool = False
+    cascade_rms_target: float | None = None
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.rms_target) or self.rms_target <= 0.0:
             raise ValueError("rms_target must be finite and > 0")
+        if self.cascade_rms_target is not None and (
+            not math.isfinite(self.cascade_rms_target)
+            or self.cascade_rms_target <= 0.0
+        ):
+            raise ValueError("cascade_rms_target must be finite and > 0")
         if self.max_order < 1:
             raise ValueError("max_order must be >= 1")
         if self.min_order < 1 or self.min_order > self.max_order:
@@ -460,6 +466,18 @@ def _find_adjustment(
     base = _base_coefficients(states)
     identity = tuple(1.0 for _ in states)
     diagnostics: list[dict[str, Any]] = []
+    raw_cascade = None
+    if config.cascade_rms_target is not None:
+        raw_cascade = _cascade_networks(
+            [
+                _sample_block_networks(
+                    state,
+                    freqs,
+                    config.reference_impedance_ohm,
+                )[0]
+                for state in states
+            ]
+        )
     baseline_metrics, baseline_rms, _ = _evaluate_scales(states, base, identity, freqs, config)
     if baseline_metrics["max_sigma"] <= 1.0 + config.cascade_passivity_epsilon:
         return identity, diagnostics
@@ -475,8 +493,21 @@ def _find_adjustment(
         passing_rms: list[dict[str, Any]] | None = None
         for scale in np.linspace(1.0, config.minimum_scale, config.adjustment_iterations + 1)[1:]:
             scales = tuple(float(scale) if index in group else 1.0 for index in range(len(states)))
-            metrics, block_rms, _ = _evaluate_scales(states, base, scales, freqs, config)
+            metrics, block_rms, cascaded = _evaluate_scales(states, base, scales, freqs, config)
             rms_ok = all(item["target_met"] for item in block_rms)
+            cascade_rms_error = (
+                None
+                if raw_cascade is None
+                else _cascade_mean_rms(raw_cascade, cascaded)
+            )
+            cascade_rms_ok = bool(
+                config.cascade_rms_target is None
+                or (
+                    cascade_rms_error is not None
+                    and math.isfinite(cascade_rms_error)
+                    and cascade_rms_error <= config.cascade_rms_target
+                )
+            )
             diagnostics.append(
                 {
                     "blocks": [states[index].spec.name for index in group],
@@ -487,9 +518,20 @@ def _find_adjustment(
                     ],
                     "block_rms_gates": block_rms,
                     "rms_ok": rms_ok,
+                    "cascade_mean_rms_error": cascade_rms_error,
+                    "cascade_rms_target": config.cascade_rms_target,
+                    "cascade_rms_target_met": (
+                        None
+                        if config.cascade_rms_target is None
+                        else cascade_rms_ok
+                    ),
                 }
             )
-            if metrics["max_sigma"] <= 1.0 + config.cascade_passivity_epsilon and rms_ok:
+            if (
+                metrics["max_sigma"] <= 1.0 + config.cascade_passivity_epsilon
+                and rms_ok
+                and cascade_rms_ok
+            ):
                 passing_scale = float(scale)
                 passing_metrics = metrics
                 passing_rms = block_rms
@@ -503,9 +545,21 @@ def _find_adjustment(
         for _ in range(config.adjustment_iterations):
             scale = 0.5 * (low + high)
             scales = tuple(scale if index in group else 1.0 for index in range(len(states)))
-            metrics, block_rms, _ = _evaluate_scales(states, base, scales, freqs, config)
+            metrics, block_rms, cascaded = _evaluate_scales(states, base, scales, freqs, config)
             rms_ok = all(item["target_met"] for item in block_rms)
-            if metrics["max_sigma"] <= 1.0 + config.cascade_passivity_epsilon and rms_ok:
+            cascade_rms_ok = bool(
+                config.cascade_rms_target is None
+                or (
+                    raw_cascade is not None
+                    and _cascade_mean_rms(raw_cascade, cascaded)
+                    <= config.cascade_rms_target
+                )
+            )
+            if (
+                metrics["max_sigma"] <= 1.0 + config.cascade_passivity_epsilon
+                and rms_ok
+                and cascade_rms_ok
+            ):
                 low = scale
                 passing_metrics = metrics
                 passing_rms = block_rms
@@ -639,6 +693,8 @@ def fit_sparam_cascade(
                 "schema_version": "sparam_cascade_v1",
                 "status": "FAIL",
                 "reason": "block_fit_target_not_met",
+                "cascade_rms_target": config.cascade_rms_target,
+                "cascade_rms_target_met": None,
                 "failed_block": spec.name,
                 "manifest_path": str(manifest_path),
                 "output_root": str(output_root),
@@ -677,12 +733,18 @@ def fit_sparam_cascade(
         payload = {
             "schema_version": "sparam_cascade_v1",
             "status": "FAIL",
-            "reason": "cascade_passivity_adjustment_failed_within_block_rms_limits",
+            "reason": (
+                "cascade_passivity_adjustment_failed_within_block_and_cascade_rms_limits"
+                if config.cascade_rms_target is not None
+                else "cascade_passivity_adjustment_failed_within_block_rms_limits"
+            ),
             "manifest_path": str(manifest_path),
             "output_root": str(output_root),
             "cascade_order": order,
             "frequency_range_hz": [float(freqs[0]), float(freqs[-1])],
             "frequency_points": len(freqs),
+            "cascade_rms_target": config.cascade_rms_target,
+            "cascade_rms_target_met": None,
             "passivity_before_adjustment": before,
             "adjustment_trials": adjustment_trials,
         }
@@ -761,9 +823,28 @@ def fit_sparam_cascade(
                 "log_path": str(state.log_path),
             }
         )
+    cascade_mean_rms_error = _cascade_mean_rms(raw_cascade, fitted_cascade)
+    cascade_passivity_met = bool(
+        after["max_sigma"] <= 1.0 + config.cascade_passivity_epsilon
+    )
+    cascade_rms_target_met = (
+        None
+        if config.cascade_rms_target is None
+        else bool(
+            math.isfinite(cascade_mean_rms_error)
+            and cascade_mean_rms_error <= config.cascade_rms_target
+        )
+    )
+    blocking_reasons = []
+    if not cascade_passivity_met:
+        blocking_reasons.append("cascade_passivity_target_not_met")
+    if cascade_rms_target_met is False:
+        blocking_reasons.append("cascade_rms_target_not_met")
+
     payload = {
         "schema_version": "sparam_cascade_v1",
-        "status": "PASS" if after["max_sigma"] <= 1.0 + config.cascade_passivity_epsilon else "FAIL",
+        "status": "FAIL" if blocking_reasons else "PASS",
+        "blocking_reasons": blocking_reasons,
         "manifest_path": str(manifest_path),
         "output_root": str(output_root),
         "cascade_order": order,
@@ -775,7 +856,10 @@ def fit_sparam_cascade(
             if priority_only
             else "intersection_only_no_extrapolation"
         ),
-        "cascade_mean_rms_error": _cascade_mean_rms(raw_cascade, fitted_cascade),
+        "cascade_mean_rms_error": cascade_mean_rms_error,
+        "cascade_rms_target": config.cascade_rms_target,
+        "cascade_rms_target_blocking": config.cascade_rms_target is not None,
+        "cascade_rms_target_met": cascade_rms_target_met,
         "passivity_before_adjustment": before,
         "passivity_after_adjustment": after,
         "full_band_postcheck": full_band_postcheck,
@@ -786,6 +870,8 @@ def fit_sparam_cascade(
         "cascade_touchstone_path": str(cascade_touchstone),
         "blocks": block_payloads,
     }
+    if blocking_reasons:
+        payload["reason"] = blocking_reasons[0]
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return payload

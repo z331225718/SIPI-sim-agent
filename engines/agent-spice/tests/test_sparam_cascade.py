@@ -1,3 +1,4 @@
+import math
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -58,6 +59,7 @@ def test_cascade_adjustment_finds_minimal_block_contraction(tmp_path: Path):
     states = [_active_through_state(tmp_path, "a"), _active_through_state(tmp_path, "b")]
     config = CascadeFitConfig(
         rms_target=0.05,
+        cascade_rms_target=0.05,
         cascade_samples=21,
         cascade_passivity_epsilon=1e-8,
         adjustment_iterations=16,
@@ -70,6 +72,8 @@ def test_cascade_adjustment_finds_minimal_block_contraction(tmp_path: Path):
     assert scales is not None
     assert any(scale < 1.0 for scale in scales)
     assert diagnostics
+    assert all(item["cascade_rms_target"] == pytest.approx(0.05) for item in diagnostics)
+    assert any(item["cascade_rms_target_met"] is True for item in diagnostics)
     base = _base_coefficients(states)
     _apply_scales(states, base, scales)
     metrics, block_rms, _ = _evaluate_scales(states, base, scales, freqs, config)
@@ -84,10 +88,19 @@ def test_fit_sparam_cascade_writes_block_and_chain_artifacts(tmp_path: Path):
     payload = fit_sparam_cascade(
         manifest,
         output_root,
-        config=CascadeFitConfig(rms_target=0.2, max_order=4, cascade_samples=21),
+        config=CascadeFitConfig(
+            rms_target=0.2,
+            cascade_rms_target=1.0,
+            max_order=4,
+            cascade_samples=21,
+        ),
     )
 
     assert payload["status"] == "PASS"
+    assert payload["blocking_reasons"] == []
+    assert payload["cascade_rms_target"] == pytest.approx(1.0)
+    assert payload["cascade_rms_target_blocking"] is True
+    assert payload["cascade_rms_target_met"] is True
     assert payload["cascade_order"] == ["first", "second"]
     assert payload["evaluation_scope"] == "intersection_only_no_extrapolation"
     assert Path(payload["cascade_touchstone_path"]).is_file()
@@ -97,6 +110,25 @@ def test_fit_sparam_cascade_writes_block_and_chain_artifacts(tmp_path: Path):
         assert Path(block["fitted_touchstone_path"]).is_file()
         assert Path(block["rfm_path"]).is_file()
         assert Path(block["rfm_wrapper_path"]).is_file()
+
+
+def test_cascade_rms_target_blocks_delivery_when_final_chain_misses(tmp_path: Path):
+    payload = fit_sparam_cascade(
+        Path("tests/fixtures/sparam/cascade_two_through.json"),
+        tmp_path / "cascade-rms-fail",
+        config=CascadeFitConfig(
+            rms_target=0.2,
+            cascade_rms_target=1e-12,
+            max_order=4,
+            cascade_samples=21,
+        ),
+    )
+
+    assert payload["status"] == "FAIL"
+    assert payload["reason"] == "cascade_rms_target_not_met"
+    assert payload["blocking_reasons"] == ["cascade_rms_target_not_met"]
+    assert payload["cascade_rms_target_met"] is False
+    assert payload["cascade_mean_rms_error"] > payload["cascade_rms_target"]
 
 
 def test_priority_only_cascade_postchecks_full_band_without_blocking(tmp_path: Path):
@@ -115,6 +147,9 @@ def test_priority_only_cascade_postchecks_full_band_without_blocking(tmp_path: P
 
     assert payload["status"] == "PASS"
     assert payload["evaluation_scope"] == "priority_band_union_only_no_extrapolation"
+    assert payload["cascade_rms_target"] is None
+    assert payload["cascade_rms_target_blocking"] is False
+    assert payload["cascade_rms_target_met"] is None
     assert payload["full_band_postcheck"]["blocking"] is False
     assert payload["full_band_postcheck"]["frequency_range_hz"] == [1e6, 5e9]
     assert all(block["full_band_rms_target"] is None for block in payload["blocks"])
@@ -130,6 +165,12 @@ def test_priority_only_cascade_postchecks_full_band_without_blocking(tmp_path: P
 def test_cascade_config_rejects_incomplete_priority_only_mode(overrides):
     with pytest.raises(ValueError):
         CascadeFitConfig(rms_target=0.01, **overrides)
+
+
+@pytest.mark.parametrize("target", [0.0, -1.0, math.inf, math.nan])
+def test_cascade_config_rejects_invalid_cascade_rms_target(target):
+    with pytest.raises(ValueError):
+        CascadeFitConfig(rms_target=0.01, cascade_rms_target=target)
 
 
 def test_fit_sparam_cascade_cli_builds_public_configuration(tmp_path: Path, monkeypatch):
@@ -158,6 +199,8 @@ def test_fit_sparam_cascade_cli_builds_public_configuration(tmp_path: Path, monk
             "1e6:2e6:0.005:4",
             "--cascade-samples",
             "101",
+            "--cascade-rms-target",
+            "0.02",
             "--reference-impedance",
             "75",
         ]
@@ -168,6 +211,7 @@ def test_fit_sparam_cascade_cli_builds_public_configuration(tmp_path: Path, monk
     assert captured["output_root"] == manifest.with_name("chain_fit")
     assert captured["config"].priority_bands_hz == ((1e6, 2e6, 0.005, 4.0),)
     assert captured["config"].cascade_samples == 101
+    assert captured["config"].cascade_rms_target == pytest.approx(0.02)
     assert captured["config"].reference_impedance_ohm == 75.0
 
 

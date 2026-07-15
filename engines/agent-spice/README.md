@@ -277,8 +277,11 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 python -m agent_spice.cli fit-sparam-cascade .\cascade.json `
   --output-root .\cascade-fit `
   --rms-target 0.001 `
+  --cascade-rms-target 0.002 `
   --max-order 80
 ```
+
+`--rms-target` 是每个 block 的默认 RMS 门限；`--cascade-rms-target` 是最终级联模型的阻塞 RMS 门限。后者按报告中的 `evaluation_scope` 计算，未达标时即使所有 block 和级联被动性都通过，命令仍返回 `FAIL`。
 
 当前稳定关系模型是 manifest 中的有序 2-port 链，不支持多端口任意连接图，也不做带外延拓。完整 manifest、产物、修复算法和失败语义见 [S 参数分频段与级联拟合使用说明](docs/sparam-band-cascade-usage.md)。
 

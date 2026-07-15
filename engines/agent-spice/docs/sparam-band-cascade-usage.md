@@ -98,6 +98,7 @@ Hamiltonian 连续被动性检查目前以 `0 Hz` 为下界。仅优先频段模
 python -m agent_spice.cli fit-sparam-cascade .\cascade.json `
   --output-root .\cascade-fit `
   --rms-target 0.001 `
+  --cascade-rms-target 0.002 `
   --max-order 80 `
   --passivity-epsilon 1e-6 `
   --cascade-passivity-epsilon 1e-8 `
@@ -114,6 +115,8 @@ python -m agent_spice.cli fit-sparam-cascade .\cascade.json `
 
 级联命令沿用相同的双模式语义。省略全局 `--rms-target` 且 manifest 中所有 block 都没有 `rms_target` 时，每个 block 只在优先频段并集内拟合和验收，级联 RMS 与被动性也只在该并集内阻塞；程序随后在各输入完整频率交集上生成 `full_band_postcheck`，但它不改变 `PASS`。显式 `--rms-target`，或任一 manifest block 显式设置 `rms_target` 时，相应全频段门限恢复为阻塞门限。级联被动性收缩候选必须保持所有实际启用的全频段及逐频段 RMS 门限。
 
+`--cascade-rms-target` 独立控制最终级联模型的平均 S-RMS 门限。它不替代每个 block 的 `--rms-target` 或优先频段目标，计算范围与 `cascade_mean_rms_error` 一致，由 `evaluation_scope` 明示。设置后，级联收缩候选也必须满足该门限；最终超标会写入 `blocking_reasons` 并返回 `FAIL`。
+
 ### 2.3 执行流程
 
 1. 验证 manifest、二端口数量和级联顺序。
@@ -121,7 +124,7 @@ python -m agent_spice.cli fit-sparam-cascade .\cascade.json `
 3. 每个 block 生成 SPICE、fitted Touchstone、RFM、RFM wrapper、JSON、HTML 和日志。
 4. 取所有输入频率范围的交集；交集为空时失败，不做带外延拓。仅优先频段模式再把阻塞评估网格限制到目标频段并集。
 5. 在 `--reference-impedance` 指定的共同参考阻抗下重归一化，默认 `50 ohm`。
-6. 按 manifest 顺序级联原始样本和 fitted 模型，报告级联 RMS 与最大奇异值。
+6. 按 manifest 顺序级联原始样本和 fitted 模型，报告级联 RMS 与最大奇异值；若设置 `--cascade-rms-target`，同时执行阻塞 RMS 验收。
 7. 若级联最大奇异值超过 `1 + --cascade-passivity-epsilon`，进入受约束修复。
 
 每个 block 都经过 Hamiltonian 被动性检查。级联检查使用实际验收范围内的密集采样，主要用于发现参考阻抗、数值容差和组合后的局部越界。全频段门限模式的 `evaluation_scope` 为 `intersection_only_no_extrapolation`；仅优先频段模式为 `priority_band_union_only_no_extrapolation`，并额外报告非阻塞的完整交集后检查。
@@ -166,8 +169,10 @@ cascade-fit/
 
 `cascade_report.json` 重点字段：
 
-- `status`：全部 block 达标且级联被动性达标时为 `PASS`。
+- `status`：全部 block、级联被动性以及显式启用的级联 RMS 门限均达标时为 `PASS`。
 - `cascade_mean_rms_error`：原始 block 级联与 fitted block 级联的平均 S-RMS。
+- `cascade_rms_target` / `cascade_rms_target_met`：用户设置的最终级联 RMS 门限及验收结果；未设置时分别为 `null` / `null`。
+- `blocking_reasons`：导致最终级联 `FAIL` 的被动性或 RMS 原因。
 - `evaluation_scope`：阻塞级联检查使用完整交集还是优先频段并集。
 - `full_band_postcheck`：仅优先频段模式下的完整交集 RMS 与被动性诊断，`blocking` 固定为 `false`。
 - `passivity_before_adjustment` / `passivity_after_adjustment`：级联最大奇异值及频率。
@@ -186,6 +191,7 @@ cascade-fit/
 - 任一 block 在最大阶次内未满足当前模式实际启用的 RMS 和被动性目标。
 - 各 block 没有共同覆盖频段。
 - 级联被动性越界，且所有允许的收缩候选都会突破 block RMS 门限。
+- 设置了 `--cascade-rms-target`，但最终级联 RMS 超过门限。
 
 生产签核仍应结合实际连接方式做 AC/TRAN 验证。级联命令证明的是给定有序二端口关系、共同参考阻抗和共同频段下的模型组合质量，不替代系统网表中的终端、偏置和激励条件。
 

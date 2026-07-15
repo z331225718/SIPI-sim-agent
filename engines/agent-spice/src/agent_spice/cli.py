@@ -1216,7 +1216,10 @@ def main(argv: list[str] | None = None) -> int:
 
     cascade_fit_parser = subparsers.add_parser(
         "fit-sparam-cascade",
-        description="Fit and enforce an ordered chain of 2-port Touchstone blocks, then verify cascade passivity.",
+        description=(
+            "Fit and enforce an ordered chain of 2-port Touchstone blocks, then verify cascade "
+            "RMS and passivity."
+        ),
     )
     cascade_fit_parser.add_argument("manifest", type=Path, help="Version 1 cascade JSON manifest.")
     cascade_fit_parser.add_argument("--output-root", type=Path, help="Output directory for block and cascade artifacts.")
@@ -1234,6 +1237,14 @@ def main(argv: list[str] | None = None) -> int:
     cascade_fit_parser.add_argument("--max-order-step", type=int, default=8)
     cascade_fit_parser.add_argument("--passivity-epsilon", type=float, default=1e-6)
     cascade_fit_parser.add_argument("--cascade-passivity-epsilon", type=float, default=1e-8)
+    cascade_fit_parser.add_argument(
+        "--cascade-rms-target",
+        type=float,
+        help=(
+            "Optional blocking mean S-RMS target for the final cascaded model, evaluated over "
+            "the reported cascade evaluation scope."
+        ),
+    )
     cascade_fit_parser.add_argument("--cascade-samples", type=int, default=1001)
     cascade_fit_parser.add_argument("--reference-impedance", type=float, default=50.0, metavar="OHM")
     cascade_fit_parser.add_argument("--adjustment-iterations", type=int, default=12)
@@ -1584,6 +1595,7 @@ def main(argv: list[str] | None = None) -> int:
                     min_order=args.min_order,
                     max_order_step=args.max_order_step,
                     passivity_epsilon=args.passivity_epsilon,
+                    cascade_rms_target=args.cascade_rms_target,
                     cascade_passivity_epsilon=args.cascade_passivity_epsilon,
                     cascade_samples=args.cascade_samples,
                     reference_impedance_ohm=args.reference_impedance,
