@@ -101,6 +101,8 @@ def test_fit_sparam_cascade_writes_block_and_chain_artifacts(tmp_path: Path):
     assert payload["cascade_rms_target"] == pytest.approx(1.0)
     assert payload["cascade_rms_target_blocking"] is True
     assert payload["cascade_rms_target_met"] is True
+    assert payload["cascade_refit"]["stop_reason"] == "initial_target_met"
+    assert payload["cascade_refit"]["iterations"] == []
     assert payload["cascade_order"] == ["first", "second"]
     assert payload["evaluation_scope"] == "intersection_only_no_extrapolation"
     assert Path(payload["cascade_touchstone_path"]).is_file()
@@ -129,6 +131,63 @@ def test_cascade_rms_target_blocks_delivery_when_final_chain_misses(tmp_path: Pa
     assert payload["blocking_reasons"] == ["cascade_rms_target_not_met"]
     assert payload["cascade_rms_target_met"] is False
     assert payload["cascade_mean_rms_error"] > payload["cascade_rms_target"]
+    assert payload["cascade_refit"]["stop_reason"] == "no_refittable_blocks"
+    assert payload["cascade_refit"]["iterations"]
+
+
+def test_cascade_rms_target_refits_high_impact_blocks_until_met(tmp_path: Path):
+    payload = fit_sparam_cascade(
+        Path("tests/fixtures/sparam/cascade_two_through.json"),
+        tmp_path / "cascade-rms-refit",
+        config=CascadeFitConfig(
+            rms_target=0.2,
+            cascade_rms_target=0.1,
+            cascade_refit_max_iterations=8,
+            max_order=6,
+            cascade_samples=21,
+        ),
+    )
+
+    refit = payload["cascade_refit"]
+    assert payload["status"] == "PASS"
+    assert payload["cascade_rms_target_met"] is True
+    assert refit["enabled"] is True
+    assert refit["initial_mean_rms_error"] > payload["cascade_rms_target"]
+    assert refit["final_mean_rms_error"] <= payload["cascade_rms_target"]
+    assert refit["stop_reason"] == "target_met"
+    assert any(item["accepted"] for item in refit["iterations"])
+    rejected = [item for item in refit["iterations"] if not item["accepted"]]
+    assert all(item["restored_previous_artifacts"] is True for item in rejected)
+    assert all(item["rejection_reason"] is not None for item in rejected)
+    assert any(
+        item["candidate_selected_order"] > item["contributions"][0]["current_order"]
+        for item in refit["iterations"]
+        if item["accepted"]
+    )
+    assert all(Path(item["history_path"]).is_dir() for item in refit["iterations"])
+    assert sum(block["cascade_refit_count"] for block in payload["blocks"]) == sum(
+        1 for item in refit["iterations"] if item["accepted"]
+    )
+    assert max(block["selected_order"] for block in payload["blocks"]) > 3
+
+
+def test_zero_cascade_refit_budget_keeps_rms_gate_but_skips_refit(tmp_path: Path):
+    payload = fit_sparam_cascade(
+        Path("tests/fixtures/sparam/cascade_two_through.json"),
+        tmp_path / "cascade-rms-no-refit",
+        config=CascadeFitConfig(
+            rms_target=0.2,
+            cascade_rms_target=0.1,
+            cascade_refit_max_iterations=0,
+            max_order=6,
+            cascade_samples=21,
+        ),
+    )
+
+    assert payload["status"] == "FAIL"
+    assert payload["cascade_rms_target_met"] is False
+    assert payload["cascade_refit"]["stop_reason"] == "max_iterations_reached"
+    assert payload["cascade_refit"]["iterations"] == []
 
 
 def test_priority_only_cascade_postchecks_full_band_without_blocking(tmp_path: Path):
@@ -150,6 +209,8 @@ def test_priority_only_cascade_postchecks_full_band_without_blocking(tmp_path: P
     assert payload["cascade_rms_target"] is None
     assert payload["cascade_rms_target_blocking"] is False
     assert payload["cascade_rms_target_met"] is None
+    assert payload["cascade_refit"]["enabled"] is False
+    assert payload["cascade_refit"]["stop_reason"] == "target_not_set"
     assert payload["full_band_postcheck"]["blocking"] is False
     assert payload["full_band_postcheck"]["frequency_range_hz"] == [1e6, 5e9]
     assert all(block["full_band_rms_target"] is None for block in payload["blocks"])
@@ -171,6 +232,14 @@ def test_cascade_config_rejects_incomplete_priority_only_mode(overrides):
 def test_cascade_config_rejects_invalid_cascade_rms_target(target):
     with pytest.raises(ValueError):
         CascadeFitConfig(rms_target=0.01, cascade_rms_target=target)
+
+
+def test_cascade_config_rejects_negative_refit_iteration_limit():
+    with pytest.raises(ValueError):
+        CascadeFitConfig(
+            rms_target=0.01,
+            cascade_refit_max_iterations=-1,
+        )
 
 
 def test_fit_sparam_cascade_cli_builds_public_configuration(tmp_path: Path, monkeypatch):
@@ -201,6 +270,8 @@ def test_fit_sparam_cascade_cli_builds_public_configuration(tmp_path: Path, monk
             "101",
             "--cascade-rms-target",
             "0.02",
+            "--cascade-refit-iterations",
+            "5",
             "--reference-impedance",
             "75",
         ]
@@ -212,6 +283,7 @@ def test_fit_sparam_cascade_cli_builds_public_configuration(tmp_path: Path, monk
     assert captured["config"].priority_bands_hz == ((1e6, 2e6, 0.005, 4.0),)
     assert captured["config"].cascade_samples == 101
     assert captured["config"].cascade_rms_target == pytest.approx(0.02)
+    assert captured["config"].cascade_refit_max_iterations == 5
     assert captured["config"].reference_impedance_ohm == 75.0
 
 

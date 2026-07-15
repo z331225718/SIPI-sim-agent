@@ -5,6 +5,7 @@ import json
 import math
 from pathlib import Path
 import re
+import shutil
 from typing import Any
 
 import numpy as np
@@ -52,6 +53,7 @@ class CascadeFitConfig:
     gate_full_band_rms: bool = True
     priority_band_fit_only: bool = False
     cascade_rms_target: float | None = None
+    cascade_refit_max_iterations: int = 8
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.rms_target) or self.rms_target <= 0.0:
@@ -61,6 +63,8 @@ class CascadeFitConfig:
             or self.cascade_rms_target <= 0.0
         ):
             raise ValueError("cascade_rms_target must be finite and > 0")
+        if self.cascade_refit_max_iterations < 0:
+            raise ValueError("cascade_refit_max_iterations must be >= 0")
         if self.max_order < 1:
             raise ValueError("max_order must be >= 1")
         if self.min_order < 1 or self.min_order > self.max_order:
@@ -210,7 +214,13 @@ def _fit_config(config: CascadeFitConfig, name: str) -> SParamFitConfig:
     )
 
 
-def _fit_block(spec: CascadeBlockSpec, output_root: Path, config: CascadeFitConfig) -> _CascadeBlockState:
+def _fit_block(
+    spec: CascadeBlockSpec,
+    output_root: Path,
+    config: CascadeFitConfig,
+    *,
+    min_order: int | None = None,
+) -> _CascadeBlockState:
     directory = output_root / "blocks" / spec.name
     directory.mkdir(parents=True, exist_ok=True)
     spice_path = directory / f"{spec.name}.sp"
@@ -224,7 +234,7 @@ def _fit_block(spec: CascadeBlockSpec, output_root: Path, config: CascadeFitConf
         mean_rms=spec.rms_target,
         passivity="enforce",
         max_order=spec.max_order,
-        min_order=config.min_order,
+        min_order=config.min_order if min_order is None else min_order,
         max_order_step=config.max_order_step,
         passivity_epsilon=config.passivity_epsilon,
         gate_full_band_rms=spec.gate_full_band_rms,
@@ -367,6 +377,292 @@ def _passivity_metrics(network: Any) -> dict[str, Any]:
 def _cascade_mean_rms(reference: Any, fitted: Any) -> float:
     squared_error = np.mean(np.square(np.abs(np.asarray(reference.s) - np.asarray(fitted.s))), axis=0)
     return float(np.sqrt(np.sum(squared_error)) / 2.0)
+
+
+def _sample_cascade_networks(
+    states: list[_CascadeBlockState],
+    freqs: np.ndarray,
+    reference_impedance: float,
+) -> tuple[list[Any], list[Any], Any, Any, float]:
+    raw_networks = []
+    fitted_networks = []
+    for state in states:
+        raw, fitted = _sample_block_networks(state, freqs, reference_impedance)
+        raw_networks.append(raw)
+        fitted_networks.append(fitted)
+    raw_cascade = _cascade_networks(raw_networks)
+    fitted_cascade = _cascade_networks(fitted_networks)
+    return (
+        raw_networks,
+        fitted_networks,
+        raw_cascade,
+        fitted_cascade,
+        _cascade_mean_rms(raw_cascade, fitted_cascade),
+    )
+
+
+def _selected_block_order(state: _CascadeBlockState) -> int | None:
+    selected = getattr(state.search_result, "selected_trial", None)
+    if selected is None:
+        return None
+    return int(selected.requested_order)
+
+
+def _cascade_refit_contributions(
+    states: list[_CascadeBlockState],
+    raw_networks: list[Any],
+    fitted_networks: list[Any],
+    raw_cascade: Any,
+    current_rms: float,
+    next_min_orders: dict[str, int],
+) -> list[dict[str, Any]]:
+    contributions = []
+    for index, state in enumerate(states):
+        hybrid_networks = list(fitted_networks)
+        hybrid_networks[index] = raw_networks[index]
+        hybrid_rms = _cascade_mean_rms(
+            raw_cascade,
+            _cascade_networks(hybrid_networks),
+        )
+        current_order = _selected_block_order(state)
+        next_min_order = next_min_orders[state.spec.name]
+        contributions.append(
+            {
+                "block": state.spec.name,
+                "block_index": index,
+                "current_order": current_order,
+                "next_min_order": next_min_order,
+                "max_order": state.spec.max_order,
+                "eligible": bool(
+                    current_order is not None
+                    and next_min_order <= state.spec.max_order
+                ),
+                "block_mean_rms_error": _cascade_mean_rms(
+                    raw_networks[index],
+                    fitted_networks[index],
+                ),
+                "hybrid_cascade_mean_rms_error": hybrid_rms,
+                "estimated_cascade_rms_improvement": current_rms - hybrid_rms,
+            }
+        )
+    contributions.sort(
+        key=lambda item: (
+            not item["eligible"],
+            -float(item["estimated_cascade_rms_improvement"]),
+            -float(item["block_mean_rms_error"]),
+            int(item["block_index"]),
+        )
+    )
+    return contributions
+
+
+def _state_artifact_paths(state: _CascadeBlockState) -> tuple[Path, ...]:
+    return (
+        state.spice_path,
+        state.report_path,
+        state.html_report_path,
+        state.log_path,
+        state.fitted_touchstone_path,
+        state.rfm_path,
+        state.rfm_wrapper_path,
+    )
+
+
+def _copy_state_artifacts(state: _CascadeBlockState, destination: Path) -> None:
+    destination.mkdir(parents=True, exist_ok=True)
+    for source in _state_artifact_paths(state):
+        if source.is_file():
+            shutil.copy2(source, destination / source.name)
+
+
+def _restore_state_artifacts(state: _CascadeBlockState, backup: Path) -> None:
+    for destination in _state_artifact_paths(state):
+        source = backup / destination.name
+        if source.is_file():
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+
+
+def _refit_cascade_to_rms_target(
+    states: list[_CascadeBlockState],
+    freqs: np.ndarray,
+    output_root: Path,
+    config: CascadeFitConfig,
+) -> dict[str, Any]:
+    target = config.cascade_rms_target
+    if target is None:
+        return {
+            "enabled": False,
+            "target": None,
+            "max_iterations": config.cascade_refit_max_iterations,
+            "initial_mean_rms_error": None,
+            "final_mean_rms_error": None,
+            "target_met": None,
+            "stop_reason": "target_not_set",
+            "iterations": [],
+        }
+
+    (
+        raw_networks,
+        fitted_networks,
+        raw_cascade,
+        _fitted_cascade,
+        current_rms,
+    ) = _sample_cascade_networks(
+        states,
+        freqs,
+        config.reference_impedance_ohm,
+    )
+    initial_rms = current_rms
+    next_min_orders = {
+        state.spec.name: (
+            state.spec.max_order + 1
+            if _selected_block_order(state) is None
+            else int(_selected_block_order(state)) + 1
+        )
+        for state in states
+    }
+    iterations = []
+    stop_reason = "initial_target_met" if current_rms <= target else None
+
+    while (
+        current_rms > target
+        and len(iterations) < config.cascade_refit_max_iterations
+    ):
+        contributions = _cascade_refit_contributions(
+            states,
+            raw_networks,
+            fitted_networks,
+            raw_cascade,
+            current_rms,
+            next_min_orders,
+        )
+        eligible = [item for item in contributions if item["eligible"]]
+        if not eligible:
+            stop_reason = "no_refittable_blocks"
+            break
+
+        selected = eligible[0]
+        block_index = int(selected["block_index"])
+        previous_state = states[block_index]
+        requested_min_order = int(selected["next_min_order"])
+        before_rms = current_rms
+        iteration_number = len(iterations) + 1
+        history_dir = (
+            output_root
+            / "cascade_refit_history"
+            / f"iteration_{iteration_number:02d}_{previous_state.spec.name}"
+        )
+        previous_dir = history_dir / "previous"
+        candidate_dir = history_dir / "candidate"
+        _copy_state_artifacts(previous_state, previous_dir)
+
+        candidate_state = None
+        error = None
+        try:
+            candidate_state = _fit_block(
+                previous_state.spec,
+                output_root,
+                config,
+                min_order=requested_min_order,
+            )
+        except Exception as exc:
+            error = str(exc)
+
+        _copy_state_artifacts(previous_state, candidate_dir)
+        candidate_target_met = bool(
+            candidate_state is not None
+            and candidate_state.search_result.target_met
+        )
+        candidate_order = (
+            None
+            if candidate_state is None
+            else _selected_block_order(candidate_state)
+        )
+        if candidate_order is None:
+            next_min_orders[previous_state.spec.name] = previous_state.spec.max_order + 1
+        else:
+            next_min_orders[previous_state.spec.name] = candidate_order + 1
+
+        after_rms = None
+        accepted = False
+        if candidate_target_met and candidate_state is not None:
+            candidate_states = list(states)
+            candidate_states[block_index] = candidate_state
+            (
+                candidate_raw_networks,
+                candidate_fitted_networks,
+                candidate_raw_cascade,
+                _candidate_fitted_cascade,
+                after_rms,
+            ) = _sample_cascade_networks(
+                candidate_states,
+                freqs,
+                config.reference_impedance_ohm,
+            )
+            tolerance = max(1e-15, abs(current_rms) * 1e-9)
+            accepted = bool(
+                math.isfinite(after_rms)
+                and (
+                    after_rms <= target
+                    or after_rms < current_rms - tolerance
+                )
+            )
+            if accepted:
+                states[block_index] = candidate_state
+                raw_networks = candidate_raw_networks
+                fitted_networks = candidate_fitted_networks
+                raw_cascade = candidate_raw_cascade
+                current_rms = after_rms
+
+        if not accepted:
+            _restore_state_artifacts(previous_state, previous_dir)
+
+        rejection_reason = None
+        if not accepted:
+            if error is not None:
+                rejection_reason = "refit_failed"
+            elif not candidate_target_met:
+                rejection_reason = "block_target_not_met"
+            else:
+                rejection_reason = "cascade_rms_not_improved"
+
+        iterations.append(
+            {
+                "iteration": iteration_number,
+                "before_mean_rms_error": before_rms,
+                "contributions": contributions,
+                "selected_block": previous_state.spec.name,
+                "requested_min_order": requested_min_order,
+                "candidate_selected_order": candidate_order,
+                "candidate_block_target_met": candidate_target_met,
+                "candidate_mean_rms_error": after_rms,
+                "accepted_rms_improvement": (
+                    None if after_rms is None else before_rms - after_rms
+                ),
+                "accepted": accepted,
+                "rejection_reason": rejection_reason,
+                "restored_previous_artifacts": not accepted,
+                "error": error,
+                "history_path": str(history_dir),
+            }
+        )
+
+    if current_rms <= target:
+        stop_reason = stop_reason or "target_met"
+    elif stop_reason is None:
+        stop_reason = "max_iterations_reached"
+
+    return {
+        "enabled": True,
+        "target": target,
+        "max_iterations": config.cascade_refit_max_iterations,
+        "initial_mean_rms_error": initial_rms,
+        "final_mean_rms_error": current_rms,
+        "target_met": bool(current_rms <= target),
+        "stop_reason": stop_reason,
+        "iterations": iterations,
+    }
 
 
 def _rms_gate_metrics(state: _CascadeBlockState) -> dict[str, Any]:
@@ -718,14 +1014,23 @@ def fit_sparam_cascade(
         if priority_only
         else full_freqs
     )
-    raw_networks = []
-    fitted_networks = []
-    for state in states:
-        raw, fitted = _sample_block_networks(state, freqs, config.reference_impedance_ohm)
-        raw_networks.append(raw)
-        fitted_networks.append(fitted)
-    raw_cascade = _cascade_networks(raw_networks)
-    fitted_cascade = _cascade_networks(fitted_networks)
+    cascade_refit = _refit_cascade_to_rms_target(
+        states,
+        freqs,
+        output_root,
+        config,
+    )
+    (
+        raw_networks,
+        fitted_networks,
+        raw_cascade,
+        fitted_cascade,
+        _pre_adjustment_cascade_rms,
+    ) = _sample_cascade_networks(
+        states,
+        freqs,
+        config.reference_impedance_ohm,
+    )
     before = _passivity_metrics(fitted_cascade)
 
     selected_scales, adjustment_trials = _find_adjustment(states, freqs, config)
@@ -745,6 +1050,7 @@ def fit_sparam_cascade(
             "frequency_points": len(freqs),
             "cascade_rms_target": config.cascade_rms_target,
             "cascade_rms_target_met": None,
+            "cascade_refit": cascade_refit,
             "passivity_before_adjustment": before,
             "adjustment_trials": adjustment_trials,
         }
@@ -801,12 +1107,22 @@ def fit_sparam_cascade(
         np.full((len(export_freqs), 2), config.reference_impedance_ohm, dtype=float),
     )
     block_payloads = []
+    accepted_refits_by_block = {
+        state.spec.name: sum(
+            1
+            for item in cascade_refit["iterations"]
+            if item["selected_block"] == state.spec.name and item["accepted"]
+        )
+        for state in states
+    }
     for state, scale in zip(states, selected_scales, strict=True):
         gate_metrics = _rms_gate_metrics(state)
         block_payloads.append(
             {
                 "name": state.spec.name,
                 "touchstone_path": str(state.spec.touchstone),
+                "selected_order": _selected_block_order(state),
+                "cascade_refit_count": accepted_refits_by_block[state.spec.name],
                 "scale": scale,
                 "target_mean_rms_error": gate_metrics["full_band_mean_rms_error"],
                 "target_mean_rms_limit": gate_metrics["full_band_rms_target"],
@@ -860,6 +1176,7 @@ def fit_sparam_cascade(
         "cascade_rms_target": config.cascade_rms_target,
         "cascade_rms_target_blocking": config.cascade_rms_target is not None,
         "cascade_rms_target_met": cascade_rms_target_met,
+        "cascade_refit": cascade_refit,
         "passivity_before_adjustment": before,
         "passivity_after_adjustment": after,
         "full_band_postcheck": full_band_postcheck,

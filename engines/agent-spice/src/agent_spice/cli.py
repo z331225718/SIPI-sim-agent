@@ -1245,6 +1245,15 @@ def main(argv: list[str] | None = None) -> int:
             "the reported cascade evaluation scope."
         ),
     )
+    cascade_fit_parser.add_argument(
+        "--cascade-refit-iterations",
+        type=int,
+        default=8,
+        help=(
+            "Maximum targeted block refits used to meet --cascade-rms-target after the initial "
+            "independent fits (default: 8; 0 disables automatic refit)."
+        ),
+    )
     cascade_fit_parser.add_argument("--cascade-samples", type=int, default=1001)
     cascade_fit_parser.add_argument("--reference-impedance", type=float, default=50.0, metavar="OHM")
     cascade_fit_parser.add_argument("--adjustment-iterations", type=int, default=12)
@@ -1596,6 +1605,7 @@ def main(argv: list[str] | None = None) -> int:
                     max_order_step=args.max_order_step,
                     passivity_epsilon=args.passivity_epsilon,
                     cascade_rms_target=args.cascade_rms_target,
+                    cascade_refit_max_iterations=args.cascade_refit_iterations,
                     cascade_passivity_epsilon=args.cascade_passivity_epsilon,
                     cascade_samples=args.cascade_samples,
                     reference_impedance_ohm=args.reference_impedance,

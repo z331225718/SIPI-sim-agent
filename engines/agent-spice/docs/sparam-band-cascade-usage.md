@@ -99,6 +99,7 @@ python -m agent_spice.cli fit-sparam-cascade .\cascade.json `
   --output-root .\cascade-fit `
   --rms-target 0.001 `
   --cascade-rms-target 0.002 `
+  --cascade-refit-iterations 8 `
   --max-order 80 `
   --passivity-epsilon 1e-6 `
   --cascade-passivity-epsilon 1e-8 `
@@ -115,7 +116,7 @@ python -m agent_spice.cli fit-sparam-cascade .\cascade.json `
 
 级联命令沿用相同的双模式语义。省略全局 `--rms-target` 且 manifest 中所有 block 都没有 `rms_target` 时，每个 block 只在优先频段并集内拟合和验收，级联 RMS 与被动性也只在该并集内阻塞；程序随后在各输入完整频率交集上生成 `full_band_postcheck`，但它不改变 `PASS`。显式 `--rms-target`，或任一 manifest block 显式设置 `rms_target` 时，相应全频段门限恢复为阻塞门限。级联被动性收缩候选必须保持所有实际启用的全频段及逐频段 RMS 门限。
 
-`--cascade-rms-target` 独立控制最终级联模型的平均 S-RMS 门限。它不替代每个 block 的 `--rms-target` 或优先频段目标，计算范围与 `cascade_mean_rms_error` 一致，由 `evaluation_scope` 明示。设置后，级联收缩候选也必须满足该门限；最终超标会写入 `blocking_reasons` 并返回 `FAIL`。
+`--cascade-rms-target` 独立控制最终级联模型的平均 S-RMS 门限。它不替代每个 block 的 `--rms-target` 或优先频段目标，计算范围与 `cascade_mean_rms_error` 一致，由 `evaluation_scope` 明示。初始级联 RMS 超标时会启动定向自动 refit；`--cascade-refit-iterations` 限制 refit 次数，默认 `8`，设为 `0` 可只做门禁而不重拟合。设置级联目标后，被动性收缩候选也必须满足该门限；最终超标会写入 `blocking_reasons` 并返回 `FAIL`。
 
 ### 2.3 执行流程
 
@@ -124,12 +125,26 @@ python -m agent_spice.cli fit-sparam-cascade .\cascade.json `
 3. 每个 block 生成 SPICE、fitted Touchstone、RFM、RFM wrapper、JSON、HTML 和日志。
 4. 取所有输入频率范围的交集；交集为空时失败，不做带外延拓。仅优先频段模式再把阻塞评估网格限制到目标频段并集。
 5. 在 `--reference-impedance` 指定的共同参考阻抗下重归一化，默认 `50 ohm`。
-6. 按 manifest 顺序级联原始样本和 fitted 模型，报告级联 RMS 与最大奇异值；若设置 `--cascade-rms-target`，同时执行阻塞 RMS 验收。
-7. 若级联最大奇异值超过 `1 + --cascade-passivity-epsilon`，进入受约束修复。
+6. 按 manifest 顺序分别构造原始 S 参数级联和 fitted 有理模型级联，计算二者 RMS。
+7. 若设置了 `--cascade-rms-target` 且 RMS 超标，按贡献度选择 block，提高最低阶次并重新 fit、enforce、生成 RFM，直到达标或耗尽预算。
+8. 对最终 refit 结果检查级联被动性；若最大奇异值超过 `1 + --cascade-passivity-epsilon`，进入受约束修复。
+9. 再次验收每个 block RMS、级联 RMS 和级联被动性，全部通过才输出 `PASS`。
 
 每个 block 都经过 Hamiltonian 被动性检查。级联检查使用实际验收范围内的密集采样，主要用于发现参考阻抗、数值容差和组合后的局部越界。全频段门限模式的 `evaluation_scope` 为 `intersection_only_no_extrapolation`；仅优先频段模式为 `priority_band_union_only_no_extrapolation`，并额外报告非阻塞的完整交集后检查。
 
-### 2.4 级联修复算法
+### 2.4 级联 RMS 自动 refit
+
+自动 refit 不会无差别重跑所有 block。每轮固定其他 fitted block，仅把一个 block 替换为原始 S 参数重新级联，计算：
+
+```text
+estimated_improvement = current_cascade_rms - hybrid_cascade_rms
+```
+
+程序优先选择 `estimated_improvement` 最大且仍有阶次空间的 block，并把该 block 的下一次 `min_order` 提高到当前选中阶次加一。候选必须重新满足该 block 自身的 RMS 和 `passivity=enforce` 门限，并且让级联 RMS 严格下降，才会替换当前模型和 RFM；无改善候选会保存在 `cascade_refit_history` 后恢复此前产物，随后继续尝试更高阶次。
+
+循环在级联 RMS 达标、没有可继续增阶的 block，或达到 `--cascade-refit-iterations` 时结束。`cascade_report.json` 的 `cascade_refit` 会记录初始/最终 RMS、停止原因、逐轮贡献度、选择的 block、候选阶次、是否接受和历史产物目录。
+
+### 2.5 级联被动性修复算法
 
 修复只缩放有理模型的 S 参数残数、常数项和比例项，极点保持不变：
 
@@ -156,6 +171,10 @@ S_adjusted(s) = alpha * S_fitted(s),  0 < alpha <= 1
 cascade-fit/
   cascade_report.json
   cascade_fitted.s2p
+  cascade_refit_history/
+    iteration_01_die/
+      previous/
+      candidate/
   blocks/
     die/
       die.sp
@@ -172,6 +191,7 @@ cascade-fit/
 - `status`：全部 block、级联被动性以及显式启用的级联 RMS 门限均达标时为 `PASS`。
 - `cascade_mean_rms_error`：原始 block 级联与 fitted block 级联的平均 S-RMS。
 - `cascade_rms_target` / `cascade_rms_target_met`：用户设置的最终级联 RMS 门限及验收结果；未设置时分别为 `null` / `null`。
+- `cascade_refit`：自动 refit 的初始/最终 RMS、停止原因、逐轮贡献排序、候选阶次和接受结果。
 - `blocking_reasons`：导致最终级联 `FAIL` 的被动性或 RMS 原因。
 - `evaluation_scope`：阻塞级联检查使用完整交集还是优先频段并集。
 - `full_band_postcheck`：仅优先频段模式下的完整交集 RMS 与被动性诊断，`blocking` 固定为 `false`。
@@ -191,7 +211,7 @@ cascade-fit/
 - 任一 block 在最大阶次内未满足当前模式实际启用的 RMS 和被动性目标。
 - 各 block 没有共同覆盖频段。
 - 级联被动性越界，且所有允许的收缩候选都会突破 block RMS 门限。
-- 设置了 `--cascade-rms-target`，但最终级联 RMS 超过门限。
+- 设置了 `--cascade-rms-target`，但自动 refit 达到次数上限或耗尽各 block 的 `max_order` 后，最终级联 RMS 仍超过门限。
 
 生产签核仍应结合实际连接方式做 AC/TRAN 验证。级联命令证明的是给定有序二端口关系、共同参考阻抗和共同频段下的模型组合质量，不替代系统网表中的终端、偏置和激励条件。
 
