@@ -3,6 +3,8 @@
 Agent-Spice 是面向电源完整性与高速互连场景的命令行工具。当前稳定的用户工作流有两类：
 
 - `fit-sparam`：将 Touchstone S 参数拟合为 SPICE 子电路、RFM 和可核验的 fitted Touchstone。
+- `fit-yparam`：在 Y 参数域拟合 Touchstone，并输出 Y-domain SPICE 宏、Z-log 误差报告及可选的精确 Y-to-S RFM 交付物。
+- `tune-yparam-tran`：针对明确提供的 HSPICE 签核场景，细调既有 Y-derived S-RFM 的低频残差；不会修改 `fit-sparam` 或将某个 CPM 场景硬编码为默认行为。
 - `run-hspice`：解析 HSPICE 网表，展开 `.alter`，并生成兼容性报告与后端输入文件。
 - `run-rfm`：不重新拟合、不展开普通 SPICE 状态子电路，直接用 XSPICE N-port device 执行 RFM 瞬态仿真。
 
@@ -51,6 +53,29 @@ python -m agent_spice.cli run-rfm .\channel-tran.sp `
 该路径读取现有 pole/residue，生成的 `.sp` 仅含一个 XSPICE wrapper，不是展开后的有理函数宏模型。默认加载随 Agent-Spice 发布、与 Windows ngspice-46 ABI 匹配的 `rfm.cm`；不会修改全局 `spinit`，也不要求 Xyce/XDM。完整接口、产物、步长建议、限制和源码构建方法见 [RFM 直接仿真使用说明](docs/rfm-ngspice-usage.md)。
 
 RFM 的复数行保存的是 `A_c/(s+omega_c)` 中的分母系数 `omega_c`，系统极点是 `p=-omega_c`；第二列不是系统极点虚部的直接副本。当前导出器、importer 和随包 XSPICE device 均按该 HSPICE 约定实现。由修复前版本生成的 RFM 即使能被 HSPICE 读入，也可能产生错误频响，必须从原拟合结果重新生成。
+
+## Y 参数拟合与 Z-log 门禁
+
+`fit-yparam` 以标准 Touchstone `.sNp` 为输入，先换算为 Y 参数再执行共享极点有理拟合。它面向阻抗/PDN 误差：报告同时包含 Y RMS（Siemens）和完整矩阵 `Z-log RMS`，后者定义为 `log10(|Zfit| / |Zref|)` 的 RMS（单位为 decades）。
+
+最短命令：
+
+```powershell
+python -m agent_spice.cli fit-yparam .\board.s19p `
+  --output .\board.y.sp `
+  --derived-s-touchstone .\board.y-derived.s19p
+```
+
+默认输出是 Y-domain SPICE、JSON、HTML 和日志；`--derived-s-touchstone` 输出由有理 Y 严格换算得到的采样 S 参数。若需要连续频率 Y 正实性证书及 S-RFM 交付，请附加 `--no-fit-proportional --exact-s-rfm <path>`；该路径无法取得 KYP 证书时会硬失败，不会静默降级。
+
+当前项目级算法门禁固定使用 held-out 全矩阵 `Z-log RMS`，严格要求 `Y-fit < S-fit`。运行：
+
+```powershell
+python scripts/benchmark_yparam_corpus.py `
+  --output runs-yparam-benchmark/corpus-heldout-order20.json
+```
+
+默认语料覆盖 S19、S30 及 HSPICE 签核使用的 2-port 规约；任一输入持平、落后或 Z 转换失败时命令返回非零。完整的产物、KYP、TRAN 细调参数及门禁说明见 [Y 参数拟合使用说明](docs/yparam-usage.md)。
 
 ## S 参数拟合
 

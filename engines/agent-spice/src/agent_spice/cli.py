@@ -23,6 +23,7 @@ from agent_spice.sparam.artifacts import evaluate_fitted_s, write_cadence_rfm, w
 from agent_spice.sparam.rational_lft import exact_y_to_s_rational
 from agent_spice.sparam.y_pr import enforce_y_positive_real_kyp
 from agent_spice.sparam.yparam import YParamFitConfig, fit_touchstone_to_y_spice
+from agent_spice.sparam.y_tran_tuning import YTranTuneConfig, parse_float_csv, tune_y_rfm_for_tran
 
 
 SPARAM_IDEM_FAST_CANDIDATES_LARGE_PORT = "9,10,12,14,17,20"
@@ -1185,6 +1186,27 @@ def main(argv: list[str] | None = None) -> int:
     y_fit_parser.add_argument("--kyp-max-relative-correction", type=float, default=0.05, help="Maximum accepted KYP correction relative to the Y model (default: 0.05).")
     y_fit_parser.add_argument("--kyp-solver", default="CLARABEL", help="CVXPY PSD-cone solver for KYP enforcement (default: CLARABEL).")
 
+    y_tran_tune_parser = subparsers.add_parser(
+        "tune-yparam-tran",
+        description="Tune declared low-frequency residues of an existing Y-derived S RFM against an explicit HSPICE transient signoff deck.",
+    )
+    y_tran_tune_parser.add_argument("touchstone", type=Path, help="Input .sNp used to retain in-band static accuracy.")
+    y_tran_tune_parser.add_argument("input_rfm", type=Path, help="Existing Y-derived S RFM to tune.")
+    y_tran_tune_parser.add_argument("deck", type=Path, help="HSPICE signoff deck containing the input RFM filename exactly once.")
+    y_tran_tune_parser.add_argument("--output-rfm", type=Path, required=True, help="Frozen best RFM output path.")
+    y_tran_tune_parser.add_argument("--report", type=Path, help="JSON search report; defaults next to --output-rfm.")
+    y_tran_tune_parser.add_argument("--work-dir", type=Path, help="Trial artifacts directory; defaults beside the signoff deck.")
+    y_tran_tune_parser.add_argument("--rfm-token", required=True, help="Exact input-RFM filename token to replace once in the signoff deck.")
+    y_tran_tune_parser.add_argument("--rms-measure", required=True, help="HSPICE .measure name used as the optimization objective.")
+    y_tran_tune_parser.add_argument("--peak-measure", help="Optional HSPICE .measure name recorded for the selected candidate.")
+    y_tran_tune_parser.add_argument("--residual-poles", required=True, help="Strictly increasing real-pole damping list in rad/s, comma-separated.")
+    y_tran_tune_parser.add_argument("--band-boundaries", required=True, help="Strictly increasing residual-band boundaries in rad/s, comma-separated.")
+    y_tran_tune_parser.add_argument("--hspice-bin", default="hspice", help="HSPICE executable or command (default: hspice).")
+    y_tran_tune_parser.add_argument("--license-file", help="Optional HSPICE license endpoint assigned to SNPSLMD_LICENSE_FILE and LM_LICENSE_FILE.")
+    y_tran_tune_parser.add_argument("--max-evaluations", type=int, default=150, help="Maximum HSPICE candidates (default: 150).")
+    y_tran_tune_parser.add_argument("--max-static-rms-growth", type=float, default=0.003, help="Largest allowed in-band S-RMS growth fraction (default: 0.003).")
+    y_tran_tune_parser.add_argument("--max-sigma", type=float, default=0.999, help="Largest allowed sampled in-band singular value (default: 0.999).")
+
     idem_probe_parser = subparsers.add_parser("probe-idem-init")
     idem_probe_parser.add_argument("touchstone", type=Path)
     idem_probe_parser.add_argument("--output-root", type=Path, default=Path("runs-sparam/idem-init-probe"))
@@ -1651,6 +1673,37 @@ def main(argv: list[str] | None = None) -> int:
         selected_trial = result.selected_trial
         selected_order = None if selected_trial is None else getattr(selected_trial, "requested_order", None)
         print(f"fit-sparam status=PASS selected_order={selected_order} output={args.output}")
+        return 0
+    if args.command == "tune-yparam-tran":
+        try:
+            payload = tune_y_rfm_for_tran(
+                YTranTuneConfig(
+                    touchstone=args.touchstone,
+                    input_rfm=args.input_rfm,
+                    deck=args.deck,
+                    output_rfm=args.output_rfm,
+                    rfm_token=args.rfm_token,
+                    rms_measure=args.rms_measure,
+                    peak_measure=args.peak_measure,
+                    residual_damping=parse_float_csv(args.residual_poles, label="residual_poles"),
+                    band_boundaries=parse_float_csv(args.band_boundaries, label="band_boundaries"),
+                    report=args.report,
+                    work_dir=args.work_dir,
+                    hspice_bin=args.hspice_bin,
+                    license_file=args.license_file,
+                    max_evaluations=args.max_evaluations,
+                    max_static_rms_growth=args.max_static_rms_growth,
+                    max_sigma=args.max_sigma,
+                )
+            )
+        except (OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        best = payload["best"]
+        print(
+            f"tune-yparam-tran status=PASS rms={float(best['tran_rms']):.12g} "
+            f"output={args.output_rfm}"
+        )
         return 0
     if args.command == "fit-yparam":
         output = args.output or args.touchstone.with_name(f"{args.touchstone.stem}_fitted.y.sp")
