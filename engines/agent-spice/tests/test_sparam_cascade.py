@@ -73,7 +73,7 @@ def test_cascade_adjustment_finds_minimal_block_contraction(tmp_path: Path):
     _apply_scales(states, base, scales)
     metrics, block_rms, _ = _evaluate_scales(states, base, scales, freqs, config)
     assert metrics["max_sigma"] <= 1.0 + config.cascade_passivity_epsilon
-    assert all(value <= 0.05 for value in block_rms)
+    assert all(item["target_met"] for item in block_rms)
 
 
 def test_fit_sparam_cascade_writes_block_and_chain_artifacts(tmp_path: Path):
@@ -121,7 +121,7 @@ def test_fit_sparam_cascade_cli_builds_public_configuration(tmp_path: Path, monk
             "--rms-target",
             "0.01",
             "--priority-band",
-            "1e6:2e6:4",
+            "1e6:2e6:0.005:4",
             "--cascade-samples",
             "101",
             "--reference-impedance",
@@ -132,6 +132,32 @@ def test_fit_sparam_cascade_cli_builds_public_configuration(tmp_path: Path, monk
     assert result == 0
     assert captured["manifest"] == manifest
     assert captured["output_root"] == manifest.with_name("chain_fit")
-    assert captured["config"].priority_bands_hz == ((1e6, 2e6, 4.0),)
+    assert captured["config"].priority_bands_hz == ((1e6, 2e6, 0.005, 4.0),)
     assert captured["config"].cascade_samples == 101
     assert captured["config"].reference_impedance_ohm == 75.0
+
+
+def test_fit_sparam_cascade_cli_defaults_full_band_target_from_priority_band(
+    tmp_path: Path,
+    monkeypatch,
+):
+    import agent_spice.cli as cli
+
+    captured = {}
+
+    def fake_fit(manifest, output_root, *, config, report_path=None):
+        captured["config"] = config
+        return {"status": "PASS"}
+
+    monkeypatch.setattr(cli, "fit_sparam_cascade", fake_fit)
+    result = cli.main(
+        [
+            "fit-sparam-cascade",
+            str(tmp_path / "chain.json"),
+            "--priority-band",
+            "0:1e7:0.001",
+        ]
+    )
+
+    assert result == 0
+    assert captured["config"].rms_target == 0.003

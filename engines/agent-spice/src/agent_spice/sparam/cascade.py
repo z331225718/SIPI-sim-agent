@@ -46,7 +46,7 @@ class CascadeFitConfig:
     reference_impedance_ohm: float = 50.0
     adjustment_iterations: int = 12
     minimum_scale: float = 0.8
-    priority_bands_hz: tuple[tuple[float, float, float], ...] = ()
+    priority_bands_hz: tuple[tuple[float, float, float, float], ...] = ()
     outside_band_weight: float = 0.1
 
     def __post_init__(self) -> None:
@@ -301,13 +301,36 @@ def _cascade_mean_rms(reference: Any, fitted: Any) -> float:
     return float(np.sqrt(np.sum(squared_error)) / 2.0)
 
 
-def _target_metric(state: _CascadeBlockState) -> float:
+def _rms_gate_metrics(state: _CascadeBlockState) -> dict[str, Any]:
     result = state.execution.result
     comparison = _comparison_rms_error(state.execution.network, state.execution.vector_fit, "s")
     global_mean = _mean_rms_error_from_sum_style(comparison, state.execution.network.nports)
     metrics = _comparison_frequency_metrics(state.execution.network, state.execution.vector_fit, result.config)
-    value = global_mean if metrics is None else metrics["priority_mean_rms_error"]
-    return math.inf if value is None else float(value)
+    full_value = math.inf if global_mean is None else float(global_mean)
+    bands = [] if metrics is None else metrics["bands"]
+    expected_band_count = len(result.config.priority_bands_hz)
+    band_metrics_available = len(bands) == expected_band_count
+    ratios = [full_value / state.target.mean_rms]
+    if not band_metrics_available:
+        ratios.append(math.inf)
+    ratios.extend(
+        math.inf
+        if band["mean_rms_error"] is None
+        else float(band["mean_rms_error"]) / float(band["rms_target"])
+        for band in bands
+    )
+    return {
+        "full_band_mean_rms_error": full_value,
+        "full_band_rms_target": state.target.mean_rms,
+        "priority_bands": bands,
+        "target_met": bool(
+            math.isfinite(full_value)
+            and full_value <= state.target.mean_rms
+            and band_metrics_available
+            and all(band["target_met"] for band in bands)
+        ),
+        "worst_rms_ratio": max(ratios, default=math.inf),
+    }
 
 
 def _base_coefficients(states: list[_CascadeBlockState]) -> list[tuple[np.ndarray, np.ndarray, np.ndarray]]:
@@ -338,14 +361,14 @@ def _evaluate_scales(
     scales: tuple[float, ...],
     freqs: np.ndarray,
     config: CascadeFitConfig,
-) -> tuple[dict[str, Any], list[float], Any]:
+) -> tuple[dict[str, Any], list[dict[str, Any]], Any]:
     _apply_scales(states, base, scales)
     fitted_networks = [
         _sample_block_networks(state, freqs, config.reference_impedance_ohm)[1]
         for state in states
     ]
     cascaded = _cascade_networks(fitted_networks)
-    return _passivity_metrics(cascaded), [_target_metric(state) for state in states], cascaded
+    return _passivity_metrics(cascaded), [_rms_gate_metrics(state) for state in states], cascaded
 
 
 def _find_adjustment(
@@ -363,22 +386,25 @@ def _find_adjustment(
     groups = [(index,) for index in range(len(states))]
     if len(states) > 1:
         groups.append(tuple(range(len(states))))
-    candidates: list[tuple[float, float, tuple[float, ...], dict[str, Any], list[float]]] = []
+    candidates: list[tuple[float, float, tuple[float, ...], dict[str, Any], list[dict[str, Any]]]] = []
     for group in groups:
         previous_scale = 1.0
         passing_scale: float | None = None
         passing_metrics: dict[str, Any] | None = None
-        passing_rms: list[float] | None = None
+        passing_rms: list[dict[str, Any]] | None = None
         for scale in np.linspace(1.0, config.minimum_scale, config.adjustment_iterations + 1)[1:]:
             scales = tuple(float(scale) if index in group else 1.0 for index in range(len(states)))
             metrics, block_rms, _ = _evaluate_scales(states, base, scales, freqs, config)
-            rms_ok = all(value <= state.target.mean_rms for value, state in zip(block_rms, states, strict=True))
+            rms_ok = all(item["target_met"] for item in block_rms)
             diagnostics.append(
                 {
                     "blocks": [states[index].spec.name for index in group],
                     "scale": float(scale),
                     "cascade_max_sigma": metrics["max_sigma"],
-                    "block_target_mean_rms": block_rms,
+                    "block_full_band_mean_rms": [
+                        item["full_band_mean_rms_error"] for item in block_rms
+                    ],
+                    "block_rms_gates": block_rms,
                     "rms_ok": rms_ok,
                 }
             )
@@ -397,7 +423,7 @@ def _find_adjustment(
             scale = 0.5 * (low + high)
             scales = tuple(scale if index in group else 1.0 for index in range(len(states)))
             metrics, block_rms, _ = _evaluate_scales(states, base, scales, freqs, config)
-            rms_ok = all(value <= state.target.mean_rms for value, state in zip(block_rms, states, strict=True))
+            rms_ok = all(item["target_met"] for item in block_rms)
             if metrics["max_sigma"] <= 1.0 + config.cascade_passivity_epsilon and rms_ok:
                 low = scale
                 passing_metrics = metrics
@@ -405,7 +431,10 @@ def _find_adjustment(
             else:
                 high = scale
         scales = tuple(low if index in group else 1.0 for index in range(len(states)))
-        rms_increase = sum(max(0.0, value - baseline) for value, baseline in zip(passing_rms, baseline_rms, strict=True))
+        rms_increase = sum(
+            max(0.0, value["worst_rms_ratio"] - baseline["worst_rms_ratio"])
+            for value, baseline in zip(passing_rms, baseline_rms, strict=True)
+        )
         total_attenuation = sum(1.0 - value for value in scales)
         candidates.append((rms_increase, total_attenuation, scales, passing_metrics, passing_rms))
 
@@ -488,11 +517,15 @@ def _refresh_adjusted_block(
     new_payload = json.loads(state.report_path.read_text(encoding="utf-8"))
     merged_payload = dict(old_payload)
     merged_payload.update(new_payload)
+    gate_metrics = _rms_gate_metrics(state)
     merged_payload["cascade_adjustment"] = {
         "method": "uniform_s_contraction",
         "scale": scale,
         "target_mean_rms_error": target_mean,
-        "target_mean_rms_limit": state.target.mean_rms,
+        "full_band_mean_rms_error": gate_metrics["full_band_mean_rms_error"],
+        "full_band_rms_target": gate_metrics["full_band_rms_target"],
+        "priority_bands": gate_metrics["priority_bands"],
+        "rms_targets_met": gate_metrics["target_met"],
     }
     state.report_path.write_text(json.dumps(merged_payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -575,13 +608,18 @@ def fit_sparam_cascade(
     )
     block_payloads = []
     for state, scale in zip(states, selected_scales, strict=True):
+        gate_metrics = _rms_gate_metrics(state)
         block_payloads.append(
             {
                 "name": state.spec.name,
                 "touchstone_path": str(state.spec.touchstone),
                 "scale": scale,
-                "target_mean_rms_error": _target_metric(state),
-                "target_mean_rms_limit": state.target.mean_rms,
+                "target_mean_rms_error": gate_metrics["full_band_mean_rms_error"],
+                "target_mean_rms_limit": gate_metrics["full_band_rms_target"],
+                "full_band_mean_rms_error": gate_metrics["full_band_mean_rms_error"],
+                "full_band_rms_target": gate_metrics["full_band_rms_target"],
+                "priority_bands": gate_metrics["priority_bands"],
+                "rms_targets_met": gate_metrics["target_met"],
                 "spice_path": str(state.spice_path),
                 "fitted_touchstone_path": str(state.fitted_touchstone_path),
                 "rfm_path": str(state.rfm_path),

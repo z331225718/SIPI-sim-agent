@@ -118,18 +118,17 @@ sqrt(mean(abs(S_fit - S_raw) ** 2))
 
 搜索从低阶开始。误差远高于目标时会增大阶次步长；接近目标时缩小步长。`--max-order-step` 限制最大跳步，默认值为 `8`；设为 `2` 可使用较保守的两阶步进。由于矢量拟合误差不严格单调，跳步模式只回填最后一个跨越目标的区间；若必须优先检查每个偶数阶次，使用 `--max-order-step 2`。
 
-整体很难拟合、但业务只要求某些频段时，可重复使用 `--priority-band F_MIN:F_MAX[:WEIGHT]`。频段权重会同时进入频点抽样、极点迁移和残差最小二乘；一旦指定频段，`--rms-target` 改为约束这些频段的并集，带外仅保留较小的 `--outside-band-weight`，但被动性仍检查整个输入频带：
+整体很难拟合、但业务对某些频段有更严格要求时，可重复使用 `--priority-band F_MIN:F_MAX:RMS_TARGET[:WEIGHT]`。每个频段必须与自己的 RMS 目标同时出现，频段权重会进入频点抽样、极点迁移和残差最小二乘。模型只有在每个指定频段和全频段都达标时才会通过：
 
 ```powershell
 python -m agent_spice.cli fit-sparam .\channel.s2p `
-  --rms-target 0.001 `
-  --priority-band 1e8:8e8 `
-  --priority-band 1.2e9:1.5e9:2 `
+  --priority-band 0:1e7:0.001 `
+  --priority-band 1.2e9:1.5e9:0.002:2 `
   --outside-band-weight 0.1 `
   --passivity enforce
 ```
 
-JSON 会同时记录 `target_mean_rms_error`、`comparison_mean_rms_error`、`outside_band_mean_rms_error`、`weighted_mean_rms_error` 和每段的 `frequency_band_metrics`，不会用局部 RMS 冒充全带 RMS。
+上例未显式传 `--rms-target`，因此全频段门限自动取最严格频段目标 `0.001` 的 3 倍，即 `0.003`。如需更严或更松的全频段门限，可显式增加 `--rms-target 0.0025`；它只表示全频段门限，不替代任何频段自身的 RMS 目标。JSON 会同时记录 `full_band_rms_target`、`comparison_mean_rms_error`、`priority_band_targets_hz`、`outside_band_mean_rms_error`、`weighted_mean_rms_error`，并在 `frequency_band_metrics` 中记录每段目标、实测 RMS 和是否达标。
 
 ### 被动性策略
 
@@ -139,7 +138,7 @@ JSON 会同时记录 `target_mean_rms_error`、`comparison_mean_rms_error`、`ou
 | `check`（默认） | 检查被动性；即使非被动，也会保留拟合产物，并在报告中标记警告。 |
 | `enforce` | 仅接受同时满足 RMS 目标和被动性目标的最终模型。若修复被动性后 RMS 超标，则该阶次失败。 |
 
-`enforce` 使用严格边界：原始频带、自适应频点和 `f -> infinity` 的常数矩阵 `D` 都必须满足 `sigma_max < 1`，不是 `1 + epsilon`。如果有限频带已拟合良好但 `D` 非无源，程序会先严格投影 `D`，再固定已有极点、用共享 SVD 分块求解残数补偿，以保持原始频带 RMS。大端口补偿后若只剩很小的局部超限，会优先使用 DC 保持微阻尼，而不是直接进入耗时的大规模 QP。补偿或微阻尼只有在最终 RMS 仍不超过 `--rms-target` 时才能通过。
+`enforce` 使用严格边界：原始频带、自适应频点和 `f -> infinity` 的常数矩阵 `D` 都必须满足 `sigma_max < 1`，不是 `1 + epsilon`。如果有限频带已拟合良好但 `D` 非无源，程序会先严格投影 `D`，再固定已有极点、用共享 SVD 分块求解残数补偿，以保持原始频带 RMS。大端口补偿后若只剩很小的局部超限，会优先使用 DC 保持微阻尼，而不是直接进入耗时的大规模 QP。补偿或微阻尼只有在最终全带 RMS 与每个指定频段 RMS 都不超过各自门限时才能通过。
 
 逐阶次日志会明确记录是否检测到非无源 D、补偿基大小和秩、RMS 前后值以及候选接受/拒绝原因。详细算法、跨端口实测和剩余性能工作见 [S 参数渐近无源补偿算法设计](docs/sparam-passivity-asymptotic-compensation-design.md)。
 
@@ -164,8 +163,8 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 | `--rfm-wrapper PATH` | 自动生成 | RFM wrapper 路径，默认 `<rfm 名称>_rfm_wrapper.sp`。 |
 | `--report-top-rms N` | `5` | HTML 中绘制 RMS 最大的 S 参数元素数量。`0` 表示不绘制曲线。 |
 | `--log PATH` | `<输入名>.log`，位于 JSON 报告目录 | 写入逐阶次搜索摘要、渐近补偿过程、阶次、RMS、状态和失败原因。 |
-| `--rms-target FLOAT` | 必填 | 最终平均 S-RMS 上限，必须为正数。 |
-| `--priority-band F_MIN:F_MAX[:WEIGHT]` | 不启用 | 优先拟合的闭区间，单位 Hz；可重复。指定后，`--rms-target` 对所有优先频段的并集生效。默认段内权重为 `1`。 |
+| `--rms-target FLOAT` | 无优先频段时必填 | 全频段最终平均 S-RMS 上限。指定优先频段但省略本参数时，默认是最严格频段 RMS 目标的 3 倍。 |
+| `--priority-band F_MIN:F_MAX:RMS_TARGET[:WEIGHT]` | 不启用 | 优先拟合的闭区间，单位 Hz；可重复。每段必须携带正数 RMS 目标，默认段内权重为 `1`。所有频段及全频段必须同时达标。 |
 | `--outside-band-weight FLOAT` | `0.1` | 优先频段以外的最小二乘权重，必须大于 `0`；只有指定 `--priority-band` 时生效。 |
 | `--passivity {off,check,enforce}` | `check` | 被动性处理策略，见上表。 |
 | `--max-order N` | `100` | 允许尝试的最大有效公共极点阶次；与端口数量无关。 |

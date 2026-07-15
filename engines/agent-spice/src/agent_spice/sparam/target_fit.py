@@ -53,6 +53,10 @@ class SParamOrderTrial:
     real_pole_count: int | None = None
     complex_pair_count: int | None = None
     stored_pole_count: int | None = None
+    full_band_mean_rms: float | None = None
+    full_band_rms_target: float | None = None
+    priority_band_mean_rms_errors: tuple[float | None, ...] = ()
+    priority_band_rms_targets: tuple[float, ...] = ()
     payload: Any = field(default=None, repr=False, compare=False)
 
     def to_dict(self) -> dict[str, Any]:
@@ -90,13 +94,25 @@ class SParamTargetSearchResult:
         ]
         return min(
             candidates,
-            key=lambda trial: (trial.final_mean_rms, trial.effective_order, trial.requested_order),
+            key=lambda trial: (
+                _trial_rms_target_ratio(trial, self.target.mean_rms),
+                trial.final_mean_rms,
+                trial.effective_order,
+                trial.requested_order,
+            ),
             default=None,
         )
 
     def to_dict(self) -> dict[str, Any]:
+        reference_trial = self.selected_trial or self.best_trial
         return {
             "rms_target": float(self.target.mean_rms),
+            "full_band_rms_target": float(self.target.mean_rms),
+            "priority_band_rms_targets": (
+                list(reference_trial.priority_band_rms_targets)
+                if reference_trial is not None
+                else []
+            ),
             "passivity_policy": self.target.passivity,
             "max_order": int(self.target.max_order),
             "min_order": int(self.target.min_order),
@@ -124,8 +140,28 @@ class SParamTargetSearchResult:
                 default=0.0,
             ),
             "order_trials": [trial.to_dict() for trial in self.trials],
+            "rms_acceptance_contract": "per_priority_band_and_full_band_v1",
             "benchmark_contract_version": "sparam_target_v1",
         }
+
+
+def _trial_rms_target_ratio(trial: SParamOrderTrial, fallback_target: float) -> float:
+    full_value = trial.full_band_mean_rms
+    if full_value is None:
+        full_value = trial.final_mean_rms
+    full_target = trial.full_band_rms_target
+    if full_target is None:
+        full_target = fallback_target
+    ratios = [float(full_value) / float(full_target)]
+    ratios.extend(
+        math.inf if value is None else float(value) / float(limit)
+        for value, limit in zip(
+            trial.priority_band_mean_rms_errors,
+            trial.priority_band_rms_targets,
+            strict=True,
+        )
+    )
+    return max(ratios, default=math.inf)
 
 
 def trial_from_fit_result(
@@ -135,14 +171,28 @@ def trial_from_fit_result(
     requested_order: int,
 ) -> SParamOrderTrial:
     effective_order = int(getattr(fit_result, "expanded_model_order", 0) or 0)
-    pre_mean_rms = getattr(fit_result, "pre_enforcement_target_mean_rms_error", None)
+    pre_mean_rms = getattr(fit_result, "pre_enforcement_mean_rms_error", None)
     if pre_mean_rms is None:
-        pre_mean_rms = getattr(fit_result, "pre_enforcement_mean_rms_error", None)
-    final_mean_rms = getattr(fit_result, "target_mean_rms_error", None)
+        pre_mean_rms = getattr(fit_result, "pre_enforcement_target_mean_rms_error", None)
+    final_mean_rms = getattr(fit_result, "comparison_mean_rms_error", None)
     if final_mean_rms is None:
-        final_mean_rms = getattr(fit_result, "comparison_mean_rms_error", None)
+        final_mean_rms = getattr(fit_result, "target_mean_rms_error", None)
     pre_value = float(final_mean_rms if pre_mean_rms is None else pre_mean_rms)
     final_value = math.inf if final_mean_rms is None else float(final_mean_rms)
+    configured_bands = tuple(
+        getattr(getattr(fit_result, "config", None), "priority_bands_hz", ()) or ()
+    )
+    raw_band_metrics = tuple(getattr(fit_result, "frequency_band_metrics", ()) or ())
+    priority_band_targets = tuple(float(band[2]) for band in configured_bands)
+    priority_band_errors: tuple[float | None, ...]
+    band_metrics_missing = bool(configured_bands) and len(raw_band_metrics) != len(configured_bands)
+    if band_metrics_missing:
+        priority_band_errors = tuple(None for _ in configured_bands)
+    else:
+        priority_band_errors = tuple(
+            None if metric.get("mean_rms_error") is None else float(metric["mean_rms_error"])
+            for metric in raw_band_metrics
+        )
     pre_sigma = getattr(fit_result, "passivity_max_sigma_before", None)
     final_sigma = getattr(fit_result, "passivity_max_sigma_after", None)
     constant_sigma = getattr(fit_result, "constant_matrix_sigma", None)
@@ -158,8 +208,15 @@ def trial_from_fit_result(
         rejection_reason = (
             "pre_rms_above_target"
             if target.passivity == "enforce" and skip_reason == "pre_rms_above_target"
-            else "final_rms_above_target"
+            else "full_band_rms_above_target"
         )
+    elif band_metrics_missing:
+        rejection_reason = "priority_band_metrics_missing"
+    elif any(
+        value is None or not math.isfinite(value) or value > limit
+        for value, limit in zip(priority_band_errors, priority_band_targets, strict=True)
+    ):
+        rejection_reason = "priority_band_rms_above_target"
     elif target.passivity == "off":
         target_met = True
         status = "PASS"
@@ -212,6 +269,10 @@ def trial_from_fit_result(
         real_pole_count=getattr(fit_result, "real_pole_count", None),
         complex_pair_count=getattr(fit_result, "complex_pair_count", None),
         stored_pole_count=getattr(fit_result, "stored_pole_count", None),
+        full_band_mean_rms=final_value,
+        full_band_rms_target=float(target.mean_rms),
+        priority_band_mean_rms_errors=priority_band_errors,
+        priority_band_rms_targets=priority_band_targets,
         payload=fit_result,
     )
 
@@ -262,7 +323,7 @@ def run_target_order_search(
             first_passing_order = order
             break
         previous_failed_order = order
-        ratio = trial.final_mean_rms / target.mean_rms
+        ratio = _trial_rms_target_ratio(trial, target.mean_rms)
         if not math.isfinite(ratio) or ratio >= 100.0:
             step = target.max_order_step
         elif ratio >= 10.0:

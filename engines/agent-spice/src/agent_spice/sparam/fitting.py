@@ -174,7 +174,7 @@ class SParamFitConfig:
     fit_max_frequency_points: int | None = None
     fit_f_min: float | None = None
     fit_f_max: float | None = None
-    priority_bands_hz: tuple[tuple[float, float, float], ...] = ()
+    priority_bands_hz: tuple[tuple[float, float, float, float], ...] = ()
     outside_band_weight: float = 0.1
     use_lightweight_network: bool = False
     high_frequency_complex_pair_count: int = 0
@@ -579,13 +579,17 @@ def _frequency_fit_weights(freqs: Any, config: SParamFitConfig) -> np.ndarray | 
     weights = np.full(frequency_array.shape, float(config.outside_band_weight), dtype=float)
     covered = np.zeros(frequency_array.shape, dtype=bool)
     for band_index, raw_band in enumerate(config.priority_bands_hz, start=1):
-        if len(raw_band) != 3:
-            raise ValueError(f"priority band {band_index} must contain f_min, f_max, and weight")
-        f_min, f_max, weight = (float(value) for value in raw_band)
-        if not all(math.isfinite(value) for value in (f_min, f_max, weight)):
+        if len(raw_band) != 4:
+            raise ValueError(
+                f"priority band {band_index} must contain f_min, f_max, rms_target, and weight"
+            )
+        f_min, f_max, rms_target, weight = (float(value) for value in raw_band)
+        if not all(math.isfinite(value) for value in (f_min, f_max, rms_target, weight)):
             raise ValueError(f"priority band {band_index} values must be finite")
         if f_min < 0.0 or f_min >= f_max:
             raise ValueError(f"priority band {band_index} must satisfy 0 <= f_min < f_max")
+        if rms_target <= 0.0:
+            raise ValueError(f"priority band {band_index} rms_target must be > 0")
         if weight <= 0.0:
             raise ValueError(f"priority band {band_index} weight must be > 0")
         mask = (frequency_array >= f_min) & (frequency_array <= f_max)
@@ -904,17 +908,22 @@ def _comparison_frequency_metrics(
             return float(np.sqrt(np.sum(per_response_mse)) / float(network.nports))
 
         bands: list[dict[str, Any]] = []
-        for index, (f_min, f_max, weight) in enumerate(config.priority_bands_hz, start=1):
+        for index, (f_min, f_max, rms_target, weight) in enumerate(config.priority_bands_hz, start=1):
             mask = (freqs >= f_min) & (freqs <= f_max)
             priority_mask |= mask
+            band_mean_rms = mean_rms(mask)
             bands.append(
                 {
                     "index": index,
                     "f_min_hz": float(f_min),
                     "f_max_hz": float(f_max),
+                    "rms_target": float(rms_target),
                     "weight": float(weight),
                     "frequency_points": int(np.count_nonzero(mask)),
-                    "mean_rms_error": mean_rms(mask),
+                    "mean_rms_error": band_mean_rms,
+                    "target_met": bool(
+                        band_mean_rms is not None and band_mean_rms <= float(rms_target)
+                    ),
                 }
             )
 
@@ -1381,7 +1390,7 @@ def _report_configuration_summary(result: SParamFitResult) -> list[tuple[str, st
         passivity_strategy = "enforce" if config.enforce_passivity else "check" if config.check_passivity else "off"
     return [
         ("运行方式", config.mode),
-        ("RMS 目标", _format_cell(rms_target)),
+        ("全带 RMS 目标", _format_cell(rms_target)),
         ("最大 order", _format_cell(max_order)),
         ("最大步长", _format_cell(max_order_step)),
         ("选中 order", _format_cell(selected_order)),
@@ -1428,9 +1437,11 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
         f"<td>{item['index']}</td>"
         f"<td>{_format_hz(item['f_min_hz'])}</td>"
         f"<td>{_format_hz(item['f_max_hz'])}</td>"
+        f"<td>{_format_float(item['rms_target'])}</td>"
         f"<td>{_format_float(item['weight'])}</td>"
         f"<td>{item['frequency_points']}</td>"
         f"<td>{_format_float(item['mean_rms_error'])}</td>"
+        f"<td>{_format_bool(item['target_met'])}</td>"
         "</tr>"
         for item in (result.frequency_band_metrics or [])
     )
@@ -1439,7 +1450,7 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
         band_metric_section = f"""
   <h2>优先频段 RMS</h2>
   <table>
-    <tr><th>频段</th><th>起点</th><th>终点</th><th>权重</th><th>频点数</th><th>Mean RMS</th></tr>
+    <tr><th>频段</th><th>起点</th><th>终点</th><th>RMS 目标</th><th>权重</th><th>频点数</th><th>Mean RMS</th><th>达标</th></tr>
     {band_metric_rows}
   </table>
 """
@@ -1871,27 +1882,27 @@ def _fit_touchstone_execution(
         if (
             should_enforce
             and config.passivity_enforce_rms_target is not None
-            and pre_enforcement_target_mean_rms_error is not None
-            and pre_enforcement_target_mean_rms_error > config.passivity_enforce_rms_target
+            and pre_enforcement_mean_rms_error is not None
+            and pre_enforcement_mean_rms_error > config.passivity_enforce_rms_target
         ):
             should_enforce = False
             passivity_enforcement_skip_reason = "pre_rms_above_target"
             progress.info(
                 "skipping passivity enforcement because pre-enforcement mean RMS "
-                f"{pre_enforcement_target_mean_rms_error:.9g} exceeds target "
+                f"{pre_enforcement_mean_rms_error:.9g} exceeds full-band target "
                 f"{config.passivity_enforce_rms_target:.9g}"
             )
         if (
             should_check
             and config.passivity_check_rms_target is not None
-            and pre_enforcement_target_mean_rms_error is not None
-            and pre_enforcement_target_mean_rms_error > config.passivity_check_rms_target
+            and pre_enforcement_mean_rms_error is not None
+            and pre_enforcement_mean_rms_error > config.passivity_check_rms_target
         ):
             should_check = False
             passivity_check_skip_reason = "pre_rms_above_target"
             progress.info(
                 "skipping passivity check because pre-enforcement mean RMS "
-                f"{pre_enforcement_target_mean_rms_error:.9g} exceeds target "
+                f"{pre_enforcement_mean_rms_error:.9g} exceeds full-band target "
                 f"{config.passivity_check_rms_target:.9g}"
             )
         use_low_memory_passivity = _uses_low_memory_passivity(config)
@@ -2732,7 +2743,7 @@ def _resume_target_trial(
         return None
     trial_fields = {item.name for item in fields(SParamOrderTrial) if item.name != "payload"}
     try:
-        trial_data = {name: raw_trial.get(name) for name in trial_fields}
+        trial_data = {name: raw_trial[name] for name in trial_fields if name in raw_trial}
         resumed_payload = _ResumedTargetFitPayload(payload, output_path)
         trial = SParamOrderTrial(**trial_data, payload=resumed_payload)
     except (TypeError, ValueError):
@@ -2756,7 +2767,17 @@ def _resume_target_trial(
         if (
             not isinstance(trial.final_mean_rms, (int, float))
             or not math.isfinite(trial.final_mean_rms)
-            or trial.final_mean_rms > target.mean_rms
+            or trial.full_band_mean_rms is None
+            or trial.full_band_rms_target is None
+            or trial.full_band_mean_rms > trial.full_band_rms_target
+            or any(
+                value is None or value > limit
+                for value, limit in zip(
+                    trial.priority_band_mean_rms_errors,
+                    trial.priority_band_rms_targets,
+                    strict=True,
+                )
+            )
         ):
             return None
         if target.passivity == "enforce":
@@ -2824,7 +2845,7 @@ def fit_touchstone_to_spice_target(
         log_path.parent.mkdir(parents=True, exist_ok=True)
         log_path.write_text("", encoding="utf-8")
     write_progress(
-        f"target-search start rms_target={target.mean_rms:.12g} "
+        f"target-search start full_band_rms_target={target.mean_rms:.12g} "
         f"passivity={target.passivity} max_order={target.max_order} max_order_step={max_order_step}"
     )
     executions_by_order: dict[int, _FitExecution] = {}
@@ -2906,6 +2927,10 @@ def fit_touchstone_to_spice_target(
                 report_top_rms=report_top_rms,
                 report_configuration={
                     "rms_target": target.mean_rms,
+                    "full_band_rms_target": target.mean_rms,
+                    "priority_band_targets_hz": [
+                        list(band[:3]) for band in policy_config.priority_bands_hz
+                    ],
                     "max_order": target.max_order,
                     "min_order": target.min_order,
                     "max_order_step": max_order_step,
@@ -2935,6 +2960,10 @@ def fit_touchstone_to_spice_target(
             report_top_rms=report_top_rms,
             report_configuration={
                 "rms_target": target.mean_rms,
+                "full_band_rms_target": target.mean_rms,
+                "priority_band_targets_hz": [
+                    list(band[:3]) for band in policy_config.priority_bands_hz
+                ],
                 "max_order": target.max_order,
                 "min_order": target.min_order,
                 "max_order_step": max_order_step,
@@ -2957,6 +2986,16 @@ def fit_touchstone_to_spice_target(
         selected_payload.update(payload)
         payload = selected_payload
     payload["rms_formula"] = "mean_s_rms_v1"
+    payload["full_band_rms_target"] = target.mean_rms
+    payload["priority_band_targets_hz"] = [
+        {
+            "f_min_hz": band[0],
+            "f_max_hz": band[1],
+            "rms_target": band[2],
+            "weight": band[3],
+        }
+        for band in policy_config.priority_bands_hz
+    ]
     payload["order_formula"] = "real_plus_twice_complex_v1"
     payload["touchstone_path"] = str(touchstone_path)
     payload["best_effort_exported"] = best_effort_exported

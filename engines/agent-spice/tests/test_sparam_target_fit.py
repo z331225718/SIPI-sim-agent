@@ -366,7 +366,7 @@ def test_enforce_policy_rejects_final_rms_regression():
     )
 
     assert trial.target_met is False
-    assert trial.rejection_reason == "final_rms_above_target"
+    assert trial.rejection_reason == "full_band_rms_above_target"
 
 
 def test_enforce_policy_records_pre_rms_cost_gate():

@@ -23,7 +23,7 @@ def test_priority_band_weights_and_sampling_favor_selected_frequency_range():
     )
     config = SParamFitConfig(
         fit_max_frequency_points=4,
-        priority_bands_hz=((7.0, 9.0, 1.0),),
+        priority_bands_hz=((7.0, 9.0, 0.01, 1.0),),
         outside_band_weight=0.05,
     )
 
@@ -45,7 +45,7 @@ def test_priority_band_weights_are_applied_to_native_residue_fit():
         z0=np.full((4, 2), 50.0),
     )
     config = SParamFitConfig(
-        priority_bands_hz=((3.0, 4.0, 2.0),),
+        priority_bands_hz=((3.0, 4.0, 0.01, 2.0),),
         outside_band_weight=0.25,
     )
 
@@ -68,7 +68,7 @@ def test_priority_band_report_keeps_global_outside_and_target_rms_separate():
     vector_fit.constant_coeff = np.zeros(1)
     vector_fit.proportional_coeff = np.zeros(1)
     config = SParamFitConfig(
-        priority_bands_hz=((3.0, 4.0, 1.0),),
+        priority_bands_hz=((3.0, 4.0, 0.2, 1.0),),
         outside_band_weight=0.1,
     )
 
@@ -78,14 +78,19 @@ def test_priority_band_report_keeps_global_outside_and_target_rms_separate():
     assert metrics["priority_mean_rms_error"] == pytest.approx(0.1)
     assert metrics["outside_mean_rms_error"] == pytest.approx(1.0)
     assert metrics["weighted_mean_rms_error"] < 0.5
+    assert metrics["bands"][0]["rms_target"] == pytest.approx(0.2)
+    assert metrics["bands"][0]["target_met"] is True
 
 
-def test_target_order_trial_uses_priority_target_metric_when_available():
+def test_target_order_trial_requires_priority_and_full_band_targets():
     fit_result = SimpleNamespace(
         expanded_model_order=4,
         target_mean_rms_error=0.01,
-        comparison_mean_rms_error=0.2,
+        comparison_mean_rms_error=0.02,
         pre_enforcement_target_mean_rms_error=0.01,
+        pre_enforcement_mean_rms_error=0.02,
+        config=SParamFitConfig(priority_bands_hz=((3.0, 4.0, 0.01, 1.0),)),
+        frequency_band_metrics=[{"mean_rms_error": 0.01}],
         passivity_max_sigma_before=None,
         passivity_max_sigma_after=None,
         constant_matrix_sigma=None,
@@ -96,20 +101,75 @@ def test_target_order_trial_uses_priority_target_metric_when_available():
     )
 
     trial = trial_from_fit_result(
-        SParamFitTarget(mean_rms=0.02, passivity="off", max_order=4),
+        SParamFitTarget(mean_rms=0.03, passivity="off", max_order=4),
         fit_result,
         requested_order=4,
     )
 
     assert trial.target_met is True
-    assert trial.final_mean_rms == pytest.approx(0.01)
+    assert trial.final_mean_rms == pytest.approx(0.02)
+    assert trial.full_band_rms_target == pytest.approx(0.03)
+    assert trial.priority_band_mean_rms_errors == pytest.approx((0.01,))
+    assert trial.priority_band_rms_targets == pytest.approx((0.01,))
+
+
+def test_target_order_trial_rejects_full_band_regression_even_when_priority_band_passes():
+    fit_result = SimpleNamespace(
+        expanded_model_order=4,
+        comparison_mean_rms_error=0.031,
+        pre_enforcement_mean_rms_error=0.031,
+        config=SParamFitConfig(priority_bands_hz=((3.0, 4.0, 0.01, 1.0),)),
+        frequency_band_metrics=[{"mean_rms_error": 0.009}],
+        passivity_max_sigma_before=None,
+        passivity_max_sigma_after=None,
+        constant_matrix_sigma=None,
+        passive_after_enforce=None,
+        passivity_enforcement_skip_reason=None,
+        fit_frequency_points=10,
+        frequency_points=20,
+    )
+
+    trial = trial_from_fit_result(
+        SParamFitTarget(mean_rms=0.03, passivity="off", max_order=4),
+        fit_result,
+        requested_order=4,
+    )
+
+    assert trial.target_met is False
+    assert trial.rejection_reason == "full_band_rms_above_target"
+
+
+def test_target_order_trial_rejects_priority_band_when_full_band_passes():
+    fit_result = SimpleNamespace(
+        expanded_model_order=4,
+        comparison_mean_rms_error=0.02,
+        pre_enforcement_mean_rms_error=0.02,
+        config=SParamFitConfig(priority_bands_hz=((3.0, 4.0, 0.01, 1.0),)),
+        frequency_band_metrics=[{"mean_rms_error": 0.011}],
+        passivity_max_sigma_before=None,
+        passivity_max_sigma_after=None,
+        constant_matrix_sigma=None,
+        passive_after_enforce=None,
+        passivity_enforcement_skip_reason=None,
+        fit_frequency_points=10,
+        frequency_points=20,
+    )
+
+    trial = trial_from_fit_result(
+        SParamFitTarget(mean_rms=0.03, passivity="off", max_order=4),
+        fit_result,
+        requested_order=4,
+    )
+
+    assert trial.target_met is False
+    assert trial.rejection_reason == "priority_band_rms_above_target"
 
 
 def test_priority_band_validation_rejects_empty_band():
     with pytest.raises(ValueError, match="contains no frequency samples"):
         _frequency_fit_weights(
             np.array([1.0, 2.0]),
-            SParamFitConfig(priority_bands_hz=((3.0, 4.0, 1.0),)),
+            SParamFitConfig(priority_bands_hz=((3.0, 4.0, 0.01, 1.0),)),
         )
 
 
@@ -130,12 +190,10 @@ def test_fit_sparam_cli_passes_priority_band_configuration(tmp_path, monkeypatch
         [
             "fit-sparam",
             str(tmp_path / "input.s2p"),
-            "--rms-target",
-            "0.01",
             "--priority-band",
-            "1e6:2e6:3",
+            "1e6:2e6:0.003:3",
             "--priority-band",
-            "4e6:5e6",
+            "4e6:5e6:0.005",
             "--outside-band-weight",
             "0.2",
         ]
@@ -143,5 +201,53 @@ def test_fit_sparam_cli_passes_priority_band_configuration(tmp_path, monkeypatch
 
     assert result == 0
     config = captured["config"]
-    assert config.priority_bands_hz == ((1e6, 2e6, 3.0), (4e6, 5e6, 1.0))
+    assert config.priority_bands_hz == (
+        (1e6, 2e6, 0.003, 3.0),
+        (4e6, 5e6, 0.005, 1.0),
+    )
     assert config.outside_band_weight == 0.2
+    assert captured["target"].mean_rms == pytest.approx(0.009)
+
+
+def test_fit_sparam_cli_explicit_rms_target_is_full_band_gate(tmp_path, monkeypatch):
+    import agent_spice.cli as cli
+
+    captured = {}
+
+    def fake_target(*args, **kwargs):
+        captured.update(kwargs)
+        return SimpleNamespace(
+            target_met=True,
+            selected_trial=SimpleNamespace(requested_order=4, payload=None),
+        )
+
+    monkeypatch.setattr(cli, "fit_touchstone_to_spice_target", fake_target)
+    result = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "input.s2p"),
+            "--rms-target",
+            "0.002",
+            "--priority-band",
+            "0:1e7:0.001",
+        ]
+    )
+
+    assert result == 0
+    assert captured["target"].mean_rms == pytest.approx(0.002)
+
+
+def test_fit_sparam_cli_rejects_priority_band_without_rms_target(tmp_path, capsys):
+    import agent_spice.cli as cli
+
+    result = cli.main(
+        [
+            "fit-sparam",
+            str(tmp_path / "input.s2p"),
+            "--priority-band",
+            "0:1e7",
+        ]
+    )
+
+    assert result == 1
+    assert "F_MIN:F_MAX:RMS_TARGET" in capsys.readouterr().err

@@ -13,14 +13,15 @@
 
 ```powershell
 python -m agent_spice.cli fit-sparam .\channel.s2p `
-  --rms-target 0.001 `
-  --priority-band 1e8:8e8 `
-  --priority-band 1.2e9:1.5e9:2 `
+  --priority-band 0:1e7:0.001 `
+  --priority-band 1.2e9:1.5e9:0.002:2 `
   --outside-band-weight 0.1 `
   --passivity enforce
 ```
 
-`--priority-band` 的格式为 `F_MIN:F_MAX[:WEIGHT]`，频率单位为 Hz，区间包含两个端点。该选项可重复；省略 `WEIGHT` 时段内权重为 `1`。重叠频段取最大权重，不重复累加。
+`--priority-band` 的格式为 `F_MIN:F_MAX:RMS_TARGET[:WEIGHT]`，频率单位为 Hz，区间包含两个端点。频率范围与正数 `RMS_TARGET` 必须在同一个参数中出现；省略 `WEIGHT` 时段内权重为 `1`。该选项可重复，重叠频段的拟合权重取最大值，但每个频段的 RMS 门限仍分别验收。
+
+原有 `--rms-target` 现在明确表示全频段门限。指定优先频段但省略它时，全频段门限默认为最严格频段目标的 3 倍。上例因此要求 0-10MHz RMS 不超过 `0.001`、1.2-1.5GHz RMS 不超过 `0.002`，同时全频段 RMS 不超过 `0.003`。显式传 `--rms-target 0.0025` 可覆盖这个默认值。
 
 `--outside-band-weight` 必须大于 `0`，默认 `0.1`。它不是删除带外数据：带外样本仍参与拟合和完整频带被动性检查，只是在最小二乘目标中的约束被放松。
 
@@ -38,14 +39,16 @@ python -m agent_spice.cli fit-sparam .\channel.s2p `
 
 指定优先频段后：
 
-- `--rms-target` 对所有优先频段的并集 RMS 生效。
-- `target_mean_rms_error` 是实际参与阶数搜索和 PASS/FAIL 的优先频段并集 RMS。
+- 每个频段的 `RMS_TARGET` 单独参与阶数搜索和 PASS/FAIL。
+- `--rms-target` 是全频段门限；未指定时自动取最严格频段目标的 3 倍。
+- 只有每个指定频段和全频段同时达标，当前阶次才满足 RMS 验收。
+- `target_mean_rms_error` 保留为优先频段并集 RMS 诊断值，不再单独决定 PASS/FAIL。
 - `comparison_mean_rms_error` 始终是所有原始频点、所有 S 元素的全带 RMS。
 - `outside_band_mean_rms_error` 是所有优先频段以外的 RMS。
 - `weighted_mean_rms_error` 使用拟合权重计算。
-- `frequency_band_metrics` 逐段记录频率范围、权重、频点数和 RMS。
+- `frequency_band_metrics` 逐段记录频率范围、目标、权重、频点数、实测 RMS 和 `target_met`。
 
-因此，全带 RMS 可以高于 `--rms-target`，但报告会明确保留该数值。被动性没有随带外误差一起放松；`--passivity enforce` 仍对完整模型和渐近常数矩阵生效。
+因此，目标频段达标但全带 RMS 超标，或全带达标但任一目标频段超标，都会继续搜索更高阶次并最终在未找到双门限解时返回 `FAIL`。被动性没有随带外误差一起放松；`--passivity enforce` 仍对完整模型和渐近常数矩阵生效。
 
 ## 2. 有序二端口级联
 
@@ -96,10 +99,11 @@ python -m agent_spice.cli fit-sparam-cascade .\cascade.json `
 
 ```powershell
 python -m agent_spice.cli fit-sparam-cascade .\cascade.json `
-  --rms-target 0.001 `
-  --priority-band 1e8:2e9 `
+  --priority-band 1e8:2e9:0.001 `
   --outside-band-weight 0.1
 ```
+
+级联命令沿用相同双门限语义：每个 block 的全带门限默认是最严格频段目标的 3 倍；显式 `--rms-target` 或 manifest 中 block 的 `rms_target` 可覆盖全带门限。级联被动性收缩候选也必须保持每个 block 的全带与逐频段 RMS 同时达标。
 
 ### 2.3 执行流程
 

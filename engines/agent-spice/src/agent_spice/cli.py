@@ -567,29 +567,46 @@ def _parse_frequency_bands(value: Any) -> tuple[tuple[float, float], ...]:
     return tuple(bands)
 
 
-def _parse_priority_bands(values: Any) -> tuple[tuple[float, float, float], ...]:
+def _parse_priority_bands(values: Any) -> tuple[tuple[float, float, float, float], ...]:
     if values is None:
         return ()
     items = values if isinstance(values, (list, tuple)) else [values]
-    bands: list[tuple[float, float, float]] = []
+    bands: list[tuple[float, float, float, float]] = []
     for raw_item in items:
         parts = [part.strip() for part in str(raw_item).split(":")]
-        if len(parts) not in {2, 3}:
-            raise ValueError(f"Expected priority band F_MIN:F_MAX[:WEIGHT], got '{raw_item}'")
+        if len(parts) not in {3, 4}:
+            raise ValueError(
+                f"Expected priority band F_MIN:F_MAX:RMS_TARGET[:WEIGHT], got '{raw_item}'"
+            )
         try:
             f_min = float(parts[0])
             f_max = float(parts[1])
-            weight = 1.0 if len(parts) == 2 else float(parts[2])
+            rms_target = float(parts[2])
+            weight = 1.0 if len(parts) == 3 else float(parts[3])
         except ValueError as exc:
             raise ValueError(f"Expected numeric priority band, got '{raw_item}'") from exc
-        if not all(math.isfinite(value) for value in (f_min, f_max, weight)):
+        if not all(math.isfinite(value) for value in (f_min, f_max, rms_target, weight)):
             raise ValueError(f"Priority band values must be finite, got '{raw_item}'")
         if f_min < 0.0 or f_min >= f_max:
             raise ValueError(f"Priority band must satisfy 0 <= F_MIN < F_MAX, got '{raw_item}'")
+        if rms_target <= 0.0:
+            raise ValueError(f"Priority band RMS target must be > 0, got '{raw_item}'")
         if weight <= 0.0:
             raise ValueError(f"Priority band weight must be > 0, got '{raw_item}'")
-        bands.append((f_min, f_max, weight))
+        bands.append((f_min, f_max, rms_target, weight))
     return tuple(bands)
+
+
+def _resolve_full_band_rms_target(
+    explicit_target: float | None,
+    auto_target: float | None,
+    priority_bands: tuple[tuple[float, float, float, float], ...],
+) -> float | None:
+    if explicit_target is not None:
+        return explicit_target
+    if priority_bands:
+        return 3.0 * min(band[2] for band in priority_bands)
+    return auto_target
 
 
 def check_modal_quality(result: Any, args: Any) -> dict[str, Any]:
@@ -1059,14 +1076,21 @@ def main(argv: list[str] | None = None) -> int:
         help="Number of worst RMS S-parameter elements to plot in the HTML report (default: 5).",
     )
     fit_parser.add_argument("--log", type=Path, help="Progress log path; defaults next to the JSON report as <input>.log.")
-    fit_parser.add_argument("--rms-target", type=float, help="Required final mean S-RMS target.")
+    fit_parser.add_argument(
+        "--rms-target",
+        type=float,
+        help=(
+            "Full-band mean S-RMS target. Required without --priority-band; when omitted with "
+            "priority bands, defaults to 3x the strictest band RMS target."
+        ),
+    )
     fit_parser.add_argument(
         "--priority-band",
         action="append",
-        metavar="F_MIN:F_MAX[:WEIGHT]",
+        metavar="F_MIN:F_MAX:RMS_TARGET[:WEIGHT]",
         help=(
             "Prioritize a frequency band during pole relocation and residue fitting; repeat for multiple bands. "
-            "When present, --rms-target is evaluated over the union of these bands."
+            "Each band must include its own RMS target; optional WEIGHT defaults to 1."
         ),
     )
     fit_parser.add_argument(
@@ -1209,7 +1233,14 @@ def main(argv: list[str] | None = None) -> int:
     cascade_fit_parser.add_argument("manifest", type=Path, help="Version 1 cascade JSON manifest.")
     cascade_fit_parser.add_argument("--output-root", type=Path, help="Output directory for block and cascade artifacts.")
     cascade_fit_parser.add_argument("--report", type=Path, help="Cascade JSON report path.")
-    cascade_fit_parser.add_argument("--rms-target", type=float, required=True, help="Default per-block target mean S-RMS.")
+    cascade_fit_parser.add_argument(
+        "--rms-target",
+        type=float,
+        help=(
+            "Default per-block full-band mean S-RMS target. Required without --priority-band; "
+            "otherwise defaults to 3x the strictest band RMS target."
+        ),
+    )
     cascade_fit_parser.add_argument("--max-order", type=int, default=100)
     cascade_fit_parser.add_argument("--min-order", type=int, default=1)
     cascade_fit_parser.add_argument("--max-order-step", type=int, default=8)
@@ -1222,8 +1253,8 @@ def main(argv: list[str] | None = None) -> int:
     cascade_fit_parser.add_argument(
         "--priority-band",
         action="append",
-        metavar="F_MIN:F_MAX[:WEIGHT]",
-        help="Per-block priority band; repeat for multiple bands.",
+        metavar="F_MIN:F_MAX:RMS_TARGET[:WEIGHT]",
+        help="Per-block priority band and RMS target; repeat for multiple bands.",
     )
     cascade_fit_parser.add_argument("--outside-band-weight", type=float, default=0.1)
 
@@ -1547,11 +1578,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "fit-sparam-cascade":
         output_root = args.output_root or args.manifest.with_name(f"{args.manifest.stem}_fit")
         try:
+            priority_bands = _parse_priority_bands(args.priority_band)
+            rms_target = _resolve_full_band_rms_target(args.rms_target, None, priority_bands)
+            if rms_target is None:
+                raise ValueError("--rms-target is required without --priority-band")
             payload = fit_sparam_cascade(
                 args.manifest,
                 output_root,
                 config=_cascade_fit_config(
-                    rms_target=args.rms_target,
+                    rms_target=rms_target,
                     max_order=args.max_order,
                     min_order=args.min_order,
                     max_order_step=args.max_order_step,
@@ -1561,7 +1596,7 @@ def main(argv: list[str] | None = None) -> int:
                     reference_impedance_ohm=args.reference_impedance,
                     adjustment_iterations=args.adjustment_iterations,
                     minimum_scale=args.minimum_scale,
-                    priority_bands_hz=_parse_priority_bands(args.priority_band),
+                    priority_bands_hz=priority_bands,
                     outside_band_weight=args.outside_band_weight,
                 ),
                 report_path=args.report,
@@ -1609,12 +1644,6 @@ def main(argv: list[str] | None = None) -> int:
                     continue
                 setattr(args, attr, value)
 
-        rms_target = args.rms_target
-        if rms_target is None:
-            rms_target = args.auto_target_mean_rms_error
-        if rms_target is None:
-            print("error: --rms-target is required", file=sys.stderr)
-            return 1
         max_order = args.max_order
         if max_order is None and args.auto_model_order_candidates:
             compatibility_orders = _parse_int_list(args.auto_model_order_candidates)
@@ -1623,6 +1652,13 @@ def main(argv: list[str] | None = None) -> int:
             max_order = 100
         try:
             priority_bands = _parse_priority_bands(args.priority_band)
+            rms_target = _resolve_full_band_rms_target(
+                args.rms_target,
+                args.auto_target_mean_rms_error,
+                priority_bands,
+            )
+            if rms_target is None:
+                raise ValueError("--rms-target is required without --priority-band")
             target = SParamFitTarget(
                 mean_rms=rms_target,
                 passivity=passivity_policy,
