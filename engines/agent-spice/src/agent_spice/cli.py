@@ -1165,6 +1165,11 @@ def main(argv: list[str] | None = None) -> int:
     y_fit_parser.add_argument("--n-poles-cmplx", type=int, default=3, help="Initial complex-pair count (default: 3).")
     y_fit_parser.add_argument("--pole-spacing", choices=["lin", "log"], default="log")
     y_fit_parser.add_argument("--fit-iterations", type=int, default=20)
+    y_fit_parser.add_argument(
+        "--no-fit-proportional",
+        action="store_true",
+        help="Disable the Y proportional term. Required by the current exact rational Y-to-S/RFM path.",
+    )
     y_fit_parser.add_argument("--max-y-rms-siemens", type=float, help="Maximum absolute Y RMS error in Siemens.")
     y_fit_parser.add_argument("--passivity", choices=["off", "check"], default="check", help="Y positive-real check policy; enforcement is intentionally unavailable.")
     y_fit_parser.add_argument("--passivity-epsilon", type=float, default=1e-9)
@@ -1655,6 +1660,7 @@ def main(argv: list[str] | None = None) -> int:
                     passivity=args.passivity,
                     passivity_epsilon=args.passivity_epsilon,
                     conversion_condition_limit=args.conversion_condition_limit,
+                    fit_proportional=not args.no_fit_proportional,
                     subckt_name=args.subckt_name,
                 ),
                 report_path=report_path,

@@ -85,6 +85,19 @@ def test_fit_yparam_can_export_y_derived_s_touchstone(tmp_path: Path) -> None:
     assert payload["y_derived_s"]["condition_max"] > 0.0
 
 
+def test_fit_yparam_can_disable_proportional_term(tmp_path: Path) -> None:
+    frequencies = np.array([1.0e6, 2.0e6, 5.0e6, 1.0e7])
+    touchstone = _write_y_touchstone(tmp_path / "conductance.s1p", frequencies, np.full((4, 1, 1), 0.02 + 0j))
+
+    result = fit_touchstone_to_y_spice(
+        touchstone,
+        tmp_path / "conductance.y.sp",
+        config=YParamFitConfig(n_poles_real=1, n_poles_cmplx=1, max_iterations=8, fit_proportional=False),
+    )
+
+    assert result.to_dict()["fit_proportional"] is False
+
+
 def test_convert_y_to_s_rejects_ill_conditioned_mapping() -> None:
     with pytest.raises(ValueError, match="ill-conditioned"):
         convert_y_to_s_strict(np.array([[[-0.02 + 0j]]]), 50.0, condition_limit=1e6)

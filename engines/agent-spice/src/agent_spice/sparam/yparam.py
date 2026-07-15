@@ -28,6 +28,7 @@ class YParamFitConfig:
     passivity: YPassivityPolicy = "check"
     passivity_epsilon: float = 1.0e-9
     conversion_condition_limit: float = 1.0e12
+    fit_proportional: bool = True
     subckt_name: str = "y_equivalent"
 
 
@@ -102,7 +103,7 @@ class YParamFitResult:
                 "matrix": "I+S",
             },
             "fit_seconds": self.fit_seconds,
-            "fit_proportional": True,
+            "fit_proportional": self.config.fit_proportional,
             "fit_dc": True,
             "poles_rad_per_s": self.poles_rad_per_s,
             "stable_poles": True,
@@ -230,7 +231,7 @@ def fit_touchstone_to_y_spice(
         init_pole_spacing=cfg.init_pole_spacing,
         parameter_type="y",
         fit_constant=True,
-        fit_proportional=True,
+        fit_proportional=cfg.fit_proportional,
         enforce_dc=True,
     )
     fit_seconds = time.perf_counter() - started
