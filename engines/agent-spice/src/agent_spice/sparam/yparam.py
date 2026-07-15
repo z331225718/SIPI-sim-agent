@@ -61,6 +61,7 @@ class YParamFitResult:
     conversion_condition_by_frequency: list[float]
     fit_seconds: float
     target_met: bool
+    fitted_model: NativeVectorFitting
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -311,6 +312,7 @@ def fit_touchstone_to_y_spice(
         conversion_condition_by_frequency=conditions,
         fit_seconds=fit_seconds,
         target_met=target_met,
+        fitted_model=vector_fit,
     )
     payload = result.to_dict()
     payload["element_rms_siemens"] = [item.__dict__ for item in rank_element_rms(y_values, fitted)]

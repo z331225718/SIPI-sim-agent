@@ -12,6 +12,7 @@ dependencies = [
   "pyyaml>=6.0",
   "scipy>=1.13",
   "scikit-rf>=1.6",
+  "cvxpy>=1.6",
 ]
 
 [project.scripts]
