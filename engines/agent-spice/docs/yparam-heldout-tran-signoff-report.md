@@ -89,6 +89,14 @@ Y-fit Norton/MNA 宏没有通过 TRAN：三路网表在约 `4.2 ns` 中止，未
 
 该 Y-derived S-RFM 也已完成 HSPICE 14 ns TRAN：相对原始 sampled-Touchstone reference 的波形 RMS 差为 `3.474 mV`，峰值差为 `5.169 mV`。它避开了 Y Norton/MNA 宏在 4.2 ns 的数值中止，但在这个 CPM 场景中仍明显劣于直接 S-fit RFM 的 `0.6793 mV` RMS；因此它是可运行的交付路径验证，不是质量签核通过。
 
+## KYP-enforced exact Y-to-S RFM
+
+现在新增的交付路径不再执行 `Y -> sampled S -> S refit`。对 2-port 规约使用 8 对复极点、proper Y（关闭 proportional 项）时，KYP SDP 给出连续频率 PR certificate：32 个状态、`P` 最小特征值 `3.999e-4`、KYP 最大特征值 `1.178e-8`、校正量为零。随后直接通过状态空间 LFT 生成 S 的新极点/残差；直接矩阵 LFT 与该有理 S 的最大误差 `4.65e-13`，RFM 回读 RMS `2.67e-13`。
+
+HSPICE 14 ns CPM TRAN 也已完成：Y-KYP-exact-S-RFM 相对原始 sampled-Touchstone 的 RMS 差为 `4.326 mV`、峰值差为 `8.720 mV`。这证明 `Y-fit -> KYP Y PR -> exact rational Y-to-S -> S-RFM -> HSPICE` 已端到端可执行；该低阶模型的原始网络保真度仍不够，因此不是最终质量 signoff。
+
+CLI 使用 `fit-yparam --no-fit-proportional --exact-s-rfm <model.rfm>`。它在 KYP 状态数超过 128、存在 proportional/descriptor 项、或所需 KYP 校正超过预算时硬失败，避免静默降级回采样 S refit。
+
 ## 下一步
 
 1. 为 Y 有理模型实现真正的连续频带正实 enforcement（例如 KYP/LMI 或等价有理 PR 判定与受约束校正），并将未完成 enforcement 作为硬失败而非 warning。
