@@ -20,10 +20,10 @@ P >= 0
 
 ## 受控首版限制
 
-- 只接受共享正实 `z0`、稳定、实系数、**proper** Y（当前 RFM 目标不支持 proportional/descriptor 项）。
+- 只接受共享正实 `z0`、稳定、实系数 Y。proper Y 直接走标准状态空间 LFT；`sE` 路径在 `E` 实对称正定且条件数受控时走精确 descriptor LFT。
 - KYP SDP 使用 `cvxpy` + PSD-cone solver，默认最多 128 个 dense state；超限硬失败，不退化为 sampled heuristic。
 - 校正超过相对预算（默认 5%）硬失败，避免用“无源”掩盖严重保真度损失。
-- descriptor `sE` 路径（包括奇异/半正定 E）需要 QZ/index reduction，尚未实现；不得静默丢弃 E。
+- 奇异/半正定的 descriptor `sE` 仍需要 QZ/index reduction，尚未实现；不得静默丢弃 E。
 - 最终 S 常数项可以是 lossless 边界值，验收应允许 `sigma_max <= 1+epsilon`，不能强行投影到严格小于 1 后还称为精确 LFT。
 
 ## 验证门

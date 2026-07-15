@@ -40,7 +40,7 @@ def _real_scalar_array(values: Any, *, label: str, tolerance: float) -> np.ndarr
     return array.real
 
 
-def _real_y_state_space(model: Any, *, tolerance: float) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[tuple[str, int, int]]]:
+def _real_y_state_space(model: Any, *, tolerance: float) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[tuple[str, int, int]]]:
     network = getattr(model, "network", None)
     ports = getattr(network, "nports", None)
     if not isinstance(ports, (int, np.integer)) or isinstance(ports, bool) or ports <= 0:
@@ -49,11 +49,9 @@ def _real_y_state_space(model: Any, *, tolerance: float) -> tuple[np.ndarray, np
     poles = np.asarray(getattr(model, "poles", None), dtype=complex).reshape(-1)
     residues = np.asarray(getattr(model, "residues", None), dtype=complex)
     constant = _real_scalar_array(getattr(model, "constant_coeff", None), label="constant coefficients", tolerance=tolerance).reshape(ports, ports)
-    proportional = _real_scalar_array(getattr(model, "proportional_coeff", None), label="proportional coefficients", tolerance=tolerance).reshape(-1)
+    proportional = _real_scalar_array(getattr(model, "proportional_coeff", None), label="proportional coefficients", tolerance=tolerance).reshape(ports, ports)
     if residues.shape != (ports * ports, len(poles)):
         raise ValueError("model has invalid native pole-residue dimensions")
-    if np.any(np.abs(proportional) > tolerance):
-        raise ValueError("KYP Y enforcement currently supports only proper Y models (zero proportional term)")
     blocks: list[tuple[str, int, int]] = []
     state_count = sum(ports if pole.imag == 0.0 else 2 * ports for pole in poles)
     a = np.zeros((state_count, state_count), dtype=float)
@@ -86,7 +84,7 @@ def _real_y_state_space(model: Any, *, tolerance: float) -> tuple[np.ndarray, np
             offset += 2 * ports
         else:
             raise ValueError("native model must store only positive-imaginary complex pole representatives")
-    return a, b, c, constant, blocks
+    return a, b, c, constant, proportional, blocks
 
 
 def enforce_y_positive_real_kyp(
@@ -114,11 +112,16 @@ def enforce_y_positive_real_kyp(
         raise ValueError("margin must be finite and positive")
     if not np.isfinite(max_relative_correction) or max_relative_correction < 0.0:
         raise ValueError("max_relative_correction must be finite and non-negative")
-    a, b, c0, d0, blocks = _real_y_state_space(model, tolerance=tolerance)
+    a, b, c0, d0, e0, blocks = _real_y_state_space(model, tolerance=tolerance)
     ports = d0.shape[0]
     states = a.shape[0]
     if states == 0 or states > max_states:
         raise ValueError(f"KYP Y enforcement supports 1..{max_states} dense states; got {states}")
+    e_scale = max(float(np.max(np.abs(e0))), np.finfo(float).tiny)
+    if np.max(np.abs(e0 - e0.T)) > tolerance * e_scale:
+        raise ValueError("KYP Y enforcement requires a symmetric proportional matrix")
+    if float(np.min(np.linalg.eigvalsh(0.5 * (e0 + e0.T)))) < -tolerance * e_scale:
+        raise ValueError("KYP Y enforcement requires a positive-semidefinite proportional matrix")
     # A feasible certificate means the original fit is already continuous-time
     # positive real.  Preserve it exactly instead of running a correction SDP.
     # Normalize the Laplace variable.  KYP is invariant under s'=s/omega,
@@ -142,7 +145,7 @@ def enforce_y_positive_real_kyp(
                 np.asarray(getattr(model, "poles"), dtype=complex).reshape(-1).copy(),
                 np.asarray(getattr(model, "residues"), dtype=complex).copy(),
                 d0.reshape(-1).copy(),
-                np.zeros(ports * ports, dtype=complex),
+                e0.reshape(-1).astype(complex),
                 ports,
             )
             return original, YPositiveRealCertificate(solver, str(check_problem.status), states, kyp_max, p_min, 0.0)
@@ -182,7 +185,7 @@ def enforce_y_positive_real_kyp(
             "KYP Y enforcement requires an excessive correction "
             f"({correction / baseline:.6g} relative; limit={max_relative_correction:.6g})"
         )
-    enforced = EnforcedYModel(poles, residues, d_value.reshape(-1), np.zeros(ports * ports, dtype=complex), ports)
+    enforced = EnforcedYModel(poles, residues, d_value.reshape(-1), e0.reshape(-1).astype(complex), ports)
     certificate = YPositiveRealCertificate(
         solver=solver,
         status=str(problem.status),

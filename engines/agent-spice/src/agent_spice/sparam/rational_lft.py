@@ -24,7 +24,7 @@ class RationalSModel:
         return SimpleNamespace(nports=self.nports)
 
 
-def _native_dimensions(model: Any) -> tuple[int, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def _native_dimensions(model: Any, *, allow_proportional: bool = False) -> tuple[int, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     network = getattr(model, "network", None)
     ports = getattr(network, "nports", None)
     if not isinstance(ports, (int, np.integer)) or isinstance(ports, bool) or ports <= 0:
@@ -40,15 +40,15 @@ def _native_dimensions(model: Any) -> tuple[int, np.ndarray, np.ndarray, np.ndar
         raise ValueError("model has non-finite pole-residue coefficients")
     if np.any(poles.real >= 0.0):
         raise ValueError("exact Y-to-S transform requires stable Y poles")
-    if np.any(np.abs(proportional) > 1.0e-14):
+    if not allow_proportional and np.any(np.abs(proportional) > 1.0e-14):
         raise ValueError("exact RFM Y-to-S transform currently requires a proper Y model (zero proportional term)")
     return int(ports), poles, residues, constant.reshape(int(ports), int(ports)), proportional
 
 
-def _expanded_state_space(model: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def _expanded_state_space(model: Any, *, allow_proportional: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Return complex state-space matrices for native canonical pole-residue data."""
 
-    ports, poles, residues, constant, _ = _native_dimensions(model)
+    ports, poles, residues, constant, proportional = _native_dimensions(model, allow_proportional=allow_proportional)
     expanded_poles: list[complex] = []
     expanded_residues: list[np.ndarray] = []
     for index, pole in enumerate(poles):
@@ -69,7 +69,7 @@ def _expanded_state_space(model: Any) -> tuple[np.ndarray, np.ndarray, np.ndarra
         b[state_slice, input_port] = 1.0
         for state, residue in enumerate(expanded_residues):
             c[:, state_slice.start + state] = residue[:, input_port]
-    return a, b, c, constant
+    return a, b, c, constant, proportional.reshape(ports, ports)
 
 
 def _canonicalize_state_space(a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray, *, tolerance: float) -> RationalSModel:
@@ -128,7 +128,7 @@ def exact_y_to_s_rational(model: Any, z0: float, *, tolerance: float = 1.0e-8) -
         raise ValueError("z0 must be a finite positive real value")
     if not np.isfinite(tolerance) or tolerance <= 0.0:
         raise ValueError("tolerance must be finite and positive")
-    a, b, c, d = _expanded_state_space(model)
+    a, b, c, d, _ = _expanded_state_space(model)
     identity = np.eye(d.shape[0], dtype=complex)
     try:
         f = np.linalg.solve(identity + z0 * d, identity)
@@ -139,3 +139,43 @@ def exact_y_to_s_rational(model: Any, z0: float, *, tolerance: float = 1.0e-8) -
     c_s = -z0 * c - (identity - z0 * d) @ f @ (z0 * c)
     d_s = (identity - z0 * d) @ f
     return _canonicalize_state_space(a_s, b_s, c_s, d_s, tolerance=tolerance)
+
+
+def exact_y_to_s_descriptor_rational(
+    model: Any,
+    z0: float,
+    *,
+    tolerance: float = 1.0e-8,
+    max_descriptor_condition: float = 1.0e8,
+) -> RationalSModel:
+    """Apply the exact descriptor LFT for ``Y=D+sE+C(sI-A)^-1B``.
+
+    This preserves a positive-definite proportional ``E`` term instead of
+    approximating it with additional poles.  Singular ``E`` needs descriptor
+    index reduction and is deliberately rejected rather than pseudo-inverted.
+    """
+
+    if not np.isfinite(z0) or z0 <= 0.0:
+        raise ValueError("z0 must be a finite positive real value")
+    if not np.isfinite(tolerance) or tolerance <= 0.0:
+        raise ValueError("tolerance must be finite and positive")
+    if not np.isfinite(max_descriptor_condition) or max_descriptor_condition <= 1.0:
+        raise ValueError("max_descriptor_condition must be finite and > 1")
+    a, b, c, d, e = _expanded_state_space(model, allow_proportional=True)
+    scale = max(1.0, float(np.max(np.abs(e))))
+    if np.max(np.abs(e.imag)) > tolerance * scale or np.max(np.abs(e - e.T.conjugate())) > tolerance * scale:
+        raise ValueError("descriptor Y-to-S requires a real symmetric proportional matrix")
+    e_real = e.real
+    eigenvalues = np.linalg.eigvalsh(e_real)
+    if eigenvalues[0] <= tolerance * max(float(abs(eigenvalues[-1])), np.finfo(float).tiny):
+        raise ValueError("descriptor Y-to-S requires a positive-definite proportional matrix; singular E needs index reduction")
+    e_s = np.block([[np.eye(a.shape[0], dtype=complex), np.zeros((a.shape[0], d.shape[0]), dtype=complex)], [np.zeros((d.shape[0], a.shape[0]), dtype=complex), z0 * e_real]])
+    condition = float(np.linalg.cond(e_s))
+    if not np.isfinite(condition) or condition > max_descriptor_condition:
+        raise ValueError(f"descriptor Y-to-S pencil is ill-conditioned (cond(E_s)={condition:.12g})")
+    identity = np.eye(d.shape[0], dtype=complex)
+    a_s = np.block([[a, b], [-z0 * c, -(identity + z0 * d)]])
+    b_s = np.vstack((np.zeros((a.shape[0], d.shape[0]), dtype=complex), identity))
+    c_s = np.hstack((np.zeros((d.shape[0], a.shape[0]), dtype=complex), 2.0 * identity))
+    d_s = -identity
+    return _canonicalize_state_space(np.linalg.solve(e_s, a_s), np.linalg.solve(e_s, b_s), c_s, d_s, tolerance=tolerance)
