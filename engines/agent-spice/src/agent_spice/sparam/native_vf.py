@@ -73,6 +73,7 @@ class NativeVectorFitting:
         self.relocation_frontier_passivity_weight = 1.0
         self.relocation_frontier_max_candidates = 0
         self.relocation_frontier_diagnostics = []
+        self.residue_response_weights = None
 
     @staticmethod
     def get_model_order(poles: np.ndarray) -> int:
@@ -841,6 +842,7 @@ class NativeVectorFitting:
             fit_constant,
             fit_proportional,
             enforce_dc,
+            response_weights=self.residue_response_weights,
         )
         if self.high_frequency_residual_injection_enabled:
             fitted_responses = self._evaluate_residue_model(
@@ -901,6 +903,7 @@ class NativeVectorFitting:
                     fit_constant,
                     fit_proportional,
                     enforce_dc,
+                    response_weights=self.residue_response_weights,
                 )
         self.poles = poles * norm
         self.residues = np.array(residues) * norm
@@ -1031,7 +1034,7 @@ class NativeVectorFitting:
         self.wall_clock_time = time.perf_counter() - started
 
     @staticmethod
-    def _fit_residues(poles, freqs, freq_responses, fit_constant, fit_proportional, enforce_dc):
+    def _fit_residues(poles, freqs, freq_responses, fit_constant, fit_proportional, enforce_dc, response_weights=None):
         n_responses, n_freqs = np.shape(freq_responses)
         s = 2j * np.pi * freqs
         n_cols = NativeVectorFitting.get_model_order(poles)
@@ -1081,7 +1084,42 @@ class NativeVectorFitting:
         scaling = 1 / np.linalg.norm(a_matrix, axis=0)
         a_matrix = scaling * a_matrix
 
-        if enforce_dc and freqs[0] == 0.0:
+        if response_weights is not None:
+            weights = np.asarray(response_weights, dtype=float)
+            if weights.shape != (n_responses, n_freqs) or not np.isfinite(weights).all() or np.any(weights <= 0.0):
+                raise ValueError("response_weights must be finite positive with shape (responses, frequencies)")
+            x = np.empty((n_cols, n_responses), dtype=float)
+            residuals = np.empty(n_responses, dtype=float)
+            ranks: list[int] = []
+            singular_values: list[np.ndarray] = []
+            for response in range(n_responses):
+                root_weight = np.sqrt(weights[response])
+                if enforce_dc and freqs[0] == 0.0:
+                    mask_idx_constrained = np.zeros(n_cols, dtype=bool)
+                    mask_idx_constrained[idx_constant if fit_constant else [0]] = True
+                    design = a_matrix[1:, ~mask_idx_constrained] * root_weight[1:, None]
+                    target = freq_responses[response, 1:] * root_weight[1:]
+                    design_ri = np.vstack((design.real, design.imag))
+                    target_ri = np.hstack((target.real, target.imag))
+                    solution, residual, rank, singular = np.linalg.lstsq(design_ri, target_ri, rcond=None)
+                    x[~mask_idx_constrained, response] = solution
+                    constrained = np.real((freq_responses[response, 0] - a_matrix[0, ~mask_idx_constrained] @ solution) / a_matrix[0, mask_idx_constrained])
+                    x[mask_idx_constrained, response] = constrained
+                else:
+                    design = a_matrix * root_weight[:, None]
+                    target = freq_responses[response] * root_weight
+                    solution, residual, rank, singular = np.linalg.lstsq(
+                        np.vstack((design.real, design.imag)),
+                        np.hstack((target.real, target.imag)),
+                        rcond=None,
+                    )
+                    x[:, response] = solution
+                residuals[response] = float(residual[0]) if np.size(residual) else 0.0
+                ranks.append(int(rank))
+                singular_values.append(np.asarray(singular))
+            rank = min(ranks)
+            singular_vals = np.concatenate(singular_values)
+        elif enforce_dc and freqs[0] == 0.0:
             mask_idx_constrained = np.zeros(n_cols, dtype=bool)
             if fit_constant:
                 mask_idx_constrained[idx_constant] = True

@@ -99,6 +99,27 @@ def test_native_residue_fit_handles_all_real_poles():
     assert proportional_coeff.shape == (1,)
 
 
+def test_native_residue_fit_accepts_per_response_frequency_weights():
+    poles = np.array([-1.0e6 + 0.0j])
+    freqs = np.array([0.0, 1.0, 2.0, 3.0])
+    responses = np.array([[1.0 + 0.0j, 0.9 + 0.1j, 0.8 + 0.2j, 0.7 + 0.3j]])
+
+    residues, constant_coeff, proportional_coeff, *_ = NativeVectorFitting._fit_residues(
+        poles,
+        freqs,
+        responses,
+        True,
+        False,
+        True,
+        response_weights=np.array([[1.0, 2.0, 4.0, 8.0]]),
+    )
+
+    assert residues.shape == (1, 1)
+    assert np.isfinite(residues).all()
+    assert np.isfinite(constant_coeff).all()
+    assert np.all(proportional_coeff == 0.0)
+
+
 def test_native_high_frequency_complex_pair_repair_converts_largest_real_pole():
     poles = np.array([-1.0 + 0.0j, -10.0 + 0.0j, -2.0 + 3.0 * np.pi * 1j])
     repaired = NativeVectorFitting._ensure_high_frequency_complex_pairs(
