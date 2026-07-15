@@ -1,8 +1,9 @@
 # Agent-Spice
 
-Agent-Spice 是面向电源完整性与高速互连场景的命令行工具。当前稳定的用户工作流有两类：
+Agent-Spice 是面向电源完整性与高速互连场景的命令行工具。当前稳定的用户工作流包括：
 
 - `fit-sparam`：将 Touchstone S 参数拟合为 SPICE 子电路、RFM 和可核验的 fitted Touchstone。
+- `fit-sparam-cascade`：按 manifest 拟合并 enforce 多个二端口 S 参数，再检查和修复有序级联链的整体被动性。
 - `fit-yparam`：在 Y 参数域拟合 Touchstone，并输出 Y-domain SPICE 宏、Z-log 误差报告及可选的精确 Y-to-S RFM 交付物。
 - `tune-yparam-tran`：针对明确提供的 HSPICE 签核场景，细调既有 Y-derived S-RFM 的低频残差；不会修改 `fit-sparam` 或将某个 CPM 场景硬编码为默认行为。
 - `run-hspice`：解析 HSPICE 网表，展开 `.alter`，并生成兼容性报告与后端输入文件。
@@ -117,6 +118,19 @@ sqrt(mean(abs(S_fit - S_raw) ** 2))
 
 搜索从低阶开始。误差远高于目标时会增大阶次步长；接近目标时缩小步长。`--max-order-step` 限制最大跳步，默认值为 `8`；设为 `2` 可使用较保守的两阶步进。由于矢量拟合误差不严格单调，跳步模式只回填最后一个跨越目标的区间；若必须优先检查每个偶数阶次，使用 `--max-order-step 2`。
 
+整体很难拟合、但业务只要求某些频段时，可重复使用 `--priority-band F_MIN:F_MAX[:WEIGHT]`。频段权重会同时进入频点抽样、极点迁移和残差最小二乘；一旦指定频段，`--rms-target` 改为约束这些频段的并集，带外仅保留较小的 `--outside-band-weight`，但被动性仍检查整个输入频带：
+
+```powershell
+python -m agent_spice.cli fit-sparam .\channel.s2p `
+  --rms-target 0.001 `
+  --priority-band 1e8:8e8 `
+  --priority-band 1.2e9:1.5e9:2 `
+  --outside-band-weight 0.1 `
+  --passivity enforce
+```
+
+JSON 会同时记录 `target_mean_rms_error`、`comparison_mean_rms_error`、`outside_band_mean_rms_error`、`weighted_mean_rms_error` 和每段的 `frequency_band_metrics`，不会用局部 RMS 冒充全带 RMS。
+
 ### 被动性策略
 
 | `--passivity` 值 | 行为 |
@@ -151,6 +165,8 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 | `--report-top-rms N` | `5` | HTML 中绘制 RMS 最大的 S 参数元素数量。`0` 表示不绘制曲线。 |
 | `--log PATH` | `<输入名>.log`，位于 JSON 报告目录 | 写入逐阶次搜索摘要、渐近补偿过程、阶次、RMS、状态和失败原因。 |
 | `--rms-target FLOAT` | 必填 | 最终平均 S-RMS 上限，必须为正数。 |
+| `--priority-band F_MIN:F_MAX[:WEIGHT]` | 不启用 | 优先拟合的闭区间，单位 Hz；可重复。指定后，`--rms-target` 对所有优先频段的并集生效。默认段内权重为 `1`。 |
+| `--outside-band-weight FLOAT` | `0.1` | 优先频段以外的最小二乘权重，必须大于 `0`；只有指定 `--priority-band` 时生效。 |
 | `--passivity {off,check,enforce}` | `check` | 被动性处理策略，见上表。 |
 | `--max-order N` | `100` | 允许尝试的最大有效公共极点阶次；与端口数量无关。 |
 | `--min-order N` | `1` | 已由此前完整报告验证的最低起始阶次；仅用于相同输入的重复拟合以跳过已知失败的低阶 trial。新输入必须保留默认值。 |
@@ -240,7 +256,8 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 优先打开 HTML 报告：其中提供输入、SPICE、fitted Touchstone、RFM 和 wrapper 的本地链接，并展示最差 RMS 曲线。JSON 中建议重点检查：
 
 - `target_met`：是否满足目标。
-- `comparison_mean_rms_error`：与 `--rms-target` 使用同一 `mean_s_rms_v1` 公式的目标判定 RMS。
+- `comparison_mean_rms_error`：全部原始频点上的全带 `mean_s_rms_v1`；未指定优先频段时也是目标判定值。
+- `target_mean_rms_error`：实际用于目标搜索的 RMS；未指定优先频段时等于 `comparison_mean_rms_error`，指定后为优先频段并集 RMS。
 - `passivity_max_sigma_after`：最终被动性最大奇异值。
 - `constant_matrix_sigma`：RFM 渐近常数矩阵 D 的最大奇异值，严格验收时必须小于 `1`。
 - `passivity_enforcement_diagnostics`：D 投影、固定极点补偿、DC 保持微阻尼和最终密集验证的可审计记录。
@@ -248,6 +265,19 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
 - `order_trials`：搜索过程中的每个试探阶次及其结果。
 
 失败时不会把最接近的模型当作成功交付：CLI 返回 `FAIL` 和非零退出码；若存在有限 RMS 候选，仍会导出 RMS 最低的诊断输出，并在 JSON/HTML 中标记为“最佳可得输出（未达目标）”。最终 JSON/HTML 会保留搜索记录，方便判断是最大阶次不足、RMS 未达标，还是被动性修复后 RMS 超标。
+
+### 二端口级联拟合
+
+多个二端口按明确顺序连接时，使用 `fit-sparam-cascade`。命令会逐块执行目标阶数搜索和 passivity enforcement，再在共同覆盖频段内统一参考阻抗、级联 fitted S 参数并检查整体最大奇异值；必要时在不突破各块 RMS 门限的前提下选择最小收缩修复。
+
+```powershell
+python -m agent_spice.cli fit-sparam-cascade .\cascade.json `
+  --output-root .\cascade-fit `
+  --rms-target 0.001 `
+  --max-order 80
+```
+
+当前稳定关系模型是 manifest 中的有序 2-port 链，不支持多端口任意连接图，也不做带外延拓。完整 manifest、产物、修复算法和失败语义见 [S 参数分频段与级联拟合使用说明](docs/sparam-band-cascade-usage.md)。
 
 ## HSPICE 网表处理
 

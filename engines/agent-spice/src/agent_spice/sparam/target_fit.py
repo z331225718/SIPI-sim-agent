@@ -135,8 +135,12 @@ def trial_from_fit_result(
     requested_order: int,
 ) -> SParamOrderTrial:
     effective_order = int(getattr(fit_result, "expanded_model_order", 0) or 0)
-    pre_mean_rms = getattr(fit_result, "pre_enforcement_mean_rms_error", None)
-    final_mean_rms = getattr(fit_result, "comparison_mean_rms_error", None)
+    pre_mean_rms = getattr(fit_result, "pre_enforcement_target_mean_rms_error", None)
+    if pre_mean_rms is None:
+        pre_mean_rms = getattr(fit_result, "pre_enforcement_mean_rms_error", None)
+    final_mean_rms = getattr(fit_result, "target_mean_rms_error", None)
+    if final_mean_rms is None:
+        final_mean_rms = getattr(fit_result, "comparison_mean_rms_error", None)
     pre_value = float(final_mean_rms if pre_mean_rms is None else pre_mean_rms)
     final_value = math.inf if final_mean_rms is None else float(final_mean_rms)
     pre_sigma = getattr(fit_result, "passivity_max_sigma_before", None)

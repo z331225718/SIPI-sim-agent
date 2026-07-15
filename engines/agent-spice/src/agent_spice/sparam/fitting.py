@@ -127,6 +127,13 @@ def _configure_native_vector_fitting(vector_fit: Any, config: "SParamFitConfig",
 def _create_vector_fitting(network: Any, config: "SParamFitConfig") -> NativeVectorFitting:
     vector_fit = NativeVectorFitting(network)
     _configure_native_vector_fitting(vector_fit, config, _validated_network_nports(network))
+    frequency_weights = _frequency_fit_weights(network.f, config) if config.priority_bands_hz else None
+    if frequency_weights is not None:
+        vector_fit.frequency_fit_weights = frequency_weights
+        vector_fit.residue_response_weights = np.broadcast_to(
+            frequency_weights,
+            (network.nports * network.nports, len(network.f)),
+        ).copy()
     return vector_fit
 
 
@@ -167,6 +174,8 @@ class SParamFitConfig:
     fit_max_frequency_points: int | None = None
     fit_f_min: float | None = None
     fit_f_max: float | None = None
+    priority_bands_hz: tuple[tuple[float, float, float], ...] = ()
+    outside_band_weight: float = 0.1
     use_lightweight_network: bool = False
     high_frequency_complex_pair_count: int = 0
     high_frequency_complex_pair_damping: float = 0.03
@@ -287,6 +296,12 @@ class SParamFitResult:
     passivity_enforcement_diagnostics: list[dict[str, Any]] | None = None
     comparison_mean_rms_error: float | None = None
     pre_enforcement_mean_rms_error: float | None = None
+    target_mean_rms_error: float | None = None
+    pre_enforcement_target_mean_rms_error: float | None = None
+    priority_band_mean_rms_error: float | None = None
+    outside_band_mean_rms_error: float | None = None
+    weighted_mean_rms_error: float | None = None
+    frequency_band_metrics: list[dict[str, Any]] | None = None
     fit_seconds: float = 0.0
     check_seconds: float = 0.0
     enforce_seconds: float = 0.0
@@ -348,6 +363,15 @@ class SParamFitResult:
             "comparison_rms_error_scope": "original_frequency_points",
             "comparison_mean_rms_error": self.comparison_mean_rms_error,
             "pre_enforcement_mean_rms_error": self.pre_enforcement_mean_rms_error,
+            "target_mean_rms_error": self.target_mean_rms_error,
+            "target_mean_rms_error_scope": (
+                "priority_band_union" if self.config.priority_bands_hz else "original_frequency_points"
+            ),
+            "pre_enforcement_target_mean_rms_error": self.pre_enforcement_target_mean_rms_error,
+            "priority_band_mean_rms_error": self.priority_band_mean_rms_error,
+            "outside_band_mean_rms_error": self.outside_band_mean_rms_error,
+            "weighted_mean_rms_error": self.weighted_mean_rms_error,
+            "frequency_band_metrics": self.frequency_band_metrics,
             "fit_seconds": self.fit_seconds,
             "check_seconds": self.check_seconds,
             "enforce_seconds": self.enforce_seconds,
@@ -541,7 +565,60 @@ def _frequency_selection_summary(config: SParamFitConfig) -> dict[str, Any]:
         "max_points": config.fit_max_frequency_points,
         "f_min": config.fit_f_min,
         "f_max": config.fit_f_max,
+        "priority_bands_hz": [list(band) for band in config.priority_bands_hz],
+        "outside_band_weight": config.outside_band_weight,
     }
+
+
+def _frequency_fit_weights(freqs: Any, config: SParamFitConfig) -> np.ndarray | None:
+    if not config.priority_bands_hz:
+        return None
+    if not math.isfinite(config.outside_band_weight) or config.outside_band_weight <= 0.0:
+        raise ValueError("outside_band_weight must be finite and > 0")
+    frequency_array = np.asarray(freqs, dtype=float)
+    weights = np.full(frequency_array.shape, float(config.outside_band_weight), dtype=float)
+    covered = np.zeros(frequency_array.shape, dtype=bool)
+    for band_index, raw_band in enumerate(config.priority_bands_hz, start=1):
+        if len(raw_band) != 3:
+            raise ValueError(f"priority band {band_index} must contain f_min, f_max, and weight")
+        f_min, f_max, weight = (float(value) for value in raw_band)
+        if not all(math.isfinite(value) for value in (f_min, f_max, weight)):
+            raise ValueError(f"priority band {band_index} values must be finite")
+        if f_min < 0.0 or f_min >= f_max:
+            raise ValueError(f"priority band {band_index} must satisfy 0 <= f_min < f_max")
+        if weight <= 0.0:
+            raise ValueError(f"priority band {band_index} weight must be > 0")
+        mask = (frequency_array >= f_min) & (frequency_array <= f_max)
+        if not np.any(mask):
+            raise ValueError(
+                f"priority band {band_index} [{f_min:.12g}, {f_max:.12g}] Hz contains no frequency samples"
+            )
+        weights[mask] = np.maximum(weights[mask], weight)
+        covered |= mask
+    if not np.any(covered):
+        raise ValueError("priority bands contain no frequency samples")
+    return weights
+
+
+def _weighted_sample_positions(weights: np.ndarray, count: int) -> np.ndarray:
+    if count >= len(weights):
+        return np.arange(len(weights), dtype=int)
+    cumulative = np.cumsum(np.asarray(weights, dtype=float))
+    targets = np.linspace(0.0, float(cumulative[-1]), count)
+    positions = np.searchsorted(cumulative, targets, side="left")
+    positions[0] = 0
+    positions[-1] = len(weights) - 1
+    unique = list(dict.fromkeys(int(value) for value in positions))
+    if len(unique) < count:
+        selected = set(unique)
+        for candidate in np.argsort(weights)[::-1]:
+            index = int(candidate)
+            if index not in selected:
+                unique.append(index)
+                selected.add(index)
+            if len(unique) == count:
+                break
+    return np.asarray(sorted(unique[:count]), dtype=int)
 
 
 def _selected_z0(network: Any, indices: np.ndarray) -> Any:
@@ -569,10 +646,17 @@ def _select_fit_network(network: Any, config: SParamFitConfig) -> Any:
         indices = indices[:: config.fit_frequency_stride]
 
     if config.fit_max_frequency_points is not None and len(indices) > config.fit_max_frequency_points:
-        sampled_positions = np.linspace(0, len(indices) - 1, config.fit_max_frequency_points, dtype=int)
+        candidate_weights = _frequency_fit_weights(np.asarray(network.f)[indices], config)
+        sampled_positions = (
+            np.linspace(0, len(indices) - 1, config.fit_max_frequency_points, dtype=int)
+            if candidate_weights is None
+            else _weighted_sample_positions(candidate_weights, config.fit_max_frequency_points)
+        )
         indices = indices[np.unique(sampled_positions)]
     if len(indices) < 2:
         raise ValueError("Frequency selection must contain at least 2 samples for vector fitting")
+
+    _frequency_fit_weights(np.asarray(network.f)[indices], config)
 
     if len(indices) == len(network.f) and np.array_equal(indices, np.arange(len(network.f))):
         return network
@@ -791,6 +875,60 @@ def _comparison_rms_error(network: Any, vector_fit: Any, parameter_type: str) ->
                 original = network_array[:, row, column].astype(complex)
                 error_mean_squared += float(np.mean(np.square(np.abs(original - np.asarray(fitted)))))
         return float(math.sqrt(error_mean_squared))
+    except Exception:
+        return None
+
+
+def _comparison_frequency_metrics(
+    network: Any,
+    vector_fit: Any,
+    config: SParamFitConfig,
+) -> dict[str, Any] | None:
+    if not config.priority_bands_hz:
+        return None
+    try:
+        original = np.asarray(network.s, dtype=complex)
+        fitted = np.asarray(evaluate_fitted_s(vector_fit, network.f), dtype=complex)
+        if fitted.shape != original.shape:
+            return None
+        squared_error = np.square(np.abs(original - fitted))
+        freqs = np.asarray(network.f, dtype=float)
+        fit_weights = _frequency_fit_weights(freqs, config)
+        assert fit_weights is not None
+        priority_mask = np.zeros(freqs.shape, dtype=bool)
+
+        def mean_rms(mask: np.ndarray) -> float | None:
+            if not np.any(mask):
+                return None
+            per_response_mse = np.mean(squared_error[mask], axis=0)
+            return float(np.sqrt(np.sum(per_response_mse)) / float(network.nports))
+
+        bands: list[dict[str, Any]] = []
+        for index, (f_min, f_max, weight) in enumerate(config.priority_bands_hz, start=1):
+            mask = (freqs >= f_min) & (freqs <= f_max)
+            priority_mask |= mask
+            bands.append(
+                {
+                    "index": index,
+                    "f_min_hz": float(f_min),
+                    "f_max_hz": float(f_max),
+                    "weight": float(weight),
+                    "frequency_points": int(np.count_nonzero(mask)),
+                    "mean_rms_error": mean_rms(mask),
+                }
+            )
+
+        weighted_per_response_mse = np.sum(squared_error * fit_weights[:, None, None], axis=0) / np.sum(
+            fit_weights
+        )
+        return {
+            "bands": bands,
+            "priority_mean_rms_error": mean_rms(priority_mask),
+            "outside_mean_rms_error": mean_rms(~priority_mask),
+            "weighted_mean_rms_error": float(
+                np.sqrt(np.sum(weighted_per_response_mse)) / float(network.nports)
+            ),
+        }
     except Exception:
         return None
 
@@ -1285,6 +1423,26 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     )
     if not worst_rms_rows:
         worst_rms_rows = "<tr><td colspan=\"2\">无法计算逐元素 RMS。</td></tr>"
+    band_metric_rows = "\n".join(
+        "<tr>"
+        f"<td>{item['index']}</td>"
+        f"<td>{_format_hz(item['f_min_hz'])}</td>"
+        f"<td>{_format_hz(item['f_max_hz'])}</td>"
+        f"<td>{_format_float(item['weight'])}</td>"
+        f"<td>{item['frequency_points']}</td>"
+        f"<td>{_format_float(item['mean_rms_error'])}</td>"
+        "</tr>"
+        for item in (result.frequency_band_metrics or [])
+    )
+    band_metric_section = ""
+    if band_metric_rows:
+        band_metric_section = f"""
+  <h2>优先频段 RMS</h2>
+  <table>
+    <tr><th>频段</th><th>起点</th><th>终点</th><th>权重</th><th>频点数</th><th>Mean RMS</th></tr>
+    {band_metric_rows}
+  </table>
+"""
     configuration_rows = "\n".join(
         f"<tr><td>{escape(label)}</td><td>{escape(value)}</td></tr>"
         for label, value in _report_configuration_summary(result)
@@ -1343,7 +1501,7 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     <div class="card"><div class="label">端口数</div><div class="value">{result.ports}</div></div>
     <div class="card"><div class="label">频点数</div><div class="value">{result.frequency_points}</div></div>
     <div class="card"><div class="label">拟合频点数</div><div class="value">{result.fit_frequency_points}</div></div>
-    <div class="card"><div class="label">目标判定值（mean_s_rms_v1）</div><div class="value">{_format_float(result.comparison_mean_rms_error)}</div></div>
+    <div class="card"><div class="label">目标判定值（mean_s_rms_v1）</div><div class="value">{_format_float(result.target_mean_rms_error)}</div></div>
   </div>
 
   <h2>拟合配置</h2>
@@ -1402,9 +1560,14 @@ def _render_html_report(result: SParamFitResult, traces: list[dict[str, Any]]) -
     <tr><td>拟合频点数</td><td>{result.fit_frequency_points}</td></tr>
     <tr><td>原始频率范围</td><td>{_format_hz(freq_start)} 至 {_format_hz(freq_end)}</td></tr>
     <tr><td>拟合频率范围</td><td>{_format_hz(fit_freq_start)} 至 {_format_hz(fit_freq_end)}</td></tr>
-    <tr><td>目标判定值（mean_s_rms_v1）</td><td>{_format_float(result.comparison_mean_rms_error)}</td></tr>
+    <tr><td>目标判定值（mean_s_rms_v1）</td><td>{_format_float(result.target_mean_rms_error)}</td></tr>
+    <tr><td>全带 Mean RMS</td><td>{_format_float(result.comparison_mean_rms_error)}</td></tr>
+    <tr><td>带外 Mean RMS</td><td>{_format_float(result.outside_band_mean_rms_error)}</td></tr>
+    <tr><td>加权 Mean RMS</td><td>{_format_float(result.weighted_mean_rms_error)}</td></tr>
     {selection_rows}
   </table>
+
+  {band_metric_section}
 
   <h2>最差 RMS 元素</h2>
   <table>
@@ -1685,6 +1848,12 @@ def _fit_touchstone_execution(
             pre_comparison_rms_error,
             network.nports,
         )
+        pre_frequency_metrics = _comparison_frequency_metrics(network, vector_fit, config)
+        pre_enforcement_target_mean_rms_error = (
+            pre_enforcement_mean_rms_error
+            if pre_frequency_metrics is None
+            else pre_frequency_metrics["priority_mean_rms_error"]
+        )
         if config.passivity_enforce_rms_target is not None and (
             not math.isfinite(config.passivity_enforce_rms_target)
             or config.passivity_enforce_rms_target <= 0.0
@@ -1702,27 +1871,27 @@ def _fit_touchstone_execution(
         if (
             should_enforce
             and config.passivity_enforce_rms_target is not None
-            and pre_enforcement_mean_rms_error is not None
-            and pre_enforcement_mean_rms_error > config.passivity_enforce_rms_target
+            and pre_enforcement_target_mean_rms_error is not None
+            and pre_enforcement_target_mean_rms_error > config.passivity_enforce_rms_target
         ):
             should_enforce = False
             passivity_enforcement_skip_reason = "pre_rms_above_target"
             progress.info(
                 "skipping passivity enforcement because pre-enforcement mean RMS "
-                f"{pre_enforcement_mean_rms_error:.9g} exceeds target "
+                f"{pre_enforcement_target_mean_rms_error:.9g} exceeds target "
                 f"{config.passivity_enforce_rms_target:.9g}"
             )
         if (
             should_check
             and config.passivity_check_rms_target is not None
-            and pre_enforcement_mean_rms_error is not None
-            and pre_enforcement_mean_rms_error > config.passivity_check_rms_target
+            and pre_enforcement_target_mean_rms_error is not None
+            and pre_enforcement_target_mean_rms_error > config.passivity_check_rms_target
         ):
             should_check = False
             passivity_check_skip_reason = "pre_rms_above_target"
             progress.info(
                 "skipping passivity check because pre-enforcement mean RMS "
-                f"{pre_enforcement_mean_rms_error:.9g} exceeds target "
+                f"{pre_enforcement_target_mean_rms_error:.9g} exceeds target "
                 f"{config.passivity_check_rms_target:.9g}"
             )
         use_low_memory_passivity = _uses_low_memory_passivity(config)
@@ -2146,6 +2315,13 @@ def _fit_touchstone_execution(
 
         rms_error = _safe_rms_error(vector_fit, config.parameter_type)
         comparison_rms_error = _comparison_rms_error(network, vector_fit, config.parameter_type)
+        frequency_metrics = _comparison_frequency_metrics(network, vector_fit, config)
+        comparison_mean_rms_error = _mean_rms_error_from_sum_style(comparison_rms_error, network.nports)
+        target_mean_rms_error = (
+            comparison_mean_rms_error
+            if frequency_metrics is None
+            else frequency_metrics["priority_mean_rms_error"]
+        )
         constant_matrix_sigma = _constant_matrix_sigma(vector_fit, network.nports)
         if (
             config.enforce_passivity
@@ -2205,8 +2381,20 @@ def _fit_touchstone_execution(
             passivity_enforcement_diagnostics=getattr(vector_fit, "passivity_enforcement_diagnostics", None),
             quality_report=quality_report,
             native_baseline_version=NATIVE_BASELINE_VERSION,
-            comparison_mean_rms_error=_mean_rms_error_from_sum_style(comparison_rms_error, network.nports),
+            comparison_mean_rms_error=comparison_mean_rms_error,
             pre_enforcement_mean_rms_error=pre_enforcement_mean_rms_error,
+            target_mean_rms_error=target_mean_rms_error,
+            pre_enforcement_target_mean_rms_error=pre_enforcement_target_mean_rms_error,
+            priority_band_mean_rms_error=(
+                None if frequency_metrics is None else frequency_metrics["priority_mean_rms_error"]
+            ),
+            outside_band_mean_rms_error=(
+                None if frequency_metrics is None else frequency_metrics["outside_mean_rms_error"]
+            ),
+            weighted_mean_rms_error=(
+                None if frequency_metrics is None else frequency_metrics["weighted_mean_rms_error"]
+            ),
+            frequency_band_metrics=None if frequency_metrics is None else frequency_metrics["bands"],
             fit_seconds=fit_seconds,
             check_seconds=check_seconds,
             enforce_seconds=enforce_seconds,
@@ -2596,6 +2784,7 @@ def fit_touchstone_to_spice_target(
     report_top_rms: int = 6,
     max_order_step: int = 8,
     tuning_overrides: dict[str, Any] | None = None,
+    _selected_execution_sink: Callable[[_FitExecution], None] | None = None,
 ) -> SParamTargetSearchResult:
     if report_top_rms < 0:
         raise ValueError("report_top_rms must be >= 0")
@@ -2700,6 +2889,8 @@ def fit_touchstone_to_spice_target(
                 if artifact_path is not None:
                     artifact_path.unlink(missing_ok=True)
         else:
+            if _selected_execution_sink is not None:
+                _selected_execution_sink(best_execution)
             write_progress(
                 "target-search exporting best-effort "
                 f"order={best_trial.requested_order} rms={_format_float(best_trial.final_mean_rms)}"
@@ -2731,6 +2922,8 @@ def fit_touchstone_to_spice_target(
         selected_execution = executions_by_order.get(selected_order)
         if selected_execution is None:
             raise RuntimeError("selected target trial is missing its internal fit execution")
+        if _selected_execution_sink is not None:
+            _selected_execution_sink(selected_execution)
         selected_fit_result = _write_fit_outputs(
             selected_execution,
             output_path,

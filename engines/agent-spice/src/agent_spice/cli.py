@@ -44,6 +44,18 @@ SPARAM_IDEM_FAST_PASSIVITY_OPTION_FLAGS = {
     "passivity_f_max": "--passivity-f-max",
 }
 
+
+def fit_sparam_cascade(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    from agent_spice.sparam.cascade import fit_sparam_cascade as implementation
+
+    return implementation(*args, **kwargs)
+
+
+def _cascade_fit_config(**kwargs: Any) -> Any:
+    from agent_spice.sparam.cascade import CascadeFitConfig
+
+    return CascadeFitConfig(**kwargs)
+
 _EXPERT_TUNING_OPTION_FLAGS = {
     "init_pole_spacing": ("--pole-spacing", "--init-pole-spacing"),
     "fit_max_iterations": ("--fit-iterations", "--fit-max-iterations"),
@@ -555,6 +567,31 @@ def _parse_frequency_bands(value: Any) -> tuple[tuple[float, float], ...]:
     return tuple(bands)
 
 
+def _parse_priority_bands(values: Any) -> tuple[tuple[float, float, float], ...]:
+    if values is None:
+        return ()
+    items = values if isinstance(values, (list, tuple)) else [values]
+    bands: list[tuple[float, float, float]] = []
+    for raw_item in items:
+        parts = [part.strip() for part in str(raw_item).split(":")]
+        if len(parts) not in {2, 3}:
+            raise ValueError(f"Expected priority band F_MIN:F_MAX[:WEIGHT], got '{raw_item}'")
+        try:
+            f_min = float(parts[0])
+            f_max = float(parts[1])
+            weight = 1.0 if len(parts) == 2 else float(parts[2])
+        except ValueError as exc:
+            raise ValueError(f"Expected numeric priority band, got '{raw_item}'") from exc
+        if not all(math.isfinite(value) for value in (f_min, f_max, weight)):
+            raise ValueError(f"Priority band values must be finite, got '{raw_item}'")
+        if f_min < 0.0 or f_min >= f_max:
+            raise ValueError(f"Priority band must satisfy 0 <= F_MIN < F_MAX, got '{raw_item}'")
+        if weight <= 0.0:
+            raise ValueError(f"Priority band weight must be > 0, got '{raw_item}'")
+        bands.append((f_min, f_max, weight))
+    return tuple(bands)
+
+
 def check_modal_quality(result: Any, args: Any) -> dict[str, Any]:
     checks = []
     blocking_reasons = []
@@ -1024,6 +1061,21 @@ def main(argv: list[str] | None = None) -> int:
     fit_parser.add_argument("--log", type=Path, help="Progress log path; defaults next to the JSON report as <input>.log.")
     fit_parser.add_argument("--rms-target", type=float, help="Required final mean S-RMS target.")
     fit_parser.add_argument(
+        "--priority-band",
+        action="append",
+        metavar="F_MIN:F_MAX[:WEIGHT]",
+        help=(
+            "Prioritize a frequency band during pole relocation and residue fitting; repeat for multiple bands. "
+            "When present, --rms-target is evaluated over the union of these bands."
+        ),
+    )
+    fit_parser.add_argument(
+        "--outside-band-weight",
+        type=float,
+        default=0.1,
+        help="Least-squares weight outside --priority-band ranges (default: 0.1; must be > 0).",
+    )
+    fit_parser.add_argument(
         "--passivity",
         choices=["off", "check", "enforce"],
         default=None,
@@ -1149,6 +1201,31 @@ def main(argv: list[str] | None = None) -> int:
     _add_hidden_argument(fit_parser, "--max-comparison-rms-error", type=float, default=0.05)
     _add_hidden_argument(fit_parser, "--max-passivity-epsilon", type=float, default=1e-6)
     _add_hidden_argument(fit_parser, "--require-dc", action="store_true")
+
+    cascade_fit_parser = subparsers.add_parser(
+        "fit-sparam-cascade",
+        description="Fit and enforce an ordered chain of 2-port Touchstone blocks, then verify cascade passivity.",
+    )
+    cascade_fit_parser.add_argument("manifest", type=Path, help="Version 1 cascade JSON manifest.")
+    cascade_fit_parser.add_argument("--output-root", type=Path, help="Output directory for block and cascade artifacts.")
+    cascade_fit_parser.add_argument("--report", type=Path, help="Cascade JSON report path.")
+    cascade_fit_parser.add_argument("--rms-target", type=float, required=True, help="Default per-block target mean S-RMS.")
+    cascade_fit_parser.add_argument("--max-order", type=int, default=100)
+    cascade_fit_parser.add_argument("--min-order", type=int, default=1)
+    cascade_fit_parser.add_argument("--max-order-step", type=int, default=8)
+    cascade_fit_parser.add_argument("--passivity-epsilon", type=float, default=1e-6)
+    cascade_fit_parser.add_argument("--cascade-passivity-epsilon", type=float, default=1e-8)
+    cascade_fit_parser.add_argument("--cascade-samples", type=int, default=1001)
+    cascade_fit_parser.add_argument("--reference-impedance", type=float, default=50.0, metavar="OHM")
+    cascade_fit_parser.add_argument("--adjustment-iterations", type=int, default=12)
+    cascade_fit_parser.add_argument("--minimum-scale", type=float, default=0.8)
+    cascade_fit_parser.add_argument(
+        "--priority-band",
+        action="append",
+        metavar="F_MIN:F_MAX[:WEIGHT]",
+        help="Per-block priority band; repeat for multiple bands.",
+    )
+    cascade_fit_parser.add_argument("--outside-band-weight", type=float, default=0.1)
 
     y_fit_parser = subparsers.add_parser(
         "fit-yparam",
@@ -1467,6 +1544,34 @@ def main(argv: list[str] | None = None) -> int:
             ngspice_executable=args.ngspice,
             code_model=args.code_model,
         )
+    if args.command == "fit-sparam-cascade":
+        output_root = args.output_root or args.manifest.with_name(f"{args.manifest.stem}_fit")
+        try:
+            payload = fit_sparam_cascade(
+                args.manifest,
+                output_root,
+                config=_cascade_fit_config(
+                    rms_target=args.rms_target,
+                    max_order=args.max_order,
+                    min_order=args.min_order,
+                    max_order_step=args.max_order_step,
+                    passivity_epsilon=args.passivity_epsilon,
+                    cascade_passivity_epsilon=args.cascade_passivity_epsilon,
+                    cascade_samples=args.cascade_samples,
+                    reference_impedance_ohm=args.reference_impedance,
+                    adjustment_iterations=args.adjustment_iterations,
+                    minimum_scale=args.minimum_scale,
+                    priority_bands_hz=_parse_priority_bands(args.priority_band),
+                    outside_band_weight=args.outside_band_weight,
+                ),
+                report_path=args.report,
+            )
+        except (OSError, RuntimeError, ValueError) as exc:
+            print(f"fit-sparam-cascade status=FAIL reason={exc}", file=sys.stderr)
+            return 1
+        status = payload.get("status", "FAIL")
+        print(f"fit-sparam-cascade status={status} output={output_root}")
+        return 0 if status == "PASS" else 1
     if args.command == "fit-sparam":
         try:
             _apply_sparam_auto_preset(args, effective_argv)
@@ -1517,6 +1622,7 @@ def main(argv: list[str] | None = None) -> int:
         if max_order is None:
             max_order = 100
         try:
+            priority_bands = _parse_priority_bands(args.priority_band)
             target = SParamFitTarget(
                 mean_rms=rms_target,
                 passivity=passivity_policy,
@@ -1557,6 +1663,8 @@ def main(argv: list[str] | None = None) -> int:
             fit_max_frequency_points=args.fit_max_frequency_points,
             fit_f_min=args.fit_f_min,
             fit_f_max=args.fit_f_max,
+            priority_bands_hz=priority_bands,
+            outside_band_weight=args.outside_band_weight,
             use_lightweight_network=args.use_lightweight_network,
             high_frequency_complex_pair_count=args.high_frequency_complex_pairs,
             high_frequency_complex_pair_damping=args.high_frequency_complex_pair_damping,

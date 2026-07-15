@@ -74,6 +74,7 @@ class NativeVectorFitting:
         self.relocation_frontier_max_candidates = 0
         self.relocation_frontier_diagnostics = []
         self.residue_response_weights = None
+        self.frequency_fit_weights = None
 
     @staticmethod
     def get_model_order(poles: np.ndarray) -> int:
@@ -580,12 +581,22 @@ class NativeVectorFitting:
         previous_input_complex_rows: list[tuple[float, float]] = []
         while iterations > 0:
             frequency_relocation_weights = None
+            if self.frequency_fit_weights is not None:
+                fit_weights = np.asarray(self.frequency_fit_weights, dtype=float)
+                if (
+                    fit_weights.shape != freqs_norm.shape
+                    or not np.isfinite(fit_weights).all()
+                    or np.any(fit_weights <= 0.0)
+                ):
+                    raise ValueError("frequency_fit_weights must be finite positive with one value per frequency")
+                frequency_relocation_weights = np.sqrt(fit_weights)
             if self.high_frequency_relocation_weight_enabled:
-                frequency_relocation_weights = np.ones_like(freqs_norm, dtype=float)
+                if frequency_relocation_weights is None:
+                    frequency_relocation_weights = np.ones_like(freqs_norm, dtype=float)
                 high_mask = np.asarray(self.network.f, dtype=float) >= (
                     self.high_frequency_relocation_weight_lower_fraction * float(np.max(self.network.f))
                 )
-                frequency_relocation_weights[high_mask] = float(self.high_frequency_relocation_weight_gain)
+                frequency_relocation_weights[high_mask] *= float(self.high_frequency_relocation_weight_gain)
             pole_regularization_weights = self._dynamic_edge_c_res_regularization_weights(
                 poles,
                 norm,
@@ -985,6 +996,8 @@ class NativeVectorFitting:
             )
             candidate_fit.effective_order_max = self.effective_order_max
             candidate_fit.effective_complex_pole_count = self.effective_complex_pole_count
+            candidate_fit.frequency_fit_weights = self.frequency_fit_weights
+            candidate_fit.residue_response_weights = self.residue_response_weights
             candidate_fit.vector_fit(
                 n_poles_real=int(candidate["n_poles_real"]),
                 n_poles_cmplx=int(candidate["n_poles_cmplx"]),
