@@ -11,6 +11,8 @@ use crate::expression;
 
 pub type Node = Option<usize>;
 
+const HSPICE_DEFAULT_RESMIN: f64 = 1e-5;
+
 #[derive(Debug, Clone)]
 pub enum Waveform {
     Pulse {
@@ -502,6 +504,7 @@ impl Deck {
             current_tolerance: 1e-12,
             charge_tolerance: 1e-14,
             truncation_tolerance: 7.0,
+            minimum_resistance: HSPICE_DEFAULT_RESMIN,
             ..Parser::default()
         };
         let lines = logical_lines(text);
@@ -1229,6 +1232,7 @@ struct Parser {
     current_tolerance: f64,
     charge_tolerance: f64,
     truncation_tolerance: f64,
+    minimum_resistance: f64,
     probes: HashMap<String, Vec<String>>,
     measurements: Vec<Measurement>,
 }
@@ -1286,11 +1290,12 @@ impl Parser {
         match kind {
             b'R' => {
                 let value = parse_number(&tokens[3], &self.parameters)?;
-                if value <= 0.0 {
+                if value < 0.0 {
                     return Err(Error::Parse(format!(
-                        "resistance must be positive on '{name}'"
+                        "resistance must be non-negative on '{name}'"
                     )));
                 }
+                let value = value.max(self.minimum_resistance);
                 self.elements
                     .push(PendingElement::Resistor(name, positive, negative, value));
             }
@@ -1490,6 +1495,7 @@ impl Parser {
                         "abstol" | "iabstol" => self.current_tolerance = value,
                         "chgtol" => self.charge_tolerance = value,
                         "trtol" => self.truncation_tolerance = value,
+                        "resmin" => self.minimum_resistance = value,
                         _ => {}
                     }
                 }

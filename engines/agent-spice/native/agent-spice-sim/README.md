@@ -6,6 +6,8 @@ PI/SI rather than full device-level SPICE compatibility.
 Current executable slice:
 
 - R, C, L, independent voltage/current sources, and E/F/G/H controlled sources;
+- HSPICE-compatible resistor flooring with default `RESMIN=1e-5` and
+  `.option RESMIN=...` overrides;
 - nested parameterized `.subckt`, `.global`, recursive relative `.include` /
   `.inc`, external `.lib` section selection, numeric and `str('...')` `.param`,
   nested `.if`/`.elseif`/`.else`/`.endif`, and SI numeric suffixes;

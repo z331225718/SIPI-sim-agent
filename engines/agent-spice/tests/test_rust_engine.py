@@ -216,6 +216,38 @@ def test_rust_engine_evaluates_subcircuit_local_hspice_conditionals(
     assert result["points"][0]["values"]["out"] == pytest.approx(1.0 / 3.0)
 
 
+@pytest.mark.parametrize(
+    ("option", "expected"),
+    [
+        ("", 1.0 / (1.0 + 1e-5)),
+        (".option resmin=100m\n", 1.0 / 1.1),
+    ],
+)
+def test_rust_engine_applies_hspice_resmin_to_zero_ohm_dummy_resistors(
+    tmp_path: Path,
+    option: str,
+    expected: float,
+) -> None:
+    deck = tmp_path / "zero_ohm_dummy.sp"
+    deck.write_text(
+        "HSPICE zero-ohm dummy resistor\n"
+        f"{option}"
+        ".subckt branch in out params: random=0\n"
+        "Ran in out 'random'\n"
+        ".ends branch\n"
+        "V1 in 0 1\n"
+        "Xdummy in out branch\n"
+        "Rload out 0 1\n"
+        ".op\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+
+    result = run(deck)
+
+    assert result["points"][0]["values"]["out"] == pytest.approx(expected)
+
+
 def test_rust_engine_evaluates_hspice_measurement_operations(tmp_path: Path) -> None:
     deck = tmp_path / "measurements.sp"
     deck.write_text(
