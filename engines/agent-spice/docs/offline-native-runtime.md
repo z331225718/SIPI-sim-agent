@@ -28,7 +28,7 @@ Windows x64 服务器先记录：
 python --version
 ```
 
-当前 CI 直接在 GitHub Linux runner 上构建 `linux_x86_64` wheel，它不是 musl wheel，也尚未声明 manylinux 基线。服务器的 glibc 不能比构建机更旧；首次部署应先执行下面的内核 smoke，再投入长任务。Windows x64 wheel 已完成干净环境实跑。
+Linux x64 wheel 中的 `agent-spice-sim` 使用 `x86_64-unknown-linux-musl` 静态构建，不依赖服务器 glibc。wheel 使用通用 `linux_x86_64` 平台标签，仍要求 x86_64 Linux 内核。完整 Python CLI 与 sfit 使用的 NumPy、SciPy、scikit-rf 和 cvxpy wheel 仍可能有 manylinux/glibc 要求，因此必须按服务器上的 Python 版本和平台准备 wheelhouse。Windows x64 wheel 已完成干净环境实跑。
 
 ## 在联网机器准备 wheelhouse
 
