@@ -137,12 +137,12 @@ def test_rust_engine_accepts_hspice_dollar_comments(tmp_path: Path) -> None:
     deck.write_text(
         "native HSPICE dollar comments $ title comment\n"
         "$ full-line comment containing .fft v(out)\n"
-        ".param vddc = 1 rval = 1k $ spaced HSPICE assignments\n"
-        ".subckt branch in out params: r = rval $ subcircuit comment\n"
+        ".param vddc      =       1    rval   =    1k $ spaced HSPICE assignments\n"
+        ".subckt branch in out params: r      =      rval $ subcircuit comment\n"
         "Rbranch in out {r} $ element comment\n"
         ".ends branch $ end comment\n"
         "V1 in 0 {vddc} $ source comment\n"
-        "Xload in out branch r = 2k $ instance override comment\n"
+        "Xload in out branch r        =        2k $ instance override comment\n"
         ".inc 'load$part.inc' $ quoted dollar is part of the path\n"
         ".op $ analysis comment\n"
         ".end $ final comment\n",
