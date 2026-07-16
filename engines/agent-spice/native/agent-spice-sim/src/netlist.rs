@@ -944,7 +944,7 @@ enum PendingElement {
 
 impl Parser {
     fn parse_line(&mut self, line: &str) -> Result<()> {
-        let line = line.split('$').next().unwrap_or("").trim();
+        let line = strip_hspice_comment(line).trim();
         if line.is_empty() {
             return Ok(());
         }
@@ -1773,12 +1773,35 @@ fn probe_name(token: &str) -> Option<String> {
     (!token.contains('(') && !token.contains(')')).then(|| token.to_string())
 }
 
+fn strip_hspice_comment(line: &str) -> &str {
+    let mut quote = None;
+    for (index, character) in line.char_indices() {
+        match character {
+            '\'' | '"' if quote.is_none() => quote = Some(character),
+            value if quote == Some(value) => quote = None,
+            '$' if quote.is_none() => return &line[..index],
+            _ => {}
+        }
+    }
+    line
+}
+
 fn logical_lines(text: &str) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
-    for raw in text.lines() {
-        let trimmed = raw.trim();
+    for (physical_index, raw) in text.lines().enumerate() {
+        let trimmed = strip_hspice_comment(raw).trim();
+        if trimmed.is_empty() || trimmed.starts_with('*') {
+            if physical_index == 0 {
+                lines.push(trimmed.to_string());
+            }
+            continue;
+        }
         if let Some(continuation) = trimmed.strip_prefix('+') {
-            if let Some(previous) = lines.last_mut() {
+            if let Some(previous) = lines
+                .iter_mut()
+                .rev()
+                .find(|line| !line.is_empty() && !line.starts_with('*'))
+            {
                 previous.push(' ');
                 previous.push_str(continuation.trim());
             }

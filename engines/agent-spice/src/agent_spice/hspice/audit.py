@@ -37,11 +37,23 @@ class AuditReport:
     unsupported_directives: list[str]
 
 
+def _strip_hspice_comment(line: str) -> str:
+    quote: str | None = None
+    for index, character in enumerate(line):
+        if character in {"'", '"'} and quote is None:
+            quote = character
+        elif character == quote:
+            quote = None
+        elif character == "$" and quote is None:
+            return line[:index]
+    return line
+
+
 def _logical_lines(text: str) -> list[str]:
     lines: list[str] = []
     current = ""
     for raw in text.splitlines():
-        stripped = raw.strip()
+        stripped = _strip_hspice_comment(raw).strip()
         if not stripped or stripped.startswith("*"):
             continue
         if stripped.startswith("+"):

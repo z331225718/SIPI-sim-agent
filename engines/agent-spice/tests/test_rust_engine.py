@@ -128,6 +128,33 @@ def test_rust_engine_accepts_native_hspice_directives_without_conversion(
     assert points[4]["values"] == {"out": pytest.approx(1.0)}
 
 
+def test_rust_engine_accepts_hspice_dollar_comments(tmp_path: Path) -> None:
+    (tmp_path / "load$part.inc").write_text(
+        "Rground out 0 1k $ comment in included deck\n",
+        encoding="utf-8",
+    )
+    deck = tmp_path / "dollar_comments.sp"
+    deck.write_text(
+        "native HSPICE dollar comments $ title comment\n"
+        "$ full-line comment containing .fft v(out)\n"
+        ".param rval=1k $ parameter comment\n"
+        ".subckt branch in out params: r=rval $ subcircuit comment\n"
+        "Rbranch in out {r} $ element comment\n"
+        ".ends branch $ end comment\n"
+        "V1 in 0 1 $ source comment\n"
+        "Xload in out branch $ instance comment\n"
+        ".inc 'load$part.inc' $ quoted dollar is part of the path\n"
+        ".op $ analysis comment\n"
+        ".end $ final comment\n",
+        encoding="utf-8",
+    )
+
+    result = run(deck)
+
+    assert result["points"][0]["analysis"] == "op"
+    assert result["points"][0]["values"]["out"] == pytest.approx(0.5)
+
+
 def test_rust_engine_evaluates_hspice_measurement_operations(tmp_path: Path) -> None:
     deck = tmp_path / "measurements.sp"
     deck.write_text(

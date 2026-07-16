@@ -28,3 +28,17 @@ def test_audit_reports_unsupported_directive():
     report = audit_deck(".fft v(out)\n.end\n")
 
     assert report.unsupported_directives == [".fft"]
+
+
+def test_audit_ignores_hspice_dollar_comments_and_preserves_quoted_dollars():
+    report = audit_deck(
+        "$ .fft v(out)\n"
+        ".include 'models/load$rev.inc' $ include comment\n"
+        ".lib './corners$2026.lib' tt $ library comment\n"
+        ".tran 1p 10n $ analysis comment\n"
+        ".end\n"
+    )
+
+    assert report.includes == ["models/load$rev.inc"]
+    assert report.libraries == [("./corners$2026.lib", "tt")]
+    assert report.unsupported_directives == []
