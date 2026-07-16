@@ -1,6 +1,59 @@
 import json
 
-from agent_spice.hspice.converter import convert_hspice_deck
+from agent_spice.hspice.converter import accept_hspice_deck, convert_hspice_deck
+
+
+def test_native_accepts_hspice_dialect_without_rewriting() -> None:
+    source = (
+        "native hspice syntax\n"
+        ".inc 'models/pdn.inc'\n"
+        ".option post=2 nomod\n"
+        ".probe tran v(out)\n"
+        ".tran 1p 1n\n"
+        ".end\n"
+    )
+
+    result = accept_hspice_deck(source)
+
+    assert result.deck_text == source
+    assert result.report.backend == "native"
+    assert result.report.actions == []
+    assert result.report.summary == {
+        "status": "compatible",
+        "rewrites": 0,
+        "drops": 0,
+        "unsupported": 0,
+    }
+
+
+def test_native_audit_records_compact_and_spaced_measure_param() -> None:
+    source = (
+        "param measurements\n"
+        ".measure tran normalized PARAM='sampled/2'\n"
+        ".measure tran chained PARAM = 'normalized+1'\n"
+        ".tran 1p 1n\n"
+        ".end\n"
+    )
+
+    result = accept_hspice_deck(source)
+
+    assert result.deck_text == source
+    assert result.report.outputs["measures"] == [
+        {
+            "analysis": "tran",
+            "name": "normalized",
+            "operation": "param",
+            "target": "'sampled/2'",
+            "raw": ".measure tran normalized PARAM='sampled/2'",
+        },
+        {
+            "analysis": "tran",
+            "name": "chained",
+            "operation": "param",
+            "target": "'normalized+1'",
+            "raw": ".measure tran chained PARAM = 'normalized+1'",
+        },
+    ]
 
 
 def test_convert_for_ngspice_normalizes_inc_and_probe():

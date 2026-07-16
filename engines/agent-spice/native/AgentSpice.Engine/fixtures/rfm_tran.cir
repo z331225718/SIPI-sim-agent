@@ -1,0 +1,7 @@
+Agent-Spice native RFM transient smoke
+Xchannel p 0 rfm_direct
+Vsrc src 0 PULSE(0 1 100p 20p 20p 500p 1n)
+Rsrc src p 50
+Rload p 0 50
+.tran 2p 2n
+.end

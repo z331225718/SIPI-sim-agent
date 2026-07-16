@@ -200,6 +200,51 @@ def test_run_rfm_cli_prepares_without_execution(tmp_path: Path) -> None:
     assert (tmp_path / "runs" / "source" / "rfm_direct" / "case.cir").is_file()
 
 
+def test_run_rfm_cli_executes_native_backend_by_default(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rfm = tmp_path / "source.rfm"
+    deck = tmp_path / "source.sp"
+    write_cadence_rfm(_OnePortSource(), rfm, z0=50.0)
+    deck.write_text("X1 p 0 channel\n.end\n", encoding="ascii")
+    calls: list[str] = []
+
+    def execute_native(artifacts, **kwargs):
+        calls.append("native")
+        return BackendResult(returncode=0, stdout="{}", stderr="")
+
+    def execute_ngspice(artifacts, **kwargs):
+        calls.append("ngspice")
+        return BackendResult(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(
+        "agent_spice.sparam.rfm_ngspice.execute_native_rfm_run",
+        execute_native,
+    )
+    monkeypatch.setattr(
+        "agent_spice.sparam.rfm_ngspice.execute_rfm_run",
+        execute_ngspice,
+    )
+
+    status = main(
+        [
+            "run-rfm",
+            str(deck),
+            "--rfm",
+            str(rfm),
+            "--subckt-name",
+            "channel",
+            "--output-root",
+            str(tmp_path / "runs"),
+            "--execute",
+        ]
+    )
+
+    assert status == 0
+    assert calls == ["native"]
+
+
 @pytest.mark.skipif(shutil.which("ngspice") is None, reason="ngspice is not installed")
 def test_bundled_xspice_model_matches_rfm_complex_pair_in_ac(tmp_path: Path) -> None:
     rfm = tmp_path / "complex.rfm"

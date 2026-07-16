@@ -25,6 +25,44 @@ def test_run_hspice_writes_cases_without_executing(tmp_path: Path):
     assert (case_deck.parent / "case.source.sp").read_text(encoding="utf-8") == ".probe tran v(vdd)\n.tran 1p 1n\n.end\n"
 
 
+def test_run_hspice_native_preserves_hspice_syntax_without_conversion(
+    tmp_path: Path,
+) -> None:
+    deps = tmp_path / "models"
+    deps.mkdir()
+    (deps / "pdn.inc").write_text("Rload out 0 1k\n", encoding="utf-8")
+    deck = tmp_path / "native.sp"
+    source = (
+        "native HSPICE deck\n"
+        ".inc 'models/pdn.inc'\n"
+        "V1 out 0 1\n"
+        ".option post=2 nomod\n"
+        ".probe tran v(out)\n"
+        ".tran 1p 10p\n"
+        ".end\n"
+    )
+    deck.write_text(source, encoding="utf-8")
+
+    exit_code = run_hspice(
+        deck,
+        backend_name="native",
+        output_root=tmp_path / "runs",
+        execute=False,
+    )
+
+    run_dir = tmp_path / "runs" / "native" / "native__base"
+    report = json.loads((run_dir / "compat_report.json").read_text(encoding="utf-8"))
+    assert exit_code == 0
+    assert (run_dir / "case.cir").read_text(encoding="utf-8") == source
+    assert (run_dir / "models" / "pdn.inc").read_text(encoding="utf-8") == "Rload out 0 1k\n"
+    assert report["summary"] == {
+        "status": "compatible",
+        "rewrites": 0,
+        "drops": 0,
+        "unsupported": 0,
+    }
+
+
 def test_run_hspice_stages_relative_include_for_generated_case(tmp_path: Path):
     deps = tmp_path / "deps"
     deps.mkdir()
@@ -71,6 +109,47 @@ def test_run_hspice_writes_ngspice_summary_on_backend_failure(tmp_path: Path, mo
     assert summary["ok"] is False
     assert summary["error"] == "parse failed"
     assert summary["waveform"] == {"path": "waveform.csv", "format": "csv", "exists": False, "rows": 0}
+
+
+def test_run_hspice_executes_project_owned_native_backend(tmp_path: Path, monkeypatch):
+    from agent_spice.backend.base import BackendResult
+
+    deck = tmp_path / "linear.sp"
+    deck.write_text(
+        "linear native run\nV1 in 0 1\nR1 in out 1k\nR2 out 0 1k\n.op\n.print op v(out)\n.end\n",
+        encoding="utf-8",
+    )
+    engine = tmp_path / "agent-spice-sim.exe"
+    engine.write_bytes(b"placeholder")
+
+    def fake_run(self, deck_path: Path, cwd: Path):
+        assert self.engine_path == engine.resolve()
+        assert deck_path == cwd / "case.cir"
+        self.output_json_path.write_text(
+            '{"points": [], "measurements": [{"analysis": "op", "name": "vout", "value": 0.5}]}\n',
+            encoding="utf-8",
+        )
+        self.waveform_csv_path.write_text("analysis,x\nop,0\n", encoding="utf-8")
+        return BackendResult(0, '{"ok":true,"waveformRows":1}\n', "")
+
+    monkeypatch.setattr("agent_spice.backend.native.NativeEngineBackend.run", fake_run)
+    exit_code = run_hspice(
+        deck,
+        backend_name="native",
+        output_root=tmp_path / "runs",
+        execute=True,
+        native_engine=engine,
+    )
+
+    run_dir = tmp_path / "runs" / "linear" / "linear__base"
+    summary = json.loads((run_dir / "run_summary.json").read_text(encoding="utf-8"))
+    assert exit_code == 0
+    assert summary["backend"] == "native"
+    assert summary["waveform"]["rows"] == 1
+    assert summary["native_result"] == {"path": "native_result.json", "exists": True}
+    assert summary["measurements"] == [
+        {"analysis": "op", "name": "vout", "value": 0.5}
+    ]
 
 
 def test_run_hspice_expands_alter_cases(tmp_path: Path):
@@ -240,6 +319,27 @@ def test_main_dispatches_run_hspice(tmp_path: Path):
 
     assert exit_code == 0
     assert (tmp_path / "runs" / "legacy" / "legacy__base" / "case.cir").exists()
+
+
+def test_main_defaults_run_hspice_to_native_without_execution(tmp_path: Path):
+    deck = tmp_path / "linear.sp"
+    deck.write_text("linear\nV1 out 0 1\n.op\n.end\n", encoding="utf-8")
+
+    exit_code = main(
+        ["run-hspice", str(deck), "--output-root", str(tmp_path / "runs")]
+    )
+
+    report = json.loads(
+        (
+            tmp_path
+            / "runs"
+            / "linear"
+            / "linear__base"
+            / "compat_report.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert exit_code == 0
+    assert report["backend"] == "native"
 
 
 def test_main_accepts_xyce_xdm_backend_without_execution(tmp_path: Path):

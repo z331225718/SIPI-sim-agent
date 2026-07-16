@@ -8,7 +8,7 @@ from typing import Any
 import yaml
 
 
-VALID_BACKENDS = {"ngspice", "xyce", "xyce-xdm"}
+VALID_BACKENDS = {"native", "ngspice", "xyce", "xyce-xdm"}
 
 
 def _required_non_empty_string(data: Mapping[str, Any], field: str) -> str:
@@ -42,7 +42,7 @@ class ProjectManifest:
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any]) -> "ProjectManifest":
         name = _required_non_empty_string(data, "name")
-        backend = str(data.get("backend", "ngspice")).lower()
+        backend = str(data.get("backend", "native")).lower()
         if backend not in VALID_BACKENDS:
             raise ValueError(f"Unsupported backend '{backend}'. Expected one of {sorted(VALID_BACKENDS)}")
         inputs = _optional_mapping(data, "inputs")

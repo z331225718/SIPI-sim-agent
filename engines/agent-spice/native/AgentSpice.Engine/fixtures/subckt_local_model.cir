@@ -1,0 +1,16 @@
+Parameterized local subcircuit models
+.param global_is=1e-12
+Vdrive input 0 0.8
+Xweak input weak clip scale=1
+Xstrong input strong clip scale=2
+Rweak weak 0 2k
+Rstrong strong 0 2k
+.subckt clip clip_in clip_out params: scale=1
+Rseries clip_in clip_out {1k/scale}
+.model local_d D(IS={global_is*scale}
++ N=1)
+Dclamp clip_out 0 local_d
+.ends clip
+.op
+.print op v(weak) v(strong)
+.end

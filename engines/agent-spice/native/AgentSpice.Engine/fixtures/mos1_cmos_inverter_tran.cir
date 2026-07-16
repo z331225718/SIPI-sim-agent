@@ -1,0 +1,11 @@
+Level-1 complementary MOS inverter transient regression
+Vdd supply 0 5
+Vin input 0 PULSE(0 5 2n 0.2n 0.2n 4n 10n)
+Mpullup out input supply supply pch L=1u W=40u AD=12p AS=12p PD=14u PS=14u
+Mpulldown out input 0 0 nch L=1u W=20u AD=8p AS=8p PD=10u PS=10u
+Cload out 0 5p
+.model nch nmos (level=1 vto=0.7 kp=200u gamma=0.4 phi=0.7 lambda=0.02 is=2e-14 pb=0.8 cbd=0.5p cbs=0.5p cj=100u mj=0.45 cjsw=100p mjsw=0.35 cgso=100n cgdo=80n cgbo=50n fc=0.5)
+.model pch pmos (level=1 vto=-0.75 kp=100u gamma=0.35 phi=0.65 lambda=0.025 is=2e-14 pb=0.8 cbd=0.5p cbs=0.5p cj=100u mj=0.45 cjsw=100p mjsw=0.35 cgso=100n cgdo=80n cgbo=50n fc=0.5)
+.tran 0.1n 30n
+.print tran v(out) i(Vin) i(Vdd)
+.end

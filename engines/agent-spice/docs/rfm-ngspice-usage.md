@@ -1,15 +1,15 @@
-# RFM 直接接入 ngspice 使用说明
+# RFM 直接仿真使用说明
 
 ## 1. 适用范围
 
-`run-rfm` 将 HSPICE/Sigrity/Cadence Broadband SPICE `VERSION 200600`、`MATRIX_TYPE S` 的 pole/residue RFM 直接交给 Agent-Spice 的 XSPICE `nport_rfm` device。
+`run-rfm` 将 HSPICE/Sigrity/Cadence Broadband SPICE `VERSION 200600`、`MATRIX_TYPE S` 的 pole/residue RFM 直接交给 Agent-Spice 自主 N-port 内核；ngspice XSPICE `nport_rfm` device 保留为显式 oracle 后端。
 
 - **[实现事实]** 不执行 vector fitting，不使用 `fit-sparam`，也不生成包含大量内部状态节点的普通 `.sp` 有理函数宏模型。
-- **[实现事实]** 默认求解器仍是 Windows 离线 ngspice；Xyce/XDM 不是安装或执行前提。
+- **[实现事实]** 默认求解器是项目自主 Rust 内核，不调用 ngspice、`rfm.cm`、.NET 或 Xyce/XDM。
 - **[实验验证]** 随包 `rfm.cm` 已在官方 Windows ngspice-46 上完成加载、DC、AC 和 TRAN 验证。
 - **[实现事实]** 当前支持动态 N-port、每端口单端信号加一个公共参考 pin；差分/任意多参考映射尚未开放为稳定接口。
 
-`.rfm` 不是 ngspice 原生可读取格式。实际读取它的是随 Agent-Spice 发布的 XSPICE code model。
+`.rfm` 不是 ngspice 原生可读取格式。默认由自主 Rust parser 读取；选择 `--backend ngspice` 时由随 Agent-Spice 发布的 XSPICE code model 读取。
 
 ## 2. RFM 格式与复极点约定
 
@@ -73,7 +73,7 @@ Xpackage p1 p2 p3 p4 0 rfm_direct
 
 ## 4. 准备与执行
 
-只生成可复现运行目录，不启动 ngspice：
+只生成可复现运行目录，不启动求解器：
 
 ```powershell
 python -m agent_spice.cli run-rfm .\channel-tran.sp `
@@ -88,26 +88,28 @@ python -m agent_spice.cli run-rfm .\channel-tran.sp `
   --execute
 ```
 
-指定子电路名、输出目录或 ngspice 路径：
+指定子电路名、输出目录，或显式选择 ngspice oracle：
 
 ```powershell
 python -m agent_spice.cli run-rfm .\channel-tran.sp `
   --rfm .\channel.rfm `
   --subckt-name package_rfm `
   --output-root .\runs-rfm `
+  --backend ngspice `
   --ngspice C:\Users\me\tools\ngspice-46\Spice64\bin\ngspice_con.exe `
   --execute
 ```
 
-`--subckt-name` 必须与电路中的 X 实例一致。输出根目录的绝对路径当前不能含空白字符，这是 ngspice `codemodel` 命令在 Windows 上的加载限制。
+`--subckt-name` 必须与电路中的 X 实例一致。只有 ngspice 后端的输出根目录绝对路径不能含空白字符，这是 Windows `codemodel` 命令的加载限制；native 后端没有这个约束。
 
-## 5. Code model 选择
+## 5. ngspice oracle 与 code model
 
-默认使用 Python 包内的 `agent_spice/lib/ngspice/rfm.cm`。临时覆盖：
+`run-rfm` 默认不加载 code model。选择 `--backend ngspice` 后使用 Python 包内的 `agent_spice/lib/ngspice/rfm.cm`；临时覆盖：
 
 ```powershell
 python -m agent_spice.cli run-rfm .\channel-tran.sp `
   --rfm .\channel.rfm `
+  --backend ngspice `
   --code-model .\build\rfm.cm `
   --execute
 ```
@@ -131,18 +133,19 @@ $env:AGENT_SPICE_RFM_CODE_MODEL = "C:\models\rfm.cm"
 | `case.source.sp` | 原始电路，逐字节保留。 |
 | `model.input.rfm` | 原始 RFM，逐字节保留。 |
 | `model.runtime.rfm` | 共享 pole union 的规范化 RFM；缺失 residue 补零，不重拟合。 |
-| `rfm_direct_wrapper.sp` | 一个动态 XSPICE vector device 的连接 wrapper。 |
-| `case.cir` | 注入 wrapper 并完成通用 ngspice 转换后的实际网表。 |
+| `rfm_direct_wrapper.sp` | ngspice oracle 使用的动态 XSPICE vector device 连接 wrapper。 |
+| `case.cir` | 规范化后的实际运行网表；native 直接绑定其中的 RFM X 实例。 |
 | `rfm_run_manifest.json` | 输入/运行 RFM SHA-256、端口数、阶次、频响重构误差和依赖清单。 |
-| `stdout.log`、`stderr.log` | ngspice 原始日志。 |
-| `run_summary.json` | 返回码、DLL 路径/hash 和 waveform 状态。 |
-| `waveform.csv` | 可从 ngspice `.print` 输出解析时生成。 |
+| `stdout.log`、`stderr.log` | 所选后端的原始日志。 |
+| `run_summary.json` | 后端名称、返回码、引擎或 DLL 路径/hash 和 waveform 状态。 |
+| `native_result.json` | native 后端的完整机器可读结果。 |
+| `waveform.csv` | 所选后端生成或解析出的波形。 |
 
 相对 `.include`/`.lib` 会递归暂存并转换；逃出电路目录的相对路径会被拒绝。绝对 include 保持原样。
 
 ## 7. 数值与步长
 
-**[实现事实]** device 使用 scattering-wave 状态空间和梯形伴随模型，每个 transient step 更新 pole states，并向 ngspice MNA 写入端口电流及完整 N x N Jacobian。状态留在 code model 内部，不成为 MNA 未知量。
+**[实现事实]** native 后端使用 scattering-wave 状态空间和 MNA 外 Schur 消元，支持 Trap 与 `.options method=gear` 变步长 Gear2；有理状态保留三层接受历史，动态端口响应参与 LTE 接受/拒绝、源断点重启和完整状态回滚。显式 ngspice 后端的 XSPICE device 使用梯形伴随模型。两条路径都不把 pole state 扩张为 MNA 未知量。
 
 建议在 `.tran` 中显式给出 `Tmax`：
 
@@ -158,11 +161,11 @@ $env:AGENT_SPICE_RFM_CODE_MODEL = "C:\models\rfm.cm"
 
 - 仅支持 `VERSION 200600`、S 矩阵、单一实数正 `Z0`、稳定实极点或复共轭极点代表。
 - 当前 wrapper 是 N 个单端端口加一个公共参考 pin；差分和多参考 incidence mapping 尚未实现。
-- 单个 device 上限为 256 port；这是内存溢出防护，不代表 256-port 已完成性能签核。
-- Windows 随包 DLL 只签核 ngspice-46 ABI；Linux/macOS 需要针对目标 ngspice 自行构建 `.cm`。
-- 运行目录路径不能含空白字符。
+- ngspice code model 的单个 device 上限为 256 port；这是内存溢出防护，不代表 256-port 已完成性能签核。
+- Windows 随包 DLL 只签核 ngspice-46 ABI；Linux/macOS 的 ngspice oracle 需要针对目标版本自行构建 `.cm`。
+- 只有 ngspice oracle 的运行目录路径不能含空白字符。
 
-## 9. 从源码构建 Windows DLL
+## 9. 从源码构建 ngspice oracle DLL
 
 构建只需要在发布/开发机运行，最终用户不需要 compiler、CMPP 或 Docker：
 

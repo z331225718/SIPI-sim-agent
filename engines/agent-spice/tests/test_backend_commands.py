@@ -3,6 +3,11 @@ import subprocess
 
 from agent_spice.backend.base import ProcessBackend
 from agent_spice.backend.ngspice import NgspiceBackend
+from agent_spice.backend.native import (
+    NativeEngineBackend,
+    _native_engine_candidates,
+    _native_runtime_identifier,
+)
 from agent_spice.backend.xyce import XyceBackend
 
 
@@ -13,6 +18,93 @@ def test_ngspice_command_uses_batch_mode(tmp_path: Path):
     backend = NgspiceBackend(executable="ngspice")
 
     assert backend.command_for(deck) == ["ngspice", "-b", str(deck)]
+
+
+def test_native_engine_command_is_explicit_and_resolves_engine_path(tmp_path: Path):
+    deck = tmp_path / "case.cir"
+    engine = tmp_path / "AgentSpice.Engine.dll"
+    backend = NativeEngineBackend(engine_path=engine)
+
+    assert backend.command_for(deck) == ["dotnet", str(engine.resolve()), str(deck.resolve())]
+
+
+def test_native_engine_command_runs_apphost_directly(tmp_path: Path):
+    deck = tmp_path / "case.cir"
+    engine = tmp_path / "AgentSpice.Engine.exe"
+    backend = NativeEngineBackend(engine_path=engine)
+
+    assert backend.command_for(deck) == [str(engine.resolve()), str(deck.resolve())]
+
+
+def test_native_runtime_identifier_maps_supported_platforms():
+    assert _native_runtime_identifier("win32", "AMD64") == "win-x64"
+    assert _native_runtime_identifier("linux", "x86_64") == "linux-x64"
+    assert _native_runtime_identifier("darwin", "arm64") == "osx-arm64"
+    assert _native_runtime_identifier("freebsd", "x86_64") is None
+
+
+def test_native_engine_candidates_prefer_rust_before_migration_engine(
+    tmp_path: Path,
+):
+    package = tmp_path / "package"
+    repository = tmp_path / "repository"
+
+    candidates = _native_engine_candidates(package, repository, "win-x64")
+
+    assert candidates[:3] == [
+        package / "win-x64" / "agent-spice-sim.exe",
+        package / "agent-spice-sim.exe",
+        repository
+        / "native"
+        / "agent-spice-sim"
+        / "target"
+        / "release"
+        / "agent-spice-sim.exe",
+    ]
+    assert candidates[3].name == "AgentSpice.Engine.exe"
+
+
+def test_native_engine_command_passes_rfm_binding(tmp_path: Path):
+    deck = tmp_path / "case.cir"
+    engine = tmp_path / "AgentSpice.Engine.dll"
+    rfm = tmp_path / "model.rfm"
+    backend = NativeEngineBackend(
+        engine_path=engine,
+        rfm_path=rfm,
+        rfm_subcircuit="channel",
+    )
+
+    assert backend.command_for(deck) == [
+        "dotnet",
+        str(engine.resolve()),
+        str(deck.resolve()),
+        "--rfm",
+        str(rfm.resolve()),
+        "--rfm-subckt",
+        "channel",
+    ]
+
+
+def test_native_engine_command_passes_direct_output_paths(tmp_path: Path):
+    deck = tmp_path / "case.cir"
+    engine = tmp_path / "AgentSpice.Engine.dll"
+    result = tmp_path / "native.json"
+    waveform = tmp_path / "waveform.csv"
+    backend = NativeEngineBackend(
+        engine_path=engine,
+        output_json_path=result,
+        waveform_csv_path=waveform,
+    )
+
+    assert backend.command_for(deck) == [
+        "dotnet",
+        str(engine.resolve()),
+        str(deck.resolve()),
+        "--output-json",
+        str(result.resolve()),
+        "--waveform-csv",
+        str(waveform.resolve()),
+    ]
 
 
 def test_xyce_command_uses_deck_path(tmp_path: Path):

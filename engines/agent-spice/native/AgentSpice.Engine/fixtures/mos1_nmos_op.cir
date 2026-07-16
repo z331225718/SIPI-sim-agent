@@ -1,0 +1,11 @@
+Level-1 NMOS nonlinear operating-point regression
+Vdd supply 0 5
+Rload supply out 1k
+Vgate gate 0 1.5
+Vbulk bulk 0 -0.4
+M1 out gate 0 bulk nch L=1u W=20u
+.model nch nmos (level=1 vto=0.7 kp=200u gamma=0.45 phi=0.7 lambda=0.02)
+.options reltol=1e-8 vntol=1e-10 abstol=1e-14
+.op
+.print op v(out) i(Vgate) i(Vbulk)
+.end

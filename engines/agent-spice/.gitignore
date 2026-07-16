@@ -9,9 +9,14 @@ __pycache__/
 venv/
 build/
 dist/
+dist-*/
 *.egg-info/
 runs/
 runs-smoke/
 runs-*/
 xdm-smoke/
 user_input/
+native/**/bin/
+native/**/obj/
+native/**/target/
+src/agent_spice/lib/native/win-*/

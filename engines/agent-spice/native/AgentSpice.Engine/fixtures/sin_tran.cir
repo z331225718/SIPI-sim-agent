@@ -1,0 +1,8 @@
+SIN source with delay and damping
+Vdrive input 0 SIN(0.2 0.8 200meg 1.3n 20meg 0)
+Rsource input output 100
+Cload output 0 20p
+.options reltol=1e-4 vntol=1e-8 abstol=1e-12
+.tran 0.2n 10n
+.print tran v(input) v(output)
+.end

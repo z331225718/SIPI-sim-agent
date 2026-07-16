@@ -1,0 +1,83 @@
+name: Native wheels
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/native-wheels.yml"
+      - "native/**"
+      - "src/agent_spice/backend/native.py"
+      - "setup.py"
+      - "pyproject.toml"
+      - "tools/build-native-*.ps1"
+      - "tools/build-rust-engine.ps1"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/native-wheels.yml"
+      - "native/**"
+      - "src/agent_spice/backend/native.py"
+      - "setup.py"
+      - "pyproject.toml"
+      - "tools/build-native-*.ps1"
+      - "tools/build-rust-engine.ps1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            executable: agent-spice-sim.exe
+          - os: ubuntu-latest
+            rid: linux-x64
+            executable: agent-spice-sim
+          - os: macos-15-intel
+            rid: osx-x64
+            executable: agent-spice-sim
+          - os: macos-15
+            rid: osx-arm64
+            executable: agent-spice-sim
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: 1.97.0
+          components: clippy,rustfmt
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Build platform wheel
+        shell: pwsh
+        run: ./tools/build-native-wheel.ps1 -RuntimeIdentifier ${{ matrix.rid }}
+      - name: Install wheel without runtime dependencies
+        shell: pwsh
+        run: |
+          $wheel = Get-ChildItem -LiteralPath dist -Filter *.whl | Select-Object -First 1
+          python -m pip install --no-deps $wheel.FullName
+      - name: Smoke packaged Rust executable
+        shell: pwsh
+        run: |
+          $packageRoot = python -c "import agent_spice, pathlib; print(pathlib.Path(agent_spice.__file__).parent)"
+          $engine = Join-Path $packageRoot "lib/native/${{ matrix.rid }}/${{ matrix.executable }}"
+          & $engine native/AgentSpice.Engine/fixtures/rc.cir --output-json native-smoke.json
+          if ($LASTEXITCODE -ne 0) {
+              throw "Rust engine smoke failed with exit code $LASTEXITCODE"
+          }
+          $result = Get-Content -LiteralPath native-smoke.json -Raw | ConvertFrom-Json
+          if ($result.points.Count -ne 8) {
+              throw "unexpected simulation point count: $($result.points.Count)"
+          }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: agent-spice-${{ matrix.rid }}
+          path: dist/*.whl
+          if-no-files-found: error

@@ -20,13 +20,28 @@ def normalize_outputs(text: str) -> OutputRequest:
         directive = parts[0].lower()
         if directive in {".probe", ".print"} and len(parts) >= 3:
             probes.extend(parts[2:])
-        if directive in {".measure", ".meas"} and len(parts) >= 5:
+        if directive in {".measure", ".meas"} and len(parts) >= 4:
+            operation_token = parts[3]
+            operation = operation_token.lower()
+            target: str | None = None
+            if operation.startswith("param="):
+                operation = "param"
+                target = operation_token.split("=", 1)[1]
+            elif operation == "param":
+                if len(parts) >= 6 and parts[4] == "=":
+                    target = parts[5]
+                elif len(parts) >= 5:
+                    target = parts[4]
+            elif len(parts) >= 5:
+                target = parts[4]
+            if target is None:
+                continue
             measures.append(
                 {
                     "analysis": parts[1].lower(),
                     "name": parts[2],
-                    "operation": parts[3].lower(),
-                    "target": parts[4],
+                    "operation": operation,
+                    "target": target,
                     "raw": line,
                 }
             )

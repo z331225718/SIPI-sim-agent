@@ -1,0 +1,9 @@
+Diode reverse recovery with Gear2 integration
+Vdrive in 0 PULSE(1 -1 20n 0.2n 0.2n 20n 50n)
+Rsource in out 20
+Dswitch out 0 diode_recovery
+.model diode_recovery D(IS=1e-12 N=1 CJO=5p VJ=0.7 M=0.4 TT=10n FC=0.5)
+.options method=gear reltol=2e-4 vntol=1e-8 abstol=1e-12
+.tran 0.5n 40n
+.print tran v(in) v(out)
+.end
