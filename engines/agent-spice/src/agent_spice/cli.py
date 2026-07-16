@@ -22,7 +22,7 @@ from agent_spice.sparam.io import load_touchstone_metadata
 from agent_spice.sparam.artifacts import evaluate_fitted_s, write_cadence_rfm, write_cadence_rfm_wrapper, write_fitted_touchstone
 from agent_spice.sparam.rational_lft import exact_y_to_s_rational
 from agent_spice.sparam.y_pr import enforce_y_positive_real_kyp
-from agent_spice.sparam.yparam import YParamFitConfig, fit_touchstone_to_y_spice
+from agent_spice.sparam.yparam import YParamFitConfig, append_yparam_progress, fit_touchstone_to_y_spice
 from agent_spice.sparam.y_tran_tuning import YTranTuneConfig, parse_float_csv, tune_y_rfm_for_tran
 
 
@@ -1903,6 +1903,13 @@ def main(argv: list[str] | None = None) -> int:
             if args.exact_s_rfm is not None:
                 if not args.no_fit_proportional:
                     raise ValueError("--exact-s-rfm requires --no-fit-proportional; descriptor Y-to-S is not implemented")
+                append_yparam_progress(
+                    log_path,
+                    "starting KYP Y positive-real enforcement: "
+                    f"solver={args.kyp_solver}, max_states={args.kyp_max_states}, "
+                    f"margin={args.kyp_margin:.12g}, "
+                    f"max_relative_correction={args.kyp_max_relative_correction:.12g}",
+                )
                 enforced_y, certificate = enforce_y_positive_real_kyp(
                     result.fitted_model,
                     margin=args.kyp_margin,
@@ -1910,12 +1917,28 @@ def main(argv: list[str] | None = None) -> int:
                     max_relative_correction=args.kyp_max_relative_correction,
                     solver=args.kyp_solver,
                 )
+                append_yparam_progress(
+                    log_path,
+                    "KYP Y positive-real enforcement finished: "
+                    f"status={certificate.status}, state_count={certificate.state_count}, "
+                    f"correction_frobenius_norm={certificate.correction_frobenius_norm:.12g}",
+                )
+                append_yparam_progress(log_path, "starting exact rational Y-to-S transformation")
                 z0 = float(result.reference_impedance[0])
                 exact_s = exact_y_to_s_rational(enforced_y, z0)
+                append_yparam_progress(
+                    log_path,
+                    f"writing exact S RFM: {args.exact_s_rfm}",
+                )
                 write_cadence_rfm(exact_s, args.exact_s_rfm, z0)
                 exact_touchstone = args.exact_s_touchstone or args.exact_s_rfm.with_suffix(args.touchstone.suffix.lower())
+                append_yparam_progress(log_path, f"writing exact S Touchstone: {exact_touchstone}")
                 write_fitted_touchstone(exact_touchstone, result.fitted_model.network.f, evaluate_fitted_s(exact_s, result.fitted_model.network.f), result.fitted_model.network.z0)
                 if args.exact_s_rfm_wrapper is not None:
+                    append_yparam_progress(
+                        log_path,
+                        f"writing exact S RFM wrapper: {args.exact_s_rfm_wrapper}",
+                    )
                     write_cadence_rfm_wrapper(
                         args.exact_s_rfm_wrapper,
                         args.exact_s_rfm,
@@ -1933,7 +1956,12 @@ def main(argv: list[str] | None = None) -> int:
                     "stored_pole_count": int(len(exact_s.poles)),
                 }
                 report_path.write_text(json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
+                append_yparam_progress(
+                    log_path,
+                    f"exact Y-to-S delivery completed: rfm={args.exact_s_rfm}, touchstone={exact_touchstone}",
+                )
         except ValueError as exc:
+            append_yparam_progress(log_path, f"fit-yparam command failed: {exc}")
             print(f"error: {exc}", file=sys.stderr)
             return 1
         if not result.target_met:

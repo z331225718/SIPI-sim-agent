@@ -60,6 +60,70 @@ def test_fit_yparam_writes_y_report_and_checks_positive_real_rc(tmp_path: Path) 
     assert "Fy1_1" in (tmp_path / "rc.y.sp").read_text(encoding="ascii")
 
 
+def test_fit_yparam_flushes_progress_log_while_vector_fit_runs(tmp_path: Path, monkeypatch) -> None:
+    frequencies = np.array([1.0e6, 2.0e6, 5.0e6, 1.0e7])
+    touchstone = _write_y_touchstone(
+        tmp_path / "progress.s1p",
+        frequencies,
+        np.full((4, 1, 1), 0.02 + 0j),
+    )
+    log_path = tmp_path / "progress.y.log"
+    original_vector_fit = NativeVectorFitting.vector_fit
+    observed_during_fit: dict[str, bool] = {}
+
+    def inspect_log_then_fit(self, *args, **kwargs):
+        log_text = log_path.read_text(encoding="utf-8")
+        observed_during_fit["created"] = log_path.is_file()
+        observed_during_fit["loading"] = "loading Touchstone" in log_text
+        observed_during_fit["started"] = "starting vector fit" in log_text
+        return original_vector_fit(self, *args, **kwargs)
+
+    monkeypatch.setattr(NativeVectorFitting, "vector_fit", inspect_log_then_fit)
+
+    fit_touchstone_to_y_spice(
+        touchstone,
+        tmp_path / "progress.y.sp",
+        config=YParamFitConfig(n_poles_real=1, n_poles_cmplx=1, max_iterations=3),
+        log_path=log_path,
+    )
+
+    assert observed_during_fit == {"created": True, "loading": True, "started": True}
+    log_text = log_path.read_text(encoding="utf-8")
+    assert "vector-fit iteration=1/3" in log_text
+    assert "Y error evaluated" in log_text
+    assert "sampled Y positive-real check finished" in log_text
+    assert "writing Y-domain SPICE subcircuit" in log_text
+    assert "fit-yparam completed" in log_text
+
+
+def test_fit_yparam_preserves_progress_log_when_vector_fit_fails(tmp_path: Path, monkeypatch) -> None:
+    frequencies = np.array([1.0e6, 2.0e6, 5.0e6, 1.0e7])
+    touchstone = _write_y_touchstone(
+        tmp_path / "failure.s1p",
+        frequencies,
+        np.full((4, 1, 1), 0.02 + 0j),
+    )
+    log_path = tmp_path / "failure.y.log"
+
+    def fail_vector_fit(self, *args, **kwargs):
+        assert "starting vector fit" in log_path.read_text(encoding="utf-8")
+        raise RuntimeError("intentional vector-fit failure")
+
+    monkeypatch.setattr(NativeVectorFitting, "vector_fit", fail_vector_fit)
+
+    with pytest.raises(RuntimeError, match="intentional vector-fit failure"):
+        fit_touchstone_to_y_spice(
+            touchstone,
+            tmp_path / "failure.y.sp",
+            config=YParamFitConfig(n_poles_real=1, n_poles_cmplx=1, max_iterations=3),
+            log_path=log_path,
+        )
+
+    log_text = log_path.read_text(encoding="utf-8")
+    assert "fit-yparam failed" in log_text
+    assert "intentional vector-fit failure" in log_text
+
+
 def test_fit_yparam_can_export_y_derived_s_touchstone(tmp_path: Path) -> None:
     frequencies = np.array([1.0e6, 2.0e6, 5.0e6, 1.0e7, 2.0e7, 5.0e7])
     y = 0.02 + 2j * np.pi * frequencies[:, None, None] * 1.0e-9
@@ -146,6 +210,7 @@ def test_fit_yparam_cli_writes_default_y_artifacts(tmp_path: Path) -> None:
     assert (tmp_path / "line_fitted.y.sp").is_file()
     assert (tmp_path / "line_fitted.y.json").is_file()
     assert (tmp_path / "line_fitted.y.html").is_file()
+    assert "fit-yparam completed" in (tmp_path / "line_fitted.y.log").read_text(encoding="utf-8")
     assert (tmp_path / "line.y-derived.s1p").is_file()
 
 
@@ -165,9 +230,11 @@ def test_fit_yparam_cli_exports_kyp_enforced_exact_s_rfm(tmp_path: Path) -> None
     touchstone = _write_y_touchstone(tmp_path / "passive.s1p", frequencies, np.full((4, 1, 1), 0.02 + 0j))
     rfm = tmp_path / "passive.exact.rfm"
     report = tmp_path / "passive.y.json"
+    log_path = tmp_path / "passive.y.log"
 
     assert cli.main([
         "fit-yparam", str(touchstone), "--output", str(tmp_path / "passive.y.sp"), "--report", str(report),
+        "--log", str(log_path),
         "--n-poles-real", "1", "--n-poles-cmplx", "1", "--fit-iterations", "8", "--no-fit-proportional",
         "--exact-s-rfm", str(rfm),
     ]) == 0
@@ -176,6 +243,10 @@ def test_fit_yparam_cli_exports_kyp_enforced_exact_s_rfm(tmp_path: Path) -> None
     assert rfm.is_file()
     assert payload["passivity"]["enforcement"] == "KYP continuous-frequency certificate"
     assert payload["exact_y_to_s"]["method"] == "state-space rational LFT; no sampled S refit"
+    log_text = log_path.read_text(encoding="utf-8")
+    assert "starting KYP Y positive-real enforcement" in log_text
+    assert "KYP Y positive-real enforcement finished" in log_text
+    assert "exact Y-to-S delivery completed" in log_text
 
 
 def test_y_spice_export_ac_matches_conductance_and_capacitance(tmp_path: Path) -> None:

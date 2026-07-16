@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 import time
 import warnings
 from typing import Any
@@ -13,6 +14,9 @@ from .pole_relocation import (
     streaming_pole_relocation,
     streaming_reciprocal_pole_relocation,
 )
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -577,6 +581,7 @@ class NativeVectorFitting:
         relocation_frontier_checkpoints: list[tuple[int, np.ndarray]] = []
 
         iterations = self.max_iterations
+        total_iterations = iterations
         iteration = 0
         previous_input_complex_rows: list[tuple[float, float]] = []
         while iterations > 0:
@@ -760,6 +765,18 @@ class NativeVectorFitting:
             delta_max = np.abs(1 - new_max_singular / max_singular)
             self.delta_max_history.append(delta_max)
             max_singular = new_max_singular
+            LOGGER.info(
+                "vector-fit iteration=%d/%d condition_number=%.12g rank_deficiency=%d "
+                "d_res_abs=%.12g delta_max=%.12g stored_poles=%d model_order=%d",
+                iteration + 1,
+                total_iterations,
+                cond,
+                rank_deficiency,
+                abs(d_res),
+                delta_max,
+                len(poles),
+                self.get_model_order(np.asarray(poles, dtype=complex)),
+            )
             iterations -= 1
             iteration += 1
 

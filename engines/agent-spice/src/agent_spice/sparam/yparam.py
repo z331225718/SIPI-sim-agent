@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 import json
+import logging
 from pathlib import Path
 import time
 from typing import Any, Literal
@@ -16,6 +17,61 @@ from .z_metrics import invert_y_strict, z_log_metric_summary
 
 
 YPassivityPolicy = Literal["off", "check"]
+
+
+class _YProgressLog:
+    def __init__(self, path: Path | None, *, mode: str = "w"):
+        self.path = path
+        self.mode = mode
+        self.handler: logging.Handler | None = None
+        self.loggers: list[logging.Logger] = []
+        self.old_levels: dict[logging.Logger, int] = {}
+        self.progress_logger = logging.getLogger("agent_spice.sparam.yparam")
+
+    def __enter__(self) -> "_YProgressLog":
+        if self.path is None:
+            return self
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.handler = logging.FileHandler(self.path, mode=self.mode, encoding="utf-8")
+        self.handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+        self.loggers = [
+            self.progress_logger,
+            logging.getLogger("agent_spice.sparam.native_vf"),
+        ]
+        for logger in self.loggers:
+            self.old_levels[logger] = logger.level
+            logger.addHandler(self.handler)
+            logger.setLevel(logging.INFO)
+        return self
+
+    def __exit__(self, exc_type, exc, traceback) -> None:
+        if exc is not None:
+            self.progress_logger.error(
+                "fit-yparam failed",
+                exc_info=(exc_type, exc, traceback),
+            )
+            if self.handler is not None:
+                self.handler.flush()
+        if self.handler is None:
+            return
+        for logger in self.loggers:
+            logger.removeHandler(self.handler)
+            logger.setLevel(self.old_levels[logger])
+        self.handler.close()
+
+    def info(self, message: str) -> None:
+        if self.handler is None:
+            return
+        self.progress_logger.info(message)
+        self.handler.flush()
+
+
+def append_yparam_progress(log_path: str | Path | None, message: str) -> None:
+    """Append and flush a later fit-yparam delivery stage to an existing progress log."""
+
+    path = None if log_path is None else Path(log_path)
+    with _YProgressLog(path, mode="a") as progress:
+        progress.info(message)
 
 
 @dataclass(frozen=True)
@@ -202,6 +258,33 @@ def fit_touchstone_to_y_spice(
 ) -> YParamFitResult:
     """Fit Touchstone-derived Y data and write a common-ground SPICE model."""
 
+    progress_path = None if log_path is None else Path(log_path)
+    with _YProgressLog(progress_path) as progress:
+        return _fit_touchstone_to_y_spice_impl(
+            touchstone_path,
+            spice_path,
+            config=config,
+            report_path=report_path,
+            html_report_path=html_report_path,
+            log_path=log_path,
+            derived_s_touchstone_path=derived_s_touchstone_path,
+            progress=progress,
+        )
+
+
+def _fit_touchstone_to_y_spice_impl(
+    touchstone_path: str | Path,
+    spice_path: str | Path,
+    *,
+    config: YParamFitConfig | None,
+    report_path: str | Path | None,
+    html_report_path: str | Path | None,
+    log_path: str | Path | None,
+    derived_s_touchstone_path: str | Path | None,
+    progress: _YProgressLog,
+) -> YParamFitResult:
+    """Internal Y fit implementation with an active progress log."""
+
     import skrf as rf
 
     cfg = config or YParamFitConfig()
@@ -217,14 +300,30 @@ def fit_touchstone_to_y_spice(
         raise ValueError("max_iterations must be an integer >= 1")
     source = Path(touchstone_path)
     output = Path(spice_path)
+    progress.info(f"loading Touchstone: {source}")
     network = rf.Network(str(source))
+    progress.info(
+        f"loaded Touchstone: ports={network.nports}, frequency_points={len(network.f)}, "
+        f"frequency_range=[{float(network.f[0]):.12g}, {float(network.f[-1]):.12g}] Hz"
+    )
+    progress.info("converting input S parameters to Y")
     y_values = np.asarray(network.y, dtype=complex)
     if not np.isfinite(y_values).all():
         raise ValueError("Touchstone S-to-Y conversion produced non-finite Y values")
     conditions = _conversion_conditions(network, cfg.conversion_condition_limit)
+    progress.info(
+        f"S-to-Y conversion validated: condition_max={max(conditions):.12g}, "
+        f"condition_limit={cfg.conversion_condition_limit:.12g}"
+    )
 
     vector_fit = NativeVectorFitting(network)
     vector_fit.max_iterations = cfg.max_iterations
+    progress.info(
+        "starting vector fit: parameter_type=y, "
+        f"n_poles_real={cfg.n_poles_real}, n_poles_cmplx={cfg.n_poles_cmplx}, "
+        f"pole_spacing={cfg.init_pole_spacing}, max_iterations={cfg.max_iterations}, "
+        f"fit_proportional={cfg.fit_proportional}"
+    )
     started = time.perf_counter()
     vector_fit.vector_fit(
         n_poles_real=cfg.n_poles_real,
@@ -236,12 +335,20 @@ def fit_touchstone_to_y_spice(
         enforce_dc=True,
     )
     fit_seconds = time.perf_counter() - started
+    progress.info(
+        f"vector fit finished: elapsed_seconds={fit_seconds:.6f}, "
+        f"stored_poles={len(np.asarray(vector_fit.poles))}, "
+        f"model_order={vector_fit.get_model_order(np.asarray(vector_fit.poles, dtype=complex))}"
+    )
+    progress.info("evaluating fitted Y on the input frequency grid")
     fitted = evaluate_fitted_y(vector_fit, network.f)
     element_rms = np.sqrt(np.mean(np.abs(y_values - fitted) ** 2, axis=0))
     rms = float(np.sqrt(np.sum(element_rms**2)))
     mean_rms = rms / network.nports
+    progress.info(f"Y error evaluated: rms_siemens={rms:.12g}, mean_rms_siemens={mean_rms:.12g}")
     derived_s_path = None if derived_s_touchstone_path is None else Path(derived_s_touchstone_path)
     if derived_s_path is not None:
+        progress.info(f"converting fitted Y to sampled S: output={derived_s_path}")
         z0 = float(np.asarray(network.z0, dtype=complex)[0, 0].real)
         derived_s, derived_s_conditions = convert_y_to_s_strict(
             fitted,
@@ -259,8 +366,14 @@ def fit_touchstone_to_y_spice(
             "mean_rms_error_against_input": float(np.sqrt(np.sum(derived_s_element_rms**2)) / network.nports),
             "element_rms": [item.__dict__ for item in rank_element_rms(np.asarray(network.s, dtype=complex), derived_s)],
         }
+        progress.info(
+            "sampled Y-to-S conversion finished: "
+            f"mean_rms_error={derived_s_metrics['mean_rms_error_against_input']:.12g}, "
+            f"condition_max={derived_s_metrics['condition_max']:.12g}"
+        )
     else:
         derived_s_metrics = None
+    progress.info("evaluating Z-log metrics")
     try:
         fitted_z, fitted_y_conditions = invert_y_strict(fitted)
         z_log_metrics = z_log_metric_summary(np.asarray(network.z, dtype=complex), fitted_z)
@@ -272,16 +385,31 @@ def fit_touchstone_to_y_spice(
             "offdiagonal_z_log_magnitude_rms_error": None,
         }
         fitted_y_condition_max = None
+        progress.info("Z-log metrics unavailable because fitted Y inversion failed")
+    else:
+        progress.info(
+            "Z-log metrics evaluated: "
+            f"z_log_rms={z_log_metrics['z_log_magnitude_rms_error']:.12g}, "
+            f"fitted_y_condition_max={fitted_y_condition_max:.12g}"
+        )
     if cfg.passivity == "check":
+        progress.info("starting sampled Y positive-real check")
         minimum, minimum_frequency, violations, passivity_samples = _assess_y_passivity(vector_fit, np.asarray(network.f, dtype=float), cfg.passivity_epsilon)
         constant_minimum = _hermitian_minimum(vector_fit.constant_coeff, network.nports)
         proportional_minimum = _hermitian_minimum(vector_fit.proportional_coeff, network.nports)
+        progress.info(
+            "sampled Y positive-real check finished: "
+            f"min_eigenvalue={minimum:.12g}, min_frequency_hz={minimum_frequency:.12g}, "
+            f"violation_count={violations}"
+        )
     else:
         minimum = minimum_frequency = None
         violations = None
         constant_minimum = proportional_minimum = None
         passivity_samples = None
+        progress.info("sampled Y positive-real check skipped")
     target_met = (cfg.max_y_rms_siemens is None or mean_rms <= cfg.max_y_rms_siemens) and (violations in {None, 0})
+    progress.info(f"writing Y-domain SPICE subcircuit: {output}")
     write_spice_subcircuit_y(vector_fit, output, fitted_model_name=cfg.subckt_name)
 
     result = YParamFitResult(
@@ -318,19 +446,19 @@ def fit_touchstone_to_y_spice(
     payload["element_rms_siemens"] = [item.__dict__ for item in rank_element_rms(y_values, fitted)]
     payload["y_derived_s"] = derived_s_metrics
     if result.report_path is not None:
+        progress.info(f"writing JSON report: {result.report_path}")
         result.report_path.parent.mkdir(parents=True, exist_ok=True)
         result.report_path.write_text(json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
-    if result.log_path is not None:
-        result.log_path.parent.mkdir(parents=True, exist_ok=True)
-        result.log_path.write_text(
-            f"fit-yparam ports={network.nports} rms_siemens={rms:.12g} target_met={target_met}\n",
-            encoding="utf-8",
-        )
     if result.html_report_path is not None:
+        progress.info(f"writing HTML report: {result.html_report_path}")
         result.html_report_path.parent.mkdir(parents=True, exist_ok=True)
         result.html_report_path.write_text(
             "<!doctype html><html><head><meta charset=\"utf-8\"><title>Y-Parameter Fit</title></head>"
             f"<body><h1>Y-Parameter Fit</h1><p>RMS: {rms:.12g} S; target met: {target_met}</p></body></html>\n",
             encoding="utf-8",
         )
+    progress.info(
+        f"fit-yparam completed: ports={network.nports}, rms_siemens={rms:.12g}, "
+        f"mean_rms_siemens={mean_rms:.12g}, target_met={target_met}"
+    )
     return result

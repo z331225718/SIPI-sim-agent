@@ -74,7 +74,7 @@ python -m agent_spice.cli fit-yparam .\board.s19p
 | `board_fitted.y.sp` | 是 | Common-ground Norton/MNA Y-domain SPICE 子电路。 |
 | `board_fitted.y.json` | 是 | 机器可读报告，包含 Y RMS、Z-log RMS、转换条件数和被动性检查。 |
 | `board_fitted.y.html` | 是 | 人工阅读的拟合质量报告。 |
-| `board_fitted.y.log` | 是 | 拟合过程日志。 |
+| `board_fitted.y.log` | 是 | 运行开始即创建，逐阶段、逐矢量拟合迭代追加并刷新；失败时保留已有进度和异常。 |
 | `board.y-derived.s19p` | 指定 `--derived-s-touchstone` | 由 fitted Y 在输入频点严格转换得到的采样 S 参数，用于检查转换后的 S RMS。 |
 | `board_fitted.rfm` | 指定 `--exact-s-rfm` | Y 正实性 enforcement 后，经精确有理 Y-to-S 变换得到的 S-RFM。 |
 | `board_fitted.s19p` | 指定 `--exact-s-rfm` | 与最终 RFM 对应的 fitted S 参数；可用 `--exact-s-touchstone` 改名。 |
