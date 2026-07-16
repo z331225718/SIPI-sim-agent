@@ -388,7 +388,7 @@ python -m agent_spice.cli run-hspice .\design.sp `
 
 ### Native HSPICE 语法
 
-Rust 内核直接解析 `.inc`/`.include`、`.lib` section、`.param`、`.global`、参数化层级 `.subckt`、`.option`、`.probe`、`.op/.dc/.ac/.tran` 和 `.measure`，不会先生成另一种 SPICE 方言。目前原生 `.measure` 支持 `FIND ... AT`、`FIND ... WHEN`、独立 `WHEN`、`TRIG/TARG`、`TRIG AT`、`MIN`、`MAX`、`AVG`、`RMS`、`PARAM`、`DERIV ... AT/WHEN`、`INTEG` 及 `FROM/TO` 窗口。事件测量支持 `TD`、`RISE/FALL/CROSS=<n>` 和 `LAST`；`PARAM` 按网表顺序引用先前测量、普通 `.param`、SI 后缀及数学函数。目标支持节点电压、差分电压、支路电流，以及 AC 的实部、虚部、幅值和相位。结果直接写入 `native_result.json`，并同步进入 `run_summary.json`。
+Rust 内核直接解析 `.inc`/`.include`、`.lib` section、数值及 `str('...')` 字符串 `.param`、`.if/.elseif/.else/.endif`、`.global`、参数化层级 `.subckt`、`.option`、`.probe`、`.op/.dc/.ac/.tran` 和 `.measure`，不会先生成另一种 SPICE 方言。目前原生 `.measure` 支持 `FIND ... AT`、`FIND ... WHEN`、独立 `WHEN`、`TRIG/TARG`、`TRIG AT`、`MIN`、`MAX`、`AVG`、`RMS`、`PARAM`、`DERIV ... AT/WHEN`、`INTEG` 及 `FROM/TO` 窗口。事件测量支持 `TD`、`RISE/FALL/CROSS=<n>` 和 `LAST`；`PARAM` 按网表顺序引用先前测量、普通 `.param`、SI 后缀及数学函数。目标支持节点电压、差分电压、支路电流，以及 AC 的实部、虚部、幅值和相位。结果直接写入 `native_result.json`，并同步进入 `run_summary.json`。
 
 尚未支持的 `.measure` 高阶语义包括信号对信号的动态事件比较及优化专用的 `GOAL/MINVAL/WEIGHT`。这些语法会显式报错，不会静默调用 ngspice 或 HSPICE。事件时刻、导数和 `AT/FROM/TO` 边界基于相邻输出点插值，`INTEG` 使用窗口边界插值后的梯形积分；TRAN 聚合仍基于输出采样网格，后续将增加内部接受步极值签核。
 

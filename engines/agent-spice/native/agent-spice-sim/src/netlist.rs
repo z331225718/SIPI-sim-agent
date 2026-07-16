@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::f64::consts::PI;
 use std::fs;
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
 
 use faer::c64;
@@ -384,6 +385,88 @@ pub enum IntegrationMethod {
     Gear2,
 }
 
+#[derive(Debug, Clone)]
+enum ParameterValue {
+    Numeric(f64),
+    String(String),
+}
+
+#[derive(Debug, Clone, Default)]
+struct ParameterSet {
+    numeric: HashMap<String, f64>,
+    strings: HashMap<String, String>,
+}
+
+impl ParameterSet {
+    fn evaluate(&self, text: &str) -> Result<ParameterValue> {
+        let text = text.trim();
+        if let Some(value) = self.strings.get(&text.to_ascii_lowercase()) {
+            return Ok(ParameterValue::String(value.clone()));
+        }
+        if let Some(open) = text.find('(')
+            && text[..open].trim().eq_ignore_ascii_case("str")
+        {
+            let close = text
+                .rfind(')')
+                .filter(|close| *close == text.len() - 1 && *close > open)
+                .ok_or_else(|| {
+                    Error::Parse(format!("invalid HSPICE string expression '{text}'"))
+                })?;
+            let argument = text[open + 1..close].trim();
+            if argument.len() >= 2 {
+                let first = argument.as_bytes()[0] as char;
+                let last = argument.as_bytes()[argument.len() - 1] as char;
+                if (first == '\'' || first == '"') && first == last {
+                    return Ok(ParameterValue::String(
+                        argument[1..argument.len() - 1].to_string(),
+                    ));
+                }
+            }
+            if let Some(value) = self.strings.get(&argument.to_ascii_lowercase()) {
+                return Ok(ParameterValue::String(value.clone()));
+            }
+            return Err(Error::Parse(format!(
+                "str() requires a quoted string or string parameter in '{text}'"
+            )));
+        }
+        expression::evaluate(text, &self.numeric).map(ParameterValue::Numeric)
+    }
+
+    fn insert(&mut self, name: &str, value: ParameterValue) {
+        let name = name.to_ascii_lowercase();
+        match value {
+            ParameterValue::Numeric(value) => {
+                self.strings.remove(&name);
+                self.numeric.insert(name, value);
+            }
+            ParameterValue::String(value) => {
+                self.numeric.remove(&name);
+                self.strings.insert(name, value);
+            }
+        }
+    }
+
+    fn assign(&mut self, name: &str, expression: &str) -> Result<()> {
+        let value = self.evaluate(expression)?;
+        self.insert(name, value);
+        Ok(())
+    }
+
+    fn string(&self, name: &str) -> Option<&str> {
+        self.strings
+            .get(&name.to_ascii_lowercase())
+            .map(String::as_str)
+    }
+}
+
+impl Deref for ParameterSet {
+    type Target = HashMap<String, f64>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.numeric
+    }
+}
+
 #[derive(Debug)]
 pub struct Deck {
     pub nodes: Vec<String>,
@@ -556,11 +639,145 @@ struct Subcircuit {
 struct Scope {
     path: String,
     pins: HashMap<String, String>,
-    parameters: HashMap<String, f64>,
+    parameters: ParameterSet,
+}
+
+struct ConditionalFrame {
+    parent_active: bool,
+    branch_taken: bool,
+    active: bool,
+    else_seen: bool,
+}
+
+#[derive(Default)]
+struct ConditionalState {
+    frames: Vec<ConditionalFrame>,
+}
+
+impl ConditionalState {
+    fn is_active(&self) -> bool {
+        self.frames.last().is_none_or(|frame| frame.active)
+    }
+
+    fn handle(&mut self, line: &str, tokens: &[String], parameters: &ParameterSet) -> Result<bool> {
+        let Some(head) = tokens.first().map(|token| token.to_ascii_lowercase()) else {
+            return Ok(false);
+        };
+        match head.as_str() {
+            ".if" => {
+                let parent_active = self.is_active();
+                let condition = parent_active && evaluate_condition(line, &tokens[0], parameters)?;
+                self.frames.push(ConditionalFrame {
+                    parent_active,
+                    branch_taken: condition,
+                    active: condition,
+                    else_seen: false,
+                });
+                Ok(true)
+            }
+            ".elseif" | ".elif" => {
+                let frame = self
+                    .frames
+                    .last_mut()
+                    .ok_or_else(|| Error::Parse(format!("{} has no matching .if", tokens[0])))?;
+                if frame.else_seen {
+                    return Err(Error::Parse(format!("{} cannot follow .else", tokens[0])));
+                }
+                let condition = frame.parent_active
+                    && !frame.branch_taken
+                    && evaluate_condition(line, &tokens[0], parameters)?;
+                frame.active = condition;
+                frame.branch_taken |= condition;
+                Ok(true)
+            }
+            ".else" => {
+                let frame = self
+                    .frames
+                    .last_mut()
+                    .ok_or_else(|| Error::Parse(".else has no matching .if".into()))?;
+                if frame.else_seen {
+                    return Err(Error::Parse("duplicate .else for the same .if".into()));
+                }
+                frame.else_seen = true;
+                frame.active = frame.parent_active && !frame.branch_taken;
+                frame.branch_taken = true;
+                Ok(true)
+            }
+            ".endif" => {
+                self.frames
+                    .pop()
+                    .ok_or_else(|| Error::Parse(".endif has no matching .if".into()))?;
+                Ok(true)
+            }
+            _ => Ok(false),
+        }
+    }
+
+    fn finish(&self, context: &str) -> Result<()> {
+        if self.frames.is_empty() {
+            Ok(())
+        } else {
+            Err(Error::Parse(format!("unterminated .if in {context}")))
+        }
+    }
+}
+
+fn evaluate_condition(line: &str, head: &str, parameters: &ParameterSet) -> Result<bool> {
+    let condition = line[head.len()..].trim();
+    if condition.is_empty() {
+        return Err(Error::Parse(format!("{head} condition is missing")));
+    }
+    expression::evaluate(condition, parameters).map(|value| value != 0.0)
+}
+
+fn preprocess_top_level_conditionals(lines: Vec<String>) -> Result<Vec<String>> {
+    if lines.is_empty() {
+        return Ok(lines);
+    }
+    let mut output = vec![lines[0].clone()];
+    let mut parameters = ParameterSet::default();
+    let mut conditionals = ConditionalState::default();
+    let mut subcircuit_selected = None;
+    for line in lines.into_iter().skip(1) {
+        let tokens = tokenize(&line);
+        let head = tokens
+            .first()
+            .map(|token| token.to_ascii_lowercase())
+            .unwrap_or_default();
+        if let Some(selected) = subcircuit_selected {
+            if selected {
+                output.push(line);
+            }
+            if head == ".ends" {
+                subcircuit_selected = None;
+            }
+            continue;
+        }
+        if head == ".subckt" {
+            let selected = conditionals.is_active();
+            subcircuit_selected = Some(selected);
+            if selected {
+                output.push(line);
+            }
+            continue;
+        }
+        if conditionals.handle(&line, &tokens, &parameters)? {
+            continue;
+        }
+        if !conditionals.is_active() {
+            continue;
+        }
+        if head == ".param" {
+            update_parameters(&tokens[1..], &mut parameters)?;
+        }
+        output.push(line);
+    }
+    conditionals.finish("top-level netlist")?;
+    Ok(output)
 }
 
 fn flatten_subcircuits(text: &str, rfm_subcircuit: Option<&str>) -> Result<String> {
-    let lines = logical_lines(text);
+    let lines = preprocess_top_level_conditionals(logical_lines(text))?;
     if lines.is_empty() {
         return Ok(String::new());
     }
@@ -641,10 +858,6 @@ fn flatten_subcircuits(text: &str, rfm_subcircuit: Option<&str>) -> Result<Strin
             "subcircuit '{name}' has no matching .ends"
         )));
     }
-    if definitions.is_empty() {
-        return Ok(top_level.join("\n") + "\n");
-    }
-
     let mut global_nodes = HashSet::new();
     for line in &top_level {
         let values = tokenize(line);
@@ -662,7 +875,7 @@ fn flatten_subcircuits(text: &str, rfm_subcircuit: Option<&str>) -> Result<Strin
         active: Vec::new(),
     };
     let mut output = vec![top_level[0].clone()];
-    let mut top_parameters = HashMap::new();
+    let mut top_parameters = ParameterSet::default();
     for line in top_level.into_iter().skip(1) {
         let values = tokenize(&line);
         if values.is_empty() {
@@ -697,16 +910,31 @@ impl Flattener<'_> {
     fn expand_line(&mut self, line: &str, scope: &Scope, output: &mut Vec<String>) -> Result<()> {
         let substituted = substitute_braced_expressions(line, &scope.parameters)?;
         let mut values = tokenize(&substituted);
-        for value in &mut values {
+        let parameter_start = values.first().map_or(values.len(), |head| {
+            if head.starts_with('.') {
+                1
+            } else {
+                match head.as_bytes()[0].to_ascii_uppercase() {
+                    b'R' | b'C' | b'L' | b'V' | b'I' => 3,
+                    b'E' | b'G' => 5,
+                    b'F' | b'H' => 4,
+                    _ => values.len(),
+                }
+            }
+        });
+        for value in values.iter_mut().skip(parameter_start) {
             let quoted_expression = value.len() >= 2
                 && ((value.starts_with('\'') && value.ends_with('\''))
                     || (value.starts_with('"') && value.ends_with('"')));
             if quoted_expression {
-                if let Ok(parameter) = expression::evaluate(value, &scope.parameters) {
+                let inner = &value[1..value.len() - 1];
+                if let Some(parameter) = scope.parameters.string(inner) {
+                    *value = quote_parameter_string(parameter);
+                } else if let Ok(parameter) = expression::evaluate(value, &scope.parameters) {
                     *value = format!("{parameter:.17e}");
                 }
-            } else if let Some(parameter) = scope.parameters.get(&value.to_ascii_lowercase()) {
-                *value = format!("{parameter:.17e}");
+            } else if let Some(parameter) = substitute_parameter_token(value, &scope.parameters) {
+                *value = parameter;
             }
         }
         if values.is_empty() || values[0].starts_with('*') {
@@ -807,16 +1035,16 @@ impl Flattener<'_> {
             .collect();
         let mut parameters = scope.parameters.clone();
         for (name, default) in &definition.defaults {
-            let value = expression::evaluate(default, &parameters)?;
-            parameters.insert(name.clone(), value);
+            let value = parameters.evaluate(default)?;
+            parameters.insert(name, value);
         }
         for (name, value) in parse_assignments(
             &values[definition_index + 1..],
             "instance parameter override",
             true,
         )? {
-            let value = expression::evaluate(&value, &scope.parameters)?;
-            parameters.insert(name.to_ascii_lowercase(), value);
+            let value = scope.parameters.evaluate(&value)?;
+            parameters.insert(&name, value);
         }
         let mut child = Scope {
             path,
@@ -824,8 +1052,15 @@ impl Flattener<'_> {
             parameters,
         };
         self.active.push(definition_name);
+        let mut conditionals = ConditionalState::default();
         for line in &definition.body {
             let body_values = tokenize(line);
+            if conditionals.handle(line, &body_values, &child.parameters)? {
+                continue;
+            }
+            if !conditionals.is_active() {
+                continue;
+            }
             if body_values
                 .first()
                 .is_some_and(|value| value.eq_ignore_ascii_case(".param"))
@@ -839,6 +1074,7 @@ impl Flattener<'_> {
             }
             self.expand_line(line, &child, output)?;
         }
+        conditionals.finish(&format!("subcircuit '{}'", values[definition_index]))?;
         self.active.pop();
         Ok(())
     }
@@ -905,15 +1141,14 @@ fn parse_assignments(
     Ok(assignments)
 }
 
-fn update_parameters(tokens: &[String], parameters: &mut HashMap<String, f64>) -> Result<()> {
+fn update_parameters(tokens: &[String], parameters: &mut ParameterSet) -> Result<()> {
     for (name, expression_text) in parse_assignments(tokens, ".param assignment", false)? {
-        let value = expression::evaluate(&expression_text, parameters)?;
-        parameters.insert(name.to_ascii_lowercase(), value);
+        parameters.assign(&name, &expression_text)?;
     }
     Ok(())
 }
 
-fn substitute_braced_expressions(line: &str, parameters: &HashMap<String, f64>) -> Result<String> {
+fn substitute_braced_expressions(line: &str, parameters: &ParameterSet) -> Result<String> {
     let mut output = String::with_capacity(line.len());
     let mut cursor = 0usize;
     while let Some(relative_start) = line[cursor..].find('{') {
@@ -933,12 +1168,41 @@ fn substitute_braced_expressions(line: &str, parameters: &HashMap<String, f64>) 
             }
         }
         let end = end.ok_or_else(|| Error::Parse(format!("unclosed '{{' in '{line}'")))?;
-        let value = expression::evaluate(&line[start + 1..end], parameters)?;
-        output.push_str(&format!("{value:.17e}"));
+        let expression_text = line[start + 1..end].trim();
+        if let Some(value) = parameters.string(expression_text) {
+            output.push_str(&quote_parameter_string(value));
+        } else {
+            let value = expression::evaluate(expression_text, parameters)?;
+            output.push_str(&format!("{value:.17e}"));
+        }
         cursor = end + 1;
     }
     output.push_str(&line[cursor..]);
     Ok(output)
+}
+
+fn substitute_parameter_token(token: &str, parameters: &ParameterSet) -> Option<String> {
+    if let Some(value) = parameters.get(&token.to_ascii_lowercase()) {
+        return Some(format!("{value:.17e}"));
+    }
+    if let Some(value) = parameters.string(token) {
+        return Some(quote_parameter_string(value));
+    }
+    let (prefix, value) = token.split_once('=')?;
+    if let Some(parameter) = parameters.get(&value.to_ascii_lowercase()) {
+        return Some(format!("{prefix}={parameter:.17e}"));
+    }
+    parameters
+        .string(value)
+        .map(|parameter| format!("{prefix}={}", quote_parameter_string(parameter)))
+}
+
+fn quote_parameter_string(value: &str) -> String {
+    if value.contains('\'') && !value.contains('"') {
+        format!("\"{value}\"")
+    } else {
+        format!("'{value}'")
+    }
 }
 
 fn qualify(path: &str, name: &str) -> String {
@@ -955,7 +1219,7 @@ struct Parser {
     node_lookup: HashMap<String, usize>,
     elements: Vec<PendingElement>,
     analyses: Vec<Analysis>,
-    parameters: HashMap<String, f64>,
+    parameters: ParameterSet,
     rfm_subcircuit: Option<String>,
     rfm_nports: Option<usize>,
     skipping_rfm_wrapper: bool,
@@ -1550,6 +1814,7 @@ impl Parser {
             };
             elements.push(element);
         }
+        let ParameterSet { numeric, .. } = self.parameters;
         Ok(Deck {
             nodes: self.nodes,
             elements,
@@ -1563,7 +1828,7 @@ impl Parser {
             charge_tolerance: self.charge_tolerance,
             truncation_tolerance: self.truncation_tolerance,
             probes: self.probes,
-            parameters: self.parameters,
+            parameters: numeric,
             measurements: self.measurements,
         })
     }

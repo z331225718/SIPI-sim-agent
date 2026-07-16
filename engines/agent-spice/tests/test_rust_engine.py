@@ -155,6 +155,67 @@ def test_rust_engine_accepts_hspice_dollar_comments(tmp_path: Path) -> None:
     assert result["points"][0]["values"]["out"] == pytest.approx(1.0 / 3.0)
 
 
+def test_rust_engine_accepts_hspice_string_params_and_conditionals(
+    tmp_path: Path,
+) -> None:
+    deck = tmp_path / "string_params_and_conditionals.sp"
+    deck.write_text(
+        "native HSPICE string parameters and conditionals\n"
+        ".param num_nop_vdda=1 num_nop_vddio1=1 len_nop=100n\n"
+        ".if ( ('num_nop_vdda*len_nop' < 200n) && "
+        "('num_nop_vddio1*len_nop' < 200n) )\n"
+        ".param delay1=200n\n"
+        ".param vdda_read10ns      =      "
+        "str('FF_125deg_0p935_0p44_VDDA_read10ns_delay200ns.csv')\n"
+        ".param branch_resistance=1k\n"
+        ".else\n"
+        ".param delay1=400n\n"
+        ".param vdda_read10ns=str('wrong_branch.csv')\n"
+        ".param branch_resistance=2k\n"
+        ".endif\n"
+        "V1 in 0 1\n"
+        "Rseries in out branch_resistance\n"
+        "Rload out 0 1k\n"
+        ".op\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+
+    result = run(deck)
+
+    assert result["points"][0]["values"]["out"] == pytest.approx(0.5)
+
+
+def test_rust_engine_evaluates_subcircuit_local_hspice_conditionals(
+    tmp_path: Path,
+) -> None:
+    deck = tmp_path / "subcircuit_conditionals.sp"
+    deck.write_text(
+        "subcircuit-local HSPICE conditionals\n"
+        ".param selected_mode=2\n"
+        ".subckt branch in out params: mode=selected_mode\n"
+        ".if ('mode' = 1)\n"
+        ".param resistance=1k source_file=str('mode1.csv')\n"
+        ".elseif ('mode' = 2)\n"
+        ".param resistance=2k source_file=str('mode2.csv')\n"
+        ".else\n"
+        ".param resistance=4k source_file=str('fallback.csv')\n"
+        ".endif\n"
+        "Rbranch in out resistance\n"
+        ".ends branch\n"
+        "V1 in 0 1\n"
+        "Xbranch in out branch\n"
+        "Rload out 0 1k\n"
+        ".op\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+
+    result = run(deck)
+
+    assert result["points"][0]["values"]["out"] == pytest.approx(1.0 / 3.0)
+
+
 def test_rust_engine_evaluates_hspice_measurement_operations(tmp_path: Path) -> None:
     deck = tmp_path / "measurements.sp"
     deck.write_text(

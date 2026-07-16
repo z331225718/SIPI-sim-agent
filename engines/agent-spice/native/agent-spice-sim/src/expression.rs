@@ -17,7 +17,7 @@ pub fn evaluate(text: &str, parameters: &HashMap<String, f64>) -> Result<f64> {
         position: 0,
         parameters,
     };
-    let value = parser.parse_additive()?;
+    let value = parser.parse_logical_or()?;
     parser.skip_whitespace();
     if parser.position != text.len() {
         return Err(Error::Parse(format!(
@@ -40,6 +40,66 @@ struct Parser<'a> {
 }
 
 impl Parser<'_> {
+    fn parse_logical_or(&mut self) -> Result<f64> {
+        let mut value = self.parse_logical_and()?;
+        loop {
+            self.skip_whitespace();
+            if self.consume_text("||") {
+                let right = self.parse_logical_and()?;
+                value = boolean(value != 0.0 || right != 0.0);
+            } else {
+                return Ok(value);
+            }
+        }
+    }
+
+    fn parse_logical_and(&mut self) -> Result<f64> {
+        let mut value = self.parse_equality()?;
+        loop {
+            self.skip_whitespace();
+            if self.consume_text("&&") {
+                let right = self.parse_equality()?;
+                value = boolean(value != 0.0 && right != 0.0);
+            } else {
+                return Ok(value);
+            }
+        }
+    }
+
+    fn parse_equality(&mut self) -> Result<f64> {
+        let mut value = self.parse_comparison()?;
+        loop {
+            self.skip_whitespace();
+            if self.consume_text("==") || self.consume_text("=") {
+                value = boolean(value == self.parse_comparison()?);
+            } else if self.consume_text("!=") || self.consume_text("<>") {
+                value = boolean(value != self.parse_comparison()?);
+            } else {
+                return Ok(value);
+            }
+        }
+    }
+
+    fn parse_comparison(&mut self) -> Result<f64> {
+        let mut value = self.parse_additive()?;
+        loop {
+            self.skip_whitespace();
+            if self.consume_text("<=") {
+                value = boolean(value <= self.parse_additive()?);
+            } else if self.consume_text(">=") {
+                value = boolean(value >= self.parse_additive()?);
+            } else if self.text[self.position..].starts_with("<>") {
+                return Ok(value);
+            } else if self.consume_text("<") {
+                value = boolean(value < self.parse_additive()?);
+            } else if self.consume_text(">") {
+                value = boolean(value > self.parse_additive()?);
+            } else {
+                return Ok(value);
+            }
+        }
+    }
+
     fn parse_additive(&mut self) -> Result<f64> {
         let mut value = self.parse_multiplicative()?;
         loop {
@@ -84,6 +144,8 @@ impl Parser<'_> {
             self.parse_unary()
         } else if self.consume('-') {
             Ok(-self.parse_unary()?)
+        } else if self.consume('!') {
+            Ok(boolean(self.parse_unary()? == 0.0))
         } else {
             self.parse_primary()
         }
@@ -92,14 +154,20 @@ impl Parser<'_> {
     fn parse_primary(&mut self) -> Result<f64> {
         self.skip_whitespace();
         if self.consume('(') {
-            let value = self.parse_additive()?;
+            let value = self.parse_logical_or()?;
             self.expect(')')?;
             return Ok(value);
         }
         if self.consume('{') {
-            let value = self.parse_additive()?;
+            let value = self.parse_logical_or()?;
             self.expect('}')?;
             return Ok(value);
+        }
+        if self
+            .peek()
+            .is_some_and(|value| value == '\'' || value == '"')
+        {
+            return self.parse_quoted_expression();
         }
         if self
             .peek()
@@ -114,7 +182,7 @@ impl Parser<'_> {
             self.skip_whitespace();
             if !self.consume(')') {
                 loop {
-                    arguments.push(self.parse_additive()?);
+                    arguments.push(self.parse_logical_or()?);
                     self.skip_whitespace();
                     if self.consume(')') {
                         break;
@@ -131,6 +199,25 @@ impl Parser<'_> {
             .get(&identifier.to_ascii_lowercase())
             .copied()
             .ok_or_else(|| Error::Parse(format!("unknown parameter '{identifier}'")))
+    }
+
+    fn parse_quoted_expression(&mut self) -> Result<f64> {
+        let quote = self.peek().expect("quoted expression has an opening quote");
+        self.advance();
+        let start = self.position;
+        while self.peek().is_some_and(|value| value != quote) {
+            self.advance();
+        }
+        if self.peek() != Some(quote) {
+            return Err(Error::Parse(format!(
+                "unclosed quoted expression in '{}' at byte {start}",
+                self.text
+            )));
+        }
+        let expression = &self.text[start..self.position];
+        let value = evaluate(expression, self.parameters)?;
+        self.advance();
+        Ok(value)
     }
 
     fn parse_literal(&mut self) -> Result<f64> {
@@ -228,6 +315,15 @@ impl Parser<'_> {
         }
     }
 
+    fn consume_text(&mut self, expected: &str) -> bool {
+        if self.text[self.position..].starts_with(expected) {
+            self.position += expected.len();
+            true
+        } else {
+            false
+        }
+    }
+
     fn peek(&self) -> Option<char> {
         self.text[self.position..].chars().next()
     }
@@ -237,6 +333,10 @@ impl Parser<'_> {
             self.position += value.len_utf8();
         }
     }
+}
+
+fn boolean(value: bool) -> f64 {
+    if value { 1.0 } else { 0.0 }
 }
 
 fn evaluate_function(name: &str, arguments: &[f64]) -> Result<f64> {
@@ -299,5 +399,24 @@ mod tests {
         assert_eq!(evaluate("{base*sqrt(4)}", &parameters).unwrap(), 1000.0);
         assert_eq!(evaluate("max(1, 3-1)", &parameters).unwrap(), 2.0);
         assert_eq!(evaluate("2.5meg/5k", &parameters).unwrap(), 500.0);
+    }
+
+    #[test]
+    fn evaluates_hspice_conditional_operators_and_quoted_subexpressions() {
+        let mut parameters = HashMap::new();
+        parameters.insert("num_nop_vdda".into(), 1.0);
+        parameters.insert("num_nop_vddio1".into(), 1.0);
+        parameters.insert("len_nop".into(), 100e-9);
+
+        assert_eq!(
+            evaluate(
+                "(('num_nop_vdda*len_nop' < 200n) && ('num_nop_vddio1*len_nop' < 200n))",
+                &parameters,
+            )
+            .unwrap(),
+            1.0
+        );
+        assert_eq!(evaluate("!(1 >= 2) || 0", &parameters).unwrap(), 1.0);
+        assert_eq!(evaluate("1 <> 1", &parameters).unwrap(), 0.0);
     }
 }

@@ -7,8 +7,8 @@ Current executable slice:
 
 - R, C, L, independent voltage/current sources, and E/F/G/H controlled sources;
 - nested parameterized `.subckt`, `.global`, recursive relative `.include` /
-  `.inc`, external `.lib` section selection, expression-valued `.param`, and SI
-  numeric suffixes;
+  `.inc`, external `.lib` section selection, numeric and `str('...')` `.param`,
+  nested `.if`/`.elseif`/`.else`/`.endif`, and SI numeric suffixes;
 - operating point, single-source DC sweep, complex AC sweep, and adaptive Trap
   or variable-step Gear2 transient analysis with backward-Euler restart;
 - device-state LTE control for capacitor charge, inductor flux, and RFM dynamic
