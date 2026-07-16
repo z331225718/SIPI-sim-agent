@@ -583,26 +583,26 @@ fn flatten_subcircuits(text: &str, rfm_subcircuit: Option<&str>) -> Result<Strin
                 .get(1)
                 .ok_or_else(|| Error::Parse(".subckt name is missing".into()))?
                 .clone();
-            let parameter_start = values[2..]
-                .iter()
-                .position(|value| {
+            let parameter_start = (2..values.len())
+                .find(|index| {
+                    let value = &values[*index];
                     value.eq_ignore_ascii_case("params:")
                         || value.eq_ignore_ascii_case("params")
                         || value.contains('=')
+                        || values
+                            .get(*index + 1)
+                            .is_some_and(|next| next == "=" || next.starts_with('='))
                 })
-                .map(|index| index + 2)
                 .unwrap_or(values.len());
             let pins = values[2..parameter_start].to_vec();
-            let mut defaults = Vec::new();
-            for value in &values[parameter_start..] {
-                if value.eq_ignore_ascii_case("params:") || value.eq_ignore_ascii_case("params") {
-                    continue;
-                }
-                let (parameter, default) = value.split_once('=').ok_or_else(|| {
-                    Error::Parse(format!("invalid .subckt parameter declaration '{value}'"))
-                })?;
-                defaults.push((parameter.to_ascii_lowercase(), default.to_string()));
-            }
+            let defaults = parse_assignments(
+                &values[parameter_start..],
+                ".subckt parameter declaration",
+                true,
+            )?
+            .into_iter()
+            .map(|(parameter, default)| (parameter.to_ascii_lowercase(), default))
+            .collect();
             let ignored = rfm_subcircuit.is_some_and(|rfm| name.eq_ignore_ascii_case(rfm));
             active = Some((
                 name,
@@ -810,13 +810,12 @@ impl Flattener<'_> {
             let value = expression::evaluate(default, &parameters)?;
             parameters.insert(name.clone(), value);
         }
-        for assignment in &values[definition_index + 1..] {
-            let (name, value) = assignment.split_once('=').ok_or_else(|| {
-                Error::Parse(format!(
-                    "invalid instance parameter override '{assignment}'"
-                ))
-            })?;
-            let value = expression::evaluate(value, &scope.parameters)?;
+        for (name, value) in parse_assignments(
+            &values[definition_index + 1..],
+            "instance parameter override",
+            true,
+        )? {
+            let value = expression::evaluate(&value, &scope.parameters)?;
             parameters.insert(name.to_ascii_lowercase(), value);
         }
         let mut child = Scope {
@@ -862,12 +861,53 @@ impl Flattener<'_> {
     }
 }
 
+fn parse_assignments(
+    tokens: &[String],
+    context: &str,
+    allow_params_marker: bool,
+) -> Result<Vec<(String, String)>> {
+    let invalid = |token: &str| Error::Parse(format!("invalid {context} '{token}'"));
+    let mut assignments = Vec::new();
+    let mut index = 0usize;
+    while index < tokens.len() {
+        let token = &tokens[index];
+        if allow_params_marker
+            && (token.eq_ignore_ascii_case("params:") || token.eq_ignore_ascii_case("params"))
+        {
+            index += 1;
+            continue;
+        }
+        let (name, value, consumed) = if let Some((name, value)) = token.split_once('=') {
+            if value.is_empty() {
+                let value = tokens.get(index + 1).ok_or_else(|| invalid(token))?;
+                (name, value.as_str(), 2)
+            } else {
+                (name, value, 1)
+            }
+        } else if tokens.get(index + 1).is_some_and(|next| next == "=") {
+            let value = tokens.get(index + 2).ok_or_else(|| invalid(token))?;
+            (token.as_str(), value.as_str(), 3)
+        } else if let Some(value) = tokens
+            .get(index + 1)
+            .and_then(|next| next.strip_prefix('='))
+            .filter(|value| !value.is_empty())
+        {
+            (token.as_str(), value, 2)
+        } else {
+            return Err(invalid(token));
+        };
+        if name.is_empty() || value.is_empty() || value == "=" {
+            return Err(invalid(token));
+        }
+        assignments.push((name.to_string(), value.to_string()));
+        index += consumed;
+    }
+    Ok(assignments)
+}
+
 fn update_parameters(tokens: &[String], parameters: &mut HashMap<String, f64>) -> Result<()> {
-    for token in tokens {
-        let (name, expression_text) = token
-            .split_once('=')
-            .ok_or_else(|| Error::Parse(format!("invalid .param assignment '{token}'")))?;
-        let value = expression::evaluate(expression_text, parameters)?;
+    for (name, expression_text) in parse_assignments(tokens, ".param assignment", false)? {
+        let value = expression::evaluate(&expression_text, parameters)?;
         parameters.insert(name.to_ascii_lowercase(), value);
     }
     Ok(())
@@ -1103,13 +1143,7 @@ impl Parser {
     fn parse_directive(&mut self, head: &str, tokens: &[String]) -> Result<()> {
         match head {
             ".param" => {
-                for token in tokens {
-                    let (name, value) = token.split_once('=').ok_or_else(|| {
-                        Error::Parse(format!("invalid .param assignment '{token}'"))
-                    })?;
-                    let value = parse_number(value, &self.parameters)?;
-                    self.parameters.insert(name.to_ascii_lowercase(), value);
-                }
+                update_parameters(tokens, &mut self.parameters)?;
             }
             ".op" => self.analyses.push(Analysis::Op),
             ".dc" => {
