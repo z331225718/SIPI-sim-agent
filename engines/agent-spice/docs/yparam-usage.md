@@ -21,7 +21,7 @@ python -m agent_spice.cli fit-yparam .\board.s19p `
 
 输入必须是标准 Touchstone `.sNp`。Y 拟合使用输入的参考阻抗；不要先把 S 参数手工改写为非标准 `.yNp` 文件。
 
-`fit-yparam` 默认不是固定阶次单次拟合。初始有效阶次按 `n_poles_real + 2 * n_poles_cmplx` 计算；某阶没有同时满足 mean Y RMS 门限和 sampled Y 正实性门限时，命令按 `--order-step`（默认 `2`）提高到 `--max-order`（默认 `40`），第一个通过的阶次立即停止。最大阶次仍不通过时，命令输出评分最佳的诊断模型并返回失败。每阶结果写入 JSON 的 `order_search.trials`，也会实时追加到 `.y.log`。
+`fit-yparam` 默认不是固定阶次单次拟合。初始有效阶次按 `n_poles_real + 2 * n_poles_cmplx` 计算；某阶没有同时满足 mean Y RMS 门限和 sampled Y 正实性门限时，命令按 `--order-step`（默认 `2`）提高到 `--max-order`（默认 `40`），第一个通过的阶次立即停止。指定 `--exact-s-rfm` 时，每个通过基础门限的候选还必须通过 KYP enforcement 和精确有理 Y-to-S 转换，失败后继续升阶。最大阶次仍不通过时，命令输出评分最佳的诊断模型并返回失败。每阶结果写入 JSON 的 `order_search.trials`，也会实时追加到 `.y.log`。
 
 建议先为探索运行保留 `--passivity check`（默认），并显式设置极点预算和迭代次数，使结果可复现：
 

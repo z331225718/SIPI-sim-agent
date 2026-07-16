@@ -7,7 +7,7 @@ import json
 import logging
 from pathlib import Path
 import time
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 
 import numpy as np
 
@@ -557,6 +557,7 @@ def fit_touchstone_to_y_spice_auto_order(
     html_report_path: str | Path | None = None,
     log_path: str | Path | None = None,
     derived_s_touchstone_path: str | Path | None = None,
+    trial_acceptance: Callable[[YParamFitResult], tuple[bool, str | None]] | None = None,
 ) -> YParamFitResult:
     """Increase Y-fit order until the RMS and positive-real gates both pass."""
 
@@ -612,7 +613,12 @@ def fit_touchstone_to_y_spice_auto_order(
         effective_order = trial.fitted_model.get_model_order(
             np.asarray(trial.fitted_model.poles, dtype=complex)
         )
-        trial_met = trial.target_met and effective_order == requested_order
+        base_target_met = trial.target_met and effective_order == requested_order
+        acceptance_met = True
+        acceptance_reason = None
+        if base_target_met and trial_acceptance is not None:
+            acceptance_met, acceptance_reason = trial_acceptance(trial)
+        trial_met = base_target_met and acceptance_met
         if trial.target_met != trial_met:
             trial = replace(trial, target_met=trial_met)
         trial_payload = {
@@ -628,6 +634,9 @@ def fit_touchstone_to_y_spice_auto_order(
             "passivity_min_eigenvalue": trial.passivity_min_eigenvalue,
             "passivity_violation_count": trial.passivity_violation_count,
             "fit_seconds": trial.fit_seconds,
+            "base_target_met": base_target_met,
+            "acceptance_gate_met": acceptance_met,
+            "acceptance_rejection_reason": acceptance_reason,
             "target_met": trial_met,
             "rejection_reason": (
                 None
@@ -636,9 +645,13 @@ def fit_touchstone_to_y_spice_auto_order(
                     "effective_order_mismatch"
                     if effective_order != requested_order
                     else (
-                        "y_not_positive_real"
-                        if trial.passivity_violation_count not in {None, 0}
-                        else "y_rms_target_not_met"
+                        acceptance_reason
+                        if base_target_met and not acceptance_met
+                        else (
+                            "y_not_positive_real"
+                            if trial.passivity_violation_count not in {None, 0}
+                            else "y_rms_target_not_met"
+                        )
                     )
                 )
             ),
@@ -648,7 +661,9 @@ def fit_touchstone_to_y_spice_auto_order(
             progress_path,
             f"Y order trial finished: requested_order={requested_order}, "
             f"effective_order={effective_order}, mean_rms_siemens={trial.y_mean_rms_siemens:.12g}, "
-            f"passivity_violations={trial.passivity_violation_count}, target_met={trial_met}",
+            f"passivity_violations={trial.passivity_violation_count}, "
+            f"acceptance_gate_met={acceptance_met}, target_met={trial_met}, "
+            f"rejection_reason={trial_payload['rejection_reason']}",
         )
         if best is None or _y_trial_score(trial) < _y_trial_score(best):
             best = trial

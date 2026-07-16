@@ -1899,7 +1899,59 @@ def main(argv: list[str] | None = None) -> int:
         report_path = args.report or output.with_suffix(".json")
         html_report_path = args.html_report or output.with_suffix(".html")
         log_path = args.log or output.with_suffix(".log")
+        exact_trial_deliveries: dict[int, tuple[Any, Any, Any]] = {}
+        exact_gate_failures: list[str] = []
+
+        def validate_exact_y_to_s_trial(trial_result):
+            trial_order = trial_result.fitted_model.get_model_order(
+                trial_result.fitted_model.poles
+            )
+            append_yparam_progress(
+                log_path,
+                "starting exact Y delivery gate: "
+                f"order={trial_order}, solver={args.kyp_solver}, "
+                f"max_states={args.kyp_max_states}, margin={args.kyp_margin:.12g}, "
+                f"max_relative_correction={args.kyp_max_relative_correction:.12g}",
+            )
+            try:
+                enforced_y, certificate = enforce_y_positive_real_kyp(
+                    trial_result.fitted_model,
+                    margin=args.kyp_margin,
+                    max_states=args.kyp_max_states,
+                    max_relative_correction=args.kyp_max_relative_correction,
+                    solver=args.kyp_solver,
+                )
+                exact_s = exact_y_to_s_rational(
+                    enforced_y,
+                    float(trial_result.reference_impedance[0]),
+                )
+            except (RuntimeError, ValueError) as exc:
+                reason = f"exact_y_to_s_gate_failed: {exc}"
+                exact_gate_failures.append(reason)
+                append_yparam_progress(
+                    log_path,
+                    f"exact Y delivery gate failed: order={trial_order}, error={exc}",
+                )
+                return False, reason
+            exact_trial_deliveries[id(trial_result.fitted_model)] = (
+                enforced_y,
+                certificate,
+                exact_s,
+            )
+            append_yparam_progress(
+                log_path,
+                "exact Y delivery gate passed: "
+                f"order={trial_order}, status={certificate.status}, "
+                f"state_count={certificate.state_count}, "
+                f"correction_frobenius_norm={certificate.correction_frobenius_norm:.12g}",
+            )
+            return True, None
+
         try:
+            if args.exact_s_rfm is not None and not args.no_fit_proportional:
+                raise ValueError(
+                    "--exact-s-rfm requires --no-fit-proportional; descriptor Y-to-S is not implemented"
+                )
             result = fit_touchstone_to_y_spice_auto_order(
                 args.touchstone,
                 output,
@@ -1921,33 +1973,18 @@ def main(argv: list[str] | None = None) -> int:
                 html_report_path=html_report_path,
                 log_path=log_path,
                 derived_s_touchstone_path=args.derived_s_touchstone,
+                trial_acceptance=(
+                    validate_exact_y_to_s_trial
+                    if args.exact_s_rfm is not None
+                    else None
+                ),
             )
-            if args.exact_s_rfm is not None:
-                if not args.no_fit_proportional:
-                    raise ValueError("--exact-s-rfm requires --no-fit-proportional; descriptor Y-to-S is not implemented")
-                append_yparam_progress(
-                    log_path,
-                    "starting KYP Y positive-real enforcement: "
-                    f"solver={args.kyp_solver}, max_states={args.kyp_max_states}, "
-                    f"margin={args.kyp_margin:.12g}, "
-                    f"max_relative_correction={args.kyp_max_relative_correction:.12g}",
-                )
-                enforced_y, certificate = enforce_y_positive_real_kyp(
-                    result.fitted_model,
-                    margin=args.kyp_margin,
-                    max_states=args.kyp_max_states,
-                    max_relative_correction=args.kyp_max_relative_correction,
-                    solver=args.kyp_solver,
-                )
-                append_yparam_progress(
-                    log_path,
-                    "KYP Y positive-real enforcement finished: "
-                    f"status={certificate.status}, state_count={certificate.state_count}, "
-                    f"correction_frobenius_norm={certificate.correction_frobenius_norm:.12g}",
-                )
-                append_yparam_progress(log_path, "starting exact rational Y-to-S transformation")
+            if args.exact_s_rfm is not None and result.target_met:
+                delivery = exact_trial_deliveries.get(id(result.fitted_model))
+                if delivery is None:
+                    raise ValueError("selected Y model is missing its exact-delivery gate result")
+                _, certificate, exact_s = delivery
                 z0 = float(result.reference_impedance[0])
-                exact_s = exact_y_to_s_rational(enforced_y, z0)
                 append_yparam_progress(
                     log_path,
                     f"writing exact S RFM: {args.exact_s_rfm}",
@@ -1988,7 +2025,9 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         if not result.target_met:
             reason = "y_rms_target_not_met"
-            if args.passivity == "check" and result.passivity_violation_count:
+            if exact_gate_failures:
+                reason = "exact_y_to_s_gate_failed"
+            elif args.passivity == "check" and result.passivity_violation_count:
                 reason = "y_not_positive_real"
             selected_order = result.fitted_model.get_model_order(result.fitted_model.poles)
             print(

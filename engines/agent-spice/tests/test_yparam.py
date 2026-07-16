@@ -1,4 +1,3 @@
-from dataclasses import replace
 import json
 from pathlib import Path
 import re
@@ -130,9 +129,7 @@ def test_fit_yparam_preserves_progress_log_when_vector_fit_fails(tmp_path: Path,
     assert "intentional vector-fit failure" in log_text
 
 
-def test_fit_yparam_auto_order_increases_until_target_passes(tmp_path: Path, monkeypatch) -> None:
-    import agent_spice.sparam.yparam as yparam_module
-
+def test_fit_yparam_auto_order_increases_until_all_gates_pass(tmp_path: Path) -> None:
     frequencies = np.array([1.0e6, 2.0e6, 5.0e6, 1.0e7])
     touchstone = _write_y_touchstone(
         tmp_path / "auto.s1p",
@@ -142,15 +139,11 @@ def test_fit_yparam_auto_order_increases_until_target_passes(tmp_path: Path, mon
     report_path = tmp_path / "auto.y.json"
     log_path = tmp_path / "auto.y.log"
     attempted_orders: list[int] = []
-    original_impl = yparam_module._fit_touchstone_to_y_spice_impl
 
-    def controlled_target(*args, **kwargs):
-        result = original_impl(*args, **kwargs)
+    def controlled_acceptance(result):
         order = result.config.n_poles_real + 2 * result.config.n_poles_cmplx
         attempted_orders.append(order)
-        return replace(result, target_met=order >= 5)
-
-    monkeypatch.setattr(yparam_module, "_fit_touchstone_to_y_spice_impl", controlled_target)
+        return (order >= 5, None if order >= 5 else "delivery_gate_failed")
 
     result = fit_touchstone_to_y_spice_auto_order(
         touchstone,
@@ -165,6 +158,7 @@ def test_fit_yparam_auto_order_increases_until_target_passes(tmp_path: Path, mon
         order_step=2,
         report_path=report_path,
         log_path=log_path,
+        trial_acceptance=controlled_acceptance,
     )
 
     assert attempted_orders == [3, 5]
@@ -173,6 +167,7 @@ def test_fit_yparam_auto_order_increases_until_target_passes(tmp_path: Path, mon
     payload = json.loads(report_path.read_text(encoding="utf-8"))
     assert payload["order_search"]["selected_order"] == 5
     assert [trial["requested_order"] for trial in payload["order_search"]["trials"]] == [3, 5]
+    assert payload["order_search"]["trials"][0]["rejection_reason"] == "delivery_gate_failed"
     log_text = log_path.read_text(encoding="utf-8")
     assert "Y order trial started: requested_order=3" in log_text
     assert "Y order trial started: requested_order=5" in log_text
@@ -310,9 +305,52 @@ def test_fit_yparam_cli_exports_kyp_enforced_exact_s_rfm(tmp_path: Path) -> None
     assert payload["passivity"]["enforcement"] == "KYP continuous-frequency certificate"
     assert payload["exact_y_to_s"]["method"] == "state-space rational LFT; no sampled S refit"
     log_text = log_path.read_text(encoding="utf-8")
-    assert "starting KYP Y positive-real enforcement" in log_text
-    assert "KYP Y positive-real enforcement finished" in log_text
+    assert "starting exact Y delivery gate" in log_text
+    assert "exact Y delivery gate passed" in log_text
     assert "exact Y-to-S delivery completed" in log_text
+
+
+def test_fit_yparam_cli_retries_higher_order_when_exact_delivery_gate_fails(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from agent_spice import cli
+
+    frequencies = np.array([1.0e6, 2.0e6, 5.0e6, 1.0e7])
+    touchstone = _write_y_touchstone(
+        tmp_path / "retry_exact.s1p",
+        frequencies,
+        np.full((4, 1, 1), 0.02 + 0j),
+    )
+    report_path = tmp_path / "retry_exact.y.json"
+    rfm_path = tmp_path / "retry_exact.rfm"
+    attempted_orders: list[int] = []
+    original_enforce = cli.enforce_y_positive_real_kyp
+    reusable_delivery = []
+
+    def fail_first_order(model, **kwargs):
+        order = model.get_model_order(model.poles)
+        attempted_orders.append(order)
+        if order == 3:
+            reusable_delivery.append(original_enforce(model, **kwargs))
+            raise ValueError("forced order-3 KYP failure")
+        return reusable_delivery[0]
+
+    monkeypatch.setattr(cli, "enforce_y_positive_real_kyp", fail_first_order)
+
+    assert cli.main([
+        "fit-yparam", str(touchstone), "--output", str(tmp_path / "retry_exact.y.sp"),
+        "--report", str(report_path), "--n-poles-real", "1", "--n-poles-cmplx", "1",
+        "--max-order", "5", "--order-step", "2", "--fit-iterations", "3",
+        "--no-fit-proportional", "--exact-s-rfm", str(rfm_path),
+    ]) == 0
+
+    assert attempted_orders == [3, 5]
+    assert rfm_path.is_file()
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    assert payload["order_search"]["selected_order"] == 5
+    assert payload["order_search"]["trials"][0]["acceptance_gate_met"] is False
+    assert payload["order_search"]["trials"][1]["acceptance_gate_met"] is True
 
 
 def test_y_spice_export_ac_matches_conductance_and_capacitance(tmp_path: Path) -> None:

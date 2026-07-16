@@ -67,7 +67,7 @@ Y-fit 使用独立命令 `fit-yparam`，不是 `fit-sparam` 的开关，因此�
 python -m agent_spice.cli fit-yparam .\board.s19p
 ```
 
-CLI 默认执行目标阶次搜索。初始有效阶次为 `--n-poles-real + 2 * --n-poles-cmplx`（默认 `7`），未同时满足 `--max-y-rms-siemens` 和 `--passivity` 时按 `--order-step` 增加，直到 `--max-order`；首个满足全部门限的阶次立即停止。达到最大阶次仍失败时会交付评分最佳的诊断模型，但命令保持非零退出码。JSON 的 `order_search.trials` 和实时日志记录每次尝试。
+CLI 默认执行目标阶次搜索。初始有效阶次为 `--n-poles-real + 2 * --n-poles-cmplx`（默认 `7`），未同时满足 `--max-y-rms-siemens` 和 `--passivity` 时按 `--order-step` 增加，直到 `--max-order`；首个满足全部门限的阶次立即停止。指定 `--exact-s-rfm` 时，KYP enforcement 和精确有理 Y-to-S 转换也属于逐阶验收门限，某阶 exact delivery 失败会继续尝试更高阶。达到最大阶次仍失败时会交付评分最佳的诊断模型，但命令保持非零退出码。JSON 的 `order_search.trials` 和实时日志记录每次尝试。
 
 不指定输出路径时，文件写在输入 Touchstone 旁。以 `board.s19p` 为例：
 
