@@ -19,7 +19,10 @@ Current executable slice:
   sparse Trap/Gear2 state-space TRAN companions;
 - real and complex sparse LU through `faer`, with symbolic reuse, numeric-factor
   caching, compressed stamp replay, and parallel AC frequency blocks;
-- `PULSE` and `PWL` transient sources;
+- `PULSE`, inline `PWL`, and two-column HSPICE `PWL PWLFILE=...` transient
+  sources, including `M`, `TD`, and `R` options;
+- recursive native compatibility audit with one JSON issue list for directives,
+  elements, source functions, and source options;
 - native HSPICE `.measure` evaluation for `FIND ... AT`, `FIND ... WHEN`,
   standalone `WHEN`, `TRIG/TARG`, `TRIG AT`, `MIN`, `MAX`, `AVG`, `RMS`,
   `DERIV ... AT/WHEN`, `INTEG`, and ordered `PARAM` expressions; event
@@ -38,6 +41,9 @@ native\agent-spice-sim\target\release\agent-spice-sim.exe tests\fixtures\hspice\
 native\agent-spice-sim\target\release\agent-spice-sim.exe `
   native\AgentSpice.Engine\fixtures\rfm_tran.cir `
   --rfm native\AgentSpice.Engine\fixtures\one_port.rfm
+
+native\agent-spice-sim\target\release\agent-spice-sim.exe legacy.sp `
+  --audit-json native_compatibility.json
 ```
 
 Run the local HSPICE compatibility gate:

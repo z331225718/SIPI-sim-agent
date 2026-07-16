@@ -1,3 +1,4 @@
+mod compatibility;
 mod error;
 mod expression;
 mod netlist;
@@ -8,6 +9,8 @@ mod simulator;
 mod sparse;
 
 use std::env;
+use std::fs::File;
+use std::io::BufWriter;
 use std::path::PathBuf;
 
 use error::{Error, Result};
@@ -29,6 +32,7 @@ fn run() -> Result<()> {
     let mut rfm_subcircuit = "rfm_direct".to_string();
     let mut output_json = None;
     let mut waveform_csv = None;
+    let mut audit_json = None;
     while let Some(argument) = arguments.next() {
         if argument == "--rfm" {
             rfm_path = Some(PathBuf::from(
@@ -46,6 +50,10 @@ fn run() -> Result<()> {
             ));
         } else if argument == "--waveform-csv" {
             waveform_csv = Some(PathBuf::from(
+                arguments.next().ok_or_else(|| Error::Usage(usage()))?,
+            ));
+        } else if argument == "--audit-json" {
+            audit_json = Some(PathBuf::from(
                 arguments.next().ok_or_else(|| Error::Usage(usage()))?,
             ));
         } else {
@@ -66,6 +74,26 @@ fn run() -> Result<()> {
     }
     if waveform_csv.is_some() && output_json.is_none() {
         return Err(Error::Usage("--waveform-csv requires --output-json".into()));
+    }
+    if let Some(audit_json) = audit_json {
+        if output_json.is_some() || waveform_csv.is_some() {
+            return Err(Error::Usage(
+                "--audit-json cannot be combined with simulation outputs".into(),
+            ));
+        }
+        let report = compatibility::audit_file(&deck)?;
+        let writer = BufWriter::new(File::create(audit_json)?);
+        serde_json::to_writer_pretty(writer, &report)?;
+        println!(
+            "{}",
+            serde_json::json!({
+                "ok": true,
+                "compatible": report.issue_count() == 0,
+                "issues": report.issue_count(),
+                "scannedFiles": report.scanned_file_count(),
+            })
+        );
+        return Ok(());
     }
 
     let rfm = rfm_path
@@ -93,6 +121,7 @@ fn run() -> Result<()> {
 
 fn usage() -> String {
     "agent-spice-sim <deck> [--rfm <model.rfm>] [--rfm-subckt <name>] \
-     [--output-json <result.json>] [--waveform-csv <waveform.csv>]"
+     [--output-json <result.json>] [--waveform-csv <waveform.csv>] \
+     [--audit-json <compatibility.json>]"
         .into()
 }

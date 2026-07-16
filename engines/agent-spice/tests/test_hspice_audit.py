@@ -42,3 +42,16 @@ def test_audit_ignores_hspice_dollar_comments_and_preserves_quoted_dollars():
     assert report.includes == ["models/load$rev.inc"]
     assert report.libraries == [("./corners$2026.lib", "tt")]
     assert report.unsupported_directives == []
+
+
+def test_audit_accepts_native_hspice_conditionals_and_options_alias():
+    report = audit_deck(
+        ".if (mode = 1)\n"
+        ".options post=2\n"
+        ".elseif (mode = 2)\n"
+        ".else\n"
+        ".endif\n"
+        ".end\n"
+    )
+
+    assert report.unsupported_directives == []

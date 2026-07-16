@@ -24,7 +24,10 @@ pub enum Waveform {
         width: f64,
         period: f64,
     },
-    Pwl(Vec<(f64, f64)>),
+    Pwl {
+        points: Vec<(f64, f64)>,
+        repeat_from: Option<f64>,
+    },
 }
 
 impl Waveform {
@@ -58,7 +61,18 @@ impl Waveform {
                 }
                 *initial
             }
-            Self::Pwl(points) => {
+            Self::Pwl {
+                points,
+                repeat_from,
+            } => {
+                let time = repeat_from.map_or(time, |repeat_from| {
+                    let end = points.last().expect("PWL has at least one point").0;
+                    if time > end {
+                        repeat_from + (time - repeat_from).rem_euclid(end - repeat_from)
+                    } else {
+                        time
+                    }
+                });
                 if time <= points[0].0 {
                     return points[0].1;
                 }
@@ -78,10 +92,34 @@ impl Waveform {
     pub fn next_breakpoint_after(&self, time: f64, stop: f64) -> Option<f64> {
         let tolerance = 1e-15_f64.max(time.abs() * 1e-12);
         match self {
-            Self::Pwl(points) => points
-                .iter()
-                .map(|(point_time, _)| *point_time)
-                .find(|point_time| *point_time > time + tolerance && *point_time <= stop),
+            Self::Pwl {
+                points,
+                repeat_from,
+            } => {
+                let direct = points
+                    .iter()
+                    .map(|(point_time, _)| *point_time)
+                    .find(|point_time| *point_time > time + tolerance && *point_time <= stop);
+                let repeated = repeat_from.and_then(|repeat_from| {
+                    let end = points.last().expect("PWL has at least one point").0;
+                    let period = end - repeat_from;
+                    points
+                        .iter()
+                        .map(|(point_time, _)| *point_time)
+                        .filter(|point_time| *point_time >= repeat_from)
+                        .filter_map(|point_time| {
+                            let cycles = if point_time > time + tolerance {
+                                0.0
+                            } else {
+                                ((time + tolerance - point_time) / period).floor() + 1.0
+                            };
+                            let candidate = point_time + cycles * period;
+                            (candidate > time + tolerance && candidate <= stop).then_some(candidate)
+                        })
+                        .min_by(f64::total_cmp)
+                });
+                direct.into_iter().chain(repeated).min_by(f64::total_cmp)
+            }
             Self::Pulse {
                 delay,
                 rise,
@@ -121,6 +159,11 @@ pub struct Source {
     pub dc: f64,
     pub ac: c64,
     pub waveform: Option<Waveform>,
+}
+
+struct ParsedPwlFileSource {
+    points: Vec<(f64, f64)>,
+    repeat_from: Option<f64>,
 }
 
 impl Source {
@@ -489,13 +532,22 @@ pub struct Deck {
 
 impl Deck {
     pub fn parse_file(path: &Path, rfm_binding: Option<(&str, usize)>) -> Result<Self> {
+        let path = path.canonicalize()?;
         let mut active = HashSet::new();
-        let text = expand_includes(path, &mut active)?;
+        let text = expand_includes(&path, &mut active)?;
         let text = flatten_subcircuits(&text, rfm_binding.map(|(name, _)| name))?;
-        Self::parse(&text, rfm_binding)
+        Self::parse(
+            &text,
+            rfm_binding,
+            path.parent().unwrap_or_else(|| Path::new(".")),
+        )
     }
 
-    fn parse(text: &str, rfm_binding: Option<(&str, usize)>) -> Result<Self> {
+    fn parse(
+        text: &str,
+        rfm_binding: Option<(&str, usize)>,
+        source_directory: &Path,
+    ) -> Result<Self> {
         let mut parser = Parser {
             rfm_subcircuit: rfm_binding.map(|(name, _)| name.to_string()),
             rfm_nports: rfm_binding.map(|(_, nports)| nports),
@@ -505,6 +557,7 @@ impl Deck {
             charge_tolerance: 1e-14,
             truncation_tolerance: 7.0,
             minimum_resistance: HSPICE_DEFAULT_RESMIN,
+            source_directory: source_directory.to_path_buf(),
             ..Parser::default()
         };
         let lines = logical_lines(text);
@@ -1233,6 +1286,7 @@ struct Parser {
     charge_tolerance: f64,
     truncation_tolerance: f64,
     minimum_resistance: f64,
+    source_directory: PathBuf,
     probes: HashMap<String, Vec<String>>,
     measurements: Vec<Measurement>,
 }
@@ -1320,12 +1374,12 @@ impl Parser {
                     .push(PendingElement::Inductor(name, positive, negative, value));
             }
             b'V' => {
-                let source = parse_source(&tokens[3..], &self.parameters)?;
+                let source = parse_source(&tokens[3..], &self.parameters, &self.source_directory)?;
                 self.elements
                     .push(PendingElement::Voltage(name, positive, negative, source));
             }
             b'I' => {
-                let source = parse_source(&tokens[3..], &self.parameters)?;
+                let source = parse_source(&tokens[3..], &self.parameters, &self.source_directory)?;
                 self.elements
                     .push(PendingElement::Current(name, positive, negative, source));
             }
@@ -2154,7 +2208,11 @@ fn tokenize(line: &str) -> Vec<String> {
     tokens
 }
 
-fn parse_source(tokens: &[String], parameters: &HashMap<String, f64>) -> Result<Source> {
+fn parse_source(
+    tokens: &[String],
+    parameters: &ParameterSet,
+    source_directory: &Path,
+) -> Result<Source> {
     let mut dc = None;
     let mut ac = c64::new(0.0, 0.0);
     let mut waveform = None;
@@ -2222,7 +2280,22 @@ fn parse_source(tokens: &[String], parameters: &HashMap<String, f64>) -> Result<
                 return Err(Error::Parse("PWL times must be strictly increasing".into()));
             }
             dc.get_or_insert(points[0].1);
-            waveform = Some(Waveform::Pwl(points));
+            waveform = Some(Waveform::Pwl {
+                points,
+                repeat_from: None,
+            });
+        } else if token.eq_ignore_ascii_case("pwl") {
+            let parsed = parse_pwl_file_source(&tokens[index + 1..], parameters, source_directory)?;
+            let ParsedPwlFileSource {
+                points,
+                repeat_from,
+            } = parsed;
+            dc.get_or_insert(points[0].1);
+            waveform = Some(Waveform::Pwl {
+                points,
+                repeat_from,
+            });
+            break;
         } else if dc.is_none() {
             dc = Some(parse_number(token, parameters)?);
         } else {
@@ -2237,8 +2310,176 @@ fn parse_source(tokens: &[String], parameters: &HashMap<String, f64>) -> Result<
     })
 }
 
+fn parse_pwl_file_source(
+    tokens: &[String],
+    parameters: &ParameterSet,
+    source_directory: &Path,
+) -> Result<ParsedPwlFileSource> {
+    let mut normalized = tokens.to_vec();
+    for index in 0..normalized.len() {
+        if normalized[index].eq_ignore_ascii_case("r")
+            && normalized
+                .get(index + 1)
+                .is_none_or(|next| next != "=" && !next.starts_with('='))
+        {
+            normalized[index] = "r=0".into();
+        }
+    }
+    let mut file = None;
+    let mut multiplier = 1.0;
+    let mut delay = 0.0;
+    let mut repeat_from = None;
+    for (name, value) in parse_assignments(&normalized, "PWL source option", false)? {
+        match name.to_ascii_lowercase().as_str() {
+            "pwlfile" => file = Some(resolve_string_value(&value, parameters)),
+            "m" => multiplier = parse_number(&value, parameters)?,
+            "td" => delay = parse_number(&value, parameters)?,
+            "r" => repeat_from = Some(parse_number(&value, parameters)?),
+            _ => {
+                return Err(Error::Parse(format!(
+                    "unsupported PWL source option '{name}'"
+                )));
+            }
+        }
+    }
+    if !multiplier.is_finite() {
+        return Err(Error::Parse("PWL source M must be finite".into()));
+    }
+    if delay < 0.0 || !delay.is_finite() {
+        return Err(Error::Parse("PWL source TD must be non-negative".into()));
+    }
+    if repeat_from.is_some_and(|value| value < 0.0 || !value.is_finite()) {
+        return Err(Error::Parse("PWL source R must be non-negative".into()));
+    }
+    let file = file.ok_or_else(|| Error::Parse("PWL source requires PWLFILE".into()))?;
+    let path = PathBuf::from(file);
+    let path = if path.is_absolute() {
+        path
+    } else {
+        let deck_relative = source_directory.join(&path);
+        if deck_relative.is_file() {
+            deck_relative
+        } else if path.is_file() {
+            path
+        } else {
+            deck_relative
+        }
+    };
+    let mut points = read_pwl_file(&path)?;
+    if let Some(repeat) = repeat_from {
+        let end = points.last().expect("PWL file has at least two points").0;
+        if repeat >= end {
+            return Err(Error::Parse(format!(
+                "PWL source R={repeat} must be less than the final time {end} in '{}'",
+                path.display()
+            )));
+        }
+        insert_pwl_point(&mut points, repeat);
+    }
+    for (time, value) in &mut points {
+        *time += delay;
+        *value *= multiplier;
+    }
+    Ok(ParsedPwlFileSource {
+        points,
+        repeat_from: repeat_from.map(|repeat| repeat + delay),
+    })
+}
+
+fn resolve_string_value(value: &str, parameters: &ParameterSet) -> String {
+    let value = value.trim();
+    if value.len() >= 2 {
+        let first = value.as_bytes()[0] as char;
+        let last = value.as_bytes()[value.len() - 1] as char;
+        if (first == '\'' || first == '"') && first == last {
+            return value[1..value.len() - 1].to_string();
+        }
+    }
+    parameters.string(value).unwrap_or(value).to_string()
+}
+
+fn read_pwl_file(path: &Path) -> Result<Vec<(f64, f64)>> {
+    let text = fs::read_to_string(path).map_err(|error| {
+        Error::Parse(format!(
+            "failed to read PWLFILE '{}': {error}",
+            path.display()
+        ))
+    })?;
+    let empty = HashMap::new();
+    let mut points = Vec::new();
+    for (line_index, raw) in text.lines().enumerate() {
+        let line = strip_hspice_comment(raw).trim();
+        if line.is_empty() || line.starts_with('*') || line.starts_with('#') {
+            continue;
+        }
+        let fields: Vec<_> = line
+            .split(|character: char| character == ',' || character.is_whitespace())
+            .filter(|field| !field.is_empty())
+            .collect();
+        if fields.len() < 2 {
+            return Err(Error::Parse(format!(
+                "PWLFILE '{}' line {} requires time and value columns",
+                path.display(),
+                line_index + 1
+            )));
+        }
+        let time = parse_number(fields[0], &empty).map_err(|error| {
+            Error::Parse(format!(
+                "PWLFILE '{}' line {} has invalid time: {error}",
+                path.display(),
+                line_index + 1
+            ))
+        })?;
+        let value = parse_number(fields[1], &empty).map_err(|error| {
+            Error::Parse(format!(
+                "PWLFILE '{}' line {} has invalid value: {error}",
+                path.display(),
+                line_index + 1
+            ))
+        })?;
+        points.push((time, value));
+    }
+    if points.len() < 2 {
+        return Err(Error::Parse(format!(
+            "PWLFILE '{}' requires at least two time/value rows",
+            path.display()
+        )));
+    }
+    if points.windows(2).any(|pair| pair[1].0 <= pair[0].0) {
+        return Err(Error::Parse(format!(
+            "PWLFILE '{}' times must be strictly increasing",
+            path.display()
+        )));
+    }
+    Ok(points)
+}
+
+fn insert_pwl_point(points: &mut Vec<(f64, f64)>, time: f64) {
+    if points
+        .iter()
+        .any(|(point_time, _)| (*point_time - time).abs() <= 1e-15)
+    {
+        return;
+    }
+    let value = if time <= points[0].0 {
+        points[0].1
+    } else {
+        let pair = points
+            .windows(2)
+            .find(|pair| time < pair[1].0)
+            .expect("repeat time is before the final PWL point");
+        let fraction = (time - pair[0].0) / (pair[1].0 - pair[0].0);
+        pair[0].1 + fraction * (pair[1].1 - pair[0].1)
+    };
+    let index = points.partition_point(|(point_time, _)| *point_time < time);
+    points.insert(index, (time, value));
+}
+
 fn is_source_keyword(token: &str) -> bool {
-    token.eq_ignore_ascii_case("dc") || token.eq_ignore_ascii_case("ac") || token.contains('(')
+    token.eq_ignore_ascii_case("dc")
+        || token.eq_ignore_ascii_case("ac")
+        || token.eq_ignore_ascii_case("pwl")
+        || token.contains('(')
 }
 
 fn waveform_values(token: &str, name: &str, parameters: &HashMap<String, f64>) -> Result<Vec<f64>> {

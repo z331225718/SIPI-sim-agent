@@ -392,6 +392,17 @@ Rust 内核直接解析 `.inc`/`.include`、`.lib` section、数值及 `str('...
 
 线性电阻遵循 HSPICE `RESMIN` 下限语义：默认小于 `1e-5Ω` 的非负阻值按 `1e-5Ω` 盖章，也可通过 `.option RESMIN=<value>` 覆盖；因此用于防止子电路实例合并的零欧姆哑元电阻可以原生执行。
 
+独立电压源和电流源支持两列 HSPICE `PWL PWLFILE='<path>' M=<value> TD=<time> R=<time>`，文件可以用逗号或空白分隔，注释行不作为表头解析。`M`、延迟和重复起点直接进入原生波形，不经过 converter。
+
+直接调用 exe 时可先执行批量兼容扫描：
+
+```powershell
+.\src\agent_spice\lib\native\win-x64\agent-spice-sim.exe case.sp `
+  --audit-json native_compatibility.json
+```
+
+扫描会递归进入相对 `.inc/.include` 和指定 `.lib` section，在一次 JSON 报告中列出文件、行号、原语句及原因。目前覆盖未知指令、未知器件、未知独立源函数和未知 `PWLFILE` 选项；该模式只做审计，不启动求解。
+
 尚未支持的 `.measure` 高阶语义包括信号对信号的动态事件比较及优化专用的 `GOAL/MINVAL/WEIGHT`。这些语法会显式报错，不会静默调用 ngspice 或 HSPICE。事件时刻、导数和 `AT/FROM/TO` 边界基于相邻输出点插值，`INTEG` 使用窗口边界插值后的梯形积分；TRAN 聚合仍基于输出采样网格，后续将增加内部接受步极值签核。
 
 ### ngspice 前置转换与 SIPI/PI 范围

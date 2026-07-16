@@ -248,6 +248,84 @@ def test_rust_engine_applies_hspice_resmin_to_zero_ohm_dummy_resistors(
     assert result["points"][0]["values"]["out"] == pytest.approx(expected)
 
 
+def test_rust_engine_audits_all_native_compatibility_issues_at_once(
+    tmp_path: Path,
+) -> None:
+    child = tmp_path / "child.inc"
+    child.write_text(
+        ".param child_value=1\n"
+        "Dunsupported out 0 diode_model\n"
+        "Vunsupported out 0 SIN(0 1 1k)\n"
+        ".fft v(out)\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "drive.csv").write_text("0,0\n1n,1\n", encoding="utf-8")
+    deck = tmp_path / "audit.sp"
+    deck.write_text(
+        "native compatibility audit\n"
+        ".include 'child.inc'\n"
+        ".if (1 = 1)\n"
+        "Vdrive in 0 PWL PWLFILE='drive.csv' M=1 TD=0 R=0\n"
+        ".endif\n"
+        "Rload in 0 1k\n"
+        ".tran 1p 1n\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+    report_path = tmp_path / "native_compatibility.json"
+
+    completed = subprocess.run(
+        [str(ENGINE), str(deck), "--audit-json", str(report_path)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    summary = json.loads(completed.stdout)
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert summary == {
+        "ok": True,
+        "compatible": False,
+        "issues": 3,
+        "scannedFiles": 2,
+    }
+    assert {issue["reason"] for issue in report["issues"]} == {
+        "unsupported_directive",
+        "unsupported_element",
+        "unsupported_source_function",
+    }
+    assert report["statementCounts"][".if"] == 1
+    assert report["statementCounts"]["element:V"] == 2
+
+
+def test_rust_engine_reads_hspice_pwlfile_with_multiplier_delay_and_repeat(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "drive.csv").write_text(
+        "* time,value\n0,0\n1n,1\n2n,0\n",
+        encoding="utf-8",
+    )
+    deck = tmp_path / "pwlfile.sp"
+    deck.write_text(
+        "native HSPICE PWLFILE\n"
+        ".param waveform_file=str('drive.csv')\n"
+        "Vdrive out 0 PWL PWLFILE=waveform_file M=2 TD=1n R=0\n"
+        "Rload out 0 1\n"
+        ".tran 500p 4n\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+
+    result = run(deck)
+
+    transient = [point for point in result["points"] if point["analysis"] == "tran"]
+    samples = {round(point["x"] / 1e-9, 6): point["values"]["out"] for point in transient}
+    assert samples[1.0] == pytest.approx(0.0)
+    assert samples[2.0] == pytest.approx(2.0)
+    assert samples[3.0] == pytest.approx(0.0)
+    assert samples[4.0] == pytest.approx(2.0)
+
+
 def test_rust_engine_evaluates_hspice_measurement_operations(tmp_path: Path) -> None:
     deck = tmp_path / "measurements.sp"
     deck.write_text(
