@@ -77,7 +77,10 @@ jobs:
       - name: Verify static Linux executable
         if: matrix.rid == 'linux-x64'
         shell: bash
-        run: file src/agent_spice/lib/native/linux-x64/agent-spice-sim | grep --quiet 'statically linked'
+        run: |
+          description=$(file src/agent_spice/lib/native/linux-x64/agent-spice-sim)
+          echo "$description"
+          grep --extended-regexp --quiet 'statically linked|static-pie linked' <<< "$description"
       - name: Install wheel without runtime dependencies
         shell: pwsh
         run: |
