@@ -1859,9 +1859,9 @@ def test_lightweight_s_network_preserves_lightweight_frequency_subset():
 
 
 def test_lightweight_touchstone_loader_reads_hz_s_ri_fixture():
-    from agent_spice.sparam.fitting import _load_touchstone_s_ri_lightweight
+    from agent_spice.sparam.fitting import _load_touchstone_s_lightweight
 
-    network = _load_touchstone_s_ri_lightweight(Path("tests/fixtures/sparam/simple_through.s2p"))
+    network = _load_touchstone_s_lightweight(Path("tests/fixtures/sparam/simple_through.s2p"))
 
     assert network.nports == 2
     assert network.f.tolist() == [1e6, 1e7, 1e8, 1e9, 5e9]
@@ -1878,7 +1878,7 @@ def test_lightweight_touchstone_loader_reads_hz_s_ri_fixture():
 
 
 def test_lightweight_touchstone_loader_reads_multiline_nport_block(tmp_path: Path):
-    from agent_spice.sparam.fitting import _load_touchstone_s_ri_lightweight
+    from agent_spice.sparam.fitting import _load_touchstone_s_lightweight
 
     touchstone = tmp_path / "multi.s3p"
     touchstone.write_text(
@@ -1894,7 +1894,7 @@ def test_lightweight_touchstone_loader_reads_multiline_nport_block(tmp_path: Pat
         encoding="utf-8",
     )
 
-    network = _load_touchstone_s_ri_lightweight(touchstone)
+    network = _load_touchstone_s_lightweight(touchstone)
 
     assert network.nports == 3
     assert network.f.tolist() == [1e6]
@@ -1903,13 +1903,67 @@ def test_lightweight_touchstone_loader_reads_multiline_nport_block(tmp_path: Pat
         network.s[0],
         np.array(
             [
-                [1, 2, 3],
-                [4, 5, 6],
-                [7, 8, 9],
+                [1, 4, 7],
+                [2, 5, 8],
+                [3, 6, 9],
             ],
             dtype=complex,
         ),
     )
+
+
+@pytest.mark.parametrize(
+    ("data_format", "pairs"),
+    [
+        ("RI", "0.5 0 0 0.25 -0.125 0 0.07071067811865475 -0.07071067811865475"),
+        ("ma", "0.5 0 0.25 90 0.125 180 0.1 -45"),
+        ("DB", "-6.020599913279624 0 -12.041199826559248 90 -18.06179973983887 180 -20 -45"),
+    ],
+)
+def test_lightweight_touchstone_loader_supports_ri_ma_db_and_standard_order(
+    tmp_path: Path,
+    data_format: str,
+    pairs: str,
+):
+    from agent_spice.sparam.fitting import _load_touchstone_s_lightweight
+
+    touchstone = tmp_path / f"asymmetric_{data_format.lower()}.s2p"
+    touchstone.write_text(f"# GHz S {data_format} R 75\n1 {pairs}\n", encoding="utf-8")
+
+    network = _load_touchstone_s_lightweight(touchstone)
+
+    assert network.f.tolist() == [1.0e9]
+    np.testing.assert_allclose(network.z0, np.full((1, 2), 75.0))
+    np.testing.assert_allclose(
+        network.s[0],
+        np.array(
+            [
+                [0.5 + 0.0j, -0.125 + 0.0j],
+                [0.0 + 0.25j, 0.07071067811865475 - 0.07071067811865475j],
+            ]
+        ),
+        atol=1e-15,
+    )
+
+
+def test_lightweight_touchstone_loader_matches_skrf_for_asymmetric_data(tmp_path: Path):
+    from agent_spice.sparam.fitting import _load_touchstone_s_lightweight
+    import skrf as rf
+
+    touchstone = tmp_path / "asymmetric.s2p"
+    touchstone.write_text(
+        "# MHz S MA R 50\n"
+        "1 0.5 0 0.25 90 0.125 180 0.1 -45\n"
+        "2 0.4 10 0.2 80 0.1 170 0.08 -35\n",
+        encoding="utf-8",
+    )
+
+    lightweight = _load_touchstone_s_lightweight(touchstone)
+    reference = rf.Network(str(touchstone))
+
+    np.testing.assert_allclose(lightweight.f, reference.f)
+    np.testing.assert_allclose(lightweight.z0, reference.z0)
+    np.testing.assert_allclose(lightweight.s, reference.s, atol=1e-15)
 
 
 def test_fit_touchstone_to_spice_lightweight_path_bypasses_skrf_network_loader(tmp_path: Path, monkeypatch):

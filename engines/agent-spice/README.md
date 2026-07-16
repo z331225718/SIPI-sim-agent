@@ -147,7 +147,7 @@ python scripts/benchmark_yparam_corpus.py `
 python -m agent_spice.cli fit-sparam .\board.s19p --rms-target 0.001
 ```
 
-输入应为 Touchstone `.sNp` 文件。未指定 `--output` 时，交付物写在输入文件旁。以 `board.s19p` 为例：
+输入应为 Touchstone `.sNp` 文件。Touchstone 1.x 的 S 参数数据格式支持 `RI`（实部/虚部）、`MA`（幅度/角度）和 `DB`（dB/角度），格式名大小写不敏感，角度单位为度。fitted Touchstone 统一输出为数值等价的 `RI` 格式。未指定 `--output` 时，交付物写在输入文件旁。以 `board.s19p` 为例：
 
 | 文件 | 含义 |
 | --- | --- |

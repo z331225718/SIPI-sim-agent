@@ -451,11 +451,12 @@ def _touchstone_ports_from_suffix(path: Path) -> int:
     return int(match.group(1))
 
 
-def _load_touchstone_s_ri_lightweight(path: Path) -> _LightweightSNetwork:
+def _load_touchstone_s_lightweight(path: Path) -> _LightweightSNetwork:
     ports = _touchstone_ports_from_suffix(path)
     expected_values = 1 + 2 * ports * ports
     frequency_scale = 1.0
     reference_ohms = 50.0
+    data_format = "ri"
     header_seen = False
     values: list[float] = []
     frequencies: list[float] = []
@@ -473,13 +474,18 @@ def _load_touchstone_s_ri_lightweight(path: Path) -> _LightweightSNetwork:
             line = raw_line.split("!", 1)[0].strip()
             if not line:
                 continue
+            if line.startswith("["):
+                raise ValueError("Lightweight Touchstone loader only supports Touchstone 1.x data")
             if line.startswith("#"):
                 tokens = line[1:].lower().split()
                 if len(tokens) < 3:
                     raise ValueError(f"Unsupported Touchstone option line: {line}")
                 unit, parameter, data_format = tokens[:3]
-                if unit not in scales or parameter != "s" or data_format != "ri":
-                    raise ValueError("Lightweight Touchstone loader only supports '# Hz S RI R ...' style data")
+                if unit not in scales or parameter != "s" or data_format not in {"ri", "ma", "db"}:
+                    raise ValueError(
+                        "Lightweight Touchstone loader requires S-parameter RI, MA, or DB data "
+                        "with Hz, kHz, MHz, or GHz frequency units"
+                    )
                 frequency_scale = scales[unit]
                 if "r" in tokens:
                     r_index = tokens.index("r")
@@ -495,9 +501,13 @@ def _load_touchstone_s_ri_lightweight(path: Path) -> _LightweightSNetwork:
                 point = values[:expected_values]
                 del values[:expected_values]
                 frequencies.append(point[0] * frequency_scale)
-                pairs = point[1:]
-                complex_values = [complex(pairs[i], pairs[i + 1]) for i in range(0, len(pairs), 2)]
-                responses.append(np.asarray(complex_values, dtype=complex).reshape(ports, ports))
+                pairs = np.asarray(point[1:], dtype=float).reshape(-1, 2)
+                if data_format == "ri":
+                    complex_values = pairs[:, 0] + 1j * pairs[:, 1]
+                else:
+                    magnitude = pairs[:, 0] if data_format == "ma" else np.power(10.0, pairs[:, 0] / 20.0)
+                    complex_values = magnitude * np.exp(1j * np.deg2rad(pairs[:, 1]))
+                responses.append(np.asarray(complex_values, dtype=complex).reshape((ports, ports), order="F"))
 
     if values:
         raise ValueError(f"Incomplete Touchstone data block in {path}")
@@ -507,6 +517,9 @@ def _load_touchstone_s_ri_lightweight(path: Path) -> _LightweightSNetwork:
     s = np.asarray(responses, dtype=complex)
     z0 = np.full((len(frequencies), ports), complex(reference_ohms), dtype=complex)
     return _LightweightSNetwork(f=f, s=s, z0=z0, name=path.stem)
+
+
+_load_touchstone_s_ri_lightweight = _load_touchstone_s_lightweight
 
 
 class _FitResourceMonitor:
@@ -1856,7 +1869,7 @@ def _fit_touchstone_execution(
         if config.use_lightweight_network:
             if config.parameter_type.lower() != "s":
                 raise ValueError("use_lightweight_network only supports S-parameter fitting")
-            network = _load_touchstone_s_ri_lightweight(touchstone_path)
+            network = _load_touchstone_s_lightweight(touchstone_path)
         else:
             network = rf.Network(str(touchstone_path))
         progress.info(
