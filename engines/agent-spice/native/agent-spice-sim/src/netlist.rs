@@ -534,20 +534,13 @@ impl Deck {
     pub fn parse_file(path: &Path, rfm_binding: Option<(&str, usize)>) -> Result<Self> {
         let path = path.canonicalize()?;
         let mut active = HashSet::new();
-        let text = expand_includes(&path, &mut active)?;
-        let text = flatten_subcircuits(&text, rfm_binding.map(|(name, _)| name))?;
-        Self::parse(
-            &text,
-            rfm_binding,
-            path.parent().unwrap_or_else(|| Path::new(".")),
-        )
+        let lines = expand_includes(&path, &mut active)?;
+        let lines = flatten_subcircuits(lines, rfm_binding.map(|(name, _)| name))?;
+        Self::parse(lines, rfm_binding)
     }
 
-    fn parse(
-        text: &str,
-        rfm_binding: Option<(&str, usize)>,
-        source_directory: &Path,
-    ) -> Result<Self> {
+    fn parse(lines: Vec<SourceLine>, rfm_binding: Option<(&str, usize)>) -> Result<Self> {
+        let deck_source = lines.first().cloned();
         let mut parser = Parser {
             rfm_subcircuit: rfm_binding.map(|(name, _)| name.to_string()),
             rfm_nports: rfm_binding.map(|(_, nports)| nports),
@@ -557,50 +550,94 @@ impl Deck {
             charge_tolerance: 1e-14,
             truncation_tolerance: 7.0,
             minimum_resistance: HSPICE_DEFAULT_RESMIN,
-            source_directory: source_directory.to_path_buf(),
             ..Parser::default()
         };
-        let lines = logical_lines(text);
         for (line_index, line) in lines.iter().enumerate() {
-            if line_index == 0 || line.is_empty() || line.starts_with('*') {
+            if line_index == 0 || line.text.is_empty() || line.text.starts_with('*') {
                 continue;
             }
             parser.parse_line(line)?;
         }
-        parser.finish()
+        let result = parser.finish();
+        match deck_source {
+            Some(source) => source.wrap(result),
+            None => result,
+        }
     }
 }
 
-fn expand_includes(path: &Path, active: &mut HashSet<PathBuf>) -> Result<String> {
+#[derive(Debug, Clone)]
+struct SourceLine {
+    path: PathBuf,
+    line: usize,
+    original: String,
+    text: String,
+}
+
+impl SourceLine {
+    fn new(path: &Path, line: usize, text: String) -> Self {
+        Self {
+            path: path.to_path_buf(),
+            line,
+            original: text.clone(),
+            text,
+        }
+    }
+
+    fn rewritten(&self, text: String) -> Self {
+        Self {
+            text,
+            ..self.clone()
+        }
+    }
+
+    fn locate(&self, error: Error) -> Error {
+        error.at_source(&self.path, self.line, &self.original, &self.text)
+    }
+
+    fn wrap<T>(&self, result: Result<T>) -> Result<T> {
+        result.map_err(|error| self.locate(error))
+    }
+
+    fn error(&self, message: impl Into<String>) -> Error {
+        self.locate(Error::Parse(message.into()))
+    }
+
+    fn directory(&self) -> &Path {
+        self.path.parent().unwrap_or_else(|| Path::new("."))
+    }
+}
+
+fn expand_includes(path: &Path, active: &mut HashSet<PathBuf>) -> Result<Vec<SourceLine>> {
     let path = path.canonicalize()?;
     enter_dependency(&path, active)?;
     let text = fs::read_to_string(&path)?;
-    let expanded = expand_dependency_lines(&path, logical_lines(&text), active)?;
+    let expanded = expand_dependency_lines(&path, logical_lines(&text, &path), active)?;
     active.remove(&path);
     Ok(expanded)
 }
 
 fn expand_dependency_lines(
     source: &Path,
-    lines: Vec<String>,
+    lines: Vec<SourceLine>,
     active: &mut HashSet<PathBuf>,
-) -> Result<String> {
-    let mut expanded = String::new();
+) -> Result<Vec<SourceLine>> {
+    let mut expanded = Vec::new();
     for line in lines {
-        let tokens = tokenize(&line);
+        let tokens = tokenize(&line.text);
         let include = tokens.first().is_some_and(|head| {
             head.eq_ignore_ascii_case(".inc") || head.eq_ignore_ascii_case(".include")
         });
         if include {
             let reference = tokens
                 .get(1)
-                .ok_or_else(|| Error::Parse(format!("include path is missing in '{line}'")))?
+                .ok_or_else(|| line.error("include path is missing"))?
                 .trim_matches(|character| character == '\'' || character == '"');
             let include_path = source
                 .parent()
                 .unwrap_or_else(|| Path::new("."))
                 .join(reference);
-            expanded.push_str(&expand_includes(&include_path, active)?);
+            expanded.extend(line.wrap(expand_includes(&include_path, active))?);
         } else if tokens
             .first()
             .is_some_and(|head| head.eq_ignore_ascii_case(".lib"))
@@ -612,10 +649,13 @@ fn expand_dependency_lines(
                 .parent()
                 .unwrap_or_else(|| Path::new("."))
                 .join(reference);
-            expanded.push_str(&expand_library_section(&library_path, &tokens[2], active)?);
+            expanded.extend(line.wrap(expand_library_section(
+                &library_path,
+                &tokens[2],
+                active,
+            ))?);
         } else {
-            expanded.push_str(&line);
-            expanded.push('\n');
+            expanded.push(line);
         }
     }
     Ok(expanded)
@@ -625,15 +665,15 @@ fn expand_library_section(
     path: &Path,
     section: &str,
     active: &mut HashSet<PathBuf>,
-) -> Result<String> {
+) -> Result<Vec<SourceLine>> {
     let path = path.canonicalize()?;
     enter_dependency(&path, active)?;
     let text = fs::read_to_string(&path)?;
     let mut selected = Vec::new();
     let mut inside = false;
     let mut found = false;
-    for line in logical_lines(&text) {
-        let values = tokenize(&line);
+    for line in logical_lines(&text, &path) {
+        let values = tokenize(&line.text);
         if values
             .first()
             .is_some_and(|head| head.eq_ignore_ascii_case(".lib"))
@@ -641,10 +681,7 @@ fn expand_library_section(
         {
             if inside {
                 active.remove(&path);
-                return Err(Error::Parse(format!(
-                    "nested .lib section in '{}'",
-                    path.display()
-                )));
+                return Err(line.error("nested .lib sections are not supported"));
             }
             inside = values[1].eq_ignore_ascii_case(section);
             found |= inside;
@@ -689,7 +726,8 @@ fn enter_dependency(path: &Path, active: &mut HashSet<PathBuf>) -> Result<()> {
 struct Subcircuit {
     pins: Vec<String>,
     defaults: Vec<(String, String)>,
-    body: Vec<String>,
+    body: Vec<SourceLine>,
+    declaration: SourceLine,
 }
 
 struct Scope {
@@ -703,6 +741,7 @@ struct ConditionalFrame {
     branch_taken: bool,
     active: bool,
     else_seen: bool,
+    opening: SourceLine,
 }
 
 #[derive(Default)]
@@ -715,19 +754,35 @@ impl ConditionalState {
         self.frames.last().is_none_or(|frame| frame.active)
     }
 
-    fn handle(&mut self, line: &str, tokens: &[String], parameters: &ParameterSet) -> Result<bool> {
+    fn handle(
+        &mut self,
+        line: &SourceLine,
+        tokens: &[String],
+        parameters: &ParameterSet,
+    ) -> Result<bool> {
+        line.wrap(self.handle_inner(line, tokens, parameters))
+    }
+
+    fn handle_inner(
+        &mut self,
+        line: &SourceLine,
+        tokens: &[String],
+        parameters: &ParameterSet,
+    ) -> Result<bool> {
         let Some(head) = tokens.first().map(|token| token.to_ascii_lowercase()) else {
             return Ok(false);
         };
         match head.as_str() {
             ".if" => {
                 let parent_active = self.is_active();
-                let condition = parent_active && evaluate_condition(line, &tokens[0], parameters)?;
+                let condition =
+                    parent_active && evaluate_condition(&line.text, &tokens[0], parameters)?;
                 self.frames.push(ConditionalFrame {
                     parent_active,
                     branch_taken: condition,
                     active: condition,
                     else_seen: false,
+                    opening: line.clone(),
                 });
                 Ok(true)
             }
@@ -741,7 +796,7 @@ impl ConditionalState {
                 }
                 let condition = frame.parent_active
                     && !frame.branch_taken
-                    && evaluate_condition(line, &tokens[0], parameters)?;
+                    && evaluate_condition(&line.text, &tokens[0], parameters)?;
                 frame.active = condition;
                 frame.branch_taken |= condition;
                 Ok(true)
@@ -770,10 +825,12 @@ impl ConditionalState {
     }
 
     fn finish(&self, context: &str) -> Result<()> {
-        if self.frames.is_empty() {
-            Ok(())
+        if let Some(frame) = self.frames.last() {
+            Err(frame
+                .opening
+                .error(format!("unterminated .if in {context}")))
         } else {
-            Err(Error::Parse(format!("unterminated .if in {context}")))
+            Ok(())
         }
     }
 }
@@ -786,7 +843,7 @@ fn evaluate_condition(line: &str, head: &str, parameters: &ParameterSet) -> Resu
     expression::evaluate(condition, parameters).map(|value| value != 0.0)
 }
 
-fn preprocess_top_level_conditionals(lines: Vec<String>) -> Result<Vec<String>> {
+fn preprocess_top_level_conditionals(lines: Vec<SourceLine>) -> Result<Vec<SourceLine>> {
     if lines.is_empty() {
         return Ok(lines);
     }
@@ -795,7 +852,7 @@ fn preprocess_top_level_conditionals(lines: Vec<String>) -> Result<Vec<String>> 
     let mut conditionals = ConditionalState::default();
     let mut subcircuit_selected = None;
     for line in lines.into_iter().skip(1) {
-        let tokens = tokenize(&line);
+        let tokens = tokenize(&line.text);
         let head = tokens
             .first()
             .map(|token| token.to_ascii_lowercase())
@@ -824,7 +881,7 @@ fn preprocess_top_level_conditionals(lines: Vec<String>) -> Result<Vec<String>> 
             continue;
         }
         if head == ".param" {
-            update_parameters(&tokens[1..], &mut parameters)?;
+            line.wrap(update_parameters(&tokens[1..], &mut parameters))?;
         }
         output.push(line);
     }
@@ -832,29 +889,30 @@ fn preprocess_top_level_conditionals(lines: Vec<String>) -> Result<Vec<String>> 
     Ok(output)
 }
 
-fn flatten_subcircuits(text: &str, rfm_subcircuit: Option<&str>) -> Result<String> {
-    let lines = preprocess_top_level_conditionals(logical_lines(text))?;
+fn flatten_subcircuits(
+    lines: Vec<SourceLine>,
+    rfm_subcircuit: Option<&str>,
+) -> Result<Vec<SourceLine>> {
+    let lines = preprocess_top_level_conditionals(lines)?;
     if lines.is_empty() {
-        return Ok(String::new());
+        return Ok(Vec::new());
     }
     let mut definitions = HashMap::new();
     let mut top_level = vec![lines[0].clone()];
     let mut active: Option<(String, Subcircuit, bool)> = None;
     for line in lines.into_iter().skip(1) {
-        let values = tokenize(&line);
+        let values = tokenize(&line.text);
         let head = values
             .first()
             .map(|value| value.to_ascii_lowercase())
             .unwrap_or_default();
         if head == ".subckt" {
             if active.is_some() {
-                return Err(Error::Parse(
-                    "nested .subckt definitions are not supported".into(),
-                ));
+                return Err(line.error("nested .subckt definitions are not supported"));
             }
             let name = values
                 .get(1)
-                .ok_or_else(|| Error::Parse(".subckt name is missing".into()))?
+                .ok_or_else(|| line.error(".subckt name is missing"))?
                 .clone();
             let parameter_start = (2..values.len())
                 .find(|index| {
@@ -868,14 +926,15 @@ fn flatten_subcircuits(text: &str, rfm_subcircuit: Option<&str>) -> Result<Strin
                 })
                 .unwrap_or(values.len());
             let pins = values[2..parameter_start].to_vec();
-            let defaults = parse_assignments(
-                &values[parameter_start..],
-                ".subckt parameter declaration",
-                true,
-            )?
-            .into_iter()
-            .map(|(parameter, default)| (parameter.to_ascii_lowercase(), default))
-            .collect();
+            let defaults = line
+                .wrap(parse_assignments(
+                    &values[parameter_start..],
+                    ".subckt parameter declaration",
+                    true,
+                ))?
+                .into_iter()
+                .map(|(parameter, default)| (parameter.to_ascii_lowercase(), default))
+                .collect();
             let ignored = rfm_subcircuit.is_some_and(|rfm| name.eq_ignore_ascii_case(rfm));
             active = Some((
                 name,
@@ -883,6 +942,7 @@ fn flatten_subcircuits(text: &str, rfm_subcircuit: Option<&str>) -> Result<Strin
                     pins,
                     defaults,
                     body: Vec::new(),
+                    declaration: line.clone(),
                 },
                 ignored,
             ));
@@ -891,15 +951,13 @@ fn flatten_subcircuits(text: &str, rfm_subcircuit: Option<&str>) -> Result<Strin
         if head == ".ends" {
             let (name, definition, ignored) = active
                 .take()
-                .ok_or_else(|| Error::Parse(".ends has no matching .subckt".into()))?;
+                .ok_or_else(|| line.error(".ends has no matching .subckt"))?;
             if !ignored
                 && definitions
                     .insert(name.to_ascii_lowercase(), definition)
                     .is_some()
             {
-                return Err(Error::Parse(format!(
-                    "duplicate subcircuit definition '{name}'"
-                )));
+                return Err(line.error(format!("duplicate subcircuit definition '{name}'")));
             }
             continue;
         }
@@ -909,14 +967,14 @@ fn flatten_subcircuits(text: &str, rfm_subcircuit: Option<&str>) -> Result<Strin
             top_level.push(line);
         }
     }
-    if let Some((name, _, _)) = active {
-        return Err(Error::Parse(format!(
-            "subcircuit '{name}' has no matching .ends"
-        )));
+    if let Some((name, definition, _)) = active {
+        return Err(definition
+            .declaration
+            .error(format!("subcircuit '{name}' has no matching .ends")));
     }
     let mut global_nodes = HashSet::new();
     for line in &top_level {
-        let values = tokenize(line);
+        let values = tokenize(&line.text);
         if values
             .first()
             .is_some_and(|value| value.eq_ignore_ascii_case(".global"))
@@ -933,7 +991,7 @@ fn flatten_subcircuits(text: &str, rfm_subcircuit: Option<&str>) -> Result<Strin
     let mut output = vec![top_level[0].clone()];
     let mut top_parameters = ParameterSet::default();
     for line in top_level.into_iter().skip(1) {
-        let values = tokenize(&line);
+        let values = tokenize(&line.text);
         if values.is_empty() {
             continue;
         }
@@ -941,7 +999,7 @@ fn flatten_subcircuits(text: &str, rfm_subcircuit: Option<&str>) -> Result<Strin
             continue;
         }
         if values[0].eq_ignore_ascii_case(".param") {
-            update_parameters(&values[1..], &mut top_parameters)?;
+            line.wrap(update_parameters(&values[1..], &mut top_parameters))?;
             output.push(line);
             continue;
         }
@@ -952,7 +1010,7 @@ fn flatten_subcircuits(text: &str, rfm_subcircuit: Option<&str>) -> Result<Strin
         };
         flattener.expand_line(&line, &scope, &mut output)?;
     }
-    Ok(output.join("\n") + "\n")
+    Ok(output)
 }
 
 struct Flattener<'a> {
@@ -963,8 +1021,22 @@ struct Flattener<'a> {
 }
 
 impl Flattener<'_> {
-    fn expand_line(&mut self, line: &str, scope: &Scope, output: &mut Vec<String>) -> Result<()> {
-        let substituted = substitute_braced_expressions(line, &scope.parameters)?;
+    fn expand_line(
+        &mut self,
+        line: &SourceLine,
+        scope: &Scope,
+        output: &mut Vec<SourceLine>,
+    ) -> Result<()> {
+        line.wrap(self.expand_line_inner(line, scope, output))
+    }
+
+    fn expand_line_inner(
+        &mut self,
+        line: &SourceLine,
+        scope: &Scope,
+        output: &mut Vec<SourceLine>,
+    ) -> Result<()> {
+        let substituted = substitute_braced_expressions(&line.text, &scope.parameters)?;
         let mut values = tokenize(&substituted);
         let parameter_start = values.first().map_or(values.len(), |head| {
             if head.starts_with('.') {
@@ -997,12 +1069,12 @@ impl Flattener<'_> {
             return Ok(());
         }
         if values[0].starts_with('.') {
-            output.push(values.join(" "));
+            output.push(line.rewritten(values.join(" ")));
             return Ok(());
         }
         let kind = values[0].as_bytes()[0].to_ascii_uppercase();
         if kind == b'X' {
-            return self.expand_instance(&values, scope, output);
+            return self.expand_instance(&values, line, scope, output);
         }
         if !scope.path.is_empty() {
             values[0] = qualify_element(&scope.path, &values[0]);
@@ -1020,15 +1092,16 @@ impl Flattener<'_> {
         if matches!(kind, b'F' | b'H') && !scope.path.is_empty() && values.len() > 3 {
             values[3] = qualify_element(&scope.path, &values[3]);
         }
-        output.push(values.join(" "));
+        output.push(line.rewritten(values.join(" ")));
         Ok(())
     }
 
     fn expand_instance(
         &mut self,
         values: &[String],
+        line: &SourceLine,
         scope: &Scope,
-        output: &mut Vec<String>,
+        output: &mut Vec<SourceLine>,
     ) -> Result<()> {
         if self.rfm_subcircuit.is_some_and(|rfm| {
             values
@@ -1043,7 +1116,7 @@ impl Flattener<'_> {
             for value in &mut rewritten[1..node_end] {
                 *value = self.map_node(value, scope);
             }
-            output.push(rewritten.join(" "));
+            output.push(line.rewritten(rewritten.join(" ")));
             return Ok(());
         }
         let definition_index = (1..values.len())
@@ -1091,7 +1164,7 @@ impl Flattener<'_> {
             .collect();
         let mut parameters = scope.parameters.clone();
         for (name, default) in &definition.defaults {
-            let value = parameters.evaluate(default)?;
+            let value = definition.declaration.wrap(parameters.evaluate(default))?;
             parameters.insert(name, value);
         }
         for (name, value) in parse_assignments(
@@ -1110,7 +1183,7 @@ impl Flattener<'_> {
         self.active.push(definition_name);
         let mut conditionals = ConditionalState::default();
         for line in &definition.body {
-            let body_values = tokenize(line);
+            let body_values = tokenize(&line.text);
             if conditionals.handle(line, &body_values, &child.parameters)? {
                 continue;
             }
@@ -1121,11 +1194,13 @@ impl Flattener<'_> {
                 .first()
                 .is_some_and(|value| value.eq_ignore_ascii_case(".param"))
             {
-                let assignments: Vec<String> = body_values[1..]
-                    .iter()
-                    .map(|value| substitute_braced_expressions(value, &child.parameters))
-                    .collect::<Result<_>>()?;
-                update_parameters(&assignments, &mut child.parameters)?;
+                let assignments: Vec<String> = line.wrap(
+                    body_values[1..]
+                        .iter()
+                        .map(|value| substitute_braced_expressions(value, &child.parameters))
+                        .collect::<Result<_>>(),
+                )?;
+                line.wrap(update_parameters(&assignments, &mut child.parameters))?;
                 continue;
             }
             self.expand_line(line, &child, output)?;
@@ -1274,6 +1349,7 @@ struct Parser {
     nodes: Vec<String>,
     node_lookup: HashMap<String, usize>,
     elements: Vec<PendingElement>,
+    element_sources: Vec<SourceLine>,
     analyses: Vec<Analysis>,
     parameters: ParameterSet,
     rfm_subcircuit: Option<String>,
@@ -1286,7 +1362,6 @@ struct Parser {
     charge_tolerance: f64,
     truncation_tolerance: f64,
     minimum_resistance: f64,
-    source_directory: PathBuf,
     probes: HashMap<String, Vec<String>>,
     measurements: Vec<Measurement>,
 }
@@ -1305,7 +1380,19 @@ enum PendingElement {
 }
 
 impl Parser {
-    fn parse_line(&mut self, line: &str) -> Result<()> {
+    fn parse_line(&mut self, source: &SourceLine) -> Result<()> {
+        let previous_elements = self.elements.len();
+        let result = self.parse_line_inner(&source.text, source.directory());
+        if result.is_ok() {
+            self.element_sources.extend(std::iter::repeat_n(
+                source.clone(),
+                self.elements.len() - previous_elements,
+            ));
+        }
+        source.wrap(result)
+    }
+
+    fn parse_line_inner(&mut self, line: &str, source_directory: &Path) -> Result<()> {
         let line = strip_hspice_comment(line).trim();
         if line.is_empty() {
             return Ok(());
@@ -1374,12 +1461,12 @@ impl Parser {
                     .push(PendingElement::Inductor(name, positive, negative, value));
             }
             b'V' => {
-                let source = parse_source(&tokens[3..], &self.parameters, &self.source_directory)?;
+                let source = parse_source(&tokens[3..], &self.parameters, source_directory)?;
                 self.elements
                     .push(PendingElement::Voltage(name, positive, negative, source));
             }
             b'I' => {
-                let source = parse_source(&tokens[3..], &self.parameters, &self.source_directory)?;
+                let source = parse_source(&tokens[3..], &self.parameters, source_directory)?;
                 self.elements
                     .push(PendingElement::Current(name, positive, negative, source));
             }
@@ -1766,6 +1853,7 @@ impl Parser {
             }
         }
         let mut elements = Vec::with_capacity(self.elements.len());
+        let element_sources = self.element_sources;
         for (index, pending) in self.elements.into_iter().enumerate() {
             let element = match pending {
                 PendingElement::Resistor(name, positive, negative, resistance) => {
@@ -1845,7 +1933,8 @@ impl Parser {
                         .get(&control.to_ascii_lowercase())
                         .copied()
                         .ok_or_else(|| {
-                            Error::Parse(format!("controlling branch '{control}' was not found"))
+                            element_sources[index]
+                                .error(format!("controlling branch '{control}' was not found"))
                         })?,
                     gain,
                 },
@@ -1858,9 +1947,8 @@ impl Parser {
                             .get(&control.to_ascii_lowercase())
                             .copied()
                             .ok_or_else(|| {
-                                Error::Parse(format!(
-                                    "controlling branch '{control}' was not found"
-                                ))
+                                element_sources[index]
+                                    .error(format!("controlling branch '{control}' was not found"))
                             })?,
                         transresistance,
                         branch: branch_by_element[&index],
@@ -2145,13 +2233,17 @@ fn strip_hspice_comment(line: &str) -> &str {
     line
 }
 
-fn logical_lines(text: &str) -> Vec<String> {
-    let mut lines: Vec<String> = Vec::new();
+fn logical_lines(text: &str, path: &Path) -> Vec<SourceLine> {
+    let mut lines: Vec<SourceLine> = Vec::new();
     for (physical_index, raw) in text.lines().enumerate() {
         let trimmed = strip_hspice_comment(raw).trim();
         if trimmed.is_empty() || trimmed.starts_with('*') {
             if physical_index == 0 {
-                lines.push(trimmed.to_string());
+                lines.push(SourceLine::new(
+                    path,
+                    physical_index + 1,
+                    trimmed.to_string(),
+                ));
             }
             continue;
         }
@@ -2159,13 +2251,19 @@ fn logical_lines(text: &str) -> Vec<String> {
             if let Some(previous) = lines
                 .iter_mut()
                 .rev()
-                .find(|line| !line.is_empty() && !line.starts_with('*'))
+                .find(|line| !line.text.is_empty() && !line.text.starts_with('*'))
             {
-                previous.push(' ');
-                previous.push_str(continuation.trim());
+                previous.text.push(' ');
+                previous.text.push_str(continuation.trim());
+                previous.original.push(' ');
+                previous.original.push_str(continuation.trim());
             }
         } else {
-            lines.push(trimmed.to_string());
+            lines.push(SourceLine::new(
+                path,
+                physical_index + 1,
+                trimmed.to_string(),
+            ));
         }
     }
     lines
@@ -2331,7 +2429,7 @@ fn parse_pwl_file_source(
     let mut repeat_from = None;
     for (name, value) in parse_assignments(&normalized, "PWL source option", false)? {
         match name.to_ascii_lowercase().as_str() {
-            "pwlfile" => file = Some(resolve_string_value(&value, parameters)),
+            "pwlfile" => file = Some(resolve_string_value(&value, parameters)?),
             "m" => multiplier = parse_number(&value, parameters)?,
             "td" => delay = parse_number(&value, parameters)?,
             "r" => repeat_from = Some(parse_number(&value, parameters)?),
@@ -2386,16 +2484,29 @@ fn parse_pwl_file_source(
     })
 }
 
-fn resolve_string_value(value: &str, parameters: &ParameterSet) -> String {
+fn resolve_string_value(value: &str, parameters: &ParameterSet) -> Result<String> {
     let value = value.trim();
     if value.len() >= 2 {
         let first = value.as_bytes()[0] as char;
         let last = value.as_bytes()[value.len() - 1] as char;
         if (first == '\'' || first == '"') && first == last {
-            return value[1..value.len() - 1].to_string();
+            return Ok(value[1..value.len() - 1].to_string());
         }
     }
-    parameters.string(value).unwrap_or(value).to_string()
+    if value.len() > 5 && value[..4].eq_ignore_ascii_case("str(") && value.ends_with(')') {
+        let argument = value[4..value.len() - 1].trim();
+        if let Some(parameter) = parameters.string(argument) {
+            return Ok(parameter.to_string());
+        }
+        let unquoted = argument.trim_matches(|character| character == '\'' || character == '"');
+        if unquoted != argument {
+            return Ok(unquoted.to_string());
+        }
+        return Err(Error::Parse(format!(
+            "unknown string parameter '{argument}' in PWLFILE"
+        )));
+    }
+    Ok(parameters.string(value).unwrap_or(value).to_string())
 }
 
 fn read_pwl_file(path: &Path) -> Result<Vec<(f64, f64)>> {

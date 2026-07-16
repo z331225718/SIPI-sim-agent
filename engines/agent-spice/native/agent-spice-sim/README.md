@@ -46,6 +46,9 @@ native\agent-spice-sim\target\release\agent-spice-sim.exe legacy.sp `
   --audit-json native_compatibility.json
 ```
 
+Netlist parse and parameter errors include the absolute source path, physical line number,
+original statement, and the expanded statement when a subcircuit rewrite changed it.
+
 Run the local HSPICE compatibility gate:
 
 ```powershell

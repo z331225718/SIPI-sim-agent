@@ -309,7 +309,8 @@ def test_rust_engine_reads_hspice_pwlfile_with_multiplier_delay_and_repeat(
     deck.write_text(
         "native HSPICE PWLFILE\n"
         ".param waveform_file=str('drive.csv')\n"
-        "Vdrive out 0 PWL PWLFILE=waveform_file M=2 TD=1n R=0\n"
+        ".param repeat_start=0\n"
+        "Vdrive out 0 PWL PWLFILE=str(waveform_file) M=2 TD=1n R = 'repeat_start'\n"
         "Rload out 0 1\n"
         ".tran 500p 4n\n"
         ".end\n",
@@ -324,6 +325,68 @@ def test_rust_engine_reads_hspice_pwlfile_with_multiplier_delay_and_repeat(
     assert samples[2.0] == pytest.approx(2.0)
     assert samples[3.0] == pytest.approx(0.0)
     assert samples[4.0] == pytest.approx(2.0)
+
+
+def test_rust_engine_reports_included_file_line_statement_and_expansion(
+    tmp_path: Path,
+) -> None:
+    child = tmp_path / "child.inc"
+    child.write_text(
+        ".subckt branch out\n"
+        "Vbad out 0 missing_value\n"
+        ".ends branch\n",
+        encoding="utf-8",
+    )
+    deck = tmp_path / "source_location.sp"
+    deck.write_text(
+        "native source diagnostics\n"
+        ".include 'child.inc'\n"
+        "Xbad out branch\n"
+        "Rload out 0 1\n"
+        ".op\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        [str(ENGINE), str(deck)], capture_output=True, text=True, check=False
+    )
+
+    assert completed.returncode != 0
+    assert f"{child.resolve()}:2: unknown parameter 'missing_value'" in completed.stderr
+    assert "statement: Vbad out 0 missing_value" in completed.stderr
+    assert "expanded: Vbad:Xbad out 0 missing_value" in completed.stderr
+
+
+def test_rust_engine_keeps_source_location_for_late_element_validation(
+    tmp_path: Path,
+) -> None:
+    child = tmp_path / "controlled.inc"
+    child.write_text(
+        ".subckt controlled out\n"
+        "Fbad out 0 Vmissing 1\n"
+        ".ends controlled\n",
+        encoding="utf-8",
+    )
+    deck = tmp_path / "late_validation.sp"
+    deck.write_text(
+        "native late validation diagnostics\n"
+        ".include 'controlled.inc'\n"
+        "Xbad out controlled\n"
+        "Rload out 0 1\n"
+        ".op\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        [str(ENGINE), str(deck)], capture_output=True, text=True, check=False
+    )
+
+    assert completed.returncode != 0
+    assert f"{child.resolve()}:2: controlling branch 'Vmissing:Xbad' was not found" in completed.stderr
+    assert "statement: Fbad out 0 Vmissing 1" in completed.stderr
+    assert "expanded: Fbad:Xbad out 0 Vmissing:Xbad 1" in completed.stderr
 
 
 def test_rust_engine_evaluates_hspice_measurement_operations(tmp_path: Path) -> None:

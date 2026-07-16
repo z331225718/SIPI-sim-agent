@@ -394,6 +394,8 @@ Rust 内核直接解析 `.inc`/`.include`、`.lib` section、数值及 `str('...
 
 独立电压源和电流源支持两列 HSPICE `PWL PWLFILE='<path>' M=<value> TD=<time> R=<time>`，文件可以用逗号或空白分隔，注释行不作为表头解析。`M`、延迟和重复起点直接进入原生波形，不经过 converter。
 
+原生解析、参数求值和子电路展开错误会报告绝对文件路径、物理行号及原语句。语句来自 `.include`/`.lib` 或层级子电路时仍保留定义位置；若展开后的器件名、节点或参数与原文不同，错误中还会追加 `expanded:` 语句。
+
 直接调用 exe 时可先执行批量兼容扫描：
 
 ```powershell
