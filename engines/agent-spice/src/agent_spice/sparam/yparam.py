@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 import json
 import logging
 from pathlib import Path
@@ -255,11 +255,13 @@ def fit_touchstone_to_y_spice(
     html_report_path: str | Path | None = None,
     log_path: str | Path | None = None,
     derived_s_touchstone_path: str | Path | None = None,
+    _progress_mode: str = "w",
+    _write_outputs: bool = True,
 ) -> YParamFitResult:
     """Fit Touchstone-derived Y data and write a common-ground SPICE model."""
 
     progress_path = None if log_path is None else Path(log_path)
-    with _YProgressLog(progress_path) as progress:
+    with _YProgressLog(progress_path, mode=_progress_mode) as progress:
         return _fit_touchstone_to_y_spice_impl(
             touchstone_path,
             spice_path,
@@ -269,6 +271,7 @@ def fit_touchstone_to_y_spice(
             log_path=log_path,
             derived_s_touchstone_path=derived_s_touchstone_path,
             progress=progress,
+            write_outputs=_write_outputs,
         )
 
 
@@ -282,6 +285,7 @@ def _fit_touchstone_to_y_spice_impl(
     log_path: str | Path | None,
     derived_s_touchstone_path: str | Path | None,
     progress: _YProgressLog,
+    write_outputs: bool,
 ) -> YParamFitResult:
     """Internal Y fit implementation with an active progress log."""
 
@@ -346,33 +350,6 @@ def _fit_touchstone_to_y_spice_impl(
     rms = float(np.sqrt(np.sum(element_rms**2)))
     mean_rms = rms / network.nports
     progress.info(f"Y error evaluated: rms_siemens={rms:.12g}, mean_rms_siemens={mean_rms:.12g}")
-    derived_s_path = None if derived_s_touchstone_path is None else Path(derived_s_touchstone_path)
-    if derived_s_path is not None:
-        progress.info(f"converting fitted Y to sampled S: output={derived_s_path}")
-        z0 = float(np.asarray(network.z0, dtype=complex)[0, 0].real)
-        derived_s, derived_s_conditions = convert_y_to_s_strict(
-            fitted,
-            z0,
-            condition_limit=cfg.conversion_condition_limit,
-        )
-        write_fitted_touchstone(derived_s_path, network.f, derived_s, network.z0)
-        derived_s_element_rms = np.sqrt(np.mean(np.abs(np.asarray(network.s, dtype=complex) - derived_s) ** 2, axis=0))
-        derived_s_metrics: dict[str, Any] | None = {
-            "path": str(derived_s_path),
-            "matrix": "S=(I-z0Y)(I+z0Y)^-1",
-            "condition_matrix": "I+z0Y",
-            "condition_max": float(np.max(derived_s_conditions)),
-            "rms_error_against_input": float(np.sqrt(np.sum(derived_s_element_rms**2))),
-            "mean_rms_error_against_input": float(np.sqrt(np.sum(derived_s_element_rms**2)) / network.nports),
-            "element_rms": [item.__dict__ for item in rank_element_rms(np.asarray(network.s, dtype=complex), derived_s)],
-        }
-        progress.info(
-            "sampled Y-to-S conversion finished: "
-            f"mean_rms_error={derived_s_metrics['mean_rms_error_against_input']:.12g}, "
-            f"condition_max={derived_s_metrics['condition_max']:.12g}"
-        )
-    else:
-        derived_s_metrics = None
     progress.info("evaluating Z-log metrics")
     try:
         fitted_z, fitted_y_conditions = invert_y_strict(fitted)
@@ -409,8 +386,6 @@ def _fit_touchstone_to_y_spice_impl(
         passivity_samples = None
         progress.info("sampled Y positive-real check skipped")
     target_met = (cfg.max_y_rms_siemens is None or mean_rms <= cfg.max_y_rms_siemens) and (violations in {None, 0})
-    progress.info(f"writing Y-domain SPICE subcircuit: {output}")
-    write_spice_subcircuit_y(vector_fit, output, fitted_model_name=cfg.subckt_name)
 
     result = YParamFitResult(
         touchstone_path=source,
@@ -442,23 +417,284 @@ def _fit_touchstone_to_y_spice_impl(
         target_met=target_met,
         fitted_model=vector_fit,
     )
+    if write_outputs:
+        result = _write_y_fit_outputs(
+            result,
+            derived_s_touchstone_path=derived_s_touchstone_path,
+            progress=progress,
+        )
+    else:
+        progress.info(
+            f"fit-yparam trial completed: ports={network.nports}, rms_siemens={rms:.12g}, "
+            f"mean_rms_siemens={mean_rms:.12g}, target_met={target_met}"
+        )
+    return result
+
+
+def _write_y_fit_outputs(
+    result: YParamFitResult,
+    *,
+    derived_s_touchstone_path: str | Path | None,
+    progress: _YProgressLog,
+    report_extras: dict[str, Any] | None = None,
+) -> YParamFitResult:
+    network = result.fitted_model.network
+    fitted = evaluate_fitted_y(result.fitted_model, network.f)
+    y_values = np.asarray(network.y, dtype=complex)
+    progress.info(f"writing Y-domain SPICE subcircuit: {result.spice_path}")
+    write_spice_subcircuit_y(
+        result.fitted_model,
+        result.spice_path,
+        fitted_model_name=result.config.subckt_name,
+    )
+
+    derived_s_path = None if derived_s_touchstone_path is None else Path(derived_s_touchstone_path)
+    if derived_s_path is not None:
+        progress.info(f"converting fitted Y to sampled S: output={derived_s_path}")
+        z0 = float(np.asarray(network.z0, dtype=complex)[0, 0].real)
+        derived_s, derived_s_conditions = convert_y_to_s_strict(
+            fitted,
+            z0,
+            condition_limit=result.config.conversion_condition_limit,
+        )
+        write_fitted_touchstone(derived_s_path, network.f, derived_s, network.z0)
+        derived_s_element_rms = np.sqrt(
+            np.mean(np.abs(np.asarray(network.s, dtype=complex) - derived_s) ** 2, axis=0)
+        )
+        derived_s_metrics: dict[str, Any] | None = {
+            "path": str(derived_s_path),
+            "matrix": "S=(I-z0Y)(I+z0Y)^-1",
+            "condition_matrix": "I+z0Y",
+            "condition_max": float(np.max(derived_s_conditions)),
+            "rms_error_against_input": float(np.sqrt(np.sum(derived_s_element_rms**2))),
+            "mean_rms_error_against_input": float(
+                np.sqrt(np.sum(derived_s_element_rms**2)) / network.nports
+            ),
+            "element_rms": [
+                item.__dict__
+                for item in rank_element_rms(
+                    np.asarray(network.s, dtype=complex),
+                    derived_s,
+                )
+            ],
+        }
+        progress.info(
+            "sampled Y-to-S conversion finished: "
+            f"mean_rms_error={derived_s_metrics['mean_rms_error_against_input']:.12g}, "
+            f"condition_max={derived_s_metrics['condition_max']:.12g}"
+        )
+    else:
+        derived_s_metrics = None
+
     payload = result.to_dict()
-    payload["element_rms_siemens"] = [item.__dict__ for item in rank_element_rms(y_values, fitted)]
+    payload["element_rms_siemens"] = [
+        item.__dict__ for item in rank_element_rms(y_values, fitted)
+    ]
     payload["y_derived_s"] = derived_s_metrics
+    if report_extras:
+        payload.update(report_extras)
     if result.report_path is not None:
         progress.info(f"writing JSON report: {result.report_path}")
         result.report_path.parent.mkdir(parents=True, exist_ok=True)
-        result.report_path.write_text(json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
+        result.report_path.write_text(
+            json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n",
+            encoding="utf-8",
+        )
     if result.html_report_path is not None:
         progress.info(f"writing HTML report: {result.html_report_path}")
         result.html_report_path.parent.mkdir(parents=True, exist_ok=True)
+        effective_order = result.fitted_model.get_model_order(
+            np.asarray(result.fitted_model.poles, dtype=complex)
+        )
         result.html_report_path.write_text(
             "<!doctype html><html><head><meta charset=\"utf-8\"><title>Y-Parameter Fit</title></head>"
-            f"<body><h1>Y-Parameter Fit</h1><p>RMS: {rms:.12g} S; target met: {target_met}</p></body></html>\n",
+            f"<body><h1>Y-Parameter Fit</h1><p>Order: {effective_order}; "
+            f"RMS: {result.y_rms_siemens:.12g} S; mean RMS: {result.y_mean_rms_siemens:.12g} S; "
+            f"target met: {result.target_met}</p></body></html>\n",
             encoding="utf-8",
         )
     progress.info(
-        f"fit-yparam completed: ports={network.nports}, rms_siemens={rms:.12g}, "
-        f"mean_rms_siemens={mean_rms:.12g}, target_met={target_met}"
+        f"fit-yparam completed: ports={result.ports}, rms_siemens={result.y_rms_siemens:.12g}, "
+        f"mean_rms_siemens={result.y_mean_rms_siemens:.12g}, target_met={result.target_met}"
     )
     return result
+
+
+def _y_pole_counts_for_order(config: YParamFitConfig, order: int) -> tuple[int, int]:
+    if order < 1:
+        raise ValueError("Y fit order must be >= 1")
+    real_count = min(config.n_poles_real, order)
+    if (order - real_count) % 2:
+        if real_count < order:
+            real_count += 1
+        else:
+            real_count -= 1
+    return real_count, (order - real_count) // 2
+
+
+def _y_trial_score(result: YParamFitResult) -> tuple[float, float, int]:
+    passivity_failed = result.passivity_violation_count not in {None, 0}
+    target = result.config.max_y_rms_siemens
+    rms_score = (
+        result.y_mean_rms_siemens
+        if target is None
+        else result.y_mean_rms_siemens / target
+    )
+    effective_order = result.fitted_model.get_model_order(
+        np.asarray(result.fitted_model.poles, dtype=complex)
+    )
+    return (1.0 if passivity_failed else 0.0, rms_score, effective_order)
+
+
+def fit_touchstone_to_y_spice_auto_order(
+    touchstone_path: str | Path,
+    spice_path: str | Path,
+    *,
+    config: YParamFitConfig | None = None,
+    max_order: int = 40,
+    order_step: int = 2,
+    report_path: str | Path | None = None,
+    html_report_path: str | Path | None = None,
+    log_path: str | Path | None = None,
+    derived_s_touchstone_path: str | Path | None = None,
+) -> YParamFitResult:
+    """Increase Y-fit order until the RMS and positive-real gates both pass."""
+
+    cfg = config or YParamFitConfig()
+    initial_order = cfg.n_poles_real + 2 * cfg.n_poles_cmplx
+    if not isinstance(max_order, int) or max_order < initial_order:
+        raise ValueError(
+            f"max_order must be an integer >= initial Y fit order {initial_order}"
+        )
+    if not isinstance(order_step, int) or order_step < 1:
+        raise ValueError("order_step must be an integer >= 1")
+
+    orders = list(range(initial_order, max_order + 1, order_step))
+    if orders[-1] != max_order:
+        orders.append(max_order)
+    progress_path = None if log_path is None else Path(log_path)
+    if progress_path is not None:
+        progress_path.parent.mkdir(parents=True, exist_ok=True)
+        progress_path.write_text("", encoding="utf-8")
+    append_yparam_progress(
+        progress_path,
+        "Y target-order search started: "
+        f"initial_order={initial_order}, max_order={max_order}, order_step={order_step}, "
+        f"mean_y_rms_target={cfg.max_y_rms_siemens}, passivity={cfg.passivity}",
+    )
+
+    trials: list[dict[str, Any]] = []
+    selected: YParamFitResult | None = None
+    best: YParamFitResult | None = None
+    for requested_order in orders:
+        n_poles_real, n_poles_cmplx = _y_pole_counts_for_order(cfg, requested_order)
+        trial_config = replace(
+            cfg,
+            n_poles_real=n_poles_real,
+            n_poles_cmplx=n_poles_cmplx,
+        )
+        append_yparam_progress(
+            progress_path,
+            f"Y order trial started: requested_order={requested_order}, "
+            f"n_poles_real={n_poles_real}, n_poles_cmplx={n_poles_cmplx}",
+        )
+        trial = fit_touchstone_to_y_spice(
+            touchstone_path,
+            spice_path,
+            config=trial_config,
+            report_path=None,
+            html_report_path=None,
+            log_path=progress_path,
+            derived_s_touchstone_path=None,
+            _progress_mode="a",
+            _write_outputs=False,
+        )
+        effective_order = trial.fitted_model.get_model_order(
+            np.asarray(trial.fitted_model.poles, dtype=complex)
+        )
+        trial_met = trial.target_met and effective_order == requested_order
+        if trial.target_met != trial_met:
+            trial = replace(trial, target_met=trial_met)
+        trial_payload = {
+            "requested_order": requested_order,
+            "effective_order": effective_order,
+            "n_poles_real": n_poles_real,
+            "n_poles_cmplx": n_poles_cmplx,
+            "y_rms_siemens": trial.y_rms_siemens,
+            "y_mean_rms_siemens": trial.y_mean_rms_siemens,
+            "z_log_magnitude_rms_error": trial.z_log_metrics.get(
+                "z_log_magnitude_rms_error"
+            ),
+            "passivity_min_eigenvalue": trial.passivity_min_eigenvalue,
+            "passivity_violation_count": trial.passivity_violation_count,
+            "fit_seconds": trial.fit_seconds,
+            "target_met": trial_met,
+            "rejection_reason": (
+                None
+                if trial_met
+                else (
+                    "effective_order_mismatch"
+                    if effective_order != requested_order
+                    else (
+                        "y_not_positive_real"
+                        if trial.passivity_violation_count not in {None, 0}
+                        else "y_rms_target_not_met"
+                    )
+                )
+            ),
+        }
+        trials.append(trial_payload)
+        append_yparam_progress(
+            progress_path,
+            f"Y order trial finished: requested_order={requested_order}, "
+            f"effective_order={effective_order}, mean_rms_siemens={trial.y_mean_rms_siemens:.12g}, "
+            f"passivity_violations={trial.passivity_violation_count}, target_met={trial_met}",
+        )
+        if best is None or _y_trial_score(trial) < _y_trial_score(best):
+            best = trial
+        if trial_met:
+            selected = trial
+            break
+
+    chosen = selected or best
+    if chosen is None:
+        raise ValueError("Y target-order search produced no usable fit")
+    selected_order = chosen.fitted_model.get_model_order(
+        np.asarray(chosen.fitted_model.poles, dtype=complex)
+    )
+    final_result = replace(
+        chosen,
+        spice_path=Path(spice_path),
+        report_path=None if report_path is None else Path(report_path),
+        html_report_path=None if html_report_path is None else Path(html_report_path),
+        log_path=progress_path,
+    )
+    order_search = {
+        "enabled": True,
+        "initial_order": initial_order,
+        "max_order": max_order,
+        "order_step": order_step,
+        "selected_order": selected_order if selected is not None else None,
+        "best_effort_order": selected_order,
+        "target_met": selected is not None,
+        "stop_reason": "target_met" if selected is not None else "target_not_met_before_max_order",
+        "trials": trials,
+    }
+    with _YProgressLog(progress_path, mode="a") as progress:
+        progress.info(
+            "Y target-order search selected model: "
+            f"order={selected_order}, target_met={final_result.target_met}, "
+            f"trial_count={len(trials)}"
+        )
+        final_result = _write_y_fit_outputs(
+            final_result,
+            derived_s_touchstone_path=derived_s_touchstone_path,
+            progress=progress,
+            report_extras={"order_search": order_search},
+        )
+        progress.info(
+            "Y target-order search finished: "
+            f"status={'PASS' if final_result.target_met else 'FAIL'}, "
+            f"selected_order={selected_order}"
+        )
+    return final_result

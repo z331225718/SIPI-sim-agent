@@ -22,7 +22,11 @@ from agent_spice.sparam.io import load_touchstone_metadata
 from agent_spice.sparam.artifacts import evaluate_fitted_s, write_cadence_rfm, write_cadence_rfm_wrapper, write_fitted_touchstone
 from agent_spice.sparam.rational_lft import exact_y_to_s_rational
 from agent_spice.sparam.y_pr import enforce_y_positive_real_kyp
-from agent_spice.sparam.yparam import YParamFitConfig, append_yparam_progress, fit_touchstone_to_y_spice
+from agent_spice.sparam.yparam import (
+    YParamFitConfig,
+    append_yparam_progress,
+    fit_touchstone_to_y_spice_auto_order,
+)
 from agent_spice.sparam.y_tran_tuning import YTranTuneConfig, parse_float_csv, tune_y_rfm_for_tran
 
 
@@ -1283,6 +1287,18 @@ def main(argv: list[str] | None = None) -> int:
     y_fit_parser.add_argument("--subckt-name", default="y_equivalent", help="SPICE subcircuit name.")
     y_fit_parser.add_argument("--n-poles-real", type=int, default=1, help="Initial real pole count (default: 1).")
     y_fit_parser.add_argument("--n-poles-cmplx", type=int, default=3, help="Initial complex-pair count (default: 3).")
+    y_fit_parser.add_argument(
+        "--max-order",
+        type=int,
+        default=40,
+        help="Maximum effective common-pole order for Y target search (default: 40).",
+    )
+    y_fit_parser.add_argument(
+        "--order-step",
+        type=int,
+        default=2,
+        help="Effective-order increment between Y fit attempts (default: 2).",
+    )
     y_fit_parser.add_argument("--pole-spacing", choices=["lin", "log"], default="log")
     y_fit_parser.add_argument("--fit-iterations", type=int, default=20)
     y_fit_parser.add_argument(
@@ -1290,7 +1306,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Disable the Y proportional term. Required by the current exact rational Y-to-S/RFM path.",
     )
-    y_fit_parser.add_argument("--max-y-rms-siemens", type=float, help="Maximum absolute Y RMS error in Siemens.")
+    y_fit_parser.add_argument(
+        "--max-y-rms-siemens",
+        type=float,
+        help="Maximum full-matrix mean Y RMS error in Siemens.",
+    )
     y_fit_parser.add_argument("--passivity", choices=["off", "check"], default="check", help="Y positive-real check policy; enforcement is intentionally unavailable.")
     y_fit_parser.add_argument("--passivity-epsilon", type=float, default=1e-9)
     y_fit_parser.add_argument("--conversion-condition-limit", type=float, default=1e12)
@@ -1880,7 +1900,7 @@ def main(argv: list[str] | None = None) -> int:
         html_report_path = args.html_report or output.with_suffix(".html")
         log_path = args.log or output.with_suffix(".log")
         try:
-            result = fit_touchstone_to_y_spice(
+            result = fit_touchstone_to_y_spice_auto_order(
                 args.touchstone,
                 output,
                 config=YParamFitConfig(
@@ -1895,6 +1915,8 @@ def main(argv: list[str] | None = None) -> int:
                     fit_proportional=not args.no_fit_proportional,
                     subckt_name=args.subckt_name,
                 ),
+                max_order=args.max_order,
+                order_step=args.order_step,
                 report_path=report_path,
                 html_report_path=html_report_path,
                 log_path=log_path,
@@ -1968,16 +1990,20 @@ def main(argv: list[str] | None = None) -> int:
             reason = "y_rms_target_not_met"
             if args.passivity == "check" and result.passivity_violation_count:
                 reason = "y_not_positive_real"
+            selected_order = result.fitted_model.get_model_order(result.fitted_model.poles)
             print(
-                f"fit-yparam status=FAIL reason={reason} rms_siemens={result.y_rms_siemens:.12g} output={output}",
+                f"fit-yparam status=FAIL reason={reason} rms_siemens={result.y_rms_siemens:.12g} "
+                f"mean_rms_siemens={result.y_mean_rms_siemens:.12g} order={selected_order} output={output}",
                 file=sys.stderr,
             )
             return 1
         z_log = result.z_log_metrics["z_log_magnitude_rms_error"]
         z_log_text = "unavailable" if z_log is None else f"{z_log:.12g}"
+        selected_order = result.fitted_model.get_model_order(result.fitted_model.poles)
         print(
             f"fit-yparam status=PASS rms_siemens={result.y_rms_siemens:.12g} "
-            f"z_log_rms={z_log_text} output={output}"
+            f"mean_rms_siemens={result.y_mean_rms_siemens:.12g} z_log_rms={z_log_text} "
+            f"order={selected_order} output={output}"
         )
         return 0
     if args.command == "probe-idem-init":

@@ -67,6 +67,8 @@ Y-fit 使用独立命令 `fit-yparam`，不是 `fit-sparam` 的开关，因此�
 python -m agent_spice.cli fit-yparam .\board.s19p
 ```
 
+CLI 默认执行目标阶次搜索。初始有效阶次为 `--n-poles-real + 2 * --n-poles-cmplx`（默认 `7`），未同时满足 `--max-y-rms-siemens` 和 `--passivity` 时按 `--order-step` 增加，直到 `--max-order`；首个满足全部门限的阶次立即停止。达到最大阶次仍失败时会交付评分最佳的诊断模型，但命令保持非零退出码。JSON 的 `order_search.trials` 和实时日志记录每次尝试。
+
 不指定输出路径时，文件写在输入 Touchstone 旁。以 `board.s19p` 为例：
 
 | 文件 | 是否默认生成 | 含义 |
@@ -110,9 +112,11 @@ S input -> Y fit -> KYP continuous-frequency Y positive-real enforcement
 | `--derived-s-touchstone PATH` | 输出 fitted Y 严格转换得到的采样 S 参数，便于比较转换前后的 S RMS。 |
 | `--n-poles-real N` | 初始实极点数，默认 `1`。 |
 | `--n-poles-cmplx N` | 初始共轭复极点对数，默认 `3`。 |
+| `--max-order N` | Y-fit 允许尝试的最大有效公共极点阶次，默认 `40`；不得低于初始有效阶次。 |
+| `--order-step N` | 每次失败后增加的有效阶次，默认 `2`。达到 `--max-order` 前不会只因某一阶失败而停止。 |
 | `--pole-spacing lin|log` | 初始极点间距，默认 `log`。 |
 | `--fit-iterations N` | 矢量拟合迭代上限，默认 `20`。 |
-| `--max-y-rms-siemens VALUE` | Y 域绝对 RMS 硬门限，单位 Siemens；未指定时不设置该数值门限。 |
+| `--max-y-rms-siemens VALUE` | 全矩阵 mean Y RMS 硬门限，单位 Siemens；未指定时阶次验收只受 `--passivity` 约束。 |
 | `--passivity off|check` | Y 正实性策略，默认 `check`；这里只检查采样频点，连续频率 enforcement 由 exact-RFM 路径执行。 |
 | `--passivity-epsilon VALUE` | 采样 Y 正实性检查容差，默认 `1e-9`。 |
 | `--conversion-condition-limit VALUE` | S/Y 严格转换允许的最大条件数，默认 `1e12`。 |

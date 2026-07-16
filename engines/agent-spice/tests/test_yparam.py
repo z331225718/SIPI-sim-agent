@@ -1,5 +1,6 @@
-from pathlib import Path
+from dataclasses import replace
 import json
+from pathlib import Path
 import re
 import shutil
 import subprocess
@@ -10,7 +11,12 @@ import pytest
 
 from agent_spice.sparam.artifacts import evaluate_fitted_y, write_spice_subcircuit_y
 from agent_spice.sparam.native_vf import NativeVectorFitting
-from agent_spice.sparam.yparam import YParamFitConfig, convert_y_to_s_strict, fit_touchstone_to_y_spice
+from agent_spice.sparam.yparam import (
+    YParamFitConfig,
+    convert_y_to_s_strict,
+    fit_touchstone_to_y_spice,
+    fit_touchstone_to_y_spice_auto_order,
+)
 
 
 def _write_y_touchstone(path: Path, frequencies: np.ndarray, y: np.ndarray) -> Path:
@@ -124,6 +130,55 @@ def test_fit_yparam_preserves_progress_log_when_vector_fit_fails(tmp_path: Path,
     assert "intentional vector-fit failure" in log_text
 
 
+def test_fit_yparam_auto_order_increases_until_target_passes(tmp_path: Path, monkeypatch) -> None:
+    import agent_spice.sparam.yparam as yparam_module
+
+    frequencies = np.array([1.0e6, 2.0e6, 5.0e6, 1.0e7])
+    touchstone = _write_y_touchstone(
+        tmp_path / "auto.s1p",
+        frequencies,
+        np.full((4, 1, 1), 0.02 + 0j),
+    )
+    report_path = tmp_path / "auto.y.json"
+    log_path = tmp_path / "auto.y.log"
+    attempted_orders: list[int] = []
+    original_impl = yparam_module._fit_touchstone_to_y_spice_impl
+
+    def controlled_target(*args, **kwargs):
+        result = original_impl(*args, **kwargs)
+        order = result.config.n_poles_real + 2 * result.config.n_poles_cmplx
+        attempted_orders.append(order)
+        return replace(result, target_met=order >= 5)
+
+    monkeypatch.setattr(yparam_module, "_fit_touchstone_to_y_spice_impl", controlled_target)
+
+    result = fit_touchstone_to_y_spice_auto_order(
+        touchstone,
+        tmp_path / "auto.y.sp",
+        config=YParamFitConfig(
+            n_poles_real=1,
+            n_poles_cmplx=1,
+            max_iterations=3,
+            passivity="off",
+        ),
+        max_order=9,
+        order_step=2,
+        report_path=report_path,
+        log_path=log_path,
+    )
+
+    assert attempted_orders == [3, 5]
+    assert result.target_met is True
+    assert (tmp_path / "auto.y.sp").is_file()
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    assert payload["order_search"]["selected_order"] == 5
+    assert [trial["requested_order"] for trial in payload["order_search"]["trials"]] == [3, 5]
+    log_text = log_path.read_text(encoding="utf-8")
+    assert "Y order trial started: requested_order=3" in log_text
+    assert "Y order trial started: requested_order=5" in log_text
+    assert "Y order trial started: requested_order=7" not in log_text
+
+
 def test_fit_yparam_can_export_y_derived_s_touchstone(tmp_path: Path) -> None:
     frequencies = np.array([1.0e6, 2.0e6, 5.0e6, 1.0e7, 2.0e7, 5.0e7])
     y = 0.02 + 2j * np.pi * frequencies[:, None, None] * 1.0e-9
@@ -212,6 +267,9 @@ def test_fit_yparam_cli_writes_default_y_artifacts(tmp_path: Path) -> None:
     assert (tmp_path / "line_fitted.y.html").is_file()
     assert "fit-yparam completed" in (tmp_path / "line_fitted.y.log").read_text(encoding="utf-8")
     assert (tmp_path / "line.y-derived.s1p").is_file()
+    payload = json.loads((tmp_path / "line_fitted.y.json").read_text(encoding="utf-8"))
+    assert payload["order_search"]["target_met"] is True
+    assert len(payload["order_search"]["trials"]) == 1
 
 
 def test_fit_yparam_cli_fails_positive_real_check(tmp_path: Path) -> None:
@@ -220,7 +278,15 @@ def test_fit_yparam_cli_fails_positive_real_check(tmp_path: Path) -> None:
     frequencies = np.array([1.0e6, 2.0e6, 5.0e6, 1.0e7])
     touchstone = _write_y_touchstone(tmp_path / "negative_cli.s1p", frequencies, np.full((4, 1, 1), -0.01 + 0j))
 
-    assert cli.main(["fit-yparam", str(touchstone), "--n-poles-real", "1", "--n-poles-cmplx", "1", "--fit-iterations", "8"]) == 1
+    report_path = tmp_path / "negative_cli.y.json"
+    assert cli.main([
+        "fit-yparam", str(touchstone), "--n-poles-real", "1", "--n-poles-cmplx", "1",
+        "--fit-iterations", "8", "--max-order", "7", "--order-step", "2",
+        "--report", str(report_path),
+    ]) == 1
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    assert payload["order_search"]["target_met"] is False
+    assert [trial["requested_order"] for trial in payload["order_search"]["trials"]] == [3, 5, 7]
 
 
 def test_fit_yparam_cli_exports_kyp_enforced_exact_s_rfm(tmp_path: Path) -> None:
