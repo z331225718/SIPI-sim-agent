@@ -1,0 +1,10 @@
+Temperature-adjusted diode junction and diffusion capacitance
+.temp 100
+.options tnom=27 reltol=1e-6 abstol=1e-14
+Vdrive in 0 DC 0.62 AC 1
+Rsource in out 220
+Dhot out 0 dhot AREA=2 M=1.5
+.model dhot D(IS=1.5e-12 N=1.15 TNOM=25 EG=1.08 XTI=2.7 CJO=18p VJ=0.72 M=0.42 TT=1.5n FC=0.45)
+.ac dec 5 10k 10meg
+.print ac v(out) i(Vdrive)
+.end

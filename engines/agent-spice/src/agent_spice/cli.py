@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 from agent_spice.deck.builder import write_case_artifacts
 from agent_spice.hspice.alter import split_alter_cases
 from agent_spice.hspice.audit import audit_deck
-from agent_spice.hspice.converter import convert_hspice_deck
+from agent_spice.hspice.converter import accept_hspice_deck, convert_hspice_deck
 from agent_spice.hspice.results import parse_ngspice_measurements, write_ngspice_waveform_csv
 from agent_spice.project import prepare_run_directory
 from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice_target
@@ -138,7 +138,16 @@ if TYPE_CHECKING:
     from agent_spice.backend.xyce import XyceXdmRunResult
 
 
-def _run_backend(backend_name: str, deck_path: Path, run_dir: Path):
+def _run_backend(
+    backend_name: str,
+    deck_path: Path,
+    run_dir: Path,
+    *,
+    native_engine: Path | None = None,
+    rfm_path: Path | None = None,
+    rfm_subcircuit: str = "rfm_direct",
+    dotnet_executable: str = "dotnet",
+):
     if backend_name == "ngspice":
         from agent_spice.backend.ngspice import NgspiceBackend
 
@@ -147,6 +156,17 @@ def _run_backend(backend_name: str, deck_path: Path, run_dir: Path):
         from agent_spice.backend.xyce import XyceBackend
 
         return XyceBackend().run(deck_path, cwd=run_dir)
+    if backend_name == "native":
+        from agent_spice.backend.native import NativeEngineBackend, resolve_native_engine
+
+        return NativeEngineBackend(
+            engine_path=resolve_native_engine(native_engine),
+            rfm_path=rfm_path,
+            rfm_subcircuit=rfm_subcircuit,
+            executable=dotnet_executable,
+            output_json_path=run_dir / "native_result.json",
+            waveform_csv_path=run_dir / "waveform.csv",
+        ).run(deck_path, cwd=run_dir)
     raise ValueError(f"Unsupported backend '{backend_name}'")
 
 
@@ -196,6 +216,30 @@ def _write_backend_summary(run_dir: Path, backend_name: str, result: Any) -> Non
             "rows": waveform_rows,
         }
         summary["measurements"] = parse_ngspice_measurements(result.stdout)
+    elif backend_name == "native":
+        native_result = run_dir / "native_result.json"
+        try:
+            execution = json.loads(result.stdout)
+        except json.JSONDecodeError:
+            execution = {}
+        summary["waveform"] = {
+            "path": "waveform.csv",
+            "format": "csv",
+            "exists": waveform.exists(),
+            "rows": int(execution.get("waveformRows", 0)),
+        }
+        summary["native_result"] = {
+            "path": "native_result.json",
+            "exists": native_result.exists(),
+        }
+        if native_result.is_file():
+            try:
+                payload = json.loads(native_result.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                payload = {}
+            measurements = payload.get("measurements", [])
+            if isinstance(measurements, list):
+                summary["measurements"] = measurements
     (run_dir / "run_summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
@@ -924,7 +968,17 @@ def _sparam_cli_advanced_passivity_kwargs(args: Any) -> dict[str, Any]:
     }
 
 
-def run_hspice(deck_path: Path, backend_name: str, output_root: Path, execute: bool = False) -> int:
+def run_hspice(
+    deck_path: Path,
+    backend_name: str,
+    output_root: Path,
+    execute: bool = False,
+    *,
+    native_engine: Path | None = None,
+    rfm_path: Path | None = None,
+    rfm_subcircuit: str = "rfm_direct",
+    dotnet_executable: str = "dotnet",
+) -> int:
     source = deck_path.read_text(encoding="utf-8")
     deck_id = deck_path.stem
     source_hash = hashlib.sha256(source.encode("utf-8")).hexdigest()
@@ -933,11 +987,21 @@ def run_hspice(deck_path: Path, backend_name: str, output_root: Path, execute: b
     for case in cases:
         case_kind, alter_label = _case_metadata(deck_id, case.name)
         run_dir = prepare_run_directory(output_root, project_name=deck_id, case_name=case.name)
-        prepared_text, preflight_messages = (
-            _compile_touchstone_s_elements(case.text, deck_path.parent, run_dir, convert_hspice_deck(case.text, backend=backend_name).report)
-            if backend_name == "ngspice" else (case.text, [])
+        if backend_name == "ngspice":
+            initial_conversion = convert_hspice_deck(case.text, backend=backend_name)
+            prepared_text, preflight_messages = _compile_touchstone_s_elements(
+                case.text,
+                deck_path.parent,
+                run_dir,
+                initial_conversion.report,
+            )
+        else:
+            prepared_text, preflight_messages = case.text, []
+        conversion = (
+            accept_hspice_deck(prepared_text)
+            if backend_name == "native"
+            else convert_hspice_deck(prepared_text, backend=backend_name)
         )
-        conversion = convert_hspice_deck(prepared_text, backend=backend_name)
         for message in preflight_messages:
             conversion.report.add_action("auto_fit_touchstone", message)
         conversion.report.set_deck(deck_id=deck_id, source=source_path, sha256=source_hash)
@@ -959,7 +1023,19 @@ def run_hspice(deck_path: Path, backend_name: str, output_root: Path, execute: b
                 if not result.ok:
                     return result.returncode
                 continue
-            result = _run_backend(backend_name, artifacts.deck_path, run_dir)
+            result = (
+                _run_backend(
+                    backend_name,
+                    artifacts.deck_path,
+                    run_dir,
+                    native_engine=native_engine,
+                    rfm_path=rfm_path,
+                    rfm_subcircuit=rfm_subcircuit,
+                    dotnet_executable=dotnet_executable,
+                )
+                if backend_name == "native"
+                else _run_backend(backend_name, artifacts.deck_path, run_dir)
+            )
             (run_dir / "stdout.log").write_text("\n".join(preflight_messages) + ("\n" if preflight_messages else "") + result.stdout, encoding="utf-8")
             (run_dir / "stderr.log").write_text(result.stderr, encoding="utf-8")
             _write_backend_summary(run_dir, backend_name, result)
@@ -975,14 +1051,19 @@ def run_rfm(
     subcircuit_name: str,
     *,
     execute: bool = False,
+    backend_name: str = "native",
     ngspice_executable: str = "ngspice",
     code_model: Path | None = None,
+    native_engine: Path | None = None,
+    dotnet_executable: str = "dotnet",
 ) -> int:
     """Prepare and optionally execute an RFM without vector fitting or macro expansion."""
 
     from agent_spice.sparam.rfm import RfmParseError
     from agent_spice.sparam.rfm_ngspice import (
+        RfmNativeError,
         RfmNgspiceError,
+        execute_native_rfm_run,
         execute_rfm_run,
         prepare_rfm_run,
     )
@@ -997,12 +1078,20 @@ def run_rfm(
         if not execute:
             print(f"run-rfm status=PREPARED output={artifacts.run_dir}")
             return 0
-        result = execute_rfm_run(
-            artifacts,
-            ngspice_executable=ngspice_executable,
-            code_model=code_model,
-        )
-    except (OSError, ValueError, RfmParseError, RfmNgspiceError) as exc:
+        if backend_name == "native":
+            result = execute_native_rfm_run(
+                artifacts,
+                engine_path=native_engine,
+                dotnet_executable=dotnet_executable,
+                subcircuit_name=subcircuit_name,
+            )
+        else:
+            result = execute_rfm_run(
+                artifacts,
+                ngspice_executable=ngspice_executable,
+                code_model=code_model,
+            )
+    except (OSError, ValueError, RfmParseError, RfmNgspiceError, RfmNativeError) as exc:
         print(f"run-rfm status=FAIL reason={exc}", file=sys.stderr)
         return 1
     status = "PASS" if result.ok else "FAIL"
@@ -1016,14 +1105,22 @@ def main(argv: list[str] | None = None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
     run_parser = subparsers.add_parser("run-hspice")
     run_parser.add_argument("deck", type=Path)
-    run_parser.add_argument("--backend", choices=["ngspice", "xyce", "xyce-xdm"], default="ngspice")
+    run_parser.add_argument(
+        "--backend",
+        choices=["native", "ngspice", "xyce", "xyce-xdm"],
+        default="native",
+    )
     run_parser.add_argument("--output-root", type=Path, default=Path("runs"))
     run_parser.add_argument("--execute", action="store_true")
+    run_parser.add_argument("--native-engine", type=Path)
+    run_parser.add_argument("--rfm", type=Path)
+    run_parser.add_argument("--rfm-subckt", default="rfm_direct")
+    run_parser.add_argument("--dotnet", default="dotnet")
 
     rfm_parser = subparsers.add_parser(
         "run-rfm",
         description=(
-            "Run a Cadence/HSPICE RFM directly through the Agent-Spice XSPICE N-port device; "
+            "Run a Cadence/HSPICE RFM directly through the native or XSPICE N-port device; "
             "no vector fitting or expanded SPICE macro-model is used."
         ),
     )
@@ -1031,12 +1128,26 @@ def main(argv: list[str] | None = None) -> int:
     rfm_parser.add_argument("--rfm", type=Path, required=True, help="Input VERSION 200600 S-matrix RFM.")
     rfm_parser.add_argument("--subckt-name", default="rfm_direct")
     rfm_parser.add_argument("--output-root", type=Path, default=Path("runs"))
-    rfm_parser.add_argument("--ngspice", default="ngspice", help="ngspice executable or absolute path.")
+    rfm_parser.add_argument("--backend", choices=["native", "ngspice"], default="native")
+    rfm_parser.add_argument(
+        "--ngspice",
+        default="ngspice",
+        help="ngspice executable or absolute path when --backend ngspice is selected.",
+    )
     rfm_parser.add_argument(
         "--code-model",
         type=Path,
         help="Override bundled rfm.cm (or set AGENT_SPICE_RFM_CODE_MODEL).",
     )
+    rfm_parser.add_argument(
+        "--native-engine",
+        type=Path,
+        help=(
+            "Override the native simulator executable or migration DLL "
+            "(or set AGENT_SPICE_NATIVE_ENGINE)."
+        ),
+    )
+    rfm_parser.add_argument("--dotnet", default="dotnet", help="dotnet executable or absolute path.")
     rfm_parser.add_argument("--execute", action="store_true")
 
     fit_parser = subparsers.add_parser(
@@ -1592,7 +1703,16 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(effective_argv)
     if args.command == "run-hspice":
-        return run_hspice(args.deck, args.backend, args.output_root, args.execute)
+        return run_hspice(
+            args.deck,
+            args.backend,
+            args.output_root,
+            args.execute,
+            native_engine=args.native_engine,
+            rfm_path=args.rfm,
+            rfm_subcircuit=args.rfm_subckt,
+            dotnet_executable=args.dotnet,
+        )
     if args.command == "run-rfm":
         return run_rfm(
             args.deck,
@@ -1600,8 +1720,11 @@ def main(argv: list[str] | None = None) -> int:
             args.output_root,
             args.subckt_name,
             execute=args.execute,
+            backend_name=args.backend,
             ngspice_executable=args.ngspice,
             code_model=args.code_model,
+            native_engine=args.native_engine,
+            dotnet_executable=args.dotnet,
         )
     if args.command == "fit-sparam-cascade":
         output_root = args.output_root or args.manifest.with_name(f"{args.manifest.stem}_fit")

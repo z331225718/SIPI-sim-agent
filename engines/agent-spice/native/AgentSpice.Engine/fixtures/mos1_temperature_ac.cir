@@ -1,0 +1,11 @@
+Level-1 NMOS temperature-adjusted Meyer and junction capacitance AC regression
+.options tnom=35
+.temp 125
+Vdd supply 0 5
+Rload supply out 10k
+Vgate gate 0 1.5 ac 1
+M1 out gate 0 0 nch L=1u W=100u AD=20p AS=15p PD=30u PS=25u
+.model nch nmos (level=1 vto=0.7 uo=650 tox=20n gamma=0.4 phi=0.7 lambda=0.02 is=2e-14 js=1u pb=0.8 cj=100u mj=0.45 cjsw=100p mjsw=0.35 cgso=20n cgdo=15n cgbo=10n)
+.ac dec 5 1k 100g
+.print ac v(out) i(Vgate) i(Vdd)
+.end

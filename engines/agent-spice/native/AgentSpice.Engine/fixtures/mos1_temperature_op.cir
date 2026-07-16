@@ -1,0 +1,13 @@
+Level-1 NMOS model and instance temperature operating-point regression
+.temp 60
+Vgate gate 0 2
+Vdglobal dglobal 0 1.5
+Vddelta ddelta 0 1.5
+Vdexp dexplicit 0 1.5
+Mglobal dglobal gate 0 0 nch L=1u W=20u AD=10p AS=8p PD=12u PS=10u
+Mdelta ddelta gate 0 0 nch L=1u W=20u AD=10p AS=8p PD=12u PS=10u DTEMP=40
+Mexplicit dexplicit gate 0 0 nch L=1u W=20u AD=10p AS=8p PD=12u PS=10u TEMP=-40 DTEMP=100
+.model nch nmos (level=1 tnom=35 vto=0.7 kp=200u gamma=0.4 phi=0.7 lambda=0.02 is=2e-14 js=1u pb=0.8 cj=100u mj=0.45 cjsw=100p mjsw=0.35 tox=20n cgso=20n cgdo=15n cgbo=10n)
+.op
+.print op i(Vdglobal) i(Vddelta) i(Vdexp)
+.end

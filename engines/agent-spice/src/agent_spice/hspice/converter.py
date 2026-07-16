@@ -88,7 +88,7 @@ def _rewrite_current_pwl_repeats_for_ngspice(text: str, report: CompatReport) ->
     return _CURRENT_PWL_REPEAT.sub(replace, text)
 
 
-def convert_hspice_deck(text: str, backend: str) -> ConversionResult:
+def _compatibility_report(text: str, backend: str) -> CompatReport:
     report = CompatReport(backend=backend)
     audit = audit_deck(text)
     outputs = normalize_outputs(text)
@@ -96,6 +96,19 @@ def convert_hspice_deck(text: str, backend: str) -> ConversionResult:
     report.set_outputs(outputs.probes, outputs.measures)
     for directive in audit.unsupported_directives:
         report.add_unsupported(directive, "unsupported_directive")
+    return report
+
+
+def accept_hspice_deck(text: str, backend: str = "native") -> ConversionResult:
+    """Accept native HSPICE syntax without rewriting the deck."""
+
+    report = _compatibility_report(text, backend)
+    report.finalize_summary()
+    return ConversionResult(deck_text=text, report=report)
+
+
+def convert_hspice_deck(text: str, backend: str) -> ConversionResult:
+    report = _compatibility_report(text, backend)
     source_text = _rewrite_current_pwl_repeats_for_ngspice(text, report) if backend == "ngspice" else text
     output: list[str] = []
     for raw in source_text.splitlines():

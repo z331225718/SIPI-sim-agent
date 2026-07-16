@@ -1,0 +1,9 @@
+Level-1 NMOS direct drain and source resistance DC regression
+Vgate gate 0 2
+Vdrain drain 0 0
+Vsource source 0 0
+M1 drain gate source 0 nch L=1u W=20u M=3
+.model nch nmos (level=1 vto=0.7 kp=200u lambda=0.02 rd=120 rs=75)
+.dc Vdrain 0 5 0.25
+.print dc i(Vdrain) i(Vsource)
+.end

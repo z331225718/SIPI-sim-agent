@@ -1,0 +1,9 @@
+Level-1 NMOS body-effect DC regression
+Vdrain drain 0 2
+Vgate gate 0 0
+Vbulk bulk 0 -0.4
+M1 drain gate 0 bulk nch L=1u W=20u
+.model nch nmos (level=1 vto=0.7 kp=200u gamma=0.45 phi=0.7 lambda=0.02)
+.dc Vgate 0 3 0.1
+.print dc i(Vdrain) i(Vgate)
+.end

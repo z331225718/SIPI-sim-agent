@@ -1,0 +1,7 @@
+Diode reverse breakdown DC sweep
+Vreverse cathode 0 0
+Dbreak 0 cathode dbreak AREA=2
+.model dbreak D(IS=1e-12 N=1.1 BV=5 IBV=100u NBV=1.5)
+.dc Vreverse 5 7 0.25
+.print dc i(Vreverse)
+.end

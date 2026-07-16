@@ -1,0 +1,8 @@
+Level-1 PMOS DC regression
+Vdrain drain 0 -2
+Vgate gate 0 0
+M1 drain gate 0 0 pch L=1u W=20u M=1.5
+.model pch pmos (level=1 vto=-0.75 kp=120u gamma=0.35 phi=0.65 lambda=0.025)
+.dc Vgate 0 -3 -0.1
+.print dc i(Vdrain) i(Vgate)
+.end

@@ -33,6 +33,12 @@ def test_manifest_accepts_xyce_xdm_backend():
     assert manifest.backend == "xyce-xdm"
 
 
+def test_manifest_defaults_to_project_owned_native_backend():
+    manifest = ProjectManifest.from_mapping({"name": "demo_pdn"})
+
+    assert manifest.backend == "native"
+
+
 def test_prepare_run_directory_is_deterministic(tmp_path: Path):
     run_dir = prepare_run_directory(tmp_path, project_name="demo_pdn", case_name="base")
 

@@ -1,0 +1,9 @@
+Level-1 NPN Early effect sweep
+Vcollector collector 0 1
+Vbase base 0 0.68
+Qdevice collector base 0 transistor_npn
+.model transistor_npn NPN(IS=1e-15 BF=120 BR=3 NF=1 NR=1 VAF=50 VAR=20)
+.options reltol=1e-8 vntol=1e-10 abstol=1e-14
+.dc Vcollector 1 10 1
+.print dc i(Vcollector) i(Vbase)
+.end

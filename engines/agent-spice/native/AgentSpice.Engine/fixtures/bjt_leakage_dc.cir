@@ -1,0 +1,10 @@
+BJT composite base-emitter and base-collector leakage DC sweep
+.options reltol=1e-6 abstol=1e-15 gmin=1e-20 numdgt=15
+Vc collector 0 0.2
+Vb base 0 -0.2
+Ve emitter 0 0
+Qleak collector base emitter qleak AREA=2 M=3
+.model qleak NPN(IS=1e-30 BF=1e12 BR=1e12 NF=1 NR=1 ISE=1e-12 NE=1.7 ISC=2e-12 NC=2.1)
+.dc Vb -0.2 0.8 0.05
+.print dc i(Vc) i(Vb) i(Ve)
+.end

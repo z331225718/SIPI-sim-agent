@@ -1,0 +1,9 @@
+Level-1 PMOS oxide and Meyer intrinsic capacitance AC regression
+Vsource source 0 5
+Vdrain drain 0 2.5
+Vgate gate 0 3.5 ac 1
+M1 drain gate source source pch L=1u W=100u
+.model pch pmos (level=1 vto=-0.7 uo=300 tox=20n gamma=0.35 phi=0.65 lambda=0.025 cgso=20n cgdo=15n cgbo=10n)
+.ac dec 5 1k 100g
+.print ac i(Vgate) i(Vdrain) i(Vsource)
+.end

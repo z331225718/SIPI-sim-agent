@@ -1,0 +1,9 @@
+Recursive include and library section
+.include "parts/parameters.inc"
+.lib "models.lib" fast
+Vdrive input 0 0.75
+Xconditioned input output conditioned scale=1.25
+Rload output 0 {base_r*2}
+.op
+.print op v(output)
+.end

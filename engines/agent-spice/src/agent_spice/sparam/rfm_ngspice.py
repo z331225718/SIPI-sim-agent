@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass
 import hashlib
 import json
@@ -14,6 +15,7 @@ from typing import Any
 import numpy as np
 
 from agent_spice.backend.base import BackendResult
+from agent_spice.backend.native import NativeEngineBackend, resolve_native_engine
 from agent_spice.backend.ngspice import NgspiceBackend
 from agent_spice.hspice.audit import audit_deck
 from agent_spice.hspice.converter import convert_hspice_deck
@@ -29,6 +31,10 @@ _END_DIRECTIVE = re.compile(r"(?im)^\s*\.end\s*(?:$|\*)")
 
 class RfmNgspiceError(RuntimeError):
     """Raised when a direct-RFM ngspice run cannot be prepared safely."""
+
+
+class RfmNativeError(RuntimeError):
+    """Raised when the project-owned direct-RFM engine returns invalid output."""
 
 
 @dataclass(frozen=True)
@@ -285,6 +291,95 @@ def execute_rfm_run(
         "code_model": {"path": str(resolved_model), "sha256": _sha256(resolved_model)},
         "logs": {"stdout": "stdout.log", "stderr": "stderr.log"},
         "waveform": "waveform.csv" if waveform_rows else None,
+        "waveform_rows": waveform_rows,
+    }
+    (artifacts.run_dir / "run_summary.json").write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    return result
+
+
+def _write_native_waveform(payload: dict[str, Any], path: Path) -> int:
+    points = payload.get("points")
+    if not isinstance(points, list) or not points:
+        return 0
+    analysis = str(points[0].get("analysis", ""))
+    first_point = points[0]
+    count = 0
+    if analysis == "ac":
+        first = first_point.get("complex", {})
+        names = list(first) if isinstance(first, dict) else []
+        fieldnames = ["frequency"] + [item for name in names for item in (f"real({name})", f"imag({name})")]
+    else:
+        first = first_point.get("values", {})
+        names = list(first) if isinstance(first, dict) else []
+        axis = "time" if analysis == "tran" else "sweep"
+        fieldnames = [axis, *names]
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for point in points:
+            if point.get("analysis") != analysis:
+                continue
+            if analysis == "ac":
+                complex_values = point.get("complex", {})
+                row: dict[str, Any] = {"frequency": point.get("x")}
+                for name in names:
+                    value = complex_values.get(name, {})
+                    row[f"real({name})"] = value.get("re")
+                    row[f"imag({name})"] = value.get("im")
+            else:
+                row = {axis: point.get("x"), **point.get("values", {})}
+            writer.writerow(row)
+            count += 1
+    return count
+
+
+def execute_native_rfm_run(
+    artifacts: RfmRunArtifacts,
+    *,
+    engine_path: str | Path | None = None,
+    dotnet_executable: str = "dotnet",
+    subcircuit_name: str = "rfm_direct",
+) -> BackendResult:
+    """Execute a prepared RFM deck without ngspice or the XSPICE code-model DLL."""
+
+    resolved_engine = resolve_native_engine(engine_path)
+    result_json = artifacts.run_dir / "native_result.json"
+    waveform = artifacts.run_dir / "waveform.csv"
+    backend = NativeEngineBackend(
+        engine_path=resolved_engine,
+        rfm_path=artifacts.runtime_rfm_path,
+        rfm_subcircuit=subcircuit_name,
+        executable=dotnet_executable,
+        output_json_path=result_json,
+        waveform_csv_path=waveform,
+    )
+    result = backend.run(artifacts.deck_path, cwd=artifacts.run_dir)
+    waveform_rows = 0
+    if result.ok:
+        try:
+            parsed = json.loads(result.stdout)
+            if not isinstance(parsed, dict):
+                raise TypeError("top-level native result must be an object")
+            waveform_rows = int(parsed.get("waveformRows", 0))
+        except (json.JSONDecodeError, TypeError, ValueError) as exc:
+            result = BackendResult(
+                returncode=2,
+                stdout=result.stdout,
+                stderr=result.stderr + f"native result parse failed: {exc}\n",
+            )
+    (artifacts.run_dir / "stdout.log").write_text(result.stdout, encoding="utf-8")
+    (artifacts.run_dir / "stderr.log").write_text(result.stderr, encoding="utf-8")
+    summary = {
+        "schema_version": 1,
+        "backend": "agent-spice-native-rfm",
+        "ok": result.ok,
+        "returncode": result.returncode,
+        "engine": {"path": str(resolved_engine), "sha256": _sha256(resolved_engine)},
+        "logs": {"stdout": "stdout.log", "stderr": "stderr.log"},
+        "result": result_json.name if result.ok and result_json.is_file() else None,
+        "waveform": waveform.name if waveform_rows else None,
         "waveform_rows": waveform_rows,
     }
     (artifacts.run_dir / "run_summary.json").write_text(

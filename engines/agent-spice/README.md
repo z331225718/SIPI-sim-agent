@@ -6,8 +6,8 @@ Agent-Spice 是面向电源完整性与高速互连场景的命令行工具。�
 - `fit-sparam-cascade`：按 manifest 拟合并 enforce 多个二端口 S 参数，再检查和修复有序级联链的整体被动性。
 - `fit-yparam`：在 Y 参数域拟合 Touchstone，并输出 Y-domain SPICE 宏、Z-log 误差报告及可选的精确 Y-to-S RFM 交付物。
 - `tune-yparam-tran`：针对明确提供的 HSPICE 签核场景，细调既有 Y-derived S-RFM 的低频残差；不会修改 `fit-sparam` 或将某个 CPM 场景硬编码为默认行为。
-- `run-hspice`：解析 HSPICE 网表，展开 `.alter`，并生成兼容性报告与后端输入文件。
-- `run-rfm`：不重新拟合、不展开普通 SPICE 状态子电路，直接用 XSPICE N-port device 执行 RFM 瞬态仿真。
+- `run-hspice`：原生接收 HSPICE 网表，展开 `.alter`，生成兼容性报告，并默认交给项目自主 Rust 内核执行；native 路径不再改写 `.inc`、`.probe` 或 `.option post`。
+- `run-rfm`：不重新拟合、不展开普通 SPICE 状态子电路，默认用项目自主 N-port 内核执行 RFM；ngspice XSPICE 保留为显式 oracle 后端。
 
 仓库内还保留了 IdEM、极点、模态和基准探针命令，供算法研究使用；它们不是稳定产品接口，参数与输出契约可能变化，因此不在本 README 中逐项承诺。可用 `python -m agent_spice.cli --help` 查看完整命令索引，以及 `python -m agent_spice.cli <命令> --help` 查看探针命令的即时帮助。
 
@@ -51,7 +51,22 @@ python -m agent_spice.cli run-rfm .\channel-tran.sp `
   --execute
 ```
 
-该路径读取现有 pole/residue，生成的 `.sp` 仅含一个 XSPICE wrapper，不是展开后的有理函数宏模型。默认加载随 Agent-Spice 发布、与 Windows ngspice-46 ABI 匹配的 `rfm.cm`；不会修改全局 `spinit`，也不要求 Xyce/XDM。完整接口、产物、步长建议、限制和源码构建方法见 [RFM 直接仿真使用说明](docs/rfm-ngspice-usage.md)。
+需要显式调用 ngspice XSPICE oracle 时：
+
+```powershell
+python -m agent_spice.cli run-rfm .\channel-tran.sp `
+  --rfm .\channel.rfm `
+  --backend ngspice `
+  --execute
+```
+
+源码树首次使用前运行 `.\tools\build-rust-engine.ps1`。`.\tools\build-native-wheel.ps1 -RuntimeIdentifier <RID>` 会把自包含的 `agent-spice-sim` 打进对应平台 wheel，不要求目标机器安装 Rust 或 .NET。CI 构建 Windows x64、Linux x64、macOS x64/ARM64；Windows x64 已在干净 venv 中完成包内可执行文件 smoke，其余平台以 CI 首次实跑为准。服务器所需系统信息、wheelhouse 准备和无网安装命令见 [Native 离线运行清单](docs/offline-native-runtime.md)。
+
+Rust native 路径刻意聚焦 PI/SI：线性 R/C/L/V/I/E/F/G/H、参数表达式、递归 include、`.lib` section、`.global`、嵌套参数化 `.subckt`、PULSE/PWL、OP/DC/AC，以及带源断点、Trap/变步长 Gear2、器件 LTE、拒步和状态回滚的 TRAN。`VERSION 200600` RFM N-port 可直接进入 OP/DC/AC/TRAN，不依赖 ngspice。二极管、BJT、MOS 的扩面已经冻结，旧 C# 实现仅保留为迁移 oracle，不再是默认产品内核。
+
+当前 5 轮进程级门禁中，2/8/16-port RFM Trap 为 ngspice 的 `0.52/0.51/0.38` 倍，Gear2 为 `0.56/0.56/0.42` 倍；81/289/1089 阶真实 RLC 网格 TRAN 为 `0.69/0.76/0.56` 倍，101 点 AC 为 `0.69/0.80/0.68` 倍，2050 阶梯形网络 AC 约 `1.00` 倍。ngspice 与本机 HSPICE 继续作为显式兼容 oracle，不会被静默调用。
+
+两条路径都读取现有 pole/residue，不重新拟合或展开有理函数宏模型。默认 native 路径直接绑定 `X... rfm_direct` 实例并完全绕过 ngspice；显式 `--backend ngspice` 路径生成一个 XSPICE wrapper，并加载随 Agent-Spice 发布、与 Windows ngspice-46 ABI 匹配的 `rfm.cm`。二者都不会修改全局 `spinit`，也不要求 Xyce/XDM。完整接口、产物、步长建议、限制和源码构建方法见 [RFM 直接仿真使用说明](docs/rfm-ngspice-usage.md)。
 
 RFM 的复数行保存的是 `A_c/(s+omega_c)` 中的分母系数 `omega_c`，系统极点是 `p=-omega_c`；第二列不是系统极点虚部的直接副本。当前导出器、importer 和随包 XSPICE device 均按该 HSPICE 约定实现。由修复前版本生成的 RFM 即使能被 HSPICE 读入，也可能产生错误频响，必须从原拟合结果重新生成。
 
@@ -349,11 +364,10 @@ python -m agent_spice.cli fit-sparam-cascade .\cascade.json `
 
 ## HSPICE 网表处理
 
-`run-hspice` 用于网表兼容性分析、`.alter` 展开及后端输入生成。默认只生成文件，不运行求解器：
+`run-hspice` 用于原生 HSPICE 网表审计、`.alter` 展开及仿真执行。默认后端是项目自主 Rust 内核；不指定 `--execute` 时只生成文件：
 
 ```powershell
 python -m agent_spice.cli run-hspice .\design.sp `
-  --backend ngspice `
   --output-root .\runs
 ```
 
@@ -362,12 +376,21 @@ python -m agent_spice.cli run-hspice .\design.sp `
 | 参数 | 默认值 | 含义 |
 | --- | --- | --- |
 | `deck` | 必填位置参数 | 输入 HSPICE 网表。 |
-| `--backend {ngspice,xyce,xyce-xdm}` | `ngspice` | 生成目标后端格式。 |
+| `--backend {native,ngspice,xyce,xyce-xdm}` | `native` | 选择自主内核或显式 oracle/兼容后端。 |
 | `--output-root PATH` | `runs` | 输出根目录。 |
 | `--execute` | 关闭 | 在生成后调用已配置的后端求解器执行。未指定时只生成工件。 |
+| `--native-engine PATH` | 包内可执行文件 | 覆盖 Rust 内核路径。 |
+| `--rfm PATH` | 无 | 向 native 路径提供外部 `VERSION 200600` RFM。 |
+| `--rfm-subckt NAME` | `rfm_direct` | 指定 RFM 实例绑定名称。 |
 | `-h`、`--help` | - | 显示命令帮助。 |
 
-典型输出包括每个 case 的 `case.source.sp`、`case.cir`、兼容性报告，以及 `.alter` 展开后的独立目录。`case.source.sp` 永远保留用户输入的原始 case；`case.cir` 是 converter 处理后实际交给后端的网表。带相对 `.include` 或 `.lib` 的本地模型文件会按原相对路径暂存到 case 目录，并在目标为 ngspice 时递归转换，因此生成的网表可在该目录直接运行。
+典型输出包括每个 case 的 `case.source.sp`、`case.cir`、兼容性报告，以及 `.alter` 展开后的独立目录。`case.source.sp` 永远保留用户输入的原始 case。native 路径的 `case.cir` 与 case 文本逐字一致，相对 `.include`/`.lib` 依赖也按原文暂存，不经过 converter；只有 ngspice/Xyce 路径会按目标方言转换。
+
+### Native HSPICE 语法
+
+Rust 内核直接解析 `.inc`/`.include`、`.lib` section、`.param`、`.global`、参数化层级 `.subckt`、`.option`、`.probe`、`.op/.dc/.ac/.tran` 和 `.measure`，不会先生成另一种 SPICE 方言。目前原生 `.measure` 支持 `FIND ... AT`、`FIND ... WHEN`、独立 `WHEN`、`TRIG/TARG`、`TRIG AT`、`MIN`、`MAX`、`AVG`、`RMS`、`PARAM`、`DERIV ... AT/WHEN`、`INTEG` 及 `FROM/TO` 窗口。事件测量支持 `TD`、`RISE/FALL/CROSS=<n>` 和 `LAST`；`PARAM` 按网表顺序引用先前测量、普通 `.param`、SI 后缀及数学函数。目标支持节点电压、差分电压、支路电流，以及 AC 的实部、虚部、幅值和相位。结果直接写入 `native_result.json`，并同步进入 `run_summary.json`。
+
+尚未支持的 `.measure` 高阶语义包括信号对信号的动态事件比较及优化专用的 `GOAL/MINVAL/WEIGHT`。这些语法会显式报错，不会静默调用 ngspice 或 HSPICE。事件时刻、导数和 `AT/FROM/TO` 边界基于相邻输出点插值，`INTEG` 使用窗口边界插值后的梯形积分；TRAN 聚合仍基于输出采样网格，后续将增加内部接受步极值签核。
 
 ### ngspice 前置转换与 SIPI/PI 范围
 
@@ -402,11 +425,12 @@ Test-Path runs-smoke\alter_pi\alter_pi__base\case.cir
 Test-Path runs-smoke\alter_pi\alter_pi__alter_001_high_decap\case.cir
 ```
 
-指定 `--execute` 时，默认 `ngspice` 路径会额外生成：
+指定 `--execute` 时会额外生成：
 
 - `stdout.log`、`stderr.log`：后端完整输出与诊断；
-- `waveform.csv`：由 `.print` 输出解析出的波形；
-- `run_summary.json`：退出码、日志索引、CSV 波形状态，以及已解析的 `.measure` 数值和失败信息。
+- `waveform.csv`：native 直接输出，或由外部后端输出解析；
+- `native_result.json`：native 的节点、分析点、统计量和 `.measure` 结果；
+- `run_summary.json`：退出码、日志索引、CSV 波形状态，以及 `.measure` 数值和失败信息。
 
 例如：
 
@@ -415,7 +439,7 @@ python -m agent_spice.cli run-hspice tests\fixtures\hspice\simple_pi.sp --output
 Get-Content runs-pi\simple_pi\simple_pi__base\run_summary.json
 ```
 
-Windows 离线生产默认只需 ngspice：`tools\install-solvers.ps1` 与 `tools\doctor-solvers.ps1 -Smoke` 均不会要求 Xyce 或 XDM。仅在显式选择 `--backend xyce-xdm` 时，才需要通过 `-IncludeXyce` 安装并检查这两个本地可选工具。
+Windows 离线生产默认不需要 ngspice、HSPICE、Xyce 或 XDM；wheel 自带 Rust 内核。ngspice/HSPICE 建议仅保留在开发与签核环境中作为显式 oracle。仅在选择对应外部后端时，才需要安装和检查外部求解器。
 
 ## 完整命令索引与研究命令
 

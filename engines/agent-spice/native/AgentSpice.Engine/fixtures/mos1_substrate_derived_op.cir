@@ -1,0 +1,16 @@
+Level-1 NMOS and PMOS substrate-derived model parameter regression
+.temp 100
+Vgn gn 0 2.5
+Vdn dn 0 2
+Vsn sn 0 0.5
+Vgp gp 0 2.5
+Vdp dp 0 3
+Vsp sp 0 4.5
+Vbp bp 0 5
+Mn dn gn sn 0 nch L=1u W=20u
+Mp dp gp sp bp pch L=1u W=40u
+.model nch nmos (level=1 tnom=35 tox=20n uo=650 nsub=1e16 tpg=1 nss=1e10 lambda=0.02)
+.model pch pmos (level=1 tnom=35 tox=20n uo=300 nsub=1e16 tpg=-1 nss=2e10 lambda=0.025)
+.op
+.print op i(Vdn) i(Vsn) i(Vdp) i(Vsp)
+.end
