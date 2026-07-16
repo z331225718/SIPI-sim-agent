@@ -57,26 +57,83 @@ RFM 的复数行保存的是 `A_c/(s+omega_c)` 中的分母系数 `omega_c`，�
 
 ## Y 参数拟合与 Z-log 门禁
 
-`fit-yparam` 以标准 Touchstone `.sNp` 为输入，先换算为 Y 参数再执行共享极点有理拟合。它面向阻抗/PDN 误差：报告同时包含 Y RMS（Siemens）和完整矩阵 `Z-log RMS`，后者定义为 `log10(|Zfit| / |Zref|)` 的 RMS（单位为 decades）。
+### 如何开启 Y-fit
+
+Y-fit 使用独立命令 `fit-yparam`，不是 `fit-sparam` 的开关，因此不会改变原有 S-fit 的默认行为。输入仍是标准 Touchstone `.sNp`；命令读取其中的 S 参数和参考阻抗，严格转换为 Y 后执行共享极点有理拟合。
 
 最短命令：
 
 ```powershell
-python -m agent_spice.cli fit-yparam .\board.s19p `
-  --output .\board.y.sp `
-  --derived-s-touchstone .\board.y-derived.s19p
+python -m agent_spice.cli fit-yparam .\board.s19p
 ```
 
-默认输出是 Y-domain SPICE、JSON、HTML 和日志；`--derived-s-touchstone` 输出由有理 Y 严格换算得到的采样 S 参数。若需要连续频率 Y 正实性证书及 S-RFM 交付，请附加 `--no-fit-proportional --exact-s-rfm <path>`；该路径无法取得 KYP 证书时会硬失败，不会静默降级。
+不指定输出路径时，文件写在输入 Touchstone 旁。以 `board.s19p` 为例：
 
-当前项目级算法门禁固定使用 held-out 全矩阵 `Z-log RMS`，严格要求 `Y-fit < S-fit`。运行：
+| 文件 | 是否默认生成 | 含义 |
+| --- | --- | --- |
+| `board_fitted.y.sp` | 是 | Common-ground Norton/MNA Y-domain SPICE 子电路。 |
+| `board_fitted.y.json` | 是 | 机器可读报告，包含 Y RMS、Z-log RMS、转换条件数和被动性检查。 |
+| `board_fitted.y.html` | 是 | 人工阅读的拟合质量报告。 |
+| `board_fitted.y.log` | 是 | 拟合过程日志。 |
+| `board.y-derived.s19p` | 指定 `--derived-s-touchstone` | 由 fitted Y 在输入频点严格转换得到的采样 S 参数，用于检查转换后的 S RMS。 |
+| `board_fitted.rfm` | 指定 `--exact-s-rfm` | Y 正实性 enforcement 后，经精确有理 Y-to-S 变换得到的 S-RFM。 |
+| `board_fitted.s19p` | 指定 `--exact-s-rfm` | 与最终 RFM 对应的 fitted S 参数；可用 `--exact-s-touchstone` 改名。 |
+| `board_fitted_rfm_wrapper.sp` | 指定 `--exact-s-rfm-wrapper` | 引用最终 RFM 的 HSPICE/Sigrity wrapper。 |
+
+`--derived-s-touchstone` 只输出未做 KYP enforcement 的采样检查文件，不是最终被动 RFM。需要与 S-fit 类似的 RFM、fitted Touchstone 和 wrapper 交付物时，推荐直接运行：
+
+```powershell
+python -m agent_spice.cli fit-yparam .\board.s19p `
+  --output .\board_fitted.y.sp `
+  --no-fit-proportional `
+  --exact-s-rfm .\board_fitted.rfm `
+  --exact-s-touchstone .\board_fitted.s19p `
+  --exact-s-rfm-wrapper .\board_fitted_rfm_wrapper.sp `
+  --subckt-name board_y
+```
+
+这条交付路径执行：
+
+```text
+S input -> Y fit -> KYP continuous-frequency Y positive-real enforcement
+        -> exact rational S=(I-Z0Y)(I+Z0Y)^-1 -> RFM/Touchstone
+```
+
+它不会把 fitted Y 重新采样后再做一次 S-fit。`--exact-s-rfm` 当前必须与 `--no-fit-proportional` 一起使用；如果 KYP 求解无法取得证书、状态数超过限制或所需校正量超过预算，命令会失败，不会静默降级。
+
+### `fit-yparam` 常用参数
+
+| 参数 | 作用与默认值 |
+| --- | --- |
+| `--output PATH` | Y-domain SPICE 路径；默认 `<输入名>_fitted.y.sp`。JSON、HTML、日志默认沿用该文件名基底。 |
+| `--report PATH`、`--html-report PATH`、`--log PATH` | 分别覆盖 JSON、HTML 和日志路径。 |
+| `--derived-s-touchstone PATH` | 输出 fitted Y 严格转换得到的采样 S 参数，便于比较转换前后的 S RMS。 |
+| `--n-poles-real N` | 初始实极点数，默认 `1`。 |
+| `--n-poles-cmplx N` | 初始共轭复极点对数，默认 `3`。 |
+| `--pole-spacing lin|log` | 初始极点间距，默认 `log`。 |
+| `--fit-iterations N` | 矢量拟合迭代上限，默认 `20`。 |
+| `--max-y-rms-siemens VALUE` | Y 域绝对 RMS 硬门限，单位 Siemens；未指定时不设置该数值门限。 |
+| `--passivity off|check` | Y 正实性策略，默认 `check`；这里只检查采样频点，连续频率 enforcement 由 exact-RFM 路径执行。 |
+| `--passivity-epsilon VALUE` | 采样 Y 正实性检查容差，默认 `1e-9`。 |
+| `--conversion-condition-limit VALUE` | S/Y 严格转换允许的最大条件数，默认 `1e12`。 |
+| `--no-fit-proportional` | 禁用 Y 的 proportional 项；当前 exact Y-to-S/RFM 路径必须使用。 |
+| `--exact-s-rfm PATH` | 执行 KYP Y enforcement，并输出精确有理 Y-to-S RFM。 |
+| `--exact-s-touchstone PATH` | 指定与 exact RFM 对应的 Touchstone 路径；省略时使用 RFM 基名和输入的 `.sNp` 扩展名。 |
+| `--exact-s-rfm-wrapper PATH` | 输出 HSPICE/Sigrity RFM wrapper。 |
+| `--kyp-max-states N` | KYP 稠密状态数上限，默认 `128`。 |
+| `--kyp-margin VALUE` | KYP 正实性裕量，默认 `1e-8`。 |
+| `--kyp-max-relative-correction VALUE` | KYP 相对校正量上限，默认 `0.05`。 |
+| `--kyp-solver NAME` | CVXPY PSD-cone solver，默认 `CLARABEL`。 |
+| `--subckt-name NAME` | Y-domain SPICE 子电路名，默认 `y_equivalent`。 |
+
+报告同时给出 Y RMS（Siemens）和完整矩阵 `Z-log RMS`。后者定义为 `log10(|Zfit| / |Zref|)` 的 RMS，单位为 decades，项目级 Y-vs-S 算法选择以 held-out 全矩阵 Z-log RMS 为准。运行默认语料门禁：
 
 ```powershell
 python scripts/benchmark_yparam_corpus.py `
   --output runs-yparam-benchmark/corpus-heldout-order20.json
 ```
 
-默认语料覆盖 S19、S30 及 HSPICE 签核使用的 2-port 规约；任一输入持平、落后或 Z 转换失败时命令返回非零。完整的产物、KYP、TRAN 细调参数及门禁说明见 [Y 参数拟合使用说明](docs/yparam-usage.md)。
+默认语料覆盖 S19、S30 及 HSPICE 签核使用的 2-port 规约；任一输入持平、落后或 Z 转换失败时命令返回非零。TRAN 场景细调、完整 KYP 约束和常见失败说明见 [Y 参数拟合使用说明](docs/yparam-usage.md)。全部即时参数也可用 `python -m agent_spice.cli fit-yparam --help` 查看。
 
 ## S 参数拟合
 
