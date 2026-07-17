@@ -1050,7 +1050,14 @@ impl Flattener<'_> {
                 }
             }
         });
-        for value in values.iter_mut().skip(parameter_start) {
+        for index in parameter_start..values.len() {
+            let is_assignment_name = values
+                .get(index + 1)
+                .is_some_and(|next| next == "=" || next.starts_with('='));
+            if is_assignment_name {
+                continue;
+            }
+            let value = &mut values[index];
             let quoted_expression = value.len() >= 2
                 && ((value.starts_with('\'') && value.ends_with('\''))
                     || (value.starts_with('"') && value.ends_with('"')));
@@ -1320,12 +1327,12 @@ fn substitute_parameter_token(token: &str, parameters: &ParameterSet) -> Option<
         return Some(quote_parameter_string(value));
     }
     let (prefix, value) = token.split_once('=')?;
-    if let Some(parameter) = parameters.get(&value.to_ascii_lowercase()) {
-        return Some(format!("{prefix}={parameter:.17e}"));
+    match parameters.evaluate(value).ok()? {
+        ParameterValue::Numeric(parameter) => Some(format!("{prefix}={parameter:.17e}")),
+        ParameterValue::String(parameter) => {
+            Some(format!("{prefix}={}", quote_parameter_string(&parameter)))
+        }
     }
-    parameters
-        .string(value)
-        .map(|parameter| format!("{prefix}={}", quote_parameter_string(parameter)))
 }
 
 fn quote_parameter_string(value: &str) -> String {
@@ -1430,7 +1437,7 @@ impl Parser {
         let kind = name.as_bytes()[0].to_ascii_uppercase();
         match kind {
             b'R' => {
-                let value = parse_number(&tokens[3], &self.parameters)?;
+                let value = parse_passive_value(&tokens[3..], "r", &self.parameters)?;
                 if value < 0.0 {
                     return Err(Error::Parse(format!(
                         "resistance must be non-negative on '{name}'"
@@ -1441,7 +1448,7 @@ impl Parser {
                     .push(PendingElement::Resistor(name, positive, negative, value));
             }
             b'C' => {
-                let value = parse_number(&tokens[3], &self.parameters)?;
+                let value = parse_passive_value(&tokens[3..], "c", &self.parameters)?;
                 if value <= 0.0 {
                     return Err(Error::Parse(format!(
                         "capacitance must be positive on '{name}'"
@@ -1451,7 +1458,7 @@ impl Parser {
                     .push(PendingElement::Capacitor(name, positive, negative, value));
             }
             b'L' => {
-                let value = parse_number(&tokens[3], &self.parameters)?;
+                let value = parse_passive_value(&tokens[3..], "l", &self.parameters)?;
                 if value <= 0.0 {
                     return Err(Error::Parse(format!(
                         "inductance must be positive on '{name}'"
@@ -2304,6 +2311,44 @@ fn tokenize(line: &str) -> Vec<String> {
         tokens.push(current);
     }
     tokens
+}
+
+fn parse_passive_value(
+    tokens: &[String],
+    parameter_name: &str,
+    parameters: &HashMap<String, f64>,
+) -> Result<f64> {
+    let first = tokens
+        .first()
+        .ok_or_else(|| Error::Parse(format!("{parameter_name} value is missing")))?;
+    let expression = if let Some((name, value)) = first.split_once('=')
+        && name.eq_ignore_ascii_case(parameter_name)
+    {
+        if value.is_empty() {
+            tokens
+                .get(1)
+                .filter(|value| value.as_str() != "=")
+                .ok_or_else(|| Error::Parse(format!("{parameter_name} value is missing")))?
+        } else {
+            value
+        }
+    } else if first.eq_ignore_ascii_case(parameter_name)
+        && tokens.get(1).is_some_and(|value| value == "=")
+    {
+        tokens
+            .get(2)
+            .ok_or_else(|| Error::Parse(format!("{parameter_name} value is missing")))?
+    } else if first.eq_ignore_ascii_case(parameter_name)
+        && tokens.get(1).is_some_and(|value| value.starts_with('='))
+    {
+        tokens[1]
+            .strip_prefix('=')
+            .filter(|value| !value.is_empty())
+            .ok_or_else(|| Error::Parse(format!("{parameter_name} value is missing")))?
+    } else {
+        first
+    };
+    parse_number(expression, parameters)
 }
 
 fn parse_source(

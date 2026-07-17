@@ -248,6 +248,30 @@ def test_rust_engine_applies_hspice_resmin_to_zero_ohm_dummy_resistors(
     assert result["points"][0]["values"]["out"] == pytest.approx(expected)
 
 
+def test_rust_engine_accepts_hspice_named_passive_values(tmp_path: Path) -> None:
+    deck = tmp_path / "named_passive_values.sp"
+    deck.write_text(
+        "HSPICE named passive values\n"
+        ".subckt branch in out params: resistance=2k capacitance=1p inductance=1n\n"
+        "Rinline in middle r='resistance'\n"
+        "Rspaced middle out r   =   'resistance'\n"
+        "Cnamed middle 0 c='capacitance'\n"
+        "Lnamed middle sense l = 'inductance'\n"
+        "Rsense sense 0 1e18\n"
+        ".ends branch\n"
+        "V1 in 0 1\n"
+        "Xbranch in out branch\n"
+        "Rload out 0 4k\n"
+        ".op\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+
+    result = run(deck)
+
+    assert result["points"][0]["values"]["out"] == pytest.approx(0.5)
+
+
 def test_rust_engine_audits_all_native_compatibility_issues_at_once(
     tmp_path: Path,
 ) -> None:
