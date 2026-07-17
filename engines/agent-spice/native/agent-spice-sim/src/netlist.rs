@@ -1197,6 +1197,7 @@ impl Flattener<'_> {
         };
         self.active.push(definition_name);
         let mut conditionals = ConditionalState::default();
+        let mut active_lines = Vec::new();
         for line in &definition.body {
             let body_values = tokenize(&line.text);
             if conditionals.handle(line, &body_values, &child.parameters)? {
@@ -1218,9 +1219,12 @@ impl Flattener<'_> {
                 line.wrap(update_parameters(&assignments, &mut child.parameters))?;
                 continue;
             }
-            self.expand_line(line, &child, output)?;
+            active_lines.push(line);
         }
         conditionals.finish(&format!("subcircuit '{}'", values[definition_index]))?;
+        for line in active_lines {
+            self.expand_line(line, &child, output)?;
+        }
         self.active.pop();
         Ok(())
     }
