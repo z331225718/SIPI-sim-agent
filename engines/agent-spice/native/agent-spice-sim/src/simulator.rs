@@ -64,6 +64,7 @@ pub fn run_with_observer(
     deck: &Deck,
     rfm: Option<&RfmModel>,
     observer: &mut dyn SimulationObserver,
+    retain_points: bool,
 ) -> Result<SimulationResult> {
     let mut points = Vec::new();
     let mut statistics = SimulationStatistics::default();
@@ -75,7 +76,9 @@ pub fn run_with_observer(
                 let solution = solve_dc(deck, None, rfm, &mut real_cache, &mut statistics)?;
                 let point = real_point(deck, "op", 0.0, &solution);
                 observer.point(&point, 1, 1, &statistics)?;
-                points.push(point);
+                if retain_points {
+                    points.push(point);
+                }
                 observer.analysis_finished("op", 1, &statistics)?;
             }
             Analysis::Dc {
@@ -107,7 +110,9 @@ pub fn run_with_observer(
                     let point = real_point(deck, "dc", value, &solution);
                     index += 1;
                     observer.point(&point, index, total_points, &statistics)?;
-                    points.push(point);
+                    if retain_points {
+                        points.push(point);
+                    }
                     value += step;
                 }
                 observer.analysis_finished("dc", index, &statistics)?;
@@ -128,7 +133,9 @@ pub fn run_with_observer(
                 for (index, (frequency, solution)) in samples.into_iter().enumerate() {
                     let point = complex_point(deck, frequency, &solution);
                     observer.point(&point, index + 1, total_points, &statistics)?;
-                    points.push(point);
+                    if retain_points {
+                        points.push(point);
+                    }
                 }
                 observer.analysis_finished("ac", total_points, &statistics)?;
             }
@@ -138,11 +145,11 @@ pub fn run_with_observer(
                 points.extend(run_transient(
                     deck,
                     rfm,
-                    *step,
-                    *stop,
+                    (*step, *stop),
                     &mut real_cache,
                     &mut statistics,
                     observer,
+                    retain_points,
                 )?);
                 observer.analysis_finished("tran", total_points, &statistics)?;
             }
@@ -965,12 +972,13 @@ struct InductorState {
 fn run_transient(
     deck: &Deck,
     rfm: Option<&RfmModel>,
-    step: f64,
-    stop: f64,
+    analysis: (f64, f64),
     cache: &mut SymbolicCache,
     statistics: &mut SimulationStatistics,
     observer: &mut dyn SimulationObserver,
+    retain_points: bool,
 ) -> Result<Vec<SimulationPoint>> {
+    let (step, stop) = analysis;
     let total_points = transient_output_count(step, stop);
     let initial = solve_dc(deck, None, rfm, cache, statistics)?;
     let mut state = DynamicState::default();
@@ -1023,7 +1031,10 @@ fn run_transient(
     }
     let initial_point = real_point(deck, "tran", 0.0, &initial);
     observer.point(&initial_point, 1, total_points, statistics)?;
-    let mut result = vec![initial_point];
+    let mut result = Vec::new();
+    if retain_points {
+        result.push(initial_point);
+    }
     let mut first_step = true;
     let mut restart_integration = false;
     let mut previous_time = 0.0;
@@ -1412,7 +1423,9 @@ fn run_transient(
         if reaches_output {
             let point = real_point(deck, "tran", output_time, &solution);
             observer.point(&point, output_index + 1, total_points, statistics)?;
-            result.push(point);
+            if retain_points {
+                result.push(point);
+            }
             output_index += 1;
         }
         first_step = false;

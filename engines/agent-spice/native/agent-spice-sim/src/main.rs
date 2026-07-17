@@ -74,9 +74,6 @@ fn run() -> Result<()> {
             rfm_path.as_ref().expect("RFM path was checked").display()
         )));
     }
-    if waveform_csv.is_some() && output_json.is_none() {
-        return Err(Error::Usage("--waveform-csv requires --output-json".into()));
-    }
     if let Some(audit_json) = audit_json {
         if output_json.is_some() || waveform_csv.is_some() {
             return Err(Error::Usage(
@@ -122,7 +119,12 @@ fn run() -> Result<()> {
         );
     }
     let mut observer = output::RuntimeObserver::new(waveform_csv.as_deref(), &deck.analyses)?;
-    let result = simulator::run_with_observer(&deck, rfm.as_ref(), &mut observer)?;
+    let retain_points =
+        output_json.is_some() || waveform_csv.is_none() || !deck.measurements.is_empty();
+    if waveform_csv.is_some() && !retain_points {
+        eprintln!("[agent-spice-sim] streaming mode: full waveform points are not retained");
+    }
+    let result = simulator::run_with_observer(&deck, rfm.as_ref(), &mut observer, retain_points)?;
     let waveform_rows = observer.finish()?;
     if let Some(output_json) = output_json.as_deref() {
         let json_started = Instant::now();
@@ -133,6 +135,16 @@ fn run() -> Result<()> {
             json_started.elapsed().as_secs_f64()
         );
         println!(r#"{{"ok":true,"waveformRows":{waveform_rows}}}"#);
+    } else if waveform_csv.is_some() {
+        println!(
+            "{}",
+            serde_json::json!({
+                "ok": true,
+                "waveformRows": waveform_rows,
+                "measurements": result.measurements,
+                "statistics": result.statistics,
+            })
+        );
     } else {
         println!("{}", serde_json::to_string(&result)?);
     }

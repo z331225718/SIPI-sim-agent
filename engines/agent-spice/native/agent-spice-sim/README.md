@@ -54,7 +54,10 @@ native\agent-spice-sim\target\release\agent-spice-sim.exe legacy.sp `
 Progress remains visible in the terminal because it uses stderr, while stdout
 keeps its machine-readable JSON contract. `waveform.csv` is readable during a
 long simulation and retains its flushed rows after `Ctrl+C`; the final JSON is
-written only after a successful completion.
+written only after a successful completion. `--waveform-csv waveform.csv` can
+be used without `--output-json`; this streaming-only mode does not retain full
+waveform points in memory and prints only measurements/statistics as a compact
+stdout summary.
 
 Set `AGENT_SPICE_PROFILE=1` to append a TRAN hot-path breakdown for matrix
 stamping, sparse solving, candidate-state updates, and LTE evaluation. This is

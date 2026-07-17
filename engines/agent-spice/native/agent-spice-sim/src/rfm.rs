@@ -3,8 +3,9 @@ use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 
+use faer::linalg::matmul::matmul;
 use faer::linalg::solvers::DenseSolveCore;
-use faer::{Mat, c64};
+use faer::{Accum, Mat, MatMut, MatRef, Par, c64};
 
 use crate::error::{Error, Result};
 
@@ -30,6 +31,12 @@ struct StepKernel {
 enum KernelKind {
     Trapezoidal,
     Bdf,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum DerivativeFormula {
+    Trapezoidal { step: f64 },
+    Bdf { a0: f64, a1: f64, a2: f64 },
 }
 
 #[derive(Debug)]
@@ -393,8 +400,8 @@ impl RfmModel {
             previous_dynamic_output: vec![0.0; self.nports],
             older_dynamic_output: vec![0.0; self.nports],
             dynamic_output_derivative: vec![0.0; self.nports],
-            derivative_state_scratch: vec![0.0; value_count],
             normalized_port_voltages: vec![0.0; self.nports],
+            derivative_formula: None,
             kernel: None,
         }
     }
@@ -422,12 +429,6 @@ impl RfmModel {
         state
             .older_dynamic_output
             .copy_from_slice(&state.dynamic_output);
-        self.fill_dynamic_output_voltage_derivative(
-            &state.values,
-            &state.incident,
-            &mut state.dynamic_output_derivative,
-            &mut state.derivative_state_scratch,
-        );
         Ok(())
     }
 
@@ -444,6 +445,7 @@ impl RfmModel {
         {
             state.kernel = Some(Arc::new(self.build_trapezoidal_kernel(step)?));
         }
+        state.derivative_formula = Some(DerivativeFormula::Trapezoidal { step });
 
         let half = 0.5 * step;
         for input in 0..self.nports {
@@ -487,6 +489,7 @@ impl RfmModel {
         {
             state.kernel = Some(Arc::new(self.build_bdf_kernel(a0)?));
         }
+        state.derivative_formula = Some(DerivativeFormula::Bdf { a0, a1, a2 });
         for input in 0..self.nports {
             for pole_index in 0..self.poles.len() {
                 let pole = self.poles[pole_index];
@@ -529,6 +532,7 @@ impl RfmModel {
         port_voltages: &[f64],
     ) {
         current.kernel.clone_from(&previous.kernel);
+        current.derivative_formula = previous.derivative_formula;
         current.x_base.copy_from_slice(&previous.x_base);
         current.history.copy_from_slice(&previous.history);
         current
@@ -575,12 +579,25 @@ impl RfmModel {
                         .map(|(coefficient, incident)| coefficient * incident)
                         .sum::<f64>());
         }
-        self.fill_dynamic_output_voltage_derivative(
-            &current.values,
-            &current.incident,
-            &mut current.dynamic_output_derivative,
-            &mut current.derivative_state_scratch,
-        );
+        match current
+            .derivative_formula
+            .expect("RFM derivative formula was prepared")
+        {
+            DerivativeFormula::Trapezoidal { step } => {
+                for port in 0..self.nports {
+                    current.dynamic_output_derivative[port] =
+                        2.0 * (current.dynamic_output[port] - previous.dynamic_output[port]) / step
+                            - previous.dynamic_output_derivative[port];
+                }
+            }
+            DerivativeFormula::Bdf { a0, a1, a2 } => {
+                for port in 0..self.nports {
+                    current.dynamic_output_derivative[port] = a0 * current.dynamic_output[port]
+                        + a1 * previous.dynamic_output[port]
+                        + a2 * previous.previous_dynamic_output[port];
+                }
+            }
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -745,16 +762,11 @@ impl RfmModel {
     fn fill_history(&self, values: &[f64], history: &mut [f64]) {
         debug_assert_eq!(values.len(), self.nports * self.state_width);
         debug_assert_eq!(history.len(), self.nports);
-        for (history_value, coefficients) in history
-            .iter_mut()
-            .zip(self.history_coefficients.chunks_exact(values.len()))
-        {
-            *history_value = coefficients
-                .iter()
-                .zip(values)
-                .map(|(coefficient, value)| coefficient * value)
-                .sum();
-        }
+        let coefficients =
+            MatRef::from_row_major_slice(&self.history_coefficients, self.nports, values.len());
+        let values = MatRef::from_column_major_slice(values, values.len(), 1);
+        let history = MatMut::from_column_major_slice_mut(history, self.nports, 1);
+        matmul(history, Accum::Replace, coefficients, values, 1.0, Par::Seq);
     }
 
     fn fill_dynamic_output_voltage(&self, values: &[f64], output: &mut [f64]) {
@@ -763,32 +775,6 @@ impl RfmModel {
         for value in output {
             *value *= scale;
         }
-    }
-
-    fn fill_dynamic_output_voltage_derivative(
-        &self,
-        values: &[f64],
-        incident: &[f64],
-        output: &mut [f64],
-        derivative_state: &mut [f64],
-    ) {
-        for (input, incident_value) in incident.iter().copied().enumerate().take(self.nports) {
-            let input_offset = input * self.state_width;
-            for pole_index in 0..self.poles.len() {
-                let pole = self.poles[pole_index];
-                let state = input_offset + self.state_offsets[pole_index];
-                if pole.im == 0.0 {
-                    derivative_state[state] = pole.re * values[state] + incident_value;
-                    continue;
-                }
-                let real = values[state];
-                let imaginary = values[state + 1];
-                derivative_state[state] =
-                    pole.re * real + pole.im * imaginary + 2.0 * incident_value;
-                derivative_state[state + 1] = -pole.im * real + pole.re * imaginary;
-            }
-        }
-        self.fill_dynamic_output_voltage(derivative_state, output);
     }
 }
 
@@ -805,8 +791,8 @@ pub struct RfmState {
     previous_dynamic_output: Vec<f64>,
     older_dynamic_output: Vec<f64>,
     dynamic_output_derivative: Vec<f64>,
-    derivative_state_scratch: Vec<f64>,
     normalized_port_voltages: Vec<f64>,
+    derivative_formula: Option<DerivativeFormula>,
     kernel: Option<Arc<StepKernel>>,
 }
 

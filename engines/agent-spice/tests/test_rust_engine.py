@@ -121,6 +121,35 @@ def test_rust_engine_flushes_waveform_while_transient_is_running(
     assert "TRAN started" in stderr
 
 
+def test_rust_engine_streams_waveform_without_full_json(tmp_path: Path) -> None:
+    deck = tmp_path / "waveform_only.sp"
+    waveform_csv = tmp_path / "waveform.csv"
+    deck.write_text(
+        "waveform only\n"
+        "V1 out 0 1\n"
+        "R1 out 0 1k\n"
+        ".probe tran v(out)\n"
+        ".tran 1n 10n\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        [str(ENGINE), str(deck), "--waveform-csv", str(waveform_csv)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    summary = json.loads(completed.stdout)
+    assert summary["ok"] is True
+    assert summary["waveformRows"] == 11
+    assert "points" not in summary
+    assert summary["statistics"]["acceptedTransientSteps"] == 10
+    assert len(waveform_csv.read_text(encoding="utf-8").splitlines()) == 12
+    assert "full waveform points are not retained" in completed.stderr
+
+
 def test_rust_engine_operating_point_and_dc_sweep() -> None:
     result = run(ROOT / "native" / "AgentSpice.Engine" / "fixtures" / "divider.cir")
     operating_point = result["points"][0]
