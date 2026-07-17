@@ -23,6 +23,7 @@ struct StepKernel {
     inverse_columns: Vec<usize>,
     inverse_values: Vec<f64>,
     conductance: Vec<f64>,
+    dynamic_response: Vec<f64>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,11 +41,7 @@ pub struct RfmModel {
     constant: Vec<f64>,
     state_offsets: Vec<usize>,
     state_width: usize,
-    history_starts: Vec<usize>,
-    history_state_indices: Vec<usize>,
-    history_residue_real: Vec<f64>,
-    history_residue_imaginary: Vec<f64>,
-    history_has_imaginary_state: Vec<bool>,
+    history_coefficients: Vec<f64>,
 }
 
 impl RfmModel {
@@ -301,28 +298,22 @@ impl RfmModel {
             state_offsets.push(state_width);
             state_width += if pole.im == 0.0 { 1 } else { 2 };
         }
-        let mut history_starts = Vec::with_capacity(nports + 1);
-        let mut history_state_indices = Vec::new();
-        let mut history_residue_real = Vec::new();
-        let mut history_residue_imaginary = Vec::new();
-        let mut history_has_imaginary_state = Vec::new();
+        let value_count = nports * state_width;
+        let mut history_coefficients = vec![0.0; nports * value_count];
         for output in 0..nports {
-            history_starts.push(history_state_indices.len());
             for input in 0..nports {
                 let response = output * nports + input;
                 for pole_index in 0..poles.len() {
                     let residue = residues[response * poles.len() + pole_index];
-                    if residue == c64::new(0.0, 0.0) {
-                        continue;
+                    let state = input * state_width + state_offsets[pole_index];
+                    let row = output * value_count;
+                    history_coefficients[row + state] = residue.re;
+                    if poles[pole_index].im != 0.0 {
+                        history_coefficients[row + state + 1] = residue.im;
                     }
-                    history_state_indices.push(input * state_width + state_offsets[pole_index]);
-                    history_residue_real.push(residue.re);
-                    history_residue_imaginary.push(residue.im);
-                    history_has_imaginary_state.push(poles[pole_index].im != 0.0);
                 }
             }
         }
-        history_starts.push(history_state_indices.len());
         Ok(Self {
             nports,
             z0,
@@ -331,11 +322,7 @@ impl RfmModel {
             constant: constants,
             state_offsets,
             state_width,
-            history_starts,
-            history_state_indices,
-            history_residue_real,
-            history_residue_imaginary,
-            history_has_imaginary_state,
+            history_coefficients,
         })
     }
 
@@ -402,7 +389,12 @@ impl RfmModel {
             x_base: vec![0.0; value_count],
             history: vec![0.0; self.nports],
             offset: vec![0.0; self.nports],
-            truncation_scratch: vec![0.0; 6 * self.nports + value_count],
+            dynamic_output: vec![0.0; self.nports],
+            previous_dynamic_output: vec![0.0; self.nports],
+            older_dynamic_output: vec![0.0; self.nports],
+            dynamic_output_derivative: vec![0.0; self.nports],
+            derivative_state_scratch: vec![0.0; value_count],
+            normalized_port_voltages: vec![0.0; self.nports],
             kernel: None,
         }
     }
@@ -423,6 +415,19 @@ impl RfmModel {
         }
         state.previous_values.copy_from_slice(&state.values);
         state.older_values.copy_from_slice(&state.values);
+        self.fill_dynamic_output_voltage(&state.values, &mut state.dynamic_output);
+        state
+            .previous_dynamic_output
+            .copy_from_slice(&state.dynamic_output);
+        state
+            .older_dynamic_output
+            .copy_from_slice(&state.dynamic_output);
+        self.fill_dynamic_output_voltage_derivative(
+            &state.values,
+            &state.incident,
+            &mut state.dynamic_output_derivative,
+            &mut state.derivative_state_scratch,
+        );
         Ok(())
     }
 
@@ -517,30 +522,71 @@ impl RfmModel {
         }
     }
 
-    pub fn commit(&self, state: &mut RfmState, port_voltages: &[f64]) {
-        state.older_values.copy_from_slice(&state.previous_values);
-        state.previous_values.copy_from_slice(&state.values);
-        let kernel = state.kernel.as_ref().expect("RFM companion was prepared");
+    pub fn commit_candidate(
+        &self,
+        current: &mut RfmState,
+        previous: &RfmState,
+        port_voltages: &[f64],
+    ) {
+        current.kernel.clone_from(&previous.kernel);
+        current.x_base.copy_from_slice(&previous.x_base);
+        current.history.copy_from_slice(&previous.history);
+        current
+            .older_values
+            .copy_from_slice(&previous.previous_values);
+        current.previous_values.copy_from_slice(&previous.values);
+        current
+            .older_dynamic_output
+            .copy_from_slice(&previous.previous_dynamic_output);
+        current
+            .previous_dynamic_output
+            .copy_from_slice(&previous.dynamic_output);
+        let scale = self.z0.sqrt();
+        for (normalized, voltage) in current
+            .normalized_port_voltages
+            .iter_mut()
+            .zip(port_voltages)
+        {
+            *normalized = voltage / scale;
+        }
+        let kernel = current.kernel.as_ref().expect("RFM companion was prepared");
         for input in 0..self.nports {
             let incident: f64 = (kernel.inverse_starts[input]..kernel.inverse_starts[input + 1])
                 .map(|term| {
                     let output = kernel.inverse_columns[term];
                     kernel.inverse_values[term]
-                        * (port_voltages[output] / self.z0.sqrt() - state.history[output])
+                        * (current.normalized_port_voltages[output] - current.history[output])
                 })
                 .sum();
-            state.incident[input] = incident;
+            current.incident[input] = incident;
             for state_index in 0..self.state_width {
                 let index = input * self.state_width + state_index;
-                state.values[index] = state.x_base[index] + kernel.weights[state_index] * incident;
+                current.values[index] =
+                    current.x_base[index] + kernel.weights[state_index] * incident;
             }
         }
+        for row in 0..self.nports {
+            let response = &kernel.dynamic_response[row * self.nports..(row + 1) * self.nports];
+            current.dynamic_output[row] = scale
+                * (current.history[row]
+                    + response
+                        .iter()
+                        .zip(&current.incident)
+                        .map(|(coefficient, incident)| coefficient * incident)
+                        .sum::<f64>());
+        }
+        self.fill_dynamic_output_voltage_derivative(
+            &current.values,
+            &current.incident,
+            &mut current.dynamic_output_derivative,
+            &mut current.derivative_state_scratch,
+        );
     }
 
     #[allow(clippy::too_many_arguments)]
     pub fn truncation_error_ratio(
         &self,
-        current: &mut RfmState,
+        current: &RfmState,
         previous: &RfmState,
         h0: f64,
         h1: f64,
@@ -552,39 +598,15 @@ impl RfmModel {
         truncation_tolerance: f64,
         truncation_scale: f64,
     ) -> f64 {
-        let mut scratch = std::mem::take(&mut current.truncation_scratch);
-        scratch.resize(6 * self.nports + current.values.len(), 0.0);
-        let (q0, rest) = scratch.split_at_mut(self.nports);
-        let (q1, rest) = rest.split_at_mut(self.nports);
-        let (q2, rest) = rest.split_at_mut(self.nports);
-        let (q3, rest) = rest.split_at_mut(self.nports);
-        let (derivative0, rest) = rest.split_at_mut(self.nports);
-        let (derivative1, derivative_state) = rest.split_at_mut(self.nports);
-        self.fill_dynamic_output_voltage(&current.values, q0);
-        self.fill_dynamic_output_voltage(&previous.values, q1);
-        self.fill_dynamic_output_voltage(&previous.previous_values, q2);
-        self.fill_dynamic_output_voltage(&previous.older_values, q3);
-        self.fill_dynamic_output_voltage_derivative(
-            &current.values,
-            &current.incident,
-            derivative0,
-            derivative_state,
-        );
-        self.fill_dynamic_output_voltage_derivative(
-            &previous.values,
-            &previous.incident,
-            derivative1,
-            derivative_state,
-        );
         let mut maximum: f64 = 0.0;
         for port in 0..self.nports {
             maximum = maximum.max(charge_truncation_ratio(
-                q0[port],
-                q1[port],
-                q2[port],
-                q3[port],
-                derivative0[port],
-                derivative1[port],
+                current.dynamic_output[port],
+                previous.dynamic_output[port],
+                previous.previous_dynamic_output[port],
+                previous.older_dynamic_output[port],
+                current.dynamic_output_derivative[port],
+                previous.dynamic_output_derivative[port],
                 h0,
                 h1,
                 h2,
@@ -596,7 +618,6 @@ impl RfmModel {
                 truncation_tolerance * truncation_scale,
             ));
         }
-        current.truncation_scratch = scratch;
         maximum
     }
 
@@ -616,13 +637,17 @@ impl RfmModel {
             weights[state] = step * d / denominator;
             weights[state + 1] = -step * e / denominator;
         }
-        let inverse = invert_real(&self.build_wave_matrix(&weights), self.nports)?;
+        let wave_matrix = self.build_wave_matrix(&weights);
+        let inverse = invert_real(&wave_matrix, self.nports)?;
         let (inverse_starts, inverse_columns, inverse_values) =
             compress_real_rows(&inverse, self.nports);
         let mut conductance = vec![0.0; self.nports * self.nports];
+        let mut dynamic_response = wave_matrix;
         for row in 0..self.nports {
             for column in 0..self.nports {
                 let index = row * self.nports + column;
+                dynamic_response[index] -=
+                    self.constant[index] + if row == column { 1.0 } else { 0.0 };
                 conductance[index] = 2.0 * inverse[index] / self.z0
                     - if row == column { 1.0 / self.z0 } else { 0.0 };
             }
@@ -635,6 +660,7 @@ impl RfmModel {
             inverse_columns,
             inverse_values,
             conductance,
+            dynamic_response,
         })
     }
 
@@ -653,13 +679,17 @@ impl RfmModel {
             weights[state] = 2.0 * d / denominator;
             weights[state + 1] = -2.0 * e / denominator;
         }
-        let inverse = invert_real(&self.build_wave_matrix(&weights), self.nports)?;
+        let wave_matrix = self.build_wave_matrix(&weights);
+        let inverse = invert_real(&wave_matrix, self.nports)?;
         let (inverse_starts, inverse_columns, inverse_values) =
             compress_real_rows(&inverse, self.nports);
         let mut conductance = vec![0.0; self.nports * self.nports];
+        let mut dynamic_response = wave_matrix;
         for row in 0..self.nports {
             for column in 0..self.nports {
                 let index = row * self.nports + column;
+                dynamic_response[index] -=
+                    self.constant[index] + if row == column { 1.0 } else { 0.0 };
                 conductance[index] = 2.0 * inverse[index] / self.z0
                     - if row == column { 1.0 / self.z0 } else { 0.0 };
             }
@@ -672,6 +702,7 @@ impl RfmModel {
             inverse_columns,
             inverse_values,
             conductance,
+            dynamic_response,
         })
     }
 
@@ -712,16 +743,17 @@ impl RfmModel {
     }
 
     fn fill_history(&self, values: &[f64], history: &mut [f64]) {
-        for (output, history_value) in history.iter_mut().enumerate() {
-            let mut value = 0.0;
-            for term in self.history_starts[output]..self.history_starts[output + 1] {
-                let state = self.history_state_indices[term];
-                value += self.history_residue_real[term] * values[state];
-                if self.history_has_imaginary_state[term] {
-                    value += self.history_residue_imaginary[term] * values[state + 1];
-                }
-            }
-            *history_value = value;
+        debug_assert_eq!(values.len(), self.nports * self.state_width);
+        debug_assert_eq!(history.len(), self.nports);
+        for (history_value, coefficients) in history
+            .iter_mut()
+            .zip(self.history_coefficients.chunks_exact(values.len()))
+        {
+            *history_value = coefficients
+                .iter()
+                .zip(values)
+                .map(|(coefficient, value)| coefficient * value)
+                .sum();
         }
     }
 
@@ -769,7 +801,12 @@ pub struct RfmState {
     x_base: Vec<f64>,
     history: Vec<f64>,
     offset: Vec<f64>,
-    truncation_scratch: Vec<f64>,
+    dynamic_output: Vec<f64>,
+    previous_dynamic_output: Vec<f64>,
+    older_dynamic_output: Vec<f64>,
+    dynamic_output_derivative: Vec<f64>,
+    derivative_state_scratch: Vec<f64>,
+    normalized_port_voltages: Vec<f64>,
     kernel: Option<Arc<StepKernel>>,
 }
 

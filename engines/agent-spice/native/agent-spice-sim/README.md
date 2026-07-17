@@ -56,6 +56,11 @@ keeps its machine-readable JSON contract. `waveform.csv` is readable during a
 long simulation and retains its flushed rows after `Ctrl+C`; the final JSON is
 written only after a successful completion.
 
+Set `AGENT_SPICE_PROFILE=1` to append a TRAN hot-path breakdown for matrix
+stamping, sparse solving, candidate-state updates, and LTE evaluation. This is
+intended for comparing difficult production decks without a profiler installed
+on the target machine.
+
 Netlist parse and parameter errors include the absolute source path, physical line number,
 original statement, and the expanded statement when a subcircuit rewrite changed it.
 

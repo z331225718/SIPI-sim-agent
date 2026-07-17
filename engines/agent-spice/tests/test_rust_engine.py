@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -57,6 +58,7 @@ def test_rust_engine_reports_progress_and_writes_final_streamed_waveform(
         capture_output=True,
         text=True,
         check=True,
+        env={**os.environ, "AGENT_SPICE_PROFILE": "1"},
     )
 
     assert json.loads(completed.stdout) == {"ok": True, "waveformRows": 11}
@@ -65,6 +67,7 @@ def test_rust_engine_reports_progress_and_writes_final_streamed_waveform(
     assert "TRAN started: 11 output point(s)" in completed.stderr
     assert "TRAN 11/11 (100.0%)" in completed.stderr
     assert "simulation completed" in completed.stderr
+    assert "[agent-spice-profile]" in completed.stderr
 
 
 def test_rust_engine_flushes_waveform_while_transient_is_running(

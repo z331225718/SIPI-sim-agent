@@ -14,6 +14,7 @@ pub struct SymbolicCache {
     complex_matrix: Option<SparseColMat<usize, c64>>,
     complex_entry_slots: Vec<usize>,
     real_factors: Vec<RealFactor>,
+    real_value_scratch: Vec<u64>,
 }
 
 struct RealFactor {
@@ -32,11 +33,13 @@ impl SymbolicCache {
         entries: &[Triplet<usize, usize, f64>],
         rhs: &[f64],
     ) -> Result<(Vec<f64>, bool, bool)> {
-        let values: Vec<u64> = entries.iter().map(|entry| entry.val.to_bits()).collect();
+        self.real_value_scratch.clear();
+        self.real_value_scratch
+            .extend(entries.iter().map(|entry| entry.val.to_bits()));
         if let Some(cached) = self
             .real_factors
             .iter()
-            .find(|cached| cached.values == values)
+            .find(|cached| cached.values == self.real_value_scratch)
         {
             return Ok((solve_factor(&cached.factor, n, rhs), false, false));
         }
@@ -58,7 +61,10 @@ impl SymbolicCache {
         if self.real_factors.len() == 8 {
             self.real_factors.remove(0);
         }
-        self.real_factors.push(RealFactor { values, factor });
+        self.real_factors.push(RealFactor {
+            values: self.real_value_scratch.clone(),
+            factor,
+        });
         Ok((solution, created_symbolic, true))
     }
 

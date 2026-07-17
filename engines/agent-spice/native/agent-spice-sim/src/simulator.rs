@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 use std::f64::consts::PI;
+use std::time::{Duration, Instant};
 
 use faer::c64;
 use faer::sparse::Triplet;
@@ -1038,7 +1039,22 @@ fn run_transient(
     let minimum_step = (step * 1e-9).max(1e-18);
     let mut suggested_step = step;
     let mut output_index = 1usize;
+    let mut matrix = Vec::new();
+    let mut rhs = vec![0.0; deck.unknown_count];
+    let mut capacitor_companions = Vec::new();
+    let mut inductor_companions = Vec::new();
+    let mut capacitor_candidates = Vec::new();
+    let mut inductor_candidates = Vec::new();
+    let mut rfm_port_voltages = Vec::new();
+    let mut rfm_candidate_state = state.rfm.clone();
+    let profile = std::env::var_os("AGENT_SPICE_PROFILE").is_some();
+    let profile_started = Instant::now();
+    let mut profile_stamp = Duration::ZERO;
+    let mut profile_solve = Duration::ZERO;
+    let mut profile_candidate = Duration::ZERO;
+    let mut profile_lte = Duration::ZERO;
     loop {
+        let stamp_started = profile.then(Instant::now);
         let raw_output_time = output_index as f64 * step;
         let output_time = if raw_output_time >= stop - step * 1e-9 {
             stop
@@ -1080,10 +1096,12 @@ fn run_transient(
         } else {
             None
         };
-        let mut matrix = Vec::new();
-        let mut rhs = vec![0.0; deck.unknown_count];
-        let mut capacitor_companions = Vec::new();
-        let mut inductor_companions = Vec::new();
+        matrix.clear();
+        rhs.fill(0.0);
+        capacitor_companions.clear();
+        inductor_companions.clear();
+        capacitor_candidates.clear();
+        inductor_candidates.clear();
         for element in &deck.elements {
             match element {
                 Element::Resistor {
@@ -1113,7 +1131,7 @@ fn run_transient(
                     stamp_admittance_real(&mut matrix, *positive, *negative, conductance);
                     stamp_current_real(&mut rhs, *positive, *negative, history);
                     capacitor_companions.push((
-                        name.clone(),
+                        name.as_str(),
                         *positive,
                         *negative,
                         *capacitance,
@@ -1149,7 +1167,7 @@ fn run_transient(
                         history,
                     );
                     inductor_companions.push((
-                        name.clone(),
+                        name.as_str(),
                         *positive,
                         *negative,
                         *inductance,
@@ -1259,33 +1277,30 @@ fn run_transient(
                 }
             }
         }
+        if let Some(started) = stamp_started {
+            profile_stamp += started.elapsed();
+        }
+        let solve_started = profile.then(Instant::now);
         let (solution, symbolic, numeric) = cache.solve_real(deck.unknown_count, &matrix, &rhs)?;
+        if let Some(started) = solve_started {
+            profile_solve += started.elapsed();
+        }
         statistics.sparse_numeric_refactorizations += usize::from(numeric);
         statistics.sparse_symbolic_factorizations += usize::from(symbolic);
-        let capacitor_candidates: Vec<_> = capacitor_companions
-            .iter()
-            .map(
-                |(name, positive, negative, capacitance, conductance, history)| {
-                    let voltage =
-                        node_voltage(&solution, *positive) - node_voltage(&solution, *negative);
-                    (
-                        name.clone(),
-                        *capacitance,
-                        voltage,
-                        conductance * voltage + history,
-                    )
-                },
-            )
-            .collect();
-        let inductor_candidates: Vec<_> = inductor_companions
-            .iter()
-            .map(|(name, positive, negative, inductance, branch)| {
-                let voltage =
-                    node_voltage(&solution, *positive) - node_voltage(&solution, *negative);
-                (name.clone(), *inductance, solution[*branch], voltage)
-            })
-            .collect();
-        let mut rfm_candidates = Vec::new();
+        let candidate_started = profile.then(Instant::now);
+        for (name, positive, negative, capacitance, conductance, history) in &capacitor_companions {
+            let voltage = node_voltage(&solution, *positive) - node_voltage(&solution, *negative);
+            capacitor_candidates.push((
+                *name,
+                *capacitance,
+                voltage,
+                conductance * voltage + history,
+            ));
+        }
+        for (name, positive, negative, inductance, branch) in &inductor_companions {
+            let voltage = node_voltage(&solution, *positive) - node_voltage(&solution, *negative);
+            inductor_candidates.push((*name, *inductance, solution[*branch], voltage));
+        }
         for element in &deck.elements {
             if let Element::Rfm {
                 name,
@@ -1295,15 +1310,26 @@ fn run_transient(
             } = element
             {
                 let rfm_model = rfm_model(deck, rfm, model)?;
-                let voltages = port_voltages(&solution, ports, references);
-                let mut candidate = state.rfm.get(name).cloned().ok_or_else(|| {
+                rfm_port_voltages.clear();
+                rfm_port_voltages.extend(ports.iter().zip(references).map(|(port, reference)| {
+                    node_voltage(&solution, *port) - node_voltage(&solution, *reference)
+                }));
+                let previous = state.rfm.get(name).ok_or_else(|| {
                     Error::InvalidDeck(format!("RFM state for '{name}' was not initialized"))
                 })?;
-                rfm_model.commit(&mut candidate, &voltages);
-                rfm_candidates.push((name.clone(), model.clone(), candidate));
+                let candidate = rfm_candidate_state.get_mut(name).ok_or_else(|| {
+                    Error::InvalidDeck(format!(
+                        "RFM candidate state for '{name}' was not initialized"
+                    ))
+                })?;
+                rfm_model.commit_candidate(candidate, previous, &rfm_port_voltages);
             }
         }
+        if let Some(started) = candidate_started {
+            profile_candidate += started.elapsed();
+        }
 
+        let lte_started = profile.then(Instant::now);
         let error_order = if !backward_euler
             && accepted_history_depth >= 2
             && previous_step > 0.0
@@ -1321,7 +1347,7 @@ fn run_transient(
                 &state,
                 &capacitor_candidates,
                 &inductor_candidates,
-                &mut rfm_candidates,
+                &rfm_candidate_state,
                 actual_step,
                 if previous_step > 0.0 {
                     previous_step
@@ -1341,6 +1367,9 @@ fn run_transient(
         } else {
             0.0
         };
+        if let Some(started) = lte_started {
+            profile_lte += started.elapsed();
+        }
         if error_ratio > 1.0 {
             statistics.rejected_transient_steps += 1;
             if actual_step <= minimum_step * (1.0 + 1e-12) {
@@ -1353,33 +1382,29 @@ fn run_transient(
             continue;
         }
 
-        for (name, _, voltage, current) in capacitor_candidates {
-            let previous = state.capacitor[&name];
-            state.capacitor.insert(
-                name,
-                CapacitorState {
-                    voltage,
-                    previous_voltage: previous.voltage,
-                    older_voltage: previous.previous_voltage,
-                    current,
-                },
-            );
+        for &(name, _, voltage, current) in &capacitor_candidates {
+            let previous = state.capacitor.get_mut(name).ok_or_else(|| {
+                Error::InvalidDeck(format!("capacitor state for '{name}' was not initialized"))
+            })?;
+            *previous = CapacitorState {
+                voltage,
+                previous_voltage: previous.voltage,
+                older_voltage: previous.previous_voltage,
+                current,
+            };
         }
-        for (name, _, current, voltage) in inductor_candidates {
-            let previous = state.inductor[&name];
-            state.inductor.insert(
-                name,
-                InductorState {
-                    current,
-                    previous_current: previous.current,
-                    older_current: previous.previous_current,
-                    voltage,
-                },
-            );
+        for &(name, _, current, voltage) in &inductor_candidates {
+            let previous = state.inductor.get_mut(name).ok_or_else(|| {
+                Error::InvalidDeck(format!("inductor state for '{name}' was not initialized"))
+            })?;
+            *previous = InductorState {
+                current,
+                previous_current: previous.current,
+                older_current: previous.previous_current,
+                voltage,
+            };
         }
-        for (name, _, candidate) in rfm_candidates {
-            state.rfm.insert(name, candidate);
-        }
+        std::mem::swap(&mut state.rfm, &mut rfm_candidate_state);
         statistics.accepted_transient_steps += 1;
         statistics.fixed_transient_steps +=
             usize::from((actual_step - step).abs() <= time_tolerance && !breakpoint_hit);
@@ -1412,6 +1437,16 @@ fn run_transient(
             break;
         }
     }
+    if profile {
+        eprintln!(
+            "[agent-spice-profile] total={:.6}s stamp={:.6}s solve={:.6}s candidate={:.6}s lte={:.6}s",
+            profile_started.elapsed().as_secs_f64(),
+            profile_stamp.as_secs_f64(),
+            profile_solve.as_secs_f64(),
+            profile_candidate.as_secs_f64(),
+            profile_lte.as_secs_f64()
+        );
+    }
     Ok(result)
 }
 
@@ -1420,9 +1455,9 @@ fn transient_truncation_error_ratio(
     deck: &Deck,
     rfm: Option<&RfmModel>,
     state: &DynamicState,
-    capacitor_candidates: &[(String, f64, f64, f64)],
-    inductor_candidates: &[(String, f64, f64, f64)],
-    rfm_candidates: &mut [(String, Option<String>, RfmState)],
+    capacitor_candidates: &[(&str, f64, f64, f64)],
+    inductor_candidates: &[(&str, f64, f64, f64)],
+    rfm_candidates: &HashMap<String, RfmState>,
     h0: f64,
     h1: f64,
     h2: f64,
@@ -1461,7 +1496,7 @@ fn transient_truncation_error_ratio(
     };
     let mut maximum: f64 = 0.0;
     for (name, capacitance, voltage, current) in capacitor_candidates {
-        let previous = state.capacitor.get(name).ok_or_else(|| {
+        let previous = state.capacitor.get(*name).ok_or_else(|| {
             Error::InvalidDeck(format!("capacitor state for '{name}' was not initialized"))
         })?;
         maximum = maximum.max(charge_truncation_ratio(
@@ -1483,7 +1518,7 @@ fn transient_truncation_error_ratio(
         ));
     }
     for (name, inductance, current, voltage) in inductor_candidates {
-        let previous = state.inductor.get(name).ok_or_else(|| {
+        let previous = state.inductor.get(*name).ok_or_else(|| {
             Error::InvalidDeck(format!("inductor state for '{name}' was not initialized"))
         })?;
         maximum = maximum.max(charge_truncation_ratio(
@@ -1505,24 +1540,36 @@ fn transient_truncation_error_ratio(
         ));
     }
     if !rfm_candidates.is_empty() {
-        for (name, model_name, candidate) in rfm_candidates {
-            let model = rfm_model(deck, rfm, model_name)?;
-            let previous = state.rfm.get(name).ok_or_else(|| {
-                Error::InvalidDeck(format!("RFM state for '{name}' was not initialized"))
-            })?;
-            maximum = maximum.max(model.truncation_error_ratio(
-                candidate,
-                previous,
-                h0,
-                h1,
-                h2,
-                order,
-                second_order_factor,
-                deck.voltage_tolerance,
-                deck.relative_tolerance,
-                deck.truncation_tolerance,
-                truncation_scale,
-            ));
+        for element in &deck.elements {
+            if let Element::Rfm {
+                name,
+                model: model_name,
+                ..
+            } = element
+            {
+                let model = rfm_model(deck, rfm, model_name)?;
+                let previous = state.rfm.get(name).ok_or_else(|| {
+                    Error::InvalidDeck(format!("RFM state for '{name}' was not initialized"))
+                })?;
+                let candidate = rfm_candidates.get(name).ok_or_else(|| {
+                    Error::InvalidDeck(format!(
+                        "RFM candidate state for '{name}' was not initialized"
+                    ))
+                })?;
+                maximum = maximum.max(model.truncation_error_ratio(
+                    candidate,
+                    previous,
+                    h0,
+                    h1,
+                    h2,
+                    order,
+                    second_order_factor,
+                    deck.voltage_tolerance,
+                    deck.relative_tolerance,
+                    deck.truncation_tolerance,
+                    truncation_scale,
+                ));
+            }
         }
     }
     Ok(maximum)

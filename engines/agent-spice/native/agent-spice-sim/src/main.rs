@@ -99,6 +99,7 @@ fn run() -> Result<()> {
     }
 
     eprintln!("[agent-spice-sim] loading deck: {}", deck.display());
+    let load_started = Instant::now();
     let rfm = rfm_path
         .as_deref()
         .map(rfm::RfmModel::parse_file)
@@ -108,10 +109,11 @@ fn run() -> Result<()> {
         .map(|model| (rfm_subcircuit.as_str(), model.nports));
     let deck = netlist::Deck::parse_file(&deck, binding)?;
     eprintln!(
-        "[agent-spice-sim] parsed: {} element(s), {} node(s), {} analysis job(s)",
+        "[agent-spice-sim] parsed: {} element(s), {} node(s), {} analysis job(s) in {:.3}s",
         deck.elements.len(),
         deck.nodes.len(),
-        deck.analyses.len()
+        deck.analyses.len(),
+        load_started.elapsed().as_secs_f64()
     );
     if let Some(path) = waveform_csv.as_deref() {
         eprintln!(
@@ -123,10 +125,12 @@ fn run() -> Result<()> {
     let result = simulator::run_with_observer(&deck, rfm.as_ref(), &mut observer)?;
     let waveform_rows = observer.finish()?;
     if let Some(output_json) = output_json.as_deref() {
+        let json_started = Instant::now();
         output::write_json(&result, output_json)?;
         eprintln!(
-            "[agent-spice-sim] wrote final JSON: {}",
-            output_json.display()
+            "[agent-spice-sim] wrote final JSON: {} in {:.3}s",
+            output_json.display(),
+            json_started.elapsed().as_secs_f64()
         );
         println!(r#"{{"ok":true,"waveformRows":{waveform_rows}}}"#);
     } else {
