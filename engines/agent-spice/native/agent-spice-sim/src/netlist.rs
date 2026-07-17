@@ -990,6 +990,15 @@ fn flatten_subcircuits(
     };
     let mut output = vec![top_level[0].clone()];
     let mut top_parameters = ParameterSet::default();
+    for line in top_level.iter().skip(1) {
+        let values = tokenize(&line.text);
+        if values
+            .first()
+            .is_some_and(|value| value.eq_ignore_ascii_case(".param"))
+        {
+            line.wrap(update_parameters(&values[1..], &mut top_parameters))?;
+        }
+    }
     for line in top_level.into_iter().skip(1) {
         let values = tokenize(&line.text);
         if values.is_empty() {
@@ -999,7 +1008,6 @@ fn flatten_subcircuits(
             continue;
         }
         if values[0].eq_ignore_ascii_case(".param") {
-            line.wrap(update_parameters(&values[1..], &mut top_parameters))?;
             output.push(line);
             continue;
         }

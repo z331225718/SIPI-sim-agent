@@ -272,6 +272,34 @@ def test_rust_engine_accepts_hspice_named_passive_values(tmp_path: Path) -> None
     assert result["points"][0]["values"]["out"] == pytest.approx(0.5)
 
 
+def test_rust_engine_resolves_top_parameter_declared_after_instance(
+    tmp_path: Path,
+) -> None:
+    child = tmp_path / "connector.spi"
+    child.write_text(
+        ".subckt connector in out\n"
+        "Rconnector in out connector_resistance\n"
+        ".ends connector\n",
+        encoding="utf-8",
+    )
+    deck = tmp_path / "forward_parameter.sp"
+    deck.write_text(
+        "HSPICE forward parameter declaration\n"
+        ".include 'connector.spi'\n"
+        "Xconnector in out connector\n"
+        ".param connector_resistance=2k\n"
+        "V1 in 0 1\n"
+        "Rload out 0 2k\n"
+        ".op\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+
+    result = run(deck)
+
+    assert result["points"][0]["values"]["out"] == pytest.approx(0.5)
+
+
 def test_rust_engine_audits_all_native_compatibility_issues_at_once(
     tmp_path: Path,
 ) -> None:
