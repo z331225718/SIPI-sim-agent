@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
+import shutil
 import subprocess
 
 import pytest
@@ -649,6 +650,62 @@ def test_rust_engine_rfm_ac_and_transient_match_reference_model() -> None:
     for index, expected_voltage in references.items():
         assert points[index]["values"]["p"] == pytest.approx(
             expected_voltage, abs=2e-4
+        )
+
+
+def test_rust_engine_runs_hspice_s_model_with_relative_rfmfile(
+    tmp_path: Path,
+) -> None:
+    source_rfm = ROOT / "native" / "AgentSpice.Engine" / "fixtures" / "one_port.rfm"
+    shutil.copy2(source_rfm, tmp_path / "channel.rfm")
+    deck = tmp_path / "native_s_model.sp"
+    deck.write_text(
+        "HSPICE native S model\n"
+        ".model channel_offdie s n=1 rfmfile='channel.rfm'\n"
+        "Vreference ref 0 0.3\n"
+        "Vdrive p ref AC 1\n"
+        "Schannel_offdie p ref mname=channel_offdie\n"
+        ".ac lin 1 1g 1g\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+
+    native = run(deck)
+    command_line = run(
+        ROOT / "native" / "AgentSpice.Engine" / "fixtures" / "rfm_ac.cir",
+        "--rfm",
+        source_rfm,
+    )
+
+    assert native["points"][0]["complex"]["Vdrive"] == pytest.approx(
+        command_line["points"][0]["complex"]["Vdrive"]
+    )
+
+    transient_deck = tmp_path / "native_s_model_tran.sp"
+    transient_deck.write_text(
+        "HSPICE native S model transient\n"
+        ".model channel_offdie s n=1 rfmfile='channel.rfm'\n"
+        "Vreference ref 0 0.2\n"
+        "Schannel_offdie p ref mname=channel_offdie\n"
+        "Vsrc src ref PULSE(0 1 100p 20p 20p 500p 1n)\n"
+        "Rsrc src p 50\n"
+        "Rload p ref 50\n"
+        ".tran 2p 2n\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+    native_transient = run(transient_deck)
+    command_line_transient = run(
+        ROOT / "native" / "AgentSpice.Engine" / "fixtures" / "rfm_tran.cir",
+        "--rfm",
+        source_rfm,
+    )
+
+    for index in (60, 310, 1000):
+        native_point = native_transient["points"][index]["values"]
+        assert native_point["p"] - native_point["ref"] == pytest.approx(
+            command_line_transient["points"][index]["values"]["p"],
+            abs=1e-12,
         )
 
 

@@ -17,6 +17,8 @@ Current executable slice:
   output voltage, including rejected-step rollback and source-breakpoint restart;
 - direct `VERSION 200600` RFM N-port parsing, S-to-Y OP/DC/AC stamping, and
   sparse Trap/Gear2 state-space TRAN companions;
+- native HSPICE `S` elements with per-port positive/negative node pairs and
+  `.model <name> S [N=...] RFMFILE='...'` model loading;
 - real and complex sparse LU through `faer`, with symbolic reuse, numeric-factor
   caching, compressed stamp replay, and parallel AC frequency blocks;
 - `PULSE`, inline `PWL`, and two-column HSPICE `PWL PWLFILE=...` transient

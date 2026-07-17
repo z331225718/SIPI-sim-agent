@@ -9,10 +9,10 @@ use crate::error::Result;
 const SUPPORTED_DIRECTIVES: &[&str] = &[
     ".ac", ".dc", ".elif", ".else", ".elseif", ".end", ".endif", ".endl", ".ends", ".global",
     ".if", ".inc", ".include", ".lib", ".meas", ".measure", ".op", ".option", ".options", ".param",
-    ".print", ".probe", ".subckt", ".temp", ".tran",
+    ".model", ".print", ".probe", ".subckt", ".temp", ".tran",
 ];
 
-const SUPPORTED_ELEMENTS: &[u8] = b"RCLVIEGFHX";
+const SUPPORTED_ELEMENTS: &[u8] = b"RCLVIEGFHXS";
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -147,7 +147,9 @@ impl Scanner {
                 self.add_issue(path, line_number, line, "unsupported_directive");
                 return Ok(());
             }
-            if matches!(directive.as_str(), ".inc" | ".include") {
+            if directive == ".model" && (tokens.len() < 3 || !tokens[2].eq_ignore_ascii_case("s")) {
+                self.add_issue(path, line_number, line, "unsupported_model");
+            } else if matches!(directive.as_str(), ".inc" | ".include") {
                 self.scan_dependency(path, line_number, line, tokens.get(1), None)?;
             } else if directive == ".lib" && tokens.len() >= 3 {
                 self.scan_dependency(

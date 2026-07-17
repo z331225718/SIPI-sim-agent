@@ -8,6 +8,7 @@ use faer::c64;
 
 use crate::error::{Error, Result};
 use crate::expression;
+use crate::rfm::RfmModel;
 
 pub type Node = Option<usize>;
 
@@ -243,7 +244,8 @@ pub enum Element {
     Rfm {
         name: String,
         ports: Vec<Node>,
-        reference: Node,
+        references: Vec<Node>,
+        model: Option<String>,
     },
 }
 
@@ -528,6 +530,7 @@ pub struct Deck {
     pub probes: HashMap<String, Vec<String>>,
     pub parameters: HashMap<String, f64>,
     pub measurements: Vec<Measurement>,
+    pub rfm_models: HashMap<String, RfmModel>,
 }
 
 impl Deck {
@@ -535,15 +538,28 @@ impl Deck {
         let path = path.canonicalize()?;
         let mut active = HashSet::new();
         let lines = expand_includes(&path, &mut active)?;
-        let lines = flatten_subcircuits(lines, rfm_binding.map(|(name, _)| name))?;
-        Self::parse(lines, rfm_binding)
+        let rfm_models = load_rfm_models(&lines)?;
+        let rfm_model_ports = rfm_models
+            .iter()
+            .map(|(name, model)| (name.clone(), model.nports))
+            .collect();
+        let lines =
+            flatten_subcircuits(lines, rfm_binding.map(|(name, _)| name), &rfm_model_ports)?;
+        let mut deck = Self::parse(lines, rfm_binding, rfm_model_ports)?;
+        deck.rfm_models = rfm_models;
+        Ok(deck)
     }
 
-    fn parse(lines: Vec<SourceLine>, rfm_binding: Option<(&str, usize)>) -> Result<Self> {
+    fn parse(
+        lines: Vec<SourceLine>,
+        rfm_binding: Option<(&str, usize)>,
+        rfm_model_ports: HashMap<String, usize>,
+    ) -> Result<Self> {
         let deck_source = lines.first().cloned();
         let mut parser = Parser {
             rfm_subcircuit: rfm_binding.map(|(name, _)| name.to_string()),
             rfm_nports: rfm_binding.map(|(_, nports)| nports),
+            rfm_model_ports,
             relative_tolerance: 1e-3,
             voltage_tolerance: 1e-6,
             current_tolerance: 1e-12,
@@ -722,6 +738,69 @@ fn enter_dependency(path: &Path, active: &mut HashSet<PathBuf>) -> Result<()> {
     Ok(())
 }
 
+fn load_rfm_models(lines: &[SourceLine]) -> Result<HashMap<String, RfmModel>> {
+    let mut models = HashMap::new();
+    for line in lines {
+        let text = strip_hspice_comment(&line.text).trim();
+        let tokens = tokenize(text);
+        if tokens.len() < 3
+            || !tokens[0].eq_ignore_ascii_case(".model")
+            || !tokens[2].eq_ignore_ascii_case("s")
+        {
+            continue;
+        }
+        let name = tokens[1].to_ascii_lowercase();
+        let mut rfm_file = None;
+        let mut declared_ports = None;
+        for (option, value) in
+            line.wrap(parse_assignments(&tokens[3..], ".model S option", false))?
+        {
+            match option.to_ascii_lowercase().as_str() {
+                "rfmfile" => rfm_file = Some(value),
+                "n" => {
+                    let value = line.wrap(parse_number(&value, &HashMap::new()))?;
+                    if value < 1.0 || value.fract() != 0.0 || value > usize::MAX as f64 {
+                        return Err(line.error(".model S N must be a positive integer"));
+                    }
+                    declared_ports = Some(value as usize);
+                }
+                _ => {
+                    return Err(line.error(format!("unsupported .model S option '{option}'")));
+                }
+            }
+        }
+        let rfm_file = rfm_file
+            .ok_or_else(|| line.error(format!(".model '{}' requires RFMFILE", tokens[1])))?;
+        let rfm_file = line.wrap(resolve_string_value(&rfm_file, &ParameterSet::default()))?;
+        let path = PathBuf::from(rfm_file);
+        let path = if path.is_absolute() {
+            path
+        } else {
+            let deck_relative = line.directory().join(&path);
+            if deck_relative.is_file() {
+                deck_relative
+            } else if path.is_file() {
+                path
+            } else {
+                deck_relative
+            }
+        };
+        let model = line.wrap(RfmModel::parse_file(&path))?;
+        if declared_ports.is_some_and(|ports| ports != model.nports) {
+            return Err(line.error(format!(
+                ".model '{}' declares N={}, but RFMFILE has NPORT {}",
+                tokens[1],
+                declared_ports.expect("declared port count exists"),
+                model.nports
+            )));
+        }
+        if models.insert(name, model).is_some() {
+            return Err(line.error(format!("duplicate .model definition '{}'", tokens[1])));
+        }
+    }
+    Ok(models)
+}
+
 #[derive(Debug, Clone)]
 struct Subcircuit {
     pins: Vec<String>,
@@ -892,6 +971,7 @@ fn preprocess_top_level_conditionals(lines: Vec<SourceLine>) -> Result<Vec<Sourc
 fn flatten_subcircuits(
     lines: Vec<SourceLine>,
     rfm_subcircuit: Option<&str>,
+    rfm_model_ports: &HashMap<String, usize>,
 ) -> Result<Vec<SourceLine>> {
     let lines = preprocess_top_level_conditionals(lines)?;
     if lines.is_empty() {
@@ -986,6 +1066,7 @@ fn flatten_subcircuits(
         definitions: &definitions,
         global_nodes: &global_nodes,
         rfm_subcircuit,
+        rfm_model_ports,
         active: Vec::new(),
     };
     let mut output = vec![top_level[0].clone()];
@@ -1025,6 +1106,7 @@ struct Flattener<'a> {
     definitions: &'a HashMap<String, Subcircuit>,
     global_nodes: &'a HashSet<String>,
     rfm_subcircuit: Option<&'a str>,
+    rfm_model_ports: &'a HashMap<String, usize>,
     active: Vec<String>,
 }
 
@@ -1094,14 +1176,26 @@ impl Flattener<'_> {
         if !scope.path.is_empty() {
             values[0] = qualify_element(&scope.path, &values[0]);
         }
-        let node_indices: &[usize] = match kind {
-            b'R' | b'C' | b'L' | b'V' | b'I' | b'F' | b'H' => &[1, 2],
-            b'E' | b'G' => &[1, 2, 3, 4],
-            _ => &[],
-        };
-        for index in node_indices {
-            if *index < values.len() {
-                values[*index] = self.map_node(&values[*index], scope);
+        if kind == b'S' {
+            let (model, node_end) = parse_s_instance_model(&values)?;
+            if !self.rfm_model_ports.contains_key(&model) {
+                return Err(Error::Parse(format!(
+                    "S-parameter model '{model}' was not found"
+                )));
+            }
+            for value in &mut values[1..node_end] {
+                *value = self.map_node(value, scope);
+            }
+        } else {
+            let node_indices: &[usize] = match kind {
+                b'R' | b'C' | b'L' | b'V' | b'I' | b'F' | b'H' => &[1, 2],
+                b'E' | b'G' => &[1, 2, 3, 4],
+                _ => &[],
+            };
+            for index in node_indices {
+                if *index < values.len() {
+                    values[*index] = self.map_node(&values[*index], scope);
+                }
             }
         }
         if matches!(kind, b'F' | b'H') && !scope.path.is_empty() && values.len() > 3 {
@@ -1291,6 +1385,28 @@ fn parse_assignments(
     Ok(assignments)
 }
 
+fn parse_s_instance_model(tokens: &[String]) -> Result<(String, usize)> {
+    let option_start = (1..tokens.len())
+        .find(|index| {
+            tokens[*index].eq_ignore_ascii_case("mname")
+                || tokens[*index]
+                    .split_once('=')
+                    .is_some_and(|(name, _)| name.eq_ignore_ascii_case("mname"))
+        })
+        .ok_or_else(|| Error::Parse("S-parameter instance requires MNAME=<model>".into()))?;
+    let assignments = parse_assignments(
+        &tokens[option_start..],
+        "S-parameter instance option",
+        false,
+    )?;
+    if assignments.len() != 1 || !assignments[0].0.eq_ignore_ascii_case("mname") {
+        return Err(Error::Parse(
+            "S-parameter instance supports only MNAME=<model>".into(),
+        ));
+    }
+    Ok((assignments[0].1.to_ascii_lowercase(), option_start))
+}
+
 fn update_parameters(tokens: &[String], parameters: &mut ParameterSet) -> Result<()> {
     for (name, expression_text) in parse_assignments(tokens, ".param assignment", false)? {
         parameters.assign(&name, &expression_text)?;
@@ -1373,6 +1489,7 @@ struct Parser {
     parameters: ParameterSet,
     rfm_subcircuit: Option<String>,
     rfm_nports: Option<usize>,
+    rfm_model_ports: HashMap<String, usize>,
     skipping_rfm_wrapper: bool,
     integration_method: IntegrationMethod,
     relative_tolerance: f64,
@@ -1395,7 +1512,7 @@ enum PendingElement {
     Vccs(String, Node, Node, Node, Node, f64),
     Cccs(String, Node, Node, String, f64),
     Ccvs(String, Node, Node, String, f64),
-    Rfm(String, Vec<Node>, Node),
+    Rfm(String, Vec<Node>, Vec<Node>, Option<String>),
 }
 
 impl Parser {
@@ -1536,6 +1653,28 @@ impl Parser {
                 };
                 self.elements.push(element);
             }
+            b'S' => {
+                let (model, node_end) = parse_s_instance_model(&tokens)?;
+                let nports = self.rfm_model_ports.get(&model).copied().ok_or_else(|| {
+                    Error::Parse(format!(
+                        "S-parameter model '{model}' was not found for '{name}'"
+                    ))
+                })?;
+                let node_tokens = &tokens[1..node_end];
+                if node_tokens.len() != nports * 2 {
+                    return Err(Error::Parse(format!(
+                        "S-parameter instance '{name}' requires {nports} positive/negative node pair(s) before MNAME"
+                    )));
+                }
+                let mut ports = Vec::with_capacity(nports);
+                let mut references = Vec::with_capacity(nports);
+                for pair in node_tokens.chunks_exact(2) {
+                    ports.push(self.node(&pair[0]));
+                    references.push(self.node(&pair[1]));
+                }
+                self.elements
+                    .push(PendingElement::Rfm(name, ports, references, Some(model)));
+            }
             b'X' => {
                 let subcircuit = self.rfm_subcircuit.as_ref().ok_or_else(|| {
                     Error::Parse(format!(
@@ -1556,8 +1695,12 @@ impl Parser {
                     .map(|token| self.node(token))
                     .collect();
                 let reference = self.node(&tokens[nports + 1]);
-                self.elements
-                    .push(PendingElement::Rfm(name, ports, reference));
+                self.elements.push(PendingElement::Rfm(
+                    name,
+                    ports,
+                    vec![reference; nports],
+                    None,
+                ));
             }
             kind => {
                 return Err(Error::Parse(format!(
@@ -1658,6 +1801,20 @@ impl Parser {
                         "resmin" => self.minimum_resistance = value,
                         _ => {}
                     }
+                }
+            }
+            ".model" => {
+                if tokens.len() < 2 || !tokens[1].eq_ignore_ascii_case("s") {
+                    return Err(Error::Parse("only .model <name> S is supported".into()));
+                }
+                if !self
+                    .rfm_model_ports
+                    .contains_key(&tokens[0].to_ascii_lowercase())
+                {
+                    return Err(Error::Parse(format!(
+                        ".model '{}' requires a valid RFMFILE",
+                        tokens[0]
+                    )));
                 }
             }
             ".print" | ".probe" => self.parse_probes(tokens),
@@ -1973,10 +2130,11 @@ impl Parser {
                         branch: branch_by_element[&index],
                     }
                 }
-                PendingElement::Rfm(name, ports, reference) => Element::Rfm {
+                PendingElement::Rfm(name, ports, references, model) => Element::Rfm {
                     name,
                     ports,
-                    reference,
+                    references,
+                    model,
                 },
             };
             elements.push(element);
@@ -1997,6 +2155,7 @@ impl Parser {
             probes: self.probes,
             parameters: numeric,
             measurements: self.measurements,
+            rfm_models: HashMap::new(),
         })
     }
 }

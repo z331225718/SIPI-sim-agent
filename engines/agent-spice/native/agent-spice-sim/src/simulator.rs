@@ -19,32 +19,29 @@ use crate::sparse::SymbolicCache;
 
 type AcSample = (f64, Vec<c64>);
 
+fn rfm_model<'a>(
+    deck: &'a Deck,
+    command_line_model: Option<&'a RfmModel>,
+    model_name: &Option<String>,
+) -> Result<&'a RfmModel> {
+    match model_name {
+        Some(name) => deck
+            .rfm_models
+            .get(name)
+            .ok_or_else(|| Error::InvalidDeck(format!("RFM model '{name}' was not loaded"))),
+        None => command_line_model
+            .ok_or_else(|| Error::InvalidDeck("RFM instance has no command-line model".into())),
+    }
+}
+
 pub fn run(deck: &Deck, rfm: Option<&RfmModel>) -> Result<SimulationResult> {
     let mut points = Vec::new();
     let mut statistics = SimulationStatistics::default();
     let mut real_cache = SymbolicCache::default();
-    let has_rfm = deck
-        .elements
-        .iter()
-        .any(|element| matches!(element, Element::Rfm { .. }));
-    let dc_rfm_admittance = if has_rfm {
-        Some(
-            rfm.ok_or_else(|| Error::InvalidDeck("RFM instance has no model".into()))?
-                .dc_admittance_real()?,
-        )
-    } else {
-        None
-    };
     for analysis in &deck.analyses {
         match analysis {
             Analysis::Op => {
-                let solution = solve_dc(
-                    deck,
-                    None,
-                    dc_rfm_admittance.as_deref(),
-                    &mut real_cache,
-                    &mut statistics,
-                )?;
+                let solution = solve_dc(deck, None, rfm, &mut real_cache, &mut statistics)?;
                 points.push(real_point(deck, "op", 0.0, &solution));
             }
             Analysis::Dc {
@@ -66,7 +63,7 @@ pub fn run(deck: &Deck, rfm: Option<&RfmModel>) -> Result<SimulationResult> {
                     let solution = solve_dc(
                         deck,
                         Some((source, value)),
-                        dc_rfm_admittance.as_deref(),
+                        rfm,
                         &mut real_cache,
                         &mut statistics,
                     )?;
@@ -93,7 +90,6 @@ pub fn run(deck: &Deck, rfm: Option<&RfmModel>) -> Result<SimulationResult> {
                 points.extend(run_transient(
                     deck,
                     rfm,
-                    dc_rfm_admittance.as_deref(),
                     *step,
                     *stop,
                     &mut real_cache,
@@ -571,7 +567,7 @@ fn solve_ac_sweep(
 fn solve_dc(
     deck: &Deck,
     sweep: Option<(&str, f64)>,
-    rfm_admittance: Option<&[f64]>,
+    rfm: Option<&RfmModel>,
     cache: &mut SymbolicCache,
     statistics: &mut SimulationStatistics,
 ) -> Result<Vec<f64>> {
@@ -609,6 +605,7 @@ fn solve_dc(
     }
     let mut matrix = Vec::new();
     let mut rhs = vec![0.0; deck.unknown_count];
+    let mut rfm_admittances = HashMap::new();
     for element in &deck.elements {
         match element {
             Element::Resistor {
@@ -720,17 +717,26 @@ fn solve_dc(
                 *transresistance,
             ),
             Element::Rfm {
-                ports, reference, ..
-            } => stamp_nport_real(
-                &mut matrix,
-                &mut rhs,
                 ports,
-                *reference,
-                rfm_admittance.ok_or_else(|| {
-                    Error::InvalidDeck("RFM instance has no DC admittance".into())
-                })?,
-                None,
-            ),
+                references,
+                model,
+                ..
+            } => {
+                if !rfm_admittances.contains_key(model) {
+                    rfm_admittances.insert(
+                        model.clone(),
+                        rfm_model(deck, rfm, model)?.dc_admittance_real()?,
+                    );
+                }
+                stamp_nport_real(
+                    &mut matrix,
+                    &mut rhs,
+                    ports,
+                    references,
+                    &rfm_admittances[model],
+                    None,
+                );
+            }
         }
     }
     let (solution, symbolic, numeric) =
@@ -749,18 +755,7 @@ fn solve_ac(
     let omega = 2.0 * PI * frequency;
     let mut matrix = Vec::new();
     let mut rhs = vec![c64::new(0.0, 0.0); deck.unknown_count];
-    let has_rfm = deck
-        .elements
-        .iter()
-        .any(|element| matches!(element, Element::Rfm { .. }));
-    let rfm_admittance = if has_rfm {
-        Some(
-            rfm.ok_or_else(|| Error::InvalidDeck("RFM instance has no model".into()))?
-                .admittance(c64::new(0.0, omega))?,
-        )
-    } else {
-        None
-    };
+    let mut rfm_admittances = HashMap::new();
     for element in &deck.elements {
         match element {
             Element::Resistor {
@@ -876,15 +871,19 @@ fn solve_ac(
                 *transresistance,
             ),
             Element::Rfm {
-                ports, reference, ..
-            } => stamp_nport_complex(
-                &mut matrix,
                 ports,
-                *reference,
-                rfm_admittance.as_deref().ok_or_else(|| {
-                    Error::InvalidDeck("RFM instance has no AC admittance".into())
-                })?,
-            ),
+                references,
+                model,
+                ..
+            } => {
+                if !rfm_admittances.contains_key(model) {
+                    rfm_admittances.insert(
+                        model.clone(),
+                        rfm_model(deck, rfm, model)?.admittance(c64::new(0.0, omega))?,
+                    );
+                }
+                stamp_nport_complex(&mut matrix, ports, references, &rfm_admittances[model]);
+            }
         }
     }
     cache.solve_complex(deck.unknown_count, &matrix, &rhs)
@@ -916,13 +915,12 @@ struct InductorState {
 fn run_transient(
     deck: &Deck,
     rfm: Option<&RfmModel>,
-    dc_rfm_admittance: Option<&[f64]>,
     step: f64,
     stop: f64,
     cache: &mut SymbolicCache,
     statistics: &mut SimulationStatistics,
 ) -> Result<Vec<SimulationPoint>> {
-    let initial = solve_dc(deck, None, dc_rfm_admittance, cache, statistics)?;
+    let initial = solve_dc(deck, None, rfm, cache, statistics)?;
     let mut state = DynamicState::default();
     for element in &deck.elements {
         match element {
@@ -959,12 +957,12 @@ fn run_transient(
             Element::Rfm {
                 name,
                 ports,
-                reference,
+                references,
+                model,
             } => {
-                let model =
-                    rfm.ok_or_else(|| Error::InvalidDeck("RFM instance has no model".into()))?;
+                let model = rfm_model(deck, rfm, model)?;
                 let mut rfm_state = model.create_state();
-                let port_voltages = port_voltages(&initial, ports, *reference);
+                let port_voltages = port_voltages(&initial, ports, references);
                 model.initialize_dc(&mut rfm_state, &port_voltages)?;
                 state.rfm.insert(name.clone(), rfm_state);
             }
@@ -1185,10 +1183,10 @@ fn run_transient(
                 Element::Rfm {
                     name,
                     ports,
-                    reference,
+                    references,
+                    model,
                 } => {
-                    let model =
-                        rfm.ok_or_else(|| Error::InvalidDeck("RFM instance has no model".into()))?;
+                    let model = rfm_model(deck, rfm, model)?;
                     let rfm_state = state.rfm.get_mut(name).ok_or_else(|| {
                         Error::InvalidDeck(format!("RFM state for '{name}' was not initialized"))
                     })?;
@@ -1201,7 +1199,7 @@ fn run_transient(
                         &mut matrix,
                         &mut rhs,
                         ports,
-                        *reference,
+                        references,
                         rfm_state.conductance(),
                         Some(rfm_state.offset()),
                     );
@@ -1239,17 +1237,17 @@ fn run_transient(
             if let Element::Rfm {
                 name,
                 ports,
-                reference,
+                references,
+                model,
             } = element
             {
-                let model =
-                    rfm.ok_or_else(|| Error::InvalidDeck("RFM instance has no model".into()))?;
-                let voltages = port_voltages(&solution, ports, *reference);
+                let rfm_model = rfm_model(deck, rfm, model)?;
+                let voltages = port_voltages(&solution, ports, references);
                 let mut candidate = state.rfm.get(name).cloned().ok_or_else(|| {
                     Error::InvalidDeck(format!("RFM state for '{name}' was not initialized"))
                 })?;
-                model.commit(&mut candidate, &voltages);
-                rfm_candidates.push((name.clone(), candidate));
+                rfm_model.commit(&mut candidate, &voltages);
+                rfm_candidates.push((name.clone(), model.clone(), candidate));
             }
         }
 
@@ -1326,7 +1324,7 @@ fn run_transient(
                 },
             );
         }
-        for (name, candidate) in rfm_candidates {
+        for (name, _, candidate) in rfm_candidates {
             state.rfm.insert(name, candidate);
         }
         if reaches_output {
@@ -1369,7 +1367,7 @@ fn transient_truncation_error_ratio(
     state: &DynamicState,
     capacitor_candidates: &[(String, f64, f64, f64)],
     inductor_candidates: &[(String, f64, f64, f64)],
-    rfm_candidates: &mut [(String, RfmState)],
+    rfm_candidates: &mut [(String, Option<String>, RfmState)],
     h0: f64,
     h1: f64,
     h2: f64,
@@ -1452,8 +1450,8 @@ fn transient_truncation_error_ratio(
         ));
     }
     if !rfm_candidates.is_empty() {
-        let model = rfm.ok_or_else(|| Error::InvalidDeck("RFM instance has no model".into()))?;
-        for (name, candidate) in rfm_candidates {
+        for (name, model_name, candidate) in rfm_candidates {
+            let model = rfm_model(deck, rfm, model_name)?;
             let previous = state.rfm.get(name).ok_or_else(|| {
                 Error::InvalidDeck(format!("RFM state for '{name}' was not initialized"))
             })?;
@@ -1546,12 +1544,14 @@ fn stamp_nport_real(
     matrix: &mut Vec<Triplet<usize, usize, f64>>,
     rhs: &mut [f64],
     ports: &[Node],
-    reference: Node,
+    references: &[Node],
     admittance: &[f64],
     offset: Option<&[f64]>,
 ) {
     debug_assert_eq!(admittance.len(), ports.len() * ports.len());
+    debug_assert_eq!(references.len(), ports.len());
     for (row, positive_row) in ports.iter().enumerate() {
+        let negative_row = references[row];
         for (column, positive_column) in ports.iter().enumerate() {
             let value = admittance[row * ports.len() + column];
             if value == 0.0 {
@@ -1560,14 +1560,14 @@ fn stamp_nport_real(
             stamp_vccs_real(
                 matrix,
                 *positive_row,
-                reference,
+                negative_row,
                 *positive_column,
-                reference,
+                references[column],
                 value,
             );
         }
         if let Some(offset) = offset {
-            stamp_current_real(rhs, *positive_row, reference, offset[row]);
+            stamp_current_real(rhs, *positive_row, negative_row, offset[row]);
         }
     }
 }
@@ -1575,28 +1575,25 @@ fn stamp_nport_real(
 fn stamp_nport_complex(
     matrix: &mut Vec<Triplet<usize, usize, c64>>,
     ports: &[Node],
-    reference: Node,
+    references: &[Node],
     admittance: &[c64],
 ) {
     debug_assert_eq!(admittance.len(), ports.len() * ports.len());
+    debug_assert_eq!(references.len(), ports.len());
     for (row, positive_row) in ports.iter().enumerate() {
         for (column, positive_column) in ports.iter().enumerate() {
             let value = admittance[row * ports.len() + column];
             if value == c64::new(0.0, 0.0) {
                 continue;
             }
-            if let (Some(row), Some(column)) = (*positive_row, *positive_column) {
-                matrix.push(Triplet::new(row, column, value));
-            }
-            if let (Some(row), Some(column)) = (*positive_row, reference) {
-                matrix.push(Triplet::new(row, column, -value));
-            }
-            if let (Some(row), Some(column)) = (reference, *positive_column) {
-                matrix.push(Triplet::new(row, column, -value));
-            }
-            if let Some(reference) = reference {
-                matrix.push(Triplet::new(reference, reference, value));
-            }
+            stamp_vccs_value_complex(
+                matrix,
+                *positive_row,
+                references[row],
+                *positive_column,
+                references[column],
+                value,
+            );
         }
     }
 }
@@ -1773,7 +1770,24 @@ fn stamp_vccs_complex(
     control_negative: Node,
     transconductance: f64,
 ) {
-    let transconductance = c64::new(transconductance, 0.0);
+    stamp_vccs_value_complex(
+        matrix,
+        positive,
+        negative,
+        control_positive,
+        control_negative,
+        c64::new(transconductance, 0.0),
+    );
+}
+
+fn stamp_vccs_value_complex(
+    matrix: &mut Vec<Triplet<usize, usize, c64>>,
+    positive: Node,
+    negative: Node,
+    control_positive: Node,
+    control_negative: Node,
+    transconductance: c64,
+) {
     if let (Some(row), Some(column)) = (positive, control_positive) {
         matrix.push(Triplet::new(row, column, transconductance));
     }
@@ -1923,11 +1937,12 @@ fn node_voltage(solution: &[f64], node: Node) -> f64 {
     node.map_or(0.0, |index| solution[index])
 }
 
-fn port_voltages(solution: &[f64], ports: &[Node], reference: Node) -> Vec<f64> {
-    let reference = node_voltage(solution, reference);
+fn port_voltages(solution: &[f64], ports: &[Node], references: &[Node]) -> Vec<f64> {
+    debug_assert_eq!(references.len(), ports.len());
     ports
         .iter()
-        .map(|port| node_voltage(solution, *port) - reference)
+        .zip(references)
+        .map(|(port, reference)| node_voltage(solution, *port) - node_voltage(solution, *reference))
         .collect()
 }
 
