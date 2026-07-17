@@ -5,6 +5,7 @@ import math
 from pathlib import Path
 import shutil
 import subprocess
+import time
 
 import pytest
 
@@ -26,6 +27,95 @@ def run(deck: Path, *arguments: str | Path) -> dict:
         check=True,
     )
     return json.loads(completed.stdout)
+
+
+def test_rust_engine_reports_progress_and_writes_final_streamed_waveform(
+    tmp_path: Path,
+) -> None:
+    deck = tmp_path / "live_output.sp"
+    result_json = tmp_path / "result.json"
+    waveform_csv = tmp_path / "waveform.csv"
+    deck.write_text(
+        "live output\n"
+        "V1 out 0 1\n"
+        "R1 out 0 1k\n"
+        ".probe tran v(out)\n"
+        ".tran 1n 10n\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        [
+            str(ENGINE),
+            str(deck),
+            "--output-json",
+            str(result_json),
+            "--waveform-csv",
+            str(waveform_csv),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    assert json.loads(completed.stdout) == {"ok": True, "waveformRows": 11}
+    assert result_json.is_file()
+    assert len(waveform_csv.read_text(encoding="utf-8").splitlines()) == 12
+    assert "TRAN started: 11 output point(s)" in completed.stderr
+    assert "TRAN 11/11 (100.0%)" in completed.stderr
+    assert "simulation completed" in completed.stderr
+
+
+def test_rust_engine_flushes_waveform_while_transient_is_running(
+    tmp_path: Path,
+) -> None:
+    deck = tmp_path / "interruptible.sp"
+    result_json = tmp_path / "result.json"
+    waveform_csv = tmp_path / "waveform.csv"
+    deck.write_text(
+        "interruptible live output\n"
+        "V1 out 0 1\n"
+        "R1 out 0 1k\n"
+        ".probe tran v(out)\n"
+        ".tran 1p 10u\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+    process = subprocess.Popen(
+        [
+            str(ENGINE),
+            str(deck),
+            "--output-json",
+            str(result_json),
+            "--waveform-csv",
+            str(waveform_csv),
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    live_lines = []
+    try:
+        deadline = time.monotonic() + 10.0
+        while time.monotonic() < deadline:
+            if waveform_csv.is_file() and waveform_csv.stat().st_size > 1024:
+                live_lines = waveform_csv.read_text(encoding="utf-8").splitlines()
+                if len(live_lines) > 10:
+                    break
+            assert process.poll() is None, "simulation completed before live output was observed"
+            time.sleep(0.02)
+        assert len(live_lines) > 10, "waveform CSV was not flushed during simulation"
+        assert process.poll() is None
+    finally:
+        if process.poll() is None:
+            process.terminate()
+        _, stderr = process.communicate(timeout=10)
+
+    assert live_lines[0].startswith("time,")
+    assert not result_json.exists()
+    assert "streaming waveform CSV" in stderr
+    assert "TRAN started" in stderr
 
 
 def test_rust_engine_operating_point_and_dc_sweep() -> None:

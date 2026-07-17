@@ -19,6 +19,31 @@ use crate::sparse::SymbolicCache;
 
 type AcSample = (f64, Vec<c64>);
 
+pub trait SimulationObserver {
+    fn analysis_started(&mut self, _analysis: &str, _total_points: usize) -> Result<()> {
+        Ok(())
+    }
+
+    fn point(
+        &mut self,
+        _point: &SimulationPoint,
+        _index: usize,
+        _total_points: usize,
+        _statistics: &SimulationStatistics,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    fn analysis_finished(
+        &mut self,
+        _analysis: &str,
+        _total_points: usize,
+        _statistics: &SimulationStatistics,
+    ) -> Result<()> {
+        Ok(())
+    }
+}
+
 fn rfm_model<'a>(
     deck: &'a Deck,
     command_line_model: Option<&'a RfmModel>,
@@ -34,15 +59,23 @@ fn rfm_model<'a>(
     }
 }
 
-pub fn run(deck: &Deck, rfm: Option<&RfmModel>) -> Result<SimulationResult> {
+pub fn run_with_observer(
+    deck: &Deck,
+    rfm: Option<&RfmModel>,
+    observer: &mut dyn SimulationObserver,
+) -> Result<SimulationResult> {
     let mut points = Vec::new();
     let mut statistics = SimulationStatistics::default();
     let mut real_cache = SymbolicCache::default();
     for analysis in &deck.analyses {
         match analysis {
             Analysis::Op => {
+                observer.analysis_started("op", 1)?;
                 let solution = solve_dc(deck, None, rfm, &mut real_cache, &mut statistics)?;
-                points.push(real_point(deck, "op", 0.0, &solution));
+                let point = real_point(deck, "op", 0.0, &solution);
+                observer.point(&point, 1, 1, &statistics)?;
+                points.push(point);
+                observer.analysis_finished("op", 1, &statistics)?;
             }
             Analysis::Dc {
                 source,
@@ -58,7 +91,10 @@ pub fn run(deck: &Deck, rfm: Option<&RfmModel>) -> Result<SimulationResult> {
                         ".dc source '{source}' was not found"
                     )));
                 }
+                let total_points = dc_output_count(*start, *stop, *step);
+                observer.analysis_started("dc", total_points)?;
                 let mut value = *start;
+                let mut index = 0usize;
                 while reached(value, *stop, *step) {
                     let solution = solve_dc(
                         deck,
@@ -67,9 +103,13 @@ pub fn run(deck: &Deck, rfm: Option<&RfmModel>) -> Result<SimulationResult> {
                         &mut real_cache,
                         &mut statistics,
                     )?;
-                    points.push(real_point(deck, "dc", value, &solution));
+                    let point = real_point(deck, "dc", value, &solution);
+                    index += 1;
+                    observer.point(&point, index, total_points, &statistics)?;
+                    points.push(point);
                     value += step;
                 }
+                observer.analysis_finished("dc", index, &statistics)?;
             }
             Analysis::Ac {
                 scale,
@@ -78,15 +118,22 @@ pub fn run(deck: &Deck, rfm: Option<&RfmModel>) -> Result<SimulationResult> {
                 stop,
             } => {
                 let frequencies = frequencies(*scale, *point_count, *start, *stop);
+                let total_points = frequencies.len();
+                observer.analysis_started("ac", total_points)?;
                 let (samples, symbolic_factorizations) = solve_ac_sweep(deck, rfm, &frequencies)?;
                 statistics.sparse_numeric_refactorizations += samples.len();
                 statistics.sparse_symbolic_factorizations += symbolic_factorizations;
                 statistics.ac_matrix_assembly_replays += samples.len();
-                for (frequency, solution) in samples {
-                    points.push(complex_point(deck, frequency, &solution));
+                for (index, (frequency, solution)) in samples.into_iter().enumerate() {
+                    let point = complex_point(deck, frequency, &solution);
+                    observer.point(&point, index + 1, total_points, &statistics)?;
+                    points.push(point);
                 }
+                observer.analysis_finished("ac", total_points, &statistics)?;
             }
             Analysis::Tran { step, stop } => {
+                let total_points = transient_output_count(*step, *stop);
+                observer.analysis_started("tran", total_points)?;
                 points.extend(run_transient(
                     deck,
                     rfm,
@@ -94,7 +141,9 @@ pub fn run(deck: &Deck, rfm: Option<&RfmModel>) -> Result<SimulationResult> {
                     *stop,
                     &mut real_cache,
                     &mut statistics,
+                    observer,
                 )?);
+                observer.analysis_finished("tran", total_points, &statistics)?;
             }
         }
     }
@@ -919,7 +968,9 @@ fn run_transient(
     stop: f64,
     cache: &mut SymbolicCache,
     statistics: &mut SimulationStatistics,
+    observer: &mut dyn SimulationObserver,
 ) -> Result<Vec<SimulationPoint>> {
+    let total_points = transient_output_count(step, stop);
     let initial = solve_dc(deck, None, rfm, cache, statistics)?;
     let mut state = DynamicState::default();
     for element in &deck.elements {
@@ -969,7 +1020,9 @@ fn run_transient(
             _ => {}
         }
     }
-    let mut result = vec![real_point(deck, "tran", 0.0, &initial)];
+    let initial_point = real_point(deck, "tran", 0.0, &initial);
+    observer.point(&initial_point, 1, total_points, statistics)?;
+    let mut result = vec![initial_point];
     let mut first_step = true;
     let mut restart_integration = false;
     let mut previous_time = 0.0;
@@ -1327,14 +1380,16 @@ fn run_transient(
         for (name, _, candidate) in rfm_candidates {
             state.rfm.insert(name, candidate);
         }
-        if reaches_output {
-            result.push(real_point(deck, "tran", output_time, &solution));
-            output_index += 1;
-        }
         statistics.accepted_transient_steps += 1;
         statistics.fixed_transient_steps +=
             usize::from((actual_step - step).abs() <= time_tolerance && !breakpoint_hit);
         statistics.breakpoint_transient_steps += usize::from(breakpoint_hit);
+        if reaches_output {
+            let point = real_point(deck, "tran", output_time, &solution);
+            observer.point(&point, output_index + 1, total_points, statistics)?;
+            result.push(point);
+            output_index += 1;
+        }
         first_step = false;
         restart_integration = breakpoint_hit;
         accepted_history_depth = if breakpoint_hit {
@@ -1965,6 +2020,18 @@ fn reached(value: f64, stop: f64, step: f64) -> bool {
     } else {
         value >= stop - step.abs() * 1e-9
     }
+}
+
+fn dc_output_count(start: f64, stop: f64, step: f64) -> usize {
+    (((stop - start) / step + 1e-9).floor().max(0.0) as usize).saturating_add(1)
+}
+
+fn transient_output_count(step: f64, stop: f64) -> usize {
+    let complete_steps = (stop / step).floor().max(0.0) as usize;
+    let last_grid_time = complete_steps as f64 * step;
+    1usize
+        .saturating_add(complete_steps)
+        .saturating_add(usize::from((last_grid_time - stop).abs() > step * 1e-9))
 }
 
 fn frequencies(scale: AcScale, points: usize, start: f64, stop: f64) -> Vec<f64> {

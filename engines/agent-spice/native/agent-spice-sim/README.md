@@ -33,7 +33,8 @@ Current executable slice:
   real/imaginary/magnitude/phase targets;
 - JSON output compatible with the existing Python/native result shape, plus
   direct `native_result.json` and waveform CSV output for `run-rfm` and
-  `run-hspice`.
+  `run-hspice`; simulation progress is printed to stderr and waveform CSV rows
+  are flushed while the selected analysis is still running.
 
 Build and run on Windows:
 
@@ -42,11 +43,18 @@ tools\build-rust-engine.ps1
 native\agent-spice-sim\target\release\agent-spice-sim.exe tests\fixtures\hspice\rust_linear_pi.sp
 native\agent-spice-sim\target\release\agent-spice-sim.exe `
   native\AgentSpice.Engine\fixtures\rfm_tran.cir `
-  --rfm native\AgentSpice.Engine\fixtures\one_port.rfm
+  --rfm native\AgentSpice.Engine\fixtures\one_port.rfm `
+  --output-json native-result.json `
+  --waveform-csv waveform.csv
 
 native\agent-spice-sim\target\release\agent-spice-sim.exe legacy.sp `
   --audit-json native_compatibility.json
 ```
+
+Progress remains visible in the terminal because it uses stderr, while stdout
+keeps its machine-readable JSON contract. `waveform.csv` is readable during a
+long simulation and retains its flushed rows after `Ctrl+C`; the final JSON is
+written only after a successful completion.
 
 Netlist parse and parameter errors include the absolute source path, physical line number,
 original statement, and the expanded statement when a subcircuit rewrite changed it.

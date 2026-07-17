@@ -12,6 +12,7 @@ use std::env;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::PathBuf;
+use std::time::Instant;
 
 use error::{Error, Result};
 
@@ -23,6 +24,7 @@ fn main() {
 }
 
 fn run() -> Result<()> {
+    let started = Instant::now();
     let mut arguments = env::args_os().skip(1);
     let deck = arguments
         .next()
@@ -96,6 +98,7 @@ fn run() -> Result<()> {
         return Ok(());
     }
 
+    eprintln!("[agent-spice-sim] loading deck: {}", deck.display());
     let rfm = rfm_path
         .as_deref()
         .map(rfm::RfmModel::parse_file)
@@ -104,18 +107,35 @@ fn run() -> Result<()> {
         .as_ref()
         .map(|model| (rfm_subcircuit.as_str(), model.nports));
     let deck = netlist::Deck::parse_file(&deck, binding)?;
-    let result = simulator::run(&deck, rfm.as_ref())?;
-    if let Some(output_json) = output_json {
-        output::write_json(&result, &output_json)?;
-        let waveform_rows = waveform_csv
-            .as_deref()
-            .map(|path| output::write_waveform(&result, path))
-            .transpose()?
-            .unwrap_or(0);
+    eprintln!(
+        "[agent-spice-sim] parsed: {} element(s), {} node(s), {} analysis job(s)",
+        deck.elements.len(),
+        deck.nodes.len(),
+        deck.analyses.len()
+    );
+    if let Some(path) = waveform_csv.as_deref() {
+        eprintln!(
+            "[agent-spice-sim] streaming waveform CSV: {}",
+            path.display()
+        );
+    }
+    let mut observer = output::RuntimeObserver::new(waveform_csv.as_deref(), &deck.analyses)?;
+    let result = simulator::run_with_observer(&deck, rfm.as_ref(), &mut observer)?;
+    let waveform_rows = observer.finish()?;
+    if let Some(output_json) = output_json.as_deref() {
+        output::write_json(&result, output_json)?;
+        eprintln!(
+            "[agent-spice-sim] wrote final JSON: {}",
+            output_json.display()
+        );
         println!(r#"{{"ok":true,"waveformRows":{waveform_rows}}}"#);
     } else {
         println!("{}", serde_json::to_string(&result)?);
     }
+    eprintln!(
+        "[agent-spice-sim] simulation completed in {:.3}s",
+        started.elapsed().as_secs_f64()
+    );
     Ok(())
 }
 
