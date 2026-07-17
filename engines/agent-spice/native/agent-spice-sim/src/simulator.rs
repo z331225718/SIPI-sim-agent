@@ -1648,11 +1648,9 @@ fn quantize_transient_step(step: f64, maximum_step: f64) -> f64 {
     if step >= maximum_step {
         return maximum_step;
     }
-    const LEVELS_PER_OCTAVE: f64 = 4.0;
-    let level = (LEVELS_PER_OCTAVE * (maximum_step / step).log2() - 1e-12)
-        .ceil()
-        .max(0.0);
-    maximum_step * 2.0_f64.powf(-level / LEVELS_PER_OCTAVE)
+    // Dyadic levels keep output-grid fragments on a small set of reusable LU factors.
+    let level = ((maximum_step / step).log2() - 1e-12).ceil().max(0.0);
+    maximum_step * 2.0_f64.powf(-level)
 }
 
 fn stamp_nport_real(

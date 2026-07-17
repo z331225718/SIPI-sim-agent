@@ -150,6 +150,34 @@ def test_rust_engine_streams_waveform_without_full_json(tmp_path: Path) -> None:
     assert "full waveform points are not retained" in completed.stderr
 
 
+def test_rust_engine_reuses_dyadic_transient_factors(tmp_path: Path) -> None:
+    deck = tmp_path / "factor_cache.sp"
+    waveform_csv = tmp_path / "waveform.csv"
+    deck.write_text(
+        "Transient factor cache regression\n"
+        "Vdrive supply 0 PULSE(0 1 0 0.2n 0.2n 40n 100n)\n"
+        "L1 supply n1 1n\n"
+        "R1 n1 n2 10m\n"
+        "C1 n2 0 100p\n"
+        "L2 n2 n3 2n\n"
+        "R2 n3 n4 20m\n"
+        "C2 n4 0 200p\n"
+        "Rload n4 0 2\n"
+        ".tran 1n 100n\n"
+        ".probe tran v(n2) v(n4)\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+
+    result = run(deck, "--waveform-csv", waveform_csv)
+
+    assert result["waveformRows"] == 101
+    statistics = result["statistics"]
+    assert statistics["acceptedTransientSteps"] > 100
+    assert statistics["sparseSymbolicFactorizations"] == 1
+    assert statistics["sparseNumericRefactorizations"] <= 32
+
+
 def test_rust_engine_operating_point_and_dc_sweep() -> None:
     result = run(ROOT / "native" / "AgentSpice.Engine" / "fixtures" / "divider.cir")
     operating_point = result["points"][0]

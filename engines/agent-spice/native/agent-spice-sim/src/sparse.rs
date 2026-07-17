@@ -36,12 +36,15 @@ impl SymbolicCache {
         self.real_value_scratch.clear();
         self.real_value_scratch
             .extend(entries.iter().map(|entry| entry.val.to_bits()));
-        if let Some(cached) = self
+        if let Some(index) = self
             .real_factors
             .iter()
-            .find(|cached| cached.values == self.real_value_scratch)
+            .position(|cached| cached.values == self.real_value_scratch)
         {
-            return Ok((solve_factor(&cached.factor, n, rhs), false, false));
+            let cached = self.real_factors.remove(index);
+            let solution = solve_factor(&cached.factor, n, rhs);
+            self.real_factors.push(cached);
+            return Ok((solution, false, false));
         }
         let matrix = SparseColMat::<usize, f64>::try_new_from_triplets(n, n, entries)
             .map_err(|error| Error::Sparse(error.to_string()))?;
@@ -58,7 +61,14 @@ impl SymbolicCache {
         let factor = Lu::try_new_with_symbolic(symbolic, matrix.as_ref())
             .map_err(|error| Error::Sparse(error.to_string()))?;
         let solution = solve_factor(&factor, n, rhs);
-        if self.real_factors.len() == 8 {
+        let factor_capacity = if n <= 512 {
+            32
+        } else if n <= 2_048 {
+            16
+        } else {
+            8
+        };
+        if self.real_factors.len() >= factor_capacity {
             self.real_factors.remove(0);
         }
         self.real_factors.push(RealFactor {

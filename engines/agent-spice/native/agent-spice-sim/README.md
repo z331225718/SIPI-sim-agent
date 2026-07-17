@@ -81,6 +81,10 @@ python scripts\compare_rust_hspice_measure_events.py `
 python scripts\compare_rust_hspice_rfm.py `
   --rust-engine native\agent-spice-sim\target\release\agent-spice-sim.exe `
   --output artifacts\rust-hspice-rfm-final
+
+python scripts\benchmark_native_hspice_rfm.py `
+  --native-engine native\agent-spice-sim\target\release\agent-spice-sim.exe `
+  --output artifacts\native-hspice-rfm-performance
 ```
 
 Run an ordinary HSPICE-style PI deck through the project-owned engine:
