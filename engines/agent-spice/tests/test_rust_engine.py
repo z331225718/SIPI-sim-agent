@@ -709,6 +709,62 @@ def test_rust_engine_runs_hspice_s_model_with_relative_rfmfile(
         )
 
 
+def test_rust_engine_accepts_hspice_s_model_common_reference_ports(
+    tmp_path: Path,
+) -> None:
+    blocks = []
+    for row in range(1, 3):
+        for column in range(1, 3):
+            constant = 0.1 if row == column else 0.0
+            blocks.extend(
+                (
+                    f"BEGIN {row} {column}",
+                    f"CONST {constant:.12e}",
+                    "C 0.000000000000e+00",
+                    "DELAY 0.000000000000e+00",
+                    "BEGIN_REAL 0",
+                    "BEGIN_COMPLEX 0",
+                    "END",
+                )
+            )
+    (tmp_path / "two_port.rfm").write_text(
+        "\n".join(
+            (
+                "VERSION 200600",
+                "NPORT 2",
+                "MATRIX_TYPE S",
+                "Z0 5.000000000000e+01",
+                *blocks,
+                "",
+            )
+        ),
+        encoding="ascii",
+    )
+
+    def write_deck(path: Path, s_nodes: str) -> None:
+        path.write_text(
+            "HSPICE two-port common reference\n"
+            ".model channel s n=2 rfmfile='two_port.rfm'\n"
+            "Vdrive p1 0 AC 1\n"
+            f"Schannel {s_nodes} mname=channel\n"
+            ".ac lin 1 1g 1g\n"
+            ".end\n",
+            encoding="utf-8",
+        )
+
+    paired = tmp_path / "paired.sp"
+    common = tmp_path / "common.sp"
+    write_deck(paired, "p1 0 p2 0")
+    write_deck(common, "p1 p2 0")
+
+    paired_result = run(paired)
+    common_result = run(common)
+
+    assert common_result["points"][0]["complex"]["Vdrive"] == pytest.approx(
+        paired_result["points"][0]["complex"]["Vdrive"]
+    )
+
+
 def test_rust_engine_rfm_gear2_matches_migration_oracle() -> None:
     rfm = ROOT / "native" / "AgentSpice.Engine" / "fixtures" / "one_port.rfm"
     result = run(

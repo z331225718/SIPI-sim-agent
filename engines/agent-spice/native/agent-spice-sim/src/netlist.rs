@@ -1661,17 +1661,26 @@ impl Parser {
                     ))
                 })?;
                 let node_tokens = &tokens[1..node_end];
-                if node_tokens.len() != nports * 2 {
+                let (ports, references) = if node_tokens.len() == nports * 2 {
+                    let mut ports = Vec::with_capacity(nports);
+                    let mut references = Vec::with_capacity(nports);
+                    for pair in node_tokens.chunks_exact(2) {
+                        ports.push(self.node(&pair[0]));
+                        references.push(self.node(&pair[1]));
+                    }
+                    (ports, references)
+                } else if node_tokens.len() == nports + 1 {
+                    let ports = node_tokens[..nports]
+                        .iter()
+                        .map(|token| self.node(token))
+                        .collect();
+                    let reference = self.node(&node_tokens[nports]);
+                    (ports, vec![reference; nports])
+                } else {
                     return Err(Error::Parse(format!(
-                        "S-parameter instance '{name}' requires {nports} positive/negative node pair(s) before MNAME"
+                        "S-parameter instance '{name}' requires either {nports} positive/negative node pair(s), or {nports} port nodes plus one common reference, before MNAME"
                     )));
-                }
-                let mut ports = Vec::with_capacity(nports);
-                let mut references = Vec::with_capacity(nports);
-                for pair in node_tokens.chunks_exact(2) {
-                    ports.push(self.node(&pair[0]));
-                    references.push(self.node(&pair[1]));
-                }
+                };
                 self.elements
                     .push(PendingElement::Rfm(name, ports, references, Some(model)));
             }
