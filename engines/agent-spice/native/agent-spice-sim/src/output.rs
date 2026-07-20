@@ -119,7 +119,7 @@ impl SimulationObserver for RuntimeObserver {
 
 impl RuntimeObserver {
     fn draw_transient_progress(&mut self, index: usize, total_points: usize, percent: f64) {
-        const WIDTH: usize = 28;
+        const WIDTH: usize = 20;
         let fraction = if total_points <= 1 {
             1.0
         } else {
@@ -140,9 +140,9 @@ impl RuntimeObserver {
         );
         let mut stderr = io::stderr().lock();
         if index == total_points {
-            let _ = writeln!(stderr, "\r{line:<140}");
+            let _ = writeln!(stderr, "\x1b[2K\r{line}");
         } else {
-            let _ = write!(stderr, "\r{line:<140}");
+            let _ = write!(stderr, "\x1b[2K\r{line}");
         }
         let _ = stderr.flush();
     }
