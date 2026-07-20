@@ -14,12 +14,29 @@ pub struct SymbolicCache {
     complex_matrix: Option<SparseColMat<usize, c64>>,
     complex_entry_slots: Vec<usize>,
     real_factors: Vec<RealFactor>,
-    real_value_scratch: Vec<u64>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransientMatrixKey {
+    BackwardEuler {
+        step_bits: u64,
+    },
+    Gear2 {
+        step_bits: u64,
+        previous_step_bits: u64,
+    },
+    Trapezoidal {
+        step_bits: u64,
+    },
 }
 
 struct RealFactor {
-    values: Vec<u64>,
+    identity: RealFactorIdentity,
     factor: Lu<usize, f64>,
+}
+
+enum RealFactorIdentity {
+    Transient(TransientMatrixKey),
 }
 
 impl SymbolicCache {
@@ -27,25 +44,38 @@ impl SymbolicCache {
         self.real_constant_factor.is_some()
     }
 
-    pub fn solve_real(
+    pub fn has_transient_factor(&self, key: TransientMatrixKey) -> bool {
+        self.real_factors.iter().any(|cached| {
+            matches!(cached.identity, RealFactorIdentity::Transient(cached_key) if cached_key == key)
+        })
+    }
+
+    pub fn solve_transient_factor(
         &mut self,
+        key: TransientMatrixKey,
+        n: usize,
+        rhs: &[f64],
+    ) -> Result<Vec<f64>> {
+        let index = self
+            .real_factors
+            .iter()
+            .position(|cached| {
+                matches!(cached.identity, RealFactorIdentity::Transient(cached_key) if cached_key == key)
+            })
+            .ok_or_else(|| Error::Sparse("transient factor cache entry was not found".into()))?;
+        let cached = self.real_factors.remove(index);
+        let solution = solve_factor(&cached.factor, n, rhs);
+        self.real_factors.push(cached);
+        Ok(solution)
+    }
+
+    pub fn solve_real_transient(
+        &mut self,
+        key: TransientMatrixKey,
         n: usize,
         entries: &[Triplet<usize, usize, f64>],
         rhs: &[f64],
-    ) -> Result<(Vec<f64>, bool, bool)> {
-        self.real_value_scratch.clear();
-        self.real_value_scratch
-            .extend(entries.iter().map(|entry| entry.val.to_bits()));
-        if let Some(index) = self
-            .real_factors
-            .iter()
-            .position(|cached| cached.values == self.real_value_scratch)
-        {
-            let cached = self.real_factors.remove(index);
-            let solution = solve_factor(&cached.factor, n, rhs);
-            self.real_factors.push(cached);
-            return Ok((solution, false, false));
-        }
+    ) -> Result<(Vec<f64>, bool)> {
         let matrix = SparseColMat::<usize, f64>::try_new_from_triplets(n, n, entries)
             .map_err(|error| Error::Sparse(error.to_string()))?;
         let created_symbolic = self.symbolic.is_none();
@@ -61,21 +91,14 @@ impl SymbolicCache {
         let factor = Lu::try_new_with_symbolic(symbolic, matrix.as_ref())
             .map_err(|error| Error::Sparse(error.to_string()))?;
         let solution = solve_factor(&factor, n, rhs);
-        let factor_capacity = if n <= 512 {
-            32
-        } else if n <= 2_048 {
-            16
-        } else {
-            8
-        };
-        if self.real_factors.len() >= factor_capacity {
-            self.real_factors.remove(0);
-        }
-        self.real_factors.push(RealFactor {
-            values: self.real_value_scratch.clone(),
-            factor,
-        });
-        Ok((solution, created_symbolic, true))
+        self.insert_real_factor(
+            RealFactor {
+                identity: RealFactorIdentity::Transient(key),
+                factor,
+            },
+            n,
+        );
+        Ok((solution, created_symbolic))
     }
 
     pub fn solve_complex(
@@ -160,6 +183,20 @@ impl SymbolicCache {
         let solution = solve_factor(&factor, n, rhs);
         self.real_constant_factor = Some(factor);
         Ok((solution, created_symbolic, true))
+    }
+
+    fn insert_real_factor(&mut self, factor: RealFactor, n: usize) {
+        let factor_capacity = if n <= 512 {
+            32
+        } else if n <= 2_048 {
+            16
+        } else {
+            8
+        };
+        if self.real_factors.len() >= factor_capacity {
+            self.real_factors.remove(0);
+        }
+        self.real_factors.push(factor);
     }
 }
 

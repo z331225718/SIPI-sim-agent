@@ -16,7 +16,7 @@ use crate::result::{
     ComplexSample, MeasurementResult, SimulationPoint, SimulationResult, SimulationStatistics,
 };
 use crate::rfm::{RfmModel, RfmState};
-use crate::sparse::SymbolicCache;
+use crate::sparse::{SymbolicCache, TransientMatrixKey};
 
 type AcSample = (f64, Vec<c64>);
 
@@ -1122,7 +1122,19 @@ fn run_transient(
         } else {
             None
         };
-        matrix.clear();
+        let matrix_key = transient_matrix_key(
+            deck.integration_method,
+            backward_euler,
+            actual_step,
+            previous_step,
+        );
+        let build_matrix = !cache.has_transient_factor(matrix_key);
+        if build_matrix {
+            matrix.clear();
+            statistics.transient_matrix_cache_misses += 1;
+        } else {
+            statistics.transient_matrix_cache_hits += 1;
+        }
         rhs.fill(0.0);
         capacitor_companions.clear();
         inductor_companions.clear();
@@ -1135,7 +1147,11 @@ fn run_transient(
                     negative,
                     resistance,
                     ..
-                } => stamp_admittance_real(&mut matrix, *positive, *negative, 1.0 / resistance),
+                } => {
+                    if build_matrix {
+                        stamp_admittance_real(&mut matrix, *positive, *negative, 1.0 / resistance);
+                    }
+                }
                 Element::Capacitor {
                     name,
                     positive,
@@ -1154,7 +1170,9 @@ fn run_transient(
                         let history = -conductance * capacitor.voltage - capacitor.current;
                         (conductance, history)
                     };
-                    stamp_admittance_real(&mut matrix, *positive, *negative, conductance);
+                    if build_matrix {
+                        stamp_admittance_real(&mut matrix, *positive, *negative, conductance);
+                    }
                     stamp_current_real(&mut rhs, *positive, *negative, history);
                     capacitor_companions.push((
                         name.as_str(),
@@ -1183,15 +1201,19 @@ fn run_transient(
                         let history = -resistance * inductor.current - inductor.voltage;
                         (resistance, history)
                     };
-                    stamp_branch_real(
-                        &mut matrix,
-                        &mut rhs,
-                        *positive,
-                        *negative,
-                        *branch,
-                        -resistance,
-                        history,
-                    );
+                    if build_matrix {
+                        stamp_branch_real(
+                            &mut matrix,
+                            &mut rhs,
+                            *positive,
+                            *negative,
+                            *branch,
+                            -resistance,
+                            history,
+                        );
+                    } else {
+                        rhs[*branch] += history;
+                    }
                     inductor_companions.push((
                         name.as_str(),
                         *positive,
@@ -1206,15 +1228,22 @@ fn run_transient(
                     source,
                     branch,
                     ..
-                } => stamp_branch_real(
-                    &mut matrix,
-                    &mut rhs,
-                    *positive,
-                    *negative,
-                    *branch,
-                    0.0,
-                    source.transient_value(time),
-                ),
+                } => {
+                    let value = source.transient_value(time);
+                    if build_matrix {
+                        stamp_branch_real(
+                            &mut matrix,
+                            &mut rhs,
+                            *positive,
+                            *negative,
+                            *branch,
+                            0.0,
+                            value,
+                        );
+                    } else {
+                        rhs[*branch] += value;
+                    }
+                }
                 Element::Current {
                     positive,
                     negative,
@@ -1231,14 +1260,18 @@ fn run_transient(
                     gain,
                     branch,
                     ..
-                } => stamp_vcvs_real(
-                    &mut matrix,
-                    &mut rhs,
-                    (*positive, *negative),
-                    (*control_positive, *control_negative),
-                    *branch,
-                    *gain,
-                ),
+                } => {
+                    if build_matrix {
+                        stamp_vcvs_real(
+                            &mut matrix,
+                            &mut rhs,
+                            (*positive, *negative),
+                            (*control_positive, *control_negative),
+                            *branch,
+                            *gain,
+                        );
+                    }
+                }
                 Element::Vccs {
                     positive,
                     negative,
@@ -1246,21 +1279,29 @@ fn run_transient(
                     control_negative,
                     transconductance,
                     ..
-                } => stamp_vccs_real(
-                    &mut matrix,
-                    *positive,
-                    *negative,
-                    *control_positive,
-                    *control_negative,
-                    *transconductance,
-                ),
+                } => {
+                    if build_matrix {
+                        stamp_vccs_real(
+                            &mut matrix,
+                            *positive,
+                            *negative,
+                            *control_positive,
+                            *control_negative,
+                            *transconductance,
+                        );
+                    }
+                }
                 Element::Cccs {
                     positive,
                     negative,
                     control_branch,
                     gain,
                     ..
-                } => stamp_cccs_real(&mut matrix, *positive, *negative, *control_branch, *gain),
+                } => {
+                    if build_matrix {
+                        stamp_cccs_real(&mut matrix, *positive, *negative, *control_branch, *gain);
+                    }
+                }
                 Element::Ccvs {
                     positive,
                     negative,
@@ -1268,15 +1309,19 @@ fn run_transient(
                     transresistance,
                     branch,
                     ..
-                } => stamp_ccvs_real(
-                    &mut matrix,
-                    &mut rhs,
-                    *positive,
-                    *negative,
-                    *control_branch,
-                    *branch,
-                    *transresistance,
-                ),
+                } => {
+                    if build_matrix {
+                        stamp_ccvs_real(
+                            &mut matrix,
+                            &mut rhs,
+                            *positive,
+                            *negative,
+                            *control_branch,
+                            *branch,
+                            *transresistance,
+                        );
+                    }
+                }
                 Element::Rfm {
                     name,
                     ports,
@@ -1293,14 +1338,18 @@ fn run_transient(
                     } else {
                         model.prepare_trapezoidal(rfm_state, actual_step)?;
                     }
-                    stamp_nport_real(
-                        &mut matrix,
-                        &mut rhs,
-                        ports,
-                        references,
-                        rfm_state.conductance(),
-                        Some(rfm_state.offset()),
-                    );
+                    if build_matrix {
+                        stamp_nport_real(
+                            &mut matrix,
+                            &mut rhs,
+                            ports,
+                            references,
+                            rfm_state.conductance(),
+                            Some(rfm_state.offset()),
+                        );
+                    } else {
+                        stamp_nport_offset_real(&mut rhs, ports, references, rfm_state.offset());
+                    }
                     if let Some(started) = rfm_stamp_started {
                         profile_rfm_stamp += started.elapsed();
                     }
@@ -1311,7 +1360,17 @@ fn run_transient(
             profile_stamp += started.elapsed();
         }
         let solve_started = profile.then(Instant::now);
-        let (solution, symbolic, numeric) = cache.solve_real(deck.unknown_count, &matrix, &rhs)?;
+        let (solution, symbolic, numeric) = if build_matrix {
+            let (solution, symbolic) =
+                cache.solve_real_transient(matrix_key, deck.unknown_count, &matrix, &rhs)?;
+            (solution, symbolic, true)
+        } else {
+            (
+                cache.solve_transient_factor(matrix_key, deck.unknown_count, &rhs)?,
+                false,
+                false,
+            )
+        };
         if let Some(started) = solve_started {
             let elapsed = started.elapsed();
             profile_solve += elapsed;
@@ -1485,7 +1544,7 @@ fn run_transient(
     }
     if profile {
         crate::logging::line(format_args!(
-            "[agent-spice-profile] total={:.6}s stamp={:.6}s solve={:.6}s candidate={:.6}s lte={:.6}s rfm-stamp={:.6}s numeric-solve={:.6}s cached-solve={:.6}s rfm-candidate={:.6}s output={:.6}s",
+            "[agent-spice-profile] total={:.6}s stamp={:.6}s solve={:.6}s candidate={:.6}s lte={:.6}s rfm-stamp={:.6}s numeric-solve={:.6}s cached-solve={:.6}s rfm-candidate={:.6}s output={:.6}s matrix-cache={}/{}",
             profile_started.elapsed().as_secs_f64(),
             profile_stamp.as_secs_f64(),
             profile_solve.as_secs_f64(),
@@ -1495,7 +1554,9 @@ fn run_transient(
             profile_numeric_solve.as_secs_f64(),
             profile_cached_solve.as_secs_f64(),
             profile_rfm_candidate.as_secs_f64(),
-            profile_output.as_secs_f64()
+            profile_output.as_secs_f64(),
+            statistics.transient_matrix_cache_hits,
+            statistics.transient_matrix_cache_misses
         ));
     }
     Ok(result)
@@ -1682,6 +1743,28 @@ fn transient_step_scale(error_ratio: f64, accepted: bool, order: usize) -> f64 {
     }
 }
 
+fn transient_matrix_key(
+    integration_method: IntegrationMethod,
+    backward_euler: bool,
+    step: f64,
+    previous_step: f64,
+) -> TransientMatrixKey {
+    if backward_euler {
+        return TransientMatrixKey::BackwardEuler {
+            step_bits: step.to_bits(),
+        };
+    }
+    match integration_method {
+        IntegrationMethod::Gear2 => TransientMatrixKey::Gear2 {
+            step_bits: step.to_bits(),
+            previous_step_bits: previous_step.to_bits(),
+        },
+        IntegrationMethod::Trap => TransientMatrixKey::Trapezoidal {
+            step_bits: step.to_bits(),
+        },
+    }
+}
+
 fn quantize_transient_step(step: f64, maximum_step: f64) -> f64 {
     if step >= maximum_step {
         return maximum_step;
@@ -1720,6 +1803,13 @@ fn stamp_nport_real(
         if let Some(offset) = offset {
             stamp_current_real(rhs, *positive_row, negative_row, offset[row]);
         }
+    }
+}
+
+fn stamp_nport_offset_real(rhs: &mut [f64], ports: &[Node], references: &[Node], offset: &[f64]) {
+    debug_assert_eq!(offset.len(), ports.len());
+    for ((positive, negative), value) in ports.iter().zip(references).zip(offset) {
+        stamp_current_real(rhs, *positive, *negative, *value);
     }
 }
 

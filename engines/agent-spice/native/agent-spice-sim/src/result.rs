@@ -30,6 +30,8 @@ pub struct SimulationStatistics {
     pub rejected_transient_steps: usize,
     pub sparse_symbolic_factorizations: usize,
     pub sparse_numeric_refactorizations: usize,
+    pub transient_matrix_cache_hits: usize,
+    pub transient_matrix_cache_misses: usize,
     pub ac_matrix_assembly_replays: usize,
     pub fixed_transient_steps: usize,
     pub breakpoint_transient_steps: usize,

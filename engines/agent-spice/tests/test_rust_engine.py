@@ -194,6 +194,8 @@ def test_rust_engine_reuses_dyadic_transient_factors(tmp_path: Path) -> None:
     assert statistics["acceptedTransientSteps"] > 100
     assert statistics["sparseSymbolicFactorizations"] == 1
     assert statistics["sparseNumericRefactorizations"] <= 32
+    assert statistics["transientMatrixCacheHits"] > 0
+    assert statistics["transientMatrixCacheMisses"] > 0
 
 
 def test_rust_engine_operating_point_and_dc_sweep() -> None:
