@@ -74,18 +74,7 @@ impl Waveform {
                         time
                     }
                 });
-                if time <= points[0].0 {
-                    return points[0].1;
-                }
-                for pair in points.windows(2) {
-                    let (left_time, left_value) = pair[0];
-                    let (right_time, right_value) = pair[1];
-                    if time <= right_time {
-                        let fraction = (time - left_time) / (right_time - left_time);
-                        return left_value + fraction * (right_value - left_value);
-                    }
-                }
-                points.last().expect("PWL has at least one point").1
+                interpolate_pwl(points, time)
             }
         }
     }
@@ -97,28 +86,18 @@ impl Waveform {
                 points,
                 repeat_from,
             } => {
+                let threshold = time + tolerance;
+                let direct_index =
+                    points.partition_point(|(point_time, _)| *point_time <= threshold);
                 let direct = points
-                    .iter()
+                    .get(direct_index)
                     .map(|(point_time, _)| *point_time)
-                    .find(|point_time| *point_time > time + tolerance && *point_time <= stop);
-                let repeated = repeat_from.and_then(|repeat_from| {
-                    let end = points.last().expect("PWL has at least one point").0;
-                    let period = end - repeat_from;
-                    points
-                        .iter()
-                        .map(|(point_time, _)| *point_time)
-                        .filter(|point_time| *point_time >= repeat_from)
-                        .filter_map(|point_time| {
-                            let cycles = if point_time > time + tolerance {
-                                0.0
-                            } else {
-                                ((time + tolerance - point_time) / period).floor() + 1.0
-                            };
-                            let candidate = point_time + cycles * period;
-                            (candidate > time + tolerance && candidate <= stop).then_some(candidate)
-                        })
-                        .min_by(f64::total_cmp)
-                });
+                    .filter(|point_time| *point_time <= stop);
+                let repeated = repeat_from
+                    .and_then(|repeat_from| {
+                        next_repeated_pwl_breakpoint(points, repeat_from, threshold)
+                    })
+                    .filter(|point_time| *point_time <= stop);
                 direct.into_iter().chain(repeated).min_by(f64::total_cmp)
             }
             Self::Pulse {
@@ -151,6 +130,91 @@ impl Waveform {
                     })
                     .min_by(f64::total_cmp)
             }
+        }
+    }
+}
+
+fn interpolate_pwl(points: &[(f64, f64)], time: f64) -> f64 {
+    let right = points.partition_point(|(point_time, _)| *point_time < time);
+    if right == 0 {
+        return points[0].1;
+    }
+    if right == points.len() {
+        return points.last().expect("PWL has at least one point").1;
+    }
+    let (left_time, left_value) = points[right - 1];
+    let (right_time, right_value) = points[right];
+    let fraction = (time - left_time) / (right_time - left_time);
+    left_value + fraction * (right_value - left_value)
+}
+
+fn next_repeated_pwl_breakpoint(
+    points: &[(f64, f64)],
+    repeat_from: f64,
+    threshold: f64,
+) -> Option<f64> {
+    let end = points.last().expect("PWL has at least one point").0;
+    let period = end - repeat_from;
+    if !period.is_finite() || period <= 0.0 {
+        return None;
+    }
+    let cycle = if threshold < repeat_from {
+        0.0
+    } else {
+        ((threshold - repeat_from) / period).floor()
+    };
+    let offset = cycle * period;
+    let local_threshold = threshold - offset;
+    let first_repeated = points.partition_point(|(point_time, _)| *point_time < repeat_from);
+    let repeated = &points[first_repeated..];
+    let next = repeated.partition_point(|(point_time, _)| *point_time <= local_threshold);
+    let candidate = repeated
+        .get(next)
+        .map_or(repeat_from + (cycle + 1.0) * period, |(point_time, _)| {
+            point_time + offset
+        });
+    (candidate > threshold).then_some(candidate)
+}
+
+#[cfg(test)]
+mod waveform_lookup_tests {
+    use super::{Waveform, interpolate_pwl};
+
+    #[test]
+    fn binary_pwl_interpolation_preserves_boundaries_and_segments() {
+        let points = [(0.0, 1.0), (1.0, 3.0), (2.5, -1.0), (4.0, 2.0)];
+        let expected = [
+            (-1.0, 1.0),
+            (0.0, 1.0),
+            (0.25, 1.5),
+            (1.0, 3.0),
+            (2.0, 1.0 / 3.0),
+            (2.5, -1.0),
+            (3.0, 0.0),
+            (4.0, 2.0),
+            (5.0, 2.0),
+        ];
+        for (time, value) in expected {
+            assert!((interpolate_pwl(&points, time) - value).abs() < 1e-12);
+        }
+    }
+
+    #[test]
+    fn binary_repeated_pwl_breakpoints_match_cycle_boundaries() {
+        let waveform = Waveform::Pwl {
+            points: vec![(0.0, 0.0), (1.0, 1.0), (2.5, 0.5), (4.0, 0.0)],
+            repeat_from: Some(1.0),
+        };
+        let expected = [
+            (0.0, 1.0),
+            (1.0, 2.5),
+            (2.5, 4.0),
+            (4.0, 5.5),
+            (5.5, 7.0),
+            (7.0, 8.5),
+        ];
+        for (time, next) in expected {
+            assert_eq!(waveform.next_breakpoint_after(time, 10.0), Some(next));
         }
     }
 }

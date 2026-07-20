@@ -75,11 +75,15 @@ impl SimulationObserver for RuntimeObserver {
                 index as f64 * 100.0 / total_points as f64
             };
             if point.analysis == "tran" {
+                let steps_per_output = statistics.accepted_transient_steps as f64
+                    / index.saturating_sub(1).max(1) as f64;
                 eprintln!(
-                    "[agent-spice-sim] TRAN {index}/{total_points} ({percent:.1}%) t={:.6e}s accepted={} rejected={}",
+                    "[agent-spice-sim] TRAN {index}/{total_points} ({percent:.1}%) t={:.6e}s accepted={} rejected={} steps/output={steps_per_output:.1} breakpoints={} refactors={}",
                     point.x,
                     statistics.accepted_transient_steps,
-                    statistics.rejected_transient_steps
+                    statistics.rejected_transient_steps,
+                    statistics.breakpoint_transient_steps,
+                    statistics.sparse_numeric_refactorizations,
                 );
             } else {
                 eprintln!(

@@ -38,6 +38,34 @@ fn log_rfm_storage(name: &str, model: &rfm::RfmModel) {
     );
 }
 
+fn log_pwl_storage(deck: &netlist::Deck) {
+    let mut sources = 0usize;
+    let mut points = 0usize;
+    let mut repeating = 0usize;
+    for element in &deck.elements {
+        let source = match element {
+            netlist::Element::Voltage { source, .. } | netlist::Element::Current { source, .. } => {
+                source
+            }
+            _ => continue,
+        };
+        if let Some(netlist::Waveform::Pwl {
+            points: source_points,
+            repeat_from,
+        }) = &source.waveform
+        {
+            sources += 1;
+            points += source_points.len();
+            repeating += usize::from(repeat_from.is_some());
+        }
+    }
+    if sources > 0 {
+        eprintln!(
+            "[agent-spice-sim] PWL sources={sources} points={points} repeating={repeating} lookup=binary"
+        );
+    }
+}
+
 fn main() {
     if let Err(error) = run() {
         eprintln!("agent-spice-sim: {error}");
@@ -135,6 +163,7 @@ fn run() -> Result<()> {
     for name in model_names {
         log_rfm_storage(name, &deck.rfm_models[name]);
     }
+    log_pwl_storage(&deck);
     eprintln!(
         "[agent-spice-sim] parsed: {} element(s), {} node(s), {} analysis job(s) in {:.3}s",
         deck.elements.len(),

@@ -10,7 +10,7 @@ use crate::expression;
 use crate::netlist::{
     AcScale, Analysis, Deck, Element, IntegrationMethod, MeasurementEvent,
     MeasurementEventDirection, MeasurementEventOccurrence, MeasurementOperation,
-    MeasurementQuantity, MeasurementTarget, MeasurementTrigger, Node,
+    MeasurementQuantity, MeasurementTarget, MeasurementTrigger, Node, Waveform,
 };
 use crate::result::{
     ComplexSample, MeasurementResult, SimulationPoint, SimulationResult, SimulationStatistics,
@@ -1041,6 +1041,16 @@ fn run_transient(
     let mut previous_step = 0.0;
     let mut older_step = 0.0;
     let mut accepted_history_depth = 0usize;
+    let source_waveforms: Vec<_> = deck
+        .elements
+        .iter()
+        .filter_map(|element| match element {
+            Element::Voltage { source, .. } | Element::Current { source, .. } => {
+                source.waveform.as_ref()
+            }
+            _ => None,
+        })
+        .collect();
     let requires_error_control = deck.elements.iter().any(|element| {
         matches!(
             element,
@@ -1083,7 +1093,7 @@ fn run_transient(
             step
         };
         let natural_time = (previous_time + candidate_step).min(output_time);
-        let breakpoint = next_source_breakpoint(deck, previous_time, stop);
+        let breakpoint = next_source_breakpoint(&source_waveforms, previous_time, stop);
         let candidate_time = breakpoint.map_or(natural_time, |value| value.min(natural_time));
         let time_tolerance = step * 1e-9;
         let reaches_output = (candidate_time - output_time).abs() <= time_tolerance;
@@ -2087,16 +2097,10 @@ fn port_voltages(solution: &[f64], ports: &[Node], references: &[Node]) -> Vec<f
         .collect()
 }
 
-fn next_source_breakpoint(deck: &Deck, time: f64, stop: f64) -> Option<f64> {
-    deck.elements
+fn next_source_breakpoint(waveforms: &[&Waveform], time: f64, stop: f64) -> Option<f64> {
+    waveforms
         .iter()
-        .filter_map(|element| match element {
-            Element::Voltage { source, .. } | Element::Current { source, .. } => source
-                .waveform
-                .as_ref()
-                .and_then(|waveform| waveform.next_breakpoint_after(time, stop)),
-            _ => None,
-        })
+        .filter_map(|waveform| waveform.next_breakpoint_after(time, stop))
         .min_by(f64::total_cmp)
 }
 

@@ -404,7 +404,7 @@ $env:AGENT_SPICE_PROFILE = '1'
   --waveform-csv waveform.csv
 ```
 
-启动日志会列出每个 RFM 的端口数、唯一极点数、实际动态 mode/状态数、旧稠密布局的等效历史内存及压缩倍数。结束时的 `rfm-stamp`、`numeric-solve`、`cached-solve`、`rfm-candidate`、`lte` 和 `output` 可直接区分模型状态更新、矩阵重分解、误差控制与结果写出瓶颈。
+启动日志会列出每个 RFM 的端口数、唯一极点数、实际动态 mode/状态数、旧稠密布局的等效历史内存及压缩倍数，以及 PWL 源/采样点数量。大 PWL/PWLFILE 的当前值和下一断点均使用二分定位，不会随已运行时间线性变慢。运行中的 TRAN 进度会同步显示每个输出点对应的内部步数、PWL 断点数和数值重分解次数；结束时的 `rfm-stamp`、`numeric-solve`、`cached-solve`、`rfm-candidate`、`lte` 和 `output` 可直接区分模型状态更新、矩阵重分解、误差控制与结果写出瓶颈。
 
 直接调用 exe 时可先执行批量兼容扫描：
 
