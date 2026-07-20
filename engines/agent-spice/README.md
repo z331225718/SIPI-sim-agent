@@ -396,6 +396,16 @@ Rust 内核直接解析 `.inc`/`.include`、`.lib` section、数值及 `str('...
 
 原生解析、参数求值和子电路展开错误会报告绝对文件路径、物理行号及原语句。语句来自 `.include`/`.lib` 或层级子电路时仍保留定义位置；若展开后的器件名、节点或参数与原文不同，错误中还会追加 `expanded:` 语句。
 
+长时间 TRAN 可在 offline 机器上打开内核分项计时；CSV 会在仿真过程中持续刷新，不必同时写完整 JSON：
+
+```powershell
+$env:AGENT_SPICE_PROFILE = '1'
+.\src\agent_spice\lib\native\win-x64\agent-spice-sim.exe case.sp `
+  --waveform-csv waveform.csv
+```
+
+启动日志会列出每个 RFM 的端口数、唯一极点数、实际动态 mode/状态数、旧稠密布局的等效历史内存及压缩倍数。结束时的 `rfm-stamp`、`numeric-solve`、`cached-solve`、`rfm-candidate`、`lte` 和 `output` 可直接区分模型状态更新、矩阵重分解、误差控制与结果写出瓶颈。
+
 直接调用 exe 时可先执行批量兼容扫描：
 
 ```powershell

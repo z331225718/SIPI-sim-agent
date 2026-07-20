@@ -43,7 +43,7 @@ Agent-Spice 最终拥有由本项目控制的 SPICE 兼容仿真内核，而不�
 - Windows x64 NativeAOT 可执行文件已进入 `py3-none-win_amd64` 平台 wheel，并在没有可用 `dotnet` 命令的干净 venv 中执行通过；
 - `run-rfm` 已默认选择 native 后端；ngspice XSPICE 仅在显式 `--backend ngspice` 时作为 oracle 执行，不做静默回退；
 - NativeAOT/wheel 脚本已覆盖 Windows、Linux、macOS 的 x64/ARM64 RID，并加入 Windows x64、Linux x64、macOS x64/ARM64 CI 构建与包内可执行文件 smoke；除 Windows x64 外仍以 CI 首次实跑结果为签核条件；
-- RFM TRAN 复用 MNA 分解、按积分系数缓存的 companion kernel 和拓扑索引，并将历史卷积编译为稀疏留数项；有理状态保留三层接受历史，动态端口响应进入可回滚的 LTE 自适应步长；
+- RFM TRAN 复用 MNA 分解、按积分系数缓存的 companion kernel 和拓扑索引；状态按实际存在的 `(pole,input)` mode 分配，response-specific 极点不再扩展为 `N x global-pole-set`，历史卷积按密度自适应选择稀疏留数项或小型稠密矩阵乘法；有理状态保留三层接受历史，动态端口响应进入可回滚的 LTE 自适应步长；
 - 引擎可直接写 `native_result.json` 和 `waveform.csv`，Python 编排层不再反序列化并重写完整波形；
 - SI 后缀解析和机器可读 JSON 结果。
 

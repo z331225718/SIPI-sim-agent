@@ -915,6 +915,120 @@ def test_rust_engine_accepts_hspice_s_model_common_reference_ports(
     )
 
 
+def test_rust_engine_compacts_unique_rfm_poles_and_profiles_hot_paths(
+    tmp_path: Path,
+) -> None:
+    nports = 8
+    blocks = []
+    for row in range(nports):
+        for column in range(nports):
+            response = row * nports + column
+            blocks.extend(
+                (
+                    f"BEGIN {row + 1} {column + 1}",
+                    f"CONST {0.05 if row == column else 0.0:.12e}",
+                    "C 0.000000000000e+00",
+                    "DELAY 0.000000000000e+00",
+                    "BEGIN_REAL 1",
+                    f"{1.0e9 + response * 1.0e6:.12e} 1.000000000000e+06",
+                    "BEGIN_COMPLEX 0",
+                    "END",
+                )
+            )
+    (tmp_path / "unique.rfm").write_text(
+        "\n".join(
+            (
+                "VERSION 200600",
+                f"NPORT {nports}",
+                "MATRIX_TYPE S",
+                "Z0 5.000000000000e+01",
+                *blocks,
+                "",
+            )
+        ),
+        encoding="ascii",
+    )
+    poles = [1.0e9 + response * 1.0e6 for response in range(nports * nports)]
+    shared_blocks = []
+    for row in range(nports):
+        for column in range(nports):
+            response = row * nports + column
+            shared_blocks.extend(
+                (
+                    f"BEGIN {row + 1} {column + 1}",
+                    f"CONST {0.05 if row == column else 0.0:.12e}",
+                    "C 0.000000000000e+00",
+                    "DELAY 0.000000000000e+00",
+                    f"BEGIN_REAL {len(poles)}",
+                    *(
+                        f"{pole:.12e} {1.0e6 if index == response else 0.0:.12e}"
+                        for index, pole in enumerate(poles)
+                    ),
+                    "BEGIN_COMPLEX 0",
+                    "END",
+                )
+            )
+    (tmp_path / "shared.rfm").write_text(
+        "\n".join(
+            (
+                "VERSION 200600",
+                f"NPORT {nports}",
+                "MATRIX_TYPE S",
+                "Z0 5.000000000000e+01",
+                *shared_blocks,
+                "",
+            )
+        ),
+        encoding="ascii",
+    )
+    ports = " ".join(f"p{port + 1}" for port in range(nports))
+    deck = tmp_path / "unique.sp"
+    deck_text = (
+        "Unique-pole RFM storage regression\n"
+        ".model channel s n=8 rfmfile='unique.rfm'\n"
+        "Vsrc src 0 PULSE(0 1 10p 1p 1p 30p 100p)\n"
+        "Rsrc src p1 50\n"
+        + "".join(f"Rload{port + 1} p{port + 1} 0 50\n" for port in range(nports))
+        + f"Schannel {ports} 0 mname=channel\n"
+        ".tran 10p 100p\n"
+        ".probe tran v(p1) v(p2)\n"
+        ".end\n"
+    )
+    deck.write_text(deck_text, encoding="ascii")
+    shared_deck = tmp_path / "shared.sp"
+    shared_deck.write_text(deck_text.replace("unique.rfm", "shared.rfm"), encoding="ascii")
+    waveform = tmp_path / "unique.csv"
+    completed = subprocess.run(
+        [str(ENGINE), str(deck), "--waveform-csv", str(waveform)],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "AGENT_SPICE_PROFILE": "1"},
+    )
+    shared_waveform = tmp_path / "shared.csv"
+    shared_completed = subprocess.run(
+        [str(ENGINE), str(shared_deck), "--waveform-csv", str(shared_waveform)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert shared_completed.returncode == 0, shared_completed.stdout + shared_completed.stderr
+    assert json.loads(completed.stdout)["waveformRows"] == 11
+    assert waveform.read_text(encoding="utf-8") == shared_waveform.read_text(encoding="utf-8")
+    assert "unique-poles=64 modes=64 state-scalars=64 terms=64" in completed.stderr
+    assert "state-compression=8.0x history=sparse" in completed.stderr
+    for field in (
+        "rfm-stamp=",
+        "numeric-solve=",
+        "cached-solve=",
+        "rfm-candidate=",
+        "output=",
+    ):
+        assert field in completed.stderr
+
+
 def test_rust_engine_rfm_gear2_matches_migration_oracle() -> None:
     rfm = ROOT / "native" / "AgentSpice.Engine" / "fixtures" / "one_port.rfm"
     result = run(

@@ -39,16 +39,42 @@ enum DerivativeFormula {
     Bdf { a0: f64, a1: f64, a2: f64 },
 }
 
+#[derive(Debug, Clone, Copy)]
+struct DynamicMode {
+    pole: c64,
+    input: usize,
+    state: usize,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct ResponseTerm {
+    mode: usize,
+    residue: c64,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct RfmStorageStats {
+    pub unique_poles: usize,
+    pub dynamic_modes: usize,
+    pub state_scalars: usize,
+    pub response_terms: usize,
+    pub legacy_dense_state_scalars: usize,
+    pub legacy_dense_history_bytes: usize,
+    pub dense_history_bytes: usize,
+}
+
 #[derive(Debug)]
 pub struct RfmModel {
     pub nports: usize,
     pub z0: f64,
-    poles: Vec<c64>,
-    residues: Vec<c64>,
     constant: Vec<f64>,
-    state_offsets: Vec<usize>,
+    modes: Vec<DynamicMode>,
+    response_starts: Vec<usize>,
+    response_terms: Vec<ResponseTerm>,
     state_width: usize,
-    history_coefficients: Vec<f64>,
+    unique_poles: usize,
+    legacy_state_width: usize,
+    dense_history_coefficients: Option<Vec<f64>>,
 }
 
 impl RfmModel {
@@ -142,7 +168,6 @@ impl RfmModel {
             .ok_or_else(|| Error::Parse("RFM port count is too large".into()))?;
         let mut constants = vec![0.0; response_count];
         let mut response_terms: Vec<Option<Vec<(c64, c64)>>> = vec![None; response_count];
-        let mut poles = Vec::new();
         while cursor < lines.len() {
             let begin = expect(&lines, &mut cursor, path, "BEGIN", 3)?;
             let begin_tokens = tokens(begin);
@@ -267,11 +292,6 @@ impl RfmModel {
                 terms.push((pole, residue));
             }
             expect(&lines, &mut cursor, path, "END", 1)?;
-            for (pole, _) in &terms {
-                if !poles.contains(pole) {
-                    poles.push(*pole);
-                }
-            }
             response_terms[response] = Some(terms);
         }
 
@@ -288,49 +308,117 @@ impl RfmModel {
                 missing.join(", ")
             )));
         }
-        let mut residues = vec![c64::new(0.0, 0.0); response_count * poles.len()];
-        for (response, terms) in response_terms.into_iter().enumerate() {
-            for (pole, residue) in terms.expect("all RFM responses were checked") {
-                let pole_index = poles
-                    .iter()
-                    .position(|candidate| *candidate == pole)
-                    .expect("RFM pole was collected");
-                residues[response * poles.len() + pole_index] += residue;
+        let mut unique_poles = HashMap::new();
+        for terms in response_terms.iter().flatten() {
+            for (pole, _) in terms {
+                unique_poles
+                    .entry((pole.re.to_bits(), pole.im.to_bits()))
+                    .or_insert(if pole.im == 0.0 { 1usize } else { 2usize });
             }
         }
+        let legacy_state_width = unique_poles.values().sum();
 
-        let mut state_offsets = Vec::with_capacity(poles.len());
+        let mut modes = Vec::new();
+        let mut mode_lookup = HashMap::new();
+        let mut flattened_terms: Vec<ResponseTerm> = Vec::new();
+        let mut response_starts = Vec::with_capacity(response_count + 1);
         let mut state_width = 0usize;
-        for pole in &poles {
-            state_offsets.push(state_width);
-            state_width += if pole.im == 0.0 { 1 } else { 2 };
-        }
-        let value_count = nports * state_width;
-        let mut history_coefficients = vec![0.0; nports * value_count];
-        for output in 0..nports {
-            for input in 0..nports {
-                let response = output * nports + input;
-                for pole_index in 0..poles.len() {
-                    let residue = residues[response * poles.len() + pole_index];
-                    let state = input * state_width + state_offsets[pole_index];
-                    let row = output * value_count;
-                    history_coefficients[row + state] = residue.re;
-                    if poles[pole_index].im != 0.0 {
-                        history_coefficients[row + state + 1] = residue.im;
-                    }
+        for (response, terms) in response_terms.into_iter().enumerate() {
+            response_starts.push(flattened_terms.len());
+            let input = response % nports;
+            let response_start = flattened_terms.len();
+            for (pole, residue) in terms.expect("all RFM responses were checked") {
+                let key = (pole.re.to_bits(), pole.im.to_bits(), input);
+                let mode = *mode_lookup.entry(key).or_insert_with(|| {
+                    let mode = modes.len();
+                    modes.push(DynamicMode {
+                        pole,
+                        input,
+                        state: state_width,
+                    });
+                    state_width += if pole.im == 0.0 { 1 } else { 2 };
+                    mode
+                });
+                if let Some(existing) = flattened_terms[response_start..]
+                    .iter_mut()
+                    .find(|term| term.mode == mode)
+                {
+                    existing.residue += residue;
+                } else {
+                    flattened_terms.push(ResponseTerm { mode, residue });
                 }
             }
         }
+        response_starts.push(flattened_terms.len());
+        let dense_history_len = nports.saturating_mul(state_width);
+        let coefficient_scalars: usize = flattened_terms
+            .iter()
+            .map(|term| {
+                if modes[term.mode].pole.im == 0.0 {
+                    1
+                } else {
+                    2
+                }
+            })
+            .sum();
+        let dense_history_coefficients = (dense_history_len <= 8 * 1024 * 1024
+            && coefficient_scalars.saturating_mul(4) >= dense_history_len)
+            .then(|| {
+                let mut coefficients = vec![0.0; dense_history_len];
+                for output in 0..nports {
+                    for input in 0..nports {
+                        let response = output * nports + input;
+                        for term in &flattened_terms
+                            [response_starts[response]..response_starts[response + 1]]
+                        {
+                            let mode = modes[term.mode];
+                            let row = output * state_width;
+                            coefficients[row + mode.state] += term.residue.re;
+                            if mode.pole.im != 0.0 {
+                                coefficients[row + mode.state + 1] += term.residue.im;
+                            }
+                        }
+                    }
+                }
+                coefficients
+            });
         Ok(Self {
             nports,
             z0,
-            poles,
-            residues,
             constant: constants,
-            state_offsets,
+            modes,
+            response_starts,
+            response_terms: flattened_terms,
             state_width,
-            history_coefficients,
+            unique_poles: unique_poles.len(),
+            legacy_state_width,
+            dense_history_coefficients,
         })
+    }
+
+    pub fn storage_stats(&self) -> RfmStorageStats {
+        let legacy_dense_state_scalars = self.nports.saturating_mul(self.legacy_state_width);
+        RfmStorageStats {
+            unique_poles: self.unique_poles,
+            dynamic_modes: self.modes.len(),
+            state_scalars: self.state_width,
+            response_terms: self.response_terms.len(),
+            legacy_dense_state_scalars,
+            legacy_dense_history_bytes: self
+                .nports
+                .saturating_mul(legacy_dense_state_scalars)
+                .saturating_mul(std::mem::size_of::<f64>()),
+            dense_history_bytes: self
+                .dense_history_coefficients
+                .as_ref()
+                .map_or(0, |values| {
+                    values.len().saturating_mul(std::mem::size_of::<f64>())
+                }),
+        }
+    }
+
+    fn terms(&self, response: usize) -> &[ResponseTerm] {
+        &self.response_terms[self.response_starts[response]..self.response_starts[response + 1]]
     }
 
     pub fn admittance(&self, s: c64) -> Result<Vec<c64>> {
@@ -339,9 +427,9 @@ impl RfmModel {
             for column in 0..self.nports {
                 let response = row * self.nports + column;
                 let mut value = c64::new(self.constant[response], 0.0);
-                for pole_index in 0..self.poles.len() {
-                    let pole = self.poles[pole_index];
-                    let residue = self.residues[response * self.poles.len() + pole_index];
+                for term in self.terms(response) {
+                    let pole = self.modes[term.mode].pole;
+                    let residue = term.residue;
                     value += residue / (s - pole);
                     if pole.im != 0.0 {
                         value += residue.conj() / (s - pole.conj());
@@ -387,7 +475,7 @@ impl RfmModel {
     }
 
     pub fn create_state(&self) -> RfmState {
-        let value_count = self.nports * self.state_width;
+        let value_count = self.state_width;
         RfmState {
             values: vec![0.0; value_count],
             previous_values: vec![0.0; value_count],
@@ -416,8 +504,11 @@ impl RfmModel {
                 })
                 .sum();
             state.incident[input] = incident;
-            for (state_index, weight) in weights.iter().enumerate() {
-                state.values[input * self.state_width + state_index] = weight * incident;
+        }
+        for mode in &self.modes {
+            state.values[mode.state] = weights[mode.state] * state.incident[mode.input];
+            if mode.pole.im != 0.0 {
+                state.values[mode.state + 1] = weights[mode.state + 1] * state.incident[mode.input];
             }
         }
         state.previous_values.copy_from_slice(&state.values);
@@ -448,29 +539,27 @@ impl RfmModel {
         state.derivative_formula = Some(DerivativeFormula::Trapezoidal { step });
 
         let half = 0.5 * step;
-        for input in 0..self.nports {
-            let old_incident = state.incident[input];
-            for pole_index in 0..self.poles.len() {
-                let pole = self.poles[pole_index];
-                let base = input * self.state_width + self.state_offsets[pole_index];
-                if pole.im == 0.0 {
-                    let denominator = 1.0 - half * pole.re;
-                    state.x_base[base] = ((1.0 + half * pole.re) * state.values[base]
-                        + half * old_incident)
-                        / denominator;
-                    continue;
-                }
-                let d = 1.0 - half * pole.re;
-                let e = half * pole.im;
-                let denominator = d * d + e * e;
-                let old_real = state.values[base];
-                let old_imaginary = state.values[base + 1];
-                let q_real =
-                    (1.0 + half * pole.re) * old_real + e * old_imaginary + step * old_incident;
-                let q_imaginary = -e * old_real + (1.0 + half * pole.re) * old_imaginary;
-                state.x_base[base] = (d * q_real + e * q_imaginary) / denominator;
-                state.x_base[base + 1] = (-e * q_real + d * q_imaginary) / denominator;
+        for mode in &self.modes {
+            let pole = mode.pole;
+            let base = mode.state;
+            let old_incident = state.incident[mode.input];
+            if pole.im == 0.0 {
+                let denominator = 1.0 - half * pole.re;
+                state.x_base[base] = ((1.0 + half * pole.re) * state.values[base]
+                    + half * old_incident)
+                    / denominator;
+                continue;
             }
+            let d = 1.0 - half * pole.re;
+            let e = half * pole.im;
+            let denominator = d * d + e * e;
+            let old_real = state.values[base];
+            let old_imaginary = state.values[base + 1];
+            let q_real =
+                (1.0 + half * pole.re) * old_real + e * old_imaginary + step * old_incident;
+            let q_imaginary = -e * old_real + (1.0 + half * pole.re) * old_imaginary;
+            state.x_base[base] = (d * q_real + e * q_imaginary) / denominator;
+            state.x_base[base + 1] = (-e * q_real + d * q_imaginary) / denominator;
         }
         self.finish_companion(state);
         Ok(())
@@ -490,23 +579,20 @@ impl RfmModel {
             state.kernel = Some(Arc::new(self.build_bdf_kernel(a0)?));
         }
         state.derivative_formula = Some(DerivativeFormula::Bdf { a0, a1, a2 });
-        for input in 0..self.nports {
-            for pole_index in 0..self.poles.len() {
-                let pole = self.poles[pole_index];
-                let base = input * self.state_width + self.state_offsets[pole_index];
-                let q_real = -a1 * state.values[base] - a2 * state.previous_values[base];
-                if pole.im == 0.0 {
-                    state.x_base[base] = q_real / (a0 - pole.re);
-                    continue;
-                }
-                let q_imaginary =
-                    -a1 * state.values[base + 1] - a2 * state.previous_values[base + 1];
-                let d = a0 - pole.re;
-                let e = pole.im;
-                let denominator = d * d + e * e;
-                state.x_base[base] = (d * q_real + e * q_imaginary) / denominator;
-                state.x_base[base + 1] = (-e * q_real + d * q_imaginary) / denominator;
+        for mode in &self.modes {
+            let pole = mode.pole;
+            let base = mode.state;
+            let q_real = -a1 * state.values[base] - a2 * state.previous_values[base];
+            if pole.im == 0.0 {
+                state.x_base[base] = q_real / (a0 - pole.re);
+                continue;
             }
+            let q_imaginary = -a1 * state.values[base + 1] - a2 * state.previous_values[base + 1];
+            let d = a0 - pole.re;
+            let e = pole.im;
+            let denominator = d * d + e * e;
+            state.x_base[base] = (d * q_real + e * q_imaginary) / denominator;
+            state.x_base[base + 1] = (-e * q_real + d * q_imaginary) / denominator;
         }
         self.finish_companion(state);
         Ok(())
@@ -563,10 +649,13 @@ impl RfmModel {
                 })
                 .sum();
             current.incident[input] = incident;
-            for state_index in 0..self.state_width {
-                let index = input * self.state_width + state_index;
-                current.values[index] =
-                    current.x_base[index] + kernel.weights[state_index] * incident;
+        }
+        for mode in &self.modes {
+            current.values[mode.state] = current.x_base[mode.state]
+                + kernel.weights[mode.state] * current.incident[mode.input];
+            if mode.pole.im != 0.0 {
+                current.values[mode.state + 1] = current.x_base[mode.state + 1]
+                    + kernel.weights[mode.state + 1] * current.incident[mode.input];
             }
         }
         for row in 0..self.nports {
@@ -641,9 +730,9 @@ impl RfmModel {
     fn build_trapezoidal_kernel(&self, step: f64) -> Result<StepKernel> {
         let half = 0.5 * step;
         let mut weights = vec![0.0; self.state_width];
-        for pole_index in 0..self.poles.len() {
-            let pole = self.poles[pole_index];
-            let state = self.state_offsets[pole_index];
+        for mode in &self.modes {
+            let pole = mode.pole;
+            let state = mode.state;
             if pole.im == 0.0 {
                 weights[state] = half / (1.0 - half * pole.re);
                 continue;
@@ -683,9 +772,9 @@ impl RfmModel {
 
     fn build_bdf_kernel(&self, a0: f64) -> Result<StepKernel> {
         let mut weights = vec![0.0; self.state_width];
-        for pole_index in 0..self.poles.len() {
-            let pole = self.poles[pole_index];
-            let state = self.state_offsets[pole_index];
+        for mode in &self.modes {
+            let pole = mode.pole;
+            let state = mode.state;
             let d = a0 - pole.re;
             if pole.im == 0.0 {
                 weights[state] = 1.0 / d;
@@ -725,9 +814,9 @@ impl RfmModel {
 
     fn dc_weights(&self) -> Vec<f64> {
         let mut weights = vec![0.0; self.state_width];
-        for pole_index in 0..self.poles.len() {
-            let pole = self.poles[pole_index];
-            let state = self.state_offsets[pole_index];
+        for mode in &self.modes {
+            let pole = mode.pole;
+            let state = mode.state;
             if pole.im == 0.0 {
                 weights[state] = -1.0 / pole.re;
                 continue;
@@ -745,12 +834,11 @@ impl RfmModel {
             for column in 0..self.nports {
                 let response = row * self.nports + column;
                 let mut value = self.constant[response] + if row == column { 1.0 } else { 0.0 };
-                for pole_index in 0..self.poles.len() {
-                    let residue = self.residues[response * self.poles.len() + pole_index];
-                    let state = self.state_offsets[pole_index];
-                    value += residue.re * weights[state];
-                    if self.poles[pole_index].im != 0.0 {
-                        value += residue.im * weights[state + 1];
+                for term in self.terms(response) {
+                    let mode = self.modes[term.mode];
+                    value += term.residue.re * weights[mode.state];
+                    if mode.pole.im != 0.0 {
+                        value += term.residue.im * weights[mode.state + 1];
                     }
                 }
                 matrix[response] = value;
@@ -760,13 +848,29 @@ impl RfmModel {
     }
 
     fn fill_history(&self, values: &[f64], history: &mut [f64]) {
-        debug_assert_eq!(values.len(), self.nports * self.state_width);
+        debug_assert_eq!(values.len(), self.state_width);
         debug_assert_eq!(history.len(), self.nports);
-        let coefficients =
-            MatRef::from_row_major_slice(&self.history_coefficients, self.nports, values.len());
-        let values = MatRef::from_column_major_slice(values, values.len(), 1);
-        let history = MatMut::from_column_major_slice_mut(history, self.nports, 1);
-        matmul(history, Accum::Replace, coefficients, values, 1.0, Par::Seq);
+        if let Some(coefficients) = &self.dense_history_coefficients {
+            let coefficients =
+                MatRef::from_row_major_slice(coefficients, self.nports, values.len());
+            let values = MatRef::from_column_major_slice(values, values.len(), 1);
+            let history = MatMut::from_column_major_slice_mut(history, self.nports, 1);
+            matmul(history, Accum::Replace, coefficients, values, 1.0, Par::Seq);
+            return;
+        }
+        history.fill(0.0);
+        for (output, value) in history.iter_mut().enumerate() {
+            for input in 0..self.nports {
+                let response = output * self.nports + input;
+                for term in self.terms(response) {
+                    let mode = self.modes[term.mode];
+                    *value += term.residue.re * values[mode.state];
+                    if mode.pole.im != 0.0 {
+                        *value += term.residue.im * values[mode.state + 1];
+                    }
+                }
+            }
+        }
     }
 
     fn fill_dynamic_output_voltage(&self, values: &[f64], output: &mut [f64]) {

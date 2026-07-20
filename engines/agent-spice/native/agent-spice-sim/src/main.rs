@@ -16,6 +16,28 @@ use std::time::Instant;
 
 use error::{Error, Result};
 
+fn log_rfm_storage(name: &str, model: &rfm::RfmModel) {
+    let stats = model.storage_stats();
+    let compression = stats.legacy_dense_state_scalars as f64 / stats.state_scalars.max(1) as f64;
+    let history = if stats.dense_history_bytes == 0 {
+        "sparse".to_string()
+    } else {
+        format!(
+            "dense/{:.1} MiB",
+            stats.dense_history_bytes as f64 / (1024.0 * 1024.0)
+        )
+    };
+    eprintln!(
+        "[agent-spice-sim] RFM {name}: ports={} unique-poles={} modes={} state-scalars={} terms={} state-compression={compression:.1}x history={history} legacy-history={:.1} MiB",
+        model.nports,
+        stats.unique_poles,
+        stats.dynamic_modes,
+        stats.state_scalars,
+        stats.response_terms,
+        stats.legacy_dense_history_bytes as f64 / (1024.0 * 1024.0),
+    );
+}
+
 fn main() {
     if let Err(error) = run() {
         eprintln!("agent-spice-sim: {error}");
@@ -105,6 +127,14 @@ fn run() -> Result<()> {
         .as_ref()
         .map(|model| (rfm_subcircuit.as_str(), model.nports));
     let deck = netlist::Deck::parse_file(&deck, binding)?;
+    if let Some(model) = rfm.as_ref() {
+        log_rfm_storage("<command-line>", model);
+    }
+    let mut model_names: Vec<_> = deck.rfm_models.keys().collect();
+    model_names.sort();
+    for name in model_names {
+        log_rfm_storage(name, &deck.rfm_models[name]);
+    }
     eprintln!(
         "[agent-spice-sim] parsed: {} element(s), {} node(s), {} analysis job(s) in {:.3}s",
         deck.elements.len(),

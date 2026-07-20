@@ -1061,9 +1061,14 @@ fn run_transient(
     let profile = std::env::var_os("AGENT_SPICE_PROFILE").is_some();
     let profile_started = Instant::now();
     let mut profile_stamp = Duration::ZERO;
+    let mut profile_rfm_stamp = Duration::ZERO;
     let mut profile_solve = Duration::ZERO;
+    let mut profile_numeric_solve = Duration::ZERO;
+    let mut profile_cached_solve = Duration::ZERO;
     let mut profile_candidate = Duration::ZERO;
+    let mut profile_rfm_candidate = Duration::ZERO;
     let mut profile_lte = Duration::ZERO;
+    let mut profile_output = Duration::ZERO;
     loop {
         let stamp_started = profile.then(Instant::now);
         let raw_output_time = output_index as f64 * step;
@@ -1268,6 +1273,7 @@ fn run_transient(
                     references,
                     model,
                 } => {
+                    let rfm_stamp_started = profile.then(Instant::now);
                     let model = rfm_model(deck, rfm, model)?;
                     let rfm_state = state.rfm.get_mut(name).ok_or_else(|| {
                         Error::InvalidDeck(format!("RFM state for '{name}' was not initialized"))
@@ -1285,6 +1291,9 @@ fn run_transient(
                         rfm_state.conductance(),
                         Some(rfm_state.offset()),
                     );
+                    if let Some(started) = rfm_stamp_started {
+                        profile_rfm_stamp += started.elapsed();
+                    }
                 }
             }
         }
@@ -1294,7 +1303,13 @@ fn run_transient(
         let solve_started = profile.then(Instant::now);
         let (solution, symbolic, numeric) = cache.solve_real(deck.unknown_count, &matrix, &rhs)?;
         if let Some(started) = solve_started {
-            profile_solve += started.elapsed();
+            let elapsed = started.elapsed();
+            profile_solve += elapsed;
+            if numeric {
+                profile_numeric_solve += elapsed;
+            } else {
+                profile_cached_solve += elapsed;
+            }
         }
         statistics.sparse_numeric_refactorizations += usize::from(numeric);
         statistics.sparse_symbolic_factorizations += usize::from(symbolic);
@@ -1320,6 +1335,7 @@ fn run_transient(
                 model,
             } = element
             {
+                let rfm_candidate_started = profile.then(Instant::now);
                 let rfm_model = rfm_model(deck, rfm, model)?;
                 rfm_port_voltages.clear();
                 rfm_port_voltages.extend(ports.iter().zip(references).map(|(port, reference)| {
@@ -1334,6 +1350,9 @@ fn run_transient(
                     ))
                 })?;
                 rfm_model.commit_candidate(candidate, previous, &rfm_port_voltages);
+                if let Some(started) = rfm_candidate_started {
+                    profile_rfm_candidate += started.elapsed();
+                }
             }
         }
         if let Some(started) = candidate_started {
@@ -1421,10 +1440,14 @@ fn run_transient(
             usize::from((actual_step - step).abs() <= time_tolerance && !breakpoint_hit);
         statistics.breakpoint_transient_steps += usize::from(breakpoint_hit);
         if reaches_output {
+            let output_started = profile.then(Instant::now);
             let point = real_point(deck, "tran", output_time, &solution);
             observer.point(&point, output_index + 1, total_points, statistics)?;
             if retain_points {
                 result.push(point);
+            }
+            if let Some(started) = output_started {
+                profile_output += started.elapsed();
             }
             output_index += 1;
         }
@@ -1452,12 +1475,17 @@ fn run_transient(
     }
     if profile {
         eprintln!(
-            "[agent-spice-profile] total={:.6}s stamp={:.6}s solve={:.6}s candidate={:.6}s lte={:.6}s",
+            "[agent-spice-profile] total={:.6}s stamp={:.6}s solve={:.6}s candidate={:.6}s lte={:.6}s rfm-stamp={:.6}s numeric-solve={:.6}s cached-solve={:.6}s rfm-candidate={:.6}s output={:.6}s",
             profile_started.elapsed().as_secs_f64(),
             profile_stamp.as_secs_f64(),
             profile_solve.as_secs_f64(),
             profile_candidate.as_secs_f64(),
-            profile_lte.as_secs_f64()
+            profile_lte.as_secs_f64(),
+            profile_rfm_stamp.as_secs_f64(),
+            profile_numeric_solve.as_secs_f64(),
+            profile_cached_solve.as_secs_f64(),
+            profile_rfm_candidate.as_secs_f64(),
+            profile_output.as_secs_f64()
         );
     }
     Ok(result)
