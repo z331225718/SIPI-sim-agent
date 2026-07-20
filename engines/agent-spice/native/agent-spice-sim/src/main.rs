@@ -1,6 +1,7 @@
 mod compatibility;
 mod error;
 mod expression;
+mod logging;
 mod netlist;
 mod output;
 mod result;
@@ -27,7 +28,7 @@ fn log_rfm_storage(name: &str, model: &rfm::RfmModel) {
             stats.dense_history_bytes as f64 / (1024.0 * 1024.0)
         )
     };
-    eprintln!(
+    logging::line(format_args!(
         "[agent-spice-sim] RFM {name}: ports={} unique-poles={} modes={} state-scalars={} terms={} state-compression={compression:.1}x history={history} legacy-history={:.1} MiB",
         model.nports,
         stats.unique_poles,
@@ -35,7 +36,7 @@ fn log_rfm_storage(name: &str, model: &rfm::RfmModel) {
         stats.state_scalars,
         stats.response_terms,
         stats.legacy_dense_history_bytes as f64 / (1024.0 * 1024.0),
-    );
+    ));
 }
 
 fn log_pwl_storage(deck: &netlist::Deck) {
@@ -60,14 +61,15 @@ fn log_pwl_storage(deck: &netlist::Deck) {
         }
     }
     if sources > 0 {
-        eprintln!(
+        logging::line(format_args!(
             "[agent-spice-sim] PWL sources={sources} points={points} repeating={repeating} lookup=binary"
-        );
+        ));
     }
 }
 
 fn main() {
     if let Err(error) = run() {
+        logging::line(format_args!("agent-spice-sim: {error}"));
         eprintln!("agent-spice-sim: {error}");
         std::process::exit(1);
     }
@@ -85,6 +87,7 @@ fn run() -> Result<()> {
     let mut output_json = None;
     let mut waveform_csv = None;
     let mut audit_json = None;
+    let mut log_path = None;
     while let Some(argument) = arguments.next() {
         if argument == "--rfm" {
             rfm_path = Some(PathBuf::from(
@@ -106,6 +109,10 @@ fn run() -> Result<()> {
             ));
         } else if argument == "--audit-json" {
             audit_json = Some(PathBuf::from(
+                arguments.next().ok_or_else(|| Error::Usage(usage()))?,
+            ));
+        } else if argument == "--log" {
+            log_path = Some(PathBuf::from(
                 arguments.next().ok_or_else(|| Error::Usage(usage()))?,
             ));
         } else {
@@ -145,7 +152,21 @@ fn run() -> Result<()> {
         return Ok(());
     }
 
-    eprintln!("[agent-spice-sim] loading deck: {}", deck.display());
+    let log_path = log_path.unwrap_or_else(|| {
+        waveform_csv.as_ref().or(output_json.as_ref()).map_or_else(
+            || deck.with_extension("log"),
+            |path| path.with_extension("log"),
+        )
+    });
+    logging::initialize(&log_path)?;
+    logging::line(format_args!(
+        "[agent-spice-sim] log file: {}",
+        log_path.display()
+    ));
+    logging::line(format_args!(
+        "[agent-spice-sim] loading deck: {}",
+        deck.display()
+    ));
     let load_started = Instant::now();
     let rfm = rfm_path
         .as_deref()
@@ -164,35 +185,37 @@ fn run() -> Result<()> {
         log_rfm_storage(name, &deck.rfm_models[name]);
     }
     log_pwl_storage(&deck);
-    eprintln!(
+    logging::line(format_args!(
         "[agent-spice-sim] parsed: {} element(s), {} node(s), {} analysis job(s) in {:.3}s",
         deck.elements.len(),
         deck.nodes.len(),
         deck.analyses.len(),
         load_started.elapsed().as_secs_f64()
-    );
+    ));
     if let Some(path) = waveform_csv.as_deref() {
-        eprintln!(
+        logging::line(format_args!(
             "[agent-spice-sim] streaming waveform CSV: {}",
             path.display()
-        );
+        ));
     }
     let mut observer = output::RuntimeObserver::new(waveform_csv.as_deref(), &deck.analyses)?;
     let retain_points =
         output_json.is_some() || waveform_csv.is_none() || !deck.measurements.is_empty();
     if waveform_csv.is_some() && !retain_points {
-        eprintln!("[agent-spice-sim] streaming mode: full waveform points are not retained");
+        logging::line(format_args!(
+            "[agent-spice-sim] streaming mode: full waveform points are not retained"
+        ));
     }
     let result = simulator::run_with_observer(&deck, rfm.as_ref(), &mut observer, retain_points)?;
     let waveform_rows = observer.finish()?;
     if let Some(output_json) = output_json.as_deref() {
         let json_started = Instant::now();
         output::write_json(&result, output_json)?;
-        eprintln!(
+        logging::line(format_args!(
             "[agent-spice-sim] wrote final JSON: {} in {:.3}s",
             output_json.display(),
             json_started.elapsed().as_secs_f64()
-        );
+        ));
         println!(r#"{{"ok":true,"waveformRows":{waveform_rows}}}"#);
     } else if waveform_csv.is_some() {
         println!(
@@ -207,16 +230,16 @@ fn run() -> Result<()> {
     } else {
         println!("{}", serde_json::to_string(&result)?);
     }
-    eprintln!(
+    logging::line(format_args!(
         "[agent-spice-sim] simulation completed in {:.3}s",
         started.elapsed().as_secs_f64()
-    );
+    ));
     Ok(())
 }
 
 fn usage() -> String {
     "agent-spice-sim <deck> [--rfm <model.rfm>] [--rfm-subckt <name>] \
      [--output-json <result.json>] [--waveform-csv <waveform.csv>] \
-     [--audit-json <compatibility.json>]"
+     [--log <simulation.log>] [--audit-json <compatibility.json>]"
         .into()
 }

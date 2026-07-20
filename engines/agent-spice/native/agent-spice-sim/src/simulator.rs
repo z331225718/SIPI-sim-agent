@@ -1484,7 +1484,7 @@ fn run_transient(
         }
     }
     if profile {
-        eprintln!(
+        crate::logging::line(format_args!(
             "[agent-spice-profile] total={:.6}s stamp={:.6}s solve={:.6}s candidate={:.6}s lte={:.6}s rfm-stamp={:.6}s numeric-solve={:.6}s cached-solve={:.6}s rfm-candidate={:.6}s output={:.6}s",
             profile_started.elapsed().as_secs_f64(),
             profile_stamp.as_secs_f64(),
@@ -1496,7 +1496,7 @@ fn run_transient(
             profile_cached_solve.as_secs_f64(),
             profile_rfm_candidate.as_secs_f64(),
             profile_output.as_secs_f64()
-        );
+        ));
     }
     Ok(result)
 }

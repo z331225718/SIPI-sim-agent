@@ -21,8 +21,11 @@ pytestmark = pytest.mark.skipif(not ENGINE.is_file(), reason="Rust engine is not
 
 
 def run(deck: Path, *arguments: str | Path) -> dict:
+    command_arguments = [str(argument) for argument in arguments]
+    if "--log" not in command_arguments:
+        command_arguments.extend(("--log", os.devnull))
     completed = subprocess.run(
-        [str(ENGINE), str(deck), *(str(argument) for argument in arguments)],
+        [str(ENGINE), str(deck), *command_arguments],
         capture_output=True,
         text=True,
         check=True,
@@ -36,6 +39,7 @@ def test_rust_engine_reports_progress_and_writes_final_streamed_waveform(
     deck = tmp_path / "live_output.sp"
     result_json = tmp_path / "result.json"
     waveform_csv = tmp_path / "waveform.csv"
+    log_path = tmp_path / "simulation.log"
     deck.write_text(
         "live output\n"
         "V1 out 0 1\n"
@@ -54,6 +58,8 @@ def test_rust_engine_reports_progress_and_writes_final_streamed_waveform(
             str(result_json),
             "--waveform-csv",
             str(waveform_csv),
+            "--log",
+            str(log_path),
         ],
         capture_output=True,
         text=True,
@@ -64,10 +70,13 @@ def test_rust_engine_reports_progress_and_writes_final_streamed_waveform(
     assert json.loads(completed.stdout) == {"ok": True, "waveformRows": 11}
     assert result_json.is_file()
     assert len(waveform_csv.read_text(encoding="utf-8").splitlines()) == 12
-    assert "TRAN started: 11 output point(s)" in completed.stderr
-    assert "TRAN 11/11 (100.0%)" in completed.stderr
-    assert "simulation completed" in completed.stderr
-    assert "[agent-spice-profile]" in completed.stderr
+    log = log_path.read_text(encoding="utf-8")
+    assert "TRAN started: 11 output point(s)" in log
+    assert "TRAN 11/11 (100.0%)" in log
+    assert "simulation completed" in log
+    assert "[agent-spice-profile]" in log
+    assert "TRAN [" in completed.stderr
+    assert "TRAN started" not in completed.stderr
 
 
 def test_rust_engine_flushes_waveform_while_transient_is_running(
@@ -76,6 +85,7 @@ def test_rust_engine_flushes_waveform_while_transient_is_running(
     deck = tmp_path / "interruptible.sp"
     result_json = tmp_path / "result.json"
     waveform_csv = tmp_path / "waveform.csv"
+    log_path = tmp_path / "simulation.log"
     deck.write_text(
         "interruptible live output\n"
         "V1 out 0 1\n"
@@ -93,6 +103,8 @@ def test_rust_engine_flushes_waveform_while_transient_is_running(
             str(result_json),
             "--waveform-csv",
             str(waveform_csv),
+            "--log",
+            str(log_path),
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -117,13 +129,16 @@ def test_rust_engine_flushes_waveform_while_transient_is_running(
 
     assert live_lines[0].startswith("time,")
     assert not result_json.exists()
-    assert "streaming waveform CSV" in stderr
-    assert "TRAN started" in stderr
+    log = log_path.read_text(encoding="utf-8")
+    assert "streaming waveform CSV" in log
+    assert "TRAN started" in log
+    assert "TRAN [" in stderr
 
 
 def test_rust_engine_streams_waveform_without_full_json(tmp_path: Path) -> None:
     deck = tmp_path / "waveform_only.sp"
     waveform_csv = tmp_path / "waveform.csv"
+    log_path = tmp_path / "waveform.log"
     deck.write_text(
         "waveform only\n"
         "V1 out 0 1\n"
@@ -147,7 +162,10 @@ def test_rust_engine_streams_waveform_without_full_json(tmp_path: Path) -> None:
     assert "points" not in summary
     assert summary["statistics"]["acceptedTransientSteps"] == 10
     assert len(waveform_csv.read_text(encoding="utf-8").splitlines()) == 12
-    assert "full waveform points are not retained" in completed.stderr
+    assert "full waveform points are not retained" in log_path.read_text(encoding="utf-8")
+    assert "streaming waveform CSV" not in completed.stderr
+    assert "accepted=" not in completed.stderr
+    assert completed.stderr.count("[agent-spice-sim] TRAN [") <= 2
 
 
 def test_rust_engine_reuses_dyadic_transient_factors(tmp_path: Path) -> None:
@@ -998,8 +1016,16 @@ def test_rust_engine_compacts_unique_rfm_poles_and_profiles_hot_paths(
     shared_deck = tmp_path / "shared.sp"
     shared_deck.write_text(deck_text.replace("unique.rfm", "shared.rfm"), encoding="ascii")
     waveform = tmp_path / "unique.csv"
+    log_path = tmp_path / "unique.log"
     completed = subprocess.run(
-        [str(ENGINE), str(deck), "--waveform-csv", str(waveform)],
+        [
+            str(ENGINE),
+            str(deck),
+            "--waveform-csv",
+            str(waveform),
+            "--log",
+            str(log_path),
+        ],
         capture_output=True,
         text=True,
         check=False,
@@ -1017,8 +1043,9 @@ def test_rust_engine_compacts_unique_rfm_poles_and_profiles_hot_paths(
     assert shared_completed.returncode == 0, shared_completed.stdout + shared_completed.stderr
     assert json.loads(completed.stdout)["waveformRows"] == 11
     assert waveform.read_text(encoding="utf-8") == shared_waveform.read_text(encoding="utf-8")
-    assert "unique-poles=64 modes=64 state-scalars=64 terms=64" in completed.stderr
-    assert "state-compression=8.0x history=sparse" in completed.stderr
+    log = log_path.read_text(encoding="utf-8")
+    assert "unique-poles=64 modes=64 state-scalars=64 terms=64" in log
+    assert "state-compression=8.0x history=sparse" in log
     for field in (
         "rfm-stamp=",
         "numeric-solve=",
@@ -1026,7 +1053,7 @@ def test_rust_engine_compacts_unique_rfm_poles_and_profiles_hot_paths(
         "rfm-candidate=",
         "output=",
     ):
-        assert field in completed.stderr
+        assert field in log
 
 
 def test_rust_engine_rfm_gear2_matches_migration_oracle() -> None:

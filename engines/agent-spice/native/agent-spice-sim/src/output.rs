@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::io::{self, BufWriter, Write};
 use std::path::Path;
 use std::time::{Duration, Instant};
 
@@ -45,11 +45,11 @@ impl SimulationObserver for RuntimeObserver {
     fn analysis_started(&mut self, analysis: &str, total_points: usize) -> Result<()> {
         self.analysis_started = Instant::now();
         self.last_progress = Instant::now();
-        eprintln!(
+        crate::logging::line(format_args!(
             "[agent-spice-sim] {} started: {} output point(s)",
             analysis.to_ascii_uppercase(),
             total_points
-        );
+        ));
         Ok(())
     }
 
@@ -69,28 +69,29 @@ impl SimulationObserver for RuntimeObserver {
             || index == total_points
             || now.duration_since(self.last_progress) >= PROGRESS_INTERVAL
         {
-            let percent = if total_points == 0 {
+            let percent = if total_points <= 1 {
                 100.0
             } else {
-                index as f64 * 100.0 / total_points as f64
+                index.saturating_sub(1) as f64 * 100.0 / (total_points - 1) as f64
             };
             if point.analysis == "tran" {
                 let steps_per_output = statistics.accepted_transient_steps as f64
                     / index.saturating_sub(1).max(1) as f64;
-                eprintln!(
+                crate::logging::line(format_args!(
                     "[agent-spice-sim] TRAN {index}/{total_points} ({percent:.1}%) t={:.6e}s accepted={} rejected={} steps/output={steps_per_output:.1} breakpoints={} refactors={}",
                     point.x,
                     statistics.accepted_transient_steps,
                     statistics.rejected_transient_steps,
                     statistics.breakpoint_transient_steps,
                     statistics.sparse_numeric_refactorizations,
-                );
+                ));
+                self.draw_transient_progress(index, total_points, percent);
             } else {
-                eprintln!(
+                crate::logging::line(format_args!(
                     "[agent-spice-sim] {} {index}/{total_points} ({percent:.1}%) x={:.6e}",
                     point.analysis.to_ascii_uppercase(),
                     point.x
-                );
+                ));
             }
             self.last_progress = now;
         }
@@ -106,14 +107,53 @@ impl SimulationObserver for RuntimeObserver {
         if let Some(waveform) = &mut self.waveform {
             waveform.flush_if_analysis(analysis)?;
         }
-        eprintln!(
+        crate::logging::line(format_args!(
             "[agent-spice-sim] {} completed: {} output point(s) in {:.3}s",
             analysis.to_ascii_uppercase(),
             total_points,
             self.analysis_started.elapsed().as_secs_f64()
-        );
+        ));
         Ok(())
     }
+}
+
+impl RuntimeObserver {
+    fn draw_transient_progress(&mut self, index: usize, total_points: usize, percent: f64) {
+        const WIDTH: usize = 28;
+        let fraction = if total_points <= 1 {
+            1.0
+        } else {
+            (index.saturating_sub(1) as f64 / (total_points - 1) as f64).clamp(0.0, 1.0)
+        };
+        let filled = (fraction * WIDTH as f64).round() as usize;
+        let bar = format!("{}{}", "#".repeat(filled), "-".repeat(WIDTH - filled));
+        let elapsed = self.analysis_started.elapsed().as_secs_f64();
+        let eta = if index > 1 && fraction > 0.0 && fraction < 1.0 {
+            format_duration(elapsed * (1.0 - fraction) / fraction)
+        } else if fraction >= 1.0 {
+            "00:00:00".to_string()
+        } else {
+            "--:--:--".to_string()
+        };
+        let line = format!(
+            "[agent-spice-sim] TRAN [{bar}] {percent:6.2}% {index}/{total_points} ETA {eta}"
+        );
+        let mut stderr = io::stderr().lock();
+        if index == total_points {
+            let _ = writeln!(stderr, "\r{line:<140}");
+        } else {
+            let _ = write!(stderr, "\r{line:<140}");
+        }
+        let _ = stderr.flush();
+    }
+}
+
+fn format_duration(seconds: f64) -> String {
+    let seconds = seconds.max(0.0).round() as u64;
+    let hours = seconds / 3600;
+    let minutes = (seconds % 3600) / 60;
+    let seconds = seconds % 60;
+    format!("{hours:02}:{minutes:02}:{seconds:02}")
 }
 
 struct LiveWaveformWriter {
