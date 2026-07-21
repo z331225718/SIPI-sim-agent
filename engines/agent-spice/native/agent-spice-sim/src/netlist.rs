@@ -27,6 +27,7 @@ pub enum Waveform {
     },
     Pwl {
         points: Vec<(f64, f64)>,
+        hard_breakpoints: Vec<f64>,
         repeat_from: Option<f64>,
     },
 }
@@ -65,6 +66,7 @@ impl Waveform {
             Self::Pwl {
                 points,
                 repeat_from,
+                ..
             } => {
                 let time = repeat_from.map_or(time, |repeat_from| {
                     let end = points.last().expect("PWL has at least one point").0;
@@ -83,19 +85,20 @@ impl Waveform {
         let tolerance = 1e-15_f64.max(time.abs() * 1e-12);
         match self {
             Self::Pwl {
-                points,
+                hard_breakpoints,
                 repeat_from,
+                ..
             } => {
                 let threshold = time + tolerance;
                 let direct_index =
-                    points.partition_point(|(point_time, _)| *point_time <= threshold);
-                let direct = points
+                    hard_breakpoints.partition_point(|point_time| *point_time <= threshold);
+                let direct = hard_breakpoints
                     .get(direct_index)
-                    .map(|(point_time, _)| *point_time)
+                    .copied()
                     .filter(|point_time| *point_time <= stop);
                 let repeated = repeat_from
                     .and_then(|repeat_from| {
-                        next_repeated_pwl_breakpoint(points, repeat_from, threshold)
+                        next_repeated_pwl_breakpoint(hard_breakpoints, repeat_from, threshold)
                     })
                     .filter(|point_time| *point_time <= stop);
                 direct.into_iter().chain(repeated).min_by(f64::total_cmp)
@@ -149,11 +152,11 @@ fn interpolate_pwl(points: &[(f64, f64)], time: f64) -> f64 {
 }
 
 fn next_repeated_pwl_breakpoint(
-    points: &[(f64, f64)],
+    hard_breakpoints: &[f64],
     repeat_from: f64,
     threshold: f64,
 ) -> Option<f64> {
-    let end = points.last().expect("PWL has at least one point").0;
+    let end = *hard_breakpoints.last().expect("PWL has at least one point");
     let period = end - repeat_from;
     if !period.is_finite() || period <= 0.0 {
         return None;
@@ -165,20 +168,43 @@ fn next_repeated_pwl_breakpoint(
     };
     let offset = cycle * period;
     let local_threshold = threshold - offset;
-    let first_repeated = points.partition_point(|(point_time, _)| *point_time < repeat_from);
-    let repeated = &points[first_repeated..];
-    let next = repeated.partition_point(|(point_time, _)| *point_time <= local_threshold);
+    let first_repeated = hard_breakpoints.partition_point(|point_time| *point_time < repeat_from);
+    let repeated = &hard_breakpoints[first_repeated..];
+    let next = repeated.partition_point(|point_time| *point_time <= local_threshold);
     let candidate = repeated
         .get(next)
-        .map_or(repeat_from + (cycle + 1.0) * period, |(point_time, _)| {
+        .map_or(repeat_from + (cycle + 1.0) * period, |point_time| {
             point_time + offset
         });
     (candidate > threshold).then_some(candidate)
 }
 
+fn pwl_hard_breakpoints(points: &[(f64, f64)], repeat_from: Option<f64>) -> Vec<f64> {
+    debug_assert!(!points.is_empty());
+    let mut breakpoints = Vec::with_capacity(points.len());
+    breakpoints.push(points[0].0);
+    for window in points.windows(3) {
+        let [(t0, v0), (t1, v1), (t2, v2)] = window else {
+            unreachable!("PWL windows have exactly three points")
+        };
+        let left_slope = (v1 - v0) / (t1 - t0);
+        let right_slope = (v2 - v1) / (t2 - t1);
+        if left_slope.to_bits() != right_slope.to_bits() {
+            breakpoints.push(*t1);
+        }
+    }
+    breakpoints.push(points.last().expect("PWL has at least one point").0);
+    if let Some(repeat_from) = repeat_from {
+        breakpoints.push(repeat_from);
+    }
+    breakpoints.sort_by(f64::total_cmp);
+    breakpoints.dedup_by(|left, right| left.to_bits() == right.to_bits());
+    breakpoints
+}
+
 #[cfg(test)]
 mod waveform_lookup_tests {
-    use super::{Waveform, interpolate_pwl};
+    use super::{Waveform, interpolate_pwl, pwl_hard_breakpoints};
 
     #[test]
     fn binary_pwl_interpolation_preserves_boundaries_and_segments() {
@@ -203,19 +229,55 @@ mod waveform_lookup_tests {
     fn binary_repeated_pwl_breakpoints_match_cycle_boundaries() {
         let waveform = Waveform::Pwl {
             points: vec![(0.0, 0.0), (1.0, 1.0), (2.5, 0.5), (4.0, 0.0)],
+            hard_breakpoints: pwl_hard_breakpoints(
+                &[(0.0, 0.0), (1.0, 1.0), (2.5, 0.5), (4.0, 0.0)],
+                Some(1.0),
+            ),
             repeat_from: Some(1.0),
         };
         let expected = [
             (0.0, 1.0),
-            (1.0, 2.5),
+            (1.0, 4.0),
             (2.5, 4.0),
-            (4.0, 5.5),
+            (4.0, 7.0),
             (5.5, 7.0),
-            (7.0, 8.5),
+            (7.0, 10.0),
         ];
         for (time, next) in expected {
             assert_eq!(waveform.next_breakpoint_after(time, 10.0), Some(next));
         }
+    }
+
+    #[test]
+    fn exact_collinear_points_are_not_hard_breakpoints() {
+        let points = [(0.0, 0.0), (1.0, 2.0), (2.0, 4.0), (3.0, 6.0)];
+        let waveform = Waveform::Pwl {
+            points: points.to_vec(),
+            hard_breakpoints: pwl_hard_breakpoints(&points, None),
+            repeat_from: None,
+        };
+
+        assert_eq!(waveform.next_breakpoint_after(0.0, 10.0), Some(3.0));
+        for time in [-1.0, 0.0, 0.25, 1.0, 1.75, 2.0, 2.5, 3.0, 5.0] {
+            assert_eq!(
+                waveform.value(time).to_bits(),
+                interpolate_pwl(&points, time).to_bits()
+            );
+        }
+    }
+
+    #[test]
+    fn nearly_collinear_points_remain_hard_breakpoints() {
+        let points = [
+            (0.0, 0.0),
+            (1.0, 2.0),
+            (2.0, 4.0 + 8.0 * f64::EPSILON),
+            (3.0, 6.0),
+        ];
+        assert_eq!(
+            pwl_hard_breakpoints(&points, None),
+            vec![0.0, 1.0, 2.0, 3.0]
+        );
     }
 }
 
@@ -2668,6 +2730,7 @@ fn parse_source(
             }
             dc.get_or_insert(points[0].1);
             waveform = Some(Waveform::Pwl {
+                hard_breakpoints: pwl_hard_breakpoints(&points, None),
                 points,
                 repeat_from: None,
             });
@@ -2679,6 +2742,7 @@ fn parse_source(
             } = parsed;
             dc.get_or_insert(points[0].1);
             waveform = Some(Waveform::Pwl {
+                hard_breakpoints: pwl_hard_breakpoints(&points, repeat_from),
                 points,
                 repeat_from,
             });

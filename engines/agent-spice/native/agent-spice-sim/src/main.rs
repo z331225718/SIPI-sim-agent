@@ -42,6 +42,7 @@ fn log_rfm_storage(name: &str, model: &rfm::RfmModel) {
 fn log_pwl_storage(deck: &netlist::Deck) {
     let mut sources = 0usize;
     let mut points = 0usize;
+    let mut hard_breakpoints = 0usize;
     let mut repeating = 0usize;
     for element in &deck.elements {
         let source = match element {
@@ -52,17 +53,19 @@ fn log_pwl_storage(deck: &netlist::Deck) {
         };
         if let Some(netlist::Waveform::Pwl {
             points: source_points,
+            hard_breakpoints: source_breakpoints,
             repeat_from,
         }) = &source.waveform
         {
             sources += 1;
             points += source_points.len();
+            hard_breakpoints += source_breakpoints.len();
             repeating += usize::from(repeat_from.is_some());
         }
     }
     if sources > 0 {
         logging::line(format_args!(
-            "[agent-spice-sim] PWL sources={sources} points={points} repeating={repeating} lookup=binary"
+            "[agent-spice-sim] PWL sources={sources} points={points} hard-breakpoints={hard_breakpoints} repeating={repeating} lookup=binary"
         ));
     }
 }
