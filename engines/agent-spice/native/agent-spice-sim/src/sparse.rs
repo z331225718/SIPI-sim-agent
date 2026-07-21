@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use faer::prelude::Solve;
 use faer::sparse::linalg::solvers::{Lu, SymbolicLu};
 use faer::sparse::{SparseColMat, Triplet};
-use faer::{Mat, c64};
+use faer::{MatMut, c64};
 
 use crate::error::{Error, Result};
 
@@ -50,32 +50,32 @@ impl SymbolicCache {
         })
     }
 
-    pub fn solve_transient_factor(
+    pub fn solve_transient_factor_in_place(
         &mut self,
         key: TransientMatrixKey,
         n: usize,
-        rhs: &[f64],
-    ) -> Result<Vec<f64>> {
+        rhs: &mut [f64],
+    ) -> Result<()> {
         let index = self
             .real_factors
             .iter()
             .position(|cached| {
                 matches!(cached.identity, RealFactorIdentity::Transient(cached_key) if cached_key == key)
-            })
-            .ok_or_else(|| Error::Sparse("transient factor cache entry was not found".into()))?;
+        })
+        .ok_or_else(|| Error::Sparse("transient factor cache entry was not found".into()))?;
         let cached = self.real_factors.remove(index);
-        let solution = solve_factor(&cached.factor, n, rhs);
+        solve_factor_in_place(&cached.factor, n, rhs);
         self.real_factors.push(cached);
-        Ok(solution)
+        Ok(())
     }
 
-    pub fn solve_real_transient(
+    pub fn solve_real_transient_in_place(
         &mut self,
         key: TransientMatrixKey,
         n: usize,
         entries: &[Triplet<usize, usize, f64>],
-        rhs: &[f64],
-    ) -> Result<(Vec<f64>, bool)> {
+        rhs: &mut [f64],
+    ) -> Result<bool> {
         let matrix = SparseColMat::<usize, f64>::try_new_from_triplets(n, n, entries)
             .map_err(|error| Error::Sparse(error.to_string()))?;
         let created_symbolic = self.symbolic.is_none();
@@ -90,7 +90,7 @@ impl SymbolicCache {
         };
         let factor = Lu::try_new_with_symbolic(symbolic, matrix.as_ref())
             .map_err(|error| Error::Sparse(error.to_string()))?;
-        let solution = solve_factor(&factor, n, rhs);
+        solve_factor_in_place(&factor, n, rhs);
         self.insert_real_factor(
             RealFactor {
                 identity: RealFactorIdentity::Transient(key),
@@ -98,7 +98,7 @@ impl SymbolicCache {
             },
             n,
         );
-        Ok((solution, created_symbolic))
+        Ok(created_symbolic)
     }
 
     pub fn solve_complex(
@@ -204,7 +204,15 @@ fn solve_factor<T>(factor: &Lu<usize, T>, n: usize, rhs: &[T]) -> Vec<T>
 where
     T: faer::traits::ComplexField,
 {
-    let rhs = Mat::from_fn(n, 1, |row, _| rhs[row].clone());
-    let solution = factor.solve(&rhs);
-    (0..n).map(|row| solution[(row, 0)].clone()).collect()
+    let mut solution = rhs.to_vec();
+    solve_factor_in_place(factor, n, &mut solution);
+    solution
+}
+
+fn solve_factor_in_place<T>(factor: &Lu<usize, T>, n: usize, rhs: &mut [T])
+where
+    T: faer::traits::ComplexField,
+{
+    debug_assert_eq!(rhs.len(), n);
+    factor.solve_in_place(MatMut::from_column_major_slice_mut(rhs, n, 1));
 }

@@ -1360,16 +1360,17 @@ fn run_transient(
             profile_stamp += started.elapsed();
         }
         let solve_started = profile.then(Instant::now);
-        let (solution, symbolic, numeric) = if build_matrix {
-            let (solution, symbolic) =
-                cache.solve_real_transient(matrix_key, deck.unknown_count, &matrix, &rhs)?;
-            (solution, symbolic, true)
+        let (symbolic, numeric) = if build_matrix {
+            let symbolic = cache.solve_real_transient_in_place(
+                matrix_key,
+                deck.unknown_count,
+                &matrix,
+                &mut rhs,
+            )?;
+            (symbolic, true)
         } else {
-            (
-                cache.solve_transient_factor(matrix_key, deck.unknown_count, &rhs)?,
-                false,
-                false,
-            )
+            cache.solve_transient_factor_in_place(matrix_key, deck.unknown_count, &mut rhs)?;
+            (false, false)
         };
         if let Some(started) = solve_started {
             let elapsed = started.elapsed();
@@ -1382,9 +1383,10 @@ fn run_transient(
         }
         statistics.sparse_numeric_refactorizations += usize::from(numeric);
         statistics.sparse_symbolic_factorizations += usize::from(symbolic);
+        let solution = &rhs;
         let candidate_started = profile.then(Instant::now);
         for (name, positive, negative, capacitance, conductance, history) in &capacitor_companions {
-            let voltage = node_voltage(&solution, *positive) - node_voltage(&solution, *negative);
+            let voltage = node_voltage(solution, *positive) - node_voltage(solution, *negative);
             capacitor_candidates.push((
                 *name,
                 *capacitance,
@@ -1393,7 +1395,7 @@ fn run_transient(
             ));
         }
         for (name, positive, negative, inductance, branch) in &inductor_companions {
-            let voltage = node_voltage(&solution, *positive) - node_voltage(&solution, *negative);
+            let voltage = node_voltage(solution, *positive) - node_voltage(solution, *negative);
             inductor_candidates.push((*name, *inductance, solution[*branch], voltage));
         }
         for element in &deck.elements {
@@ -1408,7 +1410,7 @@ fn run_transient(
                 let rfm_model = rfm_model(deck, rfm, model)?;
                 rfm_port_voltages.clear();
                 rfm_port_voltages.extend(ports.iter().zip(references).map(|(port, reference)| {
-                    node_voltage(&solution, *port) - node_voltage(&solution, *reference)
+                    node_voltage(solution, *port) - node_voltage(solution, *reference)
                 }));
                 let previous = state.rfm.get(name).ok_or_else(|| {
                     Error::InvalidDeck(format!("RFM state for '{name}' was not initialized"))
@@ -1510,7 +1512,7 @@ fn run_transient(
         statistics.breakpoint_transient_steps += usize::from(breakpoint_hit);
         if reaches_output {
             let output_started = profile.then(Instant::now);
-            let point = real_point(deck, "tran", output_time, &solution);
+            let point = real_point(deck, "tran", output_time, solution);
             observer.point(&point, output_index + 1, total_points, statistics)?;
             if retain_points {
                 result.push(point);

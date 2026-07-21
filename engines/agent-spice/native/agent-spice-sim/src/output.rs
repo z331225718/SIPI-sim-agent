@@ -78,12 +78,14 @@ impl SimulationObserver for RuntimeObserver {
                 let steps_per_output = statistics.accepted_transient_steps as f64
                     / index.saturating_sub(1).max(1) as f64;
                 crate::logging::line(format_args!(
-                    "[agent-spice-sim] TRAN {index}/{total_points} ({percent:.1}%) t={:.6e}s accepted={} rejected={} steps/output={steps_per_output:.1} breakpoints={} refactors={}",
+                    "[agent-spice-sim] TRAN {index}/{total_points} ({percent:.1}%) t={:.6e}s accepted={} rejected={} steps/output={steps_per_output:.1} breakpoints={} refactors={} matrix-cache={}/{}",
                     point.x,
                     statistics.accepted_transient_steps,
                     statistics.rejected_transient_steps,
                     statistics.breakpoint_transient_steps,
                     statistics.sparse_numeric_refactorizations,
+                    statistics.transient_matrix_cache_hits,
+                    statistics.transient_matrix_cache_misses,
                 ));
                 self.draw_transient_progress(index, total_points, percent);
             } else {
