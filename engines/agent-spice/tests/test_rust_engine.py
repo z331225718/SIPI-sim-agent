@@ -895,7 +895,7 @@ def test_rust_engine_fits_hspice_touchstone_s_model_natively(tmp_path: Path) -> 
         "HSPICE native Touchstone S model\n"
         ".model channel s TSTONEFILE='channel.s1p' rational_func_reuse=0 rational_func=1\n"
         "Vdrive p 0 AC 1\n"
-        "Schannel p 0 mname=channel\n"
+        "Schannel p 0 mname=channel m=1\n"
         ".ac lin 1 1g 1g\n"
         ".end\n",
         encoding="utf-8",
@@ -907,6 +907,42 @@ def test_rust_engine_fits_hspice_touchstone_s_model_natively(tmp_path: Path) -> 
     branch_current = native["points"][0]["complex"]["Vdrive"]
     assert math.isfinite(branch_current["re"])
     assert math.isfinite(branch_current["im"])
+
+
+def test_rust_engine_scales_hspice_s_model_multiplier(tmp_path: Path) -> None:
+    (tmp_path / "channel.s1p").write_text(
+        "# GHz S RI R 50\n"
+        "0.1 0.5 0\n"
+        "1.0 0.5 0\n",
+        encoding="ascii",
+    )
+
+    def run_with_multiplier(multiplier: int, multiplier_first: bool = False) -> complex:
+        suffix = "_first" if multiplier_first else ""
+        deck = tmp_path / f"native_touchstone_m{multiplier}{suffix}.sp"
+        options = (
+            f"m={multiplier} mname=channel"
+            if multiplier_first
+            else f"mname=channel m={multiplier}"
+        )
+        deck.write_text(
+            "HSPICE Touchstone multiplier\n"
+            ".model channel s TSTONEFILE='channel.s1p'\n"
+            "Vdrive p 0 AC 1\n"
+            f"Schannel p 0 {options}\n"
+            ".ac lin 1 1g 1g\n"
+            ".end\n",
+            encoding="utf-8",
+        )
+        current = run(deck)["points"][0]["complex"]["Vdrive"]
+        return complex(current["re"], current["im"])
+
+    one = run_with_multiplier(1)
+    one_multiplier_first = run_with_multiplier(1, multiplier_first=True)
+    two = run_with_multiplier(2)
+
+    assert one_multiplier_first == pytest.approx(one, abs=1e-12)
+    assert two == pytest.approx(2.0 * one, abs=1e-12)
 
 
 def test_rust_engine_uses_direct_ac_for_touchstone_without_rational_option(

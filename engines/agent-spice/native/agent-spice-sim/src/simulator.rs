@@ -777,6 +777,7 @@ fn solve_dc(
                 ports,
                 references,
                 model,
+                multiplier,
                 ..
             } => {
                 if !rfm_admittances.contains_key(model) {
@@ -792,6 +793,7 @@ fn solve_dc(
                     references,
                     &rfm_admittances[model],
                     None,
+                    *multiplier,
                 );
             }
         }
@@ -931,6 +933,7 @@ fn solve_ac(
                 ports,
                 references,
                 model,
+                multiplier,
                 ..
             } => {
                 if !rfm_admittances.contains_key(model) {
@@ -939,7 +942,13 @@ fn solve_ac(
                         rfm_model(deck, rfm, model)?.admittance(c64::new(0.0, omega))?,
                     );
                 }
-                stamp_nport_complex(&mut matrix, ports, references, &rfm_admittances[model]);
+                stamp_nport_complex(
+                    &mut matrix,
+                    ports,
+                    references,
+                    &rfm_admittances[model],
+                    *multiplier,
+                );
             }
         }
     }
@@ -1030,6 +1039,7 @@ fn run_transient(
                 ports,
                 references,
                 model,
+                ..
             } => {
                 let model = rfm_model(deck, rfm, model)?;
                 let mut rfm_state = model.create_state();
@@ -1338,6 +1348,7 @@ fn run_transient(
                     ports,
                     references,
                     model,
+                    multiplier,
                 } => {
                     let rfm_stamp_started = profile.then(Instant::now);
                     let model = rfm_model(deck, rfm, model)?;
@@ -1357,9 +1368,16 @@ fn run_transient(
                             references,
                             rfm_state.conductance(),
                             Some(rfm_state.offset()),
+                            *multiplier,
                         );
                     } else {
-                        stamp_nport_offset_real(&mut rhs, ports, references, rfm_state.offset());
+                        stamp_nport_offset_real(
+                            &mut rhs,
+                            ports,
+                            references,
+                            rfm_state.offset(),
+                            *multiplier,
+                        );
                     }
                     if let Some(started) = rfm_stamp_started {
                         profile_rfm_stamp += started.elapsed();
@@ -1415,6 +1433,7 @@ fn run_transient(
                 ports,
                 references,
                 model,
+                ..
             } = element
             {
                 let rfm_candidate_started = profile.then(Instant::now);
@@ -1794,13 +1813,14 @@ fn stamp_nport_real(
     references: &[Node],
     admittance: &[f64],
     offset: Option<&[f64]>,
+    multiplier: f64,
 ) {
     debug_assert_eq!(admittance.len(), ports.len() * ports.len());
     debug_assert_eq!(references.len(), ports.len());
     for (row, positive_row) in ports.iter().enumerate() {
         let negative_row = references[row];
         for (column, positive_column) in ports.iter().enumerate() {
-            let value = admittance[row * ports.len() + column];
+            let value = multiplier * admittance[row * ports.len() + column];
             if value == 0.0 {
                 continue;
             }
@@ -1814,15 +1834,21 @@ fn stamp_nport_real(
             );
         }
         if let Some(offset) = offset {
-            stamp_current_real(rhs, *positive_row, negative_row, offset[row]);
+            stamp_current_real(rhs, *positive_row, negative_row, multiplier * offset[row]);
         }
     }
 }
 
-fn stamp_nport_offset_real(rhs: &mut [f64], ports: &[Node], references: &[Node], offset: &[f64]) {
+fn stamp_nport_offset_real(
+    rhs: &mut [f64],
+    ports: &[Node],
+    references: &[Node],
+    offset: &[f64],
+    multiplier: f64,
+) {
     debug_assert_eq!(offset.len(), ports.len());
     for ((positive, negative), value) in ports.iter().zip(references).zip(offset) {
-        stamp_current_real(rhs, *positive, *negative, *value);
+        stamp_current_real(rhs, *positive, *negative, multiplier * *value);
     }
 }
 
@@ -1831,12 +1857,13 @@ fn stamp_nport_complex(
     ports: &[Node],
     references: &[Node],
     admittance: &[c64],
+    multiplier: f64,
 ) {
     debug_assert_eq!(admittance.len(), ports.len() * ports.len());
     debug_assert_eq!(references.len(), ports.len());
     for (row, positive_row) in ports.iter().enumerate() {
         for (column, positive_column) in ports.iter().enumerate() {
-            let value = admittance[row * ports.len() + column];
+            let value = multiplier * admittance[row * ports.len() + column];
             if value == c64::new(0.0, 0.0) {
                 continue;
             }

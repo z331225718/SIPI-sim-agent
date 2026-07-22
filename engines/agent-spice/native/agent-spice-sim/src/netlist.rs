@@ -373,6 +373,7 @@ pub enum Element {
         ports: Vec<Node>,
         references: Vec<Node>,
         model: Option<String>,
+        multiplier: f64,
     },
 }
 
@@ -1363,13 +1364,14 @@ impl Flattener<'_> {
             values[0] = qualify_element(&scope.path, &values[0]);
         }
         if kind == b'S' {
-            let (model, node_end) = parse_s_instance_model(&values)?;
-            if !self.rfm_model_ports.contains_key(&model) {
+            let instance = parse_s_instance_model(&values)?;
+            if !self.rfm_model_ports.contains_key(&instance.model) {
                 return Err(Error::Parse(format!(
-                    "S-parameter model '{model}' was not found"
+                    "S-parameter model '{}' was not found",
+                    instance.model
                 )));
             }
-            for value in &mut values[1..node_end] {
+            for value in &mut values[1..instance.node_end] {
                 *value = self.map_node(value, scope);
             }
         } else {
@@ -1571,13 +1573,20 @@ fn parse_assignments(
     Ok(assignments)
 }
 
-fn parse_s_instance_model(tokens: &[String]) -> Result<(String, usize)> {
+struct SInstanceModel {
+    model: String,
+    node_end: usize,
+    multiplier: Option<String>,
+}
+
+fn parse_s_instance_model(tokens: &[String]) -> Result<SInstanceModel> {
     let option_start = (1..tokens.len())
         .find(|index| {
             tokens[*index].eq_ignore_ascii_case("mname")
-                || tokens[*index]
-                    .split_once('=')
-                    .is_some_and(|(name, _)| name.eq_ignore_ascii_case("mname"))
+                || tokens[*index].eq_ignore_ascii_case("m")
+                || tokens[*index].split_once('=').is_some_and(|(name, _)| {
+                    name.eq_ignore_ascii_case("mname") || name.eq_ignore_ascii_case("m")
+                })
         })
         .ok_or_else(|| Error::Parse("S-parameter instance requires MNAME=<model>".into()))?;
     let assignments = parse_assignments(
@@ -1585,12 +1594,34 @@ fn parse_s_instance_model(tokens: &[String]) -> Result<(String, usize)> {
         "S-parameter instance option",
         false,
     )?;
-    if assignments.len() != 1 || !assignments[0].0.eq_ignore_ascii_case("mname") {
-        return Err(Error::Parse(
-            "S-parameter instance supports only MNAME=<model>".into(),
-        ));
+    let mut model = None;
+    let mut multiplier = None;
+    for (name, value) in assignments {
+        if name.eq_ignore_ascii_case("mname") {
+            if model.replace(value).is_some() {
+                return Err(Error::Parse(
+                    "S-parameter instance specifies MNAME more than once".into(),
+                ));
+            }
+        } else if name.eq_ignore_ascii_case("m") {
+            if multiplier.replace(value).is_some() {
+                return Err(Error::Parse(
+                    "S-parameter instance specifies M more than once".into(),
+                ));
+            }
+        } else {
+            return Err(Error::Parse(format!(
+                "unsupported S-parameter instance option '{name}'"
+            )));
+        }
     }
-    Ok((assignments[0].1.to_ascii_lowercase(), option_start))
+    let model =
+        model.ok_or_else(|| Error::Parse("S-parameter instance requires MNAME=<model>".into()))?;
+    Ok(SInstanceModel {
+        model: model.to_ascii_lowercase(),
+        node_end: option_start,
+        multiplier,
+    })
 }
 
 fn update_parameters(tokens: &[String], parameters: &mut ParameterSet) -> Result<()> {
@@ -1698,7 +1729,7 @@ enum PendingElement {
     Vccs(String, Node, Node, Node, Node, f64),
     Cccs(String, Node, Node, String, f64),
     Ccvs(String, Node, Node, String, f64),
-    Rfm(String, Vec<Node>, Vec<Node>, Option<String>),
+    Rfm(String, Vec<Node>, Vec<Node>, Option<String>, f64),
 }
 
 impl Parser {
@@ -1840,13 +1871,29 @@ impl Parser {
                 self.elements.push(element);
             }
             b'S' => {
-                let (model, node_end) = parse_s_instance_model(&tokens)?;
-                let nports = self.rfm_model_ports.get(&model).copied().ok_or_else(|| {
-                    Error::Parse(format!(
-                        "S-parameter model '{model}' was not found for '{name}'"
-                    ))
-                })?;
-                let node_tokens = &tokens[1..node_end];
+                let instance = parse_s_instance_model(&tokens)?;
+                let nports = self
+                    .rfm_model_ports
+                    .get(&instance.model)
+                    .copied()
+                    .ok_or_else(|| {
+                        Error::Parse(format!(
+                            "S-parameter model '{}' was not found for '{name}'",
+                            instance.model
+                        ))
+                    })?;
+                let multiplier = instance
+                    .multiplier
+                    .as_deref()
+                    .map(|value| parse_number(value, &self.parameters))
+                    .transpose()?
+                    .unwrap_or(1.0);
+                if !multiplier.is_finite() || multiplier <= 0.0 {
+                    return Err(Error::Parse(format!(
+                        "S-parameter instance '{name}' requires a positive finite M multiplier"
+                    )));
+                }
+                let node_tokens = &tokens[1..instance.node_end];
                 let (ports, references) = if node_tokens.len() == nports * 2 {
                     let mut ports = Vec::with_capacity(nports);
                     let mut references = Vec::with_capacity(nports);
@@ -1867,8 +1914,13 @@ impl Parser {
                         "S-parameter instance '{name}' requires either {nports} positive/negative node pair(s), or {nports} port nodes plus one common reference, before MNAME"
                     )));
                 };
-                self.elements
-                    .push(PendingElement::Rfm(name, ports, references, Some(model)));
+                self.elements.push(PendingElement::Rfm(
+                    name,
+                    ports,
+                    references,
+                    Some(instance.model),
+                    multiplier,
+                ));
             }
             b'X' => {
                 let subcircuit = self.rfm_subcircuit.as_ref().ok_or_else(|| {
@@ -1895,6 +1947,7 @@ impl Parser {
                     ports,
                     vec![reference; nports],
                     None,
+                    1.0,
                 ));
             }
             kind => {
@@ -2325,11 +2378,12 @@ impl Parser {
                         branch: branch_by_element[&index],
                     }
                 }
-                PendingElement::Rfm(name, ports, references, model) => Element::Rfm {
+                PendingElement::Rfm(name, ports, references, model, multiplier) => Element::Rfm {
                     name,
                     ports,
                     references,
                     model,
+                    multiplier,
                 },
             };
             elements.push(element);
