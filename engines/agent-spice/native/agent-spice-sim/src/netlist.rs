@@ -336,6 +336,14 @@ pub enum Element {
         negative: Node,
         source: Source,
     },
+    Port {
+        name: String,
+        positive: Node,
+        negative: Node,
+        number: usize,
+        impedance: f64,
+        ac: c64,
+    },
     Vcvs {
         name: String,
         positive: Node,
@@ -385,6 +393,7 @@ impl Element {
             | Self::Inductor { name, .. }
             | Self::Voltage { name, .. }
             | Self::Current { name, .. }
+            | Self::Port { name, .. }
             | Self::Vcvs { name, .. }
             | Self::Vccs { name, .. }
             | Self::Cccs { name, .. }
@@ -1320,7 +1329,7 @@ impl Flattener<'_> {
                 1
             } else {
                 match head.as_bytes()[0].to_ascii_uppercase() {
-                    b'R' | b'C' | b'L' | b'V' | b'I' => 3,
+                    b'R' | b'C' | b'L' | b'V' | b'I' | b'P' => 3,
                     b'E' | b'G' => 5,
                     b'F' | b'H' => 4,
                     _ => values.len(),
@@ -1376,7 +1385,7 @@ impl Flattener<'_> {
             }
         } else {
             let node_indices: &[usize] = match kind {
-                b'R' | b'C' | b'L' | b'V' | b'I' | b'F' | b'H' => &[1, 2],
+                b'R' | b'C' | b'L' | b'V' | b'I' | b'P' | b'F' | b'H' => &[1, 2],
                 b'E' | b'G' => &[1, 2, 3, 4],
                 _ => &[],
             };
@@ -1725,6 +1734,7 @@ enum PendingElement {
     Inductor(String, Node, Node, f64),
     Voltage(String, Node, Node, Source),
     Current(String, Node, Node, Source),
+    Port(String, Node, Node, usize, f64, c64),
     Vcvs(String, Node, Node, Node, Node, f64),
     Vccs(String, Node, Node, Node, Node, f64),
     Cccs(String, Node, Node, String, f64),
@@ -1822,6 +1832,12 @@ impl Parser {
                 let source = parse_source(&tokens[3..], &self.parameters, source_directory)?;
                 self.elements
                     .push(PendingElement::Current(name, positive, negative, source));
+            }
+            b'P' => {
+                let (number, impedance, ac) = parse_port(&tokens[3..], &self.parameters)?;
+                self.elements.push(PendingElement::Port(
+                    name, positive, negative, number, impedance, ac,
+                ));
             }
             b'E' | b'G' => {
                 if tokens.len() < 6 {
@@ -2256,6 +2272,23 @@ impl Parser {
                 "deck has no OP, DC, AC, or TRAN analysis".into(),
             ));
         }
+        let mut port_numbers = HashSet::new();
+        for pending in &self.elements {
+            if let PendingElement::Port(_, _, _, number, _, _) = pending
+                && !port_numbers.insert(*number)
+            {
+                return Err(Error::Parse(format!(
+                    "P-element PORT={number} is declared more than once"
+                )));
+            }
+        }
+        if let Some(maximum) = port_numbers.iter().max()
+            && *maximum != port_numbers.len()
+        {
+            return Err(Error::Parse(
+                "P-element PORT numbers must be contiguous from 1".into(),
+            ));
+        }
         let mut next_branch = self.nodes.len();
         let mut branch_names = Vec::new();
         let mut branch_by_element = HashMap::new();
@@ -2318,6 +2351,16 @@ impl Parser {
                     negative,
                     source,
                 },
+                PendingElement::Port(name, positive, negative, number, impedance, ac) => {
+                    Element::Port {
+                        name,
+                        positive,
+                        negative,
+                        number,
+                        impedance,
+                        ac,
+                    }
+                }
                 PendingElement::Vcvs(
                     name,
                     positive,
@@ -2769,6 +2812,99 @@ fn parse_passive_value(
         first
     };
     parse_number(expression, parameters)
+}
+
+fn parse_port_option_value(
+    tokens: &[String],
+    index: &mut usize,
+    inline_value: Option<&str>,
+    option: &str,
+) -> Result<String> {
+    if let Some(value) = inline_value.filter(|value| !value.is_empty()) {
+        *index += 1;
+        return Ok(value.to_string());
+    }
+    *index += 1;
+    if tokens.get(*index).is_some_and(|value| value == "=") {
+        *index += 1;
+    }
+    let value = tokens
+        .get(*index)
+        .cloned()
+        .ok_or_else(|| Error::Parse(format!("P-element {option} value is missing")))?;
+    *index += 1;
+    Ok(value)
+}
+
+fn parse_port(tokens: &[String], parameters: &HashMap<String, f64>) -> Result<(usize, f64, c64)> {
+    let mut port = None;
+    let mut impedance = 50.0;
+    let mut ac = c64::new(0.0, 0.0);
+    let mut index = 0usize;
+    while index < tokens.len() {
+        let token = &tokens[index];
+        let (name, inline_value) = token
+            .split_once('=')
+            .map_or((token.as_str(), None), |(name, value)| (name, Some(value)));
+        if name.eq_ignore_ascii_case("port") {
+            let value = parse_number(
+                &parse_port_option_value(tokens, &mut index, inline_value, "PORT")?,
+                parameters,
+            )?;
+            if !value.is_finite()
+                || value < 1.0
+                || value.fract() != 0.0
+                || value > usize::MAX as f64
+            {
+                return Err(Error::Parse(
+                    "P-element PORT must be a positive integer".into(),
+                ));
+            }
+            if port.replace(value as usize).is_some() {
+                return Err(Error::Parse(
+                    "P-element specifies PORT more than once".into(),
+                ));
+            }
+        } else if name.eq_ignore_ascii_case("z0") {
+            let value = parse_number(
+                &parse_port_option_value(tokens, &mut index, inline_value, "Z0")?,
+                parameters,
+            )?;
+            if !value.is_finite() || value <= 0.0 {
+                return Err(Error::Parse(
+                    "P-element Z0 must be a positive finite resistance".into(),
+                ));
+            }
+            impedance = value;
+        } else if name.eq_ignore_ascii_case("ac") {
+            let magnitude = parse_number(
+                &parse_port_option_value(tokens, &mut index, inline_value, "AC magnitude")?,
+                parameters,
+            )?;
+            let phase = tokens
+                .get(index)
+                .filter(|next| {
+                    let option = next.split_once('=').map_or(next.as_str(), |(name, _)| name);
+                    !option.eq_ignore_ascii_case("port")
+                        && !option.eq_ignore_ascii_case("z0")
+                        && !option.eq_ignore_ascii_case("ac")
+                })
+                .map(|next| parse_number(next, parameters))
+                .transpose()?;
+            if let Some(phase) = phase {
+                index += 1;
+                ac = c64::from_polar(magnitude, phase * PI / 180.0);
+            } else {
+                ac = c64::new(magnitude, 0.0);
+            }
+        } else {
+            return Err(Error::Parse(format!(
+                "unsupported P-element option '{token}'"
+            )));
+        }
+    }
+    let port = port.ok_or_else(|| Error::Parse("P-element requires PORT=<number>".into()))?;
+    Ok((port, impedance, ac))
 }
 
 fn parse_source(

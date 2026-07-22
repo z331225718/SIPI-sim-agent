@@ -671,6 +671,12 @@ fn solve_dc(
                 resistance,
                 ..
             } => stamp_admittance_real(&mut matrix, *positive, *negative, 1.0 / resistance),
+            Element::Port {
+                positive,
+                negative,
+                impedance,
+                ..
+            } => stamp_admittance_real(&mut matrix, *positive, *negative, 1.0 / impedance),
             Element::Capacitor {
                 positive, negative, ..
             } => stamp_admittance_real(&mut matrix, *positive, *negative, 0.0),
@@ -828,6 +834,23 @@ fn solve_ac(
                 *negative,
                 c64::new(1.0 / resistance, 0.0),
             ),
+            Element::Port {
+                positive,
+                negative,
+                number,
+                impedance,
+                ac,
+                ..
+            } => {
+                debug_assert!(*number > 0);
+                stamp_admittance_complex(
+                    &mut matrix,
+                    *positive,
+                    *negative,
+                    c64::new(1.0 / impedance, 0.0),
+                );
+                stamp_current_complex(&mut rhs, *positive, *negative, -*ac / *impedance);
+            }
             Element::Capacitor {
                 positive,
                 negative,
@@ -1171,6 +1194,16 @@ fn run_transient(
                 } => {
                     if build_matrix {
                         stamp_admittance_real(&mut matrix, *positive, *negative, 1.0 / resistance);
+                    }
+                }
+                Element::Port {
+                    positive,
+                    negative,
+                    impedance,
+                    ..
+                } => {
+                    if build_matrix {
+                        stamp_admittance_real(&mut matrix, *positive, *negative, 1.0 / impedance);
                     }
                 }
                 Element::Capacitor {

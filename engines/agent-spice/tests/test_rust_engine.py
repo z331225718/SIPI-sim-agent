@@ -945,6 +945,33 @@ def test_rust_engine_scales_hspice_s_model_multiplier(tmp_path: Path) -> None:
     assert two == pytest.approx(2.0 * one, abs=1e-12)
 
 
+def test_rust_engine_runs_hspice_ac_port_elements(tmp_path: Path) -> None:
+    terminated = tmp_path / "port_termination.sp"
+    terminated.write_text(
+        "HSPICE AC port termination\n"
+        "Vdrive p 0 AC 1\n"
+        "P1 p 0 z0=50 port=1\n"
+        ".ac lin 1 1g 1g\n"
+        ".end\n",
+        encoding="ascii",
+    )
+    driven = tmp_path / "port_source.sp"
+    driven.write_text(
+        "HSPICE AC port source\n"
+        "P1 p 0 port=1 z0=50 AC 1 0\n"
+        "Rload p 0 50\n"
+        ".ac lin 1 1g 1g\n"
+        ".end\n",
+        encoding="ascii",
+    )
+
+    termination_current = run(terminated)["points"][0]["complex"]["Vdrive"]
+    source_voltage = run(driven)["points"][0]["complex"]["p"]
+
+    assert termination_current == pytest.approx({"re": -0.02, "im": 0.0})
+    assert source_voltage == pytest.approx({"re": 0.5, "im": 0.0})
+
+
 def test_rust_engine_uses_direct_ac_for_touchstone_without_rational_option(
     tmp_path: Path,
 ) -> None:
