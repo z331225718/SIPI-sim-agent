@@ -136,6 +136,32 @@ impl Waveform {
             }
         }
     }
+
+    /// PWL knots keep the source value continuous: land on them exactly, but do
+    /// not throw away the integration history. A repeated PWL can introduce a
+    /// real jump at its cycle boundary, which does require a restart.
+    pub fn requires_integration_restart_at(&self, time: f64) -> bool {
+        match self {
+            Self::Pulse { .. } => true,
+            Self::Pwl {
+                points,
+                repeat_from: Some(repeat_from),
+                ..
+            } => {
+                let end = points.last().expect("PWL has at least one point").0;
+                let period = end - repeat_from;
+                if period <= 0.0 || time < *repeat_from {
+                    return false;
+                }
+                let tolerance = 1e-15_f64.max(time.abs() * 1e-12);
+                let phase = (time - repeat_from).rem_euclid(period);
+                phase <= tolerance || (period - phase) <= tolerance
+            }
+            Self::Pwl {
+                repeat_from: None, ..
+            } => false,
+        }
+    }
 }
 
 fn interpolate_pwl(points: &[(f64, f64)], time: f64) -> f64 {
@@ -279,6 +305,27 @@ mod waveform_lookup_tests {
             pwl_hard_breakpoints(&points, None),
             vec![0.0, 1.0, 2.0, 3.0]
         );
+    }
+
+    #[test]
+    fn continuous_pwl_knots_do_not_restart_integration() {
+        let waveform = Waveform::Pwl {
+            points: vec![(0.0, 0.0), (1.0, 1.0), (2.0, 0.0)],
+            hard_breakpoints: vec![0.0, 1.0, 2.0],
+            repeat_from: None,
+        };
+        assert!(!waveform.requires_integration_restart_at(1.0));
+    }
+
+    #[test]
+    fn repeated_pwl_cycle_boundary_restarts_integration() {
+        let waveform = Waveform::Pwl {
+            points: vec![(0.0, 0.0), (1.0, 1.0), (2.0, 0.0)],
+            hard_breakpoints: vec![0.0, 1.0, 2.0],
+            repeat_from: Some(0.5),
+        };
+        assert!(waveform.requires_integration_restart_at(2.0));
+        assert!(!waveform.requires_integration_restart_at(1.0));
     }
 }
 

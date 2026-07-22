@@ -1328,6 +1328,10 @@ fn run_transient(
             candidate_time
         };
         let breakpoint_hit = breakpoint.is_some_and(|value| (time - value).abs() <= time_tolerance);
+        let restart_at_breakpoint = breakpoint_hit
+            && source_waveforms
+                .iter()
+                .any(|waveform| waveform.requires_integration_restart_at(time));
         let measured_step = time - previous_time;
         let actual_step = if (measured_step - candidate_step).abs() <= time_tolerance {
             candidate_step
@@ -1767,8 +1771,8 @@ fn run_transient(
             output_index += 1;
         }
         first_step = false;
-        restart_integration = breakpoint_hit;
-        accepted_history_depth = if breakpoint_hit {
+        restart_integration = restart_at_breakpoint;
+        accepted_history_depth = if restart_at_breakpoint {
             0
         } else {
             (accepted_history_depth + 1).min(3)
@@ -1781,7 +1785,7 @@ fn run_transient(
             next_step = next_step.max(candidate_step);
         }
         suggested_step = next_step.min(step);
-        if breakpoint_hit {
+        if restart_at_breakpoint {
             suggested_step = suggested_step.min((actual_step * 0.25).max(minimum_step));
         }
         if time >= stop {
