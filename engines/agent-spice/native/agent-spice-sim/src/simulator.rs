@@ -984,7 +984,7 @@ fn run_transient(
             let model_data = rfm_model(deck, rfm, model)?;
             if !model_data.supports_transient() {
                 return Err(Error::InvalidDeck(format!(
-                    "S-parameter model '{}' uses direct TSTONEFILE AC data and cannot run TRAN; set RATIONAL_FUNC_FOR_AC=1 to enable native rational fitting",
+                    "S-parameter model '{}' cannot run TRAN without RATIONAL_FUNC=1 on its TSTONEFILE .model",
                     model.as_deref().unwrap_or("<command-line>")
                 )));
             }

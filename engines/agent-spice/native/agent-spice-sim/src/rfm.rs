@@ -84,6 +84,7 @@ pub struct RfmModel {
     legacy_state_width: usize,
     dense_history_coefficients: Option<Vec<f64>>,
     touchstone: Option<TouchstoneSamples>,
+    transient_supported: bool,
 }
 
 impl RfmModel {
@@ -148,12 +149,13 @@ impl RfmModel {
                 frequencies_hz,
                 scattering,
             }),
+            transient_supported: false,
         })
     }
 
     /// Load a Touchstone S-parameter file and fit it into the same real, stable
     /// rational representation used by native AC and transient simulation.
-    pub fn fit_touchstone_file(path: &Path) -> Result<Self> {
+    pub fn fit_touchstone_file(path: &Path, transient_supported: bool) -> Result<Self> {
         let touchstone = Touchstone::from_path(path).map_err(|error| {
             Error::Parse(format!("{}: invalid Touchstone: {error}", path.display()))
         })?;
@@ -217,7 +219,8 @@ impl RfmModel {
                 path.display()
             ))
         })?;
-        let model = Self::from_vector_fit(nports, z0, &fit)?;
+        let mut model = Self::from_vector_fit(nports, z0, &fit)?;
+        model.transient_supported = transient_supported;
         if !model.constant.iter().all(|value| value.is_finite()) {
             return Err(Error::Parse(format!(
                 "{}: native rational fit produced non-finite constants",
@@ -650,6 +653,7 @@ impl RfmModel {
             legacy_state_width,
             dense_history_coefficients,
             touchstone: None,
+            transient_supported: true,
         })
     }
 
@@ -720,7 +724,7 @@ impl RfmModel {
     }
 
     pub fn supports_transient(&self) -> bool {
-        self.touchstone.is_none()
+        self.transient_supported
     }
 
     fn touchstone_admittance(&self, touchstone: &TouchstoneSamples, s: c64) -> Result<Vec<c64>> {

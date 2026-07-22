@@ -893,7 +893,7 @@ def test_rust_engine_fits_hspice_touchstone_s_model_natively(tmp_path: Path) -> 
     deck = tmp_path / "native_touchstone_s_model.sp"
     deck.write_text(
         "HSPICE native Touchstone S model\n"
-        ".model channel s TSTONEFILE='channel.s1p' rational_func_reuse=0 rational_func_for_ac=1\n"
+        ".model channel s TSTONEFILE='channel.s1p' rational_func_reuse=0 rational_func=1\n"
         "Vdrive p 0 AC 1\n"
         "Schannel p 0 mname=channel\n"
         ".ac lin 1 1g 1g\n"
@@ -963,7 +963,33 @@ def test_rust_engine_rejects_transient_with_direct_touchstone_ac_model(
 
     assert completed.returncode != 0
     assert "cannot run TRAN" in completed.stderr
-    assert "RATIONAL_FUNC_FOR_AC=1" in completed.stderr
+    assert "RATIONAL_FUNC=1" in completed.stderr
+
+
+def test_rust_engine_runs_transient_with_touchstone_rational_func(tmp_path: Path) -> None:
+    (tmp_path / "channel.s1p").write_text(
+        "# GHz S RI R 50\n"
+        "0.1 0.5 0\n"
+        "0.5 0.5 0\n"
+        "1.0 0.5 0\n"
+        "2.0 0.5 0\n"
+        "5.0 0.5 0\n",
+        encoding="ascii",
+    )
+    deck = tmp_path / "native_touchstone_rational_tran.sp"
+    deck.write_text(
+        "HSPICE Touchstone rational transient\n"
+        ".model channel s TSTONEFILE='channel.s1p' rational_func=1\n"
+        "Vdrive p 0 1\n"
+        "Schannel p 0 mname=channel\n"
+        ".tran 1n 1n\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+
+    native = run(deck)
+
+    assert len(native["points"]) == 2
 
 
 def test_rust_engine_accepts_hspice_s_model_common_reference_ports(

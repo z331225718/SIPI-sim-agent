@@ -881,6 +881,7 @@ fn load_rfm_models(lines: &[SourceLine]) -> Result<HashMap<String, RfmModel>> {
         let mut touchstone_file = None;
         let mut declared_ports = None;
         let mut rational_func_for_ac = false;
+        let mut rational_func = false;
         for (option, value) in
             line.wrap(parse_assignments(&tokens[3..], ".model S option", false))?
         {
@@ -907,6 +908,13 @@ fn load_rfm_models(lines: &[SourceLine]) -> Result<HashMap<String, RfmModel>> {
                     }
                     rational_func_for_ac = value != 0.0;
                 }
+                "rational_func" => {
+                    let value = line.wrap(parse_number(&value, &HashMap::new()))?;
+                    if value != 0.0 && value != 1.0 {
+                        return Err(line.error(".model S RATIONAL_FUNC must be 0 or 1"));
+                    }
+                    rational_func = value != 0.0;
+                }
                 _ => {
                     return Err(line.error(format!("unsupported .model S option '{option}'")));
                 }
@@ -917,6 +925,9 @@ fn load_rfm_models(lines: &[SourceLine]) -> Result<HashMap<String, RfmModel>> {
                 ".model '{}' cannot specify both RFMFILE and TSTONEFILE",
                 tokens[1]
             )));
+        }
+        if rational_func_for_ac && !rational_func {
+            return Err(line.error(".model S RATIONAL_FUNC_FOR_AC=1 requires RATIONAL_FUNC=1"));
         }
         let (file, is_touchstone) = if let Some(file) = rfm_file {
             (file, false)
@@ -943,13 +954,13 @@ fn load_rfm_models(lines: &[SourceLine]) -> Result<HashMap<String, RfmModel>> {
             }
         };
         let model = if is_touchstone {
-            if rational_func_for_ac {
+            if rational_func {
                 logging::line(format_args!(
                     "[agent-spice-sim] fitting TSTONEFILE model {}: {}",
                     tokens[1],
                     path.display()
                 ));
-                line.wrap(RfmModel::fit_touchstone_file(&path))?
+                line.wrap(RfmModel::fit_touchstone_file(&path, rational_func))?
             } else {
                 logging::line(format_args!(
                     "[agent-spice-sim] loading direct-AC TSTONEFILE model {}: {}",
