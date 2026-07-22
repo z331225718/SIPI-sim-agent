@@ -424,6 +424,14 @@ pub enum Analysis {
     },
 }
 
+#[derive(Debug, Clone)]
+pub struct LinExport {
+    pub ac_analysis: usize,
+    pub filename: PathBuf,
+    pub frequency_digits: usize,
+    pub sparameter_digits: usize,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum MeasurementQuantity {
     Value,
@@ -656,6 +664,7 @@ pub struct Deck {
     pub nodes: Vec<String>,
     pub elements: Vec<Element>,
     pub analyses: Vec<Analysis>,
+    pub lin_exports: Vec<LinExport>,
     pub unknown_count: usize,
     pub branch_names: Vec<(String, usize)>,
     pub integration_method: IntegrationMethod,
@@ -1712,6 +1721,7 @@ struct Parser {
     elements: Vec<PendingElement>,
     element_sources: Vec<SourceLine>,
     analyses: Vec<Analysis>,
+    lin_exports: Vec<LinExport>,
     parameters: ParameterSet,
     rfm_subcircuit: Option<String>,
     rfm_nports: Option<usize>,
@@ -1782,7 +1792,7 @@ impl Parser {
             return Ok(());
         }
         if head.starts_with('.') {
-            return self.parse_directive(&head, &tokens[1..]);
+            return self.parse_directive(&head, &tokens[1..], source_directory);
         }
         if tokens.len() < 4 {
             return Err(Error::Parse(format!("invalid element line '{line}'")));
@@ -1976,7 +1986,12 @@ impl Parser {
         Ok(())
     }
 
-    fn parse_directive(&mut self, head: &str, tokens: &[String]) -> Result<()> {
+    fn parse_directive(
+        &mut self,
+        head: &str,
+        tokens: &[String],
+        source_directory: &Path,
+    ) -> Result<()> {
         match head {
             ".param" => {
                 update_parameters(tokens, &mut self.parameters)?;
@@ -2022,6 +2037,76 @@ impl Parser {
                     points,
                     start,
                     stop,
+                });
+            }
+            ".lin" => {
+                let ac_analysis = self
+                    .analyses
+                    .iter()
+                    .rposition(|analysis| matches!(analysis, Analysis::Ac { .. }))
+                    .ok_or_else(|| Error::Parse(".lin requires a preceding .ac analysis".into()))?;
+                let mut sparcalc = true;
+                let mut parameter_type = "s".to_string();
+                let mut filename = None;
+                let mut format = "touchstone".to_string();
+                let mut dataformat = "ri".to_string();
+                let mut frequency_digits = 6usize;
+                let mut sparameter_digits = 6usize;
+                for (name, value) in parse_assignments(tokens, ".lin option", false)? {
+                    match name.to_ascii_lowercase().as_str() {
+                        "sparcalc" => sparcalc = parse_number(&value, &self.parameters)? != 0.0,
+                        "type" | "types" => parameter_type = value,
+                        "filename" => {
+                            filename = Some(resolve_string_value(&value, &self.parameters)?)
+                        }
+                        "format" => format = value,
+                        "dataformat" => dataformat = value,
+                        "freqdigit" => {
+                            frequency_digits =
+                                parse_lin_digits(&value, &self.parameters, "FREQDIGIT")?
+                        }
+                        "spardigit" => {
+                            sparameter_digits =
+                                parse_lin_digits(&value, &self.parameters, "SPARDIGIT")?
+                        }
+                        option => {
+                            return Err(Error::Parse(format!(
+                                "unsupported .lin option '{option}'"
+                            )));
+                        }
+                    }
+                }
+                if !sparcalc {
+                    return Err(Error::Parse(".lin requires SPARCALC=1".into()));
+                }
+                if !parameter_type.eq_ignore_ascii_case("s") {
+                    return Err(Error::Parse(format!(
+                        ".lin TYPE={parameter_type} is unsupported; only TYPE=S is available"
+                    )));
+                }
+                if !format.eq_ignore_ascii_case("touchstone") {
+                    return Err(Error::Parse(format!(
+                        ".lin FORMAT={format} is unsupported; only FORMAT=TOUCHSTONE is available"
+                    )));
+                }
+                if !dataformat.eq_ignore_ascii_case("ri") {
+                    return Err(Error::Parse(format!(
+                        ".lin DATAFORMAT={dataformat} is unsupported; only DATAFORMAT=RI is available"
+                    )));
+                }
+                let filename =
+                    filename.ok_or_else(|| Error::Parse(".lin requires FILENAME".into()))?;
+                let filename = PathBuf::from(filename);
+                let filename = if filename.is_absolute() {
+                    filename
+                } else {
+                    source_directory.join(filename)
+                };
+                self.lin_exports.push(LinExport {
+                    ac_analysis,
+                    filename,
+                    frequency_digits,
+                    sparameter_digits,
                 });
             }
             ".tran" => {
@@ -2436,6 +2521,7 @@ impl Parser {
             nodes: self.nodes,
             elements,
             analyses: self.analyses,
+            lin_exports: self.lin_exports,
             unknown_count: next_branch,
             branch_names,
             integration_method: self.integration_method,
@@ -2812,6 +2898,16 @@ fn parse_passive_value(
         first
     };
     parse_number(expression, parameters)
+}
+
+fn parse_lin_digits(value: &str, parameters: &HashMap<String, f64>, option: &str) -> Result<usize> {
+    let digits = parse_number(value, parameters)?;
+    if !digits.is_finite() || !(1.0..=17.0).contains(&digits) || digits.fract() != 0.0 {
+        return Err(Error::Parse(format!(
+            ".lin {option} must be an integer from 1 to 17"
+        )));
+    }
+    Ok(digits as usize)
 }
 
 fn parse_port_option_value(

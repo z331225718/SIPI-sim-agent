@@ -972,6 +972,31 @@ def test_rust_engine_runs_hspice_ac_port_elements(tmp_path: Path) -> None:
     assert source_voltage == pytest.approx({"re": 0.5, "im": 0.0})
 
 
+def test_rust_engine_exports_hspice_lin_touchstone(tmp_path: Path) -> None:
+    deck = tmp_path / "lin_export.sp"
+    deck.write_text(
+        "HSPICE multiport .lin export\n"
+        "P1 p1 0 z0=50 port=1\n"
+        "P2 p2 0 z0=50 port=2\n"
+        "R1 p1 0 50\n"
+        "R2 p2 0 50\n"
+        ".ac lin 1 1g 1g\n"
+        ".lin sparcalc=1 types=s filename='matched_ports' format=touchstone "
+        "dataformat=ri freqdigit=12 spardigit=12\n"
+        ".end\n",
+        encoding="ascii",
+    )
+
+    run(deck)
+
+    output = tmp_path / "matched_ports.s2p"
+    lines = output.read_text(encoding="ascii").splitlines()
+    assert lines[1] == "# Hz S RI R 5.00000000000000000e1"
+    values = [float(value) for value in lines[2].split()]
+    assert values[0] == pytest.approx(1.0e9)
+    assert values[1:] == pytest.approx([0.0] * 8, abs=1e-12)
+
+
 def test_rust_engine_uses_direct_ac_for_touchstone_without_rational_option(
     tmp_path: Path,
 ) -> None:

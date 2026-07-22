@@ -211,6 +211,15 @@ fn run() -> Result<()> {
     }
     let result = simulator::run_with_observer(&deck, rfm.as_ref(), &mut observer, retain_points)?;
     let waveform_rows = observer.finish()?;
+    for export in &deck.lin_exports {
+        let lin_started = Instant::now();
+        let output = simulator::export_lin_touchstone(&deck, rfm.as_ref(), export)?;
+        logging::line(format_args!(
+            "[agent-spice-sim] wrote .lin Touchstone: {} in {:.3}s",
+            output.display(),
+            lin_started.elapsed().as_secs_f64()
+        ));
+    }
     if let Some(output_json) = output_json.as_deref() {
         let json_started = Instant::now();
         output::write_json(&result, output_json)?;

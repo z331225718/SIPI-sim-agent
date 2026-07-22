@@ -157,6 +157,69 @@ impl SymbolicCache {
         Ok((solve_factor(&factor, n, rhs), created_symbolic))
     }
 
+    pub fn solve_complex_many_in_place(
+        &mut self,
+        n: usize,
+        entries: &[Triplet<usize, usize, c64>],
+        rhs: &mut [c64],
+        columns: usize,
+    ) -> Result<bool> {
+        if rhs.len() != n * columns {
+            return Err(Error::Sparse(
+                "complex RHS matrix has an invalid shape".into(),
+            ));
+        }
+        if let Some(matrix) = self.complex_matrix.as_mut() {
+            if entries.len() != self.complex_entry_slots.len() {
+                return Err(Error::Sparse(
+                    "complex matrix stamp structure changed".into(),
+                ));
+            }
+            let values = matrix.val_mut();
+            values.fill(c64::new(0.0, 0.0));
+            for (entry, slot) in entries.iter().zip(&self.complex_entry_slots) {
+                values[*slot] += entry.val;
+            }
+        } else {
+            let matrix = SparseColMat::<usize, c64>::try_new_from_triplets(n, n, entries)
+                .map_err(|error| Error::Sparse(error.to_string()))?;
+            let coordinate_slots: HashMap<(usize, usize), usize> = matrix
+                .as_ref()
+                .triplet_iter()
+                .enumerate()
+                .map(|(index, entry)| ((entry.row, entry.col), index))
+                .collect();
+            self.complex_entry_slots = entries
+                .iter()
+                .map(|entry| {
+                    coordinate_slots
+                        .get(&(entry.row, entry.col))
+                        .copied()
+                        .expect("triplet coordinate exists in compressed matrix")
+                })
+                .collect();
+            self.complex_matrix = Some(matrix);
+        }
+        let matrix = self
+            .complex_matrix
+            .as_ref()
+            .expect("complex matrix cache was initialized");
+        let created_symbolic = self.symbolic.is_none();
+        let symbolic = match &self.symbolic {
+            Some(symbolic) => symbolic.clone(),
+            None => {
+                let symbolic = SymbolicLu::try_new(matrix.symbolic())
+                    .map_err(|error| Error::Sparse(error.to_string()))?;
+                self.symbolic = Some(symbolic.clone());
+                symbolic
+            }
+        };
+        let factor = Lu::try_new_with_symbolic(symbolic, matrix.as_ref())
+            .map_err(|error| Error::Sparse(error.to_string()))?;
+        factor.solve_in_place(MatMut::from_column_major_slice_mut(rhs, n, columns));
+        Ok(created_symbolic)
+    }
+
     pub fn solve_real_constant(
         &mut self,
         n: usize,

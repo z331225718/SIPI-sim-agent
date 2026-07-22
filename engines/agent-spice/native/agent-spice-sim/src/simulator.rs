@@ -1,5 +1,8 @@
 use std::collections::{BTreeMap, HashMap};
 use std::f64::consts::PI;
+use std::fs::File;
+use std::io::{BufWriter, Write};
+use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 use faer::c64;
@@ -8,7 +11,7 @@ use faer::sparse::Triplet;
 use crate::error::{Error, Result};
 use crate::expression;
 use crate::netlist::{
-    AcScale, Analysis, Deck, Element, IntegrationMethod, MeasurementEvent,
+    AcScale, Analysis, Deck, Element, IntegrationMethod, LinExport, MeasurementEvent,
     MeasurementEventDirection, MeasurementEventOccurrence, MeasurementOperation,
     MeasurementQuantity, MeasurementTarget, MeasurementTrigger, Node, Waveform,
 };
@@ -19,6 +22,7 @@ use crate::rfm::{RfmModel, RfmState};
 use crate::sparse::{SymbolicCache, TransientMatrixKey};
 
 type AcSample = (f64, Vec<c64>);
+type ComplexMatrix = Vec<Triplet<usize, usize, c64>>;
 
 pub trait SimulationObserver {
     fn analysis_started(&mut self, _analysis: &str, _total_points: usize) -> Result<()> {
@@ -162,6 +166,164 @@ pub fn run_with_observer(
         measurements,
         statistics,
     })
+}
+
+#[derive(Clone, Copy)]
+struct LinPort {
+    positive: Node,
+    negative: Node,
+    impedance: f64,
+}
+
+pub fn export_lin_touchstone(
+    deck: &Deck,
+    rfm: Option<&RfmModel>,
+    export: &LinExport,
+) -> Result<PathBuf> {
+    let Analysis::Ac {
+        scale,
+        points,
+        start,
+        stop,
+    } = deck
+        .analyses
+        .get(export.ac_analysis)
+        .ok_or_else(|| Error::InvalidDeck(".lin is not bound to a valid .ac analysis".into()))?
+    else {
+        return Err(Error::InvalidDeck(
+            ".lin must be bound to an .ac analysis".into(),
+        ));
+    };
+    let mut ports: Vec<_> = deck
+        .elements
+        .iter()
+        .filter_map(|element| match element {
+            Element::Port {
+                positive,
+                negative,
+                number,
+                impedance,
+                ac,
+                ..
+            } => Some((*number, *positive, *negative, *impedance, *ac)),
+            _ => None,
+        })
+        .collect();
+    if ports.is_empty() {
+        return Err(Error::InvalidDeck(
+            ".lin requires one or more P-element ports".into(),
+        ));
+    }
+    ports.sort_unstable_by_key(|(number, ..)| *number);
+    if ports
+        .iter()
+        .enumerate()
+        .any(|(index, (number, ..))| *number != index + 1)
+    {
+        return Err(Error::InvalidDeck(
+            ".lin P-element PORT numbers must be contiguous from 1".into(),
+        ));
+    }
+    if ports
+        .iter()
+        .any(|(_, _, _, _, ac)| *ac != c64::new(0.0, 0.0))
+        || deck.elements.iter().any(|element| {
+            matches!(element,
+                Element::Voltage { source, .. } | Element::Current { source, .. }
+                if source.ac != c64::new(0.0, 0.0)
+            )
+        })
+    {
+        return Err(Error::InvalidDeck(
+            ".lin S extraction requires zero explicit AC sources; it drives P-element ports itself"
+                .into(),
+        ));
+    }
+    let reference_impedance = ports[0].3;
+    if ports
+        .iter()
+        .any(|(_, _, _, impedance, _)| *impedance != reference_impedance)
+    {
+        return Err(Error::InvalidDeck(
+            ".lin FORMAT=TOUCHSTONE requires identical P-element Z0 values; use TOUCHSTONE2 for unequal references"
+                .into(),
+        ));
+    }
+    let ports: Vec<_> = ports
+        .into_iter()
+        .map(|(_, positive, negative, impedance, _)| LinPort {
+            positive,
+            negative,
+            impedance,
+        })
+        .collect();
+    let output = touchstone_output_path(&export.filename, ports.len());
+    let file = File::create(&output)?;
+    let mut writer = BufWriter::new(file);
+    writeln!(writer, "! agent-spice-sim native .lin export")?;
+    writeln!(writer, "# Hz S RI R {reference_impedance:.17e}")?;
+    let mut cache = SymbolicCache::default();
+    for frequency in frequencies(*scale, *points, *start, *stop) {
+        let (matrix, _) = assemble_ac(deck, rfm, frequency)?;
+        let mut rhs = vec![c64::new(0.0, 0.0); deck.unknown_count * ports.len()];
+        for (column, port) in ports.iter().enumerate() {
+            let source_voltage = 2.0 * port.impedance.sqrt();
+            stamp_current_complex_column(
+                &mut rhs,
+                deck.unknown_count,
+                column,
+                port.positive,
+                port.negative,
+                c64::new(-source_voltage / port.impedance, 0.0),
+            );
+        }
+        cache.solve_complex_many_in_place(deck.unknown_count, &matrix, &mut rhs, ports.len())?;
+        let mut line = scientific(frequency, export.frequency_digits);
+        for column in 0..ports.len() {
+            let solution = &rhs[column * deck.unknown_count..(column + 1) * deck.unknown_count];
+            for (row, port) in ports.iter().enumerate() {
+                let voltage = complex_node_voltage(solution, port.positive)
+                    - complex_node_voltage(solution, port.negative);
+                let scattering = voltage / port.impedance.sqrt()
+                    - c64::new(if row == column { 1.0 } else { 0.0 }, 0.0);
+                line.push(' ');
+                line.push_str(&scientific(scattering.re, export.sparameter_digits));
+                line.push(' ');
+                line.push_str(&scientific(scattering.im, export.sparameter_digits));
+            }
+        }
+        writeln!(writer, "{line}")?;
+    }
+    writer.flush()?;
+    Ok(output)
+}
+
+fn touchstone_output_path(filename: &Path, ports: usize) -> PathBuf {
+    if filename.extension().is_some() {
+        filename.to_path_buf()
+    } else {
+        filename.with_extension(format!("s{ports}p"))
+    }
+}
+
+fn scientific(value: f64, digits: usize) -> String {
+    format!("{value:.precision$e}", precision = digits - 1)
+}
+
+fn complex_node_voltage(solution: &[c64], node: Node) -> c64 {
+    node.map_or(c64::new(0.0, 0.0), |index| solution[index])
+}
+
+fn stamp_current_complex_column(
+    rhs: &mut [c64],
+    row_count: usize,
+    column: usize,
+    positive: Node,
+    negative: Node,
+    current: c64,
+) {
+    let rhs = &mut rhs[column * row_count..(column + 1) * row_count];
+    stamp_current_complex(rhs, positive, negative, current);
 }
 
 fn evaluate_measurements(
@@ -817,6 +979,15 @@ fn solve_ac(
     frequency: f64,
     cache: &mut SymbolicCache,
 ) -> Result<(Vec<c64>, bool)> {
+    let (matrix, rhs) = assemble_ac(deck, rfm, frequency)?;
+    cache.solve_complex(deck.unknown_count, &matrix, &rhs)
+}
+
+fn assemble_ac(
+    deck: &Deck,
+    rfm: Option<&RfmModel>,
+    frequency: f64,
+) -> Result<(ComplexMatrix, Vec<c64>)> {
     let omega = 2.0 * PI * frequency;
     let mut matrix = Vec::new();
     let mut rhs = vec![c64::new(0.0, 0.0); deck.unknown_count];
@@ -975,7 +1146,7 @@ fn solve_ac(
             }
         }
     }
-    cache.solve_complex(deck.unknown_count, &matrix, &rhs)
+    Ok((matrix, rhs))
 }
 
 #[derive(Default)]
