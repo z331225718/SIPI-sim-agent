@@ -219,6 +219,10 @@ fn run() -> Result<()> {
             output.display(),
             lin_started.elapsed().as_secs_f64()
         ));
+        eprintln!(
+            "[agent-spice-sim] LIN Touchstone exported: {}",
+            output.display()
+        );
     }
     if let Some(output_json) = output_json.as_deref() {
         let json_started = Instant::now();

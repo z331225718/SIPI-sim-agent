@@ -974,6 +974,7 @@ def test_rust_engine_runs_hspice_ac_port_elements(tmp_path: Path) -> None:
 
 def test_rust_engine_exports_hspice_lin_touchstone(tmp_path: Path) -> None:
     deck = tmp_path / "lin_export.sp"
+    output = tmp_path / "matched_ports"
     deck.write_text(
         "HSPICE multiport .lin export\n"
         "P1 p1 0 z0=50 port=1\n"
@@ -981,7 +982,7 @@ def test_rust_engine_exports_hspice_lin_touchstone(tmp_path: Path) -> None:
         "R1 p1 0 50\n"
         "R2 p2 0 50\n"
         ".ac lin 1 1g 1g\n"
-        ".lin sparcalc=1 types=s filename='matched_ports' format=touchstone "
+        f".lin sparcalc=1 types=s filename='{output.as_posix()}' format=touchstone "
         "dataformat=ri freqdigit=12 spardigit=12\n"
         ".end\n",
         encoding="ascii",
@@ -989,12 +990,40 @@ def test_rust_engine_exports_hspice_lin_touchstone(tmp_path: Path) -> None:
 
     run(deck)
 
-    output = tmp_path / "matched_ports.s2p"
-    lines = output.read_text(encoding="ascii").splitlines()
+    lines = output.with_suffix(".s2p").read_text(encoding="ascii").splitlines()
     assert lines[1] == "# Hz S RI R 5.00000000000000000e1"
     values = [float(value) for value in lines[2].split()]
     assert values[0] == pytest.approx(1.0e9)
     assert values[1:] == pytest.approx([0.0] * 8, abs=1e-12)
+
+
+def test_rust_engine_writes_relative_lin_filename_from_process_directory(
+    tmp_path: Path,
+) -> None:
+    deck_directory = tmp_path / "deck"
+    deck_directory.mkdir()
+    deck = deck_directory / "lin_cwd.sp"
+    deck.write_text(
+        "HSPICE .lin working directory output\n"
+        "P1 p 0 z0=50 port=1\n"
+        "R1 p 0 50\n"
+        ".ac lin 1 1g 1g\n"
+        ".lin filename='./cwd_export' format=touchstone dataformat=ri\n"
+        ".end\n",
+        encoding="ascii",
+    )
+
+    completed = subprocess.run(
+        [str(ENGINE), str(deck), "--log", os.devnull],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    assert "LIN Touchstone exported:" in completed.stderr
+    assert (tmp_path / "cwd_export.s1p").is_file()
+    assert not (deck_directory / "cwd_export.s1p").exists()
 
 
 def test_rust_engine_uses_direct_ac_for_touchstone_without_rational_option(

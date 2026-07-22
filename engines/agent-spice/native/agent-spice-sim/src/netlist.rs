@@ -1792,7 +1792,7 @@ impl Parser {
             return Ok(());
         }
         if head.starts_with('.') {
-            return self.parse_directive(&head, &tokens[1..], source_directory);
+            return self.parse_directive(&head, &tokens[1..]);
         }
         if tokens.len() < 4 {
             return Err(Error::Parse(format!("invalid element line '{line}'")));
@@ -1986,12 +1986,7 @@ impl Parser {
         Ok(())
     }
 
-    fn parse_directive(
-        &mut self,
-        head: &str,
-        tokens: &[String],
-        source_directory: &Path,
-    ) -> Result<()> {
+    fn parse_directive(&mut self, head: &str, tokens: &[String]) -> Result<()> {
         match head {
             ".param" => {
                 update_parameters(tokens, &mut self.parameters)?;
@@ -2096,15 +2091,9 @@ impl Parser {
                 }
                 let filename =
                     filename.ok_or_else(|| Error::Parse(".lin requires FILENAME".into()))?;
-                let filename = PathBuf::from(filename);
-                let filename = if filename.is_absolute() {
-                    filename
-                } else {
-                    source_directory.join(filename)
-                };
                 self.lin_exports.push(LinExport {
                     ac_analysis,
-                    filename,
+                    filename: PathBuf::from(filename),
                     frequency_digits,
                     sparameter_digits,
                 });

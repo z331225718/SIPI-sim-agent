@@ -257,8 +257,18 @@ pub fn export_lin_touchstone(
             impedance,
         })
         .collect();
-    let output = touchstone_output_path(&export.filename, ports.len());
-    let file = File::create(&output)?;
+    let filename = if export.filename.is_absolute() {
+        export.filename.clone()
+    } else {
+        std::env::current_dir()?.join(&export.filename)
+    };
+    let output = touchstone_output_path(&filename, ports.len());
+    let file = File::create(&output).map_err(|error| {
+        Error::InvalidDeck(format!(
+            "failed to create .lin Touchstone '{}': {error}",
+            output.display()
+        ))
+    })?;
     let mut writer = BufWriter::new(file);
     writeln!(writer, "! agent-spice-sim native .lin export")?;
     writeln!(writer, "# Hz S RI R {reference_impedance:.17e}")?;
