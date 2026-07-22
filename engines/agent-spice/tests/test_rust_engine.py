@@ -879,6 +879,36 @@ def test_rust_engine_runs_hspice_s_model_with_relative_rfmfile(
         )
 
 
+def test_rust_engine_fits_hspice_touchstone_s_model_natively(tmp_path: Path) -> None:
+    (tmp_path / "channel.s1p").write_text(
+        "! constant one-port scattering response\n"
+        "# GHz S RI R 50\n"
+        "0.1 0.5 0\n"
+        "0.5 0.5 0\n"
+        "1.0 0.5 0\n"
+        "2.0 0.5 0\n"
+        "5.0 0.5 0\n",
+        encoding="ascii",
+    )
+    deck = tmp_path / "native_touchstone_s_model.sp"
+    deck.write_text(
+        "HSPICE native Touchstone S model\n"
+        ".model channel s TSTONEFILE='channel.s1p' rational_func_reuse=0 rational_func_for_ac=1\n"
+        "Vdrive p 0 AC 1\n"
+        "Schannel p 0 mname=channel\n"
+        ".ac lin 1 1g 1g\n"
+        ".end\n",
+        encoding="utf-8",
+    )
+
+    native = run(deck)
+
+    assert len(native["points"]) == 1
+    branch_current = native["points"][0]["complex"]["Vdrive"]
+    assert math.isfinite(branch_current["re"])
+    assert math.isfinite(branch_current["im"])
+
+
 def test_rust_engine_accepts_hspice_s_model_common_reference_ports(
     tmp_path: Path,
 ) -> None:

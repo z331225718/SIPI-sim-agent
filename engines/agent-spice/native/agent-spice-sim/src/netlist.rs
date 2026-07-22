@@ -8,6 +8,7 @@ use faer::c64;
 
 use crate::error::{Error, Result};
 use crate::expression;
+use crate::logging;
 use crate::rfm::RfmModel;
 
 pub type Node = Option<usize>;
@@ -877,12 +878,15 @@ fn load_rfm_models(lines: &[SourceLine]) -> Result<HashMap<String, RfmModel>> {
         }
         let name = tokens[1].to_ascii_lowercase();
         let mut rfm_file = None;
+        let mut touchstone_file = None;
         let mut declared_ports = None;
+        let mut rational_func_for_ac = true;
         for (option, value) in
             line.wrap(parse_assignments(&tokens[3..], ".model S option", false))?
         {
             match option.to_ascii_lowercase().as_str() {
                 "rfmfile" => rfm_file = Some(value),
+                "tstonefile" => touchstone_file = Some(value),
                 "n" => {
                     let value = line.wrap(parse_number(&value, &HashMap::new()))?;
                     if value < 1.0 || value.fract() != 0.0 || value > usize::MAX as f64 {
@@ -890,15 +894,47 @@ fn load_rfm_models(lines: &[SourceLine]) -> Result<HashMap<String, RfmModel>> {
                     }
                     declared_ports = Some(value as usize);
                 }
+                "rational_func_reuse" => {
+                    let value = line.wrap(parse_number(&value, &HashMap::new()))?;
+                    if value != 0.0 && value != 1.0 {
+                        return Err(line.error(".model S RATIONAL_FUNC_REUSE must be 0 or 1"));
+                    }
+                }
+                "rational_func_for_ac" => {
+                    let value = line.wrap(parse_number(&value, &HashMap::new()))?;
+                    if value != 0.0 && value != 1.0 {
+                        return Err(line.error(".model S RATIONAL_FUNC_FOR_AC must be 0 or 1"));
+                    }
+                    rational_func_for_ac = value != 0.0;
+                }
                 _ => {
                     return Err(line.error(format!("unsupported .model S option '{option}'")));
                 }
             }
         }
-        let rfm_file = rfm_file
-            .ok_or_else(|| line.error(format!(".model '{}' requires RFMFILE", tokens[1])))?;
-        let rfm_file = line.wrap(resolve_string_value(&rfm_file, &ParameterSet::default()))?;
-        let path = PathBuf::from(rfm_file);
+        if rfm_file.is_some() && touchstone_file.is_some() {
+            return Err(line.error(format!(
+                ".model '{}' cannot specify both RFMFILE and TSTONEFILE",
+                tokens[1]
+            )));
+        }
+        let (file, is_touchstone) = if let Some(file) = rfm_file {
+            (file, false)
+        } else if let Some(file) = touchstone_file {
+            if !rational_func_for_ac {
+                return Err(
+                    line.error(".model S TSTONEFILE with RATIONAL_FUNC_FOR_AC=0 is not supported")
+                );
+            }
+            (file, true)
+        } else {
+            return Err(line.error(format!(
+                ".model '{}' requires RFMFILE or TSTONEFILE",
+                tokens[1]
+            )));
+        };
+        let file = line.wrap(resolve_string_value(&file, &ParameterSet::default()))?;
+        let path = PathBuf::from(file);
         let path = if path.is_absolute() {
             path
         } else {
@@ -911,10 +947,19 @@ fn load_rfm_models(lines: &[SourceLine]) -> Result<HashMap<String, RfmModel>> {
                 deck_relative
             }
         };
-        let model = line.wrap(RfmModel::parse_file(&path))?;
+        let model = if is_touchstone {
+            logging::line(format_args!(
+                "[agent-spice-sim] fitting TSTONEFILE model {}: {}",
+                tokens[1],
+                path.display()
+            ));
+            line.wrap(RfmModel::fit_touchstone_file(&path))?
+        } else {
+            line.wrap(RfmModel::parse_file(&path))?
+        };
         if declared_ports.is_some_and(|ports| ports != model.nports) {
             return Err(line.error(format!(
-                ".model '{}' declares N={}, but RFMFILE has NPORT {}",
+                ".model '{}' declares N={}, but model data has {} port(s)",
                 tokens[1],
                 declared_ports.expect("declared port count exists"),
                 model.nports

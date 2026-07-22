@@ -6,6 +6,7 @@ use std::sync::Arc;
 use faer::linalg::matmul::matmul;
 use faer::linalg::solvers::DenseSolveCore;
 use faer::{Accum, Mat, MatMut, MatRef, Par, c64};
+use vecfit::{Model as VectorFitModel, Options as VectorFitOptions, Shape, Touchstone, complex};
 
 use crate::error::{Error, Result};
 
@@ -78,6 +79,169 @@ pub struct RfmModel {
 }
 
 impl RfmModel {
+    /// Load a Touchstone S-parameter file and fit it into the same real, stable
+    /// rational representation used by native AC and transient simulation.
+    pub fn fit_touchstone_file(path: &Path) -> Result<Self> {
+        let touchstone = Touchstone::from_path(path).map_err(|error| {
+            Error::Parse(format!("{}: invalid Touchstone: {error}", path.display()))
+        })?;
+        if !matches!(touchstone.parameter_type(), vecfit::ParameterType::S) {
+            return Err(Error::Parse(format!(
+                "{}: TSTONEFILE must contain S-parameters",
+                path.display()
+            )));
+        }
+        let z0 = touchstone.reference_impedance();
+        if !z0.is_finite() || z0 <= 0.0 {
+            return Err(Error::Parse(format!(
+                "{}: Touchstone reference impedance must be positive and finite",
+                path.display()
+            )));
+        }
+        let nports = touchstone.ports();
+        let response_count = nports
+            .checked_mul(nports)
+            .ok_or_else(|| Error::Parse("Touchstone port count is too large".into()))?;
+        if touchstone.len() < 3 {
+            return Err(Error::Parse(format!(
+                "{}: TSTONEFILE needs at least three frequency samples",
+                path.display()
+            )));
+        }
+
+        // Touchstone stores each frequency matrix by column (S11, S21, ...),
+        // while the native RFM is row-major. Keep the conversion here rather
+        // than relying on a parser layout default.
+        let mut samples = vec![c64::new(0.0, 0.0); touchstone.len() * response_count];
+        for sample in 0..touchstone.len() {
+            let source = touchstone.samples().row(sample);
+            for row in 0..nports {
+                for column in 0..nports {
+                    samples[sample * response_count + row * nports + column] =
+                        source[column * nports + row];
+                }
+            }
+        }
+        let poles = touchstone_fit_pole_count(touchstone.len());
+        let shape = Shape::matrix(nports, nports).map_err(|error| {
+            Error::Parse(format!(
+                "{}: invalid Touchstone shape: {error}",
+                path.display()
+            ))
+        })?;
+        let fit = VectorFitModel::fit_samples(
+            complex(touchstone.axis()),
+            &samples,
+            shape,
+            VectorFitOptions::new()
+                .poles(poles)
+                .max_iterations(24)
+                .fit_constant(true)
+                .fit_proportional(false),
+        )
+        .map_err(|error| {
+            Error::Parse(format!(
+                "{}: native rational fit failed: {error}",
+                path.display()
+            ))
+        })?;
+        let model = Self::from_vector_fit(nports, z0, &fit)?;
+        if !model.constant.iter().all(|value| value.is_finite()) {
+            return Err(Error::Parse(format!(
+                "{}: native rational fit produced non-finite constants",
+                path.display()
+            )));
+        }
+        Ok(model)
+    }
+
+    fn from_vector_fit(nports: usize, z0: f64, fit: &VectorFitModel) -> Result<Self> {
+        let response_count = nports * nports;
+        if fit.channels() != response_count {
+            return Err(Error::Parse(
+                "native rational fit returned an invalid response shape".into(),
+            ));
+        }
+        let constants = fit
+            .constant_terms()
+            .iter()
+            .enumerate()
+            .map(|(index, value)| real_fit_value(*value, &format!("constant term {index}")))
+            .collect::<Result<Vec<_>>>()?;
+        if fit
+            .proportional_terms()
+            .iter()
+            .any(|value| value.norm() > 1e-12)
+        {
+            return Err(Error::Parse(
+                "native rational fit produced unsupported proportional terms".into(),
+            ));
+        }
+
+        let mut terms = vec![Vec::<(c64, c64)>::new(); response_count];
+        let poles = fit.poles();
+        let mut used = vec![false; poles.len()];
+        for (index, pole) in poles.iter().copied().enumerate() {
+            if used[index] {
+                continue;
+            }
+            if !pole.re.is_finite() || !pole.im.is_finite() || pole.re >= 0.0 {
+                return Err(Error::Parse(
+                    "native rational fit produced an unstable pole".into(),
+                ));
+            }
+            let pole_scale = pole.norm().max(1.0);
+            if pole.im.abs() <= 1e-10 * pole_scale {
+                used[index] = true;
+                for (response, response_terms) in terms.iter_mut().enumerate() {
+                    let residue =
+                        real_fit_value(fit.residue(index, response), "real-pole residue")?;
+                    response_terms.push((c64::new(pole.re, 0.0), c64::new(residue, 0.0)));
+                }
+                continue;
+            }
+            let positive = if pole.im > 0.0 {
+                index
+            } else {
+                poles
+                    .iter()
+                    .enumerate()
+                    .find_map(|(candidate, other)| {
+                        (!used[candidate] && other.im > 0.0 && pole_pair_matches(pole, *other))
+                            .then_some(candidate)
+                    })
+                    .ok_or_else(|| {
+                        Error::Parse(
+                            "native rational fit returned an incomplete complex pole pair".into(),
+                        )
+                    })?
+            };
+            let negative = poles
+                .iter()
+                .enumerate()
+                .find_map(|(candidate, other)| {
+                    (!used[candidate]
+                        && other.im < 0.0
+                        && pole_pair_matches(poles[positive], *other))
+                    .then_some(candidate)
+                })
+                .ok_or_else(|| {
+                    Error::Parse(
+                        "native rational fit returned an incomplete complex pole pair".into(),
+                    )
+                })?;
+            used[positive] = true;
+            used[negative] = true;
+            for (response, response_terms) in terms.iter_mut().enumerate() {
+                let residue = (fit.residue(positive, response)
+                    + fit.residue(negative, response).conj())
+                    * 0.5;
+                response_terms.push((poles[positive], residue));
+            }
+        }
+        Self::from_response_terms(nports, z0, constants, terms)
+    }
+
     pub fn parse_file(path: &Path) -> Result<Self> {
         let lines: Vec<SourceLine> = fs::read_to_string(path)?
             .lines()
@@ -308,8 +472,29 @@ impl RfmModel {
                 missing.join(", ")
             )));
         }
+        Self::from_response_terms(
+            nports,
+            z0,
+            constants,
+            response_terms
+                .into_iter()
+                .map(|terms| terms.expect("all RFM responses were checked"))
+                .collect(),
+        )
+    }
+
+    fn from_response_terms(
+        nports: usize,
+        z0: f64,
+        constants: Vec<f64>,
+        response_terms: Vec<Vec<(c64, c64)>>,
+    ) -> Result<Self> {
+        let response_count = nports * nports;
+        if constants.len() != response_count || response_terms.len() != response_count {
+            return Err(Error::Parse("invalid RFM response dimensions".into()));
+        }
         let mut unique_poles = HashMap::new();
-        for terms in response_terms.iter().flatten() {
+        for terms in &response_terms {
             for (pole, _) in terms {
                 unique_poles
                     .entry((pole.re.to_bits(), pole.im.to_bits()))
@@ -317,17 +502,16 @@ impl RfmModel {
             }
         }
         let legacy_state_width = unique_poles.values().sum();
-
         let mut modes = Vec::new();
         let mut mode_lookup = HashMap::new();
-        let mut flattened_terms: Vec<ResponseTerm> = Vec::new();
+        let mut flattened_terms = Vec::new();
         let mut response_starts = Vec::with_capacity(response_count + 1);
         let mut state_width = 0usize;
         for (response, terms) in response_terms.into_iter().enumerate() {
             response_starts.push(flattened_terms.len());
             let input = response % nports;
             let response_start = flattened_terms.len();
-            for (pole, residue) in terms.expect("all RFM responses were checked") {
+            for (pole, residue) in terms {
                 let key = (pole.re.to_bits(), pole.im.to_bits(), input);
                 let mode = *mode_lookup.entry(key).or_insert_with(|| {
                     let mode = modes.len();
@@ -341,7 +525,7 @@ impl RfmModel {
                 });
                 if let Some(existing) = flattened_terms[response_start..]
                     .iter_mut()
-                    .find(|term| term.mode == mode)
+                    .find(|term: &&mut ResponseTerm| term.mode == mode)
                 {
                     existing.residue += residue;
                 } else {
@@ -880,6 +1064,31 @@ impl RfmModel {
             *value *= scale;
         }
     }
+}
+
+fn touchstone_fit_pole_count(samples: usize) -> usize {
+    // Keep the initial state-space bounded for large N-port transient decks.
+    // A later auto-order pass can raise this after fit-quality gates exist.
+    samples.saturating_sub(1).clamp(1, 24)
+}
+
+fn real_fit_value(value: c64, label: &str) -> Result<f64> {
+    if !value.re.is_finite() || !value.im.is_finite() {
+        return Err(Error::Parse(format!(
+            "native rational fit produced non-finite {label}"
+        )));
+    }
+    if value.im.abs() > 1e-7 * (1.0 + value.re.abs()) {
+        return Err(Error::Parse(format!(
+            "native rational fit produced non-real {label}; cannot build a real transient model"
+        )));
+    }
+    Ok(value.re)
+}
+
+fn pole_pair_matches(left: c64, right: c64) -> bool {
+    let scale = left.norm().max(right.norm()).max(1.0);
+    (left.re - right.re).abs() <= 1e-7 * scale && (left.im + right.im).abs() <= 1e-7 * scale
 }
 
 #[derive(Debug, Clone)]
