@@ -979,6 +979,17 @@ fn run_transient(
     retain_points: bool,
 ) -> Result<Vec<SimulationPoint>> {
     let (step, stop) = analysis;
+    for element in &deck.elements {
+        if let Element::Rfm { model, .. } = element {
+            let model_data = rfm_model(deck, rfm, model)?;
+            if !model_data.supports_transient() {
+                return Err(Error::InvalidDeck(format!(
+                    "S-parameter model '{}' uses direct TSTONEFILE AC data and cannot run TRAN; set RATIONAL_FUNC_FOR_AC=1 to enable native rational fitting",
+                    model.as_deref().unwrap_or("<command-line>")
+                )));
+            }
+        }
+    }
     let total_points = transient_output_count(step, stop);
     let initial = solve_dc(deck, None, rfm, cache, statistics)?;
     let mut state = DynamicState::default();

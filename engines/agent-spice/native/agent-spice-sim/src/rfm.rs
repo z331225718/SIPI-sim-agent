@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::f64::consts::PI;
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
@@ -65,6 +66,12 @@ pub struct RfmStorageStats {
 }
 
 #[derive(Debug)]
+struct TouchstoneSamples {
+    frequencies_hz: Vec<f64>,
+    scattering: Vec<c64>,
+}
+
+#[derive(Debug)]
 pub struct RfmModel {
     pub nports: usize,
     pub z0: f64,
@@ -76,9 +83,74 @@ pub struct RfmModel {
     unique_poles: usize,
     legacy_state_width: usize,
     dense_history_coefficients: Option<Vec<f64>>,
+    touchstone: Option<TouchstoneSamples>,
 }
 
 impl RfmModel {
+    /// Load an S-parameter Touchstone model for direct frequency-domain use.
+    /// This deliberately does not synthesize a transient state-space model.
+    pub fn load_touchstone_file(path: &Path) -> Result<Self> {
+        let touchstone = Touchstone::from_path(path).map_err(|error| {
+            Error::Parse(format!("{}: invalid Touchstone: {error}", path.display()))
+        })?;
+        if !matches!(touchstone.parameter_type(), vecfit::ParameterType::S) {
+            return Err(Error::Parse(format!(
+                "{}: TSTONEFILE must contain S-parameters",
+                path.display()
+            )));
+        }
+        let z0 = touchstone.reference_impedance();
+        if !z0.is_finite() || z0 <= 0.0 {
+            return Err(Error::Parse(format!(
+                "{}: Touchstone reference impedance must be positive and finite",
+                path.display()
+            )));
+        }
+        let nports = touchstone.ports();
+        let response_count = nports
+            .checked_mul(nports)
+            .ok_or_else(|| Error::Parse("Touchstone port count is too large".into()))?;
+        if touchstone.len() < 2 {
+            return Err(Error::Parse(format!(
+                "{}: TSTONEFILE needs at least two frequency samples",
+                path.display()
+            )));
+        }
+        let frequencies_hz = touchstone.frequency_hz().to_vec();
+        if frequencies_hz.windows(2).any(|pair| pair[0] >= pair[1]) {
+            return Err(Error::Parse(format!(
+                "{}: TSTONEFILE frequencies must be strictly increasing",
+                path.display()
+            )));
+        }
+        let mut scattering = vec![c64::new(0.0, 0.0); touchstone.len() * response_count];
+        for sample in 0..touchstone.len() {
+            let source = touchstone.samples().row(sample);
+            for row in 0..nports {
+                for column in 0..nports {
+                    scattering[sample * response_count + row * nports + column] =
+                        source[column * nports + row];
+                }
+            }
+        }
+        Ok(Self {
+            nports,
+            z0,
+            constant: Vec::new(),
+            modes: Vec::new(),
+            response_starts: vec![0; response_count + 1],
+            response_terms: Vec::new(),
+            state_width: 0,
+            unique_poles: 0,
+            legacy_state_width: 0,
+            dense_history_coefficients: None,
+            touchstone: Some(TouchstoneSamples {
+                frequencies_hz,
+                scattering,
+            }),
+        })
+    }
+
     /// Load a Touchstone S-parameter file and fit it into the same real, stable
     /// rational representation used by native AC and transient simulation.
     pub fn fit_touchstone_file(path: &Path) -> Result<Self> {
@@ -577,6 +649,7 @@ impl RfmModel {
             unique_poles: unique_poles.len(),
             legacy_state_width,
             dense_history_coefficients,
+            touchstone: None,
         })
     }
 
@@ -606,6 +679,9 @@ impl RfmModel {
     }
 
     pub fn admittance(&self, s: c64) -> Result<Vec<c64>> {
+        if let Some(touchstone) = &self.touchstone {
+            return self.touchstone_admittance(touchstone, s);
+        }
         let mut identity_plus_scattering = vec![c64::new(0.0, 0.0); self.nports * self.nports];
         for row in 0..self.nports {
             for column in 0..self.nports {
@@ -641,6 +717,54 @@ impl RfmModel {
             }
         }
         Ok(admittance)
+    }
+
+    pub fn supports_transient(&self) -> bool {
+        self.touchstone.is_none()
+    }
+
+    fn touchstone_admittance(&self, touchstone: &TouchstoneSamples, s: c64) -> Result<Vec<c64>> {
+        if s.re != 0.0 || s.im <= 0.0 {
+            return Err(Error::InvalidDeck(
+                "direct TSTONEFILE evaluation only supports positive-frequency AC analysis; set RATIONAL_FUNC_FOR_AC=1 for a rational model".into(),
+            ));
+        }
+        let frequency_hz = s.im / (2.0 * PI);
+        let last = touchstone.frequencies_hz.len() - 1;
+        let upper = touchstone
+            .frequencies_hz
+            .partition_point(|frequency| *frequency < frequency_hz);
+        let (left, right, fraction) = if upper == 0 {
+            if frequency_hz != touchstone.frequencies_hz[0] {
+                return Err(Error::InvalidDeck(format!(
+                    "AC frequency {frequency_hz:.12e} Hz is below TSTONEFILE range [{:.12e}, {:.12e}] Hz",
+                    touchstone.frequencies_hz[0], touchstone.frequencies_hz[last]
+                )));
+            }
+            (0, 0, 0.0)
+        } else if upper == touchstone.frequencies_hz.len() {
+            if frequency_hz != touchstone.frequencies_hz[last] {
+                return Err(Error::InvalidDeck(format!(
+                    "AC frequency {frequency_hz:.12e} Hz is above TSTONEFILE range [{:.12e}, {:.12e}] Hz",
+                    touchstone.frequencies_hz[0], touchstone.frequencies_hz[last]
+                )));
+            }
+            (last, last, 0.0)
+        } else {
+            let left = upper - 1;
+            let right = upper;
+            let fraction = (frequency_hz - touchstone.frequencies_hz[left])
+                / (touchstone.frequencies_hz[right] - touchstone.frequencies_hz[left]);
+            (left, right, fraction)
+        };
+        let response_count = self.nports * self.nports;
+        let scattering = (0..response_count)
+            .map(|index| {
+                touchstone.scattering[left * response_count + index] * (1.0 - fraction)
+                    + touchstone.scattering[right * response_count + index] * fraction
+            })
+            .collect::<Vec<_>>();
+        scattering_to_admittance(&scattering, self.nports, self.z0)
     }
 
     pub fn dc_admittance_real(&self) -> Result<Vec<f64>> {
@@ -1089,6 +1213,27 @@ fn real_fit_value(value: c64, label: &str) -> Result<f64> {
 fn pole_pair_matches(left: c64, right: c64) -> bool {
     let scale = left.norm().max(right.norm()).max(1.0);
     (left.re - right.re).abs() <= 1e-7 * scale && (left.im + right.im).abs() <= 1e-7 * scale
+}
+
+fn scattering_to_admittance(scattering: &[c64], nports: usize, z0: f64) -> Result<Vec<c64>> {
+    let mut identity_plus_scattering = scattering.to_vec();
+    for index in 0..nports {
+        identity_plus_scattering[index * nports + index] += c64::new(1.0, 0.0);
+    }
+    let inverse = invert_complex(&identity_plus_scattering, nports)?;
+    let mut admittance = vec![c64::new(0.0, 0.0); inverse.len()];
+    for row in 0..nports {
+        for column in 0..nports {
+            let index = row * nports + column;
+            admittance[index] = 2.0 * inverse[index] / z0
+                - if row == column {
+                    c64::new(1.0 / z0, 0.0)
+                } else {
+                    c64::new(0.0, 0.0)
+                };
+        }
+    }
+    Ok(admittance)
 }
 
 #[derive(Debug, Clone)]

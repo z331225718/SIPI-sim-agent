@@ -880,7 +880,7 @@ fn load_rfm_models(lines: &[SourceLine]) -> Result<HashMap<String, RfmModel>> {
         let mut rfm_file = None;
         let mut touchstone_file = None;
         let mut declared_ports = None;
-        let mut rational_func_for_ac = true;
+        let mut rational_func_for_ac = false;
         for (option, value) in
             line.wrap(parse_assignments(&tokens[3..], ".model S option", false))?
         {
@@ -921,11 +921,6 @@ fn load_rfm_models(lines: &[SourceLine]) -> Result<HashMap<String, RfmModel>> {
         let (file, is_touchstone) = if let Some(file) = rfm_file {
             (file, false)
         } else if let Some(file) = touchstone_file {
-            if !rational_func_for_ac {
-                return Err(
-                    line.error(".model S TSTONEFILE with RATIONAL_FUNC_FOR_AC=0 is not supported")
-                );
-            }
             (file, true)
         } else {
             return Err(line.error(format!(
@@ -948,12 +943,21 @@ fn load_rfm_models(lines: &[SourceLine]) -> Result<HashMap<String, RfmModel>> {
             }
         };
         let model = if is_touchstone {
-            logging::line(format_args!(
-                "[agent-spice-sim] fitting TSTONEFILE model {}: {}",
-                tokens[1],
-                path.display()
-            ));
-            line.wrap(RfmModel::fit_touchstone_file(&path))?
+            if rational_func_for_ac {
+                logging::line(format_args!(
+                    "[agent-spice-sim] fitting TSTONEFILE model {}: {}",
+                    tokens[1],
+                    path.display()
+                ));
+                line.wrap(RfmModel::fit_touchstone_file(&path))?
+            } else {
+                logging::line(format_args!(
+                    "[agent-spice-sim] loading direct-AC TSTONEFILE model {}: {}",
+                    tokens[1],
+                    path.display()
+                ));
+                line.wrap(RfmModel::load_touchstone_file(&path))?
+            }
         } else {
             line.wrap(RfmModel::parse_file(&path))?
         };
