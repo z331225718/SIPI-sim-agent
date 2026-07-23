@@ -128,6 +128,16 @@ fn run() -> Result<()> {
             deck.display()
         )));
     }
+    let deck = deck.canonicalize()?;
+    let deck_directory = deck.parent().ok_or_else(|| {
+        Error::InvalidDeck(format!("deck has no parent directory: {}", deck.display()))
+    })?;
+    std::env::set_current_dir(deck_directory).map_err(|error| {
+        Error::InvalidDeck(format!(
+            "failed to set simulation working directory to '{}': {error}",
+            deck_directory.display()
+        ))
+    })?;
     if rfm_path.as_ref().is_some_and(|path| !path.is_file()) {
         return Err(Error::InvalidDeck(format!(
             "RFM model does not exist: {}",
@@ -169,6 +179,10 @@ fn run() -> Result<()> {
     logging::line(format_args!(
         "[agent-spice-sim] loading deck: {}",
         deck.display()
+    ));
+    logging::line(format_args!(
+        "[agent-spice-sim] working directory: {}",
+        deck_directory.display()
     ));
     let load_started = Instant::now();
     let rfm = rfm_path
