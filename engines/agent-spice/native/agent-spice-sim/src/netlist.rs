@@ -231,7 +231,10 @@ fn pwl_hard_breakpoints(points: &[(f64, f64)], repeat_from: Option<f64>) -> Vec<
 
 #[cfg(test)]
 mod waveform_lookup_tests {
-    use super::{Waveform, interpolate_pwl, pwl_hard_breakpoints};
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    use super::{Deck, Element, Waveform, interpolate_pwl, pwl_hard_breakpoints};
 
     #[test]
     fn binary_pwl_interpolation_preserves_boundaries_and_segments() {
@@ -326,6 +329,46 @@ mod waveform_lookup_tests {
         };
         assert!(waveform.requires_integration_restart_at(2.0));
         assert!(!waveform.requires_integration_restart_at(1.0));
+    }
+
+    #[test]
+    fn nested_deck_references_resolve_from_root_deck_directory() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time is after Unix epoch")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!(
+            "agent-spice-root-relative-path-{}-{unique}",
+            std::process::id()
+        ));
+        fs::create_dir_all(root.join("sub")).expect("create test directories");
+        fs::write(
+            root.join("main.sp"),
+            "root deck\n.include 'sub/child.sp'\n.tran 1n 2n\n.end\n",
+        )
+        .expect("write root deck");
+        fs::write(
+            root.join("sub/child.sp"),
+            ".include 'grandchild.sp'\nIload n 0 pwl pwlfile='wave.csv'\n",
+        )
+        .expect("write child deck");
+        fs::write(root.join("grandchild.sp"), "Rload n 0 1\n")
+            .expect("write root-level nested include");
+        fs::write(root.join("wave.csv"), "0,0\n1n,1m\n2n,0\n").expect("write root waveform");
+        fs::write(root.join("sub/wave.csv"), "0,0\n1n,2m\n2n,0\n").expect("write child waveform");
+
+        let deck = Deck::parse_file(&root.join("main.sp"), None).expect("parse deck");
+        let source = deck
+            .elements
+            .iter()
+            .find_map(|element| match element {
+                Element::Current { source, .. } => Some(source),
+                _ => None,
+            })
+            .expect("current source from included deck");
+        assert_eq!(source.transient_value(1e-9), 1e-3);
+
+        fs::remove_dir_all(root).expect("remove test directories");
     }
 }
 
@@ -729,16 +772,17 @@ pub struct Deck {
 impl Deck {
     pub fn parse_file(path: &Path, rfm_binding: Option<(&str, usize)>) -> Result<Self> {
         let path = path.canonicalize()?;
+        let root_directory = path.parent().unwrap_or_else(|| Path::new("."));
         let mut active = HashSet::new();
-        let lines = expand_includes(&path, &mut active)?;
-        let rfm_models = load_rfm_models(&lines)?;
+        let lines = expand_includes(&path, root_directory, &mut active)?;
+        let rfm_models = load_rfm_models(&lines, root_directory)?;
         let rfm_model_ports = rfm_models
             .iter()
             .map(|(name, model)| (name.clone(), model.nports))
             .collect();
         let lines =
             flatten_subcircuits(lines, rfm_binding.map(|(name, _)| name), &rfm_model_ports)?;
-        let mut deck = Self::parse(lines, rfm_binding, rfm_model_ports)?;
+        let mut deck = Self::parse(lines, rfm_binding, rfm_model_ports, root_directory)?;
         deck.rfm_models = rfm_models;
         Ok(deck)
     }
@@ -747,12 +791,14 @@ impl Deck {
         lines: Vec<SourceLine>,
         rfm_binding: Option<(&str, usize)>,
         rfm_model_ports: HashMap<String, usize>,
+        root_directory: &Path,
     ) -> Result<Self> {
         let deck_source = lines.first().cloned();
         let mut parser = Parser {
             rfm_subcircuit: rfm_binding.map(|(name, _)| name.to_string()),
             rfm_nports: rfm_binding.map(|(_, nports)| nports),
             rfm_model_ports,
+            root_directory: root_directory.to_path_buf(),
             relative_tolerance: 1e-3,
             voltage_tolerance: 1e-6,
             current_tolerance: 1e-12,
@@ -812,23 +858,26 @@ impl SourceLine {
         self.locate(Error::Parse(message.into()))
     }
 
-    fn directory(&self) -> &Path {
-        self.path.parent().unwrap_or_else(|| Path::new("."))
-    }
 }
 
-fn expand_includes(path: &Path, active: &mut HashSet<PathBuf>) -> Result<Vec<SourceLine>> {
+fn expand_includes(
+    path: &Path,
+    root_directory: &Path,
+    active: &mut HashSet<PathBuf>,
+) -> Result<Vec<SourceLine>> {
     let path = path.canonicalize()?;
     enter_dependency(&path, active)?;
     let text = fs::read_to_string(&path)?;
-    let expanded = expand_dependency_lines(&path, logical_lines(&text, &path), active)?;
+    let expanded =
+        expand_dependency_lines(&path, logical_lines(&text, &path), root_directory, active)?;
     active.remove(&path);
     Ok(expanded)
 }
 
 fn expand_dependency_lines(
-    source: &Path,
+    _source: &Path,
     lines: Vec<SourceLine>,
+    root_directory: &Path,
     active: &mut HashSet<PathBuf>,
 ) -> Result<Vec<SourceLine>> {
     let mut expanded = Vec::new();
@@ -842,11 +891,8 @@ fn expand_dependency_lines(
                 .get(1)
                 .ok_or_else(|| line.error("include path is missing"))?
                 .trim_matches(|character| character == '\'' || character == '"');
-            let include_path = source
-                .parent()
-                .unwrap_or_else(|| Path::new("."))
-                .join(reference);
-            expanded.extend(line.wrap(expand_includes(&include_path, active))?);
+            let include_path = root_directory.join(reference);
+            expanded.extend(line.wrap(expand_includes(&include_path, root_directory, active))?);
         } else if tokens
             .first()
             .is_some_and(|head| head.eq_ignore_ascii_case(".lib"))
@@ -854,13 +900,11 @@ fn expand_dependency_lines(
         {
             let reference =
                 tokens[1].trim_matches(|character| character == '\'' || character == '"');
-            let library_path = source
-                .parent()
-                .unwrap_or_else(|| Path::new("."))
-                .join(reference);
+            let library_path = root_directory.join(reference);
             expanded.extend(line.wrap(expand_library_section(
                 &library_path,
                 &tokens[2],
+                root_directory,
                 active,
             ))?);
         } else {
@@ -873,6 +917,7 @@ fn expand_dependency_lines(
 fn expand_library_section(
     path: &Path,
     section: &str,
+    root_directory: &Path,
     active: &mut HashSet<PathBuf>,
 ) -> Result<Vec<SourceLine>> {
     let path = path.canonicalize()?;
@@ -916,7 +961,7 @@ fn expand_library_section(
             path.display()
         )));
     }
-    let expanded = expand_dependency_lines(&path, selected, active)?;
+    let expanded = expand_dependency_lines(&path, selected, root_directory, active)?;
     active.remove(&path);
     Ok(expanded)
 }
@@ -931,7 +976,10 @@ fn enter_dependency(path: &Path, active: &mut HashSet<PathBuf>) -> Result<()> {
     Ok(())
 }
 
-fn load_rfm_models(lines: &[SourceLine]) -> Result<HashMap<String, RfmModel>> {
+fn load_rfm_models(
+    lines: &[SourceLine],
+    root_directory: &Path,
+) -> Result<HashMap<String, RfmModel>> {
     let mut models = HashMap::new();
     for line in lines {
         let text = strip_hspice_comment(&line.text).trim();
@@ -1010,14 +1058,7 @@ fn load_rfm_models(lines: &[SourceLine]) -> Result<HashMap<String, RfmModel>> {
         let path = if path.is_absolute() {
             path
         } else {
-            let deck_relative = line.directory().join(&path);
-            if deck_relative.is_file() {
-                deck_relative
-            } else if path.is_file() {
-                path
-            } else {
-                deck_relative
-            }
+            root_directory.join(path)
         };
         let model = if is_touchstone {
             if rational_func {
@@ -1773,6 +1814,7 @@ struct Parser {
     rfm_subcircuit: Option<String>,
     rfm_nports: Option<usize>,
     rfm_model_ports: HashMap<String, usize>,
+    root_directory: PathBuf,
     skipping_rfm_wrapper: bool,
     integration_method: IntegrationMethod,
     relative_tolerance: f64,
@@ -1802,7 +1844,8 @@ enum PendingElement {
 impl Parser {
     fn parse_line(&mut self, source: &SourceLine) -> Result<()> {
         let previous_elements = self.elements.len();
-        let result = self.parse_line_inner(&source.text, source.directory());
+        let root_directory = self.root_directory.clone();
+        let result = self.parse_line_inner(&source.text, &root_directory);
         if result.is_ok() {
             self.element_sources.extend(std::iter::repeat_n(
                 source.clone(),
