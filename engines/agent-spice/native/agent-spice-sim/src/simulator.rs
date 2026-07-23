@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::f64::consts::PI;
 use std::fs::File;
 use std::io::{BufWriter, Write};
@@ -10,6 +10,7 @@ use faer::sparse::Triplet;
 
 use crate::error::{Error, Result};
 use crate::expression;
+use crate::logging;
 use crate::netlist::{
     AcScale, Analysis, Deck, Element, IntegrationMethod, LinExport, MeasurementEvent,
     MeasurementEventDirection, MeasurementEventOccurrence, MeasurementOperation,
@@ -128,6 +129,7 @@ pub fn run_with_observer(
                 stop,
             } => {
                 let frequencies = frequencies(*scale, *point_count, *start, *stop);
+                warn_ac_touchstone_extrapolation(deck, rfm, &frequencies)?;
                 let total_points = frequencies.len();
                 observer.analysis_started("ac", total_points)?;
                 let (samples, symbolic_factorizations) = solve_ac_sweep(deck, rfm, &frequencies)?;
@@ -271,7 +273,7 @@ pub fn export_lin_touchstone(
     })?;
     let mut writer = BufWriter::new(file);
     writeln!(writer, "! agent-spice-sim native .lin export")?;
-    writeln!(writer, "# Hz S RI R {reference_impedance:.17e}")?;
+    writeln!(writer, "# Hz S RI R {reference_impedance}")?;
     let mut cache = SymbolicCache::default();
     for frequency in frequencies(*scale, *points, *start, *stop) {
         let (matrix, _) = assemble_ac(deck, rfm, frequency)?;
@@ -306,6 +308,41 @@ pub fn export_lin_touchstone(
     }
     writer.flush()?;
     Ok(output)
+}
+
+fn warn_ac_touchstone_extrapolation(
+    deck: &Deck,
+    rfm: Option<&RfmModel>,
+    frequencies: &[f64],
+) -> Result<()> {
+    let Some(&lowest) = frequencies.first() else {
+        return Ok(());
+    };
+    let highest = *frequencies.last().expect("nonempty frequency sweep");
+    let mut warned_models = HashSet::new();
+    for element in &deck.elements {
+        let Element::Rfm {
+            name,
+            model: model_name,
+            ..
+        } = element
+        else {
+            continue;
+        };
+        let model = rfm_model(deck, rfm, model_name)?;
+        let Some((model_lowest, model_highest)) = model.direct_touchstone_frequency_range() else {
+            continue;
+        };
+        let label = model_name.as_deref().unwrap_or(name);
+        if (lowest < model_lowest || highest > model_highest)
+            && warned_models.insert(label.to_ascii_lowercase())
+        {
+            logging::line(format_args!(
+                "[agent-spice-sim] WARNING: AC sweep [{lowest:.12e}, {highest:.12e}] Hz extends beyond direct TSTONEFILE model '{label}' range [{model_lowest:.12e}, {model_highest:.12e}] Hz; linearly extrapolating from the nearest two samples"
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn touchstone_output_path(filename: &Path, ports: usize) -> PathBuf {

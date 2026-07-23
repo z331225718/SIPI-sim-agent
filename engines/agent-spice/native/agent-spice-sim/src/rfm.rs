@@ -727,6 +727,16 @@ impl RfmModel {
         self.transient_supported
     }
 
+    pub fn direct_touchstone_frequency_range(&self) -> Option<(f64, f64)> {
+        self.touchstone.as_ref().map(|touchstone| {
+            let last = touchstone.frequencies_hz.len() - 1;
+            (
+                touchstone.frequencies_hz[0],
+                touchstone.frequencies_hz[last],
+            )
+        })
+    }
+
     fn touchstone_admittance(&self, touchstone: &TouchstoneSamples, s: c64) -> Result<Vec<c64>> {
         if s.re != 0.0 || s.im <= 0.0 {
             return Err(Error::InvalidDeck(
@@ -734,33 +744,8 @@ impl RfmModel {
             ));
         }
         let frequency_hz = s.im / (2.0 * PI);
-        let last = touchstone.frequencies_hz.len() - 1;
-        let upper = touchstone
-            .frequencies_hz
-            .partition_point(|frequency| *frequency < frequency_hz);
-        let (left, right, fraction) = if upper == 0 {
-            if frequency_hz != touchstone.frequencies_hz[0] {
-                return Err(Error::InvalidDeck(format!(
-                    "AC frequency {frequency_hz:.12e} Hz is below TSTONEFILE range [{:.12e}, {:.12e}] Hz",
-                    touchstone.frequencies_hz[0], touchstone.frequencies_hz[last]
-                )));
-            }
-            (0, 0, 0.0)
-        } else if upper == touchstone.frequencies_hz.len() {
-            if frequency_hz != touchstone.frequencies_hz[last] {
-                return Err(Error::InvalidDeck(format!(
-                    "AC frequency {frequency_hz:.12e} Hz is above TSTONEFILE range [{:.12e}, {:.12e}] Hz",
-                    touchstone.frequencies_hz[0], touchstone.frequencies_hz[last]
-                )));
-            }
-            (last, last, 0.0)
-        } else {
-            let left = upper - 1;
-            let right = upper;
-            let fraction = (frequency_hz - touchstone.frequencies_hz[left])
-                / (touchstone.frequencies_hz[right] - touchstone.frequencies_hz[left]);
-            (left, right, fraction)
-        };
+        let (left, right, fraction) =
+            linear_frequency_bracket(&touchstone.frequencies_hz, frequency_hz);
         let response_count = self.nports * self.nports;
         let scattering = (0..response_count)
             .map(|index| {
@@ -1191,6 +1176,36 @@ impl RfmModel {
         for value in output {
             *value *= scale;
         }
+    }
+}
+
+fn linear_frequency_bracket(frequencies_hz: &[f64], frequency_hz: f64) -> (usize, usize, f64) {
+    debug_assert!(frequencies_hz.len() >= 2);
+    let upper = frequencies_hz.partition_point(|frequency| *frequency < frequency_hz);
+    let (left, right) = if upper == 0 {
+        (0, 1)
+    } else if upper == frequencies_hz.len() {
+        (frequencies_hz.len() - 2, frequencies_hz.len() - 1)
+    } else {
+        (upper - 1, upper)
+    };
+    let fraction =
+        (frequency_hz - frequencies_hz[left]) / (frequencies_hz[right] - frequencies_hz[left]);
+    (left, right, fraction)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::linear_frequency_bracket;
+
+    #[test]
+    fn linear_frequency_bracket_extrapolates_below_and_above_touchstone_range() {
+        let frequencies = [1.0, 10.0, 100.0];
+        assert_eq!(linear_frequency_bracket(&frequencies, 0.1), (0, 1, -0.1));
+        assert_eq!(
+            linear_frequency_bracket(&frequencies, 1_000.0),
+            (1, 2, 11.0)
+        );
     }
 }
 
