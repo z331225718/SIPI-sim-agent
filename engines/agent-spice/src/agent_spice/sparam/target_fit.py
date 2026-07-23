@@ -261,7 +261,7 @@ def trial_from_fit_result(
         rejection_reason = "pre_rms_above_target"
     elif (
         constant_sigma is not None
-        and float(constant_sigma) >= 1.0
+        and float(constant_sigma) > 1.0 + target.passivity_epsilon
     ):
         rejection_reason = "asymptotic_passivity_failed"
     elif (

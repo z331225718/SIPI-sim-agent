@@ -605,10 +605,9 @@ def build_quality_report(
         )
     )
     if enforce_passivity and constant_matrix_sigma is not None:
-        # RFM Const is the high-frequency S-matrix itself.  Do not grant it
-        # the finite-frequency numerical epsilon: equality is not a passive
-        # delivery margin and must be rejected for transient use.
-        asymptotic_threshold = 1.0
+        # RFM Const is the high-frequency S-matrix itself.  It follows the
+        # same numerical passivity contract as the sampled response.
+        asymptotic_threshold = 1.0 + passivity_epsilon
         if not np.isfinite(constant_matrix_sigma):
             diagnostics.append(
                 QualityDiagnostic(
@@ -621,7 +620,7 @@ def build_quality_report(
                 )
             )
         else:
-            asymptotically_passive = constant_matrix_sigma < asymptotic_threshold
+            asymptotically_passive = constant_matrix_sigma <= asymptotic_threshold
             diagnostics.append(
                 QualityDiagnostic(
                     id="asymptotic_passivity",

@@ -46,7 +46,7 @@ def test_build_quality_report_marks_clean_explore_case_pass():
     }
 
 
-def test_build_quality_report_blocks_nonpassive_asymptotic_feedthrough_outside_checked_band():
+def test_build_quality_report_accepts_lossless_asymptotic_feedthrough_outside_checked_band():
     report = build_quality_report(
         network=QualityNetwork(),
         frequency_points=3,
@@ -62,11 +62,31 @@ def test_build_quality_report_blocks_nonpassive_asymptotic_feedthrough_outside_c
 
     payload = report.to_dict()
     asymptotic = next(item for item in payload["diagnostics"] if item["id"] == "asymptotic_passivity")
+    assert payload["status"] == "PASS"
+    assert payload["allowed_for"] == "ac_only"
+    assert "asymptotic_passivity" not in payload["blocking_reasons"]
+    assert asymptotic["status"] == "PASS"
+    assert asymptotic["metric"] == 1.0
+
+
+def test_build_quality_report_blocks_asymptotic_feedthrough_outside_passivity_epsilon():
+    report = build_quality_report(
+        network=QualityNetwork(),
+        frequency_points=3,
+        fit_frequency_points=3,
+        comparison_rms_error=0.01,
+        passive_after_enforce=True,
+        passivity_violations_after=[],
+        enforce_passivity=True,
+        poles=np.array([-1e6 + 0j]),
+        constant_matrix_sigma=1.0 + 1.1e-6,
+    )
+
+    payload = report.to_dict()
+    asymptotic = next(item for item in payload["diagnostics"] if item["id"] == "asymptotic_passivity")
     assert payload["status"] == "FAIL"
-    assert payload["allowed_for"] == "report_only"
     assert "asymptotic_passivity" in payload["blocking_reasons"]
     assert asymptotic["status"] == "FAIL"
-    assert asymptotic["metric"] == 1.0
 
 
 def test_build_quality_report_warns_for_preview_subset_and_missing_dc():

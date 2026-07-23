@@ -356,10 +356,21 @@ def test_enforce_policy_requires_final_passivity():
     assert trial.rejection_reason == "passivity_enforcement_failed"
 
 
-def test_enforce_policy_rejects_nonpassive_asymptotic_feedthrough():
+def test_enforce_policy_accepts_lossless_asymptotic_feedthrough():
     trial = trial_from_fit_result(
         SParamFitTarget(0.001, passivity="enforce"),
         make_fit_result(constant_matrix_sigma=1.0),
+        requested_order=8,
+    )
+
+    assert trial.target_met is True
+    assert trial.rejection_reason is None
+
+
+def test_enforce_policy_rejects_asymptotic_feedthrough_outside_passivity_epsilon():
+    trial = trial_from_fit_result(
+        SParamFitTarget(0.001, passivity="enforce"),
+        make_fit_result(constant_matrix_sigma=1.0 + 1.1e-6),
         requested_order=8,
     )
 

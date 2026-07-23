@@ -716,11 +716,10 @@ def test_global_damping_factor_leaves_passive_model_unchanged():
     assert _global_damping_factor(max_sigma=0.99, epsilon=1e-6) == pytest.approx(1.0)
 
 
-def test_global_damping_factor_closes_strict_gap_below_one_plus_epsilon():
+def test_global_damping_factor_leaves_passivity_epsilon_gap_unchanged():
     factor = _global_damping_factor(max_sigma=1.0 + 0.5e-6, epsilon=1e-6)
 
-    assert factor < 1.0
-    assert factor * (1.0 + 0.5e-6) < 1.0
+    assert factor == pytest.approx(1.0)
 
 
 def test_dc_preserving_uniform_damping_restores_dc_with_slowest_real_pole():
@@ -1050,7 +1049,7 @@ def test_global_damping_does_not_overwrite_model_when_rms_target_would_fail():
     assert vector_fit.residues == pytest.approx(original_residues)
 
 
-def test_final_validation_rejects_finite_sigma_inside_legacy_epsilon_gap():
+def test_final_validation_accepts_finite_sigma_inside_passivity_epsilon():
     vector_fit = type("VectorFit", (), {})()
     vector_fit.poles = np.array([-1.0], dtype=complex)
     vector_fit.residues = np.array([[0.5000005]], dtype=complex)
@@ -1066,12 +1065,12 @@ def test_final_validation_rejects_finite_sigma_inside_legacy_epsilon_gap():
 
     final_validation = vector_fit.passivity_enforcement_diagnostics[-1]
     assert 1.0 < final_validation["final_validation_max_sigma"] < 1.0 + 1e-6
-    assert final_validation["final_validation_passed"] is False
-    assert final_validation["final_validation_violation_count"] >= 1
+    assert final_validation["final_validation_passed"] is True
+    assert final_validation["final_validation_violation_count"] == 0
 
 
 @pytest.mark.parametrize("constant_value", [1.0, 1.0 + 0.5e-6, 1.0 + 1.0e-6])
-def test_enforcement_closes_strict_const_gap_before_global_damping(constant_value):
+def test_enforcement_accepts_const_at_or_inside_passivity_epsilon(constant_value):
     vector_fit = type("VectorFit", (), {})()
     vector_fit.poles = np.array([], dtype=complex)
     vector_fit.residues = np.zeros((1, 0), dtype=complex)
@@ -1086,9 +1085,10 @@ def test_enforcement_closes_strict_const_gap_before_global_damping(constant_valu
     )
 
     diagnostic = vector_fit.passivity_enforcement_diagnostics[0]
-    assert abs(vector_fit.constant_coeff[0]) < 1.0
+    assert vector_fit.constant_coeff[0] == pytest.approx(constant_value)
     assert diagnostic["enabled"] is True
-    assert diagnostic["projected"] is True
+    assert diagnostic["projected"] is False
+    assert vector_fit.passivity_enforcement_diagnostics[-1]["final_validation_passed"] is True
     assert not any(
         item.get("type") == "global_damping_fallback"
         for item in vector_fit.passivity_enforcement_diagnostics

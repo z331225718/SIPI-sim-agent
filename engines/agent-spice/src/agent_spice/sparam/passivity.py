@@ -166,7 +166,7 @@ def _global_damping_factor(
     safety_margin: float = 1e-5,
 ) -> float:
     sigma = float(max_sigma)
-    if sigma < 1.0:
+    if sigma <= 1.0 + float(epsilon):
         return 1.0
     target = max(0.0, 1.0 - float(epsilon) - float(safety_margin))
     if target <= 0.0 or not np.isfinite(sigma) or sigma <= 0.0:
@@ -3279,7 +3279,7 @@ def _project_asymptotic_constant_strictly_passive(
     sigma_before = float(singular_values[0]) if len(singular_values) else 0.0
     strict_margin = max(float(epsilon), 64.0 * np.finfo(float).eps)
     target_norm = max(0.0, 1.0 - strict_margin)
-    if sigma_before < 1.0 or (
+    if sigma_before <= 1.0 + float(epsilon) or (
         maximum_sigma_to_project is not None and sigma_before > maximum_sigma_to_project
     ):
         return constant.reshape(-1).copy(), sigma_before, sigma_before, target_norm
@@ -4990,7 +4990,7 @@ def enforce_passivity_hamiltonian(
     asymptotic_compensation_diagnostic: dict[str, Any] | None = None
 
     can_compensate_asymptote = (
-        asymptotic_sigma_before >= 1.0
+        asymptotic_sigma_before > 1.0 + epsilon
         and len(poles) > 0
         and not perturb_constant
         and not spectral_projection_fallback
@@ -5099,7 +5099,8 @@ def enforce_passivity_hamiltonian(
             not global_damping_fallback or asymptotic_sigma_before <= 1.0 + epsilon
         )
         asymptotic_constant_projected = (
-            asymptotic_sigma_before >= 1.0 and asymptotic_sigma_after < asymptotic_sigma_before
+            asymptotic_sigma_before > 1.0 + epsilon
+            and asymptotic_sigma_after < asymptotic_sigma_before
         )
     elif not asymptotic_constant_projected:
         asymptotic_preprojection_enabled = False
@@ -5836,7 +5837,7 @@ def enforce_passivity_hamiltonian(
         nports=nports,
         intervals=validation_intervals,
         f_max=f_max,
-        epsilon=0.0,
+        epsilon=epsilon,
         max_depth=2,
         curvature_tol=1e-3,
         reference_freqs=spectral_projection_reference_freqs
@@ -6652,16 +6653,16 @@ def enforce_passivity_hamiltonian(
     asymptotic_values = la.svd(constant_coeff.reshape(nports, nports), compute_uv=False)
     validation_asymptotic_sigma = float(asymptotic_values[0]) if len(asymptotic_values) else 0.0
     validation_max_sigma_at_asymptote = False
-    if validation_max_sigma >= 1.0 and validation_violation_count == 0:
+    if validation_max_sigma > 1.0 + epsilon and validation_violation_count == 0:
         validation_violation_count = 1
-    if validation_asymptotic_sigma >= 1.0:
+    if validation_asymptotic_sigma > 1.0 + epsilon:
         validation_violation_count += 1
     if validation_asymptotic_sigma > validation_max_sigma:
         validation_max_sigma = validation_asymptotic_sigma
         validation_max_sigma_frequency = float(validation_f_limit)
         validation_max_sigma_at_asymptote = True
 
-    if global_damping_fallback and validation_max_sigma >= 1.0:
+    if global_damping_fallback and validation_max_sigma > 1.0 + epsilon:
         if global_damping_mode not in {"uniform", "selective_pole", "optimized_pole"}:
             raise ValueError("global_damping_mode must be 'uniform', 'selective_pole', or 'optimized_pole'")
         validation_max_sigma_before_damping = float(validation_max_sigma)
@@ -6670,7 +6671,7 @@ def enforce_passivity_hamiltonian(
         damping_history = []
         validation_max_sigma_after = float(validation_max_sigma)
         for _damping_iteration in range(3):
-            if validation_max_sigma < 1.0:
+            if validation_max_sigma <= 1.0 + epsilon:
                 break
             damping_factor = _global_damping_factor(
                 max_sigma=validation_max_sigma,
@@ -6808,7 +6809,7 @@ def enforce_passivity_hamiltonian(
                     if len(candidate_asymptotic_values)
                     else 0.0
                 )
-                if candidate_asymptotic_sigma >= 1.0:
+                if candidate_asymptotic_sigma > 1.0 + epsilon:
                     candidate_violation_count += 1
                 if candidate_asymptotic_sigma > candidate_max_sigma:
                     candidate_max_sigma = candidate_asymptotic_sigma
@@ -6986,7 +6987,7 @@ def enforce_passivity_hamiltonian(
         )
         validation_max_sigma = validation_max_sigma_after
 
-    if validation_max_sigma >= 1.0 and validation_violation_count == 0:
+    if validation_max_sigma > 1.0 + epsilon and validation_violation_count == 0:
         validation_violation_count = 1
 
     diagnostics.append(

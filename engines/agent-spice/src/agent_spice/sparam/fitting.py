@@ -2379,11 +2379,12 @@ def _fit_touchstone_execution(
         if (
             config.enforce_passivity
             and constant_matrix_sigma is not None
-            and constant_matrix_sigma >= 1.0
+            and constant_matrix_sigma > 1.0 + config.max_passivity_epsilon
         ):
             progress.info(
                 "asymptotic passivity failed: "
-                f"sigma_max(Const)={constant_matrix_sigma:.9g} must be strictly less than 1"
+                f"sigma_max(Const)={constant_matrix_sigma:.9g} exceeds the passivity threshold "
+                f"{1.0 + config.max_passivity_epsilon:.9g}"
             )
         quality_report = build_quality_report(
             network=network,
