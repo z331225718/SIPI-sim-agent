@@ -734,16 +734,26 @@ impl RfmModel {
         output_ports: &[usize],
         input_ports: &[usize],
     ) -> Result<Vec<c64>> {
-        if output_ports.iter().chain(input_ports).any(|port| *port >= self.nports) {
-            return Err(Error::InvalidDeck("RFM response port index is out of range".into()));
+        if output_ports
+            .iter()
+            .chain(input_ports)
+            .any(|port| *port >= self.nports)
+        {
+            return Err(Error::InvalidDeck(
+                "RFM response port index is out of range".into(),
+            ));
         }
         let scattering = self.scattering(s)?;
         if self.nports == 1 {
             let denominator = c64::new(1.0, 0.0) - scattering[0];
             if denominator.norm() == 0.0 {
-                return Err(Error::InvalidDeck("RFM S1P impedance is singular at this frequency".into()));
+                return Err(Error::InvalidDeck(
+                    "RFM S1P impedance is singular at this frequency".into(),
+                ));
             }
-            return Ok(vec![self.z0 * (c64::new(1.0, 0.0) + scattering[0]) / denominator]);
+            return Ok(vec![
+                self.z0 * (c64::new(1.0, 0.0) + scattering[0]) / denominator,
+            ]);
         }
 
         // Z = Z0 * (I - S)^-1 * (I + S).  Solve once, then emit only the
@@ -759,9 +769,147 @@ impl RfmModel {
         for &output in output_ports {
             for &input in input_ports {
                 let value: c64 = (0..self.nports)
-                    .map(|index| inverse[output * self.nports + index] * right[index * self.nports + input])
+                    .map(|index| {
+                        inverse[output * self.nports + index] * right[index * self.nports + input]
+                    })
                     .sum();
                 selected.push(value * self.z0);
+            }
+        }
+        Ok(selected)
+    }
+
+    /// Return a selected port response after grounding selected ports and
+    /// applying finite shunt admittances to the remaining ports.
+    ///
+    /// `shorted_ports` models ideal 0-ohm supplies/terminations.  The finite
+    /// loads are evaluated by the caller at the current frequency, so this
+    /// stays independent of any particular CPM file format.
+    pub fn loaded_impedance_response(
+        &self,
+        s: c64,
+        output_ports: &[usize],
+        input_ports: &[usize],
+        shorted_ports: &[usize],
+        shunt_admittances: &[c64],
+    ) -> Result<Vec<c64>> {
+        if shunt_admittances.len() != self.nports {
+            return Err(Error::InvalidDeck(
+                "RFM shunt load count does not match port count".into(),
+            ));
+        }
+        if output_ports
+            .iter()
+            .chain(input_ports)
+            .chain(shorted_ports)
+            .any(|port| *port >= self.nports)
+        {
+            return Err(Error::InvalidDeck(
+                "RFM response port index is out of range".into(),
+            ));
+        }
+        let mut is_shorted = vec![false; self.nports];
+        for &port in shorted_ports {
+            is_shorted[port] = true;
+        }
+        if output_ports
+            .iter()
+            .chain(input_ports)
+            .any(|port| is_shorted[*port])
+        {
+            return Err(Error::InvalidDeck(
+                "an input/output RFM response port cannot be ideal-shorted".into(),
+            ));
+        }
+        if shorted_ports.is_empty() && shunt_admittances.iter().all(|value| value.norm() == 0.0) {
+            return self.impedance_response(s, output_ports, input_ports);
+        }
+
+        let scattering = self.scattering(s)?;
+        let mut left = scattering.iter().map(|value| -*value).collect::<Vec<_>>();
+        let mut right = scattering;
+        for diagonal in 0..self.nports {
+            left[diagonal * self.nports + diagonal] += c64::new(1.0, 0.0);
+            right[diagonal * self.nports + diagonal] += c64::new(1.0, 0.0);
+        }
+        let inverse = invert_complex(&left, self.nports)?;
+        let mut impedance = vec![c64::new(0.0, 0.0); self.nports * self.nports];
+        for row in 0..self.nports {
+            for column in 0..self.nports {
+                impedance[row * self.nports + column] = (0..self.nports)
+                    .map(|index| {
+                        inverse[row * self.nports + index] * right[index * self.nports + column]
+                    })
+                    .sum::<c64>()
+                    * self.z0;
+            }
+        }
+
+        let active = (0..self.nports)
+            .filter(|port| !is_shorted[*port])
+            .collect::<Vec<_>>();
+        let shorted = (0..self.nports)
+            .filter(|port| is_shorted[*port])
+            .collect::<Vec<_>>();
+        let size = active.len();
+        let mut effective = vec![c64::new(0.0, 0.0); size * size];
+        for (row, &port_row) in active.iter().enumerate() {
+            for (column, &port_column) in active.iter().enumerate() {
+                effective[row * size + column] = impedance[port_row * self.nports + port_column];
+            }
+        }
+        if !shorted.is_empty() {
+            let short_size = shorted.len();
+            let mut zss = Vec::with_capacity(short_size * short_size);
+            for &row in &shorted {
+                for &column in &shorted {
+                    zss.push(impedance[row * self.nports + column]);
+                }
+            }
+            let zss_inverse = invert_complex(&zss, short_size)?;
+            for (row, &port_row) in active.iter().enumerate() {
+                for (column, &port_column) in active.iter().enumerate() {
+                    let mut correction = c64::new(0.0, 0.0);
+                    for left_index in 0..short_size {
+                        for right_index in 0..short_size {
+                            correction += impedance[port_row * self.nports + shorted[left_index]]
+                                * zss_inverse[left_index * short_size + right_index]
+                                * impedance[shorted[right_index] * self.nports + port_column];
+                        }
+                    }
+                    effective[row * size + column] -= correction;
+                }
+            }
+        }
+
+        // V = Z_eff (I - Y_load V), hence H = (I + Z_eff Y_load)^-1 Z_eff.
+        let mut system = effective.clone();
+        for row in 0..size {
+            for column in 0..size {
+                system[row * size + column] *= shunt_admittances[active[column]];
+            }
+            system[row * size + row] += c64::new(1.0, 0.0);
+        }
+        let system_inverse = invert_complex(&system, size)?;
+        let mut loaded = vec![c64::new(0.0, 0.0); size * size];
+        for row in 0..size {
+            for column in 0..size {
+                loaded[row * size + column] = (0..size)
+                    .map(|index| {
+                        system_inverse[row * size + index] * effective[index * size + column]
+                    })
+                    .sum();
+            }
+        }
+        let active_index = active
+            .iter()
+            .enumerate()
+            .map(|(index, &port)| (port, index))
+            .collect::<HashMap<_, _>>();
+        let mut selected = Vec::with_capacity(output_ports.len() * input_ports.len());
+        for &output in output_ports {
+            for &input in input_ports {
+                selected.push(loaded[active_index[&output] * size + active_index[&input]]);
             }
         }
         Ok(selected)
@@ -1433,7 +1581,7 @@ fn invert_real(values: &[f64], size: usize) -> Result<Vec<f64>> {
         .collect()
 }
 
-fn invert_complex(values: &[c64], size: usize) -> Result<Vec<c64>> {
+pub(crate) fn invert_complex(values: &[c64], size: usize) -> Result<Vec<c64>> {
     let matrix = Mat::from_fn(size, size, |row, column| values[row * size + column]);
     let inverse = matrix.partial_piv_lu().inverse();
     let mut values = Vec::with_capacity(size * size);

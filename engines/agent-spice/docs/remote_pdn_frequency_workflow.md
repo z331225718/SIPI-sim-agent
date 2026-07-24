@@ -182,7 +182,20 @@ agent-spice-sim rfm-response reduced_fit.rfm `
   --threads 4
 ```
 
-它输出 frequency-major 的复数 `H(f)` 二进制文件；对于 S1P，`H=Z=Z0(1+S)/(1-S)`，不再在 Python 中逐频求 RFM。固定端接、VRM、RDIE/CDIE/CPM 必须已经吸收进 reduced RFM。S2P/M-port 同样支持选定的输入/输出 port 子矩阵，语义为其他 port 电流为零时的阻抗传函。
+它输出 frequency-major 的复数 `H(f)` 二进制文件；对于无外部负载的 S1P，`H=Z=Z0(1+S)/(1-S)`，不再在 Python 中逐频求 RFM。固定端接、VRM、RDIE/CDIE/CPM 最快的路径仍是预先吸收进 reduced RFM。对于需要扫 die RC corner 的两端线性 CPM，可由 native 在导纳域加载：
+
+```powershell
+agent-spice-sim rfm-response full_or_reduced.rfm `
+  --fft-size 203001 --dt 1e-11 `
+  --input-ports 6 --output-ports 6 `
+  --shunt-resistance 1:0 `
+  --shunt-resistance 2:0.1 `
+  --rc-load 6:C:\path\PowerModel.sp.inc `
+  --response-bin runs\case\H.bin `
+  --metadata-json runs\case\H.json
+```
+
+`--shunt-resistance <port>:0` 是理想短路；非零值为 port 对参考地的并联电阻。`--rc-load <port>:<file>` 只接受**恰有一个 `.SUBCKT`、两个端子、且仅包含 R/C** 的线性小信号负载；native 会消去其内部节点后与 RFM 统一求解。含电源、受控源、L、非线性器件或多个 rail 相互耦合的 CPM 必须先降阶为合适的 M-port 模型，不能假装成独立一端口 RC。外接 load 与已吸收的 CPM 只能二选一。S2P/M-port 同样支持选定的输入/输出 port 子矩阵，语义为在指定短路/负载边界下的端口阻抗传函。
 
 Python 侧使用：
 
@@ -192,11 +205,12 @@ python scripts\native_rfm_fft.py `
   --current runs\case\physical_zero_padded_current.csv `
   --tail 500e-9 `
   --input-ports 1 --output-ports 1 --threads 4 `
+  --rc-load 1:C:\path\PowerModel.sp.inc `
   --comparison runs\case\full_tran.csv `
   --output runs\case\native_fft
 ```
 
-脚本只做 `FFT(I)`、`H*I`、`IFFT`，并记录 native H 构建和 FFT 的独立耗时。
+脚本只做 `FFT(I)`、`H*I`、`IFFT`，并记录 native H 构建和 FFT 的独立耗时；`--shunt-resistance` / `--rc-load` 原样传给 native，不在 Python 逐频解析 CPM。
 
 ### 6. 对比和性能计时
 
