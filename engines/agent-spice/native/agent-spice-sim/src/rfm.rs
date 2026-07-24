@@ -723,6 +723,75 @@ impl RfmModel {
         Ok(admittance)
     }
 
+    /// Return selected entries of the open-circuit port impedance matrix.
+    ///
+    /// This is the native hot path for reduced S1P/S2P/M-port frequency
+    /// convolution. Fixed VRM, termination, and CPM elements must already be
+    /// absorbed into the reduced RFM before calling it.
+    pub fn impedance_response(
+        &self,
+        s: c64,
+        output_ports: &[usize],
+        input_ports: &[usize],
+    ) -> Result<Vec<c64>> {
+        if output_ports.iter().chain(input_ports).any(|port| *port >= self.nports) {
+            return Err(Error::InvalidDeck("RFM response port index is out of range".into()));
+        }
+        let scattering = self.scattering(s)?;
+        if self.nports == 1 {
+            let denominator = c64::new(1.0, 0.0) - scattering[0];
+            if denominator.norm() == 0.0 {
+                return Err(Error::InvalidDeck("RFM S1P impedance is singular at this frequency".into()));
+            }
+            return Ok(vec![self.z0 * (c64::new(1.0, 0.0) + scattering[0]) / denominator]);
+        }
+
+        // Z = Z0 * (I - S)^-1 * (I + S).  Solve once, then emit only the
+        // requested columns/rows rather than materializing a user-visible Z.
+        let mut left = scattering.iter().map(|value| -*value).collect::<Vec<_>>();
+        let mut right = scattering;
+        for diagonal in 0..self.nports {
+            left[diagonal * self.nports + diagonal] += c64::new(1.0, 0.0);
+            right[diagonal * self.nports + diagonal] += c64::new(1.0, 0.0);
+        }
+        let inverse = invert_complex(&left, self.nports)?;
+        let mut selected = Vec::with_capacity(output_ports.len() * input_ports.len());
+        for &output in output_ports {
+            for &input in input_ports {
+                let value: c64 = (0..self.nports)
+                    .map(|index| inverse[output * self.nports + index] * right[index * self.nports + input])
+                    .sum();
+                selected.push(value * self.z0);
+            }
+        }
+        Ok(selected)
+    }
+
+    fn scattering(&self, s: c64) -> Result<Vec<c64>> {
+        if self.touchstone.is_some() {
+            return Err(Error::InvalidDeck(
+                "native RFM response requires a rational RFM, not direct Touchstone samples".into(),
+            ));
+        }
+        let mut scattering = vec![c64::new(0.0, 0.0); self.nports * self.nports];
+        for row in 0..self.nports {
+            for column in 0..self.nports {
+                let response = row * self.nports + column;
+                let mut value = c64::new(self.constant[response], 0.0);
+                for term in self.terms(response) {
+                    let pole = self.modes[term.mode].pole;
+                    let residue = term.residue;
+                    value += residue / (s - pole);
+                    if pole.im != 0.0 {
+                        value += residue.conj() / (s - pole.conj());
+                    }
+                }
+                scattering[response] = value;
+            }
+        }
+        Ok(scattering)
+    }
+
     pub fn supports_transient(&self) -> bool {
         self.transient_supported
     }

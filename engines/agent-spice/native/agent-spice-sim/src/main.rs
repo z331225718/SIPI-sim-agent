@@ -11,9 +11,11 @@ mod sparse;
 
 use std::env;
 use std::fs::File;
-use std::io::BufWriter;
+use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::time::Instant;
+
+use faer::c64;
 
 use error::{Error, Result};
 
@@ -81,10 +83,11 @@ fn main() {
 fn run() -> Result<()> {
     let started = Instant::now();
     let mut arguments = env::args_os().skip(1);
-    let deck = arguments
-        .next()
-        .map(PathBuf::from)
-        .ok_or_else(|| Error::Usage(usage()))?;
+    let first = arguments.next().ok_or_else(|| Error::Usage(usage()))?;
+    if first == "rfm-response" {
+        return run_rfm_response(arguments);
+    }
+    let deck = PathBuf::from(first);
     let mut rfm_path = None;
     let mut rfm_subcircuit = "rfm_direct".to_string();
     let mut output_json = None;
@@ -267,9 +270,168 @@ fn run() -> Result<()> {
     Ok(())
 }
 
+fn run_rfm_response(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> Result<()> {
+    let rfm_path = arguments
+        .next()
+        .map(PathBuf::from)
+        .ok_or_else(|| Error::Usage(rfm_response_usage()))?;
+    let mut fft_size = None;
+    let mut dt = None;
+    let mut input_ports = None;
+    let mut output_ports = None;
+    let mut response_bin = None;
+    let mut metadata_json = None;
+    let mut threads = 1usize;
+    while let Some(argument) = arguments.next() {
+        if argument == "--fft-size" {
+            fft_size = Some(parse_positive_usize(arguments.next(), "--fft-size")?);
+        } else if argument == "--dt" {
+            dt = Some(parse_positive_f64(arguments.next(), "--dt")?);
+        } else if argument == "--input-ports" {
+            input_ports = Some(arguments.next().ok_or_else(|| Error::Usage(rfm_response_usage()))?);
+        } else if argument == "--output-ports" {
+            output_ports = Some(arguments.next().ok_or_else(|| Error::Usage(rfm_response_usage()))?);
+        } else if argument == "--response-bin" {
+            response_bin = Some(PathBuf::from(arguments.next().ok_or_else(|| Error::Usage(rfm_response_usage()))?));
+        } else if argument == "--metadata-json" {
+            metadata_json = Some(PathBuf::from(arguments.next().ok_or_else(|| Error::Usage(rfm_response_usage()))?));
+        } else if argument == "--threads" {
+            threads = parse_positive_usize(arguments.next(), "--threads")?;
+        } else {
+            return Err(Error::Usage(rfm_response_usage()));
+        }
+    }
+    let fft_size = fft_size.ok_or_else(|| Error::Usage(rfm_response_usage()))?;
+    if fft_size < 2 {
+        return Err(Error::Usage("--fft-size must be at least 2".into()));
+    }
+    let dt = dt.ok_or_else(|| Error::Usage(rfm_response_usage()))?;
+    let response_bin = response_bin.ok_or_else(|| Error::Usage(rfm_response_usage()))?;
+    let metadata_json = metadata_json.ok_or_else(|| Error::Usage(rfm_response_usage()))?;
+    let model = rfm::RfmModel::parse_file(&rfm_path)?;
+    let inputs = parse_ports(input_ports, model.nports)?;
+    let outputs = parse_ports(output_ports, model.nports)?;
+    let bins = fft_size / 2 + 1;
+    let values_per_bin = inputs.len() * outputs.len();
+    let started = Instant::now();
+    let values = evaluate_response_grid(&model, fft_size, dt, &inputs, &outputs, threads)?;
+    let mut writer = BufWriter::new(File::create(&response_bin)?);
+    for value in values {
+        writer.write_all(&value.re.to_le_bytes())?;
+        writer.write_all(&value.im.to_le_bytes())?;
+    }
+    writer.flush()?;
+    let metadata = serde_json::json!({
+        "schema": "agent-spice.rfm-response.v1",
+        "rfm": rfm_path,
+        "fftSize": fft_size,
+        "dtS": dt,
+        "frequencyBins": bins,
+        "inputPorts": inputs.iter().map(|port| port + 1).collect::<Vec<_>>(),
+        "outputPorts": outputs.iter().map(|port| port + 1).collect::<Vec<_>>(),
+        "layout": "frequency-major,output-major,input-major,re-im,f64-le",
+        "threads": threads,
+        "seconds": started.elapsed().as_secs_f64(),
+    });
+    serde_json::to_writer_pretty(BufWriter::new(File::create(&metadata_json)?), &metadata)?;
+    println!("{}", serde_json::json!({
+        "ok": true,
+        "frequencyBins": bins,
+        "responseValues": bins * values_per_bin,
+        "seconds": started.elapsed().as_secs_f64(),
+    }));
+    Ok(())
+}
+
+fn evaluate_response_grid(
+    model: &rfm::RfmModel,
+    fft_size: usize,
+    dt: f64,
+    inputs: &[usize],
+    outputs: &[usize],
+    threads: usize,
+) -> Result<Vec<c64>> {
+    let bins = fft_size / 2 + 1;
+    let values_per_bin = inputs.len() * outputs.len();
+    let workers = threads.min(bins).max(1);
+    if workers == 1 {
+        let mut values = Vec::with_capacity(bins * values_per_bin);
+        for bin in 0..bins {
+            let frequency = bin as f64 / (fft_size as f64 * dt);
+            values.extend(model.impedance_response(c64::new(0.0, 2.0 * std::f64::consts::PI * frequency), outputs, inputs)?);
+        }
+        return Ok(values);
+    }
+    let chunk = bins.div_ceil(workers);
+    let mut pieces = Vec::new();
+    std::thread::scope(|scope| -> Result<()> {
+        let mut handles = Vec::new();
+        for start in (0..bins).step_by(chunk) {
+            let stop = (start + chunk).min(bins);
+            handles.push(scope.spawn(move || -> Result<(usize, Vec<c64>)> {
+                let mut values = Vec::with_capacity((stop - start) * values_per_bin);
+                for bin in start..stop {
+                    let frequency = bin as f64 / (fft_size as f64 * dt);
+                    values.extend(model.impedance_response(c64::new(0.0, 2.0 * std::f64::consts::PI * frequency), outputs, inputs)?);
+                }
+                Ok((start, values))
+            }));
+        }
+        for handle in handles {
+            pieces.push(handle.join().map_err(|_| Error::Sparse("RFM response worker panicked".into()))??);
+        }
+        Ok(())
+    })?;
+    pieces.sort_by_key(|(start, _)| *start);
+    Ok(pieces.into_iter().flat_map(|(_, values)| values).collect())
+}
+
+fn parse_positive_usize(value: Option<std::ffi::OsString>, name: &str) -> Result<usize> {
+    let value = value.ok_or_else(|| Error::Usage(rfm_response_usage()))?;
+    let parsed = value.to_string_lossy().parse::<usize>().map_err(|_| Error::Usage(format!("{name} must be a positive integer")))?;
+    if parsed == 0 {
+        return Err(Error::Usage(format!("{name} must be a positive integer")));
+    }
+    Ok(parsed)
+}
+
+fn parse_positive_f64(value: Option<std::ffi::OsString>, name: &str) -> Result<f64> {
+    let value = value.ok_or_else(|| Error::Usage(rfm_response_usage()))?;
+    let parsed = value.to_string_lossy().parse::<f64>().map_err(|_| Error::Usage(format!("{name} must be a positive finite number")))?;
+    if !parsed.is_finite() || parsed <= 0.0 {
+        return Err(Error::Usage(format!("{name} must be a positive finite number")));
+    }
+    Ok(parsed)
+}
+
+fn parse_ports(value: Option<std::ffi::OsString>, nports: usize) -> Result<Vec<usize>> {
+    let Some(value) = value else {
+        return Ok((0..nports).collect());
+    };
+    let mut ports = Vec::new();
+    for token in value.to_string_lossy().split(',') {
+        let port = token.trim().parse::<usize>().map_err(|_| Error::Usage("--input-ports/--output-ports must be comma-separated 1-based integers".into()))?;
+        if port == 0 || port > nports || ports.contains(&(port - 1)) {
+            return Err(Error::Usage("response port is outside range or repeated".into()));
+        }
+        ports.push(port - 1);
+    }
+    if ports.is_empty() {
+        return Err(Error::Usage("response port list cannot be empty".into()));
+    }
+    Ok(ports)
+}
+
 fn usage() -> String {
     "agent-spice-sim <deck> [--rfm <model.rfm>] [--rfm-subckt <name>] \
      [--output-json <result.json>] [--waveform-csv <waveform.csv>] \
      [--log <simulation.log>] [--audit-json <compatibility.json>]"
+        .into()
+}
+
+fn rfm_response_usage() -> String {
+    "agent-spice-sim rfm-response <model.rfm> --fft-size <N> --dt <seconds> \
+     --response-bin <H.bin> --metadata-json <H.json> \
+     [--input-ports 1,2] [--output-ports 1,2] [--threads <count>]"
         .into()
 }

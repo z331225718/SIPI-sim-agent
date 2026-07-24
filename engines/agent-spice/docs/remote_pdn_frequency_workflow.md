@@ -33,7 +33,7 @@ full S30P
 reduced S1P RFM：RMSE 0.367 mV，最大误差 1.828 mV
 ```
 
-后者的误差来自 reduced S1P 的 sfit 误差，不是 FFT 本身。标量 RFM 的在线频域计算约 85 ms；同一 full S30P native TRAN 约 1.965 s。
+后者的误差来自 reduced S1P 的 sfit 误差，不是 FFT 本身。初始 Python 标量 RFM 的在线频域计算约 85 ms；现已将 `H(f)` 构建下沉到 native Rust，实测 native H 构建约 23 ms、NumPy FFT 约 27 ms；同一 full S30P native TRAN 约 1.965 s。
 
 参考产物：
 
@@ -166,6 +166,37 @@ V(f) = -H_reduced(f) I(f)
 ```
 
 负号必须用一个 AC current probe 校准，不得凭习惯假定。所有输入电流和输出电压都必须处在降阶时定义的相同参考方向。
+
+#### Native H 构建器
+
+`agent-spice-sim` 已提供仅面向项目 RFM 的 native 子命令：
+
+```powershell
+agent-spice-sim rfm-response reduced_fit.rfm `
+  --fft-size 203001 `
+  --dt 1e-11 `
+  --input-ports 1 `
+  --output-ports 1 `
+  --response-bin runs\case\H.bin `
+  --metadata-json runs\case\H.json `
+  --threads 4
+```
+
+它输出 frequency-major 的复数 `H(f)` 二进制文件；对于 S1P，`H=Z=Z0(1+S)/(1-S)`，不再在 Python 中逐频求 RFM。固定端接、VRM、RDIE/CDIE/CPM 必须已经吸收进 reduced RFM。S2P/M-port 同样支持选定的输入/输出 port 子矩阵，语义为其他 port 电流为零时的阻抗传函。
+
+Python 侧使用：
+
+```powershell
+python scripts\native_rfm_fft.py `
+  --rfm runs\case\reduced_fit.rfm `
+  --current runs\case\physical_zero_padded_current.csv `
+  --tail 500e-9 `
+  --input-ports 1 --output-ports 1 --threads 4 `
+  --comparison runs\case\full_tran.csv `
+  --output runs\case\native_fft
+```
+
+脚本只做 `FFT(I)`、`H*I`、`IFFT`，并记录 native H 构建和 FFT 的独立耗时。
 
 ### 6. 对比和性能计时
 
