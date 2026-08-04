@@ -1,0 +1,88 @@
+schema: sipi.dirty-disposition.v1
+captured_at_utc: 2026-08-04T22:50:59Z
+backup:
+  root: C:\Users\z3312\code\SIPI-m0-backups\20260804T225059608Z
+  manifest_sha256: D5AC6A9590CC66679F02CE7FC726B8B37E8F80D55F8B409D7853CB4106050E44
+  restore_rehearsal_sha256: 42A58FEE07E69253607F1B4727FD8F981FDEAFE1E5437EABFFB44CAB981624E7
+required_fields: [disposition, owner, target_task]
+repositories:
+  - id: agent-spice
+    head: 90f0374bc9987e9197d4dcaa3912432fbd766a5e
+    entries:
+      - {path: .github/workflows/native-wheels.yml, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: .reasonix/desktop-topic-title-sources.json, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: .reasonix/desktop-topic-titles.json, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: native/agent-spice-sim/Cargo.toml, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: native/agent-spice-sim/src/main.rs, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: native/agent-spice-sim/src/netlist.rs, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: native/agent-spice-sim/build.rs, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test/current_for_spice.csv, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test/fit_report.html, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test/fit_report.json, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test/pdn_compare.sp, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test/pdn_fitted.rfm, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test/pdn_fitted.s2p, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test/pdn_fitted.sp, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test/pdn_fitted_rfm_wrapper.sp, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test/simple_through.log, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test/voltage_fft.csv, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test/voltage_tran.csv, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test/voltage_tran.log, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test/z_port2_loaded.csv, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test2/current_for_spice.csv, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test2/fit_report.html, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test2/fit_report.json, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test2/pdn_compare.sp, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test2/pdn_fitted.rfm, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test2/pdn_fitted.s2p, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test2/pdn_fitted.sp, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test2/pdn_fitted_rfm_wrapper.sp, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test2/simple_through.log, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test2/voltage_fft.csv, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test2/voltage_tran.csv, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test2/voltage_tran.log, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test2/z_port2_loaded.csv, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test3/comparison.csv, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test3/current_for_spice.csv, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test3/fit_report.html, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test3/fit_report.json, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test3/pdn_compare.sp, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test3/pdn_fitted.rfm, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test3/pdn_fitted.s2p, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test3/pdn_fitted.sp, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test3/pdn_fitted_rfm_wrapper.sp, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test3/simple_through.log, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test3/voltage_fft.csv, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test3/voltage_tran.csv, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test3/voltage_tran.log, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: pdn_fft_compare_test3/z_port2_loaded.csv, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: scripts/fit_natural_envelope.py, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: scripts/rfm_port6_ac_probe.py, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: scripts/scale_rfm_passive.py, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+  - id: py-bert-agent
+    head: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+    entries:
+      - {path: .claude/skills/gitnexus/gitnexus-cli/SKILL.md, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: .claude/skills/gitnexus/gitnexus-debugging/SKILL.md, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: .claude/skills/gitnexus/gitnexus-exploring/SKILL.md, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: .claude/skills/gitnexus/gitnexus-guide/SKILL.md, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: .claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: .claude/skills/gitnexus/gitnexus-refactoring/SKILL.md, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: .codegraph/daemon.pid, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: .reasonix/desktop-topic-created-at.json, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: .reasonix/desktop-topic-title-sources.json, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: .reasonix/desktop-topic-titles.json, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: AGENTS.md, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: CLAUDE.md, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: log_dfe_init_0.csv, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: log_dfe_init_1.csv, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: log_dfe_init_2.csv, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: log_objects_init_0.csv, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: log_objects_init_1.csv, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: log_objects_init_2.csv, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: reasonix.toml, kind: tracked_modified, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: .reasonix/desktop-topic-auto-title-meta.json, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+      - {path: check_mem.ps1, kind: untracked, disposition: pending, owner: unassigned, target_task: M0-02}
+  - id: agent-com
+    head: 034b21b2f293b2ef97cb8be269b1bf2be38e0086
+    entries: []

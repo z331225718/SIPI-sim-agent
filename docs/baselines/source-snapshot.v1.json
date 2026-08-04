@@ -1,0 +1,48 @@
+{
+  "schema": "sipi.source-snapshot.v1",
+  "captured_at_utc": "2026-08-04T22:50:59Z",
+  "capture_mode": "read_only",
+  "repositories": [
+    {
+      "id": "agent-spice",
+      "path": "C:\\Users\\z3312\\code\\agent-spice",
+      "head": "90f0374bc9987e9197d4dcaa3912432fbd766a5e",
+      "tree": "b5db1cb9a1a989459dffe7db885790abeaf47290",
+      "branch": "main",
+      "upstream": "origin/main",
+      "remote_names": ["origin"],
+      "worktree_status_sha256": "0FA0AA91103360ED2EB8558E47A301F548E722E4998F8F9AE3390849F7C7F570",
+      "lockfiles": [{"path": "native/agent-spice-sim/Cargo.lock", "sha256": "D8D0CC39F9A86148DF5A6CA24F4FA2077974C0C639D4E91AE524A357E39FC09A"}]
+    },
+    {
+      "id": "py-bert-agent",
+      "path": "C:\\Users\\z3312\\code\\Py-bert-agent",
+      "head": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+      "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24",
+      "branch": "master",
+      "upstream": "origin/master",
+      "remote_names": ["origin"],
+      "worktree_status_sha256": "FFD87997FC247E65BD36499669D554BC1034CC383E09EFE86E8966D415C47FD2",
+      "lockfiles": [
+        {"path": "uv.lock", "sha256": "624B62D7A84FBC48579DE17E2AE171F5E4190D6AD7E5231E67DDAFB9D3FA0D86"},
+        {"path": "requirements.txt", "sha256": "C8FAC51BEE6324847D7F143D6DA4F134279E7E19C6BFC5F7B578614B51DD00F0"},
+        {"path": "requirements-wheelhouse.txt", "sha256": "8030FDF6E6FB31625C222C7A5D514696F86625DC57563DC51040467DD5CEFB80"},
+        {"path": "native/pybert-core/Cargo.lock", "sha256": "9E021C575B3228465EAF5B227A0882F3C4C4BD40178EC5362A5845DD30F55715"},
+        {"path": "native/pybert-python/Cargo.lock", "sha256": "D5EFAC4C178498B652DE2EE9CB068B61BFF0E164E742EEE44510F2FE80CFDC85"},
+        {"path": "PyAMI/uv.lock", "sha256": "EC23BBBD2453867D7D1F5C25FC2DD92BD24277B637A8140B524338BF8B5EF1F5"},
+        {"path": "PyAMI/docs/requirements.txt", "sha256": "F50A9864AA49DA169D809770948B9CAEB7468442FA346B3D1CDE15BC119061FE"}
+      ]
+    },
+    {
+      "id": "agent-com",
+      "path": "C:\\Users\\z3312\\code\\COM",
+      "head": "034b21b2f293b2ef97cb8be269b1bf2be38e0086",
+      "tree": "dc6e5529612d7272f23547a796b53e1456cc49cb",
+      "branch": "main",
+      "upstream": "origin/main",
+      "remote_names": ["origin"],
+      "worktree_status_sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lockfiles": [{"path": "uv.lock", "sha256": "7711F8EF121491FFDA0198462243F3AEB02B5A8B05F6B0C040CDAB387293DF8E"}]
+    }
+  ]
+}
