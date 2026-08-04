@@ -4,7 +4,7 @@
   "isolation_policy": {
     "clone_mode": "git clone --no-local",
     "forbidden": ["git worktree add", "source worktree test execution", "editable sibling dependency"],
-    "environment": ["CARGO_HOME", "CARGO_TARGET_DIR", "UV_CACHE_DIR", "TMP", "TEMP", "PYTHONNOUSERSITE=1", "PYTHONPATH="]
+    "environment": {"CARGO_HOME": "per-lane", "CARGO_TARGET_DIR": "per-lane", "UV_CACHE_DIR": "per-lane", "TMP": "per-lane", "TEMP": "per-lane", "PYTHONNOUSERSITE": "1", "PYTHONPATH": ""}
   },
   "lanes": [
     {
@@ -13,7 +13,7 @@
       "head": "90f0374bc9987e9197d4dcaa3912432fbd766a5e",
       "tree": "b5db1cb9a1a989459dffe7db885790abeaf47290",
       "scratch": "C:/Users/z3312/code/SIPI-m0-scratch/agent-spice-90f0374",
-      "commands": ["python -m pytest --collect-only -q", "python -m pytest -q", "rustup run 1.97.0-x86_64-pc-windows-msvc cargo test --locked --manifest-path native/agent-spice-sim/Cargo.toml"],
+      "commands": ["C:/Users/z3312/AppData/Roaming/uv/python/cpython-3.12.13-windows-x86_64-none/python.exe -I -m pytest --collect-only -q", "C:/Users/z3312/AppData/Roaming/uv/python/cpython-3.12.13-windows-x86_64-none/python.exe -I -m pytest -q", "C:/Users/z3312/.cargo/bin/rustup.exe run 1.97.0-x86_64-pc-windows-msvc cargo test --locked --manifest-path native/agent-spice-sim/Cargo.toml"],
       "tests_run": false
     },
     {
@@ -22,7 +22,7 @@
       "head": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
       "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24",
       "scratch": "C:/Users/z3312/code/SIPI-m0-scratch/pybert-5bf6d7e",
-      "commands": ["uv sync --frozen --python 3.12.13", "uv run --frozen pytest -m not gui -q", "rustup run 1.97.0-x86_64-pc-windows-msvc cargo test --locked --release --manifest-path native/pybert-core/Cargo.toml"],
+      "commands": ["C:/Users/z3312/AppData/Local/Microsoft/WinGet/Links/uv.exe sync --frozen --python 3.12.13", "C:/Users/z3312/AppData/Local/Microsoft/WinGet/Links/uv.exe run --frozen pytest -m \"not gui\" -q", "C:/Users/z3312/.cargo/bin/rustup.exe run 1.97.0-x86_64-pc-windows-msvc cargo test --locked --release --manifest-path native/pybert-core/Cargo.toml"],
       "tests_run": false
     },
     {
@@ -31,13 +31,13 @@
       "head": "034b21b2f293b2ef97cb8be269b1bf2be38e0086",
       "tree": "dc6e5529612d7272f23547a796b53e1456cc49cb",
       "scratch": "C:/Users/z3312/code/SIPI-m0-scratch/agent-com-034b21b",
-      "commands": ["uv sync --frozen --python 3.12.13", "uv run --frozen python tools/run_test_lane.py fast"],
+      "commands": ["C:/Users/z3312/AppData/Local/Microsoft/WinGet/Links/uv.exe sync --frozen --python 3.12.13", "C:/Users/z3312/AppData/Local/Microsoft/WinGet/Links/uv.exe run --frozen python tools/run_test_lane.py fast"],
       "tests_run": false
     }
   ],
   "probes": {
     "toolchain_probe": {
-      "path": "C:/Users/z3312/code/SIPI-m0-scratch/toolchain-probe",
+      "path": "C:/Users/z3312/code/SIPI-m0-scratch/toolchain-probe+",
       "python_isolated": true,
       "cargo_metadata_locked": true,
       "gitnexus_version": "1.6.6"

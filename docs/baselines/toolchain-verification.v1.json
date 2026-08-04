@@ -5,9 +5,11 @@
   "isolation": {
     "python_no_user_site": true,
     "python_path_empty": true,
-    "cargo_home": "C:/Users/z3312/code/SIPI-m0-scratch/toolchain-probe/cargo-home",
-    "cargo_target_dir": "C:/Users/z3312/code/SIPI-m0-scratch/toolchain-probe/cargo-target",
-    "uv_cache_dir": "C:/Users/z3312/code/SIPI-m0-scratch/toolchain-probe/uv-cache"
+    "cargo_home": "C:/Users/z3312/code/SIPI-m0-scratch/toolchain-probe+/cargo-home",
+    "cargo_target_dir": "C:/Users/z3312/code/SIPI-m0-scratch/toolchain-probe+/cargo-target",
+    "uv_cache_dir": "C:/Users/z3312/code/SIPI-m0-scratch/toolchain-probe+/uv-cache",
+    "tmp": "C:/Users/z3312/code/SIPI-m0-scratch/toolchain-probe+/tmp",
+    "gitnexus_home": "C:/Users/z3312/code/SIPI-m0-scratch/gitnexus-home"
   },
   "checks": [
     {"command": "python-3.12.13 -I -c import platform, sys", "exit_code": 0, "observed": "CPython 3.12.13 / Windows x86_64"},

@@ -1,6 +1,6 @@
 schema = "sipi.toolchains-lock.v1"
 status = "verified_for_m0_03"
-captured_at_utc = "2026-08-05T00:00:00Z"
+captured_at_utc = "2026-08-04T23:35:00Z"
 platform = "windows-x86_64"
 notes = "Observed locally and verified in an isolated probe; no system installation, PATH mutation, or solver upgrade was performed. This is not a release lock."
 
@@ -41,7 +41,7 @@ availability = "observed"
 [external_solvers]
 ngspice = { version = "46", availability = "observed" }
 xyce = { version = "7.10", availability = "observed" }
-xdm = { version = "2.6", availability = "declared_not_on_path" }
+xdm = { version = "2.6", command = "xdm_bdl.exe", availability = "observed" }
 hspice = { availability = "unavailable" }
 ads = { availability = "unavailable" }
 matlab = { version = "R2024b", availability = "observed" }
