@@ -13,8 +13,9 @@
       "head": "90f0374bc9987e9197d4dcaa3912432fbd766a5e",
       "tree": "b5db1cb9a1a989459dffe7db885790abeaf47290",
       "scratch": "C:/Users/z3312/code/SIPI-m0-scratch/agent-spice-90f0374",
-      "commands": ["C:/Users/z3312/AppData/Roaming/uv/python/cpython-3.12.13-windows-x86_64-none/python.exe -I -m pytest --collect-only -q", "C:/Users/z3312/AppData/Roaming/uv/python/cpython-3.12.13-windows-x86_64-none/python.exe -I -m pytest -q", "C:/Users/z3312/.cargo/bin/rustup.exe run 1.97.0-x86_64-pc-windows-msvc cargo test --locked --manifest-path native/agent-spice-sim/Cargo.toml"],
-      "tests_run": false
+      "commands": ["C:/Users/z3312/code/SIPI-m0-scratch/agent-spice-venv-90f0374/Scripts/python.exe -m pytest --collect-only -q", "C:/Users/z3312/code/SIPI-m0-scratch/agent-spice-venv-90f0374/Scripts/python.exe -m pytest -q", "C:/Users/z3312/.cargo/bin/rustup.exe run 1.97.0-x86_64-pc-windows-msvc cargo test --locked --manifest-path native/agent-spice-sim/Cargo.toml"],
+      "tests_run": true,
+      "baseline": "docs/baselines/agent-spice-baseline.json"
     },
     {
       "id": "pybert-m0-05",
