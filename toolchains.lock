@@ -1,0 +1,47 @@
+schema = "sipi.toolchains-lock.v1"
+status = "verified_for_m0_03"
+captured_at_utc = "2026-08-05T00:00:00Z"
+platform = "windows-x86_64"
+notes = "Observed locally and verified in an isolated probe; no system installation, PATH mutation, or solver upgrade was performed. This is not a release lock."
+
+[python]
+selected_version = "3.12.13"
+executable = "C:/Users/z3312/AppData/Roaming/uv/python/cpython-3.12.13-windows-x86_64-none/python.exe"
+manager = "uv 0.11.21"
+default_version = "3.14.5"
+availability = "observed"
+
+[rust]
+toolchain = "1.97.0-x86_64-pc-windows-msvc"
+rustc_version = "1.97.0"
+rustc_commit = "2d8144b7880597b6e6d3dfd63a9a9efae3f533d3"
+cargo_version = "1.97.0"
+cargo_commit = "c980f4866"
+host = "x86_64-pc-windows-msvc"
+components = ["cargo", "clippy", "rustfmt"]
+invocation = "C:/Users/z3312/.cargo/bin/rustup.exe run 1.97.0-x86_64-pc-windows-msvc"
+availability = "observed_not_on_path"
+
+[node]
+node_version = "24.16.0"
+npm_version = "12.0.1"
+gitnexus_version = "1.6.6"
+gitnexus_entrypoint = "C:/Users/z3312/AppData/Roaming/npm/node_modules/gitnexus/dist/cli/index.js"
+availability = "observed"
+
+[git]
+version = "2.54.0.windows.1"
+availability = "observed"
+
+[msvc]
+visual_studio_build_tools = "17.14.34"
+installation_version = "17.14.37328.6"
+availability = "observed"
+
+[external_solvers]
+ngspice = { version = "46", availability = "observed" }
+xyce = { version = "7.10", availability = "observed" }
+xdm = { version = "2.6", availability = "declared_not_on_path" }
+hspice = { availability = "unavailable" }
+ads = { availability = "unavailable" }
+matlab = { version = "R2024b", availability = "observed" }

@@ -1,0 +1,19 @@
+{
+  "schema": "sipi.toolchain-verification.v1",
+  "result": "pass",
+  "scope": "M0-03 isolated toolchain verification only",
+  "isolation": {
+    "python_no_user_site": true,
+    "python_path_empty": true,
+    "cargo_home": "C:/Users/z3312/code/SIPI-m0-scratch/toolchain-probe/cargo-home",
+    "cargo_target_dir": "C:/Users/z3312/code/SIPI-m0-scratch/toolchain-probe/cargo-target",
+    "uv_cache_dir": "C:/Users/z3312/code/SIPI-m0-scratch/toolchain-probe/uv-cache"
+  },
+  "checks": [
+    {"command": "python-3.12.13 -I -c import platform, sys", "exit_code": 0, "observed": "CPython 3.12.13 / Windows x86_64"},
+    {"command": "rustup run 1.97.0-x86_64-pc-windows-msvc cargo metadata --locked --no-deps", "exit_code": 0, "observed": "agent-spice clean scratch manifest"},
+    {"command": "node gitnexus-1.6.6-entrypoint --version", "exit_code": 0, "observed": "1.6.6"},
+    {"command": "node gitnexus-1.6.6-entrypoint analyze", "exit_code": 0, "observed": "PyBERT clean index clone; 5354 nodes / 10235 edges"}
+  ],
+  "non_claims": ["No engine test lane was run.", "No wheel or executable was built.", "External solver availability is observed, not certified.", "This evidence does not close M0-04 through M0-11."]
+}

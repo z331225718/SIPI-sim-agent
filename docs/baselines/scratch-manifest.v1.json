@@ -1,0 +1,57 @@
+{
+  "schema": "sipi.scratch-manifest.v1",
+  "status": "provisioned",
+  "isolation_policy": {
+    "clone_mode": "git clone --no-local",
+    "forbidden": ["git worktree add", "source worktree test execution", "editable sibling dependency"],
+    "environment": ["CARGO_HOME", "CARGO_TARGET_DIR", "UV_CACHE_DIR", "TMP", "TEMP", "PYTHONNOUSERSITE=1", "PYTHONPATH="]
+  },
+  "lanes": [
+    {
+      "id": "agent-spice-m0-04",
+      "source": "C:/Users/z3312/code/agent-spice",
+      "head": "90f0374bc9987e9197d4dcaa3912432fbd766a5e",
+      "tree": "b5db1cb9a1a989459dffe7db885790abeaf47290",
+      "scratch": "C:/Users/z3312/code/SIPI-m0-scratch/agent-spice-90f0374",
+      "commands": ["python -m pytest --collect-only -q", "python -m pytest -q", "rustup run 1.97.0-x86_64-pc-windows-msvc cargo test --locked --manifest-path native/agent-spice-sim/Cargo.toml"],
+      "tests_run": false
+    },
+    {
+      "id": "pybert-m0-05",
+      "source": "C:/Users/z3312/code/Py-bert-agent",
+      "head": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+      "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24",
+      "scratch": "C:/Users/z3312/code/SIPI-m0-scratch/pybert-5bf6d7e",
+      "commands": ["uv sync --frozen --python 3.12.13", "uv run --frozen pytest -m not gui -q", "rustup run 1.97.0-x86_64-pc-windows-msvc cargo test --locked --release --manifest-path native/pybert-core/Cargo.toml"],
+      "tests_run": false
+    },
+    {
+      "id": "agent-com-m0-06",
+      "source": "C:/Users/z3312/code/COM",
+      "head": "034b21b2f293b2ef97cb8be269b1bf2be38e0086",
+      "tree": "dc6e5529612d7272f23547a796b53e1456cc49cb",
+      "scratch": "C:/Users/z3312/code/SIPI-m0-scratch/agent-com-034b21b",
+      "commands": ["uv sync --frozen --python 3.12.13", "uv run --frozen python tools/run_test_lane.py fast"],
+      "tests_run": false
+    }
+  ],
+  "probes": {
+    "toolchain_probe": {
+      "path": "C:/Users/z3312/code/SIPI-m0-scratch/toolchain-probe",
+      "python_isolated": true,
+      "cargo_metadata_locked": true,
+      "gitnexus_version": "1.6.6"
+    },
+    "pybert_gitnexus_index": {
+      "path": "C:/Users/z3312/code/SIPI-m0-scratch/pybert-index-5bf6d7e",
+      "head": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+      "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24",
+      "entrypoint_sha256": "5B5CBE672C733F4FBF2C4404A87ADB31F1E8761A08832E4A712B6A743CEB63DE",
+      "meta_sha256": "313F0B284EF2CFC48F9C0A998F28D8D970F92FFE5C39D73905ABD4CE26DFA29A",
+      "analyze_exit_code": 0,
+      "indexed_files": 314,
+      "nodes": 5354,
+      "edges": 10235
+    }
+  }
+}
