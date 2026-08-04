@@ -8,7 +8,7 @@
 | `py-bert-agent` | `5bf6d7e` / `5faef6b` | `master` / `origin/master` | 19 tracked modified，2 untracked | `uv.lock`、requirements、2 Cargo locks、PyAMI locks |
 | `agent-com` | `034b21b` / `dc6e552` | `main` / `origin/main` | clean | `uv.lock` |
 
-完整的 machine-readable evidence 位于 `source-snapshot.v1.json`。remote URL 不纳入仓内证据，避免无意记录凭据或私有地址。
+完整的 machine-readable evidence 位于 `source-snapshot.v1.json`。它包括 lock/build-input hash、脱敏后的 remote identity hash 和本地缓存的 upstream OID/ahead-behind；本轮未 fetch，remote 状态不是实时远端事实。PyBERT 比本地缓存的 `origin/master` ahead 2 commits。
 
 ## 已保护的 Dirty State
 
@@ -26,4 +26,4 @@ M0-02 的非破坏性备份位于目标仓之外：`C:\Users\z3312\code\SIPI-m0-
 
 ## 下一步
 
-M0-03 起应在与原工作树隔离的 scratch clone 中恢复 Rust toolchain 并采集测试证据；M0-04 至 M0-11 保持未开始。
+本轮是保护性 checkpoint：M0-01 的完整 source inventory 和 M0-02 的 disposition owner 决策都保持 open。M0-03 起应在与原工作树隔离的 scratch clone 中恢复 Rust toolchain 并采集测试证据；M0-04 至 M0-11 保持未开始。
