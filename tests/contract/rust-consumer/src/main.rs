@@ -1,5 +1,6 @@
 use jsonschema::{Draft, Resource, Validator};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeMap,
     env, fs,
@@ -24,6 +25,33 @@ fn read_case_document(
         return Err("fixture_path_escape");
     }
     Ok(read_json(&path))
+}
+
+fn read_case_bytes(
+    fixture_root: &Path,
+    case_dir: &Path,
+    name: &str,
+) -> Result<Vec<u8>, &'static str> {
+    let root = fixture_root.canonicalize().expect("canonical fixture root");
+    let path = case_dir
+        .join(name)
+        .canonicalize()
+        .map_err(|_| "fixture_file_missing")?;
+    if !path.starts_with(&root) {
+        return Err("fixture_path_escape");
+    }
+    fs::read(path).map_err(|_| "fixture_file_missing")
+}
+
+fn artifact_integrity_error(document: &Value, content: &[u8]) -> Option<&'static str> {
+    let hash = format!("{:x}", Sha256::digest(content));
+    if document["sha256"].as_str() != Some(hash.as_str()) {
+        Some("hash_mismatch")
+    } else if document["byte_length"].as_u64() != Some(content.len() as u64) {
+        Some("length_mismatch")
+    } else {
+        None
+    }
 }
 
 fn schema_name(schema_id: &str) -> Option<&'static str> {
@@ -501,6 +529,31 @@ fn validate(fixture_root: &Path, schema_root: &Path, case: &Value) -> Value {
             .expect("contained enforcement"),
         );
         return json!({"id":case["id"],"decision":if accepted {"accept"} else {"reject"},"phase":if accepted {"relation"} else {"relation"}});
+    }
+    if case["entrypoint"] == "artifact_integrity" {
+        let document = match read_case_document(
+            fixture_root,
+            &case_dir,
+            documents["subject"].as_str().unwrap(),
+        ) {
+            Ok(document) => document,
+            Err(code) => return json!({"id":case["id"],"decision":"reject","phase":"integrity","code":code}),
+        };
+        if !schema_valid(schema_root, "artifact-ref.v1.schema.json", &document) {
+            return json!({"id":case["id"],"decision":"reject","phase":"schema","code":"schema"});
+        }
+        let content = match read_case_bytes(
+            fixture_root,
+            &case_dir,
+            documents["content"].as_str().unwrap(),
+        ) {
+            Ok(content) => content,
+            Err(code) => return json!({"id":case["id"],"decision":"reject","phase":"integrity","code":code}),
+        };
+        return match artifact_integrity_error(&document, &content) {
+            Some(code) => json!({"id":case["id"],"decision":"reject","phase":"integrity","code":code}),
+            None => json!({"id":case["id"],"decision":"accept","phase":"integrity","preserved":true}),
+        };
     }
     let document = read_case_document(
         fixture_root,

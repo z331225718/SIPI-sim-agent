@@ -45,6 +45,24 @@ def _document(case_dir: Path, name: str) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _content(case_dir: Path, name: str) -> bytes:
+    path = (case_dir / name).resolve()
+    try:
+        path.relative_to(FIXTURES)
+    except ValueError as error:
+        raise FixtureViolation("fixture_path_escape") from error
+    return path.read_bytes()
+
+
+def artifact_integrity_error(case_dir: Path, documents: dict, artifact) -> str | None:
+    content = _content(case_dir, documents["content"])
+    if hashlib.sha256(content).hexdigest() != artifact["sha256"]:
+        return "hash_mismatch"
+    if len(content) != artifact["byte_length"]:
+        return "length_mismatch"
+    return None
+
+
 def _pointer(value: object, pointer: str) -> object:
     current = value
     for token in pointer.removeprefix("/").split("/"):
@@ -100,11 +118,8 @@ def _run(case: dict) -> dict:
             model = parse_artifact_ref(_document(case_dir, documents["subject"]), producer=case["mode"] == "producer")
         elif case["entrypoint"] == "artifact_integrity":
             model = parse_artifact_ref(_document(case_dir, documents["subject"]), producer=case["mode"] == "producer")
-            content = (case_dir / documents["content"]).read_bytes()
-            if hashlib.sha256(content).hexdigest() != model["sha256"]:
-                return {"id": case["id"], "decision": "reject", "phase": "integrity", "code": "hash_mismatch"}
-            if len(content) != model["byte_length"]:
-                return {"id": case["id"], "decision": "reject", "phase": "integrity", "code": "length_mismatch"}
+            if code := artifact_integrity_error(case_dir, documents, model):
+                return {"id": case["id"], "decision": "reject", "phase": "integrity", "code": code}
         elif case["entrypoint"] == "event":
             model = parse_run_event(_document(case_dir, documents["subject"]), producer=case["mode"] == "producer")
         elif case["entrypoint"] == "capabilities":
