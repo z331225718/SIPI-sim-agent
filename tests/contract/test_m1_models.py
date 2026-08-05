@@ -11,8 +11,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "packages" / "sipi-contracts" / "src"))
 
+import sipi_contracts
 from sipi_contracts import ContractViolation, RunRequestV1, parse_artifact_ref, parse_engine_capabilities, parse_provenance, parse_run_request, parse_run_result
-from sipi_contracts.models import validate_run_result
+from sipi_contracts.models import parse_capability_baseline, validate_run_result
 from sipi_contracts.validation import resolve_artifact_path, validate_event
 
 
@@ -110,6 +111,26 @@ class ImmutableModelTests(unittest.TestCase):
         value={"schema":"sipi.engine-capabilities.v1","producer":"fixture","version":"1","build":"x","engine_instance_id":"pybert-python","bundle_hash":"sha256:x","platform":{"os":"windows","architecture":"x86_64"},"capabilities":[capability,dict(capability)],"extensions":{}}
         with self.assertRaisesRegex(ContractViolation, "duplicate"):
             parse_engine_capabilities(value)
+
+    def test_nonpublic_capability_baseline_is_immutable_and_cannot_promote(self):
+        raw=json.loads((ROOT/"docs"/"baselines"/"capabilities.baseline.v1.json").read_text())
+        model=parse_capability_baseline(raw)
+        self.assertEqual(model.to_wire(), raw)
+        self.assertFalse(hasattr(sipi_contracts, "PythonCapabilityBaselineV1"))
+        self.assertFalse(hasattr(sipi_contracts, "parse_capability_baseline"))
+        for field in ("runtime_consumable", "advertise", "default_auto_eligible"):
+            invalid=dict(raw)
+            invalid[field]=True
+            with self.assertRaisesRegex(ContractViolation, "schema"):
+                parse_capability_baseline(invalid)
+
+    def test_nonpublic_capability_baseline_rejects_duplicate_stable_key(self):
+        raw=json.loads((ROOT/"docs"/"baselines"/"capabilities.baseline.v1.json").read_text())
+        duplicate=dict(raw["capabilities"][0])
+        duplicate["source_inventory_id"]="different-inventory-record"
+        raw["capabilities"].append(duplicate)
+        with self.assertRaisesRegex(ContractViolation, "duplicate"):
+            parse_capability_baseline(raw)
 
     def test_event_cursor_and_resolved_path(self):
         prior={}

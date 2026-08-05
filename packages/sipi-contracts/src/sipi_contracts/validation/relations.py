@@ -474,3 +474,19 @@ def validate_capabilities(value: Mapping[str, Any], *, producer: bool = True) ->
         allowed = {"operation", "payload_schema", "domain_result_schemas", "behavior_profile", "role", "execution_mode", "resource_enforcement", "external_model_capabilities", "maximum_scale"}
         for capability in value["capabilities"]:
             _reject_unknown(capability, allowed, "sipi.engine-capabilities.v1", "capability")
+
+
+def validate_capability_baseline(value: Mapping[str, Any]) -> None:
+    """Validate a nonpublic, inspection-only M0 capability baseline."""
+    validate_wire("capabilities-baseline.v1.schema.json", value)
+    seen = set()
+    for capability in value["capabilities"]:
+        key = capability["key"]
+        stable_key = (
+            key["operation"], key["payload_schema"], key["engine_instance"],
+            key["behavior_profile"], key["platform"]["os"],
+            key["platform"]["architecture"], key["execution_mode"],
+        )
+        if stable_key in seen:
+            _violation("sipi.capabilities-baseline.v1", "duplicate_capability", "duplicate baseline capability key")
+        seen.add(stable_key)

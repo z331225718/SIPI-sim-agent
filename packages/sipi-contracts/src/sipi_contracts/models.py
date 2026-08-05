@@ -17,6 +17,7 @@ from .validation.relations import (
     validate_result_intrinsic,
     validate_backend_result_intrinsic,
     validate_capabilities,
+    validate_capability_baseline,
     validate_validation_report_intrinsic,
 )
 from .validation.registry import schema_id_for, validate_wire
@@ -129,6 +130,14 @@ class ValidationReportV1(ContractModel):
     known_fields = frozenset({"schema", "run_id", "analysis_id", "attempt_id", "backend_execution_id", "role", "engine_instance_id", "bundle_hash", "operation", "payload_schema", "selection_hash", "valid", "errors", "warnings", "resource_enforcement", "extensions"})
 
 
+@dataclass(frozen=True, slots=True, init=False)
+class PythonCapabilityBaselineV1(ContractModel):
+    """Nonpublic quality binding; it intentionally has no runtime selection API."""
+
+    schema_name = "capabilities-baseline.v1.schema.json"
+    known_fields = frozenset({"schema", "status", "runtime_consumable", "advertise", "default_auto_eligible", "source", "capability_key_fields", "catalogs", "capabilities", "unmapped_capability_gaps", "non_claims"})
+
+
 def parse_run_request(value: str | Mapping[str, Any], *, allow_internal: bool = False) -> RunRequestV1:
     data = _mapping(value, RunRequestV1.schema_name)
     validate_request(data, allow_internal=allow_internal)
@@ -181,6 +190,12 @@ def parse_engine_capabilities(value: str | Mapping[str, Any], *, producer: bool 
     data = _mapping(value, EngineCapabilitiesV1.schema_name)
     validate_capabilities(data, producer=producer)
     return _parse(EngineCapabilitiesV1, data)  # type: ignore[return-value]
+
+
+def parse_capability_baseline(value: str | Mapping[str, Any]) -> PythonCapabilityBaselineV1:
+    data = _mapping(value, PythonCapabilityBaselineV1.schema_name)
+    validate_capability_baseline(data)
+    return _parse(PythonCapabilityBaselineV1, data)  # type: ignore[return-value]
 
 
 def parse_validation_report(value: str | Mapping[str, Any], *, producer: bool = False) -> ValidationReportV1:
