@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sipi.run-request.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "run_id", "project_id", "analysis_id", "attempt_id", "operation", "payload_schema", "backend_selection", "resource_limits", "randomness", "artifact_policy", "extensions"],
+  "properties": {
+    "schema": {"const": "sipi.run-request.v1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "project_id": {"type": "string", "minLength": 1},
+    "analysis_id": {"type": "string", "minLength": 1},
+    "attempt_id": {"type": "string", "minLength": 1},
+    "operation": {"enum": ["circuit.solve.v1", "network.fit.v1", "link.simulate.v1", "com.r480.run.v1"]},
+    "payload_schema": {"type": "string", "minLength": 1},
+    "payload": {},
+    "payload_artifact": {"$ref": "#/$defs/artifact_ref_slot"},
+    "backend_selection": {"$ref": "#/$defs/backend_selection"},
+    "resource_limits": {"type": "object", "$comment": "M1-03 owns resource-limit member semantics."},
+    "randomness": {"type": "object", "$comment": "M1-03 owns randomness member semantics."},
+    "artifact_policy": {"type": "object", "$comment": "M1-04 owns artifact-policy member semantics."},
+    "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+  },
+  "oneOf": [
+    {"required": ["payload"], "not": {"required": ["payload_artifact"]}},
+    {"required": ["payload_artifact"], "not": {"required": ["payload"]}}
+  ],
+  "$defs": {
+    "artifact_ref_slot": {"type": "object", "required": ["schema"], "properties": {"schema": {"const": "sipi.artifact-ref.v1"}}, "additionalProperties": true},
+    "instance": {"type": "string", "minLength": 1},
+    "backend_selection": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["mode", "instance"], "properties": {"mode": {"const": "strict"}, "instance": {"$ref": "#/$defs/instance"}, "allow_experimental": {"type": "boolean", "default": false}, "allow_internal": {"type": "boolean", "default": false}}},
+        {"type": "object", "additionalProperties": false, "required": ["mode", "candidates", "fallback_on"], "properties": {"mode": {"const": "auto"}, "candidates": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/instance"}}, "fallback_on": {"type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true, "items": {"enum": ["EngineUnavailable", "UnsupportedCapability"]}}}},
+        {"type": "object", "additionalProperties": false, "required": ["mode", "reference", "candidate", "comparison_profile"], "properties": {"mode": {"const": "compare"}, "reference": {"$ref": "#/$defs/instance"}, "candidate": {"$ref": "#/$defs/instance"}, "comparison_profile": {"type": "string", "minLength": 1}, "allow_experimental": {"type": "boolean", "default": false}, "allow_internal": {"type": "boolean", "default": false}}}
+      ]
+    }
+  }
+}
