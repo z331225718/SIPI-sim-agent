@@ -25,13 +25,23 @@ from sipi_contracts import (
     validate_run_result,
 )
 from sipi_contracts.validation.relations import validate_resource_slice
+from sipi_contracts.validation.registry import validate_wire
 
 
 FIXTURES = ROOT / "fixtures" / "contracts" / "v1"
 
 
+class FixtureViolation(RuntimeError):
+    """A test-suite integrity failure, not a public contract validation error."""
+
+
 def _document(case_dir: Path, name: str) -> dict:
-    return json.loads((case_dir / name).read_text(encoding="utf-8"))
+    path = (case_dir / name).resolve()
+    try:
+        path.relative_to(FIXTURES.resolve())
+    except ValueError as error:
+        raise FixtureViolation("fixture_path_escape") from error
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _pointer(value: object, pointer: str) -> object:
@@ -50,7 +60,8 @@ def _run(case: dict) -> dict:
     if "deferred_to" in case:
         return {"id": case["id"], "decision": "deferred", "phase": case["deferred_to"]}
     case_dir = FIXTURES / case["path"]
-    documents = _document(case_dir, "case.json")["documents"]
+    case_data = _document(case_dir, "case.json")
+    documents = case_data["documents"]
     try:
         if case["entrypoint"] == "run_request":
             model = parse_run_request(_document(case_dir, documents["subject"]))
@@ -61,13 +72,28 @@ def _run(case: dict) -> dict:
         elif case["entrypoint"] == "backend_result":
             model = parse_backend_execution_result(_document(case_dir, documents["subject"]), producer=case["mode"] == "producer")
         elif case["entrypoint"] == "selection_chain":
-            run_request = parse_run_request(_document(case_dir, documents["run_request"]))
-            backend_request = parse_backend_execution_request(_document(case_dir, documents["backend_request"]))
-            backend_result = parse_backend_execution_result(_document(case_dir, documents["backend_result"]), producer=True)
-            run_result = parse_run_result(_document(case_dir, documents["run_result"]), producer=True)
-            validate_backend_execution_request(run_request, backend_request, documents["selection_hash"])
+            run_request_wire = _document(case_dir, documents["run_request"])
+            backend_request_wire = _document(case_dir, documents["backend_request"])
+            backend_result_wire = _document(case_dir, documents["backend_result"])
+            run_result_wire = _document(case_dir, documents["run_result"])
+            for schema_name, document in (
+                ("run-request.v1.schema.json", run_request_wire),
+                ("backend-execution-request.v1.schema.json", backend_request_wire),
+                ("backend-execution-result.v1.schema.json", backend_result_wire),
+                ("run-result.v1.schema.json", run_result_wire),
+            ):
+                validate_wire(schema_name, document)
+            if run_request_wire["backend_selection"]["mode"] != "strict":
+                raise FixtureViolation("fixture_configuration")
+            run_request = parse_run_request(run_request_wire)
+            backend_request = parse_backend_execution_request(backend_request_wire)
+            backend_result = parse_backend_execution_result(backend_result_wire, producer=False)
+            run_result = parse_run_result(run_result_wire, producer=False)
+            validate_backend_execution_request(run_request, backend_request, case_data["parameters"]["selection_hash"])
             validate_backend_execution_result(backend_request, backend_result)
             validate_run_result(run_request, run_result)
+            if not any(item["backend_execution_id"] == backend_result["backend_execution_id"] for item in run_result["backend_executions"]):
+                raise ContractViolation("sipi.run-result.v1", "identity", "/backend_executions", "backend result summary mismatch")
             model = None
         elif case["entrypoint"] == "artifact":
             model = parse_artifact_ref(_document(case_dir, documents["subject"]), producer=case["mode"] == "producer")
@@ -89,8 +115,17 @@ def _run(case: dict) -> dict:
             model = None
         else:
             raise RuntimeError(f"M1-06 case has no Python dispatch: {case['entrypoint']}")
+    except FixtureViolation as error:
+        return {"id": case["id"], "decision": "reject", "phase": "integrity", "code": str(error)}
     except ContractViolation as error:
-        phase = "schema" if error.code == "schema" else "relation" if case["entrypoint"] == "resource_slice" else "semantic"
+        if error.code == "schema":
+            phase = "schema"
+        elif case["entrypoint"] == "resource_slice":
+            phase = "relation"
+        elif case["entrypoint"] == "selection_chain" and error.code in {"identity", "selection", "selection_hash", "orchestration"}:
+            phase = "relation"
+        else:
+            phase = "semantic"
         return {"id": case["id"], "decision": "reject", "phase": phase, "code": error.code}
     preserved = all(_pointer(model.to_wire(), pointer) == _pointer(_document(case_dir, documents["subject"]), pointer) for pointer in case["expect"].get("preserve", [])) if model is not None else True
     phase = "relation" if case["entrypoint"] == "selection_chain" else case["expect"]["phase"]

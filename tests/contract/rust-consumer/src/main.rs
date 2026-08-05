@@ -10,6 +10,22 @@ fn read_json(path: &Path) -> Value {
     serde_json::from_str(&fs::read_to_string(path).expect("read fixture")).expect("parse fixture")
 }
 
+fn read_case_document(
+    fixture_root: &Path,
+    case_dir: &Path,
+    name: &str,
+) -> Result<Value, &'static str> {
+    let root = fixture_root.canonicalize().expect("canonical fixture root");
+    let path = case_dir
+        .join(name)
+        .canonicalize()
+        .expect("canonical fixture document");
+    if !path.starts_with(&root) {
+        return Err("fixture_path_escape");
+    }
+    Ok(read_json(&path))
+}
+
 fn schema_name(schema_id: &str) -> Option<&'static str> {
     match schema_id {
         "sipi.run-request.v1" => Some("run-request.v1.schema.json"),
@@ -191,6 +207,34 @@ fn semantic_error(case: &Value, document: &Value) -> Option<&'static str> {
     }
 }
 
+fn schema_valid(schema_root: &Path, name: &str, document: &Value) -> bool {
+    let schema = read_json(&schema_root.join(name));
+    let mut options = Validator::options()
+        .with_draft(Draft::Draft202012)
+        .with_base_uri("file:///sipi/schemas/");
+    for relative in [
+        "run-request.v1.schema.json",
+        "artifact-ref.v1.schema.json",
+        "run-event.v1.schema.json",
+        "_defs/runtime-validation.v1.schema.json",
+        "_defs/provenance.v1.schema.json",
+    ] {
+        let content = read_json(&schema_root.join(relative));
+        options = options.with_resource(
+            relative,
+            Resource::from_contents(content.clone()).expect("schema resource"),
+        );
+        options = options.with_resource(
+            format!("file:///sipi/schemas/{relative}"),
+            Resource::from_contents(content).expect("schema resource"),
+        );
+    }
+    options
+        .build(&schema)
+        .expect("compile schema")
+        .is_valid(document)
+}
+
 fn validate(fixture_root: &Path, schema_root: &Path, case: &Value) -> Value {
     if !case["required_languages"]
         .as_array()
@@ -207,12 +251,64 @@ fn validate(fixture_root: &Path, schema_root: &Path, case: &Value) -> Value {
     let case_data = read_json(&case_dir.join("case.json"));
     let documents = case_data["documents"].as_object().expect("documents");
     if case["entrypoint"] == "selection_chain" {
-        let run_request = read_json(&case_dir.join(documents["run_request"].as_str().unwrap()));
-        let backend_request =
-            read_json(&case_dir.join(documents["backend_request"].as_str().unwrap()));
-        let backend_result =
-            read_json(&case_dir.join(documents["backend_result"].as_str().unwrap()));
-        let run_result = read_json(&case_dir.join(documents["run_result"].as_str().unwrap()));
+        let run_request = match read_case_document(
+            fixture_root,
+            &case_dir,
+            documents["run_request"].as_str().unwrap(),
+        ) {
+            Ok(document) => document,
+            Err(code) => {
+                return json!({"id":case["id"],"decision":"reject","phase":"integrity","code":code});
+            }
+        };
+        let backend_request = match read_case_document(
+            fixture_root,
+            &case_dir,
+            documents["backend_request"].as_str().unwrap(),
+        ) {
+            Ok(document) => document,
+            Err(code) => {
+                return json!({"id":case["id"],"decision":"reject","phase":"integrity","code":code});
+            }
+        };
+        let backend_result = match read_case_document(
+            fixture_root,
+            &case_dir,
+            documents["backend_result"].as_str().unwrap(),
+        ) {
+            Ok(document) => document,
+            Err(code) => {
+                return json!({"id":case["id"],"decision":"reject","phase":"integrity","code":code});
+            }
+        };
+        let run_result = match read_case_document(
+            fixture_root,
+            &case_dir,
+            documents["run_result"].as_str().unwrap(),
+        ) {
+            Ok(document) => document,
+            Err(code) => {
+                return json!({"id":case["id"],"decision":"reject","phase":"integrity","code":code});
+            }
+        };
+        if !schema_valid(schema_root, "run-request.v1.schema.json", &run_request)
+            || !schema_valid(
+                schema_root,
+                "backend-execution-request.v1.schema.json",
+                &backend_request,
+            )
+            || !schema_valid(
+                schema_root,
+                "backend-execution-result.v1.schema.json",
+                &backend_result,
+            )
+            || !schema_valid(schema_root, "run-result.v1.schema.json", &run_result)
+        {
+            return json!({"id":case["id"],"decision":"reject","phase":"schema","code":"schema"});
+        }
+        if run_request["backend_selection"]["mode"] != "strict" {
+            return json!({"id":case["id"],"decision":"reject","phase":"integrity","code":"fixture_configuration"});
+        }
         let identity_fields = [
             "run_id",
             "analysis_id",
@@ -239,51 +335,72 @@ fn validate(fixture_root: &Path, schema_root: &Path, case: &Value) -> Value {
         let result_identity = identity_fields
             .iter()
             .all(|field| run_result[*field] == run_request[*field]);
-        let selection_valid = run_request["backend_selection"]["mode"] == "strict"
-            && backend_request["role"] == "primary"
-            && backend_request["engine_instance_id"]
-                == run_request["backend_selection"]["instance"]
-            && backend_request["selection_hash"] == documents["selection_hash"]
-            && run_result["selection_requested"] == run_request["backend_selection"];
-        let valid = request_identity && backend_identity && result_identity && selection_valid;
-        return json!({"id":case["id"],"decision":if valid {"accept"} else {"reject"},"phase":"relation","code":if valid {Value::Null} else {Value::String("identity".to_owned())}});
+        if !request_identity {
+            return json!({"id":case["id"],"decision":"reject","phase":"relation","code":"identity"});
+        }
+        if backend_request["selection_hash"] != case_data["parameters"]["selection_hash"] {
+            return json!({"id":case["id"],"decision":"reject","phase":"relation","code":"selection_hash"});
+        }
+        if backend_request["role"] != "primary"
+            || backend_request["engine_instance_id"] != run_request["backend_selection"]["instance"]
+        {
+            return json!({"id":case["id"],"decision":"reject","phase":"relation","code":"selection"});
+        }
+        if backend_result.get("comparison").is_some() {
+            return json!({"id":case["id"],"decision":"reject","phase":"relation","code":"orchestration"});
+        }
+        if !backend_identity || !result_identity {
+            return json!({"id":case["id"],"decision":"reject","phase":"relation","code":"identity"});
+        }
+        if !run_result["backend_executions"]
+            .as_array()
+            .is_some_and(|items| {
+                items.iter().any(|item| {
+                    item["backend_execution_id"] == backend_result["backend_execution_id"]
+                })
+            })
+        {
+            return json!({"id":case["id"],"decision":"reject","phase":"relation","code":"identity"});
+        }
+        if run_result["selection_requested"] != run_request["backend_selection"] {
+            return json!({"id":case["id"],"decision":"reject","phase":"relation","code":"selection"});
+        }
+        return json!({"id":case["id"],"decision":"accept","phase":"relation","code":Value::Null});
     }
     if case["entrypoint"] == "resource_slice" {
-        let parent = read_json(&case_dir.join(documents["parent"].as_str().unwrap()));
-        let child = read_json(&case_dir.join(documents["child"].as_str().unwrap()));
+        let parent = read_case_document(
+            fixture_root,
+            &case_dir,
+            documents["parent"].as_str().unwrap(),
+        )
+        .expect("contained resource parent");
+        let child = read_case_document(
+            fixture_root,
+            &case_dir,
+            documents["child"].as_str().unwrap(),
+        )
+        .expect("contained resource child");
         let accepted = resource_slice_valid(
             &parent,
             &child,
-            &read_json(&case_dir.join(documents["enforcement"].as_str().unwrap())),
+            &read_case_document(
+                fixture_root,
+                &case_dir,
+                documents["enforcement"].as_str().unwrap(),
+            )
+            .expect("contained enforcement"),
         );
         return json!({"id":case["id"],"decision":if accepted {"accept"} else {"reject"},"phase":if accepted {"relation"} else {"relation"}});
     }
-    let document = read_json(&case_dir.join(documents["subject"].as_str().unwrap()));
+    let document = read_case_document(
+        fixture_root,
+        &case_dir,
+        documents["subject"].as_str().unwrap(),
+    )
+    .expect("contained subject");
     let name = schema_name(case["schema_id"].as_str().unwrap())
         .expect("schema supported by M1-06 Rust runner");
-    let schema = read_json(&schema_root.join(name));
-    let mut options = Validator::options()
-        .with_draft(Draft::Draft202012)
-        .with_base_uri("file:///sipi/schemas/");
-    for relative in [
-        "run-request.v1.schema.json",
-        "artifact-ref.v1.schema.json",
-        "run-event.v1.schema.json",
-        "_defs/runtime-validation.v1.schema.json",
-        "_defs/provenance.v1.schema.json",
-    ] {
-        let content = read_json(&schema_root.join(relative));
-        options = options.with_resource(
-            relative,
-            Resource::from_contents(content.clone()).expect("schema resource"),
-        );
-        options = options.with_resource(
-            format!("file:///sipi/schemas/{relative}"),
-            Resource::from_contents(content).expect("schema resource"),
-        );
-    }
-    let validator = options.build(&schema).expect("compile schema");
-    let schema_valid = validator.is_valid(&document);
+    let schema_valid = schema_valid(schema_root, name, &document);
     let semantic_error = if schema_valid {
         semantic_error(case, &document)
     } else {
