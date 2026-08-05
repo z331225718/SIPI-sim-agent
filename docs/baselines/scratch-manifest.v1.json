@@ -23,8 +23,11 @@
       "head": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
       "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24",
       "scratch": "C:/Users/z3312/code/SIPI-m0-scratch/pybert-5bf6d7e",
-      "commands": ["C:/Users/z3312/AppData/Local/Microsoft/WinGet/Links/uv.exe sync --frozen --python 3.12.13", "C:/Users/z3312/AppData/Local/Microsoft/WinGet/Links/uv.exe run --frozen pytest -m \"not gui\" -q", "C:/Users/z3312/.cargo/bin/rustup.exe run 1.97.0-x86_64-pc-windows-msvc cargo test --locked --release --manifest-path native/pybert-core/Cargo.toml"],
-      "tests_run": false
+      "execution_clones": ["C:/Users/z3312/code/SIPI-m0-scratch/pybert-m0-05-run-5bf6d7e", "C:/Users/z3312/code/SIPI-m0-scratch/pybert-m0-05-full-5bf6d7e"],
+      "commands": ["C:/Users/z3312/AppData/Local/Microsoft/WinGet/Links/uv.exe sync --frozen --python C:/Users/z3312/AppData/Roaming/uv/python/cpython-3.12.13-windows-x86_64-none/python.exe", "C:/Users/z3312/AppData/Local/Microsoft/WinGet/Links/uv.exe run --frozen --no-sync python -m pytest -m \"not gui\" -q -ra", "C:/Users/z3312/.rustup/toolchains/1.97.0-x86_64-pc-windows-msvc/bin/cargo.exe test --manifest-path native/pybert-core/Cargo.toml --release", "C:/Users/z3312/AppData/Local/Microsoft/WinGet/Links/uv.exe tool run --from maturin==1.10.2 maturin develop --locked --release --manifest-path native/pybert-python/Cargo.toml"],
+      "tests_run": true,
+      "baseline": "docs/baselines/pybert-baseline.json",
+      "disposable_test_output": "Full Python lane modified declared legacy log and simDone files; clone is not reused."
     },
     {
       "id": "agent-com-m0-06",
@@ -44,15 +47,16 @@
       "gitnexus_version": "1.6.6"
     },
     "pybert_gitnexus_index": {
-      "path": "C:/Users/z3312/code/SIPI-m0-scratch/pybert-index-5bf6d7e",
+      "path": "C:/Users/z3312/code/SIPI-m0-scratch/pybert-m0-05-index-5bf6d7e",
       "head": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
       "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24",
       "entrypoint_sha256": "5B5CBE672C733F4FBF2C4404A87ADB31F1E8761A08832E4A712B6A743CEB63DE",
-      "meta_sha256": "313F0B284EF2CFC48F9C0A998F28D8D970F92FFE5C39D73905ABD4CE26DFA29A",
+      "meta_sha256": "F16817009A8F2DCA3C26A25584B4883C3A9BDE71919A624F3BB0796E35269198",
       "analyze_exit_code": 0,
-      "indexed_files": 314,
+      "indexed_files": null,
       "nodes": 5354,
-      "edges": 10235
+      "edges": 10235,
+      "command": "node C:/Users/z3312/AppData/Roaming/npm/node_modules/gitnexus/dist/cli/index.js analyze --force --index-only --name pybert-m0-05-5bf6d7e"
     }
   }
 }
