@@ -14,8 +14,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "packages" / "sipi-contracts" / "src"))
 sys.path.insert(0, str(ROOT / "packages" / "sipi-artifacts" / "src"))
 
-from sipi_artifacts import ArtifactIntegrityError, ArtifactStoreError, AttemptStore, SuccessMarkerAlreadyExists, SuccessMarkerRejected
-from sipi_contracts import parse_run_record
+from sipi_artifacts import ArtifactIntegrityError, ArtifactStoreError, AttemptStore, DagNodeRecordStore, NodeRecordAlreadyExists, SuccessMarkerAlreadyExists, SuccessMarkerRejected
+from sipi_contracts import parse_dag_node_record, parse_run_record
 
 
 def artifact(relative_path: str, contents: bytes) -> dict:
@@ -36,6 +36,13 @@ def record(*, status: str = "succeeded", artifacts: list[dict]) -> object:
         "schema": "sipi.run-record.v1", "run_id": "run-1", "analysis_id": "analysis-1",
         "attempt_id": "attempt-1", "status": status, "operation": "link.simulate.v1",
         "payload_schema": "fixture.input.v1", "artifacts": artifacts, "error": error, "extensions": {},
+    })
+
+
+def blocked_node() -> object:
+    return parse_dag_node_record({
+        "schema": "sipi.dag-node-record.v1", "run_id": "run-1", "analysis_id": "analysis-2",
+        "status": "blocked", "blocked_by": [{"analysis_id": "analysis-1", "terminal_status": "failed"}], "extensions": {},
     })
 
 
@@ -172,6 +179,42 @@ class AttemptStoreTests(unittest.TestCase):
             return "installed"
         except SuccessMarkerAlreadyExists:
             return "exists"
+
+
+class DagNodeRecordStoreTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+        self.publish = self.root / "publish"
+        self.publish.mkdir()
+        self.store = DagNodeRecordStore(self.publish)
+
+    def tearDown(self) -> None:
+        self.temporary.cleanup()
+
+    def test_blocked_node_record_is_atomic_and_never_overwritten(self):
+        record = blocked_node()
+        installed = self.store.install_blocked("run-1/nodes/analysis-2", record)
+        path = installed.node_dir / "dag-node-record.json"
+        self.assertTrue(path.is_file())
+        original = path.read_bytes()
+        with self.assertRaises(NodeRecordAlreadyExists):
+            self.store.install_blocked("run-1/nodes/analysis-2", record)
+        self.assertEqual(path.read_bytes(), original)
+
+    def test_blocked_node_store_rejects_escape_and_atomic_write_failure(self):
+        record = blocked_node()
+        with self.assertRaises(ArtifactStoreError):
+            self.store.install_blocked("../escape", record)
+
+        def fail_after_partial_write(path: Path, contents: bytes) -> None:
+            path.write_bytes(contents[:4])
+            raise OSError("disk full")
+
+        with patch("sipi_artifacts.store._write_new_file", side_effect=fail_after_partial_write):
+            with self.assertRaises(OSError):
+                self.store.install_blocked("run-1/nodes/analysis-2", record)
+        self.assertFalse((self.publish / "run-1" / "nodes" / "analysis-2" / "dag-node-record.json").exists())
 
 
 if __name__ == "__main__":

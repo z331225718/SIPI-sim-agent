@@ -19,6 +19,7 @@ from .validation.relations import (
     validate_capabilities,
     validate_capability_baseline,
     validate_validation_report_intrinsic,
+    validate_dag_node_record_intrinsic,
     validate_run_record_intrinsic,
     validate_success_manifest_intrinsic,
     validate_success_manifest_relation as validate_success_manifest_relation_wire,
@@ -128,6 +129,12 @@ class SuccessManifestV1(ContractModel):
 
 
 @dataclass(frozen=True, slots=True, init=False)
+class DagNodeRecordV1(ContractModel):
+    schema_name = "dag-node-record.v1.schema.json"
+    known_fields = frozenset({"schema", "run_id", "analysis_id", "status", "blocked_by", "extensions"})
+
+
+@dataclass(frozen=True, slots=True, init=False)
 class ProvenanceV1(ContractModel):
     schema_name = "_defs/provenance.v1.schema.json"
     known_fields = frozenset({"producers", "request", "environment", "randomness", "policies", "extensions"})
@@ -203,6 +210,12 @@ def parse_success_manifest(value: str | Mapping[str, Any]) -> SuccessManifestV1:
     data = _mapping(value, SuccessManifestV1.schema_name)
     validate_success_manifest_intrinsic(data)
     return _parse(SuccessManifestV1, data)  # type: ignore[return-value]
+
+
+def parse_dag_node_record(value: str | Mapping[str, Any]) -> DagNodeRecordV1:
+    data = _mapping(value, DagNodeRecordV1.schema_name)
+    validate_dag_node_record_intrinsic(data)
+    return _parse(DagNodeRecordV1, data)  # type: ignore[return-value]
 
 
 def validate_success_manifest_relation(run_record: RunRecordV1, manifest: SuccessManifestV1) -> None:

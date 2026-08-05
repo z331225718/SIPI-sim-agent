@@ -7,10 +7,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from sipi_contracts import (
+    DagNodeRecordV1,
     RunRecordV1,
     SipiArtifactRefV1,
     SuccessManifestV1,
     parse_artifact_ref,
+    parse_dag_node_record,
     parse_run_record,
     parse_success_manifest,
     resolve_artifact_path,
@@ -23,6 +25,7 @@ from .errors import (
     ArtifactIntegrityError,
     ArtifactStoreError,
     AttemptAlreadyExists,
+    NodeRecordAlreadyExists,
     SuccessMarkerAlreadyExists,
     SuccessMarkerRejected,
 )
@@ -31,6 +34,7 @@ from .errors import (
 _RUN_RECORD_NAME = "run-record.json"
 _CHECKSUMS_NAME = "checksums.json"
 _SUCCESS_MARKER_NAME = "success-manifest.json"
+_DAG_NODE_RECORD_NAME = "dag-node-record.json"
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,6 +56,12 @@ class MaterializedAttempt:
 class InstalledMarker:
     attempt_dir: Path
     manifest: SuccessManifestV1
+
+
+@dataclass(frozen=True, slots=True)
+class InstalledNodeRecord:
+    node_dir: Path
+    record: DagNodeRecordV1
 
 
 class AttemptStore:
@@ -133,6 +143,24 @@ class AttemptStore:
         return InstalledMarker(attempt_dir=attempt_dir, manifest=manifest)
 
 
+class DagNodeRecordStore:
+    """Atomically export a blocked DAG node record without creating an attempt."""
+
+    def __init__(self, publish_root: str | Path) -> None:
+        self._publish_root = _existing_root(publish_root, "publish")
+
+    def install_blocked(self, node_directory_relative_path: str, record: DagNodeRecordV1) -> InstalledNodeRecord:
+        if not isinstance(record, DagNodeRecordV1):
+            raise TypeError("record must be a DagNodeRecordV1")
+        parsed = parse_dag_node_record(record.to_wire())
+        node_dir = _create_destination_directory(self._publish_root, node_directory_relative_path, allow_existing_final=True)
+        try:
+            _write_new_file_atomically(node_dir / _DAG_NODE_RECORD_NAME, canonical_json_bytes(parsed.to_wire()))
+        except FileExistsError as error:
+            raise NodeRecordAlreadyExists("blocked node record already exists") from error
+        return InstalledNodeRecord(node_dir=node_dir, record=parsed)
+
+
 def _existing_root(value: str | Path, name: str) -> Path:
     path = Path(value).resolve(strict=True)
     if not path.is_dir():
@@ -176,6 +204,10 @@ def _existing_directory_under_root(root: Path, value: str | Path, label: str) ->
 
 
 def _create_attempt_directory(root: Path, relative_path: str) -> Path:
+    return _create_destination_directory(root, relative_path, allow_existing_final=False)
+
+
+def _create_destination_directory(root: Path, relative_path: str, *, allow_existing_final: bool) -> Path:
     parts = _relative_parts(relative_path)
     cursor = root
     for index, part in enumerate(parts):
@@ -184,7 +216,8 @@ def _create_attempt_directory(root: Path, relative_path: str) -> Path:
             try:
                 candidate.mkdir()
             except FileExistsError as error:
-                raise AttemptAlreadyExists("publish attempt directory already exists") from error
+                if not allow_existing_final or candidate.is_symlink() or not candidate.is_dir():
+                    raise AttemptAlreadyExists("publish attempt directory already exists") from error
         elif candidate.exists() or candidate.is_symlink():
             if candidate.is_symlink() or not candidate.is_dir():
                 raise ArtifactStoreError("publish path has a non-directory or symlink parent")

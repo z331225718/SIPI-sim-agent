@@ -244,7 +244,7 @@
       "definition_owner": "sipi-runtime+sipi-contracts",
       "source_of_truth": {
         "kind": "planned_definition",
-        "task": "M1-07",
+        "task": "M1-09",
         "path": "schemas/project-execution-record.v1.schema.json"
       },
       "exposure": "not_public",
@@ -255,8 +255,8 @@
         "planned:PythonProjectExecutionRecordV1"
       ],
       "conformance": {
-        "producer": "planned:M1-07",
-        "consumer": "planned:M1-07"
+        "producer": "planned:M1-09",
+        "consumer": "planned:M1-09"
       },
       "deprecation": "none"
     },
@@ -266,8 +266,7 @@
       "lifecycle": "reserved_unpublished",
       "definition_owner": "sipi-runtime+sipi-contracts",
       "source_of_truth": {
-        "kind": "planned_definition",
-        "task": "M1-07",
+        "kind": "local_json_schema",
         "path": "schemas/dag-node-record.v1.schema.json"
       },
       "exposure": "not_public",
@@ -275,7 +274,7 @@
       "compatibility_policy": "none_until_published",
       "platform_role": "record",
       "bindings": [
-        "planned:PythonDagNodeRecordV1"
+        "python"
       ],
       "conformance": {
         "producer": "planned:M1-07",

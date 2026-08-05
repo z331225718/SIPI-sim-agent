@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "packages" / "sipi-contracts" / "src"))
 
 import sipi_contracts
-from sipi_contracts import ContractViolation, RunRequestV1, parse_artifact_ref, parse_engine_capabilities, parse_provenance, parse_run_record, parse_run_request, parse_run_result, parse_success_manifest, validate_success_manifest_relation
+from sipi_contracts import ContractViolation, RunRequestV1, parse_artifact_ref, parse_dag_node_record, parse_engine_capabilities, parse_provenance, parse_run_record, parse_run_request, parse_run_result, parse_success_manifest, validate_success_manifest_relation
 from sipi_contracts.models import parse_capability_baseline, validate_run_result
 from sipi_contracts.validation import resolve_artifact_path, validate_event
 
@@ -48,6 +48,12 @@ def run_record(*, status="succeeded", artifacts=None, error=None):
 
 def success_manifest(*, artifacts=None):
     return {"schema":"sipi.success-manifest.v1","run_id":"run-1","analysis_id":"analysis-1","attempt_id":"attempt-1","run_record_sha256":"b"*64,"checksums_sha256":"c"*64,"artifacts":artifacts if artifacts is not None else [artifact()],"extensions":{}}
+
+
+def blocked_node(**changes):
+    value={"schema":"sipi.dag-node-record.v1","run_id":"run-1","analysis_id":"analysis-2","status":"blocked","blocked_by":[{"analysis_id":"analysis-1","terminal_status":"failed"}],"extensions":{}}
+    value.update(changes)
+    return value
 
 
 class ImmutableModelTests(unittest.TestCase):
@@ -216,6 +222,21 @@ class RunRecordContractTests(unittest.TestCase):
         failed = parse_run_record(run_record(status="failed", artifacts=artifacts))
         with self.assertRaises(ContractViolation):
             validate_success_manifest_relation(failed, manifest)
+
+
+class DagNodeRecordContractTests(unittest.TestCase):
+    def test_blocked_node_record_rejects_attempt_like_or_invalid_dependencies(self):
+        parse_dag_node_record(blocked_node())
+        with self.assertRaises(ContractViolation):
+            parse_dag_node_record(blocked_node(status="failed"))
+        with self.assertRaises(ContractViolation):
+            parse_dag_node_record(blocked_node(blocked_by=[]))
+        with self.assertRaises(ContractViolation):
+            parse_dag_node_record(blocked_node(blocked_by=[{"analysis_id":"analysis-1","terminal_status":"failed"}, {"analysis_id":"analysis-1","terminal_status":"cancelled"}]))
+        with self.assertRaises(ContractViolation):
+            parse_dag_node_record(blocked_node(blocked_by=[{"analysis_id":"analysis-2","terminal_status":"blocked"}]))
+        with self.assertRaises(ContractViolation):
+            parse_dag_node_record({**blocked_node(), "attempt_id":"attempt-1"})
 
 
 if __name__ == "__main__":

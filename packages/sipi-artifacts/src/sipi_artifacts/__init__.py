@@ -4,13 +4,14 @@ from .errors import (
     ArtifactIntegrityError,
     ArtifactStoreError,
     AttemptAlreadyExists,
+    NodeRecordAlreadyExists,
     SuccessMarkerAlreadyExists,
     SuccessMarkerRejected,
 )
-from .store import AttemptStore, InstalledMarker, MaterializedAttempt, PreparedAttempt
+from .store import AttemptStore, DagNodeRecordStore, InstalledMarker, InstalledNodeRecord, MaterializedAttempt, PreparedAttempt
 
 __all__ = [
     "ArtifactIntegrityError", "ArtifactStoreError", "AttemptAlreadyExists", "AttemptStore",
-    "InstalledMarker", "MaterializedAttempt", "PreparedAttempt", "SuccessMarkerAlreadyExists",
+    "DagNodeRecordStore", "InstalledMarker", "InstalledNodeRecord", "MaterializedAttempt", "NodeRecordAlreadyExists", "PreparedAttempt", "SuccessMarkerAlreadyExists",
     "SuccessMarkerRejected",
 ]

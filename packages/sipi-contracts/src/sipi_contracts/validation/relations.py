@@ -100,6 +100,16 @@ def validate_success_manifest_relation(run_record: Mapping[str, Any], manifest: 
         _violation("sipi.success-manifest.v1", "artifact_set", "manifest artifacts must equal the succeeded run record artifacts")
 
 
+def validate_dag_node_record_intrinsic(value: Mapping[str, Any]) -> None:
+    validate_wire("dag-node-record.v1.schema.json", value)
+    blocked_by = value["blocked_by"]
+    analysis_ids = [item["analysis_id"] for item in blocked_by]
+    if len(analysis_ids) != len(set(analysis_ids)):
+        _violation("sipi.dag-node-record.v1", "blocked_by", "blocked dependencies must be unique")
+    if value["analysis_id"] in analysis_ids:
+        _violation("sipi.dag-node-record.v1", "blocked_by", "blocked node cannot reference itself")
+
+
 def validate_provenance(value: Mapping[str, Any], *, producer: bool = True) -> None:
     validate_definition("_defs/provenance.v1.schema.json", "provenance", value, PROVENANCE_SCHEMA_ID)
     producers = value["producers"]

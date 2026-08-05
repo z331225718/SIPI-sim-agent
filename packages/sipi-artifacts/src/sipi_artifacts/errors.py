@@ -19,3 +19,7 @@ class SuccessMarkerAlreadyExists(ArtifactStoreError):
 
 class SuccessMarkerRejected(ArtifactStoreError):
     """A non-successful attempt cannot receive a success marker."""
+
+
+class NodeRecordAlreadyExists(ArtifactStoreError):
+    """A blocked node record already exists and must not be replaced."""
