@@ -1,0 +1,74 @@
+{
+  "schema": "sipi.platform-support.v1",
+  "status": "selected_for_m0_not_certified",
+  "scope": "M0 platform-target selection and evidence linkage only",
+  "support_tiers": {
+    "tier_1_certification_target": {
+      "platform_key": {
+        "os_family": "windows",
+        "architecture": "x86_64",
+        "python_implementation": "CPython",
+        "python_abi": "cp312",
+        "execution_mode": "managed_worker"
+      },
+      "evidence_state": "unverified",
+      "certification_status": "not_certified"
+    },
+    "portability_intent_unverified": ["linux", "macos"],
+    "unassessed": "all other platform, ABI, and execution-mode combinations"
+  },
+  "evidence_realization": {
+    "toolchain_probe_state": "baseline_passed",
+    "python": {"implementation": "CPython", "version": "3.12.13", "abi": "cp312"},
+    "rust": {
+      "toolchain": "1.97.0-x86_64-pc-windows-msvc",
+      "rustc_commit": "2d8144b7880597b6e6d3dfd63a9a9efae3f533d3"
+    },
+    "msvc": {
+      "build_tools": "17.14.34",
+      "installation_version": "17.14.37328.6"
+    },
+    "environment_identity": {
+      "state": "partial_replayable_identity",
+      "missing": ["windows_runner_or_image_identity", "windows_sdk_crt_manifest", "native_dll_closure"]
+    },
+    "engine_environment_policy": "independent_lock_and_environment_per_engine",
+    "numerical_controls": {
+      "agent_com_thread_limits": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "blas_implementation": "not_yet_pinned_for_platform_certification"
+    }
+  },
+  "evidence_refs": [
+    {"path": "toolchains.lock", "sha256": "580CD44F94CFB071446809C7E4364BAAED0B92D377397A8A9FF86A1CC94B6ED1", "scope": "M0-03 toolchain observation", "result": "pass"},
+    {"path": "docs/baselines/toolchain-verification.v1.json", "sha256": "5EA5501FCB236FFCF7D6E7F2B60B32445B93574B5B92AA4B0794D37176E91963", "scope": "isolated toolchain probe", "result": "pass"},
+    {"path": "docs/baselines/agent-spice-baseline.json", "sha256": "82BAC914629E774736B21685726D86013F14CA1C2A6E60490C4FC914BA6C046D", "scope": "limited native and wheel evidence", "result": "provisional"},
+    {"path": "docs/baselines/agent-com-baseline.json", "sha256": "EE99D7C599D0FC380F9DCF649673BABC72F825D570E77F5F4B8CE245A5F5E92C", "scope": "fast lane and concurrency repair", "result": "partial_asset_blocked"},
+    {"path": "docs/baselines/pybert-baseline.json", "sha256": "F6E48000E61CE7910E97BE047611A49B74E387EEA1D25984D55F3315FFA3DA73", "scope": "limited native and Python evidence", "result": "provisional"}
+  ],
+  "engine_evidence": [
+    {"engine": "agent-spice", "python_version": "3.12.13", "rust_toolchain": "1.97.0-x86_64-pc-windows-msvc", "baseline_status": "provisional_baseline_collected_with_known_failures_and_skips", "environment_state": "isolated_python_diagnostic_unlocked_rust_locked"},
+    {"engine": "agent-com", "python_version": "3.12.13", "baseline_status": "partial_concurrency_repair_verified_golden_asset_blocked", "environment_state": "isolated_requirements_parity_lock"},
+    {"engine": "pybert", "python_version": "3.12.13", "rust_toolchain": "1.97.0-x86_64-pc-windows-msvc", "baseline_status": "provisional_baseline_collected_with_classified_full_python_blockers_and_lock_provenance_gap", "environment_state": "isolated_python_lock_with_rust_source_lock_provenance_gap"}
+  ],
+  "solver_evidence": [
+    {"solver": "ngspice", "version": "46", "state": "observed_local", "advertise": false},
+    {"solver": "xyce", "version": "7.10", "state": "observed_local", "advertise": false},
+    {"solver": "xdm", "version": "2.6", "state": "observed_local", "advertise": false},
+    {"solver": "matlab", "version": "R2024b", "state": "observed_local", "advertise": false},
+    {"solver": "hspice", "state": "unavailable", "advertise": false},
+    {"solver": "ads", "state": "unavailable", "advertise": false}
+  ],
+  "revalidation_triggers": [
+    "os_or_runner_image", "python_patch_or_abi", "engine_lock_hash", "rust_or_msvc_or_sdk", "blas_or_thread_controls", "native_dll_closure", "solver_binary_or_license", "fixture_hash", "source_tag"
+  ],
+  "non_claims": [
+    "This record is not release support or platform certification.",
+    "No operation or engine capability is certified by this record.",
+    "No cross-platform, solver availability, solver redistribution, or hard-resource-enforcement promise is made."
+  ]
+}
