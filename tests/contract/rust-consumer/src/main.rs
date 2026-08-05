@@ -24,6 +24,173 @@ fn schema_name(schema_id: &str) -> Option<&'static str> {
     }
 }
 
+const RESOURCE_FIELDS: [&str; 5] = [
+    "wall_time_s",
+    "cpu_time_s",
+    "memory_bytes",
+    "process_count",
+    "artifact_bytes",
+];
+
+fn terminal_valid(value: &Value) -> bool {
+    match value["status"].as_str() {
+        Some("succeeded") => value["error"].is_null(),
+        Some("cancelled") => {
+            value["error"].is_object() && value["error"]["category"] == "Cancelled"
+        }
+        Some("failed") => value["error"].is_object() && value["error"]["category"] != "Cancelled",
+        _ => false,
+    }
+}
+
+fn resource_slice_valid(parent: &Value, child: &Value, enforcement: &Value) -> bool {
+    if parent["enforcement"] != child["enforcement"] {
+        return false;
+    }
+    RESOURCE_FIELDS.iter().all(|field| {
+        let parent_limit = &parent[*field];
+        let child_limit = &child[*field];
+        let assigned = !child_limit.is_null();
+        let bounded = if parent_limit.is_null() {
+            child_limit.is_null()
+        } else {
+            !child_limit.is_null() && child_limit.as_f64() <= parent_limit.as_f64()
+        };
+        let enforceable = !assigned
+            || if child["enforcement"] == "required" {
+                enforcement[*field] == "hard"
+            } else {
+                enforcement[*field] != "unsupported"
+            };
+        !(!parent_limit.is_null() && child_limit.is_null()) && bounded && enforceable
+    })
+}
+
+fn run_result_valid(document: &Value) -> bool {
+    let executions = match document["backend_executions"].as_array() {
+        Some(value) => value,
+        None => return false,
+    };
+    if !terminal_valid(document)
+        || (document["status"] == "succeeded"
+            && (executions.is_empty()
+                || executions.iter().any(|item| item["status"] != "succeeded")))
+    {
+        return false;
+    }
+    if executions.iter().any(|item| {
+        !terminal_valid(item)
+            || (item["status"] == "succeeded"
+                && (item["domain_result_schema"].is_null()
+                    || item["artifacts"].as_array().is_none_or(Vec::is_empty)))
+    }) {
+        return false;
+    }
+    true
+}
+
+fn backend_result_valid(document: &Value) -> bool {
+    terminal_valid(document)
+        && !(document["status"] == "succeeded"
+            && (document["domain_result_schema"].is_null()
+                || (document.get("domain_result").is_none()
+                    && document["artifacts"].as_array().is_some_and(Vec::is_empty))))
+}
+
+fn validation_report_valid(document: &Value) -> bool {
+    document["valid"].as_bool().is_some_and(|valid| {
+        valid
+            != document["errors"]
+                .as_array()
+                .is_some_and(|errors| !errors.is_empty())
+    })
+}
+
+fn capabilities_valid(document: &Value) -> bool {
+    let capabilities = match document["capabilities"].as_array() {
+        Some(value) => value,
+        None => return false,
+    };
+    let keys: Vec<String> = capabilities
+        .iter()
+        .map(|item| {
+            [
+                "operation",
+                "payload_schema",
+                "behavior_profile",
+                "execution_mode",
+            ]
+            .iter()
+            .map(|field| item[*field].to_string())
+            .collect::<Vec<_>>()
+            .join("\u{1f}")
+                + "\u{1f}"
+                + document["engine_instance_id"]
+                    .as_str()
+                    .expect("engine instance")
+                + "\u{1f}"
+                + document["platform"]["os"].as_str().expect("platform os")
+                + "\u{1f}"
+                + document["platform"]["architecture"]
+                    .as_str()
+                    .expect("platform architecture")
+        })
+        .collect();
+    keys.len() == keys.iter().collect::<std::collections::BTreeSet<_>>().len()
+}
+
+fn semantic_valid(case: &Value, document: &Value) -> bool {
+    match case["entrypoint"].as_str() {
+        Some("run_request") => {
+            document["backend_selection"]["mode"] != "compare"
+                || document["backend_selection"]["reference"]
+                    != document["backend_selection"]["candidate"]
+        }
+        Some("run_result") => run_result_valid(document),
+        Some("backend_result") => backend_result_valid(document),
+        Some("validation_report") => validation_report_valid(document),
+        Some("capabilities") => capabilities_valid(document),
+        Some("event") => match document["scope"].as_str() {
+            Some("project") => {
+                document["analysis_id"].is_null()
+                    && document["attempt_id"].is_null()
+                    && document["backend_execution_id"].is_null()
+            }
+            Some("analysis") => {
+                !document["analysis_id"].is_null()
+                    && document["attempt_id"].is_null()
+                    && document["backend_execution_id"].is_null()
+            }
+            Some("attempt") => {
+                !document["analysis_id"].is_null()
+                    && !document["attempt_id"].is_null()
+                    && document["backend_execution_id"].is_null()
+            }
+            Some("backend_execution") => {
+                !document["analysis_id"].is_null()
+                    && !document["attempt_id"].is_null()
+                    && !document["backend_execution_id"].is_null()
+            }
+            _ => false,
+        },
+        _ => true,
+    }
+}
+
+fn semantic_error(case: &Value, document: &Value) -> Option<&'static str> {
+    if semantic_valid(case, document) {
+        return None;
+    }
+    match case["entrypoint"].as_str() {
+        Some("run_request") => Some("selection"),
+        Some("run_result") | Some("backend_result") => Some("terminal_state"),
+        Some("validation_report") => Some("validity"),
+        Some("capabilities") => Some("duplicate_capability"),
+        Some("event") => Some("scope"),
+        _ => Some("semantic"),
+    }
+}
+
 fn validate(fixture_root: &Path, schema_root: &Path, case: &Value) -> Value {
     if !case["required_languages"]
         .as_array()
@@ -42,8 +209,11 @@ fn validate(fixture_root: &Path, schema_root: &Path, case: &Value) -> Value {
     if case["entrypoint"] == "resource_slice" {
         let parent = read_json(&case_dir.join(documents["parent"].as_str().unwrap()));
         let child = read_json(&case_dir.join(documents["child"].as_str().unwrap()));
-        let accepted = parent["enforcement"] == child["enforcement"]
-            && child["wall_time_s"].as_f64() <= parent["wall_time_s"].as_f64();
+        let accepted = resource_slice_valid(
+            &parent,
+            &child,
+            &read_json(&case_dir.join(documents["enforcement"].as_str().unwrap())),
+        );
         return json!({"id":case["id"],"decision":if accepted {"accept"} else {"reject"},"phase":if accepted {"relation"} else {"relation"}});
     }
     let document = read_json(&case_dir.join(documents["subject"].as_str().unwrap()));
@@ -72,41 +242,19 @@ fn validate(fixture_root: &Path, schema_root: &Path, case: &Value) -> Value {
     }
     let validator = options.build(&schema).expect("compile schema");
     let schema_valid = validator.is_valid(&document);
-    let semantic_valid = if case["entrypoint"] == "event" {
-        match document["scope"].as_str() {
-            Some("project") => {
-                document["analysis_id"].is_null()
-                    && document["attempt_id"].is_null()
-                    && document["backend_execution_id"].is_null()
-            }
-            Some("analysis") => {
-                !document["analysis_id"].is_null()
-                    && document["attempt_id"].is_null()
-                    && document["backend_execution_id"].is_null()
-            }
-            Some("attempt") => {
-                !document["analysis_id"].is_null()
-                    && !document["attempt_id"].is_null()
-                    && document["backend_execution_id"].is_null()
-            }
-            Some("backend_execution") => {
-                !document["analysis_id"].is_null()
-                    && !document["attempt_id"].is_null()
-                    && !document["backend_execution_id"].is_null()
-            }
-            _ => false,
-        }
+    let semantic_error = if schema_valid {
+        semantic_error(case, &document)
     } else {
-        true
+        None
     };
-    let decision = if schema_valid && semantic_valid {
+    let decision = if schema_valid && semantic_error.is_none() {
         "accept"
     } else {
         "reject"
     };
     let phase = if !schema_valid {
         "schema"
-    } else if !semantic_valid {
+    } else if semantic_error.is_some() {
         "semantic"
     } else {
         case["expect"]["phase"].as_str().unwrap()
@@ -122,7 +270,12 @@ fn validate(fixture_root: &Path, schema_root: &Path, case: &Value) -> Value {
                     && document.pointer(pointer) == round_trip.pointer(pointer)
             })
         });
-    json!({"id":case["id"],"decision":if preserved { decision } else { "reject" },"phase":phase,"preserved":preserved})
+    let code = if !schema_valid {
+        Some("schema")
+    } else {
+        semantic_error
+    };
+    json!({"id":case["id"],"decision":if preserved { decision } else { "reject" },"phase":phase,"code":code,"preserved":preserved})
 }
 
 fn main() {

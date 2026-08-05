@@ -60,7 +60,7 @@ def main() -> int:
         for language in case["required_languages"]:
             result = language_results[language].get(case_id, {})
             requires_preservation = bool(case["expect"].get("preserve"))
-            if result.get("decision") != case["expect"]["decision"] or result.get("phase") != case["expect"]["phase"] or (requires_preservation and result.get("preserved") is not True):
+            if result.get("decision") != case["expect"]["decision"] or result.get("phase") != case["expect"]["phase"] or ("code" in case["expect"] and result.get("code") != case["expect"]["code"]) or (requires_preservation and result.get("preserved") is not True):
                 failures.append(f"{language}:{case_id}")
     print(json.dumps({"suite": suite["suite"], "status": suite["status"], "fixture_tree_sha256": _tree_sha256(), "failures": failures, "python": language_results["python"], "rust": language_results["rust"]}, sort_keys=True))
     return 1 if failures else 0

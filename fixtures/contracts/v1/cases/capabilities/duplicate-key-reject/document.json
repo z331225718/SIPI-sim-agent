@@ -1,0 +1,14 @@
+{
+  "schema": "sipi.engine-capabilities.v1",
+  "producer": "fixture",
+  "version": "1",
+  "build": "fixture",
+  "engine_instance_id": "pybert-python",
+  "bundle_hash": "sha256:bundle",
+  "platform": {"os": "windows", "architecture": "x86_64"},
+  "capabilities": [
+    {"operation": "link.simulate.v1", "payload_schema": "pybert.simulation.v1", "domain_result_schemas": ["pybert.output.v1"], "behavior_profile": "default", "role": "reference", "execution_mode": "process", "resource_enforcement": {"wall_time_s": "hard", "cpu_time_s": "unsupported", "memory_bytes": "unsupported", "process_count": "unsupported", "artifact_bytes": "unsupported"}, "external_model_capabilities": {}, "maximum_scale": {"fixture.max": 1}},
+    {"operation": "link.simulate.v1", "payload_schema": "pybert.simulation.v1", "domain_result_schemas": ["pybert.output.v1"], "behavior_profile": "default", "role": "candidate", "execution_mode": "process", "resource_enforcement": {"wall_time_s": "hard", "cpu_time_s": "unsupported", "memory_bytes": "unsupported", "process_count": "unsupported", "artifact_bytes": "unsupported"}, "external_model_capabilities": {}, "maximum_scale": {"fixture.max": 1}}
+  ],
+  "extensions": {}
+}
