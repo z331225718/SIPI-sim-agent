@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sipi.validation-report.v1",
+  "type": "object",
+  "required": ["schema", "run_id", "analysis_id", "attempt_id", "backend_execution_id", "role", "engine_instance_id", "bundle_hash", "operation", "payload_schema", "selection_hash", "valid", "errors", "warnings", "resource_enforcement", "extensions"],
+  "properties": {"schema": {"const": "sipi.validation-report.v1"}, "run_id": {"type": "string", "minLength": 1}, "analysis_id": {"type": "string", "minLength": 1}, "attempt_id": {"type": "string", "minLength": 1}, "backend_execution_id": {"type": "string", "minLength": 1}, "role": {"enum": ["primary", "reference", "candidate"]}, "engine_instance_id": {"type": "string", "minLength": 1}, "bundle_hash": {"type": "string", "minLength": 1}, "operation": {"type": "string", "minLength": 1}, "payload_schema": {"type": "string", "minLength": 1}, "selection_hash": {"type": "string", "minLength": 1}, "valid": {"type": "boolean"}, "errors": {"type": "array", "items": {"$ref": "_defs/runtime-validation.v1.schema.json#/$defs/platform_error"}}, "warnings": {"type": "array", "items": {"type": "string"}}, "resource_enforcement": {"$ref": "_defs/runtime-validation.v1.schema.json#/$defs/resource_enforcement"}, "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}}
+}

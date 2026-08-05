@@ -15,7 +15,7 @@
     "payload": {},
     "payload_artifact": {"$ref": "#/$defs/artifact_ref_slot"},
     "backend_selection": {"$ref": "#/$defs/backend_selection"},
-    "resource_limits": {"type": "object", "$comment": "M1-03 owns resource-limit member semantics."},
+    "resource_limits": {"$ref": "_defs/runtime-validation.v1.schema.json#/$defs/resource_limits"},
     "randomness": {"type": "object", "$comment": "M1-03 owns randomness member semantics."},
     "artifact_policy": {"type": "object", "$comment": "M1-04 owns artifact-policy member semantics."},
     "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}

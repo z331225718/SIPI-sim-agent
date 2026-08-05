@@ -18,14 +18,13 @@
     "domain_result_schema": {"type": ["string", "null"]},
     "domain_result": {},
     "artifacts": {"type": "array", "items": {"$ref": "#/$defs/artifact_ref_slot"}},
-    "events": {"type": "array", "items": {"$ref": "#/$defs/event_slot"}},
+    "events": {"type": "array", "items": {"$ref": "run-event.v1.schema.json"}},
     "warnings": {"type": "array", "items": {"type": "string"}},
     "timings": {"type": "object", "$comment": "M1-03 owns timing member semantics."},
-    "resource_usage": {"type": "object", "$comment": "M1-03 owns resource-usage member semantics."},
-    "error": {"type": ["object", "null"], "$comment": "M1-03 owns error member semantics."}
+    "resource_usage": {"$ref": "_defs/runtime-validation.v1.schema.json#/$defs/resource_usage"},
+    "error": {"anyOf": [{"$ref": "_defs/runtime-validation.v1.schema.json#/$defs/platform_error"}, {"type": "null"}]}
   },
   "$defs": {
-    "artifact_ref_slot": {"type": "object", "required": ["schema"], "properties": {"schema": {"const": "sipi.artifact-ref.v1"}}, "additionalProperties": true},
-    "event_slot": {"type": "object", "required": ["schema"], "properties": {"schema": {"const": "sipi.run-event.v1"}}, "additionalProperties": true}
+    "artifact_ref_slot": {"type": "object", "required": ["schema"], "properties": {"schema": {"const": "sipi.artifact-ref.v1"}}, "additionalProperties": true}
   }
 }

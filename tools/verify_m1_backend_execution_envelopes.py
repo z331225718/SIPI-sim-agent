@@ -4,14 +4,17 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, RefResolver
 
 from verify_m1_run_envelopes import validate_request
+from verify_m1_runtime_validation import validate_platform_error, validate_resource_usage
 
 
 ROOT = Path(__file__).resolve().parents[1]
 REQUEST_SCHEMA = json.loads((ROOT / "schemas/backend-execution-request.v1.schema.json").read_text())
 RESULT_SCHEMA = json.loads((ROOT / "schemas/backend-execution-result.v1.schema.json").read_text())
+REQUEST_RESOLVER = RefResolver(base_uri=(ROOT / "schemas/").as_uri() + "/", referrer=REQUEST_SCHEMA)
+RESULT_RESOLVER = RefResolver(base_uri=(ROOT / "schemas/").as_uri() + "/", referrer=RESULT_SCHEMA)
 REQUEST_FIELDS = {
     "schema", "run_id", "analysis_id", "attempt_id", "backend_execution_id", "role",
     "engine_instance_id", "bundle_hash", "operation", "payload_schema", "payload",
@@ -37,7 +40,7 @@ def _same_payload_transport(run_request, backend_request):
 
 def validate_backend_request(run_request, backend_request, expected_selection_hash, allow_internal=False):
     """Ensure runtime made the only selection before invoking a strict adapter."""
-    Draft202012Validator(REQUEST_SCHEMA).validate(backend_request)
+    Draft202012Validator(REQUEST_SCHEMA, resolver=REQUEST_RESOLVER).validate(backend_request)
     validate_request(run_request, allow_internal=allow_internal)
     for field in ("run_id", "analysis_id", "attempt_id", "operation", "payload_schema"):
         if backend_request[field] != run_request[field]:
@@ -64,7 +67,7 @@ def validate_backend_request(run_request, backend_request, expected_selection_ha
 
 def validate_backend_result(backend_request, result, producer=True):
     """Ensure one adapter result exactly echoes one strict backend request."""
-    Draft202012Validator(RESULT_SCHEMA).validate(result)
+    Draft202012Validator(RESULT_SCHEMA, resolver=RESULT_RESOLVER).validate(result)
     if FORBIDDEN_RESULT_FIELDS & set(result):
         raise ValueError("adapter result contains runtime orchestration fields")
     for field in ("run_id", "analysis_id", "attempt_id", "backend_execution_id", "role", "engine_instance_id", "bundle_hash", "operation", "payload_schema"):
@@ -79,6 +82,11 @@ def validate_backend_result(backend_request, result, producer=True):
             raise ValueError("successful result requires an inline result or artifact")
     elif not isinstance(result["error"], dict):
         raise ValueError("failed/cancelled result requires an error object")
+    if result["error"] is not None:
+        validate_platform_error(result["error"], producer=producer)
+        if result["status"] == "cancelled" and result["error"]["category"] != "Cancelled": raise ValueError("cancelled result requires Cancelled")
+        if result["status"] == "failed" and result["error"]["category"] == "Cancelled": raise ValueError("failed result cannot use Cancelled")
+    validate_resource_usage(backend_request["resource_limits"], result["resource_usage"])
     if "domain_result" in result and (not isinstance(result["domain_result_schema"], str) or not result["domain_result_schema"]):
         raise ValueError("inline domain result requires a domain result schema")
     if producer:

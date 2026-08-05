@@ -15,15 +15,15 @@ def run_request(mode="strict"):
         selection = {"mode": "auto", "candidates": ["pybert-rust", "pybert-python"], "fallback_on": ["EngineUnavailable", "UnsupportedCapability"]}
     if mode == "compare":
         selection = {"mode": "compare", "reference": "pybert-python", "candidate": "pybert-rust", "comparison_profile": "parity.v1"}
-    return {"schema": "sipi.run-request.v1", "run_id": "run-1", "project_id": "project-1", "analysis_id": "analysis-1", "attempt_id": "attempt-1", "operation": "link.simulate.v1", "payload_schema": "pybert.simulation.v1", "payload": {"source": "fixture"}, "backend_selection": selection, "resource_limits": {}, "randomness": {}, "artifact_policy": {}, "extensions": {}}
+    return {"schema": "sipi.run-request.v1", "run_id": "run-1", "project_id": "project-1", "analysis_id": "analysis-1", "attempt_id": "attempt-1", "operation": "link.simulate.v1", "payload_schema": "pybert.simulation.v1", "payload": {"source": "fixture"}, "backend_selection": selection, "resource_limits": {"enforcement": "monitor", "wall_time_s": None, "cpu_time_s": None, "memory_bytes": None, "process_count": None, "artifact_bytes": None}, "randomness": {}, "artifact_policy": {}, "extensions": {}}
 
 
 def backend_request(parent, role="primary", instance="pybert-python"):
-    return {"schema": "sipi.backend-execution-request.v1", "run_id": parent["run_id"], "analysis_id": parent["analysis_id"], "attempt_id": parent["attempt_id"], "backend_execution_id": "backend-1", "role": role, "engine_instance_id": instance, "bundle_hash": "sha256:bundle", "operation": parent["operation"], "payload_schema": parent["payload_schema"], "payload": deepcopy(parent["payload"]), "bound_inputs": {}, "resource_limits": {}, "artifact_policy": {}, "randomness": {}, "selection_hash": "sha256:selection"}
+    return {"schema": "sipi.backend-execution-request.v1", "run_id": parent["run_id"], "analysis_id": parent["analysis_id"], "attempt_id": parent["attempt_id"], "backend_execution_id": "backend-1", "role": role, "engine_instance_id": instance, "bundle_hash": "sha256:bundle", "operation": parent["operation"], "payload_schema": parent["payload_schema"], "payload": deepcopy(parent["payload"]), "bound_inputs": {}, "resource_limits": deepcopy(parent["resource_limits"]), "artifact_policy": {}, "randomness": {}, "selection_hash": "sha256:selection"}
 
 
 def backend_result(request):
-    return {"schema": "sipi.backend-execution-result.v1", "run_id": request["run_id"], "analysis_id": request["analysis_id"], "attempt_id": request["attempt_id"], "backend_execution_id": request["backend_execution_id"], "role": request["role"], "engine_instance_id": request["engine_instance_id"], "bundle_hash": request["bundle_hash"], "operation": request["operation"], "payload_schema": request["payload_schema"], "status": "succeeded", "domain_result_schema": "pybert.simulation.v1", "artifacts": [{"schema": "sipi.artifact-ref.v1", "opaque": True}], "events": [{"schema": "sipi.run-event.v1", "opaque": True}], "warnings": [], "timings": {}, "resource_usage": {}, "error": None}
+    return {"schema": "sipi.backend-execution-result.v1", "run_id": request["run_id"], "analysis_id": request["analysis_id"], "attempt_id": request["attempt_id"], "backend_execution_id": request["backend_execution_id"], "role": request["role"], "engine_instance_id": request["engine_instance_id"], "bundle_hash": request["bundle_hash"], "operation": request["operation"], "payload_schema": request["payload_schema"], "status": "succeeded", "domain_result_schema": "pybert.simulation.v1", "artifacts": [{"schema": "sipi.artifact-ref.v1", "opaque": True}], "events": [{"schema": "sipi.run-event.v1", "run_id": request["run_id"], "sequence": 0, "scope": "backend_execution", "stage": "completed", "elapsed_s": 0, "analysis_id": request["analysis_id"], "attempt_id": request["attempt_id"], "backend_execution_id": request["backend_execution_id"], "extensions": {}}], "warnings": [], "timings": {}, "resource_usage": {"actual_enforcement": {"wall_time_s": "monitor", "cpu_time_s": "unsupported", "memory_bytes": "unsupported", "process_count": "unsupported", "artifact_bytes": "unsupported"}}, "error": None}
 
 
 class BackendExecutionEnvelopeTests(unittest.TestCase):
@@ -99,7 +99,7 @@ class BackendExecutionEnvelopeTests(unittest.TestCase):
         parent = run_request()
         request = backend_request(parent)
         out = backend_result(request)
-        out["error"] = {"deferred": True}
+        out["error"] = {"category": "NumericFailure", "message": "fixture", "resource": None, "cause": None, "details": {}}
         with self.assertRaisesRegex(ValueError, "cannot contain an error"):
             validate_backend_result(request, out)
         out = backend_result(request)
@@ -127,7 +127,7 @@ class BackendExecutionEnvelopeTests(unittest.TestCase):
         request = backend_request(parent)
         out = backend_result(request)
         out["status"] = "failed"
-        out["error"] = {"deferred": True}
+        out["error"] = {"category": "NumericFailure", "message": "fixture", "resource": None, "cause": None, "details": {}}
         out["domain_result_schema"] = None
         out["domain_result"] = {"partial": True}
         with self.assertRaisesRegex(ValueError, "inline domain result requires"):

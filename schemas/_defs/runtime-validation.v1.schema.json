@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "resource_limits": {
+      "type": "object", "additionalProperties": false,
+      "required": ["enforcement", "wall_time_s", "cpu_time_s", "memory_bytes", "process_count", "artifact_bytes"],
+      "properties": {
+        "enforcement": {"enum": ["required", "monitor"]},
+        "wall_time_s": {"type": ["number", "null"], "exclusiveMinimum": 0},
+        "cpu_time_s": {"type": ["number", "null"], "exclusiveMinimum": 0},
+        "memory_bytes": {"type": ["integer", "null"], "minimum": 1},
+        "process_count": {"type": ["integer", "null"], "minimum": 1},
+        "artifact_bytes": {"type": ["integer", "null"], "minimum": 1}
+      }
+    },
+    "resource_enforcement": {
+      "type": "object", "additionalProperties": false,
+      "required": ["wall_time_s", "cpu_time_s", "memory_bytes", "process_count", "artifact_bytes"],
+      "properties": {
+        "wall_time_s": {"enum": ["hard", "monitor", "unsupported"]},
+        "cpu_time_s": {"enum": ["hard", "monitor", "unsupported"]},
+        "memory_bytes": {"enum": ["hard", "monitor", "unsupported"]},
+        "process_count": {"enum": ["hard", "monitor", "unsupported"]},
+        "artifact_bytes": {"enum": ["hard", "monitor", "unsupported"]}
+      }
+    },
+    "resource_usage": {
+      "type": "object", "required": ["actual_enforcement"],
+      "properties": {
+        "actual_enforcement": {"$ref": "#/$defs/resource_enforcement"},
+        "sampling_period_s": {"type": "number", "exclusiveMinimum": 0},
+        "max_possible_overshoot": {"type": "object"}
+      }
+    },
+    "platform_error": {
+      "type": "object",
+      "required": ["category", "message", "resource", "cause", "details"],
+      "properties": {
+        "category": {"enum": ["InvalidRequest", "EngineUnavailable", "UnsupportedCapability", "InputNotFound", "ExternalModelFailure", "ResourceLimit", "Timeout", "Cancelled", "NumericFailure", "EngineProtocolFailure", "InternalInvariant"]},
+        "message": {"type": "string", "minLength": 1},
+        "resource": {"enum": ["wall_time_s", "cpu_time_s", "memory_bytes", "process_count", "artifact_bytes", null]},
+        "cause": {"type": ["object", "null"]},
+        "details": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+      }
+    }
+  }
+}

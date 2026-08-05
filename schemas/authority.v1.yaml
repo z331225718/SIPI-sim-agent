@@ -105,8 +105,7 @@
       "lifecycle": "reserved_unpublished",
       "definition_owner": "sipi-contracts",
       "source_of_truth": {
-        "kind": "planned_definition",
-        "task": "M1-03",
+        "kind": "local_json_schema",
         "path": "schemas/run-event.v1.schema.json"
       },
       "exposure": "not_public",
@@ -177,8 +176,7 @@
       "lifecycle": "reserved_unpublished",
       "definition_owner": "sipi-contracts",
       "source_of_truth": {
-        "kind": "planned_definition",
-        "task": "M1-03",
+        "kind": "local_json_schema",
         "path": "schemas/engine-capabilities.v1.schema.json"
       },
       "exposure": "not_public",
@@ -201,8 +199,7 @@
       "lifecycle": "reserved_unpublished",
       "definition_owner": "sipi-contracts",
       "source_of_truth": {
-        "kind": "planned_definition",
-        "task": "M1-03",
+        "kind": "local_json_schema",
         "path": "schemas/validation-report.v1.schema.json"
       },
       "exposure": "not_public",

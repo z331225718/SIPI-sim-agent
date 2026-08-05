@@ -5,11 +5,15 @@ import json
 from pathlib import Path
 
 from jsonschema import Draft202012Validator, RefResolver
+from verify_m1_runtime_validation import validate_platform_error, validate_resource_usage
 
 
 ROOT = Path(__file__).resolve().parents[1]
 REQUEST_SCHEMA = json.loads((ROOT / "schemas/run-request.v1.schema.json").read_text())
 RESULT_SCHEMA = json.loads((ROOT / "schemas/run-result.v1.schema.json").read_text())
+REQUEST_RESOLVER = RefResolver(
+    base_uri=(ROOT / "schemas/").as_uri() + "/", referrer=REQUEST_SCHEMA
+)
 RESULT_RESOLVER = RefResolver(
     base_uri=(ROOT / "schemas/").as_uri() + "/", referrer=RESULT_SCHEMA
 )
@@ -41,7 +45,7 @@ def _require_namespaced_keys(value, description):
 
 def validate_request(value, allow_internal=False):
     """Validate a closed request; callers must authorize internal opt-in separately."""
-    Draft202012Validator(REQUEST_SCHEMA).validate(value)
+    Draft202012Validator(REQUEST_SCHEMA, resolver=REQUEST_RESOLVER).validate(value)
     selection = value["backend_selection"]
     if selection["mode"] == "compare" and selection["reference"] == selection["candidate"]:
         raise ValueError("compare reference and candidate must differ")
@@ -75,6 +79,9 @@ def validate_result(request, value, producer=True, allow_internal=False):
         raise ValueError("successful result requires an execution")
     if value["status"] == "succeeded" and any(item["status"] != "succeeded" for item in executions):
         raise ValueError("successful result has unsuccessful execution")
+    _validate_terminal_error(value, producer)
+    validate_resource_usage(request["resource_limits"], value["resource_usage"])
+    for execution in executions: _validate_terminal_error(execution, producer)
 
     selection = request["backend_selection"]
     mode = selection["mode"]
@@ -126,3 +133,13 @@ def validate_result(request, value, producer=True, allow_internal=False):
         for rejection in value["fallback_trace"]:
             _reject_unrecognized_fields(rejection, FALLBACK_FIELDS, "fallback rejection")
         _require_namespaced_keys(value["metrics_summary"], "metrics_summary")
+
+
+def _validate_terminal_error(value, producer=True):
+    if value["status"] == "succeeded":
+        if value["error"] is not None: raise ValueError("successful result cannot contain an error")
+        return
+    if not isinstance(value["error"], dict): raise ValueError("failed/cancelled result requires an error")
+    validate_platform_error(value["error"], producer=producer)
+    if value["status"] == "cancelled" and value["error"]["category"] != "Cancelled": raise ValueError("cancelled result requires Cancelled")
+    if value["status"] == "failed" and value["error"]["category"] == "Cancelled": raise ValueError("failed result cannot use Cancelled")

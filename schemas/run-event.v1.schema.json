@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sipi.run-event.v1",
+  "type": "object",
+  "required": ["schema", "run_id", "sequence", "scope", "stage", "elapsed_s", "analysis_id", "attempt_id", "backend_execution_id", "extensions"],
+  "properties": {
+    "schema": {"const": "sipi.run-event.v1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "sequence": {"type": "integer", "minimum": 0},
+    "scope": {"enum": ["project", "analysis", "attempt", "backend_execution"]},
+    "stage": {"type": "string", "minLength": 1},
+    "elapsed_s": {"type": "number", "minimum": 0},
+    "analysis_id": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+    "attempt_id": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+    "backend_execution_id": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+    "progress": {"type": "object", "properties": {"fraction": {"type": "number", "minimum": 0, "maximum": 1}}},
+    "domain_event_schema": {"type": "string", "minLength": 1},
+    "domain_event": {},
+    "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+  },
+  "oneOf": [
+    {"required": ["domain_event_schema", "domain_event"]},
+    {"not": {"anyOf": [{"required": ["domain_event_schema"]}, {"required": ["domain_event"]}]}}
+  ]
+}

@@ -17,12 +17,12 @@
     "comparison": {"type": "object"},
     "metrics_summary": {"type": "object"},
     "artifacts": {"type": "array", "items": {"$ref": "#/$defs/artifact_ref_slot"}},
-    "events": {"type": "array", "items": {"type": "object"}, "$comment": "M1-03 owns event member semantics."},
+    "events": {"type": "array", "items": {"$ref": "run-event.v1.schema.json"}},
     "event_log_artifact": {"$ref": "#/$defs/artifact_ref_slot"},
     "provenance": {"type": "object", "$comment": "M1-04 owns provenance member semantics."},
     "timings": {"type": "object", "$comment": "M1-03 owns timing member semantics."},
-    "resource_usage": {"type": "object", "$comment": "M1-03 owns resource-usage member semantics."},
-    "error": {"type": ["object", "null"], "$comment": "M1-03 owns error member semantics."},
+    "resource_usage": {"$ref": "_defs/runtime-validation.v1.schema.json#/$defs/resource_usage"},
+    "error": {"anyOf": [{"$ref": "_defs/runtime-validation.v1.schema.json#/$defs/platform_error"}, {"type": "null"}]},
     "warnings": {"type": "array", "items": {"type": "string"}},
     "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
   },
@@ -36,7 +36,7 @@
     "backend_execution_summary": {
       "type": "object",
       "required": ["backend_execution_id", "role", "engine_instance_id", "bundle_hash", "status", "domain_result_schema", "artifacts", "error"],
-      "properties": {"backend_execution_id": {"type": "string", "minLength": 1}, "role": {"enum": ["primary", "reference", "candidate"]}, "engine_instance_id": {"type": "string", "minLength": 1}, "bundle_hash": {"type": "string", "minLength": 1}, "status": {"enum": ["succeeded", "failed", "cancelled"]}, "domain_result_schema": {"type": ["string", "null"]}, "artifacts": {"type": "array", "items": {"$ref": "#/$defs/artifact_ref_slot"}}, "error": {"type": ["object", "null"]}}
+      "properties": {"backend_execution_id": {"type": "string", "minLength": 1}, "role": {"enum": ["primary", "reference", "candidate"]}, "engine_instance_id": {"type": "string", "minLength": 1}, "bundle_hash": {"type": "string", "minLength": 1}, "status": {"enum": ["succeeded", "failed", "cancelled"]}, "domain_result_schema": {"type": ["string", "null"]}, "artifacts": {"type": "array", "items": {"$ref": "#/$defs/artifact_ref_slot"}}, "error": {"anyOf": [{"$ref": "_defs/runtime-validation.v1.schema.json#/$defs/platform_error"}, {"type": "null"}]}}
     }
   }
 }
