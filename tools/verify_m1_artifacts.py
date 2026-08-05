@@ -1,11 +1,13 @@
 """Semantic checks for M1-04 artifact references and embedded provenance."""
 from __future__ import annotations
 import json
+import sys
 from copy import deepcopy
 from pathlib import Path
 from jsonschema import Draft202012Validator, RefResolver
 
 ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'packages' / 'sipi-contracts' / 'src'))
 SCHEMA=json.loads((ROOT/'schemas/artifact-ref.v1.schema.json').read_text())
 PROVENANCE_SCHEMA=json.loads((ROOT/'schemas/_defs/provenance.v1.schema.json').read_text())
 RESOLVER=RefResolver(base_uri=(ROOT/'schemas/').as_uri()+'/',referrer=SCHEMA)
@@ -102,3 +104,6 @@ def map_com_artifact(metadata, *, content_schema, mime_type, producer, role):
     artifact={'schema':'sipi.artifact-ref.v1','content_schema':content_schema,'relative_path':metadata['relative_path'],'mime_type':mime_type,'sha256':metadata['sha256'],'byte_length':metadata['byte_length'],'producer':producer,'role':role,'extensions':{'agent-com.manifest':{'metadata':deepcopy(metadata)}}}
     validate_artifact_ref(artifact)
     return artifact
+
+
+from sipi_contracts.validation.relations import validate_artifact_collection, validate_artifact_ref, validate_provenance

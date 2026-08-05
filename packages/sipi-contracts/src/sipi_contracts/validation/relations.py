@@ -1,0 +1,476 @@
+from __future__ import annotations
+
+from collections.abc import Mapping
+from typing import Any
+
+from ..errors import ContractViolation
+from .registry import validate_definition, validate_wire
+
+
+RESOURCE_FIELDS = ("wall_time_s", "cpu_time_s", "memory_bytes", "process_count", "artifact_bytes")
+ARTIFACT_FIELDS = {"schema", "content_schema", "relative_path", "mime_type", "sha256", "byte_length", "producer", "role", "shape", "dtype", "byte_order", "layout", "extensions"}
+PROVENANCE_FIELDS = {"producers", "request", "environment", "randomness", "policies", "extensions"}
+PRODUCER_FIELDS = {"id", "kind", "name", "version", "commit", "build_profile", "dirty", "bundle_hash", "parent_ids"}
+REQUIRED_PRODUCER_KINDS = {"platform", "adapter", "engine", "algorithm"}
+PROVENANCE_SCHEMA_ID = "sipi.run-result.v1#/provenance"
+
+
+def _violation(schema_id: str, code: str, message: str, pointer: str = "") -> None:
+    raise ContractViolation(schema_id, code, pointer, message)
+
+
+def _reject_unknown(value: Mapping[str, Any], allowed: set[str], schema_id: str, description: str) -> None:
+    unknown = set(value) - allowed
+    if unknown:
+        _violation(schema_id, "unknown_field", f"{description} has unnamespaced fields: {sorted(unknown)}")
+
+
+def validate_artifact_ref(value: Mapping[str, Any], *, producer: bool = True, provenance: Mapping[str, Any] | None = None) -> None:
+    validate_wire("artifact-ref.v1.schema.json", value)
+    if value["relative_path"].endswith("/"):
+        _violation("sipi.artifact-ref.v1", "path", "artifact relative path must name a file", "/relative_path")
+    dtype = value.get("dtype")
+    byte_order = value.get("byte_order")
+    if dtype in {"bool", "int8", "uint8"} and byte_order != "not_applicable":
+        _violation("sipi.artifact-ref.v1", "array", "single-byte dtype requires not_applicable byte order")
+    if dtype not in {None, "bool", "int8", "uint8"} and byte_order == "not_applicable":
+        _violation("sipi.artifact-ref.v1", "array", "multi-byte dtype requires byte order")
+    if producer:
+        _reject_unknown(value, ARTIFACT_FIELDS, "sipi.artifact-ref.v1", "artifact")
+    if provenance is not None and value["producer"] not in {item["id"] for item in provenance["producers"]}:
+        _violation("sipi.artifact-ref.v1", "producer", "artifact producer is absent from provenance", "/producer")
+
+
+def validate_artifact_collection(values: list[Mapping[str, Any]], *, producer: bool = True, provenance: Mapping[str, Any] | None = None) -> None:
+    paths = [item["relative_path"] for item in values]
+    if len(paths) != len(set(paths)):
+        _violation("sipi.artifact-ref.v1", "duplicate_path", "duplicate artifact relative path")
+    for item in values:
+        validate_artifact_ref(item, producer=producer, provenance=provenance)
+
+
+def validate_provenance(value: Mapping[str, Any], *, producer: bool = True) -> None:
+    validate_definition("_defs/provenance.v1.schema.json", "provenance", value, PROVENANCE_SCHEMA_ID)
+    producers = value["producers"]
+    ids = [item["id"] for item in producers]
+    if len(ids) != len(set(ids)):
+        _violation(PROVENANCE_SCHEMA_ID, "duplicate_producer", "duplicate provenance producer id")
+    by_id = {item["id"]: item for item in producers}
+    for item in producers:
+        if producer:
+            _reject_unknown(item, PRODUCER_FIELDS, PROVENANCE_SCHEMA_ID, "provenance producer")
+        for parent_id in item["parent_ids"]:
+            if parent_id not in by_id:
+                _violation(PROVENANCE_SCHEMA_ID, "missing_parent", "provenance parent is absent")
+    visiting: set[str] = set()
+    visited: set[str] = set()
+    def visit(producer_id: str) -> None:
+        if producer_id in visiting:
+            _violation(PROVENANCE_SCHEMA_ID, "producer_cycle", "provenance producer graph contains a cycle")
+        if producer_id not in visited:
+            visiting.add(producer_id)
+            for parent_id in by_id[producer_id]["parent_ids"]:
+                visit(parent_id)
+            visiting.remove(producer_id)
+            visited.add(producer_id)
+    for producer_id in by_id:
+        visit(producer_id)
+    if producer:
+        _reject_unknown(value, PROVENANCE_FIELDS, PROVENANCE_SCHEMA_ID, "provenance")
+        if not REQUIRED_PRODUCER_KINDS <= {item["kind"] for item in producers}:
+            _violation(PROVENANCE_SCHEMA_ID, "producer_kind", "provenance lacks a required producer kind")
+        _reject_unknown(value["request"], {"schema", "behavior_profile", "inputs", "resolved_config_sha256"}, PROVENANCE_SCHEMA_ID, "provenance request")
+        _reject_unknown(value["environment"], {"python", "rust", "os", "cpu", "blas", "thread_count", "dependency_locks"}, PROVENANCE_SCHEMA_ID, "provenance environment")
+        _reject_unknown(value["randomness"], {"seed", "array_sources"}, PROVENANCE_SCHEMA_ID, "provenance randomness")
+        policy_groups = {"fallback", "conditioning", "repairs", "truncations", "approximations"}
+        _reject_unknown(value["policies"], policy_groups, PROVENANCE_SCHEMA_ID, "provenance policies")
+        for item in value["request"]["inputs"] + value["environment"]["dependency_locks"]:
+            _reject_unknown(item, {"name", "sha256"}, PROVENANCE_SCHEMA_ID, "provenance hash input")
+        for item in value["randomness"]["array_sources"]:
+            _reject_unknown(item, {"name", "source", "sha256"}, PROVENANCE_SCHEMA_ID, "provenance array source")
+        for group in policy_groups:
+            for item in value["policies"][group]:
+                _reject_unknown(item, {"name", "parameters"}, PROVENANCE_SCHEMA_ID, "provenance policy")
+
+
+def validate_platform_error(error: Mapping[str, Any], *, producer: bool = True) -> None:
+    validate_definition("_defs/runtime-validation.v1.schema.json", "platform_error", error, "sipi.platform-error.v1")
+    if error["category"] == "Timeout" and error["resource"] != "wall_time_s":
+        _violation("sipi.platform-error.v1", "error_resource", "Timeout must identify wall_time_s")
+    if error["category"] == "ResourceLimit" and error["resource"] not in set(RESOURCE_FIELDS) - {"wall_time_s"}:
+        _violation("sipi.platform-error.v1", "error_resource", "ResourceLimit must identify non-wall resource")
+    if producer:
+        _reject_unknown(error, {"category", "message", "resource", "cause", "details"}, "sipi.platform-error.v1", "platform error")
+
+
+def validate_resource_usage(limits: Mapping[str, Any], usage: Mapping[str, Any]) -> None:
+    validate_definition("_defs/runtime-validation.v1.schema.json", "resource_limits", limits, "sipi.resource-limits.v1")
+    validate_definition("_defs/runtime-validation.v1.schema.json", "resource_usage", usage, "sipi.resource-usage.v1")
+    actual = usage["actual_enforcement"]
+    monitored = [field for field in RESOURCE_FIELDS if limits[field] is not None and actual[field] == "monitor"]
+    for field in RESOURCE_FIELDS:
+        if limits[field] is None:
+            continue
+        if limits["enforcement"] == "required" and actual[field] != "hard":
+            _violation("sipi.resource-usage.v1", "enforcement", "required usage must be hard")
+        if limits["enforcement"] == "monitor" and actual[field] == "unsupported":
+            _violation("sipi.resource-usage.v1", "enforcement", "monitor usage cannot be unsupported")
+    if monitored and ("sampling_period_s" not in usage or "max_possible_overshoot" not in usage):
+        _violation("sipi.resource-usage.v1", "monitoring", "monitor usage requires sampling and overshoot")
+    if monitored and any(
+        field not in usage["max_possible_overshoot"]
+        or not isinstance(usage["max_possible_overshoot"][field], (int, float))
+        or usage["max_possible_overshoot"][field] < 0
+        for field in monitored
+    ):
+        _violation("sipi.resource-usage.v1", "monitoring", "monitor usage requires numeric per-resource overshoot")
+
+
+def validate_resource_slice(parent: Mapping[str, Any], child: Mapping[str, Any], enforcement: Mapping[str, str]) -> None:
+    validate_definition("_defs/runtime-validation.v1.schema.json", "resource_limits", parent, "sipi.resource-limits.v1")
+    validate_definition("_defs/runtime-validation.v1.schema.json", "resource_limits", child, "sipi.resource-limits.v1")
+    validate_definition("_defs/runtime-validation.v1.schema.json", "resource_enforcement", enforcement, "sipi.resource-enforcement.v1")
+    if child["enforcement"] != parent["enforcement"]:
+        _violation("sipi.resource-limits.v1", "slice", "resource enforcement mismatch")
+    for field in RESOURCE_FIELDS:
+        if parent[field] is None and child[field] is not None:
+            _violation("sipi.resource-limits.v1", "slice", "resource slice invents parent limit")
+        if parent[field] is not None and child[field] is None:
+            _violation("sipi.resource-limits.v1", "slice", "resource slice removes parent limit")
+        if parent[field] is not None and child[field] is not None and child[field] > parent[field]:
+            _violation("sipi.resource-limits.v1", "slice", "resource slice exceeds parent limit")
+        if child[field] is not None and (enforcement[field] != "hard" if child["enforcement"] == "required" else enforcement[field] == "unsupported"):
+            _violation("sipi.resource-limits.v1", "enforcement", "UnsupportedCapability")
+
+
+def validate_request(value: Mapping[str, Any], *, allow_internal: bool = False) -> None:
+    validate_wire("run-request.v1.schema.json", value)
+    selection = value["backend_selection"]
+    if selection["mode"] == "compare" and selection["reference"] == selection["candidate"]:
+        _violation("sipi.run-request.v1", "selection", "compare reference and candidate must differ")
+    if selection["mode"] == "auto" and set(selection["fallback_on"]) != {"EngineUnavailable", "UnsupportedCapability"}:
+        _violation("sipi.run-request.v1", "selection", "auto fallback reasons must be exactly the platform allowlist")
+    if selection.get("allow_internal", False) and not allow_internal:
+        _violation("sipi.run-request.v1", "internal_policy", "allow_internal requires authorized internal policy")
+    if "payload_artifact" in value:
+        validate_artifact_ref(value["payload_artifact"])
+
+
+def validate_result(request: Mapping[str, Any], value: Mapping[str, Any], *, producer: bool = True, allow_internal: bool = False) -> None:
+    validate_wire("run-result.v1.schema.json", value)
+    validate_request(request, allow_internal=allow_internal)
+    if "backend_execution_id" in value:
+        _violation("sipi.run-result.v1", "orchestration", "backend_execution_id belongs to backend_executions")
+    for field in ("run_id", "analysis_id", "attempt_id", "operation", "payload_schema"):
+        if value[field] != request[field]:
+            _violation("sipi.run-result.v1", "identity", f"{field} mismatch", f"/{field}")
+    if value["selection_requested"] != request["backend_selection"]:
+        _violation("sipi.run-result.v1", "selection", "selection mismatch")
+    executions = value["backend_executions"]
+    execution_ids = [item["backend_execution_id"] for item in executions]
+    if len(execution_ids) != len(set(execution_ids)):
+        _violation("sipi.run-result.v1", "duplicate_execution", "duplicate backend execution id")
+    if value["status"] == "succeeded" and (not executions or any(item["status"] != "succeeded" for item in executions)):
+        _violation("sipi.run-result.v1", "terminal_state", "successful result requires successful execution")
+    _validate_terminal_error(value, producer)
+    validate_resource_usage(request["resource_limits"], value["resource_usage"])
+    validate_provenance(value["provenance"], producer=producer)
+    artifacts = list(value["artifacts"])
+    if "event_log_artifact" in value:
+        artifacts.append(value["event_log_artifact"])
+    for execution in executions:
+        artifacts.extend(execution["artifacts"])
+        _validate_terminal_error(execution, producer)
+        _validate_execution_summary(execution)
+    validate_artifact_collection(artifacts, producer=producer, provenance=value["provenance"])
+    _validate_result_events(value, producer=producer)
+    selection = request["backend_selection"]
+    roles = [item["role"] for item in executions]
+    if selection["mode"] == "compare":
+        if sorted(roles) != ["candidate", "reference"]:
+            _violation("sipi.run-result.v1", "selection", "compare roles")
+        by_role = {item["role"]: item for item in executions}
+        for role in ("reference", "candidate"):
+            if by_role[role]["engine_instance_id"] != selection[role]:
+                _violation("sipi.run-result.v1", "selection", f"compare {role} instance mismatch")
+        if not value["comparison"] or value["comparison"].get("profile") != selection["comparison_profile"]:
+            _violation("sipi.run-result.v1", "selection", "compare result requires matching comparison evidence")
+    elif any(role != "primary" for role in roles):
+        _violation("sipi.run-result.v1", "selection", "non-compare roles")
+    elif selection["mode"] == "strict":
+        if len(executions) > 1 or (executions and executions[0]["engine_instance_id"] != selection["instance"]):
+            _violation("sipi.run-result.v1", "selection", "strict execution does not match selection")
+    else:
+        if len(executions) > 1:
+            _violation("sipi.run-result.v1", "selection", "auto has multiple executions")
+        traced = [item["instance"] for item in value["fallback_trace"]]
+        candidates = selection["candidates"]
+        if traced != candidates[:len(traced)]:
+            _violation("sipi.run-result.v1", "selection", "auto fallback trace is not an ordered candidate prefix")
+        if executions:
+            if len(traced) == len(candidates) or executions[0]["engine_instance_id"] != candidates[len(traced)]:
+                _violation("sipi.run-result.v1", "selection", "auto execution does not follow fallback trace")
+        elif value["status"] != "cancelled" and traced != candidates:
+            _violation("sipi.run-result.v1", "selection", "auto failure must account for every candidate")
+        if set(traced) & {item["engine_instance_id"] for item in executions}:
+            _violation("sipi.run-result.v1", "selection", "rejected candidate appears as execution")
+    if selection["mode"] != "auto" and value["fallback_trace"]:
+        _violation("sipi.run-result.v1", "selection", "fallback trace outside auto mode")
+    if selection["mode"] != "compare" and value["comparison"]:
+        _violation("sipi.run-result.v1", "selection", "comparison outside compare mode")
+    if producer:
+        _reject_unknown(value, {"schema", "run_id", "analysis_id", "attempt_id", "operation", "payload_schema", "status", "selection_requested", "backend_executions", "fallback_trace", "comparison", "metrics_summary", "artifacts", "events", "event_log_artifact", "provenance", "timings", "resource_usage", "error", "warnings", "extensions"}, "sipi.run-result.v1", "run result")
+        for execution in executions:
+            _reject_unknown(execution, {"backend_execution_id", "role", "engine_instance_id", "bundle_hash", "status", "domain_result_schema", "artifacts", "error"}, "sipi.run-result.v1", "backend execution")
+        for rejection in value["fallback_trace"]:
+            _reject_unknown(rejection, {"instance", "reason"}, "sipi.run-result.v1", "fallback rejection")
+        invalid = [key for key in value["metrics_summary"] if "." not in key]
+        if invalid:
+            _violation("sipi.run-result.v1", "metrics", f"metrics_summary has unnamespaced keys: {sorted(invalid)}")
+
+
+def validate_result_intrinsic(value: Mapping[str, Any], *, producer: bool = False) -> None:
+    """Close every result invariant which does not require its originating request."""
+    validate_wire("run-result.v1.schema.json", value)
+    validate_provenance(value["provenance"], producer=producer)
+    execution_ids = [item["backend_execution_id"] for item in value["backend_executions"]]
+    if len(execution_ids) != len(set(execution_ids)):
+        _violation("sipi.run-result.v1", "duplicate_execution", "duplicate backend execution id")
+    _validate_terminal_error(value, producer)
+    if value["status"] == "succeeded" and (not value["backend_executions"] or any(item["status"] != "succeeded" for item in value["backend_executions"])):
+        _violation("sipi.run-result.v1", "terminal_state", "successful result requires successful execution")
+    artifacts = list(value["artifacts"])
+    if "event_log_artifact" in value:
+        artifacts.append(value["event_log_artifact"])
+    for execution in value["backend_executions"]:
+        _validate_terminal_error(execution, producer)
+        _validate_execution_summary(execution)
+        artifacts.extend(execution["artifacts"])
+    validate_artifact_collection(artifacts, producer=producer, provenance=value["provenance"])
+    _validate_result_selection(value)
+    _validate_result_events(value, producer=producer)
+    if producer:
+        _reject_unknown(value, {"schema", "run_id", "analysis_id", "attempt_id", "operation", "payload_schema", "status", "selection_requested", "backend_executions", "fallback_trace", "comparison", "metrics_summary", "artifacts", "events", "event_log_artifact", "provenance", "timings", "resource_usage", "error", "warnings", "extensions"}, "sipi.run-result.v1", "run result")
+        for execution in value["backend_executions"]:
+            _reject_unknown(execution, {"backend_execution_id", "role", "engine_instance_id", "bundle_hash", "status", "domain_result_schema", "artifacts", "error"}, "sipi.run-result.v1", "backend execution")
+        invalid = [key for key in value["metrics_summary"] if "." not in key]
+        if invalid:
+            _violation("sipi.run-result.v1", "metrics", f"metrics_summary has unnamespaced keys: {sorted(invalid)}")
+        for rejection in value["fallback_trace"]:
+            _reject_unknown(rejection, {"instance", "reason"}, "sipi.run-result.v1", "fallback rejection")
+
+
+def _validate_result_selection(value: Mapping[str, Any]) -> None:
+    selection = value["selection_requested"]
+    executions = value["backend_executions"]
+    roles = [item["role"] for item in executions]
+    if selection["mode"] == "compare":
+        if sorted(roles) != ["candidate", "reference"]:
+            _violation("sipi.run-result.v1", "selection", "compare roles")
+        by_role = {item["role"]: item for item in executions}
+        for role in ("reference", "candidate"):
+            if by_role[role]["engine_instance_id"] != selection[role]:
+                _violation("sipi.run-result.v1", "selection", f"compare {role} instance mismatch")
+        if not value["comparison"] or value["comparison"].get("profile") != selection["comparison_profile"]:
+            _violation("sipi.run-result.v1", "selection", "compare result requires matching comparison evidence")
+    elif any(role != "primary" for role in roles):
+        _violation("sipi.run-result.v1", "selection", "non-compare roles")
+    elif selection["mode"] == "strict":
+        if len(executions) > 1 or (executions and executions[0]["engine_instance_id"] != selection["instance"]):
+            _violation("sipi.run-result.v1", "selection", "strict execution does not match selection")
+    else:
+        if len(executions) > 1:
+            _violation("sipi.run-result.v1", "selection", "auto has multiple executions")
+        traced = [item["instance"] for item in value["fallback_trace"]]
+        candidates = selection["candidates"]
+        if traced != candidates[:len(traced)]:
+            _violation("sipi.run-result.v1", "selection", "auto fallback trace is not an ordered candidate prefix")
+        if executions and (len(traced) == len(candidates) or executions[0]["engine_instance_id"] != candidates[len(traced)]):
+            _violation("sipi.run-result.v1", "selection", "auto execution does not follow fallback trace")
+        if not executions and value["status"] != "cancelled" and traced != candidates:
+            _violation("sipi.run-result.v1", "selection", "auto failure must account for every candidate")
+    if selection["mode"] != "auto" and value["fallback_trace"]:
+        _violation("sipi.run-result.v1", "selection", "fallback trace outside auto mode")
+    if selection["mode"] != "compare" and value["comparison"]:
+        _violation("sipi.run-result.v1", "selection", "comparison outside compare mode")
+
+
+def _validate_execution_summary(execution: Mapping[str, Any]) -> None:
+    if execution["status"] == "succeeded" and (not execution["domain_result_schema"] or not execution["artifacts"]):
+        _violation("sipi.run-result.v1", "terminal_state", "successful execution requires a domain result schema and artifact")
+
+
+def _validate_result_events(value: Mapping[str, Any], *, producer: bool) -> None:
+    prior: dict[str, tuple[int, float]] = {}
+    backend_ids = {item["backend_execution_id"] for item in value["backend_executions"]}
+    for event in value.get("events", []):
+        validate_event(event, prior, producer=producer)
+        if event["run_id"] != value["run_id"]:
+            _violation("sipi.run-event.v1", "identity", "event run_id mismatch")
+        if event["analysis_id"] is not None and event["analysis_id"] != value["analysis_id"]:
+            _violation("sipi.run-event.v1", "identity", "event analysis_id mismatch")
+        if event["attempt_id"] is not None and event["attempt_id"] != value["attempt_id"]:
+            _violation("sipi.run-event.v1", "identity", "event attempt_id mismatch")
+        if event["backend_execution_id"] is not None and event["backend_execution_id"] not in backend_ids:
+            _violation("sipi.run-event.v1", "identity", "event backend_execution_id mismatch")
+
+
+def _validate_terminal_error(value: Mapping[str, Any], producer: bool) -> None:
+    if value["status"] == "succeeded":
+        if value["error"] is not None:
+            _violation("sipi.run-result.v1", "terminal_state", "successful result cannot contain an error")
+        return
+    if not isinstance(value["error"], Mapping):
+        _violation("sipi.run-result.v1", "terminal_state", "failed/cancelled result requires an error")
+    validate_platform_error(value["error"], producer=producer)
+    if value["status"] == "cancelled" and value["error"]["category"] != "Cancelled":
+        _violation("sipi.run-result.v1", "terminal_state", "cancelled result requires Cancelled")
+    if value["status"] == "failed" and value["error"]["category"] == "Cancelled":
+        _violation("sipi.run-result.v1", "terminal_state", "failed result cannot use Cancelled")
+
+
+def validate_backend_request(run_request: Mapping[str, Any], value: Mapping[str, Any], expected_selection_hash: str, *, allow_internal: bool = False) -> None:
+    validate_wire("backend-execution-request.v1.schema.json", value)
+    validate_request(run_request, allow_internal=allow_internal)
+    for field in ("run_id", "analysis_id", "attempt_id", "operation", "payload_schema"):
+        if value[field] != run_request[field]:
+            _violation("sipi.backend-execution-request.v1", "identity", f"{field} mismatch")
+    for field in ("payload", "payload_artifact"):
+        if (field in run_request) != (field in value) or (field in value and value[field] != run_request[field]):
+            _violation("sipi.backend-execution-request.v1", "payload", "payload transport mismatch")
+    if value["selection_hash"] != expected_selection_hash:
+        _violation("sipi.backend-execution-request.v1", "selection_hash", "selection_hash mismatch")
+    if "payload_artifact" in value:
+        validate_artifact_ref(value["payload_artifact"])
+    validate_artifact_collection(list(value["bound_inputs"].values()))
+    selection = run_request["backend_selection"]
+    if selection["mode"] in {"strict", "auto"} and value["role"] != "primary":
+        _violation("sipi.backend-execution-request.v1", "selection", "strict/auto adapter role must be primary")
+    if selection["mode"] == "strict" and value["engine_instance_id"] != selection["instance"]:
+        _violation("sipi.backend-execution-request.v1", "selection", "strict instance mismatch")
+    if selection["mode"] == "auto" and value["engine_instance_id"] not in selection["candidates"]:
+        _violation("sipi.backend-execution-request.v1", "selection", "auto instance is not a resolved candidate")
+    if selection["mode"] == "compare":
+        if value["role"] not in {"reference", "candidate"}:
+            _violation("sipi.backend-execution-request.v1", "selection", "compare adapter role must be reference or candidate")
+        if value["engine_instance_id"] != selection[value["role"]]:
+            _violation("sipi.backend-execution-request.v1", "selection", "compare role/instance mismatch")
+
+
+def validate_backend_result(request: Mapping[str, Any], value: Mapping[str, Any], *, producer: bool = True) -> None:
+    validate_wire("backend-execution-result.v1.schema.json", value)
+    if {"backend_selection", "fallback_trace", "comparison"} & set(value):
+        _violation("sipi.backend-execution-result.v1", "orchestration", "adapter result contains runtime orchestration fields")
+    for field in ("run_id", "analysis_id", "attempt_id", "backend_execution_id", "role", "engine_instance_id", "bundle_hash", "operation", "payload_schema"):
+        if value[field] != request[field]:
+            _violation("sipi.backend-execution-result.v1", "identity", f"{field} mismatch")
+    if value["status"] == "succeeded":
+        if not value["domain_result_schema"]:
+            _violation("sipi.backend-execution-result.v1", "terminal_state", "successful result requires a domain result schema")
+        if value["error"] is not None:
+            _violation("sipi.backend-execution-result.v1", "terminal_state", "successful result cannot contain an error")
+        if "domain_result" not in value and not value["artifacts"]:
+            _violation("sipi.backend-execution-result.v1", "terminal_state", "successful result requires an inline result or artifact")
+    elif not isinstance(value["error"], Mapping):
+        _violation("sipi.backend-execution-result.v1", "terminal_state", "failed/cancelled result requires an error object")
+    if value["error"] is not None:
+        validate_platform_error(value["error"], producer=producer)
+        if value["status"] == "cancelled" and value["error"]["category"] != "Cancelled":
+            _violation("sipi.backend-execution-result.v1", "terminal_state", "cancelled result requires Cancelled")
+        if value["status"] == "failed" and value["error"]["category"] == "Cancelled":
+            _violation("sipi.backend-execution-result.v1", "terminal_state", "failed result cannot use Cancelled")
+    validate_resource_usage(request["resource_limits"], value["resource_usage"])
+    validate_artifact_collection(value["artifacts"], producer=producer)
+    _validate_backend_events(value, producer=producer)
+    if "domain_result" in value and not value["domain_result_schema"]:
+        _violation("sipi.backend-execution-result.v1", "domain_result", "inline domain result requires a domain result schema")
+    if producer:
+        _reject_unknown(value, {"schema", "run_id", "analysis_id", "attempt_id", "backend_execution_id", "role", "engine_instance_id", "bundle_hash", "operation", "payload_schema", "status", "domain_result_schema", "domain_result", "artifacts", "events", "warnings", "timings", "resource_usage", "error"}, "sipi.backend-execution-result.v1", "adapter result")
+
+
+def validate_backend_result_intrinsic(value: Mapping[str, Any], *, producer: bool = False) -> None:
+    validate_wire("backend-execution-result.v1.schema.json", value)
+    if value["status"] == "succeeded":
+        if not value["domain_result_schema"] or value["error"] is not None:
+            _violation("sipi.backend-execution-result.v1", "terminal_state", "successful result requires schema and no error")
+        if "domain_result" not in value and not value["artifacts"]:
+            _violation("sipi.backend-execution-result.v1", "terminal_state", "successful result requires an inline result or artifact")
+    elif not isinstance(value["error"], Mapping):
+        _violation("sipi.backend-execution-result.v1", "terminal_state", "failed/cancelled result requires an error")
+    if value["error"] is not None:
+        validate_platform_error(value["error"], producer=producer)
+        if value["status"] == "cancelled" and value["error"]["category"] != "Cancelled":
+            _violation("sipi.backend-execution-result.v1", "terminal_state", "cancelled result requires Cancelled")
+        if value["status"] == "failed" and value["error"]["category"] == "Cancelled":
+            _violation("sipi.backend-execution-result.v1", "terminal_state", "failed result cannot use Cancelled")
+    validate_artifact_collection(value["artifacts"], producer=producer)
+    _validate_backend_events(value, producer=producer)
+    if producer:
+        _reject_unknown(value, {"schema", "run_id", "analysis_id", "attempt_id", "backend_execution_id", "role", "engine_instance_id", "bundle_hash", "operation", "payload_schema", "status", "domain_result_schema", "domain_result", "artifacts", "events", "warnings", "timings", "resource_usage", "error"}, "sipi.backend-execution-result.v1", "adapter result")
+
+
+def _validate_backend_events(value: Mapping[str, Any], *, producer: bool) -> None:
+    prior: dict[str, tuple[int, float]] = {}
+    for event in value["events"]:
+        validate_event(event, prior, producer=producer)
+        if event["run_id"] != value["run_id"] or (event["analysis_id"] is not None and event["analysis_id"] != value["analysis_id"]) or (event["attempt_id"] is not None and event["attempt_id"] != value["attempt_id"]) or (event["backend_execution_id"] is not None and event["backend_execution_id"] != value["backend_execution_id"]):
+            _violation("sipi.run-event.v1", "identity", "backend event identity mismatch")
+
+
+def validate_validation_report_intrinsic(value: Mapping[str, Any], *, producer: bool = False) -> None:
+    validate_wire("validation-report.v1.schema.json", value)
+    if value["valid"] == bool(value["errors"]):
+        _violation("sipi.validation-report.v1", "validity", "validation valid/errors mismatch")
+    for error in value["errors"]:
+        validate_platform_error(error, producer=producer)
+    if producer:
+        _reject_unknown(value, {"schema", "run_id", "analysis_id", "attempt_id", "backend_execution_id", "role", "engine_instance_id", "bundle_hash", "operation", "payload_schema", "selection_hash", "valid", "errors", "warnings", "resource_enforcement", "extensions"}, "sipi.validation-report.v1", "validation report")
+
+
+def validate_event(value: Mapping[str, Any], prior_by_run: dict[str, tuple[int, float]] | None = None, *, producer: bool = True) -> None:
+    validate_wire("run-event.v1.schema.json", value)
+    expected = {"project": (None, None, None), "analysis": ("value", None, None), "attempt": ("value", "value", None), "backend_execution": ("value", "value", "value")}[value["scope"]]
+    for field, required in zip(("analysis_id", "attempt_id", "backend_execution_id"), expected):
+        if (value[field] is None) != (required is None):
+            _violation("sipi.run-event.v1", "scope", "event scope identity mismatch")
+    if prior_by_run is not None and value["run_id"] in prior_by_run:
+        sequence, elapsed = prior_by_run[value["run_id"]]
+        if value["sequence"] <= sequence or value["elapsed_s"] < elapsed:
+            _violation("sipi.run-event.v1", "event_order", "event order regression")
+    if prior_by_run is not None:
+        prior_by_run[value["run_id"]] = (value["sequence"], value["elapsed_s"])
+    if producer:
+        _reject_unknown(value, {"schema", "run_id", "sequence", "scope", "stage", "elapsed_s", "analysis_id", "attempt_id", "backend_execution_id", "progress", "domain_event_schema", "domain_event", "extensions"}, "sipi.run-event.v1", "event")
+
+
+def validate_validation_report(request: Mapping[str, Any], report: Mapping[str, Any], *, producer: bool = True) -> None:
+    validate_wire("validation-report.v1.schema.json", report)
+    for field in ("run_id", "analysis_id", "attempt_id", "backend_execution_id", "role", "engine_instance_id", "bundle_hash", "operation", "payload_schema", "selection_hash"):
+        if report[field] != request[field]:
+            _violation("sipi.validation-report.v1", "identity", f"{field} mismatch")
+    if report["valid"] == bool(report["errors"]):
+        _violation("sipi.validation-report.v1", "validity", "validation valid/errors mismatch")
+    for error in report["errors"]:
+        validate_platform_error(error, producer=producer)
+    if producer:
+        _reject_unknown(report, {"schema", "run_id", "analysis_id", "attempt_id", "backend_execution_id", "role", "engine_instance_id", "bundle_hash", "operation", "payload_schema", "selection_hash", "valid", "errors", "warnings", "resource_enforcement", "extensions"}, "sipi.validation-report.v1", "validation report")
+    limits = request["resource_limits"]
+    unavailable = [field for field in RESOURCE_FIELDS if limits[field] is not None and (report["resource_enforcement"][field] != "hard" if limits["enforcement"] == "required" else report["resource_enforcement"][field] == "unsupported")]
+    if unavailable and (report["valid"] or not any(error["category"] == "UnsupportedCapability" for error in report["errors"])):
+        _violation("sipi.validation-report.v1", "enforcement", "resource enforcement requires UnsupportedCapability")
+
+
+def validate_capabilities(value: Mapping[str, Any], *, producer: bool = True) -> None:
+    validate_wire("engine-capabilities.v1.schema.json", value)
+    seen = set()
+    for capability in value["capabilities"]:
+        key = (capability["operation"], capability["payload_schema"], value["engine_instance_id"], capability["behavior_profile"], value["platform"]["os"], value["platform"]["architecture"], capability["execution_mode"])
+        if key in seen:
+            _violation("sipi.engine-capabilities.v1", "duplicate_capability", "duplicate capability key")
+        seen.add(key)
+    if producer:
+        _reject_unknown(value, {"schema", "producer", "version", "build", "engine_instance_id", "bundle_hash", "platform", "capabilities", "extensions"}, "sipi.engine-capabilities.v1", "capabilities")
+        _reject_unknown(value["platform"], {"os", "architecture"}, "sipi.engine-capabilities.v1", "platform")
+        allowed = {"operation", "payload_schema", "domain_result_schemas", "behavior_profile", "role", "execution_mode", "resource_enforcement", "external_model_capabilities", "maximum_scale"}
+        for capability in value["capabilities"]:
+            _reject_unknown(capability, allowed, "sipi.engine-capabilities.v1", "capability")

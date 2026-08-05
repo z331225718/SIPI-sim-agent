@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from jsonschema import Draft202012Validator, RefResolver
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "packages" / "sipi-contracts" / "src"))
 SCHEMAS = {name: json.loads((ROOT / "schemas" / name).read_text()) for name in ("run-event.v1.schema.json", "engine-capabilities.v1.schema.json", "validation-report.v1.schema.json")}
 RESOLVER = {name: RefResolver(base_uri=(ROOT / "schemas/").as_uri() + "/", referrer=schema) for name, schema in SCHEMAS.items()}
 RESOURCE_FIELDS = ("wall_time_s", "cpu_time_s", "memory_bytes", "process_count", "artifact_bytes")
@@ -89,3 +91,9 @@ def validate_capabilities(value, producer=True):
         allowed = {"operation", "payload_schema", "domain_result_schemas", "behavior_profile", "role", "execution_mode", "resource_enforcement", "external_model_capabilities", "maximum_scale"}
         for capability in value["capabilities"]:
             if set(capability) - allowed: raise ValueError("capability has unnamespaced fields")
+
+
+from sipi_contracts.validation.relations import (
+    validate_capabilities, validate_event, validate_platform_error, validate_resource_slice,
+    validate_resource_usage, validate_validation_report,
+)

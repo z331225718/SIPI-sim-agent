@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from jsonschema import Draft202012Validator, RefResolver
@@ -12,6 +13,7 @@ from verify_m1_artifacts import validate_artifact_collection, validate_artifact_
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "packages" / "sipi-contracts" / "src"))
 REQUEST_SCHEMA = json.loads((ROOT / "schemas/backend-execution-request.v1.schema.json").read_text())
 RESULT_SCHEMA = json.loads((ROOT / "schemas/backend-execution-result.v1.schema.json").read_text())
 REQUEST_RESOLVER = RefResolver(base_uri=(ROOT / "schemas/").as_uri() + "/", referrer=REQUEST_SCHEMA)
@@ -97,3 +99,25 @@ def validate_backend_result(backend_request, result, producer=True):
         unknown = set(result) - RESULT_FIELDS
         if unknown:
             raise ValueError(f"adapter result has unnamespaced fields: {sorted(unknown)}")
+
+
+from jsonschema import ValidationError
+from sipi_contracts.errors import ContractViolation
+from sipi_contracts.validation.relations import validate_backend_request as _validate_backend_request, validate_backend_result as _validate_backend_result
+
+
+def _compat(call, *args, **kwargs):
+    try:
+        return call(*args, **kwargs)
+    except ContractViolation as error:
+        if error.code == "schema":
+            raise ValidationError(error.message) from error
+        raise
+
+
+def validate_backend_request(run_request, backend_request, expected_selection_hash, allow_internal=False):
+    return _compat(_validate_backend_request, run_request, backend_request, expected_selection_hash, allow_internal=allow_internal)
+
+
+def validate_backend_result(backend_request, result, producer=True):
+    return _compat(_validate_backend_result, backend_request, result, producer=producer)

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from jsonschema import Draft202012Validator, RefResolver
@@ -10,6 +11,7 @@ from verify_m1_artifacts import validate_artifact_collection, validate_artifact_
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "packages" / "sipi-contracts" / "src"))
 REQUEST_SCHEMA = json.loads((ROOT / "schemas/run-request.v1.schema.json").read_text())
 RESULT_SCHEMA = json.loads((ROOT / "schemas/run-result.v1.schema.json").read_text())
 REQUEST_RESOLVER = RefResolver(
@@ -152,3 +154,25 @@ def _validate_terminal_error(value, producer=True):
     validate_platform_error(value["error"], producer=producer)
     if value["status"] == "cancelled" and value["error"]["category"] != "Cancelled": raise ValueError("cancelled result requires Cancelled")
     if value["status"] == "failed" and value["error"]["category"] == "Cancelled": raise ValueError("failed result cannot use Cancelled")
+
+
+from jsonschema import ValidationError
+from sipi_contracts.errors import ContractViolation
+from sipi_contracts.validation.relations import validate_request as _validate_request, validate_result as _validate_result
+
+
+def _compat(call, *args, **kwargs):
+    try:
+        return call(*args, **kwargs)
+    except ContractViolation as error:
+        if error.code == "schema":
+            raise ValidationError(error.message) from error
+        raise
+
+
+def validate_request(value, allow_internal=False):
+    return _compat(_validate_request, value, allow_internal=allow_internal)
+
+
+def validate_result(request, value, producer=True, allow_internal=False):
+    return _compat(_validate_result, request, value, producer=producer, allow_internal=allow_internal)
