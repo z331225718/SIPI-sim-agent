@@ -18,7 +18,7 @@
       "properties": {
         "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]+$"},
         "schema_id": {"type": "string", "minLength": 1},
-        "entrypoint": {"enum": ["run_request", "run_result", "backend_request", "backend_result", "selection_chain", "event", "artifact", "artifact_integrity", "provenance", "capabilities", "validation_report", "resource_slice"]},
+        "entrypoint": {"enum": ["run_request", "run_result", "backend_request", "backend_result", "selection_chain", "event", "artifact", "artifact_integrity", "provenance", "capabilities", "capabilities_baseline", "validation_report", "resource_slice"]},
         "mode": {"enum": ["producer", "consumer"]},
         "path": {"type": "string", "pattern": "^cases/[a-z0-9.-]+/[a-z0-9.-]+$"},
         "expect": {"type": "object", "required": ["decision", "phase"], "properties": {"decision": {"enum": ["accept", "reject"]}, "phase": {"enum": ["json", "schema", "semantic", "relation", "integrity"]}, "code": {"type": "string", "minLength": 1}, "preserve": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": false},

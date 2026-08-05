@@ -1,4 +1,4 @@
-"""Run materialized M1-06 conformance cases through public sipi_contracts APIs."""
+"""Run materialized M1-06 conformance cases through sipi_contracts bindings."""
 from __future__ import annotations
 
 import json
@@ -24,6 +24,7 @@ from sipi_contracts import (
     validate_backend_execution_result,
     validate_run_result,
 )
+from sipi_contracts.models import parse_capability_baseline
 from sipi_contracts.validation.relations import validate_resource_slice
 from sipi_contracts.validation.registry import validate_wire
 
@@ -108,6 +109,8 @@ def _run(case: dict) -> dict:
             model = parse_run_event(_document(case_dir, documents["subject"]), producer=case["mode"] == "producer")
         elif case["entrypoint"] == "capabilities":
             model = parse_engine_capabilities(_document(case_dir, documents["subject"]), producer=case["mode"] == "producer")
+        elif case["entrypoint"] == "capabilities_baseline":
+            model = parse_capability_baseline(_document(case_dir, documents["subject"]))
         elif case["entrypoint"] == "validation_report":
             model = parse_validation_report(_document(case_dir, documents["subject"]), producer=case["mode"] == "producer")
         elif case["entrypoint"] == "resource_slice":
