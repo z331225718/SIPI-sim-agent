@@ -20,6 +20,9 @@ from sipi_contracts import (
     parse_run_request,
     parse_run_result,
     parse_validation_report,
+    validate_backend_execution_request,
+    validate_backend_execution_result,
+    validate_run_result,
 )
 from sipi_contracts.validation.relations import validate_resource_slice
 
@@ -57,6 +60,15 @@ def _run(case: dict) -> dict:
             model = parse_backend_execution_request(_document(case_dir, documents["subject"]))
         elif case["entrypoint"] == "backend_result":
             model = parse_backend_execution_result(_document(case_dir, documents["subject"]), producer=case["mode"] == "producer")
+        elif case["entrypoint"] == "selection_chain":
+            run_request = parse_run_request(_document(case_dir, documents["run_request"]))
+            backend_request = parse_backend_execution_request(_document(case_dir, documents["backend_request"]))
+            backend_result = parse_backend_execution_result(_document(case_dir, documents["backend_result"]), producer=True)
+            run_result = parse_run_result(_document(case_dir, documents["run_result"]), producer=True)
+            validate_backend_execution_request(run_request, backend_request, documents["selection_hash"])
+            validate_backend_execution_result(backend_request, backend_result)
+            validate_run_result(run_request, run_result)
+            model = None
         elif case["entrypoint"] == "artifact":
             model = parse_artifact_ref(_document(case_dir, documents["subject"]), producer=case["mode"] == "producer")
         elif case["entrypoint"] == "artifact_integrity":
@@ -81,7 +93,8 @@ def _run(case: dict) -> dict:
         phase = "schema" if error.code == "schema" else "relation" if case["entrypoint"] == "resource_slice" else "semantic"
         return {"id": case["id"], "decision": "reject", "phase": phase, "code": error.code}
     preserved = all(_pointer(model.to_wire(), pointer) == _pointer(_document(case_dir, documents["subject"]), pointer) for pointer in case["expect"].get("preserve", [])) if model is not None else True
-    return {"id": case["id"], "decision": "accept" if preserved else "reject", "phase": case["expect"]["phase"], "preserved": preserved}
+    phase = "relation" if case["entrypoint"] == "selection_chain" else case["expect"]["phase"]
+    return {"id": case["id"], "decision": "accept" if preserved else "reject", "phase": phase, "preserved": preserved}
 
 
 def main() -> int:

@@ -206,6 +206,48 @@ fn validate(fixture_root: &Path, schema_root: &Path, case: &Value) -> Value {
     let case_dir = fixture_root.join(case["path"].as_str().expect("case path"));
     let case_data = read_json(&case_dir.join("case.json"));
     let documents = case_data["documents"].as_object().expect("documents");
+    if case["entrypoint"] == "selection_chain" {
+        let run_request = read_json(&case_dir.join(documents["run_request"].as_str().unwrap()));
+        let backend_request =
+            read_json(&case_dir.join(documents["backend_request"].as_str().unwrap()));
+        let backend_result =
+            read_json(&case_dir.join(documents["backend_result"].as_str().unwrap()));
+        let run_result = read_json(&case_dir.join(documents["run_result"].as_str().unwrap()));
+        let identity_fields = [
+            "run_id",
+            "analysis_id",
+            "attempt_id",
+            "operation",
+            "payload_schema",
+        ];
+        let request_identity = identity_fields
+            .iter()
+            .all(|field| backend_request[*field] == run_request[*field]);
+        let backend_identity = [
+            "run_id",
+            "analysis_id",
+            "attempt_id",
+            "backend_execution_id",
+            "role",
+            "engine_instance_id",
+            "bundle_hash",
+            "operation",
+            "payload_schema",
+        ]
+        .iter()
+        .all(|field| backend_result[*field] == backend_request[*field]);
+        let result_identity = identity_fields
+            .iter()
+            .all(|field| run_result[*field] == run_request[*field]);
+        let selection_valid = run_request["backend_selection"]["mode"] == "strict"
+            && backend_request["role"] == "primary"
+            && backend_request["engine_instance_id"]
+                == run_request["backend_selection"]["instance"]
+            && backend_request["selection_hash"] == documents["selection_hash"]
+            && run_result["selection_requested"] == run_request["backend_selection"];
+        let valid = request_identity && backend_identity && result_identity && selection_valid;
+        return json!({"id":case["id"],"decision":if valid {"accept"} else {"reject"},"phase":"relation","code":if valid {Value::Null} else {Value::String("identity".to_owned())}});
+    }
     if case["entrypoint"] == "resource_slice" {
         let parent = read_json(&case_dir.join(documents["parent"].as_str().unwrap()));
         let child = read_json(&case_dir.join(documents["child"].as_str().unwrap()));
