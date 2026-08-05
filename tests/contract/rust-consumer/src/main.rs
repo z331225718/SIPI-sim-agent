@@ -627,6 +627,9 @@ fn main() {
         .join("schemas");
     let mut results = BTreeMap::new();
     for case in suite["cases"].as_array().expect("cases") {
+        if case.get("runner").is_some_and(|runner| runner != "local") {
+            continue;
+        }
         let result = validate(&root, &schemas, case);
         results.insert(case["id"].as_str().unwrap().to_owned(), result);
     }

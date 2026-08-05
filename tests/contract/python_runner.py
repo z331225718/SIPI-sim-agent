@@ -154,8 +154,9 @@ def main() -> int:
     suite = json.loads((FIXTURES / "suite.json").read_text(encoding="utf-8"))
     schema = json.loads((FIXTURES / "suite.schema.json").read_text(encoding="utf-8"))
     Draft202012Validator(schema).validate(suite)
-    results = [_run(case) for case in suite["cases"]]
-    failed = [result for case, result in zip(suite["cases"], results) if result["decision"] != "deferred" and (result["decision"] != case["expect"]["decision"] or result["phase"] != case["expect"]["phase"] or not result.get("preserved", True))]
+    cases = [case for case in suite["cases"] if case.get("runner", "local") == "local"]
+    results = [_run(case) for case in cases]
+    failed = [result for case, result in zip(cases, results) if result["decision"] != "deferred" and (result["decision"] != case["expect"]["decision"] or result["phase"] != case["expect"]["phase"] or not result.get("preserved", True))]
     print(json.dumps({"runner": "python", "results": results, "failed": failed}, sort_keys=True))
     return 1 if failed else 0
 

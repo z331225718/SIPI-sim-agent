@@ -14,16 +14,23 @@
   "$defs": {
     "case": {
       "type": "object",
-      "required": ["id", "schema_id", "entrypoint", "mode", "path", "expect", "required_languages", "origin"],
+      "required": ["id", "entrypoint", "mode", "expect", "required_languages", "origin"],
+      "oneOf": [
+        {"required": ["schema_id", "path"], "not": {"anyOf": [{"required": ["external_contract"]}, {"required": ["probe"]}]}, "properties": {"runner": {"const": "local"}, "origin": {"properties": {"kind": {"const": "synthetic_contract"}}}}},
+        {"required": ["external_contract", "runner", "probe"], "not": {"anyOf": [{"required": ["schema_id"]}, {"required": ["path"]}]}, "properties": {"runner": {"const": "pybert_core_rust"}, "origin": {"properties": {"kind": {"const": "authoritative_external"}}}}}
+      ],
       "properties": {
         "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]+$"},
         "schema_id": {"type": "string", "minLength": 1},
-        "entrypoint": {"enum": ["run_request", "run_result", "backend_request", "backend_result", "selection_chain", "event", "artifact", "artifact_integrity", "provenance", "capabilities", "capabilities_baseline", "validation_report", "resource_slice"]},
+        "external_contract": {"type": "object", "required": ["kind", "value"], "properties": {"kind": {"enum": ["wire_schema_id", "embedded_type", "legacy_document"]}, "value": {"type": "string", "minLength": 1}}, "additionalProperties": false},
+        "runner": {"enum": ["local", "pybert_core_rust"]},
+        "probe": {"type": "string", "minLength": 1},
+        "entrypoint": {"type": "string", "minLength": 1},
         "mode": {"enum": ["producer", "consumer"]},
         "path": {"type": "string", "pattern": "^cases/[a-z0-9.-]+/[a-z0-9.-]+$"},
         "expect": {"type": "object", "required": ["decision", "phase"], "properties": {"decision": {"enum": ["accept", "reject"]}, "phase": {"enum": ["json", "schema", "semantic", "relation", "integrity"]}, "code": {"type": "string", "minLength": 1}, "preserve": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": false},
         "required_languages": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["python", "rust"]}},
-        "origin": {"type": "object", "required": ["kind", "source_ref"], "properties": {"kind": {"const": "synthetic_contract"}, "source_ref": {"type": "string", "minLength": 1}}, "additionalProperties": false},
+        "origin": {"type": "object", "required": ["kind", "source_ref"], "properties": {"kind": {"enum": ["synthetic_contract", "authoritative_external"]}, "source_ref": {"type": "string", "minLength": 1}}, "additionalProperties": false},
         "deferred_to": {"type": "string", "enum": ["M1-07", "M1-08"]}
       },
       "additionalProperties": false

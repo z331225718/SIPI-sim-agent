@@ -76,6 +76,8 @@ def _authority_obligations(authority: dict) -> set[tuple[str, str, str]]:
 
 
 def _case_document(case: dict, ref: dict, schema_id: str) -> bool:
+    if case.get("runner", "local") != "local":
+        return False
     if case["entrypoint"] == "selection_chain":
         if DOCUMENT_SCHEMAS.get(ref["document"]) != schema_id:
             return False
@@ -203,7 +205,7 @@ def verify(*, case_results: dict[str, dict[str, dict]] | None = None) -> dict:
                 case_matches_contract = (
                     _case_document(case, ref, rule["schema_id"])
                     if "schema_id" in rule
-                    else case.get("external_contract") == rule["external_contract"]["identifier"]
+                    else ref.get("document") == "subject" and case.get("external_contract") == rule["external_contract"]["identifier"]
                 )
                 if language not in case["required_languages"] or case["mode"] != rule["obligation"] or not case_matches_contract or not _case_matches_layer(case, rule):
                     failures.append(f"ledger:case_mismatch:{rule_id}:{language}:{case['id']}")

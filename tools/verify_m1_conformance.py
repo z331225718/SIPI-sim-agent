@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -18,13 +19,13 @@ UV = "uv"
 
 
 def _json_output(command: list[str]) -> dict:
-    completed = subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=True)
+    completed = subprocess.run(command, cwd=ROOT, text=True, encoding="utf-8", errors="replace", capture_output=True, check=True)
     return json.loads(next(line for line in reversed(completed.stdout.splitlines()) if line.startswith("{")))
 
 
 def _tree_sha256() -> str:
     files = [path for root in (FIXTURES, ROOT / "schemas") for path in root.rglob("*") if path.is_file()]
-    files.extend((ROOT / name) for name in ("toolchains.lock", "uv.lock", "tests/contract/rust-consumer/Cargo.lock"))
+    files.extend((ROOT / name) for name in ("toolchains.lock", "uv.lock", "tests/contract/rust-consumer/Cargo.lock", "tests/contract/external-probes/pybert-simulation/Cargo.lock"))
     digest = hashlib.sha256()
     for path in sorted(files, key=lambda item: item.relative_to(ROOT).as_posix()):
         relative = path.relative_to(ROOT).as_posix().encode("utf-8")
@@ -46,6 +47,40 @@ def _index_results(output: dict, language: str, expected_ids: set[str], failures
     return {result["id"]: result for result in results if isinstance(result.get("id"), str)}
 
 
+def _pybert_results(cases: list[dict], failures: list[str]) -> tuple[dict[str, dict], dict]:
+    output = _json_output([UV, "run", "--locked", "--python", str(PYTHON), "python", "-B", "tests/contract/run_pybert_simulation_probe.py"])
+    if output.get("runner") != "pybert_core_rust":
+        failures.append("pybert_core_rust:runner")
+    authority = json.loads((ROOT / "schemas" / "authority.v1.yaml").read_text(encoding="utf-8"))
+    snapshot = json.loads((ROOT / authority["source_snapshot_ref"]).read_text(encoding="utf-8"))
+    repository = next(item for item in snapshot["repositories"] if item["id"] == "py-bert-agent")
+    expected_snapshot = {"repository": repository["id"], "revision": repository["head"], "tree": repository["tree"]}
+    if output.get("observed_source_snapshot") != expected_snapshot:
+        failures.append("pybert_core_rust:source_snapshot")
+    results = output.get("results", [])
+    probes = {result.get("probe"): result for result in results}
+    if len(probes) != len(results) or set(probes) != {case["probe"] for case in cases}:
+        failures.append("pybert_core_rust:result_set_mismatch")
+    base_hashes = {result.get("base_payload_sha256") for result in results}
+    accepted_hashes = {probes.get(probe, {}).get("consumed_payload_sha256") for probe in ("producer_serializes", "consumer_deserializes")}
+    version = probes.get("consumer_version_rejects", {})
+    version_hash = version.get("consumed_payload_sha256")
+    hashes = base_hashes | accepted_hashes | {version_hash}
+    if (
+        len(base_hashes) != 1
+        or None in base_hashes
+        or len(accepted_hashes) != 1
+        or None in accepted_hashes
+        or accepted_hashes != base_hashes
+        or version.get("derived_from") != "producer_serializes"
+        or version_hash is None
+        or version_hash in base_hashes
+        or any(not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None for value in hashes)
+    ):
+        failures.append("pybert_core_rust:payload_hash_lineage")
+    return ({case["id"]: {**probes.get(case["probe"], {}), "id": case["id"]} for case in cases}, output.get("observed_source_snapshot", {}))
+
+
 def main() -> int:
     suite = json.loads((FIXTURES / "suite.json").read_text(encoding="utf-8"))
     if not PYTHON.is_file():
@@ -53,11 +88,17 @@ def main() -> int:
     case_ids = [case["id"] for case in suite["cases"]]
     if len(case_ids) != len(set(case_ids)):
         raise RuntimeError("suite has duplicate case ids")
+    local_cases = [case for case in suite["cases"] if case.get("runner", "local") == "local"]
     python = _json_output([UV, "run", "--locked", "--python", str(PYTHON), "python", "-B", "tests/contract/python_runner.py"])
     rust = _json_output([str(RUSTUP), "run", TOOLCHAIN, "cargo", "run", "--locked", "--quiet", "--manifest-path", "tests/contract/rust-consumer/Cargo.toml", "--", "fixtures/contracts/v1"])
     expected = {case["id"]: case for case in suite["cases"] if "deferred_to" not in case}
     failures = []
-    language_results = {name: _index_results(output, name, set(case_ids), failures) for name, output in {"python": python, "rust": rust}.items()}
+    language_results = {name: _index_results(output, name, {case["id"] for case in local_cases}, failures) for name, output in {"python": python, "rust": rust}.items()}
+    pybert_cases = [case for case in suite["cases"] if case.get("runner") == "pybert_core_rust"]
+    external_snapshots = {}
+    if pybert_cases:
+        pybert_results, external_snapshots["pybert_core_rust"] = _pybert_results(pybert_cases, failures)
+        language_results["rust"].update(pybert_results)
     for case_id, case in expected.items():
         for language in case["required_languages"]:
             result = language_results[language].get(case_id, {})
@@ -66,7 +107,7 @@ def main() -> int:
                 failures.append(f"{language}:{case_id}")
     ledger = verify_rule_ledger(case_results=language_results)
     failures.extend(ledger["failures"])
-    print(json.dumps({"suite": suite["suite"], "status": suite["status"], "fixture_tree_sha256": _tree_sha256(), "ledger": ledger, "failures": failures, "python": language_results["python"], "rust": language_results["rust"]}, sort_keys=True))
+    print(json.dumps({"suite": suite["suite"], "status": suite["status"], "fixture_tree_sha256": _tree_sha256(), "ledger": ledger, "external_snapshots": external_snapshots, "failures": failures, "python": language_results["python"], "rust": language_results["rust"]}, sort_keys=True))
     return 1 if failures else 0
 
 
