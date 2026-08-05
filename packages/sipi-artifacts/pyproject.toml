@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sipi-artifacts"
+version = "0.1.0"
+description = "Attempt artifact staging and publication for SIPI"
+requires-python = ">=3.12"
+dependencies = ["sipi-contracts"]
+
+[tool.uv.sources]
+sipi-contracts = { workspace = true }
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
