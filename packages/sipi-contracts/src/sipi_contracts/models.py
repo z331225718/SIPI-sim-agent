@@ -20,6 +20,7 @@ from .validation.relations import (
     validate_capability_baseline,
     validate_validation_report_intrinsic,
     validate_dag_node_record_intrinsic,
+    validate_engine_lock_intrinsic,
     validate_run_record_intrinsic,
     validate_success_manifest_intrinsic,
     validate_success_manifest_relation as validate_success_manifest_relation_wire,
@@ -135,6 +136,12 @@ class DagNodeRecordV1(ContractModel):
 
 
 @dataclass(frozen=True, slots=True, init=False)
+class EngineLockV1(ContractModel):
+    schema_name = "engine-lock.v1.schema.json"
+    known_fields = frozenset({"schema", "engines", "operation_defaults", "extensions"})
+
+
+@dataclass(frozen=True, slots=True, init=False)
 class ProvenanceV1(ContractModel):
     schema_name = "_defs/provenance.v1.schema.json"
     known_fields = frozenset({"producers", "request", "environment", "randomness", "policies", "extensions"})
@@ -216,6 +223,12 @@ def parse_dag_node_record(value: str | Mapping[str, Any]) -> DagNodeRecordV1:
     data = _mapping(value, DagNodeRecordV1.schema_name)
     validate_dag_node_record_intrinsic(data)
     return _parse(DagNodeRecordV1, data)  # type: ignore[return-value]
+
+
+def parse_engine_lock(value: str | Mapping[str, Any]) -> EngineLockV1:
+    data = _mapping(value, EngineLockV1.schema_name)
+    validate_engine_lock_intrinsic(data)
+    return _parse(EngineLockV1, data)  # type: ignore[return-value]
 
 
 def validate_success_manifest_relation(run_record: RunRecordV1, manifest: SuccessManifestV1) -> None:

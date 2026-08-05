@@ -110,6 +110,46 @@ def validate_dag_node_record_intrinsic(value: Mapping[str, Any]) -> None:
         _violation("sipi.dag-node-record.v1", "blocked_by", "blocked node cannot reference itself")
 
 
+def validate_engine_lock_intrinsic(value: Mapping[str, Any]) -> None:
+    validate_wire("engine-lock.v1.schema.json", value)
+    engines = value["engines"]
+    instance_ids = [engine["instance_id"] for engine in engines]
+    if len(instance_ids) != len(set(instance_ids)):
+        _violation("sipi.engine-lock.v1", "duplicate_instance", "engine instance IDs must be unique")
+    instances = set(instance_ids)
+    for engine in engines:
+        if engine["bundle"]["kind"] == "local_path":
+            portable_artifact_path_key(engine["bundle"]["path"])
+            if engine["bundle"]["path"].endswith("/"):
+                _violation("sipi.engine-lock.v1", "bundle_path", "bundle path must name a file")
+        files = engine["bundle_manifest"]["files"]
+        if engine["bundle_manifest"]["entrypoint"].endswith("/") or any(item["relative_path"].endswith("/") for item in files):
+            _violation("sipi.engine-lock.v1", "bundle_file", "bundle manifest paths must name files")
+        paths = [portable_artifact_path_key(item["relative_path"]) for item in files]
+        if len(paths) != len(set(paths)):
+            _violation("sipi.engine-lock.v1", "duplicate_bundle_file", "bundle manifest has duplicate portable paths")
+        if portable_artifact_path_key(engine["bundle_manifest"]["entrypoint"]) not in set(paths):
+            _violation("sipi.engine-lock.v1", "entrypoint", "bundle entrypoint must be listed in its manifest")
+        entrypoints = [item for item in files if item["role"] == "entrypoint"]
+        if len(entrypoints) != 1 or entrypoints[0]["relative_path"] != engine["bundle_manifest"]["entrypoint"]:
+            _violation("sipi.engine-lock.v1", "entrypoint", "manifest requires one matching entrypoint file")
+        runtime = engine["runtime"]
+        if runtime["kind"] == "python" and not runtime["python_abi"]:
+            _violation("sipi.engine-lock.v1", "runtime", "python runtime requires a Python ABI")
+        if runtime["kind"] == "native" and not runtime["rust_target"]:
+            _violation("sipi.engine-lock.v1", "runtime", "native runtime requires a Rust target")
+        if runtime["kind"] == "hybrid" and (not runtime["python_abi"] or not runtime["rust_target"]):
+            _violation("sipi.engine-lock.v1", "runtime", "hybrid runtime requires Python ABI and Rust target")
+    for operation, selection in value["operation_defaults"].items():
+        if operation not in {"circuit.solve.v1", "network.fit.v1", "link.simulate.v1", "com.r480.run.v1"}:
+            _violation("sipi.engine-lock.v1", "operation", "default selection has an unknown operation")
+        requested = ([selection["instance"]] if selection["mode"] == "strict" else selection["candidates"] if selection["mode"] == "auto" else [selection["reference"], selection["candidate"]])
+        if not set(requested) <= instances:
+            _violation("sipi.engine-lock.v1", "default_instance", "default selection references an unknown engine instance")
+        if selection["mode"] == "compare" and selection["reference"] == selection["candidate"]:
+            _violation("sipi.engine-lock.v1", "default_instance", "compare default requires distinct instances")
+
+
 def validate_provenance(value: Mapping[str, Any], *, producer: bool = True) -> None:
     validate_definition("_defs/provenance.v1.schema.json", "provenance", value, PROVENANCE_SCHEMA_ID)
     producers = value["producers"]

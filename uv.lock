@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 members = [
     "sipi-artifacts",
     "sipi-contracts",
+    "sipi-runtime",
 ]
 
 [[package]]
@@ -175,6 +176,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "jsonschema", specifier = ">=4.18" }]
+
+[[package]]
+name = "sipi-runtime"
+version = "0.1.0"
+source = { editable = "packages/sipi-runtime" }
+dependencies = [
+    { name = "sipi-contracts" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "sipi-contracts", editable = "packages/sipi-contracts" }]
 
 [[package]]
 name = "typing-extensions"

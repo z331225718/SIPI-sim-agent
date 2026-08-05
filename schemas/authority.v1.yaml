@@ -332,8 +332,7 @@
       "lifecycle": "reserved_unpublished",
       "definition_owner": "sipi-runtime+sipi-contracts",
       "source_of_truth": {
-        "kind": "planned_definition",
-        "task": "M1-08",
+        "kind": "local_json_schema",
         "path": "schemas/engine-lock.v1.schema.json"
       },
       "exposure": "not_public",
@@ -341,7 +340,7 @@
       "compatibility_policy": "none_until_published",
       "platform_role": "engine_lock",
       "bindings": [
-        "planned:PythonEngineLockV1"
+        "python"
       ],
       "conformance": {
         "producer": "planned:M1-08",
