@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sipi.backend-execution-request.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "run_id", "analysis_id", "attempt_id", "backend_execution_id", "role", "engine_instance_id", "bundle_hash", "operation", "payload_schema", "bound_inputs", "resource_limits", "artifact_policy", "randomness", "selection_hash"],
+  "properties": {
+    "schema": {"const": "sipi.backend-execution-request.v1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "analysis_id": {"type": "string", "minLength": 1},
+    "attempt_id": {"type": "string", "minLength": 1},
+    "backend_execution_id": {"type": "string", "minLength": 1},
+    "role": {"enum": ["primary", "reference", "candidate"]},
+    "engine_instance_id": {"type": "string", "minLength": 1},
+    "bundle_hash": {"type": "string", "minLength": 1},
+    "operation": {"enum": ["circuit.solve.v1", "network.fit.v1", "link.simulate.v1", "com.r480.run.v1"]},
+    "payload_schema": {"type": "string", "minLength": 1},
+    "payload": {},
+    "payload_artifact": {"$ref": "#/$defs/artifact_ref_slot"},
+    "bound_inputs": {"type": "object", "additionalProperties": {"$ref": "#/$defs/artifact_ref_slot"}},
+    "resource_limits": {"type": "object", "$comment": "M1-03 owns resource-limit member semantics."},
+    "artifact_policy": {"type": "object", "$comment": "M1-04 owns artifact-policy member semantics."},
+    "randomness": {"type": "object", "$comment": "M1-03 owns randomness member semantics."},
+    "selection_hash": {"type": "string", "minLength": 1}
+  },
+  "oneOf": [
+    {"required": ["payload"], "not": {"required": ["payload_artifact"]}},
+    {"required": ["payload_artifact"], "not": {"required": ["payload"]}}
+  ],
+  "$defs": {
+    "artifact_ref_slot": {"type": "object", "required": ["schema"], "properties": {"schema": {"const": "sipi.artifact-ref.v1"}}, "additionalProperties": true}
+  }
+}

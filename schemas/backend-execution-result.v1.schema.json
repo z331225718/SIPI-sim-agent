@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sipi.backend-execution-result.v1",
+  "type": "object",
+  "required": ["schema", "run_id", "analysis_id", "attempt_id", "backend_execution_id", "role", "engine_instance_id", "bundle_hash", "operation", "payload_schema", "status", "domain_result_schema", "artifacts", "events", "warnings", "timings", "resource_usage", "error"],
+  "properties": {
+    "schema": {"const": "sipi.backend-execution-result.v1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "analysis_id": {"type": "string", "minLength": 1},
+    "attempt_id": {"type": "string", "minLength": 1},
+    "backend_execution_id": {"type": "string", "minLength": 1},
+    "role": {"enum": ["primary", "reference", "candidate"]},
+    "engine_instance_id": {"type": "string", "minLength": 1},
+    "bundle_hash": {"type": "string", "minLength": 1},
+    "operation": {"enum": ["circuit.solve.v1", "network.fit.v1", "link.simulate.v1", "com.r480.run.v1"]},
+    "payload_schema": {"type": "string", "minLength": 1},
+    "status": {"enum": ["succeeded", "failed", "cancelled"]},
+    "domain_result_schema": {"type": ["string", "null"]},
+    "domain_result": {},
+    "artifacts": {"type": "array", "items": {"$ref": "#/$defs/artifact_ref_slot"}},
+    "events": {"type": "array", "items": {"$ref": "#/$defs/event_slot"}},
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "timings": {"type": "object", "$comment": "M1-03 owns timing member semantics."},
+    "resource_usage": {"type": "object", "$comment": "M1-03 owns resource-usage member semantics."},
+    "error": {"type": ["object", "null"], "$comment": "M1-03 owns error member semantics."}
+  },
+  "$defs": {
+    "artifact_ref_slot": {"type": "object", "required": ["schema"], "properties": {"schema": {"const": "sipi.artifact-ref.v1"}}, "additionalProperties": true},
+    "event_slot": {"type": "object", "required": ["schema"], "properties": {"schema": {"const": "sipi.run-event.v1"}}, "additionalProperties": true}
+  }
+}

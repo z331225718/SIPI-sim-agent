@@ -1,0 +1,87 @@
+"""Semantic validation for the M1-02A strict adapter SPI draft."""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from jsonschema import Draft202012Validator
+
+from verify_m1_run_envelopes import validate_request
+
+
+ROOT = Path(__file__).resolve().parents[1]
+REQUEST_SCHEMA = json.loads((ROOT / "schemas/backend-execution-request.v1.schema.json").read_text())
+RESULT_SCHEMA = json.loads((ROOT / "schemas/backend-execution-result.v1.schema.json").read_text())
+REQUEST_FIELDS = {
+    "schema", "run_id", "analysis_id", "attempt_id", "backend_execution_id", "role",
+    "engine_instance_id", "bundle_hash", "operation", "payload_schema", "payload",
+    "payload_artifact", "bound_inputs", "resource_limits", "artifact_policy", "randomness",
+    "selection_hash",
+}
+RESULT_FIELDS = {
+    "schema", "run_id", "analysis_id", "attempt_id", "backend_execution_id", "role",
+    "engine_instance_id", "bundle_hash", "operation", "payload_schema", "status",
+    "domain_result_schema", "domain_result", "artifacts", "events", "warnings", "timings",
+    "resource_usage", "error",
+}
+FORBIDDEN_RESULT_FIELDS = {"backend_selection", "fallback_trace", "comparison"}
+
+
+def _same_payload_transport(run_request, backend_request):
+    for field in ("payload", "payload_artifact"):
+        if (field in run_request) != (field in backend_request):
+            raise ValueError("payload transport mismatch")
+        if field in run_request and backend_request[field] != run_request[field]:
+            raise ValueError("payload mismatch")
+
+
+def validate_backend_request(run_request, backend_request, expected_selection_hash, allow_internal=False):
+    """Ensure runtime made the only selection before invoking a strict adapter."""
+    Draft202012Validator(REQUEST_SCHEMA).validate(backend_request)
+    validate_request(run_request, allow_internal=allow_internal)
+    for field in ("run_id", "analysis_id", "attempt_id", "operation", "payload_schema"):
+        if backend_request[field] != run_request[field]:
+            raise ValueError(f"{field} mismatch")
+    _same_payload_transport(run_request, backend_request)
+    if backend_request["selection_hash"] != expected_selection_hash:
+        raise ValueError("selection_hash mismatch")
+
+    selection = run_request["backend_selection"]
+    mode = selection["mode"]
+    if mode in {"strict", "auto"} and backend_request["role"] != "primary":
+        raise ValueError("strict/auto adapter role must be primary")
+    if mode == "strict" and backend_request["engine_instance_id"] != selection["instance"]:
+        raise ValueError("strict instance mismatch")
+    if mode == "auto" and backend_request["engine_instance_id"] not in selection["candidates"]:
+        raise ValueError("auto instance is not a resolved candidate")
+    if mode == "compare":
+        if backend_request["role"] not in {"reference", "candidate"}:
+            raise ValueError("compare adapter role must be reference or candidate")
+        expected = selection[backend_request["role"]]
+        if backend_request["engine_instance_id"] != expected:
+            raise ValueError("compare role/instance mismatch")
+
+
+def validate_backend_result(backend_request, result, producer=True):
+    """Ensure one adapter result exactly echoes one strict backend request."""
+    Draft202012Validator(RESULT_SCHEMA).validate(result)
+    if FORBIDDEN_RESULT_FIELDS & set(result):
+        raise ValueError("adapter result contains runtime orchestration fields")
+    for field in ("run_id", "analysis_id", "attempt_id", "backend_execution_id", "role", "engine_instance_id", "bundle_hash", "operation", "payload_schema"):
+        if result[field] != backend_request[field]:
+            raise ValueError(f"{field} mismatch")
+    if result["status"] == "succeeded":
+        if not isinstance(result["domain_result_schema"], str) or not result["domain_result_schema"]:
+            raise ValueError("successful result requires a domain result schema")
+        if result["error"] is not None:
+            raise ValueError("successful result cannot contain an error")
+        if "domain_result" not in result and not result["artifacts"]:
+            raise ValueError("successful result requires an inline result or artifact")
+    elif not isinstance(result["error"], dict):
+        raise ValueError("failed/cancelled result requires an error object")
+    if "domain_result" in result and (not isinstance(result["domain_result_schema"], str) or not result["domain_result_schema"]):
+        raise ValueError("inline domain result requires a domain result schema")
+    if producer:
+        unknown = set(result) - RESULT_FIELDS
+        if unknown:
+            raise ValueError(f"adapter result has unnamespaced fields: {sorted(unknown)}")
