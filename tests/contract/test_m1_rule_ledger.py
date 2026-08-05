@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from verify_m1_rule_ledger import _snapshot_matches, _source_repositories
-from verify_m1_conformance import _payload_lineage, _pybert_results
+from verify_m1_conformance import _agent_com_result_results, _payload_lineage, _pybert_results
 
 
 class ExternalSnapshotTests(unittest.TestCase):
@@ -73,8 +73,37 @@ class SuiteRoutingTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             self.validator.validate(suite)
 
+    def test_agent_com_result_runner_cannot_claim_behavior_registry(self):
+        suite = deepcopy(self.suite)
+        case = next(item for item in suite["cases"] if item["id"] == "external.agent-com-result.producer.accept")
+        case["external_contract"] = {"kind": "legacy_document", "value": "agent-com behavior registry"}
+        with self.assertRaises(ValidationError):
+            self.validator.validate(suite)
+
 
 class ExternalProbeLineageTests(unittest.TestCase):
+    def test_result_runner_rejects_wrong_contract_binding(self):
+        bad_contract = {"kind": "legacy_document", "value": "agent-com behavior registry"}
+        cases = [
+            {"id": "producer", "probe": "result_v1.producer_json", "external_contract": bad_contract},
+            {"id": "consumer", "probe": "result_v1.consumer_validates", "external_contract": bad_contract},
+            {"id": "version", "probe": "result_v1.consumer.version_rejects", "external_contract": bad_contract},
+        ]
+        output = {
+            "runner": "agent_com_result_python",
+            "python_version": "3.12.13",
+            "observed_source_snapshot": {"repository": "agent-com", "revision": "034b21b2f293b2ef97cb8be269b1bf2be38e0086", "tree": "dc6e5529612d7272f23547a796b53e1456cc49cb"},
+            "results": [
+                {"probe": "result_v1.producer_json", "base_payload_sha256": "a" * 64, "consumed_payload_sha256": "a" * 64},
+                {"probe": "result_v1.consumer_validates", "base_payload_sha256": "a" * 64, "consumed_payload_sha256": "a" * 64},
+                {"probe": "result_v1.consumer.version_rejects", "base_payload_sha256": "a" * 64, "consumed_payload_sha256": "b" * 64, "derived_from": "result_v1.producer_json"},
+            ],
+        }
+        failures: list[str] = []
+        with patch("verify_m1_conformance._json_output", return_value=output):
+            _agent_com_result_results(cases, failures)
+        self.assertIn("agent_com_result_python:contract_binding", failures)
+
     def test_run_event_rejection_requires_derived_payload(self):
         probes = {
             "run_event.producer_serializes": {"base_payload_sha256": "a" * 64, "consumed_payload_sha256": "a" * 64},

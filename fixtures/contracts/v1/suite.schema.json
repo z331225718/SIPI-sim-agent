@@ -19,12 +19,13 @@
         {"required": ["schema_id", "path"], "not": {"anyOf": [{"required": ["external_contract"]}, {"required": ["probe"]}]}, "properties": {"runner": {"const": "local"}, "origin": {"properties": {"kind": {"const": "synthetic_contract"}}}}},
         {"required": ["external_contract", "runner", "probe"], "not": {"anyOf": [{"required": ["schema_id"]}, {"required": ["path"]}]}, "properties": {"runner": {"const": "pybert_core_rust"}, "external_contract": {"oneOf": [{"const": {"kind": "wire_schema_id", "value": "pybert.simulation.v1"}}, {"const": {"kind": "embedded_type", "value": "PyBERT RunEventV1"}}]}, "origin": {"properties": {"kind": {"const": "authoritative_external"}}}}},
         {"required": ["external_contract", "runner", "probe"], "not": {"anyOf": [{"required": ["schema_id"]}, {"required": ["path"]}]}, "properties": {"runner": {"const": "agent_com_python"}, "external_contract": {"const": {"kind": "embedded_type", "value": "agent-com ProgressEvent"}}, "origin": {"properties": {"kind": {"const": "authoritative_external"}}}}}
+        ,{"required": ["external_contract", "runner", "probe"], "not": {"anyOf": [{"required": ["schema_id"]}, {"required": ["path"]}]}, "properties": {"runner": {"const": "agent_com_result_python"}, "external_contract": {"const": {"kind": "legacy_document", "value": "agent-com result v1"}}, "origin": {"properties": {"kind": {"const": "authoritative_external"}}}}}
       ],
       "properties": {
         "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]+$"},
         "schema_id": {"type": "string", "minLength": 1},
         "external_contract": {"type": "object", "required": ["kind", "value"], "properties": {"kind": {"enum": ["wire_schema_id", "embedded_type", "legacy_document"]}, "value": {"type": "string", "minLength": 1}}, "additionalProperties": false},
-        "runner": {"enum": ["local", "pybert_core_rust", "agent_com_python"]},
+        "runner": {"enum": ["local", "pybert_core_rust", "agent_com_python", "agent_com_result_python"]},
         "probe": {"type": "string", "minLength": 1},
         "entrypoint": {"type": "string", "minLength": 1},
         "mode": {"enum": ["producer", "consumer"]},

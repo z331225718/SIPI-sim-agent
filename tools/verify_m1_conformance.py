@@ -122,6 +122,31 @@ def _agent_com_results(cases: list[dict], failures: list[str]) -> tuple[dict[str
     return ({case["id"]: {**probes.get(case["probe"], {}), "id": case["id"]} for case in cases}, output.get("observed_source_snapshot", {}))
 
 
+def _agent_com_result_results(cases: list[dict], failures: list[str]) -> tuple[dict[str, dict], dict]:
+    output = _json_output([str(PYTHON), "-B", "tests/contract/run_agent_com_result_probe.py"])
+    if output.get("runner") != "agent_com_result_python":
+        failures.append("agent_com_result_python:runner")
+    if output.get("python_version") != "3.12.13":
+        failures.append("agent_com_result_python:python_version")
+    authority = json.loads((ROOT / "schemas" / "authority.v1.yaml").read_text(encoding="utf-8"))
+    snapshot = json.loads((ROOT / authority["source_snapshot_ref"]).read_text(encoding="utf-8"))
+    repository = next(item for item in snapshot["repositories"] if item["id"] == "agent-com")
+    expected_snapshot = {"repository": repository["id"], "revision": repository["head"], "tree": repository["tree"]}
+    if output.get("observed_source_snapshot") != expected_snapshot:
+        failures.append("agent_com_result_python:source_snapshot")
+    expected_contract = {"kind": "legacy_document", "value": "agent-com result v1"}
+    if any(case.get("external_contract") != expected_contract for case in cases):
+        failures.append("agent_com_result_python:contract_binding")
+    results = output.get("results", [])
+    probes = {result.get("probe"): result for result in results}
+    lineage = ("result_v1.producer_json", "result_v1.consumer_validates", "result_v1.consumer.version_rejects")
+    if len(probes) != len(results) or {case["probe"] for case in cases} != set(lineage) or set(probes) != set(lineage):
+        failures.append("agent_com_result_python:result_set_mismatch")
+    if not _payload_lineage(probes, *lineage):
+        failures.append("agent_com_result_python:payload_hash_lineage")
+    return ({case["id"]: {**probes.get(case["probe"], {}), "id": case["id"]} for case in cases}, output.get("observed_source_snapshot", {}))
+
+
 def main() -> int:
     suite = json.loads((FIXTURES / "suite.json").read_text(encoding="utf-8"))
     if not PYTHON.is_file():
@@ -144,6 +169,10 @@ def main() -> int:
     if agent_com_cases:
         agent_com_results, external_snapshots["agent_com_python"] = _agent_com_results(agent_com_cases, failures)
         language_results["python"].update(agent_com_results)
+    agent_com_result_cases = [case for case in suite["cases"] if case.get("runner") == "agent_com_result_python"]
+    if agent_com_result_cases:
+        result_cases, external_snapshots["agent_com_result_python"] = _agent_com_result_results(agent_com_result_cases, failures)
+        language_results["python"].update(result_cases)
     for case_id, case in expected.items():
         for language in case["required_languages"]:
             result = language_results[language].get(case_id, {})
