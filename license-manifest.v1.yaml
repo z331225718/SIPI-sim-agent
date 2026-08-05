@@ -1,0 +1,113 @@
+schema: sipi.license-manifest.v1
+captured_at_utc: 2026-08-05T04:48:18Z
+status: provisional_classification_with_open_owners
+default_distribution_status: blocked_unknown
+source_snapshots:
+  - {root_ref: agent-spice, head: 90f0374bc9987e9197d4dcaa3912432fbd766a5e, tree: b5db1cb9a1a989459dffe7db885790abeaf47290}
+  - {root_ref: pybert, head: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe, tree: 5faef6bdb341d444ad65d82a11c0018b15805e24}
+  - {root_ref: agent-com, head: 034b21b2f293b2ef97cb8be269b1bf2be38e0086, tree: dc6e5529612d7272f23547a796b53e1456cc49cb}
+policy:
+  valid_distribution_statuses: [authorized_public, authorized_private, external_reference_only, blocked_unknown]
+  default_action: inventory_only
+  public_bundle_requires_compliance_complete: true
+  source_migration_requires_compliance_complete: true
+  reject_applies_to_actions: [private_consume, public_bundle, source_migration, user_allowlist_in_place_validation]
+  reject_when: [missing_subject, uncovered_path, unresolved_owner, scope_overlap_without_precedence, unknown_status, authorized_without_formal_evidence, evidence_hash_mismatch, missing_notice, compliance_incomplete_for_public_or_migration, fixture_manifest_mismatch]
+  actions:
+    authorized_public: [private_consume, public_bundle, source_migration]
+    authorized_private: [private_consume]
+    external_reference_only: [user_allowlist_in_place_validation]
+    blocked_unknown: [inventory_only]
+subjects:
+  - id: agent-spice-top-level-source
+    subject_type: source
+    scope: {root_ref: agent-spice, paths: [src, native/AgentSpice.Engine, docs, tests], exclusions: [native/agent-spice-sim, third_party]}
+    fixture_refs: [agent-spice-python-fixtures, agent-spice-native-fixtures, agent-spice-sparam-benchmarks]
+    license_declaration: NOASSERTION
+    evidence_refs: []
+    distribution_status: blocked_unknown
+    compliance: {state: blocked, notice: unknown}
+    owners: {asset_owner: agent-spice-maintainer, license_decision_owner: pending_external_authorization, gate_owner: sipi-release-gate}
+    required_by: [G0b, G0c]
+    status_reason: top-level formal license text is absent
+  - id: agent-spice-rust-crate
+    subject_type: source
+    scope: {root_ref: agent-spice, paths: [native/agent-spice-sim], exclusions: []}
+    fixture_refs: []
+    license_declaration: MIT-declared-in-Cargo-toml
+    evidence_refs: [{type: package_metadata_declaration, path: native/agent-spice-sim/Cargo.toml, sha256: CFE5A26135CA60889C3662365BA4B3FF05C3081E2D3B2875BE32EE1A6131843C}]
+    distribution_status: blocked_unknown
+    compliance: {state: blocked, notice: canonical_MIT_text_and_scope_confirmation_missing}
+    owners: {asset_owner: agent-spice-maintainer, license_decision_owner: pending_external_authorization, gate_owner: sipi-release-gate}
+    required_by: [G0b, G0c]
+    status_reason: metadata declaration is not a verified scope authorization
+  - id: agent-spice-third-party
+    subject_type: third_party_component
+    scope: {root_ref: agent-spice, paths: [third_party], exclusions: []}
+    fixture_refs: [agent-spice-third-party-solver-material]
+    license_declaration: NOASSERTION
+    evidence_refs: []
+    distribution_status: blocked_unknown
+    compliance: {state: blocked, notice: component_level_notices_unclassified}
+    owners: {asset_owner: third-party-compliance-owner, license_decision_owner: pending_external_authorization, gate_owner: sipi-release-gate}
+    required_by: [G0b, G0c]
+    status_reason: solver packages and shims require per-component classification
+  - id: agent-com-source
+    subject_type: source
+    scope: {root_ref: agent-com, paths: [src, tests, tools, docs, schemas], exclusions: [matlab_src, fixtures, benchmarks, artifacts]}
+    fixture_refs: []
+    license_declaration: NOASSERTION
+    evidence_refs: []
+    distribution_status: blocked_unknown
+    compliance: {state: blocked, notice: unknown}
+    owners: {asset_owner: agent-com-maintainer, license_decision_owner: pending_external_authorization, gate_owner: sipi-release-gate}
+    required_by: [G0b, G0c]
+    status_reason: top-level formal license text is absent
+  - id: agent-com-data-and-oracles
+    subject_type: data
+    scope: {root_ref: agent-com, paths: [matlab_src, fixtures, benchmarks, artifacts], exclusions: []}
+    fixture_refs: [agent-com-matlab-source-and-workbooks, agent-com-synthetic-sparameter-fixtures, agent-com-benchmarks-and-images, agent-com-local-partial-matlab-oracle, agent-com-authoritative-matlab-golden]
+    license_declaration: NOASSERTION
+    evidence_refs: [{type: internal_decision_not_authorization, path: docs/data-license-decision.md, sha256: D88310F3A5EBAF123EEBB47966881978CB7107DBB6C9133B1102DAB95CCD7D6E}]
+    distribution_status: blocked_unknown
+    compliance: {state: blocked, notice: provenance_and_formal_authorization_missing}
+    owners: {asset_owner: agent-com-maintainer, license_decision_owner: pending_external_authorization, gate_owner: sipi-release-gate}
+    required_by: [G0b, G0c, G4]
+    status_reason: internal data-license decision cannot authorize redistribution
+  - id: pybert-main-source
+    subject_type: source
+    scope: {root_ref: pybert, paths: [src, tests, docs], exclusions: [PyAMI, models, user_input]}
+    fixture_refs: []
+    license_declaration: BSD-3-Clause
+    evidence_refs: [{type: formal_license_text, path: LICENSE, sha256: 6E16DB067FB59CA65AF720444EAE3C89F2B9F4A517AA61DD35B8499ADA7590DE}]
+    distribution_status: blocked_unknown
+    compliance: {state: pending, notice: retain the complete LicenseRef-PyAMI-two-clause-text copyright, conditions and disclaimer}
+    owners: {asset_owner: pybert-maintainer, license_decision_owner: pybert-license-owner, gate_owner: sipi-release-gate}
+    required_by: [G0b, G0c]
+    status_reason: formal text is present, but mixed source, test and fixture scope requires explicit coverage before public authorization
+  - id: pybert-pyami-source
+    subject_type: source
+    scope: {root_ref: pybert, paths: [PyAMI], exclusions: [PyAMI/models, PyAMI/tests/examples/example_tx_x86_amd64.dll]}
+    fixture_refs: []
+    license_declaration: LicenseRef-PyAMI-two-clause-text
+    evidence_refs: [{type: formal_license_text, path: PyAMI/LICENSE, sha256: 23924FA493841DC61364E4462DB1DD6BA830E2EBB211E04174E970F59560513C}]
+    distribution_status: blocked_unknown
+    compliance: {state: pending, notice: retain the complete LicenseRef-PyAMI-two-clause-text copyright, conditions and disclaimer}
+    owners: {asset_owner: pybert-maintainer, license_decision_owner: pybert-license-owner, gate_owner: sipi-release-gate}
+    required_by: [G0b, G0c]
+    status_reason: formal text is present but is not BSD-3-Clause; model and binary assets are excluded pending separate classification
+open_authorizations:
+  - {subject_id: agent-spice-top-level-source, owner: pending_external_authorization, required_evidence: rights-holder license or scoped written authorization}
+  - {subject_id: agent-com-source, owner: pending_external_authorization, required_evidence: rights-holder license or scoped written authorization}
+  - {subject_id: agent-com-data-and-oracles, owner: pending_external_authorization, required_evidence: data provenance and distribution authorization}
+  - {subject_id: agent-spice-third-party, owner: third-party-compliance-owner, required_evidence: per-component license and notice inventory}
+  - {subject_id: agent-spice-rust-crate, owner: pending_external_authorization, required_evidence: canonical MIT text and scope confirmation}
+open_classification:
+  - {subject_id: agent-com-data-and-oracles, paths: [benchmarks, matlab_src, fixtures, artifacts], owner: pending_scope_owner, reason: covered only as a blocked aggregate and requires source/workbook/corpus/oracle splitting}
+  - {subject_id: pybert-main-source, paths: [docs/golden_cases, src/pybert/gui/images], owner: pending_scope_owner, reason: covered only as a blocked aggregate and requires fixture/image splitting}
+uncovered_paths:
+  - {root_ref: agent-spice, paths: [benchmarks, pdn_analysis_output, user_input, scripts, configs], owner: pending_scope_owner, reason: candidate data and configuration paths lack a subject scope}
+  - {root_ref: pybert, paths: [models, user_input, .ads_phase1_run, .phase1b, PyAMI/tests/examples/example_tx_x86_amd64.dll], owner: pending_scope_owner, reason: models, private corpus and binary assets lack a subject scope}
+non_claims:
+  - Package metadata, README statements, successful execution, local tool availability and internal decisions do not authorize redistribution.
+  - This provisional manifest does not close M0-09, G0b or G0c.
