@@ -96,6 +96,32 @@ def _pybert_results(cases: list[dict], failures: list[str]) -> tuple[dict[str, d
     return ({case["id"]: {**probes.get(case["probe"], {}), "id": case["id"]} for case in cases}, output.get("observed_source_snapshot", {}))
 
 
+def _agent_com_results(cases: list[dict], failures: list[str]) -> tuple[dict[str, dict], dict]:
+    output = _json_output([str(PYTHON), "-B", "tests/contract/run_agent_com_progress_probe.py"])
+    if output.get("runner") != "agent_com_python":
+        failures.append("agent_com_python:runner")
+    if output.get("python_version") != "3.12.13":
+        failures.append("agent_com_python:python_version")
+    authority = json.loads((ROOT / "schemas" / "authority.v1.yaml").read_text(encoding="utf-8"))
+    snapshot = json.loads((ROOT / authority["source_snapshot_ref"]).read_text(encoding="utf-8"))
+    repository = next(item for item in snapshot["repositories"] if item["id"] == "agent-com")
+    expected_snapshot = {"repository": repository["id"], "revision": repository["head"], "tree": repository["tree"]}
+    if output.get("observed_source_snapshot") != expected_snapshot:
+        failures.append("agent_com_python:source_snapshot")
+    results = output.get("results", [])
+    probes = {result.get("probe"): result for result in results}
+    expected_probes = {case["probe"] for case in cases}
+    expected_contract = {"kind": "embedded_type", "value": "agent-com ProgressEvent"}
+    if any(case.get("external_contract") != expected_contract for case in cases):
+        failures.append("agent_com_python:contract_binding")
+    if len(probes) != len(results) or set(probes) != expected_probes:
+        failures.append("agent_com_python:result_set_mismatch")
+    lineage = ("progress_event.producer_jsonl", "progress_event.consumer_deserializes", "progress_event.consumer.schema_rejects")
+    if expected_probes != set(lineage) or not _payload_lineage(probes, *lineage):
+        failures.append("agent_com_python:progress_event:payload_hash_lineage")
+    return ({case["id"]: {**probes.get(case["probe"], {}), "id": case["id"]} for case in cases}, output.get("observed_source_snapshot", {}))
+
+
 def main() -> int:
     suite = json.loads((FIXTURES / "suite.json").read_text(encoding="utf-8"))
     if not PYTHON.is_file():
@@ -114,6 +140,10 @@ def main() -> int:
     if pybert_cases:
         pybert_results, external_snapshots["pybert_core_rust"] = _pybert_results(pybert_cases, failures)
         language_results["rust"].update(pybert_results)
+    agent_com_cases = [case for case in suite["cases"] if case.get("runner") == "agent_com_python"]
+    if agent_com_cases:
+        agent_com_results, external_snapshots["agent_com_python"] = _agent_com_results(agent_com_cases, failures)
+        language_results["python"].update(agent_com_results)
     for case_id, case in expected.items():
         for language in case["required_languages"]:
             result = language_results[language].get(case_id, {})

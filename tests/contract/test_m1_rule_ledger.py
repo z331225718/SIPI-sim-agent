@@ -66,6 +66,13 @@ class SuiteRoutingTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             self.validator.validate(suite)
 
+    def test_agent_com_runner_cannot_claim_another_external_contract(self):
+        suite = deepcopy(self.suite)
+        case = next(item for item in suite["cases"] if item["id"] == "external.agent-com-progress.producer.accept")
+        case["external_contract"] = {"kind": "legacy_document", "value": "agent-com behavior registry"}
+        with self.assertRaises(ValidationError):
+            self.validator.validate(suite)
+
 
 class ExternalProbeLineageTests(unittest.TestCase):
     def test_run_event_rejection_requires_derived_payload(self):
