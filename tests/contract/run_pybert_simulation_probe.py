@@ -66,6 +66,7 @@ def main() -> int:
         if f"{test_name} ... ok" not in canary or "1 passed" not in canary:
             raise RuntimeError(f"pybert_canary_not_executed:{test_name}")
     output = _output([str(RUSTUP), "run", TOOLCHAIN, "cargo", "run", "--locked", "--quiet", "--manifest-path", str(PROBE)])
+    _assert_pinned_source(source, repository)
     result = json.loads(output.splitlines()[-1])
     result["observed_source_snapshot"] = {"repository": repository["id"], "revision": repository["head"], "tree": repository["tree"]}
     print(json.dumps(result, sort_keys=True))
