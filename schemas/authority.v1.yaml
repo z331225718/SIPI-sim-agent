@@ -255,8 +255,8 @@
         "planned:PythonProjectExecutionRecordV1"
       ],
       "conformance": {
-        "producer": "planned:M1-06",
-        "consumer": "planned:M1-06"
+        "producer": "planned:M1-07",
+        "consumer": "planned:M1-07"
       },
       "deprecation": "none"
     },
@@ -278,8 +278,8 @@
         "planned:PythonDagNodeRecordV1"
       ],
       "conformance": {
-        "producer": "planned:M1-06",
-        "consumer": "planned:M1-06"
+        "producer": "planned:M1-07",
+        "consumer": "planned:M1-07"
       },
       "deprecation": "none"
     },
@@ -301,8 +301,8 @@
         "planned:PythonRunRecordV1"
       ],
       "conformance": {
-        "producer": "planned:M1-06",
-        "consumer": "planned:M1-06"
+        "producer": "planned:M1-07",
+        "consumer": "planned:M1-07"
       },
       "deprecation": "none"
     },
@@ -324,8 +324,8 @@
         "planned:PythonSuccessManifestV1"
       ],
       "conformance": {
-        "producer": "planned:M1-06",
-        "consumer": "planned:M1-06"
+        "producer": "planned:M1-07",
+        "consumer": "planned:M1-07"
       },
       "deprecation": "none"
     },
@@ -347,8 +347,8 @@
         "planned:PythonEngineLockV1"
       ],
       "conformance": {
-        "producer": "planned:M1-06",
-        "consumer": "planned:M1-06"
+        "producer": "planned:M1-08",
+        "consumer": "planned:M1-08"
       },
       "deprecation": "none"
     },

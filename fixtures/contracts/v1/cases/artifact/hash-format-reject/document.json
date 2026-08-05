@@ -1,0 +1,1 @@
+{"schema":"sipi.artifact-ref.v1","content_schema":"fixture.output.v1","relative_path":"artifacts/result.json","mime_type":"application/json","sha256":"not-a-sha","byte_length":1,"producer":"fixture.adapter","role":"result","extensions":{}}

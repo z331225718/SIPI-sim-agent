@@ -1,0 +1,1 @@
+{"schema":"sipi.artifact-ref.v1","content_schema":"fixture.output.v1","relative_path":"artifacts/result.bin","mime_type":"application/octet-stream","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","byte_length":2,"producer":"fixture.adapter","role":"result","extensions":{}}

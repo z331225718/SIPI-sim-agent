@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Test-only conformance manifest; it is not a public SIPI contract schema.",
+  "type": "object",
+  "required": ["suite", "version", "status", "coverage", "cases"],
+  "properties": {
+    "suite": {"const": "sipi.contract-conformance.v1"},
+    "version": {"const": 1},
+    "status": {"enum": ["incremental_partial", "complete"]},
+    "coverage": {"type": "object", "required": ["implemented_layers", "not_covered"], "properties": {"implemented_layers": {"type": "object"}, "not_covered": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": false},
+    "cases": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/case"}}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "case": {
+      "type": "object",
+      "required": ["id", "schema_id", "entrypoint", "mode", "path", "expect", "required_languages", "origin"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]+$"},
+        "schema_id": {"type": "string", "minLength": 1},
+        "entrypoint": {"enum": ["run_request", "run_result", "backend_request", "backend_result", "event", "artifact", "artifact_integrity", "provenance", "capabilities", "validation_report", "resource_slice"]},
+        "mode": {"enum": ["producer", "consumer"]},
+        "path": {"type": "string", "pattern": "^cases/[a-z0-9.-]+/[a-z0-9.-]+$"},
+        "expect": {"type": "object", "required": ["decision", "phase"], "properties": {"decision": {"enum": ["accept", "reject"]}, "phase": {"enum": ["json", "schema", "semantic", "relation", "integrity"]}, "preserve": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": false},
+        "required_languages": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["python", "rust"]}},
+        "origin": {"type": "object", "required": ["kind", "source_ref"], "properties": {"kind": {"const": "synthetic_contract"}, "source_ref": {"type": "string", "minLength": 1}}, "additionalProperties": false},
+        "deferred_to": {"type": "string", "enum": ["M1-07", "M1-08"]}
+      },
+      "additionalProperties": false
+    }
+  }
+}
