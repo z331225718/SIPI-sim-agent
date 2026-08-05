@@ -5,6 +5,7 @@ from typing import Any
 
 from ..errors import ContractViolation
 from .registry import validate_definition, validate_wire
+from .paths import portable_artifact_path_key
 
 
 RESOURCE_FIELDS = ("wall_time_s", "cpu_time_s", "memory_bytes", "process_count", "artifact_bytes")
@@ -13,6 +14,7 @@ PROVENANCE_FIELDS = {"producers", "request", "environment", "randomness", "polic
 PRODUCER_FIELDS = {"id", "kind", "name", "version", "commit", "build_profile", "dirty", "bundle_hash", "parent_ids"}
 REQUIRED_PRODUCER_KINDS = {"platform", "adapter", "engine", "algorithm"}
 PROVENANCE_SCHEMA_ID = "sipi.run-result.v1#/provenance"
+_ATTEMPT_CONTROL_PATHS = {"success-manifest.json", "checksums.json", "run-record.json"}
 
 
 def _violation(schema_id: str, code: str, message: str, pointer: str = "") -> None:
@@ -47,6 +49,55 @@ def validate_artifact_collection(values: list[Mapping[str, Any]], *, producer: b
         _violation("sipi.artifact-ref.v1", "duplicate_path", "duplicate artifact relative path")
     for item in values:
         validate_artifact_ref(item, producer=producer, provenance=provenance)
+
+
+def _validate_publishable_artifact_collection(values: list[Mapping[str, Any]]) -> None:
+    paths = [portable_artifact_path_key(item["relative_path"]) for item in values]
+    if len(paths) != len(set(paths)):
+        _violation("sipi.artifact-ref.v1", "duplicate_path", "duplicate portable artifact relative path")
+
+
+def _validate_no_control_artifacts(values: list[Mapping[str, Any]], schema_id: str) -> None:
+    paths = {portable_artifact_path_key(artifact["relative_path"]) for artifact in values}
+    if _ATTEMPT_CONTROL_PATHS & paths:
+        _violation(schema_id, "control_artifact", "artifacts cannot include attempt control files")
+
+
+def validate_run_record_intrinsic(value: Mapping[str, Any]) -> None:
+    validate_wire("run-record.v1.schema.json", value)
+    if value["status"] == "succeeded":
+        if value["error"] is not None:
+            _violation("sipi.run-record.v1", "terminal_state", "succeeded record cannot contain an error")
+    else:
+        error = value["error"]
+        assert isinstance(error, Mapping)
+        validate_platform_error(error)
+        if value["status"] == "cancelled" and error["category"] != "Cancelled":
+            _violation("sipi.run-record.v1", "terminal_state", "cancelled record requires Cancelled")
+        if value["status"] == "failed" and error["category"] == "Cancelled":
+            _violation("sipi.run-record.v1", "terminal_state", "failed record cannot use Cancelled")
+    validate_artifact_collection(value["artifacts"])
+    _validate_publishable_artifact_collection(value["artifacts"])
+    _validate_no_control_artifacts(value["artifacts"], "sipi.run-record.v1")
+
+
+def validate_success_manifest_intrinsic(value: Mapping[str, Any]) -> None:
+    validate_wire("success-manifest.v1.schema.json", value)
+    validate_artifact_collection(value["artifacts"])
+    _validate_publishable_artifact_collection(value["artifacts"])
+    _validate_no_control_artifacts(value["artifacts"], "sipi.success-manifest.v1")
+
+
+def validate_success_manifest_relation(run_record: Mapping[str, Any], manifest: Mapping[str, Any]) -> None:
+    validate_run_record_intrinsic(run_record)
+    validate_success_manifest_intrinsic(manifest)
+    if run_record["status"] != "succeeded":
+        _violation("sipi.success-manifest.v1", "terminal_state", "only succeeded run records can publish success manifests")
+    if tuple(run_record[field] for field in ("run_id", "analysis_id", "attempt_id")) != tuple(manifest[field] for field in ("run_id", "analysis_id", "attempt_id")):
+        _violation("sipi.success-manifest.v1", "identity", "manifest identity must match run record")
+    by_path = lambda artifacts: {portable_artifact_path_key(artifact["relative_path"]): artifact for artifact in artifacts}
+    if by_path(run_record["artifacts"]) != by_path(manifest["artifacts"]):
+        _violation("sipi.success-manifest.v1", "artifact_set", "manifest artifacts must equal the succeeded run record artifacts")
 
 
 def validate_provenance(value: Mapping[str, Any], *, producer: bool = True) -> None:

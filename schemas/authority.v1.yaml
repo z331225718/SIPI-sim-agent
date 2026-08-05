@@ -289,8 +289,7 @@
       "lifecycle": "reserved_unpublished",
       "definition_owner": "sipi-runtime+sipi-contracts",
       "source_of_truth": {
-        "kind": "planned_definition",
-        "task": "M1-07",
+        "kind": "local_json_schema",
         "path": "schemas/run-record.v1.schema.json"
       },
       "exposure": "not_public",
@@ -298,7 +297,7 @@
       "compatibility_policy": "none_until_published",
       "platform_role": "record",
       "bindings": [
-        "planned:PythonRunRecordV1"
+        "python"
       ],
       "conformance": {
         "producer": "planned:M1-07",
@@ -312,8 +311,7 @@
       "lifecycle": "reserved_unpublished",
       "definition_owner": "sipi-artifacts+sipi-contracts",
       "source_of_truth": {
-        "kind": "planned_definition",
-        "task": "M1-07",
+        "kind": "local_json_schema",
         "path": "schemas/success-manifest.v1.schema.json"
       },
       "exposure": "not_public",
@@ -321,7 +319,7 @@
       "compatibility_policy": "none_until_published",
       "platform_role": "manifest",
       "bindings": [
-        "planned:PythonSuccessManifestV1"
+        "python"
       ],
       "conformance": {
         "producer": "planned:M1-07",

@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "packages" / "sipi-contracts" / "src"))
 
 import sipi_contracts
-from sipi_contracts import ContractViolation, RunRequestV1, parse_artifact_ref, parse_engine_capabilities, parse_provenance, parse_run_request, parse_run_result
+from sipi_contracts import ContractViolation, RunRequestV1, parse_artifact_ref, parse_engine_capabilities, parse_provenance, parse_run_record, parse_run_request, parse_run_result, parse_success_manifest, validate_success_manifest_relation
 from sipi_contracts.models import parse_capability_baseline, validate_run_result
 from sipi_contracts.validation import resolve_artifact_path, validate_event
 
@@ -34,6 +34,20 @@ def provenance():
 
 def result(req):
     return {"schema":"sipi.run-result.v1","run_id":req["run_id"],"analysis_id":req["analysis_id"],"attempt_id":req["attempt_id"],"operation":req["operation"],"payload_schema":req["payload_schema"],"status":"succeeded","selection_requested":req["backend_selection"],"backend_executions":[{"backend_execution_id":"backend-1","role":"primary","engine_instance_id":"pybert-python","bundle_hash":"sha256:bundle","status":"succeeded","domain_result_schema":"pybert.simulation.v1","artifacts":[artifact()],"error":None}],"fallback_trace":[],"comparison":{},"metrics_summary":{},"artifacts":[],"events":[],"warnings":[],"provenance":provenance(),"timings":{},"resource_usage":{"actual_enforcement":{"wall_time_s":"unsupported","cpu_time_s":"unsupported","memory_bytes":"unsupported","process_count":"unsupported","artifact_bytes":"unsupported"}},"error":None,"extensions":{}}
+
+
+def platform_error(category="ExternalModelFailure"):
+    return {"category":category,"message":"fixture failure","resource":None,"cause":None,"details":{}}
+
+
+def run_record(*, status="succeeded", artifacts=None, error=None):
+    if error is None and status != "succeeded":
+        error=platform_error("Cancelled" if status == "cancelled" else "ExternalModelFailure")
+    return {"schema":"sipi.run-record.v1","run_id":"run-1","analysis_id":"analysis-1","attempt_id":"attempt-1","status":status,"operation":"link.simulate.v1","payload_schema":"pybert.simulation.v1","artifacts":artifacts if artifacts is not None else [artifact()],"error":error,"extensions":{}}
+
+
+def success_manifest(*, artifacts=None):
+    return {"schema":"sipi.success-manifest.v1","run_id":"run-1","analysis_id":"analysis-1","attempt_id":"attempt-1","run_record_sha256":"b"*64,"checksums_sha256":"c"*64,"artifacts":artifacts if artifacts is not None else [artifact()],"extensions":{}}
 
 
 class ImmutableModelTests(unittest.TestCase):
@@ -154,6 +168,54 @@ class ImmutableModelTests(unittest.TestCase):
                 self.skipTest("symlink creation is unavailable")
             with self.assertRaisesRegex(ContractViolation, "outside"):
                 resolve_artifact_path(root, artifact(relative_path="safe/linked.json"), must_exist=True)
+
+
+class RunRecordContractTests(unittest.TestCase):
+    def test_terminal_statuses_require_consistent_platform_errors(self):
+        for status in ("succeeded", "failed", "cancelled"):
+            parse_run_record(run_record(status=status))
+        with self.assertRaises(ContractViolation):
+            parse_run_record(run_record(status="blocked"))
+        with self.assertRaises(ContractViolation):
+            parse_run_record(run_record(status="succeeded", error=platform_error()))
+        with self.assertRaises(ContractViolation):
+            parse_run_record(run_record(status="cancelled", error=platform_error()))
+        with self.assertRaises(ContractViolation):
+            parse_run_record(run_record(status="failed", error=platform_error("Cancelled")))
+
+    def test_attempt_control_artifacts_and_portable_aliases_are_rejected(self):
+        for control in ("run-record.json", "checksums.json", "SUCCESS-MANIFEST.JSON", "checksums.json."):
+            control_artifact = artifact(relative_path=control)
+            with self.assertRaises(ContractViolation):
+                parse_run_record(run_record(artifacts=[control_artifact]))
+            with self.assertRaises(ContractViolation):
+                parse_success_manifest(success_manifest(artifacts=[control_artifact]))
+        parse_artifact_ref(artifact(relative_path="reports/con.txt"))
+        with self.assertRaises(ContractViolation):
+            parse_run_record(run_record(artifacts=[artifact(relative_path="reports/con.txt")]))
+        aliases = [artifact(relative_path="reports/result.json"), artifact(relative_path="reports/RESULT.JSON")]
+        with self.assertRaises(ContractViolation):
+            parse_run_record(run_record(artifacts=aliases))
+
+    def test_success_manifest_relation_is_identity_and_order_independent(self):
+        artifacts = [artifact(relative_path="reports/a.json"), artifact(relative_path="reports/b.json", sha256="b" * 64)]
+        record = parse_run_record(run_record(artifacts=artifacts))
+        manifest = parse_success_manifest(success_manifest(artifacts=list(reversed(artifacts))))
+        validate_success_manifest_relation(record, manifest)
+
+        divergent = manifest.to_wire()
+        divergent["artifacts"][0]["sha256"] = "d" * 64
+        with self.assertRaises(ContractViolation):
+            validate_success_manifest_relation(record, parse_success_manifest(divergent))
+
+        wrong_identity = manifest.to_wire()
+        wrong_identity["attempt_id"] = "attempt-2"
+        with self.assertRaises(ContractViolation):
+            validate_success_manifest_relation(record, parse_success_manifest(wrong_identity))
+
+        failed = parse_run_record(run_record(status="failed", artifacts=artifacts))
+        with self.assertRaises(ContractViolation):
+            validate_success_manifest_relation(failed, manifest)
 
 
 if __name__ == "__main__":

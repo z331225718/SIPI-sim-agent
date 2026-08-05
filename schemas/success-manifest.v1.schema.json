@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sipi.success-manifest.v1",
+  "type": "object",
+  "required": ["schema", "run_id", "analysis_id", "attempt_id", "run_record_sha256", "checksums_sha256", "artifacts", "extensions"],
+  "properties": {
+    "schema": {"const": "sipi.success-manifest.v1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "analysis_id": {"type": "string", "minLength": 1},
+    "attempt_id": {"type": "string", "minLength": 1},
+    "run_record_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "checksums_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "artifacts": {"type": "array", "items": {"$ref": "artifact-ref.v1.schema.json"}},
+    "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+  },
+  "additionalProperties": false
+}

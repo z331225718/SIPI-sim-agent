@@ -19,6 +19,9 @@ from .validation.relations import (
     validate_capabilities,
     validate_capability_baseline,
     validate_validation_report_intrinsic,
+    validate_run_record_intrinsic,
+    validate_success_manifest_intrinsic,
+    validate_success_manifest_relation as validate_success_manifest_relation_wire,
 )
 from .validation.registry import schema_id_for, validate_wire
 
@@ -113,6 +116,18 @@ class SipiArtifactRefV1(ContractModel):
 
 
 @dataclass(frozen=True, slots=True, init=False)
+class RunRecordV1(ContractModel):
+    schema_name = "run-record.v1.schema.json"
+    known_fields = frozenset({"schema", "run_id", "analysis_id", "attempt_id", "status", "operation", "payload_schema", "artifacts", "error", "extensions"})
+
+
+@dataclass(frozen=True, slots=True, init=False)
+class SuccessManifestV1(ContractModel):
+    schema_name = "success-manifest.v1.schema.json"
+    known_fields = frozenset({"schema", "run_id", "analysis_id", "attempt_id", "run_record_sha256", "checksums_sha256", "artifacts", "extensions"})
+
+
+@dataclass(frozen=True, slots=True, init=False)
 class ProvenanceV1(ContractModel):
     schema_name = "_defs/provenance.v1.schema.json"
     known_fields = frozenset({"producers", "request", "environment", "randomness", "policies", "extensions"})
@@ -176,6 +191,22 @@ def parse_artifact_ref(value: str | Mapping[str, Any], *, producer: bool = False
     data = _mapping(value, SipiArtifactRefV1.schema_name)
     validate_artifact_ref(data, producer=producer)
     return _parse(SipiArtifactRefV1, data)  # type: ignore[return-value]
+
+
+def parse_run_record(value: str | Mapping[str, Any]) -> RunRecordV1:
+    data = _mapping(value, RunRecordV1.schema_name)
+    validate_run_record_intrinsic(data)
+    return _parse(RunRecordV1, data)  # type: ignore[return-value]
+
+
+def parse_success_manifest(value: str | Mapping[str, Any]) -> SuccessManifestV1:
+    data = _mapping(value, SuccessManifestV1.schema_name)
+    validate_success_manifest_intrinsic(data)
+    return _parse(SuccessManifestV1, data)  # type: ignore[return-value]
+
+
+def validate_success_manifest_relation(run_record: RunRecordV1, manifest: SuccessManifestV1) -> None:
+    validate_success_manifest_relation_wire(run_record.to_wire(), manifest.to_wire())
 
 
 def parse_provenance(value: str | Mapping[str, Any], *, producer: bool = False) -> ProvenanceV1:
