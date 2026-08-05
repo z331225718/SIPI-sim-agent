@@ -1,0 +1,77 @@
+{
+  "schema": "sipi.engine-baseline.v1",
+  "engine": "pybert",
+  "source": {
+    "head": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24",
+    "seed_scratch": "C:/Users/z3312/code/SIPI-m0-scratch/pybert-5bf6d7e",
+    "run_scratch": "C:/Users/z3312/code/SIPI-m0-scratch/pybert-m0-05-run-5bf6d7e",
+    "index_scratch": "C:/Users/z3312/code/SIPI-m0-scratch/pybert-m0-05-index-5bf6d7e"
+  },
+  "evidence_root": "C:/Users/z3312/code/SIPI-m0-scratch/pybert-m0-05-evidence-5bf6d7e",
+  "environment": {
+    "python": "3.12.13",
+    "venv": "C:/Users/z3312/code/SIPI-m0-scratch/pybert-m0-05-venv-5bf6d7e",
+    "rust": "1.97.0-x86_64-pc-windows-msvc",
+    "maturin": "1.10.2",
+    "PYTHONNOUSERSITE": "1",
+    "PYTHONPATH": "",
+    "PYTEST_ADDOPTS": "",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "gitnexus": {
+    "command": "node <gitnexus-entry> analyze --force --index-only --name pybert-m0-05-5bf6d7e",
+    "exit_code": 0,
+    "nodes": 5354,
+    "edges": 10235,
+    "clusters": 181,
+    "flows": 300,
+    "log": "gitnexus-index.log",
+    "log_sha256": "CBA1199523CF3138EDCB6AEFD1CC7E2FED90C0FEF900328BE7636F566897CD2A",
+    "post_index_status": "clean"
+  },
+  "python": {
+    "dependency_resolution": "uv sync --frozen",
+    "uv_lock_sha256": "recorded in source-hashes.txt",
+    "sync": {"log": "uv-sync.log", "log_sha256": "4A5A975471F3FA2DEAAB0CC675E15380DD31DFE99EBB178FF2D6BD71E83A40E9"},
+    "freeze": {"command": "uv pip freeze", "log": "uv-pip-freeze.txt", "log_sha256": "EA256A3E49602D9116B110A7F13D2165BF5CA99BDC41C7408FBADB0F0957AC40"},
+    "module_provenance": {"pyibisami": "PyAMI/src/pyibisami/__init__.py", "pybert": "src/pybert/__init__.py", "log": "module-paths.log", "log_sha256": "7F5379CC8D4E8685CC967FA50E6320304EBC30B5F2E70C1029FBAC264AC73C98"},
+    "default_collect": {"command": "uv run --frozen --no-sync pytest --collect-only -q", "exit_code": 2, "collected": 337, "errors": 3, "skipped": 12, "log": "pytest-default-collect.log", "log_sha256": "2C26ABB3DB92E630D62ED2375700989C9DC51BCAB17C3ACFCBEF2D5A2176471A"},
+    "native_contract": {"command": "uv run --frozen --no-sync pytest -q tests/test_native_import.py tests/test_engine_contract.py", "exit_code": 0, "passed": 48, "log": "pytest-native-contract.log", "log_sha256": "C7EE0632356704AA2357767640540C99BA2C541B588AE1FE9AF40B6501A84106"},
+    "pyami": {"command": "uv run --frozen --no-sync pytest -q PyAMI/tests", "exit_code": 0, "passed": 16, "xfailed": 1, "log": "pytest-pyami.log", "log_sha256": "298EB2F4CA3CB6E6B30E39B858F66A732ABC2586C5EE3A326AE3D2FB8AAF78F7"},
+    "ibis_ami": {"command": "uv run --frozen --no-sync pytest -q -rs tests/test_hybrid_ami_pipeline.py tests/test_ibisami_rx_init.py tests/test_ibisami_rx_getwave.py tests/test_ibisami_rx_getwave_clocked.py", "exit_code": 0, "passed": 36, "log": "pytest-ibis-ami.log", "log_sha256": "DDBB93DFF5560DF20132B6319F22483CCC8CDB1515A57A15A98D98CC562825A0"},
+    "engine_parity": {"command": "uv run --frozen --no-sync python -m pytest -q tests/test_engine_contract.py tests/test_engine_compare.py tests/test_engine_python_backend.py tests/test_command_line.py tests/test_native_dfe.py tests/test_hybrid_ami_pipeline.py tests/test_report_engine_parity.py", "exit_code": 0, "passed": 101, "skipped": 1, "log": "pytest-engine-parity-module.log", "log_sha256": "DBBE9C3852FFC63C617B92CE8BF6B9E344A7DBFB18E89A6168DD00BAD4107111"}
+  },
+  "rust": {
+    "lock_probe": {"command": "cargo test --locked --manifest-path native/pybert-core/Cargo.toml --release", "exit_code": 101, "reason": "native/pybert-core/Cargo.lock is absent from the source commit", "log": "cargo-core-locked-probe.log", "log_sha256": "59DEF2E637E3361E0AD85953CA667EADB629D490CCC27093B310BA32C7388633"},
+    "generated_lock": {"path": "generated-pybert-core-Cargo.lock", "sha256": "9E021C575B3228465EAF5B227A0882F3C4C4BD40178EC5362A5845DD30F55715", "non_claim": "Generated in the disposable run clone; it is not source provenance."},
+    "release": {"command": "cargo test --manifest-path native/pybert-core/Cargo.toml --release", "exit_code": 0, "passed": 76, "failed": 0, "log": "cargo-core-release-clean.log", "log_sha256": "DEF7653BB050B0A35C9A36C7D3CD9D275DF47D3339CBA6389A737043ECF33A50"},
+    "locked_replay": {"command": "cargo test --locked --manifest-path native/pybert-core/Cargo.toml --release", "exit_code": 0, "log": "cargo-core-locked-replay-clean.log", "log_sha256": "7213E6BA0D44D5014DF773D1FD2E2F640D85D6F158E07C83A35FAD9A300685C6"}
+  },
+  "adapter": {
+    "build": {"command": "uv tool run --from maturin==1.10.2 maturin develop --locked --release --manifest-path native/pybert-python/Cargo.toml", "exit_code": 0, "log": "maturin-develop-retry.log", "log_sha256": "FE611611F980405165FD597F25205C06E53824E25B9250352D6AE6E63BD4FDB2"},
+    "build_info": {"build_id": "m0-05-5bf6d7e", "profile": "release", "target": "x86_64-windows", "log": "native-build-info-retry.log", "log_sha256": "DF8D5618CC444D1B14292EB3EB6A9C15715BA39886F42B70CB1B50FD0803F603"}
+  },
+  "fixtures": [
+    {"path": "models/ibisami/example_rx.ami", "sha256": "876C9653D2D038781ECE3167646C642623CFA49F8A0AA32EDD1F3B10EFF21904"},
+    {"path": "models/ibisami/example_rx.ibs", "sha256": "28156D0A578FDA44C02639DF90082F457A13A3E7E45114D23F3ADAEF21C61F7F"},
+    {"path": "models/ibisami/example_rx.dll", "sha256": "60E29F16DCFE1A40240956F0591B29F524CCC8844C4959671D0317178C1FF46C"}
+  ],
+  "known_failures": [
+    {"scope": "default pytest collection", "reason": "Windows pytest console entrypoint does not put repository root on sys.path; three scripts imports fail", "owner": "pybert", "classification": "test-discovery/launcher", "blocking": true, "blocked_scope": "bare pytest collection", "repro_lane": "python.default_collect"},
+    {"scope": "CI parity command through pytest console entrypoint", "reason": "tests/test_report_engine_parity.py cannot import scripts.report_engine_parity", "owner": "pybert", "classification": "test-discovery/launcher", "blocking": true, "blocked_scope": "Windows console-entry CI parity invocation", "repro_lane": "python.engine_parity_console"},
+    {"scope": "core --locked", "reason": "Cargo.lock is ignored and absent at the source commit", "owner": "pybert", "classification": "lock provenance", "blocking": true, "blocked_scope": "source-locked core Rust build", "repro_lane": "rust.lock_probe"}
+  ],
+  "skip_registry": [
+    {"reason": "Agent-Spice real CLI is not configured for the parity lane", "count": 1, "owner": "pybert", "blocking": true, "blocked_scope": "real Agent-Spice cross-engine parity", "repro_lane": "python.engine_parity"}
+  ],
+  "status": "provisional_baseline_collected_with_blocking_launcher_and_lock_provenance_gaps",
+  "non_claims": [
+    "This baseline does not authorize source import, capability advertisement, or release.",
+    "The evidence root is external and must be persisted by M0-08 before release use.",
+    "The successful module-form pytest lane does not make the Windows pytest console-entry failure non-blocking.",
+    "No ADS, GUI, Redis, or real Agent-Spice CLI oracle ran in this baseline."
+  ]
+}
