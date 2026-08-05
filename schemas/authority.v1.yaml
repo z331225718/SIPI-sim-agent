@@ -1,0 +1,852 @@
+{
+  "schema": "sipi.schema-authority.v1",
+  "policy": {
+    "public_platform_schema": "deny_unlisted",
+    "reserved_exposure": "not_public",
+    "external_contract_rule": "explicit_mapping_only_no_alias_or_mutation"
+  },
+  "source_snapshot_ref": "docs/baselines/source-snapshot.v1.json",
+  "schemas": [
+    {
+      "schema_id": "sipi.run-request.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M1-02",
+        "path": "schemas/run-request.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "platform_input_strict",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "run_envelope",
+      "bindings": [
+        "python",
+        "rust"
+      ],
+      "conformance": {
+        "producer": "planned:M1-06",
+        "consumer": "planned:M1-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.run-result.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M1-02",
+        "path": "schemas/run-result.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "platform_output_tolerant",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "run_envelope",
+      "bindings": [
+        "python",
+        "rust"
+      ],
+      "conformance": {
+        "producer": "planned:M1-06",
+        "consumer": "planned:M1-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.backend-execution-request.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M1-02A",
+        "path": "schemas/backend-execution-request.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "runtime_to_strict_adapter",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "adapter_spi",
+      "bindings": [
+        "python",
+        "rust"
+      ],
+      "conformance": {
+        "producer": "planned:M1-06",
+        "consumer": "planned:M1-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.backend-execution-result.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M1-02A",
+        "path": "schemas/backend-execution-result.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "strict_adapter_to_runtime",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "adapter_spi",
+      "bindings": [
+        "python",
+        "rust"
+      ],
+      "conformance": {
+        "producer": "planned:M1-06",
+        "consumer": "planned:M1-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.run-event.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M1-03",
+        "path": "schemas/run-event.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "mapped_event_output",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "event",
+      "bindings": [
+        "python",
+        "rust"
+      ],
+      "conformance": {
+        "producer": "planned:M1-06",
+        "consumer": "planned:M1-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.artifact-ref.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M1-04",
+        "path": "schemas/artifact-ref.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "mapped_artifact_output",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "artifact_reference",
+      "bindings": [
+        "python",
+        "rust"
+      ],
+      "conformance": {
+        "producer": "planned:M1-06",
+        "consumer": "planned:M1-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.project.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M3-01",
+        "path": "schemas/project.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "platform_input_strict",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "project",
+      "bindings": [
+        "python",
+        "rust"
+      ],
+      "conformance": {
+        "producer": "planned:M3-01",
+        "consumer": "planned:M3-01"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.engine-capabilities.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M1-03",
+        "path": "schemas/engine-capabilities.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "adapter_to_runtime",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "capability",
+      "bindings": [
+        "python",
+        "rust"
+      ],
+      "conformance": {
+        "producer": "planned:M1-06",
+        "consumer": "planned:M1-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.validation-report.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M1-03",
+        "path": "schemas/validation-report.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "adapter_to_runtime",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "validation",
+      "bindings": [
+        "python",
+        "rust"
+      ],
+      "conformance": {
+        "producer": "planned:M1-06",
+        "consumer": "planned:M1-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.capabilities-baseline.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "quality+sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M1-01B",
+        "path": "schemas/capabilities-baseline.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "quality_to_runtime",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "capability_baseline",
+      "bindings": [
+        "planned:PythonCapabilityBaselineV1"
+      ],
+      "conformance": {
+        "producer": "planned:M1-01B",
+        "consumer": "planned:M1-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.project-execution-record.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-runtime+sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M1-07",
+        "path": "schemas/project-execution-record.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "runtime_output",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "record",
+      "bindings": [
+        "planned:PythonProjectExecutionRecordV1"
+      ],
+      "conformance": {
+        "producer": "planned:M1-06",
+        "consumer": "planned:M1-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.dag-node-record.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-runtime+sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M1-07",
+        "path": "schemas/dag-node-record.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "runtime_output",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "record",
+      "bindings": [
+        "planned:PythonDagNodeRecordV1"
+      ],
+      "conformance": {
+        "producer": "planned:M1-06",
+        "consumer": "planned:M1-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.run-record.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-runtime+sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M1-07",
+        "path": "schemas/run-record.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "runtime_output",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "record",
+      "bindings": [
+        "planned:PythonRunRecordV1"
+      ],
+      "conformance": {
+        "producer": "planned:M1-06",
+        "consumer": "planned:M1-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.success-manifest.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-artifacts+sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M1-07",
+        "path": "schemas/success-manifest.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "success_output",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "manifest",
+      "bindings": [
+        "planned:PythonSuccessManifestV1"
+      ],
+      "conformance": {
+        "producer": "planned:M1-06",
+        "consumer": "planned:M1-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.engine-lock.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-runtime+sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M1-08",
+        "path": "schemas/engine-lock.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "runtime_input_strict",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "engine_lock",
+      "bindings": [
+        "planned:PythonEngineLockV1"
+      ],
+      "conformance": {
+        "producer": "planned:M1-06",
+        "consumer": "planned:M1-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.capabilities-certified.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "quality+release-owner",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M2-11",
+        "path": "schemas/capabilities-certified.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "quality_to_runtime",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "capability_certification",
+      "bindings": [
+        "planned:PythonCapabilityCertifiedV1"
+      ],
+      "conformance": {
+        "producer": "planned:M2-11",
+        "consumer": "planned:M2-11"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.axis.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M4-01",
+        "path": "schemas/axis.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "python_rust_bidirectional",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "dto",
+      "bindings": [
+        "planned:PythonAxisV1",
+        "planned:RustAxisV1"
+      ],
+      "conformance": {
+        "producer": "planned:M4-06",
+        "consumer": "planned:M4-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.port-map.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M4-02",
+        "path": "schemas/port-map.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "python_rust_bidirectional",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "dto",
+      "bindings": [
+        "planned:PythonPortMapV1",
+        "planned:RustPortMapV1"
+      ],
+      "conformance": {
+        "producer": "planned:M4-06",
+        "consumer": "planned:M4-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.network-tensor.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M4-03",
+        "path": "schemas/network-tensor.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "reader_to_platform",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "dto",
+      "bindings": [
+        "planned:PythonNetworkTensorV1",
+        "planned:RustNetworkTensorV1"
+      ],
+      "conformance": {
+        "producer": "planned:M4-06",
+        "consumer": "planned:M4-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.waveform.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M4-04",
+        "path": "schemas/waveform.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "engine_to_platform",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "dto",
+      "bindings": [
+        "planned:PythonWaveformV1",
+        "planned:RustWaveformV1"
+      ],
+      "conformance": {
+        "producer": "planned:M4-06",
+        "consumer": "planned:M4-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.spectrum.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M4-04",
+        "path": "schemas/spectrum.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "engine_to_platform",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "dto",
+      "bindings": [
+        "planned:PythonSpectrumV1",
+        "planned:RustSpectrumV1"
+      ],
+      "conformance": {
+        "producer": "planned:M4-06",
+        "consumer": "planned:M4-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.channel-resolution-policy.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M4-05",
+        "path": "schemas/channel-resolution-policy.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "resolver_input_strict",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "resolution",
+      "bindings": [
+        "planned:PythonChannelResolutionPolicyV1"
+      ],
+      "conformance": {
+        "producer": "planned:M4-06",
+        "consumer": "planned:M4-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.channel-resolution-report.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-adapters+sipi-contracts",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M4-05",
+        "path": "schemas/channel-resolution-report.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "resolver_output_tolerant",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "resolution",
+      "bindings": [
+        "planned:PythonChannelResolutionReportV1"
+      ],
+      "conformance": {
+        "producer": "planned:M4-06",
+        "consumer": "planned:M4-06"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.adapter.agent-spice.rfm-response-request.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "agent-spice-adapter",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M2-01",
+        "path": "schemas/adapter-agent-spice-rfm-request.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "platform_to_legacy_cli",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "adapter_transport",
+      "bindings": [
+        "planned:PythonAgentSpiceTransportV1"
+      ],
+      "conformance": {
+        "producer": "planned:M2-01",
+        "consumer": "planned:M2-01"
+      },
+      "deprecation": "none"
+    },
+    {
+      "schema_id": "sipi.adapter.agent-com.r480.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "agent-com-adapter",
+      "source_of_truth": {
+        "kind": "planned_definition",
+        "task": "M2-03",
+        "path": "schemas/adapter-agent-com-r480.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "platform_to_legacy_cli",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "adapter_transport",
+      "bindings": [
+        "planned:PythonAgentComTransportV1"
+      ],
+      "conformance": {
+        "producer": "planned:M2-03",
+        "consumer": "planned:M2-03"
+      },
+      "deprecation": "none"
+    }
+  ],
+  "external_contracts": [
+    {
+      "identifier": {
+        "kind": "wire_schema_id",
+        "value": "pybert.simulation.v1"
+      },
+      "current_version": "v1",
+      "bindings": [
+        "Rust"
+      ],
+      "conformance": {
+        "producer": {
+          "state": "missing",
+          "task": "M1-06"
+        },
+        "consumer": {
+          "state": "planned",
+          "task": "M1-06"
+        }
+      },
+      "deprecation": "none",
+      "definition_owner": "PyBERT",
+      "source_of_truth": {
+        "kind": "external_source",
+        "repository": "py-bert-agent",
+        "path": "native/pybert-core/src/lib.rs",
+        "symbol": "SIMULATION_SCHEMA_V1"
+      },
+      "platform_relation": "explicit_mapping_only",
+      "alias_allowed": false,
+      "platform_mutation": "forbidden"
+    },
+    {
+      "identifier": {
+        "kind": "embedded_type",
+        "value": "PyBERT ChannelResponseV1"
+      },
+      "current_version": "v1",
+      "bindings": [
+        "Rust"
+      ],
+      "conformance": {
+        "producer": {
+          "state": "missing",
+          "task": "M1-06"
+        },
+        "consumer": {
+          "state": "planned",
+          "task": "M1-06"
+        }
+      },
+      "deprecation": "none",
+      "definition_owner": "PyBERT",
+      "source_of_truth": {
+        "kind": "external_source",
+        "repository": "py-bert-agent",
+        "path": "native/pybert-core/src/input.rs",
+        "symbol": "ChannelResponseV1"
+      },
+      "platform_relation": "explicit_mapping_only",
+      "alias_allowed": false,
+      "platform_mutation": "forbidden"
+    },
+    {
+      "identifier": {
+        "kind": "embedded_type",
+        "value": "PyBERT RunEventV1"
+      },
+      "current_version": "v1",
+      "bindings": [
+        "Rust"
+      ],
+      "conformance": {
+        "producer": {
+          "state": "missing",
+          "task": "M1-06"
+        },
+        "consumer": {
+          "state": "planned",
+          "task": "M1-06"
+        }
+      },
+      "deprecation": "none",
+      "definition_owner": "PyBERT",
+      "source_of_truth": {
+        "kind": "external_source",
+        "repository": "py-bert-agent",
+        "path": "native/pybert-core/src/event.rs",
+        "symbol": "RunEventV1"
+      },
+      "platform_relation": "explicit_mapping_only",
+      "alias_allowed": false,
+      "platform_mutation": "forbidden"
+    },
+    {
+      "identifier": {
+        "kind": "embedded_type",
+        "value": "PyBERT ArtifactRefV1"
+      },
+      "current_version": "v1",
+      "bindings": [
+        "Rust"
+      ],
+      "conformance": {
+        "producer": {
+          "state": "missing",
+          "task": "M1-06"
+        },
+        "consumer": {
+          "state": "planned",
+          "task": "M1-06"
+        }
+      },
+      "deprecation": "none",
+      "definition_owner": "PyBERT",
+      "source_of_truth": {
+        "kind": "external_source",
+        "repository": "py-bert-agent",
+        "path": "native/pybert-core/src/output.rs",
+        "symbol": "ArtifactRefV1"
+      },
+      "platform_relation": "explicit_mapping_only",
+      "alias_allowed": false,
+      "platform_mutation": "forbidden"
+    },
+    {
+      "identifier": {
+        "kind": "wire_schema_id",
+        "value": "agent-spice.rfm-response.v1"
+      },
+      "current_version": "v1",
+      "bindings": [
+        "Rust",
+        "Python"
+      ],
+      "conformance": {
+        "producer": {
+          "state": "missing",
+          "task": "M1-06"
+        },
+        "consumer": {
+          "state": "planned",
+          "task": "M1-06"
+        }
+      },
+      "deprecation": "none",
+      "definition_owner": "Agent-Spice",
+      "source_of_truth": {
+        "kind": "external_source",
+        "repository": "agent-spice",
+        "path": "native/agent-spice-sim/src/main.rs",
+        "symbol": "rfm-response"
+      },
+      "platform_relation": "explicit_mapping_only",
+      "alias_allowed": false,
+      "platform_mutation": "forbidden"
+    },
+    {
+      "identifier": {
+        "kind": "legacy_document",
+        "value": "agent-com result v1"
+      },
+      "current_version": "1",
+      "bindings": [
+        "Python"
+      ],
+      "conformance": {
+        "producer": {
+          "state": "missing",
+          "task": "M1-06"
+        },
+        "consumer": {
+          "state": "planned",
+          "task": "M1-06"
+        }
+      },
+      "deprecation": "none",
+      "definition_owner": "agent-com",
+      "source_of_truth": {
+        "kind": "external_source",
+        "repository": "agent-com",
+        "path": "schemas/result-v1.schema.json",
+        "symbol": "schema_version"
+      },
+      "platform_relation": "explicit_mapping_only",
+      "alias_allowed": false,
+      "platform_mutation": "forbidden"
+    },
+    {
+      "identifier": {
+        "kind": "embedded_type",
+        "value": "agent-com ProgressEvent"
+      },
+      "current_version": "v1",
+      "bindings": [
+        "Python"
+      ],
+      "conformance": {
+        "producer": {
+          "state": "missing",
+          "task": "M1-06"
+        },
+        "consumer": {
+          "state": "planned",
+          "task": "M1-06"
+        }
+      },
+      "deprecation": "none",
+      "definition_owner": "agent-com",
+      "source_of_truth": {
+        "kind": "external_source",
+        "repository": "agent-com",
+        "path": "src/agent_com/models.py",
+        "symbol": "ProgressEvent"
+      },
+      "platform_relation": "explicit_mapping_only",
+      "alias_allowed": false,
+      "platform_mutation": "forbidden"
+    },
+    {
+      "identifier": {
+        "kind": "legacy_document",
+        "value": "agent-com behavior registry"
+      },
+      "current_version": "1",
+      "profile_revision": "r480",
+      "bindings": [
+        "Python"
+      ],
+      "conformance": {
+        "producer": {
+          "state": "missing",
+          "task": "M1-06"
+        },
+        "consumer": {
+          "state": "planned",
+          "task": "M1-06"
+        }
+      },
+      "deprecation": "none",
+      "definition_owner": "agent-com",
+      "source_of_truth": {
+        "kind": "external_source",
+        "repository": "agent-com",
+        "path": "schemas/behavior-presets.yaml",
+        "symbol": "schema_version"
+      },
+      "platform_relation": "explicit_mapping_only",
+      "alias_allowed": false,
+      "platform_mutation": "forbidden"
+    }
+  ]
+}
