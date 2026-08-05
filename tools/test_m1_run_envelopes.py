@@ -57,7 +57,7 @@ def execution(role, instance, suffix):
         "bundle_hash": f"sha256:bundle-{suffix}",
         "status": "succeeded",
         "domain_result_schema": "pybert.simulation.v1",
-        "artifacts": [{"schema": "sipi.artifact-ref.v1", "opaque": True}],
+        "artifacts": [{"schema": "sipi.artifact-ref.v1", "content_schema": "pybert.output.v1", "relative_path": f"backends/backend-{suffix}/artifacts/result.json", "mime_type": "application/json", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "byte_length": 1, "producer": "fixture.adapter", "role": "domain_result", "extensions": {}}],
         "error": None,
     }
 
@@ -78,7 +78,7 @@ def result(req, executions):
         "metrics_summary": {},
         "artifacts": [],
         "events": [],
-        "provenance": {},
+        "provenance": {"producers": [{"id": "fixture.platform", "kind": "platform", "name": "fixture", "version": "1", "commit": None, "build_profile": None, "dirty": False, "bundle_hash": None, "parent_ids": []}, {"id": "fixture.adapter", "kind": "adapter", "name": "fixture", "version": "1", "commit": None, "build_profile": None, "dirty": False, "bundle_hash": None, "parent_ids": ["fixture.platform"]}, {"id": "fixture.engine", "kind": "engine", "name": "fixture", "version": "1", "commit": None, "build_profile": None, "dirty": False, "bundle_hash": None, "parent_ids": ["fixture.adapter"]}, {"id": "fixture.algorithm", "kind": "algorithm", "name": "fixture", "version": "1", "commit": None, "build_profile": None, "dirty": False, "bundle_hash": None, "parent_ids": ["fixture.engine"]}], "request": {"schema": "pybert.simulation.v1", "behavior_profile": "fixture", "inputs": [], "resolved_config_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}, "environment": {"python": None, "rust": None, "os": "windows", "cpu": "fixture", "blas": None, "thread_count": 1, "dependency_locks": []}, "randomness": {"seed": None, "array_sources": []}, "policies": {"fallback": [], "conditioning": [], "repairs": [], "truncations": [], "approximations": []}, "extensions": {}},
         "timings": {},
         "resource_usage": {"actual_enforcement": {"wall_time_s": "monitor", "cpu_time_s": "unsupported", "memory_bytes": "unsupported", "process_count": "unsupported", "artifact_bytes": "unsupported"}},
         "error": None,

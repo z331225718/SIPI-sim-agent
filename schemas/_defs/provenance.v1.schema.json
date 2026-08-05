@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "provenance": {
+      "type": "object",
+      "required": ["producers", "request", "environment", "randomness", "policies", "extensions"],
+      "properties": {
+        "producers": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["id", "kind", "name", "version", "commit", "build_profile", "dirty", "bundle_hash", "parent_ids"], "properties": {"id": {"type": "string", "minLength": 1}, "kind": {"enum": ["platform", "adapter", "engine", "algorithm", "comparator", "importer"]}, "name": {"type": "string", "minLength": 1}, "version": {"type": "string", "minLength": 1}, "commit": {"type": ["string", "null"]}, "build_profile": {"type": ["string", "null"]}, "dirty": {"type": "boolean"}, "bundle_hash": {"type": ["string", "null"]}, "parent_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}}}},
+        "request": {"type": "object", "required": ["schema", "behavior_profile", "inputs", "resolved_config_sha256"], "properties": {"schema": {"type": "string", "minLength": 1}, "behavior_profile": {"type": "string", "minLength": 1}, "inputs": {"type": "array", "items": {"type": "object", "required": ["name", "sha256"], "properties": {"name": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}}}, "resolved_config_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}},
+        "environment": {"type": "object", "required": ["python", "rust", "os", "cpu", "blas", "thread_count", "dependency_locks"], "properties": {"python": {"type": ["string", "null"]}, "rust": {"type": ["string", "null"]}, "os": {"type": "string", "minLength": 1}, "cpu": {"type": "string", "minLength": 1}, "blas": {"type": ["string", "null"]}, "thread_count": {"type": "integer", "minimum": 1}, "dependency_locks": {"type": "array", "items": {"type": "object", "required": ["name", "sha256"], "properties": {"name": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}}}}},
+        "randomness": {"type": "object", "required": ["seed", "array_sources"], "properties": {"seed": {"type": ["integer", "string", "null"]}, "array_sources": {"type": "array", "items": {"type": "object", "required": ["name", "source", "sha256"], "properties": {"name": {"type": "string", "minLength": 1}, "source": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}}}}},
+        "policies": {"type": "object", "required": ["fallback", "conditioning", "repairs", "truncations", "approximations"], "properties": {"fallback": {"$ref": "#/$defs/policy"}, "conditioning": {"$ref": "#/$defs/policy"}, "repairs": {"$ref": "#/$defs/policy"}, "truncations": {"$ref": "#/$defs/policy"}, "approximations": {"$ref": "#/$defs/policy"}}}, "extensions": {"type": "object"}
+      }
+    },
+    "policy": {"type": "array", "items": {"type": "object", "required": ["name", "parameters"], "properties": {"name": {"type": "string", "minLength": 1}, "parameters": {"type": "object"}}}}
+  }
+}

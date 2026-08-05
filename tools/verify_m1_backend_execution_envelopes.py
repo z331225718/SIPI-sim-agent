@@ -8,6 +8,7 @@ from jsonschema import Draft202012Validator, RefResolver
 
 from verify_m1_run_envelopes import validate_request
 from verify_m1_runtime_validation import validate_platform_error, validate_resource_usage
+from verify_m1_artifacts import validate_artifact_collection, validate_artifact_ref
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,6 +47,8 @@ def validate_backend_request(run_request, backend_request, expected_selection_ha
         if backend_request[field] != run_request[field]:
             raise ValueError(f"{field} mismatch")
     _same_payload_transport(run_request, backend_request)
+    if "payload_artifact" in backend_request: validate_artifact_ref(backend_request["payload_artifact"])
+    validate_artifact_collection(list(backend_request["bound_inputs"].values()))
     if backend_request["selection_hash"] != expected_selection_hash:
         raise ValueError("selection_hash mismatch")
 
@@ -87,6 +90,7 @@ def validate_backend_result(backend_request, result, producer=True):
         if result["status"] == "cancelled" and result["error"]["category"] != "Cancelled": raise ValueError("cancelled result requires Cancelled")
         if result["status"] == "failed" and result["error"]["category"] == "Cancelled": raise ValueError("failed result cannot use Cancelled")
     validate_resource_usage(backend_request["resource_limits"], result["resource_usage"])
+    validate_artifact_collection(result["artifacts"], producer=producer)
     if "domain_result" in result and (not isinstance(result["domain_result_schema"], str) or not result["domain_result_schema"]):
         raise ValueError("inline domain result requires a domain result schema")
     if producer:

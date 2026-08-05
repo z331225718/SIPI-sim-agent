@@ -17,7 +17,7 @@
     "status": {"enum": ["succeeded", "failed", "cancelled"]},
     "domain_result_schema": {"type": ["string", "null"]},
     "domain_result": {},
-    "artifacts": {"type": "array", "items": {"$ref": "#/$defs/artifact_ref_slot"}},
+    "artifacts": {"type": "array", "items": {"$ref": "artifact-ref.v1.schema.json"}},
     "events": {"type": "array", "items": {"$ref": "run-event.v1.schema.json"}},
     "warnings": {"type": "array", "items": {"type": "string"}},
     "timings": {"type": "object", "$comment": "M1-03 owns timing member semantics."},

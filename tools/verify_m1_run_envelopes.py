@@ -6,6 +6,7 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator, RefResolver
 from verify_m1_runtime_validation import validate_platform_error, validate_resource_usage
+from verify_m1_artifacts import validate_artifact_collection, validate_artifact_ref, validate_provenance
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,6 +54,7 @@ def validate_request(value, allow_internal=False):
         raise ValueError("auto fallback reasons must be exactly the platform allowlist")
     if selection.get("allow_internal", False) and not allow_internal:
         raise ValueError("allow_internal requires authorized internal policy")
+    if "payload_artifact" in value: validate_artifact_ref(value["payload_artifact"], producer=True)
 
 
 def validate_result(request, value, producer=True, allow_internal=False):
@@ -81,6 +83,13 @@ def validate_result(request, value, producer=True, allow_internal=False):
         raise ValueError("successful result has unsuccessful execution")
     _validate_terminal_error(value, producer)
     validate_resource_usage(request["resource_limits"], value["resource_usage"])
+    validate_provenance(value["provenance"], producer=producer)
+    all_artifacts = list(value["artifacts"])
+    if "event_log_artifact" in value:
+        all_artifacts.append(value["event_log_artifact"])
+    for execution in executions:
+        all_artifacts.extend(execution["artifacts"])
+    validate_artifact_collection(all_artifacts, producer=producer, provenance=value["provenance"])
     for execution in executions: _validate_terminal_error(execution, producer)
 
     selection = request["backend_selection"]
