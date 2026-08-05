@@ -35,8 +35,12 @@
       "head": "034b21b2f293b2ef97cb8be269b1bf2be38e0086",
       "tree": "dc6e5529612d7272f23547a796b53e1456cc49cb",
       "scratch": "C:/Users/z3312/code/SIPI-m0-scratch/agent-com-034b21b",
-      "commands": ["C:/Users/z3312/AppData/Local/Microsoft/WinGet/Links/uv.exe sync --frozen --python 3.12.13", "C:/Users/z3312/AppData/Local/Microsoft/WinGet/Links/uv.exe run --frozen python tools/run_test_lane.py fast"],
-      "tests_run": false
+      "execution_clone": "C:/Users/z3312/code/SIPI-m0-scratch/agent-com-m0-06-final-ace9b81",
+      "candidate_head": "ace9b816bc5af95ad212ff38e6730f5bd3352d61",
+      "commands": ["uv pip install --python <isolated-venv> -r requirements-parity.lock", "python -m pytest -q -ra -p no:cacheprovider tests/test_run_concurrency.py::test_parallel_runs_with_one_config_have_independent_results_and_no_workspace_files", "python tools/run_test_lane.py fast", "python tools/run_test_lane.py golden"],
+      "tests_run": true,
+      "baseline": "docs/baselines/agent-com-baseline.json",
+      "disposition": "partial: focused and fast passed; golden completed without native crash but is asset-blocked; full not run"
     }
   ],
   "probes": {

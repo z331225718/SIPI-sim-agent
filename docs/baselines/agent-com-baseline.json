@@ -1,0 +1,68 @@
+{
+  "schema": "sipi.engine-baseline.v1",
+  "engine": "agent-com",
+  "source": {
+    "head": "034b21b2f293b2ef97cb8be269b1bf2be38e0086",
+    "tree": "dc6e5529612d7272f23547a796b53e1456cc49cb",
+    "seed_scratch": "C:/Users/z3312/code/SIPI-m0-scratch/agent-com-034b21b"
+  },
+  "candidate": {
+    "head": "ace9b816bc5af95ad212ff38e6730f5bd3352d61",
+    "tree": "35f1157278e25eb55a45357c75a5f3a75e8ce8a8",
+    "scratch": "C:/Users/z3312/code/SIPI-m0-scratch/agent-com-m0-06-final-ace9b81",
+    "changes": [
+      "serialize only SciPy full FFT convolution calls with a process-local threading.Lock",
+      "copy ndarray-backed materialization inputs so overrides do not share buffers across runs",
+      "separate explicit fast and golden test-lane ownership",
+      "fail closed when branch capability evidence is missing or degraded"
+    ]
+  },
+  "evidence_root": "C:/Users/z3312/code/SIPI-m0-scratch/agent-com-m0-06-evidence-ace9b81",
+  "environment": {
+    "python": "3.12.13",
+    "numpy": "2.4.6",
+    "scipy": "1.18.0",
+    "pytest": "9.0.3",
+    "scikit_rf": "1.12.0",
+    "thread_limits": {"OPENBLAS_NUM_THREADS": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1"}
+  },
+  "setup": {
+    "dependency_resolution": "requirements-parity.lock plus editable candidate install",
+    "pip_check": {"exit_code": 0, "log": "pip-check.log"},
+    "sbom_check": {"exit_code": 0},
+    "status_log": {"path": "setup-status.log", "sha256": "301644CB96A34B6226C57411B05A70BB410E6D3AAAD807F4075F0748F38CD6BD"},
+    "environment_log": {"path": "environment.log", "sha256": "A1EEC4211A61CA73116E642D6B111EC1889FDEBF70E9FDC4BA8A0A1158F2FD4A"}
+  },
+  "collection": {"full": 572, "fast": 197, "golden": 375, "partition_verified": true},
+  "concurrency_repair": {
+    "focused_case": "tests/test_run_concurrency.py::test_parallel_runs_with_one_config_have_independent_results_and_no_workspace_files",
+    "focused_runs": [
+      {"passed": 1, "duration_s": 563.24, "log": "focused-1.log", "sha256": "E8EFDF3C92D361BB50007FCE71D83CEF85295D73C293942946722627737E50CB"},
+      {"passed": 1, "duration_s": 570.37, "log": "focused-2.log", "sha256": "67D4470C9EC5AF0850C8F96BF36FD6D927F8A6A861FA9E55B5DE06A02F5A6B15"},
+      {"passed": 1, "duration_s": 565.4, "log": "focused-3.log", "sha256": "2BF66104312A1F828A41E3AFA26B566C18D9CC07B951A4825E664689C29C2941"}
+    ],
+    "fast": {"exit_code": 0, "passed": 197, "deselected": 375, "duration_s": 1003.21, "log": "fast.log", "sha256": "BBB4FCB0C3A4EB57067FC06D33DE6E86D8C9E0734C1595F3220D4612CDE36EC0"},
+    "native_crash": {
+      "pre_fix": {"description": "Windows 0xc0000374 during concurrent SciPy FFT candidate workload", "log": "C:/Users/z3312/code/SIPI-m0-scratch/agent-com-m0-06-evidence-360cab9/golden.log", "sha256": "490DC6C1A0A48C8F5E868019ADEDE8368B86A3FB17E7DE1B097A623B56C15D3A"},
+      "post_fix": "not observed in three fresh focused processes, fast lane, or completed golden execution"
+    }
+  },
+  "golden": {
+    "exit_code": 1,
+    "passed": 248,
+    "failed": 127,
+    "deselected": 197,
+    "duration_s": 547.4,
+    "log": "golden.log",
+    "sha256": "295C2A0368A07726DDF8E6189976262A37170B91D4E0699740CC37650A0DAA04",
+    "classification": "asset-blocked",
+    "blocking_reason": "authoritative ignored artifacts/ package is absent from the source snapshot; many oracle/checkpoint/config benchmark paths are missing",
+    "known_non_asset_failure": {"test": "tests/test_200g_rcos_c2c.py::test_200g_rcos_c2c_matches_matlab_and_public_api", "reason": "invalid C2M eye controls before oracle loading", "candidate_regression": "unclassified; requires parent/candidate execution with one complete authoritative asset package"}
+  },
+  "status": "partial_concurrency_repair_verified_golden_asset_blocked",
+  "non_claims": [
+    "This record does not certify golden numerical parity, the full lane, release readiness, or source import.",
+    "The absent ignored artifacts/ directory is not reconstructed from Python output or a partial local artifact tree.",
+    "Full is intentionally not run because golden cannot validate without the complete authoritative asset package."
+  ]
+}
