@@ -229,6 +229,20 @@ fn validation_report_valid(document: &Value) -> bool {
     })
 }
 
+fn artifact_producer_error(case: &Value, document: &Value) -> Option<&'static str> {
+    if case["mode"] != "producer" {
+        return None;
+    }
+    const FIELDS: [&str; 13] = [
+        "schema", "content_schema", "relative_path", "mime_type", "sha256", "byte_length",
+        "producer", "role", "shape", "dtype", "byte_order", "layout", "extensions",
+    ];
+    document
+        .as_object()
+        .is_some_and(|fields| fields.keys().any(|field| !FIELDS.contains(&field.as_str())))
+        .then_some("unknown_field")
+}
+
 fn capabilities_valid(document: &Value) -> bool {
     let capabilities = match document["capabilities"].as_array() {
         Some(value) => value,
@@ -278,6 +292,7 @@ fn semantic_valid(case: &Value, document: &Value) -> bool {
         }
         Some("run_result") => run_result_error(document).is_none(),
         Some("backend_result") => backend_result_valid(document),
+        Some("artifact") => artifact_producer_error(case, document).is_none(),
         Some("validation_report") => validation_report_valid(document),
         Some("capabilities") => capabilities_valid(document),
         Some("event") => match document["scope"].as_str() {
@@ -338,6 +353,7 @@ fn semantic_error(case: &Value, document: &Value) -> Option<&'static str> {
     }
     match case["entrypoint"].as_str() {
         Some("backend_result") => Some("terminal_state"),
+        Some("artifact") => artifact_producer_error(case, document),
         Some("validation_report") => Some("validity"),
         Some("capabilities") => Some("duplicate_capability"),
         Some("event") => Some("scope"),
