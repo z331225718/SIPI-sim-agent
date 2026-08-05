@@ -61,9 +61,10 @@ def main() -> int:
     _assert_pinned_source(source, repository)
     core_manifest = Path(repository["path"]) / "native" / "pybert-core" / "Cargo.toml"
     _assert_probe_dependency(core_manifest)
-    canary = _output([str(RUSTUP), "run", TOOLCHAIN, "cargo", "test", "--locked", "--manifest-path", str(core_manifest), "--test", "contract_v1", "simulation_input_round_trips_as_versioned_json", "--", "--exact"])
-    if "simulation_input_round_trips_as_versioned_json ... ok" not in canary or "1 passed" not in canary:
-        raise RuntimeError("pybert_canary_not_executed")
+    for test_name in ("simulation_input_round_trips_as_versioned_json", "output_and_progress_use_stable_stage_names"):
+        canary = _output([str(RUSTUP), "run", TOOLCHAIN, "cargo", "test", "--locked", "--manifest-path", str(core_manifest), "--test", "contract_v1", test_name, "--", "--exact"])
+        if f"{test_name} ... ok" not in canary or "1 passed" not in canary:
+            raise RuntimeError(f"pybert_canary_not_executed:{test_name}")
     output = _output([str(RUSTUP), "run", TOOLCHAIN, "cargo", "run", "--locked", "--quiet", "--manifest-path", str(PROBE)])
     result = json.loads(output.splitlines()[-1])
     result["observed_source_snapshot"] = {"repository": repository["id"], "revision": repository["head"], "tree": repository["tree"]}

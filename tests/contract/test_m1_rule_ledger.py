@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from verify_m1_rule_ledger import _snapshot_matches, _source_repositories
-from verify_m1_conformance import _pybert_results
+from verify_m1_conformance import _payload_lineage, _pybert_results
 
 
 class ExternalSnapshotTests(unittest.TestCase):
@@ -68,11 +68,19 @@ class SuiteRoutingTests(unittest.TestCase):
 
 
 class ExternalProbeLineageTests(unittest.TestCase):
+    def test_run_event_rejection_requires_derived_payload(self):
+        probes = {
+            "run_event.producer_serializes": {"base_payload_sha256": "a" * 64, "consumed_payload_sha256": "a" * 64},
+            "run_event.consumer_deserializes": {"base_payload_sha256": "a" * 64, "consumed_payload_sha256": "a" * 64},
+            "run_event.consumer.schema_rejects": {"base_payload_sha256": "a" * 64, "derived_from": "run_event.producer_serializes"},
+        }
+        self.assertFalse(_payload_lineage(probes, "run_event.producer_serializes", "run_event.consumer_deserializes", "run_event.consumer.schema_rejects"))
+
     def test_accepted_consumer_must_receive_producer_bytes(self):
         cases = [
-            {"id": "producer", "probe": "producer_serializes"},
-            {"id": "consumer", "probe": "consumer_deserializes"},
-            {"id": "version", "probe": "consumer_version_rejects"},
+            {"id": "producer", "probe": "producer_serializes", "external_contract": {"kind": "wire_schema_id", "value": "pybert.simulation.v1"}},
+            {"id": "consumer", "probe": "consumer_deserializes", "external_contract": {"kind": "wire_schema_id", "value": "pybert.simulation.v1"}},
+            {"id": "version", "probe": "consumer_version_rejects", "external_contract": {"kind": "wire_schema_id", "value": "pybert.simulation.v1"}},
         ]
         output = {
             "runner": "pybert_core_rust",
@@ -103,13 +111,13 @@ class ExternalProbeLineageTests(unittest.TestCase):
         failures: list[str] = []
         with patch("verify_m1_conformance._json_output", return_value=output):
             _pybert_results(cases, failures)
-        self.assertIn("pybert_core_rust:payload_hash_lineage", failures)
+        self.assertIn("pybert_core_rust:pybert.simulation.v1:payload_hash_lineage", failures)
 
     def test_rejecting_consumer_must_report_variant_bytes(self):
         cases = [
-            {"id": "producer", "probe": "producer_serializes"},
-            {"id": "consumer", "probe": "consumer_deserializes"},
-            {"id": "version", "probe": "consumer_version_rejects"},
+            {"id": "producer", "probe": "producer_serializes", "external_contract": {"kind": "wire_schema_id", "value": "pybert.simulation.v1"}},
+            {"id": "consumer", "probe": "consumer_deserializes", "external_contract": {"kind": "wire_schema_id", "value": "pybert.simulation.v1"}},
+            {"id": "version", "probe": "consumer_version_rejects", "external_contract": {"kind": "wire_schema_id", "value": "pybert.simulation.v1"}},
         ]
         output = {
             "runner": "pybert_core_rust",
@@ -139,7 +147,7 @@ class ExternalProbeLineageTests(unittest.TestCase):
         failures: list[str] = []
         with patch("verify_m1_conformance._json_output", return_value=output):
             _pybert_results(cases, failures)
-        self.assertIn("pybert_core_rust:payload_hash_lineage", failures)
+        self.assertIn("pybert_core_rust:pybert.simulation.v1:payload_hash_lineage", failures)
 
 if __name__ == "__main__":
     unittest.main()

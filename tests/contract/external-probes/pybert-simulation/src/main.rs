@@ -3,8 +3,8 @@ use std::collections::BTreeMap;
 use pybert_core::{
     AnalysisConfigV1, ChannelInputV1, ChannelResponseV1, ExternalModelRefV1, FfeConfigV1,
     Hertz, ModulationV1, Ohms, PatternV1, ResourceLimitsV1, RxConfigV1,
-    SIMULATION_SCHEMA_V1, Seconds, SimulationInputV1, StatisticalEyeConfigV1, TimebaseV1,
-    TxConfigV1, Volts,
+    RunEventV1, RunStageV1, SIMULATION_SCHEMA_V1, Seconds, SimulationInputV1,
+    StatisticalEyeConfigV1, TimebaseV1, TxConfigV1, Volts,
 };
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -63,6 +63,17 @@ fn input() -> SimulationInputV1 {
     }
 }
 
+fn event() -> RunEventV1 {
+    RunEventV1 {
+        run_id: "sipi-external-conformance".into(),
+        sequence: 2,
+        stage: RunStageV1::RxEqualization,
+        stage_progress: 0.5,
+        total_progress: 0.4,
+        message: Some("native CTLE complete".into()),
+    }
+}
+
 fn main() {
     let produced = input();
     produced.validate().expect("producer input is valid");
@@ -83,12 +94,27 @@ fn main() {
         .validate()
         .is_err_and(|error| matches!(error, pybert_core::ContractError::UnsupportedSchema(_)));
 
+    let event_produced = event();
+    event_produced.validate().expect("producer event is valid");
+    let event_payload = serde_json::to_vec(&event_produced).expect("PyBERT event Serialize");
+    let event_payload_sha256 = format!("{:x}", Sha256::digest(&event_payload));
+    let event_consumed: RunEventV1 = serde_json::from_slice(&event_payload).expect("PyBERT event Deserialize");
+    let event_consumer_accept = event_consumed.validate().is_ok() && event_consumed == event_produced;
+    let mut event_missing_run_id: Value = serde_json::from_slice(&event_payload).expect("produced event JSON");
+    event_missing_run_id.as_object_mut().expect("event object").remove("runId");
+    let event_missing_run_id = serde_json::to_vec(&event_missing_run_id).expect("invalid event JSON");
+    let event_missing_run_id_sha256 = format!("{:x}", Sha256::digest(&event_missing_run_id));
+    let event_consumer_reject = serde_json::from_slice::<RunEventV1>(&event_missing_run_id).is_err();
+
     println!(
         "{}",
         serde_json::to_string(&json!({"runner":"pybert_core_rust","results":[
             {"probe":"producer_serializes","decision":if producer_schema {"accept"} else {"reject"},"phase":"schema","base_payload_sha256":base_payload_sha256,"consumed_payload_sha256":base_payload_sha256},
             {"probe":"consumer_deserializes","decision":if consumer_accept {"accept"} else {"reject"},"phase":"schema","base_payload_sha256":base_payload_sha256,"consumed_payload_sha256":base_payload_sha256},
-            {"probe":"consumer_version_rejects","decision":if consumer_version_reject {"reject"} else {"accept"},"phase":"schema","code":"unsupported_schema","base_payload_sha256":base_payload_sha256,"consumed_payload_sha256":incompatible_payload_sha256,"derived_from":"producer_serializes"}
+            {"probe":"consumer_version_rejects","decision":if consumer_version_reject {"reject"} else {"accept"},"phase":"schema","code":"unsupported_schema","base_payload_sha256":base_payload_sha256,"consumed_payload_sha256":incompatible_payload_sha256,"derived_from":"producer_serializes"},
+            {"probe":"run_event.producer_serializes","decision":"accept","phase":"schema","base_payload_sha256":event_payload_sha256,"consumed_payload_sha256":event_payload_sha256},
+            {"probe":"run_event.consumer_deserializes","decision":if event_consumer_accept {"accept"} else {"reject"},"phase":"schema","base_payload_sha256":event_payload_sha256,"consumed_payload_sha256":event_payload_sha256},
+            {"probe":"run_event.consumer.schema_rejects","decision":if event_consumer_reject {"reject"} else {"accept"},"phase":"schema","code":"schema","base_payload_sha256":event_payload_sha256,"consumed_payload_sha256":event_missing_run_id_sha256,"derived_from":"run_event.producer_serializes"}
         ]})).expect("probe JSON")
     );
 }

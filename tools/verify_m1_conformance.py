@@ -47,6 +47,26 @@ def _index_results(output: dict, language: str, expected_ids: set[str], failures
     return {result["id"]: result for result in results if isinstance(result.get("id"), str)}
 
 
+def _payload_lineage(probes: dict[str, dict], producer: str, consumer: str, rejection: str) -> bool:
+    results = [probes.get(probe, {}) for probe in (producer, consumer, rejection)]
+    base_hashes = {result.get("base_payload_sha256") for result in results}
+    accepted_hashes = {probes.get(probe, {}).get("consumed_payload_sha256") for probe in (producer, consumer)}
+    rejected = probes.get(rejection, {})
+    rejected_hash = rejected.get("consumed_payload_sha256")
+    hashes = base_hashes | accepted_hashes | {rejected_hash}
+    return (
+        len(base_hashes) == 1
+        and None not in base_hashes
+        and len(accepted_hashes) == 1
+        and None not in accepted_hashes
+        and accepted_hashes == base_hashes
+        and rejected.get("derived_from") == producer
+        and rejected_hash is not None
+        and rejected_hash not in base_hashes
+        and all(isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None for value in hashes)
+    )
+
+
 def _pybert_results(cases: list[dict], failures: list[str]) -> tuple[dict[str, dict], dict]:
     output = _json_output([UV, "run", "--locked", "--python", str(PYTHON), "python", "-B", "tests/contract/run_pybert_simulation_probe.py"])
     if output.get("runner") != "pybert_core_rust":
@@ -61,23 +81,18 @@ def _pybert_results(cases: list[dict], failures: list[str]) -> tuple[dict[str, d
     probes = {result.get("probe"): result for result in results}
     if len(probes) != len(results) or set(probes) != {case["probe"] for case in cases}:
         failures.append("pybert_core_rust:result_set_mismatch")
-    base_hashes = {result.get("base_payload_sha256") for result in results}
-    accepted_hashes = {probes.get(probe, {}).get("consumed_payload_sha256") for probe in ("producer_serializes", "consumer_deserializes")}
-    version = probes.get("consumer_version_rejects", {})
-    version_hash = version.get("consumed_payload_sha256")
-    hashes = base_hashes | accepted_hashes | {version_hash}
-    if (
-        len(base_hashes) != 1
-        or None in base_hashes
-        or len(accepted_hashes) != 1
-        or None in accepted_hashes
-        or accepted_hashes != base_hashes
-        or version.get("derived_from") != "producer_serializes"
-        or version_hash is None
-        or version_hash in base_hashes
-        or any(not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None for value in hashes)
-    ):
-        failures.append("pybert_core_rust:payload_hash_lineage")
+    lineage_groups = {
+        ("wire_schema_id", "pybert.simulation.v1"): ("producer_serializes", "consumer_deserializes", "consumer_version_rejects"),
+        ("embedded_type", "PyBERT RunEventV1"): ("run_event.producer_serializes", "run_event.consumer_deserializes", "run_event.consumer.schema_rejects"),
+    }
+    by_contract: dict[tuple[str, str], list[dict]] = {}
+    for case in cases:
+        identifier = case["external_contract"]
+        by_contract.setdefault((identifier["kind"], identifier["value"]), []).append(case)
+    for identifier, group_cases in by_contract.items():
+        lineage = lineage_groups.get(identifier)
+        if lineage is None or {case["probe"] for case in group_cases} != set(lineage) or not _payload_lineage(probes, *lineage):
+            failures.append(f"pybert_core_rust:{identifier[1]}:payload_hash_lineage")
     return ({case["id"]: {**probes.get(case["probe"], {}), "id": case["id"]} for case in cases}, output.get("observed_source_snapshot", {}))
 
 
