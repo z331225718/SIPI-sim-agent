@@ -82,7 +82,7 @@ fn resource_slice_valid(parent: &Value, child: &Value, enforcement: &Value) -> b
     })
 }
 
-fn run_result_valid(document: &Value) -> bool {
+fn run_result_terminal_valid(document: &Value) -> bool {
     let executions = match document["backend_executions"].as_array() {
         Some(value) => value,
         None => return false,
@@ -103,6 +103,85 @@ fn run_result_valid(document: &Value) -> bool {
         return false;
     }
     true
+}
+
+fn run_result_selection_valid(document: &Value) -> bool {
+    let executions = match document["backend_executions"].as_array() {
+        Some(value) => value,
+        None => return false,
+    };
+    let selection = &document["selection_requested"];
+    let roles: Vec<&Value> = executions.iter().map(|item| &item["role"]).collect();
+    match selection["mode"].as_str() {
+        Some("strict") => {
+            roles.iter().all(|role| **role == "primary")
+                && executions.len() <= 1
+                && executions
+                    .first()
+                    .is_none_or(|item| item["engine_instance_id"] == selection["instance"])
+                && document["fallback_trace"]
+                    .as_array()
+                    .is_some_and(Vec::is_empty)
+                && document["comparison"]
+                    .as_object()
+                    .is_some_and(|value| value.is_empty())
+        }
+        Some("auto") => {
+            let trace = document["fallback_trace"]
+                .as_array()
+                .map(|items| {
+                    items
+                        .iter()
+                        .map(|item| item["instance"].clone())
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            let candidates = selection["candidates"]
+                .as_array()
+                .cloned()
+                .unwrap_or_default();
+            roles.iter().all(|role| **role == "primary")
+                && executions.len() <= 1
+                && trace
+                    == candidates
+                        .iter()
+                        .take(trace.len())
+                        .cloned()
+                        .collect::<Vec<_>>()
+                && (executions.is_empty()
+                    && (document["status"] == "cancelled" || trace == candidates)
+                    || executions.first().is_some_and(|item| {
+                        trace.len() < candidates.len()
+                            && item["engine_instance_id"] == candidates[trace.len()]
+                    }))
+                && document["comparison"]
+                    .as_object()
+                    .is_some_and(|value| value.is_empty())
+        }
+        Some("compare") => {
+            roles.len() == 2
+                && roles.iter().any(|role| **role == "reference")
+                && roles.iter().any(|role| **role == "candidate")
+                && executions.iter().all(|item| {
+                    item["engine_instance_id"] == selection[&item["role"].as_str().unwrap_or("")]
+                })
+                && document["comparison"]["profile"] == selection["comparison_profile"]
+                && document["fallback_trace"]
+                    .as_array()
+                    .is_some_and(Vec::is_empty)
+        }
+        _ => false,
+    }
+}
+
+fn run_result_error(document: &Value) -> Option<&'static str> {
+    if !run_result_terminal_valid(document) {
+        Some("terminal_state")
+    } else if !run_result_selection_valid(document) {
+        Some("selection")
+    } else {
+        None
+    }
 }
 
 fn backend_result_valid(document: &Value) -> bool {
@@ -158,11 +237,18 @@ fn capabilities_valid(document: &Value) -> bool {
 fn semantic_valid(case: &Value, document: &Value) -> bool {
     match case["entrypoint"].as_str() {
         Some("run_request") => {
-            document["backend_selection"]["mode"] != "compare"
-                || document["backend_selection"]["reference"]
-                    != document["backend_selection"]["candidate"]
+            let selection = &document["backend_selection"];
+            selection.get("allow_internal") != Some(&Value::Bool(true))
+                && (selection["mode"] != "compare"
+                    || selection["reference"] != selection["candidate"])
+                && (selection["mode"] != "auto"
+                    || selection["fallback_on"].as_array().is_some_and(|items| {
+                        items.len() == 2
+                            && items.iter().any(|item| item == "EngineUnavailable")
+                            && items.iter().any(|item| item == "UnsupportedCapability")
+                    }))
         }
-        Some("run_result") => run_result_valid(document),
+        Some("run_result") => run_result_error(document).is_none(),
         Some("backend_result") => backend_result_valid(document),
         Some("validation_report") => validation_report_valid(document),
         Some("capabilities") => capabilities_valid(document),
@@ -193,13 +279,37 @@ fn semantic_valid(case: &Value, document: &Value) -> bool {
     }
 }
 
+fn run_request_error(document: &Value) -> Option<&'static str> {
+    let selection = &document["backend_selection"];
+    if selection["mode"] == "compare" && selection["reference"] == selection["candidate"] {
+        Some("selection")
+    } else if selection["mode"] == "auto"
+        && !selection["fallback_on"].as_array().is_some_and(|items| {
+            items.len() == 2
+                && items.iter().any(|item| item == "EngineUnavailable")
+                && items.iter().any(|item| item == "UnsupportedCapability")
+        })
+    {
+        Some("selection")
+    } else if selection.get("allow_internal") == Some(&Value::Bool(true)) {
+        Some("internal_policy")
+    } else {
+        None
+    }
+}
+
 fn semantic_error(case: &Value, document: &Value) -> Option<&'static str> {
+    if case["entrypoint"] == "run_request" {
+        return run_request_error(document);
+    }
+    if case["entrypoint"] == "run_result" {
+        return run_result_error(document);
+    }
     if semantic_valid(case, document) {
         return None;
     }
     match case["entrypoint"].as_str() {
-        Some("run_request") => Some("selection"),
-        Some("run_result") | Some("backend_result") => Some("terminal_state"),
+        Some("backend_result") => Some("terminal_state"),
         Some("validation_report") => Some("validity"),
         Some("capabilities") => Some("duplicate_capability"),
         Some("event") => Some("scope"),
