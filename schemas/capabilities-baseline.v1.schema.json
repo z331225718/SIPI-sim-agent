@@ -1,0 +1,295 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sipi.capabilities-baseline.v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "runtime_consumable",
+    "advertise",
+    "default_auto_eligible",
+    "source",
+    "capability_key_fields",
+    "catalogs",
+    "capabilities",
+    "unmapped_capability_gaps",
+    "non_claims"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "sipi.capabilities-baseline.v1"
+    },
+    "status": {
+      "const": "baseline_nonpublic"
+    },
+    "runtime_consumable": {
+      "const": false
+    },
+    "advertise": {
+      "const": false
+    },
+    "default_auto_eligible": {
+      "const": false
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "path",
+        "schema",
+        "sha256",
+        "converter_version",
+        "observed_metadata"
+      ],
+      "properties": {
+        "path": {
+          "const": "docs/baselines/capability-inventory.yaml"
+        },
+        "schema": {
+          "const": "sipi.capability-inventory.m0.v1"
+        },
+        "sha256": {
+          "pattern": "^[A-F0-9]{64}$",
+          "type": "string"
+        },
+        "converter_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed_metadata": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "capability_key_fields": {
+      "const": [
+        "operation",
+        "payload_schema",
+        "engine_instance",
+        "behavior_profile",
+        "platform.os",
+        "platform.architecture",
+        "execution_mode"
+      ]
+    },
+    "catalogs": {
+      "type": "object",
+      "required": [
+        "sources",
+        "environments",
+        "legacy_artifacts",
+        "instances"
+      ],
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "environments": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "legacy_artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "instances": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "source_inventory_id",
+          "key",
+          "role",
+          "implementation_state",
+          "evidence_state",
+          "release_channel",
+          "enforcement_state",
+          "fixtures",
+          "evidence_refs",
+          "blockers"
+        ],
+        "properties": {
+          "source_inventory_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "key": {
+            "type": "object",
+            "required": [
+              "operation",
+              "payload_schema",
+              "engine_instance",
+              "behavior_profile",
+              "platform",
+              "execution_mode"
+            ],
+            "properties": {
+              "operation": {
+                "type": "string",
+                "minLength": 1
+              },
+              "payload_schema": {
+                "type": "string",
+                "minLength": 1
+              },
+              "engine_instance": {
+                "type": "string",
+                "minLength": 1
+              },
+              "behavior_profile": {
+                "type": "string",
+                "minLength": 1
+              },
+              "platform": {
+                "type": "object",
+                "required": [
+                  "os",
+                  "architecture",
+                  "source_literal"
+                ],
+                "properties": {
+                  "os": {
+                    "const": "windows"
+                  },
+                  "architecture": {
+                    "const": "x86_64"
+                  },
+                  "source_literal": {
+                    "const": "windows-x86_64"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "execution_mode": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          "role": {
+            "enum": [
+              "reference",
+              "candidate",
+              "hybrid"
+            ]
+          },
+          "implementation_state": {
+            "enum": [
+              "full",
+              "partial",
+              "absent"
+            ]
+          },
+          "evidence_state": {
+            "enum": [
+              "unverified",
+              "baseline_passed",
+              "expired",
+              "blocked"
+            ]
+          },
+          "release_channel": {
+            "enum": [
+              "experimental",
+              "internal"
+            ]
+          },
+          "enforcement_state": {
+            "enum": [
+              "unverified",
+              "monitor"
+            ]
+          },
+          "fixtures": {
+            "type": "object",
+            "required": [
+              "required",
+              "optional"
+            ],
+            "properties": {
+              "required": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "optional": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "owner",
+                "reason",
+                "repro_lane"
+              ],
+              "properties": {
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "repro_lane": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "unmapped_capability_gaps": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "non_claims": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

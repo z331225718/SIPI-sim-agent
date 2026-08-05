@@ -226,11 +226,10 @@
     {
       "schema_id": "sipi.capabilities-baseline.v1",
       "major": 1,
-      "lifecycle": "reserved_unpublished",
+      "lifecycle": "published_nonpublic",
       "definition_owner": "quality+sipi-contracts",
       "source_of_truth": {
-        "kind": "planned_definition",
-        "task": "M1-01B",
+        "kind": "local_json_schema",
         "path": "schemas/capabilities-baseline.v1.schema.json"
       },
       "exposure": "not_public",
