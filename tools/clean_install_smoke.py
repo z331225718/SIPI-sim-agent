@@ -6,6 +6,9 @@ isolated venv (no sibling repo imports), and verifies:
   - contracts/runtime/artifacts/adapters/cli all import;
   - ``sipi capabilities`` and ``sipi doctor`` behave fail-closed without a
     source checkout.
+
+Note: pip resolves third-party dependencies (jsonschema, referencing, ...)
+from the package index, so this gate requires network access.
 """
 
 from __future__ import annotations
@@ -19,6 +22,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PYTHON = "python.exe" if os.name == "nt" else "python"
+EXPECTED_WHEELS = {
+    "sipi_adapters",
+    "sipi_artifacts",
+    "sipi_cli",
+    "sipi_contracts",
+    "sipi_runtime",
+}
 
 
 def run(argv: list[str], *, cwd: Path, check: bool = True) -> subprocess.CompletedProcess:
@@ -41,8 +51,9 @@ def main() -> int:
             print("FAIL: wheel build failed")
             return 1
         wheels = sorted(wheels_dir.glob("*.whl"))
-        if len(wheels) < 5:
-            print(f"FAIL: expected at least 5 wheels, found {len(wheels)}")
+        wheel_names = {wheel.name.split("-")[0] for wheel in wheels}
+        if wheel_names != EXPECTED_WHEELS:
+            print(f"FAIL: expected wheels {sorted(EXPECTED_WHEELS)}, found {sorted(wheel_names)}")
             return 1
 
         venv_dir = tmp / "venv"
@@ -71,7 +82,7 @@ def main() -> int:
                 ],
             ),
             (
-                "packaged engine-lock schema parses",
+                "packaged engine-lock schema validates empty lock",
                 [
                     str(python),
                     "-c",

@@ -26,5 +26,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
+      - name: Regenerate packaged schema bundle
+        run: uv run python -B tools/sync_contracts_schemas.py
       - name: Run clean install smoke
         run: uv run python -B tools/clean_install_smoke.py
