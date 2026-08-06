@@ -2,6 +2,7 @@
 
 from .agent_com import AgentComRunAdapter
 from .agent_spice import AgentSpiceHspiceAdapter
+from .attestation import AttestationError, WheelAttestation, verify_wheel_bundle
 from .capabilities import AdapterCapability, build_engine_capabilities, preflight
 from .process import (
     BackendOutcome,
@@ -33,6 +34,7 @@ __all__ = [
     "AdapterCapability",
     "AgentComRunAdapter",
     "AgentSpiceHspiceAdapter",
+    "AttestationError",
     "BackendAdapter",
     "BackendOutcome",
     "build_engine_capabilities",
@@ -41,6 +43,8 @@ __all__ = [
     "ProcessResult",
     "PyBertNativeAdapter",
     "UnsupportedCapabilityError",
+    "verify_wheel_bundle",
+    "WheelAttestation",
     "assemble_backend_result",
     "execute_backend",
     "filtered_env",

@@ -25,6 +25,7 @@ from typing import Any, Protocol
 
 from sipi_contracts import BackendExecutionRequestV1, BackendExecutionResultV1, parse_backend_execution_result
 
+from .attestation import AttestationError, verify_wheel_bundle
 from .capabilities import AdapterCapability, preflight
 from .spi import AdapterContractError, UnsupportedCapabilityError, require_backend_request, validate_pinned_instance
 
@@ -102,7 +103,7 @@ def invocation(bundle_path: Path) -> list[str]:
 
 
 def verify_engine_bundle(engine_entry: Mapping[str, Any], repo_root: Path) -> Path:
-    """Verify a single-file local bundle; multi-file/wheel bundles are later slices."""
+    """Verify a pinned local bundle: wheel archives get full content attestation."""
     bundle = engine_entry["bundle"]
     if bundle["kind"] != "local_path":
         raise BundleVerificationError("https_url bundles cannot be executed without an approved downloader")
@@ -113,6 +114,12 @@ def verify_engine_bundle(engine_entry: Mapping[str, Any], repo_root: Path) -> Pa
         raise BundleVerificationError(f"engine bundle is missing: {candidate}")
     if _sha256(candidate) != bundle["sha256"]:
         raise BundleVerificationError(f"engine bundle sha256 mismatch: {candidate}")
+    if candidate.suffix.lower() == ".whl":
+        try:
+            verify_wheel_bundle(engine_entry, repo_root)
+        except AttestationError as error:
+            raise BundleVerificationError(str(error)) from error
+        return candidate
     manifest = engine_entry["bundle_manifest"]
     if manifest["entrypoint"] != candidate.name:
         raise BundleVerificationError("multi-file bundles are not supported yet; entrypoint must be the bundle file itself")
@@ -258,6 +265,12 @@ def execute_backend(
         bundle_path = verify_engine_bundle(engine_entry, repo_root)
     except BundleVerificationError as error:
         return assemble_backend_result(request, status="failed", error=platform_error("EngineUnavailable", str(error)))
+    if bundle_path.suffix.lower() == ".whl":
+        return assemble_backend_result(
+            request,
+            status="failed",
+            error=platform_error("UnsupportedCapability", "wheel execution requires isolated venv install (later M2 slice)"),
+        )
 
     owns_workdir = workdir is None
     if owns_workdir:
