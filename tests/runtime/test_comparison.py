@@ -110,6 +110,32 @@ class ComparisonTests(unittest.TestCase):
         self.assertFalse(report.matched)
         self.assertIn("invalid path index", report.errors[0])
 
+    def test_non_numeric_values_are_errors(self) -> None:
+        for bad in (float("nan"), float("inf"), True, "1.0"):
+            with self.subTest(value=bad):
+                reference = backend_result("reference", {"value": 1.0})
+                candidate = backend_result("candidate", {"value": bad})
+                report = compare_results(reference, candidate, ComparisonProfile("default", (Metric("value"),)))
+                self.assertFalse(report.matched)
+                self.assertIn("non-numeric value", report.errors[0])
+                self.assertEqual(report.mismatches, ())
+
+    def test_mixed_error_and_mismatch_counts(self) -> None:
+        reference = backend_result("reference", {"good": 1.0, "bad": 1.0})
+        candidate = backend_result("candidate", {"good": 2.0, "bad": "x"})
+        profile = ComparisonProfile("default", (Metric("good", atol=0.1), Metric("bad"), Metric("missing")))
+        report = compare_results(reference, candidate, profile)
+        self.assertFalse(report.matched)
+        self.assertEqual(report.checked_count, 1)
+        self.assertEqual(len(report.mismatches), 1)
+        self.assertEqual(len(report.errors), 2)
+
+    def test_leading_array_index_path_is_supported(self) -> None:
+        reference = backend_result("reference", [{"value": 1.0}])
+        candidate = backend_result("candidate", [{"value": 1.0}])
+        report = compare_results(reference, candidate, ComparisonProfile("default", (Metric("[0].value"),)))
+        self.assertTrue(report.matched)
+
 
 if __name__ == "__main__":
     unittest.main()

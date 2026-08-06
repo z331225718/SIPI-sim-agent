@@ -51,6 +51,7 @@ class ComparisonReport:
 
 
 def _resolve_path(document: Any, path: str) -> Any:
+    """Resolve ``cases[0].metrics.com`` style paths; ``[0]`` may lead."""
     current = document
     for segment in path.split("."):
         if segment.endswith("]") and "[" in segment:
@@ -74,11 +75,11 @@ def _resolve_path(document: Any, path: str) -> Any:
 
 
 def _close(reference: Any, candidate: Any, atol: float, rtol: float) -> bool:
-    if not isinstance(reference, (int, float)) or isinstance(reference, bool):
-        return False
-    if not isinstance(candidate, (int, float)) or isinstance(candidate, bool):
-        return False
-    return math.isfinite(reference) and math.isfinite(candidate) and abs(reference - candidate) <= atol + rtol * abs(reference)
+    return abs(reference - candidate) <= atol + rtol * abs(reference)
+
+
+def _is_finite_number(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
 
 
 def compare_results(
@@ -100,6 +101,9 @@ def compare_results(
             candidate_value = _resolve_path(candidate["domain_result"], metric.path)
         except ComparisonError as error:
             errors.append(str(error))
+            continue
+        if not (_is_finite_number(reference_value) and _is_finite_number(candidate_value)):
+            errors.append(f"non-numeric value at {metric.path}")
             continue
         if not _close(reference_value, candidate_value, metric.atol, metric.rtol):
             mismatches.append(
