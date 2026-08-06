@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sipi-cli"
+version = "0.1.0"
+description = "Read-only SIPI diagnostic commands"
+requires-python = ">=3.12"
+dependencies = ["sipi-contracts", "sipi-runtime"]
+
+[project.scripts]
+sipi = "sipi_cli.__main__:main"
+
+[tool.uv.sources]
+sipi-contracts = { workspace = true }
+sipi-runtime = { workspace = true }
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

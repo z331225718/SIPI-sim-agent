@@ -5,6 +5,7 @@ requires-python = ">=3.12"
 [manifest]
 members = [
     "sipi-artifacts",
+    "sipi-cli",
     "sipi-contracts",
     "sipi-runtime",
 ]
@@ -165,6 +166,21 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "sipi-contracts", editable = "packages/sipi-contracts" }]
+
+[[package]]
+name = "sipi-cli"
+version = "0.1.0"
+source = { editable = "apps/sipi-cli" }
+dependencies = [
+    { name = "sipi-contracts" },
+    { name = "sipi-runtime" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "sipi-contracts", editable = "packages/sipi-contracts" },
+    { name = "sipi-runtime", editable = "packages/sipi-runtime" },
+]
 
 [[package]]
 name = "sipi-contracts"
