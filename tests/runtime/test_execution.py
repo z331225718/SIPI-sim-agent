@@ -112,6 +112,18 @@ class ExecutionAssemblyTests(unittest.TestCase):
         plans = plan_backend_executions(run_request(selection), reg, bound_inputs=bound)
         self.assertEqual(plans[0].request["bound_inputs"]["request"]["relative_path"], "inputs/request.json")
 
+    def test_bound_inputs_default_to_empty(self) -> None:
+        reg = registry(engine_entry("pybert-rust"))
+        plans = plan_backend_executions(run_request({"mode": "strict", "instance": "pybert-rust"}), reg)
+        self.assertEqual(plans[0].request["bound_inputs"], {})
+
+    def test_run_level_fields_do_not_leak_into_backend_request(self) -> None:
+        reg = registry(engine_entry("pybert-rust"))
+        plans = plan_backend_executions(run_request({"mode": "strict", "instance": "pybert-rust"}), reg)
+        request = plans[0].request.to_wire()
+        for leaked in ("project_id", "backend_selection", "extensions"):
+            self.assertNotIn(leaked, request)
+
     def test_payload_artifact_mode_uses_artifact_slot(self) -> None:
         reg = registry(engine_entry("pybert-rust"))
         selection = {"mode": "strict", "instance": "pybert-rust"}
