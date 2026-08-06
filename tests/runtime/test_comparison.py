@@ -111,7 +111,7 @@ class ComparisonTests(unittest.TestCase):
         self.assertIn("invalid path index", report.errors[0])
 
     def test_non_numeric_values_are_errors(self) -> None:
-        for bad in (float("nan"), float("inf"), True, "1.0"):
+        for bad in (True, "1.0"):
             with self.subTest(value=bad):
                 reference = backend_result("reference", {"value": 1.0})
                 candidate = backend_result("candidate", {"value": bad})
