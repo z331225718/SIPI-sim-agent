@@ -112,6 +112,56 @@ class ExternalGateTests(unittest.TestCase):
             self.assertTrue(report["ready"])
             self.assertEqual(report["engines"][0]["tag"], "sipi-baseline/agent-spice/20260807.1")
 
+    def test_any_blocked_subject_for_engine_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repo = make_tagged_repo(root, "agent-spice")
+            license_text = (
+                "subjects:\n"
+                "  - id: agent-spice-authorized\n"
+                "    scope: {root_ref: agent-spice}\n"
+                "    distribution_status: authorized_public\n"
+                "  - id: agent-spice-blocked\n"
+                "    scope: {root_ref: agent-spice}\n"
+                "    distribution_status: blocked_unknown\n"
+            )
+            result = run_checker({"agent-spice": str(repo)}, license_text=license_text, fixtures={"assets": []})
+            self.assertEqual(result.returncode, 1)
+            report = json.loads(result.stdout)
+            self.assertIn("license blocked_unknown: agent-spice-blocked", report["engines"][0]["blockers"])
+
+    def test_unparsable_license_manifest_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repo = make_tagged_repo(root, "agent-spice")
+            result = run_checker({"agent-spice": str(repo)}, license_text="{not: [valid", fixtures={"assets": []})
+            self.assertEqual(result.returncode, 1)
+            report = json.loads(result.stdout)
+            self.assertTrue(any("unparsable" in item for item in report["engines"][0]["blockers"]))
+
+    def test_missing_license_manifest_exits_2(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory)
+            license_path = tmp / "missing.yaml"
+            fixtures_path = tmp / "fixtures.json"
+            fixtures_path.write_text('{"assets": []}', encoding="utf-8")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-B",
+                    str(CHECKER),
+                    "--repos",
+                    json.dumps({"agent-spice": str(tmp)}),
+                    "--license-manifest",
+                    str(license_path),
+                    "--fixtures",
+                    str(fixtures_path),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

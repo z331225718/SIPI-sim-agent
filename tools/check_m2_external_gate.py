@@ -15,9 +15,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import subprocess
+import sys
 from pathlib import Path
+
+try:
+    import yaml
+except ImportError:  # pragma: no cover - exercised only in minimal environments
+    yaml = None
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_REPOS = {
@@ -52,25 +57,31 @@ def head_at_tag(repo: Path, tag: str) -> bool:
 
 
 def license_ready(manifest_text: str, engine: str) -> tuple[bool, list[str]]:
-    """Line-based YAML block scan: subjects whose scope root_ref matches engine."""
-    blockers: list[str] = []
-    current_root: str | None = None
-    found_subject = False
-    for line in manifest_text.splitlines():
-        match = re.search(r"root_ref:\s*([A-Za-z0-9_-]+)", line)
-        if match:
-            current_root = match.group(1)
-            continue
-        status = re.search(r"distribution_status:\s*([A-Za-z_]+)", line)
-        if status is not None and current_root == engine:
-            found_subject = True
-            if status.group(1) == "blocked_unknown":
-                blockers.append("license blocked_unknown")
-            else:
-                return True, []
-    if not found_subject:
-        blockers.append("no license subject for engine")
-    return not blockers, blockers
+    """Structured YAML check: every subject for the engine must be authorized."""
+    if yaml is None:
+        return False, ["pyyaml is unavailable; license manifest cannot be parsed"]
+    try:
+        document = yaml.safe_load(manifest_text)
+    except Exception as error:  # noqa: BLE001 - gate must fail closed on any parse error
+        return False, [f"license manifest unparsable: {error}"]
+    if not isinstance(document, dict) or not isinstance(document.get("subjects"), list):
+        return False, ["license manifest missing subjects"]
+    matched = [subject for subject in document["subjects"] if subject.get("scope", {}).get("root_ref") == engine]
+    if not matched:
+        return False, ["no license subject for engine"]
+    authorized = {
+        subject.get("distribution_status")
+        for subject in matched
+        if subject.get("distribution_status") in {"authorized_public", "authorized_private", "external_reference_only"}
+    }
+    blockers = [
+        f"license blocked_unknown: {subject.get('id')}"
+        for subject in matched
+        if subject.get("distribution_status") == "blocked_unknown"
+    ]
+    if not authorized:
+        blockers.append("no authorized license subject")
+    return not blockers and bool(authorized), blockers
 
 
 def fixtures_ready(manifest: dict, engine: str) -> tuple[bool, list[str]]:
@@ -129,4 +140,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except (OSError, json.JSONDecodeError, subprocess.CalledProcessError) as error:
+        print(f"external gate check failed: {error}", file=sys.stderr)
+        raise SystemExit(2)

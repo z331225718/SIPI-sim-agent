@@ -3,3 +3,6 @@ members = ["packages/*", "apps/*"]
 
 [tool.uv]
 managed = true
+
+[dependency-groups]
+dev = ["pyyaml>=6.0"]
