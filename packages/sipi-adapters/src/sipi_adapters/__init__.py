@@ -1,5 +1,6 @@
 """Strict black-box engine adapters for the SIPI control plane."""
 
+from .agent_com import AgentComRunAdapter
 from .agent_spice import AgentSpiceHspiceAdapter
 from .process import (
     BackendOutcome,
@@ -28,6 +29,7 @@ from .spi import (
 
 __all__ = [
     "AdapterContractError",
+    "AgentComRunAdapter",
     "AgentSpiceHspiceAdapter",
     "BackendAdapter",
     "BackendOutcome",
