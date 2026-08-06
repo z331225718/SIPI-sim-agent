@@ -50,11 +50,11 @@ def _entry(engine: dict, declaration: dict, bundle_hash: str) -> dict:
         "role": declaration["role"],
         "evidence_state": "certified",
         "release_channel": "stable",
-        "resource_enforcement": enforcement,
+        "resource_enforcement": dict(enforcement),
         "evidence_refs": list(evidence_refs),
         "certified_at": declaration["certified_at"],
         "expires_at": declaration["expires_at"],
-        "limits": declaration.get("limits") or {},
+        "limits": dict(declaration.get("limits") or {}),
     }
 
 

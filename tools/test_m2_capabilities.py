@@ -112,6 +112,19 @@ class M2CapabilitiesTests(unittest.TestCase):
             build = run_tool("build_m2_capabilities_certified.py", root)
             self.assertNotEqual(build.returncode, 0)
 
+    def test_generator_accepts_monitor_enforcement_declaration(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            install_bundle(root)
+            write_lock(
+                root,
+                [engine_entry(root, declarations=[declaration(resource_enforcement={"wall_time_s": "monitor", "cpu_time_s": "unsupported", "memory_bytes": "unsupported", "process_count": "unsupported", "artifact_bytes": "unsupported"})])],
+            )
+            build = run_tool("build_m2_capabilities_certified.py", root)
+            self.assertEqual(build.returncode, 0, build.stdout + build.stderr)
+            verify = run_tool("verify_m2_capabilities_certified.py", root)
+            self.assertEqual(verify.returncode, 0, verify.stdout + verify.stderr)
+
     def test_verifier_rejects_hard_enforcement_and_missing_engine(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

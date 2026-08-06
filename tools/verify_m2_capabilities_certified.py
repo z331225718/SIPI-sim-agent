@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,8 +38,9 @@ def main() -> int:
         engines = {entry["instance_id"]: entry for entry in parse_engine_lock(lock_path.read_text(encoding="utf-8")).wire["engines"]}
     for entry in raw["entries"]:
         q(entry["evidence_state"] == "certified" and entry["release_channel"] == "stable", f"{entry['engine_instance']}: evidence/release")
-        q(all(value == "unsupported" for value in entry["resource_enforcement"].values()), f"{entry['engine_instance']}: hard enforcement before M3")
+        q(all(value != "hard" for value in entry["resource_enforcement"].values()), f"{entry['engine_instance']}: hard enforcement before M3")
         q(entry["certified_at"] <= entry["expires_at"], f"{entry['engine_instance']}: expiry ordering")
+        q(entry["expires_at"] >= date.today().isoformat(), f"{entry['engine_instance']}: certification expired")
         q(bool(entry["evidence_refs"]), f"{entry['engine_instance']}: evidence refs")
         if engines:
             q(entry["engine_instance"] in engines, f"{entry['engine_instance']}: unknown engine instance")
