@@ -83,7 +83,7 @@ class ExternalGateTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             report = json.loads(result.stdout)
             blockers = report["engines"][0]["blockers"]
-            self.assertIn("license blocked_unknown", blockers)
+            self.assertTrue(any("license blocked_unknown" in item for item in blockers))
             self.assertTrue(any("required fixture" in item for item in blockers))
 
     def test_fully_ready_repo_passes(self) -> None:
