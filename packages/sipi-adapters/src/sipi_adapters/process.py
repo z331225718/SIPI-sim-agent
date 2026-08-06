@@ -28,6 +28,7 @@ from sipi_contracts import BackendExecutionRequestV1, BackendExecutionResultV1, 
 from .attestation import AttestationError, verify_wheel_bundle
 from .capabilities import AdapterCapability, preflight
 from .spi import AdapterContractError, UnsupportedCapabilityError, require_backend_request, validate_pinned_instance
+from .venv import BundleExecutionError, install_wheel, required_console_script, resolve_console_script
 
 ALLOWED_ENV = frozenset(
     {
@@ -265,12 +266,6 @@ def execute_backend(
         bundle_path = verify_engine_bundle(engine_entry, repo_root)
     except BundleVerificationError as error:
         return assemble_backend_result(request, status="failed", error=platform_error("EngineUnavailable", str(error)))
-    if bundle_path.suffix.lower() == ".whl":
-        return assemble_backend_result(
-            request,
-            status="failed",
-            error=platform_error("UnsupportedCapability", "wheel execution requires isolated venv install (later M2 slice)"),
-        )
 
     owns_workdir = workdir is None
     if owns_workdir:
@@ -284,7 +279,19 @@ def execute_backend(
         except AdapterContractError as error:
             return _failed_from_error(request, error)
         try:
-            argv = builder.build(request, bundle_path, workdir)
+            entry_target = bundle_path
+            if bundle_path.suffix.lower() == ".whl":
+                try:
+                    required_console_script(engine_entry)
+                    install_wheel(bundle_path, workdir / "engine-venv")
+                    entry_target = resolve_console_script(engine_entry, workdir / "engine-venv")
+                except BundleExecutionError as error:
+                    return assemble_backend_result(
+                        request,
+                        status="failed",
+                        error=platform_error("UnsupportedCapability", str(error)),
+                    )
+            argv = builder.build(request, entry_target, workdir)
         except AdapterContractError as error:
             return _failed_from_error(request, error)
         wall_time_s = request["resource_limits"].get("wall_time_s")

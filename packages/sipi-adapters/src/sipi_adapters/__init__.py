@@ -19,6 +19,7 @@ from .process import (
     verify_engine_bundle,
 )
 from .pybert import PyBertNativeAdapter
+from .venv import BundleExecutionError
 from .spi import (
     AdapterContractError,
     BackendAdapter,
@@ -37,6 +38,7 @@ __all__ = [
     "AttestationError",
     "BackendAdapter",
     "BackendOutcome",
+    "BundleExecutionError",
     "build_engine_capabilities",
     "BundleVerificationError",
     "CommandBuilder",
