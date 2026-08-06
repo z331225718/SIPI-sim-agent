@@ -16,6 +16,23 @@ from sipi_runtime import EngineLockLoadError, load_engine_lock
 TOOLCHAIN_DECLARED = ("rust", "node", "git", "msvc", "external_solvers")
 FIXTURE_MANIFEST_SCHEMA_ID = "sipi.fixture-manifest.v1"
 FIXTURE_AVAILABILITY = {"present", "missing", "partial", "present_unscanned"}
+REQUIRED_SCHEMA_FILES = (
+    "artifact-ref.v1.schema.json",
+    "backend-execution-request.v1.schema.json",
+    "backend-execution-result.v1.schema.json",
+    "capabilities-baseline.v1.schema.json",
+    "dag-node-record.v1.schema.json",
+    "engine-capabilities.v1.schema.json",
+    "engine-lock.v1.schema.json",
+    "run-event.v1.schema.json",
+    "run-record.v1.schema.json",
+    "run-request.v1.schema.json",
+    "run-result.v1.schema.json",
+    "success-manifest.v1.schema.json",
+    "validation-report.v1.schema.json",
+    "_defs/provenance.v1.schema.json",
+    "_defs/runtime-validation.v1.schema.json",
+)
 
 
 def _root(value: str | None) -> Path:
@@ -128,13 +145,27 @@ def _iter_json_files(root: Any) -> list[Any]:
     return found
 
 
+def _missing_required_files(root: Any, required: tuple[str, ...]) -> list[str]:
+    missing: list[str] = []
+    for relative in required:
+        target = root.joinpath(*relative.split("/"))
+        if not target.is_file():
+            missing.append(relative)
+    return missing
+
+
 def _schemas(root: Path) -> dict[str, Any]:
-    bundled = importlib.resources.files("sipi_contracts").joinpath("_schemas")
-    bundled_files: list[Any] = []
+    source_root = root / "schemas"
+    source_mode = source_root.is_dir()
     try:
-        bundled_files = _iter_json_files(bundled)
+        if source_mode:
+            active: Any = source_root
+        else:
+            active = importlib.resources.files("sipi_contracts").joinpath("_schemas")
+        bundled = importlib.resources.files("sipi_contracts").joinpath("_schemas")
+        active_files = _iter_json_files(active)
         schema_ids: set[str] = set()
-        for path in bundled_files:
+        for path in active_files:
             document = json.loads(path.read_text(encoding="utf-8"))
             if path.parent.name == "_defs":
                 continue
@@ -147,26 +178,51 @@ def _schemas(root: Path) -> dict[str, Any]:
             if schema_id in schema_ids:
                 raise ValueError(f"duplicate schema $id: {schema_id}")
             schema_ids.add(schema_id)
-    except (AttributeError, OSError, UnicodeDecodeError, ValueError, json.JSONDecodeError) as error:
+        active_missing = _missing_required_files(active, REQUIRED_SCHEMA_FILES)
+        bundled_missing = _missing_required_files(bundled, REQUIRED_SCHEMA_FILES)
+        bundled_files = _iter_json_files(bundled)
+    except (AttributeError, OSError, UnicodeDecodeError, ValueError, json.JSONDecodeError, ModuleNotFoundError) as error:
         return _check("schemas", "invalid", error=str(error))
-    authority_path = root / "schemas" / "authority.v1.yaml"
+    authority_path = active / "authority.v1.yaml"
     source_status = "not_checked"
     missing: list[str] = []
-    if authority_path.is_file():
+    if getattr(authority_path, "is_file", lambda: False)():
         try:
             authority = json.loads(authority_path.read_text(encoding="utf-8"))
             for item in authority["schemas"]:
                 source = item["source_of_truth"]
                 if source["kind"] != "local_json_schema":
                     continue
-                candidate = (root / source["path"]).resolve()
-                if not candidate.is_relative_to(root) or not candidate.is_file():
+                declared_path = source["path"]
+                if source_mode:
+                    candidate = (root / declared_path).resolve()
+                    if not candidate.is_relative_to(root):
+                        missing.append(declared_path)
+                        continue
+                relative = declared_path.removeprefix("schemas/")
+                target = active.joinpath(*relative.split("/"))
+                if not target.is_file():
                     missing.append(source["path"])
+                    continue
+                document = json.loads(target.read_text(encoding="utf-8"))
+                if document.get("$id") != item["schema_id"]:
+                    raise ValueError(f"authority $id mismatch: {declared_path} -> {document.get('$id')}")
             source_status = "ok" if not missing else "missing"
-        except (KeyError, TypeError, UnicodeDecodeError, json.JSONDecodeError) as error:
-            return _check("schemas", "invalid", bundled_schema_count=len(bundled_files), authority=str(authority_path), error=str(error))
-    status = "missing" if missing else "ok"
-    return _check("schemas", status, bundled_schema_count=len(bundled_files), bundled_schema_ids=sorted(schema_ids), source_authority_status=source_status, authority=str(authority_path), missing=missing)
+        except (KeyError, TypeError, UnicodeDecodeError, ValueError, json.JSONDecodeError) as error:
+            return _check("schemas", "invalid", active_schema_root="source" if source_mode else "packaged", bundled_schema_count=len(bundled_files), authority=str(authority_path), error=str(error))
+    missing_all = sorted(set(missing) | set(active_missing) | set(bundled_missing))
+    status = "missing" if missing_all else "ok"
+    return _check(
+        "schemas",
+        status,
+        active_schema_root="source" if source_mode else "packaged",
+        bundled_schema_count=len(bundled_files),
+        schema_ids=sorted(schema_ids),
+        source_authority_status=source_status,
+        authority=str(authority_path),
+        missing=missing_all,
+        bundled_missing=sorted(set(bundled_missing)),
+    )
 
 
 def _fixtures(root: Path) -> dict[str, Any]:

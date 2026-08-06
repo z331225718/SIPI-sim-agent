@@ -82,6 +82,8 @@ class CliTests(unittest.TestCase):
         checks = {item["id"]: item for item in report["checks"]}
         self.assertEqual(checks["engine_lock"]["status"], "invalid")
         self.assertEqual(checks["schemas"]["status"], "ok")
+        self.assertGreaterEqual(checks["schemas"]["details"]["bundled_schema_count"], 15)
+        self.assertEqual(checks["schemas"]["details"]["bundled_missing"], [])
 
     def test_https_catalog_does_not_enable_capabilities(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -169,6 +171,32 @@ class CliTests(unittest.TestCase):
             schemas = root / "schemas"
             schemas.mkdir()
             (schemas / "authority.v1.yaml").write_text("not json", encoding="utf-8")
+            report = doctor(root)
+        check = next(item for item in report["checks"] if item["id"] == "schemas")
+        self.assertEqual(check["status"], "invalid")
+
+    def test_missing_authority_declared_schema_is_reported(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            schemas = root / "schemas"
+            schemas.mkdir()
+            (schemas / "run-request.v1.schema.json").write_text(json.dumps({"$id": "sipi.run-request.v1"}), encoding="utf-8")
+            authority = {"schemas": [{"schema_id": "sipi.engine-lock.v1", "source_of_truth": {"kind": "local_json_schema", "path": "schemas/engine-lock.v1.schema.json"}}]}
+            (schemas / "authority.v1.yaml").write_text(json.dumps(authority), encoding="utf-8")
+            report = doctor(root)
+        check = next(item for item in report["checks"] if item["id"] == "schemas")
+        self.assertEqual(check["status"], "missing")
+        self.assertIn("schemas/engine-lock.v1.schema.json", check["details"]["missing"])
+        self.assertIn("engine-lock.v1.schema.json", check["details"]["missing"])
+
+    def test_authority_schema_id_mismatch_is_invalid(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            schemas = root / "schemas"
+            schemas.mkdir()
+            (schemas / "engine-lock.v1.schema.json").write_text(json.dumps({"$id": "sipi.engine-lock.v1"}), encoding="utf-8")
+            authority = {"schemas": [{"schema_id": "sipi.other.v1", "source_of_truth": {"kind": "local_json_schema", "path": "schemas/engine-lock.v1.schema.json"}}]}
+            (schemas / "authority.v1.yaml").write_text(json.dumps(authority), encoding="utf-8")
             report = doctor(root)
         check = next(item for item in report["checks"] if item["id"] == "schemas")
         self.assertEqual(check["status"], "invalid")
