@@ -76,8 +76,21 @@ class AgentComRunAdapter(CommandBuilder):
                 behavior_profile="r480",
                 role="reference",
                 execution_mode="process",
+                external_model_capabilities={
+                    "sipi.adapter.artifact-roles": {
+                        "domain_result": ["result.json"],
+                        "data": ["diagnostics.npz"],
+                        "report": ["report.html"],
+                    }
+                },
             ),
         )
+
+    @classmethod
+    def capabilities(cls, engine_instance_id: str, bundle_hash: str):
+        from .capabilities import build_engine_capabilities
+
+        return build_engine_capabilities(engine_instance_id=engine_instance_id, bundle_hash=bundle_hash, entries=cls.capability_entries())
 
     def build(self, request: BackendExecutionRequestV1, bundle_path: Path, workdir: Path) -> list[str]:
         payload = request.to_wire()["payload"]

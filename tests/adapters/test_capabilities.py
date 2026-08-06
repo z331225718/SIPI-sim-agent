@@ -58,9 +58,15 @@ class CapabilityTests(unittest.TestCase):
             (PyBertNativeAdapter, "link.simulate.v1"),
             (AgentComRunAdapter, "com.r480.run.v1"),
         ):
-            document = build_engine_capabilities(engine_instance_id="test-engine", bundle_hash="sha256:bundle", entries=adapter.capability_entries())
+            document = adapter.capabilities("test-engine", "sha256:bundle")
             self.assertEqual(document["schema"], "sipi.engine-capabilities.v1")
             self.assertEqual(document["capabilities"][0]["operation"], operation)
+            self.assertEqual(document["engine_instance_id"], "test-engine")
+
+    def test_agent_com_discloses_report_artifact(self) -> None:
+        entry = AgentComRunAdapter.capability_entries()[0]
+        roles = entry.external_model_capabilities["sipi.adapter.artifact-roles"]
+        self.assertIn("report.html", roles["report"])
 
     def test_preflight_accepts_supported_request(self) -> None:
         preflight(backend_request(), AgentSpiceHspiceAdapter.capability_entries())
@@ -86,6 +92,24 @@ class CapabilityTests(unittest.TestCase):
             resource_limits={"enforcement": "required", "wall_time_s": None, "cpu_time_s": None, "memory_bytes": None, "process_count": None, "artifact_bytes": None}
         )
         preflight(request, AgentSpiceHspiceAdapter.capability_entries())
+
+    def test_preflight_accepts_certified_hard_enforcement(self) -> None:
+        from sipi_adapters import AdapterCapability
+
+        entry = AgentSpiceHspiceAdapter.capability_entries()[0]
+        hard = AdapterCapability(
+            operation=entry.operation,
+            payload_schema=entry.payload_schema,
+            domain_result_schemas=entry.domain_result_schemas,
+            behavior_profile=entry.behavior_profile,
+            role=entry.role,
+            execution_mode=entry.execution_mode,
+            resource_enforcement={**entry.resource_enforcement, "wall_time_s": "hard"},
+        )
+        request = backend_request(
+            resource_limits={"enforcement": "required", "wall_time_s": 5, "cpu_time_s": None, "memory_bytes": None, "process_count": None, "artifact_bytes": None}
+        )
+        preflight(request, (hard,))
 
     def test_execute_backend_preflight_fails_closed_before_running(self) -> None:
         class FixtureBuilder:
