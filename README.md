@@ -38,6 +38,7 @@
 uv run python -B tools/sync_contracts_schemas.py  # schema 变更后同步打包副本
 uv run python -B tools/run_all_tests.py           # 单元测试门禁
 uv run python -B tools/run_all_tests.py --full    # 含外部探针的 M1 conformance
+uv run python -B tools/clean_install_smoke.py     # M2-08：wheel 构建 + 隔离 venv 冒烟
 ```
 
 仓库以 `schemas/` 为权威 schema 源，打包副本 `packages/sipi-contracts/src/sipi_contracts/_schemas` 不提交到 Git；修改任何 schema 后先运行同步脚本，否则 `sipi doctor` 会按缺失报告。
