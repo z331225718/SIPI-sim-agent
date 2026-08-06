@@ -87,6 +87,13 @@ class SelectionTests(unittest.TestCase):
             resolve_selection({"mode": "auto", "candidates": ["a"], "fallback_on": ["EngineUnavailable", "UnsupportedCapability"]}, reg)
         self.assertEqual(caught.exception.category, "EngineUnavailable")
 
+    def test_auto_internal_candidate_falls_back(self) -> None:
+        reg = registry(engine_entry("a", internal=True), engine_entry("b"))
+        trace = resolve_selection({"mode": "auto", "candidates": ["a", "b"], "fallback_on": ["EngineUnavailable", "UnsupportedCapability"]}, reg)
+        self.assertEqual([(item.role, item.instance_id) for item in trace.resolved], [("primary", "b")])
+        self.assertEqual(len(trace.fallback_trace), 1)
+        self.assertIn("internal-only", trace.fallback_trace[0])
+
     def test_compare_resolves_reference_and_candidate(self) -> None:
         reg = registry(engine_entry("ref"), engine_entry("cand"))
         selection = {"mode": "compare", "reference": "ref", "candidate": "cand", "comparison_profile": "default"}
@@ -98,6 +105,15 @@ class SelectionTests(unittest.TestCase):
         with self.assertRaises(SelectionError) as caught:
             resolve_selection({"mode": "compare", "reference": "a", "candidate": "a", "comparison_profile": "default"}, registry(engine_entry("a")))
         self.assertEqual(caught.exception.category, "EngineUnavailable")
+
+    def test_compare_internal_gate_passes_allow_internal(self) -> None:
+        reg = registry(engine_entry("ref", internal=True), engine_entry("cand"))
+        selection = {"mode": "compare", "reference": "ref", "candidate": "cand", "comparison_profile": "default", "allow_internal": True}
+        with self.assertRaises(SelectionError) as caught:
+            resolve_selection(selection, reg)
+        self.assertEqual(caught.exception.category, "UnsupportedCapability")
+        trace = resolve_selection(selection, reg, allow_internal=True)
+        self.assertEqual([(item.role, item.instance_id) for item in trace.resolved], [("reference", "ref"), ("candidate", "cand")])
 
     def test_selection_hash_is_key_order_independent(self) -> None:
         first = selection_hash({"mode": "strict", "instance": "a"})
