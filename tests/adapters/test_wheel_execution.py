@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import base64
+import json
 import sys
 import tempfile
 import unittest
@@ -13,7 +14,8 @@ sys.path.insert(0, str(ROOT / "packages" / "sipi-contracts" / "src"))
 sys.path.insert(0, str(ROOT / "packages" / "sipi-adapters" / "src"))
 
 from sipi_adapters import PyBertNativeAdapter, execute_backend
-from sipi_contracts import parse_backend_execution_request
+from sipi_contracts import parse_backend_execution_request, parse_engine_lock, parse_run_request
+from sipi_runtime import EngineRegistry, plan_backend_executions
 
 BASE_FILES = {
     "fixture_engine/__init__.py": (
@@ -183,6 +185,42 @@ class WheelExecutionTests(unittest.TestCase):
             result = execute_backend(backend_request(), engine_entry(root, files=wheel_files(engine_source=source)), root, builder=PyBertNativeAdapter())
         self.assertEqual(result["status"], "failed")
         self.assertEqual(result["error"]["category"], "ExternalModelFailure")
+
+    def test_wheel_execution_through_platform_loop(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            entry = engine_entry(root)
+            lock = {"schema": "sipi.engine-lock.v1", "engines": [entry], "operation_defaults": {}, "extensions": {}}
+            (root / "engine.lock").write_text(json.dumps(lock), encoding="utf-8")
+            registry = EngineRegistry(parse_engine_lock(lock))
+            run_request = parse_run_request(
+                {
+                    "schema": "sipi.run-request.v1",
+                    "run_id": "run-1",
+                    "project_id": "project-1",
+                    "analysis_id": "analysis-1",
+                    "attempt_id": "attempt-1",
+                    "operation": "link.simulate.v1",
+                    "payload_schema": "pybert.simulation.v1",
+                    "payload": {"simulation_input": {"schema": "pybert.simulation.v1", "source": "fixture"}},
+                    "backend_selection": {"mode": "strict", "instance": "pybert-rust-wheel"},
+                    "resource_limits": {"enforcement": "monitor", "wall_time_s": None, "cpu_time_s": None, "memory_bytes": None, "process_count": None, "artifact_bytes": None},
+                    "randomness": {},
+                    "artifact_policy": {},
+                    "extensions": {},
+                }
+            )
+            plans = plan_backend_executions(run_request, registry)
+            result = execute_backend(
+                plans[0].request,
+                plans[0].engine_entry,
+                root,
+                builder=PyBertNativeAdapter(),
+                capabilities=PyBertNativeAdapter.capability_entries(),
+                artifact_root=root / "artifacts",
+            )
+            self.assertEqual(result["status"], "succeeded")
+            self.assertEqual(result["domain_result"]["effective_input"]["source"], "fixture")
 
 
 if __name__ == "__main__":

@@ -128,6 +128,42 @@ class M2EndToEndTests(unittest.TestCase):
             self.assertEqual(result["status"], "succeeded")
             self.assertEqual(result["domain_result"]["effective_input"]["sample_count"], 2)
 
+    def test_auto_loop_falls_back_and_executes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            blocked = make_engine_entry(root, "pybert-python")
+            blocked["license_provenance"]["distribution_status"] = "blocked_unknown"
+            registry = write_lock(root, [blocked, make_engine_entry(root, "pybert-rust")])
+            selection = {"mode": "auto", "candidates": ["pybert-python", "pybert-rust"], "fallback_on": ["EngineUnavailable", "UnsupportedCapability"]}
+            plans = plan_backend_executions(run_request(selection), registry)
+            self.assertEqual([(plan.role, plan.request["engine_instance_id"]) for plan in plans], [("primary", "pybert-rust")])
+            result = execute_backend(
+                plans[0].request,
+                plans[0].engine_entry,
+                root,
+                builder=PyBertNativeAdapter(),
+                capabilities=PyBertNativeAdapter.capability_entries(),
+                artifact_root=root / "artifacts",
+            )
+            self.assertEqual(result["status"], "succeeded")
+
+    def test_failure_propagates_through_platform_loop(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            registry = write_lock(root, [make_engine_entry(root, "pybert-rust")])
+            plans = plan_backend_executions(run_request({"mode": "strict", "instance": "pybert-rust"}), registry)
+            tampered = dict(plans[0].engine_entry)
+            tampered["bundle"] = dict(tampered["bundle"], sha256="f" * 64)
+            result = execute_backend(
+                plans[0].request,
+                tampered,
+                root,
+                builder=PyBertNativeAdapter(),
+                capabilities=PyBertNativeAdapter.capability_entries(),
+            )
+            self.assertEqual(result["status"], "failed")
+            self.assertEqual(result["error"]["category"], "EngineUnavailable")
+
 
 if __name__ == "__main__":
     unittest.main()
