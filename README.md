@@ -31,3 +31,13 @@
 - 受约束的 Agent 工具层，用于运行、比较、诊断和参数扫描，不绕过仿真契约直接操作数值内核。
 
 实施从 [PLAN.md](PLAN.md) 的 `M0` 基线门禁开始。
+
+## 验证
+
+```powershell
+uv run python -B tools/sync_contracts_schemas.py  # schema 变更后同步打包副本
+uv run python -B tools/run_all_tests.py           # 单元测试门禁
+uv run python -B tools/run_all_tests.py --full    # 含外部探针的 M1 conformance
+```
+
+仓库以 `schemas/` 为权威 schema 源，打包副本 `packages/sipi-contracts/src/sipi_contracts/_schemas` 不提交到 Git；修改任何 schema 后先运行同步脚本，否则 `sipi doctor` 会按缺失报告。

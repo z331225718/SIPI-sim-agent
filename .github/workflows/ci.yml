@@ -1,0 +1,20 @@
+name: SIPI CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unit-tests:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Install workspace
+        run: uv sync --locked
+      - name: Regenerate packaged schema bundle
+        run: uv run python -B tools/sync_contracts_schemas.py
+      - name: Run unit test gate
+        run: uv run python -B tools/run_all_tests.py
