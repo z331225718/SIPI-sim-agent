@@ -206,7 +206,7 @@ class AttestationTests(unittest.TestCase):
             path = verify_engine_bundle(entry, root)
             self.assertEqual(path.suffix, ".py")
 
-    def test_execute_backend_refuses_wheel_execution_without_running_engine(self) -> None:
+    def test_execute_backend_requires_console_script_without_running_engine(self) -> None:
         class NeverBuilder:
             def build(self, request, bundle_path, workdir):
                 raise AssertionError("engine must not run for wheel bundles yet")
@@ -219,7 +219,7 @@ class AttestationTests(unittest.TestCase):
             result = execute_backend(backend_request(), engine_entry(root), root, builder=NeverBuilder())
         self.assertEqual(result["status"], "failed")
         self.assertEqual(result["error"]["category"], "UnsupportedCapability")
-        self.assertIn("isolated venv", result["error"]["message"])
+        self.assertIn("console-script", result["error"]["message"])
 
 
 if __name__ == "__main__":
