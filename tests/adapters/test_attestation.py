@@ -152,6 +152,15 @@ class AttestationTests(unittest.TestCase):
                 verify_wheel_bundle(entry, root)
             self.assertIn("sha256 mismatch", str(caught.exception))
 
+    def test_https_bundle_is_rejected_at_attestation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            entry = engine_entry(root)
+            entry["bundle"] = {"kind": "https_url", "url": "https://example.invalid/fixture.whl", "sha256": "f" * 64}
+            with self.assertRaises(AttestationError) as caught:
+                verify_wheel_bundle(entry, root)
+            self.assertIn("https_url", str(caught.exception))
+
     def test_path_escape_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -160,6 +169,42 @@ class AttestationTests(unittest.TestCase):
             with self.assertRaises(AttestationError) as caught:
                 verify_wheel_bundle(entry, root)
             self.assertIn("escapes", str(caught.exception))
+
+    def test_unsafe_archive_entry_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            files = dict(wheel_files())
+            files["../evil.py"] = b"evil"
+            build_wheel(root, files=files)
+            entry = engine_entry(root)
+            with self.assertRaises(AttestationError) as caught:
+                verify_wheel_bundle(entry, root)
+            self.assertIn("unsafe archive entry", str(caught.exception))
+
+    def test_single_file_bundle_attestation_regression(self) -> None:
+        fake_engine = ROOT / "tests" / "adapters" / "fixtures" / "fake_engine.py"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "bundles" / "fake_engine.py"
+            target.parent.mkdir(parents=True)
+            target.write_bytes(fake_engine.read_bytes())
+            digest = sha256(target)
+            entry = {
+                "instance_id": "single-file",
+                "engine_family": "fixture",
+                "version": "1",
+                "source_commit": "0" * 40,
+                "bundle": {"kind": "local_path", "path": "bundles/fake_engine.py", "sha256": digest},
+                "protocol": {"request_schema": "sipi.backend-execution-request.v1", "result_schema": "sipi.backend-execution-result.v1"},
+                "capabilities": {"schema": "sipi.engine-capabilities.v1", "sha256": "1" * 64},
+                "runtime": {"kind": "python", "os": "windows", "architecture": "x86_64", "python_abi": "cp312", "rust_target": None},
+                "dependency_lock_sha256": "2" * 64,
+                "license_provenance": {"distribution_status": "authorized_public", "manifest_sha256": "3" * 64},
+                "bundle_manifest": {"entrypoint": "fake_engine.py", "files": [{"relative_path": "fake_engine.py", "role": "entrypoint", "sha256": digest, "byte_length": target.stat().st_size}]},
+                "extensions": {},
+            }
+            path = verify_engine_bundle(entry, root)
+            self.assertEqual(path.suffix, ".py")
 
     def test_execute_backend_refuses_wheel_execution_without_running_engine(self) -> None:
         class NeverBuilder:

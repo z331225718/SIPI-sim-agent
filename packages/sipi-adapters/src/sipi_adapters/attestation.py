@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+MAX_ARCHIVE_MEMBER_BYTES = 1024 * 1024 * 1024
+
 
 class AttestationError(ValueError):
     """Raised when a wheel bundle fails attestation."""
@@ -50,6 +52,14 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _validate_archive_name(name: str) -> None:
+    if name.startswith("/") or "\\" in name or ":" in name:
+        raise AttestationError(f"unsafe archive entry: {name}")
+    parts = name.split("/")
+    if any(part in ("", ".", "..") for part in parts):
+        raise AttestationError(f"unsafe archive entry: {name}")
+
+
 def verify_wheel_bundle(engine_entry: Mapping[str, Any], repo_root: Path) -> WheelAttestation:
     bundle = engine_entry["bundle"]
     if bundle["kind"] != "local_path":
@@ -70,12 +80,18 @@ def verify_wheel_bundle(engine_entry: Mapping[str, Any], repo_root: Path) -> Whe
     try:
         with zipfile.ZipFile(candidate) as archive:
             names = set(archive.namelist())
+            for name in names:
+                _validate_archive_name(name)
             verified: list[str] = []
             for item in manifest["files"]:
                 relative = item["relative_path"]
+                _validate_archive_name(relative)
+                if item["byte_length"] > MAX_ARCHIVE_MEMBER_BYTES:
+                    raise AttestationError(f"manifest member exceeds size cap: {relative}")
                 if relative not in names:
                     raise AttestationError(f"manifest file missing inside wheel: {relative}")
-                data = archive.read(relative)
+                with archive.open(relative) as stream:
+                    data = stream.read(item["byte_length"] + 1)
                 if len(data) != item["byte_length"]:
                     raise AttestationError(f"manifest byte length mismatch: {relative}")
                 actual = hashlib.sha256(data).hexdigest()
