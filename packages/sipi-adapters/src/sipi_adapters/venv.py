@@ -20,6 +20,14 @@ class BundleExecutionError(RuntimeError):
     """Raised when an attested wheel cannot be installed or resolved."""
 
 
+def _clean_env() -> dict[str, str]:
+    env = dict(os.environ)
+    env.pop("PYTHONPATH", None)
+    env.pop("PYTHONHOME", None)
+    env["PYTHONNOUSERSITE"] = "1"
+    return env
+
+
 def venv_python(venv_dir: Path) -> Path:
     return venv_dir / ("Scripts" if os.name == "nt" else "bin") / ("python.exe" if os.name == "nt" else "python")
 
@@ -30,7 +38,7 @@ def console_script_path(venv_dir: Path, name: str) -> Path:
 
 
 def install_wheel(wheel_path: Path, venv_dir: Path, *, python: str = sys.executable) -> Path:
-    created = subprocess.run([python, "-m", "venv", str(venv_dir)], capture_output=True, text=True)
+    created = subprocess.run([python, "-m", "venv", str(venv_dir)], capture_output=True, text=True, env=_clean_env())
     if created.returncode != 0:
         raise BundleExecutionError(f"venv creation failed: {created.stderr[-500:]}")
     venv_python_path = venv_python(venv_dir)
@@ -38,6 +46,7 @@ def install_wheel(wheel_path: Path, venv_dir: Path, *, python: str = sys.executa
         [str(venv_python_path), "-m", "pip", "install", "--no-deps", "--quiet", str(wheel_path)],
         capture_output=True,
         text=True,
+        env=_clean_env(),
     )
     if installed.returncode != 0:
         raise BundleExecutionError(f"wheel install failed: {installed.stderr[-500:]}")

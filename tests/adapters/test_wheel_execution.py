@@ -48,8 +48,10 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def wheel_files() -> dict[str, bytes]:
+def wheel_files(*, engine_source: bytes | None = None) -> dict[str, bytes]:
     files = dict(BASE_FILES)
+    if engine_source is not None:
+        files["fixture_engine/__init__.py"] = engine_source
     lines = []
     for name, data in sorted(files.items()):
         digest = base64.urlsafe_b64encode(hashlib.sha256(data).digest()).rstrip(b"=").decode()
@@ -60,18 +62,18 @@ def wheel_files() -> dict[str, bytes]:
     return files
 
 
-def build_wheel(root: Path) -> Path:
+def build_wheel(root: Path, *, files: dict[str, bytes] | None = None) -> Path:
     wheel = root / "bundles" / "fixture_engine-0.1.0-py3-none-any.whl"
     wheel.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(wheel, "w") as archive:
-        for name, data in wheel_files().items():
+        for name, data in (files if files is not None else wheel_files()).items():
             archive.writestr(name, data)
     return wheel
 
 
-def engine_entry(root: Path, *, console_script: str | None = "fixture-engine") -> dict:
-    wheel = build_wheel(root)
-    files = wheel_files()
+def engine_entry(root: Path, *, console_script: str | None = "fixture-engine", files: dict[str, bytes] | None = None) -> dict:
+    files = files if files is not None else wheel_files()
+    wheel = build_wheel(root, files=files)
     manifest_files = [
         {
             "relative_path": name,
@@ -150,6 +152,37 @@ class WheelExecutionTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed")
         self.assertEqual(result["error"]["category"], "UnsupportedCapability")
         self.assertIn("console-script", result["error"]["message"])
+
+    def test_missing_console_script_after_install_is_unsupported_capability(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = execute_backend(backend_request(), engine_entry(root, console_script="missing-script"), root, builder=PyBertNativeAdapter())
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["error"]["category"], "UnsupportedCapability")
+        self.assertIn("console script missing", result["error"]["message"])
+
+    def test_wheel_install_failure_is_unsupported_capability(self) -> None:
+        no_record = {name: data for name, data in BASE_FILES.items()}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = execute_backend(backend_request(), engine_entry(root, files=no_record), root, builder=PyBertNativeAdapter())
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["error"]["category"], "UnsupportedCapability")
+        self.assertIn("wheel install failed", result["error"]["message"])
+
+    def test_missing_third_party_dependency_is_engine_failure(self) -> None:
+        source = (
+            "import argparse, json, sys\n"
+            "import missing_third_party_dep\n"  # noqa: F401
+            "from pathlib import Path\n"
+            "def main():\n"
+            "    return 1\n"
+        ).encode("utf-8")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = execute_backend(backend_request(), engine_entry(root, files=wheel_files(engine_source=source)), root, builder=PyBertNativeAdapter())
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["error"]["category"], "ExternalModelFailure")
 
 
 if __name__ == "__main__":
