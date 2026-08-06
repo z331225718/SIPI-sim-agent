@@ -9,6 +9,7 @@ from typing import Any, Mapping
 from sipi_contracts import BackendExecutionRequestV1, BackendExecutionResultV1
 
 from .process import (
+    BackendOutcome,
     CommandBuilder,
     ProcessResult,
     assemble_backend_result,
@@ -52,23 +53,27 @@ class AgentSpiceHspiceAdapter(CommandBuilder):
             "--execute",
         ]
 
-    def build_result(self, request: BackendExecutionRequestV1, engine_entry: Mapping[str, Any], workdir: Path, process: ProcessResult) -> BackendExecutionResultV1:
+    def build_outcome(self, request: BackendExecutionRequestV1, engine_entry: Mapping[str, Any], workdir: Path, process: ProcessResult) -> BackendOutcome:
         out_root = workdir / "out"
         summaries = sorted(out_root.rglob("run_summary.json"))
         if not summaries:
-            return assemble_backend_result(
-                request,
-                status="failed",
-                error=platform_error("ExternalModelFailure", "engine succeeded but produced no run_summary.json"),
+            return BackendOutcome(
+                assemble_backend_result(
+                    request,
+                    status="failed",
+                    error=platform_error("ExternalModelFailure", "engine succeeded but produced no run_summary.json"),
+                )
             )
         summary: Any = json.loads(summaries[0].read_text(encoding="utf-8"))
         warnings: tuple[str, ...] = ()
         if len(summaries) > 1:
             warnings = (f"multiple run_summary.json files found; used {summaries[0].relative_to(workdir).as_posix()}",)
-        return assemble_backend_result(
-            request,
-            status="succeeded",
-            domain_result=summary,
-            domain_result_schema=self.domain_result_schema,
-            warnings=warnings,
+        return BackendOutcome(
+            assemble_backend_result(
+                request,
+                status="succeeded",
+                domain_result=summary,
+                domain_result_schema=self.domain_result_schema,
+                warnings=warnings,
+            )
         )

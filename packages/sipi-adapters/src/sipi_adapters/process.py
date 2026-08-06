@@ -61,6 +61,14 @@ class ProcessResult:
     timed_out: bool
 
 
+@dataclass(frozen=True)
+class BackendOutcome:
+    """One backend result plus files that must be handed to the runtime store."""
+
+    result: BackendExecutionResultV1
+    artifact_paths: tuple[Path, ...] = ()
+
+
 def platform_error(
     category: str,
     message: str,
@@ -209,7 +217,7 @@ class CommandBuilder(Protocol):
     def build(self, request: BackendExecutionRequestV1, bundle_path: Path, workdir: Path) -> list[str]:
         ...
 
-    def build_result(self, request: BackendExecutionRequestV1, engine_entry: Mapping[str, Any], workdir: Path, process: ProcessResult) -> BackendExecutionResultV1:
+    def build_outcome(self, request: BackendExecutionRequestV1, engine_entry: Mapping[str, Any], workdir: Path, process: ProcessResult) -> BackendOutcome:
         ...
 
 
@@ -234,6 +242,7 @@ def execute_backend(
     *,
     builder: CommandBuilder,
     workdir: Path | None = None,
+    artifact_root: Path | None = None,
 ) -> BackendExecutionResultV1:
     """Execute one strict backend execution and return its single result."""
     require_backend_request(request)
@@ -271,7 +280,30 @@ def execute_backend(
             if process.stderr.strip():
                 message += f": {process.stderr.strip().splitlines()[-1]}"
             return assemble_backend_result(request, status="failed", error=platform_error("ExternalModelFailure", message))
-        return builder.build_result(request, engine_entry, workdir, process)
+        outcome = builder.build_outcome(request, engine_entry, workdir, process)
+        if outcome.result["artifacts"] and artifact_root is None:
+            return assemble_backend_result(
+                request,
+                status="failed",
+                error=platform_error("InternalInvariant", "backend result has artifacts but no artifact_root was provided"),
+            )
+        if artifact_root is not None:
+            artifact_root = Path(artifact_root)
+            artifact_root.mkdir(parents=True, exist_ok=True)
+            for source in outcome.artifact_paths:
+                relative = source.resolve().relative_to(workdir.resolve())
+                target = artifact_root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, target)
+            for artifact in outcome.result["artifacts"]:
+                stored = artifact_root / artifact["relative_path"]
+                if not stored.is_file() or _sha256(stored) != artifact["sha256"] or stored.stat().st_size != artifact["byte_length"]:
+                    return assemble_backend_result(
+                        request,
+                        status="failed",
+                        error=platform_error("InternalInvariant", f"artifact handoff verification failed: {artifact['relative_path']}"),
+                    )
+        return outcome.result
     finally:
         if owns_workdir:
             shutil.rmtree(workdir, ignore_errors=True)

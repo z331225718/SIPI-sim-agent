@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT / "packages" / "sipi-adapters" / "src"))
 
 from sipi_adapters import (
     AgentSpiceHspiceAdapter,
+    BackendOutcome,
     CommandBuilder,
     ProcessResult,
     assemble_backend_result,
@@ -93,15 +94,17 @@ class FixtureBuilder(CommandBuilder):
             argv += ["--sleep", str(payload["sleep_s"])]
         return argv
 
-    def build_result(self, request, engine_entry, workdir, process):
+    def build_outcome(self, request, engine_entry, workdir, process):
         result_path = workdir / "domain-result.json"
         if not result_path.is_file():
-            return assemble_backend_result(request, status="failed", error=platform_error("ExternalModelFailure", "fixture engine produced no result file"))
-        return assemble_backend_result(
-            request,
-            status="succeeded",
-            domain_result=json.loads(result_path.read_text(encoding="utf-8")),
-            domain_result_schema=self.domain_result_schema,
+            return BackendOutcome(assemble_backend_result(request, status="failed", error=platform_error("ExternalModelFailure", "fixture engine produced no result file")))
+        return BackendOutcome(
+            assemble_backend_result(
+                request,
+                status="succeeded",
+                domain_result=json.loads(result_path.read_text(encoding="utf-8")),
+                domain_result_schema=self.domain_result_schema,
+            )
         )
 
 
@@ -261,15 +264,15 @@ class ProcessAdapterTests(unittest.TestCase):
             case_dir.mkdir(parents=True)
             (case_dir / "run_summary.json").write_text(json.dumps({"exit_code": 0, "measures": {"vout": 1.0}}), encoding="utf-8")
             request = backend_request(payload={"deck": "deck.sp"})
-            result = AgentSpiceHspiceAdapter().build_result(
+            result = AgentSpiceHspiceAdapter().build_outcome(
                 request,
                 engine_entry(root),
                 workdir,
                 ProcessResult(returncode=0, stdout="", stderr="", elapsed_s=0.1, timed_out=False),
             )
-        self.assertEqual(result["status"], "succeeded")
-        self.assertEqual(result["domain_result_schema"], "agent-spice.hspice-run-summary.v1")
-        self.assertEqual(result["domain_result"]["measures"], {"vout": 1.0})
+        self.assertEqual(result.result["status"], "succeeded")
+        self.assertEqual(result.result["domain_result_schema"], "agent-spice.hspice-run-summary.v1")
+        self.assertEqual(result.result["domain_result"]["measures"], {"vout": 1.0})
 
 
 if __name__ == "__main__":

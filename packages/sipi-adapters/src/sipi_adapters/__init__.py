@@ -2,6 +2,7 @@
 
 from .agent_spice import AgentSpiceHspiceAdapter
 from .process import (
+    BackendOutcome,
     BundleVerificationError,
     CommandBuilder,
     ProcessResult,
@@ -14,6 +15,7 @@ from .process import (
     run_process,
     verify_engine_bundle,
 )
+from .pybert import PyBertNativeAdapter
 from .spi import (
     AdapterContractError,
     BackendAdapter,
@@ -28,9 +30,11 @@ __all__ = [
     "AdapterContractError",
     "AgentSpiceHspiceAdapter",
     "BackendAdapter",
+    "BackendOutcome",
     "BundleVerificationError",
     "CommandBuilder",
     "ProcessResult",
+    "PyBertNativeAdapter",
     "UnsupportedCapabilityError",
     "assemble_backend_result",
     "execute_backend",
