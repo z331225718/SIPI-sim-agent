@@ -18,6 +18,7 @@ from .validation.relations import (
     validate_backend_result_intrinsic,
     validate_capabilities,
     validate_capability_baseline,
+    validate_capabilities_certified,
     validate_validation_report_intrinsic,
     validate_dag_node_record_intrinsic,
     validate_engine_lock_intrinsic,
@@ -167,6 +168,14 @@ class PythonCapabilityBaselineV1(ContractModel):
     known_fields = frozenset({"schema", "status", "runtime_consumable", "advertise", "default_auto_eligible", "source", "capability_key_fields", "catalogs", "capabilities", "unmapped_capability_gaps", "non_claims"})
 
 
+@dataclass(frozen=True, slots=True, init=False)
+class CapabilitiesCertifiedV1(ContractModel):
+    """Quality-to-runtime certified capability catalog; consume only via this model."""
+
+    schema_name = "capabilities-certified.v1.schema.json"
+    known_fields = frozenset({"schema", "status", "advertise", "capability_key_fields", "entries", "non_claims"})
+
+
 def parse_run_request(value: str | Mapping[str, Any], *, allow_internal: bool = False) -> RunRequestV1:
     data = _mapping(value, RunRequestV1.schema_name)
     validate_request(data, allow_internal=allow_internal)
@@ -253,6 +262,12 @@ def parse_capability_baseline(value: str | Mapping[str, Any]) -> PythonCapabilit
     data = _mapping(value, PythonCapabilityBaselineV1.schema_name)
     validate_capability_baseline(data)
     return _parse(PythonCapabilityBaselineV1, data)  # type: ignore[return-value]
+
+
+def parse_capabilities_certified(value: str | Mapping[str, Any], *, producer: bool = False) -> CapabilitiesCertifiedV1:
+    data = _mapping(value, CapabilitiesCertifiedV1.schema_name)
+    validate_capabilities_certified(data, producer=producer)
+    return _parse(CapabilitiesCertifiedV1, data)  # type: ignore[return-value]
 
 
 def parse_validation_report(value: str | Mapping[str, Any], *, producer: bool = False) -> ValidationReportV1:

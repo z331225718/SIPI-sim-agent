@@ -354,8 +354,7 @@
       "lifecycle": "reserved_unpublished",
       "definition_owner": "quality+release-owner",
       "source_of_truth": {
-        "kind": "planned_definition",
-        "task": "M2-11",
+        "kind": "local_json_schema",
         "path": "schemas/capabilities-certified.v1.schema.json"
       },
       "exposure": "not_public",

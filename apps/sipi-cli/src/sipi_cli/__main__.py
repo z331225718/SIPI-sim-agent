@@ -11,6 +11,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from sipi_contracts import ContractViolation, parse_capabilities_certified
 from sipi_runtime import EngineLockLoadError, load_engine_lock
 
 TOOLCHAIN_DECLARED = ("rust", "node", "git", "msvc", "external_solvers")
@@ -259,9 +260,31 @@ def capabilities(root: Path, instance: str | None) -> dict[str, Any]:
     catalog = root / "docs" / "baselines" / "capabilities.certified.v1.json"
     if not catalog.is_file():
         source = {"kind": "certified_catalog", "status": "absent"}
+        advertised: list[dict[str, Any]] = []
     else:
-        source = {"kind": "certified_catalog", "status": "invalid", "path": str(catalog), "reason": "no certified catalog contract is available before M2"}
-    return {"format_version": 1, "command": "capabilities", "source": source, "filter": {"instance": instance}, "advertised": []}
+        try:
+            parsed = parse_capabilities_certified(catalog.read_text(encoding="utf-8"))
+        except (ContractViolation, TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            source = {"kind": "certified_catalog", "status": "invalid", "path": str(catalog), "reason": "certified catalog failed validation", "error": str(error)}
+            advertised = []
+        else:
+            entries = parsed.to_wire()["entries"]
+            if instance is not None:
+                entries = [entry for entry in entries if entry["engine_instance"] == instance]
+            advertised = [
+                {
+                    "operation": entry["operation"],
+                    "payload_schema": entry["payload_schema"],
+                    "engine_instance": entry["engine_instance"],
+                    "behavior_profile": entry["behavior_profile"],
+                    "platform": entry["platform"],
+                    "execution_mode": entry["execution_mode"],
+                    "bundle_hash": entry["bundle_hash"],
+                }
+                for entry in entries
+            ]
+            source = {"kind": "certified_catalog", "status": "ok", "path": str(catalog), "entry_count": len(entries)}
+    return {"format_version": 1, "command": "capabilities", "source": source, "filter": {"instance": instance}, "advertised": advertised}
 
 
 def _render(payload: dict[str, Any], output_format: str) -> None:
@@ -274,7 +297,7 @@ def _render(payload: dict[str, Any], output_format: str) -> None:
             print(f"{item['id']}: {item['status']}")
     else:
         print(f"capabilities: {payload['source']['status']}")
-        print("advertised: 0")
+        print(f"advertised: {len(payload['advertised'])}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -289,7 +312,7 @@ def main(argv: list[str] | None = None) -> int:
     root = _root(args.root)
     payload = doctor(root) if args.command == "doctor" else capabilities(root, args.instance)
     _render(payload, args.format)
-    return 0 if (args.command == "capabilities" and payload["source"]["status"] == "absent") or (args.command == "doctor" and payload["overall"] == "ok") else 1
+    return 0 if (args.command == "capabilities" and payload["source"]["status"] in {"absent", "ok"}) or (args.command == "doctor" and payload["overall"] == "ok") else 1
 
 
 if __name__ == "__main__":

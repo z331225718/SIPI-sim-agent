@@ -591,3 +591,20 @@ def validate_capability_baseline(value: Mapping[str, Any]) -> None:
         if stable_key in seen:
             _violation("sipi.capabilities-baseline.v1", "duplicate_capability", "duplicate baseline capability key")
         seen.add(stable_key)
+
+
+def validate_capabilities_certified(value: Mapping[str, Any], *, producer: bool = False) -> None:
+    """Validate the certified capability catalog consumed by the runtime."""
+    validate_wire("capabilities-certified.v1.schema.json", value)
+    seen = set()
+    for entry in value["entries"]:
+        key = (
+            entry["operation"], entry["payload_schema"], entry["engine_instance"],
+            entry["behavior_profile"], entry["platform"]["os"], entry["platform"]["architecture"],
+            entry["execution_mode"],
+        )
+        if key in seen:
+            _violation("sipi.capabilities-certified.v1", "duplicate_capability", "duplicate certified capability key")
+        seen.add(key)
+    if producer:
+        _reject_unknown(value, {"schema", "status", "advertise", "capability_key_fields", "entries", "non_claims"}, "sipi.capabilities-certified.v1", "catalog")

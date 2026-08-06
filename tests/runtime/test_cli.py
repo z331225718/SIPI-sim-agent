@@ -243,6 +243,48 @@ class CliTests(unittest.TestCase):
         self.assertEqual(payload["source"]["status"], "invalid")
         self.assertEqual(payload["advertised"], [])
 
+    def test_certified_catalog_advertises_valid_entries(self) -> None:
+        resource_fields = ("wall_time_s", "cpu_time_s", "memory_bytes", "process_count", "artifact_bytes")
+        entry = {
+            "operation": "link.simulate.v1",
+            "payload_schema": "pybert.simulation.v1",
+            "engine_instance": "pybert-rust",
+            "bundle_hash": "sha256:" + "a" * 64,
+            "behavior_profile": "default",
+            "platform": {"os": "windows", "architecture": "x86_64"},
+            "execution_mode": "process",
+            "role": "candidate",
+            "evidence_state": "certified",
+            "release_channel": "stable",
+            "resource_enforcement": {name: "unsupported" for name in resource_fields},
+            "evidence_refs": ["fixture:pybert-rust-smoke"],
+            "certified_at": "2026-08-06",
+            "expires_at": "2027-08-06",
+            "limits": {},
+        }
+        payload = {
+            "schema": "sipi.capabilities-certified.v1",
+            "status": "certified",
+            "advertise": True,
+            "capability_key_fields": ["operation", "payload_schema", "engine_instance", "behavior_profile", "platform.os", "platform.architecture", "execution_mode"],
+            "entries": [entry],
+            "non_claims": [],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            catalog = root / "docs" / "baselines"
+            catalog.mkdir(parents=True)
+            (catalog / "capabilities.certified.v1.json").write_text(json.dumps(payload), encoding="utf-8")
+            status, output = self.run_cli("capabilities", "--root", str(root), "--format", "json")
+            parsed = json.loads(output)
+            self.assertEqual(status, 0)
+            self.assertEqual(parsed["source"]["status"], "ok")
+            self.assertEqual(len(parsed["advertised"]), 1)
+            self.assertEqual(parsed["advertised"][0]["engine_instance"], "pybert-rust")
+            filtered_status, filtered_output = self.run_cli("capabilities", "--root", str(root), "--instance", "other", "--format", "json")
+            self.assertEqual(json.loads(filtered_output)["advertised"], [])
+            self.assertEqual(filtered_status, 0)
+
     def test_toolchains_reports_declared_unchecked_tools(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
