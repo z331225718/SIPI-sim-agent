@@ -95,6 +95,28 @@ class LifecycleTests(unittest.TestCase):
         with self.assertRaises(InvalidTransition):
             lifecycle.block_node("downstream", blocked_by=("missing",))
 
+    def test_required_blocked_by_cancelled_upstream_finalizes_cancelled(self) -> None:
+        lifecycle = self.active({"upstream": True, "downstream": True})
+        lifecycle.request_cancel("upstream")
+        self.assertEqual(lifecycle.snapshot().nodes["upstream"]["status"], "cancelled")
+        lifecycle.block_node("downstream", blocked_by=("upstream",))
+        self.assertEqual(lifecycle.finalize_execution(), "cancelled")
+
+    def test_required_blocked_by_cancelled_chain_finalizes_cancelled(self) -> None:
+        lifecycle = self.active({"upstream": True, "middle": True, "leaf": True})
+        lifecycle.request_cancel("upstream")
+        lifecycle.block_node("middle", blocked_by=("upstream",))
+        lifecycle.block_node("leaf", blocked_by=("middle",))
+        self.assertEqual(lifecycle.finalize_execution(), "cancelled")
+
+    def test_required_blocked_by_failed_upstream_finalizes_failed(self) -> None:
+        lifecycle = self.active({"upstream": True, "downstream": True})
+        lifecycle.mark_node_ready("upstream")
+        lifecycle.start_attempt("upstream", "upstream-1")
+        lifecycle.finish_attempt("upstream-1", "failed")
+        lifecycle.block_node("downstream", blocked_by=("upstream",))
+        self.assertEqual(lifecycle.finalize_execution(), "failed")
+
     def test_cancel_is_one_way_and_unsolicited_cancel_is_a_failure(self) -> None:
         lifecycle = self.active()
         self.ready(lifecycle)

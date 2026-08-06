@@ -412,7 +412,7 @@ class InMemoryLifecycle:
 
             required = [node for node in self._nodes.values() if node["effective_required"]]
             required_cancelled = any(
-                node["status"] == "cancelled" or node_id in self._analysis_cancel_requested
+                self._node_cancel_caused(node_id)
                 for node_id, node in self._nodes.items()
                 if node["effective_required"]
             )
@@ -432,6 +432,19 @@ class InMemoryLifecycle:
             self._warnings = ["optional DAG nodes did not complete successfully"] if optional_degraded else []
             self._execution = terminal
             return terminal
+
+    def _node_cancel_caused(self, node_id: str, *, seen: set[str] | None = None) -> bool:
+        """True when a node is cancelled, has a submitted cancel, or is blocked by one."""
+        node = self._nodes[node_id]
+        if node["status"] == "cancelled" or node_id in self._analysis_cancel_requested:
+            return True
+        if node["status"] != "blocked":
+            return False
+        seen = set() if seen is None else seen
+        if node_id in seen:
+            return False
+        seen = seen | {node_id}
+        return any(self._node_cancel_caused(blocker_id, seen=seen) for blocker_id in node["blocked_by"])
 
     def fail_resolution(self) -> None:
         """Terminate an unresolved execution when DAG resolution itself fails."""
