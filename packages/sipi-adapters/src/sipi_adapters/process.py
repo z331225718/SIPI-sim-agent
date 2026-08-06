@@ -291,7 +291,14 @@ def execute_backend(
             artifact_root = Path(artifact_root)
             artifact_root.mkdir(parents=True, exist_ok=True)
             for source in outcome.artifact_paths:
-                relative = source.resolve().relative_to(workdir.resolve())
+                try:
+                    relative = source.resolve().relative_to(workdir.resolve())
+                except ValueError:
+                    return assemble_backend_result(
+                        request,
+                        status="failed",
+                        error=platform_error("InternalInvariant", f"artifact path escapes the work directory: {source}"),
+                    )
                 target = artifact_root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, target)

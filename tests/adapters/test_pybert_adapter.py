@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "packages" / "sipi-contracts" / "src"))
 sys.path.insert(0, str(ROOT / "packages" / "sipi-adapters" / "src"))
 
-from sipi_adapters import PyBertNativeAdapter, execute_backend
+from sipi_adapters import BackendOutcome, PyBertNativeAdapter, execute_backend
 from sipi_contracts import parse_backend_execution_request
 
 FAKE_ENGINE = ROOT / "tests" / "adapters" / "fixtures" / "fake_pybert.py"
@@ -137,6 +137,25 @@ class PyBertAdapterTests(unittest.TestCase):
             result = execute_backend(request, engine_entry(root), root, builder=PyBertNativeAdapter())
         self.assertEqual(result["status"], "failed")
         self.assertEqual(result["error"]["category"], "UnsupportedCapability")
+
+    def test_missing_artifact_handoff_is_internal_invariant(self) -> None:
+        class MissingHandoffBuilder(PyBertNativeAdapter):
+            def build_outcome(self, request, engine_entry, workdir, process):
+                outcome = super().build_outcome(request, engine_entry, workdir, process)
+                return BackendOutcome(outcome.result, artifact_paths=())
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.install_bundle(root)
+            result = execute_backend(
+                backend_request(),
+                engine_entry(root),
+                root,
+                builder=MissingHandoffBuilder(),
+                artifact_root=root / "artifacts",
+            )
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["error"]["category"], "InternalInvariant")
 
     def test_engine_failure_is_external_model_failure(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
