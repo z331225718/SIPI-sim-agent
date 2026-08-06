@@ -25,7 +25,7 @@ from typing import Any, Protocol
 
 from sipi_contracts import BackendExecutionRequestV1, BackendExecutionResultV1, parse_backend_execution_result
 
-from .spi import AdapterContractError, require_backend_request, validate_pinned_instance
+from .spi import AdapterContractError, UnsupportedCapabilityError, require_backend_request, validate_pinned_instance
 
 ALLOWED_ENV = frozenset(
     {
@@ -61,8 +61,14 @@ class ProcessResult:
     timed_out: bool
 
 
-def platform_error(category: str, message: str, resource: str | None = None, details: Mapping[str, Any] | None = None) -> dict[str, Any]:
-    return {"category": category, "message": message, "resource": resource, "cause": None, "details": dict(details or {})}
+def platform_error(
+    category: str,
+    message: str,
+    resource: str | None = None,
+    details: Mapping[str, Any] | None = None,
+    cause: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {"category": category, "message": message, "resource": resource, "cause": cause, "details": dict(details or {})}
 
 
 def _sha256(path: Path) -> str:
@@ -73,18 +79,16 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def filtered_env(extra: Mapping[str, str] | None = None) -> dict[str, str]:
+def filtered_env() -> dict[str, str]:
     env = {name: value for name, value in os.environ.items() if name in ALLOWED_ENV}
     env.pop("PYTHONPATH", None)
     env["PYTHONNOUSERSITE"] = "1"
-    if extra:
-        env.update(extra)
     return env
 
 
 def invocation(bundle_path: Path) -> list[str]:
     if bundle_path.suffix.lower() == ".py":
-        return [sys.executable, str(bundle_path)]
+        return [sys.executable, "-I", str(bundle_path)]
     return [str(bundle_path)]
 
 
@@ -211,13 +215,16 @@ class CommandBuilder(Protocol):
 
 def _failed_from_error(request: BackendExecutionRequestV1, error: BaseException) -> BackendExecutionResultV1:
     message = str(error)
-    if "escapes" in message:
+    cause = {"kind": type(error).__name__, "message": message}
+    if isinstance(error, UnsupportedCapabilityError):
+        category = "UnsupportedCapability"
+    elif "escapes" in message:
         category = "InvalidRequest"
     elif "missing" in message or "hash mismatch" in message:
         category = "InputNotFound"
     else:
         category = "EngineUnavailable"
-    return assemble_backend_result(request, status="failed", error=platform_error(category, message))
+    return assemble_backend_result(request, status="failed", error=platform_error(category, message, cause=cause))
 
 
 def execute_backend(
@@ -227,7 +234,6 @@ def execute_backend(
     *,
     builder: CommandBuilder,
     workdir: Path | None = None,
-    env_extra: Mapping[str, str] | None = None,
 ) -> BackendExecutionResultV1:
     """Execute one strict backend execution and return its single result."""
     require_backend_request(request)
@@ -253,7 +259,7 @@ def execute_backend(
         except AdapterContractError as error:
             return _failed_from_error(request, error)
         wall_time_s = request["resource_limits"].get("wall_time_s")
-        process = run_process(argv, workdir=workdir, env=filtered_env(env_extra), wall_time_s=wall_time_s)
+        process = run_process(argv, workdir=workdir, env=filtered_env(), wall_time_s=wall_time_s)
         if process.timed_out:
             return assemble_backend_result(
                 request,

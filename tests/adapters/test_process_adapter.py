@@ -163,6 +163,7 @@ class ProcessAdapterTests(unittest.TestCase):
             result = execute_backend(request, engine_entry(root), root, builder=FixtureBuilder())
         self.assertEqual(result["status"], "failed")
         self.assertEqual(result["error"]["category"], "InputNotFound")
+        self.assertEqual(result["error"]["cause"]["kind"], "AdapterContractError")
 
     def test_nonzero_exit_is_failed_result(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -220,9 +221,28 @@ class ProcessAdapterTests(unittest.TestCase):
             deck.write_text(".title fixture\n", encoding="utf-8")
             request = backend_request(payload={"deck": "inputs/deck.sp", "backend": "native"})
             argv = AgentSpiceHspiceAdapter().build(request, root / "bundles" / "fake_engine.py", workdir)
-        self.assertEqual(argv[:2], [sys.executable, str(root / "bundles" / "fake_engine.py")])
-        self.assertEqual(argv[2:6], ["run-hspice", str(deck), "--backend", "native"])
-        self.assertEqual(argv[6:9], ["--output-root", str(workdir / "out"), "--execute"])
+        self.assertEqual(argv[:3], [sys.executable, "-I", str(root / "bundles" / "fake_engine.py")])
+        self.assertEqual(argv[3:7], ["run-hspice", str(deck), "--backend", "native"])
+        self.assertEqual(argv[7:10], ["--output-root", str(workdir / "out"), "--execute"])
+
+    def test_unsupported_backend_is_unsupported_capability(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            install_bundle(root)
+            request = backend_request(payload={"deck": "deck.sp", "backend": "bogus"})
+            result = execute_backend(request, engine_entry(root), root, builder=AgentSpiceHspiceAdapter())
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["error"]["category"], "UnsupportedCapability")
+        self.assertEqual(result["error"]["cause"]["kind"], "UnsupportedCapabilityError")
+
+    def test_deck_path_escape_is_invalid_request(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            install_bundle(root)
+            request = backend_request(payload={"deck": "../escape.sp"})
+            result = execute_backend(request, engine_entry(root), root, builder=AgentSpiceHspiceAdapter())
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["error"]["category"], "InvalidRequest")
 
     def test_hspice_missing_deck_is_input_not_found(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

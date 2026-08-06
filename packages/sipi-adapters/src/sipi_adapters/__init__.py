@@ -17,6 +17,7 @@ from .process import (
 from .spi import (
     AdapterContractError,
     BackendAdapter,
+    UnsupportedCapabilityError,
     require_backend_request,
     require_backend_result,
     validate_pinned_instance,
@@ -30,6 +31,7 @@ __all__ = [
     "BundleVerificationError",
     "CommandBuilder",
     "ProcessResult",
+    "UnsupportedCapabilityError",
     "assemble_backend_result",
     "execute_backend",
     "filtered_env",

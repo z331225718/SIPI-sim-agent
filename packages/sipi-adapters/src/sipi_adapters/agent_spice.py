@@ -15,7 +15,7 @@ from .process import (
     invocation,
     platform_error,
 )
-from .spi import AdapterContractError
+from .spi import AdapterContractError, UnsupportedCapabilityError
 
 
 class AgentSpiceHspiceAdapter(CommandBuilder):
@@ -35,8 +35,10 @@ class AgentSpiceHspiceAdapter(CommandBuilder):
         if not isinstance(deck, str) or not deck:
             raise AdapterContractError("payload requires a deck path relative to the work directory")
         if backend not in {"native", "ngspice", "xyce", "xyce-xdm"}:
-            raise AdapterContractError(f"unsupported backend: {backend!r}")
-        deck_path = workdir / deck
+            raise UnsupportedCapabilityError(f"unsupported backend: {backend!r}")
+        deck_path = (workdir / deck).resolve()
+        if not deck_path.is_relative_to(workdir.resolve()):
+            raise AdapterContractError("deck path escapes the work directory")
         if not deck_path.is_file():
             raise AdapterContractError(f"deck input is missing: {deck}")
         return [

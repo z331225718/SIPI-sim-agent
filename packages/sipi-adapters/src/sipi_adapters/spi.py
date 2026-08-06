@@ -31,6 +31,10 @@ class AdapterContractError(TypeError):
     """Raised when an envelope crosses the strict adapter boundary illegally."""
 
 
+class UnsupportedCapabilityError(AdapterContractError):
+    """Raised when a request asks for a capability the adapter cannot provide."""
+
+
 @runtime_checkable
 class BackendAdapter(Protocol):
     """One strict engine execution per call; no selection or aggregation."""
