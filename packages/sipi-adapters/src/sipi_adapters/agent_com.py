@@ -17,6 +17,7 @@ from .process import (
     invocation,
     platform_error,
 )
+from .capabilities import AdapterCapability
 from .spi import AdapterContractError
 
 
@@ -64,6 +65,19 @@ class AgentComRunAdapter(CommandBuilder):
     """
 
     domain_result_schema = "agent-com.result-v1"
+
+    @classmethod
+    def capability_entries(cls) -> tuple[AdapterCapability, ...]:
+        return (
+            AdapterCapability(
+                operation="com.r480.run.v1",
+                payload_schema="agent-com.r480.v1",
+                domain_result_schemas=("agent-com.result-v1", "agent-com.diagnostics.v1"),
+                behavior_profile="r480",
+                role="reference",
+                execution_mode="process",
+            ),
+        )
 
     def build(self, request: BackendExecutionRequestV1, bundle_path: Path, workdir: Path) -> list[str]:
         payload = request.to_wire()["payload"]

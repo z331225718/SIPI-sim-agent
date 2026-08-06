@@ -16,6 +16,7 @@ from .process import (
     invocation,
     platform_error,
 )
+from .capabilities import AdapterCapability
 from .spi import AdapterContractError, UnsupportedCapabilityError
 
 
@@ -28,6 +29,19 @@ class AgentSpiceHspiceAdapter(CommandBuilder):
     """
 
     domain_result_schema = "agent-spice.hspice-run-summary.v1"
+
+    @classmethod
+    def capability_entries(cls) -> tuple[AdapterCapability, ...]:
+        return (
+            AdapterCapability(
+                operation="circuit.solve.v1",
+                payload_schema="agent-spice.hspice.v1",
+                domain_result_schemas=("agent-spice.hspice-run-summary.v1",),
+                behavior_profile="default",
+                role="reference",
+                execution_mode="process",
+            ),
+        )
 
     def build(self, request: BackendExecutionRequestV1, bundle_path: Path, workdir: Path) -> list[str]:
         payload = request["payload"]

@@ -25,6 +25,7 @@ from typing import Any, Protocol
 
 from sipi_contracts import BackendExecutionRequestV1, BackendExecutionResultV1, parse_backend_execution_result
 
+from .capabilities import AdapterCapability, preflight
 from .spi import AdapterContractError, UnsupportedCapabilityError, require_backend_request, validate_pinned_instance
 
 ALLOWED_ENV = frozenset(
@@ -243,10 +244,16 @@ def execute_backend(
     builder: CommandBuilder,
     workdir: Path | None = None,
     artifact_root: Path | None = None,
+    capabilities: tuple[AdapterCapability, ...] | None = None,
 ) -> BackendExecutionResultV1:
     """Execute one strict backend execution and return its single result."""
     require_backend_request(request)
     validate_pinned_instance(request, engine_entry["instance_id"])
+    if capabilities is not None:
+        try:
+            preflight(request, capabilities)
+        except UnsupportedCapabilityError as error:
+            return _failed_from_error(request, error)
     try:
         bundle_path = verify_engine_bundle(engine_entry, repo_root)
     except BundleVerificationError as error:

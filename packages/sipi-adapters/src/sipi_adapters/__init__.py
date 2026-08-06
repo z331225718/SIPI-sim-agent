@@ -2,6 +2,7 @@
 
 from .agent_com import AgentComRunAdapter
 from .agent_spice import AgentSpiceHspiceAdapter
+from .capabilities import AdapterCapability, build_engine_capabilities, preflight
 from .process import (
     BackendOutcome,
     BundleVerificationError,
@@ -29,10 +30,12 @@ from .spi import (
 
 __all__ = [
     "AdapterContractError",
+    "AdapterCapability",
     "AgentComRunAdapter",
     "AgentSpiceHspiceAdapter",
     "BackendAdapter",
     "BackendOutcome",
+    "build_engine_capabilities",
     "BundleVerificationError",
     "CommandBuilder",
     "ProcessResult",
@@ -44,6 +47,7 @@ __all__ = [
     "invocation",
     "materialize_bound_inputs",
     "platform_error",
+    "preflight",
     "require_backend_request",
     "require_backend_result",
     "run_process",

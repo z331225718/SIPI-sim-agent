@@ -17,6 +17,7 @@ from .process import (
     invocation,
     platform_error,
 )
+from .capabilities import AdapterCapability
 from .spi import AdapterContractError, UnsupportedCapabilityError
 
 
@@ -56,6 +57,19 @@ class PyBertNativeAdapter(CommandBuilder):
     """
 
     domain_result_schema = "pybert.native-cli-result.v1"
+
+    @classmethod
+    def capability_entries(cls) -> tuple[AdapterCapability, ...]:
+        return (
+            AdapterCapability(
+                operation="link.simulate.v1",
+                payload_schema="pybert.simulation.v1",
+                domain_result_schemas=("pybert.native-cli-result.v1", "pybert.arrays.v1"),
+                behavior_profile="default",
+                role="candidate",
+                execution_mode="process",
+            ),
+        )
 
     def build(self, request: BackendExecutionRequestV1, bundle_path: Path, workdir: Path) -> list[str]:
         wire = request.to_wire()
