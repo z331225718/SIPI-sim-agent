@@ -28,6 +28,7 @@ from .validation.relations import (
     validate_project_intrinsic,
     validate_axis_intrinsic,
     validate_port_map_intrinsic,
+    validate_network_tensor_intrinsic,
 )
 from .validation.registry import schema_id_for, validate_wire
 
@@ -164,6 +165,12 @@ class PortMapV1(ContractModel):
 
 
 @dataclass(frozen=True, slots=True, init=False)
+class NetworkTensorV1(ContractModel):
+    schema_name = "network-tensor.v1.schema.json"
+    known_fields = frozenset({"schema", "parameter_kind", "parameter_kind_name", "axis", "port_map", "data", "shape", "complex_encoding", "dtype", "byte_order", "layout", "z0", "wave_definition", "reader", "extensions"})
+
+
+@dataclass(frozen=True, slots=True, init=False)
 class ProvenanceV1(ContractModel):
     schema_name = "_defs/provenance.v1.schema.json"
     known_fields = frozenset({"producers", "request", "environment", "randomness", "policies", "extensions"})
@@ -277,6 +284,12 @@ def parse_port_map(value: str | Mapping[str, Any], *, producer: bool = True) -> 
     data = _mapping(value, PortMapV1.schema_name)
     validate_port_map_intrinsic(data, producer=producer)
     return _parse(PortMapV1, data)  # type: ignore[return-value]
+
+
+def parse_network_tensor(value: str | Mapping[str, Any], *, producer: bool = True) -> NetworkTensorV1:
+    data = _mapping(value, NetworkTensorV1.schema_name)
+    validate_network_tensor_intrinsic(data, producer=producer)
+    return _parse(NetworkTensorV1, data)  # type: ignore[return-value]
 
 
 def validate_success_manifest_relation(run_record: RunRecordV1, manifest: SuccessManifestV1) -> None:

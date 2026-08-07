@@ -743,3 +743,55 @@ def validate_port_map_intrinsic(value: Mapping[str, Any], *, producer: bool = Tr
                 _violation("sipi.port-map.v1", "unknown_pair", f"port pairs with undeclared port: {pair}", f"/ports/{port_id}")
             if by_id[pair].get("pair_with") != port_id:
                 _violation("sipi.port-map.v1", "asymmetric_pair", f"pair_with must be symmetric for {port_id} and {pair}", f"/ports/{port_id}")
+
+
+def validate_network_tensor_intrinsic(value: Mapping[str, Any], *, producer: bool = True) -> None:
+    """Validate a sipi.network-tensor.v1 document plus DTO composition semantics."""
+    validate_wire("network-tensor.v1.schema.json", value)
+    if producer:
+        _reject_unknown(
+            value,
+            {"schema", "parameter_kind", "parameter_kind_name", "axis", "port_map", "data", "shape", "complex_encoding", "dtype", "byte_order", "layout", "z0", "wave_definition", "reader", "extensions"},
+            "sipi.network-tensor.v1",
+            "network tensor",
+        )
+    axis = value["axis"]
+    if axis["kind"] != "frequency":
+        _violation("sipi.network-tensor.v1", "axis", "network tensor axis must be a frequency axis")
+    if axis["length"] != value["shape"]["frequency"]:
+        _violation("sipi.network-tensor.v1", "shape", "shape.frequency must equal axis length")
+    ports = value["port_map"]["ports"]
+    port_count = sum(1 for port in ports if port["kind"] in {"signal", "common_mode"})
+    output_ports = value["shape"]["output_ports"]
+    input_ports = value["shape"]["input_ports"]
+    if value["parameter_kind"] in {"S", "Y", "Z", "H"}:
+        if output_ports != input_ports or output_ports != port_count:
+            _violation("sipi.network-tensor.v1", "shape", f"{value['parameter_kind']} tensor must be square with {port_count} ports")
+    else:
+        if output_ports > port_count or input_ports > port_count:
+            _violation("sipi.network-tensor.v1", "shape", "shape ports must not exceed declared ports")
+    if value["parameter_kind"] == "EXT" and not value.get("parameter_kind_name"):
+        _violation("sipi.network-tensor.v1", "parameter_kind", "EXT parameter kind requires parameter_kind_name")
+    if value["dtype"] in {"complex128", "complex64"} and value["complex_encoding"] != "interleaved":
+        _violation("sipi.network-tensor.v1", "complex", "complex dtype requires interleaved encoding")
+    validate_artifact_ref(value["data"], producer=producer)
+    z0 = value["z0"]
+    if z0["kind"] == "scalar":
+        if "value" not in z0:
+            _violation("sipi.network-tensor.v1", "z0", "scalar z0 requires a positive value")
+    else:
+        if "values_artifact" not in z0:
+            _violation("sipi.network-tensor.v1", "z0", f"{z0['kind']} z0 requires values_artifact")
+        else:
+            validate_artifact_ref(z0["values_artifact"], producer=producer)
+    port_ids = {port["id"] for port in ports}
+    reorders = value["reader"].get("port_reorder", [])
+    from_ids = [item["from"] for item in reorders]
+    to_ids = [item["to"] for item in reorders]
+    if len(from_ids) != len(set(from_ids)) or len(to_ids) != len(set(to_ids)):
+        _violation("sipi.network-tensor.v1", "port_reorder", "port reorder from/to must be unique")
+    for item in reorders:
+        if item["from"] == item["to"]:
+            _violation("sipi.network-tensor.v1", "port_reorder", "port reorder cannot map a port to itself")
+        if item["from"] not in port_ids or item["to"] not in port_ids:
+            _violation("sipi.network-tensor.v1", "port_reorder", "port reorder references undeclared port")
