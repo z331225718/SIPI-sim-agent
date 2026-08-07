@@ -114,6 +114,23 @@ class CliM3Tests(unittest.TestCase):
             self.assertEqual(status, 0)
             self.assertIn("run_id", json.loads(output))
 
+    def test_status_without_supervisor_exits_cleanly(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            status, _ = self.run_cli("status", "--root", str(root), "run-missing")
+            self.assertEqual(status, 1)
+
+    def test_run_wait_timeout_returns_active_status(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_project(root)
+            data_dir = root / ".sipi"
+            with SupervisorServer(Supervisor(data_dir), data_dir) as server:
+                status, output = self.run_cli("run", "--root", str(root), "--wait-timeout-s", "1")
+                self.assertEqual(status, 0)
+                self.assertEqual(json.loads(output)["status"], "queued")
+                server.close()
+
     def test_spawn_daemon_serves_ping(self):
         with tempfile.TemporaryDirectory() as directory:
             data_dir = Path(directory)

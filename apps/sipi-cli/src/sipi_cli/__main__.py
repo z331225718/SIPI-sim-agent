@@ -333,11 +333,14 @@ def _ensure_supervisor(data_dir: Path, *, foreground: bool) -> Any:
         return None
 
 
-def _wait_terminal(client: SupervisorClient, run_id: str) -> str:
+def _wait_terminal(client: SupervisorClient, run_id: str, timeout_s: float | None = None) -> str:
+    deadline = None if timeout_s is None else time.monotonic() + timeout_s
     while True:
         execution = client.request({"command": "status", "run_id": run_id}).get("execution")
         status = execution.get("status") if execution else "unknown"
         if status in TERMINAL_EXECUTION_STATUSES:
+            return status
+        if deadline is not None and time.monotonic() >= deadline:
             return status
         time.sleep(0.2)
 
@@ -364,7 +367,11 @@ def cmd_run(args: argparse.Namespace, root: Path) -> int:
         print(f"validation failed: {error}", file=sys.stderr)
         return 1
     data_dir = root / DATA_DIR_NAME
-    owned = _ensure_supervisor(data_dir, foreground=args.foreground)
+    try:
+        owned = _ensure_supervisor(data_dir, foreground=args.foreground)
+    except SupervisorUnavailable as error:
+        print(f"supervisor unavailable: {error}", file=sys.stderr)
+        return 1
     try:
         client = _client(data_dir)
         run_id = args.run_id or f"run-{uuid.uuid4().hex}"
@@ -386,30 +393,41 @@ def cmd_run(args: argparse.Namespace, root: Path) -> int:
             print(json.dumps({"run_id": actual_run_id}, sort_keys=True, separators=(",", ":")))
             return 0
         try:
-            status = _wait_terminal(client, actual_run_id)
+            status = _wait_terminal(client, actual_run_id, args.wait_timeout_s)
         except KeyboardInterrupt:
             client.request({"command": "cancel", "run_id": actual_run_id})
             print(json.dumps({"run_id": actual_run_id, "status": "cancelled"}, sort_keys=True, separators=(",", ":")))
             return 130
         print(json.dumps({"run_id": actual_run_id, "status": status}, sort_keys=True, separators=(",", ":")))
         return 0
+    except SupervisorUnavailable as error:
+        print(f"supervisor unavailable: {error}", file=sys.stderr)
+        return 1
     finally:
         if owned is not None:
             owned.close()
 
 
 def cmd_status(args: argparse.Namespace, root: Path) -> int:
-    client = _client(root / DATA_DIR_NAME)
-    response = client.request({"command": "status", "run_id": args.run_id})
-    print(json.dumps(response, sort_keys=True, separators=(",", ":")))
-    return 0 if response.get("execution") is not None else 1
+    try:
+        client = _client(root / DATA_DIR_NAME)
+        response = client.request({"command": "status", "run_id": args.run_id})
+        print(json.dumps(response, sort_keys=True, separators=(",", ":")))
+        return 0 if response.get("execution") is not None else 1
+    except SupervisorUnavailable as error:
+        print(f"supervisor unavailable: {error}", file=sys.stderr)
+        return 1
 
 
 def cmd_cancel(args: argparse.Namespace, root: Path) -> int:
-    client = _client(root / DATA_DIR_NAME)
-    response = client.request({"command": "cancel", "run_id": args.run_id, "analysis_id": args.analysis})
-    print(json.dumps(response, sort_keys=True, separators=(",", ":")))
-    return 0 if response.get("ok") else 1
+    try:
+        client = _client(root / DATA_DIR_NAME)
+        response = client.request({"command": "cancel", "run_id": args.run_id, "analysis_id": args.analysis})
+        print(json.dumps(response, sort_keys=True, separators=(",", ":")))
+        return 0 if response.get("ok") else 1
+    except SupervisorUnavailable as error:
+        print(f"supervisor unavailable: {error}", file=sys.stderr)
+        return 1
 
 
 def cmd_retry(args: argparse.Namespace, root: Path) -> int:
@@ -418,24 +436,28 @@ def cmd_retry(args: argparse.Namespace, root: Path) -> int:
     except Exception as error:
         print(f"validation failed: {error}", file=sys.stderr)
         return 1
-    client = _client(root / DATA_DIR_NAME)
-    new_run_id = f"run-{uuid.uuid4().hex}"
-    submission_key = args.submission_key or f"retry:{args.run_id}:{uuid.uuid4().hex}"
-    response = client.request(
-        {
-            "command": "submit",
-            "run_id": new_run_id,
-            "project_hash": resolved.project_hash,
-            "submission_key": submission_key,
-            "failure_policy": resolved.failure_policy,
-            "retry_of": args.run_id,
-        }
-    )
-    if not response.get("ok"):
-        print(f"retry failed: {response.get('error')}", file=sys.stderr)
+    try:
+        client = _client(root / DATA_DIR_NAME)
+        new_run_id = f"run-{uuid.uuid4().hex}"
+        submission_key = args.submission_key or f"retry:{args.run_id}:{uuid.uuid4().hex}"
+        response = client.request(
+            {
+                "command": "submit",
+                "run_id": new_run_id,
+                "project_hash": resolved.project_hash,
+                "submission_key": submission_key,
+                "failure_policy": resolved.failure_policy,
+                "retry_of": args.run_id,
+            }
+        )
+        if not response.get("ok"):
+            print(f"retry failed: {response.get('error')}", file=sys.stderr)
+            return 1
+        print(json.dumps({"run_id": response["execution"]["run_id"], "retry_of": args.run_id}, sort_keys=True, separators=(",", ":")))
+        return 0
+    except SupervisorUnavailable as error:
+        print(f"supervisor unavailable: {error}", file=sys.stderr)
         return 1
-    print(json.dumps({"run_id": response["execution"]["run_id"], "retry_of": args.run_id}, sort_keys=True, separators=(",", ":")))
-    return 0
 
 
 def _render(payload: dict[str, Any], output_format: str) -> None:
@@ -470,6 +492,7 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--submission-key")
     run.add_argument("--detach", action="store_true")
     run.add_argument("--foreground", action="store_true")
+    run.add_argument("--wait-timeout-s", type=float)
     status = subcommands.add_parser("status")
     status.add_argument("--root")
     status.add_argument("run_id")
