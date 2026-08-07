@@ -1,5 +1,8 @@
 {
   "failures": [],
+  "notes": [
+    "M4 DTOs (axis/port-map/network-tensor/waveform/spectrum) are platform-owned typed data with authority direction python_rust_bidirectional and are strict in both directions; SPEC 6.7 unknown-field tolerance applies to result envelopes (run-result/backend-result), not to embedded DTOs."
+  ],
   "python": "covered",
   "rust": "deferred",
   "schema": "sipi.m4-conformance.v1",

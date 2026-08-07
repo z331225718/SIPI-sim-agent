@@ -189,7 +189,17 @@ def run() -> dict[str, Any]:
             if not ok:
                 failures.append(f"{name}:{case}")
         schemas[name] = {"python": "covered" if all(results.values()) else "failed", "rust": "deferred", "cases": results}
-    return {"schema": "sipi.m4-conformance.v1", "python": "covered", "rust": "deferred", "valid": not failures, "schemas": schemas, "failures": failures}
+    return {
+        "schema": "sipi.m4-conformance.v1",
+        "python": "covered",
+        "rust": "deferred",
+        "valid": not failures,
+        "schemas": schemas,
+        "failures": failures,
+        "notes": [
+            "M4 DTOs (axis/port-map/network-tensor/waveform/spectrum) are platform-owned typed data with authority direction python_rust_bidirectional and are strict in both directions; SPEC 6.7 unknown-field tolerance applies to result envelopes (run-result/backend-result), not to embedded DTOs."
+        ],
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
