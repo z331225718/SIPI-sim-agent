@@ -660,3 +660,50 @@ def validate_project_intrinsic(value: Mapping[str, Any]) -> None:
                     f"input binding expected_schema does not match producer export schema for role {binding['artifact_role']}",
                     binding_pointer,
                 )
+
+
+def _axis_monotonicity(values: list[Any]) -> str:
+    if len(values) < 2:
+        return "non_monotonic"
+    diffs = [values[index + 1] - values[index] for index in range(len(values) - 1)]
+    if all(diff > 0 for diff in diffs):
+        return "increasing"
+    if all(diff < 0 for diff in diffs):
+        return "decreasing"
+    return "non_monotonic"
+
+
+def validate_axis_intrinsic(value: Mapping[str, Any], *, producer: bool = True) -> None:
+    """Validate a sipi.axis.v1 document plus its axis semantics."""
+    validate_wire("axis.v1.schema.json", value)
+    if producer:
+        _reject_unknown(
+            value,
+            {"schema", "kind", "unit", "dtype", "length", "monotonicity", "uniform", "sample_location", "start", "step", "values", "values_artifact", "spectrum", "extensions"},
+            "sipi.axis.v1",
+            "axis",
+        )
+    kind = value["kind"]
+    spectrum = value.get("spectrum")
+    if kind == "frequency" and spectrum is None:
+        _violation("sipi.axis.v1", "spectrum", "frequency axis requires spectrum metadata")
+    if kind != "frequency" and spectrum is not None:
+        _violation("sipi.axis.v1", "spectrum", "spectrum metadata is only valid for frequency axes")
+    if "start" in value:
+        if not value["uniform"]:
+            _violation("sipi.axis.v1", "uniform", "start/step axis must declare uniform=true")
+        if value["step"] == 0:
+            _violation("sipi.axis.v1", "step", "axis step must be non-zero")
+    if "values" in value:
+        if value["uniform"]:
+            _violation("sipi.axis.v1", "uniform", "explicit values axis must declare uniform=false")
+        if len(value["values"]) != value["length"]:
+            _violation("sipi.axis.v1", "length", "values length must equal declared length")
+        declared = value["monotonicity"]
+        computed = _axis_monotonicity(value["values"])
+        if declared != "non_monotonic" and computed != declared:
+            _violation("sipi.axis.v1", "monotonicity", f"declared {declared} but values are {computed}")
+    if "values_artifact" in value:
+        if value["uniform"]:
+            _violation("sipi.axis.v1", "uniform", "values_artifact axis must declare uniform=false")
+        validate_artifact_ref(value["values_artifact"], producer=producer)

@@ -26,6 +26,7 @@ from .validation.relations import (
     validate_success_manifest_intrinsic,
     validate_success_manifest_relation as validate_success_manifest_relation_wire,
     validate_project_intrinsic,
+    validate_axis_intrinsic,
 )
 from .validation.registry import schema_id_for, validate_wire
 
@@ -150,6 +151,12 @@ class ProjectV1(ContractModel):
 
 
 @dataclass(frozen=True, slots=True, init=False)
+class AxisV1(ContractModel):
+    schema_name = "axis.v1.schema.json"
+    known_fields = frozenset({"schema", "kind", "unit", "dtype", "length", "monotonicity", "uniform", "sample_location", "start", "step", "values", "values_artifact", "spectrum", "extensions"})
+
+
+@dataclass(frozen=True, slots=True, init=False)
 class ProvenanceV1(ContractModel):
     schema_name = "_defs/provenance.v1.schema.json"
     known_fields = frozenset({"producers", "request", "environment", "randomness", "policies", "extensions"})
@@ -251,6 +258,12 @@ def parse_project(value: str | Mapping[str, Any]) -> ProjectV1:
     data = _mapping(value, ProjectV1.schema_name)
     validate_project_intrinsic(data)
     return _parse(ProjectV1, data)  # type: ignore[return-value]
+
+
+def parse_axis(value: str | Mapping[str, Any], *, producer: bool = True) -> AxisV1:
+    data = _mapping(value, AxisV1.schema_name)
+    validate_axis_intrinsic(data, producer=producer)
+    return _parse(AxisV1, data)  # type: ignore[return-value]
 
 
 def validate_success_manifest_relation(run_record: RunRecordV1, manifest: SuccessManifestV1) -> None:

@@ -2,6 +2,7 @@
 
 from .errors import ContractViolation
 from .models import (
+    AxisV1,
     BackendExecutionRequestV1,
     BackendExecutionResultV1,
     CapabilitiesCertifiedV1,
@@ -18,6 +19,7 @@ from .models import (
     ValidationReportV1,
     ProvenanceV1,
     parse_artifact_ref,
+    parse_axis,
     parse_dag_node_record,
     parse_engine_lock,
     parse_project,
@@ -40,11 +42,11 @@ from .models import (
 from .validation import resolve_artifact_path
 
 __all__ = [
-    "BackendExecutionRequestV1", "BackendExecutionResultV1", "ContractViolation",
+    "AxisV1", "BackendExecutionRequestV1", "BackendExecutionResultV1", "ContractViolation",
     "CapabilitiesCertifiedV1",
     "DagNodeRecordV1", "EngineCapabilitiesV1", "EngineLockV1", "ProvenanceV1", "RunRecordV1", "RunRequestV1", "RunResultV1", "SipiArtifactRefV1", "SuccessManifestV1",
     "ProjectV1",
-    "SipiRunEventV1", "parse_artifact_ref", "parse_dag_node_record", "parse_engine_lock", "parse_backend_execution_request",
+    "SipiRunEventV1", "parse_artifact_ref", "parse_axis", "parse_dag_node_record", "parse_engine_lock", "parse_backend_execution_request",
     "ValidationReportV1", "parse_backend_execution_result", "parse_engine_capabilities",
     "parse_capabilities_certified",
     "parse_provenance", "parse_run_event", "parse_run_record", "parse_run_request", "parse_run_result", "parse_success_manifest",

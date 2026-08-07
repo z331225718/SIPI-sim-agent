@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sipi.axis.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "kind", "unit", "dtype", "length", "monotonicity", "uniform", "sample_location", "extensions"],
+  "properties": {
+    "schema": {"const": "sipi.axis.v1"},
+    "kind": {"enum": ["time", "frequency", "phase", "index"]},
+    "unit": {"type": "string", "minLength": 1},
+    "dtype": {"enum": ["float64", "float32", "int64", "int32", "uint64", "uint32"]},
+    "length": {"type": "integer", "minimum": 0},
+    "monotonicity": {"enum": ["increasing", "decreasing", "non_monotonic"]},
+    "uniform": {"type": "boolean"},
+    "sample_location": {"enum": ["sample", "bin_center", "bin_edge"], "default": "sample"},
+    "start": {"type": "number"},
+    "step": {"type": "number"},
+    "values": {"type": "array", "items": {"type": "number"}},
+    "values_artifact": {"$ref": "artifact-ref.v1.schema.json"},
+    "spectrum": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sidedness", "has_dc", "has_nyquist"],
+      "properties": {
+        "sidedness": {"enum": ["single", "double"]},
+        "has_dc": {"type": "boolean"},
+        "has_nyquist": {"type": "boolean"},
+        "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+      }
+    },
+    "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+  },
+  "oneOf": [
+    {"required": ["start", "step"], "not": {"anyOf": [{"required": ["values"]}, {"required": ["values_artifact"]}]}},
+    {"required": ["values"], "not": {"anyOf": [{"required": ["start"]}, {"required": ["step"]}, {"required": ["values_artifact"]}]}},
+    {"required": ["values_artifact"], "not": {"anyOf": [{"required": ["start"]}, {"required": ["step"]}, {"required": ["values"]}]}}
+  ]
+}
