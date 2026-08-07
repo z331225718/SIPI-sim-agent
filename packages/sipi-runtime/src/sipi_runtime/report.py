@@ -28,7 +28,7 @@ DEFAULT_COMPARISON_PROFILES: dict[str, ComparisonProfile] = {
 RESOURCE_FIELDS = ("wall_time_s", "cpu_time_s", "memory_bytes", "process_count", "artifact_bytes")
 
 
-def _result_wire(domain: Any, *, role: str, engine_instance_id: str, operation: str, payload_schema: str, run_id: str, attempt_id: str) -> dict[str, Any]:
+def _result_wire(domain: Any, *, role: str, engine_instance_id: str, operation: str, payload_schema: str, run_id: str, attempt_id: str, domain_result_schema: str) -> dict[str, Any]:
     return {
         "schema": "sipi.backend-execution-result.v1",
         "run_id": run_id,
@@ -41,7 +41,9 @@ def _result_wire(domain: Any, *, role: str, engine_instance_id: str, operation: 
         "operation": operation,
         "payload_schema": payload_schema,
         "status": "succeeded",
-        "domain_result_schema": "pybert.native-cli-result.v1",
+        "domain_result_schema": domain_result_schema,
+        # Synthetic bundle hash: compare_results does not consume it; M3-07/08
+        # will derive it from the real stored backend execution records.
         "domain_result": domain,
         "artifacts": [],
         "events": [],
@@ -73,6 +75,7 @@ def _compare_attempt(
         return {"profile": profile_name, "matched": False, "errors": [f"unknown comparison profile: {profile_name}"], "mismatches": []}
     reference_domain = json.loads(reference_path.read_text(encoding="utf-8"))
     candidate_domain = json.loads(candidate_path.read_text(encoding="utf-8"))
+    domain_result_schema = reference_domain.get("schema", "pybert.native-cli-result.v1")
     reference = parse_backend_execution_result(
         _result_wire(
             reference_domain,
@@ -82,6 +85,7 @@ def _compare_attempt(
             payload_schema=node_plan.payload_schema,
             run_id=run_id,
             attempt_id=attempt_id,
+            domain_result_schema=domain_result_schema,
         )
     )
     candidate = parse_backend_execution_result(
@@ -93,6 +97,7 @@ def _compare_attempt(
             payload_schema=node_plan.payload_schema,
             run_id=run_id,
             attempt_id=attempt_id,
+            domain_result_schema=domain_result_schema,
         )
     )
     report = compare_results(reference, candidate, profile)
