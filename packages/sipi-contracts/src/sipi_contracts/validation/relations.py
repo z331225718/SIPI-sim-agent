@@ -897,6 +897,42 @@ def validate_channel_resolution_policy_intrinsic(value: Mapping[str, Any], *, pr
         _violation("sipi.channel-resolution-policy.v1", "output", "output reference_port must be a selected port")
 
 
+def validate_transform_policy_intrinsic(value: Mapping[str, Any], *, producer: bool = True) -> None:
+    """Validate a sipi.transform-policy.v1 document (explicit implementation-named transforms).
+
+    The platform pins the ordered transform chain and public semantic fields only;
+    algorithm details and format parsing remain with the domain owner.  Port
+    transforms may repeat as an explicit sequence; numeric transform kinds
+    (interpolation/dc/causality/passivity) are single-step per chain so their
+    order is unambiguous.
+    """
+    validate_wire("transform-policy.v1.schema.json", value)
+    if producer:
+        _reject_unknown(value, {"schema", "reader_semantics", "transforms", "extensions"}, "sipi.transform-policy.v1", "transform policy")
+    numeric_kinds = {"interpolation", "dc", "causality", "passivity"}
+    seen_numeric: set[str] = set()
+    for index, transform in enumerate(value["transforms"]):
+        pointer = f"/transforms/{index}"
+        kind = transform["kind"]
+        parameters = transform["parameters"]
+        if kind in numeric_kinds:
+            if kind in seen_numeric:
+                _violation("sipi.transform-policy.v1", "duplicate_transform", f"numeric transform kind {kind} must appear at most once", pointer)
+            seen_numeric.add(kind)
+        if kind == "port":
+            operation = parameters.get("operation")
+            if operation is None:
+                _violation("sipi.transform-policy.v1", "port_transform", "port transform requires an explicit operation", pointer)
+            elif operation != "identity" and "ports" not in parameters:
+                _violation("sipi.transform-policy.v1", "port_transform", f"port operation {operation} requires the affected ports", pointer)
+        elif kind == "interpolation" and "method" not in parameters:
+            _violation("sipi.transform-policy.v1", "interpolation", "interpolation transform requires a method", pointer)
+        elif kind == "dc" and "method" not in parameters:
+            _violation("sipi.transform-policy.v1", "dc", "dc transform requires a method", pointer)
+        elif kind == "causality" and "method" not in parameters:
+            _violation("sipi.transform-policy.v1", "causality", "causality transform requires a method", pointer)
+
+
 def validate_channel_resolution_report_intrinsic(value: Mapping[str, Any], *, producer: bool = False) -> None:
     """Validate a sipi.channel-resolution-report.v1 document (tolerant consumer)."""
     validate_wire("channel-resolution-report.v1.schema.json", value)

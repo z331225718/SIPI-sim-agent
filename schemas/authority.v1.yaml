@@ -529,6 +529,28 @@
       "deprecation": "none"
     },
     {
+      "schema_id": "sipi.transform-policy.v1",
+      "major": 1,
+      "lifecycle": "reserved_unpublished",
+      "definition_owner": "sipi-contracts",
+      "source_of_truth": {
+        "kind": "local_json_schema",
+        "path": "schemas/transform-policy.v1.schema.json"
+      },
+      "exposure": "not_public",
+      "direction": "resolver_input_strict",
+      "compatibility_policy": "none_until_published",
+      "platform_role": "resolution",
+      "bindings": [
+        "planned:PythonTransformPolicyV1"
+      ],
+      "conformance": {
+        "producer": "planned:M4-06",
+        "consumer": "planned:M4-06"
+      },
+      "deprecation": "none"
+    },
+    {
       "schema_id": "sipi.adapter.agent-spice.rfm-response-request.v1",
       "major": 1,
       "lifecycle": "reserved_unpublished",
