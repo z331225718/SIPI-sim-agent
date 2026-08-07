@@ -315,6 +315,9 @@ fn run() -> Result<()> {
     let started = Instant::now();
     let mut arguments = env::args_os().skip(1);
     let first = arguments.next().ok_or_else(|| Error::Usage(usage()))?;
+    if first == "build-info" {
+        return run_build_info(arguments);
+    }
     if first == "rfm-response" {
         return run_rfm_response(arguments);
     }
@@ -501,6 +504,36 @@ fn run() -> Result<()> {
     Ok(())
 }
 
+fn build_info() -> serde_json::Value {
+    let git_dirty = match env!("AGENT_SPICE_GIT_DIRTY") {
+        "true" => Some(true),
+        "false" => Some(false),
+        _ => None,
+    };
+    serde_json::json!({
+        "schema": "agent-spice.build-info.v1",
+        "crateName": env!("CARGO_PKG_NAME"),
+        "crateVersion": env!("CARGO_PKG_VERSION"),
+        "gitRevision": env!("AGENT_SPICE_GIT_REVISION"),
+        "gitDirty": git_dirty,
+        "target": env!("AGENT_SPICE_TARGET"),
+        "profile": env!("AGENT_SPICE_PROFILE"),
+    })
+}
+
+fn run_build_info(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> Result<()> {
+    if let Some(argument) = arguments.next() {
+        if argument != "--json" || arguments.next().is_some() {
+            return Err(Error::Usage("agent-spice-sim build-info [--json]".into()));
+        }
+    }
+    println!(
+        "{}",
+        serde_json::to_string(&build_info()).expect("build-info is serializable")
+    );
+    Ok(())
+}
+
 fn run_rfm_response(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> Result<()> {
     let rfm_path = arguments
         .next()
@@ -585,7 +618,8 @@ fn run_rfm_response(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> 
     writer.flush()?;
     let metadata = serde_json::json!({
         "schema": "agent-spice.rfm-response.v1",
-        "rfm": rfm_path,
+        "rfmName": rfm_path.file_name().and_then(|name| name.to_str()).unwrap_or("unknown"),
+        "producer": build_info(),
         "fftSize": fft_size,
         "dtS": dt,
         "frequencyBins": bins,
@@ -594,7 +628,11 @@ fn run_rfm_response(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> 
         "shortedPorts": loads.shorted_ports.iter().map(|port| port + 1).collect::<Vec<_>>(),
         "rcLoads": loads.rc_shunts.iter().map(|load| serde_json::json!({
             "port": load.port + 1,
-            "source": load.source,
+            "sourceName": load
+                .source
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("unknown"),
             "branches": load.branches.len(),
         })).collect::<Vec<_>>(),
         "layout": "frequency-major,output-major,input-major,re-im,f64-le",
@@ -845,7 +883,8 @@ fn spice_number(token: &str) -> Option<f64> {
 }
 
 fn usage() -> String {
-    "agent-spice-sim <deck> [--rfm <model.rfm>] [--rfm-subckt <name>] \
+    "agent-spice-sim build-info [--json]\n\
+     agent-spice-sim <deck> [--rfm <model.rfm>] [--rfm-subckt <name>] \
      [--output-json <result.json>] [--waveform-csv <waveform.csv>] \
      [--log <simulation.log>] [--audit-json <compatibility.json>]"
         .into()

@@ -857,7 +857,6 @@ impl SourceLine {
     fn error(&self, message: impl Into<String>) -> Error {
         self.locate(Error::Parse(message.into()))
     }
-
 }
 
 fn expand_includes(
