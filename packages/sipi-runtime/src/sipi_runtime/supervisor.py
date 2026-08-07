@@ -94,7 +94,13 @@ class Supervisor:
         return self.registry.cancel_scope(run_id=run_id, analysis_id=analysis_id)
 
     def reconcile(self) -> dict[str, object]:
-        """Restart reconciliation: expire stale leases and settle cancelled publishing attempts."""
+        """Restart reconciliation: expire stale leases and settle cancelled publishing attempts.
+
+        Stale executions are settled as ``failed``/``cancelled`` here without
+        child-evidence classification; EngineProtocolFailure and orphan
+        identity matching against ``backend_executions`` child identity are
+        M3-09 failure-injection scope.
+        """
         now_iso = datetime.now(timezone.utc).isoformat()
         expired = self.registry.expire_stale_executions(now_iso)
         cancelled_publishing = self.registry.expire_cancelled_publishing()

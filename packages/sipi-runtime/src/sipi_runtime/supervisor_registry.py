@@ -315,7 +315,13 @@ class SupervisorRegistry:
             return ("accepted" if changed else "already_requested"), tuple(affected)
 
     def expire_stale_executions(self, now_iso: str) -> tuple[str, ...]:
-        """Restart reconciliation: fail/cancel non-terminal executions whose lease expired."""
+        """Restart reconciliation: fail/cancel non-terminal executions whose lease expired.
+
+        M3-04b3 marks stale executions ``failed`` without child-evidence
+        classification; SPEC 9.4's EngineProtocolFailure / orphan-identity
+        matching requires consuming ``backend_executions`` child identity and
+        real process probing, which belongs to M3-09 failure injection.
+        """
         with self._txn() as cursor:
             rows = cursor.execute(
                 """
