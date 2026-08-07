@@ -130,6 +130,7 @@ class DagPlanningTests(unittest.TestCase):
             node = plan.by_id["a"]
             self.assertTrue(node.selection_hash.startswith("sha256:"))
             self.assertEqual(node.execution_modes, ("primary:pybert-python:sha256:" + "1" * 64,))
+            self.assertTrue(node.cache_key_prebound.startswith("sha256:"))
 
 
 class CacheIdentityTests(unittest.TestCase):

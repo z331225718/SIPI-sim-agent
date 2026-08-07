@@ -1,12 +1,15 @@
 """Local analysis DAG planning (M3-03).
 
 ``plan_dag`` turns a resolved project into a deterministic execution plan:
-topological order with long-chain cycle detection, ``effective_required``
-closure over required nodes, and a content-addressed cache identity per node.
-Execution-layer IDs (run/analysis/attempt/backend) and lineage are never part
-of a cache key; only canonical payload, input/upstream artifact hashes, the
-complete resolved selection, actual instance bundle hashes, schema/profile,
-resources and randomness participate.
+topological order with long-chain cycle detection and an
+``effective_required`` closure over required nodes.  Each node carries a
+*pre-bound* cache key (``cache_key_prebound``) covering the canonical payload,
+the complete resolved selection, actual instance bundle hashes and declared
+input bindings; upstream artifact hashes, resources and randomness are bound at
+execution time (M3-05) via ``cache_identity`` with ``bound_input_hashes``,
+``resource_policy`` and ``randomness``, and the pre-bound key is therefore not
+the final reuse key.  Execution-layer IDs (run/analysis/attempt/backend) and
+lineage are never part of any cache key.
 """
 
 from __future__ import annotations
@@ -44,7 +47,7 @@ class DagNode:
     selection: Mapping[str, Any]
     selection_hash: str
     execution_modes: tuple[str, ...]
-    cache_key: str
+    cache_key_prebound: str
 
 
 @dataclass(frozen=True)
@@ -143,7 +146,7 @@ def plan_dag(resolved: ResolvedProject, registry: EngineRegistry) -> DagPlan:
             f"{backend.role}:{backend.instance_id}:sha256:{backend.engine_entry['bundle']['sha256']}"
             for backend in trace.resolved
         )
-        cache_key = cache_identity(
+        cache_key_prebound = cache_identity(
             analysis,
             selection_hash=trace.selection_hash,
             bundle_hashes=bundle_hashes,
@@ -160,7 +163,7 @@ def plan_dag(resolved: ResolvedProject, registry: EngineRegistry) -> DagPlan:
                 selection=analysis.backend_selection,
                 selection_hash=trace.selection_hash,
                 execution_modes=execution_modes,
-                cache_key=cache_key,
+                cache_key_prebound=cache_key_prebound,
             )
         )
     return DagPlan(project_hash=resolved.project_hash, order=order, nodes=tuple(nodes))
