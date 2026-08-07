@@ -31,6 +31,8 @@ from .validation.relations import (
     validate_network_tensor_intrinsic,
     validate_waveform_intrinsic,
     validate_spectrum_intrinsic,
+    validate_channel_resolution_policy_intrinsic,
+    validate_channel_resolution_report_intrinsic,
 )
 from .validation.registry import schema_id_for, validate_wire
 
@@ -185,6 +187,18 @@ class SpectrumV1(ContractModel):
 
 
 @dataclass(frozen=True, slots=True, init=False)
+class ChannelResolutionPolicyV1(ContractModel):
+    schema_name = "channel-resolution-policy.v1.schema.json"
+    known_fields = frozenset({"schema", "reader_semantics", "port_selection", "termination", "interpolation", "dc", "causality", "ifft", "normalization", "output", "extensions"})
+
+
+@dataclass(frozen=True, slots=True, init=False)
+class ChannelResolutionReportV1(ContractModel):
+    schema_name = "channel-resolution-report.v1.schema.json"
+    known_fields = frozenset({"schema", "producer", "source_network_hash", "policy_hash", "output_hash", "transforms", "warnings", "extensions"})
+
+
+@dataclass(frozen=True, slots=True, init=False)
 class ProvenanceV1(ContractModel):
     schema_name = "_defs/provenance.v1.schema.json"
     known_fields = frozenset({"producers", "request", "environment", "randomness", "policies", "extensions"})
@@ -316,6 +330,18 @@ def parse_spectrum(value: str | Mapping[str, Any], *, producer: bool = True) -> 
     data = _mapping(value, SpectrumV1.schema_name)
     validate_spectrum_intrinsic(data, producer=producer)
     return _parse(SpectrumV1, data)  # type: ignore[return-value]
+
+
+def parse_channel_resolution_policy(value: str | Mapping[str, Any], *, producer: bool = True) -> ChannelResolutionPolicyV1:
+    data = _mapping(value, ChannelResolutionPolicyV1.schema_name)
+    validate_channel_resolution_policy_intrinsic(data, producer=producer)
+    return _parse(ChannelResolutionPolicyV1, data)  # type: ignore[return-value]
+
+
+def parse_channel_resolution_report(value: str | Mapping[str, Any], *, producer: bool = False) -> ChannelResolutionReportV1:
+    data = _mapping(value, ChannelResolutionReportV1.schema_name)
+    validate_channel_resolution_report_intrinsic(data, producer=producer)
+    return _parse(ChannelResolutionReportV1, data)  # type: ignore[return-value]
 
 
 def validate_success_manifest_relation(run_record: RunRecordV1, manifest: SuccessManifestV1) -> None:

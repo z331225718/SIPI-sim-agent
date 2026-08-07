@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sipi.channel-resolution-report.v1",
+  "type": "object",
+  "required": ["schema", "producer", "source_network_hash", "policy_hash", "output_hash", "transforms", "warnings", "extensions"],
+  "properties": {
+    "schema": {"const": "sipi.channel-resolution-report.v1"},
+    "producer": {"type": "string", "minLength": 1},
+    "source_network_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "policy_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "output_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "transforms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "applied"],
+        "properties": {
+          "kind": {"type": "string", "minLength": 1},
+          "applied": {"type": "boolean"},
+          "details": {"type": "object"},
+          "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+        }
+      }
+    },
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+  },
+  "additionalProperties": true
+}

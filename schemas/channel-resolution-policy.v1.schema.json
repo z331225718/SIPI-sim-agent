@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sipi.channel-resolution-policy.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "reader_semantics", "port_selection", "termination", "interpolation", "dc", "causality", "ifft", "normalization", "output", "extensions"],
+  "properties": {
+    "schema": {"const": "sipi.channel-resolution-policy.v1"},
+    "reader_semantics": {"type": "string", "minLength": 1},
+    "port_selection": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["port_id", "role"],
+        "properties": {
+          "port_id": {"type": "string", "minLength": 1},
+          "role": {"enum": ["signal", "reference"]},
+          "termination": {"enum": ["open", "short", "match"]},
+          "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+        }
+      }
+    },
+    "termination": {"enum": ["open", "short", "match"]},
+    "interpolation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {"enum": ["linear", "log_frequency", "nearest", "none"]},
+        "fft_size": {"type": "integer", "minimum": 2},
+        "sample_interval_s": {"type": "number", "exclusiveMinimum": 0},
+        "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+      }
+    },
+    "dc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method"],
+      "properties": {
+        "method": {"enum": ["constant", "linear", "none"]},
+        "extrapolate": {"type": "boolean", "default": false},
+        "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+      }
+    },
+    "causality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method"],
+      "properties": {
+        "method": {"enum": ["minimum_phase", "time_shift", "none"]},
+        "enforce": {"type": "boolean", "default": false},
+        "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+      }
+    },
+    "ifft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["extensions"],
+      "properties": {
+        "window": {"type": "string", "minLength": 1},
+        "zero_pad_factor": {"type": "number", "exclusiveMinimum": 1},
+        "trim": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["leading_samples", "trailing_samples"],
+          "properties": {
+            "leading_samples": {"type": "integer", "minimum": 0},
+            "trailing_samples": {"type": "integer", "minimum": 0}
+          }
+        },
+        "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+      }
+    },
+    "normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fft"],
+      "properties": {
+        "fft": {"enum": ["none", "1/N", "1/sqrt(N)", "amplitude", "power"]},
+        "scaling": {"type": "string", "minLength": 1},
+        "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["signal_intent", "extensions"],
+      "properties": {
+        "signal_intent": {"enum": ["voltage", "current"]},
+        "current_to_voltage_sign": {"enum": [1, -1]},
+        "reference_port": {"type": "string", "minLength": 1},
+        "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+      }
+    },
+    "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+  }
+}

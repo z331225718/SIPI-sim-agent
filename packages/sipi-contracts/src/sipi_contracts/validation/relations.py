@@ -874,3 +874,32 @@ def validate_waveform_intrinsic(value: Mapping[str, Any], *, producer: bool = Tr
 def validate_spectrum_intrinsic(value: Mapping[str, Any], *, producer: bool = True) -> None:
     """Validate a sipi.spectrum.v1 document plus signal semantics."""
     _validate_signal_document(value, "sipi.spectrum.v1", axis_kind="frequency", axis_length_key="bins", producer=producer)
+
+
+def validate_channel_resolution_policy_intrinsic(value: Mapping[str, Any], *, producer: bool = True) -> None:
+    """Validate a sipi.channel-resolution-policy.v1 document."""
+    validate_wire("channel-resolution-policy.v1.schema.json", value)
+    if producer:
+        _reject_unknown(
+            value,
+            {"schema", "reader_semantics", "port_selection", "termination", "interpolation", "dc", "causality", "ifft", "normalization", "output", "extensions"},
+            "sipi.channel-resolution-policy.v1",
+            "resolution policy",
+        )
+    port_ids = [item["port_id"] for item in value["port_selection"]]
+    if len(port_ids) != len(set(port_ids)):
+        _violation("sipi.channel-resolution-policy.v1", "port_selection", "selected port ids must be unique")
+    output = value["output"]
+    if output["signal_intent"] == "voltage" and "current_to_voltage_sign" not in output:
+        _violation("sipi.channel-resolution-policy.v1", "output", "voltage output requires current_to_voltage_sign")
+    reference_port = output.get("reference_port")
+    if reference_port is not None and reference_port not in port_ids:
+        _violation("sipi.channel-resolution-policy.v1", "output", "output reference_port must be a selected port")
+
+
+def validate_channel_resolution_report_intrinsic(value: Mapping[str, Any], *, producer: bool = False) -> None:
+    """Validate a sipi.channel-resolution-report.v1 document (tolerant consumer)."""
+    validate_wire("channel-resolution-report.v1.schema.json", value)
+    kinds = [item["kind"] for item in value["transforms"]]
+    if len(kinds) != len(set(kinds)):
+        _violation("sipi.channel-resolution-report.v1", "transforms", "transform kinds must be unique")
