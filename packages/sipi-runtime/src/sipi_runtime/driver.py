@@ -138,6 +138,7 @@ class ExecutionDriver:
                         analysis,
                         selection_hash=node.selection_hash,
                         bundle_hashes=node.bundle_hashes,
+                        producers=node.producers,
                         bound_input_hashes=bound_input_hashes or None,
                     )
                     try:

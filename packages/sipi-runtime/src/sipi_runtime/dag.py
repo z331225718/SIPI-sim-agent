@@ -5,11 +5,14 @@ topological order with long-chain cycle detection and an
 ``effective_required`` closure over required nodes.  Each node carries a
 *pre-bound* cache key (``cache_key_prebound``) covering the canonical payload,
 the complete resolved selection, actual instance bundle hashes and declared
-input bindings; upstream artifact hashes, resources and randomness are bound at
+input bindings, plus explicit producers (role + instance id + bundle hash)
+per M4-10; upstream artifact hashes, resources and randomness are bound at
 execution time (M3-05) via ``cache_identity`` with ``bound_input_hashes``,
 ``resource_policy`` and ``randomness``, and the pre-bound key is therefore not
-the final reuse key.  Execution-layer IDs (run/analysis/attempt/backend) and
-lineage are never part of any cache key.
+the final reuse key.  Execution-layer IDs (run/analysis/attempt/backend),
+lineage, project identity and selection *source* are never part of any cache
+key: semantic fields are the operation, payload schema/hash, resolved
+selection, producer identities, bound input content, resources and randomness.
 """
 
 from __future__ import annotations
@@ -48,6 +51,7 @@ class DagNode:
     selection_hash: str
     execution_modes: tuple[str, ...]
     bundle_hashes: tuple[str, ...]
+    producers: tuple[tuple[str, str, str], ...]
     cache_key_prebound: str
 
 
@@ -67,11 +71,18 @@ def cache_identity(
     *,
     selection_hash: str,
     bundle_hashes: tuple[str, ...],
+    producers: tuple[tuple[str, str, str], ...] = (),
     bound_input_hashes: Mapping[str, str] | None = None,
     resource_policy: Mapping[str, Any] | None = None,
     randomness: Mapping[str, Any] | None = None,
 ) -> str:
-    """Content-addressed cache identity excluding all execution IDs/lineage."""
+    """Content-addressed cache identity excluding all execution IDs/lineage.
+
+    ``producers`` entries are ``(role, instance_id, bundle_hash)`` in resolved
+    selection order (strict/auto/compare), so the exact producer identity and
+    its binary participate in the key even when two instances share a bundle
+    hash or the resolved role order differs.
+    """
     inputs: dict[str, Any] = {}
     for binding in analysis.inputs:
         upstream_hash = bound_input_hashes.get(binding.name) if bound_input_hashes is not None else None
@@ -88,6 +99,10 @@ def cache_identity(
         "backend_selection": dict(analysis.backend_selection),
         "selection_hash": selection_hash,
         "bundle_hashes": tuple(sorted(bundle_hashes)),
+        "producers": [
+            {"role": role, "instance_id": instance_id, "bundle_hash": bundle_hash}
+            for role, instance_id, bundle_hash in producers
+        ],
         "inputs": inputs,
         "resource_policy": dict(resource_policy or {}),
         "randomness": dict(randomness or {}),
@@ -143,6 +158,10 @@ def plan_dag(resolved: ResolvedProject, registry: EngineRegistry) -> DagPlan:
         analysis = analyses[analysis_id]
         trace = resolve_selection(analysis.backend_selection, registry)
         bundle_hashes = tuple(backend.engine_entry["bundle"]["sha256"] for backend in trace.resolved)
+        producers = tuple(
+            (backend.role, backend.instance_id, backend.engine_entry["bundle"]["sha256"])
+            for backend in trace.resolved
+        )
         execution_modes = tuple(
             f"{backend.role}:{backend.instance_id}:sha256:{backend.engine_entry['bundle']['sha256']}"
             for backend in trace.resolved
@@ -151,6 +170,7 @@ def plan_dag(resolved: ResolvedProject, registry: EngineRegistry) -> DagPlan:
             analysis,
             selection_hash=trace.selection_hash,
             bundle_hashes=bundle_hashes,
+            producers=producers,
         )
         nodes.append(
             DagNode(
@@ -165,6 +185,7 @@ def plan_dag(resolved: ResolvedProject, registry: EngineRegistry) -> DagPlan:
                 selection_hash=trace.selection_hash,
                 execution_modes=execution_modes,
                 bundle_hashes=bundle_hashes,
+                producers=producers,
                 cache_key_prebound=cache_key_prebound,
             )
         )

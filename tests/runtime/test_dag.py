@@ -130,6 +130,7 @@ class DagPlanningTests(unittest.TestCase):
             node = plan.by_id["a"]
             self.assertTrue(node.selection_hash.startswith("sha256:"))
             self.assertEqual(node.execution_modes, ("primary:pybert-python:sha256:" + "1" * 64,))
+            self.assertEqual(node.producers, (("primary", "pybert-python", "1" * 64),))
             self.assertTrue(node.cache_key_prebound.startswith("sha256:"))
 
 
@@ -174,6 +175,35 @@ class CacheIdentityTests(unittest.TestCase):
     def test_execution_ids_and_analysis_id_are_excluded(self):
         base = dict(selection_hash="sha256:" + "0" * 64, bundle_hashes=("b1",))
         self.assertEqual(cache_identity(self._analysis("a"), **base), cache_identity(self._analysis("b"), **base))
+
+    def test_producer_identity_participates(self):
+        analysis = self._analysis()
+        base = dict(selection_hash="sha256:" + "0" * 64, bundle_hashes=("b1",))
+        producers_a = (("primary", "instance-a", "b1"),)
+        self.assertEqual(
+            cache_identity(analysis, **base, producers=producers_a),
+            cache_identity(analysis, **base, producers=producers_a),
+        )
+        # Same bundle hash but a different producer instance must not reuse.
+        self.assertNotEqual(
+            cache_identity(analysis, **base, producers=producers_a),
+            cache_identity(analysis, **base, producers=(("primary", "instance-b", "b1"),)),
+        )
+        # Producer role order is semantic (compare reference/candidate), so it stays ordered.
+        compare = (("reference", "instance-a", "b1"), ("candidate", "instance-b", "b2"))
+        self.assertEqual(
+            cache_identity(analysis, **base, producers=compare),
+            cache_identity(analysis, **base, producers=compare),
+        )
+        self.assertNotEqual(
+            cache_identity(analysis, **base, producers=compare),
+            cache_identity(analysis, **base, producers=tuple(reversed(compare))),
+        )
+
+    def test_producers_are_optional_for_backward_compat(self):
+        analysis = self._analysis()
+        base = dict(selection_hash="sha256:" + "0" * 64, bundle_hashes=("b1",))
+        self.assertEqual(cache_identity(analysis, **base), cache_identity(analysis, **base, producers=()))
 
 
 if __name__ == "__main__":

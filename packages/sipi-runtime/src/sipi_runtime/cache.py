@@ -3,7 +3,8 @@
 The cache stores one immutable success manifest plus its artifacts per final
 cache identity (see ``cache_identity``): canonical payload, input/upstream
 artifact hashes, complete resolved selection, actual bundle hashes, schema/
-profile, resources and randomness.  Execution-layer IDs and lineage never
+profile, explicit producer identities (role + instance id + bundle hash per
+M4-10), resources and randomness.  Execution-layer IDs and lineage never
 participate.  A cache hit reuses the original success manifest instead of
 faking an engine run.
 """
