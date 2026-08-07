@@ -214,6 +214,43 @@ class CliM3Tests(unittest.TestCase):
                 self.assertTrue(manifest.is_file())
                 server.close()
 
+    def test_submission_replay_does_not_rerun_or_disturb(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_fake_project(root)
+            data_dir = root / ".sipi"
+            supervisor = Supervisor(data_dir)
+            with SupervisorServer(supervisor, data_dir, runner=build_runner(supervisor, data_dir)) as server:
+                status, output = self.run_cli("run", "--root", str(root), "--detach")
+                self.assertEqual(status, 0)
+                first_run_id = json.loads(output)["run_id"]
+                client = SupervisorClient(data_dir)
+                deadline = time.monotonic() + 15
+                while time.monotonic() < deadline:
+                    execution = client.request({"command": "status", "run_id": first_run_id}).get("execution")
+                    if execution and execution["status"] == "succeeded":
+                        break
+                    time.sleep(0.2)
+                status, output = self.run_cli("run", "--root", str(root), "--detach")
+                self.assertEqual(status, 0)
+                replay_run_id = json.loads(output)["run_id"]
+                self.assertEqual(replay_run_id, first_run_id)
+                execution = client.request({"command": "status", "run_id": first_run_id}).get("execution")
+                self.assertEqual(execution["status"], "succeeded")
+                server.close()
+
+    def test_runner_rejects_project_hash_mismatch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_fake_project(root)
+            data_dir = root / ".sipi"
+            supervisor = Supervisor(data_dir)
+            supervisor.registry.submit_execution(run_id="run-1", project_hash="different-hash", submission_key="key-1", failure_policy="p")
+            runner = build_runner(supervisor, data_dir)
+            runner(str(root), "project.json", "run-1")
+            self.assertEqual(supervisor.registry.get_execution("run-1")["status"], "failed")
+            supervisor.close()
+
 
 if __name__ == "__main__":
     unittest.main()

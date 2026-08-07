@@ -35,6 +35,12 @@ def build_runner(supervisor: Supervisor, data_dir: str | Path):
         try:
             project_dir = Path(project_root)
             resolved = resolve_project(parse_project((project_dir / project_path).read_text(encoding="utf-8")), project_dir)
+            execution = supervisor.registry.get_execution(run_id)
+            if execution is None:
+                return
+            if resolved.project_hash != execution["project_hash"]:
+                supervisor.registry.cas_execution(run_id, execution["version"], status="failed")
+                return
             engine_registry = EngineRegistry(load_engine_lock(project_dir / resolved.engine_lock["relative_path"]))
             plan = plan_dag(resolved, engine_registry)
             ExecutionDriver(

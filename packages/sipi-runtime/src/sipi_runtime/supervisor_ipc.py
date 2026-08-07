@@ -93,7 +93,8 @@ class SupervisorServer:
                 failure_policy=request["failure_policy"],
                 retry_of=request.get("retry_of"),
             )
-            if self._runner is not None and request.get("project_root") and request.get("project_path"):
+            created = execution["run_id"] == request["run_id"]
+            if created and self._runner is not None and request.get("project_root") and request.get("project_path"):
                 threading.Thread(
                     target=self._runner,
                     args=(request["project_root"], request["project_path"], execution["run_id"]),
