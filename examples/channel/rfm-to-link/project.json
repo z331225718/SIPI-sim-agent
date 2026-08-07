@@ -1,0 +1,31 @@
+{
+  "schema": "sipi.project.v1",
+  "project": {"name": "rfm-to-link", "extensions": {}},
+  "runtime": {"engine_lock": "engine.lock", "extensions": {}},
+  "analyses": [
+    {
+      "id": "rfm-response",
+      "operation": "circuit.solve.v1",
+      "backend_selection": {"mode": "strict", "instance": "agent-spice-process"},
+      "payload_schema": "sipi.adapter.agent-spice.rfm-response-request.v1",
+      "payload": {"rfm": "models/channel.rfm", "fft_size": 32768},
+      "exports": [{"role": "rfm-response", "schema": "agent-spice.rfm-response.v1"}]
+    },
+    {
+      "id": "link-eye",
+      "operation": "link.simulate.v1",
+      "backend_selection": {"mode": "strict", "instance": "pybert-python"},
+      "payload_schema": "pybert.simulation.v1",
+      "payload": {"simulation_input": {"sample_count": 2}},
+      "depends_on": ["rfm-response"],
+      "inputs": {
+        "channel": {
+          "from_analysis": "rfm-response",
+          "artifact_role": "rfm-response",
+          "expected_schema": "agent-spice.rfm-response.v1"
+        }
+      }
+    }
+  ],
+  "extensions": {}
+}

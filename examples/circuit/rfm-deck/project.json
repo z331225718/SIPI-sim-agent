@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.project.v1",
+  "project": {"name": "rfm-deck", "extensions": {}},
+  "runtime": {"engine_lock": "engine.lock", "extensions": {}},
+  "analyses": [
+    {
+      "id": "rfm-deck",
+      "operation": "circuit.solve.v1",
+      "backend_selection": {"mode": "strict", "instance": "agent-spice-process"},
+      "payload_schema": "sipi.adapter.agent-spice.rfm-response-request.v1",
+      "payload": {"rfm": "models/channel.rfm", "fft_size": 16384},
+      "exports": [{"role": "rfm-response", "schema": "agent-spice.rfm-response.v1"}]
+    }
+  ],
+  "extensions": {}
+}

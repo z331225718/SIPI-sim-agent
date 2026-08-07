@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.project.v1",
+  "project": {"name": "r480", "extensions": {}},
+  "runtime": {"engine_lock": "engine.lock", "extensions": {}},
+  "analyses": [
+    {
+      "id": "com-r480",
+      "operation": "com.r480.run.v1",
+      "backend_selection": {"mode": "strict", "instance": "agent-com-process"},
+      "payload_schema": "sipi.adapter.agent-com.r480.v1",
+      "payload": {"workbook": "configs/com.xlsx", "thru": "models/channel.s4p"}
+    }
+  ],
+  "extensions": {}
+}

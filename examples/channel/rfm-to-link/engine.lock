@@ -1,0 +1,93 @@
+{
+  "schema": "sipi.engine-lock.v1",
+  "engines": [
+    {
+      "instance_id": "agent-spice-process",
+      "engine_family": "agent-spice",
+      "version": "0.1.0",
+      "source_commit": "0000000000000000000000000000000000000000",
+      "bundle": {
+        "kind": "local_path",
+        "path": "bundles/agent-spice.py",
+        "sha256": "66e724c318707b0b66667fe36593e399f0be0854a1eb1c3d71403e3143eeca9e"
+      },
+      "protocol": {
+        "request_schema": "sipi.backend-execution-request.v1",
+        "result_schema": "sipi.backend-execution-result.v1"
+      },
+      "capabilities": {
+        "schema": "sipi.engine-capabilities.v1",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "runtime": {
+        "kind": "python",
+        "os": "windows",
+        "architecture": "x86_64",
+        "python_abi": "cp312",
+        "rust_target": null
+      },
+      "dependency_lock_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "license_provenance": {
+        "distribution_status": "authorized_public",
+        "manifest_sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+      },
+      "bundle_manifest": {
+        "entrypoint": "agent-spice.py",
+        "files": [
+          {
+            "relative_path": "agent-spice.py",
+            "role": "entrypoint",
+            "sha256": "66e724c318707b0b66667fe36593e399f0be0854a1eb1c3d71403e3143eeca9e",
+            "byte_length": 531
+          }
+        ]
+      },
+      "extensions": {}
+    },
+    {
+      "instance_id": "pybert-python",
+      "engine_family": "pybert",
+      "version": "0.1.0",
+      "source_commit": "0000000000000000000000000000000000000000",
+      "bundle": {
+        "kind": "local_path",
+        "path": "bundles/pybert.py",
+        "sha256": "2f41224f428820315c46b5be0d1da8c9f2476317c5842b4a8073b5206b341606"
+      },
+      "protocol": {
+        "request_schema": "sipi.backend-execution-request.v1",
+        "result_schema": "sipi.backend-execution-result.v1"
+      },
+      "capabilities": {
+        "schema": "sipi.engine-capabilities.v1",
+        "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+      },
+      "runtime": {
+        "kind": "python",
+        "os": "windows",
+        "architecture": "x86_64",
+        "python_abi": "cp312",
+        "rust_target": null
+      },
+      "dependency_lock_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "license_provenance": {
+        "distribution_status": "authorized_public",
+        "manifest_sha256": "6666666666666666666666666666666666666666666666666666666666666666"
+      },
+      "bundle_manifest": {
+        "entrypoint": "pybert.py",
+        "files": [
+          {
+            "relative_path": "pybert.py",
+            "role": "entrypoint",
+            "sha256": "2f41224f428820315c46b5be0d1da8c9f2476317c5842b4a8073b5206b341606",
+            "byte_length": 1680
+          }
+        ]
+      },
+      "extensions": {}
+    }
+  ],
+  "operation_defaults": {},
+  "extensions": {}
+}

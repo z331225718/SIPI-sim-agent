@@ -1,0 +1,50 @@
+{
+  "schema": "sipi.engine-lock.v1",
+  "engines": [
+    {
+      "instance_id": "agent-com-process",
+      "engine_family": "agent-com",
+      "version": "0.1.0",
+      "source_commit": "0000000000000000000000000000000000000000",
+      "bundle": {
+        "kind": "local_path",
+        "path": "bundles/agent-com.py",
+        "sha256": "98d36bd6b6aa1e89ff770dfb076d55e8da9180da564bd41b97b3f0d3df37225f"
+      },
+      "protocol": {
+        "request_schema": "sipi.backend-execution-request.v1",
+        "result_schema": "sipi.backend-execution-result.v1"
+      },
+      "capabilities": {
+        "schema": "sipi.engine-capabilities.v1",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "runtime": {
+        "kind": "python",
+        "os": "windows",
+        "architecture": "x86_64",
+        "python_abi": "cp312",
+        "rust_target": null
+      },
+      "dependency_lock_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "license_provenance": {
+        "distribution_status": "authorized_public",
+        "manifest_sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+      },
+      "bundle_manifest": {
+        "entrypoint": "agent-com.py",
+        "files": [
+          {
+            "relative_path": "agent-com.py",
+            "role": "entrypoint",
+            "sha256": "98d36bd6b6aa1e89ff770dfb076d55e8da9180da564bd41b97b3f0d3df37225f",
+            "byte_length": 430
+          }
+        ]
+      },
+      "extensions": {}
+    }
+  ],
+  "operation_defaults": {},
+  "extensions": {}
+}
