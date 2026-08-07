@@ -24,7 +24,7 @@ from sipi_adapters import CommandBuilder, execute_backend
 from sipi_contracts import RunRequestV1, parse_run_request
 from sipi_contracts.json_types import thaw_json
 
-from .cache import CacheMiss, CacheStore
+from .cache import CacheMiss, CachePathEscape, CacheStore
 from .dag import DagPlan, cache_identity
 from .execution import plan_backend_executions
 from .registry import EngineRegistry
@@ -143,28 +143,32 @@ class ExecutionDriver:
                     except CacheMiss:
                         record = None
                     if record is not None:
-                        attempt_id = f"{analysis_id}-attempt-0"
-                        self.registry.append_attempt(attempt_id=attempt_id, run_id=run_id, analysis_id=analysis_id, retry_index=0)
-                        attempt_row = self.registry.get_attempt(attempt_id)
                         current = self.registry.get_execution(run_id)
                         if current["cancel_requested"]:
                             cancelled_during_attempts = True
                         else:
-                            publish = self.registry.attempt_publish_cas(
-                                attempt_id=attempt_id,
-                                expected_version=attempt_row["version"],
-                                success_manifest_sha256=record.manifest_sha256,
-                                require_publishing=False,
-                            )
-                            if publish == "committed":
+                            try:
                                 cache_store.materialize(cache_key, artifact_root)
-                                manifest_path = artifact_root / "nodes" / analysis_id / "attempts" / attempt_id / "success-manifest.json"
-                                manifest_path.parent.mkdir(parents=True, exist_ok=True)
-                                manifest_path.write_text(json.dumps(dict(record.manifest), sort_keys=True, separators=(",", ":")), encoding="utf-8")
-                                artifacts_by_role = {artifact["role"]: dict(artifact) for artifact in record.manifest.get("artifacts", [])}
-                                outcome = {"status": "succeeded", "manifest_sha256": record.manifest_sha256, "artifacts_by_role": artifacts_by_role}
-                            elif publish == "cancel_accepted":
-                                cancelled_during_attempts = True
+                            except (CacheMiss, CachePathEscape):
+                                record = None
+                            if record is not None:
+                                attempt_id = f"{analysis_id}-attempt-0"
+                                self.registry.append_attempt(attempt_id=attempt_id, run_id=run_id, analysis_id=analysis_id, retry_index=0)
+                                attempt_row = self.registry.get_attempt(attempt_id)
+                                publish = self.registry.attempt_publish_cas(
+                                    attempt_id=attempt_id,
+                                    expected_version=attempt_row["version"],
+                                    success_manifest_sha256=record.manifest_sha256,
+                                    require_publishing=False,
+                                )
+                                if publish == "committed":
+                                    manifest_path = artifact_root / "nodes" / analysis_id / "attempts" / attempt_id / "success-manifest.json"
+                                    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+                                    manifest_path.write_text(json.dumps(dict(record.manifest), sort_keys=True, separators=(",", ":")), encoding="utf-8")
+                                    artifacts_by_role = {artifact["role"]: dict(artifact) for artifact in record.manifest.get("artifacts", [])}
+                                    outcome = {"status": "succeeded", "manifest_sha256": record.manifest_sha256, "artifacts_by_role": artifacts_by_role}
+                                elif publish == "cancel_accepted":
+                                    cancelled_during_attempts = True
             if cancelled_during_attempts:
                 node_row = self.registry.get_node(run_id, analysis_id)
                 self.registry.cas_node(run_id, analysis_id, node_row["version"], status="cancelled")

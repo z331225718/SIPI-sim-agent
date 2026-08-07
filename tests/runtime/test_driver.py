@@ -16,6 +16,8 @@ from sipi_adapters import PyBertNativeAdapter
 from sipi_adapters.process import BackendOutcome, ProcessResult
 from sipi_contracts import parse_project
 from sipi_runtime import (
+    CachePathEscape,
+    CacheStore,
     DriverOptions,
     EngineRegistry,
     ExecutionDriver,
@@ -273,6 +275,26 @@ class ExecutionDriverTests(unittest.TestCase):
                         self.assertNotEqual(attempt["success_manifest_sha256"], first_sha)
                         backend_dir = root / "nodes" / "channel-response" / "attempts" / "channel-response-attempt-0" / "backends"
                         self.assertTrue(backend_dir.exists())
+
+    def test_cache_store_rejects_escape_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            store = CacheStore(root / "cache")
+            marker = root / "marker.txt"
+            marker.write_text("x", encoding="utf-8")
+            with self.assertRaises(CachePathEscape):
+                store.store("key-1", {"artifacts": []}, {"../evil.txt": marker})
+            store.store("key-2", {"artifacts": [{"relative_path": "safe.txt", "role": "data"}]}, {"safe.txt": marker})
+            tampered = store.lookup("key-2")
+            tampered_manifest = dict(tampered.manifest)
+            tampered_manifest["artifacts"] = [{"relative_path": "../evil.txt", "role": "data"}]
+            directory_path = store._dir("key-2")
+            (directory_path / "success-manifest.json").write_text(
+                __import__("json").dumps(tampered_manifest),
+                encoding="utf-8",
+            )
+            with self.assertRaises(CachePathEscape):
+                store.materialize("key-2", root)
 
 
 if __name__ == "__main__":

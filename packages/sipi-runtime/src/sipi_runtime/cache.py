@@ -22,6 +22,10 @@ class CacheMiss(LookupError):
     pass
 
 
+class CachePathEscape(ValueError):
+    pass
+
+
 @dataclass(frozen=True)
 class CacheRecord:
     key: str
@@ -53,10 +57,13 @@ class CacheStore:
 
     def store(self, key: str, manifest: Mapping[str, Any], artifacts: Mapping[str, Path]) -> str:
         directory = self._dir(key)
+        for relative_path in artifacts:
+            self._check_relative(relative_path)
         manifest_bytes = json.dumps(dict(manifest), sort_keys=True, separators=(",", ":")).encode("utf-8")
         directory.mkdir(parents=True, exist_ok=True)
         (directory / "success-manifest.json").write_bytes(manifest_bytes)
         for relative_path, source in artifacts.items():
+            self._check_relative(relative_path)
             target = directory / relative_path
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
@@ -67,9 +74,21 @@ class CacheStore:
         record = self.lookup(key)
         for artifact in record.manifest.get("artifacts", []):
             relative_path = artifact["relative_path"]
+            self._check_relative(relative_path)
             source = self._dir(key) / relative_path
             target = run_root / relative_path
             if not source.is_file():
                 raise CacheMiss(f"cached artifact missing: {relative_path}")
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
+
+    @staticmethod
+    def _check_relative(relative_path: str) -> None:
+        if (
+            not relative_path
+            or relative_path.startswith("/")
+            or "\\" in relative_path
+            or ":" in relative_path
+            or any(part in {"", ".", ".."} for part in relative_path.split("/"))
+        ):
+            raise CachePathEscape(f"cache artifact path is not portable: {relative_path!r}")

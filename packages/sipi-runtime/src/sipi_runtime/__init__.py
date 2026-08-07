@@ -18,11 +18,12 @@ from .supervisor import Supervisor, SupervisorBusy, SupervisorLock
 from .supervisor_ipc import SupervisorClient, SupervisorServer, SupervisorUnavailable, ipc_address, ipc_family
 from .driver import DriverError, DriverOptions, ExecutionDriver
 from .report import DEFAULT_COMPARISON_PROFILES, build_run_report
-from .cache import CacheMiss, CacheRecord, CacheStore
+from .cache import CacheMiss, CachePathEscape, CacheRecord, CacheStore
 
 __all__ = [
     "CancellationToken",
     "CacheMiss",
+    "CachePathEscape",
     "CacheRecord",
     "CacheStore",
     "CasConflict",
