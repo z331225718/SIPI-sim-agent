@@ -43,7 +43,7 @@
     "analysis": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "operation", "backend_selection", "payload_schema"],
+      "required": ["id", "operation", "payload_schema"],
       "properties": {
         "id": {"type": "string", "pattern": "^[a-z][a-z0-9._-]{0,127}$"},
         "operation": {"enum": ["circuit.solve.v1", "network.fit.v1", "link.simulate.v1", "com.r480.run.v1"]},

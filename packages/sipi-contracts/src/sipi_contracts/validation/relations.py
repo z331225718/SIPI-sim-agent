@@ -613,6 +613,7 @@ def validate_capabilities_certified(value: Mapping[str, Any], *, producer: bool 
 def validate_project_intrinsic(value: Mapping[str, Any]) -> None:
     """Validate a sipi.project.v1 document plus its DAG declaration relations."""
     validate_wire("project.v1.schema.json", value)
+    defaults = value["runtime"].get("backend_defaults", {})
     analyses = value["analyses"]
     ids = [analysis["id"] for analysis in analyses]
     if len(ids) != len(set(ids)):
@@ -621,6 +622,13 @@ def validate_project_intrinsic(value: Mapping[str, Any]) -> None:
     for index, analysis in enumerate(analyses):
         pointer = f"/analyses/{index}"
         analysis_id = analysis["id"]
+        if "backend_selection" not in analysis and analysis["operation"] not in defaults:
+            _violation(
+                "sipi.project.v1",
+                "missing_selection",
+                f"analysis {analysis_id} has no backend_selection and no runtime default for {analysis['operation']}",
+                pointer,
+            )
         for dependency in analysis.get("depends_on", []):
             if dependency == analysis_id:
                 _violation("sipi.project.v1", "self_dependency", f"analysis cannot depend on itself: {analysis_id}", pointer)

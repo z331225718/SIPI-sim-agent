@@ -143,6 +143,18 @@ class ProjectContractTests(unittest.TestCase):
         raw["analyses"][0]["backend_selection"] = {"mode": "auto", "candidates": ["a", "b"], "fallback_on": ["EngineUnavailable", "UnsupportedCapability"]}
         parse_project(raw)
 
+    def test_analysis_may_omit_selection_when_runtime_default_exists(self):
+        raw = project()
+        del raw["analyses"][0]["backend_selection"]
+        raw["runtime"]["backend_defaults"] = {
+            "circuit.solve.v1": {"mode": "strict", "instance": "agent-spice-process"}
+        }
+        parse_project(raw)
+        raw = project()
+        del raw["analyses"][0]["backend_selection"]
+        with self.assertRaisesRegex(ContractViolation, "missing_selection"):
+            parse_project(raw)
+
     def test_runtime_backend_defaults_require_full_selection_objects(self):
         raw = project()
         raw["runtime"]["backend_defaults"] = {"link.simulate.v1": {"mode": "auto"}}
