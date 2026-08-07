@@ -5,15 +5,27 @@ from .execution import PlannedExecution, plan_backend_executions
 from .comparison import ComparisonError, ComparisonProfile, ComparisonReport, Metric, MetricMismatch, compare_results
 from .resolution import ResolvedAnalysis, ResolvedInputBinding, ResolvedProject, resolve_project
 from .dag import DagCycleError, DagNode, DagPlan, cache_identity, plan_dag
+from .supervisor_registry import (
+    CasConflict,
+    DuplicateAttempt,
+    DuplicateNode,
+    SubmissionKeyConflict,
+    SupervisorRegistry,
+    SupervisorRegistryError,
+    TerminalTransition,
+)
 
 __all__ = [
     "CancellationToken",
+    "CasConflict",
     "ComparisonError",
     "ComparisonProfile",
     "ComparisonReport",
     "DagCycleError",
     "DagNode",
     "DagPlan",
+    "DuplicateAttempt",
+    "DuplicateNode",
     "EngineLockLoadError",
     "EngineRegistry",
     "InMemoryEventSink",
@@ -29,6 +41,10 @@ __all__ = [
     "ResolvedProject",
     "SelectionError",
     "SelectionTrace",
+    "SubmissionKeyConflict",
+    "SupervisorRegistry",
+    "SupervisorRegistryError",
+    "TerminalTransition",
     "UnknownEngineInstance",
     "compare_results",
     "cache_identity",
