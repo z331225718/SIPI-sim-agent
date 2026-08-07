@@ -25,6 +25,7 @@ from .validation.relations import (
     validate_run_record_intrinsic,
     validate_success_manifest_intrinsic,
     validate_success_manifest_relation as validate_success_manifest_relation_wire,
+    validate_project_intrinsic,
 )
 from .validation.registry import schema_id_for, validate_wire
 
@@ -143,6 +144,12 @@ class EngineLockV1(ContractModel):
 
 
 @dataclass(frozen=True, slots=True, init=False)
+class ProjectV1(ContractModel):
+    schema_name = "project.v1.schema.json"
+    known_fields = frozenset({"schema", "project", "runtime", "analyses", "failure_policy", "extensions"})
+
+
+@dataclass(frozen=True, slots=True, init=False)
 class ProvenanceV1(ContractModel):
     schema_name = "_defs/provenance.v1.schema.json"
     known_fields = frozenset({"producers", "request", "environment", "randomness", "policies", "extensions"})
@@ -238,6 +245,12 @@ def parse_engine_lock(value: str | Mapping[str, Any]) -> EngineLockV1:
     data = _mapping(value, EngineLockV1.schema_name)
     validate_engine_lock_intrinsic(data)
     return _parse(EngineLockV1, data)  # type: ignore[return-value]
+
+
+def parse_project(value: str | Mapping[str, Any]) -> ProjectV1:
+    data = _mapping(value, ProjectV1.schema_name)
+    validate_project_intrinsic(data)
+    return _parse(ProjectV1, data)  # type: ignore[return-value]
 
 
 def validate_success_manifest_relation(run_record: RunRecordV1, manifest: SuccessManifestV1) -> None:

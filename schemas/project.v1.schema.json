@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sipi.project.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "project", "runtime", "analyses", "extensions"],
+  "properties": {
+    "schema": {"const": "sipi.project.v1"},
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "extensions"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine_lock", "extensions"],
+      "properties": {
+        "engine_lock": {"$ref": "#/$defs/path"},
+        "backend_defaults": {
+          "type": "object",
+          "propertyNames": {"pattern": "^[a-z][a-z0-9]*\\.[a-z0-9][a-z0-9-]*\\.[a-z0-9]+$"},
+          "additionalProperties": {"$ref": "run-request.v1.schema.json#/$defs/backend_selection"}
+        },
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    },
+    "analyses": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/analysis"}
+    },
+    "failure_policy": {"enum": ["block-dependents, continue-independent"], "default": "block-dependents, continue-independent"},
+    "extensions": {"$ref": "#/$defs/extensions"}
+  },
+  "$defs": {
+    "path": {"type": "string", "pattern": "^(?!/)(?!.*\\\\)(?!.*:)(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))[A-Za-z0-9][A-Za-z0-9._/-]*$"},
+    "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}},
+    "analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "operation", "backend_selection", "payload_schema"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9._-]{0,127}$"},
+        "operation": {"enum": ["circuit.solve.v1", "network.fit.v1", "link.simulate.v1", "com.r480.run.v1"]},
+        "backend_selection": {"$ref": "run-request.v1.schema.json#/$defs/backend_selection"},
+        "payload_schema": {"type": "string", "minLength": 1},
+        "payload": {"type": "object"},
+        "payload_artifact": {"$ref": "#/$defs/path"},
+        "depends_on": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "required": {"type": "boolean", "default": true},
+        "inputs": {
+          "type": "object",
+          "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9._-]*$"},
+          "additionalProperties": {"$ref": "#/$defs/input_binding"}
+        },
+        "exports": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/export"}
+        },
+        "extensions": {"$ref": "#/$defs/extensions"}
+      },
+      "oneOf": [
+        {"required": ["payload"], "not": {"required": ["payload_artifact"]}},
+        {"required": ["payload_artifact"], "not": {"required": ["payload"]}}
+      ]
+    },
+    "input_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from_analysis", "artifact_role", "expected_schema"],
+      "properties": {
+        "from_analysis": {"type": "string", "minLength": 1},
+        "artifact_role": {"type": "string", "minLength": 1},
+        "expected_schema": {"type": "string", "minLength": 1},
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    },
+    "export": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "schema"],
+      "properties": {
+        "role": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._-]*$"},
+        "schema": {"type": "string", "minLength": 1},
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    }
+  }
+}

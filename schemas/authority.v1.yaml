@@ -151,8 +151,7 @@
       "lifecycle": "reserved_unpublished",
       "definition_owner": "sipi-contracts",
       "source_of_truth": {
-        "kind": "planned_definition",
-        "task": "M3-01",
+        "kind": "local_json_schema",
         "path": "schemas/project.v1.schema.json"
       },
       "exposure": "not_public",

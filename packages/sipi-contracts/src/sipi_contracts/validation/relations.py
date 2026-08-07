@@ -608,3 +608,40 @@ def validate_capabilities_certified(value: Mapping[str, Any], *, producer: bool 
         seen.add(key)
     if producer:
         _reject_unknown(value, {"schema", "status", "advertise", "capability_key_fields", "entries", "non_claims"}, "sipi.capabilities-certified.v1", "catalog")
+
+
+def validate_project_intrinsic(value: Mapping[str, Any]) -> None:
+    """Validate a sipi.project.v1 document plus its DAG declaration relations."""
+    validate_wire("project.v1.schema.json", value)
+    analyses = value["analyses"]
+    ids = [analysis["id"] for analysis in analyses]
+    if len(ids) != len(set(ids)):
+        _violation("sipi.project.v1", "duplicate_analysis", "analysis IDs must be unique")
+    declared = set(ids)
+    for index, analysis in enumerate(analyses):
+        pointer = f"/analyses/{index}"
+        analysis_id = analysis["id"]
+        for dependency in analysis.get("depends_on", []):
+            if dependency == analysis_id:
+                _violation("sipi.project.v1", "self_dependency", f"analysis cannot depend on itself: {analysis_id}", pointer)
+            if dependency not in declared:
+                _violation("sipi.project.v1", "unknown_dependency", f"depends_on references undeclared analysis: {dependency}", pointer)
+        roles = [export["role"] for export in analysis.get("exports", [])]
+        if len(roles) != len(set(roles)):
+            _violation("sipi.project.v1", "duplicate_role", f"export roles must be unique for analysis {analysis_id}", pointer)
+        for binding_name, binding in analysis.get("inputs", {}).items():
+            binding_pointer = f"{pointer}/inputs/{binding_name}"
+            source = binding["from_analysis"]
+            if source == analysis_id:
+                _violation("sipi.project.v1", "self_input", f"analysis cannot bind its own output: {analysis_id}", binding_pointer)
+            if source not in declared:
+                _violation("sipi.project.v1", "unknown_input_source", f"input binding references undeclared analysis: {source}", binding_pointer)
+            source_exports = next(item for item in analyses if item["id"] == source).get("exports", [])
+            source_roles = {item["role"] for item in source_exports}
+            if binding["artifact_role"] not in source_roles:
+                _violation(
+                    "sipi.project.v1",
+                    "missing_producer",
+                    f"input binding has no producer export role {binding['artifact_role']} in {source}",
+                    binding_pointer,
+                )
