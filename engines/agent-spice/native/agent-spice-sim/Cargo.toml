@@ -6,6 +6,14 @@ license = "MIT"
 description = "Project-owned sparse PI/SI circuit simulator"
 build = "build.rs"
 
+[lib]
+name = "agent_spice_sim"
+path = "src/lib.rs"
+
+[[bin]]
+name = "agent-spice-sim"
+path = "src/main.rs"
+
 [dependencies]
 faer = "0.24.4"
 num-complex = "0.4.6"

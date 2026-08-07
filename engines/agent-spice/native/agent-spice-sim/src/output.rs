@@ -3,10 +3,10 @@ use std::io::{self, BufWriter, Write};
 use std::path::Path;
 use std::time::{Duration, Instant};
 
-use crate::error::Result;
-use crate::netlist::Analysis;
-use crate::result::{SimulationPoint, SimulationResult, SimulationStatistics};
-use crate::simulator::SimulationObserver;
+use agent_spice_sim::error::Result;
+use agent_spice_sim::netlist::Analysis;
+use agent_spice_sim::result::{SimulationPoint, SimulationResult, SimulationStatistics};
+use agent_spice_sim::simulator::SimulationObserver;
 
 const WAVEFORM_FLUSH_INTERVAL: Duration = Duration::from_millis(250);
 const WAVEFORM_FLUSH_ROWS: usize = 128;
@@ -45,7 +45,7 @@ impl SimulationObserver for RuntimeObserver {
     fn analysis_started(&mut self, analysis: &str, total_points: usize) -> Result<()> {
         self.analysis_started = Instant::now();
         self.last_progress = Instant::now();
-        crate::logging::line(format_args!(
+        agent_spice_sim::logging::line(format_args!(
             "[agent-spice-sim] {} started: {} output point(s)",
             analysis.to_ascii_uppercase(),
             total_points
@@ -77,7 +77,7 @@ impl SimulationObserver for RuntimeObserver {
             if point.analysis == "tran" {
                 let steps_per_output = statistics.accepted_transient_steps as f64
                     / index.saturating_sub(1).max(1) as f64;
-                crate::logging::line(format_args!(
+                agent_spice_sim::logging::line(format_args!(
                     "[agent-spice-sim] TRAN {index}/{total_points} ({percent:.1}%) t={:.6e}s accepted={} rejected={} steps/output={steps_per_output:.1} breakpoints={} refactors={} matrix-cache={}/{}",
                     point.x,
                     statistics.accepted_transient_steps,
@@ -89,7 +89,7 @@ impl SimulationObserver for RuntimeObserver {
                 ));
                 self.draw_transient_progress(index, total_points, percent);
             } else {
-                crate::logging::line(format_args!(
+                agent_spice_sim::logging::line(format_args!(
                     "[agent-spice-sim] {} {index}/{total_points} ({percent:.1}%) x={:.6e}",
                     point.analysis.to_ascii_uppercase(),
                     point.x
@@ -109,7 +109,7 @@ impl SimulationObserver for RuntimeObserver {
         if let Some(waveform) = &mut self.waveform {
             waveform.flush_if_analysis(analysis)?;
         }
-        crate::logging::line(format_args!(
+        agent_spice_sim::logging::line(format_args!(
             "[agent-spice-sim] {} completed: {} output point(s) in {:.3}s",
             analysis.to_ascii_uppercase(),
             total_points,
