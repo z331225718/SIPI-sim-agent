@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sipi.spectrum.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "axis", "port_map", "signal_kind", "unit", "data", "shape", "channels", "fft", "extensions"],
+  "properties": {
+    "schema": {"const": "sipi.spectrum.v1"},
+    "axis": {"$ref": "axis.v1.schema.json"},
+    "port_map": {"$ref": "port-map.v1.schema.json"},
+    "signal_kind": {"enum": ["voltage", "current"]},
+    "voltage_measurement": {"enum": ["single_ended", "differential", "open_circuit", "loaded"]},
+    "current_sign_convention": {"enum": ["into_positive_terminal", "out_of_positive_terminal"]},
+    "unit": {"type": "string", "minLength": 1},
+    "data": {"$ref": "artifact-ref.v1.schema.json"},
+    "shape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bins", "channels"],
+      "properties": {
+        "bins": {"type": "integer", "minimum": 1},
+        "channels": {"type": "integer", "minimum": 1}
+      }
+    },
+    "channels": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/channel"}
+    },
+    "fft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["normalization", "extensions"],
+      "properties": {
+        "normalization": {"enum": ["none", "1/N", "1/sqrt(N)", "amplitude", "power"]},
+        "window": {"type": "string", "minLength": 1},
+        "scaling": {"type": "string", "minLength": 1},
+        "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+      }
+    },
+    "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+  },
+  "$defs": {
+    "channel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["port_id", "signal_intent", "polarity", "extensions"],
+      "properties": {
+        "port_id": {"type": "string", "minLength": 1},
+        "signal_intent": {"enum": ["voltage", "current"]},
+        "polarity": {"enum": [1, -1]},
+        "reference": {"type": "string", "minLength": 1},
+        "extensions": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)+$"}}
+      }
+    }
+  }
+}

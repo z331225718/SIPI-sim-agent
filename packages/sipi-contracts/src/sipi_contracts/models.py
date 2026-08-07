@@ -29,6 +29,8 @@ from .validation.relations import (
     validate_axis_intrinsic,
     validate_port_map_intrinsic,
     validate_network_tensor_intrinsic,
+    validate_waveform_intrinsic,
+    validate_spectrum_intrinsic,
 )
 from .validation.registry import schema_id_for, validate_wire
 
@@ -171,6 +173,18 @@ class NetworkTensorV1(ContractModel):
 
 
 @dataclass(frozen=True, slots=True, init=False)
+class WaveformV1(ContractModel):
+    schema_name = "waveform.v1.schema.json"
+    known_fields = frozenset({"schema", "axis", "port_map", "signal_kind", "voltage_measurement", "current_sign_convention", "unit", "data", "shape", "channels", "sample_scaling", "effective_interval", "warmup_samples", "trimming", "initial_state", "extensions"})
+
+
+@dataclass(frozen=True, slots=True, init=False)
+class SpectrumV1(ContractModel):
+    schema_name = "spectrum.v1.schema.json"
+    known_fields = frozenset({"schema", "axis", "port_map", "signal_kind", "voltage_measurement", "current_sign_convention", "unit", "data", "shape", "channels", "fft", "extensions"})
+
+
+@dataclass(frozen=True, slots=True, init=False)
 class ProvenanceV1(ContractModel):
     schema_name = "_defs/provenance.v1.schema.json"
     known_fields = frozenset({"producers", "request", "environment", "randomness", "policies", "extensions"})
@@ -290,6 +304,18 @@ def parse_network_tensor(value: str | Mapping[str, Any], *, producer: bool = Tru
     data = _mapping(value, NetworkTensorV1.schema_name)
     validate_network_tensor_intrinsic(data, producer=producer)
     return _parse(NetworkTensorV1, data)  # type: ignore[return-value]
+
+
+def parse_waveform(value: str | Mapping[str, Any], *, producer: bool = True) -> WaveformV1:
+    data = _mapping(value, WaveformV1.schema_name)
+    validate_waveform_intrinsic(data, producer=producer)
+    return _parse(WaveformV1, data)  # type: ignore[return-value]
+
+
+def parse_spectrum(value: str | Mapping[str, Any], *, producer: bool = True) -> SpectrumV1:
+    data = _mapping(value, SpectrumV1.schema_name)
+    validate_spectrum_intrinsic(data, producer=producer)
+    return _parse(SpectrumV1, data)  # type: ignore[return-value]
 
 
 def validate_success_manifest_relation(run_record: RunRecordV1, manifest: SuccessManifestV1) -> None:

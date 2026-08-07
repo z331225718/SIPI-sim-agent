@@ -795,3 +795,82 @@ def validate_network_tensor_intrinsic(value: Mapping[str, Any], *, producer: boo
             _violation("sipi.network-tensor.v1", "port_reorder", "port reorder cannot map a port to itself")
         if item["from"] not in port_ids or item["to"] not in port_ids:
             _violation("sipi.network-tensor.v1", "port_reorder", "port reorder references undeclared port")
+
+
+def _validate_signal_document(value: Mapping[str, Any], schema_id: str, *, axis_kind: str, axis_length_key: str, producer: bool) -> None:
+    validate_wire("waveform.v1.schema.json" if schema_id == "sipi.waveform.v1" else "spectrum.v1.schema.json", value)
+    if producer:
+        _reject_unknown(
+            value,
+            {
+                "schema",
+                "axis",
+                "port_map",
+                "signal_kind",
+                "voltage_measurement",
+                "current_sign_convention",
+                "unit",
+                "data",
+                "shape",
+                "channels",
+                "fft",
+                "sample_scaling",
+                "effective_interval",
+                "warmup_samples",
+                "trimming",
+                "initial_state",
+                "extensions",
+            },
+            schema_id,
+            "signal document",
+        )
+    if value["axis"]["kind"] != axis_kind:
+        _violation(schema_id, "axis", f"axis kind must be {axis_kind}")
+    if value["shape"][axis_length_key] != value["axis"]["length"]:
+        _violation(schema_id, "shape", f"shape.{axis_length_key} must equal axis length")
+    if value["shape"]["channels"] != len(value["channels"]):
+        _violation(schema_id, "shape", "shape.channels must equal channels length")
+    if value["signal_kind"] == "voltage":
+        if "voltage_measurement" not in value:
+            _violation(schema_id, "signal", "voltage signal requires voltage_measurement")
+    else:
+        if "current_sign_convention" not in value:
+            _violation(schema_id, "signal", "current signal requires current_sign_convention")
+    port_map_ports = value["port_map"]["ports"]
+    by_id = {port["id"]: port for port in port_map_ports}
+    for index, channel in enumerate(value["channels"]):
+        pointer = f"/channels/{index}"
+        port_id = channel["port_id"]
+        if port_id not in by_id:
+            _violation(schema_id, "channel", f"channel references undeclared port: {port_id}", pointer)
+            continue
+        if by_id[port_id]["polarity"] != channel["polarity"]:
+            _violation(schema_id, "channel", f"channel polarity must match port map for {port_id}", pointer)
+        reference = channel.get("reference")
+        if reference is not None:
+            if reference == port_id:
+                _violation(schema_id, "channel", f"channel cannot reference itself: {port_id}", pointer)
+            if reference not in by_id:
+                _violation(schema_id, "channel", f"channel references undeclared node: {reference}", pointer)
+    validate_artifact_ref(value["data"], producer=producer)
+    if "fft" in value:
+        _reject_unknown(value["fft"], {"normalization", "window", "scaling", "extensions"}, schema_id, "fft")
+
+
+def validate_waveform_intrinsic(value: Mapping[str, Any], *, producer: bool = True) -> None:
+    """Validate a sipi.waveform.v1 document plus signal semantics."""
+    _validate_signal_document(value, "sipi.waveform.v1", axis_kind="time", axis_length_key="samples", producer=producer)
+    samples = value["shape"]["samples"]
+    interval = value.get("effective_interval")
+    if interval is not None and not (0 <= interval["start_index"] < interval["end_index"] <= samples):
+        _violation("sipi.waveform.v1", "interval", "effective_interval must lie within samples")
+    warmup = value.get("warmup_samples", 0)
+    trimming = value.get("trimming")
+    trimmed = (trimming["leading_samples"] + trimming["trailing_samples"]) if trimming is not None else 0
+    if warmup + trimmed > samples:
+        _violation("sipi.waveform.v1", "interval", "warmup plus trimming must not exceed samples")
+
+
+def validate_spectrum_intrinsic(value: Mapping[str, Any], *, producer: bool = True) -> None:
+    """Validate a sipi.spectrum.v1 document plus signal semantics."""
+    _validate_signal_document(value, "sipi.spectrum.v1", axis_kind="frequency", axis_length_key="bins", producer=producer)
