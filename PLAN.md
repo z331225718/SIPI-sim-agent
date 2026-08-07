@@ -232,6 +232,8 @@ engine.lock
 
 ## 7. M3：Platform MVP 与纵向切片
 
+> 状态（2026-08-07）：平台主体完成并经逐片独立审计（证据 `docs/baselines/audits/2026-08-07-m3.md`）；真实引擎纵向验收与硬资源强制延后——真实引擎待 managed lock + 许可分类，M3-11 hard enforcement 待认证 enforcer 与故障 fixture。不据此 advertise 能力。
+
 ### 7.1 目标
 
 交付第一个真正可用的平台壳：一个项目、一个命令、三个分析、统一结果和一条跨引擎链路。

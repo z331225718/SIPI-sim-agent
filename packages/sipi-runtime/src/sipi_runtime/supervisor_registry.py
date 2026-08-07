@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 from collections.abc import Mapping
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -65,6 +66,7 @@ class SupervisorRegistry:
         self._connection.row_factory = sqlite3.Row
         self._connection.execute("PRAGMA foreign_keys = ON")
         self._connection.execute("PRAGMA journal_mode = WAL")
+        self._lock = threading.RLock()
         self._create_schema()
 
     def close(self) -> None:
@@ -138,19 +140,25 @@ class SupervisorRegistry:
 
     @contextmanager
     def _txn(self) -> Iterator[sqlite3.Cursor]:
-        cursor = self._connection.cursor()
-        try:
-            cursor.execute("BEGIN IMMEDIATE")
-            yield cursor
-            self._connection.commit()
-        except Exception:
-            self._connection.rollback()
-            raise
-        finally:
-            cursor.close()
+        with self._lock:
+            cursor = self._connection.cursor()
+            try:
+                cursor.execute("BEGIN IMMEDIATE")
+                yield cursor
+                self._connection.commit()
+            except Exception:
+                self._connection.rollback()
+                raise
+            finally:
+                cursor.close()
 
     def _read(self, sql: str, parameters: tuple[Any, ...] = ()) -> sqlite3.Row | None:
-        return self._connection.execute(sql, parameters).fetchone()
+        with self._lock:
+            return self._connection.execute(sql, parameters).fetchone()
+
+    def _query_all(self, sql: str, parameters: tuple[Any, ...] = ()) -> tuple[sqlite3.Row, ...]:
+        with self._lock:
+            return tuple(self._connection.execute(sql, parameters).fetchall())
 
     @staticmethod
     def _guard_terminal(current_status: str, terminal: set[str], updates: Mapping[str, Any]) -> None:
@@ -258,12 +266,12 @@ class SupervisorRegistry:
 
     def list_attempts(self, run_id: str, analysis_id: str | None = None) -> tuple[Mapping[str, Any], ...]:
         if analysis_id is None:
-            rows = self._connection.execute("SELECT * FROM attempts WHERE run_id = ? ORDER BY retry_index", (run_id,)).fetchall()
+            rows = self._query_all("SELECT * FROM attempts WHERE run_id = ? ORDER BY retry_index", (run_id,))
         else:
-            rows = self._connection.execute(
+            rows = self._query_all(
                 "SELECT * FROM attempts WHERE run_id = ? AND analysis_id = ? ORDER BY retry_index",
                 (run_id, analysis_id),
-            ).fetchall()
+            )
         return tuple(dict(row) for row in rows)
 
     def cas_attempt(self, attempt_id: str, expected_version: int, *, status: str | None = None, cancel_requested: bool | None = None) -> bool:
@@ -399,9 +407,9 @@ class SupervisorRegistry:
 
     def list_backend_executions(self, attempt_id: str | None = None) -> tuple[Mapping[str, Any], ...]:
         if attempt_id is None:
-            rows = self._connection.execute("SELECT * FROM backend_executions ORDER BY backend_execution_id").fetchall()
+            rows = self._query_all("SELECT * FROM backend_executions ORDER BY backend_execution_id")
         else:
-            rows = self._connection.execute("SELECT * FROM backend_executions WHERE attempt_id = ? ORDER BY backend_execution_id", (attempt_id,)).fetchall()
+            rows = self._query_all("SELECT * FROM backend_executions WHERE attempt_id = ? ORDER BY backend_execution_id", (attempt_id,))
         return tuple(dict(row) for row in rows)
 
     def update_backend_identity(self, backend_execution_id: str, expected_version: int, *, pid: int | None, process_start_time: str | None, run_token: str | None, executable_hash: str | None) -> bool:
