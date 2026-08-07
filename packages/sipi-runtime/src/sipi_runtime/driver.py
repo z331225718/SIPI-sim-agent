@@ -116,7 +116,12 @@ class ExecutionDriver:
                 continue
             self.registry.cas_node(run_id, analysis_id, node_row["version"], status="ready")
             outcome: dict[str, Any] | None = None
+            cancelled_during_attempts = False
             for attempt_index in range(max(1, self.options.max_attempts)):
+                current = self.registry.get_execution(run_id)
+                if current["cancel_requested"]:
+                    cancelled_during_attempts = True
+                    break
                 attempt_id = f"{analysis_id}-attempt-{attempt_index}"
                 self.registry.append_attempt(attempt_id=attempt_id, run_id=run_id, analysis_id=analysis_id, retry_index=attempt_index)
                 attempt_row = self.registry.get_attempt(attempt_id)
@@ -127,6 +132,11 @@ class ExecutionDriver:
                     break
                 attempt_row = self.registry.get_attempt(attempt_id)
                 self.registry.cas_attempt(attempt_id, attempt_row["version"], status="failed")
+            if cancelled_during_attempts:
+                node_row = self.registry.get_node(run_id, analysis_id)
+                self.registry.cas_node(run_id, analysis_id, node_row["version"], status="cancelled")
+                upstream_status[analysis_id] = "cancelled"
+                continue
             if outcome is None:
                 node_row = self.registry.get_node(run_id, analysis_id)
                 self.registry.cas_node(run_id, analysis_id, node_row["version"], status="failed")
@@ -195,6 +205,7 @@ class ExecutionDriver:
             "run_id": run_id,
             "analysis_id": analysis_id,
             "attempt_id": attempt_id,
+            # M3-09 wires real run-record/checksum digests; artifact hashes are already real.
             "run_record_sha256": "0" * 64,
             "checksums_sha256": "0" * 64,
             "artifacts": list(artifacts_by_role.values()),

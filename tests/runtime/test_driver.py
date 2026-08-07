@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT / "packages" / "sipi-runtime" / "src"))
 sys.path.insert(0, str(ROOT / "packages" / "sipi-adapters" / "src"))
 
 from sipi_adapters import PyBertNativeAdapter
+from sipi_adapters.process import BackendOutcome, ProcessResult
 from sipi_contracts import parse_project
 from sipi_runtime import (
     DriverOptions,
@@ -91,16 +92,28 @@ def write_project(root: Path, *, upstream_payload: dict | None = None, upstream_
     (root / "project.json").write_text(json.dumps(project), encoding="utf-8")
 
 
-def driver(root: Path, registry: SupervisorRegistry, *, max_attempts: int = 1) -> tuple[ExecutionDriver, object, object, EngineRegistry]:
+def driver(root: Path, registry: SupervisorRegistry, *, max_attempts: int = 1, builders: dict | None = None) -> tuple[ExecutionDriver, object, object, EngineRegistry]:
     engine_registry = write_engine_lock(root)
     resolved = resolve_project(parse_project((root / "project.json").read_text(encoding="utf-8")), root)
     plan = plan_dag(resolved, engine_registry)
     driver_instance = ExecutionDriver(
         registry,
-        {"pybert": PyBertNativeAdapter()},
+        builders if builders is not None else {"pybert": PyBertNativeAdapter()},
         options=DriverOptions(max_attempts=max_attempts, artifact_root=root),
     )
     return driver_instance, resolved, plan, engine_registry
+
+
+class CancelOnBuildAdapter(PyBertNativeAdapter):
+    def __init__(self, hook):
+        self.hook = hook
+
+    def build(self, request, bundle_path, workdir):
+        self.hook()
+        return super().build(request, bundle_path, workdir)
+
+    def build_outcome(self, request, engine_entry, workdir, process: ProcessResult) -> BackendOutcome:
+        return super().build_outcome(request, engine_entry, workdir, process)
 
 
 class ExecutionDriverTests(unittest.TestCase):
@@ -173,6 +186,21 @@ class ExecutionDriverTests(unittest.TestCase):
                 report = instance.run(resolved, plan, engine_registry, run_id="run-1")
                 self.assertEqual(report["status"], "succeeded")
                 self.assertEqual(registry.get_node("run-1", "channel-response")["status"], "failed")
+
+    def test_cancel_during_attempt_is_fenced_by_publish(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_project(root, with_dependent=False)
+            with SupervisorRegistry(root / "registry.sqlite3") as registry:
+                registry.submit_execution(run_id="run-1", project_hash="h1", submission_key="key-1", failure_policy="p")
+                instance, resolved, plan, engine_registry = driver(
+                    root,
+                    registry,
+                    builders={"pybert": CancelOnBuildAdapter(lambda: registry.cancel_scope(run_id="run-1"))},
+                )
+                report = instance.run(resolved, plan, engine_registry, run_id="run-1")
+                self.assertEqual(report["status"], "cancelled")
+                self.assertEqual(registry.get_attempt("channel-response-attempt-0")["status"], "failed")
 
 
 if __name__ == "__main__":
