@@ -86,11 +86,11 @@ class ResolvedProject:
     failure_policy: str
     analyses: tuple[ResolvedAnalysis, ...]
 
-    def to_wire(self) -> dict[str, Any]:
+    def _content_wire(self) -> dict[str, Any]:
+        """Wire without ``project_hash``; the hash is defined over this content."""
         return {
             "schema": "sipi.project-resolved.v1",
             "project": self.project["project"]["name"],
-            "project_hash": self.project_hash,
             "engine_lock": dict(self.engine_lock),
             "failure_policy": self.failure_policy,
             "analyses": [
@@ -119,6 +119,9 @@ class ResolvedProject:
                 for analysis in self.analyses
             ],
         }
+
+    def to_wire(self) -> dict[str, Any]:
+        return {**self._content_wire(), "project_hash": self.project_hash}
 
 
 def resolve_project(project: ProjectV1, root: str | Path) -> ResolvedProject:
@@ -187,7 +190,7 @@ def resolve_project(project: ProjectV1, root: str | Path) -> ResolvedProject:
         failure_policy=wire.get("failure_policy", "block-dependents, continue-independent"),
         analyses=tuple(resolved_analyses),
     )
-    project_hash = _sha256_bytes(_canonical_json(resolved.to_wire()))
+    project_hash = _sha256_bytes(_canonical_json(resolved._content_wire()))
     return ResolvedProject(
         project=project,
         project_hash=project_hash,

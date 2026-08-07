@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import sys
 import tempfile
 import unittest
@@ -145,6 +146,16 @@ class ResolutionTests(unittest.TestCase):
             wire = resolved.to_wire()
             self.assertEqual(wire["project"], "pcie-link-study")
             self.assertEqual(len(wire["analyses"]), 2)
+
+    def test_project_hash_covers_content_excluding_itself(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_root(root)
+            resolved = resolve_project(parse_project(project()), root)
+            wire = resolved.to_wire()
+            wire.pop("project_hash")
+            canonical = json.dumps(wire, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
+            self.assertEqual(resolved.project_hash, hashlib.sha256(canonical).hexdigest())
 
 
 if __name__ == "__main__":
