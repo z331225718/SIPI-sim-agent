@@ -332,14 +332,14 @@ M4 完成即达到 `SPEC.md` 的 Shared Data MVP。
 | M5A-06 | 用临时 clone/filter-repo 将 clean repo 历史迁入 `engines/agent-spice` | 不在用户主工作树执行破坏性过滤；保留 Python fit/CLI/tests/docs |
 | M5A-07 | 在目标仓用历史保留 move 形成 `native/crates/sipi-circuit` | crate 不留双份；验证 tag artifact 等价 |
 | M5A-08 | 接管 Agent-Spice Python 生产包 | 保留 `agent_spice` namespace、fit/RFM/HSPICE CLI；研究/外部 oracle 按 manifest 分类 |
-| M5A-09 | 新增 IBIS/AMI clean-room 解析器 | 从 IBIS 规范编写（净新功能，来源干净，不继承 PyBERT BSD 代码）；进程内归 agent-spice-sim 使用；放 agent-spice，若其停止独立维护则直接放 SIPI-sim-agent |
+| M5A-09 | 新增 IBIS/AMI clean-room 解析器 | 从 IBIS 规范编写（净新功能，来源干净，不继承 PyBERT BSD 代码）；作为通用 IBIS/AMI 解析工具，进程内归 agent-spice-sim 使用；不承载 AMI DLL host（M5B-04 仍归 Python host），不属 `sipi-link` 数值核心；放 agent-spice，若其停止独立维护则直接放 SIPI-sim-agent |
 
 ### 9.3 M5B：PyBERT Link
 
 | ID | 任务 | 说明 |
 | --- | --- | --- |
 | M5B-01 | 继续现有 Task 12/13 | 完整 result parity、RSS、nightly、故障演练；按 2026-08-07 收编结论将 Phase 1-3（native Web result contract parity → Rust 成默认 → web 指标改接 native）纳入本任务验收，配套执行路线见 Py-bert-agent 仓库 `docs/superpowers/plans/2026-08-07-pybert-core-rust-migration.md` |
-| M5B-02 | 解锁 `auto` 前完成 strict NRZ/RLGC 门禁 | 当前 blocked 状态不得被平台绕过；`native_auto_parity_gate` 对已覆盖 profile 必须返回 `approved`（不得恒为 `blocked`） |
+| M5B-02 | 解锁 `auto` 前完成 strict NRZ/RLGC 门禁 | 当前 blocked 状态不得被平台绕过；Py-bert-agent 的 native parity gate（`native_auto_parity_gate`，名称定义在 Py-bert-agent 迁移文档）对已覆盖 profile 必须返回 `approved`，作为引擎侧前置；本 plan 不新增平台门禁语义 |
 | M5B-03 | 消费 M4 channel resolver 并做 Link parity | 用同一 production resolver 锁 pulse、termination、port intent 和 FFT scaling；禁止在 `sipi-link` 再写一套 S2P/S4P 转换 |
 | M5B-04 | 完整 host-driven AMI contract | DLL 仍留 Python host，补 clock/lock/cancel 跨平台 fixture |
 | M5B-05 | GUI/optimizer 后端统一另行门禁 | 不阻塞 core 迁入，但不能宣称 GUI native 已完成 |
@@ -513,12 +513,18 @@ M7 完成即达到 `SPEC.md` 的 Agent MVP。
 
 Py-bert-agent 侧配套执行路线见其仓库 `docs/superpowers/plans/2026-08-07-pybert-core-rust-migration.md`（草稿，worker 侧准备）。以下为转发结论；SIPI-sim-agent 的 plan 仍是合并计划/架构（workspace crate 布局、clean-room 边界、license 策略、迁移顺序）的源头真相，本节只做收编记录：
 
-1. 现有 `native/pybert-core` Rust 迁移（BSD 派生翻译）继续在 Py-bert-agent 演进；合并时带 BSD attribution/NOTICE 收编。
-2. IBIS/AMI 解析器按净新 clean-room 功能处理：从 IBIS 规范编写，进程内归 agent-spice-sim 使用；建议放 agent-spice，若 agent-spice 停止独立维护则直接放 SIPI-sim-agent。
-3. 若需完全摆脱 BSD，pybert 数值核心的 clean-room 重做放在干净的新项目（SIPI-sim-agent），不在 Py-bert-agent 内进行。
-4. `pybert_web`/`gui`/`PyAMI` 仍为 Python 外壳/工具，合并时作为 Python 侧保留（与 §9.3 M5B、§14 映射一致）。
-5. 依赖顺序：补全 native Web result contract parity（解除 `native_auto_parity_gate` 的 `blocked`）→ Rust 成默认 → web 指标改接 native → 移除 Python reference 路径 → 删除被 Rust 覆盖的数值 Python → S2P/拓扑决策 → GUI/optimizer/清理 → license 收尾与合并。
-6. 不可恢复删除（`src/pybert/models/*`、`utility/` 数值模块、`python_backend.py`/`compare.py`、`gui/`、整仓 `src/pybert/`）在 golden fixture 全覆盖、备份分支且用户确认前不执行，并受 §4.3 许可门禁和 §12.4 删除计划约束；`native/*/Cargo.toml` 的 MIT 声明与 BSD 派生来源的一致性由用户/法务决策。
+以下编号与转发消息一致：
+
+1. 合并计划/架构（目标 workspace crate 布局、clean-room 边界、license 策略、迁移顺序）以 SIPI-sim-agent plan 为源头真相。
+2. 现有 `native/pybert-core` Rust 迁移（BSD 派生翻译）继续在 Py-bert-agent 演进；合并时带 BSD attribution/NOTICE 收编。
+3. IBIS/AMI 解析器按净新 clean-room 功能处理：从 IBIS 规范编写，进程内归 agent-spice-sim 使用；建议放 agent-spice，若 agent-spice 停止独立维护则直接放 SIPI-sim-agent。
+4. 若需完全摆脱 BSD，pybert 数值核心的 clean-room 重做放在干净的新项目（SIPI-sim-agent），不在 Py-bert-agent 内进行。
+5. `pybert_web`/`gui`/`PyAMI` 仍为 Python 外壳/工具，合并时作为 Python 侧保留（与 §9.3 M5B、§14 映射一致）。
+6. 依赖顺序：补全 native Web result contract parity（解除 `native_auto_parity_gate` 的 `blocked`）→ Rust 成默认 → web 指标改接 native → 移除 Python reference 路径 → 删除被 Rust 覆盖的数值 Python → S2P/拓扑决策 → GUI/optimizer/清理 → license 收尾与合并。
+
+本 plan 补充（删除与 license 门禁，非转发结论）：
+
+7. 不可恢复删除（`src/pybert/models/*`、`utility/` 数值模块、`python_backend.py`/`compare.py`、`gui/`、整仓 `src/pybert/`）在 golden fixture 全覆盖、备份分支且用户确认前不执行，并受 §4.3 许可门禁和 §12.4 删除计划约束；`native/*/Cargo.toml` 的 MIT 声明与 BSD 派生来源的一致性由用户/法务决策。
 
 #### 落地映射（结论 → plan 步骤）
 
@@ -527,8 +533,9 @@ Py-bert-agent 侧配套执行路线见其仓库 `docs/superpowers/plans/2026-08-
 - 结论 3（IBIS/AMI clean-room 归 agent-spice-sim）→ 新任务 M5A-09 + §13.2 路线注记。
 - 结论 4（数值核心 clean-room 重做放 SIPI-sim-agent）→ M5B 决策点：若选择摆脱 BSD，重做任务落在 SIPI-sim-agent 干净新项目，不进 Py-bert-agent；执行前需用户批准。
 - 结论 5（web/GUI/PyAMI 作 Python 侧保留）→ M5B-04/05/09 + §14 对应行（AMI host、Web/Redis、GUI）。
-- 结论 6（依赖顺序）→ M5B-01（Phase 1-3）→ M5B-02（parity gate `approved`）→ M5B-03（S2P/拓扑决策，禁止再写第二套 resolver）→ M5B-05（GUI/optimizer 门禁）→ M5B-06/07/08（license 收尾与合并）。
-- 措辞校准（以本 plan 为准）：迁移文档 Phase 4/5 的“移除 Python reference 路径/删除数值 Python”仅指产品默认后端切换与 M2 所需范围；Python reference、AMI host、compat facade 按 §13.1/§14 在 Task 15 另批前不删除，删除动作仍受结论 6 门禁约束。
+- 结论 6（依赖顺序）→ M5B-01（Phase 1-3）→ M5B-02（parity gate 解锁）→ M5B-03（S2P/拓扑决策，禁止再写第二套 resolver）→ M5B-05（GUI/optimizer 门禁）→ M5B-06/07/08（license 收尾与合并）。
+- 补充 7（删除与 license 门禁）→ 受 §4.3（许可分类与机器拒绝）、§12.4（删除另开不可逆计划）、M2-02/M5B-09（reference 保留）和 golden 全覆盖/备份/用户确认约束；执行入口在 M5B Phase 4-5 之后，且 Task 15 另批前不删除 reference/AMI host/compat facade。
+- 措辞校准（以本 plan 为准）：迁移文档 Phase 4/5 的“移除 Python reference 路径/删除数值 Python”仅指产品默认后端切换与 M2 所需范围；Python reference、AMI host、compat facade 按 §13.1/§14 在 Task 15 另批前不删除，删除动作仍受补充 7 门禁约束。
 
 ## 14. Source-to-Target 映射
 
