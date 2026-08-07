@@ -390,6 +390,13 @@ class SupervisorRegistry:
                 )
             return tuple(row["attempt_id"] for row in rows)
 
+    def list_stale_publishing(self) -> tuple[Mapping[str, Any], ...]:
+        """Publishing attempts without an accepted cancel; restart candidates for manifest rebuild."""
+        rows = self._query_all(
+            "SELECT * FROM attempts WHERE status = 'publishing' AND cancel_requested = 0"
+        )
+        return tuple(dict(row) for row in rows)
+
     def record_backend_execution(self, *, backend_execution_id: str, attempt_id: str, role: str, engine_instance_id: str) -> Mapping[str, Any]:
         with self._txn() as cursor:
             cursor.execute(

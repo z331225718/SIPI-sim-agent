@@ -158,16 +158,18 @@ class ExecutionDriver:
                                 attempt_id = f"{analysis_id}-attempt-0"
                                 self.registry.append_attempt(attempt_id=attempt_id, run_id=run_id, analysis_id=analysis_id, retry_index=0)
                                 attempt_row = self.registry.get_attempt(attempt_id)
+                                self.registry.cas_attempt(attempt_id, attempt_row["version"], status="publishing")
+                                manifest_path = artifact_root / "nodes" / analysis_id / "attempts" / attempt_id / "success-manifest.json"
+                                manifest_path.parent.mkdir(parents=True, exist_ok=True)
+                                manifest_path.write_text(json.dumps(dict(record.manifest), sort_keys=True, separators=(",", ":")), encoding="utf-8")
+                                attempt_row = self.registry.get_attempt(attempt_id)
                                 publish = self.registry.attempt_publish_cas(
                                     attempt_id=attempt_id,
                                     expected_version=attempt_row["version"],
                                     success_manifest_sha256=record.manifest_sha256,
-                                    require_publishing=False,
+                                    require_publishing=True,
                                 )
                                 if publish == "committed":
-                                    manifest_path = artifact_root / "nodes" / analysis_id / "attempts" / attempt_id / "success-manifest.json"
-                                    manifest_path.parent.mkdir(parents=True, exist_ok=True)
-                                    manifest_path.write_text(json.dumps(dict(record.manifest), sort_keys=True, separators=(",", ":")), encoding="utf-8")
                                     artifacts_by_role = {artifact["role"]: dict(artifact) for artifact in record.manifest.get("artifacts", [])}
                                     outcome = {"status": "succeeded", "manifest_sha256": record.manifest_sha256, "artifacts_by_role": artifacts_by_role}
                                 elif publish == "cancel_accepted":
@@ -281,9 +283,6 @@ class ExecutionDriver:
                 prefixed = thaw_json(dict(artifact))
                 prefixed["relative_path"] = f"nodes/{analysis_id}/attempts/{attempt_id}/backends/{backend_id}/{artifact['relative_path']}"
                 artifacts_by_role[artifact["role"]] = prefixed
-        attempt_row = self.registry.get_attempt(attempt_id)
-        self.registry.cas_attempt(attempt_id, attempt_row["version"], status="publishing")
-        attempt_row = self.registry.get_attempt(attempt_id)
         manifest = {
             "schema": "sipi.success-manifest.v1",
             "run_id": run_id,
@@ -297,12 +296,15 @@ class ExecutionDriver:
         }
         manifest_bytes = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode("utf-8")
         manifest_sha256 = _sha256_bytes(manifest_bytes)
-        publish = self.registry.attempt_publish_cas(attempt_id=attempt_id, expected_version=attempt_row["version"], success_manifest_sha256=manifest_sha256)
-        if publish != "committed":
-            return {"status": "failed", "reason": f"publish rejected: {publish}"}
+        attempt_row = self.registry.get_attempt(attempt_id)
+        self.registry.cas_attempt(attempt_id, attempt_row["version"], status="publishing")
         manifest_path = artifact_root / "nodes" / analysis_id / "attempts" / attempt_id / "success-manifest.json"
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_bytes(manifest_bytes)
+        attempt_row = self.registry.get_attempt(attempt_id)
+        publish = self.registry.attempt_publish_cas(attempt_id=attempt_id, expected_version=attempt_row["version"], success_manifest_sha256=manifest_sha256)
+        if publish != "committed":
+            return {"status": "failed", "reason": f"publish rejected: {publish}"}
         if cache_store is not None and cache_key is not None:
             cache_store.store(
                 cache_key,
