@@ -1,0 +1,64 @@
+{
+  "failures": [],
+  "python": "covered",
+  "rust": "deferred",
+  "schema": "sipi.m4-conformance.v1",
+  "schemas": {
+    "axis": {
+      "cases": {
+        "consumer.good": true,
+        "consumer.unknown.reject": true,
+        "consumer.version.reject": true,
+        "producer.good": true,
+        "producer.unknown.reject": true
+      },
+      "python": "covered",
+      "rust": "deferred"
+    },
+    "network-tensor": {
+      "cases": {
+        "consumer.good": true,
+        "consumer.unknown.reject": true,
+        "consumer.version.reject": true,
+        "producer.good": true,
+        "producer.unknown.reject": true
+      },
+      "python": "covered",
+      "rust": "deferred"
+    },
+    "port-map": {
+      "cases": {
+        "consumer.good": true,
+        "consumer.unknown.reject": true,
+        "consumer.version.reject": true,
+        "producer.good": true,
+        "producer.unknown.reject": true
+      },
+      "python": "covered",
+      "rust": "deferred"
+    },
+    "spectrum": {
+      "cases": {
+        "consumer.good": true,
+        "consumer.unknown.reject": true,
+        "consumer.version.reject": true,
+        "producer.good": true,
+        "producer.unknown.reject": true
+      },
+      "python": "covered",
+      "rust": "deferred"
+    },
+    "waveform": {
+      "cases": {
+        "consumer.good": true,
+        "consumer.unknown.reject": true,
+        "consumer.version.reject": true,
+        "producer.good": true,
+        "producer.unknown.reject": true
+      },
+      "python": "covered",
+      "rust": "deferred"
+    }
+  },
+  "valid": true
+}
