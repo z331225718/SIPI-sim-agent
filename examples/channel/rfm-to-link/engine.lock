@@ -9,7 +9,7 @@
       "bundle": {
         "kind": "local_path",
         "path": "bundles/agent-spice.py",
-        "sha256": "66e724c318707b0b66667fe36593e399f0be0854a1eb1c3d71403e3143eeca9e"
+        "sha256": "c45d375b22674f7dd53ca4eabfcc17957563fbd8f0cb2cab9eab2bbaeceda7fc"
       },
       "protocol": {
         "request_schema": "sipi.backend-execution-request.v1",
@@ -37,8 +37,8 @@
           {
             "relative_path": "agent-spice.py",
             "role": "entrypoint",
-            "sha256": "66e724c318707b0b66667fe36593e399f0be0854a1eb1c3d71403e3143eeca9e",
-            "byte_length": 531
+            "sha256": "c45d375b22674f7dd53ca4eabfcc17957563fbd8f0cb2cab9eab2bbaeceda7fc",
+            "byte_length": 1295
           }
         ]
       },

@@ -5,7 +5,7 @@
 | 示例 | 路径 | 分析 | 执行状态 |
 | --- | --- | --- | --- |
 | Circuit RFM deck | `circuit/rfm-deck` | `circuit.solve.v1`（agent-spice-process） | validate 可用；真实执行待 agent-spice license/third-party 分类 + managed lock |
-| Channel RFM→Link | `channel/rfm-to-link` | `circuit.solve.v1` → `link.simulate.v1`（bound input） | pybert 节点可用 stub 执行；真实执行待 managed lock |
+| Channel RFM→Link | `channel/rfm-to-link` | `circuit.solve.v1` → `link.simulate.v1`（bound input） | stub 纵向 smoke 可用（两节点均 stub 执行，见 `tests/runtime/test_vertical_smoke.py`）；真实执行待 managed lock |
 | COM r480 | `com/r480` | `com.r480.run.v1`（agent-com-process） | validate 可用；真实执行待 oracle/license 分类 |
 
 ## 运行
