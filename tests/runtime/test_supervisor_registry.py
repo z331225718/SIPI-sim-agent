@@ -51,6 +51,10 @@ class SupervisorRegistryTests(unittest.TestCase):
                 self.assertTrue(registry.cas_execution("run-1", 2, status="succeeded"))
                 with self.assertRaises(TerminalTransition):
                     registry.cas_execution("run-1", 3, status="failed")
+                with self.assertRaises(TerminalTransition):
+                    registry.cas_execution("run-1", 3, cancel_requested=True)
+                with self.assertRaises(TerminalTransition):
+                    registry.cas_execution("run-1", 3, lease_owner="supervisor-2")
 
     def test_cancel_flag_and_lease_heartbeat(self):
         with tempfile.TemporaryDirectory() as directory:

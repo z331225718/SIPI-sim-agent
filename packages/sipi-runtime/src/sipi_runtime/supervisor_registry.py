@@ -153,8 +153,8 @@ class SupervisorRegistry:
 
     @staticmethod
     def _guard_terminal(current_status: str, terminal: set[str], updates: Mapping[str, Any]) -> None:
-        if current_status in terminal and updates.get("status") not in {None, current_status}:
-            raise TerminalTransition(f"terminal row cannot transition from {current_status}")
+        if current_status in terminal and any(value is not None for value in updates.values()):
+            raise TerminalTransition(f"terminal row cannot be mutated from {current_status}")
 
     def submit_execution(
         self,
