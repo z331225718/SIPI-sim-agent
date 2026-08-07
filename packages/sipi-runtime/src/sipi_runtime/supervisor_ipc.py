@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import threading
+from collections.abc import Callable
 from multiprocessing.connection import Client, Listener
 from pathlib import Path
 from typing import Any
@@ -44,9 +45,17 @@ def _encode(payload: dict[str, Any]) -> bytes:
 class SupervisorServer:
     """Accepts one local client connection at a time and dispatches commands."""
 
-    def __init__(self, supervisor: Supervisor, data_dir: str | Path, *, on_shutdown: Any = None) -> None:
+    def __init__(
+        self,
+        supervisor: Supervisor,
+        data_dir: str | Path,
+        *,
+        on_shutdown: Any = None,
+        runner: Callable[[str, str, str], None] | None = None,
+    ) -> None:
         self.supervisor: Supervisor | None = supervisor
         self._on_shutdown = on_shutdown
+        self._runner = runner
         self.data_dir = Path(data_dir)
         self.family = ipc_family()
         self.address = ipc_address(self.data_dir)
@@ -84,6 +93,13 @@ class SupervisorServer:
                 failure_policy=request["failure_policy"],
                 retry_of=request.get("retry_of"),
             )
+            if self._runner is not None and request.get("project_root") and request.get("project_path"):
+                threading.Thread(
+                    target=self._runner,
+                    args=(request["project_root"], request["project_path"], execution["run_id"]),
+                    name="sipi-supervisor-runner",
+                    daemon=True,
+                ).start()
             return {"ok": True, "execution": execution}
         if command == "status":
             return {"ok": True, "execution": self.supervisor.registry.get_execution(request["run_id"])}

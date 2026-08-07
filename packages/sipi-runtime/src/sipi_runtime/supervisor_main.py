@@ -17,8 +17,40 @@ import threading
 import time
 from pathlib import Path
 
+from sipi_adapters import PyBertNativeAdapter
+from sipi_contracts import parse_project
+
+from .driver import DriverOptions, ExecutionDriver
+from .registry import EngineRegistry, load_engine_lock
+from .dag import plan_dag
+from .resolution import resolve_project
 from .supervisor import Supervisor
 from .supervisor_ipc import SupervisorClient, SupervisorServer, SupervisorUnavailable
+
+
+def build_runner(supervisor: Supervisor, data_dir: str | Path):
+    """Build the submit runner that drives one execution through the DAG driver."""
+
+    def runner(project_root: str, project_path: str, run_id: str) -> None:
+        try:
+            project_dir = Path(project_root)
+            resolved = resolve_project(parse_project((project_dir / project_path).read_text(encoding="utf-8")), project_dir)
+            engine_registry = EngineRegistry(load_engine_lock(project_dir / resolved.engine_lock["relative_path"]))
+            plan = plan_dag(resolved, engine_registry)
+            ExecutionDriver(
+                supervisor.registry,
+                {"pybert": PyBertNativeAdapter()},
+                options=DriverOptions(artifact_root=project_dir),
+            ).run(resolved, plan, engine_registry, run_id)
+        except Exception as error:  # noqa: BLE001 - runner failure must settle the execution row
+            execution = supervisor.registry.get_execution(run_id)
+            if execution is not None and execution["status"] not in {"succeeded", "failed", "cancelled"}:
+                try:
+                    supervisor.registry.cas_execution(run_id, execution["version"], status="failed")
+                except Exception:  # noqa: BLE001 - best-effort settle
+                    pass
+
+    return runner
 
 
 def serve(data_dir: str | Path, *, reconcile: bool = True) -> None:
@@ -28,7 +60,7 @@ def serve(data_dir: str | Path, *, reconcile: bool = True) -> None:
     if reconcile:
         supervisor.reconcile()
     stop = threading.Event()
-    server = SupervisorServer(supervisor, root, on_shutdown=stop.set)
+    server = SupervisorServer(supervisor, root, on_shutdown=stop.set, runner=build_runner(supervisor, root))
     server.start()
 
     def _stop(*_: object) -> None:

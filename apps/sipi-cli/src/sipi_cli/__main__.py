@@ -377,6 +377,7 @@ def cmd_run(args: argparse.Namespace, root: Path) -> int:
         client = _client(data_dir)
         run_id = args.run_id or f"run-{uuid.uuid4().hex}"
         submission_key = args.submission_key or resolved.project_hash
+        project_file = _project_path(root, args.project)
         response = client.request(
             {
                 "command": "submit",
@@ -384,6 +385,8 @@ def cmd_run(args: argparse.Namespace, root: Path) -> int:
                 "project_hash": resolved.project_hash,
                 "submission_key": submission_key,
                 "failure_policy": resolved.failure_policy,
+                "project_root": str(root),
+                "project_path": str(project_file),
             }
         )
         if not response.get("ok"):
@@ -449,6 +452,8 @@ def cmd_retry(args: argparse.Namespace, root: Path) -> int:
                 "submission_key": submission_key,
                 "failure_policy": resolved.failure_policy,
                 "retry_of": args.run_id,
+                "project_root": str(root),
+                "project_path": str(_project_path(root, args.project)),
             }
         )
         if not response.get("ok"):
