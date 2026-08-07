@@ -7,9 +7,25 @@ use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::time::Instant;
 
-use agent_spice_sim::error::{Error, Result};
+use agent_spice_sim::error::Error;
 use agent_spice_sim::response::{RcShunt, ResponseLoads, evaluate_response_grid, spice_number};
 use agent_spice_sim::{compatibility, logging, netlist, rfm, simulator};
+
+/// CLI-layer error: adds usage messages and serde_json failures to the
+/// library [`Error`].
+#[derive(Debug, thiserror::Error)]
+enum CliError {
+    #[error("{0}")]
+    Usage(String),
+    #[error(transparent)]
+    Engine(#[from] Error),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+}
+
+type CliResult<T> = std::result::Result<T, CliError>;
 
 fn log_rfm_storage(name: &str, model: &rfm::RfmModel) {
     let stats = model.storage_stats();
@@ -72,10 +88,10 @@ fn main() {
     }
 }
 
-fn run() -> Result<()> {
+fn run() -> CliResult<()> {
     let started = Instant::now();
     let mut arguments = env::args_os().skip(1);
-    let first = arguments.next().ok_or_else(|| Error::Usage(usage()))?;
+    let first = arguments.next().ok_or_else(|| CliError::Usage(usage()))?;
     if first == "build-info" {
         return run_build_info(arguments);
     }
@@ -92,39 +108,40 @@ fn run() -> Result<()> {
     while let Some(argument) = arguments.next() {
         if argument == "--rfm" {
             rfm_path = Some(PathBuf::from(
-                arguments.next().ok_or_else(|| Error::Usage(usage()))?,
+                arguments.next().ok_or_else(|| CliError::Usage(usage()))?,
             ));
         } else if argument == "--rfm-subckt" {
             rfm_subcircuit = arguments
                 .next()
-                .ok_or_else(|| Error::Usage(usage()))?
+                .ok_or_else(|| CliError::Usage(usage()))?
                 .into_string()
-                .map_err(|_| Error::Usage("RFM subcircuit name must be valid Unicode".into()))?;
+                .map_err(|_| CliError::Usage("RFM subcircuit name must be valid Unicode".into()))?;
         } else if argument == "--output-json" {
             output_json = Some(PathBuf::from(
-                arguments.next().ok_or_else(|| Error::Usage(usage()))?,
+                arguments.next().ok_or_else(|| CliError::Usage(usage()))?,
             ));
         } else if argument == "--waveform-csv" {
             waveform_csv = Some(PathBuf::from(
-                arguments.next().ok_or_else(|| Error::Usage(usage()))?,
+                arguments.next().ok_or_else(|| CliError::Usage(usage()))?,
             ));
         } else if argument == "--audit-json" {
             audit_json = Some(PathBuf::from(
-                arguments.next().ok_or_else(|| Error::Usage(usage()))?,
+                arguments.next().ok_or_else(|| CliError::Usage(usage()))?,
             ));
         } else if argument == "--log" {
             log_path = Some(PathBuf::from(
-                arguments.next().ok_or_else(|| Error::Usage(usage()))?,
+                arguments.next().ok_or_else(|| CliError::Usage(usage()))?,
             ));
         } else {
-            return Err(Error::Usage(usage()));
+            return Err(CliError::Usage(usage()));
         }
     }
     if !deck.is_file() {
         return Err(Error::InvalidDeck(format!(
             "deck does not exist: {}",
             deck.display()
-        )));
+        ))
+        .into());
     }
     let deck = deck.canonicalize()?;
     let deck_directory = deck.parent().ok_or_else(|| {
@@ -140,11 +157,12 @@ fn run() -> Result<()> {
         return Err(Error::InvalidDeck(format!(
             "RFM model does not exist: {}",
             rfm_path.as_ref().expect("RFM path was checked").display()
-        )));
+        ))
+        .into());
     }
     if let Some(audit_json) = audit_json {
         if output_json.is_some() || waveform_csv.is_some() {
-            return Err(Error::Usage(
+            return Err(CliError::Usage(
                 "--audit-json cannot be combined with simulation outputs".into(),
             ));
         }
@@ -282,10 +300,10 @@ fn build_info() -> serde_json::Value {
     })
 }
 
-fn run_build_info(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> Result<()> {
+fn run_build_info(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> CliResult<()> {
     if let Some(argument) = arguments.next() {
         if argument != "--json" || arguments.next().is_some() {
-            return Err(Error::Usage("agent-spice-sim build-info [--json]".into()));
+            return Err(CliError::Usage("agent-spice-sim build-info [--json]".into()));
         }
     }
     println!(
@@ -295,11 +313,11 @@ fn run_build_info(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> Re
     Ok(())
 }
 
-fn run_rfm_response(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> Result<()> {
+fn run_rfm_response(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> CliResult<()> {
     let rfm_path = arguments
         .next()
         .map(PathBuf::from)
-        .ok_or_else(|| Error::Usage(rfm_response_usage()))?;
+        .ok_or_else(|| CliError::Usage(rfm_response_usage()))?;
     let mut fft_size = None;
     let mut dt = None;
     let mut input_ports = None;
@@ -318,25 +336,25 @@ fn run_rfm_response(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> 
             input_ports = Some(
                 arguments
                     .next()
-                    .ok_or_else(|| Error::Usage(rfm_response_usage()))?,
+                    .ok_or_else(|| CliError::Usage(rfm_response_usage()))?,
             );
         } else if argument == "--output-ports" {
             output_ports = Some(
                 arguments
                     .next()
-                    .ok_or_else(|| Error::Usage(rfm_response_usage()))?,
+                    .ok_or_else(|| CliError::Usage(rfm_response_usage()))?,
             );
         } else if argument == "--response-bin" {
             response_bin = Some(PathBuf::from(
                 arguments
                     .next()
-                    .ok_or_else(|| Error::Usage(rfm_response_usage()))?,
+                    .ok_or_else(|| CliError::Usage(rfm_response_usage()))?,
             ));
         } else if argument == "--metadata-json" {
             metadata_json = Some(PathBuf::from(
                 arguments
                     .next()
-                    .ok_or_else(|| Error::Usage(rfm_response_usage()))?,
+                    .ok_or_else(|| CliError::Usage(rfm_response_usage()))?,
             ));
         } else if argument == "--threads" {
             threads = parse_positive_usize(arguments.next(), "--threads")?;
@@ -344,25 +362,25 @@ fn run_rfm_response(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> 
             shunt_resistances.push(
                 arguments
                     .next()
-                    .ok_or_else(|| Error::Usage(rfm_response_usage()))?,
+                    .ok_or_else(|| CliError::Usage(rfm_response_usage()))?,
             );
         } else if argument == "--rc-load" {
             rc_loads.push(
                 arguments
                     .next()
-                    .ok_or_else(|| Error::Usage(rfm_response_usage()))?,
+                    .ok_or_else(|| CliError::Usage(rfm_response_usage()))?,
             );
         } else {
-            return Err(Error::Usage(rfm_response_usage()));
+            return Err(CliError::Usage(rfm_response_usage()));
         }
     }
-    let fft_size = fft_size.ok_or_else(|| Error::Usage(rfm_response_usage()))?;
+    let fft_size = fft_size.ok_or_else(|| CliError::Usage(rfm_response_usage()))?;
     if fft_size < 2 {
-        return Err(Error::Usage("--fft-size must be at least 2".into()));
+        return Err(CliError::Usage("--fft-size must be at least 2".into()));
     }
-    let dt = dt.ok_or_else(|| Error::Usage(rfm_response_usage()))?;
-    let response_bin = response_bin.ok_or_else(|| Error::Usage(rfm_response_usage()))?;
-    let metadata_json = metadata_json.ok_or_else(|| Error::Usage(rfm_response_usage()))?;
+    let dt = dt.ok_or_else(|| CliError::Usage(rfm_response_usage()))?;
+    let response_bin = response_bin.ok_or_else(|| CliError::Usage(rfm_response_usage()))?;
+    let metadata_json = metadata_json.ok_or_else(|| CliError::Usage(rfm_response_usage()))?;
     let model = rfm::RfmModel::parse_file(&rfm_path)?;
     let inputs = parse_ports(input_ports, model.nports)?;
     let outputs = parse_ports(output_ports, model.nports)?;
@@ -413,52 +431,52 @@ fn run_rfm_response(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> 
     Ok(())
 }
 
-fn parse_positive_usize(value: Option<std::ffi::OsString>, name: &str) -> Result<usize> {
-    let value = value.ok_or_else(|| Error::Usage(rfm_response_usage()))?;
+fn parse_positive_usize(value: Option<std::ffi::OsString>, name: &str) -> CliResult<usize> {
+    let value = value.ok_or_else(|| CliError::Usage(rfm_response_usage()))?;
     let parsed = value
         .to_string_lossy()
         .parse::<usize>()
-        .map_err(|_| Error::Usage(format!("{name} must be a positive integer")))?;
+        .map_err(|_| CliError::Usage(format!("{name} must be a positive integer")))?;
     if parsed == 0 {
-        return Err(Error::Usage(format!("{name} must be a positive integer")));
+        return Err(CliError::Usage(format!("{name} must be a positive integer")));
     }
     Ok(parsed)
 }
 
-fn parse_positive_f64(value: Option<std::ffi::OsString>, name: &str) -> Result<f64> {
-    let value = value.ok_or_else(|| Error::Usage(rfm_response_usage()))?;
+fn parse_positive_f64(value: Option<std::ffi::OsString>, name: &str) -> CliResult<f64> {
+    let value = value.ok_or_else(|| CliError::Usage(rfm_response_usage()))?;
     let parsed = value
         .to_string_lossy()
         .parse::<f64>()
-        .map_err(|_| Error::Usage(format!("{name} must be a positive finite number")))?;
+        .map_err(|_| CliError::Usage(format!("{name} must be a positive finite number")))?;
     if !parsed.is_finite() || parsed <= 0.0 {
-        return Err(Error::Usage(format!(
+        return Err(CliError::Usage(format!(
             "{name} must be a positive finite number"
         )));
     }
     Ok(parsed)
 }
 
-fn parse_ports(value: Option<std::ffi::OsString>, nports: usize) -> Result<Vec<usize>> {
+fn parse_ports(value: Option<std::ffi::OsString>, nports: usize) -> CliResult<Vec<usize>> {
     let Some(value) = value else {
         return Ok((0..nports).collect());
     };
     let mut ports = Vec::new();
     for token in value.to_string_lossy().split(',') {
         let port = token.trim().parse::<usize>().map_err(|_| {
-            Error::Usage(
+            CliError::Usage(
                 "--input-ports/--output-ports must be comma-separated 1-based integers".into(),
             )
         })?;
         if port == 0 || port > nports || ports.contains(&(port - 1)) {
-            return Err(Error::Usage(
+            return Err(CliError::Usage(
                 "response port is outside range or repeated".into(),
             ));
         }
         ports.push(port - 1);
     }
     if ports.is_empty() {
-        return Err(Error::Usage("response port list cannot be empty".into()));
+        return Err(CliError::Usage("response port list cannot be empty".into()));
     }
     Ok(ports)
 }
@@ -467,7 +485,7 @@ fn parse_response_loads(
     nports: usize,
     shunt_resistances: Vec<std::ffi::OsString>,
     rc_loads: Vec<std::ffi::OsString>,
-) -> Result<ResponseLoads> {
+) -> CliResult<ResponseLoads> {
     let mut loads = ResponseLoads::empty(nports);
     let mut shorted = BTreeSet::new();
     for value in shunt_resistances {
@@ -478,7 +496,7 @@ fn parse_response_loads(
         } else if resistance.is_finite() && resistance > 0.0 {
             loads.conductance[port] += 1.0 / resistance;
         } else {
-            return Err(Error::Usage(
+            return Err(CliError::Usage(
                 "--shunt-resistance must have a non-negative finite resistance".into(),
             ));
         }
@@ -489,23 +507,23 @@ fn parse_response_loads(
         .iter()
         .any(|&port| loads.conductance[port] != 0.0)
     {
-        return Err(Error::Usage(
+        return Err(CliError::Usage(
             "a port cannot have both an ideal short and a finite shunt resistance".into(),
         ));
     }
     for value in rc_loads {
         let value = value.to_string_lossy();
         let (port, path) = value.split_once(':').ok_or_else(|| {
-            Error::Usage("--rc-load must use <1-based-port>:<two-terminal-rc-subckt.inc>".into())
+            CliError::Usage("--rc-load must use <1-based-port>:<two-terminal-rc-subckt.inc>".into())
         })?;
         let port = checked_port(
             port.trim()
                 .parse::<usize>()
-                .map_err(|_| Error::Usage("--rc-load port must be a 1-based integer".into()))?,
+                .map_err(|_| CliError::Usage("--rc-load port must be a 1-based integer".into()))?,
             nports,
         )?;
         if loads.shorted_ports.contains(&port) {
-            return Err(Error::Usage(
+            return Err(CliError::Usage(
                 "--rc-load cannot be applied to an ideal-shorted port".into(),
             ));
         }
@@ -514,32 +532,33 @@ fn parse_response_loads(
             return Err(Error::InvalidDeck(format!(
                 "RC load does not exist: {}",
                 source.display()
-            )));
+            ))
+            .into());
         }
         loads.rc_shunts.push(RcShunt::parse(port, source)?);
     }
     Ok(loads)
 }
 
-fn checked_port(port: usize, nports: usize) -> Result<usize> {
+fn checked_port(port: usize, nports: usize) -> CliResult<usize> {
     if port == 0 || port > nports {
-        return Err(Error::Usage(
+        return Err(CliError::Usage(
             "response load port is outside the RFM range".into(),
         ));
     }
     Ok(port - 1)
 }
 
-fn parse_port_value(value: &str, name: &str) -> Result<(usize, f64)> {
+fn parse_port_value(value: &str, name: &str) -> CliResult<(usize, f64)> {
     let (port, raw_value) = value
         .split_once(':')
-        .ok_or_else(|| Error::Usage(format!("{name} must use <1-based-port>:<resistance-ohm>")))?;
+        .ok_or_else(|| CliError::Usage(format!("{name} must use <1-based-port>:<resistance-ohm>")))?;
     let port = port
         .trim()
         .parse::<usize>()
-        .map_err(|_| Error::Usage(format!("{name} port must be a 1-based integer")))?;
+        .map_err(|_| CliError::Usage(format!("{name} port must be a 1-based integer")))?;
     let resistance = spice_number(raw_value.trim())
-        .ok_or_else(|| Error::Usage(format!("{name} resistance is invalid")))?;
+        .ok_or_else(|| CliError::Usage(format!("{name} resistance is invalid")))?;
     Ok((port, resistance))
 }
 

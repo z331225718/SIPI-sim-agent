@@ -3,6 +3,7 @@ use std::io::{self, BufWriter, Write};
 use std::path::Path;
 use std::time::{Duration, Instant};
 
+use crate::CliResult;
 use agent_spice_sim::error::Result;
 use agent_spice_sim::netlist::Analysis;
 use agent_spice_sim::result::{SimulationPoint, SimulationResult, SimulationStatistics};
@@ -272,7 +273,7 @@ fn selected_analysis(analyses: &[Analysis]) -> Option<&'static str> {
     })
 }
 
-pub fn write_json(result: &SimulationResult, path: &Path) -> Result<()> {
+pub fn write_json(result: &SimulationResult, path: &Path) -> CliResult<()> {
     let writer = BufWriter::new(File::create(path)?);
     serde_json::to_writer(writer, result)?;
     Ok(())

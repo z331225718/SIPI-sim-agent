@@ -2,10 +2,11 @@ use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// Engine error type. New variants may be added; matchers outside this crate
+/// must include a wildcard arm (`#[non_exhaustive]`).
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum Error {
-    #[error("{0}")]
-    Usage(String),
     #[error("{0}")]
     InvalidDeck(String),
     #[error("{0}")]
@@ -22,8 +23,6 @@ pub enum Error {
     Sparse(String),
     #[error(transparent)]
     Io(#[from] std::io::Error),
-    #[error(transparent)]
-    Json(#[from] serde_json::Error),
 }
 
 impl Error {

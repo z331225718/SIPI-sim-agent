@@ -35,12 +35,44 @@ pub struct CompatibilityReport {
 }
 
 impl CompatibilityReport {
+    pub fn schema_version(&self) -> usize {
+        self.schema_version
+    }
+    pub fn deck(&self) -> &str {
+        &self.deck
+    }
+    pub fn is_compatible(&self) -> bool {
+        self.compatible
+    }
+    pub fn scanned_files(&self) -> &[String] {
+        &self.scanned_files
+    }
+    pub fn statement_counts(&self) -> &BTreeMap<String, usize> {
+        &self.statement_counts
+    }
+    pub fn issues(&self) -> &[CompatibilityIssue] {
+        &self.issues
+    }
     pub fn issue_count(&self) -> usize {
         self.issues.len()
     }
-
     pub fn scanned_file_count(&self) -> usize {
         self.scanned_files.len()
+    }
+}
+
+impl CompatibilityIssue {
+    pub fn path(&self) -> &str {
+        &self.path
+    }
+    pub fn line(&self) -> usize {
+        self.line
+    }
+    pub fn statement(&self) -> &str {
+        &self.statement
+    }
+    pub fn reason(&self) -> &str {
+        &self.reason
     }
 }
 

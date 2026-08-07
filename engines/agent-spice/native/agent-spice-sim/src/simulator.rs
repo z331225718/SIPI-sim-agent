@@ -163,6 +163,8 @@ pub fn run_with_observer(
     }
     let measurements = evaluate_measurements(deck, &points)?;
     Ok(SimulationResult {
+        schema: crate::RESULT_SCHEMA.to_string(),
+        circuit_api_version: crate::CIRCUIT_API_VERSION,
         nodes: deck.nodes.clone(),
         points,
         measurements,
