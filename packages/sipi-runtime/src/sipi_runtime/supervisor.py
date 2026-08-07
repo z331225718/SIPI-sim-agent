@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .supervisor_registry import SupervisorRegistry
+from .process_tree import is_process_alive, matches_identity, terminate_tree
 
 
 class SupervisorBusy(RuntimeError):
@@ -90,8 +91,16 @@ class Supervisor:
         return self.registry.attempt_publish_cas(attempt_id=attempt_id, expected_version=expected_version, success_manifest_sha256=success_manifest_sha256)
 
     def request_cancel(self, *, run_id: str, analysis_id: str | None = None) -> tuple[str, tuple[str, ...]]:
-        """Write cancel_requested CAS flags; returns (status, affected attempt ids)."""
-        return self.registry.cancel_scope(run_id=run_id, analysis_id=analysis_id)
+        """Write cancel flags, then terminate managed trees of affected backends."""
+        status, affected = self.registry.cancel_scope(run_id=run_id, analysis_id=analysis_id)
+        if status == "accepted":
+            for attempt_id in affected:
+                for backend in self.registry.list_backend_executions(attempt_id):
+                    if backend["status"] in {"pending", "running"} and backend["pid"] is not None:
+                        if matches_identity(backend["pid"], backend["process_start_time"]):
+                            terminate_tree(pid=backend["pid"])
+                        self.registry.cas_backend_execution(backend["backend_execution_id"], backend["version"], status="cancelled")
+        return status, affected
 
     def reconcile(self) -> dict[str, object]:
         """Restart reconciliation: expire stale leases and settle cancelled publishing attempts.
@@ -104,4 +113,27 @@ class Supervisor:
         now_iso = datetime.now(timezone.utc).isoformat()
         expired = self.registry.expire_stale_executions(now_iso)
         cancelled_publishing = self.registry.expire_cancelled_publishing()
-        return {"expired_executions": expired, "cancelled_publishing_attempts": cancelled_publishing}
+        settled_backends = self._reconcile_backends()
+        return {
+            "expired_executions": expired,
+            "cancelled_publishing_attempts": cancelled_publishing,
+            "settled_backends": settled_backends,
+        }
+
+    def _reconcile_backends(self) -> tuple[str, ...]:
+        """Settle orphaned/stopped backend children; identity-matched orphans are reaped."""
+        settled: list[str] = []
+        for backend in self.registry.list_backend_executions():
+            if backend["status"] not in {"pending", "running"} or backend["pid"] is None:
+                continue
+            alive = is_process_alive(backend["pid"])
+            if alive and not matches_identity(backend["pid"], backend["process_start_time"]):
+                continue  # PID reuse with a different child: warn-only, do not reap
+            if alive:
+                terminate_tree(pid=backend["pid"])
+            try:
+                self.registry.cas_backend_execution(backend["backend_execution_id"], backend["version"], status="failed")
+                settled.append(backend["backend_execution_id"])
+            except Exception:  # noqa: BLE001 - reconciliation must stay idempotent
+                pass
+        return tuple(settled)

@@ -19,6 +19,7 @@ from .supervisor_ipc import SupervisorClient, SupervisorServer, SupervisorUnavai
 from .driver import DriverError, DriverOptions, ExecutionDriver
 from .report import DEFAULT_COMPARISON_PROFILES, build_run_report
 from .cache import CacheMiss, CachePathEscape, CacheRecord, CacheStore
+from .process_tree import ChildIdentity, ProcessTreeError, child_identity, is_process_alive, matches_identity, spawn_managed, terminate_tree
 
 __all__ = [
     "CancellationToken",
@@ -26,6 +27,7 @@ __all__ = [
     "CachePathEscape",
     "CacheRecord",
     "CacheStore",
+    "ChildIdentity",
     "CasConflict",
     "ComparisonError",
     "ComparisonProfile",
@@ -48,6 +50,7 @@ __all__ = [
     "Metric",
     "MetricMismatch",
     "PlannedExecution",
+    "ProcessTreeError",
     "ResolvedAnalysis",
     "ResolvedBackend",
     "ResolvedInputBinding",
@@ -68,12 +71,17 @@ __all__ = [
     "compare_results",
     "build_run_report",
     "cache_identity",
+    "child_identity",
+    "is_process_alive",
     "load_engine_lock",
     "plan_dag",
     "plan_backend_executions",
     "ipc_address",
     "ipc_family",
+    "matches_identity",
     "resolve_project",
     "resolve_selection",
     "selection_hash",
+    "spawn_managed",
+    "terminate_tree",
 ]

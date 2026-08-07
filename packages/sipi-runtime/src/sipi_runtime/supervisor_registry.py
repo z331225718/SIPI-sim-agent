@@ -397,6 +397,13 @@ class SupervisorRegistry:
         row = self._read("SELECT * FROM backend_executions WHERE backend_execution_id = ?", (backend_execution_id,))
         return dict(row) if row is not None else None
 
+    def list_backend_executions(self, attempt_id: str | None = None) -> tuple[Mapping[str, Any], ...]:
+        if attempt_id is None:
+            rows = self._connection.execute("SELECT * FROM backend_executions ORDER BY backend_execution_id").fetchall()
+        else:
+            rows = self._connection.execute("SELECT * FROM backend_executions WHERE attempt_id = ? ORDER BY backend_execution_id", (attempt_id,)).fetchall()
+        return tuple(dict(row) for row in rows)
+
     def update_backend_identity(self, backend_execution_id: str, expected_version: int, *, pid: int | None, process_start_time: str | None, run_token: str | None, executable_hash: str | None) -> bool:
         updates = {"pid": pid, "process_start_time": process_start_time, "run_token": run_token, "executable_hash": executable_hash}
         return self._cas_row("backend_executions", "backend_execution_id", backend_execution_id, expected_version, updates, BACKEND_TERMINAL)
