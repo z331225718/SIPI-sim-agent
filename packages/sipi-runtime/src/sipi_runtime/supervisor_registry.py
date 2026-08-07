@@ -238,6 +238,16 @@ class SupervisorRegistry:
         row = self._read("SELECT * FROM attempts WHERE attempt_id = ?", (attempt_id,))
         return dict(row) if row is not None else None
 
+    def list_attempts(self, run_id: str, analysis_id: str | None = None) -> tuple[Mapping[str, Any], ...]:
+        if analysis_id is None:
+            rows = self._connection.execute("SELECT * FROM attempts WHERE run_id = ? ORDER BY retry_index", (run_id,)).fetchall()
+        else:
+            rows = self._connection.execute(
+                "SELECT * FROM attempts WHERE run_id = ? AND analysis_id = ? ORDER BY retry_index",
+                (run_id, analysis_id),
+            ).fetchall()
+        return tuple(dict(row) for row in rows)
+
     def cas_attempt(self, attempt_id: str, expected_version: int, *, status: str | None = None, cancel_requested: bool | None = None) -> bool:
         updates = {"status": status, "cancel_requested": cancel_requested}
         return self._cas_row("attempts", "attempt_id", attempt_id, expected_version, updates, ATTEMPT_TERMINAL)

@@ -5,9 +5,10 @@ build-backend = "setuptools.build_meta"
 name = "sipi-runtime"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = ["sipi-contracts"]
+dependencies = ["sipi-contracts", "sipi-adapters"]
 [tool.uv.sources]
 sipi-contracts = { workspace = true }
+sipi-adapters = { workspace = true }
 [tool.setuptools]
 package-dir = {"" = "src"}
 [tool.setuptools.packages.find]

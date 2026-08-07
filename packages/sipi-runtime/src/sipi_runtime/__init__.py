@@ -16,6 +16,7 @@ from .supervisor_registry import (
 )
 from .supervisor import Supervisor, SupervisorBusy, SupervisorLock
 from .supervisor_ipc import SupervisorClient, SupervisorServer, SupervisorUnavailable, ipc_address, ipc_family
+from .driver import DriverError, DriverOptions, ExecutionDriver
 
 __all__ = [
     "CancellationToken",
@@ -26,10 +27,13 @@ __all__ = [
     "DagCycleError",
     "DagNode",
     "DagPlan",
+    "DriverError",
+    "DriverOptions",
     "DuplicateAttempt",
     "DuplicateNode",
     "EngineLockLoadError",
     "EngineRegistry",
+    "ExecutionDriver",
     "InMemoryEventSink",
     "InMemoryLifecycle",
     "InvalidTransition",
