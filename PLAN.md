@@ -177,6 +177,8 @@ engine.lock
 
 ## 6. M2：黑盒引擎适配器
 
+> 状态（2026-08-07）：平台侧完成并经逐片独立审计（证据 `docs/baselines/audits/2026-08-07-m2-platform.md`）；引擎级真实双跑与许可项 deferred——pybert 真实双跑待 managed dependency lock（M2-08 后续 slice），agent-spice/agent-com 随许可/oracle 延后至 cleanroom 完成后重开 M0-09/G0b/G0c。
+
 ### 6.1 目标
 
 在不改变数值实现的前提下，让平台运行三个引擎，并证明平台只改变运输和工件包装。
