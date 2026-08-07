@@ -47,6 +47,7 @@ class DagNode:
     selection: Mapping[str, Any]
     selection_hash: str
     execution_modes: tuple[str, ...]
+    bundle_hashes: tuple[str, ...]
     cache_key_prebound: str
 
 
@@ -163,6 +164,7 @@ def plan_dag(resolved: ResolvedProject, registry: EngineRegistry) -> DagPlan:
                 selection=analysis.backend_selection,
                 selection_hash=trace.selection_hash,
                 execution_modes=execution_modes,
+                bundle_hashes=bundle_hashes,
                 cache_key_prebound=cache_key_prebound,
             )
         )

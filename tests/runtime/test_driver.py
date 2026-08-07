@@ -92,14 +92,14 @@ def write_project(root: Path, *, upstream_payload: dict | None = None, upstream_
     (root / "project.json").write_text(json.dumps(project), encoding="utf-8")
 
 
-def driver(root: Path, registry: SupervisorRegistry, *, max_attempts: int = 1, builders: dict | None = None) -> tuple[ExecutionDriver, object, object, EngineRegistry]:
+def driver(root: Path, registry: SupervisorRegistry, *, max_attempts: int = 1, builders: dict | None = None, cache_root: Path | None = None) -> tuple[ExecutionDriver, object, object, EngineRegistry]:
     engine_registry = write_engine_lock(root)
     resolved = resolve_project(parse_project((root / "project.json").read_text(encoding="utf-8")), root)
     plan = plan_dag(resolved, engine_registry)
     driver_instance = ExecutionDriver(
         registry,
         builders if builders is not None else {"pybert": PyBertNativeAdapter()},
-        options=DriverOptions(max_attempts=max_attempts, artifact_root=root),
+        options=DriverOptions(max_attempts=max_attempts, artifact_root=root, cache_root=cache_root),
     )
     return driver_instance, resolved, plan, engine_registry
 
@@ -114,6 +114,15 @@ class CancelOnBuildAdapter(PyBertNativeAdapter):
 
     def build_outcome(self, request, engine_entry, workdir, process: ProcessResult) -> BackendOutcome:
         return super().build_outcome(request, engine_entry, workdir, process)
+
+
+class CountingAdapter(PyBertNativeAdapter):
+    def __init__(self):
+        self.calls = 0
+
+    def build(self, request, bundle_path, workdir):
+        self.calls += 1
+        return super().build(request, bundle_path, workdir)
 
 
 class ExecutionDriverTests(unittest.TestCase):
@@ -201,6 +210,69 @@ class ExecutionDriverTests(unittest.TestCase):
                 report = instance.run(resolved, plan, engine_registry, run_id="run-1")
                 self.assertEqual(report["status"], "cancelled")
                 self.assertEqual(registry.get_attempt("channel-response-attempt-0")["status"], "failed")
+
+    def test_cache_reuse_skips_backend_on_second_run(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            base.mkdir()
+            write_project(base)
+            write_engine_lock(base)
+            cache_root = Path(directory) / "cache"
+            first_sha = None
+            counter = CountingAdapter()
+            for index, run_id in enumerate(("run-1", "run-2"), start=1):
+                root = Path(directory) / f"run{index}"
+                root.mkdir()
+                (root / "project.json").write_bytes((base / "project.json").read_bytes())
+                (root / "engine.lock").write_bytes((base / "engine.lock").read_bytes())
+                (root / "bundles").mkdir()
+                (root / "bundles" / "pybert.py").write_bytes((base / "bundles" / "pybert.py").read_bytes())
+                with SupervisorRegistry(root / "registry.sqlite3") as registry:
+                    registry.submit_execution(run_id=run_id, project_hash="h1", submission_key=f"key-{index}", failure_policy="p")
+                    calls_before = counter.calls
+                    instance, resolved, plan, engine_registry = driver(root, registry, cache_root=cache_root, builders={"pybert": counter})
+                    report = instance.run(resolved, plan, engine_registry, run_id)
+                    self.assertEqual(report["status"], "succeeded")
+                    attempt = registry.get_attempt("channel-response-attempt-0")
+                    if first_sha is None:
+                        first_sha = attempt["success_manifest_sha256"]
+                        self.assertGreater(counter.calls, calls_before)
+                    else:
+                        self.assertEqual(attempt["success_manifest_sha256"], first_sha)
+                        self.assertEqual(counter.calls, calls_before)
+            self.assertTrue(any(cache_root.iterdir()))
+
+    def test_cache_key_changes_with_payload(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            base.mkdir()
+            write_project(base)
+            write_engine_lock(base)
+            cache_root = Path(directory) / "cache"
+            first_sha = None
+            for index, run_id in enumerate(("run-1", "run-2"), start=1):
+                root = Path(directory) / f"run{index}"
+                root.mkdir()
+                (root / "project.json").write_bytes((base / "project.json").read_bytes())
+                (root / "engine.lock").write_bytes((base / "engine.lock").read_bytes())
+                (root / "bundles").mkdir()
+                (root / "bundles" / "pybert.py").write_bytes((base / "bundles" / "pybert.py").read_bytes())
+                if index == 2:
+                    project = json.loads((root / "project.json").read_text(encoding="utf-8"))
+                    project["analyses"][0]["payload"]["simulation_input"]["sample_count"] = 7
+                    (root / "project.json").write_text(json.dumps(project), encoding="utf-8")
+                with SupervisorRegistry(root / "registry.sqlite3") as registry:
+                    registry.submit_execution(run_id=run_id, project_hash=f"h{index}", submission_key=f"key-{index}", failure_policy="p")
+                    instance, resolved, plan, engine_registry = driver(root, registry, cache_root=cache_root)
+                    report = instance.run(resolved, plan, engine_registry, run_id)
+                    self.assertEqual(report["status"], "succeeded")
+                    attempt = registry.get_attempt("channel-response-attempt-0")
+                    if first_sha is None:
+                        first_sha = attempt["success_manifest_sha256"]
+                    else:
+                        self.assertNotEqual(attempt["success_manifest_sha256"], first_sha)
+                        backend_dir = root / "nodes" / "channel-response" / "attempts" / "channel-response-attempt-0" / "backends"
+                        self.assertTrue(backend_dir.exists())
 
 
 if __name__ == "__main__":

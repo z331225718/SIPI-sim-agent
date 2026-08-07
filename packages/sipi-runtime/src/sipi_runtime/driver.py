@@ -24,7 +24,8 @@ from sipi_adapters import CommandBuilder, execute_backend
 from sipi_contracts import RunRequestV1, parse_run_request
 from sipi_contracts.json_types import thaw_json
 
-from .dag import DagPlan
+from .cache import CacheMiss, CacheStore
+from .dag import DagPlan, cache_identity
 from .execution import plan_backend_executions
 from .registry import EngineRegistry
 from .resolution import ResolvedAnalysis, ResolvedProject
@@ -49,6 +50,7 @@ class DriverError(RuntimeError):
 class DriverOptions:
     max_attempts: int = 1
     artifact_root: Path | None = None
+    cache_root: Path | None = None
 
 
 def _run_request(analysis: ResolvedAnalysis, *, run_id: str, analysis_id: str, attempt_id: str, project_id: str) -> RunRequestV1:
@@ -117,6 +119,63 @@ class ExecutionDriver:
             self.registry.cas_node(run_id, analysis_id, node_row["version"], status="ready")
             outcome: dict[str, Any] | None = None
             cancelled_during_attempts = False
+            cache_store = CacheStore(self.options.cache_root) if self.options.cache_root is not None else None
+            analysis = next(item for item in resolved.analyses if item.analysis_id == analysis_id)
+            cache_key: str | None = None
+            if cache_store is not None:
+                bound_input_hashes = {}
+                resolvable = True
+                for binding in analysis.inputs:
+                    ref = upstream_artifacts.get(binding.from_analysis, {}).get(binding.artifact_role)
+                    if ref is None:
+                        resolvable = False
+                        break
+                    bound_input_hashes[binding.name] = ref["sha256"]
+                if resolvable:
+                    cache_key = cache_identity(
+                        analysis,
+                        selection_hash=node.selection_hash,
+                        bundle_hashes=node.bundle_hashes,
+                        bound_input_hashes=bound_input_hashes or None,
+                    )
+                    try:
+                        record = cache_store.lookup(cache_key)
+                    except CacheMiss:
+                        record = None
+                    if record is not None:
+                        attempt_id = f"{analysis_id}-attempt-0"
+                        self.registry.append_attempt(attempt_id=attempt_id, run_id=run_id, analysis_id=analysis_id, retry_index=0)
+                        attempt_row = self.registry.get_attempt(attempt_id)
+                        current = self.registry.get_execution(run_id)
+                        if current["cancel_requested"]:
+                            cancelled_during_attempts = True
+                        else:
+                            publish = self.registry.attempt_publish_cas(
+                                attempt_id=attempt_id,
+                                expected_version=attempt_row["version"],
+                                success_manifest_sha256=record.manifest_sha256,
+                                require_publishing=False,
+                            )
+                            if publish == "committed":
+                                cache_store.materialize(cache_key, artifact_root)
+                                manifest_path = artifact_root / "nodes" / analysis_id / "attempts" / attempt_id / "success-manifest.json"
+                                manifest_path.parent.mkdir(parents=True, exist_ok=True)
+                                manifest_path.write_text(json.dumps(dict(record.manifest), sort_keys=True, separators=(",", ":")), encoding="utf-8")
+                                artifacts_by_role = {artifact["role"]: dict(artifact) for artifact in record.manifest.get("artifacts", [])}
+                                outcome = {"status": "succeeded", "manifest_sha256": record.manifest_sha256, "artifacts_by_role": artifacts_by_role}
+                            elif publish == "cancel_accepted":
+                                cancelled_during_attempts = True
+            if cancelled_during_attempts:
+                node_row = self.registry.get_node(run_id, analysis_id)
+                self.registry.cas_node(run_id, analysis_id, node_row["version"], status="cancelled")
+                upstream_status[analysis_id] = "cancelled"
+                continue
+            if outcome is not None:
+                node_row = self.registry.get_node(run_id, analysis_id)
+                self.registry.cas_node(run_id, analysis_id, node_row["version"], status="succeeded")
+                upstream_status[analysis_id] = "succeeded"
+                upstream_artifacts[analysis_id] = outcome["artifacts_by_role"]
+                continue
             for attempt_index in range(max(1, self.options.max_attempts)):
                 current = self.registry.get_execution(run_id)
                 if current["cancel_requested"]:
@@ -126,7 +185,7 @@ class ExecutionDriver:
                 self.registry.append_attempt(attempt_id=attempt_id, run_id=run_id, analysis_id=analysis_id, retry_index=attempt_index)
                 attempt_row = self.registry.get_attempt(attempt_id)
                 self.registry.cas_attempt(attempt_id, attempt_row["version"], status="running")
-                result = self._run_attempt(resolved, node.analysis_id, run_id, attempt_id, upstream_artifacts, engine_registry, artifact_root)
+                result = self._run_attempt(resolved, node.analysis_id, run_id, attempt_id, upstream_artifacts, engine_registry, artifact_root, cache_store, cache_key)
                 if result["status"] == "succeeded":
                     outcome = result
                     break
@@ -168,6 +227,8 @@ class ExecutionDriver:
         upstream_artifacts: Mapping[str, Mapping[str, Mapping[str, Any]]],
         engine_registry: EngineRegistry,
         artifact_root: Path,
+        cache_store: CacheStore | None,
+        cache_key: str | None,
     ) -> dict[str, Any]:
         analysis = next(item for item in resolved.analyses if item.analysis_id == analysis_id)
         bound_inputs: dict[str, Any] = {}
@@ -219,4 +280,10 @@ class ExecutionDriver:
         manifest_path = artifact_root / "nodes" / analysis_id / "attempts" / attempt_id / "success-manifest.json"
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_bytes(manifest_bytes)
+        if cache_store is not None and cache_key is not None:
+            cache_store.store(
+                cache_key,
+                manifest,
+                {ref["relative_path"]: artifact_root / ref["relative_path"] for ref in artifacts_by_role.values()},
+            )
         return {"status": "succeeded", "manifest_sha256": manifest_sha256, "artifacts_by_role": artifacts_by_role}

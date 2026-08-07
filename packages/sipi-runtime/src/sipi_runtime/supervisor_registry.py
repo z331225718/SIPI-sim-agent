@@ -270,7 +270,7 @@ class SupervisorRegistry:
         updates = {"status": status, "cancel_requested": cancel_requested}
         return self._cas_row("attempts", "attempt_id", attempt_id, expected_version, updates, ATTEMPT_TERMINAL)
 
-    def attempt_publish_cas(self, *, attempt_id: str, expected_version: int, success_manifest_sha256: str) -> str:
+    def attempt_publish_cas(self, *, attempt_id: str, expected_version: int, success_manifest_sha256: str, require_publishing: bool = True) -> str:
         """Prepare/commit success publication (SPEC 9.4): single-writer CAS with cancel fencing."""
         with self._txn() as cursor:
             attempt = cursor.execute("SELECT * FROM attempts WHERE attempt_id = ?", (attempt_id,)).fetchone()
@@ -280,7 +280,7 @@ class SupervisorRegistry:
                 return "already_terminal"
             if attempt["version"] != expected_version:
                 return "version_conflict"
-            if attempt["status"] != "publishing":
+            if require_publishing and attempt["status"] != "publishing":
                 return "not_publishing"
             execution = cursor.execute("SELECT cancel_requested FROM executions WHERE run_id = ?", (attempt["run_id"],)).fetchone()
             node = cursor.execute(
