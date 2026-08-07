@@ -1,7 +1,8 @@
 """Rust-vs-ngspice differential oracle (independent of the .NET lane).
 
-ngspice is installed and on PATH, so this lane runs by default (gated only
-by tool availability in ``pytestmark``). Tolerances follow
+Opt-in via ``--run-oracle=ngspice``; also gated by tool availability in
+``pytestmark`` (missing ngspice/Rust skips rather than fails). ngspice is a
+locally-downloaded OSS tool, not a project dependency. Tolerances follow
 ``tests/test_native_engine.py`` (rel=2e-3, abs=2e-5).
 """
 from __future__ import annotations

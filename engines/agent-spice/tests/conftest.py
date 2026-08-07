@@ -1,8 +1,8 @@
 """Pytest configuration: opt-in external oracle lanes.
 
-Lanes marked ``@pytest.mark.oracle("ngspice")`` run by default (gated only by
-tool availability); ``"hspice"`` and ``"csharp"`` are opt-in via
-``--run-oracle=<lane>`` (or ``--run-oracle=all``).
+All oracle lanes (ngspice / hspice / csharp) are opt-in via
+``--run-oracle=<lane>`` (or ``--run-oracle=all``); each test file additionally
+gates on tool availability so a missing tool skips rather than fails.
 """
 from __future__ import annotations
 
