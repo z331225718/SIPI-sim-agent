@@ -20,6 +20,7 @@ from .process import (
 )
 from .pybert import PyBertNativeAdapter
 from .channel_resolver import CHANNEL_RESPONSE_CONTRACT, ChannelResolutionError, resolve_channel
+from .readers import PROFILES, ReaderError, cross_profile_fixture_matrix, read_network
 from .venv import BundleExecutionError
 from .spi import (
     AdapterContractError,
@@ -46,9 +47,13 @@ __all__ = [
     "BundleVerificationError",
     "CommandBuilder",
     "ProcessResult",
+    "PROFILES",
     "PyBertNativeAdapter",
+    "ReaderError",
     "UnsupportedCapabilityError",
     "verify_wheel_bundle",
+    "cross_profile_fixture_matrix",
+    "read_network",
     "resolve_channel",
     "WheelAttestation",
     "assemble_backend_result",
