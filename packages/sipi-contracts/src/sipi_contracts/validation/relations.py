@@ -707,3 +707,39 @@ def validate_axis_intrinsic(value: Mapping[str, Any], *, producer: bool = True) 
         if value["uniform"]:
             _violation("sipi.axis.v1", "uniform", "values_artifact axis must declare uniform=false")
         validate_artifact_ref(value["values_artifact"], producer=producer)
+
+
+def validate_port_map_intrinsic(value: Mapping[str, Any], *, producer: bool = True) -> None:
+    """Validate a sipi.port-map.v1 document plus port relation semantics."""
+    validate_wire("port-map.v1.schema.json", value)
+    if producer:
+        _reject_unknown(value, {"schema", "basis", "index_base", "ports", "extensions"}, "sipi.port-map.v1", "port map")
+    ports = value["ports"]
+    ids = [port["id"] for port in ports]
+    if len(ids) != len(set(ids)):
+        _violation("sipi.port-map.v1", "duplicate_id", "port ids must be unique")
+    indexes = [port["external_index"] for port in ports]
+    if len(indexes) != len(set(indexes)):
+        _violation("sipi.port-map.v1", "duplicate_index", "external indexes must be unique")
+    by_id = {port["id"]: port for port in ports}
+    basis = value["basis"]
+    for port in ports:
+        port_id = port["id"]
+        if "reference" in port:
+            reference = port["reference"]
+            if reference == port_id:
+                _violation("sipi.port-map.v1", "self_reference", f"port cannot reference itself: {port_id}", f"/ports/{port_id}")
+            if reference not in by_id:
+                _violation("sipi.port-map.v1", "unknown_reference", f"port references undeclared node: {reference}", f"/ports/{port_id}")
+        if "pair_with" in port:
+            pair = port["pair_with"]
+            if basis != "mixed_mode":
+                _violation("sipi.port-map.v1", "pairing", "pair_with is only valid in mixed_mode basis", f"/ports/{port_id}")
+            if port["kind"] != "signal":
+                _violation("sipi.port-map.v1", "pairing", "only signal ports may declare pair_with", f"/ports/{port_id}")
+            if pair == port_id:
+                _violation("sipi.port-map.v1", "self_pair", f"port cannot pair with itself: {port_id}", f"/ports/{port_id}")
+            if pair not in by_id:
+                _violation("sipi.port-map.v1", "unknown_pair", f"port pairs with undeclared port: {pair}", f"/ports/{port_id}")
+            if by_id[pair].get("pair_with") != port_id:
+                _violation("sipi.port-map.v1", "asymmetric_pair", f"pair_with must be symmetric for {port_id} and {pair}", f"/ports/{port_id}")

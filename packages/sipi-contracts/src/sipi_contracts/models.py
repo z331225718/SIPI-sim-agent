@@ -27,6 +27,7 @@ from .validation.relations import (
     validate_success_manifest_relation as validate_success_manifest_relation_wire,
     validate_project_intrinsic,
     validate_axis_intrinsic,
+    validate_port_map_intrinsic,
 )
 from .validation.registry import schema_id_for, validate_wire
 
@@ -157,6 +158,12 @@ class AxisV1(ContractModel):
 
 
 @dataclass(frozen=True, slots=True, init=False)
+class PortMapV1(ContractModel):
+    schema_name = "port-map.v1.schema.json"
+    known_fields = frozenset({"schema", "basis", "index_base", "ports", "extensions"})
+
+
+@dataclass(frozen=True, slots=True, init=False)
 class ProvenanceV1(ContractModel):
     schema_name = "_defs/provenance.v1.schema.json"
     known_fields = frozenset({"producers", "request", "environment", "randomness", "policies", "extensions"})
@@ -264,6 +271,12 @@ def parse_axis(value: str | Mapping[str, Any], *, producer: bool = True) -> Axis
     data = _mapping(value, AxisV1.schema_name)
     validate_axis_intrinsic(data, producer=producer)
     return _parse(AxisV1, data)  # type: ignore[return-value]
+
+
+def parse_port_map(value: str | Mapping[str, Any], *, producer: bool = True) -> PortMapV1:
+    data = _mapping(value, PortMapV1.schema_name)
+    validate_port_map_intrinsic(data, producer=producer)
+    return _parse(PortMapV1, data)  # type: ignore[return-value]
 
 
 def validate_success_manifest_relation(run_record: RunRecordV1, manifest: SuccessManifestV1) -> None:
