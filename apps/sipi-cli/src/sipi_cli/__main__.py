@@ -21,6 +21,7 @@ from sipi_runtime import (
     SupervisorClient,
     SupervisorServer,
     SupervisorUnavailable,
+    build_run_report,
     load_engine_lock,
     plan_dag,
     resolve_project,
@@ -460,6 +461,22 @@ def cmd_retry(args: argparse.Namespace, root: Path) -> int:
         return 1
 
 
+def cmd_report(args: argparse.Namespace, root: Path) -> int:
+    try:
+        resolved = _load_resolved(root, None)
+        report = build_run_report(run_id=args.run_id, resolved=resolved, plan=plan_dag(resolved, EngineRegistry(load_engine_lock(root / resolved.engine_lock["relative_path"]))), registry=SupervisorRegistry(root / DATA_DIR_NAME / "supervisor.sqlite3"), artifact_root=root)
+    except Exception as error:
+        print(f"report failed: {error}", file=sys.stderr)
+        return 1
+    if args.format == "json":
+        print(json.dumps(report, sort_keys=True, separators=(",", ":")))
+    else:
+        print(f"run {report['run_id']}: {report['execution_status']}")
+        for section in report["analyses"]:
+            print(f"  {section['analysis_id']}: {section['status']} (attempts={section['attempt_count']})")
+    return 0
+
+
 def _render(payload: dict[str, Any], output_format: str) -> None:
     if output_format == "json":
         print(json.dumps(payload, sort_keys=True, separators=(",", ":")))
@@ -505,6 +522,10 @@ def main(argv: list[str] | None = None) -> int:
     retry.add_argument("--project")
     retry.add_argument("--submission-key")
     retry.add_argument("run_id")
+    report = subcommands.add_parser("report")
+    report.add_argument("--root")
+    report.add_argument("--format", choices=("text", "json"), default="text")
+    report.add_argument("run_id")
     args = parser.parse_args(argv)
     root = _root(args.root)
     if args.command == "doctor":
@@ -525,6 +546,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_cancel(args, root)
     if args.command == "retry":
         return cmd_retry(args, root)
+    if args.command == "report":
+        return cmd_report(args, root)
     parser.error(f"unknown command: {args.command}")
     return 2
 

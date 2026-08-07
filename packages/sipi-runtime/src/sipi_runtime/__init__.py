@@ -17,6 +17,7 @@ from .supervisor_registry import (
 from .supervisor import Supervisor, SupervisorBusy, SupervisorLock
 from .supervisor_ipc import SupervisorClient, SupervisorServer, SupervisorUnavailable, ipc_address, ipc_family
 from .driver import DriverError, DriverOptions, ExecutionDriver
+from .report import DEFAULT_COMPARISON_PROFILES, build_run_report
 
 __all__ = [
     "CancellationToken",
@@ -27,6 +28,7 @@ __all__ = [
     "DagCycleError",
     "DagNode",
     "DagPlan",
+    "DEFAULT_COMPARISON_PROFILES",
     "DriverError",
     "DriverOptions",
     "DuplicateAttempt",
@@ -59,6 +61,7 @@ __all__ = [
     "TerminalTransition",
     "UnknownEngineInstance",
     "compare_results",
+    "build_run_report",
     "cache_identity",
     "load_engine_lock",
     "plan_dag",
