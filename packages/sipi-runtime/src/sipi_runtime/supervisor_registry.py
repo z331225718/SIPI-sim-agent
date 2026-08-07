@@ -114,6 +114,7 @@ class SupervisorRegistry:
                     version INTEGER NOT NULL,
                     retry_index INTEGER NOT NULL,
                     cancel_requested INTEGER NOT NULL DEFAULT 0,
+                    success_manifest_sha256 TEXT,
                     FOREIGN KEY (run_id, analysis_id) REFERENCES nodes(run_id, analysis_id)
                 );
                 CREATE TABLE IF NOT EXISTS backend_executions (
@@ -240,6 +241,78 @@ class SupervisorRegistry:
     def cas_attempt(self, attempt_id: str, expected_version: int, *, status: str | None = None, cancel_requested: bool | None = None) -> bool:
         updates = {"status": status, "cancel_requested": cancel_requested}
         return self._cas_row("attempts", "attempt_id", attempt_id, expected_version, updates, ATTEMPT_TERMINAL)
+
+    def attempt_publish_cas(self, *, attempt_id: str, expected_version: int, success_manifest_sha256: str) -> str:
+        """Prepare/commit success publication (SPEC 9.4): single-writer CAS with cancel fencing."""
+        with self._txn() as cursor:
+            attempt = cursor.execute("SELECT * FROM attempts WHERE attempt_id = ?", (attempt_id,)).fetchone()
+            if attempt is None:
+                raise SupervisorRegistryError(f"unknown attempt: {attempt_id}")
+            if attempt["status"] in ATTEMPT_TERMINAL:
+                return "already_terminal"
+            if attempt["version"] != expected_version:
+                return "version_conflict"
+            if attempt["status"] != "publishing":
+                return "not_publishing"
+            execution = cursor.execute("SELECT cancel_requested FROM executions WHERE run_id = ?", (attempt["run_id"],)).fetchone()
+            node = cursor.execute(
+                "SELECT cancel_requested FROM nodes WHERE run_id = ? AND analysis_id = ?",
+                (attempt["run_id"], attempt["analysis_id"]),
+            ).fetchone()
+            if execution is None or node is None:
+                raise SupervisorRegistryError("attempt is not attached to execution/node rows")
+            if execution["cancel_requested"] or node["cancel_requested"] or attempt["cancel_requested"]:
+                return "cancel_accepted"
+            cursor.execute(
+                "UPDATE attempts SET status = 'succeeded', success_manifest_sha256 = ?, version = version + 1 WHERE attempt_id = ? AND version = ?",
+                (success_manifest_sha256, attempt_id, expected_version),
+            )
+            return "committed"
+
+    def cancel_scope(self, *, run_id: str, analysis_id: str | None = None) -> tuple[str, tuple[str, ...]]:
+        """CAS-write cancel_requested on execution/node/active attempts; return scope status and affected attempts."""
+        with self._txn() as cursor:
+            execution = cursor.execute("SELECT * FROM executions WHERE run_id = ?", (run_id,)).fetchone()
+            if execution is None:
+                return "unknown_run", ()
+            if execution["status"] in EXECUTION_TERMINAL:
+                return "already_terminal", ()
+            changed = False
+            if execution["cancel_requested"] == 0:
+                cursor.execute(
+                    "UPDATE executions SET cancel_requested = 1, version = version + 1, updated_at = ? WHERE run_id = ? AND version = ?",
+                    (_utcnow(), run_id, execution["version"]),
+                )
+                changed = True
+            if analysis_id is not None:
+                node = cursor.execute("SELECT * FROM nodes WHERE run_id = ? AND analysis_id = ?", (run_id, analysis_id)).fetchone()
+                if node is None:
+                    return "unknown_analysis", ()
+                if node["status"] not in NODE_TERMINAL and node["cancel_requested"] == 0:
+                    cursor.execute(
+                        "UPDATE nodes SET cancel_requested = 1, version = version + 1 WHERE run_id = ? AND analysis_id = ? AND version = ?",
+                        (run_id, analysis_id, node["version"]),
+                    )
+                    changed = True
+                attempts = cursor.execute(
+                    "SELECT attempt_id, status, version, cancel_requested FROM attempts WHERE run_id = ? AND analysis_id = ?",
+                    (run_id, analysis_id),
+                ).fetchall()
+            else:
+                attempts = cursor.execute(
+                    "SELECT attempt_id, status, version, cancel_requested FROM attempts WHERE run_id = ?",
+                    (run_id,),
+                ).fetchall()
+            affected: list[str] = []
+            for attempt in attempts:
+                if attempt["status"] not in ATTEMPT_TERMINAL and attempt["cancel_requested"] == 0:
+                    cursor.execute(
+                        "UPDATE attempts SET cancel_requested = 1, version = version + 1 WHERE attempt_id = ? AND version = ?",
+                        (attempt["attempt_id"], attempt["version"]),
+                    )
+                    affected.append(attempt["attempt_id"])
+                    changed = True
+            return ("accepted" if changed else "already_requested"), tuple(affected)
 
     def record_backend_execution(self, *, backend_execution_id: str, attempt_id: str, role: str, engine_instance_id: str) -> Mapping[str, Any]:
         with self._txn() as cursor:

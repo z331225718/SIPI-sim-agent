@@ -14,6 +14,7 @@ from .supervisor_registry import (
     SupervisorRegistryError,
     TerminalTransition,
 )
+from .supervisor import Supervisor, SupervisorBusy, SupervisorLock
 
 __all__ = [
     "CancellationToken",
@@ -42,6 +43,9 @@ __all__ = [
     "SelectionError",
     "SelectionTrace",
     "SubmissionKeyConflict",
+    "Supervisor",
+    "SupervisorBusy",
+    "SupervisorLock",
     "SupervisorRegistry",
     "SupervisorRegistryError",
     "TerminalTransition",
