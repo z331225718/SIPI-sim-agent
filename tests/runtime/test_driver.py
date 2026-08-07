@@ -296,6 +296,25 @@ class ExecutionDriverTests(unittest.TestCase):
             with self.assertRaises(CachePathEscape):
                 store.materialize("key-2", root)
 
+    def test_driver_records_backend_child_identity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_project(root, with_dependent=False)
+            write_engine_lock(root)
+            with SupervisorRegistry(root / "registry.sqlite3") as registry:
+                registry.submit_execution(run_id="run-1", project_hash="h1", submission_key="key-1", failure_policy="p")
+                instance, resolved, plan, engine_registry = driver(root, registry)
+                report = instance.run(resolved, plan, engine_registry, "run-1")
+                self.assertEqual(report["status"], "succeeded")
+                backends = registry.list_backend_executions("channel-response-attempt-0")
+                self.assertEqual(len(backends), 1)
+                backend = backends[0]
+                self.assertIsNotNone(backend["pid"])
+                self.assertIsNotNone(backend["process_start_time"])
+                self.assertIsNotNone(backend["run_token"])
+                expected = hashlib.sha256((root / "bundles" / "pybert.py").read_bytes()).hexdigest()
+                self.assertEqual(backend["executable_hash"], expected)
+
 
 if __name__ == "__main__":
     unittest.main()

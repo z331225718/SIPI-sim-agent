@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
@@ -30,6 +31,7 @@ from .execution import plan_backend_executions
 from .registry import EngineRegistry
 from .resolution import ResolvedAnalysis, ResolvedProject
 from .supervisor_registry import SupervisorRegistry
+from .process_tree import child_identity
 
 
 RESOURCE_LIMITS = {
@@ -249,13 +251,29 @@ class ExecutionDriver:
         artifacts_by_role: dict[str, Mapping[str, Any]] = {}
         for plan in plans:
             backend_id = plan.request["backend_execution_id"]
-            self.registry.record_backend_execution(backend_execution_id=backend_id, attempt_id=attempt_id, role=plan.role, engine_instance_id=plan.request["engine_instance_id"])
+            backend_row = self.registry.record_backend_execution(backend_execution_id=backend_id, attempt_id=attempt_id, role=plan.role, engine_instance_id=plan.request["engine_instance_id"])
             builder = self.builders.get(plan.engine_entry["engine_family"])
             if builder is None:
                 return {"status": "failed", "reason": f"no builder for engine family {plan.engine_entry['engine_family']}"}
             capabilities = builder.capability_entries() if hasattr(builder, "capability_entries") else None
             backend_root = artifact_root / "nodes" / analysis_id / "attempts" / attempt_id / "backends" / backend_id
-            result = execute_backend(plan.request, plan.engine_entry, artifact_root, builder=builder, capabilities=capabilities, artifact_root=backend_root)
+            run_token = uuid.uuid4().hex
+            bundle_sha = plan.engine_entry["bundle"]["sha256"]
+            backend_version = backend_row["version"]
+
+            def record_child(pid: int, *, backend_id: str = backend_id, version: int = backend_version, token: str = run_token, bundle: str = bundle_sha) -> None:
+                identity = child_identity(pid, run_token=token, executable_hash=bundle)
+                self.registry.update_backend_identity(backend_id, version, **identity.to_wire())
+
+            result = execute_backend(
+                plan.request,
+                plan.engine_entry,
+                artifact_root,
+                builder=builder,
+                capabilities=capabilities,
+                artifact_root=backend_root,
+                on_child_start=record_child,
+            )
             if result["status"] != "succeeded":
                 return {"status": "failed", "reason": f"{backend_id} {result['status']}: {result['error']}"}
             for artifact in result["artifacts"]:

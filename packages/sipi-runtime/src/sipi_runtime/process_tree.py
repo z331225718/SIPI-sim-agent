@@ -203,7 +203,7 @@ def is_process_alive(pid: int) -> bool:
 
 def matches_identity(pid: int, stored_start_time: str | None) -> bool:
     if stored_start_time is None:
-        return True
+        return False
     current = _process_start_time(pid)
     return current is not None and current == stored_start_time
 

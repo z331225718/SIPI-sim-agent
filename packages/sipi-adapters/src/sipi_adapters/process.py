@@ -159,29 +159,33 @@ def run_process(
     workdir: Path,
     env: Mapping[str, str],
     wall_time_s: float | None,
+    on_start: Callable[[int], None] | None = None,
 ) -> ProcessResult:
     started = time.monotonic()
     flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+    process = subprocess.Popen(
+        argv,
+        cwd=workdir,
+        env=dict(env),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        creationflags=flags,
+    )
+    if on_start is not None:
+        on_start(process.pid)
     try:
-        completed = subprocess.run(
-            argv,
-            cwd=workdir,
-            env=dict(env),
-            capture_output=True,
-            text=True,
-            timeout=wall_time_s,
-            creationflags=flags,
-        )
+        stdout, stderr = process.communicate(timeout=wall_time_s)
         return ProcessResult(
-            returncode=completed.returncode,
-            stdout=completed.stdout or "",
-            stderr=completed.stderr or "",
+            returncode=process.returncode,
+            stdout=stdout or "",
+            stderr=stderr or "",
             elapsed_s=time.monotonic() - started,
             timed_out=False,
         )
     except subprocess.TimeoutExpired as error:
-        stdout = error.stdout if isinstance(error.stdout, str) else ""
-        stderr = error.stderr if isinstance(error.stderr, str) else ""
+        process.kill()
+        stdout, stderr = process.communicate()
         return ProcessResult(returncode=-1, stdout=stdout, stderr=stderr, elapsed_s=time.monotonic() - started, timed_out=True)
 
 
@@ -253,6 +257,7 @@ def execute_backend(
     workdir: Path | None = None,
     artifact_root: Path | None = None,
     capabilities: tuple[AdapterCapability, ...] | None = None,
+    on_child_start: Callable[[int], None] | None = None,
 ) -> BackendExecutionResultV1:
     """Execute one strict backend execution and return its single result."""
     require_backend_request(request)
@@ -295,7 +300,7 @@ def execute_backend(
         except AdapterContractError as error:
             return _failed_from_error(request, error)
         wall_time_s = request["resource_limits"].get("wall_time_s")
-        process = run_process(argv, workdir=workdir, env=filtered_env(), wall_time_s=wall_time_s)
+        process = run_process(argv, workdir=workdir, env=filtered_env(), wall_time_s=wall_time_s, on_start=on_child_start)
         if process.timed_out:
             return assemble_backend_result(
                 request,

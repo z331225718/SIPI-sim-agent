@@ -82,6 +82,7 @@ class Supervisor:
     def __init__(self, data_dir: str | Path, *, registry: SupervisorRegistry | None = None) -> None:
         self.data_dir = Path(data_dir)
         self.registry = registry if registry is not None else SupervisorRegistry(self.data_dir / "supervisor.sqlite3")
+        self._last_unmatched_backends: tuple[str, ...] = ()
 
     def close(self) -> None:
         self.registry.close()
@@ -99,7 +100,7 @@ class Supervisor:
                     if backend["status"] in {"pending", "running"} and backend["pid"] is not None:
                         if matches_identity(backend["pid"], backend["process_start_time"]):
                             terminate_tree(pid=backend["pid"])
-                        self.registry.cas_backend_execution(backend["backend_execution_id"], backend["version"], status="cancelled")
+                            self.registry.cas_backend_execution(backend["backend_execution_id"], backend["version"], status="cancelled")
         return status, affected
 
     def reconcile(self) -> dict[str, object]:
@@ -118,16 +119,19 @@ class Supervisor:
             "expired_executions": expired,
             "cancelled_publishing_attempts": cancelled_publishing,
             "settled_backends": settled_backends,
+            "unmatched_alive_backends": self._last_unmatched_backends,
         }
 
     def _reconcile_backends(self) -> tuple[str, ...]:
         """Settle orphaned/stopped backend children; identity-matched orphans are reaped."""
         settled: list[str] = []
+        unmatched: list[str] = []
         for backend in self.registry.list_backend_executions():
             if backend["status"] not in {"pending", "running"} or backend["pid"] is None:
                 continue
             alive = is_process_alive(backend["pid"])
             if alive and not matches_identity(backend["pid"], backend["process_start_time"]):
+                unmatched.append(backend["backend_execution_id"])
                 continue  # PID reuse with a different child: warn-only, do not reap
             if alive:
                 terminate_tree(pid=backend["pid"])
@@ -136,4 +140,5 @@ class Supervisor:
                 settled.append(backend["backend_execution_id"])
             except Exception:  # noqa: BLE001 - reconciliation must stay idempotent
                 pass
+        self._last_unmatched_backends = tuple(unmatched)
         return tuple(settled)
