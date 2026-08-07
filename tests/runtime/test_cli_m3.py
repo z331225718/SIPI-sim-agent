@@ -251,6 +251,30 @@ class CliM3Tests(unittest.TestCase):
             self.assertEqual(supervisor.registry.get_execution("run-1")["status"], "failed")
             supervisor.close()
 
+    def test_explicit_run_id_replay_does_not_rerun(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_fake_project(root)
+            data_dir = root / ".sipi"
+            supervisor = Supervisor(data_dir)
+            with SupervisorServer(supervisor, data_dir, runner=build_runner(supervisor, data_dir)) as server:
+                status, output = self.run_cli("run", "--root", str(root), "--detach", "--run-id", "run-x")
+                self.assertEqual(status, 0)
+                self.assertEqual(json.loads(output)["run_id"], "run-x")
+                client = SupervisorClient(data_dir)
+                deadline = time.monotonic() + 15
+                while time.monotonic() < deadline:
+                    execution = client.request({"command": "status", "run_id": "run-x"}).get("execution")
+                    if execution and execution["status"] == "succeeded":
+                        break
+                    time.sleep(0.2)
+                status, output = self.run_cli("run", "--root", str(root), "--detach", "--run-id", "run-x")
+                self.assertEqual(status, 0)
+                self.assertEqual(json.loads(output)["run_id"], "run-x")
+                execution = client.request({"command": "status", "run_id": "run-x"}).get("execution")
+                self.assertEqual(execution["status"], "succeeded")
+                server.close()
+
 
 if __name__ == "__main__":
     unittest.main()

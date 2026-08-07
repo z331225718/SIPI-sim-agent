@@ -157,7 +157,7 @@ class SupervisorRegistry:
         if current_status in terminal and any(value is not None for value in updates.values()):
             raise TerminalTransition(f"terminal row cannot be mutated from {current_status}")
 
-    def submit_execution(
+    def submit_execution_record(
         self,
         *,
         run_id: str,
@@ -165,13 +165,13 @@ class SupervisorRegistry:
         submission_key: str,
         failure_policy: str,
         retry_of: str | None = None,
-    ) -> Mapping[str, Any]:
+    ) -> tuple[Mapping[str, Any], bool]:
         with self._txn() as cursor:
             existing = cursor.execute("SELECT * FROM executions WHERE submission_key = ?", (submission_key,)).fetchone()
             if existing is not None:
                 if existing["project_hash"] != project_hash:
                     raise SubmissionKeyConflict("submission key reused with a different project hash")
-                return dict(existing)
+                return dict(existing), False
             now = _utcnow()
             cursor.execute(
                 """
@@ -182,7 +182,25 @@ class SupervisorRegistry:
                 """,
                 (run_id, project_hash, submission_key, retry_of, failure_policy, now, now),
             )
-            return dict(cursor.execute("SELECT * FROM executions WHERE run_id = ?", (run_id,)).fetchone())
+            return dict(cursor.execute("SELECT * FROM executions WHERE run_id = ?", (run_id,)).fetchone()), True
+
+    def submit_execution(
+        self,
+        *,
+        run_id: str,
+        project_hash: str,
+        submission_key: str,
+        failure_policy: str,
+        retry_of: str | None = None,
+    ) -> Mapping[str, Any]:
+        row, _ = self.submit_execution_record(
+            run_id=run_id,
+            project_hash=project_hash,
+            submission_key=submission_key,
+            failure_policy=failure_policy,
+            retry_of=retry_of,
+        )
+        return row
 
     def get_execution(self, run_id: str) -> Mapping[str, Any] | None:
         row = self._read("SELECT * FROM executions WHERE run_id = ?", (run_id,))

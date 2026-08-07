@@ -86,14 +86,13 @@ class SupervisorServer:
         if command == "ping":
             return {"ok": True, "pid": os.getpid()}
         if command == "submit":
-            execution = self.supervisor.registry.submit_execution(
+            execution, created = self.supervisor.registry.submit_execution_record(
                 run_id=request["run_id"],
                 project_hash=request["project_hash"],
                 submission_key=request["submission_key"],
                 failure_policy=request["failure_policy"],
                 retry_of=request.get("retry_of"),
             )
-            created = execution["run_id"] == request["run_id"]
             if created and self._runner is not None and request.get("project_root") and request.get("project_path"):
                 threading.Thread(
                     target=self._runner,
