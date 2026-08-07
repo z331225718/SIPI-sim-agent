@@ -314,6 +314,40 @@ class SupervisorRegistry:
                     changed = True
             return ("accepted" if changed else "already_requested"), tuple(affected)
 
+    def expire_stale_executions(self, now_iso: str) -> tuple[str, ...]:
+        """Restart reconciliation: fail/cancel non-terminal executions whose lease expired."""
+        with self._txn() as cursor:
+            rows = cursor.execute(
+                """
+                SELECT run_id, status, version, cancel_requested FROM executions
+                WHERE status NOT IN ('succeeded', 'failed', 'cancelled')
+                  AND lease_expires_at IS NOT NULL AND lease_expires_at < ?
+                """,
+                (now_iso,),
+            ).fetchall()
+            expired: list[str] = []
+            for row in rows:
+                new_status = "cancelled" if row["cancel_requested"] else "failed"
+                cursor.execute(
+                    "UPDATE executions SET status = ?, version = version + 1, updated_at = ? WHERE run_id = ? AND version = ?",
+                    (new_status, _utcnow(), row["run_id"], row["version"]),
+                )
+                expired.append(row["run_id"])
+            return tuple(expired)
+
+    def expire_cancelled_publishing(self) -> tuple[str, ...]:
+        """Publish-journal reconciliation: publishing attempts with accepted cancel become cancelled."""
+        with self._txn() as cursor:
+            rows = cursor.execute(
+                "SELECT attempt_id, version FROM attempts WHERE status = 'publishing' AND cancel_requested = 1"
+            ).fetchall()
+            for row in rows:
+                cursor.execute(
+                    "UPDATE attempts SET status = 'cancelled', version = version + 1 WHERE attempt_id = ? AND version = ?",
+                    (row["attempt_id"], row["version"]),
+                )
+            return tuple(row["attempt_id"] for row in rows)
+
     def record_backend_execution(self, *, backend_execution_id: str, attempt_id: str, role: str, engine_instance_id: str) -> Mapping[str, Any]:
         with self._txn() as cursor:
             cursor.execute(

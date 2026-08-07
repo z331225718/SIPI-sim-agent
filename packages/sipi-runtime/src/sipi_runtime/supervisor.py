@@ -11,6 +11,7 @@ signal child processes yet.
 from __future__ import annotations
 
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .supervisor_registry import SupervisorRegistry
@@ -91,3 +92,10 @@ class Supervisor:
     def request_cancel(self, *, run_id: str, analysis_id: str | None = None) -> tuple[str, tuple[str, ...]]:
         """Write cancel_requested CAS flags; returns (status, affected attempt ids)."""
         return self.registry.cancel_scope(run_id=run_id, analysis_id=analysis_id)
+
+    def reconcile(self) -> dict[str, object]:
+        """Restart reconciliation: expire stale leases and settle cancelled publishing attempts."""
+        now_iso = datetime.now(timezone.utc).isoformat()
+        expired = self.registry.expire_stale_executions(now_iso)
+        cancelled_publishing = self.registry.expire_cancelled_publishing()
+        return {"expired_executions": expired, "cancelled_publishing_attempts": cancelled_publishing}

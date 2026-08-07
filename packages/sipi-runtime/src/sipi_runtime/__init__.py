@@ -15,6 +15,7 @@ from .supervisor_registry import (
     TerminalTransition,
 )
 from .supervisor import Supervisor, SupervisorBusy, SupervisorLock
+from .supervisor_ipc import SupervisorClient, SupervisorServer, SupervisorUnavailable, ipc_address, ipc_family
 
 __all__ = [
     "CancellationToken",
@@ -45,9 +46,12 @@ __all__ = [
     "SubmissionKeyConflict",
     "Supervisor",
     "SupervisorBusy",
+    "SupervisorClient",
     "SupervisorLock",
     "SupervisorRegistry",
+    "SupervisorServer",
     "SupervisorRegistryError",
+    "SupervisorUnavailable",
     "TerminalTransition",
     "UnknownEngineInstance",
     "compare_results",
@@ -55,6 +59,8 @@ __all__ = [
     "load_engine_lock",
     "plan_dag",
     "plan_backend_executions",
+    "ipc_address",
+    "ipc_family",
     "resolve_project",
     "resolve_selection",
     "selection_hash",
