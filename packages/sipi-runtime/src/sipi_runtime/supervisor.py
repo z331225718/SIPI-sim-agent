@@ -87,6 +87,12 @@ class Supervisor:
     def close(self) -> None:
         self.registry.close()
 
+    def __enter__(self) -> "Supervisor":
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self.close()
+
     def publish_success(self, *, attempt_id: str, expected_version: int, success_manifest_sha256: str) -> str:
         """Commit a staged success manifest; SQLite commit is the linearization point."""
         return self.registry.attempt_publish_cas(attempt_id=attempt_id, expected_version=expected_version, success_manifest_sha256=success_manifest_sha256)
@@ -103,7 +109,7 @@ class Supervisor:
                             self.registry.cas_backend_execution(backend["backend_execution_id"], backend["version"], status="cancelled")
         return status, affected
 
-    def reconcile(self) -> dict[str, object]:
+    def reconcile(self, *, now: datetime | None = None) -> dict[str, object]:
         """Restart reconciliation: expire stale leases and settle cancelled publishing attempts.
 
         Stale executions are settled as ``failed``/``cancelled`` here without
@@ -111,7 +117,7 @@ class Supervisor:
         identity matching against ``backend_executions`` child identity are
         M3-09 failure-injection scope.
         """
-        now_iso = datetime.now(timezone.utc).isoformat()
+        now_iso = (now if now is not None else datetime.now(timezone.utc)).isoformat()
         expired = self.registry.expire_stale_executions(now_iso)
         cancelled_publishing = self.registry.expire_cancelled_publishing()
         settled_backends = self._reconcile_backends()

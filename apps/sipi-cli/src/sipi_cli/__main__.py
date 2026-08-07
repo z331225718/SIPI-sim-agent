@@ -26,7 +26,7 @@ from sipi_runtime import (
     plan_dag,
     resolve_project,
 )
-from sipi_runtime.supervisor_main import spawn_supervisor
+from sipi_runtime.supervisor_main import build_runner, spawn_supervisor
 
 TOOLCHAIN_DECLARED = ("rust", "node", "git", "msvc", "external_solvers")
 FIXTURE_MANIFEST_SCHEMA_ID = "sipi.fixture-manifest.v1"
@@ -319,7 +319,7 @@ def _client(data_dir: Path) -> SupervisorClient:
     return SupervisorClient(data_dir)
 
 
-def _ensure_supervisor(data_dir: Path, *, foreground: bool) -> Any:
+def _ensure_supervisor(data_dir: Path, *, foreground: bool, runner: Any = None) -> Any:
     client = _client(data_dir)
     try:
         client.ping()
@@ -327,7 +327,7 @@ def _ensure_supervisor(data_dir: Path, *, foreground: bool) -> Any:
     except SupervisorUnavailable:
         if foreground:
             supervisor = Supervisor(data_dir)
-            server = SupervisorServer(supervisor, data_dir)
+            server = SupervisorServer(supervisor, data_dir, runner=runner)
             server.start()
             return server
         spawn_supervisor(data_dir)
@@ -369,7 +369,12 @@ def cmd_run(args: argparse.Namespace, root: Path) -> int:
         return 1
     data_dir = root / DATA_DIR_NAME
     try:
-        owned = _ensure_supervisor(data_dir, foreground=args.foreground)
+        if args.foreground:
+            supervisor = Supervisor(data_dir)
+            owned = SupervisorServer(supervisor, data_dir, runner=build_runner(supervisor, data_dir))
+            owned.start()
+        else:
+            owned = _ensure_supervisor(data_dir, foreground=False)
     except SupervisorUnavailable as error:
         print(f"supervisor unavailable: {error}", file=sys.stderr)
         return 1
@@ -393,7 +398,7 @@ def cmd_run(args: argparse.Namespace, root: Path) -> int:
             print(f"submit failed: {response.get('error')}", file=sys.stderr)
             return 1
         actual_run_id = response["execution"]["run_id"]
-        if args.detach:
+        if args.detach and owned is None:
             print(json.dumps({"run_id": actual_run_id}, sort_keys=True, separators=(",", ":")))
             return 0
         try:

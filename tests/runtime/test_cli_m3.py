@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT / "packages" / "sipi-contracts" / "src"))
 sys.path.insert(0, str(ROOT / "packages" / "sipi-runtime" / "src"))
 
 from sipi_cli.__main__ import main
-from sipi_runtime import Supervisor, SupervisorClient, SupervisorServer
+from sipi_runtime import Supervisor, SupervisorClient, SupervisorRegistry, SupervisorServer, is_process_alive
 from sipi_runtime.supervisor_main import build_runner, spawn_supervisor
 
 FAKE_PYBERT = ROOT / "tests" / "adapters" / "fixtures" / "fake_pybert.py"
@@ -102,6 +102,47 @@ def write_fake_project(root: Path) -> None:
     (root / "project.json").write_text(json.dumps(project), encoding="utf-8")
 
 
+def write_sleeping_project(root: Path) -> None:
+    bundle = root / "bundles" / "pybert.py"
+    bundle.parent.mkdir(parents=True, exist_ok=True)
+    bundle.write_text(
+        FAKE_PYBERT.read_text(encoding="utf-8").replace('def main() -> int:', 'import time as _time\n\ndef main() -> int:\n    _time.sleep(5)'),
+        encoding="utf-8",
+    )
+    digest = hashlib.sha256(bundle.read_bytes()).hexdigest()
+    entry = {
+        "instance_id": "pybert-python",
+        "engine_family": "pybert",
+        "version": "0.1.0",
+        "source_commit": "0" * 40,
+        "bundle": {"kind": "local_path", "path": "bundles/pybert.py", "sha256": digest},
+        "protocol": {"request_schema": "sipi.backend-execution-request.v1", "result_schema": "sipi.backend-execution-result.v1"},
+        "capabilities": {"schema": "sipi.engine-capabilities.v1", "sha256": "1" * 64},
+        "runtime": {"kind": "python", "os": "windows", "architecture": "x86_64", "python_abi": "cp312", "rust_target": None},
+        "dependency_lock_sha256": "2" * 64,
+        "license_provenance": {"distribution_status": "authorized_public", "manifest_sha256": "3" * 64},
+        "bundle_manifest": {"entrypoint": "pybert.py", "files": [{"relative_path": "pybert.py", "role": "entrypoint", "sha256": digest, "byte_length": bundle.stat().st_size}]},
+        "extensions": {},
+    }
+    (root / "engine.lock").write_text(json.dumps({"schema": "sipi.engine-lock.v1", "engines": [entry], "operation_defaults": {}, "extensions": {}}), encoding="utf-8")
+    project = {
+        "schema": "sipi.project.v1",
+        "project": {"name": "sleepy-run", "extensions": {}},
+        "runtime": {"engine_lock": "engine.lock", "extensions": {}},
+        "analyses": [
+            {
+                "id": "link-eye",
+                "operation": "link.simulate.v1",
+                "backend_selection": {"mode": "strict", "instance": "pybert-python"},
+                "payload_schema": "pybert.simulation.v1",
+                "payload": {"simulation_input": {"sample_count": 2}},
+            }
+        ],
+        "extensions": {},
+    }
+    (root / "project.json").write_text(json.dumps(project), encoding="utf-8")
+
+
 class CliM3Tests(unittest.TestCase):
     def run_cli(self, *args: str) -> tuple[int, str]:
         stdout = io.StringIO()
@@ -151,10 +192,22 @@ class CliM3Tests(unittest.TestCase):
     def test_run_foreground_detach_starts_embedded_server(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            write_project(root)
+            write_fake_project(root)
             status, output = self.run_cli("run", "--root", str(root), "--detach", "--foreground")
             self.assertEqual(status, 0)
             self.assertIn("run_id", json.loads(output))
+            data_dir = root / ".sipi"
+            with SupervisorRegistry(data_dir / "supervisor.sqlite3") as registry:
+                run_id = json.loads(output)["run_id"]
+                deadline = time.monotonic() + 15
+                final_status = None
+                while time.monotonic() < deadline:
+                    execution = registry.get_execution(run_id)
+                    final_status = execution["status"] if execution else None
+                    if final_status in {"succeeded", "failed", "cancelled"}:
+                        break
+                    time.sleep(0.2)
+                self.assertEqual(final_status, "succeeded")
 
     def test_status_without_supervisor_exits_cleanly(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -274,6 +327,44 @@ class CliM3Tests(unittest.TestCase):
                 execution = client.request({"command": "status", "run_id": "run-x"}).get("execution")
                 self.assertEqual(execution["status"], "succeeded")
                 server.close()
+
+    def test_restart_drill_reaps_orphan_backend(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_sleeping_project(root)
+            data_dir = root / ".sipi"
+            daemon = spawn_supervisor(data_dir)
+            child_pid = None
+            try:
+                status, output = self.run_cli("run", "--root", str(root), "--detach")
+                self.assertEqual(status, 0)
+                run_id = json.loads(output)["run_id"]
+                with SupervisorRegistry(data_dir / "supervisor.sqlite3") as registry:
+                    deadline = time.monotonic() + 15
+                    while time.monotonic() < deadline:
+                        backends = registry.list_backend_executions()
+                        if backends and backends[0]["pid"] is not None:
+                            child_pid = backends[0]["pid"]
+                            break
+                        time.sleep(0.2)
+                    self.assertIsNotNone(child_pid)
+                    self.assertTrue(is_process_alive(child_pid))
+                    execution = registry.get_execution(run_id)
+                    registry.cas_execution(run_id, execution["version"], lease_expires_at="2000-01-01T00:00:00+00:00")
+            finally:
+                if daemon.poll() is None:
+                    daemon.terminate()
+                    daemon.wait(timeout=15)
+            with Supervisor(data_dir) as supervisor:
+                report = supervisor.reconcile()
+                self.assertEqual(report["expired_executions"], (run_id,))
+                self.assertIn("settled_backends", report)
+                self.assertEqual(supervisor.registry.get_execution(run_id)["status"], "failed")
+                if child_pid is not None:
+                    deadline = time.monotonic() + 15
+                    while time.monotonic() < deadline and is_process_alive(child_pid):
+                        time.sleep(0.2)
+                    self.assertFalse(is_process_alive(child_pid))
 
 
 if __name__ == "__main__":

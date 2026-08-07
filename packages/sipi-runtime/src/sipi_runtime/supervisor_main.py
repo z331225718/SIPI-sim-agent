@@ -15,6 +15,7 @@ import subprocess
 import sys
 import threading
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sipi_adapters import PyBertNativeAdapter
@@ -33,11 +34,21 @@ def build_runner(supervisor: Supervisor, data_dir: str | Path):
 
     def runner(project_root: str, project_path: str, run_id: str) -> None:
         try:
-            project_dir = Path(project_root)
-            resolved = resolve_project(parse_project((project_dir / project_path).read_text(encoding="utf-8")), project_dir)
             execution = supervisor.registry.get_execution(run_id)
             if execution is None:
                 return
+            if execution["status"] not in {"succeeded", "failed", "cancelled"}:
+                now = datetime.now(timezone.utc)
+                supervisor.registry.cas_execution(
+                    run_id,
+                    execution["version"],
+                    lease_owner="supervisor-1",
+                    lease_expires_at=(now + timedelta(seconds=300)).isoformat(),
+                    heartbeat_at=now.isoformat(),
+                )
+            project_dir = Path(project_root)
+            resolved = resolve_project(parse_project((project_dir / project_path).read_text(encoding="utf-8")), project_dir)
+            execution = supervisor.registry.get_execution(run_id)
             if resolved.project_hash != execution["project_hash"]:
                 supervisor.registry.cas_execution(run_id, execution["version"], status="failed")
                 return
