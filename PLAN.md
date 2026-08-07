@@ -507,6 +507,17 @@ M7 完成即达到 `SPEC.md` 的 Agent MVP。
 - 配置、reader、search、PDF 和 metric 作为完整 behavior profile 迁移。
 - “共享算法”是迁入后的独立优化议题，不是迁入完成条件。
 
+### 13.4 PyBERT-core Rust 迁移收编结论（2026-08-07，Py-bert-agent worker 转发，待评审）
+
+Py-bert-agent 侧配套执行路线见其仓库 `docs/superpowers/plans/2026-08-07-pybert-core-rust-migration.md`（草稿，worker 侧准备）。以下为转发结论；SIPI-sim-agent 的 plan 仍是合并计划/架构（workspace crate 布局、clean-room 边界、license 策略、迁移顺序）的源头真相，本节只做收编记录：
+
+1. 现有 `native/pybert-core` Rust 迁移（BSD 派生翻译）继续在 Py-bert-agent 演进；合并时带 BSD attribution/NOTICE 收编。
+2. IBIS/AMI 解析器按净新 clean-room 功能处理：从 IBIS 规范编写，进程内归 agent-spice-sim 使用；建议放 agent-spice，若 agent-spice 停止独立维护则直接放 SIPI-sim-agent。
+3. 若需完全摆脱 BSD，pybert 数值核心的 clean-room 重做放在干净的新项目（SIPI-sim-agent），不在 Py-bert-agent 内进行。
+4. `pybert_web`/`gui`/`PyAMI` 仍为 Python 外壳/工具，合并时作为 Python 侧保留（与 §9.3 M5B、§14 映射一致）。
+5. 依赖顺序：补全 native Web result contract parity（解除 `native_auto_parity_gate` 的 `blocked`）→ Rust 成默认 → web 指标改接 native → 移除 Python reference 路径 → 删除被 Rust 覆盖的数值 Python → S2P/拓扑决策 → GUI/optimizer/清理 → license 收尾与合并。
+6. 不可恢复删除（`src/pybert/models/*`、`utility/` 数值模块、`python_backend.py`/`compare.py`、`gui/`、整仓 `src/pybert/`）在 golden fixture 全覆盖、备份分支且用户确认前不执行，并受 §4.3 许可门禁和 §12.4 删除计划约束；`native/*/Cargo.toml` 的 MIT 声明与 BSD 派生来源的一致性由用户/法务决策。
+
 ## 14. Source-to-Target 映射
 
 | 生产来源 | 过渡形态 | 目标位置 | 里程碑/历史方式 | 旧来源退役条件 |
