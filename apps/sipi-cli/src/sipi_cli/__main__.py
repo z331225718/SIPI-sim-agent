@@ -6,17 +6,32 @@ import importlib.resources
 import json
 import platform
 import sys
+import time
 import tomllib
+import uuid
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from sipi_contracts import ContractViolation, parse_capabilities_certified
-from sipi_runtime import EngineLockLoadError, load_engine_lock
+from sipi_contracts import ContractViolation, parse_capabilities_certified, parse_project
+from sipi_runtime import (
+    EngineLockLoadError,
+    EngineRegistry,
+    Supervisor,
+    SupervisorClient,
+    SupervisorServer,
+    SupervisorUnavailable,
+    load_engine_lock,
+    plan_dag,
+    resolve_project,
+)
+from sipi_runtime.supervisor_main import spawn_supervisor
 
 TOOLCHAIN_DECLARED = ("rust", "node", "git", "msvc", "external_solvers")
 FIXTURE_MANIFEST_SCHEMA_ID = "sipi.fixture-manifest.v1"
 FIXTURE_AVAILABILITY = {"present", "missing", "partial", "present_unscanned"}
+DATA_DIR_NAME = ".sipi"
+TERMINAL_EXECUTION_STATUSES = {"succeeded", "failed", "cancelled"}
 REQUIRED_SCHEMA_FILES = (
     "artifact-ref.v1.schema.json",
     "backend-execution-request.v1.schema.json",
@@ -287,6 +302,142 @@ def capabilities(root: Path, instance: str | None) -> dict[str, Any]:
     return {"format_version": 1, "command": "capabilities", "source": source, "filter": {"instance": instance}, "advertised": advertised}
 
 
+def _project_path(root: Path, project_arg: str | None) -> Path:
+    return Path(project_arg).resolve() if project_arg else root / "project.json"
+
+
+def _load_resolved(root: Path, project_arg: str | None) -> Any:
+    project = _project_path(root, project_arg)
+    resolved = resolve_project(parse_project(project.read_text(encoding="utf-8")), root)
+    engine_lock = load_engine_lock(root / resolved.engine_lock["relative_path"])
+    plan_dag(resolved, EngineRegistry(engine_lock))
+    return resolved
+
+
+def _client(data_dir: Path) -> SupervisorClient:
+    return SupervisorClient(data_dir)
+
+
+def _ensure_supervisor(data_dir: Path, *, foreground: bool) -> Any:
+    client = _client(data_dir)
+    try:
+        client.ping()
+        return None
+    except SupervisorUnavailable:
+        if foreground:
+            supervisor = Supervisor(data_dir)
+            server = SupervisorServer(supervisor, data_dir)
+            server.start()
+            return server
+        spawn_supervisor(data_dir)
+        return None
+
+
+def _wait_terminal(client: SupervisorClient, run_id: str) -> str:
+    while True:
+        execution = client.request({"command": "status", "run_id": run_id}).get("execution")
+        status = execution.get("status") if execution else "unknown"
+        if status in TERMINAL_EXECUTION_STATUSES:
+            return status
+        time.sleep(0.2)
+
+
+def cmd_validate(args: argparse.Namespace, root: Path, output_format: str) -> int:
+    try:
+        resolved = _load_resolved(root, args.project)
+    except Exception as error:
+        print(f"validation failed: {error}", file=sys.stderr)
+        return 1
+    if output_format == "json":
+        print(json.dumps(resolved.to_wire(), sort_keys=True, separators=(",", ":")))
+    else:
+        print(f"validated: {resolved.project['project']['name']}")
+        print(f"project_hash: {resolved.project_hash}")
+        print(f"analyses: {len(resolved.analyses)}")
+    return 0
+
+
+def cmd_run(args: argparse.Namespace, root: Path) -> int:
+    try:
+        resolved = _load_resolved(root, args.project)
+    except Exception as error:
+        print(f"validation failed: {error}", file=sys.stderr)
+        return 1
+    data_dir = root / DATA_DIR_NAME
+    owned = _ensure_supervisor(data_dir, foreground=args.foreground)
+    try:
+        client = _client(data_dir)
+        run_id = args.run_id or f"run-{uuid.uuid4().hex}"
+        submission_key = args.submission_key or resolved.project_hash
+        response = client.request(
+            {
+                "command": "submit",
+                "run_id": run_id,
+                "project_hash": resolved.project_hash,
+                "submission_key": submission_key,
+                "failure_policy": resolved.failure_policy,
+            }
+        )
+        if not response.get("ok"):
+            print(f"submit failed: {response.get('error')}", file=sys.stderr)
+            return 1
+        actual_run_id = response["execution"]["run_id"]
+        if args.detach:
+            print(json.dumps({"run_id": actual_run_id}, sort_keys=True, separators=(",", ":")))
+            return 0
+        try:
+            status = _wait_terminal(client, actual_run_id)
+        except KeyboardInterrupt:
+            client.request({"command": "cancel", "run_id": actual_run_id})
+            print(json.dumps({"run_id": actual_run_id, "status": "cancelled"}, sort_keys=True, separators=(",", ":")))
+            return 130
+        print(json.dumps({"run_id": actual_run_id, "status": status}, sort_keys=True, separators=(",", ":")))
+        return 0
+    finally:
+        if owned is not None:
+            owned.close()
+
+
+def cmd_status(args: argparse.Namespace, root: Path) -> int:
+    client = _client(root / DATA_DIR_NAME)
+    response = client.request({"command": "status", "run_id": args.run_id})
+    print(json.dumps(response, sort_keys=True, separators=(",", ":")))
+    return 0 if response.get("execution") is not None else 1
+
+
+def cmd_cancel(args: argparse.Namespace, root: Path) -> int:
+    client = _client(root / DATA_DIR_NAME)
+    response = client.request({"command": "cancel", "run_id": args.run_id, "analysis_id": args.analysis})
+    print(json.dumps(response, sort_keys=True, separators=(",", ":")))
+    return 0 if response.get("ok") else 1
+
+
+def cmd_retry(args: argparse.Namespace, root: Path) -> int:
+    try:
+        resolved = _load_resolved(root, args.project)
+    except Exception as error:
+        print(f"validation failed: {error}", file=sys.stderr)
+        return 1
+    client = _client(root / DATA_DIR_NAME)
+    new_run_id = f"run-{uuid.uuid4().hex}"
+    submission_key = args.submission_key or f"retry:{args.run_id}:{uuid.uuid4().hex}"
+    response = client.request(
+        {
+            "command": "submit",
+            "run_id": new_run_id,
+            "project_hash": resolved.project_hash,
+            "submission_key": submission_key,
+            "failure_policy": resolved.failure_policy,
+            "retry_of": args.run_id,
+        }
+    )
+    if not response.get("ok"):
+        print(f"retry failed: {response.get('error')}", file=sys.stderr)
+        return 1
+    print(json.dumps({"run_id": response["execution"]["run_id"], "retry_of": args.run_id}, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
 def _render(payload: dict[str, Any], output_format: str) -> None:
     if output_format == "json":
         print(json.dumps(payload, sort_keys=True, separators=(",", ":")))
@@ -308,11 +459,51 @@ def main(argv: list[str] | None = None) -> int:
         command.add_argument("--root")
         command.add_argument("--format", choices=("text", "json"), default="text")
     subcommands.choices["capabilities"].add_argument("--instance")
+    validate = subcommands.add_parser("validate")
+    validate.add_argument("--root")
+    validate.add_argument("--project")
+    validate.add_argument("--format", choices=("text", "json"), default="text")
+    run = subcommands.add_parser("run")
+    run.add_argument("--root")
+    run.add_argument("--project")
+    run.add_argument("--run-id")
+    run.add_argument("--submission-key")
+    run.add_argument("--detach", action="store_true")
+    run.add_argument("--foreground", action="store_true")
+    status = subcommands.add_parser("status")
+    status.add_argument("--root")
+    status.add_argument("run_id")
+    cancel = subcommands.add_parser("cancel")
+    cancel.add_argument("--root")
+    cancel.add_argument("--analysis")
+    cancel.add_argument("run_id")
+    retry = subcommands.add_parser("retry")
+    retry.add_argument("--root")
+    retry.add_argument("--project")
+    retry.add_argument("--submission-key")
+    retry.add_argument("run_id")
     args = parser.parse_args(argv)
     root = _root(args.root)
-    payload = doctor(root) if args.command == "doctor" else capabilities(root, args.instance)
-    _render(payload, args.format)
-    return 0 if (args.command == "capabilities" and payload["source"]["status"] in {"absent", "ok"}) or (args.command == "doctor" and payload["overall"] == "ok") else 1
+    if args.command == "doctor":
+        payload = doctor(root)
+        _render(payload, args.format)
+        return 0 if payload["overall"] == "ok" else 1
+    if args.command == "capabilities":
+        payload = capabilities(root, args.instance)
+        _render(payload, args.format)
+        return 0 if payload["source"]["status"] in {"absent", "ok"} else 1
+    if args.command == "validate":
+        return cmd_validate(args, root, args.format)
+    if args.command == "run":
+        return cmd_run(args, root)
+    if args.command == "status":
+        return cmd_status(args, root)
+    if args.command == "cancel":
+        return cmd_cancel(args, root)
+    if args.command == "retry":
+        return cmd_retry(args, root)
+    parser.error(f"unknown command: {args.command}")
+    return 2
 
 
 if __name__ == "__main__":

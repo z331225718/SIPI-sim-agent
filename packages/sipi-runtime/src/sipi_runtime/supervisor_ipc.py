@@ -44,8 +44,9 @@ def _encode(payload: dict[str, Any]) -> bytes:
 class SupervisorServer:
     """Accepts one local client connection at a time and dispatches commands."""
 
-    def __init__(self, supervisor: Supervisor, data_dir: str | Path) -> None:
+    def __init__(self, supervisor: Supervisor, data_dir: str | Path, *, on_shutdown: Any = None) -> None:
         self.supervisor: Supervisor | None = supervisor
+        self._on_shutdown = on_shutdown
         self.data_dir = Path(data_dir)
         self.family = ipc_family()
         self.address = ipc_address(self.data_dir)
@@ -89,6 +90,11 @@ class SupervisorServer:
         if command == "cancel":
             status, affected = self.supervisor.request_cancel(run_id=request["run_id"], analysis_id=request.get("analysis_id"))
             return {"ok": True, "status": status, "affected": list(affected)}
+        if command == "shutdown":
+            if self._on_shutdown is None:
+                return {"ok": False, "error": {"category": "UnsupportedCapability", "message": "shutdown is not enabled on this server"}}
+            self._on_shutdown()
+            return {"ok": True}
         return {"ok": False, "error": {"category": "InvalidRequest", "message": f"unknown command: {command!r}"}}
 
     def _handle(self, connection: Any) -> None:
