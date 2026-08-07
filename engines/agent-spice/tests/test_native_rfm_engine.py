@@ -9,6 +9,7 @@ import subprocess
 import numpy as np
 import pytest
 
+from oracles import dotnet_dll as _dotnet_dll
 from agent_spice.cli import main
 from agent_spice.sparam.artifacts import write_cadence_rfm
 from agent_spice.sparam.rfm import parse_cadence_rfm
@@ -40,14 +41,13 @@ class _HighQReflectiveOnePort:
 
 
 def _has_sdk() -> bool:
-    dotnet = shutil.which("dotnet")
-    if dotnet is None or not DLL.is_file():
-        return False
-    result = subprocess.run([dotnet, "--list-sdks"], capture_output=True, text=True, check=False)
-    return bool(result.stdout.strip())
+    return _dotnet_dll() is not None
 
 
-pytestmark = pytest.mark.skipif(not _has_sdk(), reason="native .NET engine is not built")
+pytestmark = [
+    pytest.mark.skipif(not _has_sdk(), reason="native .NET engine is not built"),
+    pytest.mark.oracle("csharp"),
+]
 
 
 def _run_native(deck: Path, rfm: Path) -> dict:

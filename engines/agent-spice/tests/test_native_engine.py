@@ -9,20 +9,20 @@ import subprocess
 
 import pytest
 
+from oracles import dotnet_dll as _dotnet_dll
 
 ROOT = Path(__file__).resolve().parents[1]
 DLL = ROOT / "native" / "AgentSpice.Engine" / "bin" / "Release" / "net8.0" / "AgentSpice.Engine.dll"
 
 
 def _has_sdk() -> bool:
-    dotnet = shutil.which("dotnet")
-    if dotnet is None:
-        return False
-    result = subprocess.run([dotnet, "--list-sdks"], capture_output=True, text=True, check=False)
-    return bool(result.stdout.strip())
+    return _dotnet_dll() is not None
 
 
-pytestmark = pytest.mark.skipif(not _has_sdk() or not DLL.exists(), reason="native engine is not built")
+pytestmark = [
+    pytest.mark.skipif(not _has_sdk() or not DLL.exists(), reason="native engine is not built"),
+    pytest.mark.oracle("csharp"),
+]
 
 
 def _run(deck: str) -> dict:

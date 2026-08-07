@@ -36,3 +36,6 @@ agent_spice = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+  "oracle(name): external simulator differential lane (ngspice | hspice | csharp)",
+]
