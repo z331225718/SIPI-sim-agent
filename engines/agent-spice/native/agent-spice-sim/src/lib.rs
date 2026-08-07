@@ -13,8 +13,8 @@
 //! - `"dc"` → sweep source value (V or A, depending on the bound source)
 //! - `"ac"` → frequency [Hz]
 //! - `"tran"` → time [s]
-//! `SimulationPoint::values` keys: node name → node voltage [V]; voltage
-//! source name → branch current [A].
+//!
+//! `SimulationPoint::values` keys: node name → node voltage [V]; voltage source name → branch current [A].
 //!
 //! ## Port indexing
 //! Library-internal is 0-based: `rfm::RfmModel::{impedance_response,

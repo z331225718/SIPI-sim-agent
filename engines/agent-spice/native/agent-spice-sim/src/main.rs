@@ -137,11 +137,7 @@ fn run() -> CliResult<()> {
         }
     }
     if !deck.is_file() {
-        return Err(Error::InvalidDeck(format!(
-            "deck does not exist: {}",
-            deck.display()
-        ))
-        .into());
+        return Err(Error::InvalidDeck(format!("deck does not exist: {}", deck.display())).into());
     }
     let deck = deck.canonicalize()?;
     let deck_directory = deck.parent().ok_or_else(|| {
@@ -301,10 +297,12 @@ fn build_info() -> serde_json::Value {
 }
 
 fn run_build_info(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> CliResult<()> {
-    if let Some(argument) = arguments.next() {
-        if argument != "--json" || arguments.next().is_some() {
-            return Err(CliError::Usage("agent-spice-sim build-info [--json]".into()));
-        }
+    if let Some(argument) = arguments.next()
+        && (argument != "--json" || arguments.next().is_some())
+    {
+        return Err(CliError::Usage(
+            "agent-spice-sim build-info [--json]".into(),
+        ));
     }
     println!(
         "{}",
@@ -438,7 +436,9 @@ fn parse_positive_usize(value: Option<std::ffi::OsString>, name: &str) -> CliRes
         .parse::<usize>()
         .map_err(|_| CliError::Usage(format!("{name} must be a positive integer")))?;
     if parsed == 0 {
-        return Err(CliError::Usage(format!("{name} must be a positive integer")));
+        return Err(CliError::Usage(format!(
+            "{name} must be a positive integer"
+        )));
     }
     Ok(parsed)
 }
@@ -550,9 +550,9 @@ fn checked_port(port: usize, nports: usize) -> CliResult<usize> {
 }
 
 fn parse_port_value(value: &str, name: &str) -> CliResult<(usize, f64)> {
-    let (port, raw_value) = value
-        .split_once(':')
-        .ok_or_else(|| CliError::Usage(format!("{name} must use <1-based-port>:<resistance-ohm>")))?;
+    let (port, raw_value) = value.split_once(':').ok_or_else(|| {
+        CliError::Usage(format!("{name} must use <1-based-port>:<resistance-ohm>"))
+    })?;
     let port = port
         .trim()
         .parse::<usize>()

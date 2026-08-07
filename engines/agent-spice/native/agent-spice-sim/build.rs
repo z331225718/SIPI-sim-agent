@@ -20,10 +20,10 @@ fn main() {
     if let Some(index) = git_output(&["rev-parse", "--git-path", "index"]) {
         println!("cargo:rerun-if-changed={index}");
     }
-    if let Some(reference) = git_output(&["symbolic-ref", "-q", "HEAD"]) {
-        if let Some(git_dir) = git_output(&["rev-parse", "--git-dir"]) {
-            println!("cargo:rerun-if-changed={git_dir}/{reference}");
-        }
+    if let Some(reference) = git_output(&["symbolic-ref", "-q", "HEAD"])
+        && let Some(git_dir) = git_output(&["rev-parse", "--git-dir"])
+    {
+        println!("cargo:rerun-if-changed={git_dir}/{reference}");
     }
 
     let revision = env::var("AGENT_SPICE_GIT_REVISION")
