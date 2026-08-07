@@ -5,6 +5,7 @@ from .agent_spice import AgentSpiceHspiceAdapter
 from .attestation import AttestationError, WheelAttestation, verify_wheel_bundle
 from .capabilities import AdapterCapability, build_engine_capabilities, preflight
 from .process import (
+    MANAGED_HARD_ENFORCEMENT,
     BackendOutcome,
     BundleVerificationError,
     CommandBuilder,
@@ -47,6 +48,7 @@ __all__ = [
     "BundleVerificationError",
     "CommandBuilder",
     "ProcessResult",
+    "MANAGED_HARD_ENFORCEMENT",
     "PROFILES",
     "PyBertNativeAdapter",
     "ReaderError",

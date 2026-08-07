@@ -3,9 +3,12 @@
 The runner verifies the engine bundle, materializes bound inputs into an
 isolated per-run directory, executes the engine entrypoint with an allowlisted
 environment and wall-time limit, and assembles exactly one
-``BackendExecutionResultV1``.  Process-tree cancellation and hard resource
-enforcement belong to M3/G2b; this layer reports Timeout/ResourceLimit states
-honestly without claiming hard enforcement.
+``BackendExecutionResultV1``.  Hard resource enforcement (M3-11) is applied by
+this managed-worker layer: Windows Job Object limits (memory/process count/CPU
+time) plus artifact-byte publication checks on every platform, and POSIX
+``setrlimit`` (memory/CPU; process count stays unsupported on POSIX because
+``RLIMIT_NPROC`` is a weak per-user limit).  Unsupported required limits fail
+preflight instead of being silently ignored.
 """
 
 from __future__ import annotations
@@ -50,6 +53,17 @@ ALLOWED_ENV = frozenset(
 )
 _RESOURCE_FIELDS = ("wall_time_s", "cpu_time_s", "memory_bytes", "process_count", "artifact_bytes")
 
+MANAGED_HARD_ENFORCEMENT = {
+    "nt": {name: "hard" for name in _RESOURCE_FIELDS},
+    "posix": {
+        "wall_time_s": "hard",
+        "cpu_time_s": "hard",
+        "memory_bytes": "hard",
+        "process_count": "unsupported",
+        "artifact_bytes": "hard",
+    },
+}
+
 
 class BundleVerificationError(ValueError):
     """Raised when an engine bundle cannot be verified before execution."""
@@ -62,6 +76,7 @@ class ProcessResult:
     stderr: str
     elapsed_s: float
     timed_out: bool
+    resource_violation: str | None = None
 
 
 @dataclass(frozen=True)
@@ -95,6 +110,202 @@ def filtered_env() -> dict[str, str]:
     env.pop("PYTHONPATH", None)
     env["PYTHONNOUSERSITE"] = "1"
     return env
+
+
+def _create_job_with_limits(limits: Mapping[str, Any]) -> Any | None:
+    """Create a Windows Job Object with hard resource limits (M3-11)."""
+    if os.name != "nt":
+        return None
+    try:
+        import ctypes
+        from ctypes import wintypes
+    except (ImportError, OSError):
+        return None
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateJobObjectW.restype = wintypes.HANDLE
+    kernel32.CreateJobObjectW.argtypes = [wintypes.LPVOID, wintypes.LPCWSTR]
+    job = kernel32.CreateJobObjectW(None, None)
+    if not job:
+        return None
+
+    class IO_COUNTERS(ctypes.Structure):
+        _fields_ = [
+            ("ReadOperationCount", ctypes.c_ulonglong),
+            ("WriteOperationCount", ctypes.c_ulonglong),
+            ("OtherOperationCount", ctypes.c_ulonglong),
+            ("ReadTransferCount", ctypes.c_ulonglong),
+            ("WriteTransferCount", ctypes.c_ulonglong),
+            ("OtherTransferCount", ctypes.c_ulonglong),
+        ]
+
+    class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("PerProcessUserTimeLimit", ctypes.c_longlong),
+            ("PerJobUserTimeLimit", ctypes.c_longlong),
+            ("LimitFlags", wintypes.DWORD),
+            ("MinimumWorkingSetSize", ctypes.c_size_t),
+            ("MaximumWorkingSetSize", ctypes.c_size_t),
+            ("ActiveProcessLimit", wintypes.DWORD),
+            ("Affinity", ctypes.c_size_t),
+            ("PriorityClass", wintypes.DWORD),
+            ("SchedulingClass", wintypes.DWORD),
+        ]
+
+    class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("BasicLimitInformation", JOBOBJECT_BASIC_LIMIT_INFORMATION),
+            ("IoInfo", IO_COUNTERS),
+            ("ProcessMemoryLimit", ctypes.c_size_t),
+            ("JobMemoryLimit", ctypes.c_size_t),
+            ("PeakProcessMemoryUsed", ctypes.c_size_t),
+            ("PeakJobMemoryUsed", ctypes.c_size_t),
+        ]
+
+    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x2000
+    JOB_OBJECT_LIMIT_JOB_TIME = 0x0004
+    JOB_OBJECT_LIMIT_ACTIVE_PROCESS = 0x0008
+    JOB_OBJECT_LIMIT_JOB_MEMORY = 0x0200
+    JobObjectExtendedLimitInformation = 9
+    info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+    limit_flags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+    memory_bytes = limits.get("memory_bytes")
+    process_count = limits.get("process_count")
+    cpu_time_s = limits.get("cpu_time_s")
+    if memory_bytes is not None:
+        info.JobMemoryLimit = int(memory_bytes)
+        limit_flags |= JOB_OBJECT_LIMIT_JOB_MEMORY
+    if process_count is not None:
+        info.BasicLimitInformation.ActiveProcessLimit = int(process_count)
+        limit_flags |= JOB_OBJECT_LIMIT_ACTIVE_PROCESS
+    if cpu_time_s is not None:
+        info.BasicLimitInformation.PerJobUserTimeLimit = int(cpu_time_s * 1e7)
+        limit_flags |= JOB_OBJECT_LIMIT_JOB_TIME
+    info.BasicLimitInformation.LimitFlags = limit_flags
+    kernel32.SetInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD]
+    if not kernel32.SetInformationJobObject(job, JobObjectExtendedLimitInformation, ctypes.byref(info), ctypes.sizeof(info)):
+        kernel32.CloseHandle(job)
+        return None
+    return job
+
+
+def _assign_job(job: Any, pid: int) -> bool:
+    if os.name != "nt":
+        return False
+    try:
+        import ctypes
+        from ctypes import wintypes
+    except (ImportError, OSError):
+        return False
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    PROCESS_SET_QUOTA = 0x0100
+    PROCESS_TERMINATE = 0x0001
+    handle = kernel32.OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE, False, pid)
+    if not handle:
+        return False
+    try:
+        kernel32.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
+        return bool(kernel32.AssignProcessToJobObject(job, handle))
+    finally:
+        kernel32.CloseHandle(handle)
+
+
+def _job_violation(job: Any, limits: Mapping[str, Any]) -> str | None:
+    """Return the first resource limit the job demonstrably exceeded, if any."""
+    if job is None or os.name != "nt":
+        return None
+    try:
+        import ctypes
+        from ctypes import wintypes
+    except (ImportError, OSError):
+        return None
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
+    class JOBOBJECT_BASIC_ACCOUNTING_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("TotalUserTime", ctypes.c_longlong),
+            ("TotalKernelTime", ctypes.c_longlong),
+            ("ThisPeriodTotalUserTime", ctypes.c_longlong),
+            ("ThisPeriodTotalKernelTime", ctypes.c_longlong),
+            ("TotalPageFaultCount", wintypes.DWORD),
+            ("TotalProcesses", wintypes.DWORD),
+            ("ActiveProcesses", wintypes.DWORD),
+            ("TotalTerminatedProcesses", wintypes.DWORD),
+        ]
+
+    accounting = JOBOBJECT_BASIC_ACCOUNTING_INFORMATION()
+    JobObjectBasicAccountingInformation = 1
+    kernel32.QueryInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD, wintypes.LPDWORD]
+    if not kernel32.QueryInformationJobObject(job, JobObjectBasicAccountingInformation, ctypes.byref(accounting), ctypes.sizeof(accounting), None):
+        return None
+    cpu_time_s = limits.get("cpu_time_s")
+    if cpu_time_s is not None and (accounting.TotalUserTime + accounting.TotalKernelTime) >= int(cpu_time_s * 1e7):
+        return "cpu_time_s"
+    process_count = limits.get("process_count")
+    if process_count is not None and accounting.ActiveProcesses > int(process_count):
+        return "process_count"
+    memory_bytes = limits.get("memory_bytes")
+    if memory_bytes is not None:
+        class IO_COUNTERS(ctypes.Structure):
+            _fields_ = [
+                ("ReadOperationCount", ctypes.c_ulonglong),
+                ("WriteOperationCount", ctypes.c_ulonglong),
+                ("OtherOperationCount", ctypes.c_ulonglong),
+                ("ReadTransferCount", ctypes.c_ulonglong),
+                ("WriteTransferCount", ctypes.c_ulonglong),
+                ("OtherTransferCount", ctypes.c_ulonglong),
+            ]
+
+        class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
+            _fields_ = [
+                ("PerProcessUserTimeLimit", ctypes.c_longlong),
+                ("PerJobUserTimeLimit", ctypes.c_longlong),
+                ("LimitFlags", wintypes.DWORD),
+                ("MinimumWorkingSetSize", ctypes.c_size_t),
+                ("MaximumWorkingSetSize", ctypes.c_size_t),
+                ("ActiveProcessLimit", wintypes.DWORD),
+                ("Affinity", ctypes.c_size_t),
+                ("PriorityClass", wintypes.DWORD),
+                ("SchedulingClass", wintypes.DWORD),
+            ]
+
+        class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+            _fields_ = [
+                ("BasicLimitInformation", JOBOBJECT_BASIC_LIMIT_INFORMATION),
+                ("IoInfo", IO_COUNTERS),
+                ("ProcessMemoryLimit", ctypes.c_size_t),
+                ("JobMemoryLimit", ctypes.c_size_t),
+                ("PeakProcessMemoryUsed", ctypes.c_size_t),
+                ("PeakJobMemoryUsed", ctypes.c_size_t),
+            ]
+
+        extended = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+        JobObjectExtendedLimitInformation = 9
+        if kernel32.QueryInformationJobObject(job, JobObjectExtendedLimitInformation, ctypes.byref(extended), ctypes.sizeof(extended), None):
+            # Under a job memory commit limit allocation fails at the ceiling,
+            # so the measured peak lands at (or just below) the limit.
+            if extended.PeakJobMemoryUsed >= int(memory_bytes * 0.9):
+                return "memory_bytes"
+    return None
+
+
+def _posix_rlimit_preexec(limits: Mapping[str, Any]) -> Any | None:
+    """Build a preexec hook applying hard rlimits on POSIX (M3-11)."""
+    if os.name == "nt":
+        return None
+    memory_bytes = limits.get("memory_bytes")
+    cpu_time_s = limits.get("cpu_time_s")
+    if memory_bytes is None and cpu_time_s is None:
+        return None
+
+    def preexec() -> None:
+        import resource
+
+        if memory_bytes is not None:
+            resource.setrlimit(resource.RLIMIT_AS, (int(memory_bytes), int(memory_bytes)))
+        if cpu_time_s is not None:
+            resource.setrlimit(resource.RLIMIT_CPU, (int(cpu_time_s), int(cpu_time_s)))
+
+    return preexec
 
 
 def invocation(bundle_path: Path) -> list[str]:
@@ -159,10 +370,19 @@ def run_process(
     workdir: Path,
     env: Mapping[str, str],
     wall_time_s: float | None,
+    resource_limits: Mapping[str, Any] | None = None,
     on_start: Callable[[int], None] | None = None,
 ) -> ProcessResult:
     started = time.monotonic()
-    flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+    limits = resource_limits or {}
+    job = None
+    flags = 0
+    preexec = None
+    if os.name == "nt":
+        flags = subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP
+        job = _create_job_with_limits(limits)
+    else:
+        preexec = _posix_rlimit_preexec(limits)
     process = subprocess.Popen(
         argv,
         cwd=workdir,
@@ -171,22 +391,28 @@ def run_process(
         stderr=subprocess.PIPE,
         text=True,
         creationflags=flags,
+        preexec_fn=preexec,
     )
+    if job is not None:
+        _assign_job(job, process.pid)
+        process._sipi_job_handle = job  # type: ignore[attr-defined]
     if on_start is not None:
         on_start(process.pid)
     try:
         stdout, stderr = process.communicate(timeout=wall_time_s)
+        violation = _job_violation(job, limits) if job is not None else None
         return ProcessResult(
             returncode=process.returncode,
             stdout=stdout or "",
             stderr=stderr or "",
             elapsed_s=time.monotonic() - started,
             timed_out=False,
+            resource_violation=violation,
         )
     except subprocess.TimeoutExpired as error:
         process.kill()
         stdout, stderr = process.communicate()
-        return ProcessResult(returncode=-1, stdout=stdout, stderr=stderr, elapsed_s=time.monotonic() - started, timed_out=True)
+        return ProcessResult(returncode=-1, stdout=stdout, stderr=stderr, elapsed_s=time.monotonic() - started, timed_out=True, resource_violation=None)
 
 
 def assemble_backend_result(
@@ -199,6 +425,7 @@ def assemble_backend_result(
     artifacts: tuple[Mapping[str, Any], ...] = (),
     warnings: tuple[str, ...] = (),
     timings: Mapping[str, Any] | None = None,
+    actual_enforcement: Mapping[str, str] | None = None,
 ) -> BackendExecutionResultV1:
     wire: dict[str, Any] = {
         "schema": "sipi.backend-execution-result.v1",
@@ -218,7 +445,7 @@ def assemble_backend_result(
         "events": [],
         "warnings": list(warnings),
         "timings": dict(timings or {}),
-        "resource_usage": {"actual_enforcement": {name: "unsupported" for name in _RESOURCE_FIELDS}},
+        "resource_usage": {"actual_enforcement": dict(actual_enforcement or {name: "unsupported" for name in _RESOURCE_FIELDS})},
         "error": dict(error) if error is not None else None,
     }
     return parse_backend_execution_result(wire)
@@ -262,9 +489,11 @@ def execute_backend(
     """Execute one strict backend execution and return its single result."""
     require_backend_request(request)
     validate_pinned_instance(request, engine_entry["instance_id"])
+    os_key = "nt" if os.name == "nt" else "posix"
+    managed_hard = MANAGED_HARD_ENFORCEMENT[os_key]
     if capabilities is not None:
         try:
-            preflight(request, capabilities)
+            preflight(request, capabilities, platform_enforcement=managed_hard)
         except UnsupportedCapabilityError as error:
             return _failed_from_error(request, error)
     try:
@@ -299,26 +528,70 @@ def execute_backend(
             argv = builder.build(request, entry_target, workdir)
         except AdapterContractError as error:
             return _failed_from_error(request, error)
-        wall_time_s = request["resource_limits"].get("wall_time_s")
-        process = run_process(argv, workdir=workdir, env=filtered_env(), wall_time_s=wall_time_s, on_start=on_child_start)
+        limits = request["resource_limits"]
+        wall_time_s = limits.get("wall_time_s")
+        enforcement_limits: dict[str, Any] = {"wall_time_s": wall_time_s}
+        if limits.get("enforcement") == "required":
+            enforcement_limits.update({name: limits[name] for name in _RESOURCE_FIELDS if limits.get(name) is not None})
+        process = run_process(
+            argv,
+            workdir=workdir,
+            env=filtered_env(),
+            wall_time_s=wall_time_s,
+            resource_limits=enforcement_limits,
+            on_start=on_child_start,
+        )
+        actual_enforcement = {
+            name: ("hard" if limits.get("enforcement") == "required" and limits.get(name) is not None and managed_hard.get(name) == "hard" else "unsupported")
+            for name in _RESOURCE_FIELDS
+        }
         if process.timed_out:
             return assemble_backend_result(
                 request,
                 status="failed",
                 error=platform_error("Timeout", f"engine exceeded wall_time_s={wall_time_s}", "wall_time_s", {"sipi.adapter.elapsed-seconds": process.elapsed_s}),
+                actual_enforcement=actual_enforcement,
             )
         if process.returncode != 0:
+            if process.resource_violation is not None:
+                return assemble_backend_result(
+                    request,
+                    status="failed",
+                    error=platform_error(
+                        "ResourceLimit",
+                        f"engine exceeded hard {process.resource_violation} limit",
+                        process.resource_violation,
+                        {"sipi.adapter.returncode": process.returncode},
+                    ),
+                    actual_enforcement=actual_enforcement,
+                )
             message = f"engine exited with code {process.returncode}"
             if process.stderr.strip():
                 message += f": {process.stderr.strip().splitlines()[-1]}"
-            return assemble_backend_result(request, status="failed", error=platform_error("ExternalModelFailure", message))
+            return assemble_backend_result(request, status="failed", error=platform_error("ExternalModelFailure", message), actual_enforcement=actual_enforcement)
         outcome = builder.build_outcome(request, engine_entry, workdir, process)
         if outcome.result["artifacts"] and artifact_root is None:
             return assemble_backend_result(
                 request,
                 status="failed",
                 error=platform_error("InternalInvariant", "backend result has artifacts but no artifact_root was provided"),
+                actual_enforcement=actual_enforcement,
             )
+        artifact_bytes_limit = limits.get("artifact_bytes")
+        if limits.get("enforcement") == "required" and artifact_bytes_limit is not None:
+            total_bytes = sum(int(artifact.get("byte_length", 0)) for artifact in outcome.result["artifacts"])
+            if total_bytes > artifact_bytes_limit:
+                return assemble_backend_result(
+                    request,
+                    status="failed",
+                    error=platform_error(
+                        "ResourceLimit",
+                        f"artifacts exceed hard artifact_bytes limit: {total_bytes} > {artifact_bytes_limit}",
+                        "artifact_bytes",
+                        {"sipi.adapter.artifact-bytes": total_bytes},
+                    ),
+                    actual_enforcement=actual_enforcement,
+                )
         if artifact_root is not None:
             artifact_root = Path(artifact_root)
             artifact_root.mkdir(parents=True, exist_ok=True)
@@ -330,6 +603,7 @@ def execute_backend(
                         request,
                         status="failed",
                         error=platform_error("InternalInvariant", f"artifact path escapes the work directory: {source}"),
+                        actual_enforcement=actual_enforcement,
                     )
                 target = artifact_root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
@@ -341,7 +615,12 @@ def execute_backend(
                         request,
                         status="failed",
                         error=platform_error("InternalInvariant", f"artifact handoff verification failed: {artifact['relative_path']}"),
+                        actual_enforcement=actual_enforcement,
                     )
+        if actual_enforcement != {name: "unsupported" for name in _RESOURCE_FIELDS}:
+            wire = outcome.result.to_wire()
+            wire["resource_usage"]["actual_enforcement"] = actual_enforcement
+            return parse_backend_execution_result(wire)
         return outcome.result
     finally:
         if owns_workdir:

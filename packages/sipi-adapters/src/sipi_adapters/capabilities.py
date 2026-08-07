@@ -39,8 +39,18 @@ class AdapterCapability:
         }
 
 
-def preflight(request: BackendExecutionRequestV1, entries: tuple[AdapterCapability, ...]) -> None:
-    """Reject unsupported operations/payloads and uncertified hard enforcement."""
+def preflight(
+    request: BackendExecutionRequestV1,
+    entries: tuple[AdapterCapability, ...],
+    *,
+    platform_enforcement: Mapping[str, str] | None = None,
+) -> None:
+    """Reject unsupported operations/payloads and uncertified hard enforcement.
+
+    Required limits are satisfiable when the managed-worker platform layer
+    provides hard enforcement for the field (``platform_enforcement``) or an
+    adapter capability is certified hard for it; otherwise fail closed.
+    """
     wire = request.to_wire()
     matched = [entry for entry in entries if entry.operation == wire["operation"] and entry.payload_schema == wire["payload_schema"]]
     if not matched:
@@ -49,8 +59,9 @@ def preflight(request: BackendExecutionRequestV1, entries: tuple[AdapterCapabili
         )
     limits = wire["resource_limits"]
     if limits.get("enforcement") == "required":
+        platform_hard = {name: mode for name, mode in (platform_enforcement or {}).items() if mode == "hard"}
         for field_name in RESOURCE_FIELDS:
-            if limits.get(field_name) is not None and not any(entry.resource_enforcement.get(field_name) == "hard" for entry in matched):
+            if limits.get(field_name) is not None and field_name not in platform_hard and not any(entry.resource_enforcement.get(field_name) == "hard" for entry in matched):
                 raise UnsupportedCapabilityError(f"{field_name} requires certified hard enforcement")
 
 
