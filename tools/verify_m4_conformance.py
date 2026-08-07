@@ -197,7 +197,7 @@ def run() -> dict[str, Any]:
         "schemas": schemas,
         "failures": failures,
         "notes": [
-            "M4 DTOs (axis/port-map/network-tensor/waveform/spectrum) are platform-owned typed data with authority direction python_rust_bidirectional and are strict in both directions; SPEC 6.7 unknown-field tolerance applies to result envelopes (run-result/backend-result), not to embedded DTOs."
+            "M4 DTOs are platform-owned typed data with authority data-flow directions (python_rust_bidirectional for axis/port-map, reader_to_platform for network-tensor, engine_to_platform for waveform/spectrum) and strict schema validation in every direction; SPEC 6.7 unknown-field tolerance applies to result envelopes (run-result/backend-result), not to embedded DTOs."
         ],
     }
 
