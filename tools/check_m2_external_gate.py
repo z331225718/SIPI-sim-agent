@@ -49,8 +49,24 @@ def is_annotated(repo: Path, tag: str) -> bool:
     return result.stdout.strip() == "tag"
 
 
-def head_at_tag(repo: Path, tag: str) -> bool:
-    return git(["rev-parse", "HEAD"], repo).stdout.strip() == git(["rev-parse", f"tags/{tag}^{{commit}}"], repo).stdout.strip()
+def default_branch_commit(repo: Path) -> str | None:
+    origin = git(["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"], repo)
+    if origin.returncode == 0 and origin.stdout.strip():
+        branch = origin.stdout.strip().rsplit("/", 1)[-1]
+    else:
+        head = git(["symbolic-ref", "--quiet", "--short", "HEAD"], repo).stdout.strip()
+        branch = head.rsplit("/", 1)[-1] if head else ""
+    if not branch:
+        return None
+    resolved = git(["rev-parse", "--verify", "--quiet", f"refs/heads/{branch}"], repo)
+    return resolved.stdout.strip() or None
+
+
+def default_branch_at_tag(repo: Path, tag: str) -> bool:
+    branch_commit = default_branch_commit(repo)
+    if branch_commit is None:
+        return False
+    return branch_commit == git(["rev-parse", f"tags/{tag}^{{commit}}"], repo).stdout.strip()
 
 
 def license_ready(manifest_text: str, engine: str) -> tuple[bool, list[str]]:
@@ -113,8 +129,8 @@ def main() -> int:
         else:
             if not is_annotated(repo, tag):
                 blockers.append("baseline tag is not annotated")
-            if not head_at_tag(repo, tag):
-                blockers.append("HEAD does not point at baseline tag")
+            if not default_branch_at_tag(repo, tag):
+                blockers.append("default branch HEAD does not point at baseline tag")
         license_ok, license_blockers = license_ready(manifest_text, engine)
         fixtures_ok, fixture_blockers = fixtures_ready(fixtures, engine)
         blockers.extend(license_blockers)

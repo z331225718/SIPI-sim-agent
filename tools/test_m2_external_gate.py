@@ -176,6 +176,24 @@ class ExternalGateTests(unittest.TestCase):
             result = run_checker({"agent-spice": str(repo)}, license_text=license_text, fixtures={"assets": []})
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_default_branch_ahead_of_tag_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repo = make_tagged_repo(root, "agent-spice")
+            (repo / "ahead.txt").write_text("ahead", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True)
+            subprocess.run(["git", "commit", "-q", "-m", "ahead of tag"], cwd=repo, check=True)
+            license_text = (
+                "subjects:\n"
+                "  - id: agent-spice-source\n"
+                "    scope: {root_ref: agent-spice}\n"
+                "    distribution_status: authorized_public\n"
+            )
+            result = run_checker({"agent-spice": str(repo)}, license_text=license_text, fixtures={"assets": []})
+            self.assertEqual(result.returncode, 1)
+            report = json.loads(result.stdout)
+            self.assertTrue(any("default branch HEAD" in item for item in report["engines"][0]["blockers"]))
+
 
 if __name__ == "__main__":
     unittest.main()
