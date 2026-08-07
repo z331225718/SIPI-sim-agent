@@ -153,7 +153,10 @@ def verify(*, case_results: dict[str, dict[str, dict]] | None = None) -> dict:
         failures.append("ledger:schema")
     if ledger.get("scope") != {"task": "M1-06", "authority_path": "schemas/authority.v1.yaml"}:
         failures.append("ledger:scope")
-    if ledger.get("authority_sha256") != hashlib.sha256(AUTHORITY.read_bytes()).hexdigest():
+    # Normalize to LF so CRLF and LF checkouts produce the same authority digest
+    # as the committed git blob (Windows worktrees otherwise diverge).
+    authority_bytes = AUTHORITY.read_bytes().replace(b"\r\n", b"\n")
+    if ledger.get("authority_sha256") != hashlib.sha256(authority_bytes).hexdigest():
         failures.append("ledger:authority_sha256")
     cases = {case["id"]: case for case in suite["cases"]}
     expected_case_ids = {case_id for case_id, case in cases.items() if "deferred_to" not in case}
