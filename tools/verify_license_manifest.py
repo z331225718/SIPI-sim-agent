@@ -26,18 +26,34 @@ except ImportError:  # pragma: no cover
 ROOT = Path(__file__).resolve().parents[1]
 AUTHORIZED_STATES = {"authorized_public", "authorized_private", "external_reference_only"}
 COMPLIANCE_OK = {"authorized", "complete"}
+SNAPSHOT = ROOT / "docs" / "baselines" / "source-snapshot.v1.json"
+ROOT_REF_ALIASES = {"pybert": "py-bert-agent"}
 
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest().upper()
 
 
-def _verify_evidence(refs: list, root: Path, blockers: list[str], subject_id: str) -> None:
+def _evidence_root(root: Path, root_ref: str | None) -> Path:
+    if root_ref and SNAPSHOT.is_file():
+        try:
+            import json
+
+            snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+            for repository in snapshot.get("repositories", []):
+                if repository.get("id") in {root_ref, ROOT_REF_ALIASES.get(root_ref, root_ref)}:
+                    return Path(repository["path"])
+        except (OSError, KeyError, TypeError, json.JSONDecodeError):
+            pass
+    return root
+
+
+def _verify_evidence(refs: list, evidence_root: Path, blockers: list[str], subject_id: str) -> None:
     for ref in refs:
         if not isinstance(ref, dict):
             blockers.append(f"{subject_id}: malformed evidence_ref")
             continue
-        path = root / str(ref.get("path", ""))
+        path = evidence_root / str(ref.get("path", ""))
         if not path.is_file():
             blockers.append(f"{subject_id}: evidence file missing: {ref.get('path')}")
             continue
@@ -69,11 +85,12 @@ def verify(manifest_text: str, root: Path) -> dict:
             blockers.append(f"{subject_id}: unknown distribution_status {status!r}")
             continue
         authorized_ids.add(subject_id)
+        evidence_root = _evidence_root(root, subject.get("scope", {}).get("root_ref"))
         evidence = subject.get("evidence_refs")
         if not isinstance(evidence, list) or not evidence:
             blockers.append(f"{subject_id}: authorized status requires evidence_refs")
         else:
-            _verify_evidence(evidence, root, blockers, subject_id)
+            _verify_evidence(evidence, evidence_root, blockers, subject_id)
         decision_owner = subject.get("owners", {}).get("license_decision_owner")
         if decision_owner in {None, "pending_external_authorization"}:
             blockers.append(f"{subject_id}: license_decision_owner is unresolved")

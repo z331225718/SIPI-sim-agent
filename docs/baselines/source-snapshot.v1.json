@@ -1,27 +1,52 @@
 {
   "schema": "sipi.source-snapshot.v1",
-  "captured_at_utc": "2026-08-04T22:50:59Z",
+  "captured_at_utc": "2026-08-07T01:38:42Z",
   "capture_mode": "read_only",
   "repositories": [
     {
       "id": "agent-spice",
       "path": "C:\\Users\\z3312\\code\\agent-spice",
-      "head": "90f0374bc9987e9197d4dcaa3912432fbd766a5e",
-      "tree": "b5db1cb9a1a989459dffe7db885790abeaf47290",
+      "head": "80f66a384b1b4b52b91390dc40f12a7af6cf0e2a",
+      "tree": "149325eae185cc1cce24bfd3afd2c0f3583a0542",
       "branch": "main",
       "upstream": "origin/main",
-      "remote_names": ["origin"],
-      "remote_cache": {"origin_url_sha256": "F2C39C38E0FA89597FE3F0D7D40FA181DABD52CBE489323E1994180769E3BD1A", "upstream_oid": "90f0374bc9987e9197d4dcaa3912432fbd766a5e", "ahead": 0, "behind": 0},
+      "remote_names": [
+        "origin"
+      ],
+      "remote_cache": {
+        "origin_url_sha256": "F2C39C38E0FA89597FE3F0D7D40FA181DABD52CBE489323E1994180769E3BD1A",
+        "upstream_oid": "90f0374bc9987e9197d4dcaa3912432fbd766a5e",
+        "ahead": 0,
+        "behind": 0
+      },
       "worktree_status_sha256": "0FA0AA91103360ED2EB8558E47A301F548E722E4998F8F9AE3390849F7C7F570",
       "lockfiles": [
-        {"path": "native/agent-spice-sim/Cargo.lock", "sha256": "D8D0CC39F9A86148DF5A6CA24F4FA2077974C0C639D4E91AE524A357E39FC09A"},
-        {"path": "third_party/solvers.lock.json", "sha256": "92A2CE9E029FAE4874E423DBD0962A2556062B5663296EC363E32DD79A85424B"},
-        {"path": "native/agent-spice-sim/rust-toolchain.toml", "sha256": "174A086284D57E79557B62BC627E96257893375DFD37239E3C3E830CE2629B95"}
+        {
+          "path": "native/agent-spice-sim/Cargo.lock",
+          "sha256": "D8D0CC39F9A86148DF5A6CA24F4FA2077974C0C639D4E91AE524A357E39FC09A"
+        },
+        {
+          "path": "third_party/solvers.lock.json",
+          "sha256": "92A2CE9E029FAE4874E423DBD0962A2556062B5663296EC363E32DD79A85424B"
+        },
+        {
+          "path": "native/agent-spice-sim/rust-toolchain.toml",
+          "sha256": "174A086284D57E79557B62BC627E96257893375DFD37239E3C3E830CE2629B95"
+        }
       ],
       "build_inputs": [
-        {"path": "pyproject.toml", "sha256": "77650AAC5F0870195096AAE6F80A72828CCEED8465C15F547D6EDCF3F30809EF"},
-        {"path": "setup.py", "sha256": "2C2253B5996E1C65DC7365410D2C7883E1B2387CEBFAC6ED3EDF275F483AD5DC"},
-        {"path": "native/agent-spice-sim/Cargo.toml", "sha256": "CFE5A26135CA60889C3662365BA4B3FF05C3081E2D3B2875BE32EE1A6131843C"}
+        {
+          "path": "pyproject.toml",
+          "sha256": "77650AAC5F0870195096AAE6F80A72828CCEED8465C15F547D6EDCF3F30809EF"
+        },
+        {
+          "path": "setup.py",
+          "sha256": "2C2253B5996E1C65DC7365410D2C7883E1B2387CEBFAC6ED3EDF275F483AD5DC"
+        },
+        {
+          "path": "native/agent-spice-sim/Cargo.toml",
+          "sha256": "CFE5A26135CA60889C3662365BA4B3FF05C3081E2D3B2875BE32EE1A6131843C"
+        }
       ]
     },
     {
@@ -31,43 +56,105 @@
       "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24",
       "branch": "master",
       "upstream": "origin/master",
-      "remote_names": ["origin"],
-      "remote_cache": {"origin_url_sha256": "84F45F81DFC5423DBB319EC41150C535D5DE4290B7D53F3F9A4D722B5C6BBF70", "upstream_oid": "b48c103a48635f8291d69beb63d413469fc03aea", "ahead": 2, "behind": 0},
+      "remote_names": [
+        "origin"
+      ],
+      "remote_cache": {
+        "origin_url_sha256": "84F45F81DFC5423DBB319EC41150C535D5DE4290B7D53F3F9A4D722B5C6BBF70",
+        "upstream_oid": "b48c103a48635f8291d69beb63d413469fc03aea",
+        "ahead": 2,
+        "behind": 0
+      },
       "worktree_status_sha256": "FFD87997FC247E65BD36499669D554BC1034CC383E09EFE86E8966D415C47FD2",
       "lockfiles": [
-        {"path": "uv.lock", "sha256": "624B62D7A84FBC48579DE17E2AE171F5E4190D6AD7E5231E67DDAFB9D3FA0D86"},
-        {"path": "requirements.txt", "sha256": "C8FAC51BEE6324847D7F143D6DA4F134279E7E19C6BFC5F7B578614B51DD00F0"},
-        {"path": "requirements-wheelhouse.txt", "sha256": "8030FDF6E6FB31625C222C7A5D514696F86625DC57563DC51040467DD5CEFB80"},
-        {"path": "native/pybert-core/Cargo.lock", "sha256": "9E021C575B3228465EAF5B227A0882F3C4C4BD40178EC5362A5845DD30F55715"},
-        {"path": "native/pybert-python/Cargo.lock", "sha256": "D5EFAC4C178498B652DE2EE9CB068B61BFF0E164E742EEE44510F2FE80CFDC85"},
-        {"path": "PyAMI/uv.lock", "sha256": "EC23BBBD2453867D7D1F5C25FC2DD92BD24277B637A8140B524338BF8B5EF1F5"},
-        {"path": "PyAMI/docs/requirements.txt", "sha256": "F50A9864AA49DA169D809770948B9CAEB7468442FA346B3D1CDE15BC119061FE"}
+        {
+          "path": "uv.lock",
+          "sha256": "624B62D7A84FBC48579DE17E2AE171F5E4190D6AD7E5231E67DDAFB9D3FA0D86"
+        },
+        {
+          "path": "requirements.txt",
+          "sha256": "C8FAC51BEE6324847D7F143D6DA4F134279E7E19C6BFC5F7B578614B51DD00F0"
+        },
+        {
+          "path": "requirements-wheelhouse.txt",
+          "sha256": "8030FDF6E6FB31625C222C7A5D514696F86625DC57563DC51040467DD5CEFB80"
+        },
+        {
+          "path": "native/pybert-core/Cargo.lock",
+          "sha256": "9E021C575B3228465EAF5B227A0882F3C4C4BD40178EC5362A5845DD30F55715"
+        },
+        {
+          "path": "native/pybert-python/Cargo.lock",
+          "sha256": "D5EFAC4C178498B652DE2EE9CB068B61BFF0E164E742EEE44510F2FE80CFDC85"
+        },
+        {
+          "path": "PyAMI/uv.lock",
+          "sha256": "EC23BBBD2453867D7D1F5C25FC2DD92BD24277B637A8140B524338BF8B5EF1F5"
+        },
+        {
+          "path": "PyAMI/docs/requirements.txt",
+          "sha256": "F50A9864AA49DA169D809770948B9CAEB7468442FA346B3D1CDE15BC119061FE"
+        }
       ],
       "build_inputs": [
-        {"path": "pyproject.toml", "sha256": "D0B578B2D29014CAFEAF94F9002D54FC939665FB18A0B7048EC672D45B3166E7"},
-        {"path": "native/pybert-core/Cargo.toml", "sha256": "3C4065FBAB3426421C43AF0D2F04BBD09FE36C18D2544321D21D3CC2C4BB952C"},
-        {"path": "native/pybert-python/Cargo.toml", "sha256": "D2743D8C13DFDA84F92C9C9C808ACEE0F76E77AD3683CD30A80B265F33A87F3E"},
-        {"path": "PyAMI/pyproject.toml", "sha256": "396592A3F88BBD22A6F9F08DC76DB956B3B849D6596B05C80AEE8885A95A4BAF"}
+        {
+          "path": "pyproject.toml",
+          "sha256": "D0B578B2D29014CAFEAF94F9002D54FC939665FB18A0B7048EC672D45B3166E7"
+        },
+        {
+          "path": "native/pybert-core/Cargo.toml",
+          "sha256": "3C4065FBAB3426421C43AF0D2F04BBD09FE36C18D2544321D21D3CC2C4BB952C"
+        },
+        {
+          "path": "native/pybert-python/Cargo.toml",
+          "sha256": "D2743D8C13DFDA84F92C9C9C808ACEE0F76E77AD3683CD30A80B265F33A87F3E"
+        },
+        {
+          "path": "PyAMI/pyproject.toml",
+          "sha256": "396592A3F88BBD22A6F9F08DC76DB956B3B849D6596B05C80AEE8885A95A4BAF"
+        }
       ]
     },
     {
       "id": "agent-com",
       "path": "C:\\Users\\z3312\\code\\COM",
-      "head": "034b21b2f293b2ef97cb8be269b1bf2be38e0086",
-      "tree": "dc6e5529612d7272f23547a796b53e1456cc49cb",
+      "head": "8c6ffa409f8861c7b7d413a32f1c67db9a08cb70",
+      "tree": "c68df503844e27905bfb231114159820cbd795e3",
       "branch": "main",
       "upstream": "origin/main",
-      "remote_names": ["origin"],
-      "remote_cache": {"origin_url_sha256": "DCFECA1459285FC5A5278F13C1D8EA1274402E452A21CA91A1205B464CD6FFBF", "upstream_oid": "034b21b2f293b2ef97cb8be269b1bf2be38e0086", "ahead": 0, "behind": 0},
+      "remote_names": [
+        "origin"
+      ],
+      "remote_cache": {
+        "origin_url_sha256": "DCFECA1459285FC5A5278F13C1D8EA1274402E452A21CA91A1205B464CD6FFBF",
+        "upstream_oid": "034b21b2f293b2ef97cb8be269b1bf2be38e0086",
+        "ahead": 0,
+        "behind": 0
+      },
       "worktree_status_sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
       "lockfiles": [
-        {"path": "uv.lock", "sha256": "7711F8EF121491FFDA0198462243F3AEB02B5A8B05F6B0C040CDAB387293DF8E"},
-        {"path": "requirements-parity.lock", "sha256": "5DB4A6486981C6398FE92C0ED25B5219872298E75A61FCD7DC80878595D67F87"}
+        {
+          "path": "uv.lock",
+          "sha256": "7711F8EF121491FFDA0198462243F3AEB02B5A8B05F6B0C040CDAB387293DF8E"
+        },
+        {
+          "path": "requirements-parity.lock",
+          "sha256": "5DB4A6486981C6398FE92C0ED25B5219872298E75A61FCD7DC80878595D67F87"
+        }
       ],
       "build_inputs": [
-        {"path": "pyproject.toml", "sha256": "2CDCE17B129A32F5A549EE519F99696F500F2BF401193BED822E207ED9F47B4B"},
-        {"path": "setup.py", "sha256": "4BDB9D8774D76AD49A624B64E785C37A9DDEA9649FE3A8451E444E87D706255F"},
-        {"path": "MANIFEST.in", "sha256": "9BCAF7C05839E00DE0C900C6575F538CEF0393EB69DD584776A9A2B28B91B55B"}
+        {
+          "path": "pyproject.toml",
+          "sha256": "2CDCE17B129A32F5A549EE519F99696F500F2BF401193BED822E207ED9F47B4B"
+        },
+        {
+          "path": "setup.py",
+          "sha256": "4BDB9D8774D76AD49A624B64E785C37A9DDEA9649FE3A8451E444E87D706255F"
+        },
+        {
+          "path": "MANIFEST.in",
+          "sha256": "9BCAF7C05839E00DE0C900C6575F538CEF0393EB69DD584776A9A2B28B91B55B"
+        }
       ]
     }
   ]
