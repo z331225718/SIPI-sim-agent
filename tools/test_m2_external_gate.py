@@ -162,6 +162,20 @@ class ExternalGateTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 2)
 
+    def test_untracked_local_files_do_not_block_baseline_tag(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repo = make_tagged_repo(root, "agent-spice")
+            (repo / "local-untracked.txt").write_text("local", encoding="utf-8")
+            license_text = (
+                "subjects:\n"
+                "  - id: agent-spice-source\n"
+                "    scope: {root_ref: agent-spice}\n"
+                "    distribution_status: authorized_public\n"
+            )
+            result = run_checker({"agent-spice": str(repo)}, license_text=license_text, fixtures={"assets": []})
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

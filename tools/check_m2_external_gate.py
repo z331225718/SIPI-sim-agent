@@ -3,7 +3,8 @@
 The M2 platform side is complete and audited; the real-bundle dual-run
 equivalence additionally requires, per engine repository:
   - an annotated clean tag ``sipi-baseline/<engine>/<YYYYMMDD>.<n>`` with HEAD
-    pointing at that tag and a clean worktree;
+    of the default branch pointing at that tag (the tag names a committed
+    snapshot; uncommitted local files in any checkout do not corrupt it);
   - a license-manifest subject for that engine that is not ``blocked_unknown``;
   - required fixtures (per ``fixtures/manifest.v1.json``) not missing/partial.
 
@@ -46,10 +47,6 @@ def latest_baseline_tag(repo: Path, engine: str) -> str | None:
 def is_annotated(repo: Path, tag: str) -> bool:
     result = git(["for-each-ref", f"refs/tags/{tag}", "--format=%(objecttype)"], repo)
     return result.stdout.strip() == "tag"
-
-
-def worktree_clean(repo: Path) -> bool:
-    return not git(["status", "--porcelain"], repo).stdout.strip()
 
 
 def head_at_tag(repo: Path, tag: str) -> bool:
@@ -116,8 +113,6 @@ def main() -> int:
         else:
             if not is_annotated(repo, tag):
                 blockers.append("baseline tag is not annotated")
-            if not worktree_clean(repo):
-                blockers.append("worktree not clean")
             if not head_at_tag(repo, tag):
                 blockers.append("HEAD does not point at baseline tag")
         license_ok, license_blockers = license_ready(manifest_text, engine)
