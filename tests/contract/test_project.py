@@ -120,6 +120,10 @@ class ProjectContractTests(unittest.TestCase):
         raw["analyses"][1]["inputs"]["channel_response"]["from_analysis"] = "link-eye"
         with self.assertRaisesRegex(ContractViolation, "own output"):
             parse_project(raw)
+        raw = project()
+        raw["analyses"][1]["inputs"]["channel_response"]["expected_schema"] = "other.schema.v1"
+        with self.assertRaisesRegex(ContractViolation, "schema_mismatch"):
+            parse_project(raw)
 
     def test_export_roles_are_unique_per_analysis(self):
         raw = project()

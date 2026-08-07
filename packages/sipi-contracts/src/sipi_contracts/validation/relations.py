@@ -637,11 +637,18 @@ def validate_project_intrinsic(value: Mapping[str, Any]) -> None:
             if source not in declared:
                 _violation("sipi.project.v1", "unknown_input_source", f"input binding references undeclared analysis: {source}", binding_pointer)
             source_exports = next(item for item in analyses if item["id"] == source).get("exports", [])
-            source_roles = {item["role"] for item in source_exports}
-            if binding["artifact_role"] not in source_roles:
+            matching_exports = [item for item in source_exports if item["role"] == binding["artifact_role"]]
+            if not matching_exports:
                 _violation(
                     "sipi.project.v1",
                     "missing_producer",
                     f"input binding has no producer export role {binding['artifact_role']} in {source}",
+                    binding_pointer,
+                )
+            elif matching_exports[0]["schema"] != binding["expected_schema"]:
+                _violation(
+                    "sipi.project.v1",
+                    "schema_mismatch",
+                    f"input binding expected_schema does not match producer export schema for role {binding['artifact_role']}",
                     binding_pointer,
                 )
