@@ -19,6 +19,7 @@ from .process import (
     verify_engine_bundle,
 )
 from .pybert import PyBertNativeAdapter
+from .channel_resolver import CHANNEL_RESPONSE_CONTRACT, ChannelResolutionError, resolve_channel
 from .venv import BundleExecutionError
 from .spi import (
     AdapterContractError,
@@ -38,6 +39,8 @@ __all__ = [
     "AttestationError",
     "BackendAdapter",
     "BackendOutcome",
+    "CHANNEL_RESPONSE_CONTRACT",
+    "ChannelResolutionError",
     "BundleExecutionError",
     "build_engine_capabilities",
     "BundleVerificationError",
@@ -46,6 +49,7 @@ __all__ = [
     "PyBertNativeAdapter",
     "UnsupportedCapabilityError",
     "verify_wheel_bundle",
+    "resolve_channel",
     "WheelAttestation",
     "assemble_backend_result",
     "execute_backend",
