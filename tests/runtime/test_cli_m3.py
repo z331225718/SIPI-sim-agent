@@ -209,6 +209,28 @@ class CliM3Tests(unittest.TestCase):
                     time.sleep(0.2)
                 self.assertEqual(final_status, "succeeded")
 
+    def test_run_foreground_reuses_existing_daemon(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_fake_project(root)
+            data_dir = root / ".sipi"
+            supervisor = Supervisor(data_dir)
+            with SupervisorServer(supervisor, data_dir, runner=build_runner(supervisor, data_dir)) as server:
+                status, output = self.run_cli("run", "--root", str(root), "--detach", "--foreground")
+                self.assertEqual(status, 0)
+                run_id = json.loads(output)["run_id"]
+                client = SupervisorClient(data_dir)
+                deadline = time.monotonic() + 15
+                final_status = None
+                while time.monotonic() < deadline:
+                    execution = client.request({"command": "status", "run_id": run_id}).get("execution")
+                    final_status = execution.get("status") if execution else None
+                    if final_status in {"succeeded", "failed", "cancelled"}:
+                        break
+                    time.sleep(0.2)
+                self.assertEqual(final_status, "succeeded")
+                server.close()
+
     def test_status_without_supervisor_exits_cleanly(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

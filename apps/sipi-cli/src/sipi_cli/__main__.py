@@ -18,6 +18,7 @@ from sipi_runtime import (
     EngineLockLoadError,
     EngineRegistry,
     Supervisor,
+    SupervisorBusy,
     SupervisorClient,
     SupervisorServer,
     SupervisorUnavailable,
@@ -327,7 +328,7 @@ def _ensure_supervisor(data_dir: Path, *, foreground: bool, runner: Any = None) 
     except SupervisorUnavailable:
         if foreground:
             supervisor = Supervisor(data_dir)
-            server = SupervisorServer(supervisor, data_dir, runner=runner)
+            server = SupervisorServer(supervisor, data_dir, runner=runner if runner is not None else build_runner(supervisor, data_dir))
             server.start()
             return server
         spawn_supervisor(data_dir)
@@ -369,15 +370,12 @@ def cmd_run(args: argparse.Namespace, root: Path) -> int:
         return 1
     data_dir = root / DATA_DIR_NAME
     try:
-        if args.foreground:
-            supervisor = Supervisor(data_dir)
-            owned = SupervisorServer(supervisor, data_dir, runner=build_runner(supervisor, data_dir))
-            owned.start()
-        else:
-            owned = _ensure_supervisor(data_dir, foreground=False)
+        owned = _ensure_supervisor(data_dir, foreground=args.foreground)
     except SupervisorUnavailable as error:
         print(f"supervisor unavailable: {error}", file=sys.stderr)
         return 1
+    except SupervisorBusy:
+        owned = None  # a daemon appeared between ping and bind; reuse it
     try:
         client = _client(data_dir)
         run_id = args.run_id or f"run-{uuid.uuid4().hex}"
