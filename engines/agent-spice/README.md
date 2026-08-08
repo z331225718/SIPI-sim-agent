@@ -71,6 +71,11 @@ Python 生产包会优先使用 wheel 中的 `agent-spice-sim`；在源码树开
 认证仍以对应的 promotion manifest 为准；Linux/macOS 不在此处作认证声明。
 服务器所需系统信息、wheelhouse 准备和无网安装命令见 [Native 离线运行清单](docs/offline-native-runtime.md)。
 
+在 SIPI 单仓中，`tools/verify_m5a_agent_spice_wheel.py` 会在临时 staging
+目录将 `native/crates/sipi-circuit` 的 Windows x64 release 可执行文件装入
+兼容 wheel，再从隔离环境安装并执行 native smoke。它只验证源码构建链，
+不生成 promotion manifest，也不作任何平台认证声明。
+
 Rust native 路径刻意聚焦 PI/SI：线性 R/C/L/V/I/E/F/G/H、参数表达式、递归 include、`.lib` section、`.global`、嵌套参数化 `.subckt`、PULSE/PWL、OP/DC/AC，以及带源断点、Trap/变步长 Gear2、器件 LTE、拒步和状态回滚的 TRAN。`VERSION 200600` RFM N-port 可直接进入 OP/DC/AC/TRAN，不依赖 ngspice。二极管、BJT、MOS 的扩面已经冻结，旧 C# 实现仅保留为迁移 oracle，不再是默认产品内核。
 
 当前 5 轮进程级门禁中，2/8/16-port RFM Trap 为 ngspice 的 `0.52/0.51/0.38` 倍，Gear2 为 `0.56/0.56/0.42` 倍；81/289/1089 阶真实 RLC 网格 TRAN 为 `0.69/0.76/0.56` 倍，101 点 AC 为 `0.69/0.80/0.68` 倍，2050 阶梯形网络 AC 约 `1.00` 倍。ngspice 与本机 HSPICE 继续作为显式兼容 oracle，不会被静默调用。
