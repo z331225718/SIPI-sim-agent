@@ -246,6 +246,8 @@ class ExecutionDriver:
             if ref is None:
                 return {"status": "failed", "reason": f"missing producer artifact role {binding.artifact_role}"}
             bound_inputs[binding.name] = dict(ref)
+        for name, ref in analysis.static_inputs.items():
+            bound_inputs[name] = dict(ref)
         run_request = _run_request(analysis, run_id=run_id, analysis_id=analysis_id, attempt_id=attempt_id, project_id=resolved.project["project"]["name"])
         try:
             plans = plan_backend_executions(run_request, engine_registry, bound_inputs=bound_inputs)

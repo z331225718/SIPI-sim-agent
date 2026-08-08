@@ -73,6 +73,7 @@ class ResolvedAnalysis:
     depends_on: tuple[str, ...]
     required: bool
     inputs: tuple[ResolvedInputBinding, ...]
+    static_inputs: Mapping[str, Mapping[str, Any]]
     exports: tuple[Mapping[str, Any], ...]
 
 
@@ -114,6 +115,7 @@ class ResolvedProject:
                         }
                         for binding in analysis.inputs
                     ],
+                    "static_inputs": {name: dict(ref) for name, ref in analysis.static_inputs.items()},
                     "exports": [dict(export) for export in analysis.exports],
                 }
                 for analysis in self.analyses
@@ -180,6 +182,16 @@ def resolve_project(project: ProjectV1, root: str | Path) -> ResolvedProject:
                     ResolvedInputBinding(name=name, **binding)
                     for name, binding in analysis.get("inputs", {}).items()
                 ),
+                static_inputs={
+                    name: _artifact_ref(
+                        project_root,
+                        relative,
+                        content_schema=f"sipi.static-input.v1",
+                        role="static-input",
+                        producer=analysis["id"],
+                    )
+                    for name, relative in analysis.get("static_inputs", {}).items()
+                },
                 exports=tuple(analysis.get("exports", [])),
             )
         )

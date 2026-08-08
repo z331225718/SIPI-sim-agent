@@ -58,6 +58,11 @@
           "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9._-]*$"},
           "additionalProperties": {"$ref": "#/$defs/input_binding"}
         },
+        "static_inputs": {
+          "type": "object",
+          "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9._-]*$"},
+          "additionalProperties": {"$ref": "#/$defs/path"}
+        },
         "exports": {
           "type": "array",
           "items": {"$ref": "#/$defs/export"}

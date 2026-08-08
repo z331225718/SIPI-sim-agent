@@ -8,7 +8,8 @@
       "operation": "circuit.solve.v1",
       "backend_selection": {"mode": "strict", "instance": "agent-spice-process"},
       "payload_schema": "sipi.adapter.agent-spice.rfm-response-request.v1",
-      "payload": {"rfm": "models/channel.rfm", "fft_size": 32768},
+      "payload": {"rfm": "models/channel.rfm", "fft_size": 32768, "dt": 1e-12},
+      "static_inputs": {"rfm": "models/channel.rfm"},
       "exports": [{"role": "rfm-response", "schema": "agent-spice.rfm-response.v1"}]
     },
     {

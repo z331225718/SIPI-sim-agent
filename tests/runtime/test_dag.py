@@ -148,6 +148,7 @@ class CacheIdentityTests(unittest.TestCase):
             depends_on=("upstream",),
             required=True,
             inputs=(ResolvedInputBinding(name="channel", from_analysis="upstream", artifact_role="channel-response", expected_schema="agent-spice.rfm-response.v1"),),
+            static_inputs={},
             exports=(),
         )
 

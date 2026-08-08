@@ -92,6 +92,12 @@ def cache_identity(
             "expected_schema": binding.expected_schema,
             "content_sha256": upstream_hash,
         }
+    for name, ref in analysis.static_inputs.items():
+        inputs[name] = {
+            "source": "static_input",
+            "content_sha256": ref["sha256"],
+            "byte_length": ref["byte_length"],
+        }
     content = {
         "operation": analysis.operation,
         "payload_schema": analysis.payload_schema,
