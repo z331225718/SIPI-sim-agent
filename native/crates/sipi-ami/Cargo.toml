@@ -1,0 +1,10 @@
+[package]
+name = "sipi-ami"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Project-owned clean-room IBIS/AMI parser and host contracts"
+
+[lib]
+name = "sipi_ami"
+path = "src/lib.rs"
