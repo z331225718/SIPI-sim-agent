@@ -31,7 +31,15 @@ from sipi_contracts import BackendExecutionRequestV1, BackendExecutionResultV1, 
 from .attestation import AttestationError, verify_wheel_bundle
 from .capabilities import AdapterCapability, preflight
 from .spi import AdapterContractError, UnsupportedCapabilityError, require_backend_request, validate_pinned_instance
-from .venv import BundleExecutionError, install_wheels_with_dependencies, required_console_script, resolve_console_script
+from .venv import (
+    BundleExecutionError,
+    install_pip_dependencies,
+    install_wheels_with_dependencies,
+    required_console_script,
+    required_pip_dependencies,
+    resolve_console_script,
+    resolve_interpreter,
+)
 
 ALLOWED_ENV = frozenset(
     {
@@ -549,7 +557,11 @@ def execute_backend(
                 try:
                     required_console_script(engine_entry)
                     dependency_wheels = _managed_dependency_wheels(engine_entry, repo_root)
-                    install_wheels_with_dependencies(bundle_path, dependency_wheels, workdir / "engine-venv")
+                    interpreter = resolve_interpreter(engine_entry.get("runtime", {}).get("python_abi"))
+                    install_wheels_with_dependencies(bundle_path, dependency_wheels, workdir / "engine-venv", python=interpreter)
+                    pip_dependencies = required_pip_dependencies(engine_entry)
+                    if pip_dependencies:
+                        install_pip_dependencies(workdir / "engine-venv", pip_dependencies, python=interpreter)
                     entry_target = resolve_console_script(engine_entry, workdir / "engine-venv")
                 except (BundleExecutionError, BundleVerificationError) as error:
                     return assemble_backend_result(

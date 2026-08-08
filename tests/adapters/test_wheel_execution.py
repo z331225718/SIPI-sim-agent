@@ -311,6 +311,17 @@ class WheelExecutionTests(unittest.TestCase):
             self.assertEqual(result["error"]["category"], "EngineUnavailable")
             self.assertIn("dependency wheel hash mismatch", result["error"]["message"])
 
+    def test_malformed_pip_dependencies_extension_is_unsupported_capability(self) -> None:
+        """A non-list sipi.m2.pip-dependencies extension fails closed."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            entry = engine_entry(root)
+            entry["extensions"] = {"sipi.m2.console-script": "fixture-engine", "sipi.m2.pip-dependencies": "not-a-list"}
+            result = execute_backend(backend_request(), entry, root, builder=PyBertNativeAdapter())
+            self.assertEqual(result["status"], "failed")
+            self.assertEqual(result["error"]["category"], "UnsupportedCapability")
+            self.assertIn("pip-dependencies", result["error"]["message"])
+
 
 if __name__ == "__main__":
     unittest.main()
