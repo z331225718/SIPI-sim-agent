@@ -18,7 +18,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from sipi_adapters import PyBertNativeAdapter
+from sipi_adapters import PyBertLinkAdapter
 from sipi_contracts import parse_project
 
 from .driver import DriverOptions, ExecutionDriver
@@ -56,7 +56,7 @@ def build_runner(supervisor: Supervisor, data_dir: str | Path):
             plan = plan_dag(resolved, engine_registry)
             ExecutionDriver(
                 supervisor.registry,
-                {"pybert": PyBertNativeAdapter()},
+                {"pybert": PyBertLinkAdapter()},
                 options=DriverOptions(artifact_root=project_dir),
             ).run(resolved, plan, engine_registry, run_id)
         except Exception as error:  # noqa: BLE001 - runner failure must settle the execution row

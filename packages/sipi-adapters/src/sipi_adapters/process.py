@@ -509,6 +509,8 @@ def _failed_from_error(request: BackendExecutionRequestV1, error: BaseException)
         category = "InvalidRequest"
     elif "missing" in message or "hash mismatch" in message:
         category = "InputNotFound"
+    elif isinstance(error, AdapterContractError):
+        category = "InvalidRequest"
     else:
         category = "EngineUnavailable"
     return assemble_backend_result(request, status="failed", error=platform_error(category, message, cause=cause))

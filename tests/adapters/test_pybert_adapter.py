@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "packages" / "sipi-contracts" / "src"))
@@ -13,9 +15,12 @@ sys.path.insert(0, str(ROOT / "packages" / "sipi-adapters" / "src"))
 from sipi_adapters import (
     BackendOutcome,
     PyBertAgentSpiceResponseAdapter,
+    PyBertLinkAdapter,
     PyBertNativeAdapter,
+    PyBertResolvedChannelAdapter,
     execute_backend,
 )
+from sipi_adapters.pybert import resolve_channel
 from sipi_contracts import parse_backend_execution_request
 
 FAKE_ENGINE = ROOT / "tests" / "adapters" / "fixtures" / "fake_pybert.py"
@@ -73,6 +78,76 @@ def backend_request(**changes):
     return parse_backend_execution_request(value)
 
 
+def resolved_channel_payload(*, policy_change=None, external_change=None, simulation_channel=None):
+    network = {
+        "schema": "sipi.network-tensor.v1",
+        "parameter_kind": "S",
+        "axis": {
+            "schema": "sipi.axis.v1", "kind": "frequency", "unit": "Hz", "dtype": "float64", "length": 2,
+            "monotonicity": "increasing", "uniform": True, "sample_location": "bin_center", "start": 1.0, "step": 1.0,
+            "spectrum": {"sidedness": "single", "has_dc": False, "has_nyquist": False}, "extensions": {},
+        },
+        "port_map": {
+            "schema": "sipi.port-map.v1", "basis": "single_ended", "index_base": 0,
+            "ports": [
+                {"id": "p1", "external_index": 0, "kind": "signal", "polarity": 1, "extensions": {}},
+                {"id": "p2", "external_index": 1, "kind": "signal", "polarity": -1, "extensions": {}},
+            ], "extensions": {},
+        },
+        "data": {
+            "schema": "sipi.artifact-ref.v1", "content_schema": "sipi.network-matrix.v1", "relative_path": "matrix.npy",
+            "mime_type": "application/octet-stream", "sha256": "b" * 64, "byte_length": 128,
+            "producer": "fixture", "role": "data", "extensions": {},
+        },
+        "shape": {"frequency": 2, "output_ports": 2, "input_ports": 2}, "complex_encoding": "interleaved",
+        "dtype": "complex128", "byte_order": "little", "layout": "C",
+        "z0": {"kind": "scalar", "value": 50.0, "extensions": {}}, "wave_definition": "pseudo",
+        "reader": {"source_reader": "scikit-rf", "reader_semantics": "s2p", "extensions": {}}, "extensions": {},
+    }
+    policy = {
+        "schema": "sipi.channel-resolution-policy.v1", "reader_semantics": "scikit-rf s2p",
+        "port_selection": [{"port_id": "p1", "role": "signal", "extensions": {}}, {"port_id": "p2", "role": "signal", "extensions": {}}],
+        "termination": "match", "interpolation": {"kind": "none", "extensions": {}}, "dc": {"method": "none", "extensions": {}},
+        "causality": {"method": "none", "extensions": {}}, "ifft": {"extensions": {}},
+        "normalization": {"fft": "none", "extensions": {}},
+        "output": {"signal_intent": "voltage", "current_to_voltage_sign": 1, "extensions": {}}, "extensions": {},
+    }
+    if policy_change:
+        policy.update(policy_change)
+    impulse = [0.0, 1.0, 0.5]
+    digest = lambda value: hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    external = {
+        "impulse_response_volts_per_second": impulse,
+        "sample_interval_s": 1.0e-12,
+        "source_impedance_ohm": 50.0,
+        "load_impedance_ohm": 50.0,
+        "source_network_hash": digest(network),
+        "policy_hash": digest(policy),
+        "impulse_hash": digest(impulse),
+        "producer": {"tool": "pybert.utility.sparam", "package": "pybert", "version": "0.1.0", "build_id": "fixture"},
+        "semantics": {"transfer_kind": "voltage_transfer", "impulse_units": "V/s", "policy_sign_applied": False},
+        "port_intent": {
+            "selected_port_ids": ["p1", "p2"], "termination": "match", "reference_port": None,
+            "wave_definition": "pseudo", "z0": network["z0"],
+        },
+    }
+    if external_change:
+        external.update(external_change)
+    return {
+        "schema": "sipi.pybert-resolved-channel-request.v1",
+        "simulation_input": {
+            "schema": "pybert.simulation.v1",
+            "source": "fixture",
+            "channel": simulation_channel
+            if simulation_channel is not None
+            else {"kind": "external_model", "value": {"kind": "sipi_resolved_channel", "capability": "adapter_injected_v1"}},
+        },
+        "network": network,
+        "resolution_policy": policy,
+        "external_resolution": external,
+    }
+
+
 class PyBertAdapterTests(unittest.TestCase):
     def install_bundle(self, root: Path) -> None:
         target = root / "bundles" / "fake_pybert.py"
@@ -99,7 +174,7 @@ class PyBertAdapterTests(unittest.TestCase):
                 backend_request(),
                 engine_entry(root),
                 root,
-                builder=PyBertNativeAdapter(),
+                builder=PyBertLinkAdapter(),
                 artifact_root=artifact_root,
             )
             self.assertEqual(result["status"], "succeeded")
@@ -229,7 +304,7 @@ class PyBertAdapterTests(unittest.TestCase):
                 request,
                 engine_entry(root),
                 root,
-                builder=PyBertAgentSpiceResponseAdapter(),
+                builder=PyBertLinkAdapter(),
                 artifact_root=root / "artifacts",
             )
 
@@ -242,6 +317,49 @@ class PyBertAdapterTests(unittest.TestCase):
             result["domain_result"]["platform_rfm_artifacts"]["rfm_response"]["sha256"],
             response_digest,
         )
+
+    def test_resolved_channel_uses_the_sole_resolver_once_and_records_lineage(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.install_bundle(root)
+            request = backend_request(
+                payload_schema="sipi.pybert-resolved-channel-request.v1",
+                payload=resolved_channel_payload(),
+            )
+            with patch("sipi_adapters.pybert.resolve_channel", wraps=resolve_channel) as resolver:
+                result = execute_backend(
+                    request,
+                    engine_entry(root),
+                    root,
+                    builder=PyBertLinkAdapter(),
+                    artifact_root=root / "artifacts",
+                )
+        self.assertEqual(result["status"], "succeeded")
+        self.assertEqual(resolver.call_count, 1)
+        effective_channel = result["domain_result"]["effective_input"]["channel"]
+        self.assertEqual(effective_channel["kind"], "impulse_response")
+        self.assertEqual(list(effective_channel["value"]["impulseResponseVoltsPerSecond"]), [0.0, 1.0, 0.5])
+        lineage = result["domain_result"]["platform_channel_resolution"]
+        self.assertEqual(lineage["external_resolution"]["semantics"]["policy_sign_applied"], False)
+        self.assertEqual(lineage["channel_resolution_report"]["producer"], "sipi-adapters.channel_resolver")
+
+    def test_resolved_channel_rejects_hash_mismatch_sentinel_and_numeric_transforms(self) -> None:
+        cases = [
+            (resolved_channel_payload(external_change={"impulse_hash": "0" * 64}), "InvalidRequest"),
+            (resolved_channel_payload(simulation_channel={"kind": "impulse_response", "value": {}}), "InvalidRequest"),
+            (resolved_channel_payload(external_change={"source_impedance_ohm": -1.0}), "InvalidRequest"),
+            (resolved_channel_payload(external_change={"port_intent": {}}), "InvalidRequest"),
+            (resolved_channel_payload(policy_change={"dc": {"method": "constant", "extensions": {}}}), "UnsupportedCapability"),
+        ]
+        for payload, category in cases:
+            with self.subTest(category=category):
+                with tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory)
+                    self.install_bundle(root)
+                    request = backend_request(payload_schema="sipi.pybert-resolved-channel-request.v1", payload=payload)
+                    result = execute_backend(request, engine_entry(root), root, builder=PyBertLinkAdapter())
+                self.assertEqual(result["status"], "failed")
+                self.assertEqual(result["error"]["category"], category)
 
 
 if __name__ == "__main__":
