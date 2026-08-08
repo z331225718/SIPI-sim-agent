@@ -72,6 +72,10 @@ fn candidate_host_transports_raw_abi_buffers_and_fails_closed() {
     )
     .expect("valid result JSON");
     assert_eq!(result["schema"], "agent-spice.ami-host-result.v1");
+    assert_eq!(
+        result["requestSha256"],
+        sha256(&fs::read(&request_path).unwrap())
+    );
     assert_eq!(result["candidate"]["mode"], "rust-host-candidate");
     assert_eq!(result["candidate"]["primaryColumn"], 0);
     assert_eq!(result["lifecycle"]["initSucceeded"], true);

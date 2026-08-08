@@ -37,11 +37,11 @@ equalization, clock recovery, unit conversion, or sign-conversion controls.
 
 ## Result Contract
 
-`result.json` uses `agent-spice.ami-host-result.v1` and records candidate
-build/executable identity, model identities, parsed metadata, lifecycle
-outcomes, and raw ABI strings. Init impulse, GetWave waveform, and returned
-clock times are separate exact `f64le` sidecars with hashes and byte lengths.
-No raw array crosses JSON serialization.
+`result.json` uses `agent-spice.ami-host-result.v1` and records the SHA-256 of
+the exact request manifest, candidate build/executable identity, model
+identities, parsed metadata, lifecycle outcomes, and raw ABI strings. Init
+impulse, GetWave waveform, and returned clock times are separate exact `f64le`
+sidecars with hashes and byte lengths. No raw array crosses JSON serialization.
 
 The transport validates schema, metadata agreement, file and sidecar hashes,
 byte lengths, sidecar alignment, finite values, mode/capability agreement, and

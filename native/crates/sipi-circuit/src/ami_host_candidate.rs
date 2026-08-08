@@ -61,6 +61,7 @@ pub(super) fn run(mut arguments: impl Iterator<Item = OsString>) -> Result<(), S
             request_path.display()
         )
     })?;
+    let request_sha256 = sha256_bytes(&request_bytes);
     let request: CandidateRequest = serde_json::from_slice(&request_bytes)
         .map_err(|error| format!("invalid candidate request: {error}"))?;
     request.validate()?;
@@ -70,7 +71,7 @@ pub(super) fn run(mut arguments: impl Iterator<Item = OsString>) -> Result<(), S
             request_path.display()
         )
     })?;
-    let completed = execute(&request, request_root)?;
+    let completed = execute(&request, request_root, request_sha256)?;
     write_result(&output_dir, &completed)
 }
 
@@ -163,6 +164,7 @@ struct GetWaveInput {
 #[serde(rename_all = "camelCase")]
 struct CandidateResult {
     schema: &'static str,
+    request_sha256: String,
     mode: CandidateModeOutput,
     candidate: CandidateIdentity,
     model: ModelIdentity,
@@ -267,7 +269,11 @@ struct CompletedRun {
     sidecars: Vec<PendingSidecar>,
 }
 
-fn execute(request: &CandidateRequest, request_root: &Path) -> Result<CompletedRun, String> {
+fn execute(
+    request: &CandidateRequest,
+    request_root: &Path,
+    request_sha256: String,
+) -> Result<CompletedRun, String> {
     let ibis = read_file(request_root, &request.model.ibis, "IBIS model")?;
     let ami = read_file(request_root, &request.model.ami, "AMI parameter file")?;
     let dll = resolve_input_path(request_root, &request.model.dll.path, "AMI DLL")?;
@@ -387,6 +393,7 @@ fn execute(request: &CandidateRequest, request_root: &Path) -> Result<CompletedR
     Ok(CompletedRun {
         result: CandidateResult {
             schema: RESULT_SCHEMA,
+            request_sha256,
             mode: request.mode.into(),
             candidate,
             model,
