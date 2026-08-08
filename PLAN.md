@@ -234,7 +234,7 @@ engine.lock
 
 ## 7. M3：Platform MVP 与纵向切片
 
-> 状态（2026-08-08）：平台主体完成并经逐片独立审计（证据 `docs/baselines/audits/2026-08-07-m3.md`）；M3-11 hard enforcement 已实现并经 Windows 本机认证（`b7e2edc`）；**M3-07b 真实引擎示例已完成**（四切片各独立提交 + OMP 审计 0 P1/0 P2）；**M3-11 G2b Windows 认证已完成**（`a81a1ec`：G2b 故障 fixture 证据 + certified 晋级工具，仅 Windows x86_64 managed worker 可广告 hard enforcement，OMP 审计 0 P1/0 P2）。M3-08b 剩余 compare/report 数值等价接线待 M5B-03 拓扑决策；Linux/macOS 认证按用户决策暂缓。
+> 状态（2026-08-08）：**M3 完成（checkpoint accepted）**。平台主体完成并经逐片独立审计（证据 `docs/baselines/audits/2026-08-07-m3.md`）；M3-11 hard enforcement 已实现并经 Windows 本机认证（`b7e2edc`）；M3-07b 真实引擎示例完成（四切片各独立提交 + OMP 审计 0 P1/0 P2）；M3-11 G2b Windows 认证完成（`a81a1ec`，仅 Windows x86_64 managed worker 可广告 hard enforcement，OMP 审计 0 P1/0 P2）。**M3-08b（RFM→PyBERT 数值等价接线）依赖 M5B-03 拓扑决策（S2P/current sign/FFT policy），已移至 M5 之后归入 M5B-03 验收**，不阻塞 M3 完成。Linux/macOS 认证按用户决策暂缓，不属于本机可完成范围。
 
 ### 7.1 目标
 
@@ -251,7 +251,8 @@ engine.lock
 | M3-05 | 完成 `validate/run/status/cancel/retry` | RUN_ID 始终指 project execution；手工 retry 返回新 RUN_ID；analysis/attempt 用显式选项，旧终态不可 reopen |
 | M3-06 | 完成 `compare/report` | 领域 comparator 插件化，统一 provenance 摘要 |
 | M3-07 | 建三引擎示例项目 | Circuit、Channel、COM 各一个可复现 fixture |
-| M3-08 | 复现 RFM -> PyBERT 现有桥接 | 使用显式 DAG binding、`agent-spice.rfm-response.v1` consumer 和 sign golden |
+| M3-08a | 复现 RFM -> PyBERT 桥接的 DAG 绑定机制 | 使用显式 DAG binding、`agent-spice.rfm-response.v1` consumer 和 sign golden（机制层，stub 可执行；真实引擎已在 M3-07b 接入） |
+| M3-08b | ~~RFM -> PyBERT 数值等价接线~~ 已移至 M5B-03 | 数值等价（current sign/端口/FFT mapping/compare report）依赖 M5B-03 拓扑决策，随 M5 验收，不阻塞 M3 完成 |
 | M3-09 | 端到端并发与失败注入 | 双 supervisor、提交重放、自动/手工 retry、终态不 reopen、required/optional cancel 聚合及 terminal CAS、四层目录、compare 双 execution、publish crash、restart/reap/cache |
 | M3-10 | 写用户迁移指南 | 旧命令到 `sipi` operation 的映射 |
 | M3-11 | 实现资源 enforcement matrix | Windows/Linux/macOS 对 wall time、memory、CPU、process、artifact bytes 逐项认证；hard 限制走 managed worker，无法强制则预检失败 |
@@ -346,7 +347,7 @@ M4 完成即达到 `SPEC.md` 的 Shared Data MVP。
 | --- | --- | --- |
 | M5B-01 | 继续现有 Task 12/13 | 完整 result parity、RSS、nightly、故障演练；按 2026-08-07 收编结论将 Phase 1-3（native Web result contract parity → Rust 成默认 → web 指标改接 native）纳入本任务验收，配套执行路线见 Py-bert-agent 仓库 `docs/superpowers/plans/2026-08-07-pybert-core-rust-migration.md` |
 | M5B-02 | 解锁 `auto` 前完成 strict NRZ/RLGC 门禁 | 当前 blocked 状态不得被平台绕过；Py-bert-agent 的 native parity gate（`native_auto_parity_gate`，名称定义在 Py-bert-agent 迁移文档）对已覆盖 profile 必须返回 `approved`，作为引擎侧前置；本 plan 不新增平台门禁语义 |
-| M5B-03 | 消费 M4 channel resolver 并做 Link parity | 用同一 production resolver 锁 pulse、termination、port intent 和 FFT scaling；禁止在 `sipi-link` 再写一套 S2P/S4P 转换 |
+| M5B-03 | 消费 M4 channel resolver 并做 Link parity（含原 M3-08b 数值等价接线） | 用同一 production resolver 锁 pulse、termination、port intent 和 FFT scaling；禁止在 `sipi-link` 再写一套 S2P/S4P 转换。**验收含原 M3-08b：RFM→PyBERT 数值等价（current sign/端口/FFT mapping + compare report/provenance）**——RFM 频域响应→impulse 转换经 Python 外部边界（`utility/sparam.py`/pybert `agent_spice_channel`）产出 DTO，平台不写第二套 resolver |
 | M5B-04 | 完整 host-driven AMI contract | DLL 仍留 Python host，补 clock/lock/cancel 跨平台 fixture |
 | M5B-05 | GUI/optimizer 后端统一另行门禁 | 不阻塞 core 迁入，但不能宣称 GUI native 已完成 |
 | M5B-06 | 修改现有 Task 14 目标 | 最终目的地从 Agent-Spice 改为 `SIPI-sim-agent`，避免二次搬迁；合并时 `pybert-core` 作为 BSD 派生翻译带 attribution/NOTICE 收编，`native/*/Cargo.toml` 的 MIT 声明与 BSD 派生来源的一致性由用户/法务决策 |
