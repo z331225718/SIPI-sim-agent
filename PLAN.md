@@ -350,9 +350,15 @@ anchor and baseline tag mapping; 371 retained files are byte-equivalent to the
 source anchor and are all under `engines/agent-spice`. The policy excludes
 `third_party`, external-reference assets, and local native binaries. OMP
 (`msg_681a317f48a4`, `msg_0eb999b37d12`) and the independent review agent
-(`msg_668804ab5a9b`, `msg_094ab60aab3c`) both found 0 P1 / 0 P2. Rust
-fmt/clippy/test gates and `tools/run_all_tests.py` (55/55) passed. M5A-07
-(history-preserving move to `native/crates/sipi-circuit`) is next.
+(`msg_668804ab5a9b`, `msg_094ab60aab3c`) both found 0 P1 / 0 P2. M5A-07
+commit `2bf67ae` then moved the 22-file Rust crate by Git history preservation
+to `native/crates/sipi-circuit`, retaining its package/library/binary identity
+and leaving no tracked duplicate. Its verifier permits only the two fixture-path
+adjustments required by the new manifest directory, while its baseline-tag
+artifact check confirms equal build-info and normalized PE SHA-256. OMP
+(`msg_cf390620a45e`) and the independent review agent (`msg_9fc7ca8b8277`)
+both found 0 P1 / 0 P2; Rust fmt/clippy/test gates and
+`tools/run_all_tests.py` (56/56) passed. M5A-08 is next.
 
 ### 9.3 M5B：PyBERT Link
 
