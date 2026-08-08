@@ -9,5 +9,7 @@ small AMI S-expression parameter-tree reader. The IBIS scanner requires
 `[IBIS Ver]` as the first keyword and preserves keyword values, data records,
 and physical source lines. The AMI reader preserves named parameter metadata
 and validates the host-facing `AMI_Version`, `Init_Returns_Impulse`, and
-`GetWave_Exists` value types. It is not a claim of complete IBIS or AMI
-specification coverage, nor a vendor DLL or cross-platform certification claim.
+`GetWave_Exists` value types. It also defines an explicit, non-numerical
+`AMI_Init` / `AMI_GetWave` waveform contract for a future DLL host. It is not a
+claim of complete IBIS or AMI specification coverage, nor a vendor DLL or
+cross-platform certification claim.
