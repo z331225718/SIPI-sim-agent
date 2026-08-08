@@ -31,7 +31,7 @@ from sipi_contracts import BackendExecutionRequestV1, BackendExecutionResultV1, 
 from .attestation import AttestationError, verify_wheel_bundle
 from .capabilities import AdapterCapability, preflight
 from .spi import AdapterContractError, UnsupportedCapabilityError, require_backend_request, validate_pinned_instance
-from .venv import BundleExecutionError, install_wheel, required_console_script, resolve_console_script
+from .venv import BundleExecutionError, install_wheels_with_dependencies, required_console_script, resolve_console_script
 
 ALLOWED_ENV = frozenset(
     {
@@ -347,6 +347,35 @@ def verify_engine_bundle(engine_entry: Mapping[str, Any], repo_root: Path) -> Pa
     return candidate
 
 
+def _managed_dependency_wheels(engine_entry: Mapping[str, Any], repo_root: Path) -> tuple[Path, ...]:
+    """Resolve and verify managed dependency wheels declared in bundle_manifest.
+
+    Every ``role == "dependency"`` manifest entry is resolved relative to the
+    repository root, must point at a real ``.whl`` file, and must match its
+    pinned sha256/byte_length.  A missing or mismatched dependency fails closed
+    before any engine process is started.
+    """
+    manifest = engine_entry.get("bundle_manifest")
+    if manifest is None:
+        return ()
+    wheels: list[Path] = []
+    for item in manifest.get("files", ()):
+        if item.get("role") != "dependency":
+            continue
+        relative = item.get("relative_path")
+        if not isinstance(relative, str) or not relative.endswith(".whl"):
+            raise BundleVerificationError("managed dependency wheel requires a relative .whl path")
+        candidate = (repo_root / relative).resolve()
+        if not candidate.is_relative_to(repo_root):
+            raise BundleVerificationError(f"dependency wheel escapes the repository root: {relative}")
+        if not candidate.is_file():
+            raise BundleVerificationError(f"managed dependency wheel is missing: {candidate}")
+        if _sha256(candidate) != item.get("sha256") or candidate.stat().st_size != item.get("byte_length"):
+            raise BundleVerificationError(f"managed dependency wheel hash mismatch: {candidate}")
+        wheels.append(candidate)
+    return tuple(wheels)
+
+
 def materialize_bound_inputs(request: BackendExecutionRequestV1, repo_root: Path, workdir: Path) -> None:
     for name, artifact in request["bound_inputs"].items():
         relative = Path(artifact["relative_path"])
@@ -517,9 +546,10 @@ def execute_backend(
             if bundle_path.suffix.lower() == ".whl":
                 try:
                     required_console_script(engine_entry)
-                    install_wheel(bundle_path, workdir / "engine-venv")
+                    dependency_wheels = _managed_dependency_wheels(engine_entry, repo_root)
+                    install_wheels_with_dependencies(bundle_path, dependency_wheels, workdir / "engine-venv")
                     entry_target = resolve_console_script(engine_entry, workdir / "engine-venv")
-                except BundleExecutionError as error:
+                except (BundleExecutionError, BundleVerificationError) as error:
                     return assemble_backend_result(
                         request,
                         status="failed",

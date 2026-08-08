@@ -1,9 +1,10 @@
 """Isolated-venv execution of attested wheel bundles (M2-02b/M2-09 follow-up).
 
 An attested wheel is installed with ``--no-deps`` into a per-run venv; third
-party dependencies must be supplied by a managed lock in a later slice.  The
-engine.lock extension ``sipi.m2.console-script`` names the console script that
-the adapter invokes.
+party dependencies are supplied by the managed dependency lock (``bundle_manifest``
+entries with ``role == "dependency"``), each pinned by sha256, so resolution never
+hits a floating index.  The engine.lock extension ``sipi.m2.console-script`` names
+the console script that the adapter invokes.
 """
 
 from __future__ import annotations
@@ -11,7 +12,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -41,16 +42,34 @@ def install_wheel(wheel_path: Path, venv_dir: Path, *, python: str = sys.executa
     created = subprocess.run([python, "-m", "venv", str(venv_dir)], capture_output=True, text=True, env=_clean_env())
     if created.returncode != 0:
         raise BundleExecutionError(f"venv creation failed: {created.stderr[-500:]}")
-    venv_python_path = venv_python(venv_dir)
-    installed = subprocess.run(
-        [str(venv_python_path), "-m", "pip", "install", "--no-deps", "--quiet", str(wheel_path)],
-        capture_output=True,
-        text=True,
-        env=_clean_env(),
-    )
-    if installed.returncode != 0:
-        raise BundleExecutionError(f"wheel install failed: {installed.stderr[-500:]}")
-    return venv_python_path
+    _install_into_venv(venv_python(venv_dir), (wheel_path,))
+    return venv_python(venv_dir)
+
+
+def install_wheels_with_dependencies(wheel_path: Path, dependency_wheels: Sequence[Path], venv_dir: Path, *, python: str = sys.executable) -> Path:
+    """Create the venv and install the primary wheel plus every managed dependency wheel.
+
+    All wheels are installed with ``--no-deps``; the dependency set is the
+    managed lock itself (each wheel already verified against its pinned sha256),
+    so no wheel is resolved from a floating index.
+    """
+    created = subprocess.run([python, "-m", "venv", str(venv_dir)], capture_output=True, text=True, env=_clean_env())
+    if created.returncode != 0:
+        raise BundleExecutionError(f"venv creation failed: {created.stderr[-500:]}")
+    _install_into_venv(venv_python(venv_dir), (wheel_path, *dependency_wheels))
+    return venv_python(venv_dir)
+
+
+def _install_into_venv(venv_python_path: Path, wheel_paths: Sequence[Path]) -> None:
+    for wheel_path in wheel_paths:
+        installed = subprocess.run(
+            [str(venv_python_path), "-m", "pip", "install", "--no-deps", "--quiet", str(wheel_path)],
+            capture_output=True,
+            text=True,
+            env=_clean_env(),
+        )
+        if installed.returncode != 0:
+            raise BundleExecutionError(f"wheel install failed: {installed.stderr[-500:]}")
 
 
 def required_console_script(engine_entry: Mapping[str, Any]) -> str:

@@ -86,6 +86,18 @@ def verify_wheel_bundle(engine_entry: Mapping[str, Any], repo_root: Path) -> Whe
             for item in manifest["files"]:
                 relative = item["relative_path"]
                 _validate_archive_name(relative)
+                if item.get("role") == "dependency":
+                    dependency = (repo_root / relative).resolve()
+                    if not dependency.is_relative_to(repo_root):
+                        raise AttestationError(f"dependency wheel escapes the repository root: {relative}")
+                    if not dependency.is_file():
+                        raise AttestationError(f"dependency wheel is missing: {dependency}")
+                    if dependency.suffix.lower() != ".whl":
+                        raise AttestationError(f"dependency entry is not a wheel: {relative}")
+                    if _sha256(dependency) != item["sha256"] or dependency.stat().st_size != item["byte_length"]:
+                        raise AttestationError(f"dependency wheel hash mismatch: {relative}")
+                    verified.append(relative)
+                    continue
                 if item["byte_length"] > MAX_ARCHIVE_MEMBER_BYTES:
                     raise AttestationError(f"manifest member exceeds size cap: {relative}")
                 if relative not in names:

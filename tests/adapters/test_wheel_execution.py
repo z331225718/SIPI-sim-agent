@@ -222,6 +222,95 @@ class WheelExecutionTests(unittest.TestCase):
             self.assertEqual(result["status"], "succeeded")
             self.assertEqual(result["domain_result"]["effective_input"]["source"], "fixture")
 
+    def test_managed_dependency_wheel_is_installed_into_the_same_venv(self) -> None:
+        """A bundle_manifest role=dependency wheel is installed beside the primary
+        wheel and importable from the engine process (managed dependency lock)."""
+        dep_files = {
+            "fixture_dep/__init__.py": (
+                "VALUE = 42\n"
+            ).encode("utf-8"),
+            "fixture_dep-0.1.0.dist-info/METADATA": b"Metadata-Version: 2.1\nName: fixture-dep\nVersion: 0.1.0\n",
+            "fixture_dep-0.1.0.dist-info/WHEEL": b"Wheel-Version: 1.0\nGenerator: fixture\nRoot-Is-Purelib: true\nTag: py3-none-any\n",
+            "fixture_dep-0.1.0.dist-info/RECORD": b"fixture_dep/__init__.py,,\nfixture_dep-0.1.0.dist-info/METADATA,,\nfixture_dep-0.1.0.dist-info/WHEEL,,\nfixture_dep-0.1.0.dist-info/RECORD,,\n",
+        }
+        engine_source = (
+            "import argparse, json, sys\n"
+            "from pathlib import Path\n"
+            "def main():\n"
+            "    from fixture_dep import VALUE\n"
+            "    argv = sys.argv[1:]\n"
+            "    if argv and argv[0] == 'sim-native':\n"
+            "        argv = argv[1:]\n"
+            "    parser = argparse.ArgumentParser()\n"
+            "    parser.add_argument('input_file')\n"
+            "    parser.add_argument('--output-dir', required=True)\n"
+            "    args = parser.parse_args(argv)\n"
+            "    out = Path(args.output_dir)\n"
+            "    out.mkdir(parents=True, exist_ok=True)\n"
+            "    sim = json.loads(Path(args.input_file).read_text(encoding='utf-8'))\n"
+            "    sim['dep_value'] = VALUE\n"
+            "    (out / 'meta.json').write_text(json.dumps({'schema': 'pybert.native-cli-result.v1', 'effective_input': sim, 'arrays_file': 'arrays.npz'}))\n"
+            "    (out / 'arrays.npz').write_bytes(b'wheel-npz')\n"
+            "    return 0\n"
+        ).encode("utf-8")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            dep_wheel = root / "bundles" / "fixture_dep-0.1.0-py3-none-any.whl"
+            dep_wheel.parent.mkdir(parents=True, exist_ok=True)
+            with zipfile.ZipFile(dep_wheel, "w") as archive:
+                for name, data in dep_files.items():
+                    archive.writestr(name, data)
+            entry = engine_entry(root, files=wheel_files(engine_source=engine_source))
+            manifest_files = entry["bundle_manifest"]["files"]
+            manifest_files.append(
+                {
+                    "relative_path": "bundles/fixture_dep-0.1.0-py3-none-any.whl",
+                    "role": "dependency",
+                    "sha256": sha256(dep_wheel),
+                    "byte_length": dep_wheel.stat().st_size,
+                }
+            )
+            result = execute_backend(
+                backend_request(),
+                entry,
+                root,
+                builder=PyBertNativeAdapter(),
+                artifact_root=root / "artifacts",
+            )
+            self.assertEqual(result["status"], "succeeded")
+            self.assertEqual(result["domain_result"]["effective_input"]["dep_value"], 42)
+
+    def test_managed_dependency_wheel_hash_mismatch_fails_closed(self) -> None:
+        """A dependency wheel whose pinned hash does not match the actual file is
+        rejected before any engine process is started."""
+        dep_files = {
+            "fixture_dep/__init__.py": b"VALUE = 1\n",
+            "fixture_dep-0.1.0.dist-info/METADATA": b"Metadata-Version: 2.1\nName: fixture-dep\nVersion: 0.1.0\n",
+            "fixture_dep-0.1.0.dist-info/WHEEL": b"Wheel-Version: 1.0\nGenerator: fixture\nRoot-Is-Purelib: true\nTag: py3-none-any\n",
+            "fixture_dep-0.1.0.dist-info/RECORD": b"fixture_dep/__init__.py,,\nfixture_dep-0.1.0.dist-info/METADATA,,\nfixture_dep-0.1.0.dist-info/WHEEL,,\nfixture_dep-0.1.0.dist-info/RECORD,,\n",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            dep_wheel = root / "bundles" / "fixture_dep-0.1.0-py3-none-any.whl"
+            dep_wheel.parent.mkdir(parents=True, exist_ok=True)
+            with zipfile.ZipFile(dep_wheel, "w") as archive:
+                for name, data in dep_files.items():
+                    archive.writestr(name, data)
+            entry = engine_entry(root)
+            manifest_files = entry["bundle_manifest"]["files"]
+            manifest_files.append(
+                {
+                    "relative_path": "bundles/fixture_dep-0.1.0-py3-none-any.whl",
+                    "role": "dependency",
+                    "sha256": "f" * 64,
+                    "byte_length": dep_wheel.stat().st_size,
+                }
+            )
+            result = execute_backend(backend_request(), entry, root, builder=PyBertNativeAdapter())
+            self.assertEqual(result["status"], "failed")
+            self.assertEqual(result["error"]["category"], "EngineUnavailable")
+            self.assertIn("dependency wheel hash mismatch", result["error"]["message"])
+
 
 if __name__ == "__main__":
     unittest.main()
