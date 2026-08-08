@@ -144,7 +144,7 @@ def required_pip_dependencies(engine_entry: Mapping[str, Any]) -> tuple[str, ...
     dependencies = engine_entry.get("extensions", {}).get("sipi.m2.pip-dependencies")
     if dependencies is None:
         return ()
-    if not isinstance(dependencies, list) or not all(isinstance(item, str) and item for item in dependencies):
+    if not isinstance(dependencies, (list, tuple)) or not all(isinstance(item, str) and item for item in dependencies):
         raise BundleExecutionError("sipi.m2.pip-dependencies must be a list of requirement strings")
     return tuple(dependencies)
 
