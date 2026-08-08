@@ -409,8 +409,14 @@ impulse contract, closes all failed initialization handles, and guards active
 handles in `Drop`. OMP (`msg_d27b5d34edd4`) and the independent review agent
 (`msg_30760add2b23`) both found 0 P1 / 0 P2; Rust fmt/clippy/test (15/15) and
 `tools/run_all_tests.py` (56/56) passed. **M5A-08 is complete; M5A-09
-clean-room implementation is in progress, with the optional `AMI_GetWave`
-adapter and in-process `agent-spice-sim` use still required.**
+clean-room implementation now includes the optional `AMI_GetWave` adapter:
+metadata/state/sample-interval preconditions fail closed, host-owned clocks
+use the public `-1` terminator, and post-FFI failure closes the model instead
+of reusing uncertain state. OMP (`msg_aa1d01cf6fd9`) and the independent review
+agent (`msg_4536a19ecac8`) both found 0 P1 / 0 P2; Rust fmt/clippy/test (17/17)
+and `tools/run_all_tests.py` (56/56) passed. **M5A-09's clean-room parser,
+semantic contract, and Init/GetWave/Close host are present; in-process
+`agent-spice-sim` use and the M5A acceptance gate remain.**
 
 ### 9.3 M5B：PyBERT Link
 
