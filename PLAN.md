@@ -402,9 +402,15 @@ entry-point resolution for `AMI_Init`, `AMI_GetWave`, and `AMI_Close`.
 vendor DLL and invokes no vendor model yet. OMP (`msg_6aaefa1e8387`) and the
 independent review agent (`msg_db90ed6d7019`) both found 0 P1 / 0 P2; Rust
 fmt/clippy/test (13/13) and `tools/run_all_tests.py` (56/56) passed.
-**M5A-08 is complete; M5A-09 clean-room implementation is in progress, with
-the owned `AMI_Init`/`AMI_GetWave` invocation lifecycle and in-process
-`agent-spice-sim` use still required.**
+M5A-09f then introduced owned `AMI_Init` invocation and model-memory lifecycle
+management: the host validates bit time and parameter strings before FFI,
+copies model-owned output strings without freeing them, validates the returned
+impulse contract, closes all failed initialization handles, and guards active
+handles in `Drop`. OMP (`msg_d27b5d34edd4`) and the independent review agent
+(`msg_30760add2b23`) both found 0 P1 / 0 P2; Rust fmt/clippy/test (15/15) and
+`tools/run_all_tests.py` (56/56) passed. **M5A-08 is complete; M5A-09
+clean-room implementation is in progress, with the optional `AMI_GetWave`
+adapter and in-process `agent-spice-sim` use still required.**
 
 ### 9.3 M5B：PyBERT Link
 
