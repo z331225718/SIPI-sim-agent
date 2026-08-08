@@ -266,7 +266,7 @@ def _error_count_check(reference_owner: Any, native_metrics: dict[str, Any]) -> 
 
 def verify(pybert_root: Path, s2p_path: Path, source_commit: str) -> dict[str, Any]:
     source_root = pybert_root.resolve()
-    s2p_path = s2p_path.resolve()
+    s2p_path = (s2p_path if s2p_path.is_absolute() else source_root / s2p_path).resolve()
     if not s2p_path.is_file() or not s2p_path.is_relative_to(source_root):
         raise ValueError("--s2p must be a tracked file under --pybert-root")
     sys.path.insert(0, str(source_root / "src"))
