@@ -1,0 +1,58 @@
+{
+  "schema": "sipi.migration-move.v1",
+  "id": "m5a-agent-spice-move",
+  "source": {
+    "commit": "c89bb906108c39d2d1f6742d7a3c9672580b9209",
+    "filtered_commit": "b96f0aa19ec1d0800c76550d3552693fcbc3026f",
+    "path": "engines/agent-spice/native/agent-spice-sim",
+    "tree": "273af568660c867f457366abcb43ed11163d637d"
+  },
+  "target": {
+    "path": "native/crates/sipi-circuit",
+    "tree": "eb36e9cc18e9eca66f4f8f925de0bee784f33f10",
+    "cargo_package": "agent-spice-sim",
+    "cargo_library": "agent_spice_sim",
+    "binary": "agent-spice-sim",
+    "path_adjustments": [
+      {
+        "path": "tests/determinism.rs",
+        "reason": "CARGO_MANIFEST_DIR fixture traversal now starts at native/crates/sipi-circuit"
+      },
+      {
+        "path": "tests/numeric_parity.rs",
+        "reason": "CARGO_MANIFEST_DIR fixture traversal now starts at native/crates/sipi-circuit"
+      }
+    ]
+  },
+  "baseline_tag": {
+    "name": "sipi-baseline/agent-spice/20260807.2",
+    "source_commit": "80f66a384b1b4b52b91390dc40f12a7af6cf0e2a",
+    "filtered_commit": "b5fc9e178073ca65296a6d5bbbbdd8118298e9ad",
+    "artifact_equivalence": {
+      "toolchain": "rustup 1.97.0-x86_64-pc-windows-msvc",
+      "environment": {
+        "AGENT_SPICE_GIT_REVISION": "80f66a384b1b4b52b91390dc40f12a7af6cf0e2a",
+        "AGENT_SPICE_GIT_DIRTY": "false"
+      },
+      "comparison": "normalized_pe_sha256_and_build_info",
+      "normalization": [
+        "IMAGE_FILE_HEADER.TimeDateStamp",
+        "IMAGE_DEBUG_DIRECTORY.TimeDateStamp",
+        "CodeView RSDS GUID"
+      ],
+      "raw_before_sha256": "455726C4490B04E2AD24C911D981C6B80A149D5F5C949E229277339511505069",
+      "raw_after_sha256": "05D1F2ACE00A37150F1D250A3CFF6EFB277216864950E291ECDBF124C57075A4",
+      "normalized_sha256": "6C76276C73D54B07CBAAD9493EA0CC09D4A48FF166ABA724A3BD670128B708C8",
+      "build_info": {
+        "crateName": "agent-spice-sim",
+        "crateVersion": "0.1.0",
+        "gitDirty": false,
+        "gitRevision": "80f66a384b1b4b52b91390dc40f12a7af6cf0e2a",
+        "profile": "release",
+        "schema": "agent-spice.build-info.v1",
+        "target": "x86_64-pc-windows-msvc"
+      }
+    }
+  },
+  "retirement_state": "legacy source path removed from the target repository; external Agent-Spice source remains read-only reference until M5A exit gates"
+}

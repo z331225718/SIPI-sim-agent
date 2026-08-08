@@ -14,7 +14,8 @@ fn fixture(rel: &str) -> String {
 
 #[test]
 fn same_deck_runs_are_bit_identical() -> Result<()> {
-    let path = fixture("../../native/AgentSpice.Engine/fixtures/divider.cir");
+    let path =
+        fixture("../../../engines/agent-spice/native/AgentSpice.Engine/fixtures/divider.cir");
     let deck_a = Deck::parse_file(Path::new(&path), None)?;
     let mut observer_a = NullObserver;
     let first = run_with_observer(&deck_a, None, &mut observer_a, true)?;

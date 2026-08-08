@@ -19,7 +19,7 @@ fn fixture(rel: &str) -> String {
 fn divider_op_matches_oracle() -> Result<()> {
     let deck = Deck::parse_file(
         Path::new(&fixture(
-            "../../native/AgentSpice.Engine/fixtures/divider.cir",
+            "../../../engines/agent-spice/native/AgentSpice.Engine/fixtures/divider.cir",
         )),
         None,
     )?;
