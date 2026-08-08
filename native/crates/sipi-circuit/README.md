@@ -36,18 +36,18 @@ Current executable slice:
   `run-hspice`; simulation progress is printed to stderr and waveform CSV rows
   are flushed while the selected analysis is still running.
 
-Build and run on Windows:
+从仓库根目录在 Windows 构建并运行：
 
 ```powershell
-tools\build-rust-engine.ps1
-native\agent-spice-sim\target\release\agent-spice-sim.exe tests\fixtures\hspice\rust_linear_pi.sp
-native\agent-spice-sim\target\release\agent-spice-sim.exe `
-  native\AgentSpice.Engine\fixtures\rfm_tran.cir `
-  --rfm native\AgentSpice.Engine\fixtures\one_port.rfm `
+cargo build --locked --release --manifest-path .\native\crates\sipi-circuit\Cargo.toml
+.\native\crates\sipi-circuit\target\release\agent-spice-sim.exe .\engines\agent-spice\tests\fixtures\hspice\rust_linear_pi.sp
+.\native\crates\sipi-circuit\target\release\agent-spice-sim.exe `
+  .\engines\agent-spice\native\AgentSpice.Engine\fixtures\rfm_tran.cir `
+  --rfm .\engines\agent-spice\native\AgentSpice.Engine\fixtures\one_port.rfm `
   --output-json native-result.json `
   --waveform-csv waveform.csv
 
-native\agent-spice-sim\target\release\agent-spice-sim.exe legacy.sp `
+.\native\crates\sipi-circuit\target\release\agent-spice-sim.exe legacy.sp `
   --audit-json native_compatibility.json
 ```
 
@@ -67,24 +67,10 @@ on the target machine.
 Netlist parse and parameter errors include the absolute source path, physical line number,
 original statement, and the expanded statement when a subcircuit rewrite changed it.
 
-Run the local HSPICE compatibility gate:
+Run the local Rust test gate:
 
 ```powershell
-python scripts\compare_rust_hspice_pi.py `
-  --rust-engine native\agent-spice-sim\target\release\agent-spice-sim.exe `
-  --output artifacts\rust-hspice-linear-pi
-
-python scripts\compare_rust_hspice_measure_events.py `
-  --rust-engine native\agent-spice-sim\target\release\agent-spice-sim.exe `
-  --output artifacts\rust-hspice-measure-events
-
-python scripts\compare_rust_hspice_rfm.py `
-  --rust-engine native\agent-spice-sim\target\release\agent-spice-sim.exe `
-  --output artifacts\rust-hspice-rfm-final
-
-python scripts\benchmark_native_hspice_rfm.py `
-  --native-engine native\agent-spice-sim\target\release\agent-spice-sim.exe `
-  --output artifacts\native-hspice-rfm-performance
+cargo test --locked --manifest-path .\native\crates\sipi-circuit\Cargo.toml
 ```
 
 Run an ordinary HSPICE-style PI deck through the project-owned engine:

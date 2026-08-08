@@ -11,13 +11,14 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+WORKSPACE_ROOT = ROOT.parents[1]
 
 
 def rust_engine() -> Path | None:
     """Path to the built Rust engine executable, or ``None``."""
     candidates = (
-        ROOT / "native" / "agent-spice-sim" / "target" / "release" / "agent-spice-sim.exe",
-        ROOT / "native" / "agent-spice-sim" / "target" / "release" / "agent-spice-sim",
+        WORKSPACE_ROOT / "native" / "crates" / "sipi-circuit" / "target" / "release" / "agent-spice-sim.exe",
+        WORKSPACE_ROOT / "native" / "crates" / "sipi-circuit" / "target" / "release" / "agent-spice-sim",
     )
     for candidate in candidates:
         if candidate.is_file():

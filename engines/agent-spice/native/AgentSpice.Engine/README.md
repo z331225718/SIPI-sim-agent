@@ -1,6 +1,6 @@
 # Agent-Spice Engine
 
-> 迁移说明（2026-07-16）：本目录中的 C# 引擎已经冻结为算法迁移与器件级差分 oracle。PI/SI 产品主线、默认 CLI、RFM 执行与平台 wheel 均已切换到 `native/agent-spice-sim` 的 Rust 实现；这里不再承接新功能。
+> 迁移说明（2026-07-16，路径于 M5A-07 更新）：本目录中的 C# 引擎已经冻结为算法迁移与器件级差分 oracle。PI/SI 产品主线、默认 CLI、RFM 执行与平台 wheel 均已切换到仓库根目录 `native/crates/sipi-circuit` 的 Rust 实现；这里不再承接新功能。
 
 这是自主仿真内核的第一条垂直切片，使用 .NET 8/C#，不依赖 ngspice、Python 或第三方 NuGet 包。除基础线性器件外，它可以直接解析项目的 `VERSION 200600` RFM，并以 N-port 状态空间设备执行 DC、AC 和 TRAN。
 
@@ -35,20 +35,10 @@ dotnet native/AgentSpice.Engine/bin/Release/net8.0/AgentSpice.Engine.dll `
   --waveform-csv waveform.csv
 ```
 
-生成可随 wheel 携带的 framework-dependent 运行时：
-
-```powershell
-./tools/build-native-engine.ps1
-```
-
-生成当前平台的 NativeAOT 引擎和平台 wheel（默认 `win-x64`）：
-
-```powershell
-./tools/build-native-engine-aot.ps1
-./tools/build-native-wheel.ps1
-```
-
-构建脚本接受 `win-x64/win-arm64/linux-x64/linux-arm64/osx-x64/osx-arm64`，NativeAOT 必须在目标操作系统上构建；例如 Linux x64 使用 `-RuntimeIdentifier linux-x64`。CI 对 Windows x64、Linux x64、macOS x64/ARM64 构建并直接执行 wheel 内的引擎。NativeAOT 构建默认仅为本次命令使用 `https://api.nuget.org/v3/index.json`，不会修改用户全局 NuGet 配置。构建脚本会依次查找 `-DotnetPath`、`DOTNET_ROOT`、`~/.dotnet-sdk` 和 `PATH` 中带 SDK 的 `dotnet`。平台 wheel 只携带目标 RID，不依赖 .NET Runtime；未构建 AOT 时，普通 wheel 继续携带 framework-dependent DLL。
+迁入后的本仓不再为这条冻结 C# oracle 提供 wheel 构建入口。使用上面的
+`dotnet build` 命令仅作算法差分；产品 wheel 和 native CLI 由
+`native/crates/sipi-circuit` 的 Rust 引擎提供。Linux/macOS 的发布认证不在
+本说明中作出声明。
 
 未指定输出文件时，标准输出是完整 JSON；指定 `--output-json` 后，标准输出只返回执行摘要。JSON 使用 source-generated metadata，可安全裁剪为 NativeAOT。结果包含节点电压、V/L/E/H 支路电流、AC 复数值，以及瞬态接受/拒绝/断点步数、Newton 迭代、预测器使用、线搜索回退和最大收敛残差。当前实现覆盖线性 R/C/L/V/I/E/F/G/H、PULSE/PWL/SIN/EXP、OP/DC/AC/TRAN、直接 RFM N-port、通用稀疏 LU，以及带动态电荷和 AC 增量导纳的 Level-1 二极管、BJT 与 MOSFET。RFM TRAN 可选 Trap 或变步长 Gear2，内部有理状态与动态端口响应进入同一套 LTE、拒步和回滚协议。
 

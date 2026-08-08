@@ -46,15 +46,17 @@ def _native_engine_candidates(
     )
     rust_name = "agent-spice-sim.exe" if windows_runtime else "agent-spice-sim"
     aot_name = "AgentSpice.Engine.exe" if windows_runtime else "AgentSpice.Engine"
+    workspace_root = repository_root.parents[1]
     candidates = []
     if runtime_identifier is not None:
         candidates.append(package_root / runtime_identifier / rust_name)
     candidates.extend(
         [
             package_root / rust_name,
-            repository_root
+            workspace_root
             / "native"
-            / "agent-spice-sim"
+            / "crates"
+            / "sipi-circuit"
             / "target"
             / "release"
             / rust_name,

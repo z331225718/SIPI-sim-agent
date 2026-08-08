@@ -6,7 +6,7 @@ Agent-Spice 最终拥有由本项目控制的 SPICE 兼容仿真内核，而不�
 
 ## 2026-07-16 路线修正
 
-- 主实现语言从 C# NativeAOT 改为 Rust；新内核位于 `native/agent-spice-sim`。C# 引擎不删除，作为已经跑通的算法参考和迁移期差分 oracle。
+- 主实现语言从 C# NativeAOT 改为 Rust；新内核位于仓库根目录的 `native/crates/sipi-circuit`。C# 引擎不删除，作为已经跑通的算法参考和迁移期差分 oracle。
 - 产品目标收缩为 PI/SI 必需的 `OP/DC/AC/TRAN`、线性 RLC/独立源/受控源、层级网表和 RFM N-port。二极管、BJT、MOS 等器件模型停止扩面，待 PI/SI 主路径完成后再评估。
 - Rust 垂直切片已覆盖 R/C/L/V/I、E/F/G/H、嵌套参数化 `.subckt`、`.global`、递归 include、外部 `.lib` section、表达式参数、PULSE/PWL、实数/复数稀疏 LU，以及 OP/DC/AC/TRAN。
 - TRAN 已完成 BE 启动/断点重启、Trap、变步长 Gear2，以及基于电容电荷、电感磁链和 RFM 动态输出的 LTE 接受/拒绝控制。拒步只提交候选状态，RLC 历史与 RFM 有理状态可完整回滚；严格 `reltol=1e-5 trtol=1` 门禁会真实拒步 8 次，输出网格不漂移，回滚后相对默认门禁最大波形变化约 `1.18 uV`。

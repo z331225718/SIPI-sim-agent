@@ -13,7 +13,13 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 ENGINE = (
-    ROOT / "native" / "agent-spice-sim" / "target" / "release" / "agent-spice-sim.exe"
+    ROOT.parents[1]
+    / "native"
+    / "crates"
+    / "sipi-circuit"
+    / "target"
+    / "release"
+    / "agent-spice-sim.exe"
 )
 
 

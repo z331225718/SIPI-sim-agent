@@ -46,7 +46,7 @@
 | 资产 | 许可/授权 | 证据 |
 |---|---|---|
 | `src/agent_spice/**`（运行时代码，含 `lib/native` 目录载体） | MIT，Copyright (c) 2026 z331225718 | `LICENSE` |
-| `native/agent-spice-sim/**`（Rust 引擎源码、`Cargo.toml` 声明 `license = "MIT"`） | MIT | `LICENSE`；`native/agent-spice-sim/Cargo.toml` |
+| `../../native/crates/sipi-circuit/**`（M5A-07 迁入后的 Rust 引擎源码、`Cargo.toml` 声明 `license = "MIT"`） | MIT | `LICENSE`；`../../native/crates/sipi-circuit/Cargo.toml` |
 | `native/AgentSpice.Engine/**`（C# 参考实现 + `fixtures/` 65 个自著测试网表） | 本仓自有（未打包） | `LICENSE`；仓库内文件 |
 | `tests/**`、`tools/**`、`scripts/**`、`docs/**`、`configs/**`、`skills/**`、`poc/**`、`benchmarks/**` | 本仓自有 | `LICENSE` |
 | `src/agent_spice/lib/ngspice/{rfm.cm,compiler.txt,sha256.txt}` | 本仓自 ngspice-46 源码生成的配置产物（`sha256.txt` 记录输入/输出 hash），自著 | `src/agent_spice/lib/ngspice/sha256.txt` |

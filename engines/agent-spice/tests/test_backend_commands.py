@@ -54,9 +54,10 @@ def test_native_engine_candidates_prefer_rust_before_migration_engine(
     assert candidates[:3] == [
         package / "win-x64" / "agent-spice-sim.exe",
         package / "agent-spice-sim.exe",
-        repository
+        repository.parent.parent
         / "native"
-        / "agent-spice-sim"
+        / "crates"
+        / "sipi-circuit"
         / "target"
         / "release"
         / "agent-spice-sim.exe",

@@ -60,7 +60,16 @@ python -m agent_spice.cli run-rfm .\channel-tran.sp `
   --execute
 ```
 
-源码树首次使用前运行 `.\tools\build-rust-engine.ps1`。`.\tools\build-native-wheel.ps1 -RuntimeIdentifier <RID>` 会把自包含的 `agent-spice-sim` 打进对应平台 wheel，不要求目标机器安装 Rust 或 .NET。CI 构建 Windows x64、Linux x64、macOS x64/ARM64；Windows x64 已在干净 venv 中完成包内可执行文件 smoke，其余平台以 CI 首次实跑为准。服务器所需系统信息、wheelhouse 准备和无网安装命令见 [Native 离线运行清单](docs/offline-native-runtime.md)。
+从本仓库根目录在源码树中构建 Rust 引擎：
+
+```powershell
+cargo build --locked --release --manifest-path .\native\crates\sipi-circuit\Cargo.toml
+```
+
+Python 生产包会优先使用 wheel 中的 `agent-spice-sim`；在源码树开发时，
+它会回退到上述 crate 的 `target\release` 可执行文件。wheel 的平台发布和
+认证仍以对应的 promotion manifest 为准；Linux/macOS 不在此处作认证声明。
+服务器所需系统信息、wheelhouse 准备和无网安装命令见 [Native 离线运行清单](docs/offline-native-runtime.md)。
 
 Rust native 路径刻意聚焦 PI/SI：线性 R/C/L/V/I/E/F/G/H、参数表达式、递归 include、`.lib` section、`.global`、嵌套参数化 `.subckt`、PULSE/PWL、OP/DC/AC，以及带源断点、Trap/变步长 Gear2、器件 LTE、拒步和状态回滚的 TRAN。`VERSION 200600` RFM N-port 可直接进入 OP/DC/AC/TRAN，不依赖 ngspice。二极管、BJT、MOS 的扩面已经冻结，旧 C# 实现仅保留为迁移 oracle，不再是默认产品内核。
 
