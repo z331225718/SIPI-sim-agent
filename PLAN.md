@@ -376,6 +376,12 @@ history-preserving move commit `2bf67ae`, rather than freezing the moved crate
 at `HEAD`; the verifier now fails closed unless that anchor remains an ancestor
 of `HEAD`. OMP (`msg_4ddfc41d2688`) and the independent review agent
 (`msg_c7fba497146e`) both found 0 P1 / 0 P2; its direct tests (2/2) and
+`tools/run_all_tests.py` (56/56) passed. M5A-09b introduced the separately
+gated `native/crates/sipi-ami` clean-room Rust crate with a deliberately
+limited IBIS keyword/record scanner; it has no PyAMI/PyBERT code inheritance
+or runtime dependency and makes no full-specification or platform-certification
+claim. OMP (`msg_08832a62d334`) and the independent review agent
+(`msg_d2ad2dd86249`) both found 0 P1 / 0 P2; Rust fmt/clippy/test (4/4) and
 `tools/run_all_tests.py` (56/56) passed. **M5A-08 is complete; M5A-09 clean-room
 implementation is in progress.**
 
