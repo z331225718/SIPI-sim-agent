@@ -341,6 +341,14 @@ M4 完成即达到 `SPEC.md` 的 Shared Data MVP。
 | M5A-08 | 接管 Agent-Spice Python 生产包 | 保留 `agent_spice` namespace、fit/RFM/HSPICE CLI；研究/外部 oracle 按 manifest 分类 |
 | M5A-09 | **PyAMI clean-room Rust 重做（含 IBIS/AMI 解析器 + AMI 语义 + DLL host 接口）** | 从 IBIS/AMI 规范净新编写（用户决策 2026-08-08：PyAMI 非 MIT 且为 Python，统一到 Rust）；不继承 PyAMI two-clause BSD 或 PyBERT BSD 代码；覆盖 IBIS 文件解析、AMI 模型语义（Init/GetWave 参数树、脉冲响应契约）与供应商 AMI DLL host（Rust `libloading` 加载，替代 Python host）；作为通用 IBIS/AMI 工具，进程内归 agent-spice-sim 使用；放 agent-spice，若其停止独立维护则直接放 SIPI-sim-agent；旧 PyAMI 在 clean-room 重做通过 AMI golden/parity 前保留为 reference |
 
+M5A-06a completed (2026-08-08): `db3889a` fixes the clean source anchor at
+`agent-spice@2cc92316`, records the retain/drop policy, and adds a fail-closed
+preflight verifier. The policy excludes `third_party`, external-reference
+assets, and local native binaries before history rewrite. OMP (`msg_681a317f48a4`)
+and the independent review agent (`msg_668804ab5a9b`) both found 0 P1 / 0 P2;
+`tools/run_all_tests.py` passed 55/55. M5A-06b (temporary clone/filter-repo
+import) remains next.
+
 ### 9.3 M5B：PyBERT Link
 
 | ID | 任务 | 说明 |
