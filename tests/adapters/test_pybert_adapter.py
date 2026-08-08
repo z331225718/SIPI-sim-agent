@@ -114,7 +114,7 @@ def resolved_channel_payload(*, policy_change=None, external_change=None, simula
     }
     if policy_change:
         policy.update(policy_change)
-    impulse = [0.0, 1.0, 0.5]
+    impulse = [0.0, 1.0e12, 0.5e12]
     digest = lambda value: hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     external = {
         "impulse_response_volts_per_second": impulse,
@@ -338,7 +338,7 @@ class PyBertAdapterTests(unittest.TestCase):
         self.assertEqual(resolver.call_count, 1)
         effective_channel = result["domain_result"]["effective_input"]["channel"]
         self.assertEqual(effective_channel["kind"], "impulse_response")
-        self.assertEqual(list(effective_channel["value"]["impulseResponseVoltsPerSecond"]), [0.0, 1.0, 0.5])
+        self.assertEqual(list(effective_channel["value"]["impulseResponseVoltsPerSecond"]), [0.0, 1.0e12, 0.5e12])
         lineage = result["domain_result"]["platform_channel_resolution"]
         self.assertEqual(lineage["external_resolution"]["semantics"]["policy_sign_applied"], False)
         self.assertEqual(lineage["channel_resolution_report"]["producer"], "sipi-adapters.channel_resolver")
