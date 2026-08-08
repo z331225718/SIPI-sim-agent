@@ -20,6 +20,7 @@ class M5AAgentSpiceMoveTests(unittest.TestCase):
     def test_repository_move_evidence_is_ready(self) -> None:
         report = verifier.verify(TOOLS.parent)
         self.assertTrue(report["ready"], report["blockers"])
+        self.assertEqual(report["target_commit"], "2bf67aef907ff2e967f88169687c0e220565abeb")
 
 
 if __name__ == "__main__":

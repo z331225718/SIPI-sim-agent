@@ -8,6 +8,7 @@
     "tree": "273af568660c867f457366abcb43ed11163d637d"
   },
   "target": {
+    "commit": "2bf67aef907ff2e967f88169687c0e220565abeb",
     "path": "native/crates/sipi-circuit",
     "tree": "eb36e9cc18e9eca66f4f8f925de0bee784f33f10",
     "cargo_package": "agent-spice-sim",

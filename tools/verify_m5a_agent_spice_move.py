@@ -117,17 +117,21 @@ def verify(root: Path, record_path: Path = RECORD_PATH) -> dict:
     target = record.get("target", {})
     source_commit = source.get("commit")
     source_path = source.get("path")
+    target_commit = target.get("commit")
     target_path = target.get("path")
-    if not all(isinstance(value, str) and value for value in (source_commit, source_path, target_path)):
+    if not all(
+        isinstance(value, str) and value
+        for value in (source_commit, source_path, target_commit, target_path)
+    ):
         blockers.append("move record source/target identity missing")
     else:
         try:
             source_tree = _git(root, "rev-parse", f"{source_commit}:{source_path}")
-            target_tree = _git(root, "rev-parse", f"HEAD:{target_path}")
+            target_tree = _git(root, "rev-parse", f"{target_commit}:{target_path}")
             if source_tree != source.get("tree") or target_tree != target.get("tree"):
                 blockers.append("move record tree evidence mismatch")
             source_files = _git(root, "ls-tree", "-r", "--name-only", source_commit, "--", source_path).splitlines()
-            target_files = _git(root, "ls-tree", "-r", "--name-only", "HEAD", "--", target_path).splitlines()
+            target_files = _git(root, "ls-tree", "-r", "--name-only", target_commit, "--", target_path).splitlines()
             source_relative = {path.removeprefix(f"{source_path}/") for path in source_files}
             target_relative = {path.removeprefix(f"{target_path}/") for path in target_files}
             if source_relative != target_relative:
@@ -140,13 +144,20 @@ def verify(root: Path, record_path: Path = RECORD_PATH) -> dict:
             changed = set()
             for relative in source_relative & target_relative:
                 source_blob = _git(root, "rev-parse", f"{source_commit}:{source_path}/{relative}")
-                target_blob = _git(root, "rev-parse", f"HEAD:{target_path}/{relative}")
+                target_blob = _git(root, "rev-parse", f"{target_commit}:{target_path}/{relative}")
                 if source_blob != target_blob:
                     changed.add(relative)
             if changed != adjustments:
                 blockers.append("crate content changes are not exactly the recorded path adjustments")
-            if _git(root, "ls-tree", "-r", "--name-only", "HEAD", "--", source_path):
+            if _git(root, "ls-tree", "-r", "--name-only", target_commit, "--", source_path):
                 blockers.append("pre-move crate path remains tracked")
+            target_ancestry = subprocess.run(
+                ["git", "-C", str(root), "merge-base", "--is-ancestor", target_commit, "HEAD"],
+                capture_output=True,
+                text=True,
+            )
+            if target_ancestry.returncode:
+                blockers.append("recorded target move is not an ancestor of HEAD")
             filtered_commit = source.get("filtered_commit")
             if not isinstance(filtered_commit, str) or not filtered_commit:
                 blockers.append("move record filtered-history commit missing")
@@ -163,7 +174,7 @@ def verify(root: Path, record_path: Path = RECORD_PATH) -> dict:
 
     cargo_path = f"{target_path}/Cargo.toml" if isinstance(target_path, str) else ""
     try:
-        cargo = _git(root, "show", f"HEAD:{cargo_path}")
+        cargo = _git(root, "show", f"{target_commit}:{cargo_path}")
         for required in ('name = "agent-spice-sim"', 'name = "agent_spice_sim"'):
             if required not in cargo:
                 blockers.append(f"moved crate no longer preserves {required}")
@@ -174,6 +185,7 @@ def verify(root: Path, record_path: Path = RECORD_PATH) -> dict:
         "ready": not blockers,
         "source_commit": source_commit,
         "filtered_commit": source.get("filtered_commit"),
+        "target_commit": target_commit,
         "source_path": source_path,
         "target_path": target_path,
         "blockers": blockers,
