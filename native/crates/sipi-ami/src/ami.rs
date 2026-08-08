@@ -10,6 +10,7 @@ use std::fmt;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AmiParameterTree {
     parameters: Vec<AmiParameter>,
+    reserved_host_parameters: Vec<AmiParameter>,
 }
 
 impl AmiParameterTree {
@@ -25,6 +26,14 @@ impl AmiParameterTree {
         self.parameters
             .iter()
             .find(|parameter| parameter.name.eq_ignore_ascii_case(name))
+    }
+
+    fn host_parameter(&self, name: &str) -> Option<&AmiParameter> {
+        self.parameter(name).or_else(|| {
+            self.reserved_host_parameters
+                .iter()
+                .find(|parameter| parameter.name.eq_ignore_ascii_case(name))
+        })
     }
 }
 
@@ -269,11 +278,16 @@ pub fn parse_ami_parameters(source: &str) -> Result<AmiParameterTree, AmiParseEr
     let tokens = tokenize(source)?;
     let mut cursor = 0;
     let mut parameters = Vec::new();
+    let mut reserved_host_parameters = Vec::new();
     while cursor < tokens.len() {
         let expression = parse_expression(&tokens, &mut cursor)?;
+        collect_reserved_host_parameters(&expression, &mut reserved_host_parameters)?;
         parameters.push(to_parameter(expression)?);
     }
-    Ok(AmiParameterTree { parameters })
+    Ok(AmiParameterTree {
+        parameters,
+        reserved_host_parameters,
+    })
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -469,13 +483,55 @@ fn to_value(expression: Expression) -> AmiValue {
     }
 }
 
+fn collect_reserved_host_parameters(
+    expression: &Expression,
+    parameters: &mut Vec<AmiParameter>,
+) -> Result<(), AmiParseError> {
+    let ExpressionValue::List(items) = &expression.value else {
+        return Ok(());
+    };
+
+    if expression_name(items).is_some_and(|name| name.eq_ignore_ascii_case("Reserved_Parameters")) {
+        for parameter in &items[1..] {
+            if expression_name_list(parameter).is_some_and(is_host_metadata_parameter) {
+                parameters.push(to_parameter(parameter.clone())?);
+            }
+        }
+    }
+
+    for item in items {
+        collect_reserved_host_parameters(item, parameters)?;
+    }
+    Ok(())
+}
+
+fn expression_name(items: &[Expression]) -> Option<&str> {
+    let ExpressionValue::Atom(name) = &items.first()?.value else {
+        return None;
+    };
+    Some(name)
+}
+
+fn expression_name_list(expression: &Expression) -> Option<&str> {
+    let ExpressionValue::List(items) = &expression.value else {
+        return None;
+    };
+    expression_name(items)
+}
+
+fn is_host_metadata_parameter(name: &str) -> bool {
+    ["AMI_Version", "Init_Returns_Impulse", "GetWave_Exists"]
+        .iter()
+        .any(|candidate| name.eq_ignore_ascii_case(candidate))
+}
+
 fn typed_scalar<'a>(
     tree: &'a AmiParameterTree,
     name: &'static str,
     expected_type: &'static str,
 ) -> Result<&'a str, AmiSemanticError> {
     let parameter = tree
-        .parameter(name)
+        .host_parameter(name)
         .ok_or(AmiSemanticError::MissingParameter { name })?;
     let actual_type = scalar_field(parameter, name, "Type")?;
     if !actual_type.eq_ignore_ascii_case(expected_type) {
@@ -495,7 +551,7 @@ fn typed_scalar<'a>(
 fn typed_boolean(tree: &AmiParameterTree, name: &'static str) -> Result<bool, AmiSemanticError> {
     let value = typed_scalar(tree, name, "Boolean")?;
     let parameter = tree
-        .parameter(name)
+        .host_parameter(name)
         .expect("typed_scalar returned a value from an existing parameter");
     let line = parameter
         .field("Value")
@@ -553,6 +609,20 @@ mod tests {
         (Tx_Tap (Usage In) (Type Float) (Range 0.0 1.0 0.25))
     "#;
 
+    const WRAPPED_HOST_PARAMETERS: &str = r#"
+        (example_rx
+            (Description "Public model wrapper")
+            (Reserved_Parameters
+                (AMI_Version (Usage Info) (Type String) (Value "5.1"))
+                (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True))
+                (GetWave_Exists (Usage Info) (Type Boolean) (Value True))
+            )
+            (Model_Specific
+                (AMI_Version (Usage In) (Type Float) (Value 2.0))
+            )
+        )
+    "#;
+
     #[test]
     fn preserves_parameter_metadata_and_nested_values() {
         let tree = parse_ami_parameters(HOST_PARAMETERS).expect("valid AMI parameters");
@@ -572,6 +642,19 @@ mod tests {
         assert_eq!(metadata.ami_version(), "7.2");
         assert!(metadata.init_returns_impulse());
         assert!(!metadata.get_wave_exists());
+    }
+
+    #[test]
+    fn extracts_host_metadata_from_standard_reserved_parameters_wrapper() {
+        let tree =
+            parse_ami_parameters(WRAPPED_HOST_PARAMETERS).expect("valid wrapped AMI parameters");
+        assert_eq!(tree.parameters().len(), 1);
+        assert!(tree.parameter("AMI_Version").is_none());
+
+        let metadata = AmiHostMetadata::from_tree(&tree).expect("typed wrapped host metadata");
+        assert_eq!(metadata.ami_version(), "5.1");
+        assert!(metadata.init_returns_impulse());
+        assert!(metadata.get_wave_exists());
     }
 
     #[test]

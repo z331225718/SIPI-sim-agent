@@ -18,13 +18,15 @@ parity claim.
 - The SIPI clean-room `sipi-ami` crate already exposes public-ABI
   `AmiDll`/`AmiModel` Init, GetWave, and Close lifecycle methods. That library
   contract is not a process route and has no PyBERT production registration.
-- Runtime probe (2026-08-09): the existing `ami-inspect` CLI rejects the
-  repository's public `example_rx.ami` with `missing AMI parameter
-  AMI_Version`. The parser accepts the synthetic flat metadata fixture used by
-  its unit tests, but does not yet expose the standard model-wrapper/
-  `Reserved_Parameters` layout to `AmiHostMetadata`. Thus this fixture cannot
-  yet be used for a Rust host runtime claim, candidate bundle promotion, or
-  PyBERT route test.
+- Runtime probe (2026-08-09, before the parser follow-up): `ami-inspect`
+  rejected the repository's public `example_rx.ami` with `missing AMI
+  parameter AMI_Version`. The follow-up clean-room parser slice now extracts
+  the three typed host values only from standard `Reserved_Parameters`, while
+  preserving the existing top-level tree API. Its unit fixture also proves
+  that a same-named `Model_Specific` value cannot override reserved metadata.
+  The real public fixture now passes `ami-inspect`; this verifies metadata
+  admission only, not DLL loading, `AMI_Init`/`AMI_GetWave` execution,
+  candidate-bundle promotion, or a PyBERT route.
 
 ## Blocking Evidence
 
@@ -43,11 +45,11 @@ would be a new executable protocol and requires a candidate bundle, hash,
 engine-lock promotion, and independent runtime validation; it cannot be
 silently smuggled through the existing RFM lock.
 
-The metadata-layout failure is an earlier implementation prerequisite: a
-clean-room parser/semantic slice must accept the tracked wrapper layout with
-tests before an `ami-host` transport can call `AmiDll::load`. This is parser
-coverage work, not permission to copy PyAMI behavior or to infer AMI numerical
-parity from a successful metadata read.
+The wrapper-layout prerequisite is now covered by the clean-room parser and
+the public metadata probe. A future `ami-host` transport may therefore attempt
+`AmiDll::load` only under its own candidate-bundle contract. This parser work
+does not permit copying PyAMI behavior or inferring AMI numerical parity from a
+successful metadata read.
 
 ## Required Follow-on Contract
 
