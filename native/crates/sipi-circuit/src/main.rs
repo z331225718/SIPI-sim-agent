@@ -12,6 +12,8 @@ use agent_spice_sim::response::{RcShunt, ResponseLoads, evaluate_response_grid, 
 use agent_spice_sim::{compatibility, logging, netlist, rfm, simulator};
 use sipi_ami::{ami::AmiHostMetadata, ami::parse_ami_parameters, parse_ibis};
 
+mod ami_host_candidate;
+
 /// CLI-layer error: adds usage messages and serde_json failures to the
 /// library [`Error`].
 #[derive(Debug, thiserror::Error)]
@@ -103,6 +105,9 @@ fn run() -> CliResult<()> {
     }
     if first == "ami-inspect" {
         return run_ami_inspect(arguments);
+    }
+    if first == "ami-host-candidate" {
+        return ami_host_candidate::run(arguments).map_err(CliError::Ami);
     }
     let deck = PathBuf::from(first);
     let mut rfm_path = None;
@@ -604,8 +609,9 @@ fn parse_port_value(value: &str, name: &str) -> CliResult<(usize, f64)> {
 
 fn usage() -> String {
     "agent-spice-sim build-info [--json]\n\
-     agent-spice-sim ami-inspect <model.ibs> <model.ami>\n\
-     agent-spice-sim <deck> [--rfm <model.rfm>] [--rfm-subckt <name>] \
+      agent-spice-sim ami-inspect <model.ibs> <model.ami>\n\
+      agent-spice-sim ami-host-candidate --request <request.json> --output-dir <directory>\n\
+      agent-spice-sim <deck> [--rfm <model.rfm>] [--rfm-subckt <name>] \
      [--output-json <result.json>] [--waveform-csv <waveform.csv>] \
      [--log <simulation.log>] [--audit-json <compatibility.json>]"
         .into()
