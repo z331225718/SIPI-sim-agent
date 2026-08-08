@@ -416,7 +416,14 @@ of reusing uncertain state. OMP (`msg_aa1d01cf6fd9`) and the independent review
 agent (`msg_4536a19ecac8`) both found 0 P1 / 0 P2; Rust fmt/clippy/test (17/17)
 and `tools/run_all_tests.py` (56/56) passed. **M5A-09's clean-room parser,
 semantic contract, and Init/GetWave/Close host are present; in-process
-`agent-spice-sim` use and the M5A acceptance gate remain.**
+`agent-spice-sim` use and the M5A acceptance gate remain.** M5A-09h then
+connected the clean-room parser and host metadata to the in-process
+`agent-spice-sim ami-inspect` command (commits `8ae8b06`, `a9bcf4f`). The
+follow-up restores lockfile minimality after review: the final combined delta
+contains only the `sipi-ami` path dependency and its required `libloading`
+entries. OMP and the independent review agent both found 0 P1 / 0 P2; locked
+Rust checks and the root suite (56/56) passed. M5A-09 is complete; the final
+M5A acceptance gate remains.
 
 ### 9.3 M5B：PyBERT Link
 
