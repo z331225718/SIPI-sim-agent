@@ -1,0 +1,10 @@
+BJT composite leakage small-signal conductance
+.options reltol=1e-6 abstol=1e-15 gmin=1e-20 numdgt=15
+Vc collector 0 DC 0.2 AC 0
+Vb base 0 DC 0.6 AC 1
+Ve emitter 0 DC 0 AC 0
+Qleak collector base emitter qleak AREA=2 M=3
+.model qleak NPN(IS=1e-30 BF=1e12 BR=1e12 ISE=1e-12 NE=1.7 ISC=2e-12 NC=2.1)
+.ac lin 3 1k 1meg
+.print ac i(Vc) i(Vb) i(Ve)
+.end

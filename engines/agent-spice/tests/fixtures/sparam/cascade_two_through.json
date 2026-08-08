@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "name": "first",
+      "touchstone": "simple_through.s2p"
+    },
+    {
+      "name": "second",
+      "touchstone": "simple_through.s2p"
+    }
+  ],
+  "cascade": [
+    "first",
+    "second"
+  ]
+}

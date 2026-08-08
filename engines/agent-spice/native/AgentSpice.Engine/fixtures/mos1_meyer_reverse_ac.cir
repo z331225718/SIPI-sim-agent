@@ -1,0 +1,10 @@
+Level-1 NMOS reverse-mode oxide and Meyer capacitance AC regression
+Vsource source 0 2
+Vdrain drain 0 0.5
+Vgate gate 0 3 ac 1
+Vbulk bulk 0 0
+M1 drain gate source bulk nch L=1u W=100u
+.model nch nmos (level=1 vto=0.7 uo=650 tox=20n gamma=0.4 phi=0.7 lambda=0.02 cgso=20n cgdo=15n cgbo=10n)
+.ac dec 5 1k 100g
+.print ac i(Vgate) i(Vdrain) i(Vsource)
+.end

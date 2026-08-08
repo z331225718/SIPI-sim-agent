@@ -1,0 +1,16 @@
+BJT composite leakage polarity, area, multiplicity, and temperature
+.temp 80
+.options tnom=27 reltol=1e-6 abstol=1e-15 gmin=1e-20 numdgt=15
+Vcn cn 0 0.2
+Vbn bn 0 0.62
+Ven en 0 0
+Qn cn bn en nleak AREA=2 M=3
+Vcp cp 0 0.8
+Vbp bp 0 0.38
+Vep ep 0 1
+Qp cp bp ep pleak AREA=1.5 M=2 TEMP=40
+.model nleak NPN(IS=1e-30 BF=1e12 BR=1e12 ISE=1.2e-12 NE=1.65 ISC=2.3e-12 NC=2.15 TNOM=35 EG=1.08 XTI=2.6 XTB=0.4)
+.model pleak PNP(IS=1e-30 BF=1e12 BR=1e12 ISE=1.7e-12 NE=1.75 ISC=2.7e-12 NC=2.25 TNOM=30 EG=1.09 XTI=2.8 XTB=0.3)
+.op
+.print op i(Vcn) i(Vbn) i(Ven) i(Vcp) i(Vbp) i(Vep)
+.end

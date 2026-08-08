@@ -1,0 +1,16 @@
+id: include_lib_subckt
+top: include_lib_subckt.sp
+source_kind: synthetic-real
+features:
+  - include
+  - lib
+  - subckt_instance
+expected_cases:
+  - include_lib_subckt__base
+backends:
+  - ngspice
+compat_tier: compatible
+deps:
+  - deps/models.inc
+  - deps/corners.lib
+notes: Synthetic dependency deck covering include, lib section discovery, and subckt passthrough.

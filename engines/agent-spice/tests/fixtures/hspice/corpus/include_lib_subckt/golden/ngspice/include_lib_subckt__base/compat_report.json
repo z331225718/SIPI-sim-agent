@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "backend": "ngspice",
+  "deck": {
+    "id": "include_lib_subckt",
+    "source": "tests/fixtures/hspice/corpus/include_lib_subckt/include_lib_subckt.sp",
+    "sha256": "6e33fb22172d65a0c63aa456313bdb9df939e7d1f51ba9c9c9016d2eeaeb1afb"
+  },
+  "case": {
+    "name": "include_lib_subckt__base",
+    "kind": "base",
+    "alter_label": null
+  },
+  "audit": {
+    "directive_counts": {
+      ".include": 1,
+      ".lib": 1,
+      ".tran": 1,
+      ".end": 1
+    },
+    "includes": [
+      "deps/models.inc"
+    ],
+    "libraries": [
+      [
+        "deps/corners.lib",
+        "tt"
+      ]
+    ],
+    "unsupported_directives": []
+  },
+  "outputs": {
+    "probes": [],
+    "measures": []
+  },
+  "actions": [],
+  "unsupported": [],
+  "summary": {
+    "status": "compatible",
+    "rewrites": 0,
+    "drops": 0,
+    "unsupported": 0
+  }
+}

@@ -1,0 +1,10 @@
+Diode Newton OP and DC
+Vdrive in 0 1
+Rsource in out 1k
+Dclamp out 0 diode_default
+.model diode_default D(IS=1e-12 N=1)
+.op
+.dc Vdrive 0 1 0.1
+.print op v(out)
+.print dc v(out)
+.end

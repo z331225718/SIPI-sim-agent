@@ -1,0 +1,12 @@
+* synthetic-real VRM decap PDN smoke deck
+.include 'deps/decap.inc'
+.param vdd=0.8 rvrm=2m
+Vvrm vdd 0 {vdd}
+Rvrm vdd rail {rvrm}
+Lpkg rail load 500p
+Cbulk load 0 100u
+Iload load 0 PWL(0 0 1n 0 1.1n 8 5n 8)
+.print tran v(load) i(Vvrm)
+.measure tran min_vload min v(load) from=1n to=5n
+.tran 10p 5n
+.end

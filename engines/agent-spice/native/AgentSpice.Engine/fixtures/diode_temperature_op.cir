@@ -1,0 +1,15 @@
+Diode area, multiplicity, and temperature operating point
+.temp 85
+.options tnom=27 reltol=1e-6 abstol=1e-14
+Vglobal global 0 0.55
+Vdelta delta 0 0.55
+Vexplicit explicit 0 0.55
+Vdefault default 0 0.55
+Dglobal global 0 dhot AREA=2 M=3
+Ddelta delta 0 dhot AREA=1.5 M=2 DTEMP=20
+Dexplicit explicit 0 dhot 4 TEMP=40
+Ddefault default 0 dhot
+.model dhot D(IS=2e-12 N=1.2 TNOM=35 EG=1.08 XTI=2.5 AREA=1.25)
+.op
+.print op i(Vglobal) i(Vdelta) i(Vexplicit) i(Vdefault)
+.end

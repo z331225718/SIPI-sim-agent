@@ -1,0 +1,15 @@
+id: measure_outputs
+top: measure_outputs.sp
+source_kind: synthetic-real
+features:
+  - print
+  - probe
+  - measure
+  - meas_alias
+expected_cases:
+  - measure_outputs__base
+backends:
+  - ngspice
+compat_tier: auto_converted
+deps: []
+notes: Synthetic output deck covering mixed print, probe, measure, and meas directives.

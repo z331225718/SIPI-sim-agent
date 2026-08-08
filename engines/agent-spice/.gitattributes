@@ -1,0 +1,7 @@
+third_party/solver-packages/*.zip filter=lfs diff=lfs merge=lfs -text
+third_party/solver-shims/**/*.dll filter=lfs diff=lfs merge=lfs -text
+third_party/solver-shims/**/*.exe filter=lfs diff=lfs merge=lfs -text
+third_party/solver-shims/**/*.pyc filter=lfs diff=lfs merge=lfs -text
+third_party/solver-shims/**/*.pyd filter=lfs diff=lfs merge=lfs -text
+third_party/solver-shims/**/*.pyz filter=lfs diff=lfs merge=lfs -text
+third_party/solver-shims/**/*.zip filter=lfs diff=lfs merge=lfs -text

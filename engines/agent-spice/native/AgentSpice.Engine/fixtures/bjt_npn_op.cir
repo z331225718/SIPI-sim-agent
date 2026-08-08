@@ -1,0 +1,10 @@
+Level-1 NPN operating point
+Vcc vcc 0 5
+Vbase base 0 0.7
+Rcollector vcc collector 1k
+Qswitch collector base 0 transistor_npn
+.model transistor_npn NPN(IS=1e-15 BF=100 BR=2 NF=1 NR=1)
+.options reltol=1e-8 vntol=1e-10 abstol=1e-14
+.op
+.print op v(collector) i(Vbase)
+.end

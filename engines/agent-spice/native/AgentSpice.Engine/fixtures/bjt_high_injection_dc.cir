@@ -1,0 +1,10 @@
+BJT forward and reverse high-injection roll-off
+Vc collector 0 2
+Vb base 0 0.45
+Ve emitter 0 0
+Qroll collector base emitter nroll AREA=2 M=3
+.model nroll NPN(IS=1e-15 BF=200 BR=2 NF=1.02 NR=1.08 VAF=100 VAR=20 IKF=500u IKR=2m)
+.options reltol=1e-6 abstol=1e-14
+.dc Vb 0.45 0.95 0.025
+.print dc i(Vc) i(Vb) i(Ve)
+.end

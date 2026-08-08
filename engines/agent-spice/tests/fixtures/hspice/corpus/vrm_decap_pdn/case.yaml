@@ -1,0 +1,17 @@
+id: vrm_decap_pdn
+top: vrm_decap_pdn.sp
+source_kind: synthetic-real
+features:
+  - inc
+  - option_post
+  - probe
+  - measure
+  - pwl_load
+expected_cases:
+  - vrm_decap_pdn__base
+backends:
+  - ngspice
+compat_tier: auto_converted
+deps:
+  - deps/decap.inc
+notes: Synthetic PI deck covering a VRM, decap include, PWL load, probe, and droop measure.

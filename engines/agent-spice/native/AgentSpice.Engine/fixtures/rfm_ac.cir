@@ -1,0 +1,5 @@
+Agent-Spice native RFM AC smoke
+Vdrive p 0 AC 1
+Xchannel p 0 rfm_direct
+.ac lin 1 1g 1g
+.end

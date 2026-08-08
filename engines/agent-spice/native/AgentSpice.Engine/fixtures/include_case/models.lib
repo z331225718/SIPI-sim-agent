@@ -1,0 +1,9 @@
+.lib slow
+.param library_gain=2
+.model selected_diode D(IS=1e-13 N=1)
+.endl slow
+
+.lib fast
+.param library_gain=3
+.model selected_diode D(IS=1e-12 N=1)
+.endl fast

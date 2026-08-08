@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "backend": "ngspice",
+  "deck": {
+    "id": "measure_outputs",
+    "source": "tests/fixtures/hspice/corpus/measure_outputs/measure_outputs.sp",
+    "sha256": "7daaca3265153d00a9358c6757e647fe701106ed3a4df46ff65bbea3c5c3e02e"
+  },
+  "case": {
+    "name": "measure_outputs__base",
+    "kind": "base",
+    "alter_label": null
+  },
+  "audit": {
+    "directive_counts": {
+      ".print": 1,
+      ".probe": 1,
+      ".measure": 1,
+      ".meas": 1,
+      ".tran": 1,
+      ".end": 1
+    },
+    "includes": [],
+    "libraries": [],
+    "unsupported_directives": []
+  },
+  "outputs": {
+    "probes": [
+      "v(load)",
+      "v(vdd)",
+      "i(Vsrc)"
+    ],
+    "measures": [
+      {
+        "analysis": "tran",
+        "name": "min_load",
+        "operation": "min",
+        "target": "v(load)",
+        "raw": ".measure tran min_load min v(load) from=1n to=5n"
+      },
+      {
+        "analysis": "tran",
+        "name": "max_load",
+        "operation": "max",
+        "target": "v(load)",
+        "raw": ".meas tran max_load max v(load) from=1n to=5n"
+      }
+    ]
+  },
+  "actions": [
+    {
+      "kind": "rewrite",
+      "source": ".probe tran v(vdd) i(Vsrc)",
+      "target": ".print tran v(vdd) i(Vsrc)"
+    }
+  ],
+  "unsupported": [],
+  "summary": {
+    "status": "auto_converted",
+    "rewrites": 1,
+    "drops": 0,
+    "unsupported": 0
+  }
+}

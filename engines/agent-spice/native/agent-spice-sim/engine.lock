@@ -1,0 +1,94 @@
+{
+  "artifacts": {
+    "win-x64": {
+      "buildInfo": {
+        "crateName": "agent-spice-sim",
+        "crateVersion": "0.1.0",
+        "gitDirty": true,
+        "gitRevision": "5887e9d8fad88381ec5a28851047d2cef0ba49f3",
+        "profile": "release",
+        "schema": "agent-spice.build-info.v1",
+        "target": "x86_64-pc-windows-msvc"
+      },
+      "dllClosure": {
+        "system": [
+          "api-ms-win-core-synch-l1-2-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "bcryptprimitives.dll",
+          "kernel32.dll",
+          "ntdll.dll",
+          "vcruntime140.dll"
+        ],
+        "thirdParty": []
+      },
+      "executableName": "agent-spice-sim.exe",
+      "executableSha256": "111ff6e1a1a8f7f39782a355722c56f4d8e7392bff6d389445ba87dee73928dc",
+      "executableSizeBytes": 4604416
+    }
+  },
+  "capabilities": {
+    "analyses": [
+      "op",
+      "dc",
+      "ac",
+      "tran"
+    ],
+    "compatibilityAudit": true,
+    "linTouchstoneExport": true,
+    "measurements": true,
+    "portIndexing": {
+      "cli": "1-based",
+      "library": "0-based"
+    },
+    "rfmDirectResponse": true,
+    "sparseFactorCacheBuckets": {
+      "nGt2048": 8,
+      "nLtEq2048": 16,
+      "nLtEq512": 32
+    },
+    "transientPwlRepeating": true,
+    "units": "SI (s, Hz, rad/s, V, A, ohm, F, H, S)"
+  },
+  "capabilitiesDigest": "c28e5bd68b7e6d8df97fda8c96ed0741860fbb64142e0b234931fc996eb8d2b0",
+  "engine": {
+    "crateVersion": "0.1.0",
+    "name": "agent-spice-sim"
+  },
+  "generatedAtUtc": "2026-08-07T17:22:28Z",
+  "generatedBy": "tools/engine_lock_build.py --mode local --rid win-x64",
+  "protocol": {
+    "buildInfoSchema": "agent-spice.build-info.v1",
+    "circuitApiVersion": 1,
+    "cliSubcommands": [
+      "build-info",
+      "rfm-response"
+    ],
+    "deckInvocation": "agent-spice-sim <deck> [--rfm <model.rfm>] [--rfm-subckt <name>] [--output-json <result.json>] [--waveform-csv <waveform.csv>] [--log <simulation.log>] [--audit-json <compatibility.json>]",
+    "numericalTolerances": {
+      "charge": 1e-14,
+      "current": 1e-12,
+      "relative": 0.001,
+      "truncation": 7.0,
+      "voltage": 1e-06
+    },
+    "promotionManifestSchema": "agent-spice.promotion-manifest.v1",
+    "releaseProfile": {
+      "codegenUnits": 1,
+      "lto": "thin",
+      "panic": "abort",
+      "strip": "symbols"
+    },
+    "resultSchema": "agent-spice.simulation-result.v1",
+    "rfmResponseMetadataSchema": "agent-spice.rfm-response.v1"
+  },
+  "repository": {
+    "dirty": true,
+    "head": "5887e9d8fad88381ec5a28851047d2cef0ba49f3"
+  },
+  "schema": "agent-spice.engine-lock.v1",
+  "status": "locked"
+}

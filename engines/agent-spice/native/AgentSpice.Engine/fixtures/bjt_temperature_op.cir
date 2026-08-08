@@ -1,0 +1,21 @@
+BJT area, multiplicity, and temperature operating point
+.temp 80
+.options tnom=27 reltol=1e-6 abstol=1e-14
+Vcg cg 0 2
+Vbg bg 0 0.62
+Vcd cd 0 2
+Vbd bd 0 0.62
+Vce ce 0 2
+Vbe be 0 0.62
+Vcp cp 0 0.5
+Vbp bp 0 2.38
+Qglobal cg bg 0 nhot AREA=2 M=3
+Qdelta cd bd 0 nhot AREA=1.5 M=2 DTEMP=20
+Qexplicit ce be 0 nhot 4 TEMP=40
+Qpnp cp bp 3 phot AREA=2 M=2
+Vep 3 0 3
+.model nhot NPN(IS=2e-15 BF=150 BR=2 NF=1.05 NR=1.1 VAF=80 VAR=20 TNOM=35 EG=1.08 XTI=2.6 XTB=0.4)
+.model phot PNP(IS=1.5e-15 BF=120 BR=3 NF=1.08 NR=1.12 VAF=60 VAR=15 TNOM=30 EG=1.09 XTI=2.8 XTB=0.3)
+.op
+.print op i(Vcg) i(Vbg) i(Vcd) i(Vbd) i(Vce) i(Vbe) i(Vcp) i(Vbp)
+.end

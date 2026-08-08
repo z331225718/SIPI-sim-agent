@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-spice"
+version = "0.1.0"
+description = "PI simulation middleware with HSPICE deck compatibility"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=1.26",
+  "pyyaml>=6.0",
+  "scipy>=1.13",
+  "scikit-rf>=1.6",
+  "cvxpy>=1.6",
+]
+
+[project.scripts]
+agent-spice = "agent_spice.sparam.native_cli:main"
+agent-spice-native = "agent_spice.sparam.native_cli:main"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+agent_spice = [
+  "lib/ngspice/*.cm",
+  "lib/ngspice/*.txt",
+  "lib/native/*/agent-spice-sim",
+  "lib/native/*/agent-spice-sim.exe",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+  "oracle(name): external simulator differential lane (ngspice | hspice | csharp)",
+]

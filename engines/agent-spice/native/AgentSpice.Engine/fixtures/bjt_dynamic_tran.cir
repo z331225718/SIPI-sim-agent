@@ -1,0 +1,10 @@
+Level-1 NPN dynamic switching
+Vcc vcc 0 5
+Vbase base 0 PULSE(0.5 0.75 2n 0.2n 0.2n 10n 20n)
+Rcollector vcc collector 1k
+Qdevice collector base 0 transistor_npn
+.model transistor_npn NPN(IS=1e-15 BF=120 BR=3 NF=1 NR=1 VAF=80 VAR=25 CJE=8p VJE=0.75 MJE=0.33 TF=0.4n CJC=3p VJC=0.75 MJC=0.33 TR=20n FC=0.5)
+.options reltol=1e-3 vntol=1e-7 abstol=1e-11
+.tran 0.2n 40n
+.print tran v(collector) i(Vbase)
+.end

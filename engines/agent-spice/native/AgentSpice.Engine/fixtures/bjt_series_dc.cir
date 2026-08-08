@@ -1,0 +1,10 @@
+BJT area-scaled collector, base, and emitter resistance
+Vc collector 0 5
+Vb base 0 0.45
+Ve emitter 0 0
+Qseries collector base emitter nseries AREA=2 M=3
+.model nseries NPN(IS=1e-15 BF=180 BR=2 NF=1.02 NR=1.1 VAF=100 RC=12 RB=150 RE=3)
+.options reltol=1e-6 abstol=1e-14
+.dc Vb 0.45 0.9 0.05
+.print dc i(Vc) i(Vb) i(Ve)
+.end

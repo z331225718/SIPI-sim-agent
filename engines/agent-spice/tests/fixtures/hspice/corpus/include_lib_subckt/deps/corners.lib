@@ -1,0 +1,3 @@
+.lib tt
+.param esr=1m
+.endl tt
