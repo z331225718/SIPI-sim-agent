@@ -185,6 +185,8 @@ class PyBertAdapterTests(unittest.TestCase):
                 payload_schema="pybert.agent-spice-current-driven-link-request.v1",
                 payload={
                     "schema": "pybert.agent-spice-current-driven-link-request.v1",
+                    "input_ports": [1],
+                    "output_ports": [1],
                     "input_currents_a": [[3.0] * 8],
                     "current_to_voltage_sign": -1,
                     "output_port_index": 0,
