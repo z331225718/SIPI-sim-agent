@@ -382,6 +382,11 @@ limited IBIS keyword/record scanner; it has no PyAMI/PyBERT code inheritance
 or runtime dependency and makes no full-specification or platform-certification
 claim. OMP (`msg_08832a62d334`) and the independent review agent
 (`msg_d2ad2dd86249`) both found 0 P1 / 0 P2; Rust fmt/clippy/test (4/4) and
+`tools/run_all_tests.py` (56/56) passed. M5A-09c added its clean-room AMI
+parenthesized parameter tree and strict typed host metadata for `AMI_Version`,
+`Init_Returns_Impulse`, and `GetWave_Exists`; malformed structures and values
+fail closed. OMP (`msg_8585037c3705`) and the independent review agent
+(`msg_88a35cd32cca`) both found 0 P1 / 0 P2; Rust fmt/clippy/test (8/8) and
 `tools/run_all_tests.py` (56/56) passed. **M5A-08 is complete; M5A-09 clean-room
 implementation is in progress.**
 
