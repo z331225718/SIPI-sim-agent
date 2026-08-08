@@ -11,6 +11,10 @@ parity claim.
 - A public repository fixture is available for a future Windows runtime test:
   `models/ibisami/example_rx.ibs`, `example_rx.ami`, and `example_rx.dll`.
   Existing PyBERT tests prove only the retained Python-hosted hybrid route.
+- The existing `docs/baselines/capability-inventory.yaml` entry
+  `py-hybrid-ami` separately records the fixture-distribution compliance
+  blocker (`blocked_unknown`, owner `compliance`). This preflight does not
+  clear or replace that evidence.
 - The SIPI clean-room `sipi-ami` crate already exposes public-ABI
   `AmiDll`/`AmiModel` Init, GetWave, and Close lifecycle methods. That library
   contract is not a process route and has no PyBERT production registration.
