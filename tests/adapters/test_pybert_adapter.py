@@ -10,7 +10,12 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "packages" / "sipi-contracts" / "src"))
 sys.path.insert(0, str(ROOT / "packages" / "sipi-adapters" / "src"))
 
-from sipi_adapters import BackendOutcome, PyBertNativeAdapter, execute_backend
+from sipi_adapters import (
+    BackendOutcome,
+    PyBertAgentSpiceResponseAdapter,
+    PyBertNativeAdapter,
+    execute_backend,
+)
 from sipi_contracts import parse_backend_execution_request
 
 FAKE_ENGINE = ROOT / "tests" / "adapters" / "fixtures" / "fake_pybert.py"
@@ -165,6 +170,76 @@ class PyBertAdapterTests(unittest.TestCase):
             result = execute_backend(request, engine_entry(root), root, builder=PyBertNativeAdapter())
         self.assertEqual(result["status"], "failed")
         self.assertEqual(result["error"]["category"], "ExternalModelFailure")
+
+    def test_current_drive_handoff_materializes_the_exact_rfm_artifact_pair(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.install_bundle(root)
+            metadata = root / "inputs" / "rfm-meta.json"
+            response = root / "inputs" / "rfm-response.bin"
+            metadata.parent.mkdir(parents=True)
+            metadata.write_text('{"schema":"agent-spice.rfm-response.v1"}', encoding="utf-8")
+            response.write_bytes(b"rfm-response")
+            response_digest = sha256(response)
+            request = backend_request(
+                payload_schema="pybert.agent-spice-current-driven-link-request.v1",
+                payload={
+                    "schema": "pybert.agent-spice-current-driven-link-request.v1",
+                    "input_currents_a": [[3.0] * 8],
+                    "current_to_voltage_sign": -1,
+                    "output_port_index": 0,
+                    "rx_filter_impulse": [1.0],
+                    "sample_interval_s": 2.5e-10,
+                    "samples_per_ui": 4,
+                    "n_taps": 2,
+                    "gain": 0.25,
+                    "delta_t": 1.0e-12,
+                    "alpha": 0.0,
+                    "ui_seconds": 1.0e-9,
+                    "decision_scaler": 1.0,
+                },
+                bound_inputs={
+                    "rfm_metadata": {
+                        "schema": "sipi.artifact-ref.v1",
+                        "content_schema": "agent-spice.rfm-response.v1",
+                        "relative_path": "inputs/rfm-meta.json",
+                        "mime_type": "application/json",
+                        "sha256": sha256(metadata),
+                        "byte_length": metadata.stat().st_size,
+                        "producer": "agent-spice-process",
+                        "role": "rfm-response",
+                        "extensions": {},
+                    },
+                    "rfm_response": {
+                        "schema": "sipi.artifact-ref.v1",
+                        "content_schema": "agent-spice.rfm-response-binary.v1",
+                        "relative_path": "inputs/rfm-response.bin",
+                        "mime_type": "application/octet-stream",
+                        "sha256": response_digest,
+                        "byte_length": response.stat().st_size,
+                        "producer": "agent-spice-process",
+                        "role": "data",
+                        "extensions": {},
+                    },
+                },
+            )
+            result = execute_backend(
+                request,
+                engine_entry(root),
+                root,
+                builder=PyBertAgentSpiceResponseAdapter(),
+                artifact_root=root / "artifacts",
+            )
+
+        self.assertEqual(result["status"], "succeeded")
+        self.assertEqual(
+            result["domain_result_schema"],
+            "pybert.agent-spice-current-driven-link-cli-result.v1",
+        )
+        self.assertEqual(
+            result["domain_result"]["platform_rfm_artifacts"]["rfm_response"]["sha256"],
+            response_digest,
+        )
 
 
 if __name__ == "__main__":

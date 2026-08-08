@@ -14,8 +14,12 @@ def main() -> int:
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--fail", action="store_true")
     argv = sys.argv[1:]
-    if argv and argv[0] == "sim-native":
+    command = argv[0] if argv else ""
+    if command in {"sim-native", "sim-agent-spice-response"}:
         argv = argv[1:]
+    if command == "sim-agent-spice-response":
+        parser.add_argument("--rfm-metadata", required=True)
+        parser.add_argument("--rfm-response", required=True)
     args = parser.parse_args(argv)
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -26,7 +30,11 @@ def main() -> int:
     (out / "meta.json").write_text(
         json.dumps(
             {
-                "schema": "pybert.native-cli-result.v1",
+                "schema": (
+                    "pybert.agent-spice-current-driven-link-cli-result.v1"
+                    if command == "sim-agent-spice-response"
+                    else "pybert.native-cli-result.v1"
+                ),
                 "effective_input": simulation_input,
                 "backend_metadata": {"backend": "fake-native"},
                 "diagnostics": [],

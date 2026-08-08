@@ -19,7 +19,7 @@ from .process import (
     run_process,
     verify_engine_bundle,
 )
-from .pybert import PyBertNativeAdapter
+from .pybert import PyBertAgentSpiceResponseAdapter, PyBertNativeAdapter
 from .channel_resolver import CHANNEL_RESPONSE_CONTRACT, ChannelResolutionError, resolve_channel
 from .readers import PROFILES, ReaderError, cross_profile_fixture_matrix, read_network
 from .venv import BundleExecutionError
@@ -52,6 +52,7 @@ __all__ = [
     "MANAGED_HARD_ENFORCEMENT",
     "PROFILES",
     "PyBertNativeAdapter",
+    "PyBertAgentSpiceResponseAdapter",
     "ReaderError",
     "UnsupportedCapabilityError",
     "verify_wheel_bundle",
