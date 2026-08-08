@@ -387,8 +387,16 @@ parenthesized parameter tree and strict typed host metadata for `AMI_Version`,
 `Init_Returns_Impulse`, and `GetWave_Exists`; malformed structures and values
 fail closed. OMP (`msg_8585037c3705`) and the independent review agent
 (`msg_88a35cd32cca`) both found 0 P1 / 0 P2; Rust fmt/clippy/test (8/8) and
-`tools/run_all_tests.py` (56/56) passed. **M5A-08 is complete; M5A-09 clean-room
-implementation is in progress.**
+`tools/run_all_tests.py` (56/56) passed. M5A-09d added an explicit,
+non-numerical `AMI_Init` / `AMI_GetWave` waveform request/response contract:
+metadata capability mismatches, non-finite or malformed waveforms, invalid
+sample intervals, and invalid clock-time values fail closed before or after the
+future FFI boundary. It does not implement a vendor ABI, solver, resolver, or
+platform-certification claim. OMP (`msg_eb99663145f7`) and the independent
+review agent (`msg_6ff99174d02d`) both found 0 P1 / 0 P2; Rust fmt/clippy/test
+(12/12) and `tools/run_all_tests.py` (56/56) passed. **M5A-08 is complete;
+M5A-09 clean-room implementation is in progress, with the Rust `libloading`
+DLL host and in-process `agent-spice-sim` use still required.**
 
 ### 9.3 M5B：PyBERT Link
 
