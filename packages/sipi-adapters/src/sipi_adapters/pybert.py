@@ -230,6 +230,9 @@ class PyBertResolvedChannelAdapter(CommandBuilder):
         channel = simulation_input.get("channel")
         if channel != self._sentinel:
             raise AdapterContractError("simulation_input.channel must be the sipi_resolved_channel injection sentinel")
+        timebase = simulation_input.get("timebase")
+        if not isinstance(timebase, Mapping):
+            raise AdapterContractError("simulation_input.timebase is required for resolved-channel injection")
 
         try:
             network = parse_network_tensor(payload["network"])
@@ -239,7 +242,7 @@ class PyBertResolvedChannelAdapter(CommandBuilder):
         external = payload["external_resolution"]
         if not isinstance(external, Mapping):
             raise AdapterContractError("external_resolution must be an object")
-        self._validate_external_resolution(network.to_wire(), policy.to_wire(), external)
+        self._validate_external_resolution(network.to_wire(), policy.to_wire(), external, timebase)
         impulse = _finite_samples(external["impulse_response_volts_per_second"])
         try:
             resolved_channel, report = resolve_channel(
@@ -266,7 +269,12 @@ class PyBertResolvedChannelAdapter(CommandBuilder):
         return resolved_input, provenance
 
     @staticmethod
-    def _validate_external_resolution(network: Mapping[str, Any], policy: Mapping[str, Any], external: Mapping[str, Any]) -> None:
+    def _validate_external_resolution(
+        network: Mapping[str, Any],
+        policy: Mapping[str, Any],
+        external: Mapping[str, Any],
+        timebase: Mapping[str, Any],
+    ) -> None:
         required = {
             "impulse_response_volts_per_second",
             "sample_interval_s",
@@ -278,6 +286,11 @@ class PyBertResolvedChannelAdapter(CommandBuilder):
             "producer",
             "semantics",
             "port_intent",
+            "source_discrete_impulse_hash",
+            "source_units",
+            "unit_conversion",
+            "source_channel_file_sha256",
+            "legacy_channel_config_hash",
         }
         if set(external) != required:
             raise AdapterContractError("external_resolution contains unsupported or missing fields")
@@ -293,6 +306,19 @@ class PyBertResolvedChannelAdapter(CommandBuilder):
         for field, expected in hashes.items():
             if external[field] != expected:
                 raise AdapterContractError(f"external_resolution.{field} does not match its canonical input")
+        native_sample_interval = _finite_positive(timebase.get("sampleInterval"), "simulation_input.timebase.sampleInterval")
+        if external["sample_interval_s"] != native_sample_interval:
+            raise AdapterContractError("external_resolution.sample_interval_s must equal simulation_input.timebase.sampleInterval")
+        for field in (
+            "source_discrete_impulse_hash",
+            "source_channel_file_sha256",
+            "legacy_channel_config_hash",
+        ):
+            value = external[field]
+            if not isinstance(value, str) or len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
+                raise AdapterContractError(f"external_resolution.{field} must be a lowercase SHA-256 hex digest")
+        if external["source_units"] != "V/sample" or external["unit_conversion"] != "discrete_v_per_sample_to_v_per_s":
+            raise AdapterContractError("external_resolution must declare the discrete V/sample to V/s conversion")
         producer = external["producer"]
         if not isinstance(producer, Mapping) or set(producer) != {"tool", "package", "version", "build_id"} or any(
             not isinstance(value, str) or not value.strip() for value in producer.values()

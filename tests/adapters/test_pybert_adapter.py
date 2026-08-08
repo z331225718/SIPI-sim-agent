@@ -124,6 +124,11 @@ def resolved_channel_payload(*, policy_change=None, external_change=None, simula
         "source_network_hash": digest(network),
         "policy_hash": digest(policy),
         "impulse_hash": digest(impulse),
+        "source_discrete_impulse_hash": digest([0.0, 1.0, 0.5]),
+        "source_units": "V/sample",
+        "unit_conversion": "discrete_v_per_sample_to_v_per_s",
+        "source_channel_file_sha256": "c" * 64,
+        "legacy_channel_config_hash": "d" * 64,
         "producer": {"tool": "pybert.utility.sparam", "package": "pybert", "version": "0.1.0", "build_id": "fixture"},
         "semantics": {"transfer_kind": "voltage_transfer", "impulse_units": "V/s", "policy_sign_applied": False},
         "port_intent": {
@@ -138,6 +143,7 @@ def resolved_channel_payload(*, policy_change=None, external_change=None, simula
         "simulation_input": {
             "schema": "pybert.simulation.v1",
             "source": "fixture",
+            "timebase": {"sampleInterval": 1.0e-12},
             "channel": simulation_channel
             if simulation_channel is not None
             else {"kind": "external_model", "value": {"kind": "sipi_resolved_channel", "capability": "adapter_injected_v1"}},
@@ -339,6 +345,10 @@ class PyBertAdapterTests(unittest.TestCase):
         effective_channel = result["domain_result"]["effective_input"]["channel"]
         self.assertEqual(effective_channel["kind"], "impulse_response")
         self.assertEqual(list(effective_channel["value"]["impulseResponseVoltsPerSecond"]), [0.0, 1.0e12, 0.5e12])
+        self.assertEqual(
+            [sample * 1.0e-12 for sample in effective_channel["value"]["impulseResponseVoltsPerSecond"]],
+            [0.0, 1.0, 0.5],
+        )
         lineage = result["domain_result"]["platform_channel_resolution"]
         self.assertEqual(lineage["external_resolution"]["semantics"]["policy_sign_applied"], False)
         self.assertEqual(lineage["channel_resolution_report"]["producer"], "sipi-adapters.channel_resolver")
