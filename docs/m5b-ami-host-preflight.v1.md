@@ -18,6 +18,13 @@ parity claim.
 - The SIPI clean-room `sipi-ami` crate already exposes public-ABI
   `AmiDll`/`AmiModel` Init, GetWave, and Close lifecycle methods. That library
   contract is not a process route and has no PyBERT production registration.
+- Runtime probe (2026-08-09): the existing `ami-inspect` CLI rejects the
+  repository's public `example_rx.ami` with `missing AMI parameter
+  AMI_Version`. The parser accepts the synthetic flat metadata fixture used by
+  its unit tests, but does not yet expose the standard model-wrapper/
+  `Reserved_Parameters` layout to `AmiHostMetadata`. Thus this fixture cannot
+  yet be used for a Rust host runtime claim, candidate bundle promotion, or
+  PyBERT route test.
 
 ## Blocking Evidence
 
@@ -35,6 +42,12 @@ claim to invoke a lock-constrained Rust DLL host today. Adding a new command
 would be a new executable protocol and requires a candidate bundle, hash,
 engine-lock promotion, and independent runtime validation; it cannot be
 silently smuggled through the existing RFM lock.
+
+The metadata-layout failure is an earlier implementation prerequisite: a
+clean-room parser/semantic slice must accept the tracked wrapper layout with
+tests before an `ami-host` transport can call `AmiDll::load`. This is parser
+coverage work, not permission to copy PyAMI behavior or to infer AMI numerical
+parity from a successful metadata read.
 
 ## Required Follow-on Contract
 
