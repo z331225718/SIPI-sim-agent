@@ -422,8 +422,12 @@ connected the clean-room parser and host metadata to the in-process
 follow-up restores lockfile minimality after review: the final combined delta
 contains only the `sipi-ami` path dependency and its required `libloading`
 entries. OMP and the independent review agent both found 0 P1 / 0 P2; locked
-Rust checks and the root suite (56/56) passed. M5A-09 is complete; the final
-M5A acceptance gate remains.
+Rust checks and the root suite (56/56) passed. M5A-09 is complete. The M5A
+aggregate acceptance gate then passed with OMP and the independent review
+agent at 0 P1 / 0 P2: preflight/move/license/wheel verifiers, locked Rust
+checks, and the root suite (56/56) are green. **M5A is complete.** This is not
+an AMI golden/parity claim and does not authorize removal of the retained PyAMI
+reference; M5B is next.
 
 ### 9.3 M5B：PyBERT Link
 
