@@ -358,7 +358,15 @@ adjustments required by the new manifest directory, while its baseline-tag
 artifact check confirms equal build-info and normalized PE SHA-256. OMP
 (`msg_cf390620a45e`) and the independent review agent (`msg_9fc7ca8b8277`)
 both found 0 P1 / 0 P2; Rust fmt/clippy/test gates and
-`tools/run_all_tests.py` (56/56) passed. M5A-08 is next.
+`tools/run_all_tests.py` (56/56) passed. M5A-08a then reconnected the
+Agent-Spice source runtime to the single moved crate (commits `82b4b0a`,
+`ba4abcd`) without changing the namespace, compatibility CLIs, numerical
+algorithms, or resolver ordering. A first audit caught an M5A-07 evidence-tree
+violation; the remediation restored the crate README exactly rather than
+weakening that gate. OMP (`msg_bb2faa492e3e`) and the independent review agent
+(`msg_f1d27325f61c`) both found final 0 P1 / 0 P2; the move verifier and
+`tools/run_all_tests.py` (56/56) passed. M5A-08b packaging/provenance work is
+next; M5A-08 as a whole remains open.
 
 ### 9.3 M5B：PyBERT Link
 
