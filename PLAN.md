@@ -394,9 +394,17 @@ sample intervals, and invalid clock-time values fail closed before or after the
 future FFI boundary. It does not implement a vendor ABI, solver, resolver, or
 platform-certification claim. OMP (`msg_eb99663145f7`) and the independent
 review agent (`msg_6ff99174d02d`) both found 0 P1 / 0 P2; Rust fmt/clippy/test
-(12/12) and `tools/run_all_tests.py` (56/56) passed. **M5A-08 is complete;
-M5A-09 clean-room implementation is in progress, with the Rust `libloading`
-DLL host and in-process `agent-spice-sim` use still required.**
+(12/12) and `tools/run_all_tests.py` (56/56) passed. M5A-09e added a
+clean-room Rust `libloading` executable-library owner and public C ABI
+entry-point resolution for `AMI_Init`, `AMI_GetWave`, and `AMI_Close`.
+`AMI_Init`/`AMI_Close` are mandatory and `AMI_GetWave` is conditional on
+`GetWave_Exists`; missing required symbols fail closed. The loader retains no
+vendor DLL and invokes no vendor model yet. OMP (`msg_6aaefa1e8387`) and the
+independent review agent (`msg_db90ed6d7019`) both found 0 P1 / 0 P2; Rust
+fmt/clippy/test (13/13) and `tools/run_all_tests.py` (56/56) passed.
+**M5A-08 is complete; M5A-09 clean-room implementation is in progress, with
+the owned `AMI_Init`/`AMI_GetWave` invocation lifecycle and in-process
+`agent-spice-sim` use still required.**
 
 ### 9.3 M5B：PyBERT Link
 
