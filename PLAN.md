@@ -433,8 +433,8 @@ reference; M5B is next.
 
 | ID | 任务 | 说明 |
 | --- | --- | --- |
-| M5B-01 | 继续现有 Task 12/13 | 完整 result parity、RSS、nightly、故障演练；按 2026-08-07 收编结论将 Phase 1-3（native Web result contract parity → Rust 成默认 → web 指标改接 native）纳入本任务验收，配套执行路线见 Py-bert-agent 仓库 `docs/superpowers/plans/2026-08-07-pybert-core-rust-migration.md` |
-| M5B-02 | 解锁 `auto` 前完成 strict NRZ/RLGC 门禁 | 当前 blocked 状态不得被平台绕过；Py-bert-agent 的 native parity gate（`native_auto_parity_gate`，名称定义在 Py-bert-agent 迁移文档）对已覆盖 profile 必须返回 `approved`，作为引擎侧前置；本 plan 不新增平台门禁语义 |
+| M5B-01 | 继续现有 Task 12/13 | 完整 result parity、RSS、nightly、故障演练；按 2026-08-07 收编结论将 Phase 1-3（native Web result contract parity → Rust 成默认 → web 指标改接 native）纳入本任务验收，配套执行路线见 Py-bert-agent 仓库 `docs/superpowers/plans/2026-08-07-pybert-core-rust-migration.md`。已完成的 7-profile 分档/结果契约证据不替代 Task 13；nightly 慢 fixture、端到端 RSS/性能预算、远端/损坏 wheel、panic/OOM 和真实子进程故障演练仍待闭环。 |
+| M5B-02 | 解锁 `auto` 前完成 strict NRZ/RLGC 门禁 | **已完成并审计接受（2026-08-08）**：clean source candidate `b3d072e` 上的 `056dd23`/`975c0a7` 定义 `python -> auto -> rust` 分档；strict `rust` 仅接受同一 offline-golden/build approved profile，未覆盖或不匹配 fail-closed，`auto`/`compare` 仍保留 raw candidate 语义。OMP `msg_67f33dcd1ae8` 和交叉审查 `msg_64baf5602a92` 均为 0 P1 / 0 P2。本 plan 不新增平台门禁语义。 |
 | M5B-03 | 消费 M4 channel resolver 并做 Link parity（含原 M3-08b 数值等价接线） | 用同一 production resolver 锁 pulse、termination、port intent 和 FFT scaling；禁止在 `sipi-link` 再写一套 S2P/S4P 转换。**验收含原 M3-08b：RFM→PyBERT 数值等价（current sign/端口/FFT mapping + compare report/provenance）**——RFM 频域响应→impulse 转换经 Python 外部边界（`utility/sparam.py`/pybert `agent_spice_channel`）产出 DTO，平台不写第二套 resolver |
 | M5B-04 | 完整 host-driven AMI contract | DLL host 由 M5A-09 clean-room Rust 实现承接（Rust `libloading` 加载供应商 AMI DLL）；补 clock/lock/cancel 跨平台 fixture；Python host 保留为 reference 直到 parity 通过 |
 | M5B-05 | GUI/optimizer 后端统一另行门禁 | 不阻塞 core 迁入，但不能宣称 GUI native 已完成 |
