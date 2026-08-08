@@ -371,7 +371,13 @@ it outside the worktree, verifies the installed wheel's native engine,
 build-info, and eight-point smoke, and explicitly emits no promotion or
 cross-platform certification claim. OMP (`msg_3d380fd32f6e`) and the
 independent review agent (`msg_7a90a7220fef`) both found 0 P1 / 0 P2.
-**M5A-08 is complete; M5A-09 is next.**
+M5A-09a then anchored the M5A-07 move-evidence verifier at its recorded
+history-preserving move commit `2bf67ae`, rather than freezing the moved crate
+at `HEAD`; the verifier now fails closed unless that anchor remains an ancestor
+of `HEAD`. OMP (`msg_4ddfc41d2688`) and the independent review agent
+(`msg_c7fba497146e`) both found 0 P1 / 0 P2; its direct tests (2/2) and
+`tools/run_all_tests.py` (56/56) passed. **M5A-08 is complete; M5A-09 clean-room
+implementation is in progress.**
 
 ### 9.3 M5B：PyBERT Link
 
