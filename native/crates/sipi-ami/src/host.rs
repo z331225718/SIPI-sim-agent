@@ -1,9 +1,9 @@
 //! Vendor AMI executable-library discovery through the public C ABI.
 //!
-//! This module owns the dynamic library and invokes its public initialization
+//! This module owns the dynamic library and invokes its public Init/GetWave
 //! ABI. It keeps parameter strings and model memory at the host boundary, then
-//! adapts the modified impulse buffer to [`crate::contract`]. No vendor DLL is
-//! bundled or certified by this crate.
+//! adapts modified buffers to [`crate::contract`]. No vendor DLL is bundled or
+//! certified by this crate.
 
 use std::ffi::{CStr, CString, c_char, c_long, c_void};
 use std::fmt;
@@ -12,7 +12,10 @@ use std::path::{Path, PathBuf};
 use libloading::Library;
 
 use crate::ami::AmiHostMetadata;
-use crate::contract::{AmiContractError, AmiInitRequest, AmiInitResponse, validate_init_response};
+use crate::contract::{
+    AmiContractError, AmiGetWaveRequest, AmiGetWaveResponse, AmiInitRequest, AmiInitResponse,
+    validate_get_wave_request, validate_get_wave_response, validate_init_response,
+};
 
 /// Public C ABI for an IBIS AMI initialization entry point.
 ///
@@ -161,7 +164,10 @@ pub struct AmiModel {
 #[derive(Clone, Copy)]
 enum AmiModelState {
     Uninitialized,
-    Active(*mut c_void),
+    Active {
+        memory: *mut c_void,
+        sample_interval: f64,
+    },
     Closed,
 }
 
@@ -193,6 +199,27 @@ impl AmiInitOutcome {
     }
 }
 
+/// Data returned after a successful `AMI_GetWave` call.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AmiGetWaveOutcome {
+    response: AmiGetWaveResponse,
+    parameters_out: Option<String>,
+}
+
+impl AmiGetWaveOutcome {
+    /// Typed waveform and clock-time response validated against its request.
+    #[must_use]
+    pub const fn response(&self) -> &AmiGetWaveResponse {
+        &self.response
+    }
+
+    /// Optional model-owned parameter tree copied during the call.
+    #[must_use]
+    pub fn parameters_out(&self) -> Option<&str> {
+        self.parameters_out.as_deref()
+    }
+}
+
 /// Errors while invoking the AMI initialization lifecycle.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AmiModelError {
@@ -206,6 +233,12 @@ pub enum AmiModelError {
     NotInitialized,
     /// The model has already been closed.
     AlreadyClosed,
+    /// The GetWave request used a different sample interval from `AMI_Init`.
+    SampleIntervalMismatch,
+    /// The caller did not reserve storage for the required clock-time vector.
+    EmptyClockBuffer,
+    /// A returned clock time was negative but not the `-1` terminator.
+    InvalidClockTime { index: usize },
     /// `AMI_Init` or `AMI_Close` returned a failure status.
     ModelFailure {
         function: &'static str,
@@ -232,6 +265,20 @@ impl fmt::Display for AmiModelError {
             Self::AlreadyInitialized => write!(formatter, "AMI model is already initialized"),
             Self::NotInitialized => write!(formatter, "AMI model is not initialized"),
             Self::AlreadyClosed => write!(formatter, "AMI model has already been closed"),
+            Self::SampleIntervalMismatch => write!(
+                formatter,
+                "AMI_GetWave sample interval must match the AMI_Init sample interval"
+            ),
+            Self::EmptyClockBuffer => {
+                write!(
+                    formatter,
+                    "AMI_GetWave requires a non-empty clock-time buffer"
+                )
+            }
+            Self::InvalidClockTime { index } => write!(
+                formatter,
+                "AMI_GetWave returned an invalid negative clock time at index {index}"
+            ),
             Self::ModelFailure { function, status } => {
                 write!(formatter, "{function} returned failure status {status}")
             }
@@ -273,7 +320,7 @@ impl AmiModel {
         }
         match self.state {
             AmiModelState::Uninitialized => {}
-            AmiModelState::Active(_) => return Err(AmiModelError::AlreadyInitialized),
+            AmiModelState::Active { .. } => return Err(AmiModelError::AlreadyInitialized),
             AmiModelState::Closed => return Err(AmiModelError::AlreadyClosed),
         }
 
@@ -324,7 +371,10 @@ impl AmiModel {
 
         match outcome {
             Ok(outcome) => {
-                self.state = AmiModelState::Active(memory);
+                self.state = AmiModelState::Active {
+                    memory,
+                    sample_interval: request.sample_interval(),
+                };
                 Ok(outcome)
             }
             Err(error) => {
@@ -334,13 +384,90 @@ impl AmiModel {
         }
     }
 
-    /// Closes the model's opaque memory once after a successful initialization.
-    pub fn close(&mut self) -> Result<(), AmiModelError> {
-        let AmiModelState::Active(memory) = self.state else {
+    /// Invokes the optional `AMI_GetWave` entry point for an active model.
+    ///
+    /// `clock_capacity` is host-owned writable storage required by the public
+    /// ABI. The model terminates valid clock values with `-1`; this method
+    /// returns only values before that sentinel and closes after a post-FFI
+    /// failure so an uncertain model state cannot be reused.
+    pub fn get_wave(
+        &mut self,
+        request: &AmiGetWaveRequest,
+        clock_capacity: usize,
+    ) -> Result<AmiGetWaveOutcome, AmiModelError> {
+        validate_get_wave_request(&self.metadata, request).map_err(AmiModelError::Contract)?;
+        if clock_capacity == 0 {
+            return Err(AmiModelError::EmptyClockBuffer);
+        }
+        let AmiModelState::Active {
+            memory,
+            sample_interval,
+        } = self.state
+        else {
             return match self.state {
                 AmiModelState::Uninitialized => Err(AmiModelError::NotInitialized),
                 AmiModelState::Closed => Err(AmiModelError::AlreadyClosed),
-                AmiModelState::Active(_) => unreachable!("active state was matched"),
+                AmiModelState::Active { .. } => unreachable!("active state was matched"),
+            };
+        };
+        if request.sample_interval() != sample_interval {
+            return Err(AmiModelError::SampleIntervalMismatch);
+        }
+
+        let wave_size = c_long::try_from(request.waveform().len()).map_err(|_| {
+            AmiModelError::ModelFailure {
+                function: "AMI_GetWave",
+                status: 0,
+            }
+        })?;
+        let get_wave = self
+            .dll
+            .get_wave
+            .expect("metadata was validated before use");
+        let mut waveform = request.waveform().to_vec();
+        let mut clock_times = vec![-1.0; clock_capacity];
+        let mut parameters_out = std::ptr::null_mut();
+        let status = unsafe {
+            get_wave(
+                waveform.as_mut_ptr(),
+                wave_size,
+                clock_times.as_mut_ptr(),
+                &mut parameters_out,
+                memory,
+            )
+        };
+        if status != 1 {
+            self.close_after_get_wave_failure(memory);
+            return Err(AmiModelError::ModelFailure {
+                function: "AMI_GetWave",
+                status,
+            });
+        }
+
+        let outcome = (|| {
+            let response = AmiGetWaveResponse::new(waveform, valid_clock_times(&clock_times)?);
+            validate_get_wave_response(request, &response).map_err(AmiModelError::Contract)?;
+            Ok(AmiGetWaveOutcome {
+                response,
+                parameters_out: copy_model_string(parameters_out, "AMI_GetWave parameters")?,
+            })
+        })();
+        match outcome {
+            Ok(outcome) => Ok(outcome),
+            Err(error) => {
+                self.close_after_get_wave_failure(memory);
+                Err(error)
+            }
+        }
+    }
+
+    /// Closes the model's opaque memory once after a successful initialization.
+    pub fn close(&mut self) -> Result<(), AmiModelError> {
+        let AmiModelState::Active { memory, .. } = self.state else {
+            return match self.state {
+                AmiModelState::Uninitialized => Err(AmiModelError::NotInitialized),
+                AmiModelState::Closed => Err(AmiModelError::AlreadyClosed),
+                AmiModelState::Active { .. } => unreachable!("active state was matched"),
             };
         };
         let status = unsafe { (self.dll.close)(memory) };
@@ -358,14 +485,39 @@ impl AmiModel {
     fn close_failed_initialization(&mut self, memory: *mut c_void) {
         let _ = unsafe { (self.dll.close)(memory) };
     }
+
+    fn close_after_get_wave_failure(&mut self, memory: *mut c_void) {
+        let _ = unsafe { (self.dll.close)(memory) };
+        self.state = AmiModelState::Closed;
+    }
 }
 
 impl Drop for AmiModel {
     fn drop(&mut self) {
-        if let AmiModelState::Active(memory) = self.state {
+        if let AmiModelState::Active { memory, .. } = self.state {
             let _ = unsafe { (self.dll.close)(memory) };
         }
     }
+}
+
+fn valid_clock_times(clock_times: &[f64]) -> Result<Vec<f64>, AmiModelError> {
+    let mut valid = Vec::new();
+    for (index, clock_time) in clock_times.iter().copied().enumerate() {
+        if clock_time == -1.0 {
+            return Ok(valid);
+        }
+        if !clock_time.is_finite() {
+            return Err(AmiModelError::Contract(AmiContractError::NonFiniteValue {
+                name: "AMI_GetWave clock times",
+                index,
+            }));
+        }
+        if clock_time < 0.0 {
+            return Err(AmiModelError::InvalidClockTime { index });
+        }
+        valid.push(clock_time);
+    }
+    Ok(valid)
 }
 
 fn copy_model_string(
@@ -400,7 +552,7 @@ mod tests {
     use std::ffi::{c_char, c_long, c_void};
 
     use crate::ami::{AmiHostMetadata, parse_ami_parameters};
-    use crate::contract::AmiInitRequest;
+    use crate::contract::{AmiGetWaveRequest, AmiInitRequest};
 
     use super::{
         AmiCloseFn, AmiDll, AmiDllLoadError, AmiGetWaveFn, AmiInitFn, AmiModel, AmiModelError,
@@ -454,6 +606,26 @@ mod tests {
         1
     }
 
+    unsafe extern "C" fn fixture_get_wave(
+        wave: *mut f64,
+        wave_size: c_long,
+        clock_times: *mut f64,
+        _ami_parameters_out: *mut *mut c_char,
+        _ami_memory: *mut c_void,
+    ) -> c_long {
+        let waveform = unsafe {
+            std::slice::from_raw_parts_mut(
+                wave,
+                usize::try_from(wave_size).expect("fixture wave size is non-negative"),
+            )
+        };
+        waveform[0] = 0.25;
+        let clocks = unsafe { std::slice::from_raw_parts_mut(clock_times, 2) };
+        clocks[0] = 2e-12;
+        clocks[1] = -1.0;
+        1
+    }
+
     #[test]
     fn initialization_adapts_the_modified_abi_buffer_and_closes_once() {
         let dll = AmiDll::from_functions_for_test(
@@ -489,6 +661,47 @@ mod tests {
         assert_eq!(
             model.initialize(&request, 1e-10, "(root)"),
             Err(AmiModelError::AlreadyInitialized)
+        );
+    }
+
+    #[test]
+    fn get_wave_adapts_waveform_and_clock_sentinel_after_initialization() {
+        let dll = AmiDll::from_functions_for_test(
+            fixture_init as AmiInitFn,
+            Some(fixture_get_wave as AmiGetWaveFn),
+            fixture_close as AmiCloseFn,
+        );
+        let mut model = AmiModel::new(dll, metadata(true, true));
+        let init = AmiInitRequest::new(1e-12, vec![0.0, 1.0]).unwrap();
+        model.initialize(&init, 1e-10, "(root)").unwrap();
+        let request = AmiGetWaveRequest::new(1e-12, vec![1.0, 2.0]).unwrap();
+
+        let outcome = model.get_wave(&request, 2).unwrap();
+        assert_eq!(outcome.response().waveform(), &[0.25, 2.0]);
+        assert_eq!(outcome.response().clock_times(), &[2e-12]);
+        assert_eq!(model.close(), Ok(()));
+    }
+
+    #[test]
+    fn get_wave_rejects_wrong_interval_and_empty_clock_storage() {
+        let dll = AmiDll::from_functions_for_test(
+            fixture_init as AmiInitFn,
+            Some(fixture_get_wave as AmiGetWaveFn),
+            fixture_close as AmiCloseFn,
+        );
+        let mut model = AmiModel::new(dll, metadata(false, true));
+        let init = AmiInitRequest::new(1e-12, vec![0.0, 1.0]).unwrap();
+        model.initialize(&init, 1e-10, "(root)").unwrap();
+        let wrong_interval = AmiGetWaveRequest::new(2e-12, vec![1.0]).unwrap();
+        let request = AmiGetWaveRequest::new(1e-12, vec![1.0]).unwrap();
+
+        assert_eq!(
+            model.get_wave(&wrong_interval, 1),
+            Err(AmiModelError::SampleIntervalMismatch)
+        );
+        assert_eq!(
+            model.get_wave(&request, 0),
+            Err(AmiModelError::EmptyClockBuffer)
         );
     }
 }
