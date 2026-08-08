@@ -6,6 +6,8 @@
 
 use std::fmt;
 
+pub mod ami;
+
 /// A parsed IBIS file, preserving the order of its keyword sections.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IbisDocument {
