@@ -10,6 +10,7 @@ use std::time::Instant;
 use agent_spice_sim::error::Error;
 use agent_spice_sim::response::{RcShunt, ResponseLoads, evaluate_response_grid, spice_number};
 use agent_spice_sim::{compatibility, logging, netlist, rfm, simulator};
+use sipi_ami::{ami::AmiHostMetadata, ami::parse_ami_parameters, parse_ibis};
 
 /// CLI-layer error: adds usage messages and serde_json failures to the
 /// library [`Error`].
@@ -23,6 +24,8 @@ enum CliError {
     Io(#[from] std::io::Error),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+    #[error("AMI input: {0}")]
+    Ami(String),
 }
 
 type CliResult<T> = std::result::Result<T, CliError>;
@@ -97,6 +100,9 @@ fn run() -> CliResult<()> {
     }
     if first == "rfm-response" {
         return run_rfm_response(arguments);
+    }
+    if first == "ami-inspect" {
+        return run_ami_inspect(arguments);
     }
     let deck = PathBuf::from(first);
     let mut rfm_path = None;
@@ -307,6 +313,40 @@ fn run_build_info(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> Cl
     println!(
         "{}",
         serde_json::to_string(&build_info()).expect("build-info is serializable")
+    );
+    Ok(())
+}
+
+fn run_ami_inspect(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> CliResult<()> {
+    let ibis_path = arguments
+        .next()
+        .map(PathBuf::from)
+        .ok_or_else(|| CliError::Usage(ami_inspect_usage()))?;
+    let ami_path = arguments
+        .next()
+        .map(PathBuf::from)
+        .ok_or_else(|| CliError::Usage(ami_inspect_usage()))?;
+    if arguments.next().is_some() {
+        return Err(CliError::Usage(ami_inspect_usage()));
+    }
+    let ibis = std::fs::read_to_string(&ibis_path)?;
+    let ami = std::fs::read_to_string(&ami_path)?;
+    let ibis = parse_ibis(&ibis).map_err(|error| CliError::Ami(error.to_string()))?;
+    let parameters =
+        parse_ami_parameters(&ami).map_err(|error| CliError::Ami(error.to_string()))?;
+    let metadata = AmiHostMetadata::from_tree(&parameters)
+        .map_err(|error| CliError::Ami(error.to_string()))?;
+    println!(
+        "{}",
+        serde_json::json!({
+            "ok": true,
+            "schema": "agent-spice.ami-inspect.v1",
+            "ibisVersion": ibis.ibis_version(),
+            "ibisSections": ibis.sections().len(),
+            "amiVersion": metadata.ami_version(),
+            "initReturnsImpulse": metadata.init_returns_impulse(),
+            "getWaveExists": metadata.get_wave_exists(),
+        })
     );
     Ok(())
 }
@@ -564,10 +604,15 @@ fn parse_port_value(value: &str, name: &str) -> CliResult<(usize, f64)> {
 
 fn usage() -> String {
     "agent-spice-sim build-info [--json]\n\
+     agent-spice-sim ami-inspect <model.ibs> <model.ami>\n\
      agent-spice-sim <deck> [--rfm <model.rfm>] [--rfm-subckt <name>] \
      [--output-json <result.json>] [--waveform-csv <waveform.csv>] \
      [--log <simulation.log>] [--audit-json <compatibility.json>]"
         .into()
+}
+
+fn ami_inspect_usage() -> String {
+    "agent-spice-sim ami-inspect <model.ibs> <model.ami>".into()
 }
 
 fn rfm_response_usage() -> String {

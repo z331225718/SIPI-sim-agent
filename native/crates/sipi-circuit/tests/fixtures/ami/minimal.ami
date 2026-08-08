@@ -1,0 +1,3 @@
+(AMI_Version (Type String) (Value 7.2))
+(Init_Returns_Impulse (Type Boolean) (Value true))
+(GetWave_Exists (Type Boolean) (Value true))
