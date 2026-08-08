@@ -365,8 +365,13 @@ algorithms, or resolver ordering. A first audit caught an M5A-07 evidence-tree
 violation; the remediation restored the crate README exactly rather than
 weakening that gate. OMP (`msg_bb2faa492e3e`) and the independent review agent
 (`msg_f1d27325f61c`) both found final 0 P1 / 0 P2; the move verifier and
-`tools/run_all_tests.py` (56/56) passed. M5A-08b packaging/provenance work is
-next; M5A-08 as a whole remains open.
+`tools/run_all_tests.py` (56/56) passed. M5A-08b then added the Windows x64
+staged-wheel gate in `aceb252`: it builds only the moved Rust crate, packages
+it outside the worktree, verifies the installed wheel's native engine,
+build-info, and eight-point smoke, and explicitly emits no promotion or
+cross-platform certification claim. OMP (`msg_3d380fd32f6e`) and the
+independent review agent (`msg_7a90a7220fef`) both found 0 P1 / 0 P2.
+**M5A-08 is complete; M5A-09 is next.**
 
 ### 9.3 M5B：PyBERT Link
 
