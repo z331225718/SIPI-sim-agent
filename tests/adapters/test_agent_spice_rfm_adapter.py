@@ -149,7 +149,7 @@ class AgentSpiceRfmResponseAdapterTests(unittest.TestCase):
                 builder=AgentSpiceRfmResponseAdapter(),
             )
             self.assertEqual(result["status"], "failed")
-            self.assertEqual(result["error"]["category"], "EngineUnavailable")
+            self.assertEqual(result["error"]["category"], "InvalidRequest")
             self.assertIn("positive dt", result["error"]["message"])
 
     def test_invalid_fft_size_is_contract_error(self) -> None:
@@ -165,7 +165,7 @@ class AgentSpiceRfmResponseAdapterTests(unittest.TestCase):
                 builder=AgentSpiceRfmResponseAdapter(),
             )
             self.assertEqual(result["status"], "failed")
-            self.assertEqual(result["error"]["category"], "EngineUnavailable")
+            self.assertEqual(result["error"]["category"], "InvalidRequest")
 
 
 if __name__ == "__main__":
