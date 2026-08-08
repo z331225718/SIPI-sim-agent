@@ -234,7 +234,7 @@ engine.lock
 
 ## 7. M3：Platform MVP 与纵向切片
 
-> 状态（2026-08-08）：平台主体完成并经逐片独立审计（证据 `docs/baselines/audits/2026-08-07-m3.md`）；M3-11 hard enforcement 已实现并经 Windows 本机认证（`b7e2edc`，OMP 审计 0 P1/0 P2）；真实引擎纵向验收已解锁（2026-08-08：parity gate approved + agent-spice/agent-com 许可分类 + engine bundle lock 全部就绪），M3-07b/08b 推进中。Linux/macOS 认证与 G2b 故障 fixture 仍延后。
+> 状态（2026-08-08）：平台主体完成并经逐片独立审计（证据 `docs/baselines/audits/2026-08-07-m3.md`）；M3-11 hard enforcement 已实现并经 Windows 本机认证（`b7e2edc`，OMP 审计 0 P1/0 P2）；**M3-07b 真实引擎示例已完成**（2026-08-08：managed dependency lock → 真实 Agent-Spice rfm-response + static_inputs → 真实 pybert bundle → 双引擎纵向验收，四切片各独立提交 + OMP 审计 0 P1/0 P2，真实引擎路径不再 stub）。M3-08b 剩余 compare/report 数值等价接线待 M5B-03 拓扑决策；Linux/macOS 认证与 G2b 故障 fixture 仍延后。
 
 ### 7.1 目标
 
