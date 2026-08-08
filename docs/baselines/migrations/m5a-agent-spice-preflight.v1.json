@@ -1,0 +1,94 @@
+{
+  "schema": "sipi.history-migration-preflight.v1",
+  "migration_id": "m5a-agent-spice",
+  "source": {
+    "root_ref": "agent-spice",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402",
+    "baseline": {
+      "tag": "sipi-baseline/agent-spice/20260807.2",
+      "commit": "80f66a384b1b4b52b91390dc40f12a7af6cf0e2a",
+      "tree": "149325eae185cc1cce24bfd3afd2c0f3583a0542"
+    },
+    "evidence": [
+      {
+        "path": "LICENSE",
+        "sha256": "D0807E4DF734F0FADC658F4EA3BE7BFE4B81C3E85A2B053B069A23189C6034C2"
+      },
+      {
+        "path": "LICENSE-MANIFEST.md",
+        "sha256": "624E76990666071338F058ABCE50A4A625D0EFFA1A91721CC329E224CE3DFD76"
+      },
+      {
+        "path": "native/agent-spice-sim/Cargo.toml",
+        "sha256": "72C7296FDFEE4627D65DC5CB5BA35EC09A4ECFF47A34B16AF034CD7D5817CF74"
+      }
+    ]
+  },
+  "target": {
+    "prefix": "engines/agent-spice"
+  },
+  "filter": {
+    "include_paths": [
+      ".github",
+      ".gitattributes",
+      ".gitignore",
+      "LICENSE",
+      "LICENSE-MANIFEST.md",
+      "README.md",
+      "pyproject.toml",
+      "setup.py",
+      "src",
+      "native/agent-spice-sim",
+      "native/AgentSpice.Engine",
+      "docs",
+      "tests"
+    ],
+    "drop_paths": [
+      ".claude",
+      ".reasonix",
+      ".superpowers",
+      "artifacts",
+      "benchmarks",
+      "configs",
+      "pdn_analysis",
+      "pdn_analysis_output",
+      "poc",
+      "scripts",
+      "skills",
+      "third_party",
+      "tools",
+      "original-vf-30p-z-curve-v2.stderr.log",
+      "original-vf-30p-z-curve-v2.stdout.log",
+      "src/agent_spice/lib/native"
+    ],
+    "required_retained_paths": [
+      "src/agent_spice",
+      "native/agent-spice-sim",
+      "docs",
+      "tests"
+    ]
+  },
+  "restricted_paths": [
+    {
+      "path": "third_party",
+      "reason": "blocked_unknown"
+    },
+    {
+      "path": "artifacts",
+      "reason": "external_reference_only"
+    },
+    {
+      "path": "pdn_analysis",
+      "reason": "external_reference_only"
+    },
+    {
+      "path": "pdn_analysis_output",
+      "reason": "external_reference_only"
+    },
+    {
+      "path": "src/agent_spice/lib/native",
+      "reason": "external_reference_only"
+    }
+  ]
+}

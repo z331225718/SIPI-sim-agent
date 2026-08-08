@@ -6,6 +6,8 @@ source_snapshots:
   - {root_ref: agent-spice, head: 90f0374bc9987e9197d4dcaa3912432fbd766a5e, tree: b5db1cb9a1a989459dffe7db885790abeaf47290}
   - {root_ref: pybert, head: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe, tree: 5faef6bdb341d444ad65d82a11c0018b15805e24}
   - {root_ref: agent-com, head: 034b21b2f293b2ef97cb8be269b1bf2be38e0086, tree: dc6e5529612d7272f23547a796b53e1456cc49cb}
+migration_source_snapshots:
+  - {id: m5a-agent-spice, root_ref: agent-spice, head: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5, tree: b6bde97128030d6cea0d68b2f0a35d807be8c402, baseline_tag: sipi-baseline/agent-spice/20260807.2, baseline_commit: 80f66a384b1b4b52b91390dc40f12a7af6cf0e2a, source_license_manifest: {path: LICENSE-MANIFEST.md, sha256: 624E76990666071338F058ABCE50A4A625D0EFFA1A91721CC329E224CE3DFD76}}
 policy:
   valid_distribution_statuses: [authorized_public, authorized_private, external_reference_only, blocked_unknown]
   default_action: inventory_only
@@ -21,7 +23,7 @@ policy:
 subjects:
   - id: agent-spice-top-level-source
     subject_type: source
-    scope: {root_ref: agent-spice, paths: [src, native/AgentSpice.Engine, docs, tests], exclusions: [native/agent-spice-sim, third_party]}
+    scope: {root_ref: agent-spice, paths: [.github, .gitattributes, .gitignore, LICENSE, LICENSE-MANIFEST.md, README.md, pyproject.toml, setup.py, src, native/AgentSpice.Engine, docs, tests], exclusions: [src/agent_spice/lib/native, native/agent-spice-sim, third_party]}
     fixture_refs: [agent-spice-python-fixtures, agent-spice-native-fixtures, agent-spice-sparam-benchmarks]
     license_declaration: MIT
     evidence_refs: [{type: formal_license_text, path: LICENSE, sha256: D0807E4DF734F0FADC658F4EA3BE7BFE4B81C3E85A2B053B069A23189C6034C2}]
@@ -29,7 +31,7 @@ subjects:
     compliance: {state: authorized, notice: retain MIT license text and copyright}
     owners: {asset_owner: agent-spice-maintainer, license_decision_owner: sipi-license-owner, gate_owner: sipi-release-gate}
     required_by: [G0b, G0c]
-    status_reason: license owner authorized MIT; src/native/AgentSpice.Engine/docs/tests covered; native/agent-spice-sim and third_party excluded
+    status_reason: license owner authorized MIT; M5A migration scope covers Python fit/CLI, C# reference, docs/tests, and build metadata; local native binaries, Rust crate, and third_party remain separately classified
   - id: agent-spice-rust-crate
     subject_type: source
     scope: {root_ref: agent-spice, paths: [native/agent-spice-sim], exclusions: []}
@@ -37,12 +39,23 @@ subjects:
     license_declaration: MIT
     evidence_refs:
       - {type: formal_license_text, path: LICENSE, sha256: D0807E4DF734F0FADC658F4EA3BE7BFE4B81C3E85A2B053B069A23189C6034C2}
-      - {type: package_metadata_declaration, path: native/agent-spice-sim/Cargo.toml, sha256: CFE5A26135CA60889C3662365BA4B3FF05C3081E2D3B2875BE32EE1A6131843C}
+      - {type: package_metadata_declaration, path: native/agent-spice-sim/Cargo.toml, sha256: 72C7296FDFEE4627D65DC5CB5BA35EC09A4ECFF47A34B16AF034CD7D5817CF74}
     distribution_status: authorized_public
     compliance: {state: authorized, notice: retain MIT license text and copyright}
     owners: {asset_owner: agent-spice-maintainer, license_decision_owner: sipi-license-owner, gate_owner: sipi-release-gate}
     required_by: [G0b, G0c]
-    status_reason: canonical MIT LICENSE added at repository root and license owner confirmed crate scope
+    status_reason: canonical MIT LICENSE and the M5A source anchor confirm the crate scope
+  - id: agent-spice-local-native-binaries
+    subject_type: binary_artifact
+    scope: {root_ref: agent-spice, paths: [src/agent_spice/lib/native], exclusions: []}
+    fixture_refs: []
+    license_declaration: NOASSERTION
+    evidence_refs: [{type: source_classification, path: LICENSE-MANIFEST.md, sha256: 624E76990666071338F058ABCE50A4A625D0EFFA1A91721CC329E224CE3DFD76}]
+    distribution_status: external_reference_only
+    compliance: {state: authorized, notice: local build outputs are excluded from migration and may only be validated from a user-provided allowlisted location}
+    owners: {asset_owner: agent-spice-maintainer, license_decision_owner: sipi-license-owner, gate_owner: sipi-release-gate}
+    required_by: [G0c]
+    status_reason: source classification identifies win-* engine executables as locally built artifacts; M5A excludes their full history
   - id: agent-spice-third-party
     subject_type: third_party_component
     scope: {root_ref: agent-spice, paths: [third_party], exclusions: []}
