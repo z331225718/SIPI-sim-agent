@@ -419,6 +419,8 @@ def run_process(
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         creationflags=flags,
         preexec_fn=preexec,
     )

@@ -1,7 +1,7 @@
 """Strict black-box engine adapters for the SIPI control plane."""
 
 from .agent_com import AgentComRunAdapter
-from .agent_spice import AgentSpiceHspiceAdapter
+from .agent_spice import AgentSpiceHspiceAdapter, AgentSpiceRfmResponseAdapter
 from .attestation import AttestationError, WheelAttestation, verify_wheel_bundle
 from .capabilities import AdapterCapability, build_engine_capabilities, preflight
 from .process import (
@@ -38,6 +38,7 @@ __all__ = [
     "AdapterCapability",
     "AgentComRunAdapter",
     "AgentSpiceHspiceAdapter",
+    "AgentSpiceRfmResponseAdapter",
     "AttestationError",
     "BackendAdapter",
     "BackendOutcome",
