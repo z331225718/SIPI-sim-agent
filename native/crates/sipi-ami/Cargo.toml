@@ -8,3 +8,6 @@ description = "Project-owned clean-room IBIS/AMI parser and host contracts"
 [lib]
 name = "sipi_ami"
 path = "src/lib.rs"
+
+[dependencies]
+libloading = "0.8"

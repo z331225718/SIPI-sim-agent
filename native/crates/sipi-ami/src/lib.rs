@@ -8,6 +8,7 @@ use std::fmt;
 
 pub mod ami;
 pub mod contract;
+pub mod host;
 
 /// A parsed IBIS file, preserving the order of its keyword sections.
 #[derive(Debug, Clone, PartialEq, Eq)]

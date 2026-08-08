@@ -12,4 +12,6 @@ and validates the host-facing `AMI_Version`, `Init_Returns_Impulse`, and
 `GetWave_Exists` value types. It also defines an explicit, non-numerical
 `AMI_Init` / `AMI_GetWave` waveform contract for a future DLL host. It is not a
 claim of complete IBIS or AMI specification coverage, nor a vendor DLL or
-cross-platform certification claim.
+cross-platform certification claim. The current host loader resolves the
+required public AMI entry points through Rust `libloading`; invoking a vendor
+model remains a separately tested host step.
