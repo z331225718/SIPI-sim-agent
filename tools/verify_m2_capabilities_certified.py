@@ -38,7 +38,15 @@ def main() -> int:
         engines = {entry["instance_id"]: entry for entry in parse_engine_lock(lock_path.read_text(encoding="utf-8")).wire["engines"]}
     for entry in raw["entries"]:
         q(entry["evidence_state"] == "certified" and entry["release_channel"] == "stable", f"{entry['engine_instance']}: evidence/release")
-        q(all(value != "hard" for value in entry["resource_enforcement"].values()), f"{entry['engine_instance']}: hard enforcement before M3")
+        enforcement = entry["resource_enforcement"]
+        if any(value == "hard" for value in enforcement.values()):
+            # M3/G2b: hard enforcement is certifiable only on the Windows x86_64
+            # managed worker with a G2b fault-fixture evidence ref per hard field.
+            q(entry["platform"]["os"] == "windows" and entry["platform"]["architecture"] == "x86_64" and entry["execution_mode"] == "managed_worker", f"{entry['engine_instance']}: hard enforcement off Windows managed worker")
+            fixture_prefix = "g2b-windows-managed-worker-v1"
+            q(any(fixture_prefix in ref for ref in entry["evidence_refs"]), f"{entry['engine_instance']}: hard enforcement without G2b fault fixture evidence")
+        else:
+            q(True, "no hard enforcement (M2-compatible)")
         q(entry["certified_at"] <= entry["expires_at"], f"{entry['engine_instance']}: expiry ordering")
         q(entry["expires_at"] >= date.today().isoformat(), f"{entry['engine_instance']}: certification expired")
         q(bool(entry["evidence_refs"]), f"{entry['engine_instance']}: evidence refs")
