@@ -177,7 +177,9 @@ engine.lock
 
 ## 6. M2：黑盒引擎适配器
 
-> 状态（2026-08-07）：平台侧完成并经逐片独立审计（证据 `docs/baselines/audits/2026-08-07-m2-platform.md`）；引擎级真实双跑与许可项 deferred——pybert 真实双跑待 managed dependency lock（M2-08 后续 slice；2026-08-07 引擎侧 `native_auto_parity_gate` 已对 RLGC NRZ 默认 profile approved），agent-spice/agent-com 随许可/oracle 延后至 cleanroom 完成后重开 M0-09/G0b/G0c。
+> 状态（2026-08-08）：平台侧完成并经逐片独立审计（证据 `docs/baselines/audits/2026-08-07-m2-platform.md`）；引擎级真实双跑与许可项 deferred——pybert 真实双跑待 managed dependency lock（M2-08 后续 slice；2026-08-07 引擎侧 `native_auto_parity_gate` 已对 RLGC NRZ 默认 profile approved），agent-spice/agent-com 随许可/oracle 延后至 cleanroom 完成后重开 M0-09/G0b/G0c。
+
+> 状态更新（2026-08-08）：**M2 deferred 触发条件已全部满足**——(1) pybert `native_auto_parity_gate` 已对 7 个 profile（rlgc-nrz-default + TX edge jitter×5 + pam4-web）返回 approved（核验 msg_a99de12f4422，pybert commit `8a6b0fe`/`8fbd4fe`）；(2) agent-spice M0-09 许可分类 + engine bundle lock 完成（`2cc92316`/`2583926e`，核验 msg_4d2fef0101c2）；(3) agent-com M0-09 许可分类完成（`5272ffe`，核验 msg_8fa80948ec8b）。平台侧剩余工作：managed dependency lock（venv 多 wheel 依赖安装）→ 真实 bundle 替换示例 stub → 三引擎纵向验收（M3-07b/08b）。
 
 ### 6.1 目标
 
@@ -232,7 +234,7 @@ engine.lock
 
 ## 7. M3：Platform MVP 与纵向切片
 
-> 状态（2026-08-07）：平台主体完成并经逐片独立审计（证据 `docs/baselines/audits/2026-08-07-m3.md`）；真实引擎纵向验收与硬资源强制延后——真实引擎待 managed lock + 许可分类，M3-11 hard enforcement 待认证 enforcer 与故障 fixture。不据此 advertise 能力。
+> 状态（2026-08-08）：平台主体完成并经逐片独立审计（证据 `docs/baselines/audits/2026-08-07-m3.md`）；M3-11 hard enforcement 已实现并经 Windows 本机认证（`b7e2edc`，OMP 审计 0 P1/0 P2）；真实引擎纵向验收已解锁（2026-08-08：parity gate approved + agent-spice/agent-com 许可分类 + engine bundle lock 全部就绪），M3-07b/08b 推进中。Linux/macOS 认证与 G2b 故障 fixture 仍延后。
 
 ### 7.1 目标
 
