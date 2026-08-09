@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: f8b107f8b00681621627f22abe1ae345574854a107bd04d0a73a9f9ab417971f
+  tracked_paths_sha256: 41b2ce8feab95be314e1ad72d14fe89837dc553283c9910f8bd039da9811a0d8
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -288,6 +288,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-09-p1a-rust-foundation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-09-p1b-types-foundation.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
