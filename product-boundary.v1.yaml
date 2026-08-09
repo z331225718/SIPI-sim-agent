@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: b2a82d267c49c3aeaa1da89ef46820b93c35442990a1530f0764c9663538ea3e
+  tracked_paths_sha256: 029e37d7233e7147065d2c3772f09e60ee4de7134cdc049fb414f98049c1902a
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -222,6 +222,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-09-p0e-native-source-map.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-09-p0f-clean-room-templates.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
