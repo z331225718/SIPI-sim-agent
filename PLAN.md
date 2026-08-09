@@ -143,7 +143,7 @@ flowchart LR
 ### 7.2 任务
 
 - [x] **P1-01** 新建根 Cargo workspace，锁定 Rust toolchain、Cargo.lock 和 release profile；仅包含 std-only `sipi-cli`/`sipi-types`/`sipi-contracts` foundation，所有 Rust path 仍为 quarantine。
-- [ ] **P1-02** 建立 `sipi-types`：SI newtypes、axis、port、complex tensor、waveform/spectrum 和 finite validation。
+- [x] **P1-02** 建立 std-only `sipi-types`：SI newtypes、axis、port、complex tensor、waveform/spectrum 和 finite/shape/length validation；未定义单位换算、轴/端口领域语义、FFT 或 JSON。
 - [ ] **P1-03** 建立 `sipi-contracts`：versioned serde types、cross-field rule ledger、canonical serialization 和 JSON Schema 生成。
 - [ ] **P1-04** 对现有 `sipi.*.v1` wire fixture 做 Rust round-trip 和 negative conformance；语义变化新开版本。
 - [ ] **P1-05** 建立 `sipi-artifacts`：SHA-256、staging、atomic publish、success manifest、path containment。
