@@ -1,0 +1,4938 @@
+schema: sipi.product-boundary.v1
+status: provisional
+captured_at_utc: 2026-08-09 00:00:00+00:00
+inventory:
+  source: git_ls_files
+  tracked_paths_sha256: 9034a78cad52bb12cee667e5d3d5eced6fcf928bdafaaf5ce567598139ebb82a
+  entries:
+    .github/workflows/ci.yml:
+      rule: github-migration
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    .gitignore:
+      rule: migration-metadata
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    LICENSE:
+      rule: product-governance
+      class: product_candidate
+      license: MIT
+      provenance: project_authored
+      distribution: product
+    LICENSE-SCOPE.md:
+      rule: product-governance
+      class: product_candidate
+      license: MIT
+      provenance: project_authored
+      distribution: product
+    PLAN.md:
+      rule: product-governance
+      class: product_candidate
+      license: MIT
+      provenance: project_authored
+      distribution: product
+    README.md:
+      rule: product-governance
+      class: product_candidate
+      license: MIT
+      provenance: project_authored
+      distribution: product
+    SPEC.md:
+      rule: product-governance
+      class: product_candidate
+      license: MIT
+      provenance: project_authored
+      distribution: product
+    apps/sipi-cli/pyproject.toml:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    apps/sipi-cli/src/sipi_cli/__init__.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    apps/sipi-cli/src/sipi_cli/__main__.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    dirty-disposition.v1.yaml:
+      rule: migration-metadata
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/adr/ADR-001-repository-role-and-phased-migration.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/adr/ADR-002-monorepo-multipackage-independent-release.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/adr/ADR-003-runtime-envelope-and-domain-contract-boundary.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/adr/ADR-004-semantic-dtos-without-algorithm-unification.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/adr/ADR-005-engine-boundaries-and-dependency-direction.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/adr/ADR-006-inherit-pybert-v1-and-existing-handoffs.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/adr/ADR-007-preserve-com-r480-behavior-profile.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/adr/ADR-008-process-isolation-default-boundary.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/adr/ADR-009-artifact-store.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/adr/ADR-010-platform-support.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/adr/ADR-011-native-mit-rust-product-boundary.md:
+      rule: product-governance
+      class: product_candidate
+      license: MIT
+      provenance: project_authored
+      distribution: product
+    docs/baselines/agent-com-baseline.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/agent-spice-baseline.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-05-m0-a.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-05-m1-06.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-07-m2-platform.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-07-m3.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-07-m4.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-08-m5.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-09-spec-v0.2.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/capabilities.baseline.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/capability-inventory.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/conformance/m4-dto-conformance.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/m5b-ami-authorized-dll-closure-preflight.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/m5b-ami-candidate-bundle-preflight.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/m5b-ami-candidate-bundle-preflight.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/m5b-ami-vendor-fixture-preflight.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/m5b-pybert-history-preflight.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/migrations/history-map.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/migrations/m5a-agent-spice-move.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/migrations/m5a-agent-spice-preflight.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/platform-support.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/pybert-baseline.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/scratch-manifest.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/source-inventory.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/source-snapshot.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/toolchain-observation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/toolchain-verification.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/handoff-20260807-211611.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/handoff-20260808-215653.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/handoff-20260808-221902.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/handoff-20260809-m5b04e.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/m5b-ami-host-candidate.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/m5b-ami-host-preflight.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/m5b-backend-support.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/migration-guide.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    engines/agent-spice/.gitattributes:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/.github/workflows/native-wheels.yml:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/.github/workflows/rust-checks.yml:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/.gitignore:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/LICENSE:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/LICENSE-MANIFEST.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/README.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/confluence-project-overview.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/m1-compatibility-matrix.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/native-engine-roadmap.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/native-fit-algorithm-academic-report.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/offline-native-runtime.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/pdn_fft_tran_comparison_playbook.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/pi-spice-simulator-spec.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/remaining-tasks-after-task6.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/remote_pdn_frequency_workflow.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/rfm-ngspice-exploration-report.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/rfm-ngspice-usage.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/solver-toolchain.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-19port-fit-case-study.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-algorithm-research-retrospective.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-band-cascade-experiment-report.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-band-cascade-usage.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-batch-fit-results.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-benchmark.html:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-fit-performance.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-idem-full-benchmark.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-idem-s19-tuning.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-matlab-mft-s19-benchmark.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-mft-nnls-conclusion.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-mft-nnls-s19-gate-b.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-mft-nnls-test16-collapse.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-modal-pole-initializer-s19-results.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-modal-z-optimization-report.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-native-64core-performance.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-native-nnls-s19-results.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-native-single-fit-50pct.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-native-sota-decision.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-original-vs-modal-v7-comparison.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-passivity-asymptotic-compensation-design.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-pole-dictionary-s19-results.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-quality-gate-plan.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-rkfit-s19-validation-results.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-stabaaa-s19-validation-results.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-stabaaa-shared-pole-validation-results.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/sparam-tangential-loewner-s19-validation-results.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-06-30-hspice-compatible-pi-mvp.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-07-01-m2-corpus-golden-reports.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-07-01-m2-xyce-xdm-execution.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-07-02-sparam-fit-export.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-07-03-modal-z-fit.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-07-03-z-domain-pdn-fit.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-07-10-full-corpus-idem-benchmark.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-07-10-idem-s19-adaptive-tuning.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-07-10-native-production-baseline.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-07-10-target-driven-sparam-fit.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-07-11-mft-nnls-python-backend.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-07-11-native-sparam-sota-passivity.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-07-12-native-fit-product-exports.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-07-12-sparam-stabaaa-shared-pole-validation.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-07-13-native-64core-performance.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/plans/2026-07-13-native-single-fit-50pct.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/roundtables/2026-07-03-modal-z-fit-roundtable.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/specs/2026-07-01-m2-corpus-golden-reports-design.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/specs/2026-07-01-m2-xyce-xdm-execution-design.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/specs/2026-07-02-sparam-fit-export-design.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/specs/2026-07-03-modal-z-fit-design.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/specs/2026-07-10-full-corpus-idem-benchmark-design.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/specs/2026-07-10-native-baseline-idem-s19-tuning-design.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/specs/2026-07-10-target-driven-sparam-fit-design.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/specs/2026-07-11-mft-nnls-python-backend-design.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/specs/2026-07-11-native-sparam-sota-passivity-design.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/specs/2026-07-12-native-fit-product-exports-design.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/specs/2026-07-12-sparam-stabaaa-shared-pole-validation-design.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/superpowers/specs/2026-07-12-sparam-target-export-report-design.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/y-pr-exact-lft-design.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/yderived-s-enforcement-workflow.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/yparam-fit-design.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/yparam-fit-implementation-checklist.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/yparam-heldout-tran-signoff-report.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/yparam-s19-s30-benchmark.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/docs/yparam-usage.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/AgentSpice.Engine.csproj:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/Circuit.cs:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/JsonContext.cs:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/LinearAlgebra.cs:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/NetlistFlattener.cs:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/NumericExpression.cs:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/Program.cs:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/README.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/Rfm.cs:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/Simulator.cs:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/WaveformWriter.cs:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_dynamic_ac.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_dynamic_bias_tran.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_dynamic_pnp_tran.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_dynamic_tran.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_dynamic_tran_gear.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_early_dc.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_high_injection_dc.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_leakage_ac.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_leakage_dc.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_leakage_temperature_op.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_npn_ac.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_npn_dc.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_npn_op.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_pnp_op.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_series_dc.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_temperature_ac.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_temperature_op.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/bjt_temperature_tran.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/controlled_sources.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode_ac.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode_breakdown_dc.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode_breakdown_series_op.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode_breakpoint.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode_cap_ac.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode_dc.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode_op.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode_reverse_recovery.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode_reverse_recovery_gear.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode_series_dc.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode_temperature_ac.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode_temperature_op.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode_temperature_tran.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode_tran.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/diode_tran_nopredictor.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/divider.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/exp_tran.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/include_case/models.lib:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/include_case/parts/parameters.inc:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/include_case/subcircuits/conditioned.inc:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/include_case/top.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_cmos_inverter_dc.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_cmos_inverter_tran.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_dynamic_ac.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_dynamic_tran.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_dynamic_tran_gear.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_meyer_ac.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_meyer_pmos_ac.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_meyer_reverse_ac.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_meyer_tran.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_nmos_dc.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_nmos_op.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_pmos_dc.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_series_direct_dc.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_series_sheet_dc.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_substrate_derived_op.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_temperature_ac.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_temperature_op.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/mos1_temperature_tran.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/one_port.rfm:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/pulse_zero_edge_rc.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/pwl_tran.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/pwl_tran_gear.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/rc.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/rfm_ac.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/rfm_tran.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/sin_tran.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/subckt_local_model.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/native/AgentSpice.Engine/fixtures/subckt_param.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/pyproject.toml:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/setup.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/__init__.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/backend/__init__.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/backend/base.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/backend/native.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/backend/ngspice.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/backend/xyce.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/cli.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/cpm/__init__.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/cpm/io.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/cpm/waveform.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/deck/__init__.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/deck/builder.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/hspice/__init__.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/hspice/alter.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/hspice/audit.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/hspice/converter.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/hspice/manifest.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/hspice/measure.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/hspice/results.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/lib/ngspice/compiler.txt:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/lib/ngspice/rfm.cm:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/lib/ngspice/sha256.txt:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/project.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/__init__.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/artifacts.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/benchmark.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/cascade.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/corpus_preflight.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/fitting.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/idem.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/io.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/metrics.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/mft_nnls/__init__.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/mft_nnls/model.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/mft_nnls/nnls.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/mft_nnls/passivity.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/mft_nnls/perturb.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/mft_nnls/poles.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/mft_nnls/types.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/mft_nnls/vector_fit.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/mft_nnls/weights.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/modal.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/modal_report.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/native_cli.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/native_vf.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/passivity.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/performance.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/pole_discovery.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/pole_loewner.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/pole_relocation.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/quality.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/rational_lft.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/rfm.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/rfm_ngspice.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/target_fit.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/y_pr.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/y_tran_tuning.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/yparam.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/z_metrics.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/conftest.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/cpm/chiplet_demo.json:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/alter_pi.sp:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/alter_corners/alter_corners.sp:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/alter_corners/case.yaml:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/alter_corners/golden/ngspice/alter_corners__alter_001_fast/case.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    ? engines/agent-spice/tests/fixtures/hspice/corpus/alter_corners/golden/ngspice/alter_corners__alter_001_fast/compat_report.json
+    : rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/alter_corners/golden/ngspice/alter_corners__alter_002_slow/case.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    ? engines/agent-spice/tests/fixtures/hspice/corpus/alter_corners/golden/ngspice/alter_corners__alter_002_slow/compat_report.json
+    : rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/alter_corners/golden/ngspice/alter_corners__base/case.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/alter_corners/golden/ngspice/alter_corners__base/compat_report.json:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/include_lib_subckt/case.yaml:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/include_lib_subckt/deps/corners.lib:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/include_lib_subckt/deps/models.inc:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/include_lib_subckt/golden/ngspice/include_lib_subckt__base/case.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    ? engines/agent-spice/tests/fixtures/hspice/corpus/include_lib_subckt/golden/ngspice/include_lib_subckt__base/compat_report.json
+    : rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/include_lib_subckt/include_lib_subckt.sp:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/measure_outputs/case.yaml:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/measure_outputs/golden/ngspice/measure_outputs__base/case.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/measure_outputs/golden/ngspice/measure_outputs__base/compat_report.json:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/measure_outputs/measure_outputs.sp:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/vrm_decap_pdn/case.yaml:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/vrm_decap_pdn/deps/decap.inc:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/vrm_decap_pdn/golden/ngspice/vrm_decap_pdn__base/case.cir:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/vrm_decap_pdn/golden/ngspice/vrm_decap_pdn__base/compat_report.json:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/corpus/vrm_decap_pdn/vrm_decap_pdn.sp:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/rust_controlled_sources.sp:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/rust_hierarchy.sp:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/rust_linear_pi.sp:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/rust_measure_events.sp:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/rust_rfm_compat.sp:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/rust_rfm_compat_hspice.sp:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/rust_rfm_gear.sp:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/rust_rfm_gear_hspice.sp:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/rust_rfm_one_port_macro.sp:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/hspice/simple_pi.sp:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/mft_nnls/README.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/mft_nnls/convert_nnls_reference.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/mft_nnls/convert_reference.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/mft_nnls/convert_rp_reference.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/mft_nnls/ex4_s_small.npz:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/mft_nnls/generate_nnls_reference.m:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/mft_nnls/generate_reference.m:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/mft_nnls/generate_rp_reference.m:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/mft_nnls/nnls_reference.npz:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/mft_nnls/rp_reference.npz:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/sparam/cascade_two_through.json:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/fixtures/sparam/simple_through.s2p:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/oracles/__init__.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_backend_commands.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_benchmark_documentation.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_benchmark_yparam_vs_sfit.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_cli_benchmark_sparam.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_cli_fit_modal_z.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_cli_fit_sparam.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_cli_probe_idem.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_cli_run_hspice.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_cli_sparam_metrics.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_compare_rust_hspice_measure_events.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_compare_rust_hspice_pi.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_cpm_lite.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_deck_builder.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_hspice_alter.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_hspice_audit.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_hspice_converter.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_hspice_corpus_golden.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_hspice_measure.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_hspice_results.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_import.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_mft_nnls_model.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_mft_nnls_nnls.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_mft_nnls_passivity.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_mft_nnls_perturb.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_mft_nnls_poles.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_mft_nnls_vector_fit.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_mft_nnls_weights.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_native_engine.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_native_rfm_engine.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_oracle_hspice_rust.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_oracle_ngspice_rust.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_project_manifest.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_rational_lft.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_rfm_ngspice.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_rfm_xspice_poc.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_rust_engine.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_smoke_fixtures.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_artifacts.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_benchmark.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_cascade.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_corpus_preflight.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_fitting.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_full_corpus_benchmark.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_full_grid_pole_baseline.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_idem.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_idem_order58_diagnostic.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_idem_s19_tuning.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_imports.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_io.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_loewner_pole_probe.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_metrics.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_mft_pole_trajectory.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_mft_s19_gate_b.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_modal.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_native_cli.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_native_frontier_probe.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_native_thread_benchmark.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_native_vf.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_nnls_passivity_probe.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_passivity.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_passivity_nnls.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_passivity_source_attribution.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_performance.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_pole_discovery.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_pole_loewner.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_pole_manifold_probe.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_pole_placement_diagnostics.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_pole_relocation.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_pole_relocation_trajectory.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_priority_bands.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_quality.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_rfm.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_target_fit.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_target_parity.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_y_tran_tuning.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_yparam.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_z_metrics.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    examples/README.md:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    examples/channel/rfm-to-link/bundles/agent-spice.py:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    examples/channel/rfm-to-link/bundles/pybert.py:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    examples/channel/rfm-to-link/engine.lock:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    examples/channel/rfm-to-link/models/channel.rfm:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    examples/channel/rfm-to-link/project.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    examples/circuit/rfm-deck/bundles/agent-spice.py:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    examples/circuit/rfm-deck/engine.lock:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    examples/circuit/rfm-deck/models/channel.rfm:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    examples/circuit/rfm-deck/project.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    examples/com/r480/bundles/agent-com.py:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    examples/com/r480/engine.lock:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    examples/com/r480/project.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/content-hash-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/content-hash-good/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/content-hash-good/payload.bin:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/content-hash-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/content-hash-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/content-hash-reject/payload.bin:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/content-length-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/content-length-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/content-length-reject/payload.bin:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/hash-format-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/hash-format-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/producer-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/producer-good/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/producer-unknown-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/producer-unknown-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/producer-version-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/artifact/producer-version-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-request/consumer-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-request/consumer-selector-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-request/consumer-selector-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-request/consumer-unknown-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-request/consumer-unknown-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-request/consumer-version-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-request/consumer-version-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-request/selector-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-request/selector-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-request/strict-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-request/strict-good/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-result/consumer-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-result/consumer-unknown/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-result/consumer-unknown/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-result/consumer-version-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-result/consumer-version-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-result/strict-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-result/strict-good/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-result/succeeded-no-result-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/backend-result/succeeded-no-result-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/capabilities-baseline/advertise-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/capabilities-baseline/advertise-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/capabilities-baseline/duplicate-key-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/capabilities-baseline/duplicate-key-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/capabilities-baseline/good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/capabilities-baseline/good/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/capabilities/duplicate-key-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/capabilities/duplicate-key-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/capabilities/version-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/capabilities/version-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/event/consumer-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/event/consumer-good/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/event/consumer-project-scope-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/event/consumer-project-scope-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/event/consumer-unknown/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/event/consumer-unknown/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/event/consumer-version-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/event/consumer-version-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/event/scope-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/event/scope-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/resource/invent-limit-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/resource/invent-limit-reject/child.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/resource/invent-limit-reject/enforcement.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/resource/invent-limit-reject/parent.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/resource/required-unsupported-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/resource/required-unsupported-reject/child.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/resource/required-unsupported-reject/enforcement.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/resource/required-unsupported-reject/parent.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/resource/slice-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/resource/slice-reject/child.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/resource/slice-reject/enforcement.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/resource/slice-reject/parent.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/auto-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/auto-good/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/auto-strict-field-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/auto-strict-field-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/compare-auto-field-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/compare-auto-field-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/compare-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/compare-good/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/compare-same-instance-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/compare-same-instance-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/consumer-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/consumer-unknown-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/consumer-unknown-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/consumer-version-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/consumer-version-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/limit-zero-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/limit-zero-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/strict-auto-field-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/strict-auto-field-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/strict-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/strict-good/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/strict-internal-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/strict-internal-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/unknown-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-request/unknown-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/auto-failed-partial-trace-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/auto-failed-partial-trace-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/auto-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/auto-good/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/auto-multiple-execution-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/auto-multiple-execution-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/auto-next-candidate-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/auto-next-candidate-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/auto-prefix-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/auto-prefix-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/compare-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/compare-good/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/compare-instance-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/compare-instance-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/compare-profile-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/compare-profile-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/compare-roles-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/compare-roles-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/consumer-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/consumer-unknown/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/consumer-unknown/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/consumer-version-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/consumer-version-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/strict-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/strict-good/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/succeeded-failed-execution-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/run-result/succeeded-failed-execution-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/identity-backend-result-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/identity-backend-result-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/identity-request-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/identity-request-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/identity-run-result-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/identity-run-result-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/identity-summary-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/identity-summary-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/orchestration-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/orchestration-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/schema-backend-request-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/schema-backend-request-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/schema-backend-result-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/schema-backend-result-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/schema-run-request-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/schema-run-request-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/schema-run-result-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/schema-run-result-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/selection-hash-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/selection-hash-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/strict-chain-accept/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/strict-instance-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/strict-instance-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/strict-role-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/selection/strict-role-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/validation-report/consumer-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/validation-report/consumer-unknown/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/validation-report/consumer-unknown/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/validation-report/consumer-version-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/validation-report/consumer-version-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/validation-report/strict-good/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/validation-report/strict-good/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/validation-report/valid-errors-reject/case.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/cases/validation-report/valid-errors-reject/document.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/rule-ledger.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/rule-ledger.schema.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/suite.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/contracts/v1/suite.schema.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/engine-lock.empty.v1.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    fixtures/manifest.v1.json:
+      rule: external-examples
+      class: oracle_only
+      license: LicenseRef-Fixture-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    license-manifest.v1.yaml:
+      rule: migration-metadata
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    native/crates/sipi-ami/Cargo.lock:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-ami/Cargo.toml:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-ami/README.md:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-ami/src/ami.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-ami/src/contract.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-ami/src/host.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-ami/src/lib.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/Cargo.lock:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/Cargo.toml:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/README.md:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/build.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/engine.lock:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/rust-toolchain.toml:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/src/ami_host_candidate.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/src/compatibility.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/src/error.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/src/expression.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/src/lib.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/src/logging.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/src/main.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/src/netlist.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/src/output.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/src/response.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/src/result.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/src/rfm.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/src/simulator.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/src/sparse.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/tests/ami_host_candidate.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/tests/api_freeze.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/tests/determinism.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/tests/fixtures/ami/minimal.ami:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/tests/fixtures/ami/minimal.ibs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/tests/fixtures/ami_host_stub/Cargo.lock:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/tests/fixtures/ami_host_stub/Cargo.toml:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/tests/fixtures/ami_host_stub/src/lib.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    native/crates/sipi-circuit/tests/numeric_parity.rs:
+      rule: native-candidates
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: external
+      distribution: non-distributed
+    packages/sipi-adapters/pyproject.toml:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-adapters/src/sipi_adapters/__init__.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-adapters/src/sipi_adapters/agent_com.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-adapters/src/sipi_adapters/agent_spice.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-adapters/src/sipi_adapters/attestation.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-adapters/src/sipi_adapters/capabilities.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-adapters/src/sipi_adapters/channel_resolver.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-adapters/src/sipi_adapters/process.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-adapters/src/sipi_adapters/pybert.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-adapters/src/sipi_adapters/readers.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-adapters/src/sipi_adapters/spi.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-adapters/src/sipi_adapters/venv.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-artifacts/pyproject.toml:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-artifacts/src/sipi_artifacts/__init__.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-artifacts/src/sipi_artifacts/checksums.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-artifacts/src/sipi_artifacts/errors.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-artifacts/src/sipi_artifacts/store.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-contracts/MANIFEST.in:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-contracts/pyproject.toml:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-contracts/setup.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-contracts/src/sipi_contracts/__init__.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-contracts/src/sipi_contracts/errors.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-contracts/src/sipi_contracts/json_types.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-contracts/src/sipi_contracts/models.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-contracts/src/sipi_contracts/py.typed:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-contracts/src/sipi_contracts/validation/__init__.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-contracts/src/sipi_contracts/validation/paths.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-contracts/src/sipi_contracts/validation/registry.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-contracts/src/sipi_contracts/validation/relations.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/pyproject.toml:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/__init__.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/cache.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/comparison.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/dag.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/driver.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/execution.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/lifecycle.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/process_tree.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/registry.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/report.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/resolution.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/selection.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/supervisor.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/supervisor_ipc.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/supervisor_main.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    packages/sipi-runtime/src/sipi_runtime/supervisor_registry.py:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    product-boundary.v1.yaml:
+      rule: product-governance
+      class: product_candidate
+      license: MIT
+      provenance: project_authored
+      distribution: product
+    pyproject.toml:
+      rule: migration-metadata
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    schemas/_defs/provenance.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/_defs/runtime-validation.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/artifact-ref.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/authority.v1.yaml:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/axis.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/backend-execution-request.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/backend-execution-result.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/capabilities-baseline.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/capabilities-certified.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/channel-resolution-policy.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/channel-resolution-report.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/dag-node-record.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/engine-capabilities.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/engine-lock.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/network-tensor.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/port-map.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/project.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/run-event.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/run-record.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/run-request.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/run-result.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/spectrum.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/success-manifest.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/transform-policy.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/validation-report.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    schemas/waveform.v1.schema.json:
+      rule: legacy-python-platform
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: non-distributed
+    tests/adapters/fixtures/fake_com8023.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/adapters/fixtures/fake_engine.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/adapters/fixtures/fake_pybert.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/adapters/test_adapter_spi.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/adapters/test_agent_com_adapter.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/adapters/test_agent_spice_rfm_adapter.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/adapters/test_attestation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/adapters/test_capabilities.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/adapters/test_channel_resolver.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/adapters/test_g2b_fault_fixtures.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/adapters/test_process_adapter.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/adapters/test_pybert_adapter.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/adapters/test_readers.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/adapters/test_real_pybert_bundle.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/adapters/test_resource_enforcement.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/adapters/test_wheel_execution.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/artifacts/test_attempt_store.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/external-probes/pybert-simulation/Cargo.lock:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/external-probes/pybert-simulation/Cargo.toml:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/external-probes/pybert-simulation/src/main.rs:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/python_runner.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/run_agent_com_progress_probe.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/run_agent_com_result_probe.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/run_pybert_simulation_probe.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/rust-consumer/Cargo.lock:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/rust-consumer/Cargo.toml:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/rust-consumer/src/main.rs:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/test_axis.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/test_channel_resolution.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/test_m1_models.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/test_m1_rule_ledger.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/test_network_tensor.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/test_port_map.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/test_project.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/test_signal.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/contract/test_transform_policy.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_cli.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_cli_m3.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_comparison.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_dag.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_driver.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_engine_lock.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_examples.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_execution.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_failure_injection.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_lifecycle.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_m2_end_to_end.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_process_tree.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_real_engine_vertical.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_report.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_resolution.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_selection.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_supervisor.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_supervisor_ipc.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_supervisor_registry.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_two_engine_vertical.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/runtime/test_vertical_smoke.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/test_m5b_ami_candidate_assurance.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/test_m5b_ami_candidate_bundle.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/tools/test_compare_m5b_ami_exact_host_outputs.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/tools/test_compare_m5b_ami_stateful_host_outputs.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/tools/test_m5b_pybert_history_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/tools/test_replay_m5b_ami_authorized_runtime.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tests/tools/test_verify_m5b_ami_authorized_dll_closure.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    toolchains.lock:
+      rule: migration-metadata
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/build_m1_capabilities_baseline.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/build_m2_capabilities_certified.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/build_m3_capabilities_certified.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/build_m5b_ami_candidate_bundle.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/check_m2_external_gate.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/clean_install_smoke.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/compare_m5b_ami_exact_host_outputs.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/compare_m5b_ami_stateful_host_outputs.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/m0_artifact_mock.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/replay_m5b_ami_authorized_runtime.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/run_all_tests.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/sync_contracts_schemas.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_m0_artifact_mock.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_m1_artifacts.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_m1_backend_execution_envelopes.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_m1_run_envelopes.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_m1_runtime_validation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_m2_capabilities.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_m2_external_gate.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_m3_capabilities.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_m4_conformance.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_m5a_agent_spice_move.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_m5a_agent_spice_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_product_boundary.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_license_manifest.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_license_manifest.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m0_capability_inventory.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m0_platform_support.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m1_artifacts.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m1_backend_execution_envelopes.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m1_capabilities_baseline.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m1_conformance.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m1_rule_ledger.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m1_run_envelopes.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m1_runtime_validation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m2_capabilities_certified.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m4_conformance.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m5a_agent_spice_move.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m5a_agent_spice_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m5a_agent_spice_wheel.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m5b_ami_authorized_dll_closure.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m5b_ami_candidate_assurance.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m5b_ami_candidate_bundle.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m5b_ami_vendor_fixture_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m5b_pybert_history_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_m5b_s2p_link_parity.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_product_boundary.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    uv.lock:
+      rule: migration-metadata
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+classes:
+- product_candidate
+- migration_only
+- oracle_only
+- quarantine
+- generated
+rules:
+- id: product-governance
+  include:
+  - LICENSE
+  - LICENSE-SCOPE.md
+  - README.md
+  - SPEC.md
+  - PLAN.md
+  - product-boundary.v1.yaml
+  - docs/adr/ADR-011-native-mit-rust-product-boundary.md
+  class: product_candidate
+  license: MIT
+  provenance: project_authored
+  distribution: product
+  owner: sipi-release-gate
+  reason: v0.2 product charter and MIT boundary policy
+- id: migration-metadata
+  include:
+  - .gitignore
+  - pyproject.toml
+  - uv.lock
+  - toolchains.lock
+  - dirty-disposition.v1.yaml
+  - license-manifest.v1.yaml
+  class: migration_only
+  license: LicenseRef-See-License-Manifest
+  provenance: project_authored
+  distribution: evidence
+  owner: sipi-migration-owner
+  reason: v0.1 tooling and source-license evidence remain outside product release
+- id: github-migration
+  include:
+  - .github/**
+  class: migration_only
+  license: LicenseRef-See-License-Manifest
+  provenance: project_authored
+  distribution: evidence
+  owner: sipi-migration-owner
+  reason: current CI targets the legacy Python migration platform
+- id: legacy-python-platform
+  include:
+  - apps/**
+  - packages/**
+  - schemas/**
+  class: migration_only
+  license: LicenseRef-See-License-Manifest
+  provenance: project_authored
+  distribution: non-distributed
+  owner: sipi-migration-owner
+  reason: Python platform behavior is migration/oracle evidence, not the Rust product
+    runtime
+- id: migration-engine-source
+  include:
+  - engines/**
+  class: migration_only
+  license: LicenseRef-See-License-Manifest
+  provenance: external
+  distribution: non-distributed
+  owner: sipi-migration-owner
+  reason: imported Agent-Spice source is not a promoted Rust product crate
+- id: native-candidates
+  include:
+  - native/**
+  class: quarantine
+  license: LicenseRef-Provenance-Pending
+  provenance: external
+  distribution: non-distributed
+  owner: sipi-clean-room-owner
+  reason: Rust candidates require P0-09 source and clean-room audit before promotion
+- id: external-examples
+  include:
+  - examples/**
+  - fixtures/**
+  class: oracle_only
+  license: LicenseRef-Fixture-Provenance-Pending
+  provenance: external
+  distribution: non-distributed
+  owner: sipi-acceptance-owner
+  reason: examples and fixtures require per-profile license and provenance inventory
+- id: historical-docs
+  include:
+  - docs/**
+  exclude:
+  - docs/adr/ADR-011-native-mit-rust-product-boundary.md
+  class: migration_only
+  license: LicenseRef-See-License-Manifest
+  provenance: project_authored
+  distribution: evidence
+  owner: sipi-migration-owner
+  reason: historical audits and migration documents are not release documentation
+    yet
+- id: migration-tools
+  include:
+  - tools/**
+  - tests/**
+  class: migration_only
+  license: LicenseRef-See-License-Manifest
+  provenance: project_authored
+  distribution: evidence
+  owner: sipi-migration-owner
+  reason: existing verification tools exercise the Python migration platform

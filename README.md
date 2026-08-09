@@ -34,6 +34,15 @@
 
 实施从 [PLAN.md](PLAN.md) 的 `P0` 产品/clean-room 边界开始。
 
+## 许可边界
+
+根 [LICENSE](LICENSE) 仅覆盖
+[`product-boundary.v1.yaml`](product-boundary.v1.yaml) 中标为
+`product_candidate`、`license: MIT` 的第一方文件。当前清单是
+`provisional`：Python 迁移设施、旧引擎、候选 Rust crate、fixtures 和外部资产
+不会因根许可证而被重新授权或纳入发行物。完整范围见
+[LICENSE-SCOPE.md](LICENSE-SCOPE.md)。
+
 ## 验证
 
 ```powershell

@@ -108,13 +108,14 @@ flowchart LR
 - [x] **P0-01** 用户确认终态：第一方 MIT、Rust-only、统一 CLI、旧项目保持示例准确性。
 - [x] **P0-02** 发布 `SPEC.md`/`PLAN.md` v0.2 重基线。
 - [x] **P0-03** 记录 ADR-011，明确终止非 MIT 历史迁入作为产品路线。
-- [ ] **P0-04** 添加根 MIT `LICENSE`，统一第一方 Cargo/package metadata；不得覆盖第三方许可证。
-- [ ] **P0-05** 建立 `product-boundary.v1`：穷尽当前 tracked path，分类为 `product_candidate`、`migration_only`、`oracle_only`、`quarantine`、`generated`。
+- [x] **P0-04a** 添加根 MIT `LICENSE` 与 scope，明确不覆盖 migration/oracle/third-party 资产。
+- [ ] **P0-04b** 在 P1 Rust crates 出现时统一第一方 Cargo/package metadata；不得覆盖第三方许可证。
+- [x] **P0-05** 建立 `product-boundary.v1`：穷尽当前 tracked path，分类为 `product_candidate`、`migration_only`、`oracle_only`、`quarantine`、`generated`。
 - [ ] **P0-06** 将 `license-manifest.v1.yaml` 升级为 release 可执行清单：逐 Cargo/Python/build dependency、NOTICE、owner 和允许动作。
 - [ ] **P0-07** 建立 clean-room material/role register，包含观察侧、实现侧、allowlist、禁止材料和 attestation schema。
 - [ ] **P0-08** 盘点三个旧项目所有要保持的示例，建立 acceptance profile inventory；每项固定 repo/ref/blob/hash/许可/运行环境/required 状态。
 - [ ] **P0-09** 将现有 Rust candidate 逐文件映射到来源：`sipi-circuit`、`sipi-ami`、任何 PyBERT-derived crate；有歧义即 quarantine。
-- [ ] **P0-10** 增加 verifier：release/product path 中出现未分类、非 MIT 第一方、external-only asset、绝对用户路径或禁止来源时失败。
+- [x] **P0-10** 增加 verifier：release/product path 中出现未分类、非 MIT 第一方、external-only asset、绝对用户路径或禁止来源时失败。
 - [ ] **P0-11** 为 observation spec 与 implementation commit 定义模板、审计请求和保存位置。
 
 ### 6.3 退出条件
