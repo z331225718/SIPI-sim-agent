@@ -1,0 +1,26 @@
+{
+  "schema": "sipi.m5b-ami-vendor-fixture-preflight.v1",
+  "status": "authorized_restricted_runtime_only",
+  "source": {"repository": "pybert", "commit": "f6ba031"},
+  "fixture": {
+    "id": "pybert-example-rx-v1",
+    "platform": "windows-x86_64",
+    "allowedUse": "explicit candidate AMI host runtime contract only",
+    "runtimeInvoked": false,
+    "assetCopied": false,
+    "promotion": false,
+    "assets": [
+      {"kind": "ibs", "path": "models/ibisami/example_rx.ibs", "blob": "b30b88bdf5883722d8ddbbd860a115406c5e439c", "byteLength": 2721, "sha256": "37b7bf1b6c50fe56c4daaad344de1b3cabe7a7f139ca1b76c4058a943f39fbe9"},
+      {"kind": "ami", "path": "models/ibisami/example_rx.ami", "blob": "26a1b03849a0838284dfde7921926668ad1434e0", "byteLength": 3932, "sha256": "6d4038a184cb10af355dbd02b9392258d7e2b3bb9b0cddc211349db66ef80c38"},
+      {"kind": "dll", "path": "models/ibisami/example_rx.dll", "blob": "70c2efa3357a9fa7528e44286d5566413ba3fdd7", "byteLength": 363008, "sha256": "60e29f16dcfe1a40240956f0591b29f524ccc8844c4959671d0317178c1ff46c"}
+    ],
+    "dependencyClosure": "caller-supplied DLL closure remains fail-closed and may not be bundled"
+  },
+  "authorization": {
+    "decision": "user-approved-2026-08-09",
+    "distributionStatus": "authorized_private",
+    "restrictions": ["no Git import", "no redistribution", "no engine.lock promotion", "no default or auto routing", "Windows candidate runtime only"]
+  },
+  "evidence": ["LICENSE", "NOTICE", "PyAMI/LICENSE"],
+  "nonClaims": ["not a vendor license interpretation", "not a redistribution grant", "not AMI numerical parity"]
+}
