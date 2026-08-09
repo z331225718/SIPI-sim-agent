@@ -1,0 +1,21 @@
+{
+  "schema": "sipi.m5b-ami-authorized-dll-closure-preflight.v1",
+  "fixtureDocumentSha256": "be4d800c990255d4140bd7a4c5479030ddff928bb6af80172a6428740de79b16",
+  "fixture": {
+    "id": "pybert-example-rx-v1",
+    "sourceCommit": "f6ba031",
+    "dllSha256": "60e29f16dcfe1a40240956f0591b29f524ccc8844c4959671d0317178c1ff46c"
+  },
+  "platform": "windows-x86_64",
+  "expectedStaticImports": {
+    "normal": ["kernel32.dll"],
+    "delay": []
+  },
+  "coverage": "example_rx exact fixture static-import plus observed lifecycle only",
+  "nonClaims": [
+    "not arbitrary caller DLL closure",
+    "not runtime module-enumeration evidence",
+    "not candidate promotion or vendor redistribution",
+    "not AMI numerical parity"
+  ]
+}
