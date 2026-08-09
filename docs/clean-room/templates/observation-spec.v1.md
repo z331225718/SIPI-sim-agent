@@ -35,4 +35,3 @@ restricted source text, translated control flow, function names, or code layout.
 - Independent specification SHA-256:
 - `spec_sealed` attestation ID:
 - Evidence/report references:
-
