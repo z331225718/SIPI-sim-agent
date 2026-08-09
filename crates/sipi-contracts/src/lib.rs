@@ -230,6 +230,16 @@ impl TryFrom<WireWaveformV1> for Waveform {
     }
 }
 
+impl From<&Waveform> for WireWaveformV1 {
+    fn from(value: &Waveform) -> Self {
+        Self {
+            schema: "sipi.contract.v1".to_owned(),
+            axis: seconds_axis_wire(value.axis()),
+            samples: value.samples().iter().map(|sample| sample.get()).collect(),
+        }
+    }
+}
+
 impl TryFrom<WireSpectrumV1> for Spectrum {
     type Error = ContractError;
     fn try_from(value: WireSpectrumV1) -> Result<Self, Self::Error> {
@@ -242,6 +252,23 @@ impl TryFrom<WireSpectrumV1> for Spectrum {
             .collect::<Result<Vec<Complex64>, ContractError>>()?
             .pipe(|bins| Spectrum::try_new(axis, bins))
             .map_err(Into::into)
+    }
+}
+
+impl From<&Spectrum> for WireSpectrumV1 {
+    fn from(value: &Spectrum) -> Self {
+        Self {
+            schema: "sipi.contract.v1".to_owned(),
+            axis: hertz_axis_wire(value.axis()),
+            bins: value
+                .bins()
+                .iter()
+                .map(|bin| WireComplexV1 {
+                    real: bin.real(),
+                    imaginary: bin.imaginary(),
+                })
+                .collect(),
+        }
     }
 }
 
@@ -299,6 +326,32 @@ fn hertz_axis(value: WireAxisV1) -> Result<Axis<Hertz>, ContractError> {
     }
 }
 
+fn seconds_axis_wire(value: &Axis<Seconds>) -> WireAxisV1 {
+    match value.view() {
+        sipi_types::AxisView::Uniform { start, step, count } => WireAxisV1::Uniform {
+            start: start.get(),
+            step: step.get(),
+            count: count.get(),
+        },
+        sipi_types::AxisView::Explicit(values) => WireAxisV1::Explicit {
+            values: values.iter().map(|item| item.get()).collect(),
+        },
+    }
+}
+
+fn hertz_axis_wire(value: &Axis<Hertz>) -> WireAxisV1 {
+    match value.view() {
+        sipi_types::AxisView::Uniform { start, step, count } => WireAxisV1::Uniform {
+            start: start.get(),
+            step: step.get(),
+            count: count.get(),
+        },
+        sipi_types::AxisView::Explicit(values) => WireAxisV1::Explicit {
+            values: values.iter().map(|item| item.get()).collect(),
+        },
+    }
+}
+
 trait Pipe: Sized {
     fn pipe<T>(self, function: impl FnOnce(Self) -> T) -> T {
         function(self)
@@ -338,5 +391,18 @@ mod tests {
             deterministic_json(&CapabilityCatalogV1::unsupported()).unwrap()
         );
         assert!(capability_schema_json().unwrap().starts_with(b"{"));
+    }
+
+    #[test]
+    fn validated_waveform_round_trips_to_product_wire_shape() {
+        let waveform = parse_waveform_v1(
+            br#"{"schema":"sipi.contract.v1","axis":{"encoding":"explicit","values":[0.0,1.0]},"samples":[1.0,2.0]}"#,
+        )
+        .unwrap();
+
+        assert_eq!(
+            deterministic_json(&WireWaveformV1::from(&waveform)).unwrap(),
+            br#"{"schema":"sipi.contract.v1","axis":{"encoding":"explicit","values":[0.0,1.0]},"samples":[1.0,2.0]}"#,
+        );
     }
 }
