@@ -520,6 +520,21 @@ OMP `msg_ed1f52c76194` and OpenCode `msg_5b59bcdd3e75` independently found
 Task 13/M5B-01, approve RSS/performance, certify a remote wheel or production
 panic behavior, create a final clean tag, or enable history migration.
 
+**M5B Task 13 release-input preflight update (2026-08-09): pending is now
+machine-enforced.** Clean PyBERT branch
+`codex/task13-release-input-policy@88240ff` adds a versioned owner-input
+policy and a nightly evidence preflight. It records, but does not self-approve,
+the Windows authoring scope and candidate five-repeat/median budget; pending
+performance approval, controlled HTTPS wheel identity/authorization, and
+production-native-panic evidence are all rejected by
+`--require-approved`. Scheduled evidence remains non-blocking while those
+inputs are pending, whereas final manual `require_release_inputs=true` fails
+closed after writing its report. OMP `msg_67a65de7ee18` and OpenCode
+`msg_ad88add87472` independently returned 0 P1 / 0 P2 after the final
+whitespace/invalidation rechecks. The source commit is accepted for this
+preflight boundary but remains local until a separately authorized push/PR;
+it does not approve any budget, wheel, panic evidence, Task 13/M5B-01, or M5B.
+
 ### 9.4 M5C：Workspace 与 Binding
 
 | ID | 任务 | 说明 |
