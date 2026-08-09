@@ -156,7 +156,7 @@ flowchart LR
 - [x] **P1-05** 建立 quarantine `sipi-artifacts`：有界 SHA-256 staging、seal 后重验、同根新目录 atomic publish、精确 success manifest 与 fail-closed verification；v1 只适用于无敌对写者的 application-owned root，不提供 GC/远端/CLI/runtime/domain semantics。
 - [x] **P1-06** 建立 quarantine `sipi-runtime`：同步 cooperative run state、cancel request、checkpoint deadline/显式计量预算、structured error 和 deterministic cache key；不提供 executor、hard timeout/RSS/CPU isolation、cache store 或 domain semantics。
 - [x] **P1-07** 建立 quarantine `sipi-pipeline`：immutable non-executing typed plan DAG，验证 source/stage/join/sink shape、typed edge、DAG/reachability 与确定性 topological order；不执行 callback、不存值、不接 runtime/artifact/cache 或领域数值。
-- [ ] **P1-08** 建立 `sipi-cli`，交付 `version/doctor/capabilities/schema/validate/run/inspect` 基础命令。
+- [x] **P1-08** 扩展 quarantine `sipi-cli` 静态 discovery/self-conformance 命令：`version/doctor/capabilities/schema/validate self/run/inspect`；不接 stdin/file/artifact/engine/domain request，完整 stdout/stderr/exit contract 留给 P1-09。
 - [ ] **P1-09** 固定 JSON stdout、stderr/NDJSON、exit code、stdin request 和 noninteractive 行为。
 - [ ] **P1-10** release layout verifier 证明 CLI 不 import/启动 Python、旧 engine 或 sibling worktree。
 - [ ] **P1-11** Windows x86_64 locked build、fmt、clippy、test、install smoke 和 schema drift gate。

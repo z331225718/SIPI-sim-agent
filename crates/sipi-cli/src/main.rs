@@ -2,7 +2,10 @@
 
 use std::{env, process};
 
-use sipi_contracts::{CAPABILITIES_SCHEMA, PLANNED_DOMAINS};
+use sipi_contracts::{
+    CAPABILITIES_SCHEMA, CapabilityCatalogV1, PLANNED_DOMAINS, RULE_LEDGER_V1,
+    capability_schema_json, deterministic_json,
+};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const TARGET: &str = "x86_64-pc-windows-msvc";
@@ -12,6 +15,8 @@ struct Response {
     stdout: Option<String>,
     stderr: Option<String>,
 }
+
+struct CommandService;
 
 fn main() {
     let response = dispatch(&env::args().skip(1).collect::<Vec<_>>());
@@ -25,22 +30,71 @@ fn main() {
 }
 
 fn dispatch(arguments: &[String]) -> Response {
-    match arguments {
-        [command] if command == "--version" || command == "version" => success(version_json()),
-        [command, format] if command == "version" && format == "--json" => success(version_json()),
-        [command, format] if command == "capabilities" && format == "--json" => {
-            success(capabilities_json())
+    CommandService::execute(arguments)
+}
+
+impl CommandService {
+    fn execute(arguments: &[String]) -> Response {
+        match arguments {
+            [command] if command == "--version" || command == "version" => success(version_json()),
+            [command, format] if command == "version" && format == "--json" => {
+                success(version_json())
+            }
+            [command, format] if command == "doctor" && format == "--json" => {
+                success(doctor_json())
+            }
+            [command, format] if command == "capabilities" && format == "--json" => {
+                success(capabilities_json())
+            }
+            [command, action, format]
+                if command == "schema" && action == "list" && format == "--json" =>
+            {
+                success(schema_list_json())
+            }
+            [command, action, id, format]
+                if command == "schema" && action == "show" && format == "--json" =>
+            {
+                schema_show(id)
+            }
+            [command, action, format]
+                if command == "validate" && action == "self" && format == "--json" =>
+            {
+                validate_self(None)
+            }
+            [command, action, schema, id, format]
+                if command == "validate"
+                    && action == "self"
+                    && schema == "--schema"
+                    && format == "--json" =>
+            {
+                validate_self(Some(id))
+            }
+            [command, action, format]
+                if command == "inspect" && action == "self" && format == "--json" =>
+            {
+                success(inspect_self_json())
+            }
+            [command, action, id, format]
+                if command == "inspect" && action == "capability" && format == "--json" =>
+            {
+                inspect_capability(id)
+            }
+            [command, action, id, format]
+                if command == "inspect" && action == "schema" && format == "--json" =>
+            {
+                schema_show(id)
+            }
+            [command, ..] if command == "run" => error(
+                69,
+                "unsupported",
+                "simulation domains are not implemented in the P1-01 foundation",
+            ),
+            _ => error(
+                64,
+                "usage",
+                "supported commands are version, doctor, capabilities, schema, validate, run, and inspect with --json",
+            ),
         }
-        [command, ..] if command == "run" => error(
-            69,
-            "unsupported",
-            "simulation domains are not implemented in the P1-01 foundation",
-        ),
-        _ => error(
-            64,
-            "usage",
-            "supported commands are --version, version --json, and capabilities --json",
-        ),
     }
 }
 
@@ -84,6 +138,74 @@ fn capabilities_json() -> String {
     )
 }
 
+fn doctor_json() -> String {
+    format!(
+        "{{\"schema\":\"sipi.cli-doctor.v1\",\"target\":\"{TARGET}\",\"checks\":[{{\"id\":\"contract_registry\",\"status\":\"ok\"}},{{\"id\":\"rule_ledger\",\"status\":\"ok\"}},{{\"id\":\"external_runtime\",\"status\":\"not_checked\"}}]}}"
+    )
+}
+
+fn schema_list_json() -> String {
+    format!("{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\"]}}")
+}
+
+fn schema_show(id: &str) -> Response {
+    if id != CAPABILITIES_SCHEMA {
+        return error(64, "unknown_schema", "schema is not registered");
+    }
+    match capability_schema_json().and_then(|bytes| {
+        String::from_utf8(bytes)
+            .map_err(|_| sipi_contracts::ContractError::Json("schema is not UTF-8".to_owned()))
+    }) {
+        Ok(schema) => success(schema),
+        Err(_) => error(
+            70,
+            "internal_contract_error",
+            "registered schema is unavailable",
+        ),
+    }
+}
+
+fn validate_self(schema: Option<&str>) -> Response {
+    if schema.is_some_and(|id| id != CAPABILITIES_SCHEMA) {
+        return error(64, "unknown_schema", "schema is not registered");
+    }
+    let catalog = CapabilityCatalogV1::unsupported();
+    let valid = catalog.schema == CAPABILITIES_SCHEMA
+        && catalog.capabilities.len() == PLANNED_DOMAINS.len()
+        && catalog
+            .capabilities
+            .iter()
+            .all(|item| item.status == "unsupported")
+        && deterministic_json(&catalog).is_ok()
+        && !RULE_LEDGER_V1.is_empty();
+    if valid {
+        success(
+            "{\"schema\":\"sipi.cli-validate.v1\",\"subject\":\"self\",\"status\":\"ok\"}"
+                .to_owned(),
+        )
+    } else {
+        error(
+            70,
+            "self_check_failed",
+            "built-in contract self-check failed",
+        )
+    }
+}
+
+fn inspect_self_json() -> String {
+    "{\"schema\":\"sipi.cli-inspect.v1\",\"subject\":\"self\",\"scope\":\"static_discovery\",\"status\":\"quarantine\"}".to_owned()
+}
+
+fn inspect_capability(id: &str) -> Response {
+    if PLANNED_DOMAINS.contains(&id) {
+        success(format!(
+            "{{\"schema\":\"sipi.cli-inspect.v1\",\"subject\":\"capability\",\"id\":\"{id}\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}}"
+        ))
+    } else {
+        error(64, "unknown_capability", "capability is not registered")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -117,6 +239,30 @@ mod tests {
             Some(
                 "{\"schema\":\"sipi.cli-error.v1\",\"code\":\"unsupported\",\"message\":\"simulation domains are not implemented in the P1-01 foundation\"}"
             )
+        );
+    }
+
+    #[test]
+    fn discovery_and_self_commands_are_static_and_fail_closed() {
+        for command in [
+            args(&["doctor", "--json"]),
+            args(&["schema", "list", "--json"]),
+            args(&["schema", "show", "sipi.capabilities.v1", "--json"]),
+            args(&["validate", "self", "--json"]),
+            args(&["inspect", "self", "--json"]),
+            args(&["inspect", "capability", "tran", "--json"]),
+        ] {
+            let response = dispatch(&command);
+            assert_eq!(response.code, 0);
+            assert!(response.stderr.is_none());
+        }
+        assert_eq!(
+            dispatch(&args(&["schema", "show", "unknown", "--json"])).code,
+            64
+        );
+        assert_eq!(
+            dispatch(&args(&["inspect", "capability", "unknown", "--json"])).code,
+            64
         );
     }
 }
