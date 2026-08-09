@@ -481,16 +481,24 @@ returned 0 P1 / 0 P2. M5B-04 still requires representative authorized DLL
 fixtures, their dynamic dependency closure, an explicit promotion decision,
 and broader AMI parity before it can be completed.
 
-**M5B source CI activation update (2026-08-09): merged, first evidence run
-in progress.** PyBERT PR [#1](https://github.com/z331225718/Py-bert-agent/pull/1)
+**M5B source CI activation update (2026-08-09): master nightly is now
+operational.** PyBERT PR [#1](https://github.com/z331225718/Py-bert-agent/pull/1)
 merged `codex/m5b-consolidated` into `master` as `c9a466117f2bfe5ea2b9b89f84f23fc46d1f8f5c`.
-The merge includes the audited CI stabilization chain and enables
-`task13-nightly.yml` on the default branch. Its first manual Windows run is
-`31303477012`, pinned to that merge commit. It completed dependency setup and
-the locked native build before entering the frozen source-acceptance gate.
-This starts, but does not satisfy, the required 35-day evidence window; no
-Linux/macOS certification, Task 13 completion, clean accepted tag, or history
-migration eligibility is implied.
+The initial manual run `31303477012` exposed non-authoritative frozen-reference
+capture drift in the composite native-evidence process; its failed report is
+not acceptance evidence. PR [#3](https://github.com/z331225718/Py-bert-agent/pull/3)
+then merged as `4dcdec8a5ef8b5c6ec4c53d03d525b6081dbb39c`: each nightly now first
+runs the same-commit Windows CPython 3.13/NumPy 2.2.6/SciPy 1.15.3
+Python-reference gate in its own job, and the native-evidence job depends on
+that success. Its source-acceptance report records all 11 reference captures as
+delegated, with the same run URL/commit; native pytest and locked Cargo checks
+still run in full. Manual master run
+[`31305552920`](https://github.com/z331225718/Py-bert-agent/actions/runs/31305552920)
+passed both jobs with `source_acceptance=true`; its Task 13 E2E/RSS values remain
+`observed` and the remote-wheel lane remains `unavailable`. This begins, but
+does not satisfy, the required 35-day evidence window; no Linux/macOS
+certification, Task 13 completion, clean accepted tag, or history-migration
+eligibility is implied.
 
 ### 9.4 M5C：Workspace 与 Binding
 
