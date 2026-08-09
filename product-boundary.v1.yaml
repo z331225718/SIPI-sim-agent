@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 3af73f9658612afefef7b532e51ec5e0be57e029f3e4b3d2ac381660c17b02fc
+  tracked_paths_sha256: 6fd1ea354ffb01d883bfe036556865157dc534c0d4c27b96fed67542270c67a7
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -354,6 +354,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-09-spec-v0.2.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p1e-artifacts-foundation.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
