@@ -453,6 +453,22 @@ optimizer route, and is not general AMI or Link parity.
 | M5B-08 | 在目标仓历史保留 move `pybert-core` | 形成 `native/crates/sipi-link`，不留第二份 Rust core，保留 v1 schema |
 | M5B-09 | 接管 PyBERT 生产兼容包 | 保留原 namespace/CLI/reference/兼容 AMI host 入口（过渡期 reference，直至 M5A-09 clean-room Rust AMI 通过 parity）；Web/GUI 的后续搬移不删除兼容入口 |
 
+**M5B-03 / M3-08b status supersession (2026-08-09): accepted in the defined
+evidence scope.** In addition to the retained RFM artifact bridge, S2P
+external-boundary handoff, and Git-object current-domain transfer evidence
+above, clean PyBERT commits `75d25ed`/`199696a` compare the same real locked
+RFM response through retained Python DFE and the existing Rust receiver. The
+real replay binds `f6ba031` Git-object `block_2.rfm` SHA-256 `5716f691...`,
+locked executable `111ff6...`, and external report
+`m5b-rfm-receiver-parity-3c04034.json` SHA-256 `a729593f...`; eleven
+continuous arrays meet the existing `1e-12` policy and discrete bits/locks are
+exact. OMP `msg_af1d6d8102b8` and OpenCode `msg_679b4efea32d` both returned 0
+P1 / 0 P2. This completes the specific M5B-03/M3-08b receiver-parity gate
+without asserting an independent physical oracle, general RFM/S-parameter
+parity, M4 resolver parity, AMI parity, or Linux/macOS certification. The
+OpenCode P3 follow-up is provenance-only: include the full request-config
+digest and deterministic-drive description in a future replay-report revision.
+
 ### 9.4 M5C：Workspace 与 Binding
 
 | ID | 任务 | 说明 |
