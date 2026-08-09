@@ -499,9 +499,26 @@ passed both jobs with `source_acceptance=true`; its Task 13 E2E/RSS values remai
 does not satisfy, the required 35-day evidence window; no Linux/macOS
 certification, Task 13 completion, clean accepted tag, or history-migration
 eligibility is implied. OMP's independent larger-boundary audit found 0 P1 /
-0 P2; OpenCode was requested in the same boundary but had not replied when the
-audit record was committed, under the user-authorized one-responsive-reviewer
-rule.
+0 P2; OpenCode's later conclusion was also 0 P1 / 0 P2.
+
+**M5B scheduled-history verifier update (2026-08-09): evidence accumulation
+is now machine-checked, not manually narrated.** PyBERT PR
+[#4](https://github.com/z331225718/Py-bert-agent/pull/4) merged as
+`fb1b38de18f834d1b4ae8e32751f0380d8236713`. It adds the versioned
+`task13-nightly-reliability-v1` policy and a fail-closed history verifier:
+only first-attempt `schedule` runs on canonical `master` can count; each must
+bind the same-commit source/reliability reports and the delegated Windows
+authoring-profile gate, and the verifier requires 35 consecutive UTC days.
+Manual master run
+[`31308627747`](https://github.com/z331225718/Py-bert-agent/actions/runs/31308627747)
+passed all three jobs, including the history observation. Its report correctly
+records `observed_run_count=0`, `consecutive_valid_scheduled_days=0`, and
+`complete=false`: `workflow_dispatch` is a smoke only and never starts or
+extends the 35-day sequence. The policy/report artifacts retain for 90 days.
+OMP `msg_ed1f52c76194` and OpenCode `msg_5b59bcdd3e75` independently found
+0 P1 / 0 P2. This is only accumulation infrastructure; it does not close
+Task 13/M5B-01, approve RSS/performance, certify a remote wheel or production
+panic behavior, create a final clean tag, or enable history migration.
 
 ### 9.4 M5C：Workspace 与 Binding
 
