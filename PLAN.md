@@ -150,7 +150,7 @@ flowchart LR
 - [x] **P1-03** 建立 quarantine `sipi-contracts`：versioned serde wire types、rule ledger、deterministic serialization profile 与 JSON Schema generation；所有 DTO 回调 `sipi-types` 构造器，尚不宣称跨语言 canonical JSON 或任何 domain request。
 - [x] **P1-04A** 对 product-owned `sipi.contract.v1` fixture 做 Rust round-trip、schema、rule-ledger 和 negative self-conformance；语义变化新开版本。
 - [ ] **P1-04B** （oracle-only）旧 `sipi.*.v1` fixture 只能在工作树外观察其 Git-object provenance；不得进入 Rust API/fixtures/实现侧，待用户确认 required profile 后再决定是否需要比较。
-- [ ] **P1-05** 建立 `sipi-artifacts`：SHA-256、staging、atomic publish、success manifest、path containment。
+- [x] **P1-05** 建立 quarantine `sipi-artifacts`：有界 SHA-256 staging、seal 后重验、同根新目录 atomic publish、精确 success manifest 与 fail-closed verification；v1 只适用于无敌对写者的 application-owned root，不提供 GC/远端/CLI/runtime/domain semantics。
 - [ ] **P1-06** 建立 `sipi-runtime`：run state、cancel、timeout、resource policy、structured error 和 deterministic cache key。
 - [ ] **P1-07** 建立 `sipi-pipeline` 最小 typed DAG，不包含领域数值变换。
 - [ ] **P1-08** 建立 `sipi-cli`，交付 `version/doctor/capabilities/schema/validate/run/inspect` 基础命令。

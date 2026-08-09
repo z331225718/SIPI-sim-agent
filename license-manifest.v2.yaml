@@ -2,7 +2,7 @@ schema: sipi.license-manifest.v2
 status: provisional
 release_boundary:
   path: product-boundary.v1.yaml
-  sha256: 4ba1df1c92f0aee8281b563570465a1f5e650ef51a15e7ade53d1aaf58a75543
+  sha256: 87c0f7429f3f4350e74a986a4ed6c2cf14b03bfe1fad803a6031c76d9be66536
   status: provisional
 legacy_evidence:
   - id: legacy-license-manifest-v1
@@ -58,6 +58,18 @@ release_inputs:
       sbom_component_id: pkg:cargo/schemars
       status: pending
       owner_action: {owner: sipi-license-owner, action: review schemars distribution and NOTICE, approval_ref: null}
+    - id: rust-sha2
+      component: sha2
+      role: runtime
+      source: https://crates.io/crates/sha2
+      requested_version: "0.10"
+      resolved_artifact: {version: null, sha256: null}
+      declared_spdx: pending-observation
+      license_evidence_ref: evidence/third-party/sha2-license-pending
+      notice_requirement: pending
+      sbom_component_id: pkg:cargo/sha2
+      status: pending
+      owner_action: {owner: sipi-license-owner, action: review sha2 distribution and NOTICE, approval_ref: null}
   notices:
     - dependency: rust-serde
       status: pending
@@ -71,6 +83,10 @@ release_inputs:
       status: pending
       source_evidence_ref: evidence/third-party/schemars-license-pending
       output_notice_id: NOTICE/schemars
+    - dependency: rust-sha2
+      status: pending
+      source_evidence_ref: evidence/third-party/sha2-license-pending
+      output_notice_id: NOTICE/sha2
 blocking_actions:
   - id: first-party-product-promotion
     owner: sipi-release-owner
