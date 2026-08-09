@@ -498,7 +498,10 @@ passed both jobs with `source_acceptance=true`; its Task 13 E2E/RSS values remai
 `observed` and the remote-wheel lane remains `unavailable`. This begins, but
 does not satisfy, the required 35-day evidence window; no Linux/macOS
 certification, Task 13 completion, clean accepted tag, or history-migration
-eligibility is implied.
+eligibility is implied. OMP's independent larger-boundary audit found 0 P1 /
+0 P2; OpenCode was requested in the same boundary but had not replied when the
+audit record was committed, under the user-authorized one-responsive-reviewer
+rule.
 
 ### 9.4 M5C：Workspace 与 Binding
 
