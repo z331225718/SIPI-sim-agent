@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: e65a2153c0755023e6bfa4533aeef723b9cb1126301827f3e343f37ddfbfb0cc
+  tracked_paths_sha256: 2432bf60b2a23bfc1e7fd4ed99fa47d75adeb287563e703c6cf7a50baeb71e03
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -390,6 +390,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p1f-runtime-foundation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p1g-pipeline-foundation.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

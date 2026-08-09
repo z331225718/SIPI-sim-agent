@@ -2,7 +2,7 @@ schema: sipi.rust-candidate-source-map.v1
 status: provisional
 boundary_ref:
   path: product-boundary.v1.yaml
-  sha256: e306b3b9c7407aa477f7733612cb001f6c623197fd494950fcf10b0a101bae67
+  sha256: 1c5f2a4a4c3e5eb8ce213919f03b53c876d563f160b7aa253b045f5c1078bca4
   status: provisional
 inventory:
   source: git_ls_files_native
