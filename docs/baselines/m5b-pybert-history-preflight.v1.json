@@ -1,0 +1,27 @@
+{
+  "schema": "sipi.m5b.pybert-history-preflight.v1",
+  "mode": "preflight_only",
+  "migrationEligible": false,
+  "source": {
+    "repository": "https://github.com/z331225718/Py-bert-agent.git",
+    "objectFormat": "sha1",
+    "ref": "pybert-core-rust-migration",
+    "commit": "b3d072e6d425fd1ea1254c61400971b750e10d9b",
+    "tree": "6428fa66c9735f2a5482a02c1988d778bb3416ea",
+    "anchorStatus": "candidate"
+  },
+  "dependencies": {"M5B-01": "pending", "M5B-02": "accepted"},
+  "operation": {"filterRepoExecuted": false, "destinationCopyCreated": false},
+  "historyMapStatus": "pending",
+  "forbiddenArtifacts": [".git/filter-repo", "engines/py-bert-agent", "native/crates/sipi-link"],
+  "futureFilterRepo": {
+    "execution": "temporary clone outside source and target worktrees",
+    "status": "must-pin-at-execution",
+    "requiredEvidence": ["tool version and sha256", "final clean accepted source tag", "old-to-new commit map", "history preservation counts"]
+  },
+  "expandedPolicy": {
+    "entryCount": 521,
+    "decisionCounts": {"drop": 250, "external-reference": 3, "retain": 268},
+    "entryDigestSha256": "79165e3925af524e580537d4746afcd197e6cf95bd686c10ba03aff33c241f8f"
+  }
+}
