@@ -1,0 +1,14 @@
+[package]
+name = "sipi-runtime"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Cooperative SIPI run-state and cache-key foundation."
+
+[dependencies]
+sha2 = "0.10"
+
+[lints]
+workspace = true
