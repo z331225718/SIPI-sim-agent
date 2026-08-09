@@ -1,0 +1,518 @@
+schema: sipi.rust-candidate-source-map.v1
+status: provisional
+boundary_ref:
+  path: product-boundary.v1.yaml
+  sha256: a02cbc3eefe5f851edb34a926310835e054fa210d30dbd13b403bff17893442f
+  status: provisional
+inventory:
+  source: git_ls_files_native
+  entries:
+    native/crates/sipi-ami/Cargo.lock:
+      path: native/crates/sipi-ami/Cargo.lock
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 757cbbcc01b79a0c423f98541776317d3ffcb201
+      content_sha256: bed3206807d3f93fc03270b788b0469d5440d4cd2bd7b66d79342f94f2548e43
+      file_kind: manifest
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-ami/Cargo.toml:
+      path: native/crates/sipi-ami/Cargo.toml
+      tracked_git_blob:
+        algorithm: sha1
+        oid: d785a2f8181359cc3429dc29cd91deb74eba29a5
+      content_sha256: 70d2dac25d9106b8cf69869997d945260a7bf307bb470d82b1256f6453c1b9b1
+      file_kind: manifest
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-ami/README.md:
+      path: native/crates/sipi-ami/README.md
+      tracked_git_blob:
+        algorithm: sha1
+        oid: e3e1068ad5a5ba2280cd872b3aae3535138c35b1
+      content_sha256: c489f82d25c50020b3fae584ac5e91d04b1afb70331ece5e9af8800f79396781
+      file_kind: doc
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-ami/src/ami.rs:
+      path: native/crates/sipi-ami/src/ami.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 35121477162be415ea841d47e4109e3eec4619b1
+      content_sha256: 7e5ec63d6326abb03dbb300ff8712c01e67540f954d2b16cf21a5d9016ef683d
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-ami/src/contract.rs:
+      path: native/crates/sipi-ami/src/contract.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: a790f8b7e8db2b2f026ad694c01dbdb49d56a35a
+      content_sha256: 81daaf0cfcd4ad5b4ea25387bde4d0f70d52e2bf4fca6af1fdff503066d6bd56
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-ami/src/host.rs:
+      path: native/crates/sipi-ami/src/host.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 775f3b5a15231a9f195328f099c5b690bb86d869
+      content_sha256: be43cdfed363749a9dd523d674b4fb46de6873e9c7169becdd0d388f3fcea313
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-ami/src/lib.rs:
+      path: native/crates/sipi-ami/src/lib.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 28b464e16d7554a653eb184b4c473abd6ecfaf80
+      content_sha256: 4969ba68c09fade207e19a0a7e1394ce70216d17d0928ea97f3f0c65ceb9aa51
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/Cargo.lock:
+      path: native/crates/sipi-circuit/Cargo.lock
+      tracked_git_blob:
+        algorithm: sha1
+        oid: becacd1640485c4b417482eaebe6a72ac903e3e0
+      content_sha256: b0e89924296f2b6d428c14f73d49417cbade06ca9a360fb54578c97e02dd76b9
+      file_kind: manifest
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/Cargo.toml:
+      path: native/crates/sipi-circuit/Cargo.toml
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 715c1f45f155dcf325252bd9e4be11e5af3fbf7a
+      content_sha256: fa76c17ba06dfd37792d6ca13fcfeb2de1b4162197c6e924de807927f964a1b7
+      file_kind: manifest
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/README.md:
+      path: native/crates/sipi-circuit/README.md
+      tracked_git_blob:
+        algorithm: sha1
+        oid: ca08c2668559e41b1ac89becd719a3af2ab20604
+      content_sha256: 22f97d2898c5ce1c9056e5de8007ef4b0815def75adac0f078656292b31701f6
+      file_kind: doc
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/build.rs:
+      path: native/crates/sipi-circuit/build.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 763bc4628f71cc06dd1340c6afd6ef935259cd8a
+      content_sha256: 818115364b5a4e05533cd57e678e4968e58e5792a6f7f62227177bc39d3a753c
+      file_kind: build
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/engine.lock:
+      path: native/crates/sipi-circuit/engine.lock
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 564f374ad79fd088d561059e7fd9bcd4599f8b8f
+      content_sha256: 7283a3c9e365ee63f380c2c96546958e6a217e248bf8a51e223372d66a117d0f
+      file_kind: manifest
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/rust-toolchain.toml:
+      path: native/crates/sipi-circuit/rust-toolchain.toml
+      tracked_git_blob:
+        algorithm: sha1
+        oid: c10b12e6bb930e9e7df5d7876fc45fe22ed13e4f
+      content_sha256: 174a086284d57e79557b62bc627e96257893375dfd37239e3c3e830ce2629b95
+      file_kind: manifest
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/src/ami_host_candidate.rs:
+      path: native/crates/sipi-circuit/src/ami_host_candidate.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: d7a35353a15b6c0ebc7c7eb9cfa60ef8736005cb
+      content_sha256: 5d559080281bf21d87a790c186b6252717cd3c13ecc68bbe6a1b0667a7941a4d
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/src/compatibility.rs:
+      path: native/crates/sipi-circuit/src/compatibility.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 551ed9ee63893157e1666c4ce83823ca2f36357d
+      content_sha256: 86d3733f59aefa761b4852fa5e649e341d640a89ec6e677e61fa6fd7f3758590
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/src/error.rs:
+      path: native/crates/sipi-circuit/src/error.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 34114feb47cebf94029ced069b4171b8d5ce1db4
+      content_sha256: 95e3b4830a6f1e9b264810372c3f4cc5e0a5f805597abdf954463b8b16805793
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/src/expression.rs:
+      path: native/crates/sipi-circuit/src/expression.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 249615d47bf7f05281a8056d8743241480c5ddc3
+      content_sha256: 7554acd8138d4aae4959677380a1189ac573989073f03f2af47012764c531d00
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/src/lib.rs:
+      path: native/crates/sipi-circuit/src/lib.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 2affe1b62b75092823fa5374d9dee98f565237a4
+      content_sha256: 46496d446b806300b5a0929f8fa0bf7a72694a3fa031e25f9232a86b032d8d6c
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/src/logging.rs:
+      path: native/crates/sipi-circuit/src/logging.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 9164c724f488945773b811d305735be7d2bedb4d
+      content_sha256: 64362b8ca41c08a0de4a279d3d1a029db1263a890f5645be8636c3b608771f56
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/src/main.rs:
+      path: native/crates/sipi-circuit/src/main.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 59dfdacbe40ddfe66ea2f7ae233c2e3632b6c17f
+      content_sha256: f03f6c1a8adcddcc7a0352d0c41898afddabb14c74e3481739c2b93df5c768fa
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/src/netlist.rs:
+      path: native/crates/sipi-circuit/src/netlist.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 83ffa04c90fb7c523875fb93c64b1f245793bcd1
+      content_sha256: cd4fc24b57a815b8b29a25e9e3d4f0fe05ede31a895871ea9611632c2eadb5c1
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/src/output.rs:
+      path: native/crates/sipi-circuit/src/output.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: c4df009459c34a24eafbc45183fa228076ff5d40
+      content_sha256: b2ab10ddf8e6f349c660e28108115617a56f70e25b0b112fbe29db541b025771
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/src/response.rs:
+      path: native/crates/sipi-circuit/src/response.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: a519db7ee4d1a7c3bb9afe1bb7666225b32f4f85
+      content_sha256: 5adb6f95a2911bcb691d76023e13848f4034d70cf8b99067c9ca40ff1da4f54c
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/src/result.rs:
+      path: native/crates/sipi-circuit/src/result.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: f13c37b9fd367c5cb66a148deecedcea7d12b794
+      content_sha256: 0da05801ea9b6cb0f397f5a2cbf391cde24c78f6ac22abdb0f360cfe989e3314
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/src/rfm.rs:
+      path: native/crates/sipi-circuit/src/rfm.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 2a0cd67043d38b20f7f9875e2d6d68ab7760b852
+      content_sha256: d9028f8ad64936bc41a2363e4bd5d32a408963819633d1721f299ef0988645f1
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/src/simulator.rs:
+      path: native/crates/sipi-circuit/src/simulator.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: ed5712567420013d70c39a14257e1f77004a64b4
+      content_sha256: 78a49c75b3da1071bcbb3642b4b382dd4f87edf06c62990fc435b31da28cab04
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/src/sparse.rs:
+      path: native/crates/sipi-circuit/src/sparse.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: a560fa447b0196adc493530247dc3173b6afcf96
+      content_sha256: f104ebeab7e5b5f8181c53399ade0a29fe94c3fc4353e517f3e1f398bb31ac82
+      file_kind: rust_source
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/tests/ami_host_candidate.rs:
+      path: native/crates/sipi-circuit/tests/ami_host_candidate.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 8128fa3ae2a05e28d84c9c5234da8383fe2a19dc
+      content_sha256: aa296abb1128d7d2acc963e0e72bd2a014845bf5dc5dbdb5da5b74b5a153ebb7
+      file_kind: test
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/tests/api_freeze.rs:
+      path: native/crates/sipi-circuit/tests/api_freeze.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 71970989c13dc721a91406db0bf1e867b4313ac3
+      content_sha256: 37306f113cbe1eba02841a8bb4b158482da25e8a117bbe6e866e9cb56fd997ce
+      file_kind: test
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/tests/determinism.rs:
+      path: native/crates/sipi-circuit/tests/determinism.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: a4f7a5bb14abb6f9baadbc4f60a6be6f10ffd5d8
+      content_sha256: d44fe6798a9e32362b19df479764e10df2cce5345333754fa3d31c81247786b7
+      file_kind: test
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/tests/fixtures/ami/minimal.ami:
+      path: native/crates/sipi-circuit/tests/fixtures/ami/minimal.ami
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 57ab7946bd81ebb7e98d577cc16bccccc0ef1a89
+      content_sha256: 684ea42db11a602808e6d448104be4bd3464e3de4ef481196073b78ba525e80f
+      file_kind: asset
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/tests/fixtures/ami/minimal.ibs:
+      path: native/crates/sipi-circuit/tests/fixtures/ami/minimal.ibs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: 56999341c3b95eb14b4218abbf93674c6788c2b1
+      content_sha256: 31ee22c35c9e6ec9ebd0ea5c7bfb3a3028185fcb78d25acdc6b80a37597e2d32
+      file_kind: asset
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/tests/fixtures/ami_host_stub/Cargo.lock:
+      path: native/crates/sipi-circuit/tests/fixtures/ami_host_stub/Cargo.lock
+      tracked_git_blob:
+        algorithm: sha1
+        oid: f46f98aa9e9cfd516abd4dbf05e87a7c9736af87
+      content_sha256: c108750f20fc84f408405b33b94c05b18561be4503226d6e72e598fc5679ba6d
+      file_kind: manifest
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/tests/fixtures/ami_host_stub/Cargo.toml:
+      path: native/crates/sipi-circuit/tests/fixtures/ami_host_stub/Cargo.toml
+      tracked_git_blob:
+        algorithm: sha1
+        oid: e910b4fd476713c69fab645adeea4c521721c266
+      content_sha256: 3af3c9cb2c4fcbb1c567dc22135a69c2f703911c0b570c85140674b5342d0f66
+      file_kind: manifest
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/tests/fixtures/ami_host_stub/src/lib.rs:
+      path: native/crates/sipi-circuit/tests/fixtures/ami_host_stub/src/lib.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: b8003ad8b77ceeae8862898d5adda92e902021bb
+      content_sha256: 9ad03018d2f42df41d89e3c56731cf476e7790b557291dc3ea486df600f09af4
+      file_kind: test
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+    native/crates/sipi-circuit/tests/numeric_parity.rs:
+      path: native/crates/sipi-circuit/tests/numeric_parity.rs
+      tracked_git_blob:
+        algorithm: sha1
+        oid: a1e3548b7ea60b5f089ef1570cd5f6991c834676
+      content_sha256: 079f8a334dc163bd4f6433e7b36bc6603fc45adfdb315a629f15f0d5c95a6207
+      file_kind: test
+      boundary_class: quarantine
+      assessment: unknown
+      evidence_status: pending
+      direct_mit_sources: []
+      clean_room_evidence: []
+      notes: 'No promotion: exact direct-MIT or strict clean-room evidence has not
+        been recorded.'
+non_claims:
+- This inventory records source-evidence gaps, not product release eligibility or
+  legal clean-room proof.
+- Every current native file remains quarantine until a later independent promotion
+  decision.
