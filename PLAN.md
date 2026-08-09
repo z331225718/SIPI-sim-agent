@@ -481,6 +481,17 @@ returned 0 P1 / 0 P2. M5B-04 still requires representative authorized DLL
 fixtures, their dynamic dependency closure, an explicit promotion decision,
 and broader AMI parity before it can be completed.
 
+**M5B source CI activation update (2026-08-09): merged, first evidence run
+in progress.** PyBERT PR [#1](https://github.com/z331225718/Py-bert-agent/pull/1)
+merged `codex/m5b-consolidated` into `master` as `c9a466117f2bfe5ea2b9b89f84f23fc46d1f8f5c`.
+The merge includes the audited CI stabilization chain and enables
+`task13-nightly.yml` on the default branch. Its first manual Windows run is
+`31303477012`, pinned to that merge commit. It completed dependency setup and
+the locked native build before entering the frozen source-acceptance gate.
+This starts, but does not satisfy, the required 35-day evidence window; no
+Linux/macOS certification, Task 13 completion, clean accepted tag, or history
+migration eligibility is implied.
+
 ### 9.4 M5C：Workspace 与 Binding
 
 | ID | 任务 | 说明 |
