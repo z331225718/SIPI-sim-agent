@@ -421,6 +421,16 @@ mod tests {
     }
 
     #[test]
+    fn tracked_schema_baseline_is_exactly_the_registered_export() {
+        let baseline = include_bytes!("../schemas/sipi.capabilities.v1.schema.json");
+        assert!(baseline.ends_with(b"\n"));
+        assert_eq!(
+            capability_schema_json().expect("schema"),
+            &baseline[..baseline.len() - 1]
+        );
+    }
+
+    #[test]
     fn validation_request_uses_the_existing_validated_waveform_path() {
         let valid = br#"{"schema":"sipi.validation-request.v1","request_id":"request-1","subject":{"schema":"sipi.contract.v1","axis":{"encoding":"explicit","values":[0.0,1.0]},"samples":[1.0,2.0]}}"#;
         assert!(validate_request_v1(valid).is_ok());

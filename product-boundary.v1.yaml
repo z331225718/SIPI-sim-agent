@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: c13e4f286a3028a4c0c1b26d4bb301c47111583c8b4e7a575ede2e7f6208af13
+  tracked_paths_sha256: 29fbfd1b99ba8eecb3101475f4fc7b431fa52e02d34d271f8b2c78622093271b
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -120,6 +120,18 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-contracts/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-contracts/schemas/schema-inventory.v1.json:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-contracts/schemas/sipi.capabilities.v1.schema.json:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -606,6 +618,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p1-unsupported-cli-foundation.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p1-windows-locked-build-gate.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5069,6 +5087,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p1_windows_locked_build.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_acceptance_profiles.py:
       rule: migration-tools
       class: migration_only
@@ -5208,6 +5232,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_m5b_s2p_link_parity.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p1_windows_locked_build.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
