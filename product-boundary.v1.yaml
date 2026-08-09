@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 029e37d7233e7147065d2c3772f09e60ee4de7134cdc049fb414f98049c1902a
+  tracked_paths_sha256: ec56b792d57d36b250294bff8a3098d25e044ecb077de35e9488e6adfea98433
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -17,6 +17,18 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    Cargo.lock:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     LICENSE:
       rule: product-governance
       class: product_candidate
@@ -77,6 +89,48 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    crates/sipi-cli/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-cli/src/main.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-cli/tests/cli.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-contracts/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-contracts/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-types/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-types/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     dirty-disposition.v1.yaml:
       rule: migration-metadata
       class: migration_only
@@ -354,6 +408,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/independent-spec-template.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p1-unsupported-cli-foundation.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -4085,6 +4145,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    rust-toolchain.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     schemas/_defs/provenance.v1.schema.json:
       rule: legacy-python-platform
       class: migration_only
@@ -5049,6 +5115,19 @@ rules:
   distribution: non-distributed
   owner: sipi-migration-owner
   reason: imported Agent-Spice source is not a promoted Rust product crate
+- id: p1-rust-foundation
+  include:
+  - Cargo.toml
+  - Cargo.lock
+  - rust-toolchain.toml
+  - crates/**
+  class: quarantine
+  license: LicenseRef-Provenance-Pending
+  provenance: project_authored
+  distribution: non-distributed
+  owner: sipi-clean-room-owner
+  reason: new Rust product foundation remains quarantined until its clean-room and
+    release evidence is complete
 - id: native-candidates
   include:
   - native/**

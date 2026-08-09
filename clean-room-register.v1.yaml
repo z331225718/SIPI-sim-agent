@@ -33,6 +33,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: []
+  - id: p1-unsupported-cli-foundation-spec-v1
+    kind: independent_spec
+    content_sha256: 9132adedabb58a9224fb8fa09292e5980e8cdd32e3a8b59b7f63533ff53bb5fd
+    provenance:
+      source_ref: docs/clean-room/specs/p1-unsupported-cli-foundation.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: []
 scopes:
   - id: clean-room-process-template-v1
     paths: [docs/clean-room/**]
@@ -43,4 +51,13 @@ scopes:
       implementer: [independent-spec-template-v1]
       comparator: []
       auditor: [independent-spec-template-v1]
+  - id: p1-unsupported-cli-foundation-v1
+    paths: [Cargo.toml, Cargo.lock, rust-toolchain.toml, crates/**]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p1-unsupported-cli-foundation-spec-v1]
+      implementer: [p1-unsupported-cli-foundation-spec-v1]
+      comparator: []
+      auditor: [p1-unsupported-cli-foundation-spec-v1]
 attestations: []

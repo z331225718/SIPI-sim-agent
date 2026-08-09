@@ -1,0 +1,11 @@
+[package]
+name = "sipi-contracts"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Foundation constants for SIPI machine-readable contracts."
+
+[lints]
+workspace = true

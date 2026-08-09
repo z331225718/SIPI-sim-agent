@@ -1,0 +1,19 @@
+[package]
+name = "sipi-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Unsupported-only SIPI CLI foundation."
+
+[[bin]]
+name = "sipi"
+path = "src/main.rs"
+
+[dependencies]
+sipi-contracts = { path = "../sipi-contracts" }
+sipi-types = { path = "../sipi-types" }
+
+[lints]
+workspace = true

@@ -95,7 +95,7 @@ flowchart LR
 | 里程碑 | 目标 | 当前状态 |
 | --- | --- | --- |
 | P0 | 产品边界、许可、clean-room、示例清单 | 进行中；v0.2 基线与 P0-A 已审计 |
-| P1 | Rust workspace、contracts/artifacts/runtime、统一 CLI 骨架 | 未开始；有 Python 原型 |
+| P1 | Rust workspace、contracts/artifacts/runtime、统一 CLI 骨架 | P1-01 已建立 quarantine foundation；领域能力仍未开始 |
 | P2 | TRAN 原生纵向切片 | 有 `sipi-circuit` candidate，未 promotion |
 | P3 | Channel clean-room Rust 纵向切片 | 有 oracle/parity 证据，产品实现未开始 |
 | P4 | IBIS parser + AMI semantic/host | 有 `sipi-ami` candidate 和单 fixture 证据 |
@@ -115,7 +115,7 @@ flowchart LR
 - [x] **P0-02** 发布 `SPEC.md`/`PLAN.md` v0.2 重基线。
 - [x] **P0-03** 记录 ADR-011，明确终止非 MIT 历史迁入作为产品路线。
 - [x] **P0-04a** 添加根 MIT `LICENSE` 与 scope，明确不覆盖 migration/oracle/third-party 资产。
-- [ ] **P0-04b** 在 P1 Rust crates 出现时统一第一方 Cargo/package metadata；不得覆盖第三方许可证。
+- [x] **P0-04b** 在 P1 Rust crates 出现时统一第一方 Cargo/package metadata；不得覆盖第三方许可证。P1-01 crates 均为 `license = "MIT"`、`publish = false`，且仍处于 quarantine，未获得 release promotion。
 - [x] **P0-05** 建立 `product-boundary.v1`：穷尽当前 tracked path，分类为 `product_candidate`、`migration_only`、`oracle_only`、`quarantine`、`generated`。
 - [x] **P0-06** 新建 provisional `license-manifest.v2.yaml` release preflight：将 v1 legacy evidence 与未来 release 输入隔离，固定 dependency/NOTICE/owner/SBOM snapshot 的 fail-closed 字段；最终依赖和发布批准仍待录入。
 - [x] **P0-07** 建立 provisional clean-room material/role register，包含观察侧、实现侧、allowlist、禁止材料和 attestation schema；strict identity/signature 与实际领域 scope 仍待逐项录入。
@@ -141,7 +141,7 @@ flowchart LR
 
 ### 7.2 任务
 
-- [ ] **P1-01** 新建根 Cargo workspace，锁定 Rust toolchain、Cargo.lock 和 release profile。
+- [x] **P1-01** 新建根 Cargo workspace，锁定 Rust toolchain、Cargo.lock 和 release profile；仅包含 std-only `sipi-cli`/`sipi-types`/`sipi-contracts` foundation，所有 Rust path 仍为 quarantine。
 - [ ] **P1-02** 建立 `sipi-types`：SI newtypes、axis、port、complex tensor、waveform/spectrum 和 finite validation。
 - [ ] **P1-03** 建立 `sipi-contracts`：versioned serde types、cross-field rule ledger、canonical serialization 和 JSON Schema 生成。
 - [ ] **P1-04** 对现有 `sipi.*.v1` wire fixture 做 Rust round-trip 和 negative conformance；语义变化新开版本。
