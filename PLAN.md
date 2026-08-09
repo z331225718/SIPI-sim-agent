@@ -469,6 +469,18 @@ parity, M4 resolver parity, AMI parity, or Linux/macOS certification. The
 OpenCode P3 follow-up is provenance-only: include the full request-config
 digest and deterministic-drive description in a future replay-report revision.
 
+**M5B-04 exact-DLL readiness update (2026-08-09): accepted, still
+non-production.** `021ce08` adds a Git-object-bound preflight for the
+authorized `example_rx` DLL: it rejects any static normal/delay import drift,
+allows only resolved System32/API-set imports, redacts system paths, and
+replays the accepted candidate lifecycle in a fresh private directory without
+supplying `PATH`. The report is restricted to this fixture's static imports
+plus observed lifecycle; it is explicitly not arbitrary caller-DLL or runtime
+module closure. OMP `msg_8a81e64090c2` and OpenCode `msg_8bf7cd955b5a` both
+returned 0 P1 / 0 P2. M5B-04 still requires representative authorized DLL
+fixtures, their dynamic dependency closure, an explicit promotion decision,
+and broader AMI parity before it can be completed.
+
 ### 9.4 M5C：Workspace 与 Binding
 
 | ID | 任务 | 说明 |
