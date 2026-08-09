@@ -129,6 +129,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: []
+  - id: p2-tran-rc-pulse-acceptance-contract-spec-v1
+    kind: independent_spec
+    content_sha256: ad1aa95388977a2a703e0e5714d8b44fa057d90505ace3a9cb200565344b5529
+    provenance:
+      source_ref: docs/clean-room/specs/p2-tran-rc-pulse-acceptance-contract.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: []
   - id: agent-spice-license-2cc92316
     kind: mit_source
     content_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
@@ -136,6 +144,14 @@ materials:
       source_ref: external/agent-spice/2cc92316/LICENSE
       license_evidence: license-manifest.v1.yaml#agent-spice-source
     allowed_roles: [observer, auditor]
+    derived_from: []
+  - id: agent-spice-rc-pulse-fixture-2cc92316
+    kind: oracle_fixture
+    content_sha256: bcdbd81a40dde01f0e72a8c36be928b6a7325fabbc25f83f72073757154dcefc
+    provenance:
+      source_ref: external/agent-spice/2cc92316/native/AgentSpice.Engine/fixtures/rc.cir
+      license_evidence: license-manifest.v1.yaml#agent-spice-top-level-source
+    allowed_roles: [observer, comparator, auditor]
     derived_from: []
 scopes:
   - id: clean-room-process-template-v1
@@ -174,4 +190,13 @@ scopes:
       implementer: [p2-tran-package-foundation-spec-v1]
       comparator: []
       auditor: [p2-tran-package-foundation-spec-v1]
+  - id: p2-tran-rc-pulse-acceptance-contract-v1
+    paths: [docs/baselines/tran-rc-pulse-acceptance.v1.yaml, docs/clean-room/specs/p2-tran-rc-pulse-acceptance-contract.v1.md, tools/verify_tran_rc_pulse_acceptance.py, tools/test_verify_tran_rc_pulse_acceptance.py]
+    state: planned
+    role_material_allowlists:
+      observer: [agent-spice-license-2cc92316, agent-spice-rc-pulse-fixture-2cc92316]
+      spec_author: [p2-tran-rc-pulse-acceptance-contract-spec-v1]
+      implementer: [p2-tran-rc-pulse-acceptance-contract-spec-v1]
+      comparator: [agent-spice-rc-pulse-fixture-2cc92316]
+      auditor: [p2-tran-rc-pulse-acceptance-contract-spec-v1, agent-spice-license-2cc92316, agent-spice-rc-pulse-fixture-2cc92316]
 attestations: []

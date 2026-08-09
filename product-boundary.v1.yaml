@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: a46f22789af567604c54184828af592e7d82d42887937e99cd62c71432b3ffb5
+  tracked_paths_sha256: 5c4e5991c4142375fb0085219b3fee7ead34465998cf8ec21125fafe3723657d
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -593,6 +593,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/tran-rc-pulse-acceptance.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/clean-room/README.md:
       rule: historical-docs
       class: migration_only
@@ -672,6 +678,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p2-tran-provenance-preflight.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p2-tran-rc-pulse-acceptance-contract.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5147,6 +5159,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_tran_rc_pulse_acceptance.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_acceptance_profiles.py:
       rule: migration-tools
       class: migration_only
@@ -5316,6 +5334,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_tran_provenance_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_tran_rc_pulse_acceptance.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

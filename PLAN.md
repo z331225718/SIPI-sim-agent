@@ -186,6 +186,7 @@ P1 foundation 已完成。P1-04B 继续作为 oracle-only pending 项，且在�
 
 - [x] **P2-01** 审计 `agent-spice` MIT Rust 与现有 `sipi-circuit` 的逐文件来源、Cargo 依赖和 NOTICE；固定 anchor 未含 native tree，29 个 path 保持 `quarantine/unknown`，没有 promotion。
 - [x] **P2-02a** 建立不导出领域 API 的 `sipi-tran` package boundary；这不能替代 P2-02，后者仍须 required TRAN profile 与 clean-room 语义规格。
+- [ ] **P2-02b** 冻结用户选择的 `rc.cir` external-only acceptance contract；在采样、初值、环境与容差经 owner 确认前，拒绝任何 passed/certified 结论。
 - [ ] **P2-02** 将可接受内核收敛为 `sipi-tran` library；CLI/worker 只调用 library，不复制 solver。
 - [ ] **P2-03** 冻结 netlist/circuit request、器件支持矩阵、solver/convergence policy 和 error taxonomy。
 - [ ] **P2-04** 固定时间积分、初值、容差、step control、输出采样和 measurement 语义。

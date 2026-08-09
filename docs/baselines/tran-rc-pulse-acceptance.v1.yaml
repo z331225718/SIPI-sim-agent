@@ -1,0 +1,40 @@
+schema: sipi.tran.rc-pulse.acceptance.v1
+selection:
+  profile_id: tran-rc-pulse-v1
+  capability: tran
+  required: true
+  status: user_selected
+  decision_ref: user-confirmed-2026-08-10
+source:
+  canonical_origin: https://github.com/z331225718/agent-spice.git
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  object_format: sha1
+  path: native/AgentSpice.Engine/fixtures/rc.cir
+  git_blob: f9c29055902fe8aa2b268b4375a5bdbbf67df9da
+  content_sha256: bcdbd81a40dde01f0e72a8c36be928b6a7325fabbc25f83f72073757154dcefc
+  redistribution: external_only
+  license_evidence: license-manifest.v1.yaml#agent-spice-top-level-source
+scope:
+  analysis: tran
+  observables: [time_axis_seconds, voltage_in_volts, voltage_out_volts]
+  out_of_scope: [op, ac, other_nodes, measurements, netlist_text_compatibility, engine_cli_route]
+oracle:
+  mode: external_git_object_only
+  execution_status: not_invoked
+  product_fallback: forbidden
+  environment_status: pending_owner_confirmation
+acceptance:
+  status: blocked_missing_tolerance
+  acceptance_ready: false
+  sample_alignment: pending_owner_confirmation
+  time_axis: {comparison: pending_owner_confirmation, tolerance_seconds: null}
+  voltage_in: {comparison: pending_owner_confirmation, absolute_tolerance_volts: null, relative_tolerance: null}
+  voltage_out: {comparison: pending_owner_confirmation, absolute_tolerance_volts: null, relative_tolerance: null}
+  failure_handling: pending_owner_confirmation
+  missing_owner_inputs: [sample_alignment, time_tolerance, voltage_tolerances, initial_condition_policy, oracle_environment]
+non_claims:
+  - This record fixes a user-selected external oracle identity, not a product parser input.
+  - The selected profile has no approved numerical acceptance tolerance or result.
+  - The product must not copy, redistribute, parse, or fall back to the external fixture.
+  - This record does not implement TRAN, establish parity, or grant release readiness.
