@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: a4a76804d96a821bdb8ab8b54e8089ca4cae1499b6ce5bf37b3f38fd46710030
+  tracked_paths_sha256: 6ee456303fa8b52dfb82ad50afa56a8a6a432a9ba2bb11bac2d95fbb2c12477a
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -198,6 +198,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-09-p0b-clean-room-register.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-09-p0c-release-license-preflight.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
