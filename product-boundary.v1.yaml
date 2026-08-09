@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 41b2ce8feab95be314e1ad72d14fe89837dc553283c9910f8bd039da9811a0d8
+  tracked_paths_sha256: 8313878b4748d313fc1e68dab153c1015be8501f49b816fedb99d19dee948d07
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -420,6 +420,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/independent-spec-template.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p1-contracts-foundation.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

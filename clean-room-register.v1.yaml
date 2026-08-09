@@ -49,6 +49,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: []
+  - id: p1-contracts-foundation-spec-v1
+    kind: independent_spec
+    content_sha256: 5ddc09a8e703ea331fc34c391293f405c300fe3e451c923e01a011d618ecad59
+    provenance:
+      source_ref: docs/clean-room/specs/p1-contracts-foundation.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p1-types-foundation-spec-v1]
 scopes:
   - id: clean-room-process-template-v1
     paths: [docs/clean-room/**]
@@ -64,8 +72,8 @@ scopes:
     state: planned
     role_material_allowlists:
       observer: []
-      spec_author: [p1-unsupported-cli-foundation-spec-v1, p1-types-foundation-spec-v1]
-      implementer: [p1-unsupported-cli-foundation-spec-v1, p1-types-foundation-spec-v1]
+      spec_author: [p1-unsupported-cli-foundation-spec-v1, p1-types-foundation-spec-v1, p1-contracts-foundation-spec-v1]
+      implementer: [p1-unsupported-cli-foundation-spec-v1, p1-types-foundation-spec-v1, p1-contracts-foundation-spec-v1]
       comparator: []
-      auditor: [p1-unsupported-cli-foundation-spec-v1, p1-types-foundation-spec-v1]
+      auditor: [p1-unsupported-cli-foundation-spec-v1, p1-types-foundation-spec-v1, p1-contracts-foundation-spec-v1]
 attestations: []

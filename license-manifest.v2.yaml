@@ -2,7 +2,7 @@ schema: sipi.license-manifest.v2
 status: provisional
 release_boundary:
   path: product-boundary.v1.yaml
-  sha256: 1babc5f7b9b3900cba7a82cd8ddd839ae7fd719b18f33fd069f366c3b73f07a1
+  sha256: 9561ba31782f2d8fedb7c003b1d831d6b69b53ee89ea59f54d799ec50786cd8d
   status: provisional
 legacy_evidence:
   - id: legacy-license-manifest-v1
@@ -21,8 +21,56 @@ release_inputs:
     status: pending
     source_ref: null
     sha256: null
-  dependencies: []
-  notices: []
+  dependencies:
+    - id: rust-serde
+      component: serde
+      role: runtime
+      source: https://crates.io/crates/serde
+      requested_version: "1"
+      resolved_artifact: {version: null, sha256: null}
+      declared_spdx: pending-observation
+      license_evidence_ref: evidence/third-party/serde-license-pending
+      notice_requirement: pending
+      sbom_component_id: pkg:cargo/serde
+      status: pending
+      owner_action: {owner: sipi-license-owner, action: review serde distribution and NOTICE, approval_ref: null}
+    - id: rust-serde-json
+      component: serde_json
+      role: runtime
+      source: https://crates.io/crates/serde_json
+      requested_version: "1"
+      resolved_artifact: {version: null, sha256: null}
+      declared_spdx: pending-observation
+      license_evidence_ref: evidence/third-party/serde-json-license-pending
+      notice_requirement: pending
+      sbom_component_id: pkg:cargo/serde_json
+      status: pending
+      owner_action: {owner: sipi-license-owner, action: review serde_json distribution and NOTICE, approval_ref: null}
+    - id: rust-schemars
+      component: schemars
+      role: runtime
+      source: https://crates.io/crates/schemars
+      requested_version: "1"
+      resolved_artifact: {version: null, sha256: null}
+      declared_spdx: pending-observation
+      license_evidence_ref: evidence/third-party/schemars-license-pending
+      notice_requirement: pending
+      sbom_component_id: pkg:cargo/schemars
+      status: pending
+      owner_action: {owner: sipi-license-owner, action: review schemars distribution and NOTICE, approval_ref: null}
+  notices:
+    - dependency: rust-serde
+      status: pending
+      source_evidence_ref: evidence/third-party/serde-license-pending
+      output_notice_id: NOTICE/serde
+    - dependency: rust-serde-json
+      status: pending
+      source_evidence_ref: evidence/third-party/serde-json-license-pending
+      output_notice_id: NOTICE/serde-json
+    - dependency: rust-schemars
+      status: pending
+      source_evidence_ref: evidence/third-party/schemars-license-pending
+      output_notice_id: NOTICE/schemars
 blocking_actions:
   - id: first-party-product-promotion
     owner: sipi-release-owner

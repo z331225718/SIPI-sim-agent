@@ -7,5 +7,11 @@ rust-version.workspace = true
 publish = false
 description = "Foundation constants for SIPI machine-readable contracts."
 
+[dependencies]
+schemars = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sipi-types = { path = "../sipi-types" }
+
 [lints]
 workspace = true

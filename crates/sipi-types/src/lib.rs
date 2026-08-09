@@ -213,9 +213,31 @@ enum AxisRepresentation<U> {
     Explicit(Box<[U]>),
 }
 
+/// A read-only view of an axis representation.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum AxisView<'a, U> {
+    Uniform {
+        start: U,
+        step: U,
+        count: NonZeroUsize,
+    },
+    Explicit(&'a [U]),
+}
+
 impl<U: Measurement> Axis<U> {
     pub fn uniform(start: U, step: NonZeroStep<U>, count: NonZeroUsize) -> Self {
         Self(AxisRepresentation::Uniform { start, step, count })
+    }
+
+    pub fn view(&self) -> AxisView<'_, U> {
+        match &self.0 {
+            AxisRepresentation::Uniform { start, step, count } => AxisView::Uniform {
+                start: *start,
+                step: step.get(),
+                count: *count,
+            },
+            AxisRepresentation::Explicit(values) => AxisView::Explicit(values),
+        }
     }
 }
 
@@ -243,6 +265,7 @@ impl<U> Axis<U> {
     pub fn is_uniform(&self) -> bool {
         matches!(&self.0, AxisRepresentation::Uniform { .. })
     }
+
 }
 
 /// A shape-checked dense complex tensor without dimension labels or layout semantics.
