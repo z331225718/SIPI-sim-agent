@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: dd0ecb92061bb6a4d05ce7a3a51cf18a6a5a6d419e725fa2322a65cb9da3fd2c
+  tracked_paths_sha256: 708500878909725ac79606f375ab85654b73081816a599b86cfae74b63f9bef2
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -156,6 +156,24 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-contracts/tests/product_contract_fixtures.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-layout/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-layout/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-layout/src/main.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -558,6 +576,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p1-pipeline-foundation.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p1-release-layout-verifier.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

@@ -1,0 +1,21 @@
+[package]
+name = "sipi-layout"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "External staged-release layout verifier for the SIPI foundation."
+
+[[bin]]
+name = "sipi-layout-verify"
+path = "src/main.rs"
+
+[dependencies]
+pelite = { version = "0.10", default-features = false, features = ["std"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+
+[lints]
+workspace = true
