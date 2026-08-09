@@ -532,8 +532,20 @@ inputs are pending, whereas final manual `require_release_inputs=true` fails
 closed after writing its report. OMP `msg_67a65de7ee18` and OpenCode
 `msg_ad88add87472` independently returned 0 P1 / 0 P2 after the final
 whitespace/invalidation rechecks. The source commit is accepted for this
-preflight boundary but remains local until a separately authorized push/PR;
-it does not approve any budget, wheel, panic evidence, Task 13/M5B-01, or M5B.
+preflight boundary; it does not approve any budget, wheel, panic evidence,
+Task 13/M5B-01, or M5B.
+
+**M5B Task 13 release-input preflight merge/smoke update (2026-08-09):
+remote evidence path is live.** With user authorization, PR
+[#5](https://github.com/z331225718/Py-bert-agent/pull/5) merged as
+`e0c830e`. A same-commit master `workflow_dispatch`
+[`31310247935`](https://github.com/z331225718/Py-bert-agent/actions/runs/31310247935)
+passed the Windows authoring-profile reference gate, Windows native source
+acceptance, and scheduled-history observation. Its immutable artifacts bind
+the pending owner-input report (`releaseEligible=false`), accepted source
+evidence, and `0/35` scheduled-history state. This is a merge/smoke proof,
+not a scheduled-day count or release approval; the first eligible scheduled
+window remains `17 18 * * *` UTC.
 
 ### 9.4 M5C：Workspace 与 Binding
 
