@@ -14,7 +14,7 @@ fn capabilities_are_machine_readable_and_uncertified() {
     assert!(output.status.success());
     assert_eq!(
         String::from_utf8(output.stdout).expect("UTF-8 stdout"),
-        "{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"channel\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]}\n"
+        "{\"schema\":\"sipi.cli.response.v1\",\"protocol\":1,\"command\":\"capabilities\",\"request_id\":null,\"status\":\"ok\",\"result\":{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"channel\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]},\"diagnostic_count\":0}\n"
     );
     assert!(output.stderr.is_empty());
 }
@@ -23,10 +23,41 @@ fn capabilities_are_machine_readable_and_uncertified() {
 fn run_is_explicitly_unsupported() {
     let output = sipi().arg("run").output().expect("run sipi run");
 
-    assert_eq!(output.status.code(), Some(69));
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.status.code(), Some(4));
+    assert!(
+        String::from_utf8(output.stdout)
+            .unwrap()
+            .contains("\"status\":\"unsupported\"")
+    );
     assert_eq!(
         String::from_utf8(output.stderr).expect("UTF-8 stderr"),
-        "{\"schema\":\"sipi.cli-error.v1\",\"code\":\"unsupported\",\"message\":\"simulation domains are not implemented in the P1-01 foundation\"}\n"
+        "{\"schema\":\"sipi.cli.diagnostic.v1\",\"sequence\":1,\"severity\":\"error\",\"code\":\"unsupported\",\"command\":\"run\",\"request_id\":null,\"location\":null,\"message\":\"command failed\"}\n"
     );
+}
+
+#[test]
+fn stdin_validation_is_noninteractive_and_contract_checked() {
+    let valid = br#"{"schema":"sipi.validation-request.v1","request_id":"request-1","subject":{"schema":"sipi.contract.v1","axis":{"encoding":"explicit","values":[0.0,1.0]},"samples":[1.0,2.0]}}"#;
+    let mut child = sipi()
+        .args(["validate", "--stdin"])
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .expect("start sipi");
+    use std::io::Write;
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(valid)
+        .expect("write request");
+    let output = child.wait_with_output().expect("wait sipi");
+    assert!(output.status.success());
+    assert!(
+        String::from_utf8(output.stdout)
+            .expect("UTF-8 stdout")
+            .contains("\"command\":\"validate\"")
+    );
+    assert!(output.stderr.is_empty());
 }

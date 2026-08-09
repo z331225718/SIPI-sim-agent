@@ -15,6 +15,7 @@ use sipi_types::{
 };
 
 pub const CAPABILITIES_SCHEMA: &str = "sipi.capabilities.v1";
+pub const VALIDATION_REQUEST_SCHEMA: &str = "sipi.validation-request.v1";
 pub const PLANNED_DOMAINS: [&str; 4] = ["tran", "channel", "ibis-ami", "com"];
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -196,6 +197,24 @@ pub struct WireWaveformV1 {
 
 #[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct ValidationRequestV1 {
+    pub schema: String,
+    pub request_id: String,
+    pub subject: WireWaveformV1,
+}
+
+pub fn validate_request_v1(input: &[u8]) -> Result<(), ContractError> {
+    let request: ValidationRequestV1 =
+        serde_json::from_slice(input).map_err(|error| ContractError::Json(error.to_string()))?;
+    if request.schema != VALIDATION_REQUEST_SCHEMA || !valid_request_id(&request.request_id) {
+        return Err(ContractError::Version);
+    }
+    let _: Waveform = request.subject.try_into()?;
+    Ok(())
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct WireSpectrumV1 {
     pub schema: String,
     pub axis: WireAxisV1,
@@ -292,6 +311,14 @@ fn require_schema(schema: &str) -> Result<(), ContractError> {
     } else {
         Err(ContractError::Version)
     }
+}
+
+fn valid_request_id(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
 }
 
 fn seconds_axis(value: WireAxisV1) -> Result<Axis<Seconds>, ContractError> {
@@ -391,6 +418,14 @@ mod tests {
             deterministic_json(&CapabilityCatalogV1::unsupported()).unwrap()
         );
         assert!(capability_schema_json().unwrap().starts_with(b"{"));
+    }
+
+    #[test]
+    fn validation_request_uses_the_existing_validated_waveform_path() {
+        let valid = br#"{"schema":"sipi.validation-request.v1","request_id":"request-1","subject":{"schema":"sipi.contract.v1","axis":{"encoding":"explicit","values":[0.0,1.0]},"samples":[1.0,2.0]}}"#;
+        assert!(validate_request_v1(valid).is_ok());
+        assert!(validate_request_v1(br#"{"schema":"sipi.validation-request.v1","request_id":"bad/request","subject":{"schema":"sipi.contract.v1","axis":{"encoding":"explicit","values":[0.0]},"samples":[1.0]}}"#).is_err());
+        assert!(validate_request_v1(br#"{"schema":"sipi.validation-request.v1","request_id":"request-1","subject":{"schema":"sipi.contract.v1","axis":{"encoding":"explicit","values":[0.0]},"samples":[1.0],"extra":true}}"#).is_err());
     }
 
     #[test]

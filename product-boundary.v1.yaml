@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 02ffa59625f37aa3584b1514d4688dbdd6e4f2d462e42eb75827eb9b1243f771
+  tracked_paths_sha256: 60fe6de69774a1159badddd39a2a2e53122e22d9ee4279d05448a5ca929f9d0a
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -534,6 +534,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p1-cli-discovery.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p1-cli-process-contract.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

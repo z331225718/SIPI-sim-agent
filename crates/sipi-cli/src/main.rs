@@ -1,10 +1,14 @@
 #![forbid(unsafe_code)]
 
-use std::{env, process};
+use std::{
+    env,
+    io::{self, Read},
+    process,
+};
 
 use sipi_contracts::{
     CAPABILITIES_SCHEMA, CapabilityCatalogV1, PLANNED_DOMAINS, RULE_LEDGER_V1,
-    capability_schema_json, deterministic_json,
+    capability_schema_json, deterministic_json, validate_request_v1,
 };
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -19,14 +23,41 @@ struct Response {
 struct CommandService;
 
 fn main() {
-    let response = dispatch(&env::args().skip(1).collect::<Vec<_>>());
-    if let Some(stdout) = response.stdout {
-        println!("{stdout}");
-    }
-    if let Some(stderr) = response.stderr {
-        eprintln!("{stderr}");
+    let arguments = env::args().skip(1).collect::<Vec<_>>();
+    let command = arguments.first().map_or("help", String::as_str);
+    let response = if arguments == ["validate", "--stdin"] {
+        ProcessAdapter::validate_stdin()
+    } else {
+        dispatch(&arguments)
+    };
+    println!("{}", envelope_json(command, &response));
+    if let Some(stderr) = response.stderr.as_deref() {
+        eprintln!("{}", diagnostic_json(command, stderr));
     }
     process::exit(response.code);
+}
+
+struct ProcessAdapter;
+
+impl ProcessAdapter {
+    fn validate_stdin() -> Response {
+        const MAXIMUM: usize = 1_048_576;
+        let mut input = Vec::with_capacity(8192);
+        if io::stdin()
+            .take((MAXIMUM + 1) as u64)
+            .read_to_end(&mut input)
+            .is_err()
+        {
+            return error(5, "operational_failure", "stdin could not be read");
+        }
+        if input.len() > MAXIMUM || input.is_empty() || input.starts_with(&[0xEF, 0xBB, 0xBF]) {
+            return error(2, "invalid_input", "stdin request is invalid");
+        }
+        match validate_request_v1(&input) {
+            Ok(()) => success("{\"subject\":\"validation-request\"}".to_owned()),
+            Err(_) => error(3, "contract_rejected", "stdin request was rejected"),
+        }
+    }
 }
 
 fn dispatch(arguments: &[String]) -> Response {
@@ -69,6 +100,11 @@ impl CommandService {
             {
                 validate_self(Some(id))
             }
+            [command, format] if command == "validate" && format == "--stdin" => error(
+                2,
+                "invalid_input",
+                "stdin validation requires the process adapter",
+            ),
             [command, action, format]
                 if command == "inspect" && action == "self" && format == "--json" =>
             {
@@ -85,7 +121,7 @@ impl CommandService {
                 schema_show(id)
             }
             [command, ..] if command == "run" => error(
-                69,
+                4,
                 "unsupported",
                 "simulation domains are not implemented in the P1-01 foundation",
             ),
@@ -106,14 +142,32 @@ fn success(body: String) -> Response {
     }
 }
 
-fn error(code: i32, name: &str, message: &str) -> Response {
+fn error(code: i32, name: &str, _message: &str) -> Response {
     Response {
         code,
         stdout: None,
-        stderr: Some(format!(
-            "{{\"schema\":\"sipi.cli-error.v1\",\"code\":\"{name}\",\"message\":\"{message}\"}}"
-        )),
+        stderr: Some(name.to_owned()),
     }
+}
+
+fn envelope_json(command: &str, response: &Response) -> String {
+    let status = match response.code {
+        0 => "ok",
+        2 | 3 => "invalid",
+        4 => "unsupported",
+        _ => "failed",
+    };
+    let result = response.stdout.as_deref().unwrap_or("null");
+    format!(
+        "{{\"schema\":\"sipi.cli.response.v1\",\"protocol\":1,\"command\":\"{command}\",\"request_id\":null,\"status\":\"{status}\",\"result\":{result},\"diagnostic_count\":{}}}",
+        usize::from(response.stderr.is_some())
+    )
+}
+
+fn diagnostic_json(command: &str, message: &str) -> String {
+    format!(
+        "{{\"schema\":\"sipi.cli.diagnostic.v1\",\"sequence\":1,\"severity\":\"error\",\"code\":\"{message}\",\"command\":\"{command}\",\"request_id\":null,\"location\":null,\"message\":\"command failed\"}}"
+    )
 }
 
 fn version_json() -> String {
@@ -232,14 +286,9 @@ mod tests {
     fn run_is_fail_closed() {
         let response = dispatch(&args(&["run"]));
 
-        assert_eq!(response.code, 69);
+        assert_eq!(response.code, 4);
         assert_eq!(response.stdout, None);
-        assert_eq!(
-            response.stderr.as_deref(),
-            Some(
-                "{\"schema\":\"sipi.cli-error.v1\",\"code\":\"unsupported\",\"message\":\"simulation domains are not implemented in the P1-01 foundation\"}"
-            )
-        );
+        assert_eq!(response.stderr.as_deref(), Some("unsupported"));
     }
 
     #[test]
