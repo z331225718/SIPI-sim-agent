@@ -3,6 +3,7 @@ members = [
   "crates/sipi-cli",
   "crates/sipi-artifacts",
   "crates/sipi-contracts",
+  "crates/sipi-pipeline",
   "crates/sipi-runtime",
   "crates/sipi-types",
 ]

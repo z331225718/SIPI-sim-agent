@@ -1,0 +1,11 @@
+[package]
+name = "sipi-pipeline"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Validated, non-executing typed SIPI pipeline plans."
+
+[lints]
+workspace = true
