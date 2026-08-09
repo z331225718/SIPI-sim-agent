@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 9034a78cad52bb12cee667e5d3d5eced6fcf928bdafaaf5ce567598139ebb82a
+  tracked_paths_sha256: 8f8b95feeb40b2998929d957d574138fe2974cd8b7c692f50a63fe8b0e857c9c
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -65,6 +65,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: non-distributed
+    clean-room-register.v1.yaml:
+      rule: migration-metadata
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     dirty-disposition.v1.yaml:
       rule: migration-metadata
       class: migration_only
@@ -185,6 +191,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-09-p0a-product-boundary.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-09-spec-v0.2.md:
       rule: historical-docs
       class: migration_only
@@ -294,6 +306,18 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/toolchain-verification.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/README.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/independent-spec-template.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -4613,6 +4637,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_clean_room_register.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_m0_artifact_mock.py:
       rule: migration-tools
       class: migration_only
@@ -4686,6 +4716,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_license_manifest.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_clean_room_register.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -4859,6 +4895,7 @@ rules:
   - toolchains.lock
   - dirty-disposition.v1.yaml
   - license-manifest.v1.yaml
+  - clean-room-register.v1.yaml
   class: migration_only
   license: LicenseRef-See-License-Manifest
   provenance: project_authored

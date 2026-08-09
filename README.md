@@ -43,6 +43,13 @@
 不会因根许可证而被重新授权或纳入发行物。完整范围见
 [LICENSE-SCOPE.md](LICENSE-SCOPE.md)。
 
+## Clean-Room 门
+
+[`clean-room-register.v1.yaml`](clean-room-register.v1.yaml) 是材料、角色和
+attestation 的 fail-closed 声明门。它目前仅为 `provisional` 模板，不能证明
+认知隔离、授权 release 或 promotion 任何现有 Rust candidate；完整流程见
+[docs/clean-room/README.md](docs/clean-room/README.md)。
+
 ## 验证
 
 ```powershell

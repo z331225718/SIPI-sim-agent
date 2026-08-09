@@ -1,0 +1,46 @@
+schema: sipi.clean-room-register.v1
+status: provisional
+policy:
+  implementation_allowed: [public_standard, mit_source, independent_spec]
+  implementation_forbidden: [non_mit_source, pybert_source, oracle_fixture, prohibited_implementation_input]
+principals:
+  - id: clean-room-observer-assignment-pending
+    roles: [observer]
+    identity_ref: assignment-required-before-observation
+    status: placeholder
+  - id: clean-room-spec-author-assignment-pending
+    roles: [spec_author]
+    identity_ref: assignment-required-before-specification
+    status: placeholder
+  - id: clean-room-implementer-assignment-pending
+    roles: [implementer]
+    identity_ref: assignment-required-before-implementation
+    status: placeholder
+  - id: clean-room-comparator-assignment-pending
+    roles: [comparator]
+    identity_ref: assignment-required-before-comparison
+    status: placeholder
+  - id: clean-room-auditor-assignment-pending
+    roles: [auditor]
+    identity_ref: assignment-required-before-audit
+    status: placeholder
+materials:
+  - id: independent-spec-template-v1
+    kind: independent_spec
+    content_sha256: 8637d877ede52e131160796290d4a757d32726f543bea9443e7af8a143f49af2
+    provenance:
+      source_ref: docs/clean-room/independent-spec-template.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: []
+scopes:
+  - id: clean-room-process-template-v1
+    paths: [docs/clean-room/**]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [independent-spec-template-v1]
+      implementer: [independent-spec-template-v1]
+      comparator: []
+      auditor: [independent-spec-template-v1]
+attestations: []
