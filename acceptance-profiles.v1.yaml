@@ -1,0 +1,77 @@
+schema: sipi.acceptance-profiles.v1
+inventory_status: candidate
+repositories:
+  - id: pybert-f6ba031
+    canonical_origin: external-pybert-git-object-source
+    commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7
+    object_format: sha1
+  - id: agent-com-034b21b
+    canonical_origin: external-agent-com-git-object-source
+    commit: 034b21b2f293b2ef97cb8be269b1bf2be38e0086
+    object_format: sha1
+profiles:
+  - id: channel-s2p-channel-16ghz-3db-v1
+    capability: channel
+    boundary: oracle_only
+    source:
+      repository: pybert-f6ba031
+      path: models/sp_file/channel_16ghz_3db.s2p
+      git_blob: e10bfb4a43731645984f1f5e24bd3fbf2268dedd
+      content_sha256: 9d4cfeaad7c971fa45454f639b40e08c538855058f326fbdec64298b8933b5ad
+    assets:
+      - {path: models/sp_file/channel_16ghz_3db.s2p, git_blob: e10bfb4a43731645984f1f5e24bd3fbf2268dedd, content_sha256: 9d4cfeaad7c971fa45454f639b40e08c538855058f326fbdec64298b8933b5ad, redistribution: authorized_test_only}
+    source_license_evidence: license-manifest.v1.yaml#pybert-main-source
+    environment: {platform: windows-x86_64, provenance_status: evidence_incomplete, provenance_ref: docs/baselines/audits/2026-08-08-m5.md#m5b-03c}
+    acceptance: {observable: link-stage arrays and metrics after externally resolved S2P handoff, comparator_ref: tools/verify_m5b_s2p_link_parity.py, tolerance_policy_ref: docs/baselines/audits/2026-08-08-m5.md#m5b-03c, status: candidate, required_by: null}
+    evidence_refs: [docs/baselines/audits/2026-08-08-m5.md#m5b-03c]
+    notes: Fixed external S2P Link handoff evidence only; it is not generic S-parameter certification.
+  - id: channel-rfm-block-2-current-drive-v1
+    capability: channel
+    boundary: oracle_only
+    source:
+      repository: pybert-f6ba031
+      path: tests/golden/rust_migration/agent_spice_rfm/block_2.rfm
+      git_blob: 9a087a9f75c58d3d1fb15efee2628001a601a546
+      content_sha256: 5716f691a69174cfe88980ffd96bfc867f30f9ee92b6b85d3fb6b8c8b3636a53
+    assets:
+      - {path: tests/golden/rust_migration/agent_spice_rfm/block_2.rfm, git_blob: 9a087a9f75c58d3d1fb15efee2628001a601a546, content_sha256: 5716f691a69174cfe88980ffd96bfc867f30f9ee92b6b85d3fb6b8c8b3636a53, redistribution: external_only}
+    source_license_evidence: license-manifest.v1.yaml#pybert-main-source
+    environment: {platform: windows-x86_64, provenance_status: evidence_incomplete, provenance_ref: docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm}
+    acceptance: {observable: current-drive transfer plus retained receiver stages and BER, comparator_ref: tools/verify_m5b_rfm_receiver_parity.py, tolerance_policy_ref: docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm, status: candidate, required_by: null}
+    evidence_refs: [docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm]
+    notes: Same-config RFM receiver evidence is profile-limited and not general RFM physical certification.
+  - id: ibis-ami-example-rx-raw-abi-v1
+    capability: ibis_ami
+    boundary: oracle_only
+    source:
+      repository: pybert-f6ba031
+      path: models/ibisami/example_rx.ami
+      git_blob: 26a1b03849a0838284dfde7921926668ad1434e0
+      content_sha256: 6d4038a184cb10af355dbd02b9392258d7e2b3bb9b0cddc211349db66ef80c38
+    assets:
+      - {path: models/ibisami/example_rx.ami, git_blob: 26a1b03849a0838284dfde7921926668ad1434e0, content_sha256: 6d4038a184cb10af355dbd02b9392258d7e2b3bb9b0cddc211349db66ef80c38, redistribution: external_only}
+      - {path: models/ibisami/example_rx.ibs, git_blob: b30b88bdf5883722d8ddbbd860a115406c5e439c, content_sha256: 37b7bf1b6c50fe56c4daaad344de1b3cabe7a7f139ca1b76c4058a943f39fbe9, redistribution: external_only}
+      - {path: models/ibisami/example_rx.dll, git_blob: 70c2efa3357a9fa7528e44286d5566413ba3fdd7, content_sha256: 60e29f16dcfe1a40240956f0591b29f524ccc8844c4959671d0317178c1ff46c, redistribution: external_only}
+    source_license_evidence: license-manifest.v1.yaml#pybert-pyami-source
+    environment: {platform: windows-x86_64, provenance_status: evidence_incomplete, provenance_ref: docs/baselines/audits/2026-08-08-m5.md#ami-example-rx}
+    acceptance: {observable: "raw Init/GetWave waveform, clocks, status, and lifecycle", comparator_ref: tools/compare_m5b_ami_exact_host_outputs.py, tolerance_policy_ref: docs/baselines/audits/2026-08-08-m5.md#ami-example-rx, status: candidate, required_by: null}
+    evidence_refs: [docs/baselines/audits/2026-08-08-m5.md#ami-example-rx]
+    notes: Exact fixture raw ABI evidence only; it is not AMI Link, BER, eye, or general-model parity.
+  - id: com-r480-envelope-v1
+    capability: com
+    boundary: oracle_only
+    source:
+      repository: agent-com-034b21b
+      path: schemas/r480-capability-envelope-v1.yaml
+      git_blob: 69aeffa675341733277ccaf19a8e878cb716a315
+      content_sha256: 9b3329e25559e595187ae1a0530785d5a8dbbdc02a035eeb44326aa91ee34b73
+    assets: []
+    source_license_evidence: license-manifest.v1.yaml#agent-com-source
+    environment: {platform: windows-x86_64, provenance_status: evidence_incomplete, provenance_ref: docs/baselines/agent-com-baseline.json#golden}
+    acceptance: {observable: R480 behavior envelope and documented output metrics, comparator_ref: external-agent-com-oracle, tolerance_policy_ref: docs/baselines/agent-com-baseline.json#golden, status: candidate, required_by: null}
+    evidence_refs: [docs/baselines/agent-com-baseline.json#golden]
+    notes: Candidate behavior envelope; authoritative MATLAB golden remains external-only and unresolved.
+non_claims:
+  - Candidate profiles are not user-confirmed required acceptance obligations.
+  - This inventory neither runs an oracle nor copies/re-records assets or golden data.
+  - A candidate profile passing source-object checks is not numerical parity or release certification.

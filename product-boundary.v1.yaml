@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 6ee456303fa8b52dfb82ad50afa56a8a6a432a9ba2bb11bac2d95fbb2c12477a
+  tracked_paths_sha256: e49320dde4b30a14f599acc8ee80274175e291c184e6591dd6605fde5093e0e9
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -47,6 +47,12 @@ inventory:
       license: MIT
       provenance: project_authored
       distribution: product
+    acceptance-profiles.v1.yaml:
+      rule: migration-metadata
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     apps/sipi-cli/pyproject.toml:
       rule: legacy-python-platform
       class: migration_only
@@ -4655,6 +4661,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_acceptance_profiles.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_clean_room_register.py:
       rule: migration-tools
       class: migration_only
@@ -4740,6 +4752,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_license_manifest.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_acceptance_profiles.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -4927,6 +4945,7 @@ rules:
   - license-manifest.v1.yaml
   - license-manifest.v2.yaml
   - clean-room-register.v1.yaml
+  - acceptance-profiles.v1.yaml
   class: migration_only
   license: LicenseRef-See-License-Manifest
   provenance: project_authored
