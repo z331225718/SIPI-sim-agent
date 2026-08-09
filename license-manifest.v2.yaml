@@ -1,0 +1,42 @@
+schema: sipi.license-manifest.v2
+status: provisional
+release_boundary:
+  path: product-boundary.v1.yaml
+  sha256: 013284bf5a2810b5ac21763605de352d9d41e35319e4278f3b4ac0e19b82549f
+  status: provisional
+legacy_evidence:
+  - id: legacy-license-manifest-v1
+    source_ref: license-manifest.v1.yaml
+    content_sha256: df7a0ce1047ce6fe0430886354ea9f4634c5e4e9777d051c573a98eee0714daf
+    observed_license: mixed-legacy-evidence
+    use: migration_oracle_only
+release_inputs:
+  first_party:
+    intended_license: MIT
+    owner_action:
+      owner: sipi-release-owner
+      action: approve product-path promotion after P0 source review
+      approval_ref: null
+  dependency_snapshot:
+    status: pending
+    source_ref: null
+    sha256: null
+  dependencies: []
+  notices: []
+blocking_actions:
+  - id: first-party-product-promotion
+    owner: sipi-release-owner
+    action: approve first-party product paths and MIT source scope
+    approval_ref: null
+  - id: resolved-dependency-snapshot
+    owner: sipi-release-owner
+    action: provide an external, hash-addressed resolved dependency and SBOM snapshot
+    approval_ref: null
+  - id: notice-and-distribution-review
+    owner: sipi-license-owner
+    action: approve dependency distribution, NOTICE output, and release archive review
+    approval_ref: null
+non_claims:
+  - v1 legacy authorization records are migration/oracle evidence and cannot authorize a v0.2 release.
+  - This provisional preflight does not determine legal compatibility, distribution rights, or release readiness.
+  - No dependency, NOTICE, SBOM, native candidate, fixture, DLL, or model is approved by this file.

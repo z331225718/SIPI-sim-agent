@@ -113,7 +113,7 @@ flowchart LR
 - [x] **P0-04a** 添加根 MIT `LICENSE` 与 scope，明确不覆盖 migration/oracle/third-party 资产。
 - [ ] **P0-04b** 在 P1 Rust crates 出现时统一第一方 Cargo/package metadata；不得覆盖第三方许可证。
 - [x] **P0-05** 建立 `product-boundary.v1`：穷尽当前 tracked path，分类为 `product_candidate`、`migration_only`、`oracle_only`、`quarantine`、`generated`。
-- [ ] **P0-06** 将 `license-manifest.v1.yaml` 升级为 release 可执行清单：逐 Cargo/Python/build dependency、NOTICE、owner 和允许动作。
+- [x] **P0-06** 新建 provisional `license-manifest.v2.yaml` release preflight：将 v1 legacy evidence 与未来 release 输入隔离，固定 dependency/NOTICE/owner/SBOM snapshot 的 fail-closed 字段；最终依赖和发布批准仍待录入。
 - [x] **P0-07** 建立 provisional clean-room material/role register，包含观察侧、实现侧、allowlist、禁止材料和 attestation schema；strict identity/signature 与实际领域 scope 仍待逐项录入。
 - [ ] **P0-08** 盘点三个旧项目所有要保持的示例，建立 acceptance profile inventory；每项固定 repo/ref/blob/hash/许可/运行环境/required 状态。
 - [ ] **P0-09** 将现有 Rust candidate 逐文件映射到来源：`sipi-circuit`、`sipi-ami`、任何 PyBERT-derived crate；有歧义即 quarantine。
