@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: ec56b792d57d36b250294bff8a3098d25e044ecb077de35e9488e6adfea98433
+  tracked_paths_sha256: b3e6fdbda60aebb9253b1b108b8a37ed1fa2fbeca28beb2bdb1fbe0bab498e21
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -282,6 +282,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-09-p0f-clean-room-templates.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-09-p1a-rust-foundation.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
