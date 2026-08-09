@@ -19,3 +19,9 @@ Run `python -B tools/verify_clean_room_register.py` to validate the registry.
 Strict mode additionally requires an assigned identity and signature reference
 for each attestation; release mode remains blocked until all scopes are strict,
 audited, and mapped to product-candidate paths.
+
+The versioned templates in [templates](templates) are the required save
+locations for an independent observation specification, implementation commit
+record, and external comparison report. They are evidence scaffolding, not a
+substitute for the register's strict identity, material-closure, and audit
+requirements.

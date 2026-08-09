@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: afc88a6e8fa7e0f77b47cbd4a50639aa038db6e32cf058a712dc316d770d4bc8
+  tracked_paths_sha256: b2a82d267c49c3aeaa1da89ef46820b93c35442990a1530f0764c9663538ea3e
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -348,6 +348,24 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/independent-spec-template.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/templates/comparison-report.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/templates/implementation-commit.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/templates/observation-spec.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -4691,6 +4709,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_clean_room_templates.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_m0_artifact_mock.py:
       rule: migration-tools
       class: migration_only
@@ -4788,6 +4812,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_clean_room_register.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_clean_room_templates.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
