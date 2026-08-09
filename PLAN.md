@@ -431,7 +431,8 @@ reference; M5B is next.
 
 ### 9.3 M5B：PyBERT Link
 
-M5B-04 supplementary stateful boundary (pending this slice's audit): `ee7b5f5`
+M5B-04 supplementary stateful boundary accepted by OMP (0 P1 / 0 P2,
+`msg_26c293b208eb`; OpenCode cross-review requested): `955ec82`
 adds candidate-only request v2 for Init-only or an ordered GetWave sequence on
 one `sipi-ami` model handle. Its external Windows report covers the authorized
 `example_rx` fixture's Init-only, one-block, and different-length two-block
