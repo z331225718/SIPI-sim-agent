@@ -161,7 +161,7 @@ flowchart LR
 - [x] **P1-08** 扩展 quarantine `sipi-cli` 静态 discovery/self-conformance 命令：`version/doctor/capabilities/schema/validate self/run/inspect`；不接 stdin/file/artifact/engine/domain request，完整 stdout/stderr/exit contract 留给 P1-09。
 - [x] **P1-09** 固定单请求/单响应 noninteractive process contract：stdout JSON envelope、stderr JSON diagnostic、exit code 0/2/3/4/5/6，且仅 `validate --stdin` 接受受限 P1 contract request；不提供 run/file/artifact/streaming I/O。
 - [x] **P1-10** release layout verifier 验证外部 staged CLI 的 closed layout、PE imports 和静态 smoke；任意命令 child-process/dynamic-load 仍不作证明。
-- [ ] **P1-11** Windows x86_64 locked build、fmt、clippy、test、install smoke 和 schema drift gate。
+- [x] **P1-11** Windows x86_64 locked build、fmt、clippy、test、isolated install smoke 和 exact schema drift gate；仅生成外部 provisional report，不是 twin build、archive 或 release promotion。
 
 ### 7.3 退出条件
 
@@ -171,6 +171,8 @@ flowchart LR
 - artifact failure/timeout/cancel 不发布 success。
 - 发行候选不包含 Python runtime、迁移 adapter 或 external asset。
 - P1 大边界审计 0 P1/0 P2。
+
+P1 foundation 已完成。P1-04B 继续作为 oracle-only pending 项，且在用户确认 required profile 前不得成为领域实现输入。
 
 ## 8. P2：TRAN 原生能力
 

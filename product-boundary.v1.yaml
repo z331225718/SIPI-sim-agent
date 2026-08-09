@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 29fbfd1b99ba8eecb3101475f4fc7b431fa52e02d34d271f8b2c78622093271b
+  tracked_paths_sha256: 134c8b468e6cac7c0bdcc82929828dde79912351a17aa8360e9038f38dd842f4
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -444,6 +444,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p1j-release-layout.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p1k-windows-locked-build.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
