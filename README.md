@@ -1,36 +1,38 @@
 # SIPI-sim-agent
 
-面向 SI/PI、串行链路和 IEEE 802.3 COM 分析的统一仿真平台规划仓库。
+面向 SI/PI、串行链路和 IEEE 802.3 COM 分析的原生仿真平台。
 
-当前状态：`v0.1` 设计基线。此目录暂不导入三个原项目的源码，先冻结平台契约、迁移门禁和实施顺序，避免把仍在演进且带有本地修改的工作树直接拼接成一个不可验证的大仓库。
+当前状态：`v0.2` 产品重基线。终态为第一方 MIT、Rust-only 的统一平台；旧项目只作为已授权 MIT 源码候选或工作树外 oracle，不作为产品运行依赖。
 
 ## 核心文档
 
 - [SPEC.md](SPEC.md)：产品范围、目标架构、公共契约、引擎边界和验收标准。
-- [PLAN.md](PLAN.md)：分阶段迁移计划、任务依赖、质量门禁、投入估算和回滚策略。
+- [PLAN.md](PLAN.md)：纵向能力计划、任务依赖、质量门禁和旧资产处置。
+- [ADR-011](docs/adr/ADR-011-native-mit-rust-product-boundary.md)：MIT 第一方源码、Rust-only 终态和旧项目 oracle 边界。
 
 ## 一句话架构
 
-`SIPI-sim-agent` 立即成为目标治理与产品集成仓，但第一阶段只冻结设计、证据和契约；到 M3 才成为可运行的统一产品入口。数值引擎在通过各自 golden、性能和许可门禁后，才带历史逐步迁入目标 monorepo。
+一个 Rust workspace 提供 `sipi` CLI、contracts、artifacts、runtime、pipeline 以及 TRAN、Channel、IBIS-AMI、COM 内核；旧 Python/MATLAB/可执行文件仅在发行边界外生成行为规格和比较证据。
 
-## 已审计来源
+## 旧项目定位
 
-| 项目 | 审计 HEAD | 平台角色 | 当前关键约束 |
-| --- | --- | --- | --- |
-| `agent-spice` | `90f0374` | Circuit/SPICE、RFM、S 参数拟合 | Rust 当前是 binary crate；工作树有本地修改；完整测试尚未执行 |
-| `Py-bert-agent` | `5bf6d7e` | Channel、BER、眼图、IBIS-AMI、现有 Rust link core | v1 契约和 Agent-Spice 桥接已落地；native parity gate 尚未解锁 |
-| `agent-com` | `034b21b` | IEEE 802.3 COM r4.80 行为复刻 | 当前代码与旧 capability 测试存在策略漂移；大型 MATLAB oracle 需独立工件管理 |
+| 项目 | v0.2 角色 | 当前关键约束 |
+| --- | --- | --- |
+| `agent-spice` | MIT Rust TRAN 候选与外部 oracle | 逐文件来源/依赖审计后才可 promotion；Python/旧 bundle 不发布 |
+| `Py-bert-agent` | Channel/IBIS-AMI 黑盒 oracle | BSD/非 MIT 源码和派生历史不迁入产品；Channel 由 clean-room Rust 重做 |
+| `agent-com` | MIT 行为/源码参考与外部 oracle | 最终运行时移植为 Rust；MATLAB、workbook 和私有 corpus 单独管理 |
 
-这些提交号只作为审计锚点，不代表可直接迁入的发布基线。正式导入必须来自 clean tag，并记录依赖锁、测试结果、工件哈希和许可来源。
+既有 M3/M4/M5 审计、S2P/RFM/AMI compare 和 source CI 继续作为迁移证据，但不等于 Rust-only 产品已经完成。
 
 ## 目标产品面
 
-- `sipi` 统一 CLI 和后续本地服务。
-- Circuit、Channel、COM 三个独立分析引擎。
-- 统一的项目文件、能力协商、运行状态、结果信封、工件存储和比较报告。
-- 受约束的 Agent 工具层，用于运行、比较、诊断和参数扫描，不绕过仿真契约直接操作数值内核。
+- `sipi` 单一公开 CLI，稳定 JSON schema、capabilities、errors 和 provenance。
+- TRAN、Channel、IBIS、AMI、COM 独立 Rust crates。
+- typed pipeline、内容寻址工件、stage compare 和 profile 级能力认证。
+- MIT 第一方源码边界；compatible 依赖保留其许可证，供应商模型/DLL 默认外部提供。
+- 面向 AI 的机器可发现接口，不提供隐式 fallback 或任意 shell 能力。
 
-实施从 [PLAN.md](PLAN.md) 的 `M0` 基线门禁开始。
+实施从 [PLAN.md](PLAN.md) 的 `P0` 产品/clean-room 边界开始。
 
 ## 验证
 

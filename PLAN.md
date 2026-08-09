@@ -1,835 +1,478 @@
-# SIPI-sim-agent 实施计划 v0.1
+# SIPI-sim-agent 实施计划 v0.2
 
-> 状态：未开始  
-> 日期：2026-08-04  
-> 依据：[SPEC.md](SPEC.md)  
-> 估算口径：工程周，按一名熟悉 Python/Rust/SI 数值算法的工程师串行计算
+> 状态：执行中，替代 v0.1 作为当前主计划
+> 重基线日期：2026-08-09
+> 重基线仓库锚点：`9f9c76a`
+> 产品规格：[SPEC.md](SPEC.md)
+> 架构决策：[ADR-011](docs/adr/ADR-011-native-mit-rust-product-boundary.md)
 
-## 1. 实施策略
+## 1. 执行目标
 
-采用“目标 monorepo、黑盒先行、门禁迁入”的顺序：
+把当前以 Python 控制面和旧引擎适配器为主的迁移平台，收敛为：
 
-```text
-冻结证据
-  -> 建平台控制面和运行信封
-  -> 用三个旧引擎完成黑盒闭环
-  -> 建共享语义 DTO
-  -> 带历史迁入 Circuit/Link core
-  -> 原样迁入 COM 域包
-  -> 接产品 UI/Agent
-  -> 两个 RC 后切 source of truth
-```
+- 第一方可发布源码统一 MIT。
+- 产品运行时和数值能力统一 Rust。
+- 一个公开 `sipi` CLI 覆盖 TRAN、Channel、IBIS-AMI、COM 和跨域 pipeline。
+- 三个旧项目只提供已授权 MIT 源码候选或工作树外 oracle。
+- 既有示例以版本化 profile、stage compare 和预先批准容差保持准确。
 
-任何阶段都不得：
+v0.2 不否定已完成的 M0-M4/M5 证据；它改变这些证据的用途。契约、工件、fail-closed 和比较报告继续作为基础，Python adapter、旧 bundle、历史迁入和 fallback 则降级为迁移/验证设施。
 
-- 从带本地修改的工作树复制源码作为迁入基线。
-- 用 sibling editable/path dependency 作为 release 方案。
-- 在迁移行为的同时修正数值算法。
-- 为了减少文件数删除 reference backend、oracle、旧结果 reader 或 compatibility CLI。
-- 因函数同名就合并 COM、PyBERT 和 Agent-Spice 的物理语义。
+## 2. 实施纪律
 
-## 2. 里程碑总览
+1. **纵向切片。** 每个 capability 从输入契约、Rust 内核、CLI、工件、oracle compare 到能力声明形成闭环，避免先铺满空 crate。
+2. **许可先于代码 promotion。** 未进入 product allowlist 的文件不能成为最终 crate 输入；“本地能运行”不等于可发布。
+3. **clean-room 两侧隔离。** 观察/规格侧和实现侧分开记录材料、人员/agent、commit 和输出。接触过受限源码的实现不能自行签署 strict clean-room。
+4. **迁移与算法变化分开。** 复用/移动、机械 Rust 重构、数值行为修改、容差或 golden 变化分别提交和审计。
+5. **唯一 owner。** 每个物理变换只有一个 production crate；adapter/pipeline 不写第二套 resolver、FFT、termination、均衡或符号处理。
+6. **profile 级声明。** 测试通过只升级被覆盖的 profile，不能扩写为全域认证。
+7. **失败关闭。** unsupported、许可缺口、来源不明、hash 漂移、partial output、timeout、panic/OOM 均不得被记为成功或 fallback。
+8. **较大边界审计。** 一个内聚的大切片一个 commit；完成后同时请求 OMP/OpenCode 只读审计。任一可用审计给出 0 P1/0 P2 可继续，另一侧 quota/unavailable 必须落库并在恢复后补审。
+9. **删除另行批准。** 旧 Python/adapter/oracle 的删除仍要求用户批准、Rust golden 完备、release 无依赖，并与其专属漂移门同批移除。
 
-| 里程碑 | 目标 | 估算 | 关键退出条件 |
-| --- | --- | ---: | --- |
-| M0 | 基线、许可、工具链和工件冻结 | 1-2 周 | 三仓有可解释 baseline；迁入来源可追溯 |
-| M1 | 平台 contracts/runtime 骨架 | 2-3 周 | 运行信封和 consumer conformance 通过 |
-| M2 | 三个黑盒 adapter | 2-3 周 | 旧 CLI 经平台运行且领域结果等价 |
-| M3 | 统一项目、持久 supervisor 和首个跨引擎闭环 | 4-6 周 | Platform MVP 与 G2b 通过 |
-| M4 | 共享 Axis/Network/Waveform DTO | 3-4 周 | Shared Data MVP 通过 |
-| M5 | Circuit/Link core 与生产兼容包迁入 | 6-10 周 | Native Workspace MVP 通过 |
-| M6 | COM 域包迁入与平台化 | 2-4 周 | COM 全 golden/预算不退化 |
-| M7 | 本地服务、报告和 Agent 工具 | 3-4 周 | Agent MVP 通过 |
-| M8 | 发布、双跑、切换和旧仓降级 | 2-3 周 + 两个 RC | G6 通过；一键回滚演练通过 |
+## 3. 当前资产处置
 
-串行 ROM 总量约 **25-39 工程周**，M0 完成后必须按真实 baseline 和认证矩阵重新估算。其中：
+| 当前资产 | v0.2 用途 | 产品资格 |
+| --- | --- | --- |
+| `schemas/` 与 M1-M4 contract/rule ledger | Rust contracts 的兼容输入和测试基线 | 需迁为 Rust 权威并生成 schema |
+| `packages/sipi-artifacts` | 原子工件和内容寻址行为参考 | 需 Rust 重做 |
+| `packages/sipi-runtime` | DAG、状态、缓存、资源语义参考 | 需 Rust 重做 |
+| `apps/sipi-cli` | CLI 行为原型 | 不进入终态运行时 |
+| `packages/sipi-adapters` | 外部 oracle/迁移桥 | 不进入终态运行时 |
+| `engines/agent-spice` | 已授权 MIT 来源与 oracle | Rust 子集逐文件审计后可复用；Python 不发布 |
+| `native/crates/sipi-circuit` | TRAN candidate | 来源、依赖和行为门通过后 promotion |
+| `native/crates/sipi-ami` | AMI clean-room candidate | 材料隔离、ABI 和许可门通过后 promotion |
+| PyBERT source/CI/nightly/wheel evidence | Channel/AMI 外部 oracle 和稳定性证据 | 不迁入非 MIT/BSD 历史 |
+| `agent-com` | 已授权 MIT 行为与源码参考 | 可直接移植到 Rust，仍需逐文件许可审计 |
+| M5B AMI/RFM/S2P compare tools | scope-limited acceptance evidence | 工具本身不是产品 capability |
+| M5A/M5B filter-repo preflight | 历史追溯记录 | 实际非 MIT 历史迁入路线终止 |
 
-- 可用的统一平台壳（M0-M3）：约 9-14 工程周。
-- 共享数据、原生 core 和生产兼容包收敛（M4-M6）：约 11-18 工程周。
-- 产品化、Agent 和正式切换（M7-M8）：约 5-7 工程周，加两个 RC 观察周期。
+### 3.1 已接受但不外推的证据
 
-两到三名工程师可并行 Circuit、Link、COM 和平台控制面，但 gate 不能因并行而跳过。
-以上是工程投入，不包含法律授权、第三方许可证、外部模型获取或采购等待时间；这些外部阻断必须单独进入项目排期。
+- M3 checkpoint 和 M4 平台契约已接受，OMP 独立审计记录为 0 P1/0 P2。
+- PyBERT 7 个 approved profile、RFM current-drive/Link、S2P handoff 和 AMI exact-fixture 报告可用于定义 v0.2 acceptance profile。
+- Agent-Spice engine lock/bundle、许可分类和 COM 既有行为证据可用作来源锚。
+- 这些结论不表示 Rust-only 产品、通用 AMI/Channel/COM 或 MIT release 已完成。
 
-### 2.1 Gate 责任映射
-
-`SPEC.md` 第 12 节是唯一 gate 定义，`quality/severity-policy.yaml` 是实施时的机器可读权威。映射固定为：`G0a -> M0 并前置 M1`；`G0b -> M0-M2，按 engine 独立关闭`；`G0c -> M5-M8，按资产独立关闭`；`G1 -> M1`；`G2a -> M2 adapter`；`G2b -> M3 lifecycle`；`G3 -> M4`；`G4 -> M3-M6 的每条 vertical slice`；`G5 -> M5/M6 历史迁入`；`G6 -> M8 发布与 source-of-truth 切换`。未知许可不会阻断独立的 M1 contract 工作，但会阻断对应 bundle、历史迁入和分发。M5 的 Native Workspace MVP 不包含两个 RC；两个 RC 只属于 G6/M8。
-
-## 3. 依赖关系
+## 4. 工作流与依赖
 
 ```mermaid
 flowchart LR
-    M0["M0 / G0a 基线"] --> M1["M1 Contracts/Runtime"]
-    M1 --> M2["M2 Adapters"]
-    M2 --> M3["M3 Platform MVP"]
-    M3 --> M4["M4 Shared DTO"]
-    M4 --> M5A["M5A Circuit Core"]
-    M4 --> M5B["M5B Link Core"]
-    M0 --> M6A["M6A COM 绿基线"]
-    M4 --> M6B["M6B COM 迁入"]
-    M6A --> M6B
-    M5A --> M6B
-    M5B --> M6B
-    M5A --> M7["M7 Product/Agent"]
-    M5B --> M7
-    M6B --> M7
-    M7 --> M8["M8 Release/Cutover"]
+    P0["P0 产品与 clean-room 边界"] --> P1["P1 Rust foundation + CLI"]
+    P1 --> P2["P2 TRAN"]
+    P1 --> P3["P3 Channel"]
+    P1 --> P4A["P4A IBIS"]
+    P3 --> P4B["P4B AMI"]
+    P4A --> P4B
+    P1 --> P5["P5 COM"]
+    P2 --> P6["P6 Pipeline + product CLI"]
+    P3 --> P6
+    P4B --> P6
+    P5 --> P6
+    P6 --> P7["P7 Release + legacy retirement"]
 ```
 
-M5A 和 M5B 可以并行。M6A 可从 M0 后独立开展；M6B 的准备工作可在 M4 后开始，但正式历史迁入和 source-of-truth 切换必须等 M5 证明迁入流程、DTO 和 runtime 边界稳定，因此“COM 最后迁入”是硬顺序。M7 的工具 schema 和只读原型可在 M3 后并行，完整验收仍依赖 M5/M6。
+- P0 是任何现有源码 promotion 的前置门。
+- P1 先交付可运行但诚实返回 unsupported 的 Rust CLI；随后各领域纵向填充。
+- P2/P3/P4A/P5 在 P1 稳定后可独立推进；P4B 依赖 IBIS 基础和 Channel handoff。
+- P6 可在第一个领域 slice 后迭代，但只有四个领域的最小 certified profile 都接入后才能退出。
+- P7 不等待“旧项目所有功能”重写，只要求本次发布声明的 capability 全闭环。
 
-## 4. M0：基线与治理
+## 5. 里程碑总览
 
-### 4.1 目标
-
-把“当前能运行什么、在哪个环境运行、哪些失败已知、哪些数据可分发”变为可审计事实。M0 不做平台功能。
-
-### 4.2 任务
-
-| ID | 任务 | 产物 |
+| 里程碑 | 目标 | 当前状态 |
 | --- | --- | --- |
-| M0-01 | 记录三仓 HEAD/tree hash、branch、dirty diff 清单、remote、依赖锁和构建工具 | `docs/baselines/source-inventory.md` |
-| M0-02 | 为未提交修改建立非破坏性备份，并逐 diff 标记 `keep/drop/port`、owner 和目标任务；迁入只接受后续 clean tag | `dirty-disposition.v1.yaml`、备份记录和恢复演练 |
-| M0-03 | 安装并锁定 Python、Rust、Node/GitNexus 和外部工具版本 | `toolchains.lock`、`sipi doctor` 设计输入 |
-| M0-04 | Agent-Spice 运行 collect、Python full、`cargo test`、wheel smoke；固定 skip/外部 oracle 清单 | `agent-spice-baseline.json` |
-| M0-05 | 重建 PyBERT GitNexus 索引；恢复/分类 PyAMI、IBIS-AMI 和 TestSweep 失败；运行 Rust/Python/adapter 测试 | `pybert-baseline.json` |
-| M0-06 | 明确 agent-com capability policy；修复代码、测试和文档漂移；重跑 fast/golden/full | `agent-com-baseline.json` |
-| M0-07 | 对 MATLAB、ADS、COM workbook、图像、私有 corpus 和第三方 solver 建工件清单/hash | `fixtures/manifest.v1.json` |
-| M0-08 | 决定 LFS 或外部 artifact store，并做一条下载、校验、离线失败测试 | artifact store ADR |
-| M0-09 | 逐项分类 `agent-spice`、`agent-com` 源码和数据，引用已有授权/NOTICE、指定缺口 owner，并建立机器可拒绝的资产状态；不把等待外部授权算作 M0 工程完成条件 | `license-manifest.v1.yaml`、现有许可证据和授权缺口清单 |
-| M0-10 | 固定首签核平台和认证环境，建议 Windows x86_64/CPython 3.12 | platform support ADR |
-| M0-11 | 按 operation/payload/engine instance/profile/OS 盘点旧入口、source tag、旧工件、环境锁、required/optional fixture 和当前证据；此时 schema 未冻结，不得 advertise | 非公共 `docs/baselines/capability-inventory.yaml` |
+| P0 | 产品边界、许可、clean-room、示例清单 | 进行中 |
+| P1 | Rust workspace、contracts/artifacts/runtime、统一 CLI 骨架 | 未开始；有 Python 原型 |
+| P2 | TRAN 原生纵向切片 | 有 `sipi-circuit` candidate，未 promotion |
+| P3 | Channel clean-room Rust 纵向切片 | 有 oracle/parity 证据，产品实现未开始 |
+| P4 | IBIS parser + AMI semantic/host | 有 `sipi-ami` candidate 和单 fixture 证据 |
+| P5 | COM Rust 行为 profile | 未开始；有 MIT source/oracle |
+| P6 | 跨域 pipeline、完整 CLI、AI 可发现性 | 有 Python MVP，Rust 未开始 |
+| P7 | Windows release、SBOM/NOTICE、legacy retirement | 未开始 |
 
-### 4.3 退出条件
-
-- 每个已知失败都有 owner、原因、是否阻断和重现命令，不以“历史上通过”代替当前证据。
-- 三仓迁入候选均来自 clean tag；用户现有修改未丢失。
-- 大型 golden 可通过 hash manifest 获取。baseline 收集允许把缺失项标为 `unavailable`，但迁入/发布 required fixture 必须零未解释 skip；缺失 optional fixture 时对应 capability 保持 uncertified，不能 advertise。
-- 资产许可状态只允许 `authorized_public`、`authorized_private`、`external_reference_only`、`blocked_unknown`。M0/G0a 要求分类、证据引用、owner 和机器拒绝策略完整，不要求外部授权已经到达；`blocked_unknown` 不阻断独立 M1，但不能进入对应 bundle 或源码迁入；`external_reference_only` 只能通过用户提供的外部位置消费。ADR 或内部意见不能代替正式授权证据。
-- Rust 和 Python 测试工具链在干净环境可复现。
-
-M0 使用统一的 baseline tag 规则：`sipi-baseline/<engine>/<YYYYMMDD>.<n>`。tag 必须是 annotated tag，指向 clean tree；对应 CI 全绿，或附带经领域 owner 和测试 owner 共同批准的 waiver manifest。所有原 dirty 修改必须明确归属为已提交、已备份待处理或排除项。是否使用签名 tag 由许可/发布 ADR 决定，release candidate 必须使用可验证签名或等价的 CI provenance。
-
-M0 同时创建以下机器可读质量策略，后续 gate 不再依赖散落在文档里的数字：
-
-```text
-quality/severity-policy.yaml
-quality/tolerance-profiles/<engine>.yaml
-quality/performance-budgets/<engine>.yaml
-fixtures/manifest.v1.json
-```
-
-策略至少定义 P0/P1/P2 阻断级别、fixture ID、comparator、stage tolerance、性能环境和 waiver 审批者。
-
-## 5. M1：Contracts 与 Runtime 骨架
-
-### 5.1 目标
-
-在新仓建立独立于三种数值实现的控制面。此阶段不搬引擎源码。
-
-### 5.2 仓库脚手架
-
-创建：
-
-```text
-apps/sipi-cli
-packages/sipi-contracts
-packages/sipi-runtime
-packages/sipi-artifacts
-packages/sipi-adapters
-schemas
-tests/contract
-tests/runtime
-docs/adr
-engine.lock
-```
-
-顶层可使用 `uv` workspace 管理平台开发工具，但各引擎继续保留自己的认证 lock。Cargo workspace 在 M5 前只建立空的治理文件或延后创建，禁止先造无消费者的 shared crate。
-
-### 5.3 任务
-
-| ID | 任务 | 说明 |
-| --- | --- | --- |
-| M1-01 | 写 ADR-001 至 ADR-008 | 将 `SPEC.md` 的决策拆成可单独修订的记录 |
-| M1-01A | 固化 schema authority matrix | 把 `SPEC.md` 6.8 写成 `schemas/authority.v1.yaml`，现有 PyBERT/COM/Agent-Spice v1 不可变 |
-| M1-01B | 定义 capability 状态 schema 并转换 M0 inventory | role、implementation、evidence、release channel 正交；生成不可 advertise 的 `capabilities.baseline.v1.json` |
-| M1-02 | 定义 `sipi.run-request.v1` 和 `sipi.run-result.v1` | 固化 run/analysis/attempt/backend-execution 四层 ID 与 strict/auto/compare discriminated selection |
-| M1-02A | 定义 `sipi.backend-execution-request.v1/result.v1` | strict-only adapter SPI；单一 exact instance/role/预算，runtime 聚合为 run result |
-| M1-03 | 定义 validation、events、errors、resource limits | JSON Schema Draft 2020-12；`wall_time_s -> Timeout`，其他 limit -> `ResourceLimit` |
-| M1-04 | 定义 `sipi.artifact-ref.v1` 和 provenance | 显式映射 PyBERT/COM 引用，不扩写领域 v1 |
-| M1-05 | 实现 Python immutable models 和 schema validator | 禁止 NaN/Inf、路径逃逸和非法状态迁移 |
-| M1-06 | 建 schema conformance fixtures | known-good、unknown field、version mismatch、超限、损坏 hash |
-| M1-07 | 实现原子 staging/publish 和 checksums | 实际 attempt 的三个终态写 `run-record`；未执行的 blocked DAG node 写 node record；仅 succeeded 写 success manifest |
-| M1-08 | 实现 engine registry 与 `engine.lock` parser | 固定 artifact hash、protocol 和 capabilities digest |
-| M1-09 | 分别实现 project execution、DAG node 与 attempt 状态机、event sink 和 cancellation token | `blocked` 仅属于未执行 node；事件携带层级 ID，序号在 execution 内单调 |
-| M1-10 | 增加最小 `sipi doctor/capabilities` | 尚不运行真实分析 |
-
-### 5.4 退出条件
-
-- Python 与 Rust consumer conformance 全通过。Rust toolchain 是 M0 退出条件，因此 G1 不接受“只准备方案”的替代证据。
-- 旧 consumer 读取新增可选结果字段不会失败；不兼容请求明确要求新 schema ID。
-- artifact 路径、hash、原子发布、取消和非法状态均有故障注入测试。
-- 四层执行 ID 不混用，retry/compare fixture 不覆盖目录；四层 ID/lineage 从 content cache key 排除；backend selection 三个分支的非法字段组合均被拒绝。
-- M0 inventory 已可重复转换为 baseline capability schema，四个正交状态字段无隐式组合或 advertise 旁路；experimental/internal 不能进入默认 auto。
-- adapter conformance 只接受 backend-execution request/result；向 adapter 传入 attempt selector 或让 adapter 返回聚合 run result 必须失败。
-- runtime 不 import `agent_spice`、`pybert`、`agent_com` 或其私有实现。
-- schema 演化遵循 `SPEC.md` 6.7：request 严格、result 容忍未知可选字段、breaking change 使用新 major schema ID。
-
-## 6. M2：黑盒引擎适配器
-
-> 状态（2026-08-08）：平台侧完成并经逐片独立审计（证据 `docs/baselines/audits/2026-08-07-m2-platform.md`）；引擎级真实双跑与许可项 deferred——pybert 真实双跑待 managed dependency lock（M2-08 后续 slice；2026-08-07 引擎侧 `native_auto_parity_gate` 已对 RLGC NRZ 默认 profile approved），agent-spice/agent-com 随许可/oracle 延后至 cleanroom 完成后重开 M0-09/G0b/G0c。
-
-> 状态更新（2026-08-08）：**M2 deferred 触发条件已全部满足**——(1) pybert `native_auto_parity_gate` 已对 7 个 profile（rlgc-nrz-default + TX edge jitter×5 + pam4-web）返回 approved（核验 msg_a99de12f4422，pybert commit `8a6b0fe`/`8fbd4fe`）；(2) agent-spice M0-09 许可分类 + engine bundle lock 完成（`2cc92316`/`2583926e`，核验 msg_4d2fef0101c2）；(3) agent-com M0-09 许可分类完成（`5272ffe`，核验 msg_8fa80948ec8b）。平台侧剩余工作：managed dependency lock（venv 多 wheel 依赖安装）→ 真实 bundle 替换示例 stub → 三引擎纵向验收（M3-07b/08b）。
+## 6. P0：产品与 clean-room 边界
 
 ### 6.1 目标
 
-在不改变数值实现的前提下，让平台运行三个引擎，并证明平台只改变运输和工件包装。
+在继续迁代码前，机器可验证地回答：哪些字节属于产品、哪些只能作为 oracle、哪些材料实现侧绝不能读取，以及哪些旧例子必须保持。
 
-### 6.2 通用 Process Adapter
+### 6.2 任务
 
-实现能力：
+- [x] **P0-01** 用户确认终态：第一方 MIT、Rust-only、统一 CLI、旧项目保持示例准确性。
+- [x] **P0-02** 发布 `SPEC.md`/`PLAN.md` v0.2 重基线。
+- [x] **P0-03** 记录 ADR-011，明确终止非 MIT 历史迁入作为产品路线。
+- [ ] **P0-04** 添加根 MIT `LICENSE`，统一第一方 Cargo/package metadata；不得覆盖第三方许可证。
+- [ ] **P0-05** 建立 `product-boundary.v1`：穷尽当前 tracked path，分类为 `product_candidate`、`migration_only`、`oracle_only`、`quarantine`、`generated`。
+- [ ] **P0-06** 将 `license-manifest.v1.yaml` 升级为 release 可执行清单：逐 Cargo/Python/build dependency、NOTICE、owner 和允许动作。
+- [ ] **P0-07** 建立 clean-room material/role register，包含观察侧、实现侧、allowlist、禁止材料和 attestation schema。
+- [ ] **P0-08** 盘点三个旧项目所有要保持的示例，建立 acceptance profile inventory；每项固定 repo/ref/blob/hash/许可/运行环境/required 状态。
+- [ ] **P0-09** 将现有 Rust candidate 逐文件映射到来源：`sipi-circuit`、`sipi-ami`、任何 PyBERT-derived crate；有歧义即 quarantine。
+- [ ] **P0-10** 增加 verifier：release/product path 中出现未分类、非 MIT 第一方、external-only asset、绝对用户路径或禁止来源时失败。
+- [ ] **P0-11** 为 observation spec 与 implementation commit 定义模板、审计请求和保存位置。
 
-- 从 `engine.lock` 解析可验证 engine bundle，而不只是一条绝对 executable/interpreter 路径。bundle manifest 固定 wheel/executable、managed venv、native DLL closure、protocol、capabilities、依赖锁、platform 和全部 hash。
-- Python bundle 从 wheel 安装到平台管理的隔离 venv，以 isolated mode/`PYTHONNOUSERSITE=1` 运行，拒绝 user-site、editable install、`PYTHONPATH` 和 sibling repo import；native bundle 启动前校验动态库闭包和 executable hash。
-- 每次运行使用独立临时目录和受控环境变量 allowlist。
-- 支持由 `resource_limits.wall_time_s` 驱动的 timeout、取消、进程树清理和逐平台资源 enforcement；hard memory/time/process 需求必须使用 managed worker。
-- stdout/stderr 只作日志；数据只读版本化文件或明确 stdout JSON 协议。
-- 校验请求、返回码、必需工件、schema、hash 和 producer。
-- 记录 command template，不把秘密或用户绝对路径写进共享结果。
-- runtime 是唯一 backend selector。adapter 只暴露 strict engine instance，例如 `pybert-python`、`pybert-rust`、`pybert-hybrid-ami`；不得在平台 `auto/compare` 内再次调用引擎自己的 `sim-auto/sim-compare`。
-- adapter SPI 只消费/产生 `BackendExecutionRequestV1/ResultV1`；`RunRequestV1/ResultV1` 由 runtime 拥有，auto/compare 不跨入 adapter。
+### 6.3 退出条件
 
-### 6.3 三个 adapter
+- 当前 tracked paths 分类穷尽且无重叠/大小写冲突。
+- 第一方产品候选均有 MIT 覆盖；第三方依赖均有 compatible 判定或被阻断。
+- 非 MIT/BSD/PyAMI/vendor/source-unknown material 不可进入 product candidate。
+- required 示例清单由用户确认，不能在实现中途静默删减。
+- clean-room 实现侧的允许材料可机器重放。
+- P0 大边界审计 0 P1/0 P2。
 
-| Adapter | 首批 operation | 兼容依据 |
-| --- | --- | --- |
-| `agent-spice-process` | `circuit.solve.v1`、`network.fit.v1` | `run-hspice`、`run-rfm`、稳定拟合 CLI/工件 |
-| `pybert-process` | `link.simulate.v1` | strict Python reference、`sim-native`/strict Rust、strict hybrid-AMI 实例及 Web result artifacts；不嵌套 auto/compare |
-| `agent-com-process` | `com.r480.run.v1` | `com8023 run`、typed result JSON/NPZ/HTML |
-
-### 6.4 任务
-
-| ID | 任务 | 门禁 fixture |
-| --- | --- | --- |
-| M2-01 | Agent-Spice adapter | 小型 RC deck、RFM response、一个 fit case |
-| M2-02 | PyBERT strict adapters | seeded NRZ/RLGC、Python reference 和 Rust candidate；compare 只由 runtime 组合两个 strict backend execution |
-| M2-03 | Agent-COM adapter | 一个最小 r4.80 victim case和一个带 crosstalk case |
-| M2-04 | 领域结果包装 | strict adapter 返回单 backend-execution result；runtime 将一个或两个结果聚合，原领域 schema 作为 artifact |
-| M2-05 | 旧 CLI 与新 adapter 双跑比较 | 使用原有 comparator/tolerance，不重写 golden |
-| M2-06 | failure matrix | executable 缺失、hash 错、`wall_time_s` timeout、取消、崩溃、半工件、stderr 噪声 |
-| M2-07 | selection/channel trace | auto 只记录 stable 候选的预检 fallback；compare 固定 role/ID/producer；experimental 仅显式 strict/compare opt-in，internal 仅内部 policy |
-| M2-08 | 干净安装 smoke | 无源码和无 sibling repo 环境 |
-| M2-09 | engine bundle attestation | user-site/editable/sibling/DLL 污染测试和 bundle hash 验证 |
-| M2-10 | selector ownership | runtime 固定候选顺序、预算和错误分类；adapter strict-only |
-| M2-11 | 能力晋级 | 仅将通过 G0b/G2a、具备 bundle hash/attestation 和有效 fixture 的组合生成到 `capabilities.certified.v1.json`；hard enforcement 等 M3/G2b 证据后再增加 |
-
-### 6.5 退出条件
-
-- 同一 fixture 经旧入口和 adapter 得到领域等价结果。
-- 三个 adapter 均不 import 引擎私有 Python 符号。
-- 取消/崩溃后没有残留进程；半工件不会被 cache 或发布。
-- 每个结果可回答“请求了哪些 exact instance、哪个进入了数值执行、compare 两角色分别是谁、为何 fallback、每份产物由谁生成”。
-- `auto` 只在预检 `EngineUnavailable/UnsupportedCapability` fallback；compare 预留 reference+candidate 总预算并保留两份状态，数值执行开始后的失败不触发第二层选择。
-- `sipi capabilities` 只 advertise M2-11 certified 组合；M0 baseline inventory 永不直接成为运行能力声明。
-
-## 7. M3：Platform MVP 与纵向切片
-
-> 状态（2026-08-08）：**M3 完成（checkpoint accepted）**。平台主体完成并经逐片独立审计（证据 `docs/baselines/audits/2026-08-07-m3.md`）；M3-11 hard enforcement 已实现并经 Windows 本机认证（`b7e2edc`）；M3-07b 真实引擎示例完成（四切片各独立提交 + OMP 审计 0 P1/0 P2）；M3-11 G2b Windows 认证完成（`a81a1ec`，仅 Windows x86_64 managed worker 可广告 hard enforcement，OMP 审计 0 P1/0 P2）。**M3-08b（RFM→PyBERT 数值等价接线）依赖 M5B-03 拓扑决策（S2P/current sign/FFT policy），已移至 M5 之后归入 M5B-03 验收**，不阻塞 M3 完成。Linux/macOS 认证按用户决策暂缓，不属于本机可完成范围。
+## 7. P1：Rust Foundation 与 CLI 骨架
 
 ### 7.1 目标
 
-交付第一个真正可用的平台壳：一个项目、一个命令、三个分析、统一结果和一条跨引擎链路。
+建立不依赖 Python 的可安装 Rust 产品骨架。即使领域内核尚未实现，CLI 也应能发现 schema/capabilities、校验请求并诚实返回 unsupported。
 
 ### 7.2 任务
 
-| ID | 任务 | 说明 |
-| --- | --- | --- |
-| M3-01 | 定义 `sipi.project.v1` | analyses 使用 discriminated operation，不设计万能 payload |
-| M3-02 | 实现 path resolution 和输入 hash | 所有路径相对 project root，生成 resolved request |
-| M3-03 | 实现本地分析 DAG | 四层 ID；自动 retry 只在 active node 内追加 attempt，手工 retry 新建 RUN_ID/retry_of；cache 只按内容/语义寻址并排除执行 ID |
-| M3-04 | 实现持久本地 supervisor | OS singleton lock + SQLite 单写者四层表；registry 是协调权威；version CAS、idempotency、lease/heartbeat、IPC、Job Object/process group 和 reconciliation |
-| M3-05 | 完成 `validate/run/status/cancel/retry` | RUN_ID 始终指 project execution；手工 retry 返回新 RUN_ID；analysis/attempt 用显式选项，旧终态不可 reopen |
-| M3-06 | 完成 `compare/report` | 领域 comparator 插件化，统一 provenance 摘要 |
-| M3-07 | 建三引擎示例项目 | Circuit、Channel、COM 各一个可复现 fixture |
-| M3-08a | 复现 RFM -> PyBERT 桥接的 DAG 绑定机制 | 使用显式 DAG binding、`agent-spice.rfm-response.v1` consumer 和 sign golden（机制层，stub 可执行；真实引擎已在 M3-07b 接入） |
-| M3-08b | ~~RFM -> PyBERT 数值等价接线~~ 已移至 M5B-03 | 数值等价（current sign/端口/FFT mapping/compare report）依赖 M5B-03 拓扑决策，随 M5 验收，不阻塞 M3 完成 |
-| M3-09 | 端到端并发与失败注入 | 双 supervisor、提交重放、自动/手工 retry、终态不 reopen、required/optional cancel 聚合及 terminal CAS、四层目录、compare 双 execution、publish crash、restart/reap/cache |
-| M3-10 | 写用户迁移指南 | 旧命令到 `sipi` operation 的映射 |
-| M3-11 | 实现资源 enforcement matrix | Windows/Linux/macOS 对 wall time、memory、CPU、process、artifact bytes 逐项认证；hard 限制走 managed worker，无法强制则预检失败 |
+- [ ] **P1-01** 新建根 Cargo workspace，锁定 Rust toolchain、Cargo.lock 和 release profile。
+- [ ] **P1-02** 建立 `sipi-types`：SI newtypes、axis、port、complex tensor、waveform/spectrum 和 finite validation。
+- [ ] **P1-03** 建立 `sipi-contracts`：versioned serde types、cross-field rule ledger、canonical serialization 和 JSON Schema 生成。
+- [ ] **P1-04** 对现有 `sipi.*.v1` wire fixture 做 Rust round-trip 和 negative conformance；语义变化新开版本。
+- [ ] **P1-05** 建立 `sipi-artifacts`：SHA-256、staging、atomic publish、success manifest、path containment。
+- [ ] **P1-06** 建立 `sipi-runtime`：run state、cancel、timeout、resource policy、structured error 和 deterministic cache key。
+- [ ] **P1-07** 建立 `sipi-pipeline` 最小 typed DAG，不包含领域数值变换。
+- [ ] **P1-08** 建立 `sipi-cli`，交付 `version/doctor/capabilities/schema/validate/run/inspect` 基础命令。
+- [ ] **P1-09** 固定 JSON stdout、stderr/NDJSON、exit code、stdin request 和 noninteractive 行为。
+- [ ] **P1-10** release layout verifier 证明 CLI 不 import/启动 Python、旧 engine 或 sibling worktree。
+- [ ] **P1-11** Windows x86_64 locked build、fmt、clippy、test、install smoke 和 schema drift gate。
 
-### 7.3 纵向切片验收
+### 7.3 退出条件
 
-```text
-Agent-Spice RFM/deck
-  -> versioned response artifact
-  -> current sign / ports / loads / FFT mapping
-  -> PyBERT strict link request
-  -> stage arrays / eye / BER
-  -> compare report / provenance
-```
+- 从 clean checkout 可只用锁定 Rust 工具链构建 `sipi`。
+- `sipi capabilities --json` 对未实现 domain 返回稳定 `unsupported`，无 silent fallback。
+- schema 生成与提交快照一致，所有 v1 contract fixtures Rust conformance 通过。
+- artifact failure/timeout/cancel 不发布 success。
+- 发行候选不包含 Python runtime、迁移 adapter 或 external asset。
+- P1 大边界审计 0 P1/0 P2。
 
-门禁：
+## 8. P2：TRAN 原生能力
 
-- Agent-Spice RFM hash、端口顺序和 AC-probe sign 与现有 golden 一致。
-- PyBERT strict candidate 不支持的控制明确失败，不被悄悄丢弃。
-- 新平台与现有跨仓 promotion fixture 的关键数组和指标在原 tolerance 内。
-- COM 可在同一项目中独立运行并进入统一报告，但不被错误接到该物理流水线。
-- `required` 资源限制的支持组合全部有命中 fixture；同进程 PyO3 不得宣称 hard memory/time 隔离，要求 hard limit 时必须走受管 worker 或返回 `UnsupportedCapability`。
+### 8.1 第一版 scope
 
-M3 完成即达到 `SPEC.md` 的 Platform MVP。
-
-## 8. M4：共享语义 DTO
-
-### 8.1 目标
-
-统一引擎间的数据语义和验证，而不是选择一个实现替代其他实现。
+第一版只承诺用户确认的 TRAN 示例所需语法、器件和 solver profile。OP/DC/AC、RFM 和拟合能力按独立 profile 增量进入，不以旧 Agent-Spice 功能总量作为一次性退出条件。
 
 ### 8.2 任务
 
-| ID | 任务 | 重点 |
-| --- | --- | --- |
-| M4-01 | `AxisV1` | 非均匀轴、DC/Nyquist、单双边谱、sample/bin 语义 |
-| M4-02 | `PortMapV1` | 稳定 ID、index-base、参考、差分对、极性、basis |
-| M4-03 | `NetworkTensorV1` | S/Y/Z、wave definition、频变 z0、复数布局、matrix order |
-| M4-04 | `WaveformV1/SpectrumV1` | 单位、参考、FFT scaling、window、warm-up、裁剪和 shape |
-| M4-05 | 建唯一 production channel resolver | 唯一代码 owner 是 `packages/sipi-adapters/channel_resolver`；实现 `NetworkTensorV1 + resolution-policy ->` 不可变 PyBERT `ChannelResponseV1 + report`，不扩写领域 v1 |
-| M4-06 | Python/Rust conformance | zero-copy 不是首要门禁，语义和 shape 先正确 |
-| M4-07 | 三 reader adapter | COM-r480、COM-standard、PyBERT/Agent-Spice standard 各保留 profile |
-| M4-08 | cross-profile fixture matrix | 同输入锁各自结果，不要求三者相等 |
-| M4-09 | 显式 transform policies | 端口变换、插值、DC 外推、因果性、passivity 先保留实现名 |
-| M4-10 | cache identity | 所有语义字段和 producer 进入 cache key |
+- [ ] **P2-01** 审计 `agent-spice` MIT Rust 与现有 `sipi-circuit` 的逐文件来源、Cargo 依赖和 NOTICE。
+- [ ] **P2-02** 将可接受内核收敛为 `sipi-tran` library；CLI/worker 只调用 library，不复制 solver。
+- [ ] **P2-03** 冻结 netlist/circuit request、器件支持矩阵、solver/convergence policy 和 error taxonomy。
+- [ ] **P2-04** 固定时间积分、初值、容差、step control、输出采样和 measurement 语义。
+- [ ] **P2-05** 建立自有 MIT 小电路、解析解/property/metamorphic 测试。
+- [ ] **P2-06** 对 required Agent-Spice TRAN 例子生成 stage compare：parsed circuit、time grid、waveforms、measurements。
+- [ ] **P2-07** 增加 nonconvergence、unsupported device、timeout、memory/output failure 和 cancel 门。
+- [ ] **P2-08** 接入 `sipi tran run`、工件和 provenance；拒绝旧 engine fallback。
+- [ ] **P2-09** 在 owner-approved workload 上建立性能/RSS 基线，优化另行提交。
 
-### 8.3 必测矩阵
+### 8.3 退出条件
 
-- S2P、S4P、8-port/N-port。
-- S/Y/Z 和 power/pseudo/traveling wave definition。
-- 标量与逐频点/逐端口 `z0`。
-- 单端、差分、common-mode、端口置换和反极性。
-- 非均匀频轴、缺 DC、存在/缺失 Nyquist。
-- C/F layout、大小端、complex128 和明确拒绝的 dtype。
-- 电压、电流、阻抗传递和开路/负载后响应。
+- 至少一个明确 TRAN profile 在 Windows x86_64 达到 `certified`。
+- required TRAN 示例在预先批准容差内通过且无 golden 改写。
+- unsupported 语法/器件可由 `capabilities` 预先发现并稳定拒绝。
+- release binary 不依赖 Agent-Spice Python/旧 executable。
 
-### 8.4 退出条件
-
-- DTO schema 有清晰物理含义和双语言 consumer conformance。
-- 三个 reader/transform profile 可共存且结果可追踪到 producer/policy。
-- RFM -> Channel 切片改用 DTO 后不退化。
-- 没有把 COM 的行为默认值变成平台默认值，也没有把 PyBERT conditioning 隐式施加给 COM。
-
-M4 完成即达到 `SPEC.md` 的 Shared Data MVP。
-
-## 9. M5：Circuit 与 Link 原生内核收敛
+## 9. P3：Channel clean-room Rust 能力
 
 ### 9.1 原则
 
-- 先在原仓完成无行为重构，再带历史迁入。
-- Link 和 Circuit 是兄弟 crate，都依赖 `sipi-types`；组合逻辑在 `sipi-pipeline`，避免 Link 必须依赖 Circuit。
-- 旧 CLI 和进程协议继续是外部稳定 API。
-- `sipi-python` 是薄 PyO3 binding，不承载数值算法。
+PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2P、RFM、Link/DFE/CDR/BER 证据整理为独立行为规格；clean-room 实现侧只读取公开标准、该规格和自有 fixture。
 
-### 9.2 M5A：Agent-Spice Circuit
+现存 PyBERT-derived Rust 代码在来源未解决前不能被简单改名为 MIT。可以取得重许可，也可以由独立 clean-room crate 替代。
 
-| ID | 任务 | 说明 |
+### 9.2 分段任务
+
+#### P3A：Network 到 Channel Response
+
+- [ ] **P3A-01** 冻结 RLGC、Touchstone S2P/S4P、RFM response 的输入 profile、端口、z0、wave definition 和 termination。
+- [ ] **P3A-02** 由观察侧产出 DC/interpolation/window/causality/FFT/sign 行为规格和边界例。
+- [ ] **P3A-03** clean-room 实现唯一 `sipi-channel` resolver，adapter 不做任何数值变换。
+- [ ] **P3A-04** 用公开网络恒等式、passivity/causality/property tests 验证独立正确性。
+- [ ] **P3A-05** 对 required S2P/RFM fixtures 做 response/stage compare 和完整 lineage。
+
+#### P3B：Link Stages
+
+- [ ] **P3B-01** 冻结 stimulus、timebase、TX、convolution、RX FFE/CTLE 的 typed stage contract。
+- [ ] **P3B-02** clean-room 实现 channel convolution 和已批准 equalizer 子集。
+- [ ] **P3B-03** clean-room 实现 DFE/CDR/decision/BER 最小 profile。
+- [ ] **P3B-04** stage-by-stage 比较 impulse、channel output、RX/FFE/DFE waveform、clock、decision、bits 和 errors。
+- [ ] **P3B-05** 对 deterministic seed、noise/jitter profile 和 missing stage fail closed。
+
+#### P3C：指标与报告
+
+- [ ] **P3C-01** 实现被 required 示例使用的 eye、jitter、bathtub 指标；每项独立 capability。
+- [ ] **P3C-02** 记录 metric tolerance、数组 compare、missing/finite/shape 报告。
+- [ ] **P3C-03** 接入 `sipi channel run` 和 `sipi compare`。
+
+### 9.3 退出条件
+
+- required Channel profiles 在同配置、同输入、同 stage 语义下通过。
+- 端口、单位、termination、FFT scaling、sign 和 sample interval 全链路可追溯。
+- production 只有一个 Rust resolver 和一个 receiver path，无 Python fallback。
+- capability 矩阵区分 RLGC/S2P/S4P/RFM、deterministic/noisy、eye/jitter 等范围。
+
+## 10. P4：IBIS 与 AMI
+
+### 10.1 P4A：IBIS parser/semantics
+
+- [ ] **P4A-01** 盘点 required IBIS 示例的版本、keyword、model selector、corner 和 table family。
+- [ ] **P4A-02** 观察侧基于公开 IBIS 标准和授权 black-box 形成行为规格。
+- [ ] **P4A-03** clean-room 实现 Rust parser、typed AST 和严格 diagnostics。
+- [ ] **P4A-04** 实现 required I-V/V-T/ramp/package 语义与显式 interpolation/extrapolation policy。
+- [ ] **P4A-05** 建立公开/自有 fixture、malformed/unsupported matrix 和 oracle compare。
+- [ ] **P4A-06** 接入 `sipi ibis inspect`，解析成功与电气行为认证分开报告。
+
+### 10.2 P4B：AMI parser/host/semantics
+
+- [ ] **P4B-01** 审计现有 `sipi-ami` 的材料来源、实现者暴露、依赖许可证和标准依据。
+- [ ] **P4B-02** clean-room 实现 `.ami` 参数语义，固定 raw UTF-8 bytes、binding 和 validation。
+- [ ] **P4B-03** 实现 Windows x64 标准 `long` ABI、Init/GetWave/Close 和 clock sentinel contract。
+- [ ] **P4B-04** 私有 Rust host worker：hash-pinned executable、DLL/依赖 closure、timeout/cancel、atomic outputs。
+- [ ] **P4B-05** 外部 asset manifest：DLL/IBIS/AMI/依赖 hash、允许用途、owner；默认不打包。
+- [ ] **P4B-06** synthetic ABI stub 覆盖 success/failure/Close/partial/timeout/clock。
+- [ ] **P4B-07** authorized exact fixture 覆盖 Init-only、单/多 GetWave、不同合法长度的 raw ABI output compare。
+- [ ] **P4B-08** 将 raw AMI output 通过 typed edge 交给 Channel，另做 waveform/BER/eye profile；不能用 ABI 等价冒充系统 parity。
+- [ ] **P4B-09** 接入 `sipi ami run`，只允许显式、已认证 profile，不注册 silent fallback。
+
+### 10.3 退出条件
+
+- 至少一个 IBIS profile 和一个 AMI external-asset profile 达到 `certified`。
+- 标准 ABI status、lifecycle、raw samples/clocks/params 和 Close 可审计。
+- vendor bytes 不在 Git/release，运行时严格绑定用户资产 identity。
+- Python ctypes/PyAMI 不在产品路径；单 fixture 结果不外推为通用 AMI parity。
+
+## 11. P5：COM Rust 行为 profile
+
+### 11.1 原则
+
+`agent-com` 已确认 MIT 范围可直接作为移植输入，但 source/data/oracle 仍逐项分类。Rust 实现保持明确的 behavior profile，不重新定义标准，也不将 Channel 中同名算法强行合并。
+
+### 11.2 任务
+
+- [ ] **P5-01** 穷尽 `agent-com` source/data/workbook/MATLAB/oracle 许可与路径分类。
+- [ ] **P5-02** 冻结 r4.80 canonical parameter JSON、默认值、消费审计和 warning contract。
+- [ ] **P5-03** 建立 `sipi-com` crate 和 typed stage outputs。
+- [ ] **P5-04** 按 stage 移植 network ingest、channel selection、equalizer search、PDF 和 metrics；每段保留 MIT 来源映射。
+- [ ] **P5-05** workbook importer 与核心参数 DTO 分离，未使用字段仍进入消费报告。
+- [ ] **P5-06** 对 required COM 示例比较 normalized input、选择证据、intermediate arrays、COM/ERL/TDILN 等指标和 warnings。
+- [ ] **P5-07** 建立 synthetic/property/negative fixtures，避免 MATLAB oracle 成为唯一真相。
+- [ ] **P5-08** 接入 `sipi com run`、工件和 provenance。
+- [ ] **P5-09** 明确“行为复刻、非 IEEE 官方认证”的报告和 capability 文案。
+
+### 11.3 退出条件
+
+- required COM behavior profile 在冻结容差内通过。
+- Rust release 不依赖 Python/MATLAB/Excel runtime。
+- workbook、私有 channel 和 MATLAB oracle 均按许可留在外部。
+- Channel 与 COM 的算法 owner 和 profile 互不混淆。
+
+## 12. P6：Pipeline、统一 CLI 与 AI 可用性
+
+### 12.1 任务
+
+- [ ] **P6-01** 完成 Rust project/DAG contract：analysis nodes、typed artifact edges、资源、seed 和 outputs。
+- [ ] **P6-02** 实现 TRAN/RFM -> Channel、IBIS/AMI -> Channel、Channel/COM 并行等首批 edge。
+- [ ] **P6-03** 所有 edge 校验 schema、单位、port map、policy 和 producer/consumer hash。
+- [ ] **P6-04** 完成 run status/cancel/retry/cache；retry 产生新 attempt，不改写旧证据。
+- [ ] **P6-05** 完成 `tran/channel/ibis/ami/com/project/compare/inspect/report` 命令面。
+- [ ] **P6-06** 稳定 JSON/NDJSON、exit code、schema discovery、example request 和 capability diagnostics。
+- [ ] **P6-07** 建立 AI conformance：从 `schema + capabilities` 可构造合法请求，错误无需解析任意文本。
+- [ ] **P6-08** 建立端到端 artifact/provenance viewer/report；不泄露绝对路径和私有资产内容。
+- [ ] **P6-09** fail-closed 测试：缺 edge、hash 漂移、worker crash、partial output、cancel、resource limit。
+- [ ] **P6-10** 保持未来 service/GUI 只调用同一 Rust contract，不创建第二套平台语义。
+
+### 12.2 AI 验收题
+
+在无源码上下文的干净 agent 会话中，仅给 CLI/schema/capabilities，验证其能：
+
+1. 发现一个已认证 TRAN/Channel/AMI/COM profile。
+2. 构造并校验最小请求。
+3. 运行、读取结构化错误、定位字段 path。
+4. 查找 stage artifacts 和 provenance。
+5. 发起 reference/candidate compare 并正确描述 scope/non-claims。
+6. 对 unsupported capability 停止而不是猜参数或切换旧引擎。
+
+### 12.3 退出条件
+
+- `sipi` 是唯一公开 CLI，快捷命令与 project run 使用同一契约。
+- 首批跨域 pipeline 在 typed edge 上端到端通过。
+- 人和 AI 均可机器发现支持范围、错误和结果来源。
+- 无隐藏 Python/old-engine/default fallback。
+
+## 13. P7：发布、认证与 legacy retirement
+
+### 13.1 发布任务
+
+- [ ] **P7-01** Windows x86_64 clean twin build、locked dependency、可复现性差异报告。
+- [ ] **P7-02** 生成 SBOM、NOTICE、license report 和 PE normal/delay import closure。
+- [ ] **P7-03** 扫描 release archive，拒绝 Python、vendor asset、private fixture、blocked material 和绝对路径。
+- [ ] **P7-04** fresh machine/VM 安装 smoke，运行每个 certified profile 和 fail-closed case。
+- [ ] **P7-05** 发布 capability matrix、acceptance report index、non-claims 和 known limitations。
+- [ ] **P7-06** 对 owner-approved workload 执行性能/RSS 门；无批准预算只记录 observation。
+- [ ] **P7-07** 形成 release candidate tag，绑定源码、工具链、工件和审计结论。
+- [ ] **P7-08** 用户批准后删除已替代的 Python/adapter/runtime，并同批移除专属 drift gate。
+- [ ] **P7-09** 旧历史保留在原仓/evidence repo，只在产品文档引用 hash；不导入非 MIT 历史。
+
+### 13.2 发布声明
+
+发布说明只能声明 capability matrix 中的 certified 项。以下事实不得被含糊化：
+
+- Windows-only 首发。
+- vendor AMI/IBIS/DLL 由用户提供。
+- COM 是特定 behavior profile，不是 IEEE 官方认证。
+- profile 之外的模型、参数范围和平台未认证。
+- 第三方依赖保留自身许可证，MIT 指第一方产品源码。
+
+### 13.3 退出条件
+
+- G0-G6 对当前 release commit 全部通过。
+- release 不需要 Python/MATLAB/旧 engine。
+- 四个领域各至少一个 profile certified，跨域 pipeline 至少一个 certified。
+- 安装、运行、错误、工件和卸载在干净 Windows 环境可重放。
+- 用户批准的 legacy 删除范围已完成或明确保留为非发布工具。
+
+## 14. Acceptance Profile 计划
+
+### 14.1 清单结构
+
+建议落点：
+
+```text
+acceptance/
+├── profiles.v1.yaml
+├── tolerances.v1.yaml
+├── sources.v1.yaml
+├── reports/                 # 只存可披露报告/哈希
+└── schemas/
+```
+
+每个 profile 需有 `owner`、`required`、`license_status`、`oracle_mode`、`candidate_mode`、`stage_checks`、`tolerance_policy`、`platform`、`status` 和 `non_claims`。
+
+### 14.2 首批 profile group
+
+| Group | 来源 | 首要比较 | v0.2 用途 |
+| --- | --- | --- | --- |
+| TRAN legacy examples | Agent-Spice | time grid、V/I waveform、measure、convergence | P2 certified candidate |
+| PyBERT 7 approved profiles | PyBERT | stage arrays、decisions、BER/eye/jitter | P3 core acceptance |
+| S2P handoff | PyBERT + SIPI | impulse lineage、Link stages/metrics | P3 network/link boundary |
+| RFM current-drive/link | Agent-Spice + PyBERT | H/I/V transfer、receiver stages/BER | P3 cross-domain boundary |
+| IBIS model cases | PyBERT/PyAMI | parsed model、table semantics、waveform | P4A acceptance |
+| AMI `example_rx` exact hash | authorized external fixture | raw Init/GetWave/clock/status | P4B narrow ABI acceptance |
+| COM r4.80 cases | Agent-COM | normalized input、selection、PDF、metrics | P5 acceptance |
+
+P0-08 必须把 group 展开为逐 fixture 记录。表中存在并不表示许可、oracle 独立性或数值结果已经通过。
+
+### 14.3 状态机
+
+```text
+inventory -> specified -> runnable -> compared -> accepted
+     |            |           |          |
+     +----------> blocked <----+----------+
+```
+
+- `accepted` 绑定 candidate commit/build，不能跨 commit 自动沿用。
+- `blocked` 必须写许可、资产、环境、数值或规格缺口。
+- 用户可显式将 profile 降级为 optional/retired，但需记录理由，不能由实现者静默处理。
+
+## 15. 测试与审计策略
+
+### 15.1 每层测试
+
+1. Rust unit tests：算法局部、parser、validation、errors。
+2. property/metamorphic：维度、单位、稳定性、网络与信号不变量。
+3. contract tests：schema snapshot、round-trip、negative/rule ledger。
+4. domain integration：同 crate 完整 stage、resource/failure。
+5. oracle parity：工作树外 reference/candidate compare。
+6. CLI conformance：stdout/stderr/exit/schema/capability。
+7. packaging：clean locked build、SBOM/NOTICE/archive/安装。
+8. fault drills：panic/OOM/timeout/cancel/partial output/worker cleanup。
+
+### 15.2 提交边界
+
+- 规格/材料清单与实现分开。
+- 源码 promotion/move 与数值修改分开。
+- 数值实现与 tolerance/golden 修改分开。
+- CLI 接线不复制领域算法。
+- 删除与对应 drift gate 同批，但在新路径 acceptance 之后。
+
+### 15.3 审计流程
+
+每个较大边界：
+
+1. clean status 和固定 HEAD。
+2. 运行适用 test/gate，保存命令、结果、工件 hash。
+3. 单独 commit。
+4. 向 OMP 与 OpenCode 发只读审计请求，范围包含 commit、non-claims 和重点风险。
+5. 至少一个可用审计 0 P1/0 P2 才继续；P1/P2 修复后重审。
+6. quota/unavailable 不写成通过，记录待补审状态。
+7. 结论写入 `docs/baselines/audits/`，不靠聊天记录作为唯一证据。
+
+## 16. v0.1 任务的处置
+
+### 16.1 继续保留
+
+- M3/M4 accepted contract、DTO、artifact、resolution 和 vertical evidence。
+- M5A Agent-Spice MIT 来源、Rust candidate 和许可证据。
+- M5B 已形成的 S2P/RFM/AMI scope-limited compare reports。
+- PyBERT nightly/history verifier可继续观察 oracle 稳定性。
+
+### 16.2 不再作为产品完成路径
+
+- M5B-01 30-day nightly 不再是 Rust 产品 release 的总阻塞；只有依赖该 oracle 的 profile 才引用它。
+- M5B-06/07 不执行 PyBERT 非 MIT/BSD 历史 filter-repo 迁入。
+- Python -> auto -> Rust 分档不再是终态切换方案。
+- Agent-Spice/PyBERT/Agent-COM bundle 不进入默认 release resolver。
+
+### 16.3 归档原则
+
+旧 PLAN v0.1 可从 Git 历史和现有审计文档复原。新文档不改写旧审计结论，只重分类其产品意义。需要保留的旧工具在对应 Rust profile accepted 前继续可运行；此后按 P7 删除门处理。
+
+## 17. 风险登记
+
+| 风险 | 影响 | 处理 |
 | --- | --- | --- |
-| M5A-01 | 在 agent-spice 原仓建立 `lib.rs` | 从 binary 抽 `Deck`、solver、RFM、observer、result，不改行为 |
-| M5A-02 | 薄化 CLI | 参数解析、文件 I/O、进度和退出码留在 binary |
-| M5A-03 | 冻结 versioned Circuit API | 明确单位、端口、结果 schema、panic/error |
-| M5A-04 | 补 `cargo test/clippy/fmt` 和差分 oracle | HSPICE/ngspice/C# 仍是可选外部 lane |
-| M5A-05 | 处理多套 pole-residue adapter | 先互转和 round-trip，不删除表示 |
-| M5A-06 | 用临时 clone/filter-repo 将 clean repo 历史迁入 `engines/agent-spice` | 不在用户主工作树执行破坏性过滤；保留 Python fit/CLI/tests/docs |
-| M5A-07 | 在目标仓用历史保留 move 形成 `native/crates/sipi-circuit` | crate 不留双份；验证 tag artifact 等价 |
-| M5A-08 | 接管 Agent-Spice Python 生产包 | 保留 `agent_spice` namespace、fit/RFM/HSPICE CLI；研究/外部 oracle 按 manifest 分类 |
-| M5A-09 | **PyAMI clean-room Rust 重做（含 IBIS/AMI 解析器 + AMI 语义 + DLL host 接口）** | 从 IBIS/AMI 规范净新编写（用户决策 2026-08-08：PyAMI 非 MIT 且为 Python，统一到 Rust）；不继承 PyAMI two-clause BSD 或 PyBERT BSD 代码；覆盖 IBIS 文件解析、AMI 模型语义（Init/GetWave 参数树、脉冲响应契约）与供应商 AMI DLL host（Rust `libloading` 加载，替代 Python host）；作为通用 IBIS/AMI 工具，进程内归 agent-spice-sim 使用；放 agent-spice，若其停止独立维护则直接放 SIPI-sim-agent；旧 PyAMI 在 clean-room 重做通过 AMI golden/parity 前保留为 reference |
-
-M5A-06 completed (2026-08-08): preflight commit `db3889a` fixes the clean
-source anchor at `agent-spice@2cc92316`, records the retain/drop policy, and
-adds a fail-closed verifier. The filtered-history merge commit `c89bb90` was
-created from a temporary clone outside the user source worktree. Its
-`history-map.v1.json` records 369 old/new commit mappings, including the source
-anchor and baseline tag mapping; 371 retained files are byte-equivalent to the
-source anchor and are all under `engines/agent-spice`. The policy excludes
-`third_party`, external-reference assets, and local native binaries. OMP
-(`msg_681a317f48a4`, `msg_0eb999b37d12`) and the independent review agent
-(`msg_668804ab5a9b`, `msg_094ab60aab3c`) both found 0 P1 / 0 P2. M5A-07
-commit `2bf67ae` then moved the 22-file Rust crate by Git history preservation
-to `native/crates/sipi-circuit`, retaining its package/library/binary identity
-and leaving no tracked duplicate. Its verifier permits only the two fixture-path
-adjustments required by the new manifest directory, while its baseline-tag
-artifact check confirms equal build-info and normalized PE SHA-256. OMP
-(`msg_cf390620a45e`) and the independent review agent (`msg_9fc7ca8b8277`)
-both found 0 P1 / 0 P2; Rust fmt/clippy/test gates and
-`tools/run_all_tests.py` (56/56) passed. M5A-08a then reconnected the
-Agent-Spice source runtime to the single moved crate (commits `82b4b0a`,
-`ba4abcd`) without changing the namespace, compatibility CLIs, numerical
-algorithms, or resolver ordering. A first audit caught an M5A-07 evidence-tree
-violation; the remediation restored the crate README exactly rather than
-weakening that gate. OMP (`msg_bb2faa492e3e`) and the independent review agent
-(`msg_f1d27325f61c`) both found final 0 P1 / 0 P2; the move verifier and
-`tools/run_all_tests.py` (56/56) passed. M5A-08b then added the Windows x64
-staged-wheel gate in `aceb252`: it builds only the moved Rust crate, packages
-it outside the worktree, verifies the installed wheel's native engine,
-build-info, and eight-point smoke, and explicitly emits no promotion or
-cross-platform certification claim. OMP (`msg_3d380fd32f6e`) and the
-independent review agent (`msg_7a90a7220fef`) both found 0 P1 / 0 P2.
-M5A-09a then anchored the M5A-07 move-evidence verifier at its recorded
-history-preserving move commit `2bf67ae`, rather than freezing the moved crate
-at `HEAD`; the verifier now fails closed unless that anchor remains an ancestor
-of `HEAD`. OMP (`msg_4ddfc41d2688`) and the independent review agent
-(`msg_c7fba497146e`) both found 0 P1 / 0 P2; its direct tests (2/2) and
-`tools/run_all_tests.py` (56/56) passed. M5A-09b introduced the separately
-gated `native/crates/sipi-ami` clean-room Rust crate with a deliberately
-limited IBIS keyword/record scanner; it has no PyAMI/PyBERT code inheritance
-or runtime dependency and makes no full-specification or platform-certification
-claim. OMP (`msg_08832a62d334`) and the independent review agent
-(`msg_d2ad2dd86249`) both found 0 P1 / 0 P2; Rust fmt/clippy/test (4/4) and
-`tools/run_all_tests.py` (56/56) passed. M5A-09c added its clean-room AMI
-parenthesized parameter tree and strict typed host metadata for `AMI_Version`,
-`Init_Returns_Impulse`, and `GetWave_Exists`; malformed structures and values
-fail closed. OMP (`msg_8585037c3705`) and the independent review agent
-(`msg_88a35cd32cca`) both found 0 P1 / 0 P2; Rust fmt/clippy/test (8/8) and
-`tools/run_all_tests.py` (56/56) passed. M5A-09d added an explicit,
-non-numerical `AMI_Init` / `AMI_GetWave` waveform request/response contract:
-metadata capability mismatches, non-finite or malformed waveforms, invalid
-sample intervals, and invalid clock-time values fail closed before or after the
-future FFI boundary. It does not implement a vendor ABI, solver, resolver, or
-platform-certification claim. OMP (`msg_eb99663145f7`) and the independent
-review agent (`msg_6ff99174d02d`) both found 0 P1 / 0 P2; Rust fmt/clippy/test
-(12/12) and `tools/run_all_tests.py` (56/56) passed. M5A-09e added a
-clean-room Rust `libloading` executable-library owner and public C ABI
-entry-point resolution for `AMI_Init`, `AMI_GetWave`, and `AMI_Close`.
-`AMI_Init`/`AMI_Close` are mandatory and `AMI_GetWave` is conditional on
-`GetWave_Exists`; missing required symbols fail closed. The loader retains no
-vendor DLL and invokes no vendor model yet. OMP (`msg_6aaefa1e8387`) and the
-independent review agent (`msg_db90ed6d7019`) both found 0 P1 / 0 P2; Rust
-fmt/clippy/test (13/13) and `tools/run_all_tests.py` (56/56) passed.
-M5A-09f then introduced owned `AMI_Init` invocation and model-memory lifecycle
-management: the host validates bit time and parameter strings before FFI,
-copies model-owned output strings without freeing them, validates the returned
-impulse contract, closes all failed initialization handles, and guards active
-handles in `Drop`. OMP (`msg_d27b5d34edd4`) and the independent review agent
-(`msg_30760add2b23`) both found 0 P1 / 0 P2; Rust fmt/clippy/test (15/15) and
-`tools/run_all_tests.py` (56/56) passed. **M5A-08 is complete; M5A-09
-clean-room implementation now includes the optional `AMI_GetWave` adapter:
-metadata/state/sample-interval preconditions fail closed, host-owned clocks
-use the public `-1` terminator, and post-FFI failure closes the model instead
-of reusing uncertain state. OMP (`msg_aa1d01cf6fd9`) and the independent review
-agent (`msg_4536a19ecac8`) both found 0 P1 / 0 P2; Rust fmt/clippy/test (17/17)
-and `tools/run_all_tests.py` (56/56) passed. **M5A-09's clean-room parser,
-semantic contract, and Init/GetWave/Close host are present; in-process
-`agent-spice-sim` use and the M5A acceptance gate remain.** M5A-09h then
-connected the clean-room parser and host metadata to the in-process
-`agent-spice-sim ami-inspect` command (commits `8ae8b06`, `a9bcf4f`). The
-follow-up restores lockfile minimality after review: the final combined delta
-contains only the `sipi-ami` path dependency and its required `libloading`
-entries. OMP and the independent review agent both found 0 P1 / 0 P2; locked
-Rust checks and the root suite (56/56) passed. M5A-09 is complete. The M5A
-aggregate acceptance gate then passed with OMP and the independent review
-agent at 0 P1 / 0 P2: preflight/move/license/wheel verifiers, locked Rust
-checks, and the root suite (56/56) are green. **M5A is complete.** This is not
-an AMI golden/parity claim and does not authorize removal of the retained PyAMI
-reference; M5B is next.
-
-### 9.3 M5B：PyBERT Link
-
-M5B-04 supplementary stateful boundary accepted by OMP/OpenCode (both 0 P1 /
-0 P2: `msg_26c293b208eb`, `msg_c22462cac3f9`; OpenCode records one bounded
-P3 note only): `955ec82`
-adds candidate-only request v2 for Init-only or an ordered GetWave sequence on
-one `sipi-ami` model handle. Its external Windows report covers the authorized
-`example_rx` fixture's Init-only, one-block, and different-length two-block
-sequence against retained PyAMI with strict `c_long == 1` and byte-exact raw
-outputs. It changes neither v1, `engine.lock`, nor any default/auto/Web/GUI/
-optimizer route, and is not general AMI or Link parity.
-
-| ID | 任务 | 说明 |
-| --- | --- | --- |
-| M5B-01 | 继续现有 Task 12/13 | 完整 result parity、RSS、nightly、故障演练；按 2026-08-07 收编结论将 Phase 1-3（native Web result contract parity → Rust 成默认 → web 指标改接 native）纳入本任务验收，配套执行路线见 Py-bert-agent 仓库 `docs/superpowers/plans/2026-08-07-pybert-core-rust-migration.md`。`0c90fbc`/`90679b9`/`9d249ea` 已形成 source acceptance 与 Windows reliability 观测包，`e438f5e` 新增 35-day Windows nightly artifact pipeline（source acceptance + 5-repeat E2E evidence；可选 SHA-pinned HTTP(S) wheel）。`c045d8e` 在新的 clean source worktree 增加 external staged-wheel SHA pre-install gate：fresh venv/`-I` import 成功，单字节损坏在 venv/pip 前拒绝（`installer_invoked=false`）；OMP `msg_677f77326ebf` 为 0 P1 / 0 P2。`0e6d3ad` 再增加 Windows-only locked Agent-Spice real-child output-commit I/O drill：仅从 `f6ba031` Git blob 物化 `block_2.rfm`，先以 lock-pinned `111ff6…` executable 作正常控制请求，再经既有 `AgentSpiceChannelRunner` 将两个输出定向到“父路径为文件”的不可提交位置；实测 `os error 3` / exit 1 被 fail-closed 传播，`response_published=false`。同时固定 subprocess stderr 为 UTF-8 replacement decoding，避免故障路径因本地编码而丢失诊断。`8eb62be` 另增加 Windows-only、`task13-fault-injection` feature-gated 的受限 Rust worker：外部构建 manifest 强绑定 source/Cargo lock/toolchain/EXE SHA，Job Object 在 stdin `go` 放行前施加 64 MiB process/job memory、单 process、10 s wall timeout 与 kill-on-close；真实 replay 分别得到 panic exit 101 和被 64 MiB limit 拦截的 128 MiB allocation（`memory_limit_observed=true`），无 success artifact。`b6fd1ef` 新增 production `pybert_native` wheel 的 Windows memory-containment drill：SHA-verified release wheel 与 `uv.lock` 中 hash-pinned NumPy wheel 安装到 fresh venv；`-I` base interpreter 只从该 temporary venv 的 site-packages 加载 public native API，固定已批准 RLGC request。child 在 `go` 前进入 active-process=1、pre-workload process/job memory-capped Job；真实外置报告以 wheel `08438587…` 得到 control peak 527 MiB、fault limit 15.5 MiB、fault peak 15.3 MiB、nonzero `3221226505`、无 success artifact。`1d4b8fb` 在新的 clean candidate 分支 `codex/m5b-consolidated` 无冲突汇合该 Task 13 链与已接受 RFM receiver parity `199696a`；OMP `msg_d559ac7c9532`、OpenCode `msg_43405aaac6f5` 均为 0 P1 / 0 P2。它是未来 final clean tag 的候选，不是 accepted tag：GitHub default `origin/master` 尚无 `task13-nightly.yml`（查询该 workflow 返回 404），因此 35-day nightly 历史尚未开始积累，须经独立 PR/合并或显式启用后才可计时。上述均**不**替代 Task 13：nightly 历史尚未积累、端到端 RSS/性能预算尚未批准或达标、真实远端 wheel、production native-extension panic/OOM parity 仍待闭环；它们也不证明 RFM 数值、Link parity、timeout/cancel 或通用 Agent-Spice 可靠性。 |
-| M5B-02 | 解锁 `auto` 前完成 strict NRZ/RLGC 门禁 | **已完成并审计接受（2026-08-08）**：clean source candidate `b3d072e` 上的 `056dd23`/`975c0a7` 定义 `python -> auto -> rust` 分档；strict `rust` 仅接受同一 offline-golden/build approved profile，未覆盖或不匹配 fail-closed，`auto`/`compare` 仍保留 raw candidate 语义。OMP `msg_67f33dcd1ae8` 和交叉审查 `msg_64baf5602a92` 均为 0 P1 / 0 P2。本 plan 不新增平台门禁语义。 |
-| M5B-03 | 消费 M4 channel resolver 并做 Link parity（含原 M3-08b 数值等价接线） | **RFM current-drive artifact bridge 已接受（2026-08-08）**：`876d380`/`ce3069a` 与 clean source `7fb6182`/`93c8c9e` 使 hash-verified `meta.json`/`response.bin` 直入现有 Rust receiver，不重跑 Agent-Spice；sign、ports、dt、FFT shape 和 artifact provenance fail-closed。OMP `msg_0ad1e6785cf8` 与交叉审查 `msg_acedd84f2ef2` 均为 0 P1 / 0 P2。**S2P external-boundary admission 与固定 fixture Link handoff parity 已接受（2026-08-08）**：SIPI `029c09d`/`58971aa`/`677f8af`/`437d8bc`/`221ac0c`/`2adbcc3` 与 clean source `244f6db`/`f6ba031` 将既有 Python `calc_chnl_h` 的离散 `V/sample` impulse 仅在 DTO 边界换为 `V/s`，再经唯一一次 M4 `resolve_channel` 注入真实 `sim-native` CLI；同配置 `channel_16ghz_3db.s2p` 的 Link handoff compare 通过。**RFM Git-object baseline 与 current-domain transfer/handoff evidence 已记录（2026-08-09）**：clean source `2b92b80` 的 gate 直接从 `f6ba031` Git blob `9a087a9…` materialize 原始 RFM（SHA-256 `5716f691…`）；此前 `894b5d…` 是 Windows CRLF 工作树漂移，不是提交基线。它以锁定 `111ff6…` executable 重现 response `ce80d6…` 与三处 probe，比较既有 NumPy `H@I`/FFT reference 与 native FFT callbacks，并验证已产出 response 一次进入现有 Rust receiver、无重跑 Agent-Spice。OpenCode `msg_25a6ad518cfe`/`msg_c325613631c9` 为 0 P1 / 0 P2；按用户 2026-08-09 对 OMP 订阅受限的单审继续决策记录。此证据**不证明独立 Python-vs-Rust RFM receiver/BER parity，不使 M4 成为 RFM/S 参数 resolver，也不认证通用 RFM/S2P/S4P/AMI/ADS**。因此 M5B-03 仍 open，待设计并取得真正独立的 same-config RFM Link receiver parity；禁止第二 converter。 |
-| M5B-04 | 完整 host-driven AMI contract | **Candidate transport、PyBERT 薄适配器、candidate-bundle policy、PE/twin-build assurance、exact authorized fixture 的实际/replayable Init/GetWave/Close contract，以及单 fixture raw host-output equivalence 已接受，主任务仍 open（2026-08-09）**：`c51029d` 新增 Windows-only 显式 `ami-host-candidate` v1 process transport，以 `sipi-ami` 的唯一 `AmiDll`/`AmiModel` Init/GetWave/Close 路径承接原始 ABI buffers；`a14120b` 将 result 的 `requestSha256` 绑定到解析前原始 manifest bytes。clean PyBERT `d4af5e0` 隔离地新增显式 `RustAmiHostCandidate` process adapter；它未进入任何 Web/default/auto/compare registry，且不加载 Python DLL host。`c1d4d97` 新增外部目录 candidate bundle builder/verifier，拒绝 vendor `.dll/.ami/.ibs`、third-party closure、`engine.lock` promotion 和 production-resolvable 声称。`405dfb1` 解析 PE32+ normal/delay imports；`/Brepro` 后两次外部构建得到同一 `a01e5076…` candidate，但仍无 lock promotion。`614a328` 将用户 2026-08-09 授权固定为 PyBERT `f6ba031` exact `example_rx` Git-object fixture 的 external Windows runtime only；`f09052a` 将其固定为只从 Git object 物化、显式 external bundle、全 request/result/sidecar/lifecycle 校验且 Temp 清理的 replay gate。`e82236c` 以同一固定 raw ABI call 直接比较 retained PyAMI 的 `c_long` Init/GetWave/Close 与 Rust candidate：arrays/clocks/UTF-8 observable text 均 byte-exact，且不调用高层 `run_ami_model`。OpenCode `msg_c77a3738f99a` 与 OMP `msg_e9d222e8622b` 均为 0 P1 / 0 P2。它仍不构成通用 AMI、Link BER/eye 或 Python 高层 pipeline parity，也不是分发授权。后续仍需 caller-supplied DLL closure、显式 lock promotion 与通用 AMI parity；Python host 保留为 reference，直至另行完成 AMI parity。 |
-| M5B-05 | GUI/optimizer 后端统一另行门禁 | **已完成支持矩阵（2026-08-08）**：`docs/m5b-backend-support.v1.md` 明确 Web/Traits GUI/CLI/SIPI adapter/optimizer 的 Python reference、approved-native、Python-host AMI hybrid、Rust AMI host 与拒绝路径；不支持项必须显式拒绝，不能静默 fallback。OMP `msg_c415ffabea79` 与交叉审查 `msg_80d9fd6b73be` 均为 0 P1 / 0 P2。此项不宣称 GUI/optimizer/AMI numerical parity，也不解除 M5B-01、M5B-03 或 M5B-04 门禁。 |
-| M5B-06 | 修改现有 Task 14 目标 | **迁入前 preflight 已双审接受（2026-08-09），实际任务仍 pending**：`eebdd54` 固定 candidate `pybert-core-rust-migration@b3d072e`、521 条 Git-blob 路径策略与 `79165e…` digest；OpenCode `msg_f75c1b4c1c2f` 与 OMP `msg_ffe14c9062ed` 均为 0 P1 / 0 P2。`native/pybert-core` 的 BSD-derived attribution/Cargo-MIT consistency 仍是用户/法务决策。`migrationEligible=false`，直至 M5B-01 产生最终 clean accepted tag；不据此收编历史或宣称许可已解。 |
-| M5B-07 | 用临时 clone/filter-repo 将 clean repo 历史迁入 `engines/py-bert-agent` | **preflight only 已双审接受（2026-08-09），尚未执行 filter-repo**：`eebdd54` 将 Python reference、compat facade、tests/docs 列为候选 retain，PyAMI/vendor assets/build/cache/local outputs 为 drop/external-reference；future contract 要求工作树外临时 clone、pinned filter-repo、最终 source tag、old-to-new history map 与保留计数。 |
-| M5B-08 | 在目标仓历史保留 move `pybert-core` | 形成 `native/crates/sipi-link`，不留第二份 Rust core，保留 v1 schema |
-| M5B-09 | 接管 PyBERT 生产兼容包 | 保留原 namespace/CLI/reference/兼容 AMI host 入口（过渡期 reference，直至 M5A-09 clean-room Rust AMI 通过 parity）；Web/GUI 的后续搬移不删除兼容入口 |
-
-**M5B-03 / M3-08b status supersession (2026-08-09): accepted in the defined
-evidence scope.** In addition to the retained RFM artifact bridge, S2P
-external-boundary handoff, and Git-object current-domain transfer evidence
-above, clean PyBERT commits `75d25ed`/`199696a` compare the same real locked
-RFM response through retained Python DFE and the existing Rust receiver. The
-real replay binds `f6ba031` Git-object `block_2.rfm` SHA-256 `5716f691...`,
-locked executable `111ff6...`, and external report
-`m5b-rfm-receiver-parity-3c04034.json` SHA-256 `a729593f...`; eleven
-continuous arrays meet the existing `1e-12` policy and discrete bits/locks are
-exact. OMP `msg_af1d6d8102b8` and OpenCode `msg_679b4efea32d` both returned 0
-P1 / 0 P2. This completes the specific M5B-03/M3-08b receiver-parity gate
-without asserting an independent physical oracle, general RFM/S-parameter
-parity, M4 resolver parity, AMI parity, or Linux/macOS certification. The
-OpenCode P3 follow-up is provenance-only: include the full request-config
-digest and deterministic-drive description in a future replay-report revision.
-
-**M5B-04 exact-DLL readiness update (2026-08-09): accepted, still
-non-production.** `021ce08` adds a Git-object-bound preflight for the
-authorized `example_rx` DLL: it rejects any static normal/delay import drift,
-allows only resolved System32/API-set imports, redacts system paths, and
-replays the accepted candidate lifecycle in a fresh private directory without
-supplying `PATH`. The report is restricted to this fixture's static imports
-plus observed lifecycle; it is explicitly not arbitrary caller-DLL or runtime
-module closure. OMP `msg_8a81e64090c2` and OpenCode `msg_8bf7cd955b5a` both
-returned 0 P1 / 0 P2. M5B-04 still requires representative authorized DLL
-fixtures, their dynamic dependency closure, an explicit promotion decision,
-and broader AMI parity before it can be completed.
-
-**M5B source CI activation update (2026-08-09): master nightly is now
-operational.** PyBERT PR [#1](https://github.com/z331225718/Py-bert-agent/pull/1)
-merged `codex/m5b-consolidated` into `master` as `c9a466117f2bfe5ea2b9b89f84f23fc46d1f8f5c`.
-The initial manual run `31303477012` exposed non-authoritative frozen-reference
-capture drift in the composite native-evidence process; its failed report is
-not acceptance evidence. PR [#3](https://github.com/z331225718/Py-bert-agent/pull/3)
-then merged as `4dcdec8a5ef8b5c6ec4c53d03d525b6081dbb39c`: each nightly now first
-runs the same-commit Windows CPython 3.13/NumPy 2.2.6/SciPy 1.15.3
-Python-reference gate in its own job, and the native-evidence job depends on
-that success. Its source-acceptance report records all 11 reference captures as
-delegated, with the same run URL/commit; native pytest and locked Cargo checks
-still run in full. Manual master run
-[`31305552920`](https://github.com/z331225718/Py-bert-agent/actions/runs/31305552920)
-passed both jobs with `source_acceptance=true`; its Task 13 E2E/RSS values remain
-`observed` and the remote-wheel lane remains `unavailable`. This begins, but
-does not satisfy, the required 35-day evidence window; no Linux/macOS
-certification, Task 13 completion, clean accepted tag, or history-migration
-eligibility is implied. OMP's independent larger-boundary audit found 0 P1 /
-0 P2; OpenCode's later conclusion was also 0 P1 / 0 P2.
-
-**M5B scheduled-history verifier update (2026-08-09): evidence accumulation
-is now machine-checked, not manually narrated.** PyBERT PR
-[#4](https://github.com/z331225718/Py-bert-agent/pull/4) merged as
-`fb1b38de18f834d1b4ae8e32751f0380d8236713`. It adds the versioned
-`task13-nightly-reliability-v1` policy and a fail-closed history verifier:
-only first-attempt `schedule` runs on canonical `master` can count; each must
-bind the same-commit source/reliability reports and the delegated Windows
-authoring-profile gate, and the verifier requires 35 consecutive UTC days.
-Manual master run
-[`31308627747`](https://github.com/z331225718/Py-bert-agent/actions/runs/31308627747)
-passed all three jobs, including the history observation. Its report correctly
-records `observed_run_count=0`, `consecutive_valid_scheduled_days=0`, and
-`complete=false`: `workflow_dispatch` is a smoke only and never starts or
-extends the 35-day sequence. The policy/report artifacts retain for 90 days.
-OMP `msg_ed1f52c76194` and OpenCode `msg_5b59bcdd3e75` independently found
-0 P1 / 0 P2. This is only accumulation infrastructure; it does not close
-Task 13/M5B-01, approve RSS/performance, certify a remote wheel or production
-panic behavior, create a final clean tag, or enable history migration.
-
-**M5B Task 13 release-input preflight update (2026-08-09): pending is now
-machine-enforced.** Clean PyBERT branch
-`codex/task13-release-input-policy@88240ff` adds a versioned owner-input
-policy and a nightly evidence preflight. It records, but does not self-approve,
-the Windows authoring scope and candidate five-repeat/median budget; pending
-performance approval, controlled HTTPS wheel identity/authorization, and
-production-native-panic evidence are all rejected by
-`--require-approved`. Scheduled evidence remains non-blocking while those
-inputs are pending, whereas final manual `require_release_inputs=true` fails
-closed after writing its report. OMP `msg_67a65de7ee18` and OpenCode
-`msg_ad88add87472` independently returned 0 P1 / 0 P2 after the final
-whitespace/invalidation rechecks. The source commit is accepted for this
-preflight boundary; it does not approve any budget, wheel, panic evidence,
-Task 13/M5B-01, or M5B.
-
-**M5B Task 13 release-input preflight merge/smoke update (2026-08-09):
-remote evidence path is live.** With user authorization, PR
-[#5](https://github.com/z331225718/Py-bert-agent/pull/5) merged as
-`e0c830e`. A same-commit master `workflow_dispatch`
-[`31310247935`](https://github.com/z331225718/Py-bert-agent/actions/runs/31310247935)
-passed the Windows authoring-profile reference gate, Windows native source
-acceptance, and scheduled-history observation. Its immutable artifacts bind
-the pending owner-input report (`releaseEligible=false`), accepted source
-evidence, and `0/35` scheduled-history state. This is a merge/smoke proof,
-not a scheduled-day count or release approval; the first eligible scheduled
-window remains `17 18 * * *` UTC.
-
-### 9.4 M5C：Workspace 与 Binding
-
-| ID | 任务 | 说明 |
-| --- | --- | --- |
-| M5C-01 | 建 `sipi-types` | 只放已有两个消费者的 value types，禁止空抽象 |
-| M5C-02 | 建 `sipi-pipeline` | 只编排已由 M4 production resolver 解析的 Circuit/Channel artifact 与 Link；不复制 S2P/S4P resolver |
-| M5C-03 | 迁 `pybert-python` 为 `sipi-python` | ABI、NumPy buffer、错误、取消、事件 adapter |
-| M5C-04 | 拆 release profile | embed 路径可 unwind/catch panic；CLI 可独立选择优化策略 |
-| M5C-05 | 进程 vs FFI A/B | 分离 marshal、engine、端到端时间和 RSS；没有收益就保留进程 |
-| M5C-06 | 兼容 wheel/CLI | 旧包名和 v1 consumer 在过渡期继续工作 |
-| M5C-07 | 生成历史迁入映射 | `history-map.v1.json` 记录 old/new commit、tree、path、tag artifact 和 retirement state |
-
-### 9.5 退出条件
-
-- Circuit/Link 每个迁入算法只有一个活跃 Rust source of truth；旧仓副本在 RC 期间冻结，不接受独立修改。
-- 迁入历史可追溯到原 commit；新旧 tag 的规范化结果/工件等价。
-- `sipi-circuit` 和 `sipi-link` 不依赖 runtime、Web、Agent、Python 或 PyO3。
-- 旧 CLI、`agent-spice.rfm-response.v1` 和 PyBERT v1 仍通过 consumer contract。
-- PyO3 panic、取消、超限和 buffer shape 故障不会终止 host 或产生不完整成功结果。
-- Agent-Spice Python fit/CLI 与 PyBERT Python reference/AMI host 已在目标仓有明确生产位置和 history map，旧仓不再承载独立新功能。
-
-M5 完成即达到 `SPEC.md` 的 Native Workspace MVP。
-
-## 10. M6：COM 域包迁入
-
-### 10.1 原则
-
-COM 先迁移产品边界，后评估算法共享。它可以长期保留 Python 3.12 独立包和进程隔离，不以 Rust 化比例作为完成指标。
-
-“最后迁入”只指源码历史和 source-of-truth。COM 在 M2 已经以黑盒 adapter 进入 Platform MVP；M6A 可并行修基线，M6B 正式迁入必须在 M5 后执行。
-
-### 10.2 任务
-
-| ID | 任务 | 说明 |
-| --- | --- | --- |
-| M6-01 | 完成 M0-06 绿基线 | 当前 capability policy 漂移必须先关闭 |
-| M6-02 | 完成许可和大型 oracle 存储 | wheel 继续排除 MATLAB/benchmark 私有资产 |
-| M6-03 | clean tag 带历史迁入 `engines/agent-com` | 保留 `agent_com` namespace 和 `com8023` |
-| M6-04 | 在新仓原样运行 fast/golden/full | 预期值和 candidate 顺序不改 |
-| M6-05 | 接平台 provenance/progress/artifacts | 通过 adapter/facade，先不改数值实现 |
-| M6-06 | 接 `NetworkTensorV1` | 保留 r480/standard reader semantics 和转换记录 |
-| M6-07 | 建 COM/Channel 并列报告 | metric namespace 独立，不暗示数值等价 |
-| M6-08 | 评估依赖环境收敛 | 只有完整 golden 在候选 NumPy/SciPy/scikit-rf 组合通过才合并 lock |
-| M6-09 | 逐项评估小原语共享 | FIR/array helper 等需 stage parity；reader/PDF/search/metrics 默认不动 |
-
-### 10.3 COM 不可破坏清单
-
-- r4.80 workbook/source-order/materialization/consumption。
-- Touchstone token/端口和 mixed-mode profile。
-- MATLAB half-away rounding、strict `>`、first-strict-best。
-- direct/FFT convolution 策略和 candidate stream hash。
-- package/board/termination、C2C/C2M、MMSE/FV-LMS 分支。
-- COM/ERL/TDILN/RILN/VMA 指标和 typed result schema。
-- 已接受性能 ADR、warnings、diagnostics 和 legacy output contract。
-
-### 10.4 退出条件
-
-- 新仓安装的 `agent-com` 与 clean tag 的 API/CLI/artifacts 在原 comparator 下等价。
-- fast/golden/full 和已接受性能预算通过；大型 oracle hash 可追溯。
-- 平台能统一调度和报告 COM，但没有替换其行为 profile。
-- 发布文档包含非规范性声明和完整许可/provenance。
-
-## 11. M7：产品服务、报告与 Agent
-
-### 11.1 本地服务
-
-- 把 runtime 暴露为本地 API；任务状态、事件和取消与 CLI 共用实现。
-- 复用 PyBERT FastAPI/Redis/arq 的经验或适配代码，不让 Web 直接调用领域上帝对象。
-- 首版保持本地单用户；多租户、远程 worker 和认证另立规格。
-
-### 11.2 统一报告
-
-- 项目视图按 Analysis 分区显示 Circuit、Channel、COM。
-- 共享显示 provenance、输入模型、exact engine instance/profile、timing、warnings 和 artifact。
-- 比较报告区分 schema diff、array diff、离散选择 diff、最终 metric diff 和性能 diff。
-- 不把域专属结果压平为含义不明的“score”。
-
-### 11.3 Agent 工具
-
-| ID | 工具 | 允许行为 |
-| --- | --- | --- |
-| M7-01 | `validate_project` | 返回错误、capability 缺口和输入来源 |
-| M7-02 | `list_capabilities` | 展示锁定 engine instance/profile 和正交能力状态，不猜测支持能力 |
-| M7-03 | `run_analysis` | 创建新 run，受 timeout/resource/path 策略限制 |
-| M7-04 | `get_run_summary` | 返回已验证 envelope 和 metrics namespace |
-| M7-05 | `inspect_artifact` | 只读小型摘要或受限切片，不任意加载巨型数组 |
-| M7-06 | `compare_runs` | 使用批准 tolerance/profile，返回证据位置 |
-| M7-07 | `propose_sweep` | 生成新 revision 计划，执行需显式资源预算 |
-| M7-08 | `run_sweep` | 只执行已批准 plan hash；总运行数/并发由 supervisor 硬限制，时间/内存等必须请求 `enforcement: required`，无 certified enforcer 时拒绝 |
-
-### 11.4 Agent 验收
-
-- 每条物理判断能追溯到 run/analysis/attempt/backend-execution ID、exact engine instance/profile、输入 hash 和 artifact/metric。
-- Agent 无法修改已发布运行、绕过 strict capability 或提升资源限制。
-- unsupported、fallback 和数值 warning 不被自然语言隐藏。
-- 对同一运行重复解释不触发新的数值计算，除非显式创建新 run。
-
-M7 完成即达到 `SPEC.md` 的 Agent MVP。
-
-## 12. M8：发布与切换
-
-### 12.1 发布矩阵
-
-| Lane | 内容 |
-| --- | --- |
-| PR fast | contracts、runtime、adapter 单元、small golden、Rust unit |
-| PR affected | 由变更检测选择 Circuit/Link/COM parity 和 integration |
-| Nightly | 大型 S 参数、ADS/MATLAB/private oracle、RSS/长时故障注入 |
-| Release | 全量 fast/golden/full、wheel、CLI、PyO3、进程树、签名和 SBOM |
-
-### 12.2 平台与包测试
-
-- Windows x86_64 为首签核；Linux/macOS 按 capability 扩展。
-- 在干净环境安装 `sipi-platform` 与所选 engine artifacts，无源码/sibling repo。
-- wheel 缺失、损坏、ABI 不匹配、模型崩溃、OOM、磁盘满、取消和超时均有预期结果。
-- 记录平台开销、marshal、engine、RSS 和 cache 命中，不把不可比较数据放进性能结论。
-
-### 12.3 双跑和回滚
-
-- 两个 release candidate 周期同时保留旧入口与新平台入口。
-- `engine.lock` 可以固定回旧 engine artifact，不依赖回退源码提交。
-- compare 模式在抽样/夜间运行中验证新旧结果，不能成为高负载默认。
-- 任一阻断数值回归、工件损坏或无法清理的子进程均停止切换。
-- 每个 RC 至少持续 7 个连续自然日，且覆盖全部 PR lane、至少一次完整 nightly 和一次干净安装/回滚演练；两个 RC 的最短观察期因此为 14 天。`quality/severity-policy.yaml` 中 P0/P1 均阻断切换，P2 必须有 owner 和限期。
-
-### 12.4 旧仓库降级条件
-
-连续两个 RC 满足：
-
-1. 无阻断领域回归。
-2. 新仓发布工件可复现且可回滚。
-3. 历史和 issue/文档链接已迁移。
-4. 所有活跃开发者已切换目标仓。
-5. 用户明确批准 source-of-truth 切换。
-
-随后旧仓库改为受保护的只读镜像。若必须保留 `legacy-support` 分支，它只接受从新 monorepo 审批并回移的安全/兼容修复，不再接受独立功能开发，也不成为 source of truth。Python legacy core 和旧结果 reader 的删除另开不可逆变更计划，不包含在本计划自动动作中。
-
-## 13. 现有计划的处理
-
-### 13.1 PyBERT 2026-08-03 Rust 合并计划
-
-原始任务定义位于迁入前来源文档 `Py-bert-agent/docs/superpowers/plans/2026-08-03-rust-simulation-engine-agent-spice-merge.md`。M0 应将该文档及其引用 commit/hash 固定进 baseline manifest，避免 Task 编号脱离原文。
-
-- Task 1-11 的已落地代码直接继承，不在本仓重做。
-- Task 12/13 继续完成完整 product parity、GUI/optimizer 边界、RSS/nightly 和故障演练。
-- Task 14 的最终 workspace 从 `agent-spice` 改为 `SIPI-sim-agent`，避免先迁到 Agent-Spice 再搬一次。
-- Task 15 只有在 M8 两个 RC 后、用户另行批准时才启动。
-
-### 13.2 Agent-Spice 路线
-
-- Rust circuit binary-to-lib 在原仓先完成并通过现有 oracle。
-- 生产 fit/RFM/HSPICE CLI 保持兼容；研究 IdEM、benchmark、C# oracle 和第三方 solver 不作为首批迁入 core。
-- 绝对路径 corpus 配置在迁入前参数化。
-- IBIS/AMI 解析器按 M5A-09 作为净新 clean-room 功能处理：从 IBIS 规范编写、进程内归 agent-spice-sim 使用，不继承 PyBERT/BSD 代码。**PyAMI（两条款 BSD、Python）按用户决策 2026-08-08 统一到 Rust，随 M5A-09 clean-room 重做**，不迁入 Python 侧。
-
-### 13.3 Agent-COM 路线
-
-- 先修当前 HEAD policy drift，再冻结新的 fast/golden/full 基线。
-- 配置、reader、search、PDF 和 metric 作为完整 behavior profile 迁移。
-- “共享算法”是迁入后的独立优化议题，不是迁入完成条件。
-
-### 13.4 PyBERT-core Rust 迁移收编结论（2026-08-07，Py-bert-agent worker 转发，待评审）
-
-Py-bert-agent 侧配套执行路线见其仓库 `docs/superpowers/plans/2026-08-07-pybert-core-rust-migration.md`（草稿，worker 侧准备）。以下为转发结论；SIPI-sim-agent 的 plan 仍是合并计划/架构（workspace crate 布局、clean-room 边界、license 策略、迁移顺序）的源头真相，本节只做收编记录：
-
-以下编号与转发消息一致：
-
-1. 合并计划/架构（目标 workspace crate 布局、clean-room 边界、license 策略、迁移顺序）以 SIPI-sim-agent plan 为源头真相。
-2. 现有 `native/pybert-core` Rust 迁移（BSD 派生翻译）继续在 Py-bert-agent 演进；合并时带 BSD attribution/NOTICE 收编。
-3. IBIS/AMI 解析器按净新 clean-room 功能处理：从 IBIS 规范编写，进程内归 agent-spice-sim 使用；建议放 agent-spice，若 agent-spice 停止独立维护则直接放 SIPI-sim-agent。**2026-08-08 用户决策补充：PyAMI 整体（含 AMI 语义与 DLL host 接口）随 M5A-09 clean-room Rust 重做，统一到 Rust，不保留 Python 侧。**
-4. 若需完全摆脱 BSD，pybert 数值核心的 clean-room 重做放在干净的新项目（SIPI-sim-agent），不在 Py-bert-agent 内进行。
-5. `pybert_web`/`gui` 仍为 Python 外壳/工具，合并时作为 Python 侧保留（与 §9.3 M5B、§14 映射一致）。**`PyAMI` 除外——按用户决策 2026-08-08 随 M5A-09 clean-room Rust 重做，统一到 Rust，不保留 Python 侧。**
-6. 依赖顺序：补全 native Web result contract parity（解除 `native_auto_parity_gate` 的 `blocked`）→ Rust 成默认 → web 指标改接 native → 移除 Python reference 路径 → 删除被 Rust 覆盖的数值 Python → S2P/拓扑决策 → GUI/optimizer/清理 → license 收尾与合并。
-
-本 plan 补充（删除与 license 门禁，非转发结论）：
-
-7. 不可恢复删除（`src/pybert/models/*`、`utility/` 数值模块、`python_backend.py`/`compare.py`、`gui/`、整仓 `src/pybert/`）在 golden fixture 全覆盖、备份分支且用户确认前不执行，并受 §4.3 许可门禁和 §12.4 删除计划约束；`native/*/Cargo.toml` 的 MIT 声明与 BSD 派生来源的一致性由用户/法务决策。
-
-#### 落地映射（结论 → plan 步骤）
-
-- 结论 1（以本 plan 为源头真相）→ 本 plan 全局，尤其 §9.3/§13.1/§14；本节记录即执行依据。
-- 结论 2（`pybert-core` 留在 Py-bert-agent 演进、合并带 BSD attribution/NOTICE）→ M5B-01（继续演进）、M5B-06（收编时 NOTICE/attribution）、M5B-07/08（历史迁入保留）；license 门禁归 M0-09/§4.3。
-- 结论 3（IBIS/AMI clean-room 归 agent-spice-sim，PyAMI 整体 Rust 重做）→ 新任务 M5A-09 + §13.2 路线注记 + M5B-04（DLL host 承接）。
-- 结论 4（数值核心 clean-room 重做放 SIPI-sim-agent）→ M5B 决策点：若选择摆脱 BSD，重做任务落在 SIPI-sim-agent 干净新项目，不进 Py-bert-agent；执行前需用户批准。
-- 结论 5（web/GUI 作 Python 侧保留；PyAMI 按用户决策 Rust 重做）→ M5B-04/05/09 + M5A-09 + §14 对应行（AMI host 由 M5A-09 Rust 承接、Web/Redis、GUI）。
-- 结论 6（依赖顺序）→ M5B-01（Phase 1-3）→ M5B-02（parity gate 解锁）→ M5B-03（S2P/拓扑决策，禁止再写第二套 resolver）→ M5B-05（GUI/optimizer 门禁）→ M5B-06/07/08（license 收尾与合并）。
-- 补充 7（删除与 license 门禁）→ 受 §4.3（许可分类与机器拒绝）、§12.4（删除另开不可逆计划）、M2-02/M5B-09（reference 保留）和 golden 全覆盖/备份/用户确认约束；执行入口在 M5B Phase 4-5 之后，且 Task 15 另批前不删除 reference/AMI host/compat facade。
-- 措辞校准（以本 plan 为准）：迁移文档 Phase 4/5 的“移除 Python reference 路径/删除数值 Python”仅指产品默认后端切换与 M2 所需范围；Python reference、AMI host、compat facade 按 §13.1/§14 在 Task 15 另批前不删除，删除动作仍受补充 7 门禁约束。
-
-## 14. Source-to-Target 映射
-
-| 生产来源 | 过渡形态 | 目标位置 | 里程碑/历史方式 | 旧来源退役条件 |
-| --- | --- | --- | --- | --- |
-| Agent-Spice CLI/Python fit | strict process adapter | `engines/agent-spice`，保留 `agent_spice` namespace | M5A，clean repo 过滤后整体前缀迁入 | G5 后冻结；G6 后旧仓只读 |
-| `agent-spice-sim` | versioned executable | `native/crates/sipi-circuit` | M5A，整体迁入后历史保留 move | 新 crate/旧 tag 等价且旧副本移除 |
-| `pybert-core` | strict PyO3/process candidate | `native/crates/sipi-link` | M5B，clean repo 整体迁入后历史保留 move | 新 crate 接管构建，旧副本移除 |
-| `pybert-python` | `pybert-native` wheel | `native/crates/sipi-python` | M5C，与 link core 同批 move | 新 binding wheel 通过兼容/故障门禁 |
-| PyBERT Python reference/compat facade | strict reference adapter | `engines/py-bert-agent`，保留原 namespace | M5B，clean repo 整体前缀迁入 | Task 15 另批前不删除；G6 后旧仓只读 |
-| PyAMI（解析/AMI 语义/DLL host） | clean-room Rust 重做 | 随 M5A-09 放 agent-spice（或 SIPI-sim-agent）；`sipi-link` 经 v1 边界消费 | M5A-09（用户决策 2026-08-08：非 MIT、Python，统一 Rust）；M5B-04 由 Rust host 承接 | clean-room 重做通过 AMI golden/parity 且用户批准后，旧 PyAMI 只读 |
-| PyBERT Web/Redis | 外部应用 adapter | `apps/sipi-service` 的可复用部分 | M7 使用历史保留 move 或清晰重写 ADR | 统一服务签核后冻结旧 Web 新功能 |
-| PyBERT Traits GUI | compatibility app | `engines/py-bert-agent` 中保留；后续可单独 app 化 | M5B 随整体历史进入，不阻塞 M7 | 另有 GUI parity/用户批准前不删除 |
-| `agent_com` | strict process adapter | `engines/agent-com`，保留 `agent_com` namespace | M6，clean repo 整体前缀迁入 | G5 后冻结；G6 后旧仓只读 |
-| MATLAB/ADS/private golden | hash manifest + 外部 store | `fixtures/manifest` 只放授权索引 | M0 起，不复制未授权数据 | 无退役；按 provenance policy 管理 |
-| C#/ngspice/Xyce/HSPICE | optional oracle adapter | 外部 toolchain registry | 不进入默认 core | 有替代 oracle 与独立批准前保留 |
-
-每次历史迁入必须生成 `history-map.v1.json`，记录 old/new commit、tree、path、tag、bundle hash、keep/drop/port disposition 和旧来源状态。表中没有目标位置的生产 producer 不得进入 G5。
-
-## 15. 测试策略
-
-### 15.1 测试层级
-
-| 层级 | 目标 |
-| --- | --- |
-| Schema contract | version、字段、单位、shape、错误、forward/backward consumer |
-| Domain unit | 保留各原仓纯函数/模块测试 |
-| Adapter contract | 进程、文件、hash、取消、超时、崩溃和 producer |
-| Domain parity | 新旧入口的 stage/metrics/artifacts 等价 |
-| Cross-engine | RFM -> Link、同项目多分析、artifact DAG |
-| Packaging | clean venv、wheel/executable、无 sibling repo |
-| Reliability | OOM、磁盘满、损坏 artifact、进程树、panic、外部 DLL |
-| Performance | wall time、stage time、marshal、RSS、线程和 cache |
-| Security | 路径逃逸、include、环境变量、恶意 schema/zip/模型元数据 |
-
-### 15.2 Golden 管理
-
-- 原项目 comparator 和 tolerance 是 source of truth；迁移不重写预期值。
-- fixture manifest 记录输入、producer、版本、环境、hash、大小和许可。
-- PR 只放小型确定性 fixture；大型 MATLAB/ADS/S 参数进入 nightly 外部 store。
-- 更新 golden 必须有独立“算法/行为改变”评审，不能藏在重构提交。
-- baseline 阶段缺少 private/external fixture 时明确报告未验证范围；迁入/发布 required fixture 零未解释 skip。无法取得 optional fixture 时对应 capability 保持 uncertified，不以“全部通过”措辞掩盖 skip。
-
-### 15.3 变更检测
-
-- PyBERT 正式写入前重建 GitNexus，并按其 `AGENTS.md` 做 impact/detect-changes。
-- Rust crate 公共类型变更必须列出 consumer、schema 和 artifact 影响。
-- 跨引擎 DTO 变更默认触发三 adapter contract 和 RFM -> Link integration。
-- COM 行为 profile 变更触发 candidate stream、stage arrays、final metrics 和性能 ADR。
-
-## 16. 风险登记
-
-| 风险 | 等级 | 缓解和停止条件 |
-| --- | --- | --- |
-| COM/PyBERT 同名算法被错误合并 | 严重 | profile 并存、逐 stage golden；无 parity 不共享实现 |
-| 端口/差分/波定义/单位丢失 | 严重 | `NetworkTensorV1/PortMapV1` 强制字段和跨引擎 sign fixture |
-| 源工作树本地修改丢失 | 严重 | clean tag + 备份 + 临时 clone/filter-repo；禁止直接复制 |
-| 许可不清导致对应能力无法打包/迁入/发布 | 高 | M0 完成分类和机器拒绝；G0b/G0c 按资产阻断，不拖住独立 M1 contracts |
-| 三套依赖无法同环境安装 | 高 | 多包/多 lock/process adapter；通过 golden 后才收敛 |
-| `auto` 静默 fallback 或 compare 角色混淆 | 高 | discriminated selection；结果按 backend execution 记录 role/instance/fallback |
-| 双实现长期并存 | 高 | M5/M8 明确 source-of-truth 和两个 RC 删除前置条件 |
-| 大型 golden 让 CI 失控 | 中高 | small PR lane + external nightly + hash manifest |
-| PyO3 panic/FFI copy | 高 | unwind/catch、buffer contract、marshal/RSS A/B；无收益不改进程边界 |
-| 取消后残留进程/半工件 | 高 | process-tree 故障注入、staging 原子发布、success manifest 最后写 |
-| 平台过早设计万能 Component | 中高 | v0.1 只做 operation envelope；DesignGraph 延后并采用 capability |
-| 旧文档与源码状态不一致 | 中 | M0 重新生成 baseline；计划状态以测试和源码为准 |
-
-## 17. 前十个工作日建议顺序
-
-按依赖顺序执行，不按仓库并行搬代码：
-
-1. 创建目标仓版本控制和 `docs/adr`，提交当前 `README/SPEC/PLAN` 作为设计基线。
-2. 完成 M0-01/M0-02，记录并保护三个工作树的真实状态。
-3. 恢复 Rust toolchain，验证 Agent-Spice 和 PyBERT 两套 Cargo 项目。
-4. 决定 agent-com capability policy，先让聚焦失败与文档一致。
-5. 重建 PyBERT GitNexus，分类外部依赖 errors 和当前 native parity blocker。
-6. 选择大型 golden 存储方案并为一个 COM fixture 做 hash 拉取 smoke。
-7. 完成许可证/provenance 初审，明确哪些源码和数据暂不能迁入。
-8. 起草 `sipi.run-request.v1/run-result.v1/artifact-ref.v1` schema。
-9. 从 PyBERT/COM 现有类型生成第一组 conformance fixtures，而不是凭空造示例。
-10. 建最小 `sipi doctor`，报告 toolchain、engine artifact、hash、schema 和 fixture 可用性。
-
-这十步结束时仍不应搬引擎源码。正确的首个演示是“平台准确说明当前能运行什么、为什么不能运行什么”，随后再进入 M2 黑盒执行。
-
-## 18. 完成定义
-
-整项计划只有在以下条件全部满足时才算完成：
-
-- 用户通过一个平台入口可靠运行三类分析。
-- 领域语义、数值 golden、性能预算和可审计性不低于三个原项目。
-- Circuit/Link Rust core 位于目标 workspace 且各只有一个 source of truth。
-- COM 在目标仓保留独立可验证 behavior profile。
-- 三个引擎可以独立发布和回滚，平台 release 不依赖 sibling 源码目录。
-- Agent 的每项动作和结论受相同契约、资源和 provenance 约束。
-- 两个 RC 周期无阻断回归，旧仓降级和回滚演练均通过。
-- 许可、SBOM、第三方资产和大型 golden 的来源可审计。
-
-任何“代码已经搬完”但不满足这些条件的状态，都只是迁移中间态，不是平台完成。
+| 实现者已读非 MIT 源码 | clean-room 声明失效 | 独立实现者/agent、材料 allowlist、attestation；否则重许可或 unsupported |
+| 把 compatible dependency 称为 MIT | 许可虚假陈述 | 第一方 MIT 与第三方许可分开，SBOM/NOTICE/closure verifier |
+| 现有 Rust code 有 BSD 派生 | 无法作为 MIT 产品发布 | quarantine；来源审计、重许可或 clean-room 替代 |
+| 为 parity 调高容差 | 掩盖数值回归 | tolerance 先冻结，变更独立审批，stage 定位 |
+| 旧 oracle 自身不稳定 | 错误 golden 或假漂移 | 固定环境/commit/hash，多种独立正确性测试 |
+| 单一 CLI 变成 god crate | 领域耦合和二次实现 | CLI 只构造 contract，数值 owner 在 domain crates |
+| 外部 AMI DLL 不可信 | 崩溃、依赖劫持、泄露 | 私有 worker、hash/closure、受控 env、资源/路径策略 |
+| COM/Channel 同名算法被错误复用 | 标准语义漂移 | 独立 behavior profile 和 owner crate |
+| Windows 通过被外推跨平台 | 虚假能力广告 | profile 带 platform，Linux/macOS 默认 uncertified |
+| legacy 永久不退场 | 双路径漂移 | product release 禁止依赖；P7 用户批准后同批移除 drift gate |
+
+## 18. 接下来十个大切片
+
+按依赖顺序推进，不用更多诊断切片替代产品代码：
+
+1. **P0-A：product-boundary + 根 MIT + verifier。** 穷尽当前仓库路径，明确 release allowlist。
+2. **P0-B：clean-room material/role register。** 固定三旧仓材料访问与 attestation。
+3. **P0-C：acceptance profile inventory。** 展开所有 required examples、hash、许可和 stage/tolerance。
+4. **P1-A：根 Cargo workspace + types/contracts。** 生成 schema，跑现有 v1 conformance。
+5. **P1-B：Rust artifacts/runtime。** 原子发布、错误、取消、资源和 provenance。
+6. **P1-C：`sipi` CLI 骨架。** schema/capabilities/validate/run，未实现项 fail closed。
+7. **P2-A：TRAN source promotion。** 审计并收编可接受的 MIT Rust 内核，不改数值。
+8. **P2-B：首个 TRAN certified profile。** CLI 到 waveform/measure 的纵向闭环。
+9. **P3-A：Channel observation spec。** 由旧 profiles 形成 clean-room 输入，不交付实现源码。
+10. **P3-B：Channel response clean-room slice。** 新 Rust resolver + 独立正确性 + 首个 oracle compare。
+
+P4/P5 可在 P1 稳定后开独立纵向支线，但同一主工作树仍保持一个较大边界一个提交和审计。
+
+## 19. 完成定义
+
+本计划完成时：
+
+- G0-G6 对 release commit 全绿。
+- 第一方产品源码 MIT，第三方依赖 NOTICE/SBOM 完整，external/blocked bytes 不在发行物。
+- 产品 runtime、domain cores、pipeline、contracts、artifacts 和 CLI 均为 Rust。
+- `sipi` 是唯一公开入口，AI 可通过 schema/capabilities/errors 安全使用。
+- TRAN、Channel、IBIS-AMI、COM 各有至少一个 Windows x86_64 certified profile。
+- 用户确认的 required legacy examples 全部通过或有显式降级决议。
+- 跨域 pipeline 使用 typed artifact、唯一 resolver 和完整 provenance。
+- 旧 Python/adapter/bundle 不在产品依赖；其保留或删除已按用户批准处理。
+- 所有发布声明精确到 profile，未认证能力不被广告。
+
+这条路线优先交付一个范围有限但许可、语言、准确性和接口都闭环的原生平台，而不是一个功能表很长、内部仍依赖旧项目的包装层。
