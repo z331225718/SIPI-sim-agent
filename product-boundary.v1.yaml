@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: e6db4c43c953b19c93095ae17e55007a2061476604e0b9d61e737ac47b4c1c16
+  tracked_paths_sha256: 0da38cf6b506016a80f92e9278fc0607e8434e97af4e2390d4010c69049ff353
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -330,6 +330,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-09-p1c-contracts-foundation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-09-p1d-product-contract-conformance.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
