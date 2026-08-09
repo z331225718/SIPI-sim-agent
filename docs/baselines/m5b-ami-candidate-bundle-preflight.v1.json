@@ -1,0 +1,31 @@
+{
+  "schema": "sipi.m5b-ami-candidate-bundle-preflight.v1",
+  "status": "candidate_policy_only",
+  "candidate": true,
+  "productionResolvable": false,
+  "platform": "windows-x86_64",
+  "artifactContract": {
+    "bundleManifestSchema": "sipi.m5b-ami-candidate-bundle.v1",
+    "requestSchema": "agent-spice.ami-host-request.v1",
+    "resultSchema": "agent-spice.ami-host-result.v1",
+    "requiredBuildInfoCapability": "candidateCapabilities.amiHostCandidate"
+  },
+  "bundlePolicy": {
+    "outputLocation": "caller-selected external artifact directory",
+    "forbiddenVendorSuffixes": [".dll", ".ami", ".ibs"],
+    "externalVendorAssets": "blocked_unknown",
+    "dynamicClosure": "declared_system_only_not_release_authorized",
+    "engineLock": "must not reference candidate command or executable"
+  },
+  "sourceEvidence": {
+    "agentSpiceRevision": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "classification": "LICENSE-MANIFEST.md",
+    "scope": "native/agent-spice-sim"
+  },
+  "nonClaims": [
+    "not a published or promoted bundle",
+    "not a default, auto, GUI, optimizer, or production resolver backend",
+    "not a licensed vendor DLL, AMI, or IBIS fixture runtime",
+    "not AMI waveform, BER, eye, or cross-platform parity"
+  ]
+}

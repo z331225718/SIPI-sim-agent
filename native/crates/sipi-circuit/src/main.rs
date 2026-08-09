@@ -304,6 +304,16 @@ fn build_info() -> serde_json::Value {
         "gitDirty": git_dirty,
         "target": env!("AGENT_SPICE_TARGET"),
         "profile": env!("AGENT_SPICE_PROFILE"),
+        // This is metadata for an explicit candidate bundle, not a production
+        // resolver capability. The locked executable predates this field.
+        "candidateCapabilities": {
+            "amiHostCandidate": {
+                "requestSchema": "agent-spice.ami-host-request.v1",
+                "resultSchema": "agent-spice.ami-host-result.v1",
+                "platform": "windows-x86_64",
+                "productionResolvable": false,
+            }
+        },
     })
 }
 
