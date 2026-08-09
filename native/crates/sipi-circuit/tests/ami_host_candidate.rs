@@ -9,6 +9,7 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 const REQUEST_SCHEMA: &str = "agent-spice.ami-host-request.v1";
+const LIFECYCLE_REQUEST_SCHEMA: &str = "agent-spice.ami-host-request.v2";
 
 struct TempDir(PathBuf);
 
@@ -109,6 +110,65 @@ fn candidate_host_transports_raw_abi_buffers_and_fails_closed() {
         read_f64(&init_only_output.join("init-impulse-response.f64le")),
         [0.5, 1.0]
     );
+
+    write_f64(&root.join("wave-two.f64le"), &[3.0, 4.0, 5.0]);
+    let mut sequence = request.clone();
+    sequence["schema"] = Value::String(LIFECYCLE_REQUEST_SCHEMA.into());
+    sequence["mode"] = Value::String("init-get-wave-sequence".into());
+    sequence.as_object_mut().unwrap().remove("getWave");
+    sequence["getWaves"] = json!([
+        {
+            "waveform": f64_descriptor(root, "wave.f64le", 2),
+            "clockCapacity": 2,
+        },
+        {
+            "waveform": f64_descriptor(root, "wave-two.f64le", 3),
+            "clockCapacity": 2,
+        }
+    ]);
+    let sequence_path = root.join("sequence.json");
+    fs::write(&sequence_path, serde_json::to_vec(&sequence).unwrap()).unwrap();
+    let sequence_output = root.join("sequence-output");
+    let sequence_run = run_candidate(&sequence_path, &sequence_output, None);
+    assert!(
+        sequence_run.status.success(),
+        "candidate stderr: {}",
+        String::from_utf8_lossy(&sequence_run.stderr)
+    );
+    let sequence_result: Value =
+        serde_json::from_slice(&fs::read(sequence_output.join("result.json")).unwrap()).unwrap();
+    assert_eq!(sequence_result["mode"], "init-get-wave-sequence");
+    assert_eq!(sequence_result["lifecycle"]["getWaveCallCount"], 2);
+    assert_eq!(sequence_result["getWave"], Value::Null);
+    assert_eq!(sequence_result["getWaves"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        read_f64(&sequence_output.join("get-wave-0-response.f64le")),
+        [0.25, 2.0]
+    );
+    assert_eq!(
+        read_f64(&sequence_output.join("get-wave-1-response.f64le")),
+        [1.25, 4.0, 5.0]
+    );
+    assert_eq!(
+        read_f64(&sequence_output.join("clock-times-1.f64le")),
+        [3e-12]
+    );
+
+    let mut empty_sequence = sequence.clone();
+    empty_sequence["getWaves"] = json!([]);
+    let empty_sequence_path = root.join("empty-sequence.json");
+    fs::write(
+        &empty_sequence_path,
+        serde_json::to_vec(&empty_sequence).unwrap(),
+    )
+    .unwrap();
+    let empty_sequence_output = root.join("empty-sequence-output");
+    assert!(
+        !run_candidate(&empty_sequence_path, &empty_sequence_output, None)
+            .status
+            .success()
+    );
+    assert!(!empty_sequence_output.exists());
 
     let mut bad_hash = request.clone();
     bad_hash["initImpulse"]["sha256"] = Value::String("0".repeat(64));

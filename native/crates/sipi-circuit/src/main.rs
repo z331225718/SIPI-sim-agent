@@ -309,6 +309,7 @@ fn build_info() -> serde_json::Value {
         "candidateCapabilities": {
             "amiHostCandidate": {
                 "requestSchema": "agent-spice.ami-host-request.v1",
+                "lifecycleRequestSchema": "agent-spice.ami-host-request.v2",
                 "resultSchema": "agent-spice.ami-host-result.v1",
                 "platform": "windows-x86_64",
                 "productionResolvable": false,

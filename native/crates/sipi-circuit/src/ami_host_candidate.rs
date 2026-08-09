@@ -13,12 +13,13 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sipi_ami::ami::{AmiHostMetadata, parse_ami_parameters};
 use sipi_ami::contract::{AmiGetWaveRequest, AmiInitRequest};
-use sipi_ami::host::{AmiDll, AmiModel};
+use sipi_ami::host::{AmiDll, AmiGetWaveOutcome, AmiModel};
 use sipi_ami::parse_ibis;
 
 use super::build_info;
 
 const REQUEST_SCHEMA: &str = "agent-spice.ami-host-request.v1";
+const LIFECYCLE_REQUEST_SCHEMA: &str = "agent-spice.ami-host-request.v2";
 const RESULT_SCHEMA: &str = "agent-spice.ami-host-result.v1";
 const RESULT_NAME: &str = "result.json";
 
@@ -91,22 +92,36 @@ struct CandidateRequest {
     ami_parameters_in: String,
     init_impulse: F64Input,
     get_wave: Option<GetWaveInput>,
+    get_waves: Option<Vec<GetWaveInput>>,
 }
 
 impl CandidateRequest {
     fn validate(&self) -> Result<(), String> {
-        if self.schema != REQUEST_SCHEMA {
+        if self.schema != REQUEST_SCHEMA && self.schema != LIFECYCLE_REQUEST_SCHEMA {
             return Err(format!(
-                "unsupported AMI host request schema '{}'; expected {REQUEST_SCHEMA}",
+                "unsupported AMI host request schema '{}'; expected {REQUEST_SCHEMA} or {LIFECYCLE_REQUEST_SCHEMA}",
                 self.schema
             ));
         }
-        match (self.mode, self.get_wave.is_some()) {
-            (CandidateMode::Init, false) | (CandidateMode::InitGetWave, true) => Ok(()),
-            (CandidateMode::Init, true) => Err("init mode must not include getWave".into()),
-            (CandidateMode::InitGetWave, false) => {
-                Err("init-get-wave mode requires getWave".into())
+        match (
+            self.schema.as_str(),
+            self.mode,
+            self.get_wave.is_some(),
+            self.get_waves.as_ref(),
+        ) {
+            (REQUEST_SCHEMA, CandidateMode::Init, false, None)
+            | (REQUEST_SCHEMA, CandidateMode::InitGetWave, true, None) => Ok(()),
+            (REQUEST_SCHEMA, _, _, _) => Err("v1 request mode/getWave contract is invalid".into()),
+            (LIFECYCLE_REQUEST_SCHEMA, CandidateMode::Init, false, None) => Ok(()),
+            (LIFECYCLE_REQUEST_SCHEMA, CandidateMode::InitGetWaveSequence, false, Some(inputs))
+                if !inputs.is_empty() =>
+            {
+                Ok(())
             }
+            (LIFECYCLE_REQUEST_SCHEMA, _, _, _) => Err(
+                "v2 request requires init or init-get-wave-sequence with non-empty getWaves".into(),
+            ),
+            _ => unreachable!("schema already validated"),
         }
     }
 }
@@ -116,6 +131,7 @@ impl CandidateRequest {
 enum CandidateMode {
     Init,
     InitGetWave,
+    InitGetWaveSequence,
 }
 
 #[derive(Debug, Deserialize)]
@@ -171,7 +187,10 @@ struct CandidateResult {
     metadata: MetadataOutput,
     lifecycle: LifecycleOutput,
     init: InitOutput,
+    #[serde(skip_serializing_if = "Option::is_none")]
     get_wave: Option<GetWaveOutput>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    get_waves: Option<Vec<GetWaveOutput>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -179,6 +198,7 @@ struct CandidateResult {
 enum CandidateModeOutput {
     Init,
     InitGetWave,
+    InitGetWaveSequence,
 }
 
 impl From<CandidateMode> for CandidateModeOutput {
@@ -186,6 +206,7 @@ impl From<CandidateMode> for CandidateModeOutput {
         match value {
             CandidateMode::Init => Self::Init,
             CandidateMode::InitGetWave => Self::InitGetWave,
+            CandidateMode::InitGetWaveSequence => Self::InitGetWaveSequence,
         }
     }
 }
@@ -230,6 +251,8 @@ struct LifecycleOutput {
     init_succeeded: bool,
     get_wave_attempted: bool,
     close_succeeded: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    get_wave_call_count: Option<usize>,
 }
 
 #[derive(Debug, Serialize)]
@@ -260,7 +283,7 @@ struct F64Output {
 }
 
 struct PendingSidecar {
-    name: &'static str,
+    name: String,
     values: Vec<f64>,
 }
 
@@ -288,28 +311,44 @@ fn execute(
     let metadata = AmiHostMetadata::from_tree(&tree)
         .map_err(|error| format!("invalid AMI host metadata: {error}"))?;
     verify_metadata(&metadata, &request.expected_metadata)?;
-    if matches!(request.mode, CandidateMode::InitGetWave) && !metadata.get_wave_exists() {
-        return Err("init-get-wave mode requires GetWave_Exists=true".into());
+    if matches!(
+        request.mode,
+        CandidateMode::InitGetWave | CandidateMode::InitGetWaveSequence
+    ) && !metadata.get_wave_exists()
+    {
+        return Err("GetWave mode requires GetWave_Exists=true".into());
     }
 
     let init_values = read_f64_input(request_root, &request.init_impulse, "initImpulse")?;
     let init = AmiInitRequest::new(request.sample_interval_seconds, init_values)
         .map_err(|error| format!("invalid init request: {error}"))?;
-    let get_wave = request
-        .get_wave
-        .as_ref()
-        .map(|input| {
-            if input.clock_capacity == 0 {
-                return Err("getWave clockCapacity must be greater than zero".into());
-            }
-            read_f64_input(request_root, &input.waveform, "getWave waveform")
-                .and_then(|waveform| {
-                    AmiGetWaveRequest::new(request.sample_interval_seconds, waveform)
-                        .map_err(|error| format!("invalid GetWave request: {error}"))
-                })
-                .map(|request| (request, input.clock_capacity))
-        })
-        .transpose()?;
+    let parse_get_wave = |input: &GetWaveInput| {
+        if input.clock_capacity == 0 {
+            return Err("getWave clockCapacity must be greater than zero".into());
+        }
+        read_f64_input(request_root, &input.waveform, "getWave waveform")
+            .and_then(|waveform| {
+                AmiGetWaveRequest::new(request.sample_interval_seconds, waveform)
+                    .map_err(|error| format!("invalid GetWave request: {error}"))
+            })
+            .map(|request| (request, input.clock_capacity))
+    };
+    let get_waves = match request.mode {
+        CandidateMode::Init => Vec::new(),
+        CandidateMode::InitGetWave => vec![parse_get_wave(
+            request
+                .get_wave
+                .as_ref()
+                .expect("v1 validation requires getWave"),
+        )?],
+        CandidateMode::InitGetWaveSequence => request
+            .get_waves
+            .as_ref()
+            .expect("v2 validation requires getWaves")
+            .iter()
+            .map(parse_get_wave)
+            .collect::<Result<Vec<_>, _>>()?,
+    };
 
     let dll =
         AmiDll::load(&dll, &metadata).map_err(|error| format!("AMI DLL load failed: {error}"))?;
@@ -317,14 +356,14 @@ fn execute(
     let init_outcome = model
         .initialize(&init, request.bit_time_seconds, &request.ami_parameters_in)
         .map_err(|error| format!("AMI_Init failed: {error}"))?;
-    let get_wave_outcome = match get_wave {
-        Some((get_wave, clock_capacity)) => Some(
+    let get_wave_outcomes = get_waves
+        .iter()
+        .map(|(get_wave, clock_capacity)| {
             model
-                .get_wave(&get_wave, clock_capacity)
-                .map_err(|error| format!("AMI_GetWave failed: {error}"))?,
-        ),
-        None => None,
-    };
+                .get_wave(get_wave, *clock_capacity)
+                .map_err(|error| format!("AMI_GetWave failed: {error}"))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     model
         .close()
         .map_err(|error| format!("AMI_Close failed: {error}"))?;
@@ -333,21 +372,9 @@ fn execute(
         .response()
         .impulse_response()
         .map(|values| PendingSidecar {
-            name: "init-impulse-response.f64le",
+            name: "init-impulse-response.f64le".into(),
             values: values.to_vec(),
         });
-    let get_wave_sidecars = get_wave_outcome.as_ref().map(|outcome| {
-        (
-            PendingSidecar {
-                name: "get-wave-response.f64le",
-                values: outcome.response().waveform().to_vec(),
-            },
-            PendingSidecar {
-                name: "clock-times.f64le",
-                values: outcome.response().clock_times().to_vec(),
-            },
-        )
-    });
     let executable = std::env::current_exe()
         .map_err(|error| format!("failed to locate candidate executable: {error}"))?;
     let executable_sha256 = sha256_file(&executable, "candidate executable")?;
@@ -374,21 +401,46 @@ fn execute(
     if let Some(sidecar) = init_impulse {
         sidecars.push(sidecar);
     }
-    let get_wave_attempted = get_wave_sidecars.is_some();
-    let get_wave_output = get_wave_sidecars.map(|(waveform, clocks)| {
-        let waveform_output = sidecar_output(&waveform);
-        let clock_output = sidecar_output(&clocks);
+    let get_wave_attempted = !get_wave_outcomes.is_empty();
+    let mut to_output = |index: usize, outcome: &AmiGetWaveOutcome| {
+        let suffix = if matches!(request.mode, CandidateMode::InitGetWave) {
+            String::new()
+        } else {
+            format!("-{index}")
+        };
+        let waveform = PendingSidecar {
+            name: format!("get-wave{suffix}-response.f64le"),
+            values: outcome.response().waveform().to_vec(),
+        };
+        let clocks = PendingSidecar {
+            name: format!("clock-times{suffix}.f64le"),
+            values: outcome.response().clock_times().to_vec(),
+        };
+        let output = GetWaveOutput {
+            waveform: sidecar_output(&waveform),
+            clock_times: sidecar_output(&clocks),
+            parameters_out: outcome.parameters_out().map(str::to_owned),
+        };
         sidecars.push(waveform);
         sidecars.push(clocks);
-        GetWaveOutput {
-            waveform: waveform_output,
-            clock_times: clock_output,
-            parameters_out: get_wave_outcome
-                .as_ref()
-                .and_then(|outcome| outcome.parameters_out())
-                .map(str::to_owned),
-        }
-    });
+        output
+    };
+    let get_wave_output = if matches!(request.mode, CandidateMode::InitGetWave) {
+        Some(to_output(0, &get_wave_outcomes[0]))
+    } else {
+        None
+    };
+    let get_waves_output = if matches!(request.mode, CandidateMode::InitGetWaveSequence) {
+        Some(
+            get_wave_outcomes
+                .iter()
+                .enumerate()
+                .map(|(index, outcome)| to_output(index, outcome))
+                .collect(),
+        )
+    } else {
+        None
+    };
 
     Ok(CompletedRun {
         result: CandidateResult {
@@ -402,6 +454,8 @@ fn execute(
                 init_succeeded: true,
                 get_wave_attempted,
                 close_succeeded: true,
+                get_wave_call_count: matches!(request.mode, CandidateMode::InitGetWaveSequence)
+                    .then_some(get_wave_outcomes.len()),
             },
             init: InitOutput {
                 impulse_response: init_impulse_output,
@@ -409,6 +463,7 @@ fn execute(
                 message: init_outcome.message().map(str::to_owned),
             },
             get_wave: get_wave_output,
+            get_waves: get_waves_output,
         },
         sidecars,
     })
@@ -451,7 +506,7 @@ fn write_result(output_dir: &Path, completed: &CompletedRun) -> Result<(), Strin
 
 fn write_result_staging(staging: &Path, completed: &CompletedRun) -> Result<(), String> {
     for sidecar in &completed.sidecars {
-        write_new_file(&staging.join(sidecar.name), &f64_bytes(&sidecar.values))?;
+        write_new_file(&staging.join(&sidecar.name), &f64_bytes(&sidecar.values))?;
     }
     let json = serde_json::to_vec_pretty(&completed.result)
         .map_err(|error| format!("failed to serialize candidate result: {error}"))?;

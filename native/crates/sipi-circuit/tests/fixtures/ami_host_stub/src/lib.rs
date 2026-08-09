@@ -1,7 +1,9 @@
 use std::ffi::{c_char, c_long, c_void};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 static PARAMETERS_OUT: &[u8] = b"(stub_parameters)\0";
 static INIT_MESSAGE: &[u8] = b"stub init\0";
+static GET_WAVE_CALLS: AtomicUsize = AtomicUsize::new(0);
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn AMI_Init(
@@ -25,6 +27,7 @@ pub unsafe extern "C" fn AMI_Init(
         )
     };
     samples[0] = 0.5;
+    GET_WAVE_CALLS.store(0, Ordering::SeqCst);
     unsafe {
         *ami_parameters_out = PARAMETERS_OUT.as_ptr().cast_mut().cast();
         *ami_memory_handle = std::ptr::dangling_mut::<c_void>();
@@ -47,9 +50,10 @@ pub unsafe extern "C" fn AMI_GetWave(
     let waveform = unsafe {
         std::slice::from_raw_parts_mut(wave, usize::try_from(wave_size).expect("positive size"))
     };
-    waveform[0] = 0.25;
+    let call = GET_WAVE_CALLS.fetch_add(1, Ordering::SeqCst);
+    waveform[0] = 0.25 + call as f64;
     unsafe {
-        *clock_times = 2e-12;
+        *clock_times = (2 + call) as f64 * 1e-12;
         *clock_times.add(1) = -1.0;
         *ami_parameters_out = PARAMETERS_OUT.as_ptr().cast_mut().cast();
     }

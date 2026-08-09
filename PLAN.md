@@ -431,6 +431,14 @@ reference; M5B is next.
 
 ### 9.3 M5B：PyBERT Link
 
+M5B-04 supplementary stateful boundary (pending this slice's audit): `ee7b5f5`
+adds candidate-only request v2 for Init-only or an ordered GetWave sequence on
+one `sipi-ami` model handle. Its external Windows report covers the authorized
+`example_rx` fixture's Init-only, one-block, and different-length two-block
+sequence against retained PyAMI with strict `c_long == 1` and byte-exact raw
+outputs. It changes neither v1, `engine.lock`, nor any default/auto/Web/GUI/
+optimizer route, and is not general AMI or Link parity.
+
 | ID | 任务 | 说明 |
 | --- | --- | --- |
 | M5B-01 | 继续现有 Task 12/13 | 完整 result parity、RSS、nightly、故障演练；按 2026-08-07 收编结论将 Phase 1-3（native Web result contract parity → Rust 成默认 → web 指标改接 native）纳入本任务验收，配套执行路线见 Py-bert-agent 仓库 `docs/superpowers/plans/2026-08-07-pybert-core-rust-migration.md`。`0c90fbc`/`90679b9`/`9d249ea` 已形成 source acceptance 与 Windows reliability 观测包，`e438f5e` 新增 35-day Windows nightly artifact pipeline（source acceptance + 5-repeat E2E evidence；可选 SHA-pinned HTTP(S) wheel）。`c045d8e` 在新的 clean source worktree 增加 external staged-wheel SHA pre-install gate：fresh venv/`-I` import 成功，单字节损坏在 venv/pip 前拒绝（`installer_invoked=false`）；OMP `msg_677f77326ebf` 为 0 P1 / 0 P2。`0e6d3ad` 再增加 Windows-only locked Agent-Spice real-child output-commit I/O drill：仅从 `f6ba031` Git blob 物化 `block_2.rfm`，先以 lock-pinned `111ff6…` executable 作正常控制请求，再经既有 `AgentSpiceChannelRunner` 将两个输出定向到“父路径为文件”的不可提交位置；实测 `os error 3` / exit 1 被 fail-closed 传播，`response_published=false`。同时固定 subprocess stderr 为 UTF-8 replacement decoding，避免故障路径因本地编码而丢失诊断。`8eb62be` 另增加 Windows-only、`task13-fault-injection` feature-gated 的受限 Rust worker：外部构建 manifest 强绑定 source/Cargo lock/toolchain/EXE SHA，Job Object 在 stdin `go` 放行前施加 64 MiB process/job memory、单 process、10 s wall timeout 与 kill-on-close；真实 replay 分别得到 panic exit 101 和被 64 MiB limit 拦截的 128 MiB allocation（`memory_limit_observed=true`），无 success artifact。`b6fd1ef` 新增 production `pybert_native` wheel 的 Windows memory-containment drill：SHA-verified release wheel 与 `uv.lock` 中 hash-pinned NumPy wheel 安装到 fresh venv；`-I` base interpreter 只从该 temporary venv 的 site-packages 加载 public native API，固定已批准 RLGC request。child 在 `go` 前进入 active-process=1、pre-workload process/job memory-capped Job；真实外置报告以 wheel `08438587…` 得到 control peak 527 MiB、fault limit 15.5 MiB、fault peak 15.3 MiB、nonzero `3221226505`、无 success artifact。OpenCode `msg_e1e196e7147e` 为 0 P1 / 0 P2（P3：显式 opt-in 与按 baseline 记录 fault limit）；按用户“任一审计可继续”决定，OMP 请求 `msg_506a1680f3b9` 仍 pending，恢复后补记。上述均**不**替代 Task 13：nightly 历史尚未积累、端到端 RSS/性能预算尚未批准或达标、真实远端 wheel、production native-extension panic/OOM parity 仍待闭环；它们也不证明 RFM 数值、Link parity、timeout/cancel 或通用 Agent-Spice 可靠性。 |
