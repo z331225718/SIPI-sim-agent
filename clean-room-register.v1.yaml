@@ -121,6 +121,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: []
+  - id: p2-tran-package-foundation-spec-v1
+    kind: independent_spec
+    content_sha256: 598e19b3625f1b029413abc42ad9361e9a779126b161ed6bb1dc104deed9e0d8
+    provenance:
+      source_ref: docs/clean-room/specs/p2-tran-package-foundation.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: []
   - id: agent-spice-license-2cc92316
     kind: mit_source
     content_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
@@ -157,4 +165,13 @@ scopes:
       implementer: [p2-tran-provenance-preflight-spec-v1]
       comparator: []
       auditor: [p2-tran-provenance-preflight-spec-v1, agent-spice-license-2cc92316]
+  - id: p2-tran-package-foundation-v1
+    paths: [crates/sipi-tran/**]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p2-tran-package-foundation-spec-v1]
+      implementer: [p2-tran-package-foundation-spec-v1]
+      comparator: []
+      auditor: [p2-tran-package-foundation-spec-v1]
 attestations: []

@@ -1,0 +1,11 @@
+[package]
+name = "sipi-tran"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Unsupported TRAN package boundary pending an accepted profile."
+
+[lints]
+workspace = true

@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 2003f0addcd7001c9db7205cdcef4d6b8b740a0f515f892d1b8c93fb8e1a92a0
+  tracked_paths_sha256: b3b018c18b6cf6f6fa2f61dffc598eeec368dad6f8a8ff7d93ca134581a728c2
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -210,6 +210,18 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-runtime/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-tran/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-tran/src/lib.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -642,6 +654,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p1-windows-locked-build-gate.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p2-tran-package-foundation.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

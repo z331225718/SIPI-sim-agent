@@ -6,6 +6,7 @@ members = [
   "crates/sipi-layout",
   "crates/sipi-pipeline",
   "crates/sipi-runtime",
+  "crates/sipi-tran",
   "crates/sipi-types",
 ]
 default-members = ["crates/sipi-cli"]
