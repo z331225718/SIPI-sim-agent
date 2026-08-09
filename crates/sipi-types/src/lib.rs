@@ -265,7 +265,6 @@ impl<U> Axis<U> {
     pub fn is_uniform(&self) -> bool {
         matches!(&self.0, AxisRepresentation::Uniform { .. })
     }
-
 }
 
 /// A shape-checked dense complex tensor without dimension labels or layout semantics.

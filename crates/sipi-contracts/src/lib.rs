@@ -10,8 +10,8 @@ use std::{error::Error, fmt};
 use schemars::{JsonSchema, schema_for};
 use serde::{Deserialize, Serialize};
 use sipi_types::{
-    Axis, Complex64, ComplexTensor, Hertz, PortId, PortList, Seconds, Spectrum, TypeError,
-    Volts, Waveform,
+    Axis, Complex64, ComplexTensor, Hertz, PortId, PortList, Seconds, Spectrum, TypeError, Volts,
+    Waveform,
 };
 
 pub const CAPABILITIES_SCHEMA: &str = "sipi.capabilities.v1";
