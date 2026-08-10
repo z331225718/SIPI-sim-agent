@@ -285,6 +285,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
   - [x] **P4A-04d** two-fresh-custody external compare：oracle-only orchestrator 将两份 external-only asset materialization 分别交给独立 raw-table observer 与 test-only Rust runner；仅保留 hashes/aggregate metrics 的外部报告。两次 fresh custody 的 asset/selector/table/raw/product identity 一致，六点 current comparison 的 max abs/rel error 均为 0。Orca `msg_056ba9347723` 的唯一 P1（stale product-boundary inventory）已在本 acceptance update 修复；无 P2。见 [evidence](docs/baselines/p4a-ibis-input-typ-static-compare-evidence.v1.yaml)。
   - [x] **P4A-04e** quasi-static Input clamp + `C_comp` constitutive core：`sipi-ibis` 在已验收 DC tables 之上接收显式 SIG/REF 电压导数，计算 memoryless clamp currents 与 `C_comp*dV/dt`；无 time step/state/integration、supply derivation、PVT/package/V-T/ramp/AMI/CLI 或 external transient parity。Orca `msg_dfb46e7cfa64` 审计 0 P1/0 P2。该连续扩展不扩大 P4A-04d 的 DC acceptance，见 [审计记录](docs/baselines/audits/2026-08-11-p4a-ibis-quasi-static-clamp-ccomp.md)。
 - [ ] **P4A-05** 建立公开/自有 fixture、malformed/unsupported matrix 和 oracle compare。
+  - [x] **P4A-05a** selected Input/TYP conformance + unsupported matrix：版本化 matrix 统一记录 external-only accepted DC scope、产品自有 parser/decoder/evaluator/continuous C_comp 与 differential R-C self-test scopes，以及 non-Input/PVT/package/network/AMI/file/CLI/default/general-certification 的拒绝或未评估状态。matrix verifier 拒绝无证据的 promotion、外部路径和 unsupported route；04d evidence 仅作为 DC identity index，不扩大 transient 或 generic IBIS claim。
 - [ ] **P4A-06** 接入 `sipi ibis inspect`，解析成功与电气行为认证分开报告。
 
 ### 10.2 P4B：AMI parser/host/semantics

@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 4111e80984c3894b8fc043d1d18443e0cfe7425740647acadd537447008c2026
+  tracked_paths_sha256: cb94a867ba125b81cc4a40e2ad2063c47012410b4c1a33cd4fa724fa4dbd4497
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1104,6 +1104,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p4a-electrical-ibis-discovery.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p4a-ibis-conformance-matrix.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -6257,6 +6263,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p4a_ibis_conformance_matrix.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p4a_ibis_example_rx_candidate_inventory.py:
       rule: migration-tools
       class: migration_only
@@ -6564,6 +6576,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p4a_ibis71_behavior_scope_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p4a_ibis_conformance_matrix.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

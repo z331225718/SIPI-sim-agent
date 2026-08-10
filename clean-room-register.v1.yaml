@@ -924,6 +924,15 @@ scopes:
       implementer: []
       comparator: [p4a-ibis-input-typ-static-comparator-spec-v1, p4a-ibis-input-typ-static-profile-spec-v1, p4a-official-pure-ibis-external-asset-v1]
       auditor: [p4a-ibis-input-typ-static-comparator-spec-v1, p4a-ibis-input-typ-static-profile-spec-v1, p4a-official-pure-ibis-external-asset-v1]
+  - id: p4a-ibis-conformance-matrix-v1
+    paths: [docs/baselines/p4a-ibis-conformance-matrix.v1.yaml, tools/verify_p4a_ibis_conformance_matrix.py, tools/test_verify_p4a_ibis_conformance_matrix.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p4a-ibis-input-typ-static-profile-spec-v1, p4a-ibis-input-typ-static-comparator-spec-v1]
+      implementer: []
+      comparator: [p4a-ibis-input-typ-static-profile-spec-v1, p4a-ibis-input-typ-static-comparator-spec-v1]
+      auditor: [p4a-ibis-input-typ-static-profile-spec-v1, p4a-ibis-input-typ-static-comparator-spec-v1]
   - id: p5-agent-com-git-object-preflight-v1
     paths: [docs/baselines/p5-agent-com-git-object-preflight.v1.yaml, docs/clean-room/specs/p5-agent-com-git-object-preflight.v1.md, tools/verify_p5_agent_com_git_object_preflight.py, tools/test_verify_p5_agent_com_git_object_preflight.py]
     state: planned

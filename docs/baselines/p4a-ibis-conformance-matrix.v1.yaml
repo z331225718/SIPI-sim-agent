@@ -1,0 +1,93 @@
+schema: sipi.p4a-ibis-conformance-matrix.v1
+status: boundary_recorded
+selected_external_profile:
+  id: ibis-org-sample1-input-typ-static-v2
+  charter_path: docs/baselines/p4a-ibis-input-typ-static-acceptance.v1.yaml
+  charter_sha256: c2f8a900e217a525f0959836a53538501802524ac72ebc7c7fef06e8a3f0fcda
+  asset_sha256: 46c53a49a31dea27769f0dddddadea72f03f1f956fb8e60aeaa24f83a7201b95
+  selector_sha256: 0be75aff11736ab3fee529275984551c241433d189ba1a21bad1b0e0e70fd2ff
+  external_report_sha256: 5814c96e947a2bc059e1fb76e2d44f48e78f80d837bc2ac5506896892c6dcf32
+  custody: external_only
+entries:
+  - id: selected-input-typ-static-dc-clamp
+    scope: six fixed static probes for the selected external Input/TYP model ground-plus-power clamps
+    status: external_profile_accepted
+    entry_points: [decode_selected_dc_clamps_v1, evaluate_dc_clamps_v1]
+    evidence_refs: [docs/baselines/p4a-ibis-input-typ-static-acceptance.v1.yaml, docs/baselines/p4a-ibis-input-typ-static-compare-evidence.v1.yaml]
+    non_claim: This is DC-only evidence and does not certify C_comp transient behavior or general IBIS compatibility.
+  - id: bounded-structural-parser
+    scope: bounded ASCII physical lines comments bracketed keywords and opaque data tokens
+    status: implemented_self_tested
+    entry_points: [parse_structural_v1]
+    evidence_refs: [docs/clean-room/specs/p4a-ibis-structural-parser-foundation.v1.md, crates/sipi-ibis/src/lib.rs::tests::rejects_encoding_nul_line_and_record_limit_failures]
+    non_claim: Unknown keyword content remains structural and is not semantic IBIS support.
+  - id: typed-semantic-envelope
+    scope: lexical version component model declaration and block ownership only
+    status: implemented_self_tested
+    entry_points: [build_semantic_envelope_v1]
+    evidence_refs: [docs/clean-room/specs/p4a-ibis-typed-semantic-envelope-foundation.v1.md, crates/sipi-ibis/src/lib.rs::tests::rejects_invalid_or_ambiguous_envelope_declarations]
+    non_claim: The envelope does not validate a complete IBIS document.
+  - id: selected-input-typ-decoder
+    scope: one caller-selected Input Typical model with one C_comp and one ground and power clamp table
+    status: implemented_self_tested
+    entry_points: [decode_selected_dc_clamps_v1]
+    evidence_refs: [docs/clean-room/specs/p4a-ibis-selected-dc-clamp-decoder.v1.md, crates/sipi-ibis/src/lib.rs::tests::rejects_duplicate_or_algorithmic_selected_profile_sections]
+    non_claim: No model selector is embedded in the product library and no external asset is a product fixture.
+  - id: dc-clamp-evaluator
+    scope: finite strictly increasing typed I-V tables with linear in-domain interpolation and no extrapolation
+    status: implemented_self_tested
+    entry_points: [evaluate_dc_clamps_v1]
+    evidence_refs: [docs/clean-room/specs/p4a-ibis-dc-clamp-evaluator.v1.md, crates/sipi-ibis/src/lib.rs::tests::rejects_invalid_tables_and_probe_domains_without_partial_output]
+    non_claim: This primitive does not select PVT or solve a terminal network.
+  - id: quasi-static-clamp-ccomp
+    scope: memoryless typed clamp currents plus caller-supplied SIG-to-REF derivative through ideal C_comp
+    status: implemented_self_tested
+    entry_points: [evaluate_quasi_static_clamps_v1]
+    evidence_refs: [docs/clean-room/specs/p4a-ibis-quasi-static-clamp-ccomp.v1.md, crates/sipi-ibis/src/lib.rs::tests::quasi_static_boundary_rejects_invalid_inputs_and_dc_domain_first]
+    non_claim: This is not transient integration or external transient parity.
+  - id: selected-differential-rc-load
+    scope: fixed continuous P/N/REF 100 ohm plus per-leg 1 pF constitutive relation
+    status: implemented_self_tested
+    entry_points: [evaluate_selected_differential_rc_load_v1]
+    evidence_refs: [docs/clean-room/specs/p4a-selected-differential-rc-load.v1.md, crates/sipi-rx-load/src/lib.rs::tests::common_mode_ramp_preserves_each_leg_capacitor_and_ref_current]
+    non_claim: This is not a channel termination solve or an IBIS composition.
+  - id: non-input-models
+    scope: Output IO and Terminator model electrical semantics
+    status: unsupported
+    entry_points: []
+    evidence_refs: [crates/sipi-ibis/src/lib.rs::tests::rejects_selected_profile_scope_mismatches_and_malformed_tables]
+    non_claim: Only the selected Input model decoder exists.
+  - id: non-typical-corners-and-pvt
+    scope: Min Max process voltage temperature and supply derivation
+    status: unsupported
+    entry_points: []
+    evidence_refs: [docs/clean-room/specs/p4a-ibis-selected-dc-clamp-decoder.v1.md]
+    non_claim: The selected decoder admits Typical only and does not infer missing values.
+  - id: package-pin-vt-ramp-network
+    scope: package pin V-T ramp terminal network and termination solve
+    status: unsupported
+    entry_points: []
+    evidence_refs: [docs/clean-room/specs/p4a-ibis-quasi-static-clamp-ccomp.v1.md]
+    non_claim: No product entry point accepts or solves these sections.
+  - id: ami-and-algorithmic-model
+    scope: Algorithmic Model AMI DLL ABI and runtime composition
+    status: unsupported
+    entry_points: []
+    evidence_refs: [crates/sipi-ibis/src/lib.rs::tests::rejects_duplicate_or_algorithmic_selected_profile_sections]
+    non_claim: Algorithmic Model attachment rejects in the selected pure-IBIS decoder.
+  - id: file-url-cli-default-route
+    scope: file URL external asset CLI and default backend routing
+    status: unsupported
+    entry_points: []
+    evidence_refs: [docs/clean-room/specs/p4a-ibis-quasi-static-clamp-ccomp.v1.md]
+    non_claim: Product APIs are in-memory only; external comparison tools are migration-only.
+  - id: generic-ibis-certification
+    scope: complete syntax semantic or physical compliance certification
+    status: not_assessed
+    entry_points: []
+    evidence_refs: [docs/clean-room/specs/p4a-ibis-structural-parser-foundation.v1.md]
+    non_claim: No finite selected-profile evidence can certify general IBIS behavior.
+non_claims:
+  - This matrix is a fail-closed boundary record, not a release or MIT promotion decision.
+  - External asset identity and comparison evidence remain external-only and are not product fixtures.
+  - No entry creates a parser file route CLI route AMI runtime or channel termination solver.
