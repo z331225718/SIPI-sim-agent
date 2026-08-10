@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: cb94a867ba125b81cc4a40e2ad2063c47012410b4c1a33cd4fa724fa4dbd4497
+  tracked_paths_sha256: 3be474f378c6358620aa8dafe52ee2ee106c7de5d3d0f25e8345cef6943a7909
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -852,6 +852,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-rfm-readiness-evidence-anchor.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-11-p4a-ibis-conformance-matrix.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
