@@ -1398,6 +1398,79 @@ pub fn deterministic_json<T: Serialize>(value: &T) -> Result<Vec<u8>, ContractEr
     serde_json::to_vec(value).map_err(|error| ContractError::Json(error.to_string()))
 }
 
+/// Returns a minimal, product-owned request for an admitted stdin command.
+/// It contains no filesystem path, external asset, or computed result.
+pub fn product_example_request_json_v1(command_id: &str) -> Result<Option<Vec<u8>>, ContractError> {
+    match command_id {
+        "validate" => deterministic_json(&ValidationRequestV1 {
+            schema: VALIDATION_REQUEST_SCHEMA.to_owned(),
+            request_id: "example-validation-1".to_owned(),
+            subject: WireWaveformV1 {
+                schema: "sipi.contract.v1".to_owned(),
+                axis: WireAxisV1::Explicit {
+                    values: vec![0.0, 1.0],
+                },
+                samples: vec![0.0, 1.0],
+            },
+        })
+        .map(Some),
+        "tran.run" => deterministic_json(&TranRcPulseRequestV1 {
+            schema: TRAN_RC_PULSE_REQUEST_SCHEMA.to_owned(),
+            request_id: "example-rc-pulse-1".to_owned(),
+            resistance_ohms: 1_000.0,
+            capacitance_farads: 1.0e-6,
+            initial_voltage_out_volts: 0.0,
+            output_times_seconds: vec![0.0, 1.0e-6, 2.0e-6, 3.0e-6],
+            pulse: TranPulseV1 {
+                voltage_low_volts: 0.0,
+                voltage_high_volts: 1.0,
+                delay_seconds: 1.0e-6,
+                rise_seconds: 1.0e-9,
+                fall_seconds: 1.0e-9,
+                width_seconds: 1.0e-5,
+                period_seconds: 2.0e-5,
+            },
+        })
+        .map(Some),
+        "link.run" => deterministic_json(&WireLinkCausalFirRequestV1 {
+            schema: LINK_CAUSAL_FIR_REQUEST_SCHEMA.to_owned(),
+            request_id: "example-causal-fir-1".to_owned(),
+            plan: WireLinkPlanV1 {
+                schema: LINK_PLAN_SCHEMA.to_owned(),
+                timebase: WireUniformTimebaseV1 {
+                    start_seconds: 0.0,
+                    sample_interval_seconds: 1.0,
+                    sample_count: 2,
+                },
+                tx: WireTxStageV1::DirectLaunch,
+                stimulus_volts: vec![1.0, 2.0],
+                channel: WireLinkChannelV1::CausalFir {
+                    sample_interval_seconds: 1.0,
+                    gain_v_per_v: vec![3.0, 4.0],
+                },
+                rx: WireRxStagesV1 {
+                    ctle: WireCtleStageV1::Bypass,
+                    ffe: WireFfeStageV1::Bypass,
+                },
+            },
+            limits: WireLinkExecutionLimitsV1 {
+                max_output_samples: 8,
+                max_multiply_accumulates: 8,
+            },
+        })
+        .map(Some),
+        "ibis.inspect" => deterministic_json(&WireIbisInspectRequestV1 {
+            schema: IBIS_INSPECT_REQUEST_SCHEMA.to_owned(),
+            source: WireIbisInspectSourceV1 {
+                encoding: "utf-8".to_owned(),
+                text: "[IBIS Ver] 7.1\n[Model] product_example\n".to_owned(),
+            },
+        })
+        .map(Some),
+        _ => Ok(None),
+    }
+}
+
 pub fn capability_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(CapabilityCatalogV1))
 }
@@ -1755,6 +1828,13 @@ mod tests {
             link_plan_schema_json().expect("schema"),
             &baseline[..baseline.len() - 1]
         );
+    }
+
+    #[test]
+    fn tracked_link_causal_fir_request_schema_baseline_is_exactly_the_registered_export() {
+        let baseline = include_bytes!("../schemas/sipi.link.causal-fir-request.v1.schema.json");
+        let exported = link_causal_fir_request_schema_json().expect("schema");
+        assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
     }
 
     #[test]

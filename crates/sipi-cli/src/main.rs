@@ -8,13 +8,15 @@ use std::{
     time::Duration,
 };
 
+use sha2::{Digest, Sha256};
 use sipi_contracts::{
     CAPABILITIES_SCHEMA, CapabilityCatalogV1, LINK_PLAN_SCHEMA, PLANNED_DOMAINS, RULE_LEDGER_V1,
     capability_schema_json, deterministic_json, ibis_inspect_request_schema_json,
     link_causal_fir_request_schema_json, link_plan_schema_json, parse_ibis_inspect_request_v1,
-    parse_link_causal_fir_request_v1, parse_tran_rc_pulse_request_v1, project_plan_schema_json,
-    receiver_input_schema_json, receiver_semantics_schema_json, tran_rc_pulse_request_schema_json,
-    validate_request_v1, validation_request_schema_json,
+    parse_link_causal_fir_request_v1, parse_tran_rc_pulse_request_v1,
+    product_example_request_json_v1, project_plan_schema_json, receiver_input_schema_json,
+    receiver_semantics_schema_json, tran_rc_pulse_request_schema_json, validate_request_v1,
+    validation_request_schema_json,
 };
 use sipi_ibis::{IbisInspectServiceV1, ParseLimitsV1};
 use sipi_link::{ConvolutionLimitsV1, convolve_causal_fir_v1};
@@ -25,6 +27,7 @@ use sipi_types::AxisView;
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const TARGET: &str = "x86_64-pc-windows-msvc";
 const COMMAND_MANIFEST_SCHEMA: &str = "sipi.command-manifest.v1";
+const COMMAND_PROTOCOL_CATALOG_SCHEMA: &str = "sipi.command-protocol-catalog.v1";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum CommandAvailabilityV1 {
@@ -51,6 +54,15 @@ struct CommandDescriptorV1 {
     response_schema: Option<&'static str>,
     unavailable_reason: Option<&'static str>,
     nonclaim: &'static str,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct CommandProtocolProfileV1 {
+    command_id: &'static str,
+    example_id: Option<&'static str>,
+    required_options: &'static [&'static str],
+    successful_exit: i32,
+    diagnostic_contract: &'static str,
 }
 
 const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
@@ -93,6 +105,26 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         response_schema: Some(COMMAND_MANIFEST_SCHEMA),
         unavailable_reason: None,
         nonclaim: "command_discovery_only",
+    },
+    CommandDescriptorV1 {
+        id: "protocols",
+        route: &["protocols"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "none",
+        request_schema: None,
+        response_schema: Some(COMMAND_PROTOCOL_CATALOG_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "protocol_discovery_only",
+    },
+    CommandDescriptorV1 {
+        id: "example",
+        route: &["example"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "none",
+        request_schema: None,
+        response_schema: None,
+        unavailable_reason: None,
+        nonclaim: "example_is_not_a_result_or_artifact",
     },
     CommandDescriptorV1 {
         id: "schema",
@@ -223,6 +255,93 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         response_schema: None,
         unavailable_reason: Some("artifact_report_viewer_not_implemented"),
         nonclaim: "no_artifact_or_provenance_viewer",
+    },
+];
+
+const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
+    CommandProtocolProfileV1 {
+        command_id: "version",
+        example_id: None,
+        required_options: &[],
+        successful_exit: 0,
+        diagnostic_contract: "no_stdin_or_diagnostics_on_success",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "doctor",
+        example_id: None,
+        required_options: &[],
+        successful_exit: 0,
+        diagnostic_contract: "no_stdin_or_diagnostics_on_success",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "capabilities",
+        example_id: None,
+        required_options: &[],
+        successful_exit: 0,
+        diagnostic_contract: "no_stdin_or_diagnostics_on_success",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "commands",
+        example_id: None,
+        required_options: &[],
+        successful_exit: 0,
+        diagnostic_contract: "no_stdin_or_diagnostics_on_success",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "protocols",
+        example_id: None,
+        required_options: &[],
+        successful_exit: 0,
+        diagnostic_contract: "no_stdin_or_diagnostics_on_success",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "example",
+        example_id: None,
+        required_options: &[],
+        successful_exit: 0,
+        diagnostic_contract: "example_not_applicable_to_static_discovery",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "schema",
+        example_id: None,
+        required_options: &[],
+        successful_exit: 0,
+        diagnostic_contract: "no_stdin_or_diagnostics_on_success",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "validate",
+        example_id: Some("product-owned-minimal-v1"),
+        required_options: &[],
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "inspect.self",
+        example_id: None,
+        required_options: &[],
+        successful_exit: 0,
+        diagnostic_contract: "no_stdin_or_diagnostics_on_success",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "ibis.inspect",
+        example_id: Some("product-owned-minimal-v1"),
+        required_options: &[],
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "tran.run",
+        example_id: Some("product-owned-minimal-v1"),
+        required_options: &["--artifact-root", "--artifact-id"],
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "link.run",
+        example_id: Some("product-owned-minimal-v1"),
+        required_options: &["--artifact-root", "--artifact-id"],
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
 ];
 
@@ -629,6 +748,43 @@ fn command_manifest_is_valid(manifest: &[CommandDescriptorV1]) -> bool {
     })
 }
 
+fn command_protocol_profiles_are_valid(
+    manifest: &[CommandDescriptorV1],
+    profiles: &[CommandProtocolProfileV1],
+) -> bool {
+    manifest
+        .iter()
+        .filter(|descriptor| descriptor.availability == CommandAvailabilityV1::Available)
+        .all(|descriptor| {
+            let matches = profiles
+                .iter()
+                .filter(|profile| profile.command_id == descriptor.id)
+                .collect::<Vec<_>>();
+            matches.len() == 1
+                && matches[0].successful_exit == 0
+                && matches[0]
+                    .required_options
+                    .iter()
+                    .all(|option| option.starts_with("--"))
+                && if descriptor.transport == "stdin_json_v1" {
+                    descriptor.request_schema.is_some()
+                        && matches[0].example_id.is_some()
+                        && product_example_request_json_v1(descriptor.id)
+                            .ok()
+                            .flatten()
+                            .is_some()
+                } else {
+                    matches[0].example_id.is_none()
+                }
+        })
+        && profiles.iter().all(|profile| {
+            manifest.iter().any(|descriptor| {
+                descriptor.id == profile.command_id
+                    && descriptor.availability == CommandAvailabilityV1::Available
+            })
+        })
+}
+
 fn available_route_has_handler(route: &[&str]) -> bool {
     matches!(
         route,
@@ -636,6 +792,8 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["doctor"]
             | ["capabilities"]
             | ["commands"]
+            | ["protocols"]
+            | ["example"]
             | ["schema"]
             | ["validate"]
             | ["inspect", "self"]
@@ -688,6 +846,136 @@ fn command_manifest_json() -> String {
     format!("{{\"schema\":\"{COMMAND_MANIFEST_SCHEMA}\",\"commands\":[{commands}]}}")
 }
 
+fn sha256_hex(bytes: &[u8]) -> String {
+    let digest = Sha256::digest(bytes);
+    let mut result = String::with_capacity(digest.len() * 2);
+    for byte in digest {
+        use std::fmt::Write;
+        let _ = write!(&mut result, "{byte:02x}");
+    }
+    result
+}
+
+fn schema_bytes(id: &str) -> Result<Option<Vec<u8>>, sipi_contracts::ContractError> {
+    if id == CAPABILITIES_SCHEMA {
+        capability_schema_json().map(Some)
+    } else if id == sipi_contracts::VALIDATION_REQUEST_SCHEMA {
+        validation_request_schema_json().map(Some)
+    } else if id == sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA {
+        tran_rc_pulse_request_schema_json().map(Some)
+    } else if id == LINK_PLAN_SCHEMA {
+        link_plan_schema_json().map(Some)
+    } else if id == sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA {
+        link_causal_fir_request_schema_json().map(Some)
+    } else if id == sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA {
+        ibis_inspect_request_schema_json().map(Some)
+    } else if id == sipi_contracts::PROJECT_PLAN_SCHEMA {
+        project_plan_schema_json().map(Some)
+    } else if id == sipi_contracts::RECEIVER_INPUT_SCHEMA {
+        receiver_input_schema_json().map(Some)
+    } else if id == sipi_contracts::RECEIVER_SEMANTICS_SCHEMA {
+        receiver_semantics_schema_json().map(Some)
+    } else {
+        Ok(None)
+    }
+}
+
+fn command_protocol_catalog_json() -> Result<String, sipi_contracts::ContractError> {
+    let profiles = COMMAND_PROTOCOL_PROFILES_V1
+        .iter()
+        .map(|profile| {
+            let descriptor = COMMAND_MANIFEST_V1
+                .iter()
+                .find(|descriptor| descriptor.id == profile.command_id)
+                .expect("validated profile refers to a command");
+            let request_schema = descriptor
+                .request_schema
+                .map_or_else(|| "null".to_owned(), |value| format!("\"{value}\""));
+            let request_schema_sha256 = match descriptor.request_schema {
+                Some(id) => schema_bytes(id)
+                    .expect("registered request schema serializes")
+                    .map_or_else(|| "null".to_owned(), |bytes| format!("\"{}\"", sha256_hex(&bytes))),
+                None => "null".to_owned(),
+            };
+            let response_schema = descriptor
+                .response_schema
+                .map_or_else(|| "null".to_owned(), |value| format!("\"{value}\""));
+            let example_id = profile
+                .example_id
+                .map_or_else(|| "null".to_owned(), |value| format!("\"{value}\""));
+            let options = profile
+                .required_options
+                .iter()
+                .map(|option| format!("\"{option}\""))
+                .collect::<Vec<_>>()
+                .join(",");
+            format!(
+                "{{\"command_id\":\"{}\",\"transport\":\"{}\",\"request_schema\":{request_schema},\"request_schema_sha256\":{request_schema_sha256},\"response_schema\":{response_schema},\"example_id\":{example_id},\"required_options\":[{options}],\"successful_exit\":{},\"diagnostic_contract\":\"{}\"}}",
+                profile.command_id,
+                descriptor.transport,
+                profile.successful_exit,
+                profile.diagnostic_contract,
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    Ok(format!(
+        "{{\"schema\":\"{COMMAND_PROTOCOL_CATALOG_SCHEMA}\",\"profiles\":[{profiles}]}}"
+    ))
+}
+
+fn command_example(id: &str) -> Response {
+    let Some(descriptor) = COMMAND_MANIFEST_V1
+        .iter()
+        .find(|descriptor| descriptor.id == id)
+    else {
+        return error(
+            64,
+            "unknown_command_example",
+            "command example is not registered",
+        );
+    };
+    if descriptor.availability != CommandAvailabilityV1::Available
+        || descriptor.transport != "stdin_json_v1"
+    {
+        return error(
+            4,
+            "example_not_applicable",
+            "command does not accept a stdin example",
+        );
+    }
+    let Some(profile) = COMMAND_PROTOCOL_PROFILES_V1
+        .iter()
+        .find(|profile| profile.command_id == id)
+    else {
+        return error(
+            6,
+            "internal_contract_error",
+            "command protocol profile is missing",
+        );
+    };
+    match product_example_request_json_v1(id) {
+        Ok(Some(bytes)) => match String::from_utf8(bytes) {
+            Ok(request) => success(format!(
+                "{{\"schema\":\"sipi.command-example.v1\",\"command_id\":\"{id}\",\"example_id\":\"{}\",\"request_schema\":\"{}\",\"request\":{request}}}",
+                profile
+                    .example_id
+                    .expect("validated stdin profile has an example"),
+                descriptor
+                    .request_schema
+                    .expect("validated stdin descriptor has a request schema"),
+            )),
+            Err(_) => error(6, "internal_contract_error", "example request is not UTF-8"),
+        },
+        Ok(None) => error(6, "internal_contract_error", "example request is missing"),
+        Err(_) => error(
+            6,
+            "internal_contract_error",
+            "example request is unavailable",
+        ),
+    }
+}
+
 fn unavailable(descriptor: &CommandDescriptorV1) -> Response {
     let reason = descriptor
         .unavailable_reason
@@ -704,7 +992,12 @@ fn unavailable(descriptor: &CommandDescriptorV1) -> Response {
 
 impl CommandService {
     fn execute(arguments: &[String]) -> Response {
-        if !command_manifest_is_valid(COMMAND_MANIFEST_V1) {
+        if !command_manifest_is_valid(COMMAND_MANIFEST_V1)
+            || !command_protocol_profiles_are_valid(
+                COMMAND_MANIFEST_V1,
+                COMMAND_PROTOCOL_PROFILES_V1,
+            )
+        {
             return error(6, "internal_contract_error", "command manifest is invalid");
         }
         if let Some(descriptor) = descriptor_for_route(arguments)
@@ -715,6 +1008,24 @@ impl CommandService {
         match arguments {
             [command, format] if command == "commands" && format == "--json" => {
                 success(command_manifest_json())
+            }
+            [command, format] if command == "protocols" && format == "--json" => {
+                match command_protocol_catalog_json() {
+                    Ok(catalog) => success(catalog),
+                    Err(_) => error(
+                        6,
+                        "internal_contract_error",
+                        "command protocol catalog is unavailable",
+                    ),
+                }
+            }
+            [command, format] if command == "example" && format == "--json" => error(
+                4,
+                "example_not_applicable",
+                "a stdin command id is required for an example",
+            ),
+            [command, id, format] if command == "example" && format == "--json" => {
+                command_example(id)
             }
             [command] if command == "--version" || command == "version" => success(version_json()),
             [command, format] if command == "version" && format == "--json" => {
@@ -878,43 +1189,32 @@ fn doctor_json() -> String {
 fn schema_list_json() -> String {
     format!(
         "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"]}}",
-        sipi_contracts::VALIDATION_REQUEST_SCHEMA,
-        sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA,
         sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA,
         LINK_PLAN_SCHEMA,
         sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA,
         sipi_contracts::PROJECT_PLAN_SCHEMA,
         sipi_contracts::RECEIVER_INPUT_SCHEMA,
         sipi_contracts::RECEIVER_SEMANTICS_SCHEMA,
+        sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA,
+        sipi_contracts::VALIDATION_REQUEST_SCHEMA,
     )
 }
 
 fn schema_show(id: &str) -> Response {
-    let bytes = if id == CAPABILITIES_SCHEMA {
-        capability_schema_json()
-    } else if id == sipi_contracts::VALIDATION_REQUEST_SCHEMA {
-        validation_request_schema_json()
-    } else if id == sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA {
-        tran_rc_pulse_request_schema_json()
-    } else if id == LINK_PLAN_SCHEMA {
-        link_plan_schema_json()
-    } else if id == sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA {
-        link_causal_fir_request_schema_json()
-    } else if id == sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA {
-        ibis_inspect_request_schema_json()
-    } else if id == sipi_contracts::PROJECT_PLAN_SCHEMA {
-        project_plan_schema_json()
-    } else if id == sipi_contracts::RECEIVER_INPUT_SCHEMA {
-        receiver_input_schema_json()
-    } else if id == sipi_contracts::RECEIVER_SEMANTICS_SCHEMA {
-        receiver_semantics_schema_json()
-    } else {
-        return error(64, "unknown_schema", "schema is not registered");
+    let bytes = match schema_bytes(id) {
+        Ok(Some(bytes)) => bytes,
+        Ok(None) => return error(64, "unknown_schema", "schema is not registered"),
+        Err(_) => {
+            return error(
+                70,
+                "internal_contract_error",
+                "registered schema is unavailable",
+            );
+        }
     };
-    match bytes.and_then(|bytes| {
-        String::from_utf8(bytes)
-            .map_err(|_| sipi_contracts::ContractError::Json("schema is not UTF-8".to_owned()))
-    }) {
+    match String::from_utf8(bytes)
+        .map_err(|_| sipi_contracts::ContractError::Json("schema is not UTF-8".to_owned()))
+    {
         Ok(schema) => success(schema),
         Err(_) => error(
             70,
@@ -954,7 +1254,9 @@ fn validate_self(schema: Option<&str>) -> Response {
         && link_causal_fir_request_schema_json().is_ok()
         && project_plan_schema_json().is_ok()
         && receiver_input_schema_json().is_ok()
-        && receiver_semantics_schema_json().is_ok();
+        && receiver_semantics_schema_json().is_ok()
+        && command_protocol_profiles_are_valid(COMMAND_MANIFEST_V1, COMMAND_PROTOCOL_PROFILES_V1)
+        && command_protocol_catalog_json().is_ok();
     if valid {
         success(
             "{\"schema\":\"sipi.cli-validate.v1\",\"subject\":\"self\",\"status\":\"ok\"}"
@@ -1017,6 +1319,10 @@ mod tests {
     #[test]
     fn command_manifest_is_canonical_and_unavailable_routes_fail_closed() {
         assert!(command_manifest_is_valid(COMMAND_MANIFEST_V1));
+        assert!(command_protocol_profiles_are_valid(
+            COMMAND_MANIFEST_V1,
+            COMMAND_PROTOCOL_PROFILES_V1,
+        ));
         let manifest = command_manifest_json();
         assert!(manifest.starts_with("{\"schema\":\"sipi.command-manifest.v1\""));
         assert!(manifest.contains("\"id\":\"tran.run\""));
@@ -1044,6 +1350,59 @@ mod tests {
                     .is_some_and(|value| value.contains("command_id"))
             );
         }
+    }
+
+    #[test]
+    fn protocol_catalog_binds_every_available_stdin_command_to_a_product_example() {
+        let catalog = command_protocol_catalog_json().expect("protocol catalog");
+        assert!(catalog.starts_with("{\"schema\":\"sipi.command-protocol-catalog.v1\""));
+        for command in ["validate", "ibis.inspect", "tran.run", "link.run"] {
+            assert!(catalog.contains(&format!("\"command_id\":\"{command}\"")));
+            assert!(catalog.contains("\"example_id\":\"product-owned-minimal-v1\""));
+            let response = dispatch(&args(&["example", command, "--json"]));
+            assert_eq!(response.code, 0, "{command}");
+            assert!(response.stderr.is_none());
+            assert!(
+                response
+                    .stdout
+                    .as_deref()
+                    .is_some_and(|body| body.contains("sipi.command-example.v1"))
+            );
+        }
+        assert!(catalog.contains("\"request_schema_sha256\":\""));
+        assert_eq!(
+            dispatch(&args(&["example", "channel.run", "--json"])).code,
+            4
+        );
+        assert_eq!(dispatch(&args(&["example", "version", "--json"])).code, 4);
+    }
+
+    #[test]
+    fn product_examples_are_accepted_by_their_single_contract_entry_points() {
+        let validate = product_example_request_json_v1("validate")
+            .expect("validation example")
+            .expect("registered validation example");
+        assert!(validate_request_v1(&validate).is_ok());
+
+        let ibis = product_example_request_json_v1("ibis.inspect")
+            .expect("IBIS example")
+            .expect("registered IBIS example");
+        assert!(parse_ibis_inspect_request_v1(&ibis).is_ok());
+
+        let tran = product_example_request_json_v1("tran.run")
+            .expect("TRAN example")
+            .expect("registered TRAN example");
+        assert!(parse_tran_rc_pulse_request_v1(&tran).is_ok());
+
+        let link = product_example_request_json_v1("link.run")
+            .expect("Link example")
+            .expect("registered Link example");
+        assert!(parse_link_causal_fir_request_v1(&link).is_ok());
+        assert!(
+            product_example_request_json_v1("channel.run")
+                .expect("unknown example lookup")
+                .is_none()
+        );
     }
 
     #[test]
@@ -1115,6 +1474,14 @@ mod tests {
         assert_eq!(
             dispatch(&args(&["inspect", "capability", "unknown", "--json"])).code,
             64
+        );
+    }
+
+    #[test]
+    fn schema_list_uses_the_schema_inventory_order() {
+        assert_eq!(
+            schema_list_json(),
+            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
         );
     }
 

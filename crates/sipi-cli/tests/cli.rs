@@ -77,6 +77,59 @@ fn capabilities_are_machine_readable_and_uncertified() {
 }
 
 #[test]
+fn protocol_catalog_and_product_examples_are_machine_readable() {
+    let catalog = sipi()
+        .args(["protocols", "--json"])
+        .output()
+        .expect("run sipi protocols");
+    assert!(catalog.status.success());
+    let catalog_stdout = String::from_utf8(catalog.stdout).expect("UTF-8 stdout");
+    assert!(catalog_stdout.contains("sipi.command-protocol-catalog.v1"));
+    assert!(catalog_stdout.contains("\"command_id\":\"tran.run\""));
+    assert!(catalog_stdout.contains("\"request_schema_sha256\":\""));
+    assert!(catalog.stderr.is_empty());
+
+    for (command, request_schema) in [
+        ("validate", "sipi.validation-request.v1"),
+        ("ibis.inspect", "sipi.ibis.inspect.request.v1"),
+        ("tran.run", "sipi.tran.rc-pulse-request.v1"),
+        ("link.run", "sipi.link.causal-fir-request.v1"),
+    ] {
+        let example = sipi()
+            .args(["example", command, "--json"])
+            .output()
+            .expect("run sipi example");
+        assert!(example.status.success(), "{command}");
+        let example_stdout = String::from_utf8(example.stdout).expect("UTF-8 stdout");
+        assert!(example_stdout.contains("sipi.command-example.v1"));
+        assert!(example_stdout.contains(request_schema));
+        assert!(example.stderr.is_empty());
+    }
+
+    let unavailable = sipi()
+        .args(["example", "channel.run", "--json"])
+        .output()
+        .expect("run rejected sipi example");
+    assert_eq!(unavailable.status.code(), Some(4));
+    assert!(
+        String::from_utf8(unavailable.stderr)
+            .expect("UTF-8 stderr")
+            .contains("example_not_applicable")
+    );
+
+    let missing_id = sipi()
+        .args(["example", "--json"])
+        .output()
+        .expect("run incomplete sipi example");
+    assert_eq!(missing_id.status.code(), Some(4));
+    assert!(
+        String::from_utf8(missing_id.stderr)
+            .expect("UTF-8 stderr")
+            .contains("example_not_applicable")
+    );
+}
+
+#[test]
 fn causal_fir_link_run_publishes_full_linear_tail() {
     let root = std::env::temp_dir().join(format!("sipi-cli-process-link-{}", std::process::id()));
     let output = run_link(&root, LINK_REQUEST);
