@@ -353,6 +353,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: []
+  - id: p4b-ami-text-structural-foundation-spec-v1
+    kind: independent_spec
+    content_sha256: 3fc80edf6ab70adac81b47091ecb9ca7ce968525dd6e8ecc14c59920fbac6ea4
+    provenance:
+      source_ref: docs/clean-room/specs/p4b-ami-text-structural-foundation.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: []
   - id: pybert-example-rx-ibs-fixture-f6ba031
     kind: oracle_fixture
     content_sha256: 37b7bf1b6c50fe56c4daaad344de1b3cabe7a7f139ca1b76c4058a943f39fbe9
@@ -743,6 +751,15 @@ scopes:
       implementer: [p4b-ami-candidate-quarantine-preflight-spec-v1]
       comparator: []
       auditor: [p4b-ami-candidate-quarantine-preflight-spec-v1]
+  - id: p4b-ami-text-structural-foundation-v1
+    paths: [Cargo.toml, Cargo.lock, crates/sipi-ami-text/**, docs/clean-room/specs/p4b-ami-text-structural-foundation.v1.md]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p4b-ami-text-structural-foundation-spec-v1]
+      implementer: [p4b-ami-text-structural-foundation-spec-v1]
+      comparator: []
+      auditor: [p4b-ami-text-structural-foundation-spec-v1]
   - id: p4a-ibis-example-rx-candidate-inventory-v1
     paths: [docs/baselines/ibis-example-rx-candidate-inventory.v1.yaml, docs/clean-room/specs/p4a-ibis-example-rx-candidate-inventory.v1.md, tools/verify_p4a_ibis_example_rx_candidate_inventory.py, tools/test_verify_p4a_ibis_example_rx_candidate_inventory.py]
     state: planned

@@ -294,6 +294,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "sipi-ami-text"
+version = "0.1.0"
+
+[[package]]
 name = "sipi-artifacts"
 version = "0.1.0"
 dependencies = [

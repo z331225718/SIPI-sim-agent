@@ -4,6 +4,7 @@ members = [
   "crates/sipi-channel",
   "crates/sipi-ibis",
   "crates/sipi-artifacts",
+  "crates/sipi-ami-text",
   "crates/sipi-contracts",
   "crates/sipi-layout",
   "crates/sipi-link",

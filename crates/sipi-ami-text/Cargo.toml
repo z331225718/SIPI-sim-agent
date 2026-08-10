@@ -1,0 +1,11 @@
+[package]
+name = "sipi-ami-text"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Clean-room bounded structural parser foundation for AMI text."
+
+[lints]
+workspace = true
