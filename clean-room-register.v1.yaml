@@ -281,6 +281,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, comparator, auditor]
     derived_from: [p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
+  - id: p3b-receiver-charter-evaluator-spec-v1
+    kind: independent_spec
+    content_sha256: f90be81dfba841a5c15c242e7e0a2bb4f443ae185da38db2e690b8503cf8d94a
+    provenance:
+      source_ref: docs/clean-room/specs/p3b-receiver-charter-evaluator.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, comparator, auditor]
+    derived_from: [p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
   - id: pybert-channel-16ghz-3db-fixture-f6ba031
     kind: oracle_fixture
     content_sha256: 9d4cfeaad7c971fa45454f639b40e08c538855058f326fbdec64298b8933b5ad
@@ -547,4 +555,13 @@ scopes:
       implementer: [p3b-rfm-receiver-handoff-replay-spec-v1, p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
       comparator: [p3b-rfm-receiver-handoff-replay-spec-v1, pybert-rfm-reference-bits-generator-199696a, pybert-rfm-current-domain-observer-api-199696a]
       auditor: [p3b-rfm-receiver-handoff-replay-spec-v1, pybert-rfm-reference-bits-generator-199696a, pybert-rfm-current-domain-observer-api-199696a]
+  - id: p3b-receiver-charter-evaluator-v1
+    paths: [docs/clean-room/specs/p3b-receiver-charter-evaluator.v1.md, tools/evaluate_fixed_receiver_charter.py, tools/test_evaluate_fixed_receiver_charter.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3b-receiver-charter-evaluator-spec-v1]
+      implementer: []
+      comparator: [p3b-receiver-charter-evaluator-spec-v1]
+      auditor: [p3b-receiver-charter-evaluator-spec-v1, p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
 attestations: []

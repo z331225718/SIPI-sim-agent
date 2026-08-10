@@ -159,6 +159,57 @@ fn replay(root: &Path, waveform: &Path, bits: &Path, output: &Path) -> Result<()
     Ok(())
 }
 
+fn replay_or_record_rejection(
+    root: &Path,
+    waveform: &Path,
+    bits: &Path,
+    output: &Path,
+) -> Result<(), Box<dyn Error>> {
+    let (input, reference) = load_input(root, waveform, bits)?;
+    let output = contained_new(root, output)?;
+    let mut file = File::create_new(output)?;
+    match run_fixed_receiver_v1(&input, &reference) {
+        Ok(result) => {
+            let decisions = result
+                .decisions()
+                .iter()
+                .copied()
+                .map(decision_code)
+                .collect::<String>();
+            write!(
+                file,
+                concat!(
+                    "{{\"schema\":\"{}\",\"status\":\"accepted\",\"phase\":{},\"locked\":true,",
+                    "\"centerVolts\":{},\"amplitudeVolts\":{},\"frozenTaps\":[{},{},{},{},{}],",
+                    "\"decisions\":\"{}\",\"errorCount\":{},\"berNumerator\":{},\"berDenominator\":{}}}\n"
+                ),
+                RESULT_SCHEMA,
+                result.phase(),
+                result.center().get(),
+                result.amplitude().get(),
+                result.frozen_taps()[0].get(),
+                result.frozen_taps()[1].get(),
+                result.frozen_taps()[2].get(),
+                result.frozen_taps()[3].get(),
+                result.frozen_taps()[4].get(),
+                decisions,
+                result.error_count(),
+                result.error_count(),
+                result.ber_denominator(),
+            )?;
+        }
+        Err(error) => {
+            writeln!(
+                file,
+                "{{\"schema\":\"{}\",\"status\":\"rejected\",\"reason\":\"{:?}\"}}",
+                RESULT_SCHEMA, error
+            )?;
+        }
+    }
+    file.sync_all()?;
+    Ok(())
+}
+
 fn validate_input(
     root: &Path,
     waveform: &Path,
@@ -193,7 +244,7 @@ fn replay_receiver_input() {
     let waveform = environment_path("SIPI_RECEIVER_HANDOFF_WAVEFORM").unwrap();
     let bits = environment_path("SIPI_RECEIVER_HANDOFF_BITS").unwrap();
     let output = environment_path("SIPI_RECEIVER_HANDOFF_OUTPUT").unwrap();
-    replay(&root, &waveform, &bits, &output).unwrap();
+    replay_or_record_rejection(&root, &waveform, &bits, &output).unwrap();
 }
 
 #[test]
