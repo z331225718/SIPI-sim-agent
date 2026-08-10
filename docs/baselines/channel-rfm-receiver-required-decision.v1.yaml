@@ -1,0 +1,10 @@
+schema: sipi.channel.receiver-required-decision.v1
+profile_id: channel-rfm-block-2-current-drive-v1
+decision: required
+decision_ref: user-confirmed-2026-08-10-channel-rfm-receiver
+receiver_status: required_blocked_missing_receiver_semantics
+scope: single_rfm_current_drive_receiver_profile
+non_claims:
+  - This decision does not define DFE taps, CDR behavior, decisions, or BER semantics.
+  - The RFM engine, current drive, ports, and sign remain external oracle provenance only.
+  - This decision does not promote a Link route, causalize a periodic channel kernel, or enable a default backend.

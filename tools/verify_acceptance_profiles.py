@@ -117,7 +117,11 @@ def verify_document(document: object, source_roots: dict[str, Path] | None = Non
             elif acceptance.get("status") == "candidate":
                 if acceptance.get("required_by") is not None:
                     blockers.append(f"{profile_id}: candidate acceptance cannot carry a required decision")
-            elif acceptance.get("status") in {"required_pending_preflight", "required_pending_numerical_compare"}:
+            elif acceptance.get("status") in {
+                "required_pending_preflight",
+                "required_pending_numerical_compare",
+                "required_blocked_missing_receiver_semantics",
+            }:
                 if not isinstance(acceptance.get("required_by"), str) or not acceptance["required_by"]:
                     blockers.append(f"{profile_id}: selected acceptance requires a decision reference")
                 else:

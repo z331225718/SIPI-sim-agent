@@ -225,6 +225,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3b-link-stage-contract-spec-v1]
+  - id: p3b-rfm-receiver-boundary-spec-v1
+    kind: independent_spec
+    content_sha256: e668452093d850c03a1561abce48013a66bbd16c225eb47598f0dfd1a705b839
+    provenance:
+      source_ref: docs/clean-room/specs/p3b-rfm-receiver-boundary.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p3b-link-stage-contract-spec-v1]
   - id: pybert-channel-16ghz-3db-fixture-f6ba031
     kind: oracle_fixture
     content_sha256: 9d4cfeaad7c971fa45454f639b40e08c538855058f326fbdec64298b8933b5ad
@@ -394,4 +402,13 @@ scopes:
       implementer: [p3b-receiver-candidate-readiness-spec-v1]
       comparator: []
       auditor: [p3b-receiver-candidate-readiness-spec-v1]
+  - id: p3b-rfm-receiver-boundary-v1
+    paths: [acceptance-profiles.v1.yaml, docs/baselines/channel-rfm-receiver-readiness.v1.yaml, docs/baselines/channel-rfm-receiver-required-decision.v1.yaml, docs/clean-room/specs/p3b-rfm-receiver-boundary.v1.md, crates/sipi-contracts/**, tools/verify_channel_rfm_receiver_required_decision.py, tools/test_verify_channel_rfm_receiver_required_decision.py, tools/verify_channel_rfm_receiver_readiness.py, tools/test_verify_channel_rfm_receiver_readiness.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3b-rfm-receiver-boundary-spec-v1]
+      implementer: [p3b-rfm-receiver-boundary-spec-v1]
+      comparator: []
+      auditor: [p3b-rfm-receiver-boundary-spec-v1]
 attestations: []

@@ -1,4 +1,4 @@
-"""Fail closed on an unselected RFM receiver candidate's readiness record."""
+"""Fail closed on the required RFM receiver profile's still-blocked semantics."""
 
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ SHA1_LENGTH = 40
 SHA256_LENGTH = 64
 MISSING = "missing_owner_selection"
 EVIDENCE_REF = "docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm-same-config-receiver-parity"
+REQUIRED_BY = "user-confirmed-2026-08-10-channel-rfm-receiver"
 
 MISSING_FIELDS = {
     "product_stimulus_and_causal_link_waveform",
@@ -90,20 +91,20 @@ def verify_document(readiness: object, inventory: object) -> dict:
     required_top = {"schema", "status", "candidate_profile_id", "candidate_identity", "external_observation", "owner_decision", "missing_semantics", "non_claims"}
     if not _exact(readiness, required_top):
         return {"valid": False, "blockers": ["readiness has unknown or missing top-level fields"]}
-    if readiness["schema"] != SCHEMA or readiness["status"] != "candidate_ready_for_owner_selection" or readiness["candidate_profile_id"] != PROFILE_ID:
-        blockers.append("schema, status, or candidate profile mismatch")
+    if readiness["schema"] != SCHEMA or readiness["status"] != "required_selected_missing_receiver_semantics" or readiness["candidate_profile_id"] != PROFILE_ID:
+        blockers.append("schema, status, or required profile mismatch")
     profile = _candidate_profile(inventory) if isinstance(inventory, dict) else None
     if profile is None:
-        blockers.append("candidate profile is absent from acceptance inventory")
-    elif profile.get("boundary") != "oracle_only" or profile.get("acceptance", {}).get("status") != "candidate" or profile.get("acceptance", {}).get("required_by") is not None:
-        blockers.append("candidate profile must remain oracle-only with required_by null")
+        blockers.append("required profile is absent from acceptance inventory")
+    elif profile.get("boundary") != "oracle_only" or profile.get("acceptance", {}).get("status") != "required_blocked_missing_receiver_semantics" or profile.get("acceptance", {}).get("required_by") != REQUIRED_BY:
+        blockers.append("required profile must remain oracle-only with semantic blockers")
     elif (
         profile.get("environment", {}).get("provenance_ref") != EVIDENCE_REF
         or profile.get("acceptance", {}).get("tolerance_policy_ref") != EVIDENCE_REF
         or profile.get("evidence_refs") != [EVIDENCE_REF]
         or not _evidence_ref_exists(EVIDENCE_REF)
     ):
-        blockers.append("candidate profile receiver evidence anchor is invalid")
+        blockers.append("required profile receiver evidence anchor is invalid")
     identity = readiness["candidate_identity"]
     identity_keys = {"repository", "commit", "path", "git_blob", "content_sha256"}
     if not _exact(identity, identity_keys) or not isinstance(identity.get("repository"), str) or not _hex(identity.get("commit"), SHA1_LENGTH) or not _safe_ref(identity.get("path")) or not _hex(identity.get("git_blob"), SHA1_LENGTH) or not _hex(identity.get("content_sha256"), SHA256_LENGTH):
@@ -131,8 +132,8 @@ def verify_document(readiness: object, inventory: object) -> dict:
     ):
         blockers.append("external observation is not the pinned RFM receiver record")
     decision = readiness["owner_decision"]
-    if not _exact(decision, {"required_by", "decision"}) or decision["required_by"] is not None or decision["decision"] != "pending":
-        blockers.append("owner decision must remain pending with required_by null")
+    if not _exact(decision, {"required_by", "decision"}) or decision["required_by"] != REQUIRED_BY or decision["decision"] != "required":
+        blockers.append("required decision is invalid")
     missing = readiness["missing_semantics"]
     if not _exact(missing, MISSING_FIELDS) or any(value != MISSING for value in missing.values()):
         blockers.append("all receiver semantics must remain explicitly missing owner selection")
@@ -143,7 +144,7 @@ def verify_document(readiness: object, inventory: object) -> dict:
         "valid": not blockers,
         "status": readiness.get("status"),
         "candidate_profile_id": readiness.get("candidate_profile_id"),
-        "required_profile_count": 0,
+        "required_profile_count": 1,
         "missing_semantics_count": len(missing) if isinstance(missing, dict) else 0,
         "blockers": blockers,
     }

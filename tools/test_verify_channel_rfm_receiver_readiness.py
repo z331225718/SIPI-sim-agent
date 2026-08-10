@@ -18,18 +18,18 @@ class RfmReceiverReadinessTests(unittest.TestCase):
     def inventory(self) -> dict:
         return copy.deepcopy(_load(ROOT / "acceptance-profiles.v1.yaml"))
 
-    def test_current_record_is_owner_selection_ready_but_not_required(self) -> None:
+    def test_current_record_is_required_but_semantically_blocked(self) -> None:
         report = verify_document(self.readiness(), self.inventory())
         self.assertTrue(report["valid"], report["blockers"])
-        self.assertEqual(report["required_profile_count"], 0)
+        self.assertEqual(report["required_profile_count"], 1)
         self.assertEqual(report["missing_semantics_count"], 8)
 
-    def test_required_promotion_and_identity_drift_fail_closed(self) -> None:
+    def test_required_decision_and_identity_drift_fail_closed(self) -> None:
         readiness = self.readiness()
-        readiness["owner_decision"]["required_by"] = "silent-promotion"
+        readiness["owner_decision"]["required_by"] = "different-decision"
         report = verify_document(readiness, self.inventory())
         self.assertFalse(report["valid"])
-        self.assertTrue(any("owner decision" in item for item in report["blockers"]))
+        self.assertTrue(any("required decision" in item for item in report["blockers"]))
         readiness = self.readiness()
         readiness["candidate_identity"]["content_sha256"] = "0" * 64
         report = verify_document(readiness, self.inventory())
@@ -60,13 +60,13 @@ class RfmReceiverReadinessTests(unittest.TestCase):
         self.assertFalse(report["valid"])
         self.assertTrue(any("receiver evidence" in item for item in report["blockers"]))
 
-    def test_inventory_candidate_status_cannot_drift(self) -> None:
+    def test_inventory_required_status_cannot_drift(self) -> None:
         inventory = self.inventory()
-        inventory["profiles"][1]["acceptance"]["status"] = "required_pending_preflight"
-        inventory["profiles"][1]["acceptance"]["required_by"] = "silent-promotion"
+        inventory["profiles"][1]["acceptance"]["status"] = "candidate"
+        inventory["profiles"][1]["acceptance"]["required_by"] = None
         report = verify_document(self.readiness(), inventory)
         self.assertFalse(report["valid"])
-        self.assertTrue(any("candidate profile" in item for item in report["blockers"]))
+        self.assertTrue(any("required profile" in item for item in report["blockers"]))
 
 
 if __name__ == "__main__":

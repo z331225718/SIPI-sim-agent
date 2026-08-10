@@ -19,7 +19,7 @@ class AcceptanceProfileTests(unittest.TestCase):
         report = verify_document(self.document())
         self.assertTrue(report["valid"], report["blockers"])
         self.assertEqual(report["profile_count"], 4)
-        self.assertEqual(report["required_profile_count"], 1)
+        self.assertEqual(report["required_profile_count"], 2)
 
     def test_unknown_fields_and_unsafe_paths_fail_closed(self) -> None:
         invalid = self.document()
@@ -38,10 +38,10 @@ class AcceptanceProfileTests(unittest.TestCase):
         self.assertFalse(report["valid"])
         self.assertTrue(any("selected acceptance" in item for item in report["blockers"]))
         invalid = self.document()
-        invalid["profiles"][1]["acceptance"]["required_by"] = "unexpected"
+        invalid["profiles"][1]["acceptance"]["required_by"] = None
         report = verify_document(invalid)
         self.assertFalse(report["valid"])
-        self.assertTrue(any("candidate acceptance" in item for item in report["blockers"]))
+        self.assertTrue(any("selected acceptance" in item for item in report["blockers"]))
 
     def test_duplicate_legacy_asset_and_bad_hash_fail_closed(self) -> None:
         invalid = self.document()

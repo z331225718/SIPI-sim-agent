@@ -18,6 +18,7 @@ pub const CAPABILITIES_SCHEMA: &str = "sipi.capabilities.v1";
 pub const VALIDATION_REQUEST_SCHEMA: &str = "sipi.validation-request.v1";
 pub const TRAN_RC_PULSE_REQUEST_SCHEMA: &str = "sipi.tran.rc-pulse-request.v1";
 pub const LINK_PLAN_SCHEMA: &str = "sipi.link-plan.v1";
+pub const RECEIVER_INPUT_SCHEMA: &str = "sipi.receiver-input.v1";
 pub const PLANNED_DOMAINS: [&str; 4] = ["tran", "channel", "ibis-ami", "com"];
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -26,6 +27,7 @@ pub enum ContractError {
     Type(TypeError),
     Version,
     Link(LinkContractError),
+    Receiver(ReceiverContractError),
 }
 
 impl fmt::Display for ContractError {
@@ -35,6 +37,7 @@ impl fmt::Display for ContractError {
             Self::Type(error) => error.fmt(formatter),
             Self::Version => write!(formatter, "unsupported contract version"),
             Self::Link(error) => error.fmt(formatter),
+            Self::Receiver(error) => error.fmt(formatter),
         }
     }
 }
@@ -50,6 +53,12 @@ impl From<TypeError> for ContractError {
 impl From<LinkContractError> for ContractError {
     fn from(value: LinkContractError) -> Self {
         Self::Link(value)
+    }
+}
+
+impl From<ReceiverContractError> for ContractError {
+    fn from(value: ReceiverContractError) -> Self {
+        Self::Receiver(value)
     }
 }
 
@@ -73,6 +82,22 @@ impl fmt::Display for LinkContractError {
 }
 
 impl Error for LinkContractError {}
+
+/// Stable rejections for the required RFM receiver input boundary.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ReceiverContractError {
+    UnsupportedProfileTimebase,
+    UnsupportedSamplesPerUi,
+    SampleLengthMismatch,
+}
+
+impl fmt::Display for ReceiverContractError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "invalid receiver input contract: {self:?}")
+    }
+}
+
+impl Error for ReceiverContractError {}
 
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -130,7 +155,7 @@ pub struct RuleLedgerEntry {
     pub test_id: &'static str,
 }
 
-pub const RULE_LEDGER_V1: [RuleLedgerEntry; 9] = [
+pub const RULE_LEDGER_V1: [RuleLedgerEntry; 11] = [
     RuleLedgerEntry {
         id: "contract.v1.version",
         owner: "contract",
@@ -193,6 +218,20 @@ pub const RULE_LEDGER_V1: [RuleLedgerEntry; 9] = [
         wire_type: "link_plan",
         code: "unsupported_stage",
         test_id: "link_only_direct_bypass_is_accepted",
+    },
+    RuleLedgerEntry {
+        id: "receiver.rfm.v1.timebase",
+        owner: "contract",
+        wire_type: "receiver_input",
+        code: "unsupported_profile_timebase",
+        test_id: "receiver_required_timebase_is_strict",
+    },
+    RuleLedgerEntry {
+        id: "receiver.rfm.v1.frontend",
+        owner: "contract",
+        wire_type: "receiver_input",
+        code: "unsupported_stage",
+        test_id: "receiver_frontend_is_bypass_only",
     },
 ];
 
@@ -597,6 +636,122 @@ pub fn parse_link_plan_v1(input: &[u8]) -> Result<LinkPlanV1, ContractError> {
         .try_into()
 }
 
+/// Product-owned receiver waveform boundary for the required RFM profile.
+///
+/// The external RFM/current-drive provenance deliberately does not cross this
+/// boundary. DFE, CDR, and BER are not represented because their semantics
+/// remain explicitly unselected.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireReceiverInputV1 {
+    pub schema: String,
+    pub timebase: WireUniformTimebaseV1,
+    pub receive_volts: Vec<f64>,
+    pub samples_per_ui: usize,
+    pub frontend: WireRxStagesV1,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ReceiverInputV1 {
+    timebase: UniformTimebaseV1,
+    receive: Vec<Volts>,
+    samples_per_ui: NonZeroUsize,
+    frontend: RxStagesV1,
+}
+
+impl ReceiverInputV1 {
+    pub fn try_new(
+        timebase: UniformTimebaseV1,
+        receive: Vec<Volts>,
+        samples_per_ui: usize,
+        frontend: RxStagesV1,
+    ) -> Result<Self, ReceiverContractError> {
+        if timebase.sample_interval().get() != 1.0e-12 || timebase.sample_count().get() != 1024 {
+            return Err(ReceiverContractError::UnsupportedProfileTimebase);
+        }
+        let samples_per_ui = NonZeroUsize::new(samples_per_ui)
+            .ok_or(ReceiverContractError::UnsupportedSamplesPerUi)?;
+        if samples_per_ui.get() != 8 {
+            return Err(ReceiverContractError::UnsupportedSamplesPerUi);
+        }
+        if receive.len() != timebase.sample_count().get() {
+            return Err(ReceiverContractError::SampleLengthMismatch);
+        }
+        Ok(Self {
+            timebase,
+            receive,
+            samples_per_ui,
+            frontend,
+        })
+    }
+
+    pub fn timebase(&self) -> UniformTimebaseV1 {
+        self.timebase
+    }
+
+    pub fn receive(&self) -> &[Volts] {
+        &self.receive
+    }
+
+    pub fn samples_per_ui(&self) -> NonZeroUsize {
+        self.samples_per_ui
+    }
+
+    pub fn frontend(&self) -> RxStagesV1 {
+        self.frontend
+    }
+}
+
+impl TryFrom<WireReceiverInputV1> for ReceiverInputV1 {
+    type Error = ContractError;
+
+    fn try_from(value: WireReceiverInputV1) -> Result<Self, Self::Error> {
+        require_receiver_schema(&value.schema)?;
+        let timebase = UniformTimebaseV1::try_new(
+            Seconds::try_new(value.timebase.start_seconds)?,
+            Seconds::try_new(value.timebase.sample_interval_seconds)?,
+            value.timebase.sample_count,
+        )?;
+        let receive = value
+            .receive_volts
+            .into_iter()
+            .map(Volts::try_new)
+            .collect::<Result<Vec<_>, _>>()?;
+        let frontend = match value.frontend {
+            WireRxStagesV1 {
+                ctle: WireCtleStageV1::Bypass,
+                ffe: WireFfeStageV1::Bypass,
+            } => RxStagesV1::bypass(),
+        };
+        Self::try_new(timebase, receive, value.samples_per_ui, frontend).map_err(Into::into)
+    }
+}
+
+impl From<&ReceiverInputV1> for WireReceiverInputV1 {
+    fn from(value: &ReceiverInputV1) -> Self {
+        Self {
+            schema: RECEIVER_INPUT_SCHEMA.to_owned(),
+            timebase: WireUniformTimebaseV1 {
+                start_seconds: value.timebase().start().get(),
+                sample_interval_seconds: value.timebase().sample_interval().get(),
+                sample_count: value.timebase().sample_count().get(),
+            },
+            receive_volts: value.receive().iter().map(|sample| sample.get()).collect(),
+            samples_per_ui: value.samples_per_ui().get(),
+            frontend: WireRxStagesV1 {
+                ctle: WireCtleStageV1::Bypass,
+                ffe: WireFfeStageV1::Bypass,
+            },
+        }
+    }
+}
+
+pub fn parse_receiver_input_v1(input: &[u8]) -> Result<ReceiverInputV1, ContractError> {
+    serde_json::from_slice::<WireReceiverInputV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
 pub fn parse_tran_rc_pulse_request_v1(input: &[u8]) -> Result<TranRcPulseRequestV1, ContractError> {
     let request: TranRcPulseRequestV1 =
         serde_json::from_slice(input).map_err(|error| ContractError::Json(error.to_string()))?;
@@ -732,6 +887,10 @@ pub fn link_plan_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireLinkPlanV1))
 }
 
+pub fn receiver_input_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(WireReceiverInputV1))
+}
+
 fn require_schema(schema: &str) -> Result<(), ContractError> {
     if schema == "sipi.contract.v1" {
         Ok(())
@@ -742,6 +901,14 @@ fn require_schema(schema: &str) -> Result<(), ContractError> {
 
 fn require_link_schema(schema: &str) -> Result<(), ContractError> {
     if schema == LINK_PLAN_SCHEMA {
+        Ok(())
+    } else {
+        Err(ContractError::Version)
+    }
+}
+
+fn require_receiver_schema(schema: &str) -> Result<(), ContractError> {
+    if schema == RECEIVER_INPUT_SCHEMA {
         Ok(())
     } else {
         Err(ContractError::Version)
@@ -946,6 +1113,80 @@ mod tests {
         assert!(baseline.ends_with(b"\n"));
         assert_eq!(
             link_plan_schema_json().expect("schema"),
+            &baseline[..baseline.len() - 1]
+        );
+    }
+
+    fn required_receiver_wire() -> WireReceiverInputV1 {
+        WireReceiverInputV1 {
+            schema: RECEIVER_INPUT_SCHEMA.to_owned(),
+            timebase: WireUniformTimebaseV1 {
+                start_seconds: 0.0,
+                sample_interval_seconds: 1.0e-12,
+                sample_count: 1024,
+            },
+            receive_volts: vec![0.0; 1024],
+            samples_per_ui: 8,
+            frontend: WireRxStagesV1 {
+                ctle: WireCtleStageV1::Bypass,
+                ffe: WireFfeStageV1::Bypass,
+            },
+        }
+    }
+
+    #[test]
+    fn required_receiver_input_is_typed_and_bypass_only() {
+        let wire = required_receiver_wire();
+        let bytes = deterministic_json(&wire).expect("wire");
+        let receiver = parse_receiver_input_v1(&bytes).expect("required receiver input");
+        assert_eq!(receiver.receive().len(), 1024);
+        assert_eq!(receiver.samples_per_ui().get(), 8);
+        assert_eq!(receiver.frontend(), RxStagesV1::bypass());
+        assert_eq!(
+            deterministic_json(&WireReceiverInputV1::from(&receiver)).unwrap(),
+            bytes
+        );
+    }
+
+    #[test]
+    fn required_receiver_input_rejects_profile_drift_and_receiver_knobs() {
+        let mut wire = required_receiver_wire();
+        wire.timebase.sample_interval_seconds = 2.0e-12;
+        assert_eq!(
+            ReceiverInputV1::try_from(wire),
+            Err(ContractError::Receiver(
+                ReceiverContractError::UnsupportedProfileTimebase
+            ))
+        );
+        let mut wire = required_receiver_wire();
+        wire.samples_per_ui = 7;
+        assert_eq!(
+            ReceiverInputV1::try_from(wire),
+            Err(ContractError::Receiver(
+                ReceiverContractError::UnsupportedSamplesPerUi
+            ))
+        );
+        assert!(parse_receiver_input_v1(
+            br#"{"schema":"sipi.receiver-input.v1","timebase":{"start_seconds":0.0,"sample_interval_seconds":1e-12,"sample_count":1024},"receive_volts":[],"samples_per_ui":8,"frontend":{"ctle":{"kind":"bypass"},"ffe":{"kind":"bypass"}},"dfe":{"kind":"legacy"}}"#
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn receiver_schema_is_available_from_the_contract_authority() {
+        assert!(
+            receiver_input_schema_json()
+                .expect("schema")
+                .starts_with(b"{")
+        );
+    }
+
+    #[test]
+    fn tracked_receiver_schema_baseline_is_exactly_the_registered_export() {
+        let baseline = include_bytes!("../schemas/sipi.receiver-input.v1.schema.json");
+        assert!(baseline.ends_with(b"\n"));
+        assert_eq!(
+            receiver_input_schema_json().expect("schema"),
             &baseline[..baseline.len() - 1]
         );
     }

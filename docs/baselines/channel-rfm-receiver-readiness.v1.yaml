@@ -1,5 +1,5 @@
 schema: sipi.channel.receiver-candidate-readiness.v1
-status: candidate_ready_for_owner_selection
+status: required_selected_missing_receiver_semantics
 candidate_profile_id: channel-rfm-block-2-current-drive-v1
 candidate_identity:
   repository: pybert-f6ba031
@@ -20,8 +20,8 @@ external_observation:
   samples_per_ui: 8
   evidence_ref: docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm-same-config-receiver-parity
 owner_decision:
-  required_by: null
-  decision: pending
+  required_by: user-confirmed-2026-08-10-channel-rfm-receiver
+  decision: required
 missing_semantics:
   product_stimulus_and_causal_link_waveform: missing_owner_selection
   p3a_periodic_kernel_causalization: missing_owner_selection
@@ -32,6 +32,6 @@ missing_semantics:
   ber_bit_source_alignment_threshold_warmup_window_metric_and_tolerance: missing_owner_selection
   external_reference_environment_and_authorized_fixture_scope: missing_owner_selection
 non_claims:
-  - This record is a candidate admission preflight, not a required-profile decision.
-  - It does not define DFE, CDR, CTLE, FFE, BER, causalization, or a receiver API.
+  - This record confirms only the required-profile decision and a receiver boundary; it does not complete the receiver acceptance gate.
+  - It does not define DFE, CDR, CTLE or FFE beyond bypass, BER, causalization, or a receiver algorithm.
   - It does not establish RFM Link parity, physical oracle independence, or a production route.
