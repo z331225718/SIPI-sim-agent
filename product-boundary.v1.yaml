@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: bb981379ec5269c4ca601e3bcc3bb7bc85194163570464b71cc97680bb70eecd
+  tracked_paths_sha256: f3503b37b3ac247409fd14408bdc4266898a6df593ab062906a79fd28239deb1
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -972,6 +972,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-11-p4b-ami-text-structural-foundation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-11-p4b-external-ami-asset-set.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
