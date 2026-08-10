@@ -8,7 +8,7 @@
 
 use std::{error::Error, fmt, num::NonZeroUsize};
 
-use sipi_types::{Amps, Volts};
+use sipi_types::{Amps, FiniteF64, Volts};
 
 /// A byte and physical-line location in one UTF-8-free ASCII source stream.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -221,6 +221,7 @@ pub struct IbisSemanticDocumentV1 {
     components: Vec<ComponentDeclV1>,
     models: Vec<ModelDeclV1>,
     blocks: Vec<SemanticBlockV1>,
+    records: Vec<StructuralRecordV1>,
 }
 
 impl IbisSemanticDocumentV1 {
@@ -238,6 +239,10 @@ impl IbisSemanticDocumentV1 {
 
     pub fn blocks(&self) -> &[SemanticBlockV1] {
         &self.blocks
+    }
+
+    fn records(&self) -> &[StructuralRecordV1] {
+        &self.records
     }
 }
 
@@ -400,6 +405,7 @@ pub fn build_semantic_envelope_v1(
         components,
         models,
         blocks,
+        records: document.records().to_vec(),
     })
 }
 
@@ -1055,6 +1061,318 @@ pub fn evaluate_dc_clamps_v1(
     })
 }
 
+/// The only PVT corner admitted by the selected input-static profile.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DcClampCornerV1 {
+    Typical,
+}
+
+/// Caller-selected lexical identity for a profile-scoped input clamp decode.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SelectedDcClampProfileV1 {
+    ibis_version: String,
+    model_selector: String,
+    corner: DcClampCornerV1,
+}
+
+impl SelectedDcClampProfileV1 {
+    pub fn try_new(
+        ibis_version: &str,
+        model_selector: &str,
+        corner: DcClampCornerV1,
+    ) -> Result<Self, IbisProfileDiagnosticV1> {
+        if !is_version_token(ibis_version) {
+            return Err(IbisProfileDiagnosticV1::InvalidExpectedVersion);
+        }
+        if !is_declaration_name(model_selector) {
+            return Err(IbisProfileDiagnosticV1::InvalidModelSelector);
+        }
+        Ok(Self {
+            ibis_version: ibis_version.to_owned(),
+            model_selector: model_selector.to_owned(),
+            corner,
+        })
+    }
+
+    pub fn ibis_version(&self) -> &str {
+        &self.ibis_version
+    }
+
+    pub fn model_selector(&self) -> &str {
+        &self.model_selector
+    }
+
+    pub const fn corner(&self) -> DcClampCornerV1 {
+        self.corner
+    }
+}
+
+/// A finite, non-negative `C_comp` declaration expressed in farads. It is
+/// declaration metadata only; DC capacitor current remains zero.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CCompDeclarationV1 {
+    capacitance_farads: FiniteF64,
+}
+
+impl CCompDeclarationV1 {
+    pub const fn capacitance_farads(self) -> FiniteF64 {
+        self.capacitance_farads
+    }
+}
+
+/// The strict decoder output for the selected input-static profile.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DecodedDcClampProfileV1 {
+    model: InputClampDcModelV1,
+    c_comp: CCompDeclarationV1,
+}
+
+impl DecodedDcClampProfileV1 {
+    pub const fn model(&self) -> &InputClampDcModelV1 {
+        &self.model
+    }
+
+    pub const fn c_comp(&self) -> CCompDeclarationV1 {
+        self.c_comp
+    }
+}
+
+/// Stable rejection codes for the selected profile decoder.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum IbisProfileDiagnosticV1 {
+    InvalidExpectedVersion,
+    InvalidModelSelector,
+    VersionMismatch,
+    SelectedModelMissing,
+    ModelTypeMissing,
+    ModelTypeNotInput,
+    CCompMissing,
+    CCompDuplicate,
+    CCompInvalid,
+    CCompNegative,
+    GndClampMissing,
+    GndClampDuplicate,
+    PowerClampMissing,
+    PowerClampDuplicate,
+    ClampRowInvalid,
+    ClampTableInvalid,
+    AlgorithmicModelPresent,
+}
+
+impl fmt::Display for IbisProfileDiagnosticV1 {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            formatter,
+            "selected IBIS DC clamp profile rejection: {self:?}"
+        )
+    }
+}
+
+impl Error for IbisProfileDiagnosticV1 {}
+
+/// Decodes the deliberately narrow selected input-clamp profile from an
+/// in-memory semantic document. It performs no file access, external identity
+/// lookup, package/pin/PVT fallback, V-T/ramp handling, or AMI composition.
+pub fn decode_selected_dc_clamps_v1(
+    document: &IbisSemanticDocumentV1,
+    profile: &SelectedDcClampProfileV1,
+) -> Result<DecodedDcClampProfileV1, IbisProfileDiagnosticV1> {
+    if document.version().spelling() != profile.ibis_version() {
+        return Err(IbisProfileDiagnosticV1::VersionMismatch);
+    }
+    let records = document.records();
+    let model_index = records
+        .iter()
+        .position(|record| model_name(record).is_some_and(|name| name == profile.model_selector()));
+    let Some(model_index) = model_index else {
+        return Err(IbisProfileDiagnosticV1::SelectedModelMissing);
+    };
+    let end = records[model_index + 1..]
+        .iter()
+        .position(|record| model_name(record).is_some())
+        .map_or(records.len(), |offset| model_index + 1 + offset);
+    let scope = &records[model_index + 1..end];
+
+    let model_type_count = scope
+        .iter()
+        .filter(|record| data_keyword_equals(record, "model_type"))
+        .count();
+    if model_type_count == 0 {
+        return Err(IbisProfileDiagnosticV1::ModelTypeMissing);
+    }
+    if model_type_count != 1
+        || !scope
+            .iter()
+            .any(|record| data_two_tokens_equals(record, "model_type", "input"))
+    {
+        return Err(IbisProfileDiagnosticV1::ModelTypeNotInput);
+    }
+    let c_comp_entries = scope
+        .iter()
+        .filter_map(c_comp_from_record)
+        .collect::<Vec<_>>();
+    let c_comp = match c_comp_entries.as_slice() {
+        [] => return Err(IbisProfileDiagnosticV1::CCompMissing),
+        [entry] => (*entry)?,
+        _ => return Err(IbisProfileDiagnosticV1::CCompDuplicate),
+    };
+
+    if scope
+        .iter()
+        .any(|record| keyword_equals(record, "algorithmic model"))
+    {
+        return Err(IbisProfileDiagnosticV1::AlgorithmicModelPresent);
+    }
+    let gnd_clamp = decode_named_clamp(scope, "gnd_clamp", ClampBranchV1::Gnd)?;
+    let power_clamp = decode_named_clamp(scope, "power_clamp", ClampBranchV1::Power)?;
+    Ok(DecodedDcClampProfileV1 {
+        model: InputClampDcModelV1::new(gnd_clamp, power_clamp),
+        c_comp,
+    })
+}
+
+fn model_name(record: &StructuralRecordV1) -> Option<&str> {
+    let StructuralRecordV1::Keyword {
+        keyword, payload, ..
+    } = record
+    else {
+        return None;
+    };
+    if !keyword.spelling().eq_ignore_ascii_case("model") || payload.len() != 1 {
+        return None;
+    }
+    Some(payload[0].spelling())
+}
+
+fn keyword_equals(record: &StructuralRecordV1, expected: &str) -> bool {
+    matches!(record, StructuralRecordV1::Keyword { keyword, .. } if keyword.spelling().eq_ignore_ascii_case(expected))
+}
+
+fn data_keyword_equals(record: &StructuralRecordV1, expected: &str) -> bool {
+    matches!(record, StructuralRecordV1::Data { tokens, .. } if tokens.first().is_some_and(|token| token.spelling().eq_ignore_ascii_case(expected)))
+}
+
+fn data_two_tokens_equals(record: &StructuralRecordV1, first: &str, second: &str) -> bool {
+    matches!(record, StructuralRecordV1::Data { tokens, .. } if tokens.len() == 2 && tokens[0].spelling().eq_ignore_ascii_case(first) && tokens[1].spelling().eq_ignore_ascii_case(second))
+}
+
+fn c_comp_from_record(
+    record: &StructuralRecordV1,
+) -> Option<Result<CCompDeclarationV1, IbisProfileDiagnosticV1>> {
+    let StructuralRecordV1::Data { tokens, .. } = record else {
+        return None;
+    };
+    if !tokens
+        .first()
+        .is_some_and(|token| token.spelling().eq_ignore_ascii_case("c_comp"))
+    {
+        return None;
+    }
+    if tokens.len() < 2 {
+        return Some(Err(IbisProfileDiagnosticV1::CCompInvalid));
+    }
+    Some(
+        parse_scaled_value(tokens[1].spelling(), "f")
+            .map_err(|_| IbisProfileDiagnosticV1::CCompInvalid)
+            .and_then(|value| {
+                if value < 0.0 {
+                    Err(IbisProfileDiagnosticV1::CCompNegative)
+                } else {
+                    FiniteF64::try_new(value, "C_comp farads")
+                        .map(|capacitance_farads| CCompDeclarationV1 { capacitance_farads })
+                        .map_err(|_| IbisProfileDiagnosticV1::CCompInvalid)
+                }
+            }),
+    )
+}
+
+fn decode_named_clamp(
+    scope: &[StructuralRecordV1],
+    keyword: &str,
+    branch: ClampBranchV1,
+) -> Result<DcIvTableV1, IbisProfileDiagnosticV1> {
+    let indices = scope
+        .iter()
+        .enumerate()
+        .filter_map(|(index, record)| keyword_equals(record, keyword).then_some(index))
+        .collect::<Vec<_>>();
+    match indices.as_slice() {
+        [] => Err(match branch {
+            ClampBranchV1::Gnd => IbisProfileDiagnosticV1::GndClampMissing,
+            ClampBranchV1::Power => IbisProfileDiagnosticV1::PowerClampMissing,
+        }),
+        [index] => {
+            let end = scope[*index + 1..]
+                .iter()
+                .position(|record| matches!(record, StructuralRecordV1::Keyword { .. }))
+                .map_or(scope.len(), |offset| index + 1 + offset);
+            let knots = scope[index + 1..end]
+                .iter()
+                .map(parse_clamp_row)
+                .collect::<Result<Vec<_>, _>>()?;
+            DcIvTableV1::try_new(knots).map_err(|_| IbisProfileDiagnosticV1::ClampTableInvalid)
+        }
+        _ => Err(match branch {
+            ClampBranchV1::Gnd => IbisProfileDiagnosticV1::GndClampDuplicate,
+            ClampBranchV1::Power => IbisProfileDiagnosticV1::PowerClampDuplicate,
+        }),
+    }
+}
+
+fn parse_clamp_row(record: &StructuralRecordV1) -> Result<DcIvKnotV1, IbisProfileDiagnosticV1> {
+    let StructuralRecordV1::Data { tokens, .. } = record else {
+        return Err(IbisProfileDiagnosticV1::ClampRowInvalid);
+    };
+    if tokens.len() < 2 {
+        return Err(IbisProfileDiagnosticV1::ClampRowInvalid);
+    }
+    let voltage = parse_scaled_value(tokens[0].spelling(), "v").and_then(|value| {
+        Volts::try_new(value).map_err(|_| IbisProfileDiagnosticV1::ClampRowInvalid)
+    })?;
+    let current = parse_scaled_value(tokens[1].spelling(), "a").and_then(|value| {
+        Amps::try_new(value).map_err(|_| IbisProfileDiagnosticV1::ClampRowInvalid)
+    })?;
+    Ok(DcIvKnotV1::new(voltage, current))
+}
+
+fn parse_scaled_value(token: &str, base_unit: &str) -> Result<f64, IbisProfileDiagnosticV1> {
+    let lower = token.to_ascii_lowercase();
+    let suffixes = [
+        ("meg", 1.0e6),
+        ("g", 1.0e9),
+        ("k", 1.0e3),
+        ("m", 1.0e-3),
+        ("u", 1.0e-6),
+        ("n", 1.0e-9),
+        ("p", 1.0e-12),
+        ("f", 1.0e-15),
+        ("", 1.0),
+    ];
+    for (prefix, scale) in suffixes {
+        let unit = format!("{prefix}{base_unit}");
+        if let Some(number) = lower.strip_suffix(&unit) {
+            let value = number
+                .parse::<f64>()
+                .map_err(|_| IbisProfileDiagnosticV1::ClampRowInvalid)?;
+            let scaled = value * scale;
+            return scaled
+                .is_finite()
+                .then_some(scaled)
+                .ok_or(IbisProfileDiagnosticV1::ClampRowInvalid);
+        }
+    }
+    if base_unit == "v" || base_unit == "a" {
+        let value = token
+            .parse::<f64>()
+            .map_err(|_| IbisProfileDiagnosticV1::ClampRowInvalid)?;
+        return value
+            .is_finite()
+            .then_some(value)
+            .ok_or(IbisProfileDiagnosticV1::ClampRowInvalid);
+    }
+    Err(IbisProfileDiagnosticV1::CCompInvalid)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1309,6 +1627,87 @@ mod tests {
         assert_eq!(
             evaluate_dc_clamps_v1(&model(), probe),
             evaluate_dc_clamps_v1(&model(), probe)
+        );
+    }
+
+    fn decode_profile(source: &[u8]) -> Result<DecodedDcClampProfileV1, IbisProfileDiagnosticV1> {
+        let structural = parse_structural_v1(source, limits()).expect("structural parse");
+        let semantic = build_semantic_envelope_v1(&structural).expect("semantic envelope");
+        let profile = SelectedDcClampProfileV1::try_new(
+            "7.1",
+            "product_input_model",
+            DcClampCornerV1::Typical,
+        )
+        .expect("profile");
+        decode_selected_dc_clamps_v1(&semantic, &profile)
+    }
+
+    fn selected_input_source(extra_rows: &[u8]) -> Vec<u8> {
+        [
+            b"[IBIS Ver] 7.1\n[Model] product_input_model\nModel_type Input\nC_comp 2.5pF NA NA\n[GND_clamp]\n-1V -2A 999A 888A\n0V 0A 999A 888A\n1V 2A 999A 888A\n[POWER_clamp]\n-1V 3A 999A 888A\n1V -1A 999A 888A\n".as_slice(),
+            extra_rows,
+        ]
+        .concat()
+    }
+
+    #[test]
+    fn decodes_only_the_selected_typical_input_clamp_scope() {
+        let decoded = decode_profile(&selected_input_source(
+            b"[Package]\nignored 1 2\n[Model] other_model\nModel_type Output\n",
+        ))
+        .expect("decoded profile");
+        assert_eq!(decoded.c_comp().capacitance_farads().get(), 2.5e-12);
+        let result = evaluate_dc_clamps_v1(
+            decoded.model(),
+            DcClampProbeV1::new(
+                Volts::try_new(0.5).expect("finite"),
+                Volts::try_new(0.0).expect("finite"),
+            ),
+        )
+        .expect("evaluated clamps");
+        assert_eq!(result.gnd_current().get(), 1.0);
+        assert_eq!(result.power_current().get(), 1.0);
+        assert_eq!(result.capacitive_current().get(), 0.0);
+    }
+
+    #[test]
+    fn rejects_selected_profile_scope_mismatches_and_malformed_tables() {
+        let cases = [
+            (
+                b"[IBIS Ver] 7.0\n[Model] product_input_model\nModel_type Input\nC_comp 1pF\n[GND_clamp]\n0V 0A\n1V 1A\n[POWER_clamp]\n0V 0A\n1V 1A\n".as_slice(),
+                IbisProfileDiagnosticV1::VersionMismatch,
+            ),
+            (
+                b"[IBIS Ver] 7.1\n[Model] product_input_model\nModel_type Output\nC_comp 1pF\n[GND_clamp]\n0V 0A\n1V 1A\n[POWER_clamp]\n0V 0A\n1V 1A\n".as_slice(),
+                IbisProfileDiagnosticV1::ModelTypeNotInput,
+            ),
+            (
+                b"[IBIS Ver] 7.1\n[Model] product_input_model\nModel_type Input\nC_comp -1pF\n[GND_clamp]\n0V 0A\n1V 1A\n[POWER_clamp]\n0V 0A\n1V 1A\n".as_slice(),
+                IbisProfileDiagnosticV1::CCompNegative,
+            ),
+            (
+                b"[IBIS Ver] 7.1\n[Model] product_input_model\nModel_type Input\nC_comp 1pF\n[GND_clamp]\n0V 0A\n1V 1A\n[POWER_clamp]\n0V 0A\n0V 1A\n".as_slice(),
+                IbisProfileDiagnosticV1::ClampTableInvalid,
+            ),
+        ];
+        for (source, expected) in cases {
+            assert_eq!(decode_profile(source), Err(expected));
+        }
+    }
+
+    #[test]
+    fn rejects_duplicate_or_algorithmic_selected_profile_sections() {
+        assert_eq!(
+            decode_profile(&selected_input_source(b"C_comp 3pF\n")),
+            Err(IbisProfileDiagnosticV1::CCompDuplicate)
+        );
+        assert_eq!(
+            decode_profile(&selected_input_source(b"[Algorithmic Model]\nattached\n")),
+            Err(IbisProfileDiagnosticV1::AlgorithmicModelPresent)
+        );
+        assert_eq!(
+            decode_profile(&selected_input_source(b"[GND_clamp]\n0V 0A\n1V 1A\n")),
+            Err(IbisProfileDiagnosticV1::GndClampDuplicate)
         );
     }
 }
