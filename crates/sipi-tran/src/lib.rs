@@ -216,6 +216,7 @@ fn volts(value: f64) -> Result<Volts, TranError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sipi_runtime::{CancelReason, RunId, RunPolicy, Runtime};
     use sipi_types::AxisView;
 
     fn test_only_pwl_rc(
@@ -358,5 +359,19 @@ mod tests {
             assert!((shifted - (base + 3.0)).abs() <= 1.0e-14);
             assert!((multiplied - base * 2.5).abs() <= 1.0e-14);
         }
+    }
+
+    #[test]
+    fn cooperative_context_cancels_before_any_success_result() {
+        let (controller, context) = Runtime::start(
+            RunId::try_new("cancelled-rc").expect("id"),
+            RunPolicy::try_new(std::time::Duration::from_secs(1), 8, 1024).expect("policy"),
+        )
+        .expect("runtime");
+        controller.cancel(CancelReason::Requested);
+        assert!(matches!(
+            simulate_rc_pulse_with_context(RcPulseTransientV1::fixed_profile(), &context),
+            Err(TranError::Runtime(sipi_runtime::RuntimeFailure::Cancelled))
+        ));
     }
 }
