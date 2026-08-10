@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 885a72590b7d4f8affee75d011532768f13b60de0433c4e495a6698d02060342
+  tracked_paths_sha256: b905a7f58ddcc6cbbe540f9ca57c49a4515ad2fe8f1f8fe7e849dd53840e41d1
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -689,6 +689,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/channel-rfm-receiver-erasure-amendment.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/channel-rfm-receiver-readiness.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -972,6 +978,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3a-s2p-matched-channel.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3b-approved-fixed-receiver-erasure-amendment.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5507,6 +5519,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_channel_rfm_receiver_erasure_amendment.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_channel_rfm_receiver_readiness.py:
       rule: migration-tools
       class: migration_only
@@ -5574,6 +5592,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_acceptance_profiles.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_channel_rfm_receiver_erasure_amendment.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

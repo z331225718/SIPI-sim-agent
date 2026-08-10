@@ -265,6 +265,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3b-receiver-semantic-charter-spec-v1]
+  - id: p3b-approved-fixed-receiver-erasure-amendment-spec-v1
+    kind: independent_spec
+    content_sha256: 2c5eb6f2fb396f6a3e65dedaf534f546c7a374771ebfd2e7cc24864e327e9467
+    provenance:
+      source_ref: docs/clean-room/specs/p3b-approved-fixed-receiver-erasure-amendment.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p3b-approved-fixed-receiver-spec-v1]
   - id: pybert-channel-16ghz-3db-fixture-f6ba031
     kind: oracle_fixture
     content_sha256: 9d4cfeaad7c971fa45454f639b40e08c538855058f326fbdec64298b8933b5ad
@@ -479,4 +487,13 @@ scopes:
       implementer: [p3b-approved-fixed-receiver-spec-v1]
       comparator: []
       auditor: [p3b-approved-fixed-receiver-spec-v1]
+  - id: p3b-approved-fixed-receiver-erasure-amendment-v1
+    paths: [docs/baselines/channel-rfm-receiver-erasure-amendment.v1.yaml, docs/clean-room/specs/p3b-approved-fixed-receiver-erasure-amendment.v1.md]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
+      implementer: [p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
+      comparator: []
+      auditor: [p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
 attestations: []

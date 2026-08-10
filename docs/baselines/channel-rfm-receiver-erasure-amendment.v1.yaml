@@ -1,0 +1,21 @@
+schema: sipi.channel.receiver-semantic-amendment.v1
+status: approved_owner_semantics
+profile_id: channel-rfm-block-2-current-drive-v1
+approved_by: user
+approved_at: 2026-08-10
+approval_ref: user-approved-erasure-amendment-2026-08-10
+base_approval_anchor:
+  commit: 82c7e90
+  approval_path: docs/baselines/channel-rfm-receiver-semantic-approval.v1.yaml
+  approval_blob: 481a8eb57f320e3a8b1fa7af669162026634403f
+  spec_path: docs/clean-room/specs/p3b-approved-fixed-receiver.v1.md
+  spec_blob: 1cb39562d28ad67d01dc28804178641b365ad1e9
+amendment_spec:
+  path: docs/clean-room/specs/p3b-approved-fixed-receiver-erasure-amendment.v1.md
+  erasure_feedback_symbol: 0.0
+  continue_after_erasure: true
+  erasure_counts_as_error: true
+non_claims:
+  - The amendment applies only to the approved fixed receiver profile.
+  - The external RFM compare remains blocked on an authorized reference-bit source.
+  - The product still does not consume RFM, Python, or external engine inputs.
