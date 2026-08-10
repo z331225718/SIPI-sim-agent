@@ -5,18 +5,19 @@
 //! Serialization is deterministic for these fixed structs and lists in this
 //! Rust toolchain. It is not a cross-implementation canonical JSON claim.
 
-use std::{error::Error, fmt};
+use std::{error::Error, fmt, num::NonZeroUsize};
 
 use schemars::{JsonSchema, schema_for};
 use serde::{Deserialize, Serialize};
 use sipi_types::{
-    Axis, Complex64, ComplexTensor, Hertz, PortId, PortList, Seconds, Spectrum, TypeError, Volts,
-    Waveform,
+    Axis, Complex64, ComplexTensor, FiniteF64, Hertz, PortId, PortList, Seconds, Spectrum,
+    TypeError, Volts, Waveform,
 };
 
 pub const CAPABILITIES_SCHEMA: &str = "sipi.capabilities.v1";
 pub const VALIDATION_REQUEST_SCHEMA: &str = "sipi.validation-request.v1";
 pub const TRAN_RC_PULSE_REQUEST_SCHEMA: &str = "sipi.tran.rc-pulse-request.v1";
+pub const LINK_PLAN_SCHEMA: &str = "sipi.link-plan.v1";
 pub const PLANNED_DOMAINS: [&str; 4] = ["tran", "channel", "ibis-ami", "com"];
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -24,6 +25,7 @@ pub enum ContractError {
     Json(String),
     Type(TypeError),
     Version,
+    Link(LinkContractError),
 }
 
 impl fmt::Display for ContractError {
@@ -32,6 +34,7 @@ impl fmt::Display for ContractError {
             Self::Json(_) => write!(formatter, "invalid contract JSON"),
             Self::Type(error) => error.fmt(formatter),
             Self::Version => write!(formatter, "unsupported contract version"),
+            Self::Link(error) => error.fmt(formatter),
         }
     }
 }
@@ -43,6 +46,33 @@ impl From<TypeError> for ContractError {
         Self::Type(value)
     }
 }
+
+impl From<LinkContractError> for ContractError {
+    fn from(value: LinkContractError) -> Self {
+        Self::Link(value)
+    }
+}
+
+/// Stable rejections for the deliberately narrow Link-stage contract.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum LinkContractError {
+    NonZeroStart,
+    NonPositiveSampleInterval,
+    EmptySampleCount,
+    StimulusLengthMismatch,
+    EmptyCausalFir,
+    ChannelIntervalMismatch,
+    OutputLengthOverflow,
+    UnsupportedStage,
+}
+
+impl fmt::Display for LinkContractError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "invalid Link-stage contract: {self:?}")
+    }
+}
+
+impl Error for LinkContractError {}
 
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -100,7 +130,7 @@ pub struct RuleLedgerEntry {
     pub test_id: &'static str,
 }
 
-pub const RULE_LEDGER_V1: [RuleLedgerEntry; 6] = [
+pub const RULE_LEDGER_V1: [RuleLedgerEntry; 9] = [
     RuleLedgerEntry {
         id: "contract.v1.version",
         owner: "contract",
@@ -142,6 +172,27 @@ pub const RULE_LEDGER_V1: [RuleLedgerEntry; 6] = [
         wire_type: "tran_rc_pulse_request",
         code: "unsupported_profile",
         test_id: "tran_rc_pulse_exact_profile",
+    },
+    RuleLedgerEntry {
+        id: "link.v1.timebase",
+        owner: "contract",
+        wire_type: "link_plan",
+        code: "invalid_timebase",
+        test_id: "link_timebase_is_strict",
+    },
+    RuleLedgerEntry {
+        id: "link.v1.causal-fir",
+        owner: "contract",
+        wire_type: "link_plan",
+        code: "invalid_causal_fir",
+        test_id: "link_causal_fir_is_strict",
+    },
+    RuleLedgerEntry {
+        id: "link.v1.stages",
+        owner: "contract",
+        wire_type: "link_plan",
+        code: "unsupported_stage",
+        test_id: "link_only_direct_bypass_is_accepted",
     },
 ];
 
@@ -238,6 +289,312 @@ pub struct TranPulseV1 {
     pub fall_seconds: f64,
     pub width_seconds: f64,
     pub period_seconds: f64,
+}
+
+/// Product-owned Link-stage plan. It is a typed boundary, not an executor.
+///
+/// Its channel is a causal, finite impulse-response kernel for future linear
+/// convolution. In particular, the periodic DFT kernel produced by
+/// `sipi-channel` is intentionally not accepted here.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireLinkPlanV1 {
+    pub schema: String,
+    pub timebase: WireUniformTimebaseV1,
+    pub tx: WireTxStageV1,
+    pub stimulus_volts: Vec<f64>,
+    pub channel: WireLinkChannelV1,
+    pub rx: WireRxStagesV1,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireUniformTimebaseV1 {
+    pub start_seconds: f64,
+    pub sample_interval_seconds: f64,
+    pub sample_count: usize,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum WireTxStageV1 {
+    DirectLaunch,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum WireLinkChannelV1 {
+    CausalFir {
+        sample_interval_seconds: f64,
+        gain_v_per_v: Vec<f64>,
+    },
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireRxStagesV1 {
+    pub ctle: WireCtleStageV1,
+    pub ffe: WireFfeStageV1,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum WireCtleStageV1 {
+    Bypass,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum WireFfeStageV1 {
+    Bypass,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct UniformTimebaseV1 {
+    start: Seconds,
+    sample_interval: Seconds,
+    sample_count: NonZeroUsize,
+}
+
+impl UniformTimebaseV1 {
+    pub fn try_new(
+        start: Seconds,
+        sample_interval: Seconds,
+        sample_count: usize,
+    ) -> Result<Self, LinkContractError> {
+        if start.get() != 0.0 {
+            return Err(LinkContractError::NonZeroStart);
+        }
+        if sample_interval.get() <= 0.0 {
+            return Err(LinkContractError::NonPositiveSampleInterval);
+        }
+        let sample_count =
+            NonZeroUsize::new(sample_count).ok_or(LinkContractError::EmptySampleCount)?;
+        Ok(Self {
+            start,
+            sample_interval,
+            sample_count,
+        })
+    }
+
+    pub fn start(self) -> Seconds {
+        self.start
+    }
+
+    pub fn sample_interval(self) -> Seconds {
+        self.sample_interval
+    }
+
+    pub fn sample_count(self) -> NonZeroUsize {
+        self.sample_count
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct CausalFirChannelV1 {
+    sample_interval: Seconds,
+    gain: Vec<FiniteF64>,
+}
+
+impl CausalFirChannelV1 {
+    pub fn try_new(
+        sample_interval: Seconds,
+        gain: Vec<FiniteF64>,
+    ) -> Result<Self, LinkContractError> {
+        if sample_interval.get() <= 0.0 {
+            return Err(LinkContractError::NonPositiveSampleInterval);
+        }
+        if gain.is_empty() {
+            return Err(LinkContractError::EmptyCausalFir);
+        }
+        Ok(Self {
+            sample_interval,
+            gain,
+        })
+    }
+
+    pub fn sample_interval(&self) -> Seconds {
+        self.sample_interval
+    }
+
+    pub fn gain(&self) -> &[FiniteF64] {
+        &self.gain
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum TxStageV1 {
+    DirectLaunch,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CtleStageV1 {
+    Bypass,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum FfeStageV1 {
+    Bypass,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RxStagesV1 {
+    ctle: CtleStageV1,
+    ffe: FfeStageV1,
+}
+
+impl RxStagesV1 {
+    pub fn bypass() -> Self {
+        Self {
+            ctle: CtleStageV1::Bypass,
+            ffe: FfeStageV1::Bypass,
+        }
+    }
+
+    pub fn ctle(self) -> CtleStageV1 {
+        self.ctle
+    }
+
+    pub fn ffe(self) -> FfeStageV1 {
+        self.ffe
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct LinkPlanV1 {
+    timebase: UniformTimebaseV1,
+    tx: TxStageV1,
+    stimulus: Vec<Volts>,
+    channel: CausalFirChannelV1,
+    rx: RxStagesV1,
+}
+
+impl LinkPlanV1 {
+    pub fn try_new(
+        timebase: UniformTimebaseV1,
+        tx: TxStageV1,
+        stimulus: Vec<Volts>,
+        channel: CausalFirChannelV1,
+        rx: RxStagesV1,
+    ) -> Result<Self, LinkContractError> {
+        if stimulus.len() != timebase.sample_count().get() {
+            return Err(LinkContractError::StimulusLengthMismatch);
+        }
+        if channel.sample_interval() != timebase.sample_interval() {
+            return Err(LinkContractError::ChannelIntervalMismatch);
+        }
+        let _ = stimulus
+            .len()
+            .checked_add(channel.gain().len())
+            .and_then(|count| count.checked_sub(1))
+            .ok_or(LinkContractError::OutputLengthOverflow)?;
+        Ok(Self {
+            timebase,
+            tx,
+            stimulus,
+            channel,
+            rx,
+        })
+    }
+
+    pub fn timebase(&self) -> UniformTimebaseV1 {
+        self.timebase
+    }
+
+    pub fn tx(&self) -> TxStageV1 {
+        self.tx
+    }
+
+    pub fn stimulus(&self) -> &[Volts] {
+        &self.stimulus
+    }
+
+    pub fn channel(&self) -> &CausalFirChannelV1 {
+        &self.channel
+    }
+
+    pub fn rx(&self) -> RxStagesV1 {
+        self.rx
+    }
+
+    /// The future linear convolution result has this many samples.
+    pub fn output_sample_count(&self) -> usize {
+        self.stimulus.len() + self.channel.gain().len() - 1
+    }
+}
+
+impl TryFrom<WireLinkPlanV1> for LinkPlanV1 {
+    type Error = ContractError;
+
+    fn try_from(value: WireLinkPlanV1) -> Result<Self, Self::Error> {
+        require_link_schema(&value.schema)?;
+        let timebase = UniformTimebaseV1::try_new(
+            Seconds::try_new(value.timebase.start_seconds)?,
+            Seconds::try_new(value.timebase.sample_interval_seconds)?,
+            value.timebase.sample_count,
+        )?;
+        let stimulus = value
+            .stimulus_volts
+            .into_iter()
+            .map(Volts::try_new)
+            .collect::<Result<Vec<_>, _>>()?;
+        let channel = match value.channel {
+            WireLinkChannelV1::CausalFir {
+                sample_interval_seconds,
+                gain_v_per_v,
+            } => CausalFirChannelV1::try_new(
+                Seconds::try_new(sample_interval_seconds)?,
+                gain_v_per_v
+                    .into_iter()
+                    .map(|gain| FiniteF64::try_new(gain, "causal FIR gain"))
+                    .collect::<Result<Vec<_>, _>>()?,
+            )?,
+        };
+        let tx = match value.tx {
+            WireTxStageV1::DirectLaunch => TxStageV1::DirectLaunch,
+        };
+        let rx = match value.rx {
+            WireRxStagesV1 {
+                ctle: WireCtleStageV1::Bypass,
+                ffe: WireFfeStageV1::Bypass,
+            } => RxStagesV1::bypass(),
+        };
+        Self::try_new(timebase, tx, stimulus, channel, rx).map_err(Into::into)
+    }
+}
+
+impl From<&LinkPlanV1> for WireLinkPlanV1 {
+    fn from(value: &LinkPlanV1) -> Self {
+        Self {
+            schema: LINK_PLAN_SCHEMA.to_owned(),
+            timebase: WireUniformTimebaseV1 {
+                start_seconds: value.timebase.start().get(),
+                sample_interval_seconds: value.timebase.sample_interval().get(),
+                sample_count: value.timebase.sample_count().get(),
+            },
+            tx: WireTxStageV1::DirectLaunch,
+            stimulus_volts: value.stimulus().iter().map(|sample| sample.get()).collect(),
+            channel: WireLinkChannelV1::CausalFir {
+                sample_interval_seconds: value.channel().sample_interval().get(),
+                gain_v_per_v: value
+                    .channel()
+                    .gain()
+                    .iter()
+                    .map(|gain| gain.get())
+                    .collect(),
+            },
+            rx: WireRxStagesV1 {
+                ctle: WireCtleStageV1::Bypass,
+                ffe: WireFfeStageV1::Bypass,
+            },
+        }
+    }
+}
+
+pub fn parse_link_plan_v1(input: &[u8]) -> Result<LinkPlanV1, ContractError> {
+    serde_json::from_slice::<WireLinkPlanV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
 }
 
 pub fn parse_tran_rc_pulse_request_v1(input: &[u8]) -> Result<TranRcPulseRequestV1, ContractError> {
@@ -371,8 +728,20 @@ pub fn capability_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(CapabilityCatalogV1))
 }
 
+pub fn link_plan_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(WireLinkPlanV1))
+}
+
 fn require_schema(schema: &str) -> Result<(), ContractError> {
     if schema == "sipi.contract.v1" {
+        Ok(())
+    } else {
+        Err(ContractError::Version)
+    }
+}
+
+fn require_link_schema(schema: &str) -> Result<(), ContractError> {
+    if schema == LINK_PLAN_SCHEMA {
         Ok(())
     } else {
         Err(ContractError::Version)
@@ -528,6 +897,56 @@ mod tests {
         assert_eq!(
             deterministic_json(&WireWaveformV1::from(&waveform)).unwrap(),
             br#"{"schema":"sipi.contract.v1","axis":{"encoding":"explicit","values":[0.0,1.0]},"samples":[1.0,2.0]}"#,
+        );
+    }
+
+    #[test]
+    fn link_plan_is_typed_and_strictly_causal() {
+        let valid = br#"{"schema":"sipi.link-plan.v1","timebase":{"start_seconds":0.0,"sample_interval_seconds":1e-12,"sample_count":3},"tx":{"kind":"direct_launch"},"stimulus_volts":[0.0,1.0,0.0],"channel":{"kind":"causal_fir","sample_interval_seconds":1e-12,"gain_v_per_v":[1.0,0.5]},"rx":{"ctle":{"kind":"bypass"},"ffe":{"kind":"bypass"}}}"#;
+        let plan = parse_link_plan_v1(valid).expect("valid Link plan");
+        assert_eq!(plan.output_sample_count(), 4);
+        assert_eq!(plan.tx(), TxStageV1::DirectLaunch);
+        assert_eq!(plan.rx(), RxStagesV1::bypass());
+        assert_eq!(
+            deterministic_json(&WireLinkPlanV1::from(&plan)).expect("wire"),
+            valid
+        );
+    }
+
+    #[test]
+    fn link_plan_rejects_periodic_or_inconsistent_channel_shapes() {
+        let valid = br#"{"schema":"sipi.link-plan.v1","timebase":{"start_seconds":0.0,"sample_interval_seconds":1e-12,"sample_count":2},"tx":{"kind":"direct_launch"},"stimulus_volts":[0.0,1.0],"channel":{"kind":"causal_fir","sample_interval_seconds":1e-12,"gain_v_per_v":[1.0]},"rx":{"ctle":{"kind":"bypass"},"ffe":{"kind":"bypass"}}}"#;
+        assert!(parse_link_plan_v1(valid).is_ok());
+        assert!(parse_link_plan_v1(
+            br#"{"schema":"sipi.link-plan.v1","timebase":{"start_seconds":1.0,"sample_interval_seconds":1e-12,"sample_count":2},"tx":{"kind":"direct_launch"},"stimulus_volts":[0.0,1.0],"channel":{"kind":"causal_fir","sample_interval_seconds":1e-12,"gain_v_per_v":[1.0]},"rx":{"ctle":{"kind":"bypass"},"ffe":{"kind":"bypass"}}}"#
+        )
+        .is_err());
+        assert!(parse_link_plan_v1(
+            br#"{"schema":"sipi.link-plan.v1","timebase":{"start_seconds":0.0,"sample_interval_seconds":1e-12,"sample_count":2},"tx":{"kind":"direct_launch"},"stimulus_volts":[0.0,1.0],"channel":{"kind":"causal_fir","sample_interval_seconds":2e-12,"gain_v_per_v":[1.0]},"rx":{"ctle":{"kind":"bypass"},"ffe":{"kind":"bypass"}}}"#
+        )
+        .is_err());
+        assert!(parse_link_plan_v1(
+            br#"{"schema":"sipi.link-plan.v1","timebase":{"start_seconds":0.0,"sample_interval_seconds":1e-12,"sample_count":2},"tx":{"kind":"direct_launch"},"stimulus_volts":[0.0,1.0],"channel":{"kind":"periodic_kernel","sample_interval_seconds":1e-12,"gain_v_per_v":[1.0]},"rx":{"ctle":{"kind":"bypass"},"ffe":{"kind":"bypass"}}}"#
+        )
+        .is_err());
+        assert!(parse_link_plan_v1(
+            br#"{"schema":"sipi.link-plan.v1","timebase":{"start_seconds":0.0,"sample_interval_seconds":1e-12,"sample_count":2},"tx":{"kind":"direct_launch"},"stimulus_volts":[0.0,1.0],"channel":{"kind":"causal_fir","sample_interval_seconds":1e-12,"gain_v_per_v":[]},"rx":{"ctle":{"kind":"bypass"},"ffe":{"kind":"bypass"}}}"#
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn link_schema_is_available_from_the_contract_authority() {
+        assert!(link_plan_schema_json().expect("schema").starts_with(b"{"));
+    }
+
+    #[test]
+    fn tracked_link_schema_baseline_is_exactly_the_registered_export() {
+        let baseline = include_bytes!("../schemas/sipi.link-plan.v1.schema.json");
+        assert!(baseline.ends_with(b"\n"));
+        assert_eq!(
+            link_plan_schema_json().expect("schema"),
+            &baseline[..baseline.len() - 1]
         );
     }
 }
