@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 01429f5a51b63414931e389d023f65357d58853e5b31cc0a59fc5dd6023af66f
+  tracked_paths_sha256: 3f0959ed821d6a48b50d1e7069ebf247b6cfd4cbc00e08baa8ae7af85fa19892
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1026,6 +1026,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-11-p6-project-dag-contract.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-11-p6-tran-to-link-edge-attempt.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
