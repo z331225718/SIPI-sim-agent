@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: e4e6686225f53dc69542fc298d926cc1fe4b144aac2690509250033074cd23c2
+  tracked_paths_sha256: 125302d10b2b304b3437196de3af2e33aa7dcf6fa23240f560ab7bd191fecc37
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -552,6 +552,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p2l-tran-performance-observation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p3a-clean-room-matched-kernel.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

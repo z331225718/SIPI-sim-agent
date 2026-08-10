@@ -235,7 +235,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 
 - [x] **P3A-01** 为已选 `channel_16ghz_3db` 冻结 external-only、两端口 real-50-ohm matched S2P 的端口、z0、power-wave、launch/receiver 和 termination 规格；RLGC/S4P/RFM 仍未开始。
 - [x] **P3A-02** 观察侧以精确 Git object 锚定该 S2P 的结构事实，并冻结 matched-S2P 离散 V/V kernel 的 probe、DC/uniform-grid/Hermitian-IFFT/sign、对齐及容差策略。外部 observer 与产品 compare 仍未执行。
-- [ ] **P3A-03** clean-room 实现唯一 `sipi-channel` resolver，adapter 不做任何数值变换。
+- [x] **P3A-03** clean-room `sipi-channel` 实现 matched two-port `S21` 到离散 V/V kernel 的唯一 resolver；只接收产品自有均匀矩阵，不含 adapter、Touchstone、Python 或额外数值路径。
 - [ ] **P3A-04** 用公开网络恒等式、passivity/causality/property tests 验证独立正确性。
 - [ ] **P3A-05** 对 required S2P/RFM fixtures 做 response/stage compare 和完整 lineage。
 
