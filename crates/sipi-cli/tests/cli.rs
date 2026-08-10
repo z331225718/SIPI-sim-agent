@@ -14,7 +14,7 @@ fn capabilities_are_machine_readable_and_uncertified() {
     assert!(output.status.success());
     assert_eq!(
         String::from_utf8(output.stdout).expect("UTF-8 stdout"),
-        "{\"schema\":\"sipi.cli.response.v1\",\"protocol\":1,\"command\":\"capabilities\",\"request_id\":null,\"status\":\"ok\",\"result\":{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"channel\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]},\"diagnostic_count\":0}\n"
+        "{\"schema\":\"sipi.cli.response.v1\",\"protocol\":1,\"command\":\"capabilities\",\"request_id\":null,\"status\":\"ok\",\"result\":{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"},{\"domain\":\"channel\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]},\"diagnostic_count\":0}\n"
     );
     assert!(output.stderr.is_empty());
 }
@@ -60,4 +60,44 @@ fn stdin_validation_is_noninteractive_and_contract_checked() {
             .contains("\"command\":\"validate\"")
     );
     assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn fixed_tran_stdin_run_publishes_a_two_file_artifact() {
+    let request = br#"{"schema":"sipi.tran.rc-pulse-request.v1","request_id":"rc-pulse-1","resistance_ohms":1000.0,"capacitance_farads":0.000001,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000001,0.000002,0.000003],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.0,"delay_seconds":0.000001,"rise_seconds":0.000000001,"fall_seconds":0.000000001,"width_seconds":0.00001,"period_seconds":0.00002}}"#;
+    let root = std::env::temp_dir().join(format!("sipi-cli-process-tran-{}", std::process::id()));
+    let mut child = sipi()
+        .args([
+            "tran",
+            "run",
+            "--stdin",
+            "--artifact-root",
+            root.to_string_lossy().as_ref(),
+            "--artifact-id",
+            "rc-pulse-1",
+        ])
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .expect("start sipi");
+    use std::io::Write;
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(request)
+        .expect("write request");
+    let output = child.wait_with_output().expect("wait sipi");
+    assert!(output.status.success());
+    assert!(
+        String::from_utf8(output.stdout)
+            .expect("stdout")
+            .contains("sipi.tran.run-result.v1")
+    );
+    assert!(output.stderr.is_empty());
+    assert!(root.join("rc-pulse-1").join("success.json").is_file());
+    assert!(root.join("rc-pulse-1").join("result.json").is_file());
+    assert!(root.join("rc-pulse-1").join("provenance.json").is_file());
+    let _ = std::fs::remove_dir_all(root);
 }

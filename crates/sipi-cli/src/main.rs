@@ -2,14 +2,20 @@
 
 use std::{
     env,
-    io::{self, Read},
+    io::{self, Cursor, Read},
+    path::Path,
     process,
+    time::Duration,
 };
 
 use sipi_contracts::{
     CAPABILITIES_SCHEMA, CapabilityCatalogV1, PLANNED_DOMAINS, RULE_LEDGER_V1,
-    capability_schema_json, deterministic_json, validate_request_v1,
+    capability_schema_json, deterministic_json, parse_tran_rc_pulse_request_v1,
+    validate_request_v1,
 };
+use sipi_runtime::{CacheKeyBuilder, ResourceCost, RunId, RunPolicy, Runtime};
+use sipi_tran::{RcPulseTransientV1, simulate_rc_pulse};
+use sipi_types::AxisView;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const TARGET: &str = "x86_64-pc-windows-msvc";
@@ -27,6 +33,14 @@ fn main() {
     let command = arguments.first().map_or("help", String::as_str);
     let response = if arguments == ["validate", "--stdin"] {
         ProcessAdapter::validate_stdin()
+    } else if let [command, action, stdin, root, artifact_root, id, artifact_id] = &arguments[..]
+        && command == "tran"
+        && action == "run"
+        && stdin == "--stdin"
+        && root == "--artifact-root"
+        && id == "--artifact-id"
+    {
+        ProcessAdapter::tran_run_stdin(artifact_root, artifact_id)
     } else {
         dispatch(&arguments)
     };
@@ -58,6 +72,141 @@ impl ProcessAdapter {
             Err(_) => error(3, "contract_rejected", "stdin request was rejected"),
         }
     }
+
+    fn tran_run_stdin(artifact_root: &str, artifact_id: &str) -> Response {
+        let input = match read_stdin_request() {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        if parse_tran_rc_pulse_request_v1(&input).is_err() {
+            return error(3, "contract_rejected", "TRAN request was rejected");
+        }
+        run_fixed_tran(artifact_root, artifact_id, &input)
+    }
+}
+
+fn read_stdin_request() -> Result<Vec<u8>, &'static str> {
+    const MAXIMUM: usize = 1_048_576;
+    let mut input = Vec::with_capacity(8192);
+    io::stdin()
+        .take((MAXIMUM + 1) as u64)
+        .read_to_end(&mut input)
+        .map_err(|_| "operational_failure")?;
+    if input.len() > MAXIMUM || input.is_empty() || input.starts_with(&[0xEF, 0xBB, 0xBF]) {
+        Err("invalid_input")
+    } else {
+        Ok(input)
+    }
+}
+
+fn run_fixed_tran(artifact_root: &str, artifact_id: &str, request: &[u8]) -> Response {
+    let policy = match RunPolicy::try_new(Duration::from_secs(1), 16, 1_048_576) {
+        Ok(policy) => policy,
+        Err(_) => return error(6, "internal_failure", "run policy is unavailable"),
+    };
+    let id = match RunId::try_new(artifact_id) {
+        Ok(id) => id,
+        Err(_) => return error(2, "invalid_artifact_id", "artifact id is invalid"),
+    };
+    let (_, context) = match Runtime::start(id, policy) {
+        Ok(run) => run,
+        Err(_) => return error(6, "internal_failure", "runtime is unavailable"),
+    };
+    let request_key = cache_key("request", request);
+    let root = Path::new(artifact_root);
+    let result = Runtime::execute(&context, |context| -> Result<_, ()> {
+        context
+            .consume(ResourceCost {
+                work_units: 1,
+                accounted_bytes: request.len() as u64,
+            })
+            .map_err(|_| ())?;
+        let simulation = simulate_rc_pulse(RcPulseTransientV1::fixed_profile()).map_err(|_| ())?;
+        let result_json = result_json(&simulation).map_err(|_| ())?;
+        let result_key = cache_key("result", result_json.as_bytes());
+        let provenance = format!(
+            "{{\"schema\":\"sipi.tran.provenance.v1\",\"algorithm\":\"backward_euler_rc_pulse_v1\",\"request_cache_key\":\"{request_key}\",\"result_cache_key\":\"{result_key}\",\"run_policy_id\":\"sipi.tran.fixed-policy.v1\",\"contract\":\"sipi.tran.rc-pulse-request.v1\",\"target\":\"{TARGET}\"}}"
+        );
+        let store = sipi_artifacts::ArtifactRoot::open_or_create(root).map_err(|_| ())?;
+        let mut staging = store.begin(artifact_id).map_err(|_| ())?;
+        staging
+            .stage_reader(
+                "result.json",
+                Cursor::new(result_json.into_bytes()),
+                1_048_576,
+            )
+            .map_err(|_| ())?;
+        staging
+            .stage_reader(
+                "provenance.json",
+                Cursor::new(provenance.into_bytes()),
+                16_384,
+            )
+            .map_err(|_| ())?;
+        let manifest = staging
+            .seal()
+            .and_then(|sealed| sealed.publish_new())
+            .map_err(|_| ())?;
+        Ok((request_key, manifest))
+    });
+    match result {
+        Ok((request_key, manifest)) => success(format!(
+            "{{\"schema\":\"sipi.tran.run-result.v1\",\"artifact_id\":\"{}\",\"request_cache_key\":\"{}\",\"manifest_schema\":\"{}\",\"file_count\":{}}}",
+            manifest.artifact_id,
+            request_key,
+            manifest.schema,
+            manifest.files.len()
+        )),
+        Err(_) => error(
+            5,
+            "operational_failure",
+            "TRAN run did not publish an artifact",
+        ),
+    }
+}
+
+fn cache_key(label: &str, value: &[u8]) -> String {
+    let mut builder = CacheKeyBuilder::new();
+    builder
+        .add_bytes(label, value)
+        .expect("constant cache label");
+    builder.finish().as_str().to_owned()
+}
+
+fn result_json(result: &sipi_tran::RcPulseTransientResultV1) -> Result<String, &'static str> {
+    let AxisView::Explicit(times) = result.time_axis().view() else {
+        return Err("fixed profile must have explicit time axis");
+    };
+    Ok(format!(
+        "{{\"schema\":\"sipi.tran.rc-pulse-result.v1\",\"profile_id\":\"tran-rc-pulse-v1\",\"time_seconds\":{},\"voltage_in_volts\":{},\"voltage_out_volts\":{}}}",
+        json_values(times.iter().map(|value| value.get())),
+        json_values(
+            result
+                .voltage_in()
+                .samples()
+                .iter()
+                .map(|value| value.get())
+        ),
+        json_values(
+            result
+                .voltage_out()
+                .samples()
+                .iter()
+                .map(|value| value.get())
+        ),
+    ))
+}
+
+fn json_values(values: impl ExactSizeIterator<Item = f64>) -> String {
+    let mut result = String::from("[");
+    for (index, value) in values.enumerate() {
+        if index != 0 {
+            result.push(',');
+        }
+        result.push_str(&value.to_string());
+    }
+    result.push(']');
+    result
 }
 
 fn dispatch(arguments: &[String]) -> Response {
@@ -125,6 +274,11 @@ impl CommandService {
                 "unsupported",
                 "simulation domains are not implemented in the P1-01 foundation",
             ),
+            [command, ..] if command == "tran" => error(
+                4,
+                "unsupported",
+                "TRAN requires the exact run --stdin artifact command",
+            ),
             _ => error(
                 64,
                 "usage",
@@ -181,9 +335,13 @@ fn capabilities_json() -> String {
     let capabilities = PLANNED_DOMAINS
         .iter()
         .map(|domain| {
-            format!(
-                "{{\"domain\":\"{domain}\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}}"
-            )
+            if *domain == "tran" {
+                "{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"}".to_owned()
+            } else {
+                format!(
+                    "{{\"domain\":\"{domain}\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}}"
+                )
+            }
         })
         .collect::<Vec<_>>()
         .join(",");
@@ -263,13 +421,20 @@ fn inspect_capability(id: &str) -> Response {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    static TEST_NONCE: AtomicUsize = AtomicUsize::new(0);
 
     fn args(values: &[&str]) -> Vec<String> {
         values.iter().map(|value| (*value).to_owned()).collect()
     }
 
+    fn rc_pulse_request() -> &'static [u8] {
+        br#"{"schema":"sipi.tran.rc-pulse-request.v1","request_id":"rc-pulse-1","resistance_ohms":1000.0,"capacitance_farads":0.000001,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000001,0.000002,0.000003],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.0,"delay_seconds":0.000001,"rise_seconds":0.000000001,"fall_seconds":0.000000001,"width_seconds":0.00001,"period_seconds":0.00002}}"#
+    }
+
     #[test]
-    fn capability_inventory_is_explicitly_unsupported() {
+    fn capability_inventory_exposes_only_the_fixed_tran_profile() {
         let response = dispatch(&args(&["capabilities", "--json"]));
 
         assert_eq!(response.code, 0);
@@ -277,7 +442,7 @@ mod tests {
         assert_eq!(
             response.stdout.as_deref(),
             Some(
-                "{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"channel\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]}"
+                "{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"},{\"domain\":\"channel\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]}"
             )
         );
     }
@@ -313,5 +478,30 @@ mod tests {
             dispatch(&args(&["inspect", "capability", "unknown", "--json"])).code,
             64
         );
+    }
+
+    #[test]
+    fn fixed_tran_run_publishes_only_a_verified_artifact() {
+        let nonce = TEST_NONCE.fetch_add(1, Ordering::Relaxed);
+        let root = std::env::temp_dir().join(format!("sipi-cli-tran-{nonce}"));
+        let root_text = root.to_string_lossy();
+        let response = run_fixed_tran(&root_text, "rc-pulse-1", rc_pulse_request());
+        assert_eq!(response.code, 0);
+        assert!(
+            response
+                .stdout
+                .as_deref()
+                .is_some_and(|value| value.contains("artifact_id"))
+        );
+        let store = sipi_artifacts::ArtifactRoot::open_or_create(&root).expect("artifact root");
+        let manifest = store
+            .verify_published("rc-pulse-1")
+            .expect("published artifact");
+        assert_eq!(manifest.files.len(), 2);
+        assert_eq!(
+            run_fixed_tran(&root_text, "rc-pulse-1", rc_pulse_request()).code,
+            5
+        );
+        let _ = std::fs::remove_dir_all(root);
     }
 }

@@ -153,6 +153,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, comparator, auditor]
     derived_from: [p2-tran-rc-pulse-semantic-contract-spec-v1]
+  - id: p2-tran-fixed-cli-run-spec-v1
+    kind: independent_spec
+    content_sha256: b9508969a67333d0d8fcc92cde08c480c082f8703c56773e57e08bfe36caf1c8
+    provenance:
+      source_ref: docs/clean-room/specs/p2-tran-fixed-cli-run.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p2-tran-rc-pulse-semantic-contract-spec-v1]
   - id: agent-spice-license-2cc92316
     kind: mit_source
     content_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
@@ -233,4 +241,13 @@ scopes:
       implementer: []
       comparator: [p2-tran-rc-pulse-comparator-spec-v1, agent-spice-rc-pulse-fixture-2cc92316]
       auditor: [p2-tran-rc-pulse-comparator-spec-v1, agent-spice-license-2cc92316, agent-spice-rc-pulse-fixture-2cc92316]
+  - id: p2-tran-fixed-cli-run-v1
+    paths: [docs/clean-room/specs/p2-tran-fixed-cli-run.v1.md, crates/sipi-cli/**, crates/sipi-contracts/**]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1]
+      implementer: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1]
+      comparator: []
+      auditor: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1]
 attestations: []

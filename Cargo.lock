@@ -251,7 +251,10 @@ dependencies = [
 name = "sipi-cli"
 version = "0.1.0"
 dependencies = [
+ "sipi-artifacts",
  "sipi-contracts",
+ "sipi-runtime",
+ "sipi-tran",
  "sipi-types",
 ]
 

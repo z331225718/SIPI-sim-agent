@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 57a37d28070f2d6ec9e66719587ed1b8a3677631e6bf4b73c931df0b61ba8e80
+  tracked_paths_sha256: 70f8c9049121210f830a05a0d62cb1a41c3a9c6793a5aa69ce7fef3382a6782b
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -702,6 +702,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p1-windows-locked-build-gate.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p2-tran-fixed-cli-run.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
