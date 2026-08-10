@@ -219,6 +219,9 @@ def _materialize_product_runner(product_root: Path, product_commit: str, temp_ro
     archive = subprocess.run(["git", "-C", str(product_root), "archive", "--format=tar", product_commit], capture_output=True)
     if archive.returncode != 0:
         raise ComparatorError("product commit cannot be materialized")
+    lock = subprocess.run(["git", "-C", str(product_root), "cat-file", "blob", f"{product_commit}:Cargo.lock"], capture_output=True)
+    if lock.returncode != 0:
+        raise ComparatorError("product commit has no Cargo.lock Git object")
     tree = subprocess.run(["git", "-C", str(product_root), "rev-parse", f"{product_commit}^{{tree}}"], check=True, capture_output=True, text=True).stdout.strip()
     source = temp_root / "product-source"
     with tarfile.open(fileobj=io.BytesIO(archive.stdout)) as document:
@@ -237,7 +240,7 @@ def _materialize_product_runner(product_root: Path, product_commit: str, temp_ro
     runner = target / "release" / "sipi-channel-kernel-runner.exe"
     if completed.returncode != 0 or not runner.is_file():
         raise ComparatorError("product runner clean build failed")
-    return runner, {"source_commit": product_commit, "source_tree": tree, "cargo_lock_sha256": _sha256_file(source / "Cargo.lock"), "runner_sha256": _sha256_file(runner), "runner_bytes": runner.stat().st_size, "cargo_version": subprocess.run([cargo, "--version"], check=True, capture_output=True, text=True).stdout.strip()}
+    return runner, {"source_commit": product_commit, "source_tree": tree, "cargo_lock_sha256": _sha256_bytes(lock.stdout), "runner_sha256": _sha256_file(runner), "runner_bytes": runner.stat().st_size, "cargo_version": subprocess.run([cargo, "--version"], check=True, capture_output=True, text=True).stdout.strip()}
 
 
 def compare(contract_path: Path, source_root: Path, product_root: Path, product_commit: str) -> dict:
