@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: a519a577b1950f4a38cf7d868f5938dd2e791fa3d1f2d6b5c4494239c011a8fc
+  tracked_paths_sha256: 57ca71d0e944260dcd8cc0636f96600675a756c3da9e7bc3a80a4b5a09e7f273
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1020,6 +1020,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-11-p5-com-r480-reference-availability-preflight.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-11-p6-command-manifest.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
