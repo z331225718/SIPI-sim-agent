@@ -123,6 +123,7 @@ def verify_document(document: object, source_roots: dict[str, Path] | None = Non
                 "required_blocked_missing_receiver_semantics",
                 "required_blocked_missing_authorized_reference_bit_source",
                 "required_pending_receiver_compare",
+                "required_pending_authoritative_reference",
             }:
                 if not isinstance(acceptance.get("required_by"), str) or not acceptance["required_by"]:
                     blockers.append(f"{profile_id}: selected acceptance requires a decision reference")

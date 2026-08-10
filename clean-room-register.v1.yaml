@@ -449,6 +449,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: []
+  - id: p5-com-r480-acceptance-contract-spec-v1
+    kind: independent_spec
+    content_sha256: 805d82ff8b5866e006f1540b56c45746835e391d69f4fb88659017aee5265e4a
+    provenance:
+      source_ref: docs/clean-room/specs/p5-com-r480-acceptance-contract.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: []
 scopes:
   - id: clean-room-process-template-v1
     paths: [docs/clean-room/**]
@@ -801,4 +809,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p5-agent-com-git-object-preflight-spec-v1]
+  - id: p5-com-r480-acceptance-contract-v1
+    paths: [acceptance-profiles.v1.yaml, docs/baselines/com-r480-acceptance.v1.yaml, docs/clean-room/specs/p5-com-r480-acceptance-contract.v1.md, tools/verify_acceptance_profiles.py, tools/test_acceptance_profiles.py, tools/verify_com_r480_acceptance.py, tools/test_verify_com_r480_acceptance.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p5-com-r480-acceptance-contract-spec-v1]
+      spec_author: [p5-com-r480-acceptance-contract-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p5-com-r480-acceptance-contract-spec-v1]
 attestations: []

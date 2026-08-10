@@ -1,0 +1,45 @@
+schema: sipi.com.r480.acceptance.v1
+selection:
+  profile_id: com-r480-envelope-v1
+  capability: com
+  required: true
+  status: user_selected
+  decision_ref: user-confirmed-2026-08-11-com-r480
+external_oracle:
+  source:
+    canonical_origin: https://github.com/z331225718/agent-com.git
+    commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+    tree: 7094ab6e84989b218730c52432c70da10261f8ea
+    object_format: sha1
+    path: schemas/r480-capability-envelope-v1.yaml
+    git_blob: 69aeffa675341733277ccaf19a8e878cb716a315
+    content_sha256: 9b3329e25559e595187ae1a0530785d5a8dbbdc02a035eeb44326aa91ee34b73
+    redistribution: external_only
+  role: external_comparison_observation_only
+  materialization: external_clean_temp_only
+  product_fallback: forbidden
+external_materials:
+  matlab_source: external_quarantine
+  workbook_data: external_quarantine
+  fixture_data: external_quarantine
+  product_material: prohibited
+product_contract:
+  status: independent_clean_room_spec_required
+  input_identity: [normalized_input_digest, channel_role_manifest_digest, parameter_set_digest]
+  stage_observables: [selected_channel_evidence, equalizer_selection_evidence, pdf_axes_and_density]
+  metric_bundle:
+    - {id: com_db, unit: dB, comparison_level: scalar}
+    - {id: erl_db, unit: dB, comparison_level: scalar}
+    - {id: td_iln_db, unit: dB, comparison_level: scalar}
+authoritative_reference:
+  status: missing
+  required_before_compare: [exact_normalized_input, oracle_runtime_identity, reference_metric_bundle_hash, tolerance_and_alignment_policy]
+  external_custody: required
+comparison:
+  status: blocked_missing_authoritative_reference
+  result_status: not_run
+  product_self_comparison: forbidden
+non_claims:
+  - The external schema and any MATLAB, workbook, or fixture bytes are not product input, product source, test fixture, or runtime dependency.
+  - This profile selection does not define or reproduce a legacy wire API, MATLAB algorithm, numerical result, tolerance, or golden output.
+  - No COM capability, parity result, CLI route, release eligibility, or MIT source promotion is established by this record.

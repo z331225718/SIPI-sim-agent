@@ -9,6 +9,10 @@ repositories:
     canonical_origin: external-agent-com-git-object-source
     commit: 034b21b2f293b2ef97cb8be269b1bf2be38e0086
     object_format: sha1
+  - id: agent-com-5272ffe
+    canonical_origin: https://github.com/z331225718/agent-com.git
+    commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+    object_format: sha1
 profiles:
   - id: channel-s2p-channel-16ghz-3db-v1
     capability: channel
@@ -61,16 +65,16 @@ profiles:
     capability: com
     boundary: oracle_only
     source:
-      repository: agent-com-034b21b
+      repository: agent-com-5272ffe
       path: schemas/r480-capability-envelope-v1.yaml
       git_blob: 69aeffa675341733277ccaf19a8e878cb716a315
       content_sha256: 9b3329e25559e595187ae1a0530785d5a8dbbdc02a035eeb44326aa91ee34b73
     assets: []
-    source_license_evidence: license-manifest.v1.yaml#agent-com-source
-    environment: {platform: windows-x86_64, provenance_status: evidence_incomplete, provenance_ref: docs/baselines/agent-com-baseline.json#golden}
-    acceptance: {observable: R480 behavior envelope and documented output metrics, comparator_ref: external-agent-com-oracle, tolerance_policy_ref: docs/baselines/agent-com-baseline.json#golden, status: candidate, required_by: null}
-    evidence_refs: [docs/baselines/agent-com-baseline.json#golden]
-    notes: Candidate behavior envelope; authoritative MATLAB golden remains external-only and unresolved.
+    source_license_evidence: docs/baselines/p5-agent-com-git-object-preflight.v1.yaml#license_evidence.root_license
+    environment: {platform: windows-x86_64, provenance_status: evidence_incomplete, provenance_ref: docs/baselines/com-r480-acceptance.v1.yaml}
+    acceptance: {observable: "R480 selected-channel evidence, equalizer-selection evidence, PDF axes/density, and COM/ERL/TDILN metric bundle", comparator_ref: external-agent-com-oracle, tolerance_policy_ref: docs/baselines/com-r480-acceptance.v1.yaml, status: required_pending_authoritative_reference, required_by: user-confirmed-2026-08-11-com-r480}
+    evidence_refs: [docs/baselines/com-r480-acceptance.v1.yaml]
+    notes: User-selected external-oracle profile. MATLAB/workbook/data remain external quarantine and are prohibited product material; the authoritative reference bundle is missing.
 non_claims:
   - Candidate profiles are not user-confirmed required acceptance obligations.
   - This inventory neither runs an oracle nor copies/re-records assets or golden data.

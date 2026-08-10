@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: a80090974ab15910118fc6caea73cb0975a264871db46288d7d636f17ffa0d53
+  tracked_paths_sha256: 50b583658eb6e1a88cc49094a64d8cb3b4a51ca52908baa9692e8f1f77a10c61
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -905,6 +905,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/com-r480-acceptance.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/conformance/m4-dto-conformance.json:
       rule: historical-docs
       class: migration_only
@@ -1368,6 +1374,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p5-agent-com-git-object-preflight.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p5-com-r480-acceptance-contract.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5951,6 +5963,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_com_r480_acceptance.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_license_manifest.py:
       rule: migration-tools
       class: migration_only
@@ -6108,6 +6126,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_clean_room_templates.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_com_r480_acceptance.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
