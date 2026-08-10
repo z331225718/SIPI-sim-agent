@@ -1,0 +1,11 @@
+[package]
+name = "sipi-ibis"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Clean-room structural IBIS text parser foundation."
+
+[lints]
+workspace = true

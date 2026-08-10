@@ -334,6 +334,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "sipi-ibis"
+version = "0.1.0"
+
+[[package]]
 name = "sipi-layout"
 version = "0.1.0"
 dependencies = [

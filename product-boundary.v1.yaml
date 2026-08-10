@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 3373311d693be1bd1a38b214553607e968a49f4e0a4d2ad709fb673bb6672be9
+  tracked_paths_sha256: 0023599be64e2cc17910923d55bf27c36a9e239488403ed6f9fa88097b27846e
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -204,6 +204,18 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-contracts/tests/product_contract_fixtures.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-ibis/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-ibis/src/lib.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1236,6 +1248,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p4a-ibis-example-rx-candidate-inventory.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p4a-ibis-structural-parser-foundation.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

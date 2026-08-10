@@ -2,6 +2,7 @@
 members = [
   "crates/sipi-cli",
   "crates/sipi-channel",
+  "crates/sipi-ibis",
   "crates/sipi-artifacts",
   "crates/sipi-contracts",
   "crates/sipi-layout",

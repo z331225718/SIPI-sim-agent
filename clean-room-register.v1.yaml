@@ -401,6 +401,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: []
+  - id: p4a-ibis-structural-parser-foundation-spec-v1
+    kind: independent_spec
+    content_sha256: 12afbb033b6fbbfb8e68cfa439532ddfa95a901f8a4619656518cd56a2ef1a07
+    provenance:
+      source_ref: docs/clean-room/specs/p4a-ibis-structural-parser-foundation.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: []
 scopes:
   - id: clean-room-process-template-v1
     paths: [docs/clean-room/**]
@@ -708,4 +716,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p4a-ibis71-behavior-scope-preflight-spec-v1]
+  - id: p4a-ibis-structural-parser-foundation-v1
+    paths: [Cargo.toml, Cargo.lock, crates/sipi-ibis/**, docs/clean-room/specs/p4a-ibis-structural-parser-foundation.v1.md]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p4a-ibis-structural-parser-foundation-spec-v1]
+      implementer: [p4a-ibis-structural-parser-foundation-spec-v1]
+      comparator: []
+      auditor: [p4a-ibis-structural-parser-foundation-spec-v1]
 attestations: []
