@@ -126,6 +126,287 @@ impl IbisDocumentV1 {
     }
 }
 
+/// A lexically valid document-version token. It does not select a supported
+/// IBIS revision or assign any electrical meaning to that revision.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct IbisVersionTokenV1 {
+    spelling: String,
+    span: SourceSpanV1,
+}
+
+impl IbisVersionTokenV1 {
+    pub fn spelling(&self) -> &str {
+        &self.spelling
+    }
+
+    pub const fn span(&self) -> SourceSpanV1 {
+        self.span
+    }
+}
+
+/// Product-owned roles for a deliberately small semantic envelope. All other
+/// structural keyword spelling remains explicitly represented as `Other`.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum SectionKindV1 {
+    IbisVersion,
+    Component,
+    Model,
+    ModelType,
+    Other(String),
+}
+
+/// One declared component name with its source ownership boundary.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ComponentDeclV1 {
+    name: StructuralTokenV1,
+    section_span: SourceSpanV1,
+}
+
+impl ComponentDeclV1 {
+    pub fn name(&self) -> &StructuralTokenV1 {
+        &self.name
+    }
+
+    pub const fn section_span(&self) -> SourceSpanV1 {
+        self.section_span
+    }
+}
+
+/// One declared model name with its source ownership boundary.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ModelDeclV1 {
+    name: StructuralTokenV1,
+    section_span: SourceSpanV1,
+}
+
+impl ModelDeclV1 {
+    pub fn name(&self) -> &StructuralTokenV1 {
+        &self.name
+    }
+
+    pub const fn section_span(&self) -> SourceSpanV1 {
+        self.section_span
+    }
+}
+
+/// A contiguous structural block owned by exactly one bracketed section.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SemanticBlockV1 {
+    kind: SectionKindV1,
+    section_span: SourceSpanV1,
+    owned_record_spans: Vec<SourceSpanV1>,
+}
+
+impl SemanticBlockV1 {
+    pub fn kind(&self) -> &SectionKindV1 {
+        &self.kind
+    }
+
+    pub const fn section_span(&self) -> SourceSpanV1 {
+        self.section_span
+    }
+
+    pub fn owned_record_spans(&self) -> &[SourceSpanV1] {
+        &self.owned_record_spans
+    }
+}
+
+/// The product-owned typed semantic envelope. It deliberately contains no
+/// table, package, PVT, clamp, AMI, or electrical evaluation semantics.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct IbisSemanticDocumentV1 {
+    version: IbisVersionTokenV1,
+    components: Vec<ComponentDeclV1>,
+    models: Vec<ModelDeclV1>,
+    blocks: Vec<SemanticBlockV1>,
+}
+
+impl IbisSemanticDocumentV1 {
+    pub fn version(&self) -> &IbisVersionTokenV1 {
+        &self.version
+    }
+
+    pub fn components(&self) -> &[ComponentDeclV1] {
+        &self.components
+    }
+
+    pub fn models(&self) -> &[ModelDeclV1] {
+        &self.models
+    }
+
+    pub fn blocks(&self) -> &[SemanticBlockV1] {
+        &self.blocks
+    }
+}
+
+/// Stable diagnostics for the bounded semantic envelope. These are not
+/// profile-specific required-keyword rules.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum IbisSemanticDiagnosticCodeV1 {
+    MissingDocumentVersion,
+    DuplicateDocumentVersion,
+    InvalidDocumentVersion,
+    MissingSectionName,
+    InvalidSectionName,
+    DuplicateComponentName,
+    DuplicateModelName,
+    OrphanDataRecord,
+    ProfileRulesUnavailable,
+}
+
+/// A fail-closed semantic diagnostic with a stable code and source location.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct IbisSemanticDiagnosticV1 {
+    code: IbisSemanticDiagnosticCodeV1,
+    span: SourceSpanV1,
+}
+
+impl IbisSemanticDiagnosticV1 {
+    pub const fn code(self) -> IbisSemanticDiagnosticCodeV1 {
+        self.code
+    }
+
+    pub const fn span(self) -> SourceSpanV1 {
+        self.span
+    }
+}
+
+impl fmt::Display for IbisSemanticDiagnosticV1 {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            formatter,
+            "IBIS semantic envelope {:?} at line {}, column {}",
+            self.code, self.span.line, self.span.column_start
+        )
+    }
+}
+
+impl Error for IbisSemanticDiagnosticV1 {}
+
+/// Builds the typed semantic envelope from an already structural document.
+/// It never reads an asset, selects an IBIS revision, or applies a profile.
+pub fn build_semantic_envelope_v1(
+    document: &IbisDocumentV1,
+) -> Result<IbisSemanticDocumentV1, IbisSemanticDiagnosticV1> {
+    let mut version = None;
+    let mut components = Vec::new();
+    let mut models = Vec::new();
+    let mut blocks = Vec::new();
+    let mut current_block = None;
+
+    for record in document.records() {
+        match record {
+            StructuralRecordV1::Keyword {
+                keyword,
+                payload,
+                span,
+            } => {
+                let kind = section_kind(keyword.spelling());
+                match &kind {
+                    SectionKindV1::IbisVersion => {
+                        if version.is_some() {
+                            return Err(semantic_diagnostic(
+                                IbisSemanticDiagnosticCodeV1::DuplicateDocumentVersion,
+                                *span,
+                            ));
+                        }
+                        let token = exactly_one_name(payload, *span)?;
+                        if !is_version_token(token.spelling()) {
+                            return Err(semantic_diagnostic(
+                                IbisSemanticDiagnosticCodeV1::InvalidDocumentVersion,
+                                token.span(),
+                            ));
+                        }
+                        version = Some(IbisVersionTokenV1 {
+                            spelling: token.spelling.clone(),
+                            span: token.span(),
+                        });
+                    }
+                    SectionKindV1::Component => {
+                        let name = exactly_one_name(payload, *span)?;
+                        if !is_declaration_name(name.spelling()) {
+                            return Err(semantic_diagnostic(
+                                IbisSemanticDiagnosticCodeV1::InvalidSectionName,
+                                name.span(),
+                            ));
+                        }
+                        if components
+                            .iter()
+                            .any(|item: &ComponentDeclV1| item.name.spelling == name.spelling)
+                        {
+                            return Err(semantic_diagnostic(
+                                IbisSemanticDiagnosticCodeV1::DuplicateComponentName,
+                                name.span(),
+                            ));
+                        }
+                        components.push(ComponentDeclV1 {
+                            name: name.clone(),
+                            section_span: *span,
+                        });
+                    }
+                    SectionKindV1::Model => {
+                        let name = exactly_one_name(payload, *span)?;
+                        if !is_declaration_name(name.spelling()) {
+                            return Err(semantic_diagnostic(
+                                IbisSemanticDiagnosticCodeV1::InvalidSectionName,
+                                name.span(),
+                            ));
+                        }
+                        if models
+                            .iter()
+                            .any(|item: &ModelDeclV1| item.name.spelling == name.spelling)
+                        {
+                            return Err(semantic_diagnostic(
+                                IbisSemanticDiagnosticCodeV1::DuplicateModelName,
+                                name.span(),
+                            ));
+                        }
+                        models.push(ModelDeclV1 {
+                            name: name.clone(),
+                            section_span: *span,
+                        });
+                    }
+                    SectionKindV1::ModelType | SectionKindV1::Other(_) => {}
+                }
+                blocks.push(SemanticBlockV1 {
+                    kind,
+                    section_span: *span,
+                    owned_record_spans: Vec::new(),
+                });
+                current_block = Some(blocks.len() - 1);
+            }
+            StructuralRecordV1::Data { span, .. } => {
+                let Some(index) = current_block else {
+                    return Err(semantic_diagnostic(
+                        IbisSemanticDiagnosticCodeV1::OrphanDataRecord,
+                        *span,
+                    ));
+                };
+                blocks[index].owned_record_spans.push(*span);
+            }
+        }
+    }
+
+    let Some(version) = version else {
+        return Err(semantic_diagnostic(
+            IbisSemanticDiagnosticCodeV1::MissingDocumentVersion,
+            SourceSpanV1::new(0, 0, 1, 1),
+        ));
+    };
+    Ok(IbisSemanticDocumentV1 {
+        version,
+        components,
+        models,
+        blocks,
+    })
+}
+
+/// Required-keyword profile validation is intentionally unavailable until an
+/// owner selects a profile and independently freezes its semantic charter.
+pub fn profile_semantic_rules_status_v1() -> IbisSemanticDiagnosticCodeV1 {
+    IbisSemanticDiagnosticCodeV1::ProfileRulesUnavailable
+}
+
 /// Explicit hard bounds for one structural parse.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ParseLimitsV1 {
@@ -281,6 +562,59 @@ pub fn parse_structural_v1(
         physical_lines,
         records,
     })
+}
+
+fn section_kind(spelling: &str) -> SectionKindV1 {
+    if spelling.eq_ignore_ascii_case("IBIS Ver") {
+        SectionKindV1::IbisVersion
+    } else if spelling.eq_ignore_ascii_case("Component") {
+        SectionKindV1::Component
+    } else if spelling.eq_ignore_ascii_case("Model") {
+        SectionKindV1::Model
+    } else if spelling.eq_ignore_ascii_case("Model_type") {
+        SectionKindV1::ModelType
+    } else {
+        SectionKindV1::Other(spelling.to_owned())
+    }
+}
+
+fn exactly_one_name(
+    payload: &[StructuralTokenV1],
+    span: SourceSpanV1,
+) -> Result<&StructuralTokenV1, IbisSemanticDiagnosticV1> {
+    if payload.len() != 1 {
+        return Err(semantic_diagnostic(
+            IbisSemanticDiagnosticCodeV1::MissingSectionName,
+            span,
+        ));
+    }
+    Ok(&payload[0])
+}
+
+fn is_version_token(value: &str) -> bool {
+    let mut segments = value.split('.');
+    let mut count = 0;
+    for segment in &mut segments {
+        if segment.is_empty() || !segment.bytes().all(|byte| byte.is_ascii_digit()) {
+            return false;
+        }
+        count += 1;
+    }
+    count >= 2
+}
+
+fn is_declaration_name(value: &str) -> bool {
+    !value.is_empty()
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
+}
+
+const fn semantic_diagnostic(
+    code: IbisSemanticDiagnosticCodeV1,
+    span: SourceSpanV1,
+) -> IbisSemanticDiagnosticV1 {
+    IbisSemanticDiagnosticV1 { code, span }
 }
 
 fn validate_bytes(bytes: &[u8]) -> Result<(), IbisDiagnosticV1> {
@@ -623,5 +957,72 @@ mod tests {
     #[test]
     fn rejects_zero_limits() {
         assert_eq!(ParseLimitsV1::try_new(0, 1, 1, 1), Err(LimitErrorV1::Zero));
+    }
+
+    #[test]
+    fn builds_a_typed_envelope_with_explicit_block_ownership() {
+        let source = b"[IBIS Ver] 7.1\n[Component] board_0\nrow data\n[Model] rx_0\n";
+        let structural = parse_structural_v1(source, limits()).expect("structural parse");
+        let semantic = build_semantic_envelope_v1(&structural).expect("semantic envelope");
+        assert_eq!(semantic.version().spelling(), "7.1");
+        assert_eq!(semantic.components()[0].name().spelling(), "board_0");
+        assert_eq!(semantic.models()[0].name().spelling(), "rx_0");
+        assert_eq!(semantic.blocks().len(), 3);
+        assert_eq!(semantic.blocks()[1].owned_record_spans().len(), 1);
+        assert!(matches!(semantic.blocks()[2].kind(), SectionKindV1::Model));
+    }
+
+    #[test]
+    fn rejects_invalid_or_ambiguous_envelope_declarations() {
+        let cases = [
+            (
+                b"[Component] board\n".as_slice(),
+                IbisSemanticDiagnosticCodeV1::MissingDocumentVersion,
+            ),
+            (
+                b"[IBIS Ver] v7.1\n".as_slice(),
+                IbisSemanticDiagnosticCodeV1::InvalidDocumentVersion,
+            ),
+            (
+                b"[IBIS Ver] 7.1\n[IBIS Ver] 7.2\n".as_slice(),
+                IbisSemanticDiagnosticCodeV1::DuplicateDocumentVersion,
+            ),
+            (
+                b"[IBIS Ver] 7.1\n[Model]\n".as_slice(),
+                IbisSemanticDiagnosticCodeV1::MissingSectionName,
+            ),
+            (
+                b"[IBIS Ver] 7.1\n[Component] same\n[Component] same\n".as_slice(),
+                IbisSemanticDiagnosticCodeV1::DuplicateComponentName,
+            ),
+            (
+                b"orphan data\n[IBIS Ver] 7.1\n".as_slice(),
+                IbisSemanticDiagnosticCodeV1::OrphanDataRecord,
+            ),
+        ];
+        for (source, expected) in cases {
+            let structural = parse_structural_v1(source, limits()).expect("structural parse");
+            assert_eq!(
+                build_semantic_envelope_v1(&structural)
+                    .expect_err("semantic rejection")
+                    .code(),
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn preserves_unknown_sections_and_keeps_profile_rules_unavailable() {
+        let source = b"[IBIS Ver] 7.1\n[Future Section] alpha\nrow\n";
+        let structural = parse_structural_v1(source, limits()).expect("structural parse");
+        let semantic = build_semantic_envelope_v1(&structural).expect("semantic envelope");
+        assert!(matches!(
+            semantic.blocks()[1].kind(),
+            SectionKindV1::Other(spelling) if spelling == "Future Section"
+        ));
+        assert_eq!(
+            profile_semantic_rules_status_v1(),
+            IbisSemanticDiagnosticCodeV1::ProfileRulesUnavailable
+        );
     }
 }
