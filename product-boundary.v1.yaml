@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: a71b186e3a84f5c57c5a141021a7fc2fd6ca1533a51673a0d8ea70e2eaee7894
+  tracked_paths_sha256: bb981379ec5269c4ca601e3bcc3bb7bc85194163570464b71cc97680bb70eecd
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1235,6 +1235,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p4b-external-ami-asset-set.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p5-agent-com-git-object-preflight.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -1644,6 +1650,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p4b-ami-text-structural-foundation.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p4b-external-ami-asset-set.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -6395,6 +6407,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p4b_external_ami_asset_set.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p5_agent_com_git_object_preflight.py:
       rule: migration-tools
       class: migration_only
@@ -6708,6 +6726,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p4b_ami_candidate_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p4b_external_ami_asset_set.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

@@ -1,0 +1,78 @@
+schema: sipi.p4b-external-ami-asset-set.v1
+status: external_only_admission_blocked
+asset_set:
+  id: pybert-example-rx-windows-x64-v1
+  platform: windows-x86_64
+  custody: external_only
+  packaging: prohibited
+  product_asset: false
+  release_input: false
+  default_runtime: false
+  worker_admission: blocked_identity_role_mismatch
+  assets:
+    - id: example-rx-ibis
+      kind: ibis
+      logical_name: example_rx.ibs
+      role: input_model
+      byte_length: 2721
+      sha256: 37b7bf1b6c50fe56c4daaad344de1b3cabe7a7f139ca1b76c4058a943f39fbe9
+      source:
+        repository: pybert-f6ba031
+        commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7
+        path: models/ibisami/example_rx.ibs
+        git_blob: b30b88bdf5883722d8ddbbd860a115406c5e439c
+      third_party_rights_status: unverified
+      usage_scope: [external_oracle_compare]
+    - id: example-rx-ami-text
+      kind: ami_text
+      logical_name: example_rx.ami
+      role: parameter_text
+      byte_length: 3932
+      sha256: 6d4038a184cb10af355dbd02b9392258d7e2b3bb9b0cddc211349db66ef80c38
+      source:
+        repository: pybert-f6ba031
+        commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7
+        path: models/ibisami/example_rx.ami
+        git_blob: 26a1b03849a0838284dfde7921926668ad1434e0
+      third_party_rights_status: unverified
+      usage_scope: [external_oracle_compare]
+    - id: example-rx-dll
+      kind: dll
+      logical_name: example_rx.dll
+      declared_name: example_rx_x86_amd64.dll
+      role: primary_dynamic_library
+      architecture: windows-x86_64
+      byte_length: 363008
+      sha256: 60e29f16dcfe1a40240956f0591b29f524ccc8844c4959671d0317178c1ff46c
+      source:
+        repository: pybert-f6ba031
+        commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7
+        path: models/ibisami/example_rx.dll
+        git_blob: 70c2efa3357a9fa7528e44286d5566413ba3fdd7
+      third_party_rights_status: unverified
+      usage_scope: [external_oracle_compare]
+  non_system_dependency_closure:
+    status: blocked_not_admitted
+    entries: []
+  bindings:
+    - ibis_asset: example-rx-ibis
+      ami_text_asset: example-rx-ami-text
+      dll_asset: example-rx-dll
+      status: blocked_declared_dll_name_does_not_match_authorized_asset_name
+owner_authorization:
+  actor: user
+  decision_ref: docs/baselines/m5b-ami-vendor-fixture-preflight.v1.json
+  scope: external_oracle_compare
+  authorization_status: scoped_owner_permission_only
+prior_observation_evidence:
+  - path: docs/baselines/m5b-ami-vendor-fixture-preflight.v1.json
+    sha256: be4d800c990255d4140bd7a4c5479030ddff928bb6af80172a6428740de79b16
+  - path: docs/baselines/m5b-ami-authorized-dll-closure-preflight.v1.json
+    sha256: 8ab4c17d7b73d498139b71a8268abd0ed769869316fc8e8c62d26ab7b895453a
+  - path: docs/baselines/ibis-example-rx-candidate-inventory.v1.yaml
+    sha256: 60c197bb413d60556e5ba20ffa66be86c46850d02ac2d4d023b4de6398441b97
+non_claims:
+  - Owner permission for external observation is not third-party license evidence.
+  - This manifest neither admits a worker asset set nor proves a DLL dependency closure.
+  - No asset is packaged, distributed, promoted, or routed by default.
+  - M5B evidence is prior observation only and does not promote this asset set.

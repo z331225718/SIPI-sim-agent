@@ -377,6 +377,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p4b-ami-standard-abi-host-spec-v1]
+  - id: p4b-external-ami-asset-set-spec-v1
+    kind: independent_spec
+    content_sha256: 3969e76cd3d0c8cd98029b7ca1d142ffdab1b7ceb9c488de861835e8e724f635
+    provenance:
+      source_ref: docs/clean-room/specs/p4b-external-ami-asset-set.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p4b-ami-private-worker-spec-v1]
   - id: pybert-example-rx-ibs-fixture-f6ba031
     kind: oracle_fixture
     content_sha256: 37b7bf1b6c50fe56c4daaad344de1b3cabe7a7f139ca1b76c4058a943f39fbe9
@@ -858,6 +866,15 @@ scopes:
       implementer: [p4b-ami-private-worker-spec-v1, p4b-ami-standard-abi-host-spec-v1]
       comparator: []
       auditor: [p4b-ami-private-worker-spec-v1, p4b-ami-standard-abi-host-spec-v1]
+  - id: p4b-external-ami-asset-set-v1
+    paths: [docs/baselines/p4b-external-ami-asset-set.v1.yaml, docs/clean-room/specs/p4b-external-ami-asset-set.v1.md, tools/verify_p4b_external_ami_asset_set.py, tools/test_verify_p4b_external_ami_asset_set.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p4b-external-ami-asset-set-spec-v1]
+      implementer: [p4b-external-ami-asset-set-spec-v1]
+      comparator: []
+      auditor: [p4b-external-ami-asset-set-spec-v1]
   - id: p4a-ibis-example-rx-candidate-inventory-v1
     paths: [docs/baselines/ibis-example-rx-candidate-inventory.v1.yaml, docs/clean-room/specs/p4a-ibis-example-rx-candidate-inventory.v1.md, tools/verify_p4a_ibis_example_rx_candidate_inventory.py, tools/test_verify_p4a_ibis_example_rx_candidate_inventory.py]
     state: planned
