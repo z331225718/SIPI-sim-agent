@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: dc894142a9d98bcbbb0c11a2b3a0f679acc0f072ed4d8afb23976d07bb377fec
+  tracked_paths_sha256: 85847d53e9389504e71d557bdd4f4a5ff1d7c1b35cefcdb64a96cc5d888a1ca5
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -959,6 +959,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p4a-official-pure-ibis-discovery-preflight.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/platform-support.v1.json:
       rule: historical-docs
       class: migration_only
@@ -1266,6 +1272,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p4a-ibis71-behavior-scope-preflight.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p4a-official-pure-ibis-discovery-preflight.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5891,6 +5903,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p4a_official_pure_ibis_discovery_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p4b_ami_candidate_preflight.py:
       rule: migration-tools
       class: migration_only
@@ -6144,6 +6162,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p4a_ibis_example_rx_candidate_inventory.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p4a_official_pure_ibis_discovery_preflight.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

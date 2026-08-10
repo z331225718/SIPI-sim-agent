@@ -1,0 +1,26 @@
+schema: sipi.p4a-official-pure-ibis-discovery-preflight.v1
+status: official_candidate_discovery_preflight_passed
+promotion_eligible: false
+public_source:
+  directory_url: https://ibis.org/xml/sample1/
+  accessed_on: '2026-08-10'
+  source_class: official_public_site
+  directory_listing_observed: true
+candidates:
+  - id: ibis-org-sample1-original-ibs
+    canonical_url: https://ibis.org/xml/sample1/sample1%28original%29.ibs
+    source_page_anchor: https://ibis.org/xml/sample1/
+    directory_entry_name: sample1(original).ibs
+    source_class: official_public_site
+    format_status: stated_or_unverified_pure_ibs
+    asset_identity: url_only_unresolved
+    license_notice_status: not_observed_from_directory_listing
+    eligibility: discovery_only
+    required: false
+    bytes_fetched: false
+    prohibited_uses: [product_input, product_fixture, oracle_runnable, required_profile, release_input, parser_test_input]
+non_claims:
+  - Network reachability and a filename extension do not establish content identity, purity, redistribution rights, or compatibility.
+  - This record stores no asset bytes, content hash, local path, model data, curve, table, or parser test input.
+  - The candidate cannot be promoted, materialized, executed, or used as a required profile without separate license and exact-identity evidence.
+  - No IBIS semantic parser, electrical behavior, model compatibility, or numerical acceptance follows from this discovery record.
