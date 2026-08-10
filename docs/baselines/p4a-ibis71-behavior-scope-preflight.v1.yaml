@@ -1,0 +1,50 @@
+schema: sipi.p4a-ibis71-behavior-scope-preflight.v1
+status: candidate_observation_scope_preflight_passed
+promotion_eligible: false
+public_standard:
+  title: I/O Buffer Information Specification
+  version: '7.1'
+  official_source_url: https://ibis.org/ver7.1/
+  accessed_on: '2026-08-10'
+  evidence_status: official_public_document_listed
+  use: observation_basis_only
+  embedded_standard_text: false
+candidate_fact:
+  profile_id: ibis-ami-example-rx-raw-abi-v1
+  boundary: oracle_only
+  required: false
+  source_repository: pybert-f6ba031
+  source_commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7
+  ibis_asset:
+    path: models/ibisami/example_rx.ibs
+    git_blob: b30b88bdf5883722d8ddbbd860a115406c5e439c
+    content_sha256: 37b7bf1b6c50fe56c4daaad344de1b3cabe7a7f139ca1b76c4058a943f39fbe9
+  model_selector: example_rx
+  model_role: input_model
+  structural_presence:
+    c_comp: present
+    gnd_clamp: present
+    power_clamp: present
+    package: present
+    temperature_range: present
+    voltage_range: present
+    algorithmic_model_attachment: present
+  dll_identity_status: blocked_declared_windows_x64_dll_identity
+observation_scope:
+  - {id: model_selection, status: candidate_fact_only}
+  - {id: pvt_selector_presence, status: candidate_fact_only}
+  - {id: c_comp_and_clamp_presence, status: candidate_fact_only}
+  - {id: package_presence, status: candidate_fact_only}
+  - {id: input_waveform_timebase, status: profile_contract_not_selected}
+  - {id: raw_ami_waveform_clock_lifecycle, status: not_run_blocked_asset_identity}
+semantic_boundary:
+  ibis_input_electrical_behavior: separate_future_scope
+  ami_algorithmic_behavior: separate_future_scope
+  algorithmic_attachment_implies_runtime: forbidden
+  ibis_ami_implicit_composition: forbidden
+  parser_interpolation_clamp_package_pvt_semantics: not_defined
+non_claims:
+  - This is an observation boundary and candidate fact record, not a behavior implementation.
+  - No IBIS parser, table evaluation, package/PVT handling, AMI host, or composed receive chain is supported.
+  - The blocked black-box lane cannot establish runtime or numerical acceptance.
+  - No standard body, IBIS table, curve, asset byte, or user-machine path is stored.

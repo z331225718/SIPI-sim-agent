@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: fca3ea84478b1b446630980a831b0259ba56d62316b8173f71769187a73ebd10
+  tracked_paths_sha256: 3d47d5d060ab465fe58a190f4fe2bca58d972cdbe5e850050953ee4da50626bb
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -929,6 +929,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p4a-ibis71-behavior-scope-preflight.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/platform-support.v1.json:
       rule: historical-docs
       class: migration_only
@@ -1224,6 +1230,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p4a-ibis-example-rx-candidate-inventory.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p4a-ibis71-behavior-scope-preflight.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5837,6 +5849,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p4a_ibis71_behavior_scope_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p4a_ibis_example_rx_candidate_inventory.py:
       rule: migration-tools
       class: migration_only
@@ -6084,6 +6102,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p4a_electrical_ibis_discovery.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p4a_ibis71_behavior_scope_preflight.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
