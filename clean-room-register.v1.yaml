@@ -449,6 +449,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: []
+  - id: p4a-ibis-input-typ-static-profile-spec-v1
+    kind: independent_spec
+    content_sha256: c156cf6d9e2622ca68097724f040ac6c22cebb7af11769909c42a7e4dfd673c2
+    provenance:
+      source_ref: docs/clean-room/specs/p4a-ibis-input-typ-static-profile.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: []
   - id: p5-agent-com-git-object-preflight-spec-v1
     kind: independent_spec
     content_sha256: c7e0a656cba7ddeb28cbed7c1fd1e4805077b73ab693430d0b66efe4636e3147
@@ -841,6 +849,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p4a-official-pure-ibis-external-structural-scope-preflight-spec-v1]
+  - id: p4a-ibis-input-typ-static-profile-v1
+    paths: [docs/baselines/p4a-ibis-input-typ-static-acceptance.v1.yaml, docs/clean-room/specs/p4a-ibis-input-typ-static-profile.v1.md, tools/verify_p4a_ibis_input_typ_static_acceptance.py, tools/test_verify_p4a_ibis_input_typ_static_acceptance.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p4a-ibis-input-typ-static-profile-spec-v1]
+      implementer: [p4a-ibis-input-typ-static-profile-spec-v1]
+      comparator: []
+      auditor: [p4a-ibis-input-typ-static-profile-spec-v1]
   - id: p5-agent-com-git-object-preflight-v1
     paths: [docs/baselines/p5-agent-com-git-object-preflight.v1.yaml, docs/clean-room/specs/p5-agent-com-git-object-preflight.v1.md, tools/verify_p5_agent_com_git_object_preflight.py, tools/test_verify_p5_agent_com_git_object_preflight.py]
     state: planned

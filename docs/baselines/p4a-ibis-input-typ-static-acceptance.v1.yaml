@@ -1,0 +1,40 @@
+schema: sipi.p4a-ibis-input-typ-static-acceptance.v1
+status: required_pending_i_v_compare
+profile:
+  id: ibis-org-sample1-bpist02f-input-typ-static-v1
+  required_by: user-authorized-implementer-selection-2026-08-11
+  boundary: external_oracle_only
+  source:
+    canonical_url: https://ibis.org/xml/sample1/sample1%28original%29.ibs
+    content_sha256: 46c53a49a31dea27769f0dddddadea72f03f1f956fb8e60aeaa24f83a7201b95
+    byte_length: 406532
+    selector_utf8_sha256: f28fdb2606a5128621576521ee430bfbd1cb5ffe3543d1f449ab1a45373b594b
+  terminal_binding:
+    kind: single_ended
+    signal: sig
+    reference: ref
+    reference_default: forbidden
+  corner: typical
+  model_scope: input_static_clamp
+  package_scope: not_in_this_profile
+  vt_ramp_scope: not_applicable_to_input_static_profile
+stimulus:
+  kind: static_voltage_sweep
+  voltage_v: [-1.0, 0.0, 0.8, 2.0, 3.3, 4.0]
+  timebase: none
+observable:
+  id: sig_to_ref_shunt_current_a
+  current_direction: positive_into_sig
+  components: [gnd_clamp, power_clamp]
+  c_comp_contribution: zero_at_dc
+comparison:
+  alignment: index_exact
+  interpolation: linear_within_table_domain
+  out_of_domain: reject
+  absolute_tolerance_a: 1.0e-12
+  relative_tolerance: 1.0e-9
+  environment: windows_x86_64_external_observer
+non_claims:
+  - The external asset remains external-only, is not a product fixture, and has no redistribution approval.
+  - This selected profile does not implement or certify V-T, ramp, package, pin, differential, AMI, or runtime behavior.
+  - A passed compare will cover only the selected typical input-clamp voltage samples and not general IBIS compatibility.

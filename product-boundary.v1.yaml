@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: f27e79d49b795291b011bf81ce3a10f89a8f4cb2eaa72c1a210344a85796a2f0
+  tracked_paths_sha256: 4d9ad720e6e8f2b6e7adb781e120d44b091c5a8452c82ce32c0120e38c91623d
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1055,6 +1055,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p4a-ibis-input-typ-static-acceptance.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p4a-ibis71-behavior-scope-preflight.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -1386,6 +1392,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p4a-ibis-example-rx-candidate-inventory.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p4a-ibis-input-typ-static-profile.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -6143,6 +6155,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p4a_ibis_input_typ_static_acceptance.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p4a_official_pure_ibis_discovery_preflight.py:
       rule: migration-tools
       class: migration_only
@@ -6444,6 +6462,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p4a_ibis_example_rx_candidate_inventory.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p4a_ibis_input_typ_static_acceptance.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
