@@ -42,6 +42,23 @@ forward sign is negative. No window, time shift, causal repair, zero padding,
 interpolation, extrapolation, fitting, normalization, or unit conversion is
 implicit.
 
+## Finite-Grid Diagnostics
+
+The product may report informational diagnostics over the supplied finite
+frequency samples without modifying the input or changing resolver admission.
+For each supplied `2 x 2` power-wave S matrix, sampled passivity is evaluated
+as `sigma_max(S) <= 1 + 1e-10`. Sampled reciprocity is evaluated as
+`abs(S12 - S21) <= 1e-12 + 1e-10 * max(abs(S12), abs(S21))`. Sampled
+losslessness is evaluated from the largest entrywise magnitude of `S^H S - I`,
+with `1e-12 + 1e-10 * max(1, max(abs(Sij))^2)` as its bound.
+
+Overflow or otherwise non-finite intermediate arithmetic yields an explicit
+`indeterminate` diagnostic, never a passing result. These are samplewise,
+finite-grid observations only: a sampled passivity pass is not a
+continuous-band passivity or physical-realizability certificate. Causality is
+always reported as `not assessed` because a finite-band periodic DFT input has
+no sufficient broadband continuation, reference-plane, or causal-fit evidence.
+
 ## Explicit Rejections
 
 Reject non-S data, anything other than two single-ended ports, differential or
