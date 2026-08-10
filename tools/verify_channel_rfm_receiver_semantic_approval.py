@@ -43,7 +43,7 @@ def verify_document(document: object, root: Path = ROOT) -> dict:
     spec = document["approved_spec"]
     if spec != {"path": "docs/clean-room/specs/p3b-approved-fixed-receiver.v1.md", "status": "fixed_data_aided_receiver_v1"} or not (root / spec.get("path", "")).is_file():
         blockers.append("approved fixed receiver specification is unavailable")
-    if document["external_compare_status"] != "blocked_missing_authorized_reference_bit_source":
+    if document["external_compare_status"] not in {"blocked_missing_authorized_reference_bit_source", "authorized_source_attested_pending_receiver_compare"}:
         blockers.append("external comparison status is unsafe")
     if not isinstance(document["non_claims"], list) or len(document["non_claims"]) < 3:
         blockers.append("approval non-claims are incomplete")

@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: fad4dd78a29f3c17a306cec9a9f00da8b15e2daa8c4304e03833a0dda777b7d7
+  tracked_paths_sha256: 0ddf163b1a48e8d0b9fc5b43f4cf849496b1d27b2e0dcdd8e3d9302113db72fc
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -714,6 +714,18 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/channel-rfm-receiver-readiness.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/channel-rfm-receiver-reference-bits-attestation.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/channel-rfm-receiver-reference-bits-authorization.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5549,6 +5561,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_channel_rfm_receiver_reference_bits_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_channel_rfm_receiver_required_decision.py:
       rule: migration-tools
       class: migration_only
@@ -5622,6 +5640,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_channel_rfm_receiver_readiness.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_channel_rfm_receiver_reference_bits_preflight.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

@@ -1,0 +1,28 @@
+schema: sipi.channel.authorized-reference-bit-source.v1
+status: authorized_pending_source_attestation
+profile_id: channel-rfm-block-2-current-drive-v1
+approved_by: user
+approved_at: 2026-08-10
+approval_ref: user-authorized-reference-bit-observer-2026-08-10
+scope: external_oracle_only_same_source_reference_bits
+source_candidate:
+  repository_origin: https://github.com/z331225718/Py-bert-agent.git
+  commit: 199696a510baa87645dfdcf7017d11325ba06195
+  tree: 4dfa8e64114a8946183d4d1eb2a92f8c415db16c
+  path: scripts/verify_m5b_rfm_receiver_parity.py
+  git_blob: de587f2e04c11db83dc8ee389584da36e6c79ecd
+  content_sha256: c34a90035d7ae6d01321e69cc6332d75d60332d594f1fb40abc341d988882cba
+rfm_anchor:
+  commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7
+  path: tests/golden/rust_migration/agent_spice_rfm/block_2.rfm
+  git_blob: 9a087a9f75c58d3d1fb15efee2628001a601a546
+  content_sha256: 5716f691a69174cfe88980ffd96bfc867f30f9ee92b6b85d3fb6b8c8b3636a53
+sidecar_policy:
+  encoding: one-byte-per-bit-0-or-1
+  bit_count: 128
+  storage: external_ephemeral_only
+  product_or_git_storage: forbidden
+non_claims:
+  - Authorization does not itself establish source attestation, waveform alignment, or parity.
+  - The product does not read this source, sidecar, RFM, Python, or external engine.
+  - Bits must not be inferred from waveform thresholds, correlations, PRBS guesses, or legacy decisions.

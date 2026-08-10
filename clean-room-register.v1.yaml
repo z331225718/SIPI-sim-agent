@@ -281,6 +281,14 @@ materials:
       license_evidence: license-manifest.v1.yaml#pybert-external-only
     allowed_roles: [observer, comparator, auditor]
     derived_from: []
+  - id: pybert-rfm-reference-bits-generator-199696a
+    kind: pybert_source
+    content_sha256: c34a90035d7ae6d01321e69cc6332d75d60332d594f1fb40abc341d988882cba
+    provenance:
+      source_ref: external/pybert/199696a/scripts/verify_m5b_rfm_receiver_parity.py
+      license_evidence: license-manifest.v1.yaml#pybert-external-only
+    allowed_roles: [observer, comparator, auditor]
+    derived_from: []
   - id: agent-spice-license-2cc92316
     kind: mit_source
     content_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
@@ -505,4 +513,13 @@ scopes:
       implementer: [p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
       comparator: []
       auditor: [p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
+  - id: p3b-rfm-reference-bits-observer-v1
+    paths: [docs/baselines/channel-rfm-receiver-reference-bits-authorization.v1.yaml, docs/baselines/channel-rfm-receiver-reference-bits-attestation.v1.yaml, tools/verify_channel_rfm_receiver_reference_bits_preflight.py, tools/test_verify_channel_rfm_receiver_reference_bits_preflight.py]
+    state: planned
+    role_material_allowlists:
+      observer: [pybert-rfm-reference-bits-generator-199696a]
+      spec_author: []
+      implementer: []
+      comparator: [pybert-rfm-reference-bits-generator-199696a]
+      auditor: [pybert-rfm-reference-bits-generator-199696a]
 attestations: []

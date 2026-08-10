@@ -18,7 +18,7 @@ SCHEMA = "sipi.channel.receiver-required-decision.v1"
 PROFILE_ID = "channel-rfm-block-2-current-drive-v1"
 REQUIRED_BY = "user-confirmed-2026-08-10-channel-rfm-receiver"
 STATUS = "required_blocked_missing_receiver_semantics"
-CURRENT_STATUSES = {STATUS, "required_blocked_missing_authorized_reference_bit_source"}
+CURRENT_STATUSES = {STATUS, "required_blocked_missing_authorized_reference_bit_source", "required_pending_receiver_compare"}
 
 
 def _load(path: Path) -> dict:

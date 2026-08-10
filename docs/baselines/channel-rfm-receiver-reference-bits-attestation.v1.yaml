@@ -1,0 +1,29 @@
+schema: sipi.channel.reference-bit-source-attestation.v1
+status: authorized_source_attested_pending_receiver_compare
+profile_id: channel-rfm-block-2-current-drive-v1
+authorization_ref: docs/baselines/channel-rfm-receiver-reference-bits-authorization.v1.yaml
+source_generator:
+  commit: 199696a510baa87645dfdcf7017d11325ba06195
+  path: scripts/verify_m5b_rfm_receiver_parity.py
+  git_blob: de587f2e04c11db83dc8ee389584da36e6c79ecd
+  content_sha256: c34a90035d7ae6d01321e69cc6332d75d60332d594f1fb40abc341d988882cba
+rfm:
+  commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7
+  path: tests/golden/rust_migration/agent_spice_rfm/block_2.rfm
+  git_blob: 9a087a9f75c58d3d1fb15efee2628001a601a546
+  content_sha256: 5716f691a69174cfe88980ffd96bfc867f30f9ee92b6b85d3fb6b8c8b3636a53
+mapping:
+  symbol_indices: 0..127
+  samples_per_ui: 8
+  sample_interval_seconds: 1.0e-12
+  positive_current_bit: 1
+  negative_current_bit: 0
+reference_bits:
+  encoding: one-byte-per-bit-0-or-1
+  count: 128
+  sha256: aebf405592dd2d2a2e5b4a256e4a7167b6189b5272cd5cbced17a8ba139c2616
+  fresh_replay_sha256: aebf405592dd2d2a2e5b4a256e4a7167b6189b5272cd5cbced17a8ba139c2616
+non_claims:
+  - No sidecar, bit array, or waveform is committed to this repository.
+  - This attests a direct launch-current source only; it is not receiver parity.
+  - The pending compare must still reproduce and hash the receiver waveform.

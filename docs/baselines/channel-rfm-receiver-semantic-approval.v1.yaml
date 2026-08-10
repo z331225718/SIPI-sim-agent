@@ -13,7 +13,7 @@ proposal_anchor:
 approved_spec:
   path: docs/clean-room/specs/p3b-approved-fixed-receiver.v1.md
   status: fixed_data_aided_receiver_v1
-external_compare_status: blocked_missing_authorized_reference_bit_source
+external_compare_status: authorized_source_attested_pending_receiver_compare
 non_claims:
   - Approval selects only this profile-scoped receiver behavior.
   - External RFM parity remains blocked until an authorized comparator obtains matching reference-bit and waveform hashes.

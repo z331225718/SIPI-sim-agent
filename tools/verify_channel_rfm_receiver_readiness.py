@@ -97,7 +97,7 @@ def verify_document(readiness: object, inventory: object) -> dict:
     profile = _candidate_profile(inventory) if isinstance(inventory, dict) else None
     if profile is None:
         blockers.append("required profile is absent from acceptance inventory")
-    elif profile.get("boundary") != "oracle_only" or profile.get("acceptance", {}).get("status") not in {"required_blocked_missing_receiver_semantics", "required_blocked_missing_authorized_reference_bit_source"} or profile.get("acceptance", {}).get("required_by") != REQUIRED_BY:
+    elif profile.get("boundary") != "oracle_only" or profile.get("acceptance", {}).get("status") not in {"required_blocked_missing_receiver_semantics", "required_blocked_missing_authorized_reference_bit_source", "required_pending_receiver_compare"} or profile.get("acceptance", {}).get("required_by") != REQUIRED_BY:
         blockers.append("required profile must remain oracle-only and blocked")
     elif (
         profile.get("environment", {}).get("provenance_ref") != EVIDENCE_REF
