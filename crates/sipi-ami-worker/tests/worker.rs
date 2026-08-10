@@ -4,6 +4,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
     process::Command,
+    sync::{Mutex, MutexGuard, OnceLock},
     time::Duration,
 };
 
@@ -26,6 +27,29 @@ fn identity(root: &Path, relative: &str) -> FileIdentityV1 {
 }
 fn root(label: &str) -> PathBuf {
     std::env::temp_dir().join(format!("sipi-ami-worker-{label}-{}", std::process::id()))
+}
+fn mock_lock() -> MutexGuard<'static, ()> {
+    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    LOCK.get_or_init(|| Mutex::new(()))
+        .lock()
+        .expect("mock lock")
+}
+struct MockLogGuard(Option<std::ffi::OsString>);
+impl Drop for MockLogGuard {
+    fn drop(&mut self) {
+        unsafe {
+            if let Some(previous) = self.0.take() {
+                std::env::set_var("SIPI_AMI_WORKER_MOCK_LOG", previous);
+            } else {
+                std::env::remove_var("SIPI_AMI_WORKER_MOCK_LOG");
+            }
+        }
+    }
+}
+fn install_mock_log(path: &Path) -> MockLogGuard {
+    let previous = std::env::var_os("SIPI_AMI_WORKER_MOCK_LOG");
+    unsafe { std::env::set_var("SIPI_AMI_WORKER_MOCK_LOG", path) };
+    MockLogGuard(previous)
 }
 fn write_f64(path: &Path, values: &[f64]) {
     let mut bytes = Vec::new();
@@ -92,6 +116,7 @@ fn worker_bundle() -> (PathBuf, WorkerBundleManifestV1) {
 
 #[test]
 fn worker_supervisor_publishes_once_and_timeout_leaves_no_success_artifact() {
+    let _lock = mock_lock();
     let success = root("success");
     let _ = fs::remove_dir_all(&success);
     fs::create_dir_all(&success).expect("root");
@@ -140,6 +165,7 @@ fn worker_supervisor_publishes_once_and_timeout_leaves_no_success_artifact() {
 
 #[test]
 fn worker_rejects_hash_drift_path_escape_and_preexisting_cancel_without_publish() {
+    let _lock = mock_lock();
     let root = root("rejection");
     let _ = fs::remove_dir_all(&root);
     fs::create_dir_all(&root).unwrap();
@@ -161,10 +187,43 @@ fn worker_rejects_hash_drift_path_escape_and_preexisting_cancel_without_publish(
     let _ = fs::remove_dir_all(root);
 }
 
+#[test]
+fn mock_fault_matrix_discards_partial_outputs_and_closes_after_init() {
+    let _lock = mock_lock();
+    for (mode, expected_log) in [
+        ("init_fail", "I"),
+        ("partial_getwave_fail", "IGC"),
+        ("bad_clock", "IGC"),
+        ("close_fail", "IGC"),
+    ] {
+        let root = root(mode);
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).expect("root");
+        build_mock(&root);
+        let log = root.join("mock.log");
+        let _log = install_mock_log(&log);
+        let value = job(&root, mode);
+        fs::write(root.join("job.json"), serde_json::to_vec(&value).unwrap()).unwrap();
+        assert_eq!(run_one_job(&root), Err(WorkerErrorV1::Host), "{mode}");
+        assert_eq!(
+            fs::read_to_string(&log).expect("call log"),
+            expected_log,
+            "{mode}"
+        );
+        assert!(
+            !root.join("artifacts/result-1/success.json").exists(),
+            "{mode}"
+        );
+        drop(_log);
+        let _ = fs::remove_dir_all(root);
+    }
+}
+
 const MOCK: &str = r#"#![allow(unsafe_op_in_unsafe_fn)]
-use std::{ffi::{c_char,c_long,c_void,CStr},time::Duration};
+use std::{ffi::{c_char,c_long,c_void,CStr},fs,time::Duration};
 fn has(p:*const c_char,s:&str)->bool{unsafe{CStr::from_ptr(p).to_bytes().windows(s.len()).any(|w|w==s.as_bytes())}}
-#[unsafe(no_mangle)] pub unsafe extern "C" fn AMI_Init(_m:*mut f64,_r:c_long,_a:c_long,_dt:f64,_bt:f64,p:*mut c_char,_out:*mut *mut c_char,h:*mut *mut c_void,_msg:*mut *mut c_char)->c_long{*h=if has(p,"block_getwave"){2usize as *mut c_void}else{1usize as *mut c_void};1}
-#[unsafe(no_mangle)] pub unsafe extern "C" fn AMI_GetWave(w:*mut f64,n:c_long,c:*mut f64,_out:*mut *mut c_char,h:*mut c_void)->c_long{if h as usize==2{std::thread::sleep(Duration::from_secs(3));}if n>0{*w=2.0;}if n>1{*w.add(1)=3.0;}*c=1e-12;*c.add(1)=-1.0;1}
-#[unsafe(no_mangle)] pub unsafe extern "C" fn AMI_Close(_h:*mut c_void)->c_long{1}
+fn log(value:u8){if let Some(path)=std::env::var_os("SIPI_AMI_WORKER_MOCK_LOG"){let _=fs::OpenOptions::new().create(true).append(true).open(path).and_then(|mut f|std::io::Write::write_all(&mut f,&[value]));}}
+#[unsafe(no_mangle)] pub unsafe extern "C" fn AMI_Init(_m:*mut f64,_r:c_long,_a:c_long,_dt:f64,_bt:f64,p:*mut c_char,_out:*mut *mut c_char,h:*mut *mut c_void,_msg:*mut *mut c_char)->c_long{log(b'I');if has(p,"init_fail"){return 0;}*h=if has(p,"block_getwave"){2usize as *mut c_void}else if has(p,"bad_clock"){3usize as *mut c_void}else if has(p,"close_fail"){4usize as *mut c_void}else if has(p,"partial_getwave_fail"){5usize as *mut c_void}else{1usize as *mut c_void};1}
+#[unsafe(no_mangle)] pub unsafe extern "C" fn AMI_GetWave(w:*mut f64,n:c_long,c:*mut f64,_out:*mut *mut c_char,h:*mut c_void)->c_long{log(b'G');if n>0{*w=2.0;}*c=if h as usize==3{f64::NAN}else{1e-12};if h as usize==2{std::thread::sleep(Duration::from_secs(3));}if h as usize==5{return 0;}if n>1{*w.add(1)=3.0;}*c.add(1)=-1.0;1}
+#[unsafe(no_mangle)] pub unsafe extern "C" fn AMI_Close(h:*mut c_void)->c_long{log(b'C');if h as usize==4{0}else{1}}
 "#;
