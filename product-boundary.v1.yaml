@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 1536aaf13af8b8068e5f9d16db2f7aa1a6aaafb3872bf90c2946d8d27d321f80
+  tracked_paths_sha256: 3b963c03c735f39a5bd266e0a6128e5faa11cb401b93ce03fe78a4f4661278d3
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -786,6 +786,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p4a-official-pure-ibis-license-identity-preflight.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p4a-official-pure-ibis-structural-scope-preflight.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
