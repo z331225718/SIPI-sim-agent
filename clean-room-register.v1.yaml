@@ -417,6 +417,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: []
+  - id: p4a-official-pure-ibis-license-identity-preflight-spec-v1
+    kind: independent_spec
+    content_sha256: 9c71324b4c38518cc06c5c4b4a996951f3a90daf5c9a67a10a6b0bbb9721bf2a
+    provenance:
+      source_ref: docs/clean-room/specs/p4a-official-pure-ibis-license-identity-preflight.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: []
 scopes:
   - id: clean-room-process-template-v1
     paths: [docs/clean-room/**]
@@ -742,4 +750,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p4a-official-pure-ibis-discovery-preflight-spec-v1]
+  - id: p4a-official-pure-ibis-license-identity-preflight-v1
+    paths: [docs/baselines/p4a-official-pure-ibis-license-identity-preflight.v1.yaml, docs/clean-room/specs/p4a-official-pure-ibis-license-identity-preflight.v1.md, tools/verify_p4a_official_pure_ibis_license_identity_preflight.py, tools/test_verify_p4a_official_pure_ibis_license_identity_preflight.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p4a-official-pure-ibis-license-identity-preflight-spec-v1]
+      spec_author: [p4a-official-pure-ibis-license-identity-preflight-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p4a-official-pure-ibis-license-identity-preflight-spec-v1]
 attestations: []

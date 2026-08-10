@@ -1,0 +1,49 @@
+schema: sipi.p4a-official-pure-ibis-license-identity-preflight.v1
+status: external_identity_observed_cleanup_pending
+promotion_eligible: false
+profile_candidate_id: ibis-org-sample1-original-ibs
+authorization_anchor: user_authorization_external_license_identity_review_2026-08-10
+retrieval:
+  canonical_url: https://ibis.org/xml/sample1/sample1%28original%29.ibs
+  retrieved_at_utc: '2026-08-10T14:47:49Z'
+  retriever: curl-8.19.0-windows
+transport:
+  approved_hosts: [ibis.org]
+  redirect_chain: []
+  final_url: https://ibis.org/xml/sample1/sample1%28original%29.ibs
+  final_host: ibis.org
+  final_status: 200
+  content_type: not_observed
+  etag: not_observed
+  last_modified_utc: '2001-12-05T19:27:36Z'
+identity:
+  byte_length: 406532
+  content_sha256: 46c53a49a31dea27769f0dddddadea72f03f1f956fb8e60aeaa24f83a7201b95
+  materialized_outside_worktree: true
+  tracked_asset_present: false
+legal_observation:
+  copyright_marker: {status: present, count: 1, line_spans: [[8, 8]], text_sha256: aaef10d794458d9d42205729536c2d6f90b4e25a4c3d863a5562cb1c4724b5f6}
+  license_marker: {status: absent, count: 0, line_spans: [], text_sha256: null}
+  notice_marker: {status: absent, count: 0, line_spans: [], text_sha256: null}
+  external_license_notice_evidence: absent
+  rights_status: unverified
+  retrieval_authorized: true
+  reuse_or_distribution_authorized: false
+classification:
+  boundary: external_only
+  required: false
+  product_asset: false
+  parser_fixture: false
+  oracle_runnable: false
+  release_input: false
+  selection_eligibility: blocked_license_and_custody
+custody:
+  materialization_id: external-ibis-sample1-20260810-1
+  cleanup_status: not_completed_execution_policy_blocked
+  source_hash_written_to_git_blob: false
+  temporary_asset_path_recorded: false
+non_claims:
+  - The observed copyright marker is not a license, permission, or redistribution conclusion.
+  - This exact byte object remains external-only and cannot serve as a product asset, parser fixture, oracle run, required profile, or release input.
+  - No pure-IBIS content, model selector, AMI absence, parser compatibility, electrical behavior, or numerical accuracy has been verified.
+  - The temporary materialization path and file content are not stored in this record.
