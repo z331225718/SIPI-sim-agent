@@ -1,0 +1,38 @@
+schema: sipi.com.r480.oracle-invocation-surface-preflight.v1
+profile:
+  id: com-r480-envelope-v1
+  runner_capability_preflight:
+    path: docs/baselines/com-r480-matlab-runner-capability-preflight.v1.yaml
+    content_sha256: 00b0f84c64d97153a84cbd5130064b52a7b6b1666aa50d6d83e6217c06aaf20d
+observation:
+  status: runner_interface_partially_observed
+  external_report:
+    schema: sipi.com.r480.oracle-invocation-surface-report.v1
+    content_sha256: b4fd1ff3600463c2761cb30ff28f0ace258eada66be880ff0a74a06ccb66f44f
+    custody: external_only
+  tool:
+    path: tools/run_matlab_oracle.py
+    git_blob: 36d4fa55f6eaf9ecdd72ba2cebfbc1b01908e8bc
+    content_sha256: db63ed42375ac990cb53d9926f603e050b652b0706c079f2e4456a5d97d87d42
+    byte_length: 30851
+  surface:
+    declared_cli_options: [--config, --fext, --fixture-manifest, --force, --instrumented-source, --matlab, --next, --no-fext, --no-next, --output-dir, --runs, --set-com-setting, --set-parameter, --target-frequency-ghz, --thru]
+    argparse_constructor_observed: false
+    help_surface: not_observed
+    dry_run_surface: not_observed
+    subprocess_launch_api_observed: true
+    file_io_api_observed: true
+    entrypoint_guard_observed: true
+    dynamic_invocation_dependencies: unknown
+execution:
+  authorized: false
+  invoked: false
+  status: dynamic_invocation_not_authorized_or_not_safe
+reference_gate:
+  status: reference_generation_blocked
+  remaining_blockers: [startup_isolation_unproven, oracle_execution_amendment_missing, exact_normalized_input_missing, parameter_defaults_not_observed, reference_metric_bundle_missing, tolerance_and_alignment_policy_missing]
+  product_api_created: false
+non_claims:
+  - The observed option tokens are external runner metadata, not a product request or legacy compatibility contract.
+  - No external runner code, formula, default value, data, input, result, or executable invocation is used by the product.
+  - This static preflight does not establish an authorized oracle execution, authoritative reference, or COM parity.
