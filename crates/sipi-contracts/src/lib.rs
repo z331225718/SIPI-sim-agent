@@ -16,6 +16,7 @@ use sipi_types::{
 
 pub const CAPABILITIES_SCHEMA: &str = "sipi.capabilities.v1";
 pub const VALIDATION_REQUEST_SCHEMA: &str = "sipi.validation-request.v1";
+pub const TRAN_RC_PULSE_REQUEST_SCHEMA: &str = "sipi.tran.rc-pulse-request.v1";
 pub const PLANNED_DOMAINS: [&str; 4] = ["tran", "channel", "ibis-ami", "com"];
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -99,7 +100,7 @@ pub struct RuleLedgerEntry {
     pub test_id: &'static str,
 }
 
-pub const RULE_LEDGER_V1: [RuleLedgerEntry; 5] = [
+pub const RULE_LEDGER_V1: [RuleLedgerEntry; 6] = [
     RuleLedgerEntry {
         id: "contract.v1.version",
         owner: "contract",
@@ -134,6 +135,13 @@ pub const RULE_LEDGER_V1: [RuleLedgerEntry; 5] = [
         wire_type: "waveform_or_spectrum",
         code: "length_mismatch",
         test_id: "series_length",
+    },
+    RuleLedgerEntry {
+        id: "tran.rc-pulse.profile",
+        owner: "contract",
+        wire_type: "tran_rc_pulse_request",
+        code: "unsupported_profile",
+        test_id: "tran_rc_pulse_exact_profile",
     },
 ];
 
@@ -201,6 +209,64 @@ pub struct ValidationRequestV1 {
     pub schema: String,
     pub request_id: String,
     pub subject: WireWaveformV1,
+}
+
+/// Product-owned, typed request for the sole accepted TRAN profile.
+///
+/// This is deliberately an exact-profile contract: values other than the
+/// independently specified RC/PULSE instance are rejected rather than being
+/// interpreted as a general circuit or netlist request.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TranRcPulseRequestV1 {
+    pub schema: String,
+    pub request_id: String,
+    pub resistance_ohms: f64,
+    pub capacitance_farads: f64,
+    pub initial_voltage_out_volts: f64,
+    pub output_times_seconds: Vec<f64>,
+    pub pulse: TranPulseV1,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TranPulseV1 {
+    pub voltage_low_volts: f64,
+    pub voltage_high_volts: f64,
+    pub delay_seconds: f64,
+    pub rise_seconds: f64,
+    pub fall_seconds: f64,
+    pub width_seconds: f64,
+    pub period_seconds: f64,
+}
+
+pub fn parse_tran_rc_pulse_request_v1(input: &[u8]) -> Result<TranRcPulseRequestV1, ContractError> {
+    let request: TranRcPulseRequestV1 =
+        serde_json::from_slice(input).map_err(|error| ContractError::Json(error.to_string()))?;
+    if request.schema != TRAN_RC_PULSE_REQUEST_SCHEMA
+        || !valid_request_id(&request.request_id)
+        || !is_exact_rc_pulse_profile(&request)
+    {
+        return Err(ContractError::Version);
+    }
+    Ok(request)
+}
+
+fn is_exact_rc_pulse_profile(request: &TranRcPulseRequestV1) -> bool {
+    request.resistance_ohms == 1.0e3
+        && request.capacitance_farads == 1.0e-6
+        && request.initial_voltage_out_volts == 0.0
+        && request.output_times_seconds == [0.0, 1.0e-6, 2.0e-6, 3.0e-6]
+        && request.pulse
+            == TranPulseV1 {
+                voltage_low_volts: 0.0,
+                voltage_high_volts: 1.0,
+                delay_seconds: 1.0e-6,
+                rise_seconds: 1.0e-9,
+                fall_seconds: 1.0e-9,
+                width_seconds: 1.0e-5,
+                period_seconds: 2.0e-5,
+            }
 }
 
 pub fn validate_request_v1(input: &[u8]) -> Result<(), ContractError> {
@@ -436,6 +502,20 @@ mod tests {
         assert!(validate_request_v1(valid).is_ok());
         assert!(validate_request_v1(br#"{"schema":"sipi.validation-request.v1","request_id":"bad/request","subject":{"schema":"sipi.contract.v1","axis":{"encoding":"explicit","values":[0.0]},"samples":[1.0]}}"#).is_err());
         assert!(validate_request_v1(br#"{"schema":"sipi.validation-request.v1","request_id":"request-1","subject":{"schema":"sipi.contract.v1","axis":{"encoding":"explicit","values":[0.0]},"samples":[1.0],"extra":true}}"#).is_err());
+    }
+
+    #[test]
+    fn tran_rc_pulse_request_is_typed_and_exact_profile_only() {
+        let valid = br#"{"schema":"sipi.tran.rc-pulse-request.v1","request_id":"rc-pulse-1","resistance_ohms":1000.0,"capacitance_farads":0.000001,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000001,0.000002,0.000003],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.0,"delay_seconds":0.000001,"rise_seconds":0.000000001,"fall_seconds":0.000000001,"width_seconds":0.00001,"period_seconds":0.00002}}"#;
+        assert!(parse_tran_rc_pulse_request_v1(valid).is_ok());
+        assert!(parse_tran_rc_pulse_request_v1(
+            br#"{"schema":"sipi.tran.rc-pulse-request.v1","request_id":"rc-pulse-1","resistance_ohms":999.0,"capacitance_farads":0.000001,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000001,0.000002,0.000003],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.0,"delay_seconds":0.000001,"rise_seconds":0.000000001,"fall_seconds":0.000000001,"width_seconds":0.00001,"period_seconds":0.00002}}"#
+        )
+        .is_err());
+        assert!(parse_tran_rc_pulse_request_v1(
+            br#"{"schema":"sipi.tran.rc-pulse-request.v1","request_id":"rc-pulse-1","resistance_ohms":1000.0,"capacitance_farads":0.000001,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000001,0.000002,0.000003],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.0,"delay_seconds":0.000001,"rise_seconds":0.000000001,"fall_seconds":0.000000001,"width_seconds":0.00001,"period_seconds":0.00002},"legacy_netlist":"rc.cir"}"#
+        )
+        .is_err());
     }
 
     #[test]
