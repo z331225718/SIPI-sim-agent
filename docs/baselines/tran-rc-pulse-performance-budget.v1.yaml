@@ -1,0 +1,27 @@
+schema: sipi.tran.performance-budget.v1
+status: pending
+workload:
+  profile_id: tran-rc-pulse-v1
+  request_schema: sipi.tran.rc-pulse-request.v1
+  platform: windows-x86_64
+  executable_kind: p1-11-installed-rust-cli
+measurement_protocol:
+  warmup_count: 3
+  measured_count: 10
+  wall_clock: perf_counter_ns
+  peak_working_set: GetProcessMemoryInfo.PeakWorkingSetSize
+observation_sha256: null
+metric_definitions:
+  wall_time: median_min_max_nanoseconds
+  peak_working_set: median_min_max_bytes
+approval:
+  owner: null
+  approved_at_utc: null
+  scope: null
+  thresholds: null
+  statistical_rule: null
+  over_limit_disposition: null
+  approval_ref: null
+non_claims:
+  - Pending is not an approved performance or RSS budget.
+  - The policy does not establish hard resource enforcement or a cross-machine comparison.

@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 1a10859783a2d3c74a7b60710955bf31cec821ad67e20083c3b0560d7ec3ea46
+  tracked_paths_sha256: 5426fe39685b5f4f959433b792a28a34cc775d39d07894c56c286406f276666a
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -659,6 +659,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/tran-rc-pulse-performance-budget.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/clean-room/README.md:
       rule: historical-docs
       class: migration_only
@@ -744,6 +750,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p2-tran-package-foundation.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p2-tran-performance-observation.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5111,6 +5123,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/measure_tran_rc_pulse_performance.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/replay_m5b_ami_authorized_runtime.py:
       rule: migration-tools
       class: migration_only
@@ -5256,6 +5274,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_tran_rc_pulse_acceptance.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_tran_rc_pulse_performance.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5436,6 +5460,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_tran_rc_pulse_acceptance.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_tran_rc_pulse_performance.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

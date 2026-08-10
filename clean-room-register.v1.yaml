@@ -169,6 +169,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-fixed-cli-run-spec-v1]
+  - id: p2-tran-performance-observation-spec-v1
+    kind: independent_spec
+    content_sha256: 7588c5f42ba43bdd635d4dda82ce9a0071280f5de93c9b7f9623b7583a125741
+    provenance:
+      source_ref: docs/clean-room/specs/p2-tran-performance-observation.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p2-tran-fixed-cli-run-spec-v1, p2-tran-failure-gates-spec-v1]
   - id: agent-spice-license-2cc92316
     kind: mit_source
     content_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
@@ -258,4 +266,13 @@ scopes:
       implementer: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-failure-gates-spec-v1]
       comparator: []
       auditor: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-failure-gates-spec-v1]
+  - id: p2-tran-performance-observation-v1
+    paths: [docs/baselines/tran-rc-pulse-performance-budget.v1.yaml, docs/clean-room/specs/p2-tran-performance-observation.v1.md, tools/measure_tran_rc_pulse_performance.py, tools/verify_tran_rc_pulse_performance.py, tools/test_verify_tran_rc_pulse_performance.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p2-tran-performance-observation-spec-v1]
+      implementer: [p2-tran-performance-observation-spec-v1]
+      comparator: []
+      auditor: [p2-tran-performance-observation-spec-v1]
 attestations: []
