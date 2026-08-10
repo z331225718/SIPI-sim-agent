@@ -457,6 +457,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: []
+  - id: p5-com-r480-reference-availability-preflight-spec-v1
+    kind: independent_spec
+    content_sha256: 45cad8b39749aa3f95104ce7eda1d35369e0c91e25b345b128bee4dd6b704110
+    provenance:
+      source_ref: docs/clean-room/specs/p5-com-r480-reference-availability-preflight.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: []
 scopes:
   - id: clean-room-process-template-v1
     paths: [docs/clean-room/**]
@@ -818,4 +826,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p5-com-r480-acceptance-contract-spec-v1]
+  - id: p5-com-r480-reference-availability-preflight-v1
+    paths: [docs/baselines/com-r480-reference-availability-preflight.v1.yaml, docs/clean-room/specs/p5-com-r480-reference-availability-preflight.v1.md, tools/verify_com_r480_reference_availability.py, tools/test_verify_com_r480_reference_availability.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p5-com-r480-reference-availability-preflight-spec-v1]
+      spec_author: [p5-com-r480-reference-availability-preflight-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p5-com-r480-reference-availability-preflight-spec-v1]
 attestations: []
