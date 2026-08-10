@@ -185,6 +185,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: []
+  - id: p3a-s2p-matched-channel-acceptance-spec-v1
+    kind: independent_spec
+    content_sha256: 5bb8f3971fdafb25e34f93469de74eea9f2c3d71065ecbc36a683ab10e472c71
+    provenance:
+      source_ref: docs/clean-room/specs/p3a-s2p-matched-acceptance-contract.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, comparator, auditor]
+    derived_from: [p3a-s2p-matched-channel-spec-v1]
   - id: agent-spice-license-2cc92316
     kind: mit_source
     content_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
@@ -292,4 +300,13 @@ scopes:
       implementer: [p3a-s2p-matched-channel-spec-v1]
       comparator: []
       auditor: [p3a-s2p-matched-channel-spec-v1]
+  - id: p3a-s2p-matched-channel-acceptance-v1
+    paths: [acceptance-profiles.v1.yaml, docs/baselines/channel-s2p-matched-observation.v1.yaml, docs/baselines/channel-s2p-matched-acceptance.v1.yaml, docs/clean-room/specs/p3a-s2p-matched-acceptance-contract.v1.md, tools/verify_channel_s2p_matched_acceptance.py, tools/test_verify_channel_s2p_matched_acceptance.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3a-s2p-matched-channel-spec-v1, p3a-s2p-matched-channel-acceptance-spec-v1]
+      implementer: [p3a-s2p-matched-channel-spec-v1]
+      comparator: [p3a-s2p-matched-channel-acceptance-spec-v1]
+      auditor: [p3a-s2p-matched-channel-spec-v1, p3a-s2p-matched-channel-acceptance-spec-v1]
 attestations: []

@@ -156,7 +156,7 @@ def verify_document(document: object, source_root: Path, *, sipi_root: Path = RO
     expected_contract = {"schema": "sipi.channel.s2p-matched.v1", "port_order": ["source_port_1", "receiver_port_2"], "wave_convention": "real_z0_power_wave", "transfer": "receiver_voltage_per_launched_source_voltage_equals_s21", "output_sign": "receiver_port_voltage_relative_to_reference"}
     if document.get("product_contract") != expected_contract:
         blockers.append("product_contract_invalid")
-    expected_numerical = {"status": "blocked_missing_stimulus_policy", "required_before_compare": ["launch waveform and amplitude contract", "external resolver executable and configuration identity", "output observable/alignment and numerical tolerance policy"]}
+    expected_numerical = {"status": "policy_frozen_comparison_pending", "policy_ref": "docs/baselines/channel-s2p-matched-acceptance.v1.yaml", "required_before_compare": ["external standard-DFT observer identity and two-run reproducibility report", "independent Rust matched-S2P resolver result"]}
     if document.get("numerical_acceptance") != expected_numerical:
         blockers.append("numerical_boundary_invalid")
     if not isinstance(document.get("non_claims"), list) or not document["non_claims"] or not all(isinstance(item, str) and item for item in document["non_claims"]):
@@ -173,7 +173,7 @@ def verify_document(document: object, source_root: Path, *, sipi_root: Path = RO
                 blockers.append("structural_observation_mismatch")
             elif observed["dc_nyquist_imaginary_residue_max"] > 1.0e-12:
                 blockers.append("dc_nyquist_imaginary_residue_exceeds_policy")
-    return {"valid": not blockers, "profile_id": PROFILE_ID, "required": True, "structural_preflight": "passed" if not blockers else "rejected", "comparison_ready": False, "numerical_acceptance_status": "blocked_missing_stimulus_policy", "observed_structure": observed, "blockers": blockers}
+    return {"valid": not blockers, "profile_id": PROFILE_ID, "required": True, "structural_preflight": "passed" if not blockers else "rejected", "comparison_ready": False, "numerical_acceptance_status": "policy_frozen_comparison_pending", "observed_structure": observed, "blockers": blockers}
 
 
 def main() -> int:

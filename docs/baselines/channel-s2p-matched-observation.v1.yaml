@@ -39,11 +39,11 @@ structural_expectation:
   sample_interval_seconds: 2.5e-11
   dc_nyquist_imaginary_residue_max: 1.0e-12
 numerical_acceptance:
-  status: blocked_missing_stimulus_policy
+  status: policy_frozen_comparison_pending
+  policy_ref: docs/baselines/channel-s2p-matched-acceptance.v1.yaml
   required_before_compare:
-    - launch waveform and amplitude contract
-    - external resolver executable and configuration identity
-    - output observable/alignment and numerical tolerance policy
+    - external standard-DFT observer identity and two-run reproducibility report
+    - independent Rust matched-S2P resolver result
 non_claims:
   - This record is external observation metadata and not a product S2P input or fixture.
   - Structural preflight does not establish S2P parsing, IFFT, impulse, Link, or general channel parity.

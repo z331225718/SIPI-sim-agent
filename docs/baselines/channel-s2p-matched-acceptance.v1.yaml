@@ -1,0 +1,65 @@
+schema: sipi.channel.s2p-matched-acceptance.v1
+selection:
+  profile_id: channel-s2p-channel-16ghz-3db-v1
+  capability: channel
+  required: true
+  status: user_selected
+  decision_ref: user-confirmed-2026-08-10-channel_16ghz_3db
+source:
+  canonical_origin: https://github.com/z331225718/Py-bert-agent.git
+  commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7
+  tree: ac7006ea26cf9e8d885c0e4f1b82797d2e9342a1
+  object_format: sha1
+  path: models/sp_file/channel_16ghz_3db.s2p
+  git_blob: e10bfb4a43731645984f1f5e24bd3fbf2268dedd
+  content_sha256: 9d4cfeaad7c971fa45454f639b40e08c538855058f326fbdec64298b8933b5ad
+  redistribution: external_only
+contract:
+  schema: sipi.channel.s2p-matched.v1
+  port_order: [source_port_1, receiver_port_2]
+  reference_impedance_ohm: 50.0
+  termination: matched_explicit
+  wave_definition: real_z0_power_wave
+  conditioning: none
+  resampling: none
+  window: none
+  trim: none
+oracle:
+  mode: external_git_object_standard_dft_only
+  execution_status: reproducibility_required
+  product_fallback: forbidden
+  environment:
+    platform: windows-x86_64
+    observer_implementation_identity: required_at_comparison
+    product_build: independent_sipi_channel_release_f64
+    working_directory: external_clean_temp
+    legacy_and_python_environment: scrubbed
+  historical_m5b_lane: excluded_hidden_transform
+acceptance:
+  status: specified_not_executed
+  acceptance_ready: true
+  result_status: not_run
+  observable: discrete_voltage_gain_kernel_v_over_v
+  probe:
+    launched_voltage_samples_volts: [1.0, 0.0]
+    interpretation: first_sample_one_volt_then_zero_periodic_dft_probe
+  dft:
+    fft_length: 400
+    sample_interval_seconds: 2.5e-11
+    forward_sign: negative
+    inverse_normalization: one_over_n
+    one_sided_completion: hermitian
+  alignment: index_aligned_no_interpolation_no_shift
+  kernel_compare:
+    require_finite: true
+    absolute_tolerance_v_per_v: 1.0e-9
+    relative_tolerance: 1.0e-5
+  reproducibility:
+    fresh_runs_required: 2
+    require_exact_kernel_hash_match: true
+    retained_report_fields: [source_hash, observer_identity, environment_hash, fft_length, sample_interval_seconds, kernel_hash, max_abs_error, max_rel_error, worst_index, conclusion]
+non_claims:
+  - The probe defines a discrete DFT kernel, not a continuous-time Dirac impulse or Link stimulus.
+  - The external observer may only use the pinned asset and public matched-S21 DFT contract; no PyBERT resolver output qualifies for this policy.
+  - No array or external asset becomes a product fixture, golden, parser input, fallback, or release evidence.
+  - This policy does not establish a product result, S2P parser, general channel support, or Link parity.

@@ -48,7 +48,7 @@ class MatchedS2pPreflightTests(unittest.TestCase):
         self.assertTrue(report["valid"], report["blockers"])
         self.assertEqual(report["structural_preflight"], "passed")
         self.assertFalse(report["comparison_ready"])
-        self.assertEqual(report["numerical_acceptance_status"], "blocked_missing_stimulus_policy")
+        self.assertEqual(report["numerical_acceptance_status"], "policy_frozen_comparison_pending")
 
     def test_source_structure_and_legacy_evidence_drift_fail_closed(self) -> None:
         document = self.document()
