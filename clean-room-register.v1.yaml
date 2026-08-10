@@ -539,7 +539,7 @@ scopes:
       comparator: [pybert-rfm-reference-bits-generator-199696a]
       auditor: [pybert-rfm-reference-bits-generator-199696a]
   - id: p3b-rfm-receiver-handoff-replay-v1
-    paths: [docs/baselines/channel-rfm-receiver-handoff-replay.v1.yaml, docs/clean-room/specs/p3b-rfm-receiver-handoff-replay.v1.md, crates/sipi-link/tests/receiver_observer_runner.rs, tools/replay_channel_rfm_receiver_handoff.py, tools/test_replay_channel_rfm_receiver_handoff.py]
+    paths: [acceptance-profiles.v1.yaml, docs/baselines/channel-rfm-receiver-handoff-replay.v1.yaml, docs/baselines/audits/2026-08-10-p3b-rfm-receiver-handoff-replay.md, docs/clean-room/specs/p3b-rfm-receiver-handoff-replay.v1.md, crates/sipi-link/tests/receiver_observer_runner.rs, tools/replay_channel_rfm_receiver_handoff.py, tools/test_replay_channel_rfm_receiver_handoff.py]
     state: planned
     role_material_allowlists:
       observer: [pybert-rfm-reference-bits-generator-199696a, pybert-rfm-current-domain-observer-api-199696a]
