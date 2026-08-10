@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 6ec0c94afaf2e5a21c82428b6ce2ebd47c3623442733ada484b2d51ba53a6263
+  tracked_paths_sha256: 1a10859783a2d3c74a7b60710955bf31cec821ad67e20083c3b0560d7ec3ea46
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -528,6 +528,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p2j-cooperative-tran-checkpoints.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p2k-tran-failure-gates.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

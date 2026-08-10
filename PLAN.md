@@ -204,7 +204,7 @@ P1 foundation 已完成。P1-04B 继续作为 oracle-only pending 项，且在�
 - [ ] **P2-04** 固定时间积分、初值、容差、step control、输出采样和 measurement 语义。
 - [x] **P2-05** 建立自有 MIT 小电路、解析解/property/metamorphic 测试。
 - [ ] **P2-06** 对 required Agent-Spice TRAN 例子生成 stage compare：parsed circuit、time grid、waveforms、measurements。
-- [ ] **P2-07** 增加 nonconvergence、unsupported device、timeout、memory/output failure 和 cancel 门。
+- [x] **P2-07** 已完成 fixed RC/PULSE profile 的适用 failure gate：cooperative cancel/deadline observation、accounted-byte output budget、不可覆盖 artifact publish failure；未知 request shape 由契约拒绝。nonconvergence 与 unsupported device 在当前无迭代/无器件分发面的闭合线性 profile 中为 `not_applicable`，不宣称 hard timeout、RSS/OOM 或进程隔离。证据见 [2026-08-10-p2k-tran-failure-gates.md](docs/baselines/audits/2026-08-10-p2k-tran-failure-gates.md)。
 - [x] **P2-08** 接入 `sipi tran run`、工件和 provenance；拒绝旧 engine fallback。
 - [ ] **P2-09** 在 owner-approved workload 上建立性能/RSS 基线，优化另行提交。
 
