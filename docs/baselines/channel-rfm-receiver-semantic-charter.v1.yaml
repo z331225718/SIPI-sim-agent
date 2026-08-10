@@ -1,0 +1,19 @@
+schema: sipi.channel.receiver-semantic-charter.v1
+status: pending_owner_approval
+profile_id: channel-rfm-block-2-current-drive-v1
+decision_ref: user-confirmed-2026-08-10-channel-rfm-receiver
+receiver_contract:
+  schema: sipi.receiver-semantics.v1
+  schema_path: crates/sipi-contracts/schemas/sipi.receiver-semantics.v1.schema.json
+  schema_sha256: 668465e61876919056f854ecd287a57443d19e836134d07ac044d888ef6ae6a4
+pending_decisions:
+  product_stimulus_and_causal_link_waveform: pending_owner_approval
+  dfe_model_and_adaptation: pending_owner_approval
+  dfe_tap_order_cursor_units_and_sign: pending_owner_approval
+  cdr_detector_phase_frequency_update_lock_reset_and_cancel: pending_owner_approval
+  ber_reference_bits_polarity_alignment_threshold_ties_window_metric: pending_owner_approval
+  external_oracle_stage_scope_and_tolerances: pending_owner_approval
+non_claims:
+  - This charter preflight does not select a receiver algorithm or numerical values.
+  - The required RFM profile remains semantically blocked until an owner-approved charter replaces this pending record.
+  - The product receiver does not read RFM, PyBERT, or external engine inputs.

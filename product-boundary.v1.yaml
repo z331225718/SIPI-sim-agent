@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 54b14ff02081e2bbac1a5dc3e20b925761b8e091740ed56e68c491a235963534
+  tracked_paths_sha256: a17eb94133d2a847b9e72c3fcd6357c3a4b082a6ce7b5c2a6cd2da9fcb527c10
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -677,6 +677,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/channel-rfm-receiver-semantic-charter.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/channel-s2p-matched-acceptance.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -954,6 +960,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3b-receiver-candidate-readiness.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3b-receiver-semantic-charter.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5465,6 +5477,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_channel_rfm_receiver_semantic_charter.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_channel_s2p_matched_acceptance.py:
       rule: migration-tools
       class: migration_only
@@ -5520,6 +5538,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_channel_rfm_receiver_required_decision.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_channel_rfm_receiver_semantic_charter.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
