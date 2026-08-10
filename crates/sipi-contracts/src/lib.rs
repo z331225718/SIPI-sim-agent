@@ -18,6 +18,7 @@ pub const CAPABILITIES_SCHEMA: &str = "sipi.capabilities.v1";
 pub const VALIDATION_REQUEST_SCHEMA: &str = "sipi.validation-request.v1";
 pub const TRAN_RC_PULSE_REQUEST_SCHEMA: &str = "sipi.tran.rc-pulse-request.v1";
 pub const LINK_PLAN_SCHEMA: &str = "sipi.link-plan.v1";
+pub const LINK_CAUSAL_FIR_REQUEST_SCHEMA: &str = "sipi.link.causal-fir-request.v1";
 pub const RECEIVER_INPUT_SCHEMA: &str = "sipi.receiver-input.v1";
 pub const RECEIVER_SEMANTICS_SCHEMA: &str = "sipi.receiver-semantics.v1";
 pub const PLANNED_DOMAINS: [&str; 4] = ["tran", "channel", "ibis-ami", "com"];
@@ -82,6 +83,7 @@ pub enum LinkContractError {
     ChannelIntervalMismatch,
     OutputLengthOverflow,
     UnsupportedStage,
+    InvalidExecutionLimit,
 }
 
 impl fmt::Display for LinkContractError {
@@ -394,6 +396,24 @@ pub struct WireLinkPlanV1 {
     pub rx: WireRxStagesV1,
 }
 
+/// The sole executable Link request in v1. It deliberately wraps only the
+/// direct-launch, bypass-front-end causal-FIR plan.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireLinkCausalFirRequestV1 {
+    pub schema: String,
+    pub request_id: String,
+    pub plan: WireLinkPlanV1,
+    pub limits: WireLinkExecutionLimitsV1,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireLinkExecutionLimitsV1 {
+    pub max_output_samples: usize,
+    pub max_multiply_accumulates: usize,
+}
+
 #[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct WireUniformTimebaseV1 {
@@ -556,6 +576,51 @@ pub struct LinkPlanV1 {
     rx: RxStagesV1,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct LinkExecutionLimitsV1 {
+    max_output_samples: NonZeroUsize,
+    max_multiply_accumulates: NonZeroUsize,
+}
+
+impl LinkExecutionLimitsV1 {
+    pub fn try_new(
+        max_output_samples: usize,
+        max_multiply_accumulates: usize,
+    ) -> Result<Self, LinkContractError> {
+        Ok(Self {
+            max_output_samples: NonZeroUsize::new(max_output_samples)
+                .ok_or(LinkContractError::InvalidExecutionLimit)?,
+            max_multiply_accumulates: NonZeroUsize::new(max_multiply_accumulates)
+                .ok_or(LinkContractError::InvalidExecutionLimit)?,
+        })
+    }
+    pub fn max_output_samples(self) -> NonZeroUsize {
+        self.max_output_samples
+    }
+    pub fn max_multiply_accumulates(self) -> NonZeroUsize {
+        self.max_multiply_accumulates
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct LinkCausalFirRequestV1 {
+    request_id: String,
+    plan: LinkPlanV1,
+    limits: LinkExecutionLimitsV1,
+}
+
+impl LinkCausalFirRequestV1 {
+    pub fn request_id(&self) -> &str {
+        &self.request_id
+    }
+    pub fn plan(&self) -> &LinkPlanV1 {
+        &self.plan
+    }
+    pub fn limits(&self) -> LinkExecutionLimitsV1 {
+        self.limits
+    }
+}
+
 impl LinkPlanV1 {
     pub fn try_new(
         timebase: UniformTimebaseV1,
@@ -678,8 +743,48 @@ impl From<&LinkPlanV1> for WireLinkPlanV1 {
     }
 }
 
+impl TryFrom<WireLinkCausalFirRequestV1> for LinkCausalFirRequestV1 {
+    type Error = ContractError;
+    fn try_from(value: WireLinkCausalFirRequestV1) -> Result<Self, Self::Error> {
+        require_link_causal_fir_request_schema(&value.schema)?;
+        if !valid_request_id(&value.request_id) {
+            return Err(ContractError::Json("invalid request id".to_owned()));
+        }
+        Ok(Self {
+            request_id: value.request_id,
+            plan: value.plan.try_into()?,
+            limits: LinkExecutionLimitsV1::try_new(
+                value.limits.max_output_samples,
+                value.limits.max_multiply_accumulates,
+            )?,
+        })
+    }
+}
+
+impl From<&LinkCausalFirRequestV1> for WireLinkCausalFirRequestV1 {
+    fn from(value: &LinkCausalFirRequestV1) -> Self {
+        Self {
+            schema: LINK_CAUSAL_FIR_REQUEST_SCHEMA.to_owned(),
+            request_id: value.request_id.clone(),
+            plan: WireLinkPlanV1::from(&value.plan),
+            limits: WireLinkExecutionLimitsV1 {
+                max_output_samples: value.limits.max_output_samples.get(),
+                max_multiply_accumulates: value.limits.max_multiply_accumulates.get(),
+            },
+        }
+    }
+}
+
 pub fn parse_link_plan_v1(input: &[u8]) -> Result<LinkPlanV1, ContractError> {
     serde_json::from_slice::<WireLinkPlanV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
+pub fn parse_link_causal_fir_request_v1(
+    input: &[u8],
+) -> Result<LinkCausalFirRequestV1, ContractError> {
+    serde_json::from_slice::<WireLinkCausalFirRequestV1>(input)
         .map_err(|error| ContractError::Json(error.to_string()))?
         .try_into()
 }
@@ -1091,6 +1196,10 @@ pub fn link_plan_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireLinkPlanV1))
 }
 
+pub fn link_causal_fir_request_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(WireLinkCausalFirRequestV1))
+}
+
 pub fn receiver_input_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireReceiverInputV1))
 }
@@ -1109,6 +1218,14 @@ fn require_schema(schema: &str) -> Result<(), ContractError> {
 
 fn require_link_schema(schema: &str) -> Result<(), ContractError> {
     if schema == LINK_PLAN_SCHEMA {
+        Ok(())
+    } else {
+        Err(ContractError::Version)
+    }
+}
+
+fn require_link_causal_fir_request_schema(schema: &str) -> Result<(), ContractError> {
+    if schema == LINK_CAUSAL_FIR_REQUEST_SCHEMA {
         Ok(())
     } else {
         Err(ContractError::Version)

@@ -317,6 +317,7 @@ version = "0.1.0"
 dependencies = [
  "sipi-artifacts",
  "sipi-contracts",
+ "sipi-link",
  "sipi-runtime",
  "sipi-tran",
  "sipi-types",

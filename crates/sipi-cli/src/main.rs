@@ -10,9 +10,10 @@ use std::{
 
 use sipi_contracts::{
     CAPABILITIES_SCHEMA, CapabilityCatalogV1, PLANNED_DOMAINS, RULE_LEDGER_V1,
-    capability_schema_json, deterministic_json, parse_tran_rc_pulse_request_v1,
-    validate_request_v1,
+    capability_schema_json, deterministic_json, link_causal_fir_request_schema_json,
+    parse_link_causal_fir_request_v1, parse_tran_rc_pulse_request_v1, validate_request_v1,
 };
+use sipi_link::{ConvolutionLimitsV1, convolve_causal_fir_v1};
 use sipi_runtime::{CacheKeyBuilder, ResourceCost, RunId, RunPolicy, Runtime};
 use sipi_tran::{RcPulseTransientV1, simulate_rc_pulse_with_context};
 use sipi_types::AxisView;
@@ -41,6 +42,14 @@ fn main() {
         && id == "--artifact-id"
     {
         ProcessAdapter::tran_run_stdin(artifact_root, artifact_id)
+    } else if let [command, action, stdin, root, artifact_root, id, artifact_id] = &arguments[..]
+        && command == "link"
+        && action == "run"
+        && stdin == "--stdin"
+        && root == "--artifact-root"
+        && id == "--artifact-id"
+    {
+        ProcessAdapter::link_run_stdin(artifact_root, artifact_id)
     } else {
         dispatch(&arguments)
     };
@@ -82,6 +91,18 @@ impl ProcessAdapter {
             return error(3, "contract_rejected", "TRAN request was rejected");
         }
         run_fixed_tran(artifact_root, artifact_id, &input)
+    }
+
+    fn link_run_stdin(artifact_root: &str, artifact_id: &str) -> Response {
+        let input = match read_stdin_request() {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        let request = match parse_link_causal_fir_request_v1(&input) {
+            Ok(request) => request,
+            Err(_) => return error(3, "contract_rejected", "Link request was rejected"),
+        };
+        run_causal_fir_link(artifact_root, artifact_id, &request)
     }
 }
 
@@ -176,6 +197,109 @@ fn run_fixed_tran_with_policy(
     }
 }
 
+fn run_causal_fir_link(
+    artifact_root: &str,
+    artifact_id: &str,
+    request: &sipi_contracts::LinkCausalFirRequestV1,
+) -> Response {
+    let canonical_request =
+        match deterministic_json(&sipi_contracts::WireLinkCausalFirRequestV1::from(request)) {
+            Ok(bytes) => bytes,
+            Err(_) => {
+                return error(
+                    6,
+                    "internal_contract_error",
+                    "Link request cannot be serialized",
+                );
+            }
+        };
+    let limits = match ConvolutionLimitsV1::try_new(
+        request.limits().max_output_samples().get(),
+        request.limits().max_multiply_accumulates().get(),
+    ) {
+        Ok(limits) => limits,
+        Err(_) => return error(5, "operational_failure", "Link limits are unavailable"),
+    };
+    let received = match convolve_causal_fir_v1(request.plan(), limits) {
+        Ok(received) => received,
+        Err(_) => return error(5, "operational_failure", "Link convolution failed"),
+    };
+    let result_json = match link_result_json(&received) {
+        Ok(result) => result,
+        Err(_) => {
+            return error(
+                6,
+                "internal_contract_error",
+                "Link result cannot be serialized",
+            );
+        }
+    };
+    let request_key = cache_key("link-request", &canonical_request);
+    let kernel_json =
+        match deterministic_json(&sipi_contracts::WireLinkPlanV1::from(request.plan())) {
+            Ok(bytes) => bytes,
+            Err(_) => {
+                return error(
+                    6,
+                    "internal_contract_error",
+                    "Link kernel cannot be serialized",
+                );
+            }
+        };
+    let kernel_key = cache_key("link-kernel", &kernel_json);
+    let result_key = cache_key("link-result", result_json.as_bytes());
+    let provenance = format!(
+        "{{\"schema\":\"sipi.link.provenance.v1\",\"algorithm\":\"causal-fir-convolution.v1\",\"request_cache_key\":\"{request_key}\",\"kernel_cache_key\":\"{kernel_key}\",\"result_cache_key\":\"{result_key}\",\"contract\":\"sipi.link.causal-fir-request.v1\",\"max_output_samples\":{},\"max_multiply_accumulates\":{},\"target\":\"{TARGET}\"}}",
+        request.limits().max_output_samples(),
+        request.limits().max_multiply_accumulates()
+    );
+    let store = match sipi_artifacts::ArtifactRoot::open_or_create(Path::new(artifact_root)) {
+        Ok(store) => store,
+        Err(_) => {
+            return error(
+                5,
+                "operational_failure",
+                "Link artifact root is unavailable",
+            );
+        }
+    };
+    let mut staging = match store.begin(artifact_id) {
+        Ok(staging) => staging,
+        Err(_) => return error(5, "operational_failure", "Link artifact cannot be created"),
+    };
+    let publication = staging
+        .stage_reader("request.json", Cursor::new(canonical_request), 1_048_576)
+        .and_then(|_| {
+            staging.stage_reader(
+                "received-waveform.json",
+                Cursor::new(result_json.into_bytes()),
+                1_048_576,
+            )
+        })
+        .and_then(|_| {
+            staging.stage_reader(
+                "provenance.json",
+                Cursor::new(provenance.into_bytes()),
+                16_384,
+            )
+        })
+        .and_then(|_| staging.seal())
+        .and_then(|sealed| sealed.publish_new());
+    match publication {
+        Ok(manifest) => success(format!(
+            "{{\"schema\":\"sipi.link.run-result.v1\",\"artifact_id\":\"{}\",\"request_cache_key\":\"{request_key}\",\"result_cache_key\":\"{result_key}\",\"manifest_schema\":\"{}\",\"file_count\":{}}}",
+            manifest.artifact_id,
+            manifest.schema,
+            manifest.files.len()
+        )),
+        Err(_) => error(
+            5,
+            "operational_failure",
+            "Link run did not publish an artifact",
+        ),
+    }
+}
+
 fn cache_key(label: &str, value: &[u8]) -> String {
     let mut builder = CacheKeyBuilder::new();
     builder
@@ -205,6 +329,19 @@ fn result_json(result: &sipi_tran::RcPulseTransientResultV1) -> Result<String, &
                 .iter()
                 .map(|value| value.get())
         ),
+    ))
+}
+
+fn link_result_json(result: &sipi_link::ReceivedVoltageSamplesV1) -> Result<String, &'static str> {
+    let AxisView::Uniform { start, step, count } = result.waveform().axis().view() else {
+        return Err("Link result must have a uniform time axis");
+    };
+    Ok(format!(
+        "{{\"schema\":\"sipi.link.received-waveform.v1\",\"start_seconds\":{},\"sample_interval_seconds\":{},\"sample_count\":{},\"voltage_volts\":{}}}",
+        start.get(),
+        step.get(),
+        count.get(),
+        json_values(result.waveform().samples().iter().map(|value| value.get())),
     ))
 }
 
@@ -290,6 +427,11 @@ impl CommandService {
                 "unsupported",
                 "TRAN requires the exact run --stdin artifact command",
             ),
+            [command, ..] if command == "link" => error(
+                4,
+                "unsupported",
+                "Link requires the exact run --stdin artifact command",
+            ),
             _ => error(
                 64,
                 "usage",
@@ -348,6 +490,8 @@ fn capabilities_json() -> String {
         .map(|domain| {
             if *domain == "tran" {
                 "{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"}".to_owned()
+            } else if *domain == "channel" {
+                "{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"causal_fir_link_only\"}".to_owned()
             } else {
                 format!(
                     "{{\"domain\":\"{domain}\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}}"
@@ -368,14 +512,21 @@ fn doctor_json() -> String {
 }
 
 fn schema_list_json() -> String {
-    format!("{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\"]}}")
+    format!(
+        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{}\"]}}",
+        sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA
+    )
 }
 
 fn schema_show(id: &str) -> Response {
-    if id != CAPABILITIES_SCHEMA {
+    let bytes = if id == CAPABILITIES_SCHEMA {
+        capability_schema_json()
+    } else if id == sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA {
+        link_causal_fir_request_schema_json()
+    } else {
         return error(64, "unknown_schema", "schema is not registered");
-    }
-    match capability_schema_json().and_then(|bytes| {
+    };
+    match bytes.and_then(|bytes| {
         String::from_utf8(bytes)
             .map_err(|_| sipi_contracts::ContractError::Json("schema is not UTF-8".to_owned()))
     }) {
@@ -389,7 +540,9 @@ fn schema_show(id: &str) -> Response {
 }
 
 fn validate_self(schema: Option<&str>) -> Response {
-    if schema.is_some_and(|id| id != CAPABILITIES_SCHEMA) {
+    if schema.is_some_and(|id| {
+        id != CAPABILITIES_SCHEMA && id != sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA
+    }) {
         return error(64, "unknown_schema", "schema is not registered");
     }
     let catalog = CapabilityCatalogV1::unsupported();
@@ -400,7 +553,8 @@ fn validate_self(schema: Option<&str>) -> Response {
             .iter()
             .all(|item| item.status == "unsupported")
         && deterministic_json(&catalog).is_ok()
-        && !RULE_LEDGER_V1.is_empty();
+        && !RULE_LEDGER_V1.is_empty()
+        && link_causal_fir_request_schema_json().is_ok();
     if valid {
         success(
             "{\"schema\":\"sipi.cli-validate.v1\",\"subject\":\"self\",\"status\":\"ok\"}"
@@ -445,7 +599,7 @@ mod tests {
     }
 
     #[test]
-    fn capability_inventory_exposes_only_the_fixed_tran_profile() {
+    fn capability_inventory_exposes_only_the_fixed_tran_and_causal_fir_profiles() {
         let response = dispatch(&args(&["capabilities", "--json"]));
 
         assert_eq!(response.code, 0);
@@ -453,7 +607,7 @@ mod tests {
         assert_eq!(
             response.stdout.as_deref(),
             Some(
-                "{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"},{\"domain\":\"channel\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]}"
+                "{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"},{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"causal_fir_link_only\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]}"
             )
         );
     }

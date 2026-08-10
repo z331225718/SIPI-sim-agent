@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 7120cd4216472f7ac207ec7504201e167b35cb5a7cda3c30aafe2404b3a13623
+  tracked_paths_sha256: ed79cc5dd8ad512637e29f88da04f2244a4b23f72f8cc8dd81589d859f551282
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -948,6 +948,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3a-s2p-matched-channel.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3b-causal-fir-cli-run.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
