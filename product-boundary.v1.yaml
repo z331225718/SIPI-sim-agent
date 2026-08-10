@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 4462fd72409629dc31f08bbeedf588fdaae46c250ce8b16fe7eed20008a3934a
+  tracked_paths_sha256: 4111e80984c3894b8fc043d1d18443e0cfe7425740647acadd537447008c2026
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -870,6 +870,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-11-p4a-ibis-input-typ-static-profile.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-11-p4a-ibis-quasi-static-clamp-ccomp.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
