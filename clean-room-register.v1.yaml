@@ -377,6 +377,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: []
+  - id: p4a-electrical-ibis-discovery-spec-v1
+    kind: independent_spec
+    content_sha256: 1212762774a56a483e41c4ac34d05d490e3c3d3e4c65a373c6ce79df2286e378
+    provenance:
+      source_ref: docs/clean-room/specs/p4a-electrical-ibis-discovery.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: []
 scopes:
   - id: clean-room-process-template-v1
     paths: [docs/clean-room/**]
@@ -657,4 +665,13 @@ scopes:
       implementer: [p4a-receiver-topology-and-acceptance-spec-v1]
       comparator: []
       auditor: [p4a-receiver-topology-and-acceptance-spec-v1]
+  - id: p4a-electrical-ibis-discovery-v1
+    paths: [docs/baselines/p4a-electrical-ibis-discovery.v1.yaml, docs/clean-room/specs/p4a-electrical-ibis-discovery.v1.md, tools/verify_p4a_electrical_ibis_discovery.py, tools/test_verify_p4a_electrical_ibis_discovery.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p4a-electrical-ibis-discovery-spec-v1]
+      spec_author: [p4a-electrical-ibis-discovery-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p4a-electrical-ibis-discovery-spec-v1]
 attestations: []

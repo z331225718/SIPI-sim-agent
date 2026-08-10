@@ -1,0 +1,50 @@
+schema: sipi.p4a-electrical-ibis-discovery.v1
+status: candidate_discovery_preflight_passed
+promotion_eligible: false
+electrical_load_candidate:
+  profile_id: rx-electrical-load-diff100-cload1pf-v1
+  required: false
+  status: candidate_blocked_missing_c_load_placement
+  differential_resistance:
+    value_ohm: 100.0
+    placement: across_pair
+    terminals: [p, n]
+  load_capacitance:
+    value_pf: 1.0
+    placement: pending_owner_choice
+    allowed_placements: [across_pair, each_leg_to_reference, total_differential_equivalent]
+    reference_net: null
+  blocked_by:
+    - explicit_c_load_placement
+    - reference_net_when_each_leg_to_reference
+    - stimulus_and_observable_acceptance_contract
+local_candidates:
+  - id: pybert-example-rx-ibis-ami
+    boundary: oracle_only
+    status: candidate_blocked_declared_windows_x64_dll_identity
+    inventory_ref: docs/baselines/ibis-example-rx-candidate-inventory.v1.yaml
+    source_repository: pybert-f6ba031
+    source_commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7
+    assets:
+      - {path: models/ibisami/example_rx.ibs, git_blob: b30b88bdf5883722d8ddbbd860a115406c5e439c, content_sha256: 37b7bf1b6c50fe56c4daaad344de1b3cabe7a7f139ca1b76c4058a943f39fbe9}
+      - {path: models/ibisami/example_rx.ami, git_blob: 26a1b03849a0838284dfde7921926668ad1434e0, content_sha256: 6d4038a184cb10af355dbd02b9392258d7e2b3bb9b0cddc211349db66ef80c38}
+      - {path: models/ibisami/example_rx.dll, git_blob: 70c2efa3357a9fa7528e44286d5566413ba3fdd7, content_sha256: 60e29f16dcfe1a40240956f0591b29f524ccc8844c4959671d0317178c1ff46c}
+  - id: sipi-minimal-ibis-test-fixture
+    boundary: synthetic_test_only
+    status: not_an_external_acceptance_asset
+    tracked_path: native/crates/sipi-circuit/tests/fixtures/ami/minimal.ibs
+    prohibited_uses: [required_profile, oracle_asset, product_runtime_asset]
+public_discovery:
+  - id: ibis-open-forum-model-suppliers
+    source_url: https://ibis.org/~ibisorg/models/
+    kind: model_supplier_directory
+    candidate_kind: pure_ibs_asset
+    status: candidate_unverified_no_asset_selected
+    license_status: unknown_until_exact_asset_license_is_verified
+    bytes_fetched: false
+    git_or_release_import: forbidden
+non_claims:
+  - R=100 ohm is recorded only as a differential P-to-N electrical-load candidate.
+  - Cload=1 pF has no selected placement and cannot enter a solver, CLI, or acceptance compare.
+  - Local and public IBIS/AMI entries are discovery records, not parser, runtime, or release authorization.
+  - No external asset bytes or local absolute paths are recorded here.
