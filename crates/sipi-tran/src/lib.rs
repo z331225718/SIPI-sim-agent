@@ -110,6 +110,8 @@ pub fn simulate_rc_pulse(
             voltage_out,
             pulse_voltage(next_time),
             next_time - current_time,
+            RESISTANCE_OHM,
+            CAPACITANCE_F,
         )?;
         current_time = next_time;
         if OUTPUT_TIMES_S.contains(&current_time) {
@@ -146,8 +148,14 @@ fn integration_breakpoints() -> [f64; 5] {
     ]
 }
 
-fn backward_euler_step(previous: f64, source_endpoint: f64, step_s: f64) -> Result<f64, TranError> {
-    let time_constant = RESISTANCE_OHM * CAPACITANCE_F;
+fn backward_euler_step(
+    previous: f64,
+    source_endpoint: f64,
+    step_s: f64,
+    resistance_ohm: f64,
+    capacitance_f: f64,
+) -> Result<f64, TranError> {
+    let time_constant = resistance_ohm * capacitance_f;
     let next =
         (previous + (step_s / time_constant) * source_endpoint) / (1.0 + step_s / time_constant);
     if next.is_finite() {
@@ -182,6 +190,33 @@ fn volts(value: f64) -> Result<Volts, TranError> {
 mod tests {
     use super::*;
     use sipi_types::AxisView;
+
+    fn test_only_pwl_rc(
+        initial: f64,
+        source: &[f64],
+        step: f64,
+        resistance: f64,
+        capacitance: f64,
+    ) -> Vec<f64> {
+        let mut output = vec![initial];
+        for value in source.iter().copied().skip(1) {
+            let next = backward_euler_step(
+                *output.last().expect("initial"),
+                value,
+                step,
+                resistance,
+                capacitance,
+            )
+            .expect("finite owned RC test");
+            output.push(next);
+        }
+        output
+    }
+
+    fn exact_linear_segment(previous: f64, left: f64, right: f64, duration: f64, tau: f64) -> f64 {
+        let slope = (right - left) / duration;
+        right - slope * tau + (previous - left + slope * tau) * (-duration / tau).exp()
+    }
 
     #[test]
     fn fixed_profile_has_the_specified_index_aligned_waveforms() {
@@ -237,7 +272,8 @@ mod tests {
     fn backward_euler_tracks_the_independent_constant_rc_closed_form() {
         let step_s = 1.0e-6;
         let time_constant = RESISTANCE_OHM * CAPACITANCE_F;
-        let backward_euler = backward_euler_step(0.0, 1.0, step_s).expect("finite step");
+        let backward_euler = backward_euler_step(0.0, 1.0, step_s, RESISTANCE_OHM, CAPACITANCE_F)
+            .expect("finite step");
         let closed_form = 1.0 - (-step_s / time_constant).exp();
         assert!(backward_euler <= closed_form);
         assert!(closed_form - backward_euler <= 1.0e-6 / time_constant);
@@ -251,5 +287,49 @@ mod tests {
         );
         assert_eq!(pulse_voltage(1.0e-6), 0.0);
         assert_eq!(pulse_voltage(1.001e-6), 1.0);
+    }
+
+    #[test]
+    fn product_owned_pwl_rc_case_tracks_closed_form_without_external_fixture() {
+        // This test-only PWL case is intentionally unrelated to rc.cir. The
+        // closed form is an analytical oracle, not another circuit resolver.
+        let source = [0.2, 0.8, 1.4, 0.6, 0.2];
+        let step = 0.01;
+        let resistance = 20.0;
+        let capacitance = 0.01;
+        let tau = resistance * capacitance;
+        let numerical = test_only_pwl_rc(0.2, &source, step, resistance, capacitance);
+        let mut analytical = vec![0.2];
+        for pair in source.windows(2) {
+            analytical.push(exact_linear_segment(
+                *analytical.last().expect("initial"),
+                pair[0],
+                pair[1],
+                step,
+                tau,
+            ));
+        }
+        assert_eq!(numerical.len(), analytical.len());
+        for (actual, expected) in numerical.iter().zip(analytical) {
+            // The fixed 10 ms backward-Euler step is at most 0.05 tau;
+            // this 40 mV bound is a stated discretization budget, not a
+            // copied waveform tolerance.
+            assert!((actual - expected).abs() <= 0.04, "{actual} vs {expected}");
+            assert!(actual.is_finite() && (0.2..=1.4).contains(actual));
+        }
+    }
+
+    #[test]
+    fn owned_rc_response_is_linear_under_offset_and_scale() {
+        let source = [0.1, 0.9, 0.4, 0.1];
+        let baseline = test_only_pwl_rc(0.1, &source, 0.02, 50.0, 0.01);
+        let offset_source = source.map(|value| value + 3.0);
+        let offset = test_only_pwl_rc(3.1, &offset_source, 0.02, 50.0, 0.01);
+        let scale_source = source.map(|value| value * 2.5);
+        let scaled = test_only_pwl_rc(0.25, &scale_source, 0.02, 50.0, 0.01);
+        for ((base, shifted), multiplied) in baseline.iter().zip(offset).zip(scaled) {
+            assert!((shifted - (base + 3.0)).abs() <= 1.0e-14);
+            assert!((multiplied - base * 2.5).abs() <= 1.0e-14);
+        }
     }
 }
