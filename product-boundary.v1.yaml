@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 155b45c24fb37c19efc6e0894f62f453460f0e171b86c53928a36042d5b4091f
+  tracked_paths_sha256: fca3ea84478b1b446630980a831b0259ba56d62316b8173f71769187a73ebd10
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -732,6 +732,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p3b-rfm-reference-bits-preflight.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p4a-electrical-endpoint-semantics.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
