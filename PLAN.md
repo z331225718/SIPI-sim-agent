@@ -300,7 +300,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 - [ ] **P4B-04** 私有 Rust host worker：hash-pinned executable、DLL/依赖 closure、timeout/cancel、atomic outputs。
   - [x] **P4B-04a** Windows x64 one-job private worker + test-only supervisor：只消费 hash-pinned、job-root-contained inputs，使用 P4B-03a host 并经 artifact staging 原子发布成功结果；parent timeout 终止 worker 仅保证主进程恢复与无成功 artifact，不声称 sandbox、Close-on-kill、完整动态依赖 closure 或真实 vendor runtime。`7fb39e0` 经 Orca `msg_48d12a7e2af8` 审计 0 P1/0 P2，见 [审计记录](docs/baselines/audits/2026-08-11-p4b-ami-private-worker.md)。
 - [x] **P4B-05** 外部 asset manifest：DLL/IBIS/AMI/依赖 hash、允许用途、owner；默认不打包。`c5de38d` 将当前 `example_rx` 资产集固定为 Windows x64、external-only、`packaging=prohibited`，并以 M5B/P4A 先前证据的精确 hash/identity 交叉核验；声明 DLL 名与授权资产名不符及非系统依赖 closure 均保持 blocked，任何 worker admission、默认路由、发布资产或第三方权利升级都会被拒绝。Orca `msg_8ebc476b4e8a` 审计 0 P1/0 P2，见 [验收记录](docs/baselines/audits/2026-08-11-p4b-external-ami-asset-set.md)。
-- [ ] **P4B-06** synthetic ABI stub 覆盖 success/failure/Close/partial/timeout/clock。
+- [x] **P4B-06** synthetic ABI stub 覆盖 success/failure/Close/partial/timeout/clock。`dd6a3cc` 以产品自有 mock DLL 的故障矩阵验证 Init failure、GetWave 写入 partial buffer 后失败、clock NaN 与 Close failure：均丢弃输出、无 success artifact，并按生命周期只 Close 一次；既有 timeout 行仍只验证 supervisor recovery，不声称 kill 后 Close。Orca `msg_d112bb0dddbb` 审计 0 P1/0 P2，见 [验收记录](docs/baselines/audits/2026-08-11-p4b-ami-synthetic-fault-matrix.md)。
 - [ ] **P4B-07** authorized exact fixture 覆盖 Init-only、单/多 GetWave、不同合法长度的 raw ABI output compare。
 - [ ] **P4B-08** 将 raw AMI output 通过 typed edge 交给 Channel，另做 waveform/BER/eye profile；不能用 ABI 等价冒充系统 parity。
 - [ ] **P4B-09** 接入 `sipi ami run`，只允许显式、已认证 profile，不注册 silent fallback。
