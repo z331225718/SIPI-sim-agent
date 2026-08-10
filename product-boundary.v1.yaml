@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 3c2f7198ca8182c8351a00945d778fba5e2e7107df23e49ba8bf17f1c1bf09b3
+  tracked_paths_sha256: 73d0c024d06c6135adafb7e524602e2435d6ac99b89f0f57191c82362fb2cc9c
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -768,6 +768,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p4a-ibis-structural-parser-foundation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p4a-ibis-typed-semantic-envelope-foundation.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
