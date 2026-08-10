@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 203de3995b75fca426f678974aecd4676a4c32601b1d2efd2d11706cf3614f48
+  tracked_paths_sha256: 179d4386008e948577c119d75621c21c190ca758564df8e5910fb62d4e0565ac
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -834,6 +834,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-rfm-readiness-evidence-anchor.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-11-p4b-ami-text-structural-foundation.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
