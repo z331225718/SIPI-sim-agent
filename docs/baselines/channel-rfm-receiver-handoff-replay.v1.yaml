@@ -1,0 +1,39 @@
+schema: sipi.channel.rfm-receiver-handoff-replay-policy.v1
+status: external_replay_pending_execution
+profile_id: channel-rfm-block-2-current-drive-v1
+authorization_ref: docs/baselines/channel-rfm-receiver-reference-bits-authorization.v1.yaml
+reference_bits_attestation_ref: docs/baselines/channel-rfm-receiver-reference-bits-attestation.v1.yaml
+observer:
+  source_commit: 199696a510baa87645dfdcf7017d11325ba06195
+  source_path: scripts/verify_m5b_rfm_receiver_parity.py
+  source_blob: de587f2e04c11db83dc8ee389584da36e6c79ecd
+  source_sha256: c34a90035d7ae6d01321e69cc6332d75d60332d594f1fb40abc341d988882cba
+rfm:
+  commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7
+  path: tests/golden/rust_migration/agent_spice_rfm/block_2.rfm
+  blob: 9a087a9f75c58d3d1fb15efee2628001a601a546
+  sha256: 5716f691a69174cfe88980ffd96bfc867f30f9ee92b6b85d3fb6b8c8b3636a53
+engine:
+  sha256: 111ff6e1a1a8f7f39782a355722c56f4d8e7392bff6d389445ba87dee73928dc
+  platform: windows-x86_64
+handoff:
+  waveform_encoding: f64le
+  waveform_units: V
+  waveform_count: 1024
+  start_seconds: 0.0
+  sample_interval_seconds: 0.000000000001
+  reference_bit_encoding: one-byte-per-bit-0-or-1
+  reference_bit_count: 128
+  input_port: 1
+  output_port: 2
+  current_to_voltage_sign: -1
+  transformations: forbidden
+product_runner:
+  target: receiver_observer_runner
+  invocation: ignored_test_only
+  stable_cli_or_ffi: forbidden
+required_replays: 2
+non_claims:
+  - This policy does not compare against retained Python or old Rust receiver behavior.
+  - A passing replay is not charter-scoped receiver equivalence or RFM/Link parity.
+  - Sidecars and full receiver output are external ephemeral artifacts only.

@@ -273,6 +273,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3b-approved-fixed-receiver-spec-v1]
+  - id: p3b-rfm-receiver-handoff-replay-spec-v1
+    kind: independent_spec
+    content_sha256: ee625b45dfdfb268bf4c2b3fe46f65e2ba402121102b1574186bc0a119319542
+    provenance:
+      source_ref: docs/clean-room/specs/p3b-rfm-receiver-handoff-replay.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, comparator, auditor]
+    derived_from: [p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
   - id: pybert-channel-16ghz-3db-fixture-f6ba031
     kind: oracle_fixture
     content_sha256: 9d4cfeaad7c971fa45454f639b40e08c538855058f326fbdec64298b8933b5ad
@@ -286,6 +294,14 @@ materials:
     content_sha256: c34a90035d7ae6d01321e69cc6332d75d60332d594f1fb40abc341d988882cba
     provenance:
       source_ref: external/pybert/199696a/scripts/verify_m5b_rfm_receiver_parity.py
+      license_evidence: license-manifest.v1.yaml#pybert-external-only
+    allowed_roles: [observer, comparator, auditor]
+    derived_from: []
+  - id: pybert-rfm-current-domain-observer-api-199696a
+    kind: pybert_source
+    content_sha256: b449eb8ed782119b974858efcfd248cb7023c4ec849cc6d0e81784c6fbbc7c5e
+    provenance:
+      source_ref: external/pybert/199696a/src/pybert/engine/agent_spice_channel.py
       license_evidence: license-manifest.v1.yaml#pybert-external-only
     allowed_roles: [observer, comparator, auditor]
     derived_from: []
@@ -522,4 +538,13 @@ scopes:
       implementer: []
       comparator: [pybert-rfm-reference-bits-generator-199696a]
       auditor: [pybert-rfm-reference-bits-generator-199696a]
+  - id: p3b-rfm-receiver-handoff-replay-v1
+    paths: [docs/baselines/channel-rfm-receiver-handoff-replay.v1.yaml, docs/clean-room/specs/p3b-rfm-receiver-handoff-replay.v1.md, crates/sipi-link/tests/receiver_observer_runner.rs, tools/replay_channel_rfm_receiver_handoff.py, tools/test_replay_channel_rfm_receiver_handoff.py]
+    state: planned
+    role_material_allowlists:
+      observer: [pybert-rfm-reference-bits-generator-199696a, pybert-rfm-current-domain-observer-api-199696a]
+      spec_author: [p3b-rfm-receiver-handoff-replay-spec-v1]
+      implementer: [p3b-rfm-receiver-handoff-replay-spec-v1, p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
+      comparator: [p3b-rfm-receiver-handoff-replay-spec-v1, pybert-rfm-reference-bits-generator-199696a, pybert-rfm-current-domain-observer-api-199696a]
+      auditor: [p3b-rfm-receiver-handoff-replay-spec-v1, pybert-rfm-reference-bits-generator-199696a, pybert-rfm-current-domain-observer-api-199696a]
 attestations: []
