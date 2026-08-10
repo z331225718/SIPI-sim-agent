@@ -179,7 +179,7 @@ materials:
     derived_from: [p2-tran-fixed-cli-run-spec-v1, p2-tran-failure-gates-spec-v1]
   - id: p3a-s2p-matched-channel-spec-v1
     kind: independent_spec
-    content_sha256: c75273bfa4b5c90ea6dba7db59a5af0a674366f44d090af861bdcdd57e748cc8
+    content_sha256: f6b88d6f012155420add268f8ef27f9d251f6b3762c6e9c0633bca36e75067dd
     provenance:
       source_ref: docs/clean-room/specs/p3a-s2p-matched-channel.v1.md
       license_evidence: project-authored-MIT-boundary-pending-promotion
@@ -193,6 +193,22 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, comparator, auditor]
     derived_from: [p3a-s2p-matched-channel-spec-v1]
+  - id: p3a-s2p-matched-channel-comparator-spec-v1
+    kind: independent_spec
+    content_sha256: 1a754c15b726686c2ae1e3781760454bd2d963cd838f9ad26fabfcd3dd09faea
+    provenance:
+      source_ref: docs/clean-room/specs/p3a-s2p-matched-channel-comparator.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, comparator, auditor]
+    derived_from: [p3a-s2p-matched-channel-spec-v1]
+  - id: pybert-channel-16ghz-3db-fixture-f6ba031
+    kind: oracle_fixture
+    content_sha256: 9d4cfeaad7c971fa45454f639b40e08c538855058f326fbdec64298b8933b5ad
+    provenance:
+      source_ref: external/pybert/f6ba0311350fc67bd90fa13b8d578312f956d7e7/models/sp_file/channel_16ghz_3db.s2p
+      license_evidence: license-manifest.v1.yaml#pybert-external-only
+    allowed_roles: [observer, comparator, auditor]
+    derived_from: []
   - id: agent-spice-license-2cc92316
     kind: mit_source
     content_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
@@ -318,4 +334,13 @@ scopes:
       implementer: [p3a-s2p-matched-channel-spec-v1]
       comparator: []
       auditor: [p3a-s2p-matched-channel-spec-v1]
+  - id: p3a-s2p-matched-channel-comparator-v1
+    paths: [docs/clean-room/specs/p3a-s2p-matched-channel-comparator.v1.md, tools/compare_channel_s2p_matched.py, tools/test_compare_channel_s2p_matched.py]
+    state: planned
+    role_material_allowlists:
+      observer: [pybert-channel-16ghz-3db-fixture-f6ba031]
+      spec_author: [p3a-s2p-matched-channel-comparator-spec-v1]
+      implementer: []
+      comparator: [p3a-s2p-matched-channel-comparator-spec-v1, pybert-channel-16ghz-3db-fixture-f6ba031]
+      auditor: [p3a-s2p-matched-channel-comparator-spec-v1, pybert-channel-16ghz-3db-fixture-f6ba031]
 attestations: []

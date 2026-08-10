@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: ec8ec7209d637c3a628ab28b9978d42e38772e4d68ff38e658cc9abaca0ea158
+  tracked_paths_sha256: b2483fa3673e053dbf64c97ca362a86bdb7661af5c2fe6939017605333d2b27a
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -102,6 +102,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-channel/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-channel/src/bin/sipi-channel-kernel-runner.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -840,6 +846,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3a-s2p-matched-acceptance-contract.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3a-s2p-matched-channel-comparator.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5165,6 +5177,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/compare_channel_s2p_matched.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/compare_m5b_ami_exact_host_outputs.py:
       rule: migration-tools
       class: migration_only
@@ -5226,6 +5244,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_clean_room_templates.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_compare_channel_s2p_matched.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

@@ -59,6 +59,22 @@ continuous-band passivity or physical-realizability certificate. Causality is
 always reported as `not assessed` because a finite-band periodic DFT input has
 no sufficient broadband continuation, reference-plane, or causal-fit evidence.
 
+## Comparator Helper Record
+
+For external acceptance only, a non-public helper may accept a binary
+`sipi.channel.matched-spectrum-binary.v1` record. Its fixed little-endian
+layout is `SIPICHS1`, one-sided sample count (`u64`), matched `Z0` (`f64`),
+frequency step (`f64`), then each row-major `S11`, `S12`, `S21`, `S22` complex
+pair as `(real f64, imaginary f64)`. The helper must require an exact record
+length and finite values, construct the same validated product spectrum, and
+call the sole matched-kernel resolver once. It emits `SIPICHK1`, kernel count
+(`u64`), sample interval (`f64`), and gain values (`f64`).
+
+This helper neither parses Touchstone nor computes an observer/reference
+kernel. It is not a public CLI input format or a simulation route; the
+observer-side comparator alone may translate the pinned external text into
+this record without applying any numerical transformation.
+
 ## Explicit Rejections
 
 Reject non-S data, anything other than two single-ended ports, differential or
