@@ -99,6 +99,32 @@ fn complex(value: Complex64) -> Complex<f64> {
 fn endpoint_is_real(value: Complex<f64>) -> bool {
     value.im.abs() <= 1e-12
 }
+fn fft_length(sample_count: usize) -> Result<usize, ChannelError> {
+    sample_count
+        .checked_sub(1)
+        .and_then(|x| x.checked_mul(2))
+        .ok_or(ChannelError::LengthOverflow)
+}
+fn finalize_gain(spectrum: Vec<Complex<f64>>, scale: f64) -> Result<Vec<FiniteF64>, ChannelError> {
+    let max_re = spectrum
+        .iter()
+        .map(|v| (v.re * scale).abs())
+        .fold(0.0_f64, f64::max);
+    spectrum
+        .into_iter()
+        .map(|v| {
+            let real = v.re * scale;
+            if !real.is_finite() {
+                return Err(ChannelError::NonFiniteOutput);
+            }
+            if (v.im * scale).abs() > 1e-12 + 1e-10 * max_re {
+                return Err(ChannelError::InverseImaginaryResidue);
+            }
+            FiniteF64::try_new(real, "matched channel gain")
+                .map_err(|_| ChannelError::NonFiniteOutput)
+        })
+        .collect()
+}
 
 pub fn resolve_matched_kernel_v1(
     input: &MatchedTwoPortSpectrumV1,
@@ -108,10 +134,7 @@ pub fn resolve_matched_kernel_v1(
     if m > limits.max_one_sided_samples.get() {
         return Err(ChannelError::SampleLimitExceeded);
     }
-    let n = m
-        .checked_sub(1)
-        .and_then(|x| x.checked_mul(2))
-        .ok_or(ChannelError::LengthOverflow)?;
+    let n = fft_length(m)?;
     let dc = complex(input.samples[0].s21);
     let nyquist = complex(input.samples[m - 1].s21);
     if !endpoint_is_real(dc) || !endpoint_is_real(nyquist) {
@@ -128,24 +151,7 @@ pub fn resolve_matched_kernel_v1(
         .plan_fft_inverse(n)
         .process(&mut spectrum);
     let scale = 1.0 / n as f64;
-    let max_re = spectrum
-        .iter()
-        .map(|v| (v.re * scale).abs())
-        .fold(0.0_f64, f64::max);
-    let gain = spectrum
-        .into_iter()
-        .map(|v| {
-            let real = v.re * scale;
-            if !real.is_finite() {
-                return Err(ChannelError::NonFiniteOutput);
-            }
-            if (v.im * scale).abs() > 1e-12 + 1e-10 * max_re {
-                return Err(ChannelError::InverseImaginaryResidue);
-            }
-            FiniteF64::try_new(real, "matched channel gain")
-                .map_err(|_| ChannelError::NonFiniteOutput)
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+    let gain = finalize_gain(spectrum, scale)?;
     let dt = Seconds::try_new(1.0 / (n as f64 * input.frequency_step.get()))
         .map_err(|_| ChannelError::NonFiniteOutput)?;
     Ok(MatchedChannelKernelV1 {
@@ -242,6 +248,21 @@ mod tests {
             )
             .unwrap_err(),
             ChannelError::SampleLimitExceeded
+        );
+    }
+    #[test]
+    fn internal_transform_failures_are_closed() {
+        assert_eq!(
+            fft_length(usize::MAX).unwrap_err(),
+            ChannelError::LengthOverflow
+        );
+        assert_eq!(
+            finalize_gain(vec![Complex::new(1.0, 1.0)], 1.0).unwrap_err(),
+            ChannelError::InverseImaginaryResidue
+        );
+        assert_eq!(
+            finalize_gain(vec![Complex::new(f64::INFINITY, 0.0)], 1.0).unwrap_err(),
+            ChannelError::NonFiniteOutput
         );
     }
 }
