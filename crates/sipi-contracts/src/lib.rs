@@ -22,6 +22,7 @@ pub const LINK_CAUSAL_FIR_REQUEST_SCHEMA: &str = "sipi.link.causal-fir-request.v
 pub const IBIS_INSPECT_REQUEST_SCHEMA: &str = "sipi.ibis.inspect.request.v1";
 pub const RECEIVER_INPUT_SCHEMA: &str = "sipi.receiver-input.v1";
 pub const RECEIVER_SEMANTICS_SCHEMA: &str = "sipi.receiver-semantics.v1";
+pub const PROJECT_PLAN_SCHEMA: &str = "sipi.project.v1";
 pub const PLANNED_DOMAINS: [&str; 4] = ["tran", "channel", "ibis-ami", "com"];
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -33,6 +34,7 @@ pub enum ContractError {
     Receiver(ReceiverContractError),
     ReceiverSemantics(ReceiverSemanticContractError),
     IbisInspect(IbisInspectContractError),
+    Project(ProjectContractError),
 }
 
 impl fmt::Display for ContractError {
@@ -45,6 +47,7 @@ impl fmt::Display for ContractError {
             Self::Receiver(error) => error.fmt(formatter),
             Self::ReceiverSemantics(error) => error.fmt(formatter),
             Self::IbisInspect(error) => error.fmt(formatter),
+            Self::Project(error) => error.fmt(formatter),
         }
     }
 }
@@ -80,6 +83,31 @@ impl From<IbisInspectContractError> for ContractError {
         Self::IbisInspect(value)
     }
 }
+
+impl From<ProjectContractError> for ContractError {
+    fn from(value: ProjectContractError) -> Self {
+        Self::Project(value)
+    }
+}
+
+/// Stable rejections for the non-executing project declaration boundary.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ProjectContractError {
+    Version,
+    InvalidProjectId,
+    InvalidSeed,
+    InvalidResourcePolicy,
+    EmptyNodes,
+    EmptyRequestedOutputs,
+}
+
+impl fmt::Display for ProjectContractError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "invalid project contract: {self:?}")
+    }
+}
+
+impl Error for ProjectContractError {}
 
 /// Stable rejections for the in-memory IBIS structural inspection boundary.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -204,6 +232,105 @@ pub struct ContractErrorV1 {
     pub schema: String,
     pub code: String,
     pub rule_id: String,
+}
+
+/// A declarative, non-executing cross-domain project plan.
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireProjectPlanV1 {
+    pub schema: String,
+    pub project_id: String,
+    /// An explicit 32-byte deterministic seed, rendered as lowercase hex.
+    pub seed_hex: String,
+    pub resource_policy: WireProjectResourcePolicyV1,
+    pub inputs: Vec<WireProjectInputV1>,
+    pub nodes: Vec<WireProjectNodeV1>,
+    pub edges: Vec<WireProjectEdgeV1>,
+    pub requested_outputs: Vec<WireProjectOutputRefV1>,
+}
+
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireProjectResourcePolicyV1 {
+    pub timeout_millis: u64,
+    pub max_work_units: u64,
+    pub max_accounted_bytes: u64,
+}
+
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireProjectInputV1 {
+    pub id: String,
+    pub contract: String,
+}
+
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireProjectNodeV1 {
+    pub id: String,
+    pub kind: String,
+}
+
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireProjectPortRefV1 {
+    pub node_id: String,
+    pub port: String,
+}
+
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireProjectEdgeV1 {
+    pub from: WireProjectEdgeSourceV1,
+    pub to: WireProjectPortRefV1,
+    pub contract: String,
+}
+
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum WireProjectEdgeSourceV1 {
+    ProjectInput { input_id: String },
+    NodeOutput { node_id: String, port: String },
+}
+
+#[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireProjectOutputRefV1 {
+    pub node_id: String,
+    pub port: String,
+    pub contract: String,
+}
+
+impl WireProjectPlanV1 {
+    pub fn validate_boundary(&self) -> Result<(), ProjectContractError> {
+        if self.schema != PROJECT_PLAN_SCHEMA {
+            return Err(ProjectContractError::Version);
+        }
+        if !token(&self.project_id) {
+            return Err(ProjectContractError::InvalidProjectId);
+        }
+        if self.seed_hex.len() != 64
+            || !self
+                .seed_hex
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        {
+            return Err(ProjectContractError::InvalidSeed);
+        }
+        if self.resource_policy.timeout_millis == 0
+            || self.resource_policy.max_work_units == 0
+            || self.resource_policy.max_accounted_bytes == 0
+        {
+            return Err(ProjectContractError::InvalidResourcePolicy);
+        }
+        if self.nodes.is_empty() {
+            return Err(ProjectContractError::EmptyNodes);
+        }
+        if self.requested_outputs.is_empty() {
+            return Err(ProjectContractError::EmptyRequestedOutputs);
+        }
+        Ok(())
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1137,6 +1264,13 @@ pub fn parse_receiver_semantics_v1(input: &[u8]) -> Result<ReceiverSemanticsV1, 
         .try_into()
 }
 
+pub fn parse_project_plan_v1(input: &[u8]) -> Result<WireProjectPlanV1, ContractError> {
+    let plan: WireProjectPlanV1 =
+        serde_json::from_slice(input).map_err(|error| ContractError::Json(error.to_string()))?;
+    plan.validate_boundary()?;
+    Ok(plan)
+}
+
 pub fn parse_tran_rc_pulse_request_v1(input: &[u8]) -> Result<TranRcPulseRequestV1, ContractError> {
     let request: TranRcPulseRequestV1 =
         serde_json::from_slice(input).map_err(|error| ContractError::Json(error.to_string()))?;
@@ -1288,12 +1422,24 @@ pub fn receiver_semantics_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireReceiverSemanticsV1))
 }
 
+pub fn project_plan_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(WireProjectPlanV1))
+}
+
 fn require_schema(schema: &str) -> Result<(), ContractError> {
     if schema == "sipi.contract.v1" {
         Ok(())
     } else {
         Err(ContractError::Version)
     }
+}
+
+fn token(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 128
+        && value.bytes().all(|byte| {
+            byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'.' | b'_' | b'-')
+        })
 }
 
 fn require_link_schema(schema: &str) -> Result<(), ContractError> {
@@ -1433,6 +1579,27 @@ mod tests {
             deterministic_json(&CapabilityCatalogV1::unsupported()).unwrap()
         );
         assert!(capability_schema_json().unwrap().starts_with(b"{"));
+    }
+
+    #[test]
+    fn project_plan_boundary_requires_a_versioned_seed_and_policy() {
+        let valid = br#"{"schema":"sipi.project.v1","project_id":"project-1","seed_hex":"0000000000000000000000000000000000000000000000000000000000000000","resource_policy":{"timeout_millis":1,"max_work_units":1,"max_accounted_bytes":1},"inputs":[],"nodes":[{"id":"tran","kind":"tran.rc_pulse"}],"edges":[],"requested_outputs":[{"node_id":"tran","port":"result","contract":"sipi.tran.rc-pulse-result.v1"}]}"#;
+        assert!(parse_project_plan_v1(valid).is_ok());
+        assert_eq!(
+            parse_project_plan_v1(
+                br#"{"schema":"sipi.project.v0","project_id":"project-1","seed_hex":"0000000000000000000000000000000000000000000000000000000000000000","resource_policy":{"timeout_millis":1,"max_work_units":1,"max_accounted_bytes":1},"inputs":[],"nodes":[{"id":"tran","kind":"tran.rc_pulse"}],"edges":[],"requested_outputs":[{"node_id":"tran","port":"result","contract":"sipi.tran.rc-pulse-result.v1"}]}"#
+            ),
+            Err(ContractError::Project(ProjectContractError::Version))
+        );
+        assert!(parse_project_plan_v1(
+            br#"{"schema":"sipi.project.v1","project_id":"project-1","seed_hex":"not-hex","resource_policy":{"timeout_millis":1,"max_work_units":1,"max_accounted_bytes":1},"inputs":[],"nodes":[{"id":"tran","kind":"tran.rc_pulse"}],"edges":[],"requested_outputs":[{"node_id":"tran","port":"result","contract":"sipi.tran.rc-pulse-result.v1"]}"#
+        )
+        .is_err());
+        assert!(
+            project_plan_schema_json()
+                .expect("schema")
+                .starts_with(b"{")
+        );
     }
 
     #[test]

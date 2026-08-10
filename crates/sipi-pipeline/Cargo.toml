@@ -7,5 +7,9 @@ rust-version.workspace = true
 publish = false
 description = "Validated, non-executing typed SIPI pipeline plans."
 
+[dependencies]
+sha2 = "0.10"
+sipi-contracts = { path = "../sipi-contracts" }
+
 [lints]
 workspace = true

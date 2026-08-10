@@ -387,6 +387,10 @@ dependencies = [
 [[package]]
 name = "sipi-pipeline"
 version = "0.1.0"
+dependencies = [
+ "sha2",
+ "sipi-contracts",
+]
 
 [[package]]
 name = "sipi-runtime"
