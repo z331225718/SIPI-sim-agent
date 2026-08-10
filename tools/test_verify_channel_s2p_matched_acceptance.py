@@ -36,6 +36,7 @@ class MatchedS2pAcceptanceTests(unittest.TestCase):
         document = self.document(); root = self.source(document); document["contract"]["window"] = "hann"; self.assertFalse(verify_document(document, root)["valid"])
         document = self.document(); root = self.source(document); document["acceptance"]["kernel_compare"]["relative_tolerance"] = 1.0e-3; self.assertFalse(verify_document(document, root)["valid"])
         document = self.document(); root = self.source(document); document["source"]["content_sha256"] = "0" * 64; self.assertFalse(verify_document(document, root)["valid"])
+        document = self.document(); root = self.source(document); document["source"]["path"] = "C:/Windows/channel.s2p"; self.assertFalse(verify_document(document, root)["valid"])
 
 
 if __name__ == "__main__":

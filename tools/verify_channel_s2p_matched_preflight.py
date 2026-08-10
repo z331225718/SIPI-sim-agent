@@ -146,7 +146,7 @@ def verify_document(document: object, source_root: Path, *, sipi_root: Path = RO
     expected = {"schema", "selection", "source", "legacy_handoff_evidence", "product_contract", "structural_expectation", "numerical_acceptance", "non_claims"}
     if not _exact(document, expected) or document.get("schema") != SCHEMA:
         return {"valid": False, "comparison_ready": False, "blockers": ["observation_schema_invalid"]}
-    if document.get("selection") != {"profile_id": PROFILE_ID, "required": True, "required_by": document.get("selection", {}).get("required_by") if isinstance(document.get("selection"), dict) else None, "status": "required_pending_preflight"} or not isinstance(document["selection"].get("required_by"), str) or not document["selection"]["required_by"]:
+    if document.get("selection") != {"profile_id": PROFILE_ID, "required": True, "required_by": document.get("selection", {}).get("required_by") if isinstance(document.get("selection"), dict) else None, "status": "required_pending_numerical_compare"} or not isinstance(document["selection"].get("required_by"), str) or not document["selection"]["required_by"]:
         blockers.append("selection_invalid")
     payload = _verify_source(document["source"], source_root, blockers) if isinstance(document.get("source"), dict) else None
     if isinstance(document.get("legacy_handoff_evidence"), dict):

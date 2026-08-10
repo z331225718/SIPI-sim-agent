@@ -3,7 +3,7 @@ selection:
   profile_id: channel-s2p-channel-16ghz-3db-v1
   required: true
   required_by: user-confirmed-2026-08-10-channel_16ghz_3db
-  status: required_pending_preflight
+  status: required_pending_numerical_compare
 source:
   canonical_origin: https://github.com/z331225718/Py-bert-agent.git
   commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7

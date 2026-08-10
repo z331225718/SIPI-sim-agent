@@ -30,7 +30,14 @@ def _hex(value: object, length: int) -> bool:
 
 
 def _safe_path(value: object) -> bool:
-    return isinstance(value, str) and bool(value) and not value.startswith("/") and "\\" not in value and ".." not in value.split("/")
+    return (
+        isinstance(value, str)
+        and bool(value)
+        and not value.startswith("/")
+        and "\\" not in value
+        and not (len(value) >= 2 and value[0].isalpha() and value[1] == ":")
+        and ".." not in value.split("/")
+    )
 
 
 def _load(path: Path) -> dict:
