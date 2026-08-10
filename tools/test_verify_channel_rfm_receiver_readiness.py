@@ -48,6 +48,18 @@ class RfmReceiverReadinessTests(unittest.TestCase):
         self.assertFalse(report["valid"])
         self.assertTrue(any("receiver semantics" in item for item in report["blockers"]))
 
+    def test_evidence_anchor_must_exist_and_match_the_inventory(self) -> None:
+        readiness = self.readiness()
+        readiness["external_observation"]["evidence_ref"] = "docs/baselines/audits/missing.md#missing"
+        report = verify_document(readiness, self.inventory())
+        self.assertFalse(report["valid"])
+        self.assertTrue(any("external observation" in item for item in report["blockers"]))
+        inventory = self.inventory()
+        inventory["profiles"][1]["evidence_refs"] = ["docs/baselines/audits/2026-08-08-m5.md#m5b-03c"]
+        report = verify_document(self.readiness(), inventory)
+        self.assertFalse(report["valid"])
+        self.assertTrue(any("receiver evidence" in item for item in report["blockers"]))
+
     def test_inventory_candidate_status_cannot_drift(self) -> None:
         inventory = self.inventory()
         inventory["profiles"][1]["acceptance"]["status"] = "required_pending_preflight"

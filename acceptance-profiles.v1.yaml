@@ -36,9 +36,9 @@ profiles:
     assets:
       - {path: tests/golden/rust_migration/agent_spice_rfm/block_2.rfm, git_blob: 9a087a9f75c58d3d1fb15efee2628001a601a546, content_sha256: 5716f691a69174cfe88980ffd96bfc867f30f9ee92b6b85d3fb6b8c8b3636a53, redistribution: external_only}
     source_license_evidence: license-manifest.v1.yaml#pybert-main-source
-    environment: {platform: windows-x86_64, provenance_status: evidence_incomplete, provenance_ref: docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm}
-    acceptance: {observable: current-drive transfer plus retained receiver stages and BER, comparator_ref: tools/verify_m5b_rfm_receiver_parity.py, tolerance_policy_ref: docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm, status: candidate, required_by: null}
-    evidence_refs: [docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm]
+    environment: {platform: windows-x86_64, provenance_status: evidence_incomplete, provenance_ref: docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm-same-config-receiver-parity}
+    acceptance: {observable: current-drive transfer plus retained receiver stages and BER, comparator_ref: tools/verify_m5b_rfm_receiver_parity.py, tolerance_policy_ref: docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm-same-config-receiver-parity, status: candidate, required_by: null}
+    evidence_refs: [docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm-same-config-receiver-parity]
     notes: Same-config RFM receiver evidence is profile-limited and not general RFM physical certification.
   - id: ibis-ami-example-rx-raw-abi-v1
     capability: ibis_ami

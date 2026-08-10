@@ -18,7 +18,7 @@ external_observation:
   input_ports: [1]
   output_ports: [2]
   samples_per_ui: 8
-  evidence_ref: docs/baselines/audits/2026-08-08-m5.md#m5b-03c
+  evidence_ref: docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm-same-config-receiver-parity
 owner_decision:
   required_by: null
   decision: pending

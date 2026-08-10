@@ -19,6 +19,7 @@ PROFILE_ID = "channel-rfm-block-2-current-drive-v1"
 SHA1_LENGTH = 40
 SHA256_LENGTH = 64
 MISSING = "missing_owner_selection"
+EVIDENCE_REF = "docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm-same-config-receiver-parity"
 
 MISSING_FIELDS = {
     "product_stimulus_and_causal_link_waveform",
@@ -53,6 +54,30 @@ def _safe_ref(value: object) -> bool:
     return isinstance(value, str) and value and "\\" not in value and not value.startswith("/") and ".." not in value.split("/")
 
 
+def _heading_slug(title: str) -> str:
+    characters = []
+    previous_dash = False
+    for character in title.lower():
+        if character.isascii() and character.isalnum():
+            characters.append(character)
+            previous_dash = False
+        elif character in {" ", "-"} and not previous_dash:
+            characters.append("-")
+            previous_dash = True
+    return "".join(characters).strip("-")
+
+
+def _evidence_ref_exists(value: object) -> bool:
+    if value != EVIDENCE_REF:
+        return False
+    path_text, fragment = str(value).split("#", 1)
+    path = ROOT / path_text
+    if not path.is_file():
+        return False
+    headings = [line.lstrip("#").strip() for line in path.read_text(encoding="utf-8").splitlines() if line.startswith("#")]
+    return fragment in {_heading_slug(heading) for heading in headings}
+
+
 def _candidate_profile(document: dict) -> dict | None:
     profiles = document.get("profiles")
     if not isinstance(profiles, list):
@@ -72,6 +97,13 @@ def verify_document(readiness: object, inventory: object) -> dict:
         blockers.append("candidate profile is absent from acceptance inventory")
     elif profile.get("boundary") != "oracle_only" or profile.get("acceptance", {}).get("status") != "candidate" or profile.get("acceptance", {}).get("required_by") is not None:
         blockers.append("candidate profile must remain oracle-only with required_by null")
+    elif (
+        profile.get("environment", {}).get("provenance_ref") != EVIDENCE_REF
+        or profile.get("acceptance", {}).get("tolerance_policy_ref") != EVIDENCE_REF
+        or profile.get("evidence_refs") != [EVIDENCE_REF]
+        or not _evidence_ref_exists(EVIDENCE_REF)
+    ):
+        blockers.append("candidate profile receiver evidence anchor is invalid")
     identity = readiness["candidate_identity"]
     identity_keys = {"repository", "commit", "path", "git_blob", "content_sha256"}
     if not _exact(identity, identity_keys) or not isinstance(identity.get("repository"), str) or not _hex(identity.get("commit"), SHA1_LENGTH) or not _safe_ref(identity.get("path")) or not _hex(identity.get("git_blob"), SHA1_LENGTH) or not _hex(identity.get("content_sha256"), SHA256_LENGTH):
@@ -95,7 +127,7 @@ def verify_document(readiness: object, inventory: object) -> dict:
         and observation["input_ports"] == [1]
         and observation["output_ports"] == [2]
         and observation["samples_per_ui"] == 8
-        and _safe_ref(observation["evidence_ref"])
+        and _evidence_ref_exists(observation["evidence_ref"])
     ):
         blockers.append("external observation is not the pinned RFM receiver record")
     decision = readiness["owner_decision"]
