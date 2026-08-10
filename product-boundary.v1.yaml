@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 50b583658eb6e1a88cc49094a64d8cb3b4a51ca52908baa9692e8f1f77a10c61
+  tracked_paths_sha256: e8058f8e2cb2ce994632f045e3667c1759814e0e450df6abc38120601d4b2a1a
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -822,6 +822,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-rfm-readiness-evidence-anchor.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-11-p5-com-r480-acceptance-boundary.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
