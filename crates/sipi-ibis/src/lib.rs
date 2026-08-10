@@ -8,6 +8,8 @@
 
 use std::{error::Error, fmt, num::NonZeroUsize};
 
+use sipi_types::{Amps, Volts};
+
 /// A byte and physical-line location in one UTF-8-free ASCII source stream.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SourceSpanV1 {
@@ -847,6 +849,212 @@ const fn diagnostic(
     }
 }
 
+/// One finite, signed DC current-versus-voltage knot. The current sign is
+/// caller-defined and is never changed by this primitive.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DcIvKnotV1 {
+    voltage: Volts,
+    current: Amps,
+}
+
+impl DcIvKnotV1 {
+    pub const fn new(voltage: Volts, current: Amps) -> Self {
+        Self { voltage, current }
+    }
+
+    pub const fn voltage(self) -> Volts {
+        self.voltage
+    }
+
+    pub const fn current(self) -> Amps {
+        self.current
+    }
+}
+
+/// One bounded, strictly ordered piecewise-linear DC I-V table.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DcIvTableV1 {
+    knots: Vec<DcIvKnotV1>,
+}
+
+impl DcIvTableV1 {
+    pub fn try_new(knots: Vec<DcIvKnotV1>) -> Result<Self, DcClampErrorV1> {
+        if knots.len() < 2 {
+            return Err(DcClampErrorV1::InsufficientKnots);
+        }
+        for pair in knots.windows(2) {
+            if pair[0].voltage().get() >= pair[1].voltage().get() {
+                return Err(DcClampErrorV1::VoltageNotStrictlyIncreasing);
+            }
+        }
+        Ok(Self { knots })
+    }
+
+    pub fn knots(&self) -> &[DcIvKnotV1] {
+        &self.knots
+    }
+
+    fn evaluate(&self, voltage: Volts, branch: ClampBranchV1) -> Result<Amps, DcClampErrorV1> {
+        let requested = voltage.get();
+        let first = self.knots[0].voltage().get();
+        let last = self.knots[self.knots.len() - 1].voltage().get();
+        if requested < first || requested > last {
+            return Err(DcClampErrorV1::OutOfDomain { branch });
+        }
+        for pair in self.knots.windows(2) {
+            let lower = pair[0];
+            let upper = pair[1];
+            if requested == lower.voltage().get() {
+                return Ok(lower.current());
+            }
+            if requested <= upper.voltage().get() {
+                let distance = upper.voltage().get() - lower.voltage().get();
+                let ratio = (requested - lower.voltage().get()) / distance;
+                let value =
+                    lower.current().get() + ratio * (upper.current().get() - lower.current().get());
+                return Amps::try_new(value).map_err(|_| DcClampErrorV1::NonFiniteEvaluation);
+            }
+        }
+        Ok(self.knots[self.knots.len() - 1].current())
+    }
+}
+
+/// Product-owned typed data for the selected profile's two DC clamp tables.
+#[derive(Clone, Debug, PartialEq)]
+pub struct InputClampDcModelV1 {
+    gnd_clamp: DcIvTableV1,
+    power_clamp: DcIvTableV1,
+}
+
+impl InputClampDcModelV1 {
+    pub const fn new(gnd_clamp: DcIvTableV1, power_clamp: DcIvTableV1) -> Self {
+        Self {
+            gnd_clamp,
+            power_clamp,
+        }
+    }
+
+    pub const fn gnd_clamp(&self) -> &DcIvTableV1 {
+        &self.gnd_clamp
+    }
+
+    pub const fn power_clamp(&self) -> &DcIvTableV1 {
+        &self.power_clamp
+    }
+}
+
+/// Explicit per-table voltages for a DC clamp probe. This core never infers a
+/// supply, reference, polarity, or power-clamp offset from a model.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DcClampProbeV1 {
+    gnd_drive: Volts,
+    power_drive: Volts,
+}
+
+impl DcClampProbeV1 {
+    pub const fn new(gnd_drive: Volts, power_drive: Volts) -> Self {
+        Self {
+            gnd_drive,
+            power_drive,
+        }
+    }
+
+    pub const fn gnd_drive(self) -> Volts {
+        self.gnd_drive
+    }
+
+    pub const fn power_drive(self) -> Volts {
+        self.power_drive
+    }
+}
+
+/// One named clamp branch for stable out-of-domain diagnostics.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ClampBranchV1 {
+    Gnd,
+    Power,
+}
+
+/// Fail-closed DC clamp construction and evaluation errors.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DcClampErrorV1 {
+    InsufficientKnots,
+    VoltageNotStrictlyIncreasing,
+    OutOfDomain { branch: ClampBranchV1 },
+    NonFiniteEvaluation,
+}
+
+impl fmt::Display for DcClampErrorV1 {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InsufficientKnots => write!(formatter, "a DC I-V table needs at least two knots"),
+            Self::VoltageNotStrictlyIncreasing => {
+                write!(
+                    formatter,
+                    "DC I-V table voltages must be strictly increasing"
+                )
+            }
+            Self::OutOfDomain { branch } => {
+                write!(formatter, "{branch:?} clamp probe is out of domain")
+            }
+            Self::NonFiniteEvaluation => write!(formatter, "DC clamp evaluation is not finite"),
+        }
+    }
+}
+
+impl Error for DcClampErrorV1 {}
+
+/// A complete DC-only clamp response. Capacitive current is always exactly
+/// zero in this primitive; transient C_comp behavior is deliberately absent.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DcClampResponseV1 {
+    gnd_current: Amps,
+    power_current: Amps,
+    capacitive_current: Amps,
+    total_shunt_current: Amps,
+}
+
+impl DcClampResponseV1 {
+    pub const fn gnd_current(self) -> Amps {
+        self.gnd_current
+    }
+
+    pub const fn power_current(self) -> Amps {
+        self.power_current
+    }
+
+    pub const fn capacitive_current(self) -> Amps {
+        self.capacitive_current
+    }
+
+    pub const fn total_shunt_current(self) -> Amps {
+        self.total_shunt_current
+    }
+}
+
+/// Evaluates two caller-supplied DC I-V clamp tables. No table decoding,
+/// package model, PVT selection, sign conversion, or extrapolation occurs.
+pub fn evaluate_dc_clamps_v1(
+    model: &InputClampDcModelV1,
+    probe: DcClampProbeV1,
+) -> Result<DcClampResponseV1, DcClampErrorV1> {
+    let gnd_current = model
+        .gnd_clamp
+        .evaluate(probe.gnd_drive(), ClampBranchV1::Gnd)?;
+    let power_current = model
+        .power_clamp
+        .evaluate(probe.power_drive(), ClampBranchV1::Power)?;
+    let capacitive_current = Amps::try_new(0.0).map_err(|_| DcClampErrorV1::NonFiniteEvaluation)?;
+    let total_shunt_current = Amps::try_new(gnd_current.get() + power_current.get())
+        .map_err(|_| DcClampErrorV1::NonFiniteEvaluation)?;
+    Ok(DcClampResponseV1 {
+        gnd_current,
+        power_current,
+        capacitive_current,
+        total_shunt_current,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1023,6 +1231,84 @@ mod tests {
         assert_eq!(
             profile_semantic_rules_status_v1(),
             IbisSemanticDiagnosticCodeV1::ProfileRulesUnavailable
+        );
+    }
+
+    fn knot(voltage: f64, current: f64) -> DcIvKnotV1 {
+        DcIvKnotV1::new(
+            Volts::try_new(voltage).expect("finite voltage"),
+            Amps::try_new(current).expect("finite current"),
+        )
+    }
+
+    fn model() -> InputClampDcModelV1 {
+        InputClampDcModelV1::new(
+            DcIvTableV1::try_new(vec![knot(-1.0, -2.0), knot(0.0, 0.0), knot(1.0, 2.0)])
+                .expect("gnd table"),
+            DcIvTableV1::try_new(vec![knot(-1.0, 3.0), knot(1.0, -1.0)]).expect("power table"),
+        )
+    }
+
+    #[test]
+    fn evaluates_two_signed_clamps_linearly_without_a_dc_capacitor() {
+        let probe = DcClampProbeV1::new(
+            Volts::try_new(0.5).expect("voltage"),
+            Volts::try_new(0.0).expect("voltage"),
+        );
+        let result = evaluate_dc_clamps_v1(&model(), probe).expect("response");
+        assert_eq!(result.gnd_current().get(), 1.0);
+        assert_eq!(result.power_current().get(), 1.0);
+        assert_eq!(result.capacitive_current().get(), 0.0);
+        assert_eq!(result.total_shunt_current().get(), 2.0);
+    }
+
+    #[test]
+    fn rejects_invalid_tables_and_probe_domains_without_partial_output() {
+        assert_eq!(
+            DcIvTableV1::try_new(vec![knot(0.0, 0.0)]),
+            Err(DcClampErrorV1::InsufficientKnots)
+        );
+        assert_eq!(
+            DcIvTableV1::try_new(vec![knot(0.0, 0.0), knot(0.0, 1.0)]),
+            Err(DcClampErrorV1::VoltageNotStrictlyIncreasing)
+        );
+        let probe = DcClampProbeV1::new(
+            Volts::try_new(2.0).expect("voltage"),
+            Volts::try_new(0.0).expect("voltage"),
+        );
+        assert_eq!(
+            evaluate_dc_clamps_v1(&model(), probe),
+            Err(DcClampErrorV1::OutOfDomain {
+                branch: ClampBranchV1::Gnd
+            })
+        );
+    }
+
+    #[test]
+    fn scales_both_clamps_and_keeps_the_result_deterministic() {
+        let scaled = InputClampDcModelV1::new(
+            DcIvTableV1::try_new(vec![knot(-1.0, -6.0), knot(0.0, 0.0), knot(1.0, 6.0)])
+                .expect("gnd table"),
+            DcIvTableV1::try_new(vec![knot(-1.0, 9.0), knot(1.0, -3.0)]).expect("power table"),
+        );
+        let probe = DcClampProbeV1::new(
+            Volts::try_new(0.5).expect("voltage"),
+            Volts::try_new(0.0).expect("voltage"),
+        );
+        let base = evaluate_dc_clamps_v1(&model(), probe).expect("base");
+        let triple = evaluate_dc_clamps_v1(&scaled, probe).expect("scaled");
+        assert_eq!(triple.gnd_current().get(), 3.0 * base.gnd_current().get());
+        assert_eq!(
+            triple.power_current().get(),
+            3.0 * base.power_current().get()
+        );
+        assert_eq!(
+            triple.total_shunt_current().get(),
+            3.0 * base.total_shunt_current().get()
+        );
+        assert_eq!(
+            evaluate_dc_clamps_v1(&model(), probe),
+            evaluate_dc_clamps_v1(&model(), probe)
         );
     }
 }

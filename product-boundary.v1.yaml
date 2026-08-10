@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 58330c9e8a6065b8adbcfcacbf2c1706e010995e513cad1c375181c741ec0874
+  tracked_paths_sha256: 0516c321fb972d14ab062af6d2dec0df15bfd0a142cc817ad47424857fb4a279
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1392,6 +1392,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p4a-electrical-ibis-discovery.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p4a-ibis-dc-clamp-evaluator.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

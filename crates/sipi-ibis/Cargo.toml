@@ -5,7 +5,10 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 publish = false
-description = "Clean-room structural IBIS text parser foundation."
+description = "Clean-room structural IBIS parser and typed DC clamp evaluator."
 
 [lints]
 workspace = true
+
+[dependencies]
+sipi-types = { path = "../sipi-types" }

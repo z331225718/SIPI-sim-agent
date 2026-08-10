@@ -425,6 +425,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: []
+  - id: p4a-ibis-dc-clamp-evaluator-spec-v1
+    kind: independent_spec
+    content_sha256: a4b94bcf5668c53505bc92bbcf26c32d70d2d2ba9a8e9f99e03da6f792b2dd5d
+    provenance:
+      source_ref: docs/clean-room/specs/p4a-ibis-dc-clamp-evaluator.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: []
   - id: p4a-official-pure-ibis-discovery-preflight-spec-v1
     kind: independent_spec
     content_sha256: 8b7933bdf2bcaad0d16709f42c8df7bf5e9f024b63c19cbad23d6eb2ec8073b4
@@ -814,14 +822,14 @@ scopes:
       comparator: []
       auditor: [p4a-ibis71-behavior-scope-preflight-spec-v1]
   - id: p4a-ibis-structural-parser-foundation-v1
-    paths: [Cargo.toml, Cargo.lock, crates/sipi-ibis/**, docs/clean-room/specs/p4a-ibis-structural-parser-foundation.v1.md, docs/clean-room/specs/p4a-ibis-typed-semantic-envelope-foundation.v1.md]
+    paths: [Cargo.toml, Cargo.lock, crates/sipi-ibis/**, docs/clean-room/specs/p4a-ibis-structural-parser-foundation.v1.md, docs/clean-room/specs/p4a-ibis-typed-semantic-envelope-foundation.v1.md, docs/clean-room/specs/p4a-ibis-dc-clamp-evaluator.v1.md]
     state: planned
     role_material_allowlists:
       observer: []
-      spec_author: [p4a-ibis-structural-parser-foundation-spec-v1, p4a-ibis-typed-semantic-envelope-foundation-spec-v1]
-      implementer: [p4a-ibis-structural-parser-foundation-spec-v1, p4a-ibis-typed-semantic-envelope-foundation-spec-v1]
+      spec_author: [p4a-ibis-structural-parser-foundation-spec-v1, p4a-ibis-typed-semantic-envelope-foundation-spec-v1, p4a-ibis-dc-clamp-evaluator-spec-v1]
+      implementer: [p4a-ibis-structural-parser-foundation-spec-v1, p4a-ibis-typed-semantic-envelope-foundation-spec-v1, p4a-ibis-dc-clamp-evaluator-spec-v1]
       comparator: []
-      auditor: [p4a-ibis-structural-parser-foundation-spec-v1, p4a-ibis-typed-semantic-envelope-foundation-spec-v1]
+      auditor: [p4a-ibis-structural-parser-foundation-spec-v1, p4a-ibis-typed-semantic-envelope-foundation-spec-v1, p4a-ibis-dc-clamp-evaluator-spec-v1]
   - id: p4a-official-pure-ibis-discovery-preflight-v1
     paths: [docs/baselines/p4a-official-pure-ibis-discovery-preflight.v1.yaml, docs/clean-room/specs/p4a-official-pure-ibis-discovery-preflight.v1.md, tools/verify_p4a_official_pure_ibis_discovery_preflight.py, tools/test_verify_p4a_official_pure_ibis_discovery_preflight.py]
     state: planned
