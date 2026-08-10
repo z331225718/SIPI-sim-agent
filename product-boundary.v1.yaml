@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 00396c8894e15cad70317ee8a4c6e065ed3e7a599bcf1e27ab66316683265c3d
+  tracked_paths_sha256: 01a24d8c019111bb3ee9dc731328d6ce6fd480320a3286218411fdffbc72f674
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -480,6 +480,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p2c-rc-pulse-acceptance-contract.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p2d-rc-pulse-semantics.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
