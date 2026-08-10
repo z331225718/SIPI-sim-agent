@@ -1,0 +1,12 @@
+[package]
+name = "sipi-ami-host"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Clean-room Windows x64 IBIS AMI standard ABI host mechanics."
+
+[dependencies]
+sha2 = "0.10"
+sipi-ami-text = { path = "../sipi-ami-text" }
