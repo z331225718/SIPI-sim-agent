@@ -137,14 +137,23 @@ def main() -> int:
     parser.add_argument("--bits", type=Path, required=True)
     parser.add_argument("--result", type=Path, required=True)
     args = parser.parse_args()
+    if args.result.exists():
+        print(json.dumps({"schema": SCHEMA, "status": "rejected", "reason": "result_path_exists"}))
+        return 2
     try:
-        if args.result.exists():
-            raise CharterRejection("result path must not already exist")
         result = evaluate(_load_waveform(args.waveform), _load_bits(args.bits))
+    except CharterRejection as error:
+        result = {"schema": SCHEMA, "status": "rejected", "reason": str(error)}
+    except OSError:
+        result = {"schema": SCHEMA, "status": "rejected", "reason": "sidecar_io_failure"}
+    try:
         args.result.parent.mkdir(parents=True, exist_ok=True)
         args.result.write_text(json.dumps(result, sort_keys=True) + "\n", encoding="utf-8")
-    except (OSError, CharterRejection) as error:
-        print(json.dumps({"schema": SCHEMA, "status": "rejected", "reason": str(error)}))
+    except OSError:
+        print(json.dumps({"schema": SCHEMA, "status": "rejected", "reason": "result_write_failure"}))
+        return 2
+    if result["status"] == "rejected":
+        print(json.dumps(result, sort_keys=True))
         return 2
     print(json.dumps({"schema": SCHEMA, "status": "accepted"}))
     return 0

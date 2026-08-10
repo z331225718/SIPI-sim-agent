@@ -1,0 +1,23 @@
+schema: sipi.channel.rfm-receiver-charter-compare-policy.v1
+status: external_compare_pending_execution
+profile_id: channel-rfm-block-2-current-drive-v1
+handoff_policy_ref: docs/baselines/channel-rfm-receiver-handoff-replay.v1.yaml
+charter:
+  primary_spec_ref: docs/clean-room/specs/p3b-approved-fixed-receiver.v1.md
+  erasure_amendment_ref: docs/clean-room/specs/p3b-approved-fixed-receiver-erasure-amendment.v1.md
+  evaluator_spec_ref: docs/clean-room/specs/p3b-receiver-charter-evaluator.v1.md
+evaluator:
+  path: tools/evaluate_fixed_receiver_charter.py
+  schema: sipi.receiver-charter-evaluator.v1
+product_runner:
+  target: receiver_observer_runner
+  invocation: ignored_test_only
+  stable_cli_or_ffi: forbidden
+required_replays: 2
+continuous_tolerance:
+  absolute_volts: 0.000000001
+  relative: 0.000001
+non_claims:
+  - A rejected evaluator or product receiver result is not an equivalence pass.
+  - This gate does not compare retained Python or old Rust receiver behavior.
+  - This gate does not certify RFM solver, Link, general DFE, CDR, BER, or a product route.

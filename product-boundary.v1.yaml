@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 8c7dd9c3e10cbd7709355d7b2b0106a4657f98caa97a692db96013d1f88ce1e8
+  tracked_paths_sha256: 0fe283fcc786b0c4675b811057f082f1f869c34ac179f46fd2a79859123c5a7c
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -731,6 +731,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/channel-rfm-receiver-charter-compare.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/channel-rfm-receiver-erasure-amendment.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -1098,6 +1104,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3b-rfm-receiver-boundary.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3b-rfm-receiver-charter-compare.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5423,6 +5435,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/compare_channel_rfm_receiver_charter.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/compare_channel_s2p_matched.py:
       rule: migration-tools
       class: migration_only
@@ -5502,6 +5520,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_clean_room_templates.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_compare_channel_rfm_receiver_charter.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

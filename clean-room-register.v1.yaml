@@ -289,6 +289,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, comparator, auditor]
     derived_from: [p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
+  - id: p3b-rfm-receiver-charter-compare-spec-v1
+    kind: independent_spec
+    content_sha256: 91acf35bfda2cf57065255549580bdb979c046e711dd2f08fc8d47ee19b0ea6e
+    provenance:
+      source_ref: docs/clean-room/specs/p3b-rfm-receiver-charter-compare.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, comparator, auditor]
+    derived_from: [p3b-rfm-receiver-handoff-replay-spec-v1, p3b-receiver-charter-evaluator-spec-v1]
   - id: pybert-channel-16ghz-3db-fixture-f6ba031
     kind: oracle_fixture
     content_sha256: 9d4cfeaad7c971fa45454f639b40e08c538855058f326fbdec64298b8933b5ad
@@ -564,4 +572,13 @@ scopes:
       implementer: []
       comparator: [p3b-receiver-charter-evaluator-spec-v1]
       auditor: [p3b-receiver-charter-evaluator-spec-v1, p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
+  - id: p3b-rfm-receiver-charter-compare-v1
+    paths: [docs/baselines/channel-rfm-receiver-charter-compare.v1.yaml, docs/clean-room/specs/p3b-rfm-receiver-charter-compare.v1.md, tools/compare_channel_rfm_receiver_charter.py, tools/test_compare_channel_rfm_receiver_charter.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3b-rfm-receiver-charter-compare-spec-v1]
+      implementer: []
+      comparator: [p3b-rfm-receiver-charter-compare-spec-v1, p3b-rfm-receiver-handoff-replay-spec-v1, p3b-receiver-charter-evaluator-spec-v1, pybert-rfm-reference-bits-generator-199696a, pybert-rfm-current-domain-observer-api-199696a]
+      auditor: [p3b-rfm-receiver-charter-compare-spec-v1, p3b-rfm-receiver-handoff-replay-spec-v1, p3b-receiver-charter-evaluator-spec-v1, p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1, pybert-rfm-reference-bits-generator-199696a, pybert-rfm-current-domain-observer-api-199696a]
 attestations: []
