@@ -202,7 +202,10 @@ def _materialize_product_runner(product_root: Path, product_commit: str, temp_ro
     source = temp_root / "product-source"
     with tarfile.open(fileobj=io.BytesIO(archive.stdout)) as document:
         members = document.getmembers()
-        if any(not member.isfile() or not _safe_archive_member(member.name) for member in members):
+        if any(
+            not (member.isfile() or member.isdir()) or not _safe_archive_member(member.name)
+            for member in members
+        ):
             raise ComparatorError("product Git archive has an unsafe member")
         document.extractall(source, members)
     cargo = os.environ.get("CARGO", "cargo")
