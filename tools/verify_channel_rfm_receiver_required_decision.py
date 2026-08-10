@@ -18,6 +18,7 @@ SCHEMA = "sipi.channel.receiver-required-decision.v1"
 PROFILE_ID = "channel-rfm-block-2-current-drive-v1"
 REQUIRED_BY = "user-confirmed-2026-08-10-channel-rfm-receiver"
 STATUS = "required_blocked_missing_receiver_semantics"
+CURRENT_STATUSES = {STATUS, "required_blocked_missing_authorized_reference_bit_source"}
 
 
 def _load(path: Path) -> dict:
@@ -50,7 +51,7 @@ def verify_document(decision: object, inventory: object, readiness: object) -> d
         blockers.append("decision non-claims are incomplete")
     profile = _profile(inventory)
     acceptance = profile.get("acceptance") if isinstance(profile, dict) else None
-    if not isinstance(acceptance, dict) or profile.get("boundary") != "oracle_only" or acceptance.get("status") != STATUS or acceptance.get("required_by") != REQUIRED_BY:
+    if not isinstance(acceptance, dict) or profile.get("boundary") != "oracle_only" or acceptance.get("status") not in CURRENT_STATUSES or acceptance.get("required_by") != REQUIRED_BY:
         blockers.append("inventory does not carry the same scope-limited required decision")
     if not isinstance(readiness, dict) or readiness.get("status") != "required_selected_missing_receiver_semantics" or readiness.get("candidate_profile_id") != PROFILE_ID or readiness.get("owner_decision") != {"required_by": REQUIRED_BY, "decision": "required"}:
         blockers.append("readiness record does not carry the same required decision")

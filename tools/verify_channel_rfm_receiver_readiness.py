@@ -20,6 +20,7 @@ SHA1_LENGTH = 40
 SHA256_LENGTH = 64
 MISSING = "missing_owner_selection"
 EVIDENCE_REF = "docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm-same-config-receiver-parity"
+APPROVAL_REF = "docs/baselines/channel-rfm-receiver-semantic-approval.v1.yaml"
 REQUIRED_BY = "user-confirmed-2026-08-10-channel-rfm-receiver"
 
 MISSING_FIELDS = {
@@ -96,11 +97,11 @@ def verify_document(readiness: object, inventory: object) -> dict:
     profile = _candidate_profile(inventory) if isinstance(inventory, dict) else None
     if profile is None:
         blockers.append("required profile is absent from acceptance inventory")
-    elif profile.get("boundary") != "oracle_only" or profile.get("acceptance", {}).get("status") != "required_blocked_missing_receiver_semantics" or profile.get("acceptance", {}).get("required_by") != REQUIRED_BY:
-        blockers.append("required profile must remain oracle-only with semantic blockers")
+    elif profile.get("boundary") != "oracle_only" or profile.get("acceptance", {}).get("status") not in {"required_blocked_missing_receiver_semantics", "required_blocked_missing_authorized_reference_bit_source"} or profile.get("acceptance", {}).get("required_by") != REQUIRED_BY:
+        blockers.append("required profile must remain oracle-only and blocked")
     elif (
         profile.get("environment", {}).get("provenance_ref") != EVIDENCE_REF
-        or profile.get("acceptance", {}).get("tolerance_policy_ref") != EVIDENCE_REF
+        or profile.get("acceptance", {}).get("tolerance_policy_ref") not in {EVIDENCE_REF, APPROVAL_REF}
         or profile.get("evidence_refs") != [EVIDENCE_REF]
         or not _evidence_ref_exists(EVIDENCE_REF)
     ):
