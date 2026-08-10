@@ -310,7 +310,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 ### 11.2 任务
 
 - [ ] **P5-01** 穷尽 `agent-com` source/data/workbook/MATLAB/oracle 许可与路径分类。
-  - [ ] **P5-01a** Git-object license/path/material preflight：实现已完成本地 `agent-com@5272ffe` 的 415 条目穷尽分类，但独立审计发现该 commit 尚未发布到 canonical `origin/main`，fresh clone 无法重放；保持 `blocked_unreachable_source_anchor`，不得接受或 promotion。见 [审计记录](docs/baselines/audits/2026-08-10-p5-agent-com-git-object-preflight-blocker.md)。
+  - [x] **P5-01a** Git-object license/path/material preflight：canonical `agent-com@5272ffe` 的 415 条目已从 fresh clone 重放分类；root MIT 仅为证据，MATLAB/data/workbook/benchmark 仍 external/quarantine，`promotion_eligible: false`。初轮 `blocked_unreachable_source_anchor` 已由用户授权的 fast-forward `034b21b..5272ffe` 关闭；Orca 复审 `msg_3b586b2f352a` 为 0 P1 / 0 P2。见 [审计记录](docs/baselines/audits/2026-08-10-p5-agent-com-git-object-preflight-blocker.md)。
 - [ ] **P5-02** 冻结 r4.80 canonical parameter JSON、默认值、消费审计和 warning contract。
 - [ ] **P5-03** 建立 `sipi-com` crate 和 typed stage outputs。
 - [ ] **P5-04** 按 stage 移植 network ingest、channel selection、equalizer search、PDF 和 metrics；每段保留 MIT 来源映射。

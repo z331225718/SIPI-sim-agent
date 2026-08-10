@@ -1,11 +1,11 @@
-# P5 Agent-COM Git-Object Preflight Blocker
+# P5 Agent-COM Git-Object Preflight Audit
 
 - Candidate commit: `54615c5`
 - Reviewer: Orca independent read-only reviewer
 - Review message: `msg_a341ea8a2d76`
 - Conclusion: **1 P1 / 0 P2**
 
-## Blocking Finding
+## Initial Blocking Finding
 
 The preflight manifest anchors `agent-com` to canonical origin
 `https://github.com/z331225718/agent-com.git` at
@@ -15,11 +15,9 @@ cannot fetch or read `5272ffe`. The local COM worktree has the target object,
 is clean, and is ahead of `origin/main` by the two license-only commits
 `8c6ffa4` and `5272ffe`; that is insufficient for independent replay.
 
-P5-01a therefore remains blocked as `blocked_unreachable_source_anchor`.
-The local manifest is not accepted and cannot support any source or release
-promotion until the source anchor is publicly reachable through the declared
-canonical origin (or an owner-approved canonical source is recorded and
-revalidated).
+P5-01a was initially blocked as `blocked_unreachable_source_anchor`. The
+local manifest was not accepted while its source anchor was only locally
+available.
 
 ## Preserved Evidence
 
@@ -35,10 +33,14 @@ The reviewer found no P2 issues in the local-only preflight implementation:
 This record does not claim that `agent-com` is MIT-release-ready, that COM is
 implemented, or that the local-only source anchor is independently available.
 
-## Resolution Gate
+## Resolution And Acceptance
 
-An owner must explicitly authorize publication of the two verified
-license-only commits to canonical `origin/main`, or name a different
-canonical, independently reachable source. After that action, the preflight
-must run from a fresh clone and receive a new 0 P1 / 0 P2 audit before P5-01a
-can be accepted.
+The owner explicitly authorized publication of the two verified license-only
+commits. Canonical `origin/main` was fast-forwarded from `034b21b` to
+`5272ffe`, without rewriting history. A fresh clone of the declared origin
+then resolved `HEAD` to `5272ffe`, remained clean, and passed the 415-path
+preflight.
+
+Orca re-audited this exact resolution in `msg_3b586b2f352a` and concluded
+**0 P1 / 0 P2**. P5-01a is accepted only as a quarantine provenance/license
+preflight; it neither promotes source nor grants release eligibility.
