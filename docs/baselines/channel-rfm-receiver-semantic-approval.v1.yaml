@@ -1,0 +1,20 @@
+schema: sipi.channel.receiver-semantic-approval.v1
+status: approved_owner_semantics
+profile_id: channel-rfm-block-2-current-drive-v1
+approved_by: user
+approved_at: 2026-08-10
+approval_ref: user-approved-receiver-charter-2026-08-10
+proposal_anchor:
+  commit: c7a2ded
+  charter_path: docs/baselines/channel-rfm-receiver-semantic-charter.v1.yaml
+  charter_blob: d148bc34e873cf498ef6c636c016a2768692d9c9
+  spec_path: docs/clean-room/specs/p3b-receiver-semantic-charter.v1.md
+  spec_blob: 3194542cf4089a4fdf3f3c2cb8710d49eb267a88
+approved_spec:
+  path: docs/clean-room/specs/p3b-approved-fixed-receiver.v1.md
+  status: fixed_data_aided_receiver_v1
+external_compare_status: blocked_missing_authorized_reference_bit_source
+non_claims:
+  - Approval selects only this profile-scoped receiver behavior.
+  - External RFM parity remains blocked until an authorized comparator obtains matching reference-bit and waveform hashes.
+  - This approval does not add RFM, Python, or external engine inputs to the product.
