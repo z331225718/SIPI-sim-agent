@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 0ddf163b1a48e8d0b9fc5b43f4cf849496b1d27b2e0dcdd8e3d9302113db72fc
+  tracked_paths_sha256: 86bf3869d69697d3c5639bf7468944a91874b86d1dca3bc408519dad0fa70362
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -690,6 +690,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p3b-required-rfm-receiver-boundary.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p3b-rfm-reference-bits-preflight.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
