@@ -118,7 +118,7 @@ flowchart LR
 | P0 | 产品边界、许可、clean-room、示例清单 | 进行中；v0.2 基线与 P0-A 已审计 |
 | P1 | Rust workspace、contracts/artifacts/runtime、统一 CLI 骨架 | P1-01 已建立 quarantine foundation；领域能力仍未开始 |
 | P2 | TRAN 原生纵向切片 | fixed RC/PULSE profile 已完成 Rust library/CLI/oracle compare；general TRAN 与 release promotion 未开始 |
-| P3 | Channel clean-room Rust 纵向切片 | 有 oracle/parity 证据，产品实现未开始 |
+| P3 | Channel clean-room Rust 纵向切片 | `channel_16ghz_3db` 已选为 required profile，matched-S2P 观察/spec 预检已接受；产品实现未开始 |
 | P4 | IBIS parser + AMI semantic/host | 有 `sipi-ami` candidate 和单 fixture 证据 |
 | P5 | COM Rust 行为 profile | 未开始；有 MIT source/oracle |
 | P6 | 跨域 pipeline、完整 CLI、AI 可发现性 | 有 Python MVP，Rust 未开始 |
@@ -233,8 +233,8 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 
 #### P3A：Network 到 Channel Response
 
-- [ ] **P3A-01** 冻结 RLGC、Touchstone S2P/S4P、RFM response 的输入 profile、端口、z0、wave definition 和 termination。
-- [ ] **P3A-02** 由观察侧产出 DC/interpolation/window/causality/FFT/sign 行为规格和边界例。
+- [x] **P3A-01** 为已选 `channel_16ghz_3db` 冻结 external-only、两端口 real-50-ohm matched S2P 的端口、z0、power-wave、launch/receiver 和 termination 规格；RLGC/S4P/RFM 仍未开始。
+- [x] **P3A-02** 观察侧以精确 Git object 锚定该 S2P 的结构事实，冻结 DC/uniform-grid/Hermitian-IFFT/sign 的 matched-S2P v1 规则与拒绝边界。数值 acceptance 仍因 stimulus/resolution-policy/alignment/tolerance 未冻结而 blocked。
 - [ ] **P3A-03** clean-room 实现唯一 `sipi-channel` resolver，adapter 不做任何数值变换。
 - [ ] **P3A-04** 用公开网络恒等式、passivity/causality/property tests 验证独立正确性。
 - [ ] **P3A-05** 对 required S2P/RFM fixtures 做 response/stage compare 和完整 lineage。
