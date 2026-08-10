@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 9b7c527eab809f45d3b527cb2a5ff74dee0d5b7a9721877d3b063ab8d7c66bc0
+  tracked_paths_sha256: 00396c8894e15cad70317ee8a4c6e065ed3e7a599bcf1e27ab66316683265c3d
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -690,6 +690,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p2-tran-rc-pulse-acceptance-contract.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p2-tran-rc-pulse-semantic-contract.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

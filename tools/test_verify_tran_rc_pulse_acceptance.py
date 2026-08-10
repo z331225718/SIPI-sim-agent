@@ -36,26 +36,25 @@ class TranRcPulseAcceptanceTests(unittest.TestCase):
         document["source"].update({"canonical_origin": "https://example.invalid/agent-spice.git", "commit": commit, "tree": tree, "path": "fixtures/rc.cir", "git_blob": blob, "content_sha256": hashlib.sha256(payload).hexdigest()})
         return root
 
-    def test_external_object_and_pending_contract_validate(self) -> None:
+    def test_external_object_and_specified_contract_validate(self) -> None:
         document = self.document()
         root = self.temporary_source(document)
         report = verify_document(document, root)
         self.assertTrue(report["valid"], report["blockers"])
         self.assertTrue(report["source_git_object_checked"])
-        self.assertFalse(report["acceptance_ready"])
+        self.assertTrue(report["acceptance_ready"])
 
-    def test_contract_cannot_be_promoted_without_owner_inputs(self) -> None:
+    def test_ready_contract_is_not_a_numerical_result(self) -> None:
         document = self.document()
         root = self.temporary_source(document)
         report = verify_document(document, root, require_ready=True)
-        self.assertFalse(report["valid"])
-        self.assertIn("acceptance is blocked_missing_tolerance", report["blockers"])
+        self.assertTrue(report["valid"], report["blockers"])
         invalid = self.document()
-        invalid["acceptance"]["acceptance_ready"] = True
+        invalid["acceptance"]["result_status"] = "passed"
         root = self.temporary_source(invalid)
         report = verify_document(invalid, root)
         self.assertFalse(report["valid"])
-        self.assertTrue(any("prematurely ready" in item for item in report["blockers"]))
+        self.assertTrue(any("acceptance policy" in item for item in report["blockers"]))
 
     def test_source_identity_scope_and_external_boundary_fail_closed(self) -> None:
         document = self.document()
@@ -68,6 +67,12 @@ class TranRcPulseAcceptanceTests(unittest.TestCase):
         self.assertFalse(verify_document(invalid, root)["valid"])
         invalid = copy.deepcopy(document)
         invalid["oracle"]["product_fallback"] = "allowed"
+        self.assertFalse(verify_document(invalid, root)["valid"])
+        invalid = copy.deepcopy(document)
+        invalid["acceptance"]["time_axis"]["expected_values_seconds"][3] = 4.0e-6
+        self.assertFalse(verify_document(invalid, root)["valid"])
+        invalid = copy.deepcopy(document)
+        invalid["acceptance"]["voltage_out"]["relative_tolerance"] = 1.0e-3
         self.assertFalse(verify_document(invalid, root)["valid"])
 
 

@@ -21,20 +21,51 @@ scope:
   out_of_scope: [op, ac, other_nodes, measurements, netlist_text_compatibility, engine_cli_route]
 oracle:
   mode: external_git_object_only
-  execution_status: not_invoked
+  execution_status: reproducibility_required
   product_fallback: forbidden
-  environment_status: pending_owner_confirmation
+  environment:
+    platform: windows-x86_64
+    oracle_executable_identity: required_at_comparison
+    product_build: independent_sipi_tran_release_f64
+    working_directory: external_clean_temp
+    legacy_and_python_environment: scrubbed
 acceptance:
-  status: blocked_missing_tolerance
-  acceptance_ready: false
-  sample_alignment: pending_owner_confirmation
-  time_axis: {comparison: pending_owner_confirmation, tolerance_seconds: null}
-  voltage_in: {comparison: pending_owner_confirmation, absolute_tolerance_volts: null, relative_tolerance: null}
-  voltage_out: {comparison: pending_owner_confirmation, absolute_tolerance_volts: null, relative_tolerance: null}
-  failure_handling: pending_owner_confirmation
-  missing_owner_inputs: [sample_alignment, time_tolerance, voltage_tolerances, initial_condition_policy, oracle_environment]
+  status: specified_not_executed
+  acceptance_ready: true
+  result_status: not_run
+  sample_alignment: index_aligned_no_interpolation
+  time_axis:
+    expected_values_seconds: [0.0, 1.0e-6, 2.0e-6, 3.0e-6]
+    comparison: pointwise_absolute
+    absolute_tolerance_seconds: 1.0e-15
+    relative_tolerance: 0.0
+  voltage_in:
+    comparison: pointwise_max_abs_and_relative
+    absolute_tolerance_volts: 1.0e-9
+    relative_tolerance: 1.0e-9
+    require_finite: true
+  voltage_out:
+    comparison: pointwise_max_abs_and_relative
+    absolute_tolerance_volts: 2.0e-6
+    relative_tolerance: 5.0e-4
+    require_finite: true
+  initial_condition:
+    mode: explicit_without_op
+    capacitor_voltage_out_volts: 0.0
+  pulse:
+    voltage_low_volts: 0.0
+    voltage_high_volts: 1.0
+    delay_seconds: 1.0e-6
+    rise_seconds: 1.0e-9
+    fall_seconds: 1.0e-9
+    width_seconds: 1.0e-5
+    period_seconds: 2.0e-5
+  integration:
+    method: backward_euler
+    source_evaluation: substep_endpoint
+    required_breakpoints: [requested_output_times, pulse_corners]
 non_claims:
   - This record fixes a user-selected external oracle identity, not a product parser input.
-  - The selected profile has no approved numerical acceptance tolerance or result.
+  - The acceptance policy is specified, but no oracle or product result has been accepted.
   - The product must not copy, redistribute, parse, or fall back to the external fixture.
   - This record does not implement TRAN, establish parity, or grant release readiness.

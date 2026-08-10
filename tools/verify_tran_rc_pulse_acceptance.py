@@ -21,7 +21,7 @@ SHA1_LENGTH = 40
 SHA256_LENGTH = 64
 EXPECTED_OBSERVABLES = ["time_axis_seconds", "voltage_in_volts", "voltage_out_volts"]
 EXPECTED_OUT_OF_SCOPE = ["op", "ac", "other_nodes", "measurements", "netlist_text_compatibility", "engine_cli_route"]
-EXPECTED_MISSING_INPUTS = ["sample_alignment", "time_tolerance", "voltage_tolerances", "initial_condition_policy", "oracle_environment"]
+EXPECTED_TIMES = [0.0, 1.0e-6, 2.0e-6, 3.0e-6]
 
 
 def _exact(value: object, keys: set[str]) -> bool:
@@ -95,36 +95,49 @@ def verify_document(document: object, source_root: Path | None = None, *, requir
         blockers.append("scope is invalid")
 
     oracle = document["oracle"]
-    if not _exact(oracle, {"mode", "execution_status", "product_fallback", "environment_status"}) or oracle != {
+    expected_environment = {
+        "platform": "windows-x86_64",
+        "oracle_executable_identity": "required_at_comparison",
+        "product_build": "independent_sipi_tran_release_f64",
+        "working_directory": "external_clean_temp",
+        "legacy_and_python_environment": "scrubbed",
+    }
+    if not _exact(oracle, {"mode", "execution_status", "product_fallback", "environment"}) or oracle != {
         "mode": "external_git_object_only",
-        "execution_status": "not_invoked",
+        "execution_status": "reproducibility_required",
         "product_fallback": "forbidden",
-        "environment_status": "pending_owner_confirmation",
+        "environment": expected_environment,
     }:
         blockers.append("oracle boundary is invalid")
 
     acceptance = document["acceptance"]
-    acceptance_keys = {"status", "acceptance_ready", "sample_alignment", "time_axis", "voltage_in", "voltage_out", "failure_handling", "missing_owner_inputs"}
-    time_keys = {"comparison", "tolerance_seconds"}
-    voltage_keys = {"comparison", "absolute_tolerance_volts", "relative_tolerance"}
-    pending = (
+    acceptance_keys = {"status", "acceptance_ready", "result_status", "sample_alignment", "time_axis", "voltage_in", "voltage_out", "initial_condition", "pulse", "integration"}
+    time_keys = {"expected_values_seconds", "comparison", "absolute_tolerance_seconds", "relative_tolerance"}
+    voltage_keys = {"comparison", "absolute_tolerance_volts", "relative_tolerance", "require_finite"}
+    initial_keys = {"mode", "capacitor_voltage_out_volts"}
+    pulse_keys = {"voltage_low_volts", "voltage_high_volts", "delay_seconds", "rise_seconds", "fall_seconds", "width_seconds", "period_seconds"}
+    integration_keys = {"method", "source_evaluation", "required_breakpoints"}
+    specified = (
         _exact(acceptance, acceptance_keys)
-        and acceptance.get("status") == "blocked_missing_tolerance"
-        and acceptance.get("acceptance_ready") is False
-        and acceptance.get("sample_alignment") == "pending_owner_confirmation"
+        and acceptance.get("status") == "specified_not_executed"
+        and acceptance.get("acceptance_ready") is True
+        and acceptance.get("result_status") == "not_run"
+        and acceptance.get("sample_alignment") == "index_aligned_no_interpolation"
         and _exact(acceptance.get("time_axis"), time_keys)
-        and acceptance["time_axis"] == {"comparison": "pending_owner_confirmation", "tolerance_seconds": None}
+        and acceptance["time_axis"] == {"expected_values_seconds": EXPECTED_TIMES, "comparison": "pointwise_absolute", "absolute_tolerance_seconds": 1.0e-15, "relative_tolerance": 0.0}
         and _exact(acceptance.get("voltage_in"), voltage_keys)
         and _exact(acceptance.get("voltage_out"), voltage_keys)
-        and acceptance["voltage_in"] == {"comparison": "pending_owner_confirmation", "absolute_tolerance_volts": None, "relative_tolerance": None}
-        and acceptance["voltage_out"] == {"comparison": "pending_owner_confirmation", "absolute_tolerance_volts": None, "relative_tolerance": None}
-        and acceptance.get("failure_handling") == "pending_owner_confirmation"
-        and acceptance.get("missing_owner_inputs") == EXPECTED_MISSING_INPUTS
+        and acceptance["voltage_in"] == {"comparison": "pointwise_max_abs_and_relative", "absolute_tolerance_volts": 1.0e-9, "relative_tolerance": 1.0e-9, "require_finite": True}
+        and acceptance["voltage_out"] == {"comparison": "pointwise_max_abs_and_relative", "absolute_tolerance_volts": 2.0e-6, "relative_tolerance": 5.0e-4, "require_finite": True}
+        and _exact(acceptance.get("initial_condition"), initial_keys)
+        and acceptance["initial_condition"] == {"mode": "explicit_without_op", "capacitor_voltage_out_volts": 0.0}
+        and _exact(acceptance.get("pulse"), pulse_keys)
+        and acceptance["pulse"] == {"voltage_low_volts": 0.0, "voltage_high_volts": 1.0, "delay_seconds": 1.0e-6, "rise_seconds": 1.0e-9, "fall_seconds": 1.0e-9, "width_seconds": 1.0e-5, "period_seconds": 2.0e-5}
+        and _exact(acceptance.get("integration"), integration_keys)
+        and acceptance["integration"] == {"method": "backward_euler", "source_evaluation": "substep_endpoint", "required_breakpoints": ["requested_output_times", "pulse_corners"]}
     )
-    if not pending:
-        blockers.append("acceptance state is invalid or prematurely ready")
-    if require_ready:
-        blockers.append("acceptance is blocked_missing_tolerance")
+    if not specified:
+        blockers.append("acceptance policy is invalid or incomplete")
 
     non_claims = document["non_claims"]
     if not isinstance(non_claims, list) or not non_claims or not all(isinstance(item, str) and item for item in non_claims):
@@ -138,7 +151,7 @@ def verify_document(document: object, source_root: Path | None = None, *, requir
         "valid": not blockers,
         "profile_id": "tran-rc-pulse-v1",
         "required": True,
-        "acceptance_ready": False,
+        "acceptance_ready": specified,
         "source_git_object_checked": checked,
         "blockers": blockers,
     }

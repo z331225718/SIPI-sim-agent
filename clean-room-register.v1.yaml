@@ -137,6 +137,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: []
+  - id: p2-tran-rc-pulse-semantic-contract-spec-v1
+    kind: independent_spec
+    content_sha256: 25cc8524e602576e5447b6dc8fe975b1e1a07f3e4de6d1828a8746709e04ea02
+    provenance:
+      source_ref: docs/clean-room/specs/p2-tran-rc-pulse-semantic-contract.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: []
   - id: agent-spice-license-2cc92316
     kind: mit_source
     content_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
@@ -199,4 +207,13 @@ scopes:
       implementer: [p2-tran-rc-pulse-acceptance-contract-spec-v1]
       comparator: [agent-spice-rc-pulse-fixture-2cc92316]
       auditor: [p2-tran-rc-pulse-acceptance-contract-spec-v1, agent-spice-license-2cc92316, agent-spice-rc-pulse-fixture-2cc92316]
+  - id: p2-tran-rc-pulse-semantic-contract-v1
+    paths: [docs/clean-room/specs/p2-tran-rc-pulse-semantic-contract.v1.md]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p2-tran-rc-pulse-semantic-contract-spec-v1]
+      implementer: [p2-tran-rc-pulse-semantic-contract-spec-v1]
+      comparator: []
+      auditor: [p2-tran-rc-pulse-semantic-contract-spec-v1]
 attestations: []
