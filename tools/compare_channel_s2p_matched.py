@@ -15,6 +15,7 @@ import json
 import math
 import os
 import platform
+import shutil
 import struct
 import subprocess
 import tarfile
@@ -191,6 +192,19 @@ def _safe_archive_member(name: str) -> bool:
     return bool(name) and not candidate.is_absolute() and ".." not in candidate.parts
 
 
+def _cargo_executable() -> str:
+    configured = os.environ.get("CARGO")
+    if configured:
+        return configured
+    home_candidate = Path.home() / ".cargo" / "bin" / "cargo.exe"
+    if home_candidate.is_file():
+        return str(home_candidate)
+    discovered = shutil.which("cargo")
+    if discovered:
+        return discovered
+    raise ComparatorError("Cargo is unavailable for the clean product build")
+
+
 def _materialize_product_runner(product_root: Path, product_commit: str, temp_root: Path) -> tuple[Path, dict[str, object]]:
     status = subprocess.run(["git", "-C", str(product_root), "status", "--porcelain", "--untracked-files=no"], capture_output=True, text=True)
     if status.returncode != 0:
@@ -207,8 +221,8 @@ def _materialize_product_runner(product_root: Path, product_commit: str, temp_ro
             for member in members
         ):
             raise ComparatorError("product Git archive has an unsafe member")
-        document.extractall(source, members)
-    cargo = os.environ.get("CARGO", "cargo")
+        document.extractall(source, members, filter="data")
+    cargo = _cargo_executable()
     target = temp_root / "product-target"
     environment = dict(os.environ)
     environment.update({"CARGO_TARGET_DIR": str(target), "CARGO_INCREMENTAL": "0", "CARGO_NET_OFFLINE": "true"})
