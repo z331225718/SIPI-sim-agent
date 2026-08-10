@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 2c146bd15b334b06f300aa049b65a2c5b0fb0785264fd62d62fa5957363e2d6a
+  tracked_paths_sha256: fad4dd78a29f3c17a306cec9a9f00da8b15e2daa8c4304e03833a0dda777b7d7
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -647,6 +647,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-10-p3b-fixed-receiver-library.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-10-p3b-link-stage-contract.md:
       rule: historical-docs
       class: migration_only
@@ -660,6 +666,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p3b-receiver-charter-proposal.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p3b-receiver-erasure-amendment.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
