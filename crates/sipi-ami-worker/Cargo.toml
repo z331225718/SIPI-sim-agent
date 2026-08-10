@@ -1,0 +1,16 @@
+[package]
+name = "sipi-ami-worker"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Private one-job Windows AMI worker mechanics."
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+sipi-ami-host = { path = "../sipi-ami-host" }
+sipi-ami-text = { path = "../sipi-ami-text" }
+sipi-artifacts = { path = "../sipi-artifacts" }

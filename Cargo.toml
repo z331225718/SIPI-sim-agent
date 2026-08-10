@@ -6,6 +6,7 @@ members = [
   "crates/sipi-artifacts",
   "crates/sipi-ami-text",
   "crates/sipi-ami-host",
+  "crates/sipi-ami-worker",
   "crates/sipi-contracts",
   "crates/sipi-layout",
   "crates/sipi-link",

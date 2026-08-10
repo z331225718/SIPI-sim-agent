@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 2eacf8929622fb9cd322e9e73051c5df880b08bfb514ab7bc110dcd12e1e94e9
+  tracked_paths_sha256: ed34484156c2ec60cc421d9de36fc9d43b4ae912b4f85e86ddd25fb18d250238
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -114,6 +114,30 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-ami-text/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-ami-worker/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-ami-worker/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-ami-worker/src/main.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-ami-worker/tests/worker.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1596,6 +1620,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p4b-ami-candidate-quarantine-preflight.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p4b-ami-private-worker.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

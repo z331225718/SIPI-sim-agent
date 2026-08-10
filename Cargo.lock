@@ -306,6 +306,18 @@ name = "sipi-ami-text"
 version = "0.1.0"
 
 [[package]]
+name = "sipi-ami-worker"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2",
+ "sipi-ami-host",
+ "sipi-ami-text",
+ "sipi-artifacts",
+]
+
+[[package]]
 name = "sipi-artifacts"
 version = "0.1.0"
 dependencies = [
