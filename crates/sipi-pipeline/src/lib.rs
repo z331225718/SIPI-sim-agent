@@ -21,8 +21,11 @@ use sipi_contracts::{
 mod tran_to_link;
 
 pub use tran_to_link::{
-    CausalFirConsumerConfigV1, TRAN_RC_PULSE_LAUNCH_CONTRACT_V1, TranRcPulseLaunchArtifactV1,
-    TranToLinkEdgeError, build_direct_launch_plan_v1, derive_fixed_tran_launch_v1,
+    CausalFirConsumerConfigV1, EdgeDigestV1, RecordedTranToLinkExecutionV1,
+    TRAN_RC_PULSE_LAUNCH_CONTRACT_V1, TRAN_RC_PULSE_TO_CAUSAL_FIR_EDGE_SCHEMA_V1,
+    TranRcPulseLaunchArtifactV1, TranRcPulseToCausalFirEdgeRecordV1, TranToLinkEdgeError,
+    build_direct_launch_plan_v1, derive_fixed_tran_launch_v1,
+    record_tran_rc_pulse_to_causal_fir_v1, run_fixed_tran_to_causal_fir_recorded_v1,
     run_fixed_tran_to_causal_fir_v1,
 };
 

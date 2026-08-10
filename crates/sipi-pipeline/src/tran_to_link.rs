@@ -6,6 +6,7 @@
 
 use std::{error::Error, fmt};
 
+use sha2::{Digest, Sha256};
 use sipi_contracts::{
     CausalFirChannelV1, LinkContractError, LinkPlanV1, RxStagesV1, TxStageV1, UniformTimebaseV1,
 };
@@ -18,6 +19,10 @@ const FIXED_LAUNCH_INTERVAL_S: f64 = 1.0e-6;
 
 /// Product-owned identity for the admitted four-sample launch waveform.
 pub const TRAN_RC_PULSE_LAUNCH_CONTRACT_V1: &str = "sipi.tran.rc-pulse-launch.v1";
+pub const TRAN_RC_PULSE_TO_CAUSAL_FIR_EDGE_SCHEMA_V1: &str =
+    "sipi.edge.tran-rc-pulse-to-causal-fir.v1";
+const EDGE_IMPLEMENTATION_REVISION_V1: &str = "p6-03a";
+const EDGE_SIGNAL_MAP_V1: &str = "single_ended_voltage_to_common_reference";
 
 /// A validated launch artifact derived only from `tran-rc-pulse-v1` input voltage.
 #[derive(Clone, Debug, PartialEq)]
@@ -28,6 +33,125 @@ pub struct TranRcPulseLaunchArtifactV1 {
 impl TranRcPulseLaunchArtifactV1 {
     pub fn waveform(&self) -> &Waveform {
         &self.waveform
+    }
+}
+
+/// SHA-256 identity for one canonical edge value or policy.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct EdgeDigestV1([u8; 32]);
+
+impl EdgeDigestV1 {
+    pub const fn bytes(&self) -> &[u8; 32] {
+        &self.0
+    }
+
+    pub fn hex(&self) -> String {
+        let mut value = String::with_capacity(self.0.len() * 2);
+        for byte in self.0 {
+            use std::fmt::Write as _;
+            let _ = write!(value, "{byte:02x}");
+        }
+        value
+    }
+}
+
+/// Versioned identity record for the sole admitted TRAN-to-Link edge.
+///
+/// It is not an artifact manifest or complete execution provenance. It binds
+/// only the typed values and policy of this in-process edge.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TranRcPulseToCausalFirEdgeRecordV1 {
+    schema: &'static str,
+    implementation_revision: &'static str,
+    producer_contract: &'static str,
+    producer_profile: &'static str,
+    producer_output_port: &'static str,
+    consumer_contract: &'static str,
+    consumer_input_port: &'static str,
+    signal_map: &'static str,
+    producer_artifact_digest: EdgeDigestV1,
+    consumer_input_digest: EdgeDigestV1,
+    consumer_policy_digest: EdgeDigestV1,
+    received_output_digest: EdgeDigestV1,
+}
+
+impl TranRcPulseToCausalFirEdgeRecordV1 {
+    pub const fn schema(&self) -> &'static str {
+        self.schema
+    }
+
+    pub const fn implementation_revision(&self) -> &'static str {
+        self.implementation_revision
+    }
+
+    pub const fn producer_contract(&self) -> &'static str {
+        self.producer_contract
+    }
+
+    pub const fn producer_profile(&self) -> &'static str {
+        self.producer_profile
+    }
+
+    pub const fn producer_output_port(&self) -> &'static str {
+        self.producer_output_port
+    }
+
+    pub const fn consumer_contract(&self) -> &'static str {
+        self.consumer_contract
+    }
+
+    pub const fn consumer_input_port(&self) -> &'static str {
+        self.consumer_input_port
+    }
+
+    pub const fn signal_map(&self) -> &'static str {
+        self.signal_map
+    }
+
+    pub const fn producer_artifact_digest(&self) -> EdgeDigestV1 {
+        self.producer_artifact_digest
+    }
+
+    pub const fn consumer_input_digest(&self) -> EdgeDigestV1 {
+        self.consumer_input_digest
+    }
+
+    pub const fn consumer_policy_digest(&self) -> EdgeDigestV1 {
+        self.consumer_policy_digest
+    }
+
+    pub const fn received_output_digest(&self) -> EdgeDigestV1 {
+        self.received_output_digest
+    }
+
+    /// Recomputes every identity binding from the supplied typed values.
+    pub fn verify_against(
+        &self,
+        launch: &TranRcPulseLaunchArtifactV1,
+        consumer: &CausalFirConsumerConfigV1,
+        received: &ReceivedVoltageSamplesV1,
+    ) -> Result<(), TranToLinkEdgeError> {
+        if self != &record_for_v1(launch, consumer, received)? {
+            return Err(TranToLinkEdgeError::EdgeRecordMismatch);
+        }
+        Ok(())
+    }
+}
+
+/// Result of the recorded in-process edge execution.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RecordedTranToLinkExecutionV1 {
+    received: ReceivedVoltageSamplesV1,
+    record: TranRcPulseToCausalFirEdgeRecordV1,
+}
+
+impl RecordedTranToLinkExecutionV1 {
+    pub fn received(&self) -> &ReceivedVoltageSamplesV1 {
+        &self.received
+    }
+
+    pub fn record(&self) -> &TranRcPulseToCausalFirEdgeRecordV1 {
+        &self.record
     }
 }
 
@@ -67,6 +191,8 @@ pub enum TranToLinkEdgeError {
     LinkContract(LinkContractError),
     Tran(TranError),
     Link(LinkError),
+    InvalidReceivedAxis,
+    EdgeRecordMismatch,
 }
 
 impl TranToLinkEdgeError {
@@ -78,6 +204,8 @@ impl TranToLinkEdgeError {
             Self::LinkContract(_) => "link_contract_error",
             Self::Tran(_) => "tran_failure",
             Self::Link(_) => "link_failure",
+            Self::InvalidReceivedAxis => "invalid_received_axis",
+            Self::EdgeRecordMismatch => "edge_record_mismatch",
         }
     }
 }
@@ -156,6 +284,28 @@ pub fn run_fixed_tran_to_causal_fir_v1(
     Ok(convolve_causal_fir_v1(&plan, consumer.limits())?)
 }
 
+/// Runs the admitted edge and returns its specialized P6 identity record.
+pub fn run_fixed_tran_to_causal_fir_recorded_v1(
+    request: RcPulseTransientV1,
+    consumer: &CausalFirConsumerConfigV1,
+) -> Result<RecordedTranToLinkExecutionV1, TranToLinkEdgeError> {
+    let result = simulate_rc_pulse(request)?;
+    let launch = derive_fixed_tran_launch_v1(&result)?;
+    let plan = build_direct_launch_plan_v1(&launch, consumer)?;
+    let received = convolve_causal_fir_v1(&plan, consumer.limits())?;
+    let record = record_for_v1(&launch, consumer, &received)?;
+    Ok(RecordedTranToLinkExecutionV1 { received, record })
+}
+
+/// Binds the supplied typed launch, causal-FIR policy, and output identities.
+pub fn record_tran_rc_pulse_to_causal_fir_v1(
+    launch: &TranRcPulseLaunchArtifactV1,
+    consumer: &CausalFirConsumerConfigV1,
+    received: &ReceivedVoltageSamplesV1,
+) -> Result<TranRcPulseToCausalFirEdgeRecordV1, TranToLinkEdgeError> {
+    record_for_v1(launch, consumer, received)
+}
+
 fn admit_fixed_launch_waveform(
     waveform: &Waveform,
 ) -> Result<TranRcPulseLaunchArtifactV1, TranToLinkEdgeError> {
@@ -174,6 +324,121 @@ fn admit_fixed_launch_waveform(
     Ok(TranRcPulseLaunchArtifactV1 {
         waveform: waveform.clone(),
     })
+}
+
+fn record_for_v1(
+    launch: &TranRcPulseLaunchArtifactV1,
+    consumer: &CausalFirConsumerConfigV1,
+    received: &ReceivedVoltageSamplesV1,
+) -> Result<TranRcPulseToCausalFirEdgeRecordV1, TranToLinkEdgeError> {
+    let producer_artifact_digest = fixed_launch_digest(launch.waveform())?;
+    let consumer_input_digest = fixed_launch_digest(launch.waveform())?;
+    let consumer_policy_digest = consumer_policy_digest(consumer);
+    let received_output_digest = received_digest(received, consumer)?;
+    Ok(TranRcPulseToCausalFirEdgeRecordV1 {
+        schema: TRAN_RC_PULSE_TO_CAUSAL_FIR_EDGE_SCHEMA_V1,
+        implementation_revision: EDGE_IMPLEMENTATION_REVISION_V1,
+        producer_contract: TRAN_RC_PULSE_LAUNCH_CONTRACT_V1,
+        producer_profile: "tran-rc-pulse-v1",
+        producer_output_port: "voltage_in",
+        consumer_contract: "sipi.link-plan.v1",
+        consumer_input_port: "direct_launch_voltage",
+        signal_map: EDGE_SIGNAL_MAP_V1,
+        producer_artifact_digest,
+        consumer_input_digest,
+        consumer_policy_digest,
+        received_output_digest,
+    })
+}
+
+fn fixed_launch_digest(waveform: &Waveform) -> Result<EdgeDigestV1, TranToLinkEdgeError> {
+    admit_fixed_launch_waveform(waveform)?;
+    Ok(canonical_waveform_digest(
+        "sipi.edge.waveform.v1",
+        FIXED_LAUNCH_INTERVAL_S,
+        waveform.samples(),
+    ))
+}
+
+fn received_digest(
+    received: &ReceivedVoltageSamplesV1,
+    consumer: &CausalFirConsumerConfigV1,
+) -> Result<EdgeDigestV1, TranToLinkEdgeError> {
+    let waveform = received.waveform();
+    let AxisView::Uniform { start, step, count } = waveform.axis().view() else {
+        return Err(TranToLinkEdgeError::InvalidReceivedAxis);
+    };
+    if start.get().to_bits() != 0.0f64.to_bits()
+        || step.get().to_bits() != consumer.channel.sample_interval().get().to_bits()
+        || count.get() != waveform.samples().len()
+    {
+        return Err(TranToLinkEdgeError::InvalidReceivedAxis);
+    }
+    Ok(canonical_waveform_digest(
+        "sipi.edge.received-waveform.v1",
+        step.get(),
+        waveform.samples(),
+    ))
+}
+
+fn consumer_policy_digest(consumer: &CausalFirConsumerConfigV1) -> EdgeDigestV1 {
+    let mut hasher = Sha256::new();
+    hash_bytes(&mut hasher, b"sipi.edge.policy.v1\0");
+    hash_text(&mut hasher, TRAN_RC_PULSE_TO_CAUSAL_FIR_EDGE_SCHEMA_V1);
+    hash_text(&mut hasher, "direct_launch");
+    hash_text(&mut hasher, "causal_fir");
+    hash_text(&mut hasher, "bypass");
+    hash_text(&mut hasher, "bypass");
+    hash_f64(&mut hasher, consumer.channel.sample_interval().get());
+    hash_u64(&mut hasher, consumer.channel.gain().len() as u64);
+    for gain in consumer.channel.gain() {
+        hash_f64(&mut hasher, gain.get());
+    }
+    hash_u64(
+        &mut hasher,
+        consumer.limits.max_output_samples().get() as u64,
+    );
+    hash_u64(
+        &mut hasher,
+        consumer.limits.max_multiply_accumulates().get() as u64,
+    );
+    EdgeDigestV1(hasher.finalize().into())
+}
+
+fn canonical_waveform_digest(
+    domain: &str,
+    interval_s: f64,
+    samples: &[sipi_types::Volts],
+) -> EdgeDigestV1 {
+    let mut hasher = Sha256::new();
+    hash_bytes(&mut hasher, domain.as_bytes());
+    hash_text(&mut hasher, "seconds");
+    hash_text(&mut hasher, "volts");
+    hash_text(&mut hasher, "uniform");
+    hash_f64(&mut hasher, 0.0);
+    hash_f64(&mut hasher, interval_s);
+    hash_u64(&mut hasher, samples.len() as u64);
+    for sample in samples {
+        hash_f64(&mut hasher, sample.get());
+    }
+    EdgeDigestV1(hasher.finalize().into())
+}
+
+fn hash_text(hasher: &mut Sha256, value: &str) {
+    hash_bytes(hasher, value.as_bytes());
+}
+
+fn hash_bytes(hasher: &mut Sha256, value: &[u8]) {
+    hash_u64(hasher, value.len() as u64);
+    hasher.update(value);
+}
+
+fn hash_u64(hasher: &mut Sha256, value: u64) {
+    hasher.update(value.to_le_bytes());
+}
+
+fn hash_f64(hasher: &mut Sha256, value: f64) {
+    hasher.update(value.to_bits().to_le_bytes());
 }
 
 #[cfg(test)]
@@ -274,6 +539,87 @@ mod tests {
                 &consumer(&[1.0, 1.0], 4),
             ),
             Err(TranToLinkEdgeError::Link(LinkError::ResourceLimitExceeded))
+        ));
+    }
+
+    #[test]
+    fn recorded_edge_binds_the_same_launch_on_both_sides() {
+        let execution = run_fixed_tran_to_causal_fir_recorded_v1(
+            RcPulseTransientV1::fixed_profile(),
+            &consumer(&[1.0, 0.5], 5),
+        )
+        .unwrap();
+        let record = execution.record();
+
+        assert_eq!(record.schema(), TRAN_RC_PULSE_TO_CAUSAL_FIR_EDGE_SCHEMA_V1);
+        assert_eq!(record.producer_output_port(), "voltage_in");
+        assert_eq!(record.consumer_input_port(), "direct_launch_voltage");
+        assert_eq!(record.signal_map(), EDGE_SIGNAL_MAP_V1);
+        assert_eq!(
+            record.producer_artifact_digest(),
+            record.consumer_input_digest()
+        );
+
+        let result = simulate_rc_pulse(RcPulseTransientV1::fixed_profile()).unwrap();
+        let launch = derive_fixed_tran_launch_v1(&result).unwrap();
+        record
+            .verify_against(&launch, &consumer(&[1.0, 0.5], 5), execution.received())
+            .unwrap();
+    }
+
+    #[test]
+    fn record_digest_changes_for_launch_or_policy_drift_and_rejects_tampering() {
+        let result = simulate_rc_pulse(RcPulseTransientV1::fixed_profile()).unwrap();
+        let launch = derive_fixed_tran_launch_v1(&result).unwrap();
+        let first_consumer = consumer(&[1.0], 4);
+        let first_plan = build_direct_launch_plan_v1(&launch, &first_consumer).unwrap();
+        let first_received = convolve_causal_fir_v1(&first_plan, first_consumer.limits()).unwrap();
+        let first_record =
+            record_tran_rc_pulse_to_causal_fir_v1(&launch, &first_consumer, &first_received)
+                .unwrap();
+
+        let changed_waveform = Waveform::try_new(
+            launch.waveform().axis().clone(),
+            vec![
+                Volts::try_new(-0.0).unwrap(),
+                Volts::try_new(0.0).unwrap(),
+                Volts::try_new(1.0).unwrap(),
+                Volts::try_new(1.0).unwrap(),
+            ],
+        )
+        .unwrap();
+        let changed_launch = admit_fixed_launch_waveform(&changed_waveform).unwrap();
+        let changed_plan = build_direct_launch_plan_v1(&changed_launch, &first_consumer).unwrap();
+        let changed_received =
+            convolve_causal_fir_v1(&changed_plan, first_consumer.limits()).unwrap();
+        let changed_record = record_tran_rc_pulse_to_causal_fir_v1(
+            &changed_launch,
+            &first_consumer,
+            &changed_received,
+        )
+        .unwrap();
+        assert_ne!(
+            first_record.producer_artifact_digest(),
+            changed_record.producer_artifact_digest()
+        );
+
+        let policy_changed = consumer(&[0.5], 4);
+        let policy_plan = build_direct_launch_plan_v1(&launch, &policy_changed).unwrap();
+        let policy_received =
+            convolve_causal_fir_v1(&policy_plan, policy_changed.limits()).unwrap();
+        let policy_record =
+            record_tran_rc_pulse_to_causal_fir_v1(&launch, &policy_changed, &policy_received)
+                .unwrap();
+        assert_ne!(
+            first_record.consumer_policy_digest(),
+            policy_record.consumer_policy_digest()
+        );
+
+        let mut tampered = first_record.clone();
+        tampered.received_output_digest = policy_record.received_output_digest;
+        assert!(matches!(
+            tampered.verify_against(&launch, &first_consumer, &first_received),
+            Err(TranToLinkEdgeError::EdgeRecordMismatch)
         ));
     }
 }
