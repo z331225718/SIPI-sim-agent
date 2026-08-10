@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 2c0d7e7b3e97d23c8e2694fde530db6963753d5f0c03971a907ede0672865d2f
+  tracked_paths_sha256: ef29ae38bbf06db08d663cbbbedf15a1dab8fdef73267b5656268b80b3288a85
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -660,6 +660,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p3b-link-stage-contract.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p3b-link-unsupported-boundary.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
