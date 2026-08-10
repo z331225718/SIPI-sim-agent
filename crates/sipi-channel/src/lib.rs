@@ -97,7 +97,7 @@ fn complex(value: Complex64) -> Complex<f64> {
     Complex::new(value.real(), value.imaginary())
 }
 fn endpoint_is_real(value: Complex<f64>) -> bool {
-    value.im.abs() <= 1e-12 + 1e-10 * value.re.abs()
+    value.im.abs() <= 1e-12
 }
 
 pub fn resolve_matched_kernel_v1(
@@ -139,7 +139,7 @@ pub fn resolve_matched_kernel_v1(
             if !real.is_finite() {
                 return Err(ChannelError::NonFiniteOutput);
             }
-            if (v.im * scale).abs() > 1e-10 + 1e-8 * max_re {
+            if (v.im * scale).abs() > 1e-12 + 1e-10 * max_re {
                 return Err(ChannelError::InverseImaginaryResidue);
             }
             FiniteF64::try_new(real, "matched channel gain")
@@ -221,6 +221,11 @@ mod tests {
     fn endpoints_and_limits_fail_closed() {
         assert_eq!(
             resolve_matched_kernel_v1(&input(vec![c(1.0, 1.0), c(1.0, 0.0)]), limits())
+                .unwrap_err(),
+            ChannelError::EndpointImaginaryResidue
+        );
+        assert_eq!(
+            resolve_matched_kernel_v1(&input(vec![c(1.0e6, 2.0e-12), c(1.0, 0.0)]), limits())
                 .unwrap_err(),
             ChannelError::EndpointImaginaryResidue
         );
