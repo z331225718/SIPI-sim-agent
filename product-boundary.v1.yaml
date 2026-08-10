@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: f9b94b0d9752c18a20cb6cdd9516ce2606ace3fabf1a021000213a593cee6fc3
+  tracked_paths_sha256: 2eacf8929622fb9cd322e9e73051c5df880b08bfb514ab7bc110dcd12e1e94e9
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -930,6 +930,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-11-p4b-ami-raw-text-binding-foundation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-11-p4b-ami-standard-abi-host.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

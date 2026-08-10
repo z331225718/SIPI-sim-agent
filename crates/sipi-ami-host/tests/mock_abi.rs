@@ -110,6 +110,34 @@ fn validates_mock_lifecycle_failure_and_loader_gates() {
             .expect_err("clock failure"),
         AmiHostErrorV1::InvalidClock(0)
     );
+    let mut bad_wave = AmiHostV1::open(&dll, expected)
+        .expect("open")
+        .initialize(request(), &binding("bad_wave"), limits())
+        .expect("init");
+    assert_eq!(
+        bad_wave
+            .get_wave(AmiGetWaveRequestV1::try_new(vec![0.0], 2).expect("wave request"))
+            .expect_err("wave failure"),
+        AmiHostErrorV1::InvalidWaveform(0)
+    );
+    let mut no_sentinel = AmiHostV1::open(&dll, expected)
+        .expect("open")
+        .initialize(request(), &binding("no_sentinel"), limits())
+        .expect("init");
+    assert_eq!(
+        no_sentinel
+            .get_wave(AmiGetWaveRequestV1::try_new(vec![0.0], 2).expect("wave request"))
+            .expect_err("sentinel failure"),
+        AmiHostErrorV1::ClockSentinelMissing
+    );
+    let close_failure = AmiHostV1::open(&dll, expected)
+        .expect("open")
+        .initialize(request(), &binding("close_fail"), limits())
+        .expect("init");
+    assert_eq!(
+        close_failure.close().expect_err("close failure"),
+        AmiHostErrorV1::CloseFailed(0)
+    );
 
     let missing = build_mock("missing", false);
     assert!(matches!(
@@ -126,20 +154,20 @@ fn mode(parameters: *const c_char, value: &str) -> bool { unsafe { CStr::from_pt
 pub unsafe extern "C" fn AMI_Init(matrix: *mut f64, _rows: c_long, _aggressors: c_long, _dt: f64, _bit: f64, parameters: *mut c_char, _out: *mut *mut c_char, handle: *mut *mut c_void, _message: *mut *mut c_char) -> c_long {
     if mode(parameters, "init_fail") { return 0; }
     *matrix = 42.0;
-    *handle = if mode(parameters, "getwave_fail") { 2usize as *mut c_void } else if mode(parameters, "bad_clock") { 3usize as *mut c_void } else { 1usize as *mut c_void };
+    *handle = if mode(parameters, "getwave_fail") { 2usize as *mut c_void } else if mode(parameters, "bad_clock") { 3usize as *mut c_void } else if mode(parameters, "close_fail") { 4usize as *mut c_void } else if mode(parameters, "bad_wave") { 5usize as *mut c_void } else if mode(parameters, "no_sentinel") { 6usize as *mut c_void } else { 1usize as *mut c_void };
     1
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn AMI_GetWave(wave: *mut f64, size: c_long, clocks: *mut f64, _out: *mut *mut c_char, handle: *mut c_void) -> c_long {
     if handle as usize == 2 { return 0; }
-    if size > 0 { *wave = 7.0; }
+    if size > 0 { *wave = if handle as usize == 5 { f64::NAN } else { 7.0 }; }
     if size > 1 { *wave.add(1) = 8.0; }
     *clocks = if handle as usize == 3 { -2.0 } else { 1e-12 };
-    *clocks.add(1) = -1.0;
+    *clocks.add(1) = if handle as usize == 6 { 0.0 } else { -1.0 };
     1
 }
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn AMI_Close(_handle: *mut c_void) -> c_long { 1 }
+pub unsafe extern "C" fn AMI_Close(handle: *mut c_void) -> c_long { if handle as usize == 4 { 0 } else { 1 } }
 "#;
 
 const MISSING_CLOSE_SOURCE: &str = r#"
