@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: a350ba512ec5708b5c288b4f924ffe175bc39931709950832718406f2d9e7b19
+  tracked_paths_sha256: 2c0d7e7b3e97d23c8e2694fde530db6963753d5f0c03971a907ede0672865d2f
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -857,6 +857,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3b-link-stage-capability-ledger.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/platform-support.v1.json:
       rule: historical-docs
       class: migration_only
@@ -1080,6 +1086,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3b-link-stage-contract.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3b-link-unsupported-boundary.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5705,6 +5717,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3b_link_stage_capabilities.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_tran_provenance_preflight.py:
       rule: migration-tools
       class: migration_only
@@ -5916,6 +5934,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p1_windows_locked_build.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3b_link_stage_capabilities.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

@@ -1,0 +1,72 @@
+schema: sipi.link-stage-capability-ledger.v1
+status: provisional
+scope: sipi.link.causal-fir-request.v1
+profile_context:
+  receiver_profile: channel-rfm-block-2-current-drive-v1
+  receiver_profile_status: blocked_cdr_ambiguous_under_approved_charter
+entries:
+  - id: direct_launch
+    interface: plan.tx
+    disposition: supported
+    implementation_ref: crates/sipi-contracts/src/lib.rs#WireTxStageV1
+    test_ref: crates/sipi-cli/tests/cli.rs#causal_fir_link_run_publishes_full_linear_tail
+  - id: causal_fir_channel
+    interface: plan.channel
+    disposition: supported
+    implementation_ref: crates/sipi-link/src/lib.rs#convolve_causal_fir_v1
+    test_ref: crates/sipi-cli/tests/cli.rs#causal_fir_link_run_publishes_full_linear_tail
+  - id: ctle_bypass
+    interface: plan.rx.ctle
+    disposition: explicit_bypass
+    implementation_ref: crates/sipi-contracts/src/lib.rs#WireCtleStageV1
+    test_ref: crates/sipi-cli/tests/cli.rs#link_noise_jitter_and_missing_stages_fail_closed
+  - id: ffe_bypass
+    interface: plan.rx.ffe
+    disposition: explicit_bypass
+    implementation_ref: crates/sipi-contracts/src/lib.rs#WireFfeStageV1
+    test_ref: crates/sipi-cli/tests/cli.rs#link_noise_jitter_and_missing_stages_fail_closed
+  - id: deterministic_seed
+    interface: request.seed
+    disposition: reject
+    test_ref: crates/sipi-cli/tests/cli.rs#link_noise_jitter_and_missing_stages_fail_closed
+    required_owner_input: required noisy or jitter profile, seed replay policy, and canonicalization contract
+  - id: prbs_stimulus
+    interface: plan.tx.kind=prbs
+    disposition: reject
+    test_ref: crates/sipi-cli/tests/cli.rs#link_noise_jitter_and_missing_stages_fail_closed
+    required_owner_input: required stimulus profile, bit source, polarity, and timing semantics
+  - id: noise_injection
+    interface: plan.noise
+    disposition: reject
+    test_ref: crates/sipi-cli/tests/cli.rs#link_noise_jitter_and_missing_stages_fail_closed
+    required_owner_input: injection location, distribution, units, bandwidth, seed, and tolerance
+  - id: jitter_time_warp
+    interface: plan.timebase.jitter
+    disposition: reject
+    test_ref: crates/sipi-cli/tests/cli.rs#link_noise_jitter_and_missing_stages_fail_closed
+    required_owner_input: jitter type, units, time-warp/interpolation semantics, seed, and tolerance
+  - id: dfe_stage
+    interface: plan.rx.dfe
+    disposition: reject
+    test_ref: crates/sipi-cli/tests/cli.rs#link_noise_jitter_and_missing_stages_fail_closed
+    required_owner_input: required receiver profile and approved DFE semantics
+  - id: cdr_stage
+    interface: plan.rx.cdr
+    disposition: reject
+    test_ref: crates/sipi-cli/tests/cli.rs#link_noise_jitter_and_missing_stages_fail_closed
+    required_owner_input: required receiver profile and approved clock-recovery semantics
+  - id: ber_stage
+    interface: plan.rx.ber
+    disposition: reject
+    test_ref: crates/sipi-cli/tests/cli.rs#link_noise_jitter_and_missing_stages_fail_closed
+    required_owner_input: reference bits, decision alignment, window, metric, and tolerance
+  - id: fixed_receiver_library
+    interface: sipi-link::run_fixed_receiver_v1
+    disposition: library_only_profile_blocked
+    implementation_ref: crates/sipi-link/src/receiver.rs#run_fixed_receiver_v1
+    test_ref: crates/sipi-link/src/receiver.rs#selects_a_unique_phase_and_produces_exact_clean_decisions
+    blocked_by: blocked_cdr_ambiguous_under_approved_charter
+non_claims:
+  - No seed, PRBS, noise, jitter, DFE, CDR, or BER stage is accepted by sipi.link.causal-fir-request.v1.
+  - Explicit CTLE and FFE bypass are the only supported no-op stages.
+  - The fixed receiver library is not a link CLI stage or required-profile acceptance.

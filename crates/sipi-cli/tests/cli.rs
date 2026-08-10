@@ -103,6 +103,31 @@ fn causal_fir_link_run_publishes_full_linear_tail() {
 }
 
 #[test]
+fn link_noise_jitter_and_missing_stages_fail_closed() {
+    let request = String::from_utf8(LINK_REQUEST.to_vec()).expect("link request UTF-8");
+    let rejected = [
+        request.replacen("\"plan\":", "\"seed\":7,\"plan\":", 1),
+        request.replacen("\"rx\":", "\"noise\":{\"kind\":\"gaussian\"},\"rx\":", 1),
+        request.replacen("\"sample_count\":2", "\"jitter\":{\"kind\":\"random\"},\"sample_count\":2", 1),
+        request.replace("\"kind\":\"direct_launch\"", "\"kind\":\"prbs\""),
+        request.replacen("\"ffe\":", "\"dfe\":{\"kind\":\"decision_feedback\"},\"ffe\":", 1),
+        request.replacen("\"ffe\":", "\"cdr\":{\"kind\":\"tracking\"},\"ffe\":", 1),
+        request.replacen("\"ffe\":", "\"ber\":{\"kind\":\"measure\"},\"ffe\":", 1),
+        request.replace("\"ctle\":{\"kind\":\"bypass\"}", "\"ctle\":{\"kind\":\"peaking\"}"),
+    ];
+    for (index, request) in rejected.iter().enumerate() {
+        let root = std::env::temp_dir().join(format!(
+            "sipi-cli-process-link-stage-reject-{}-{index}",
+            std::process::id()
+        ));
+        let output = run_link(&root, request.as_bytes());
+        assert_eq!(output.status.code(), Some(3), "rejected request {index}");
+        assert!(!root.join("link-1").join("success.json").exists());
+        let _ = std::fs::remove_dir_all(root);
+    }
+}
+
+#[test]
 fn run_is_explicitly_unsupported() {
     let output = sipi().arg("run").output().expect("run sipi run");
 
