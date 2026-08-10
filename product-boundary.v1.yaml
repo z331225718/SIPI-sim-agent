@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 92d82eeb71d0b296d6e5207508749ebeeff95c89b8ab82ee62ab23ecd46125b2
+  tracked_paths_sha256: 04dd4779bc745a39d82e60d59844f753f8ac25cdf13b748005c3c282ce3cdd43
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -911,6 +911,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/receiver-topology-and-acceptance.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/scratch-manifest.v1.json:
       rule: historical-docs
       class: migration_only
@@ -1176,6 +1182,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p4a-ibis-example-rx-candidate-inventory.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p4a-receiver-topology-and-acceptance.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5783,6 +5795,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_receiver_topology_and_acceptance.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_tran_provenance_preflight.py:
       rule: migration-tools
       class: migration_only
@@ -6018,6 +6036,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_product_boundary.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_receiver_topology_and_acceptance.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

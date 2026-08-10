@@ -369,6 +369,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: []
+  - id: p4a-receiver-topology-and-acceptance-spec-v1
+    kind: independent_spec
+    content_sha256: a11f8ce68d6def77a688c1afcfac1e39c40885c0cb0197cef0b95967f3d000a3
+    provenance:
+      source_ref: docs/clean-room/specs/p4a-receiver-topology-and-acceptance.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: []
 scopes:
   - id: clean-room-process-template-v1
     paths: [docs/clean-room/**]
@@ -640,4 +648,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [pybert-example-rx-ibs-fixture-f6ba031, p4a-ibis-example-rx-candidate-inventory-spec-v1]
+  - id: p4a-receiver-topology-and-acceptance-v1
+    paths: [docs/baselines/receiver-topology-and-acceptance.v1.yaml, docs/clean-room/specs/p4a-receiver-topology-and-acceptance.v1.md, tools/verify_receiver_topology_and_acceptance.py, tools/test_verify_receiver_topology_and_acceptance.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p4a-receiver-topology-and-acceptance-spec-v1]
+      implementer: [p4a-receiver-topology-and-acceptance-spec-v1]
+      comparator: []
+      auditor: [p4a-receiver-topology-and-acceptance-spec-v1]
 attestations: []

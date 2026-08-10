@@ -1,0 +1,44 @@
+schema: sipi.receiver-topology-and-acceptance.v1
+status: topology_contract_pending_required_profile
+composition: explicit_profile_only
+stage_kinds:
+  electrical_load:
+    role: receive_port_termination
+    handoff: port_electrical_boundary
+    units: explicit_voltage_current_impedance_contract_required
+    current_status: not_supported
+  ibis_receiver_model:
+    role: standard_model_receiver
+    handoff: profile_defined_electrical_or_waveform_boundary
+    units: profile_defined
+    current_status: not_supported
+  ami_receiver_algorithm:
+    role: waveform_algorithm_or_abi_model
+    handoff: sampled_waveform_with_explicit_time_clock_contract
+    units: voltage_samples_and_explicit_timebase
+    current_status: not_supported
+  rx_chain:
+    role: explicit_composition_container
+    handoff: profile_declared_stage_edges
+    units: stage_specific
+    current_status: not_supported
+candidate_profiles:
+  - profile_id: ibis-ami-example-rx-raw-abi-v1
+    rx_kind: ami_receiver_algorithm
+    required: false
+    boundary: oracle_only
+    source_asset_path: models/ibisami/example_rx.ami
+    associated_ibis_asset: models/ibisami/example_rx.ibs
+    composition_status: not_composed
+    asset_identity_status: blocked_declared_filename_not_authorized_asset_name
+    observable: raw Init/GetWave waveform, clocks, status, and lifecycle
+    blocked_by:
+      - user_required_profile_selection
+      - explicit_waveform_time_clock_handoff_contract
+      - declared_windows_x64_dll_name_identity
+      - explicit_stage_order_for_any_ibis_ami_composition
+non_claims:
+  - Receiver kinds are distinct boundaries, not interchangeable load implementations.
+  - No default or implicit composition exists for IBIS, AMI, resistor, or RC load forms.
+  - This contract does not support an electrical load, IBIS model, AMI host, or Rx chain.
+  - External assets remain user-supplied oracle or runtime inputs and are not product release content.
