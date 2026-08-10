@@ -298,7 +298,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 - [ ] **P4B-03** 实现 Windows x64 标准 `long` ABI、Init/GetWave/Close 和 clock sentinel contract。
   - [x] **P4B-03a** clean-room standard-ABI host + product-owned mock-DLL conformance：仅验证显式 absolute-path、hash-pinned Windows x64 DLL 的 `AMI_Init`/optional `AMI_GetWave`/`AMI_Close` mechanics、bounded buffers、strict `status == 1`、clock sentinel 与 error-path Close；无真实 vendor/DLL、AMI 参数语义、IBIS composition、worker timeout/cancel、CLI/default 路由或数值 claim。`b51c025` 经 Orca `msg_dea46936dffa` 审计 0 P1/0 P2，见 [审计记录](docs/baselines/audits/2026-08-11-p4b-ami-standard-abi-host.md)。
 - [ ] **P4B-04** 私有 Rust host worker：hash-pinned executable、DLL/依赖 closure、timeout/cancel、atomic outputs。
-  - [ ] **P4B-04a** Windows x64 one-job private worker + test-only supervisor：只消费 hash-pinned、job-root-contained inputs，使用 P4B-03a host 并经 artifact staging 原子发布成功结果；parent timeout 终止 worker 仅保证主进程恢复与无成功 artifact，不声称 sandbox、Close-on-kill、完整动态依赖 closure 或真实 vendor runtime。
+  - [x] **P4B-04a** Windows x64 one-job private worker + test-only supervisor：只消费 hash-pinned、job-root-contained inputs，使用 P4B-03a host 并经 artifact staging 原子发布成功结果；parent timeout 终止 worker 仅保证主进程恢复与无成功 artifact，不声称 sandbox、Close-on-kill、完整动态依赖 closure 或真实 vendor runtime。`7fb39e0` 经 Orca `msg_48d12a7e2af8` 审计 0 P1/0 P2，见 [审计记录](docs/baselines/audits/2026-08-11-p4b-ami-private-worker.md)。
 - [ ] **P4B-05** 外部 asset manifest：DLL/IBIS/AMI/依赖 hash、允许用途、owner；默认不打包。
 - [ ] **P4B-06** synthetic ABI stub 覆盖 success/failure/Close/partial/timeout/clock。
 - [ ] **P4B-07** authorized exact fixture 覆盖 Init-only、单/多 GetWave、不同合法长度的 raw ABI output compare。
