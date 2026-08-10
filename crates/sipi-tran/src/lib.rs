@@ -1,20 +1,255 @@
 #![forbid(unsafe_code)]
 
-//! TRAN package boundary only.
+//! A narrowly scoped RC/PULSE transient implementation.
 //!
-//! This crate intentionally exposes no circuit representation, parser, solver,
-//! analysis request, or numerical behavior until a required TRAN acceptance
-//! profile and its clean-room specification are accepted.
+//! This crate accepts no netlist text and implements no generic circuit model.
+//! It only evaluates the independently specified first RC/PULSE profile.
 
-/// The only currently observable crate state: TRAN is not implemented.
-pub const FOUNDATION_STATUS: &str = "unsupported";
+use std::{error::Error, fmt};
+
+use sipi_types::{Axis, Seconds, TypeError, Volts, Waveform};
+
+/// Identity of the only implemented TRAN profile.
+pub const RC_PULSE_PROFILE_ID: &str = "tran-rc-pulse-v1";
+
+const OUTPUT_TIMES_S: [f64; 4] = [0.0, 1.0e-6, 2.0e-6, 3.0e-6];
+const RESISTANCE_OHM: f64 = 1.0e3;
+const CAPACITANCE_F: f64 = 1.0e-6;
+const PULSE_LOW_V: f64 = 0.0;
+const PULSE_HIGH_V: f64 = 1.0;
+const PULSE_DELAY_S: f64 = 1.0e-6;
+const PULSE_RISE_S: f64 = 1.0e-9;
+const PULSE_FALL_S: f64 = 1.0e-9;
+const PULSE_WIDTH_S: f64 = 1.0e-5;
+const PULSE_PERIOD_S: f64 = 2.0e-5;
+
+/// A typed request for the sole v1 RC/PULSE transient profile.
+///
+/// Its fields are private so callers cannot silently expand the first profile's
+/// device, sampling, or initial-condition semantics.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct RcPulseTransientV1 {
+    private: (),
+}
+
+impl RcPulseTransientV1 {
+    /// Creates the exact RC/PULSE request defined by `tran-rc-pulse-v1`.
+    pub const fn fixed_profile() -> Self {
+        Self { private: () }
+    }
+
+    pub const fn profile_id(&self) -> &'static str {
+        RC_PULSE_PROFILE_ID
+    }
+}
+
+/// Product-owned result for the fixed RC/PULSE transient request.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RcPulseTransientResultV1 {
+    time_axis: Axis<Seconds>,
+    voltage_in: Waveform,
+    voltage_out: Waveform,
+}
+
+impl RcPulseTransientResultV1 {
+    pub fn time_axis(&self) -> &Axis<Seconds> {
+        &self.time_axis
+    }
+
+    pub fn voltage_in(&self) -> &Waveform {
+        &self.voltage_in
+    }
+
+    pub fn voltage_out(&self) -> &Waveform {
+        &self.voltage_out
+    }
+}
+
+/// Fail-closed errors for the fixed-profile solver.
+#[derive(Debug)]
+pub enum TranError {
+    Invariant(TypeError),
+    NonFiniteComputation,
+}
+
+impl fmt::Display for TranError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Invariant(error) => error.fmt(formatter),
+            Self::NonFiniteComputation => write!(formatter, "transient computation is non-finite"),
+        }
+    }
+}
+
+impl Error for TranError {}
+
+impl From<TypeError> for TranError {
+    fn from(value: TypeError) -> Self {
+        Self::Invariant(value)
+    }
+}
+
+/// Simulates the exact v1 RC/PULSE profile with f64 backward Euler.
+///
+/// Requested output times and pulse corners partition the integration path;
+/// no interpolation or resampling is applied to the returned waveforms.
+pub fn simulate_rc_pulse(
+    request: RcPulseTransientV1,
+) -> Result<RcPulseTransientResultV1, TranError> {
+    let _ = request;
+    let axis = explicit_time_axis()?;
+    let mut voltage_out = 0.0;
+    let mut voltage_in_samples = Vec::with_capacity(OUTPUT_TIMES_S.len());
+    let mut voltage_out_samples = Vec::with_capacity(OUTPUT_TIMES_S.len());
+    let mut current_time = OUTPUT_TIMES_S[0];
+
+    voltage_in_samples.push(volts(pulse_voltage(current_time))?);
+    voltage_out_samples.push(volts(voltage_out)?);
+    for next_time in integration_breakpoints().into_iter().skip(1) {
+        voltage_out = backward_euler_step(
+            voltage_out,
+            pulse_voltage(next_time),
+            next_time - current_time,
+        )?;
+        current_time = next_time;
+        if OUTPUT_TIMES_S.contains(&current_time) {
+            voltage_in_samples.push(volts(pulse_voltage(current_time))?);
+            voltage_out_samples.push(volts(voltage_out)?);
+        }
+    }
+
+    let voltage_in = Waveform::try_new(axis.clone(), voltage_in_samples)?;
+    let voltage_out = Waveform::try_new(axis.clone(), voltage_out_samples)?;
+    Ok(RcPulseTransientResultV1 {
+        time_axis: axis,
+        voltage_in,
+        voltage_out,
+    })
+}
+
+fn explicit_time_axis() -> Result<Axis<Seconds>, TranError> {
+    OUTPUT_TIMES_S
+        .into_iter()
+        .map(Seconds::try_new)
+        .collect::<Result<Vec<_>, _>>()
+        .and_then(Axis::explicit)
+        .map_err(Into::into)
+}
+
+fn integration_breakpoints() -> [f64; 5] {
+    [
+        0.0,
+        PULSE_DELAY_S,
+        PULSE_DELAY_S + PULSE_RISE_S,
+        2.0e-6,
+        3.0e-6,
+    ]
+}
+
+fn backward_euler_step(previous: f64, source_endpoint: f64, step_s: f64) -> Result<f64, TranError> {
+    let time_constant = RESISTANCE_OHM * CAPACITANCE_F;
+    let next =
+        (previous + (step_s / time_constant) * source_endpoint) / (1.0 + step_s / time_constant);
+    if next.is_finite() {
+        Ok(next)
+    } else {
+        Err(TranError::NonFiniteComputation)
+    }
+}
+
+fn pulse_voltage(time_s: f64) -> f64 {
+    let phase = time_s.rem_euclid(PULSE_PERIOD_S);
+    if phase < PULSE_DELAY_S {
+        PULSE_LOW_V
+    } else if phase < PULSE_DELAY_S + PULSE_RISE_S {
+        PULSE_LOW_V + (PULSE_HIGH_V - PULSE_LOW_V) * (phase - PULSE_DELAY_S) / PULSE_RISE_S
+    } else if phase < PULSE_DELAY_S + PULSE_RISE_S + PULSE_WIDTH_S {
+        PULSE_HIGH_V
+    } else if phase < PULSE_DELAY_S + PULSE_RISE_S + PULSE_WIDTH_S + PULSE_FALL_S {
+        PULSE_HIGH_V
+            - (PULSE_HIGH_V - PULSE_LOW_V) * (phase - PULSE_DELAY_S - PULSE_RISE_S - PULSE_WIDTH_S)
+                / PULSE_FALL_S
+    } else {
+        PULSE_LOW_V
+    }
+}
+
+fn volts(value: f64) -> Result<Volts, TranError> {
+    Volts::try_new(value).map_err(Into::into)
+}
 
 #[cfg(test)]
 mod tests {
-    use super::FOUNDATION_STATUS;
+    use super::*;
+    use sipi_types::AxisView;
 
     #[test]
-    fn remains_explicitly_unsupported() {
-        assert_eq!(FOUNDATION_STATUS, "unsupported");
+    fn fixed_profile_has_the_specified_index_aligned_waveforms() {
+        let result = simulate_rc_pulse(RcPulseTransientV1::fixed_profile()).expect("fixed profile");
+        assert_eq!(
+            RcPulseTransientV1::fixed_profile().profile_id(),
+            RC_PULSE_PROFILE_ID
+        );
+        assert_eq!(
+            result.time_axis().view(),
+            AxisView::Explicit(&[
+                Seconds::try_new(0.0).expect("finite"),
+                Seconds::try_new(1.0e-6).expect("finite"),
+                Seconds::try_new(2.0e-6).expect("finite"),
+                Seconds::try_new(3.0e-6).expect("finite"),
+            ])
+        );
+        assert_eq!(
+            result
+                .voltage_in()
+                .samples()
+                .iter()
+                .map(|value| value.get())
+                .collect::<Vec<_>>(),
+            vec![0.0, 0.0, 1.0, 1.0]
+        );
+        assert_eq!(result.voltage_out().samples().len(), OUTPUT_TIMES_S.len());
+        assert!(
+            result
+                .voltage_out()
+                .samples()
+                .iter()
+                .all(|value| value.get().is_finite())
+        );
+        let first = 1.0e-9 / (RESISTANCE_OHM * CAPACITANCE_F + 1.0e-9);
+        let second_step = 0.999e-6;
+        let second = (first + second_step / (RESISTANCE_OHM * CAPACITANCE_F))
+            / (1.0 + second_step / (RESISTANCE_OHM * CAPACITANCE_F));
+        let third = (second + 1.0e-6 / (RESISTANCE_OHM * CAPACITANCE_F))
+            / (1.0 + 1.0e-6 / (RESISTANCE_OHM * CAPACITANCE_F));
+        let actual = result
+            .voltage_out()
+            .samples()
+            .iter()
+            .map(|value| value.get())
+            .collect::<Vec<_>>();
+        assert_eq!(&actual[..2], &[0.0, 0.0]);
+        assert!((actual[2] - second).abs() <= 1.0e-18);
+        assert!((actual[3] - third).abs() <= 1.0e-18);
+    }
+
+    #[test]
+    fn backward_euler_tracks_the_independent_constant_rc_closed_form() {
+        let step_s = 1.0e-6;
+        let time_constant = RESISTANCE_OHM * CAPACITANCE_F;
+        let backward_euler = backward_euler_step(0.0, 1.0, step_s).expect("finite step");
+        let closed_form = 1.0 - (-step_s / time_constant).exp();
+        assert!(backward_euler <= closed_form);
+        assert!(closed_form - backward_euler <= 1.0e-6 / time_constant);
+    }
+
+    #[test]
+    fn pulse_corners_are_explicit_breakpoints() {
+        assert_eq!(
+            integration_breakpoints(),
+            [0.0, 1.0e-6, 1.001e-6, 2.0e-6, 3.0e-6]
+        );
+        assert_eq!(pulse_voltage(1.0e-6), 0.0);
+        assert_eq!(pulse_voltage(1.001e-6), 1.0);
     }
 }

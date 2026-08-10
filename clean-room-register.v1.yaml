@@ -194,10 +194,10 @@ scopes:
     state: planned
     role_material_allowlists:
       observer: []
-      spec_author: [p2-tran-package-foundation-spec-v1]
-      implementer: [p2-tran-package-foundation-spec-v1]
+      spec_author: [p2-tran-package-foundation-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1]
+      implementer: [p2-tran-package-foundation-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1]
       comparator: []
-      auditor: [p2-tran-package-foundation-spec-v1]
+      auditor: [p2-tran-package-foundation-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1]
   - id: p2-tran-rc-pulse-acceptance-contract-v1
     paths: [docs/baselines/tran-rc-pulse-acceptance.v1.yaml, docs/clean-room/specs/p2-tran-rc-pulse-acceptance-contract.v1.md, tools/verify_tran_rc_pulse_acceptance.py, tools/test_verify_tran_rc_pulse_acceptance.py]
     state: planned

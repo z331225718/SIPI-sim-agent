@@ -7,5 +7,8 @@ rust-version.workspace = true
 publish = false
 description = "Unsupported TRAN package boundary pending an accepted profile."
 
+[dependencies]
+sipi-types = { path = "../sipi-types" }
+
 [lints]
 workspace = true
