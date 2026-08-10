@@ -12,7 +12,9 @@ source byte/line/column spans. It does not read files or run a CLI command.
 The caller supplies nonzero limits for input bytes, physical-line bytes,
 physical-line count, and record count. The parser rejects a limit breach, NUL,
 non-ASCII byte, bare carriage return, malformed/empty/unclosed bracketed
-keyword, or bracket-bearing opaque data record. Any rejection returns only a
+keyword, or an opaque data record with unbalanced brackets. Balanced brackets
+inside an opaque data token are retained without assigning semantic meaning.
+Any rejection returns only a
 stable diagnostic and no partial document.
 
 Both LF and CRLF are accepted and retained as source spelling. A vertical-bar

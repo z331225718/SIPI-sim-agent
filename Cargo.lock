@@ -341,6 +341,7 @@ dependencies = [
 name = "sipi-ibis"
 version = "0.1.0"
 dependencies = [
+ "sha2",
  "sipi-types",
 ]
 

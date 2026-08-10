@@ -1,14 +1,14 @@
 schema: sipi.p4a-ibis-input-typ-static-acceptance.v1
 status: required_pending_i_v_compare
 profile:
-  id: ibis-org-sample1-bpist02f-input-typ-static-v1
+  id: ibis-org-sample1-input-typ-static-v2
   required_by: user-authorized-implementer-selection-2026-08-11
   boundary: external_oracle_only
   source:
     canonical_url: https://ibis.org/xml/sample1/sample1%28original%29.ibs
     content_sha256: 46c53a49a31dea27769f0dddddadea72f03f1f956fb8e60aeaa24f83a7201b95
     byte_length: 406532
-    selector_utf8_sha256: f28fdb2606a5128621576521ee430bfbd1cb5ffe3543d1f449ab1a45373b594b
+    selector_utf8_sha256: 0be75aff11736ab3fee529275984551c241433d189ba1a21bad1b0e0e70fd2ff
   terminal_binding:
     kind: single_ended
     signal: sig

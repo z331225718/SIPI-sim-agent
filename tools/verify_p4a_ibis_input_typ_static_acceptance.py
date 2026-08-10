@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT = ROOT / "docs" / "baselines" / "p4a-ibis-input-typ-static-acceptance.v1.yaml"
 SCHEMA = "sipi.p4a-ibis-input-typ-static-acceptance.v1"
 ASSET_SHA256 = "46c53a49a31dea27769f0dddddadea72f03f1f956fb8e60aeaa24f83a7201b95"
-SELECTOR_SHA256 = "f28fdb2606a5128621576521ee430bfbd1cb5ffe3543d1f449ab1a45373b594b"
+SELECTOR_SHA256 = "0be75aff11736ab3fee529275984551c241433d189ba1a21bad1b0e0e70fd2ff"
 
 
 def _exact(value: object, keys: set[str]) -> dict:
@@ -37,7 +37,7 @@ def validate(document: object) -> dict:
         raise ValueError("manifest_status_invalid")
     profile = _exact(root["profile"], {"id", "required_by", "boundary", "source", "terminal_binding", "corner", "model_scope", "package_scope", "vt_ramp_scope"})
     source = _exact(profile["source"], {"canonical_url", "content_sha256", "byte_length", "selector_utf8_sha256"})
-    if profile["id"] != "ibis-org-sample1-bpist02f-input-typ-static-v1" or not isinstance(profile["required_by"], str) or not profile["required_by"] or profile["boundary"] != "external_oracle_only":
+    if profile["id"] != "ibis-org-sample1-input-typ-static-v2" or not isinstance(profile["required_by"], str) or not profile["required_by"] or profile["boundary"] != "external_oracle_only":
         raise ValueError("profile_selection_invalid")
     if source != {"canonical_url": "https://ibis.org/xml/sample1/sample1%28original%29.ibs", "content_sha256": ASSET_SHA256, "byte_length": 406532, "selector_utf8_sha256": SELECTOR_SHA256} or not _sha256(source["content_sha256"]) or not _sha256(source["selector_utf8_sha256"]):
         raise ValueError("external_identity_invalid")

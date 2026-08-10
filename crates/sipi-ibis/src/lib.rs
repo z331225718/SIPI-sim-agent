@@ -704,10 +704,7 @@ fn parse_line(
     if bytes[content_start] == b'[' {
         records.push(parse_keyword(bytes, content_start, content_end, span)?);
     } else {
-        if bytes[content_start..content_end]
-            .iter()
-            .any(|byte| matches!(*byte, b'[' | b']'))
-        {
+        if !data_brackets_are_balanced(&bytes[content_start..content_end]) {
             return Err(diagnostic(
                 IbisDiagnosticCodeV1::InvalidDataRecordSyntax,
                 content_start,
@@ -722,6 +719,19 @@ fn parse_line(
         });
     }
     Ok(())
+}
+
+fn data_brackets_are_balanced(bytes: &[u8]) -> bool {
+    let mut depth = 0usize;
+    for byte in bytes {
+        match *byte {
+            b'[' => depth += 1,
+            b']' if depth == 0 => return false,
+            b']' => depth -= 1,
+            _ => {}
+        }
+    }
+    depth == 0
 }
 
 fn parse_keyword(
@@ -1460,6 +1470,15 @@ mod tests {
                 .code(),
             IbisDiagnosticCodeV1::PhysicalLineLimitExceeded
         );
+    }
+
+    #[test]
+    fn preserves_balanced_brackets_inside_opaque_data_tokens() {
+        let document = parse_structural_v1(b"A12 a[0] model\n", limits()).expect("data record");
+        let StructuralRecordV1::Data { tokens, .. } = &document.records()[0] else {
+            panic!("data record");
+        };
+        assert_eq!(tokens[1].spelling(), "a[0]");
     }
 
     #[test]

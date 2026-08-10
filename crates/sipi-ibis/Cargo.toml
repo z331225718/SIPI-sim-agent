@@ -12,3 +12,6 @@ workspace = true
 
 [dependencies]
 sipi-types = { path = "../sipi-types" }
+
+[dev-dependencies]
+sha2 = "0.10"
