@@ -1,0 +1,64 @@
+schema: sipi.ibis-example-rx-candidate-inventory.v1
+status: candidate_not_required_preflight_passed
+promotion_eligible: false
+profile:
+  id: ibis-ami-example-rx-raw-abi-v1
+  required_by: null
+  boundary: oracle_only
+source:
+  repository: pybert-f6ba031
+  commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7
+  origin_sha256: 84f45f81dfc5423dbb319ec41150c535d5de4290b7d53f3f9a4d722b5c6bbf70
+assets:
+- path: models/ibisami/example_rx.ami
+  git_blob: 26a1b03849a0838284dfde7921926668ad1434e0
+  byte_length: 3932
+  content_sha256: 6d4038a184cb10af355dbd02b9392258d7e2b3bb9b0cddc211349db66ef80c38
+- path: models/ibisami/example_rx.dll
+  git_blob: 70c2efa3357a9fa7528e44286d5566413ba3fdd7
+  byte_length: 363008
+  content_sha256: 60e29f16dcfe1a40240956f0591b29f524ccc8844c4959671d0317178c1ff46c
+- path: models/ibisami/example_rx.ibs
+  git_blob: b30b88bdf5883722d8ddbbd860a115406c5e439c
+  byte_length: 2721
+  content_sha256: 37b7bf1b6c50fe56c4daaad344de1b3cabe7a7f139ca1b76c4058a943f39fbe9
+ibis_observation:
+  ibis_version: '7.1'
+  component: Example_Rx
+  models:
+  - name: example_rx
+    model_type: Input
+  pin_model_selectors:
+  - example_rx
+  corner_sources:
+  - C_comp
+  - Package
+  - Temperature_Range
+  - Voltage_Range
+  table_families:
+  - GND Clamp
+  - Power Clamp
+  algorithmic_executables:
+  - platform: Windows_VisualStudio_32
+    dll_name: example_rx_x86.dll
+    ami_name: example_rx.ami
+  - platform: Windows_VisualStudio_64
+    dll_name: example_rx_x86_amd64.dll
+    ami_name: example_rx.ami
+  - platform: linux_gcc4.1.2_32
+    dll_name: example_rx_x86.so
+    ami_name: example_rx.ami
+  - platform: linux_gcc4.1.2_64
+    dll_name: example_rx_x86_amd64.so
+    ami_name: example_rx.ami
+windows_x64_asset_binding:
+  declared_dll_name: example_rx_x86_amd64.dll
+  authorized_asset_name: example_rx.dll
+  status: blocked_declared_filename_not_authorized_asset_name
+non_claims:
+- The example is not user-confirmed required and this inventory does not change that
+  state.
+- The observation is external-only and does not copy an IBIS, AMI, or DLL asset into
+  the product.
+- No parser, electrical semantics, host behavior, or release conclusion follows from
+  this preflight.

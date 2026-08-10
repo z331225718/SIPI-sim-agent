@@ -265,6 +265,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 ### 10.1 P4A：IBIS parser/semantics
 
 - [ ] **P4A-01** 盘点 required IBIS 示例的版本、keyword、model selector、corner 和 table family。
+  - [ ] **P4A-01a** observer-only candidate inventory：在用户确认 required profile 前，冻结 `example_rx` 的外部 Git-object 元数据与 Windows x64 DLL name-binding gap；不得升级 candidate 状态或启动 parser。
 - [ ] **P4A-02** 观察侧基于公开 IBIS 标准和授权 black-box 形成行为规格。
 - [ ] **P4A-03** clean-room 实现 Rust parser、typed AST 和严格 diagnostics。
 - [ ] **P4A-04** 实现 required I-V/V-T/ramp/package 语义与显式 interpolation/extrapolation policy。

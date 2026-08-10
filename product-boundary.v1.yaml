@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: bbac83d5b565941893e09ad75d5d90a9f3d83b9a83e8fbc2591694c432c3e7eb
+  tracked_paths_sha256: 57b7eca1f4f1cb959af9d151391c323ee0d6086424961e9be8fd5c22461856e1
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -833,6 +833,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/ibis-example-rx-candidate-inventory.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/m5b-ami-authorized-dll-closure-preflight.v1.json:
       rule: historical-docs
       class: migration_only
@@ -1158,6 +1164,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3b-rfm-receiver-handoff-replay.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p4a-ibis-example-rx-candidate-inventory.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5753,6 +5765,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p4a_ibis_example_rx_candidate_inventory.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p4b_ami_candidate_preflight.py:
       rule: migration-tools
       class: migration_only
@@ -5976,6 +5994,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3b_link_stage_capabilities.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p4a_ibis_example_rx_candidate_inventory.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
