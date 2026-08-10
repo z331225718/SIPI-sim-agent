@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 0023599be64e2cc17910923d55bf27c36a9e239488403ed6f9fa88097b27846e
+  tracked_paths_sha256: dc894142a9d98bcbbb0c11a2b3a0f679acc0f072ed4d8afb23976d07bb377fec
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -762,6 +762,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p4a-ibis-example-rx-candidate-inventory.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p4a-ibis-structural-parser-foundation.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
