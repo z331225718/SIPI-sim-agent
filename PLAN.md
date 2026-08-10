@@ -241,7 +241,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 
 #### P3B：Link Stages
 
-- [ ] **P3B-01** 冻结 stimulus、timebase、TX、convolution、RX FFE/CTLE 的 typed stage contract。
+- [x] **P3B-01** 冻结 `sipi.link-plan.v1` 的 stimulus、timebase、`direct_launch` TX、future linear-convolution、bypass RX typed stage contract；P3A periodic DFT kernel 明确不作为 causal FIR 接受，执行与 equalizer 仍未开始。证据见 [2026-08-10-p3b-link-stage-contract.md](docs/baselines/audits/2026-08-10-p3b-link-stage-contract.md)。
 - [ ] **P3B-02** clean-room 实现 channel convolution 和已批准 equalizer 子集。
 - [ ] **P3B-03** clean-room 实现 DFE/CDR/decision/BER 最小 profile。
 - [ ] **P3B-04** stage-by-stage 比较 impulse、channel output、RX/FFE/DFE waveform、clock、decision、bits 和 errors。

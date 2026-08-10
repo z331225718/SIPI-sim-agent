@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 781d86a90acabf07df72d10a18703f62b4d642bc133868138b3cdf85efc5295d
+  tracked_paths_sha256: 77449ed84928270e7aea9427834f11735f1df60df38eba99cd5ec610469e9f36
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -594,6 +594,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p3a-matched-s2p-response-compare.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p3b-link-stage-contract.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
