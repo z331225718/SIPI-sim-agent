@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: a6ebd3f342fbc63a3cff979a0eab458801ffa5c51d06315b1fb04e20b8a9dbf3
+  tracked_paths_sha256: 9eb0cdef0810033f2d63903be51d1ee6fc4af8da1e7a7f4de590380408cb9579
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -216,6 +216,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-tran/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-tran/src/bin/sipi_tran_rc_pulse_harness.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -702,6 +708,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p2-tran-rc-pulse-acceptance-contract.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p2-tran-rc-pulse-comparator.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5039,6 +5051,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/compare_tran_rc_pulse.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/m0_artifact_mock.py:
       rule: migration-tools
       class: migration_only
@@ -5076,6 +5094,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_clean_room_templates.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_compare_tran_rc_pulse.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

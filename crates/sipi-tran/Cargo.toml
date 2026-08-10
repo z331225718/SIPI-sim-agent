@@ -7,8 +7,16 @@ rust-version.workspace = true
 publish = false
 description = "Unsupported TRAN package boundary pending an accepted profile."
 
+[features]
+rc-pulse-harness = []
+
 [dependencies]
 sipi-types = { path = "../sipi-types" }
 
 [lints]
 workspace = true
+
+[[bin]]
+name = "sipi-tran-rc-pulse-harness"
+path = "src/bin/sipi_tran_rc_pulse_harness.rs"
+required-features = ["rc-pulse-harness"]

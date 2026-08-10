@@ -145,6 +145,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: []
+  - id: p2-tran-rc-pulse-comparator-spec-v1
+    kind: independent_spec
+    content_sha256: f928dfa7e9a2ec29e0396618459219bd5d6da3d51c428b7342ea9bf8bf626511
+    provenance:
+      source_ref: docs/clean-room/specs/p2-tran-rc-pulse-comparator.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, comparator, auditor]
+    derived_from: [p2-tran-rc-pulse-semantic-contract-spec-v1]
   - id: agent-spice-license-2cc92316
     kind: mit_source
     content_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
@@ -216,4 +224,13 @@ scopes:
       implementer: [p2-tran-rc-pulse-semantic-contract-spec-v1]
       comparator: []
       auditor: [p2-tran-rc-pulse-semantic-contract-spec-v1]
+  - id: p2-tran-rc-pulse-comparator-v1
+    paths: [docs/clean-room/specs/p2-tran-rc-pulse-comparator.v1.md, tools/compare_tran_rc_pulse.py, tools/test_compare_tran_rc_pulse.py]
+    state: planned
+    role_material_allowlists:
+      observer: [agent-spice-license-2cc92316, agent-spice-rc-pulse-fixture-2cc92316]
+      spec_author: [p2-tran-rc-pulse-comparator-spec-v1]
+      implementer: []
+      comparator: [p2-tran-rc-pulse-comparator-spec-v1, agent-spice-rc-pulse-fixture-2cc92316]
+      auditor: [p2-tran-rc-pulse-comparator-spec-v1, agent-spice-license-2cc92316, agent-spice-rc-pulse-fixture-2cc92316]
 attestations: []
