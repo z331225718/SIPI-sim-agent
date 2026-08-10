@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 2bb02ee60b062d3ae9eab9d776b8f5307414df5fbd7dc74831ddb45280e50a1e
+  tracked_paths_sha256: 46866016de166b3a0d587ecb3ca71a183778e9156dd0030f639c604374dde27f
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -606,6 +606,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p3a-matched-s2p-response-compare.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p3b-causal-fir-convolution.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
