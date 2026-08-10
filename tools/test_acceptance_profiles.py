@@ -15,11 +15,11 @@ class AcceptanceProfileTests(unittest.TestCase):
     def document(self) -> dict:
         return copy.deepcopy(_load(ROOT / "acceptance-profiles.v1.yaml"))
 
-    def test_current_inventory_is_candidate_only(self) -> None:
+    def test_current_inventory_records_the_selected_channel_profile(self) -> None:
         report = verify_document(self.document())
         self.assertTrue(report["valid"], report["blockers"])
         self.assertEqual(report["profile_count"], 4)
-        self.assertEqual(report["required_profile_count"], 0)
+        self.assertEqual(report["required_profile_count"], 1)
 
     def test_unknown_fields_and_unsafe_paths_fail_closed(self) -> None:
         invalid = self.document()
@@ -31,10 +31,14 @@ class AcceptanceProfileTests(unittest.TestCase):
         self.assertFalse(report["valid"])
         self.assertTrue(any("source anchor" in item for item in report["blockers"]))
 
-    def test_candidate_cannot_be_promoted_without_required_decision(self) -> None:
+    def test_selected_profile_requires_a_decision_reference(self) -> None:
         invalid = self.document()
-        invalid["profiles"][0]["acceptance"]["status"] = "required"
-        invalid["profiles"][0]["acceptance"]["required_by"] = "owner-decision"
+        invalid["profiles"][0]["acceptance"]["required_by"] = None
+        report = verify_document(invalid)
+        self.assertFalse(report["valid"])
+        self.assertTrue(any("selected acceptance" in item for item in report["blockers"]))
+        invalid = self.document()
+        invalid["profiles"][1]["acceptance"]["required_by"] = "unexpected"
         report = verify_document(invalid)
         self.assertFalse(report["valid"])
         self.assertTrue(any("candidate acceptance" in item for item in report["blockers"]))

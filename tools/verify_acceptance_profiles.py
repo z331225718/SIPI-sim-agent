@@ -81,6 +81,7 @@ def verify_document(document: object, source_roots: dict[str, Path] | None = Non
     profiles = document["profiles"]
     profile_ids: set[str] = set()
     checked_sources = 0
+    required_profiles = 0
     if not isinstance(profiles, list) or not profiles:
         blockers.append("profiles must be a non-empty list")
     else:
@@ -111,8 +112,18 @@ def verify_document(document: object, source_roots: dict[str, Path] | None = Non
                 blockers.append(f"{profile_id}: environment is invalid")
             acceptance = profile["acceptance"]
             required = {"observable", "comparator_ref", "tolerance_policy_ref", "status", "required_by"}
-            if not _exact(acceptance, required) or acceptance.get("status") != "candidate" or acceptance.get("required_by") is not None or not all(isinstance(acceptance.get(field), str) and acceptance[field] for field in ("observable", "comparator_ref", "tolerance_policy_ref")):
-                blockers.append(f"{profile_id}: candidate acceptance cannot be required or incomplete")
+            if not _exact(acceptance, required) or not all(isinstance(acceptance.get(field), str) and acceptance[field] for field in ("observable", "comparator_ref", "tolerance_policy_ref")):
+                blockers.append(f"{profile_id}: acceptance is incomplete")
+            elif acceptance.get("status") == "candidate":
+                if acceptance.get("required_by") is not None:
+                    blockers.append(f"{profile_id}: candidate acceptance cannot carry a required decision")
+            elif acceptance.get("status") == "required_pending_preflight":
+                if not isinstance(acceptance.get("required_by"), str) or not acceptance["required_by"]:
+                    blockers.append(f"{profile_id}: selected acceptance requires a decision reference")
+                else:
+                    required_profiles += 1
+            else:
+                blockers.append(f"{profile_id}: acceptance status is invalid")
             if not isinstance(profile["source_license_evidence"], str) or not profile["source_license_evidence"] or not isinstance(profile["evidence_refs"], list) or not profile["evidence_refs"] or not all(_safe_path(item) for item in profile["evidence_refs"]) or not isinstance(profile["notes"], str) or not profile["notes"]:
                 blockers.append(f"{profile_id}: evidence or notes are invalid")
             if source_roots and source.get("repository") in source_roots and _safe_path(source.get("path")):
@@ -127,7 +138,7 @@ def verify_document(document: object, source_roots: dict[str, Path] | None = Non
                         blockers.append(f"{profile_id}: source Git object identity mismatch")
     if not isinstance(document["non_claims"], list) or not document["non_claims"] or not all(isinstance(item, str) and item for item in document["non_claims"]):
         blockers.append("non_claims must be a non-empty string list")
-    return {"valid": not blockers, "inventory_status": document["inventory_status"], "profile_count": len(profile_ids), "required_profile_count": 0, "git_object_checked_count": checked_sources, "blockers": blockers}
+    return {"valid": not blockers, "inventory_status": document["inventory_status"], "profile_count": len(profile_ids), "required_profile_count": required_profiles, "git_object_checked_count": checked_sources, "blockers": blockers}
 
 
 def main() -> int:

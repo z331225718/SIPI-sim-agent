@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 050de2b2e4f9c77db133a148a32c3c7d4b9d9d0d4116105bf92f56c965db8740
+  tracked_paths_sha256: d00d0dd99bd6cfd56027c925c07a06263684ac78f5cc95def4eda9a7ef417f44
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -557,6 +557,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/channel-s2p-matched-observation.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/conformance/m4-dto-conformance.json:
       rule: historical-docs
       class: migration_only
@@ -786,6 +792,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p2-tran-rc-pulse-semantic-contract.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3a-s2p-matched-channel.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5261,6 +5273,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_channel_s2p_matched_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_license_manifest.py:
       rule: migration-tools
       class: migration_only
@@ -5292,6 +5310,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_acceptance_profiles.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_channel_s2p_matched_preflight.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

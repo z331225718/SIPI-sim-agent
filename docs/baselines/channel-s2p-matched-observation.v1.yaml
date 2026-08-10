@@ -1,0 +1,50 @@
+schema: sipi.channel.s2p-matched-observation.v1
+selection:
+  profile_id: channel-s2p-channel-16ghz-3db-v1
+  required: true
+  required_by: user-confirmed-2026-08-10-channel_16ghz_3db
+  status: required_pending_preflight
+source:
+  canonical_origin: https://github.com/z331225718/Py-bert-agent.git
+  commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7
+  tree: ac7006ea26cf9e8d885c0e4f1b82797d2e9342a1
+  object_format: sha1
+  path: models/sp_file/channel_16ghz_3db.s2p
+  git_blob: e10bfb4a43731645984f1f5e24bd3fbf2268dedd
+  content_sha256: 9d4cfeaad7c971fa45454f639b40e08c538855058f326fbdec64298b8933b5ad
+  redistribution: external_only
+legacy_handoff_evidence:
+  sipi_commit: 6d2c221f34f878e31f4541bfff685ac3995d7a0c
+  tool_path: tools/verify_m5b_s2p_link_parity.py
+  tool_git_blob: 582ce8fefb62dc4a2a0c51d47e5d5e9e1a88f56a
+  tool_content_sha256: 01a4cccc905795dd9271f0810a06a632146b117242dce1ab27a0c494b74da065
+  scope_ref: docs/baselines/audits/2026-08-08-m5.md#m5b-03c
+product_contract:
+  schema: sipi.channel.s2p-matched.v1
+  port_order: [source_port_1, receiver_port_2]
+  wave_convention: real_z0_power_wave
+  transfer: receiver_voltage_per_launched_source_voltage_equals_s21
+  output_sign: receiver_port_voltage_relative_to_reference
+structural_expectation:
+  parameter: S
+  format: RI
+  frequency_unit: Hz
+  port_count: 2
+  reference_impedance_ohm: 50.0
+  frequency_count: 201
+  frequency_start_hz: 0.0
+  frequency_step_hz: 100000000.0
+  frequency_stop_hz: 20000000000.0
+  fft_length: 400
+  sample_interval_seconds: 2.5e-11
+  dc_nyquist_imaginary_residue_max: 1.0e-12
+numerical_acceptance:
+  status: blocked_missing_stimulus_policy
+  required_before_compare:
+    - launch waveform and amplitude contract
+    - external resolver executable and configuration identity
+    - output observable/alignment and numerical tolerance policy
+non_claims:
+  - This record is external observation metadata and not a product S2P input or fixture.
+  - Structural preflight does not establish S2P parsing, IFFT, impulse, Link, or general channel parity.
+  - The M5B Python handoff evidence is historical observer evidence, not an implementation input or fallback.

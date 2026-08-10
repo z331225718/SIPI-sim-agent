@@ -177,6 +177,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p2-tran-fixed-cli-run-spec-v1, p2-tran-failure-gates-spec-v1]
+  - id: p3a-s2p-matched-channel-spec-v1
+    kind: independent_spec
+    content_sha256: 746db1ccda6812ac4e7ddc2bd667918652146812ae4374ec58f63db74a483518
+    provenance:
+      source_ref: docs/clean-room/specs/p3a-s2p-matched-channel.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: []
   - id: agent-spice-license-2cc92316
     kind: mit_source
     content_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
@@ -275,4 +283,13 @@ scopes:
       implementer: [p2-tran-performance-observation-spec-v1]
       comparator: []
       auditor: [p2-tran-performance-observation-spec-v1]
+  - id: p3a-s2p-matched-channel-preflight-v1
+    paths: [acceptance-profiles.v1.yaml, docs/baselines/channel-s2p-matched-observation.v1.yaml, docs/clean-room/specs/p3a-s2p-matched-channel.v1.md, tools/verify_channel_s2p_matched_preflight.py, tools/test_verify_channel_s2p_matched_preflight.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3a-s2p-matched-channel-spec-v1]
+      implementer: [p3a-s2p-matched-channel-spec-v1]
+      comparator: []
+      auditor: [p3a-s2p-matched-channel-spec-v1]
 attestations: []
