@@ -5,6 +5,7 @@ members = [
   "crates/sipi-artifacts",
   "crates/sipi-contracts",
   "crates/sipi-layout",
+  "crates/sipi-link",
   "crates/sipi-pipeline",
   "crates/sipi-runtime",
   "crates/sipi-tran",
