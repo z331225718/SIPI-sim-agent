@@ -348,7 +348,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 ### 12.1 任务
 
 - [x] **P6-01** 完成 Rust project/DAG contract：analysis nodes、typed artifact edges、资源、seed 和 outputs；当前仅声明/验证，不执行跨域 edge 或 project run。
-- [ ] **P6-02** 实现 TRAN/RFM -> Channel、IBIS/AMI -> Channel、Channel/COM 并行等首批 edge。
+- [ ] **P6-02** **P6-02a 已完成：** 固定 `tran-rc-pulse-v1` 的 `voltage_in` 可经严格四点/`1 us` axis admission 原样成为 DirectLaunch causal-FIR stimulus，并复用唯一 TRAN solver 和 causal-FIR convolution；无重采样、S2P periodic kernel、RFM/IBIS/AMI/COM、project executor、CLI 或 artifact route。其余首批 edge 继续等待对应产品能力与 profile。
 - [ ] **P6-03** 所有 edge 校验 schema、单位、port map、policy 和 producer/consumer hash。
 - [ ] **P6-04** 完成 run status/cancel/retry/cache；retry 产生新 attempt，不改写旧证据。
 - [ ] **P6-05** 完成 `tran/channel/ibis/ami/com/project/compare/inspect/report` 命令面。

@@ -18,6 +18,14 @@ use sipi_contracts::{
     PROJECT_PLAN_SCHEMA, WireProjectEdgeSourceV1, WireProjectPlanV1, WireProjectPortRefV1,
 };
 
+mod tran_to_link;
+
+pub use tran_to_link::{
+    CausalFirConsumerConfigV1, TRAN_RC_PULSE_LAUNCH_CONTRACT_V1, TranRcPulseLaunchArtifactV1,
+    TranToLinkEdgeError, build_direct_launch_plan_v1, derive_fixed_tran_launch_v1,
+    run_fixed_tran_to_causal_fir_v1,
+};
+
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct NodeId(String);
 
