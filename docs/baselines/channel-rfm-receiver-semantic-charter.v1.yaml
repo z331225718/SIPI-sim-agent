@@ -13,6 +13,53 @@ pending_decisions:
   cdr_detector_phase_frequency_update_lock_reset_and_cancel: pending_owner_approval
   ber_reference_bits_polarity_alignment_threshold_ties_window_metric: pending_owner_approval
   external_oracle_stage_scope_and_tolerances: pending_owner_approval
+proposed_v1:
+  approval_required: true
+  input:
+    receive_samples: 1024
+    start_seconds: 0.0
+    sample_interval_seconds: 0.000000000001
+    ui_seconds: 0.000000000008
+    samples_per_ui: 8
+    ctle: bypass
+    ffe: bypass
+  reference_bits:
+    count: 128
+    source: caller_supplied_external_comparator_only
+    positive_voltage_is_one: true
+    training_symbols: 32
+    measurement_symbols: 96
+    training_requires_both_symbols: true
+  cdr:
+    kind: data_aided_fixed_phase_v1
+    phase_candidates: 8
+    training_symbol_count: 32
+    selection: maximum_class_separation
+    minimum_relative_margin: 0.01
+    phase_tracking: forbidden
+  normalization:
+    center: mean_one_and_zero_midpoint
+    amplitude: half_class_separation
+    minimum_absolute_amplitude_volts: 0.000001
+    normalized_threshold: 0.0
+  dfe:
+    kind: fixed_training_postcursor_dfe_v1
+    postcursor_taps: 5
+    tap_delays_ui: [1, 2, 3, 4, 5]
+    training_step: 0.25
+    initial_coefficients: zero
+    training_uses_reference_past_symbols: true
+    measurement_uses_prior_hard_decisions: true
+    adaptation_after_training: forbidden
+  decision_and_ber:
+    zero_decision: erasure_and_error
+    discrete_observables: [cdr_phase, lock_state, measurement_decisions, error_count, ber]
+    discrete_comparison: exact
+    continuous_stage_tolerance: {absolute_volts: 0.000000001, relative: 0.000001}
+  external_compare:
+    require_matching_receive_waveform_hash: true
+    require_matching_reference_bits_hash: true
+    stage_unobservable_status: blocked
 non_claims:
   - This charter preflight does not select a receiver algorithm or numerical values.
   - The required RFM profile remains semantically blocked until an owner-approved charter replaces this pending record.

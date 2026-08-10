@@ -4,15 +4,23 @@
 
 This is the approval boundary between a generic caller-supplied receiver
 preparation and the profile-specific DFE/CDR/BER behavior required by the RFM
-profile. It intentionally records no algorithm or numerical default.
+profile. Its pending record includes a proposed model, but it selects no
+implemented behavior until the owner explicitly approves that proposal.
 
 ## Required Owner Decisions
 
-An approved successor must specify the product stimulus and causal Link input,
-DFE model/adaptation/tap order/cursor/units/sign, CDR detector/state/update/
-lock/reset/cancel behavior, and BER reference/polarity/alignment/threshold/tie/
-window/metric. It must also bind the external oracle stage scope and comparison
-tolerances.
+The proposed v1 model is data-aided fixed-phase NRZ acquisition over 8 phases,
+with 32 training UI and 96 measurement UI. It requires a caller-supplied 128
+bit reference vector, uses a five-tap postcursor decision-feedback filter with
+a 0.25 training step, then freezes coefficients for measurement. It makes zero
+decisions erasures/errors and requires exact comparison for discrete lock,
+decision, error-count, and BER outputs. This proposal is deliberately not an
+interpretation of external configuration fields.
+
+Owner approval must specifically confirm the external comparator can supply
+the same reference-bit vector and receive waveform, and that it accepts this
+data-aided fixed-phase / fixed-training receiver model and its stated stage
+scope and tolerances. Otherwise the profile remains blocked.
 
 ## Binding
 

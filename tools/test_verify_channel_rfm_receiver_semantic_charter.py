@@ -31,6 +31,14 @@ class ReceiverSemanticCharterTests(unittest.TestCase):
         charter["receiver_contract"]["schema_sha256"] = "0" * 64
         self.assertFalse(verify_document(charter)["valid"])
 
+    def test_proposed_model_drift_remains_rejected_while_approval_is_pending(self) -> None:
+        charter = self.charter()
+        charter["proposed_v1"]["dfe"]["postcursor_taps"] = 4
+        self.assertFalse(verify_document(charter)["valid"])
+        charter = self.charter()
+        charter["proposed_v1"]["approval_required"] = False
+        self.assertFalse(verify_document(charter)["valid"])
+
 
 if __name__ == "__main__":
     unittest.main()
