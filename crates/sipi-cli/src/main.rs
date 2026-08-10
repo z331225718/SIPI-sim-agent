@@ -13,7 +13,8 @@ use sipi_contracts::{
     capability_schema_json, deterministic_json, ibis_inspect_request_schema_json,
     link_causal_fir_request_schema_json, link_plan_schema_json, parse_ibis_inspect_request_v1,
     parse_link_causal_fir_request_v1, parse_tran_rc_pulse_request_v1, project_plan_schema_json,
-    receiver_input_schema_json, receiver_semantics_schema_json, validate_request_v1,
+    receiver_input_schema_json, receiver_semantics_schema_json, tran_rc_pulse_request_schema_json,
+    validate_request_v1, validation_request_schema_json,
 };
 use sipi_ibis::{IbisInspectServiceV1, ParseLimitsV1};
 use sipi_link::{ConvolutionLimitsV1, convolve_causal_fir_v1};
@@ -876,9 +877,12 @@ fn doctor_json() -> String {
 
 fn schema_list_json() -> String {
     format!(
-        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"]}}",
+        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"]}}",
+        sipi_contracts::VALIDATION_REQUEST_SCHEMA,
+        sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA,
         sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA,
         LINK_PLAN_SCHEMA,
+        sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA,
         sipi_contracts::PROJECT_PLAN_SCHEMA,
         sipi_contracts::RECEIVER_INPUT_SCHEMA,
         sipi_contracts::RECEIVER_SEMANTICS_SCHEMA,
@@ -888,6 +892,10 @@ fn schema_list_json() -> String {
 fn schema_show(id: &str) -> Response {
     let bytes = if id == CAPABILITIES_SCHEMA {
         capability_schema_json()
+    } else if id == sipi_contracts::VALIDATION_REQUEST_SCHEMA {
+        validation_request_schema_json()
+    } else if id == sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA {
+        tran_rc_pulse_request_schema_json()
     } else if id == LINK_PLAN_SCHEMA {
         link_plan_schema_json()
     } else if id == sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA {
@@ -919,6 +927,8 @@ fn schema_show(id: &str) -> Response {
 fn validate_self(schema: Option<&str>) -> Response {
     if schema.is_some_and(|id| {
         id != CAPABILITIES_SCHEMA
+            && id != sipi_contracts::VALIDATION_REQUEST_SCHEMA
+            && id != sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA
             && id != sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA
             && id != LINK_PLAN_SCHEMA
             && id != sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA
@@ -937,6 +947,8 @@ fn validate_self(schema: Option<&str>) -> Response {
             .all(|item| item.status == "unsupported")
         && deterministic_json(&catalog).is_ok()
         && !RULE_LEDGER_V1.is_empty()
+        && validation_request_schema_json().is_ok()
+        && tran_rc_pulse_request_schema_json().is_ok()
         && ibis_inspect_request_schema_json().is_ok()
         && link_plan_schema_json().is_ok()
         && link_causal_fir_request_schema_json().is_ok()

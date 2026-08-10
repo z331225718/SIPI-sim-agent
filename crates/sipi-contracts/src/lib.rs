@@ -1402,6 +1402,14 @@ pub fn capability_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(CapabilityCatalogV1))
 }
 
+pub fn validation_request_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(ValidationRequestV1))
+}
+
+pub fn tran_rc_pulse_request_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(TranRcPulseRequestV1))
+}
+
 pub fn link_plan_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireLinkPlanV1))
 }
@@ -1620,6 +1628,20 @@ mod tests {
             capability_schema_json().expect("schema"),
             &baseline[..baseline.len() - 1]
         );
+    }
+
+    #[test]
+    fn tracked_validation_request_schema_baseline_is_exactly_the_registered_export() {
+        let baseline = include_bytes!("../schemas/sipi.validation-request.v1.schema.json");
+        let exported = validation_request_schema_json().expect("schema");
+        assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
+    }
+
+    #[test]
+    fn tracked_tran_request_schema_baseline_is_exactly_the_registered_export() {
+        let baseline = include_bytes!("../schemas/sipi.tran.rc-pulse-request.v1.schema.json");
+        let exported = tran_rc_pulse_request_schema_json().expect("schema");
+        assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
     }
 
     #[test]
