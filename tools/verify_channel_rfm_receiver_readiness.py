@@ -20,6 +20,7 @@ SHA1_LENGTH = 40
 SHA256_LENGTH = 64
 MISSING = "missing_owner_selection"
 EVIDENCE_REF = "docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm-same-config-receiver-parity"
+HANDOFF_REPLAY_REF = "docs/baselines/audits/2026-08-10-p3b-rfm-receiver-handoff-replay.md"
 APPROVAL_REF = "docs/baselines/channel-rfm-receiver-semantic-approval.v1.yaml"
 REQUIRED_BY = "user-confirmed-2026-08-10-channel-rfm-receiver"
 
@@ -102,8 +103,9 @@ def verify_document(readiness: object, inventory: object) -> dict:
     elif (
         profile.get("environment", {}).get("provenance_ref") != EVIDENCE_REF
         or profile.get("acceptance", {}).get("tolerance_policy_ref") not in {EVIDENCE_REF, APPROVAL_REF}
-        or profile.get("evidence_refs") != [EVIDENCE_REF]
+        or profile.get("evidence_refs") != [EVIDENCE_REF, HANDOFF_REPLAY_REF]
         or not _evidence_ref_exists(EVIDENCE_REF)
+        or not (ROOT / HANDOFF_REPLAY_REF).is_file()
     ):
         blockers.append("required profile receiver evidence anchor is invalid")
     identity = readiness["candidate_identity"]
