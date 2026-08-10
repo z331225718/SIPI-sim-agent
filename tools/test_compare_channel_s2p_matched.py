@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 from compare_channel_s2p_matched import (
     ComparatorError,
     _compare,
+    _environment_hash,
     encode_product_spectrum,
     observer_kernel,
     parse_product_kernel,
@@ -52,6 +53,8 @@ class MatchedS2pComparatorTests(unittest.TestCase):
             parse_product_kernel(b"invalid")
         with self.assertRaisesRegex(ComparatorError, "non-finite"):
             parse_product_kernel(b"SIPICHK1" + struct.pack("<Qdd", 1, 1.0, float("nan")))
+        self.assertEqual(_environment_hash("cargo 1.97"), _environment_hash("cargo 1.97"))
+        self.assertNotEqual(_environment_hash("cargo 1.97"), _environment_hash("cargo 1.98"))
 
 
 if __name__ == "__main__":

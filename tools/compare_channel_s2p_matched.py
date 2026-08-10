@@ -57,6 +57,16 @@ def _array_hash(values: list[float]) -> str:
     return _sha256_bytes(b"".join(struct.pack("<d", value) for value in values))
 
 
+def _environment_hash(cargo_version: str) -> str:
+    evidence = {
+        "cargo_net_offline": True,
+        "cargo_version": cargo_version,
+        "platform": "windows-x86_64",
+        "runner_environment": "SystemRoot_System32_only",
+    }
+    return _sha256_bytes(json.dumps(evidence, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+
+
 def _finite(value: object, label: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
         raise ComparatorError(f"{label} must be finite")
@@ -206,9 +216,6 @@ def _cargo_executable() -> str:
 
 
 def _materialize_product_runner(product_root: Path, product_commit: str, temp_root: Path) -> tuple[Path, dict[str, object]]:
-    status = subprocess.run(["git", "-C", str(product_root), "status", "--porcelain", "--untracked-files=no"], capture_output=True, text=True)
-    if status.returncode != 0:
-        raise ComparatorError("product source Git status is unavailable")
     archive = subprocess.run(["git", "-C", str(product_root), "archive", "--format=tar", product_commit], capture_output=True)
     if archive.returncode != 0:
         raise ComparatorError("product commit cannot be materialized")
@@ -272,6 +279,7 @@ def compare(contract_path: Path, source_root: Path, product_root: Path, product_
         "accepted": bool(comparison["passed"]),
         "policy_sha256": _sha256_file(contract_path),
         "source": {key: contract["source"][key] for key in ("canonical_origin", "commit", "tree", "path", "git_blob", "content_sha256", "redistribution")},
+        "environment": {"platform": "windows-x86_64", "environment_hash": _environment_hash(str(runner_identity["cargo_version"]))},
         "observer": {"implementation": "standard_dft_observer_v1", "fresh_run_kernel_sha256_f64le": _array_hash(first_kernel), "fft_length": len(first_kernel), "sample_interval_seconds": first_dt},
         "product_input": {"schema": "sipi.channel.matched-spectrum-binary.v1", "sha256": _sha256_bytes(product_input), "one_sided_sample_count": len(spectrum.samples), "frequency_step_hz": spectrum.frequency_step_hz, "reference_impedance_ohm": spectrum.reference_impedance_ohm},
         "product": {**runner_identity, "runner": "sipi-channel-kernel-runner", "kernel_sha256_f64le": _array_hash(product_kernel), "fft_length": len(product_kernel), "sample_interval_seconds": product_dt},
