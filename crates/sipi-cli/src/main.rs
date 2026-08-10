@@ -9,10 +9,11 @@ use std::{
 };
 
 use sipi_contracts::{
-    CAPABILITIES_SCHEMA, CapabilityCatalogV1, PLANNED_DOMAINS, RULE_LEDGER_V1,
+    CAPABILITIES_SCHEMA, CapabilityCatalogV1, LINK_PLAN_SCHEMA, PLANNED_DOMAINS, RULE_LEDGER_V1,
     capability_schema_json, deterministic_json, ibis_inspect_request_schema_json,
-    link_causal_fir_request_schema_json, parse_ibis_inspect_request_v1,
-    parse_link_causal_fir_request_v1, parse_tran_rc_pulse_request_v1, validate_request_v1,
+    link_causal_fir_request_schema_json, link_plan_schema_json, parse_ibis_inspect_request_v1,
+    parse_link_causal_fir_request_v1, parse_tran_rc_pulse_request_v1, project_plan_schema_json,
+    receiver_input_schema_json, receiver_semantics_schema_json, validate_request_v1,
 };
 use sipi_ibis::{IbisInspectServiceV1, ParseLimitsV1};
 use sipi_link::{ConvolutionLimitsV1, convolve_causal_fir_v1};
@@ -556,19 +557,30 @@ fn doctor_json() -> String {
 
 fn schema_list_json() -> String {
     format!(
-        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{}\",\"{}\"]}}",
+        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"]}}",
         sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA,
-        sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA,
+        LINK_PLAN_SCHEMA,
+        sipi_contracts::PROJECT_PLAN_SCHEMA,
+        sipi_contracts::RECEIVER_INPUT_SCHEMA,
+        sipi_contracts::RECEIVER_SEMANTICS_SCHEMA,
     )
 }
 
 fn schema_show(id: &str) -> Response {
     let bytes = if id == CAPABILITIES_SCHEMA {
         capability_schema_json()
+    } else if id == LINK_PLAN_SCHEMA {
+        link_plan_schema_json()
     } else if id == sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA {
         link_causal_fir_request_schema_json()
     } else if id == sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA {
         ibis_inspect_request_schema_json()
+    } else if id == sipi_contracts::PROJECT_PLAN_SCHEMA {
+        project_plan_schema_json()
+    } else if id == sipi_contracts::RECEIVER_INPUT_SCHEMA {
+        receiver_input_schema_json()
+    } else if id == sipi_contracts::RECEIVER_SEMANTICS_SCHEMA {
+        receiver_semantics_schema_json()
     } else {
         return error(64, "unknown_schema", "schema is not registered");
     };
@@ -589,7 +601,11 @@ fn validate_self(schema: Option<&str>) -> Response {
     if schema.is_some_and(|id| {
         id != CAPABILITIES_SCHEMA
             && id != sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA
+            && id != LINK_PLAN_SCHEMA
             && id != sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA
+            && id != sipi_contracts::PROJECT_PLAN_SCHEMA
+            && id != sipi_contracts::RECEIVER_INPUT_SCHEMA
+            && id != sipi_contracts::RECEIVER_SEMANTICS_SCHEMA
     }) {
         return error(64, "unknown_schema", "schema is not registered");
     }
@@ -603,7 +619,11 @@ fn validate_self(schema: Option<&str>) -> Response {
         && deterministic_json(&catalog).is_ok()
         && !RULE_LEDGER_V1.is_empty()
         && ibis_inspect_request_schema_json().is_ok()
-        && link_causal_fir_request_schema_json().is_ok();
+        && link_plan_schema_json().is_ok()
+        && link_causal_fir_request_schema_json().is_ok()
+        && project_plan_schema_json().is_ok()
+        && receiver_input_schema_json().is_ok()
+        && receiver_semantics_schema_json().is_ok();
     if valid {
         success(
             "{\"schema\":\"sipi.cli-validate.v1\",\"subject\":\"self\",\"status\":\"ok\"}"

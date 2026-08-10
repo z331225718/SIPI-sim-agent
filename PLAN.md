@@ -74,6 +74,7 @@ v0.2 不否定已完成的 M0-M4/M5 证据；它改变这些证据的用途。�
 - P1-07 `92fd319` 已完成 OMP 独立只读审计，结论 0 P1/0 P2；`sipi-pipeline` 只提供 immutable non-executing typed DAG validation 与确定性拓扑顺序，未接 runtime/artifact/cache 或领域执行。证据见 [2026-08-10-p1g-pipeline-foundation.md](docs/baselines/audits/2026-08-10-p1g-pipeline-foundation.md)。
 - P1-08 `7ea8a39` 已完成 OMP 独立只读审计，结论 0 P1/0 P2；`sipi-cli` 只提供静态 discovery/self-conformance surface，未接请求/asset/runtime/domain execution，完整 process I/O contract 留给 P1-09。证据见 [2026-08-10-p1h-cli-discovery.md](docs/baselines/audits/2026-08-10-p1h-cli-discovery.md)。
 - P1-09 `f67654d` 已完成 OMP 独立只读审计，结论 0 P1/0 P2；CLI 固定单请求/单响应 noninteractive contract，`validate --stdin` 只验证受限 P1 contract，`run` 仍 unsupported。证据见 [2026-08-10-p1i-cli-process-contract.md](docs/baselines/audits/2026-08-10-p1i-cli-process-contract.md)。
+- P6-01 `4fca0a3` 建立 quarantine 的 `sipi.project.v1` 声明式计划与非执行 planner：固定节点 catalog、typed artifact contract edge、资源、32-byte seed、requested output、确定性拓扑和 digest。它不执行节点、不接 CLI/project run/artifact/worker/外部资产；审计整改和证据见 [2026-08-11-p6-project-dag-contract.md](docs/baselines/audits/2026-08-11-p6-project-dag-contract.md)。
 - P2-01 `e7fbfd4` 已完成 OMP 独立只读审计，结论 0 P1/0 P2；固定 `agent-spice@2cc92316` 未含 `native/crates/sipi-circuit` tree，29 个目标 path 全部仍为 `quarantine/unknown`，没有 promotion。证据见 [2026-08-10-p2a-tran-provenance-preflight.md](docs/baselines/audits/2026-08-10-p2a-tran-provenance-preflight.md)。
 - P2-02a `ede13a3` 已完成 OMP 独立只读审计，结论 0 P1/0 P2；`sipi-tran` 仅为 std-only、显式 unsupported 的 package boundary，不导出 TRAN 领域 API 或路由。证据见 [2026-08-10-p2b-tran-package-foundation.md](docs/baselines/audits/2026-08-10-p2b-tran-package-foundation.md)。
 - P2-02b `05583cb` 已完成 OMP 独立只读审计，结论 0 P1/0 P2；`rc.cir` 已作为 required external-only profile 锚定，但采样、初值、环境和容差尚未确认，任何 passed/certified 结论仍会 fail-closed。证据见 [2026-08-10-p2c-rc-pulse-acceptance-contract.md](docs/baselines/audits/2026-08-10-p2c-rc-pulse-acceptance-contract.md)。
@@ -346,7 +347,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 
 ### 12.1 任务
 
-- [ ] **P6-01** 完成 Rust project/DAG contract：analysis nodes、typed artifact edges、资源、seed 和 outputs。
+- [x] **P6-01** 完成 Rust project/DAG contract：analysis nodes、typed artifact edges、资源、seed 和 outputs；当前仅声明/验证，不执行跨域 edge 或 project run。
 - [ ] **P6-02** 实现 TRAN/RFM -> Channel、IBIS/AMI -> Channel、Channel/COM 并行等首批 edge。
 - [ ] **P6-03** 所有 edge 校验 schema、单位、port map、policy 和 producer/consumer hash。
 - [ ] **P6-04** 完成 run status/cancel/retry/cache；retry 产生新 attempt，不改写旧证据。

@@ -1603,6 +1603,16 @@ mod tests {
     }
 
     #[test]
+    fn tracked_project_schema_baseline_is_exactly_the_registered_export() {
+        let baseline = include_bytes!("../schemas/sipi.project.v1.schema.json");
+        assert!(baseline.ends_with(b"\n"));
+        assert_eq!(
+            project_plan_schema_json().expect("schema"),
+            &baseline[..baseline.len() - 1]
+        );
+    }
+
+    #[test]
     fn tracked_schema_baseline_is_exactly_the_registered_export() {
         let baseline = include_bytes!("../schemas/sipi.capabilities.v1.schema.json");
         assert!(baseline.ends_with(b"\n"));
