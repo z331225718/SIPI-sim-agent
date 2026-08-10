@@ -243,7 +243,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 
 - [x] **P3B-01** 冻结 `sipi.link-plan.v1` 的 stimulus、timebase、`direct_launch` TX、future linear-convolution、bypass RX typed stage contract；P3A periodic DFT kernel 明确不作为 causal FIR 接受，执行与 equalizer 仍未开始。证据见 [2026-08-10-p3b-link-stage-contract.md](docs/baselines/audits/2026-08-10-p3b-link-stage-contract.md)。
 - [ ] **P3B-02** **P3B-02a 已完成：** `sipi-link` 仅实现 product-owned causal FIR full linear convolution，显式限制/数值溢出 fail-closed，CTLE/FFE 仍仅 bypass；equalizer 子集待明确 Link profile 与独立语义后开始。证据见 [2026-08-10-p3b-causal-fir-convolution.md](docs/baselines/audits/2026-08-10-p3b-causal-fir-convolution.md)。
-- [ ] **P3B-03** clean-room 实现 DFE/CDR/decision/BER 最小 profile。
+- [ ] **P3B-03** **P3B-03a 已完成：** `channel-rfm-block-2-current-drive-v1` 的 Git-object/current-drive receiver candidate admission preflight 已固定，并强制 `required_by: null` 与八项 owner 语义缺口；DFE/CDR/decision/BER 实现仍等待用户明确选择 required profile。证据见 [2026-08-10-p3b-receiver-candidate-readiness.md](docs/baselines/audits/2026-08-10-p3b-receiver-candidate-readiness.md)。
 - [ ] **P3B-04** stage-by-stage 比较 impulse、channel output、RX/FFE/DFE waveform、clock、decision、bits 和 errors。
 - [ ] **P3B-05** 对 deterministic seed、noise/jitter profile 和 missing stage fail closed。
 
