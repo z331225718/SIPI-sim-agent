@@ -375,6 +375,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "sipi-rx-load"
+version = "0.1.0"
+dependencies = [
+ "sipi-types",
+]
+
+[[package]]
 name = "sipi-tran"
 version = "0.1.0"
 dependencies = [

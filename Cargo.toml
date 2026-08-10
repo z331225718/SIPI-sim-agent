@@ -10,6 +10,7 @@ members = [
   "crates/sipi-link",
   "crates/sipi-pipeline",
   "crates/sipi-runtime",
+  "crates/sipi-rx-load",
   "crates/sipi-tran",
   "crates/sipi-types",
 ]

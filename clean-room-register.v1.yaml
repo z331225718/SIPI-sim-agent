@@ -401,6 +401,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: []
+  - id: p4a-selected-differential-rc-load-spec-v1
+    kind: independent_spec
+    content_sha256: 4d7c374a99053f2d3c6252a725fd06554708513260460b921607481429c8b82a
+    provenance:
+      source_ref: docs/clean-room/specs/p4a-selected-differential-rc-load.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p4a-electrical-endpoint-semantic-contract-spec-v1]
   - id: p4a-ibis71-behavior-scope-preflight-spec-v1
     kind: independent_spec
     content_sha256: 9182cb51e6f49b5c25b23bbd2f7e73fc27b07aab21305ce7a701f5f540154b78
@@ -836,6 +844,15 @@ scopes:
       implementer: [p4a-electrical-endpoint-semantic-contract-spec-v1]
       comparator: []
       auditor: [p4a-electrical-endpoint-semantic-contract-spec-v1]
+  - id: p4a-selected-differential-rc-load-v1
+    paths: [Cargo.toml, Cargo.lock, crates/sipi-rx-load/**, docs/clean-room/specs/p4a-selected-differential-rc-load.v1.md]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p4a-electrical-endpoint-semantic-contract-spec-v1, p4a-selected-differential-rc-load-spec-v1]
+      implementer: [p4a-electrical-endpoint-semantic-contract-spec-v1, p4a-selected-differential-rc-load-spec-v1]
+      comparator: []
+      auditor: [p4a-electrical-endpoint-semantic-contract-spec-v1, p4a-selected-differential-rc-load-spec-v1]
   - id: p4a-ibis71-behavior-scope-preflight-v1
     paths: [docs/baselines/p4a-ibis71-behavior-scope-preflight.v1.yaml, docs/clean-room/specs/p4a-ibis71-behavior-scope-preflight.v1.md, tools/verify_p4a_ibis71_behavior_scope_preflight.py, tools/test_verify_p4a_ibis71_behavior_scope_preflight.py]
     state: planned
