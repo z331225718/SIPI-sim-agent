@@ -34,6 +34,16 @@ does not select an AMI revision or support any reserved/model-specific
 parameter, coercion, default, binding, IBIS relationship, Init/GetWave/Close
 lifecycle, DLL, file I/O, CLI route, runtime, or external compatibility claim.
 
+## Exact Raw-Text Binding
+
+`parse_and_bind_v1()` is the only constructor for `RawAmiTextV1` and
+`AmiTextBindingV1`. It retains exactly the caller-provided bytes together with
+the successful structural document. It does not normalize line endings,
+Unicode, case, escapes, whitespace, or token spelling. `verify_binding_v1()`
+requires the caller to present the same bytes and reparses them under explicit
+limits before accepting the binding. This is an in-memory integrity boundary,
+not a provenance hash, file identity, AMI semantic binding, or ABI payload.
+
 ## Test Boundary
 
 Tests use only project-authored synthetic text. They do not read a `.ami`

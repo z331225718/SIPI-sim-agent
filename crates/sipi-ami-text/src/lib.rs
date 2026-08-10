@@ -97,6 +97,40 @@ pub struct AmiTextDocumentV1 {
     forms: Vec<AmiTextListV1>,
 }
 
+/// Caller-provided AMI text retained byte-for-byte after a successful parse.
+/// It has no path, origin, model, DLL, or semantic metadata.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RawAmiTextV1 {
+    bytes: Vec<u8>,
+}
+
+impl RawAmiTextV1 {
+    pub fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    pub const fn byte_len(&self) -> usize {
+        self.bytes.len()
+    }
+}
+
+/// Exact in-memory association of retained raw bytes and their structural AST.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AmiTextBindingV1 {
+    raw: RawAmiTextV1,
+    document: AmiTextDocumentV1,
+}
+
+impl AmiTextBindingV1 {
+    pub fn raw(&self) -> &RawAmiTextV1 {
+        &self.raw
+    }
+
+    pub fn document(&self) -> &AmiTextDocumentV1 {
+        &self.document
+    }
+}
+
 impl AmiTextDocumentV1 {
     pub fn forms(&self) -> &[AmiTextListV1] {
         &self.forms
@@ -203,6 +237,31 @@ impl fmt::Display for AmiTextDiagnosticV1 {
 
 impl Error for AmiTextDiagnosticV1 {}
 
+/// Fail-closed errors for an exact raw-text binding check.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum AmiTextBindingErrorV1 {
+    Parse(AmiTextDiagnosticV1),
+    RawBytesMismatch,
+    StructuralIdentityMismatch,
+}
+
+impl fmt::Display for AmiTextBindingErrorV1 {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Parse(error) => write!(formatter, "raw AMI text binding parse error: {error}"),
+            Self::RawBytesMismatch => write!(formatter, "raw AMI text bytes do not match binding"),
+            Self::StructuralIdentityMismatch => {
+                write!(
+                    formatter,
+                    "raw AMI text structural identity does not match binding"
+                )
+            }
+        }
+    }
+}
+
+impl Error for AmiTextBindingErrorV1 {}
+
 /// Semantic validation is intentionally unavailable in this structural layer.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AmiTextSemanticStatusV1 {
@@ -261,6 +320,38 @@ pub fn parse_ami_text_v1(
         parser.skip_ignorable()?;
     }
     Ok(AmiTextDocumentV1 { forms })
+}
+
+/// Parses and retains exactly one caller-provided raw AMI text byte sequence.
+/// No newline, Unicode, case, or token-spelling normalization is performed.
+pub fn parse_and_bind_v1(
+    bytes: &[u8],
+    limits: ParseLimitsV1,
+) -> Result<AmiTextBindingV1, AmiTextDiagnosticV1> {
+    let document = parse_ami_text_v1(bytes, limits)?;
+    Ok(AmiTextBindingV1 {
+        raw: RawAmiTextV1 {
+            bytes: bytes.to_vec(),
+        },
+        document,
+    })
+}
+
+/// Verifies that supplied bytes exactly match a binding and reconstruct the
+/// same structural document under explicit limits.
+pub fn verify_binding_v1(
+    bytes: &[u8],
+    binding: &AmiTextBindingV1,
+    limits: ParseLimitsV1,
+) -> Result<(), AmiTextBindingErrorV1> {
+    if bytes != binding.raw.bytes() {
+        return Err(AmiTextBindingErrorV1::RawBytesMismatch);
+    }
+    let document = parse_ami_text_v1(bytes, limits).map_err(AmiTextBindingErrorV1::Parse)?;
+    if document != binding.document {
+        return Err(AmiTextBindingErrorV1::StructuralIdentityMismatch);
+    }
+    Ok(())
 }
 
 struct Parser<'a> {
@@ -628,5 +719,26 @@ mod tests {
             AmiTextSemanticStatusV1::RulesUnavailable
         );
         assert_eq!(ParseLimitsV1::try_new(0, 1, 1, 1), Err(LimitErrorV1::Zero));
+    }
+
+    #[test]
+    fn binds_exact_raw_bytes_without_normalizing_or_accepting_drift() {
+        let source = b"(key \"A\\\\B\"\r\n  value)";
+        let binding = parse_and_bind_v1(source, limits()).expect("binding");
+        assert_eq!(binding.raw().bytes(), source);
+        assert_eq!(binding.raw().byte_len(), source.len());
+        verify_binding_v1(source, &binding, limits()).expect("exact binding");
+        assert_eq!(
+            verify_binding_v1(b"(key \"A\\\\B\"\n  value)", &binding, limits()),
+            Err(AmiTextBindingErrorV1::RawBytesMismatch)
+        );
+        let forged = AmiTextBindingV1 {
+            raw: binding.raw.clone(),
+            document: parse_ami_text_v1(b"(other)", limits()).expect("other document"),
+        };
+        assert_eq!(
+            verify_binding_v1(source, &forged, limits()),
+            Err(AmiTextBindingErrorV1::StructuralIdentityMismatch)
+        );
     }
 }
