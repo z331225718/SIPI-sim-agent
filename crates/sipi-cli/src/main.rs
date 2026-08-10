@@ -23,6 +23,207 @@ use sipi_types::AxisView;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const TARGET: &str = "x86_64-pc-windows-msvc";
+const COMMAND_MANIFEST_SCHEMA: &str = "sipi.command-manifest.v1";
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum CommandAvailabilityV1 {
+    Available,
+    Unavailable,
+}
+
+impl CommandAvailabilityV1 {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::Available => "available",
+            Self::Unavailable => "unavailable",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct CommandDescriptorV1 {
+    id: &'static str,
+    route: &'static [&'static str],
+    availability: CommandAvailabilityV1,
+    transport: &'static str,
+    request_schema: Option<&'static str>,
+    response_schema: Option<&'static str>,
+    unavailable_reason: Option<&'static str>,
+    nonclaim: &'static str,
+}
+
+const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
+    CommandDescriptorV1 {
+        id: "version",
+        route: &["version"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "none",
+        request_schema: None,
+        response_schema: Some("sipi.cli-version.v1"),
+        unavailable_reason: None,
+        nonclaim: "static_product_identity_only",
+    },
+    CommandDescriptorV1 {
+        id: "doctor",
+        route: &["doctor"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "none",
+        request_schema: None,
+        response_schema: Some("sipi.cli-doctor.v1"),
+        unavailable_reason: None,
+        nonclaim: "external_runtime_not_checked",
+    },
+    CommandDescriptorV1 {
+        id: "capabilities",
+        route: &["capabilities"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "none",
+        request_schema: None,
+        response_schema: Some(CAPABILITIES_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "capabilities_are_scope_limited",
+    },
+    CommandDescriptorV1 {
+        id: "commands",
+        route: &["commands"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "none",
+        request_schema: None,
+        response_schema: Some(COMMAND_MANIFEST_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "command_discovery_only",
+    },
+    CommandDescriptorV1 {
+        id: "schema",
+        route: &["schema"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "none",
+        request_schema: None,
+        response_schema: Some("sipi.cli-schema-list.v1"),
+        unavailable_reason: None,
+        nonclaim: "schema_discovery_only",
+    },
+    CommandDescriptorV1 {
+        id: "validate",
+        route: &["validate"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some("sipi.validation-request.v1"),
+        response_schema: Some("sipi.cli-validate.v1"),
+        unavailable_reason: None,
+        nonclaim: "validation_does_not_execute_a_simulation",
+    },
+    CommandDescriptorV1 {
+        id: "inspect.self",
+        route: &["inspect", "self"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "none",
+        request_schema: None,
+        response_schema: Some("sipi.cli-inspect.v1"),
+        unavailable_reason: None,
+        nonclaim: "static_discovery_only",
+    },
+    CommandDescriptorV1 {
+        id: "ibis.inspect",
+        route: &["ibis", "inspect"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some(sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA),
+        response_schema: Some("sipi.ibis.inspect.response.v1"),
+        unavailable_reason: None,
+        nonclaim: "structural_inspection_only",
+    },
+    CommandDescriptorV1 {
+        id: "tran.run",
+        route: &["tran", "run"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some(sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA),
+        response_schema: Some("sipi.tran.run-result.v1"),
+        unavailable_reason: None,
+        nonclaim: "fixed_rc_pulse_profile_only",
+    },
+    CommandDescriptorV1 {
+        id: "link.run",
+        route: &["link", "run"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some(sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA),
+        response_schema: Some("sipi.link.run-result.v1"),
+        unavailable_reason: None,
+        nonclaim: "causal_fir_direct_launch_only",
+    },
+    CommandDescriptorV1 {
+        id: "channel.run",
+        route: &["channel", "run"],
+        availability: CommandAvailabilityV1::Unavailable,
+        transport: "none",
+        request_schema: None,
+        response_schema: None,
+        unavailable_reason: Some("channel_profile_not_admitted"),
+        nonclaim: "no_s_parameter_or_channel_resolver",
+    },
+    CommandDescriptorV1 {
+        id: "ami.run",
+        route: &["ami", "run"],
+        availability: CommandAvailabilityV1::Unavailable,
+        transport: "none",
+        request_schema: None,
+        response_schema: None,
+        unavailable_reason: Some("ami_runtime_not_admitted"),
+        nonclaim: "no_vendor_dll_or_ami_workflow",
+    },
+    CommandDescriptorV1 {
+        id: "com.run",
+        route: &["com", "run"],
+        availability: CommandAvailabilityV1::Unavailable,
+        transport: "none",
+        request_schema: None,
+        response_schema: None,
+        unavailable_reason: Some("com_profile_not_admitted"),
+        nonclaim: "no_com_solver_or_oracle_workflow",
+    },
+    CommandDescriptorV1 {
+        id: "project.validate",
+        route: &["project", "validate"],
+        availability: CommandAvailabilityV1::Unavailable,
+        transport: "none",
+        request_schema: None,
+        response_schema: None,
+        unavailable_reason: Some("project_execution_not_implemented"),
+        nonclaim: "no_project_execution",
+    },
+    CommandDescriptorV1 {
+        id: "project.run",
+        route: &["project", "run"],
+        availability: CommandAvailabilityV1::Unavailable,
+        transport: "none",
+        request_schema: None,
+        response_schema: None,
+        unavailable_reason: Some("project_execution_not_implemented"),
+        nonclaim: "no_project_execution",
+    },
+    CommandDescriptorV1 {
+        id: "compare.run",
+        route: &["compare", "run"],
+        availability: CommandAvailabilityV1::Unavailable,
+        transport: "none",
+        request_schema: None,
+        response_schema: None,
+        unavailable_reason: Some("external_comparator_not_exposed"),
+        nonclaim: "no_oracle_or_comparison_workflow",
+    },
+    CommandDescriptorV1 {
+        id: "report.show",
+        route: &["report", "show"],
+        availability: CommandAvailabilityV1::Unavailable,
+        transport: "none",
+        request_schema: None,
+        response_schema: None,
+        unavailable_reason: Some("artifact_report_viewer_not_implemented"),
+        nonclaim: "no_artifact_or_provenance_viewer",
+    },
+];
 
 struct Response {
     code: i32,
@@ -400,9 +601,120 @@ fn dispatch(arguments: &[String]) -> Response {
     CommandService::execute(arguments)
 }
 
+fn command_manifest_is_valid(manifest: &[CommandDescriptorV1]) -> bool {
+    manifest.iter().enumerate().all(|(index, descriptor)| {
+        !descriptor.id.is_empty()
+            && !descriptor.route.is_empty()
+            && descriptor.route.iter().all(|token| {
+                !token.is_empty()
+                    && token
+                        .bytes()
+                        .all(|byte| byte.is_ascii_lowercase() || byte == b'-')
+            })
+            && matches!(descriptor.transport, "none" | "stdin_json_v1")
+            && match descriptor.availability {
+                CommandAvailabilityV1::Available => {
+                    descriptor.unavailable_reason.is_none()
+                        && available_route_has_handler(descriptor.route)
+                }
+                CommandAvailabilityV1::Unavailable => {
+                    descriptor.unavailable_reason.is_some()
+                        && !available_route_has_handler(descriptor.route)
+                }
+            }
+            && manifest[..index]
+                .iter()
+                .all(|previous| previous.id != descriptor.id && previous.route != descriptor.route)
+    })
+}
+
+fn available_route_has_handler(route: &[&str]) -> bool {
+    matches!(
+        route,
+        ["version"]
+            | ["doctor"]
+            | ["capabilities"]
+            | ["commands"]
+            | ["schema"]
+            | ["validate"]
+            | ["inspect", "self"]
+            | ["ibis", "inspect"]
+            | ["tran", "run"]
+            | ["link", "run"]
+    )
+}
+
+fn descriptor_for_route(arguments: &[String]) -> Option<&'static CommandDescriptorV1> {
+    COMMAND_MANIFEST_V1.iter().find(|descriptor| {
+        arguments.len() >= descriptor.route.len()
+            && arguments
+                .iter()
+                .zip(descriptor.route)
+                .all(|(argument, token)| argument == token)
+    })
+}
+
+fn command_manifest_json() -> String {
+    let commands = COMMAND_MANIFEST_V1
+        .iter()
+        .map(|descriptor| {
+            let route = descriptor
+                .route
+                .iter()
+                .map(|token| format!("\"{token}\""))
+                .collect::<Vec<_>>()
+                .join(",");
+            let request_schema = descriptor
+                .request_schema
+                .map_or_else(|| "null".to_owned(), |schema| format!("\"{schema}\""));
+            let response_schema = descriptor
+                .response_schema
+                .map_or_else(|| "null".to_owned(), |schema| format!("\"{schema}\""));
+            let reason = descriptor.unavailable_reason.map_or_else(
+                || "null".to_owned(),
+                |reason| format!("\"{reason}\""),
+            );
+            format!(
+                "{{\"id\":\"{}\",\"route\":[{route}],\"availability\":\"{}\",\"transport\":\"{}\",\"request_schema\":{request_schema},\"response_schema\":{response_schema},\"unavailable_reason\":{reason},\"nonclaim\":\"{}\"}}",
+                descriptor.id,
+                descriptor.availability.as_str(),
+                descriptor.transport,
+                descriptor.nonclaim,
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    format!("{{\"schema\":\"{COMMAND_MANIFEST_SCHEMA}\",\"commands\":[{commands}]}}")
+}
+
+fn unavailable(descriptor: &CommandDescriptorV1) -> Response {
+    let reason = descriptor
+        .unavailable_reason
+        .expect("validated unavailable descriptor has a reason");
+    Response {
+        code: 4,
+        stdout: Some(format!(
+            "{{\"schema\":\"sipi.command-unavailable.v1\",\"command_id\":\"{}\",\"reason\":\"{reason}\"}}",
+            descriptor.id
+        )),
+        stderr: Some("capability_unavailable".to_owned()),
+    }
+}
+
 impl CommandService {
     fn execute(arguments: &[String]) -> Response {
+        if !command_manifest_is_valid(COMMAND_MANIFEST_V1) {
+            return error(6, "internal_contract_error", "command manifest is invalid");
+        }
+        if let Some(descriptor) = descriptor_for_route(arguments)
+            && descriptor.availability == CommandAvailabilityV1::Unavailable
+        {
+            return unavailable(descriptor);
+        }
         match arguments {
+            [command, format] if command == "commands" && format == "--json" => {
+                success(command_manifest_json())
+            }
             [command] if command == "--version" || command == "version" => success(version_json()),
             [command, format] if command == "version" && format == "--json" => {
                 success(version_json())
@@ -532,9 +844,9 @@ fn capabilities_json() -> String {
     let capabilities = PLANNED_DOMAINS
         .iter()
         .map(|domain| {
-            if *domain == "tran" {
+            if *domain == "tran" && manifest_available("tran.run") {
                 "{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"}".to_owned()
-            } else if *domain == "channel" {
+            } else if *domain == "channel" && manifest_available("link.run") {
                 "{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"causal_fir_link_only\"}".to_owned()
             } else {
                 format!(
@@ -547,6 +859,13 @@ fn capabilities_json() -> String {
     format!(
         "{{\"schema\":\"{CAPABILITIES_SCHEMA}\",\"product\":{{\"name\":\"sipi\",\"version\":\"{VERSION}\"}},\"platform\":{{\"target\":\"{TARGET}\",\"certification\":\"uncertified\"}},\"capabilities\":[{capabilities}]}}"
     )
+}
+
+fn manifest_available(id: &str) -> bool {
+    COMMAND_MANIFEST_V1
+        .iter()
+        .find(|descriptor| descriptor.id == id)
+        .is_some_and(|descriptor| descriptor.availability == CommandAvailabilityV1::Available)
 }
 
 fn doctor_json() -> String {
@@ -639,7 +958,9 @@ fn validate_self(schema: Option<&str>) -> Response {
 }
 
 fn inspect_self_json() -> String {
-    "{\"schema\":\"sipi.cli-inspect.v1\",\"subject\":\"self\",\"scope\":\"static_discovery\",\"status\":\"quarantine\"}".to_owned()
+    format!(
+        "{{\"schema\":\"sipi.cli-inspect.v1\",\"subject\":\"self\",\"scope\":\"static_discovery\",\"status\":\"quarantine\",\"command_manifest\":\"{COMMAND_MANIFEST_SCHEMA}\"}}"
+    )
 }
 
 fn inspect_capability(id: &str) -> Response {
@@ -679,6 +1000,77 @@ mod tests {
                 "{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"},{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"causal_fir_link_only\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]}"
             )
         );
+    }
+
+    #[test]
+    fn command_manifest_is_canonical_and_unavailable_routes_fail_closed() {
+        assert!(command_manifest_is_valid(COMMAND_MANIFEST_V1));
+        let manifest = command_manifest_json();
+        assert!(manifest.starts_with("{\"schema\":\"sipi.command-manifest.v1\""));
+        assert!(manifest.contains("\"id\":\"tran.run\""));
+        assert!(manifest.contains("\"id\":\"ami.run\""));
+        let commands_response = dispatch(&args(&["commands", "--json"]));
+        assert_eq!(commands_response.code, 0);
+        assert_eq!(commands_response.stdout.as_deref(), Some(manifest.as_str()));
+
+        for command in [
+            ["channel", "run"].as_slice(),
+            ["ami", "run"].as_slice(),
+            ["com", "run"].as_slice(),
+            ["project", "validate"].as_slice(),
+            ["project", "run"].as_slice(),
+            ["compare", "run"].as_slice(),
+            ["report", "show"].as_slice(),
+        ] {
+            let response = dispatch(&args(command));
+            assert_eq!(response.code, 4);
+            assert_eq!(response.stderr.as_deref(), Some("capability_unavailable"));
+            assert!(
+                response
+                    .stdout
+                    .as_deref()
+                    .is_some_and(|value| value.contains("command_id"))
+            );
+        }
+    }
+
+    #[test]
+    fn malformed_command_manifest_entries_are_rejected() {
+        let duplicate = [
+            CommandDescriptorV1 {
+                id: "one",
+                route: &["one"],
+                availability: CommandAvailabilityV1::Available,
+                transport: "none",
+                request_schema: None,
+                response_schema: None,
+                unavailable_reason: None,
+                nonclaim: "test",
+            },
+            CommandDescriptorV1 {
+                id: "two",
+                route: &["one"],
+                availability: CommandAvailabilityV1::Available,
+                transport: "none",
+                request_schema: None,
+                response_schema: None,
+                unavailable_reason: None,
+                nonclaim: "test",
+            },
+        ];
+        assert!(!command_manifest_is_valid(&duplicate));
+
+        let unavailable_with_handler = [CommandDescriptorV1 {
+            id: "bad",
+            route: &["tran", "run"],
+            availability: CommandAvailabilityV1::Unavailable,
+            transport: "none",
+            request_schema: None,
+            response_schema: None,
+            unavailable_reason: Some("test"),
+            nonclaim: "test",
+        }];
+        assert!(!command_manifest_is_valid(&unavailable_with_handler));
     }
 
     #[test]

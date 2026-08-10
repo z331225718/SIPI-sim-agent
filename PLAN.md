@@ -351,7 +351,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 - [ ] **P6-02** **P6-02a 已完成：** 固定 `tran-rc-pulse-v1` 的 `voltage_in` 可经严格四点/`1 us` axis admission 原样成为 DirectLaunch causal-FIR stimulus，并复用唯一 TRAN solver 和 causal-FIR convolution；无重采样、S2P periodic kernel、RFM/IBIS/AMI/COM、project executor、CLI 或 artifact route。其余首批 edge 继续等待对应产品能力与 profile。
 - [ ] **P6-03** **P6-03a 已完成：** 现有 fixed TRAN→causal-FIR edge 具有专用 schema、单端 voltage/common-reference map、单位/axis admission、policy 与 canonical f64-bit SHA-256 input/output identity record，并可从 typed values重算校验；它不是通用 edge schema、artifact/provenance、project executor 或外部连接。其余 edge 待能力到位后分别纳入。
 - [ ] **P6-04** **P6-04a 已完成：** 唯一 fixed TRAN→causal-FIR edge 可在调用者提供的协作式 `RunContext` 中执行 attempt `1`，共享 TRAN/FIR checkpoint 和 checked work/byte admission；取消、deadline、资源或计算失败不返回 result/record。retry、cache、持久状态与 project executor 仍未实现。
-- [ ] **P6-05** 完成 `tran/channel/ibis/ami/com/project/compare/inspect/report` 命令面。
+- [ ] **P6-05** **P6-05a 已完成：** 版本化 command manifest 成为当前命令发现、capabilities 与 dispatcher 的单一来源；实际 handler 保持 available，`channel/ami/com/project/compare/report` 被识别后以稳定 `capability_unavailable` fail-closed。project execution、channel resolver、AMI/COM、compare/report workflow 仍待各自能力完成。
 - [ ] **P6-06** 稳定 JSON/NDJSON、exit code、schema discovery、example request 和 capability diagnostics。
 - [ ] **P6-07** 建立 AI conformance：从 `schema + capabilities` 可构造合法请求，错误无需解析任意文本。
 - [ ] **P6-08** 建立端到端 artifact/provenance viewer/report；不泄露绝对路径和私有资产内容。
