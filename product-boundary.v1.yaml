@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 04dd4779bc745a39d82e60d59844f753f8ac25cdf13b748005c3c282ce3cdd43
+  tracked_paths_sha256: 5b3632e30ebf49e09c7611ca533d78dbaedcb6d420af5d83a0f639f952861ee8
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -738,6 +738,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p4a-ibis-example-rx-candidate-inventory.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p4a-receiver-topology-boundary.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
