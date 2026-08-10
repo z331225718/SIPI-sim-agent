@@ -1,5 +1,5 @@
 schema: sipi.p4a-ibis-input-typ-static-acceptance.v1
-status: required_pending_i_v_compare
+status: required_accepted_external_compare
 profile:
   id: ibis-org-sample1-input-typ-static-v2
   required_by: user-authorized-implementer-selection-2026-08-11

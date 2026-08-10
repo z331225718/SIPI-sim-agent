@@ -63,7 +63,7 @@ def load_charter(path: Path) -> tuple[dict, str]:
     required = {"schema", "status", "profile", "stimulus", "observable", "comparison", "non_claims"}
     if set(value) != required or value["schema"] != "sipi.p4a-ibis-input-typ-static-acceptance.v1":
         raise CompareError("charter_shape_invalid")
-    if value["status"] != "required_pending_i_v_compare":
+    if value["status"] != "required_accepted_external_compare":
         raise CompareError("charter_status_invalid")
     source = value["profile"].get("source") if isinstance(value["profile"], dict) else None
     comparison = value.get("comparison")

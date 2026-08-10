@@ -33,7 +33,7 @@ def _sha256(value: object) -> bool:
 
 def validate(document: object) -> dict:
     root = _exact(document, {"schema", "status", "profile", "stimulus", "observable", "comparison", "non_claims"})
-    if root["schema"] != SCHEMA or root["status"] != "required_pending_i_v_compare":
+    if root["schema"] != SCHEMA or root["status"] != "required_accepted_external_compare":
         raise ValueError("manifest_status_invalid")
     profile = _exact(root["profile"], {"id", "required_by", "boundary", "source", "terminal_binding", "corner", "model_scope", "package_scope", "vt_ramp_scope"})
     source = _exact(profile["source"], {"canonical_url", "content_sha256", "byte_length", "selector_utf8_sha256"})

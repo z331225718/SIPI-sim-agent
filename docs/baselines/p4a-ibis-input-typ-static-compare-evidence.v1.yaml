@@ -1,0 +1,21 @@
+schema: sipi.p4a-ibis-input-typ-static-compare-evidence.v1
+status: accepted
+profile_id: ibis-org-sample1-input-typ-static-v2
+charter_sha256: c2f8a900e217a525f0959836a53538501802524ac72ebc7c7fef06e8a3f0fcda
+external_report:
+  schema: sipi.p4a.ibis-input-typ-static-compare.v1
+  sha256: 5814c96e947a2bc059e1fb76e2d44f48e78f80d837bc2ac5506896892c6dcf32
+  custody: operator_external_only
+identity:
+  asset_sha256: 46c53a49a31dea27769f0dddddadea72f03f1f956fb8e60aeaa24f83a7201b95
+  selector_sha256: 0be75aff11736ab3fee529275984551c241433d189ba1a21bad1b0e0e70fd2ff
+  table_fingerprint: 98cc6ba59ef0c1e6770e5656dc78d75a9e0938a0c2ae9510d0b5fcec722a2037
+replays:
+  fresh_custody_runs: 2
+  raw_observation_sha256: 25c5f62f03ff6d0561bf4050afb7be74de93ffb656e230c3e82bf4a334363b03
+  product_result_sha256: acc857bffa5fd1a46327c4a688dd2980b3a6668690e432bd46df5d66e5c7efb6
+  max_abs_error_a: 0.0
+  max_rel_error: 0.0
+non_claims:
+  - The report and every external asset, selector, raw table, request, and probe remain outside the worktree.
+  - This evidence accepts only the selected Input/TYP static DC clamp profile, not general IBIS, package, PVT, V-T, ramp, AMI, terminal network, or release behavior.
