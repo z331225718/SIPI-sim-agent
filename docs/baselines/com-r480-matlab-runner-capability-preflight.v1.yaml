@@ -1,0 +1,40 @@
+schema: sipi.com.r480.matlab-runner-capability-preflight.v1
+profile:
+  id: com-r480-envelope-v1
+  required: true
+  availability_preflight:
+    path: docs/baselines/com-r480-reference-availability-preflight.v1.yaml
+    content_sha256: ca44d298350f1ab2c4d8f270450359290d4ec28868a6735508c7efe5b6b4a582
+runner_observation:
+  status: indeterminate_startup_isolation_unproven
+  external_report:
+    schema: sipi.com.matlab-runner-probe-report.v1
+    content_sha256: f6b1fc48d2749b22c6d2cb4c0ff0b9edfa7131237a5f06ad2cbec1872aa2df16
+    custody: external_only
+  runner:
+    logical_name: matlab
+    platform: windows-x86_64
+    executable_sha256: 4b0fcf8112211ad1ae6ef5e51df0801d7afbe89c4daaac45473a46e1de16e633
+    executable_byte_length: 458288
+  builtin_identity:
+    release: 2024b
+    version: 24.2.0.2712019 (R2024b)
+    platform: PCWIN64
+  probe:
+    id: matlab-builtins-version-sentinel-v1
+    template_sha256: 746b5480ad1108441771d270d02a6dad76f321c909bc2b04ca69c342f8a69219
+    timeout_seconds: 30
+    startup_isolation: unproven
+  result:
+    timed_out: false
+    sentinel_observed: true
+    license_runtime_observation: unknown
+reference_gate:
+  status: reference_generation_blocked
+  remaining_blockers: [startup_isolation_unproven, oracle_authorization_unestablished, exact_normalized_input_missing, parameter_defaults_not_observed, reference_metric_bundle_missing, tolerance_and_alignment_policy_missing]
+  product_runtime: forbidden
+  product_api_created: false
+non_claims:
+  - The runner path, report path, captured stream contents, license key, server identity, and external COM material are not tracked.
+  - This probe does not establish MATLAB use rights, an authorized R480 oracle, R480 execution, a reference output, or parity.
+  - The clean-room Rust product has no MATLAB runtime dependency or COM API from this preflight.
