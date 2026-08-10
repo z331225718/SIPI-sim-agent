@@ -1,0 +1,54 @@
+schema: sipi.p4a-electrical-endpoint-semantic-contract.v1
+status: selected_pending_reference_and_acceptance_policy
+promotion_eligible: false
+profile:
+  id: rx-electrical-load-diff100-cload1pf-per-leg-v1
+  selected_by: user-confirmed-2026-08-10-per-leg-c-load
+  required: false
+  runtime_status: not_supported
+terminals:
+  - {id: p, role: differential_positive}
+  - {id: n, role: differential_negative}
+  - {id: ref, role: endpoint_reference_terminal}
+components:
+  - id: r_diff
+    kind: resistor
+    value_ohm: 100.0
+    endpoints: [p, n]
+    passive_current_direction: p_to_n
+  - id: c_p_ref
+    kind: capacitor
+    value_pf: 1.0
+    endpoints: [p, ref]
+    passive_current_direction: into_p
+  - id: c_n_ref
+    kind: capacitor
+    value_pf: 1.0
+    endpoints: [n, ref]
+    passive_current_direction: into_n
+conventions:
+  differential_voltage: V_p_minus_V_n
+  reference_default: forbidden
+  global_ground_or_node_zero_default: forbidden
+  total_differential_equivalent_substitution: forbidden
+  solver_semantics: not_defined
+acceptance_status:
+  state: blocked
+  blockers:
+    - explicit_ref_to_channel_return_binding
+    - stimulus_timebase_and_initial_state
+    - observable_alignment_and_tolerance
+    - external_or_product_owned_acceptance_evidence
+future_capabilities:
+  - id: c_across_pair
+    terminals: [p, n]
+    status: planned_not_supported
+    non_equivalence: not_inferred_from_per_leg_capacitors
+  - id: single_ended_channel
+    terminals: [sig, ref]
+    status: planned_not_supported
+    non_equivalence: not_inferred_by_removing_n_from_differential_profile
+non_claims:
+  - This contract is a selected electrical topology, not a solved termination or accepted profile.
+  - REF is an explicit endpoint terminal and is not an implicit global ground or node zero.
+  - No parser, channel resolver, CLI route, IBIS/AMI composition, or runtime load support is added.

@@ -385,6 +385,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: []
+  - id: p4a-electrical-endpoint-semantic-contract-spec-v1
+    kind: independent_spec
+    content_sha256: 6771243c125bfe53fd5212d9a2e8e82d68c14166a8cdd412d7c7f3cbb3fac106
+    provenance:
+      source_ref: docs/clean-room/specs/p4a-electrical-endpoint-semantic-contract.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: []
 scopes:
   - id: clean-room-process-template-v1
     paths: [docs/clean-room/**]
@@ -674,4 +682,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p4a-electrical-ibis-discovery-spec-v1]
+  - id: p4a-electrical-endpoint-semantic-contract-v1
+    paths: [docs/baselines/p4a-electrical-endpoint-semantic-contract.v1.yaml, docs/clean-room/specs/p4a-electrical-endpoint-semantic-contract.v1.md, tools/verify_p4a_electrical_endpoint_semantic_contract.py, tools/test_verify_p4a_electrical_endpoint_semantic_contract.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p4a-electrical-endpoint-semantic-contract-spec-v1]
+      implementer: [p4a-electrical-endpoint-semantic-contract-spec-v1]
+      comparator: []
+      auditor: [p4a-electrical-endpoint-semantic-contract-spec-v1]
 attestations: []

@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 1693e826439284ee0fc988ebd0f8b270ef68a9d9189cb1daae55346d92420343
+  tracked_paths_sha256: 155b45c24fb37c19efc6e0894f62f453460f0e171b86c53928a36042d5b4091f
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -911,6 +911,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p4a-electrical-endpoint-semantic-contract.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p4a-electrical-ibis-discovery.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -1194,6 +1200,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3b-rfm-receiver-handoff-replay.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p4a-electrical-endpoint-semantic-contract.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5807,6 +5819,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p4a_electrical_endpoint_semantic_contract.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p4a_electrical_ibis_discovery.py:
       rule: migration-tools
       class: migration_only
@@ -6048,6 +6066,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3b_link_stage_capabilities.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p4a_electrical_endpoint_semantic_contract.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
