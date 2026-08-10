@@ -19,6 +19,7 @@ pub const VALIDATION_REQUEST_SCHEMA: &str = "sipi.validation-request.v1";
 pub const TRAN_RC_PULSE_REQUEST_SCHEMA: &str = "sipi.tran.rc-pulse-request.v1";
 pub const LINK_PLAN_SCHEMA: &str = "sipi.link-plan.v1";
 pub const RECEIVER_INPUT_SCHEMA: &str = "sipi.receiver-input.v1";
+pub const RECEIVER_SEMANTICS_SCHEMA: &str = "sipi.receiver-semantics.v1";
 pub const PLANNED_DOMAINS: [&str; 4] = ["tran", "channel", "ibis-ami", "com"];
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -28,6 +29,7 @@ pub enum ContractError {
     Version,
     Link(LinkContractError),
     Receiver(ReceiverContractError),
+    ReceiverSemantics(ReceiverSemanticContractError),
 }
 
 impl fmt::Display for ContractError {
@@ -38,6 +40,7 @@ impl fmt::Display for ContractError {
             Self::Version => write!(formatter, "unsupported contract version"),
             Self::Link(error) => error.fmt(formatter),
             Self::Receiver(error) => error.fmt(formatter),
+            Self::ReceiverSemantics(error) => error.fmt(formatter),
         }
     }
 }
@@ -59,6 +62,12 @@ impl From<LinkContractError> for ContractError {
 impl From<ReceiverContractError> for ContractError {
     fn from(value: ReceiverContractError) -> Self {
         Self::Receiver(value)
+    }
+}
+
+impl From<ReceiverSemanticContractError> for ContractError {
+    fn from(value: ReceiverSemanticContractError) -> Self {
+        Self::ReceiverSemantics(value)
     }
 }
 
@@ -98,6 +107,31 @@ impl fmt::Display for ReceiverContractError {
 }
 
 impl Error for ReceiverContractError {}
+
+/// Stable rejections for a caller-supplied receiver semantic preparation.
+///
+/// This describes no receiver algorithm. It only prevents future callers from
+/// omitting the reference bits, fixed feedback coefficients, sampling plan, or
+/// BER observation window that an algorithm would need.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ReceiverSemanticContractError {
+    EmptyKnownBits,
+    EmptyDfeCoefficients,
+    InvalidDfeCursor,
+    EmptyClockPlan,
+    NonIncreasingClockSamples,
+    EmptyBerWindow,
+    BerWindowOverflow,
+    BerWindowExceedsKnownBits,
+}
+
+impl fmt::Display for ReceiverSemanticContractError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "invalid receiver semantic preparation: {self:?}")
+    }
+}
+
+impl Error for ReceiverSemanticContractError {}
 
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -155,7 +189,7 @@ pub struct RuleLedgerEntry {
     pub test_id: &'static str,
 }
 
-pub const RULE_LEDGER_V1: [RuleLedgerEntry; 11] = [
+pub const RULE_LEDGER_V1: [RuleLedgerEntry; 13] = [
     RuleLedgerEntry {
         id: "contract.v1.version",
         owner: "contract",
@@ -232,6 +266,20 @@ pub const RULE_LEDGER_V1: [RuleLedgerEntry; 11] = [
         wire_type: "receiver_input",
         code: "unsupported_stage",
         test_id: "receiver_frontend_is_bypass_only",
+    },
+    RuleLedgerEntry {
+        id: "receiver.semantics.v1.explicit-inputs",
+        owner: "contract",
+        wire_type: "receiver_semantics",
+        code: "missing_receiver_semantics",
+        test_id: "receiver_semantics_require_explicit_inputs",
+    },
+    RuleLedgerEntry {
+        id: "receiver.semantics.v1.window",
+        owner: "contract",
+        wire_type: "receiver_semantics",
+        code: "invalid_ber_window",
+        test_id: "receiver_semantics_validate_window",
     },
 ];
 
@@ -659,6 +707,156 @@ pub struct ReceiverInputV1 {
     frontend: RxStagesV1,
 }
 
+/// Caller-supplied preparation for a future receiver algorithm.
+///
+/// No method in this crate evaluates DFE feedback, recovers a clock, makes a
+/// decision, or computes BER. The values deliberately have no default.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireReceiverSemanticsV1 {
+    pub schema: String,
+    pub known_bits: WireKnownBitsV1,
+    pub dfe: WireFixedDfeCoefficientsV1,
+    pub clock: WireClockRecoveryPlanV1,
+    pub ber: WireBerWindowV1,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireKnownBitsV1 {
+    pub bits: Vec<bool>,
+    pub positive_voltage_is_one: bool,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireFixedDfeCoefficientsV1 {
+    pub coefficients: Vec<f64>,
+    pub cursor_index: usize,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum WireClockRecoveryPlanV1 {
+    ExplicitSampleIndices { sample_indices: Vec<usize> },
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireBerWindowV1 {
+    pub start_symbol: usize,
+    pub symbol_count: usize,
+    pub decision_threshold_volts: f64,
+    pub ties: WireDecisionTiePolicyV1,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum WireDecisionTiePolicyV1 {
+    Reject,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ReceiverSemanticsV1 {
+    known_bits: Vec<bool>,
+    positive_voltage_is_one: bool,
+    dfe_coefficients: Vec<FiniteF64>,
+    dfe_cursor_index: usize,
+    clock_sample_indices: Vec<usize>,
+    ber_start_symbol: usize,
+    ber_symbol_count: NonZeroUsize,
+    decision_threshold: Volts,
+}
+
+impl ReceiverSemanticsV1 {
+    pub fn known_bits(&self) -> &[bool] {
+        &self.known_bits
+    }
+
+    pub fn positive_voltage_is_one(&self) -> bool {
+        self.positive_voltage_is_one
+    }
+
+    pub fn dfe_coefficients(&self) -> &[FiniteF64] {
+        &self.dfe_coefficients
+    }
+
+    pub fn dfe_cursor_index(&self) -> usize {
+        self.dfe_cursor_index
+    }
+
+    pub fn clock_sample_indices(&self) -> &[usize] {
+        &self.clock_sample_indices
+    }
+
+    pub fn ber_start_symbol(&self) -> usize {
+        self.ber_start_symbol
+    }
+
+    pub fn ber_symbol_count(&self) -> NonZeroUsize {
+        self.ber_symbol_count
+    }
+
+    pub fn decision_threshold(&self) -> Volts {
+        self.decision_threshold
+    }
+}
+
+impl TryFrom<WireReceiverSemanticsV1> for ReceiverSemanticsV1 {
+    type Error = ContractError;
+
+    fn try_from(value: WireReceiverSemanticsV1) -> Result<Self, Self::Error> {
+        require_receiver_semantics_schema(&value.schema)?;
+        if value.known_bits.bits.is_empty() {
+            return Err(ReceiverSemanticContractError::EmptyKnownBits.into());
+        }
+        if value.dfe.coefficients.is_empty() {
+            return Err(ReceiverSemanticContractError::EmptyDfeCoefficients.into());
+        }
+        if value.dfe.cursor_index >= value.dfe.coefficients.len() {
+            return Err(ReceiverSemanticContractError::InvalidDfeCursor.into());
+        }
+        let dfe_coefficients = value
+            .dfe
+            .coefficients
+            .into_iter()
+            .map(|value| FiniteF64::try_new(value, "DFE coefficient"))
+            .collect::<Result<Vec<_>, _>>()?;
+        let clock_sample_indices = match value.clock {
+            WireClockRecoveryPlanV1::ExplicitSampleIndices { sample_indices } => sample_indices,
+        };
+        if clock_sample_indices.is_empty() {
+            return Err(ReceiverSemanticContractError::EmptyClockPlan.into());
+        }
+        if clock_sample_indices
+            .windows(2)
+            .any(|pair| pair[0] >= pair[1])
+        {
+            return Err(ReceiverSemanticContractError::NonIncreasingClockSamples.into());
+        }
+        let ber_symbol_count = NonZeroUsize::new(value.ber.symbol_count)
+            .ok_or(ReceiverSemanticContractError::EmptyBerWindow)?;
+        let ber_end = value
+            .ber
+            .start_symbol
+            .checked_add(ber_symbol_count.get())
+            .ok_or(ReceiverSemanticContractError::BerWindowOverflow)?;
+        if ber_end > value.known_bits.bits.len() {
+            return Err(ReceiverSemanticContractError::BerWindowExceedsKnownBits.into());
+        }
+        Ok(Self {
+            known_bits: value.known_bits.bits,
+            positive_voltage_is_one: value.known_bits.positive_voltage_is_one,
+            dfe_coefficients,
+            dfe_cursor_index: value.dfe.cursor_index,
+            clock_sample_indices,
+            ber_start_symbol: value.ber.start_symbol,
+            ber_symbol_count,
+            decision_threshold: Volts::try_new(value.ber.decision_threshold_volts)?,
+        })
+    }
+}
+
 impl ReceiverInputV1 {
     pub fn try_new(
         timebase: UniformTimebaseV1,
@@ -748,6 +946,12 @@ impl From<&ReceiverInputV1> for WireReceiverInputV1 {
 
 pub fn parse_receiver_input_v1(input: &[u8]) -> Result<ReceiverInputV1, ContractError> {
     serde_json::from_slice::<WireReceiverInputV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
+pub fn parse_receiver_semantics_v1(input: &[u8]) -> Result<ReceiverSemanticsV1, ContractError> {
+    serde_json::from_slice::<WireReceiverSemanticsV1>(input)
         .map_err(|error| ContractError::Json(error.to_string()))?
         .try_into()
 }
@@ -891,6 +1095,10 @@ pub fn receiver_input_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireReceiverInputV1))
 }
 
+pub fn receiver_semantics_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(WireReceiverSemanticsV1))
+}
+
 fn require_schema(schema: &str) -> Result<(), ContractError> {
     if schema == "sipi.contract.v1" {
         Ok(())
@@ -909,6 +1117,14 @@ fn require_link_schema(schema: &str) -> Result<(), ContractError> {
 
 fn require_receiver_schema(schema: &str) -> Result<(), ContractError> {
     if schema == RECEIVER_INPUT_SCHEMA {
+        Ok(())
+    } else {
+        Err(ContractError::Version)
+    }
+}
+
+fn require_receiver_semantics_schema(schema: &str) -> Result<(), ContractError> {
+    if schema == RECEIVER_SEMANTICS_SCHEMA {
         Ok(())
     } else {
         Err(ContractError::Version)
@@ -1178,6 +1394,94 @@ mod tests {
             receiver_input_schema_json()
                 .expect("schema")
                 .starts_with(b"{")
+        );
+    }
+
+    fn required_receiver_semantics_wire() -> WireReceiverSemanticsV1 {
+        WireReceiverSemanticsV1 {
+            schema: RECEIVER_SEMANTICS_SCHEMA.to_owned(),
+            known_bits: WireKnownBitsV1 {
+                bits: vec![false, true, true, false],
+                positive_voltage_is_one: true,
+            },
+            dfe: WireFixedDfeCoefficientsV1 {
+                coefficients: vec![0.0, 0.25],
+                cursor_index: 0,
+            },
+            clock: WireClockRecoveryPlanV1::ExplicitSampleIndices {
+                sample_indices: vec![3, 11, 19, 27],
+            },
+            ber: WireBerWindowV1 {
+                start_symbol: 1,
+                symbol_count: 3,
+                decision_threshold_volts: 0.0,
+                ties: WireDecisionTiePolicyV1::Reject,
+            },
+        }
+    }
+
+    #[test]
+    fn receiver_semantics_require_explicit_inputs_without_an_algorithm() {
+        let wire = required_receiver_semantics_wire();
+        let semantics = ReceiverSemanticsV1::try_from(wire).expect("explicit inputs");
+        assert_eq!(semantics.known_bits(), [false, true, true, false]);
+        assert_eq!(semantics.dfe_coefficients().len(), 2);
+        assert_eq!(semantics.clock_sample_indices(), [3, 11, 19, 27]);
+        assert_eq!(semantics.ber_start_symbol(), 1);
+        assert_eq!(semantics.ber_symbol_count().get(), 3);
+        assert_eq!(semantics.decision_threshold().get(), 0.0);
+        assert!(parse_receiver_semantics_v1(
+            br#"{"schema":"sipi.receiver-semantics.v1","known_bits":{"bits":[true],"positive_voltage_is_one":true},"dfe":{"coefficients":[0.0],"cursor_index":0},"clock":{"kind":"explicit_sample_indices","sample_indices":[0]},"ber":{"start_symbol":0,"symbol_count":1,"decision_threshold_volts":0.0,"ties":{"kind":"reject"}},"legacy_cdr":{"kind":"bang_bang"}}"#
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn receiver_semantics_validate_window_and_clock_without_defaults() {
+        let mut wire = required_receiver_semantics_wire();
+        wire.dfe.coefficients.clear();
+        assert_eq!(
+            ReceiverSemanticsV1::try_from(wire),
+            Err(ContractError::ReceiverSemantics(
+                ReceiverSemanticContractError::EmptyDfeCoefficients
+            ))
+        );
+        let mut wire = required_receiver_semantics_wire();
+        wire.clock = WireClockRecoveryPlanV1::ExplicitSampleIndices {
+            sample_indices: vec![3, 3],
+        };
+        assert_eq!(
+            ReceiverSemanticsV1::try_from(wire),
+            Err(ContractError::ReceiverSemantics(
+                ReceiverSemanticContractError::NonIncreasingClockSamples
+            ))
+        );
+        let mut wire = required_receiver_semantics_wire();
+        wire.ber.symbol_count = 4;
+        assert_eq!(
+            ReceiverSemanticsV1::try_from(wire),
+            Err(ContractError::ReceiverSemantics(
+                ReceiverSemanticContractError::BerWindowExceedsKnownBits
+            ))
+        );
+    }
+
+    #[test]
+    fn receiver_semantics_schema_is_available_from_the_contract_authority() {
+        assert!(
+            receiver_semantics_schema_json()
+                .expect("schema")
+                .starts_with(b"{")
+        );
+    }
+
+    #[test]
+    fn tracked_receiver_semantics_schema_baseline_is_exactly_the_registered_export() {
+        let baseline = include_bytes!("../schemas/sipi.receiver-semantics.v1.schema.json");
+        assert!(baseline.ends_with(b"\n"));
+        assert_eq!(
+            receiver_semantics_schema_json().expect("schema"),
+            &baseline[..baseline.len() - 1]
         );
     }
 

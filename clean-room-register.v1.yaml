@@ -233,6 +233,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3b-link-stage-contract-spec-v1]
+  - id: p3b-receiver-semantics-preparation-spec-v1
+    kind: independent_spec
+    content_sha256: a948eb18f536c34baf430885db07d1f956f2a4030e992dcb77f3b03d5914b172
+    provenance:
+      source_ref: docs/clean-room/specs/p3b-receiver-semantics-preparation.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p3b-rfm-receiver-boundary-spec-v1]
   - id: pybert-channel-16ghz-3db-fixture-f6ba031
     kind: oracle_fixture
     content_sha256: 9d4cfeaad7c971fa45454f639b40e08c538855058f326fbdec64298b8933b5ad
@@ -411,4 +419,13 @@ scopes:
       implementer: [p3b-rfm-receiver-boundary-spec-v1]
       comparator: []
       auditor: [p3b-rfm-receiver-boundary-spec-v1]
+  - id: p3b-receiver-semantics-preparation-v1
+    paths: [docs/clean-room/specs/p3b-receiver-semantics-preparation.v1.md, crates/sipi-contracts/**]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3b-receiver-semantics-preparation-spec-v1]
+      implementer: [p3b-receiver-semantics-preparation-spec-v1]
+      comparator: []
+      auditor: [p3b-receiver-semantics-preparation-spec-v1]
 attestations: []
