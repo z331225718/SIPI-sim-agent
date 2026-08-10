@@ -104,6 +104,15 @@ fn run_fixed_tran(artifact_root: &str, artifact_id: &str, request: &[u8]) -> Res
         Ok(policy) => policy,
         Err(_) => return error(6, "internal_failure", "run policy is unavailable"),
     };
+    run_fixed_tran_with_policy(artifact_root, artifact_id, request, policy)
+}
+
+fn run_fixed_tran_with_policy(
+    artifact_root: &str,
+    artifact_id: &str,
+    request: &[u8],
+    policy: RunPolicy,
+) -> Response {
     let id = match RunId::try_new(artifact_id) {
         Ok(id) => id,
         Err(_) => return error(2, "invalid_artifact_id", "artifact id is invalid"),
@@ -504,6 +513,22 @@ mod tests {
             run_fixed_tran(&root_text, "rc-pulse-1", rc_pulse_request()).code,
             5
         );
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn accounted_byte_limit_rejects_before_an_artifact_can_be_published() {
+        let nonce = TEST_NONCE.fetch_add(1, Ordering::Relaxed);
+        let root = std::env::temp_dir().join(format!("sipi-cli-tran-quota-{nonce}"));
+        let root_text = root.to_string_lossy();
+        let policy = RunPolicy::try_new(Duration::from_secs(1), 16, 1).expect("policy");
+
+        let response =
+            run_fixed_tran_with_policy(&root_text, "rc-pulse-1", rc_pulse_request(), policy);
+
+        assert_eq!(response.code, 5);
+        assert_eq!(response.stderr.as_deref(), Some("operational_failure"));
+        assert!(!root.join("rc-pulse-1").join("success.json").exists());
         let _ = std::fs::remove_dir_all(root);
     }
 }

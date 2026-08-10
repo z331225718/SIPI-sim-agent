@@ -1,7 +1,38 @@
-use std::process::Command;
+use std::{
+    io::Write,
+    path::Path,
+    process::{Command, Output, Stdio},
+};
 
 fn sipi() -> Command {
     Command::new(env!("CARGO_BIN_EXE_sipi"))
+}
+
+const RC_PULSE_REQUEST: &[u8] = br#"{"schema":"sipi.tran.rc-pulse-request.v1","request_id":"rc-pulse-1","resistance_ohms":1000.0,"capacitance_farads":0.000001,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000001,0.000002,0.000003],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.0,"delay_seconds":0.000001,"rise_seconds":0.000000001,"fall_seconds":0.000000001,"width_seconds":0.00001,"period_seconds":0.00002}}"#;
+
+fn run_fixed_tran(root: &Path) -> Output {
+    let mut child = sipi()
+        .args([
+            "tran",
+            "run",
+            "--stdin",
+            "--artifact-root",
+            root.to_string_lossy().as_ref(),
+            "--artifact-id",
+            "rc-pulse-1",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start sipi");
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(RC_PULSE_REQUEST)
+        .expect("write request");
+    child.wait_with_output().expect("wait sipi")
 }
 
 #[test]
@@ -45,7 +76,6 @@ fn stdin_validation_is_noninteractive_and_contract_checked() {
         .stderr(std::process::Stdio::piped())
         .spawn()
         .expect("start sipi");
-    use std::io::Write;
     child
         .stdin
         .take()
@@ -64,31 +94,8 @@ fn stdin_validation_is_noninteractive_and_contract_checked() {
 
 #[test]
 fn fixed_tran_stdin_run_publishes_a_two_file_artifact() {
-    let request = br#"{"schema":"sipi.tran.rc-pulse-request.v1","request_id":"rc-pulse-1","resistance_ohms":1000.0,"capacitance_farads":0.000001,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000001,0.000002,0.000003],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.0,"delay_seconds":0.000001,"rise_seconds":0.000000001,"fall_seconds":0.000000001,"width_seconds":0.00001,"period_seconds":0.00002}}"#;
     let root = std::env::temp_dir().join(format!("sipi-cli-process-tran-{}", std::process::id()));
-    let mut child = sipi()
-        .args([
-            "tran",
-            "run",
-            "--stdin",
-            "--artifact-root",
-            root.to_string_lossy().as_ref(),
-            "--artifact-id",
-            "rc-pulse-1",
-        ])
-        .stdin(std::process::Stdio::piped())
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .spawn()
-        .expect("start sipi");
-    use std::io::Write;
-    child
-        .stdin
-        .take()
-        .expect("stdin")
-        .write_all(request)
-        .expect("write request");
-    let output = child.wait_with_output().expect("wait sipi");
+    let output = run_fixed_tran(&root);
     assert!(output.status.success());
     assert!(
         String::from_utf8(output.stdout)
@@ -99,5 +106,32 @@ fn fixed_tran_stdin_run_publishes_a_two_file_artifact() {
     assert!(root.join("rc-pulse-1").join("success.json").is_file());
     assert!(root.join("rc-pulse-1").join("result.json").is_file());
     assert!(root.join("rc-pulse-1").join("provenance.json").is_file());
+    let success = std::fs::read(root.join("rc-pulse-1").join("success.json")).expect("success");
+    let result = std::fs::read(root.join("rc-pulse-1").join("result.json")).expect("result");
+    let provenance =
+        std::fs::read(root.join("rc-pulse-1").join("provenance.json")).expect("provenance");
+
+    let duplicate = run_fixed_tran(&root);
+    assert_eq!(duplicate.status.code(), Some(5));
+    assert_eq!(
+        String::from_utf8(duplicate.stdout).expect("duplicate stdout"),
+        "{\"schema\":\"sipi.cli.response.v1\",\"protocol\":1,\"command\":\"tran\",\"request_id\":null,\"status\":\"failed\",\"result\":null,\"diagnostic_count\":1}\n"
+    );
+    assert_eq!(
+        String::from_utf8(duplicate.stderr).expect("duplicate stderr"),
+        "{\"schema\":\"sipi.cli.diagnostic.v1\",\"sequence\":1,\"severity\":\"error\",\"code\":\"operational_failure\",\"command\":\"tran\",\"request_id\":null,\"location\":null,\"message\":\"command failed\"}\n"
+    );
+    assert_eq!(
+        std::fs::read(root.join("rc-pulse-1").join("success.json")).expect("success"),
+        success
+    );
+    assert_eq!(
+        std::fs::read(root.join("rc-pulse-1").join("result.json")).expect("result"),
+        result
+    );
+    assert_eq!(
+        std::fs::read(root.join("rc-pulse-1").join("provenance.json")).expect("provenance"),
+        provenance
+    );
     let _ = std::fs::remove_dir_all(root);
 }

@@ -161,6 +161,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p2-tran-rc-pulse-semantic-contract-spec-v1]
+  - id: p2-tran-failure-gates-spec-v1
+    kind: independent_spec
+    content_sha256: 759ecb6753c919d9f28fb9316847033c0e3e3f3fc30d3d3048ecde56eb394f5a
+    provenance:
+      source_ref: docs/clean-room/specs/p2-tran-failure-gates.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-fixed-cli-run-spec-v1]
   - id: agent-spice-license-2cc92316
     kind: mit_source
     content_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
@@ -246,8 +254,8 @@ scopes:
     state: planned
     role_material_allowlists:
       observer: []
-      spec_author: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1]
-      implementer: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1]
+      spec_author: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-failure-gates-spec-v1]
+      implementer: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-failure-gates-spec-v1]
       comparator: []
-      auditor: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1]
+      auditor: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-failure-gates-spec-v1]
 attestations: []
