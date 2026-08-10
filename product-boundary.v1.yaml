@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 0e76442c6f78117950cbfeb48a6162e7ea56edca436cc7502651ada964b182f7
+  tracked_paths_sha256: 450842a70664f41bc849f4e03e75f689fa7eb243b71f06267a3903fb1b46445e
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -894,6 +894,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-11-p4a-ibis-selected-dc-clamp-decoder.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-11-p4a-ibis-structural-inspect.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
