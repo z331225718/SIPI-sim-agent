@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: e737d817ea349b1bdfefa18852211b4b121f69c9a846f85798bf3081859f216e
+  tracked_paths_sha256: 4e3e92317ec69ca2cbde6bd9e2c513500a63e7d636eaa1fd0bb4f4ded148409c
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -732,6 +732,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p3b-rfm-reference-bits-preflight.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p4b-ami-candidate-quarantine-preflight.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
