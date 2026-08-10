@@ -1,0 +1,15 @@
+[package]
+name = "sipi-channel"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Clean-room matched two-port channel kernel primitive."
+
+[dependencies]
+rustfft = "6.4.1"
+sipi-types = { path = "../sipi-types" }
+
+[lints]
+workspace = true

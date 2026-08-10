@@ -309,4 +309,13 @@ scopes:
       implementer: [p3a-s2p-matched-channel-spec-v1]
       comparator: [p3a-s2p-matched-channel-acceptance-spec-v1]
       auditor: [p3a-s2p-matched-channel-spec-v1, p3a-s2p-matched-channel-acceptance-spec-v1]
+  - id: p3a-s2p-matched-channel-resolver-v1
+    paths: [crates/sipi-channel/**]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3a-s2p-matched-channel-spec-v1]
+      implementer: [p3a-s2p-matched-channel-spec-v1]
+      comparator: []
+      auditor: [p3a-s2p-matched-channel-spec-v1]
 attestations: []

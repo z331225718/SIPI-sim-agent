@@ -2,7 +2,7 @@ schema: sipi.license-manifest.v2
 status: provisional
 release_boundary:
   path: product-boundary.v1.yaml
-  sha256: f21abaa1879aead258faa8b62a0a134230f1dd8ae24c44625314e1cc893b6008
+  sha256: 1581843e5f79acc1008db305290a3d698aafb1c3aec9c52c5061832b8babddfe
   status: provisional
 legacy_evidence:
   - id: legacy-license-manifest-v1
@@ -22,6 +22,18 @@ release_inputs:
     source_ref: null
     sha256: null
   dependencies:
+    - id: rust-rustfft
+      component: rustfft
+      role: runtime
+      source: https://crates.io/crates/rustfft
+      requested_version: "6.4.1"
+      resolved_artifact: {version: null, sha256: null}
+      declared_spdx: pending-observation
+      license_evidence_ref: evidence/third-party/rustfft-license-pending
+      notice_requirement: pending
+      sbom_component_id: pkg:cargo/rustfft@6.4.1
+      status: pending
+      owner_action: {owner: sipi-license-owner, action: review rustfft and locked transitive distribution and NOTICE, approval_ref: null}
     - id: rust-serde
       component: serde
       role: runtime
@@ -143,6 +155,10 @@ release_inputs:
       status: pending
       owner_action: {owner: sipi-license-owner, action: review quarantined sipi-circuit vecfit dependency and NOTICE, approval_ref: null}
   notices:
+    - dependency: rust-rustfft
+      status: pending
+      source_evidence_ref: evidence/third-party/rustfft-license-pending
+      output_notice_id: NOTICE/rustfft
     - dependency: rust-serde
       status: pending
       source_evidence_ref: evidence/third-party/serde-license-pending

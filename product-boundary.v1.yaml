@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 6892900714c758a9c103d0914831c70b1d72c050e0dd710f79ab43cc4723de47
+  tracked_paths_sha256: e4e6686225f53dc69542fc298d926cc1fe4b144aac2690509250033074cd23c2
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -96,6 +96,18 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-artifacts/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-channel/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-channel/src/lib.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
