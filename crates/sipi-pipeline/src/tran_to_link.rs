@@ -10,8 +10,15 @@ use sha2::{Digest, Sha256};
 use sipi_contracts::{
     CausalFirChannelV1, LinkContractError, LinkPlanV1, RxStagesV1, TxStageV1, UniformTimebaseV1,
 };
-use sipi_link::{ConvolutionLimitsV1, LinkError, ReceivedVoltageSamplesV1, convolve_causal_fir_v1};
-use sipi_tran::{RcPulseTransientResultV1, RcPulseTransientV1, TranError, simulate_rc_pulse};
+use sipi_link::{
+    ConvolutionLimitsV1, LinkError, ReceivedVoltageSamplesV1, convolve_causal_fir_v1,
+    convolve_causal_fir_with_context_v1,
+};
+use sipi_runtime::{ResourceCost, RunContext, Runtime, RuntimeFailure};
+use sipi_tran::{
+    RcPulseTransientResultV1, RcPulseTransientV1, TranError, simulate_rc_pulse,
+    simulate_rc_pulse_with_context,
+};
 use sipi_types::{AxisView, Seconds, TypeError, Waveform};
 
 const FIXED_LAUNCH_TIMES_S: [f64; 4] = [0.0, 1.0e-6, 2.0e-6, 3.0e-6];
@@ -23,6 +30,7 @@ pub const TRAN_RC_PULSE_TO_CAUSAL_FIR_EDGE_SCHEMA_V1: &str =
     "sipi.edge.tran-rc-pulse-to-causal-fir.v1";
 const EDGE_IMPLEMENTATION_REVISION_V1: &str = "p6-03a";
 const EDGE_SIGNAL_MAP_V1: &str = "single_ended_voltage_to_common_reference";
+const EDGE_ATTEMPT_SCHEMA_V1: &str = "sipi.edge-attempt.tran-rc-pulse-to-causal-fir.v1";
 
 /// A validated launch artifact derived only from `tran-rc-pulse-v1` input voltage.
 #[derive(Clone, Debug, PartialEq)]
@@ -143,6 +151,35 @@ impl TranRcPulseToCausalFirEdgeRecordV1 {
 pub struct RecordedTranToLinkExecutionV1 {
     received: ReceivedVoltageSamplesV1,
     record: TranRcPulseToCausalFirEdgeRecordV1,
+}
+
+/// The sole successful cooperative execution attempt for this fixed edge.
+///
+/// Attempt numbering is deliberately fixed at one; P6-04a has no retry,
+/// cache, artifact publication, or project executor.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CompletedEdgeAttemptV1 {
+    schema: &'static str,
+    attempt_index: u64,
+    execution: RecordedTranToLinkExecutionV1,
+}
+
+impl CompletedEdgeAttemptV1 {
+    pub const fn schema(&self) -> &'static str {
+        self.schema
+    }
+
+    pub const fn attempt_index(&self) -> u64 {
+        self.attempt_index
+    }
+
+    pub fn received(&self) -> &ReceivedVoltageSamplesV1 {
+        self.execution.received()
+    }
+
+    pub fn record(&self) -> &TranRcPulseToCausalFirEdgeRecordV1 {
+        self.execution.record()
+    }
 }
 
 impl RecordedTranToLinkExecutionV1 {
@@ -297,6 +334,34 @@ pub fn run_fixed_tran_to_causal_fir_recorded_v1(
     Ok(RecordedTranToLinkExecutionV1 { received, record })
 }
 
+/// Executes the one admitted edge as a single cooperative attempt.
+///
+/// A cancellation, timeout, resource exhaustion, validation error, or numeric
+/// failure returns no edge result or record. The caller owns the supplied run
+/// context and may inspect its terminal state; successful attempts are always
+/// numbered one because retry and caching are intentionally not implemented.
+pub fn run_fixed_tran_to_causal_fir_with_context_v1(
+    request: RcPulseTransientV1,
+    consumer: &CausalFirConsumerConfigV1,
+    context: &RunContext,
+) -> Result<CompletedEdgeAttemptV1, RuntimeFailure> {
+    Runtime::execute(context, |context| {
+        let cost = edge_resource_cost(consumer).map_err(|_| ())?;
+        context.consume(cost).map_err(|_| ())?;
+        let result = simulate_rc_pulse_with_context(request, context).map_err(|_| ())?;
+        let launch = derive_fixed_tran_launch_v1(&result).map_err(|_| ())?;
+        let plan = build_direct_launch_plan_v1(&launch, consumer).map_err(|_| ())?;
+        let received = convolve_causal_fir_with_context_v1(&plan, consumer.limits(), context)
+            .map_err(|_| ())?;
+        let record = record_for_v1(&launch, consumer, &received).map_err(|_| ())?;
+        Ok::<_, ()>(CompletedEdgeAttemptV1 {
+            schema: EDGE_ATTEMPT_SCHEMA_V1,
+            attempt_index: 1,
+            execution: RecordedTranToLinkExecutionV1 { received, record },
+        })
+    })
+}
+
 /// Binds the supplied typed launch, causal-FIR policy, and output identities.
 pub fn record_tran_rc_pulse_to_causal_fir_v1(
     launch: &TranRcPulseLaunchArtifactV1,
@@ -323,6 +388,36 @@ fn admit_fixed_launch_waveform(
     }
     Ok(TranRcPulseLaunchArtifactV1 {
         waveform: waveform.clone(),
+    })
+}
+
+fn edge_resource_cost(
+    consumer: &CausalFirConsumerConfigV1,
+) -> Result<ResourceCost, TranToLinkEdgeError> {
+    let launch_count = u64::try_from(FIXED_LAUNCH_TIMES_S.len())
+        .map_err(|_| TranToLinkEdgeError::Link(LinkError::ResourceLimitExceeded))?;
+    let gain_count = u64::try_from(consumer.channel.gain().len())
+        .map_err(|_| TranToLinkEdgeError::Link(LinkError::ResourceLimitExceeded))?;
+    let convolution_work = launch_count
+        .checked_mul(gain_count)
+        .ok_or(TranToLinkEdgeError::Link(LinkError::ResourceLimitExceeded))?;
+    let work_units = launch_count
+        .checked_add(convolution_work)
+        .ok_or(TranToLinkEdgeError::Link(LinkError::ResourceLimitExceeded))?;
+    let received_count = launch_count
+        .checked_add(gain_count)
+        .and_then(|count| count.checked_sub(1))
+        .ok_or(TranToLinkEdgeError::Link(LinkError::ResourceLimitExceeded))?;
+    let stored_samples = launch_count
+        .checked_mul(3)
+        .and_then(|count| count.checked_add(received_count))
+        .ok_or(TranToLinkEdgeError::Link(LinkError::ResourceLimitExceeded))?;
+    let accounted_bytes = stored_samples
+        .checked_mul(u64::try_from(std::mem::size_of::<f64>()).expect("f64 size fits u64"))
+        .ok_or(TranToLinkEdgeError::Link(LinkError::ResourceLimitExceeded))?;
+    Ok(ResourceCost {
+        work_units,
+        accounted_bytes,
     })
 }
 
@@ -444,6 +539,9 @@ fn hash_f64(hasher: &mut Sha256, value: f64) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
+
+    use sipi_runtime::{CancelReason, RunId, RunPolicy, RunState};
     use sipi_types::{Axis, FiniteF64, Volts};
 
     fn consumer(gain: &[f64], max_output: usize) -> CausalFirConsumerConfigV1 {
@@ -458,6 +556,14 @@ mod tests {
             )
             .unwrap(),
             ConvolutionLimitsV1::try_new(max_output, 64).unwrap(),
+        )
+        .unwrap()
+    }
+
+    fn context(work_units: u64, accounted_bytes: u64) -> (sipi_runtime::RunController, RunContext) {
+        Runtime::start(
+            RunId::try_new("p6-edge-attempt").unwrap(),
+            RunPolicy::try_new(Duration::from_secs(1), work_units, accounted_bytes).unwrap(),
         )
         .unwrap()
     }
@@ -621,5 +727,55 @@ mod tests {
             tampered.verify_against(&launch, &first_consumer, &first_received),
             Err(TranToLinkEdgeError::EdgeRecordMismatch)
         ));
+    }
+
+    #[test]
+    fn cooperative_attempt_matches_recorded_execution_and_is_numbered_once() {
+        let consumer = consumer(&[1.0, 0.5], 5);
+        let expected = run_fixed_tran_to_causal_fir_recorded_v1(
+            RcPulseTransientV1::fixed_profile(),
+            &consumer,
+        )
+        .unwrap();
+        let (controller, run_context) = context(64, 256);
+        let attempt = run_fixed_tran_to_causal_fir_with_context_v1(
+            RcPulseTransientV1::fixed_profile(),
+            &consumer,
+            &run_context,
+        )
+        .unwrap();
+
+        assert_eq!(attempt.schema(), EDGE_ATTEMPT_SCHEMA_V1);
+        assert_eq!(attempt.attempt_index(), 1);
+        assert_eq!(attempt.received(), expected.received());
+        assert_eq!(attempt.record(), expected.record());
+        assert_eq!(controller.state(), RunState::Succeeded);
+    }
+
+    #[test]
+    fn cooperative_attempt_cancellation_and_budget_fail_without_a_record() {
+        let consumer = consumer(&[1.0, 0.5], 5);
+        let (controller, run_context) = context(64, 256);
+        controller.cancel(CancelReason::Requested);
+        assert_eq!(
+            run_fixed_tran_to_causal_fir_with_context_v1(
+                RcPulseTransientV1::fixed_profile(),
+                &consumer,
+                &run_context,
+            ),
+            Err(RuntimeFailure::Cancelled)
+        );
+        assert_eq!(controller.state(), RunState::Cancelled);
+
+        let (controller, run_context) = context(1, 1);
+        assert_eq!(
+            run_fixed_tran_to_causal_fir_with_context_v1(
+                RcPulseTransientV1::fixed_profile(),
+                &consumer,
+                &run_context,
+            ),
+            Err(RuntimeFailure::ResourceExceeded)
+        );
+        assert_eq!(controller.state(), RunState::ResourceExceeded);
     }
 }

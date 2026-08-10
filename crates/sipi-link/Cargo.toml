@@ -9,6 +9,7 @@ description = "Clean-room causal FIR Link and fixed receiver primitives."
 
 [dependencies]
 sipi-contracts = { path = "../sipi-contracts" }
+sipi-runtime = { path = "../sipi-runtime" }
 sipi-types = { path = "../sipi-types" }
 
 [lints]

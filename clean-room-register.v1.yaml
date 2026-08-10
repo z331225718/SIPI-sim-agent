@@ -105,6 +105,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p6-tran-to-link-edge-spec-v1, p1-pipeline-foundation-spec-v1]
+  - id: p6-tran-to-link-edge-attempt-spec-v1
+    kind: independent_spec
+    content_sha256: 0ff873bbfef36bda3448aad003e8bea37b6077c0153aeb6062be42fca3de2d31
+    provenance:
+      source_ref: docs/clean-room/specs/p6-tran-to-link-edge-attempt.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p6-tran-to-link-edge-spec-v1, p6-tran-to-link-edge-record-spec-v1, p1-runtime-foundation-spec-v1, p3b-causal-fir-convolution-spec-v1]
   - id: p1-cli-discovery-spec-v1
     kind: independent_spec
     content_sha256: 47ebafe76d3b55c98244ea4b55a07c3e773f4a7443ab1d5a040bb9ae87387131
@@ -612,14 +620,14 @@ scopes:
       comparator: []
       auditor: [independent-spec-template-v1]
   - id: p1-unsupported-cli-foundation-v1
-    paths: [Cargo.toml, Cargo.lock, rust-toolchain.toml, crates/**, docs/clean-room/specs/p6-project-dag-contract.v1.md, docs/clean-room/specs/p6-tran-to-link-edge.v1.md, docs/clean-room/specs/p6-tran-to-link-edge-record.v1.md]
+    paths: [Cargo.toml, Cargo.lock, rust-toolchain.toml, crates/**, docs/clean-room/specs/p6-project-dag-contract.v1.md, docs/clean-room/specs/p6-tran-to-link-edge.v1.md, docs/clean-room/specs/p6-tran-to-link-edge-record.v1.md, docs/clean-room/specs/p6-tran-to-link-edge-attempt.v1.md]
     state: planned
     role_material_allowlists:
       observer: []
-      spec_author: [p1-unsupported-cli-foundation-spec-v1, p1-types-foundation-spec-v1, p1-contracts-foundation-spec-v1, p1-artifacts-foundation-spec-v1, p1-runtime-foundation-spec-v1, p1-pipeline-foundation-spec-v1, p6-project-dag-contract-spec-v1, p6-tran-to-link-edge-spec-v1, p6-tran-to-link-edge-record-spec-v1, p1-cli-discovery-spec-v1, p1-cli-process-contract-spec-v1, p1-release-layout-verifier-spec-v1, p1-windows-locked-build-gate-spec-v1]
-      implementer: [p1-unsupported-cli-foundation-spec-v1, p1-types-foundation-spec-v1, p1-contracts-foundation-spec-v1, p1-artifacts-foundation-spec-v1, p1-runtime-foundation-spec-v1, p1-pipeline-foundation-spec-v1, p6-project-dag-contract-spec-v1, p6-tran-to-link-edge-spec-v1, p6-tran-to-link-edge-record-spec-v1, p1-cli-discovery-spec-v1, p1-cli-process-contract-spec-v1, p1-release-layout-verifier-spec-v1, p1-windows-locked-build-gate-spec-v1]
+      spec_author: [p1-unsupported-cli-foundation-spec-v1, p1-types-foundation-spec-v1, p1-contracts-foundation-spec-v1, p1-artifacts-foundation-spec-v1, p1-runtime-foundation-spec-v1, p1-pipeline-foundation-spec-v1, p6-project-dag-contract-spec-v1, p6-tran-to-link-edge-spec-v1, p6-tran-to-link-edge-record-spec-v1, p6-tran-to-link-edge-attempt-spec-v1, p1-cli-discovery-spec-v1, p1-cli-process-contract-spec-v1, p1-release-layout-verifier-spec-v1, p1-windows-locked-build-gate-spec-v1]
+      implementer: [p1-unsupported-cli-foundation-spec-v1, p1-types-foundation-spec-v1, p1-contracts-foundation-spec-v1, p1-artifacts-foundation-spec-v1, p1-runtime-foundation-spec-v1, p1-pipeline-foundation-spec-v1, p6-project-dag-contract-spec-v1, p6-tran-to-link-edge-spec-v1, p6-tran-to-link-edge-record-spec-v1, p6-tran-to-link-edge-attempt-spec-v1, p1-cli-discovery-spec-v1, p1-cli-process-contract-spec-v1, p1-release-layout-verifier-spec-v1, p1-windows-locked-build-gate-spec-v1]
       comparator: []
-      auditor: [p1-unsupported-cli-foundation-spec-v1, p1-types-foundation-spec-v1, p1-contracts-foundation-spec-v1, p1-artifacts-foundation-spec-v1, p1-runtime-foundation-spec-v1, p1-pipeline-foundation-spec-v1, p6-project-dag-contract-spec-v1, p6-tran-to-link-edge-spec-v1, p6-tran-to-link-edge-record-spec-v1, p1-cli-discovery-spec-v1, p1-cli-process-contract-spec-v1, p1-release-layout-verifier-spec-v1, p1-windows-locked-build-gate-spec-v1]
+      auditor: [p1-unsupported-cli-foundation-spec-v1, p1-types-foundation-spec-v1, p1-contracts-foundation-spec-v1, p1-artifacts-foundation-spec-v1, p1-runtime-foundation-spec-v1, p1-pipeline-foundation-spec-v1, p6-project-dag-contract-spec-v1, p6-tran-to-link-edge-spec-v1, p6-tran-to-link-edge-record-spec-v1, p6-tran-to-link-edge-attempt-spec-v1, p1-cli-discovery-spec-v1, p1-cli-process-contract-spec-v1, p1-release-layout-verifier-spec-v1, p1-windows-locked-build-gate-spec-v1]
   - id: p2-tran-provenance-preflight-v1
     paths: [docs/baselines/tran-provenance-preflight.v1.yaml, docs/clean-room/specs/p2-tran-provenance-preflight.v1.md, tools/verify_tran_provenance_preflight.py, tools/test_verify_tran_provenance_preflight.py]
     state: planned

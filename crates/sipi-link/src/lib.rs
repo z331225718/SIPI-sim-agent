@@ -9,6 +9,7 @@
 use std::{error::Error, fmt, num::NonZeroUsize};
 
 use sipi_contracts::LinkPlanV1;
+use sipi_runtime::RunContext;
 use sipi_types::{Axis, NonZeroStep, Seconds, TypeError, Volts, Waveform};
 
 mod receiver;
@@ -64,6 +65,7 @@ pub enum LinkError {
     InvalidLimit,
     ResourceLimitExceeded,
     NumericOverflow { output_index: usize },
+    Runtime(sipi_runtime::RuntimeFailure),
     Invariant(TypeError),
 }
 
@@ -78,6 +80,7 @@ impl fmt::Display for LinkError {
                     "non-finite convolution result at output {output_index}"
                 )
             }
+            Self::Runtime(error) => write!(formatter, "runtime failure: {}", error.code()),
             Self::Invariant(error) => error.fmt(formatter),
         }
     }
@@ -91,6 +94,12 @@ impl From<TypeError> for LinkError {
     }
 }
 
+impl From<sipi_runtime::RuntimeFailure> for LinkError {
+    fn from(value: sipi_runtime::RuntimeFailure) -> Self {
+        Self::Runtime(value)
+    }
+}
+
 /// Convolves the contract's direct launch with its causal FIR channel.
 ///
 /// The calculation is deterministic: outputs are visited from zero upward and
@@ -100,6 +109,24 @@ impl From<TypeError> for LinkError {
 pub fn convolve_causal_fir_v1(
     plan: &LinkPlanV1,
     limits: ConvolutionLimitsV1,
+) -> Result<ReceivedVoltageSamplesV1, LinkError> {
+    convolve_causal_fir_checked(plan, limits, || Ok(()))
+}
+
+/// Convolves the contract's direct launch while observing cooperative runtime
+/// checkpoints. It shares the exact numerical order of the context-free API.
+pub fn convolve_causal_fir_with_context_v1(
+    plan: &LinkPlanV1,
+    limits: ConvolutionLimitsV1,
+    context: &RunContext,
+) -> Result<ReceivedVoltageSamplesV1, LinkError> {
+    convolve_causal_fir_checked(plan, limits, || context.checkpoint().map_err(Into::into))
+}
+
+fn convolve_causal_fir_checked(
+    plan: &LinkPlanV1,
+    limits: ConvolutionLimitsV1,
+    mut checkpoint: impl FnMut() -> Result<(), LinkError>,
 ) -> Result<ReceivedVoltageSamplesV1, LinkError> {
     let launch = plan.stimulus();
     let gain = plan.channel().gain();
@@ -117,6 +144,7 @@ pub fn convolve_causal_fir_v1(
 
     let mut received = Vec::with_capacity(output_count);
     for output_index in 0..output_count {
+        checkpoint()?;
         let first_kernel = output_index.saturating_sub(launch.len() - 1);
         let last_kernel = output_index.min(gain.len() - 1);
         let mut sum = 0.0;
