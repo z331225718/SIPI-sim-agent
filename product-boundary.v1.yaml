@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 26732c4a42535df5065fb0845ebe452bfe300d91e5ca7ea77b6508ac60f142f9
+  tracked_paths_sha256: 54b14ff02081e2bbac1a5dc3e20b925761b8e091740ed56e68c491a235963534
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -636,6 +636,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-p3b-receiver-candidate-readiness.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-10-p3b-receiver-semantics-preparation.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
