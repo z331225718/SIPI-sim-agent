@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 344e66cde3ce8804463dd59b7bf0c71c3015960aee7a534caa067ee7b7fe113f
+  tracked_paths_sha256: 4462fd72409629dc31f08bbeedf588fdaae46c250ce8b16fe7eed20008a3934a
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1470,6 +1470,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p4a-ibis-input-typ-static-profile.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p4a-ibis-quasi-static-clamp-ccomp.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

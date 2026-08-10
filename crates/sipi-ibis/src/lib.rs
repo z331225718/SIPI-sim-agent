@@ -1117,17 +1117,167 @@ impl SelectedDcClampProfileV1 {
     }
 }
 
-/// A finite, non-negative `C_comp` declaration expressed in farads. It is
-/// declaration metadata only; DC capacitor current remains zero.
+/// A finite, non-negative `C_comp` declaration expressed in farads.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct CCompDeclarationV1 {
     capacitance_farads: FiniteF64,
 }
 
 impl CCompDeclarationV1 {
+    pub fn try_new(capacitance_farads: f64) -> Result<Self, InputClampConstitutiveErrorV1> {
+        if !capacitance_farads.is_finite() || capacitance_farads < 0.0 {
+            return Err(InputClampConstitutiveErrorV1::InvalidCComp);
+        }
+        Ok(Self {
+            capacitance_farads: FiniteF64::try_new(capacitance_farads, "C_comp capacitance")
+                .map_err(|_| InputClampConstitutiveErrorV1::InvalidCComp)?,
+        })
+    }
+
     pub const fn capacitance_farads(self) -> FiniteF64 {
         self.capacitance_farads
     }
+}
+
+/// Memoryless I-V clamps plus an ideal continuous `C_comp` relation.
+///
+/// The two clamp drives remain independently caller-supplied. This type does
+/// not infer a supply, a signal voltage, or a derivative from a waveform.
+#[derive(Clone, Debug, PartialEq)]
+pub struct InputClampConstitutiveV1 {
+    dc_model: InputClampDcModelV1,
+    c_comp: CCompDeclarationV1,
+}
+
+impl InputClampConstitutiveV1 {
+    pub fn try_new(
+        dc_model: InputClampDcModelV1,
+        c_comp: CCompDeclarationV1,
+    ) -> Result<Self, InputClampConstitutiveErrorV1> {
+        let capacitance = c_comp.capacitance_farads().get();
+        if !capacitance.is_finite() || capacitance < 0.0 {
+            return Err(InputClampConstitutiveErrorV1::InvalidCComp);
+        }
+        Ok(Self { dc_model, c_comp })
+    }
+
+    pub const fn dc_model(&self) -> &InputClampDcModelV1 {
+        &self.dc_model
+    }
+
+    pub const fn c_comp(&self) -> CCompDeclarationV1 {
+        self.c_comp
+    }
+}
+
+/// Explicit quasi-static clamp drives and the SIG-to-REF voltage derivative.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct QuasiStaticClampStateV1 {
+    dc_probe: DcClampProbeV1,
+    sig_to_ref_slope_v_per_s: FiniteF64,
+}
+
+impl QuasiStaticClampStateV1 {
+    pub fn try_new(
+        gnd_clamp_drive: Volts,
+        power_clamp_drive: Volts,
+        sig_to_ref_slope_v_per_s: f64,
+    ) -> Result<Self, InputClampConstitutiveErrorV1> {
+        Ok(Self {
+            dc_probe: DcClampProbeV1::new(gnd_clamp_drive, power_clamp_drive),
+            sig_to_ref_slope_v_per_s: FiniteF64::try_new(
+                sig_to_ref_slope_v_per_s,
+                "SIG-to-REF voltage slope in volts per second",
+            )
+            .map_err(|_| InputClampConstitutiveErrorV1::InvalidSlope)?,
+        })
+    }
+
+    pub const fn dc_probe(self) -> DcClampProbeV1 {
+        self.dc_probe
+    }
+
+    pub fn sig_to_ref_slope_v_per_s(self) -> f64 {
+        self.sig_to_ref_slope_v_per_s.get()
+    }
+}
+
+/// The signed quasi-static clamp response, with all currents positive into
+/// the selected shunt relation.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct QuasiStaticClampResponseV1 {
+    gnd_current: Amps,
+    power_current: Amps,
+    c_comp_current: Amps,
+    total_shunt_current: Amps,
+}
+
+impl QuasiStaticClampResponseV1 {
+    pub const fn gnd_current(self) -> Amps {
+        self.gnd_current
+    }
+
+    pub const fn power_current(self) -> Amps {
+        self.power_current
+    }
+
+    pub const fn c_comp_current(self) -> Amps {
+        self.c_comp_current
+    }
+
+    pub const fn total_shunt_current(self) -> Amps {
+        self.total_shunt_current
+    }
+}
+
+/// Fail-closed errors for the quasi-static clamp-plus-capacitance relation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum InputClampConstitutiveErrorV1 {
+    Dc(DcClampErrorV1),
+    InvalidCComp,
+    InvalidSlope,
+    NonFiniteCapacitiveCurrent,
+    NonFiniteTotalCurrent,
+}
+
+impl fmt::Display for InputClampConstitutiveErrorV1 {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Dc(error) => error.fmt(formatter),
+            Self::InvalidCComp => write!(formatter, "C_comp must be finite and non-negative"),
+            Self::InvalidSlope => write!(formatter, "SIG-to-REF voltage slope must be finite"),
+            Self::NonFiniteCapacitiveCurrent => write!(formatter, "C_comp current is not finite"),
+            Self::NonFiniteTotalCurrent => write!(formatter, "total shunt current is not finite"),
+        }
+    }
+}
+
+impl Error for InputClampConstitutiveErrorV1 {}
+
+/// Evaluates the memoryless I-V clamps and ideal continuous `C_comp` current.
+///
+/// This does not integrate, retain state, accept a time step, or infer a
+/// derivative. The DC table evaluation is performed first and its out-of-
+/// domain error is returned before any capacitive result is published.
+pub fn evaluate_quasi_static_clamps_v1(
+    model: &InputClampConstitutiveV1,
+    state: QuasiStaticClampStateV1,
+) -> Result<QuasiStaticClampResponseV1, InputClampConstitutiveErrorV1> {
+    let dc = evaluate_dc_clamps_v1(model.dc_model(), state.dc_probe())
+        .map_err(InputClampConstitutiveErrorV1::Dc)?;
+    let c_comp_current_value =
+        model.c_comp().capacitance_farads().get() * state.sig_to_ref_slope_v_per_s();
+    let c_comp_current = Amps::try_new(c_comp_current_value)
+        .map_err(|_| InputClampConstitutiveErrorV1::NonFiniteCapacitiveCurrent)?;
+    let total_shunt_current =
+        Amps::try_new(dc.gnd_current().get() + dc.power_current().get() + c_comp_current.get())
+            .map_err(|_| InputClampConstitutiveErrorV1::NonFiniteTotalCurrent)?;
+    Ok(QuasiStaticClampResponseV1 {
+        gnd_current: dc.gnd_current(),
+        power_current: dc.power_current(),
+        c_comp_current,
+        total_shunt_current,
+    })
 }
 
 /// The strict decoder output for the selected input-static profile.
@@ -1597,6 +1747,94 @@ mod tests {
         assert_eq!(result.power_current().get(), 1.0);
         assert_eq!(result.capacitive_current().get(), 0.0);
         assert_eq!(result.total_shunt_current().get(), 2.0);
+    }
+
+    fn constitutive(capacitance_farads: f64) -> InputClampConstitutiveV1 {
+        InputClampConstitutiveV1::try_new(
+            model(),
+            CCompDeclarationV1::try_new(capacitance_farads).expect("finite capacitance"),
+        )
+        .expect("constitutive model")
+    }
+
+    fn state(gnd: f64, power: f64, slope: f64) -> QuasiStaticClampStateV1 {
+        QuasiStaticClampStateV1::try_new(
+            Volts::try_new(gnd).expect("finite voltage"),
+            Volts::try_new(power).expect("finite voltage"),
+            slope,
+        )
+        .expect("finite state")
+    }
+
+    #[test]
+    fn zero_c_comp_matches_the_dc_evaluator() {
+        let dc_probe =
+            DcClampProbeV1::new(Volts::try_new(0.5).unwrap(), Volts::try_new(0.0).unwrap());
+        let dc = evaluate_dc_clamps_v1(&model(), dc_probe).expect("DC response");
+        let continuous =
+            evaluate_quasi_static_clamps_v1(&constitutive(0.0), state(0.5, 0.0, 7.0e9))
+                .expect("continuous response");
+        assert_eq!(continuous.gnd_current(), dc.gnd_current());
+        assert_eq!(continuous.power_current(), dc.power_current());
+        assert_eq!(continuous.c_comp_current().get(), 0.0);
+        assert_eq!(continuous.total_shunt_current(), dc.total_shunt_current());
+    }
+
+    #[test]
+    fn c_comp_is_continuous_and_adds_linearly_to_independent_clamps() {
+        let response =
+            evaluate_quasi_static_clamps_v1(&constitutive(1.0e-12), state(0.5, 0.0, 1.0e9))
+                .expect("response");
+        assert_eq!(response.gnd_current().get(), 1.0);
+        assert_eq!(response.power_current().get(), 1.0);
+        assert_eq!(response.c_comp_current().get(), 0.001);
+        assert_eq!(response.total_shunt_current().get(), 2.001);
+
+        let negative =
+            evaluate_quasi_static_clamps_v1(&constitutive(1.0e-12), state(0.5, 0.0, -1.0e9))
+                .expect("negative slope");
+        assert_eq!(negative.c_comp_current().get(), -0.001);
+        assert_eq!(negative.total_shunt_current().get(), 1.999);
+
+        let changed_power =
+            evaluate_quasi_static_clamps_v1(&constitutive(1.0e-12), state(0.5, 1.0, 1.0e9))
+                .expect("independent power drive");
+        assert_eq!(changed_power.gnd_current(), response.gnd_current());
+        assert_eq!(changed_power.c_comp_current(), response.c_comp_current());
+        assert_ne!(changed_power.power_current(), response.power_current());
+    }
+
+    #[test]
+    fn quasi_static_boundary_rejects_invalid_inputs_and_dc_domain_first() {
+        assert_eq!(
+            CCompDeclarationV1::try_new(-1.0),
+            Err(InputClampConstitutiveErrorV1::InvalidCComp)
+        );
+        assert_eq!(
+            QuasiStaticClampStateV1::try_new(
+                Volts::try_new(0.0).unwrap(),
+                Volts::try_new(0.0).unwrap(),
+                f64::NAN,
+            ),
+            Err(InputClampConstitutiveErrorV1::InvalidSlope)
+        );
+        assert_eq!(
+            evaluate_quasi_static_clamps_v1(&constitutive(1.0), state(2.0, 0.0, 0.0)),
+            Err(InputClampConstitutiveErrorV1::Dc(
+                DcClampErrorV1::OutOfDomain {
+                    branch: ClampBranchV1::Gnd
+                }
+            ))
+        );
+        let overflowing = InputClampConstitutiveV1::try_new(
+            model(),
+            CCompDeclarationV1::try_new(f64::MAX).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            evaluate_quasi_static_clamps_v1(&overflowing, state(0.0, 0.0, f64::MAX)),
+            Err(InputClampConstitutiveErrorV1::NonFiniteCapacitiveCurrent)
+        );
     }
 
     #[test]
