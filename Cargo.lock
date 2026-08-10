@@ -293,6 +293,7 @@ dependencies = [
 name = "sipi-tran"
 version = "0.1.0"
 dependencies = [
+ "sipi-runtime",
  "sipi-types",
 ]
 

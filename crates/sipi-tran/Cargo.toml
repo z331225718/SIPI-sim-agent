@@ -11,6 +11,7 @@ description = "Unsupported TRAN package boundary pending an accepted profile."
 rc-pulse-harness = []
 
 [dependencies]
+sipi-runtime = { path = "../sipi-runtime" }
 sipi-types = { path = "../sipi-types" }
 
 [lints]

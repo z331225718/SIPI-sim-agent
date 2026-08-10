@@ -7,6 +7,7 @@
 
 use std::{error::Error, fmt};
 
+use sipi_runtime::RunContext;
 use sipi_types::{Axis, Seconds, TypeError, Volts, Waveform};
 
 /// Identity of the only implemented TRAN profile.
@@ -69,6 +70,7 @@ impl RcPulseTransientResultV1 {
 #[derive(Debug)]
 pub enum TranError {
     Invariant(TypeError),
+    Runtime(sipi_runtime::RuntimeFailure),
     NonFiniteComputation,
 }
 
@@ -76,6 +78,7 @@ impl fmt::Display for TranError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Invariant(error) => error.fmt(formatter),
+            Self::Runtime(error) => write!(formatter, "runtime failure: {}", error.code()),
             Self::NonFiniteComputation => write!(formatter, "transient computation is non-finite"),
         }
     }
@@ -89,6 +92,12 @@ impl From<TypeError> for TranError {
     }
 }
 
+impl From<sipi_runtime::RuntimeFailure> for TranError {
+    fn from(value: sipi_runtime::RuntimeFailure) -> Self {
+        Self::Runtime(value)
+    }
+}
+
 /// Simulates the exact v1 RC/PULSE profile with f64 backward Euler.
 ///
 /// Requested output times and pulse corners partition the integration path;
@@ -96,7 +105,23 @@ impl From<TypeError> for TranError {
 pub fn simulate_rc_pulse(
     request: RcPulseTransientV1,
 ) -> Result<RcPulseTransientResultV1, TranError> {
+    simulate_rc_pulse_checked(request, || Ok(()))
+}
+
+/// Runs the fixed profile with cooperative checkpoints supplied by its caller.
+pub fn simulate_rc_pulse_with_context(
+    request: RcPulseTransientV1,
+    context: &RunContext,
+) -> Result<RcPulseTransientResultV1, TranError> {
+    simulate_rc_pulse_checked(request, || context.checkpoint().map_err(Into::into))
+}
+
+fn simulate_rc_pulse_checked(
+    request: RcPulseTransientV1,
+    mut checkpoint: impl FnMut() -> Result<(), TranError>,
+) -> Result<RcPulseTransientResultV1, TranError> {
     let _ = request;
+    checkpoint()?;
     let axis = explicit_time_axis()?;
     let mut voltage_out = 0.0;
     let mut voltage_in_samples = Vec::with_capacity(OUTPUT_TIMES_S.len());
@@ -106,6 +131,7 @@ pub fn simulate_rc_pulse(
     voltage_in_samples.push(volts(pulse_voltage(current_time))?);
     voltage_out_samples.push(volts(voltage_out)?);
     for next_time in integration_breakpoints().into_iter().skip(1) {
+        checkpoint()?;
         voltage_out = backward_euler_step(
             voltage_out,
             pulse_voltage(next_time),
@@ -121,6 +147,7 @@ pub fn simulate_rc_pulse(
     }
 
     let voltage_in = Waveform::try_new(axis.clone(), voltage_in_samples)?;
+    checkpoint()?;
     let voltage_out = Waveform::try_new(axis.clone(), voltage_out_samples)?;
     Ok(RcPulseTransientResultV1 {
         time_axis: axis,

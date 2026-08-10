@@ -14,7 +14,7 @@ use sipi_contracts::{
     validate_request_v1,
 };
 use sipi_runtime::{CacheKeyBuilder, ResourceCost, RunId, RunPolicy, Runtime};
-use sipi_tran::{RcPulseTransientV1, simulate_rc_pulse};
+use sipi_tran::{RcPulseTransientV1, simulate_rc_pulse_with_context};
 use sipi_types::AxisView;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -118,10 +118,12 @@ fn run_fixed_tran(artifact_root: &str, artifact_id: &str, request: &[u8]) -> Res
         context
             .consume(ResourceCost {
                 work_units: 1,
-                accounted_bytes: request.len() as u64,
+                accounted_bytes: request.len() as u64 + 4096,
             })
             .map_err(|_| ())?;
-        let simulation = simulate_rc_pulse(RcPulseTransientV1::fixed_profile()).map_err(|_| ())?;
+        let simulation =
+            simulate_rc_pulse_with_context(RcPulseTransientV1::fixed_profile(), context)
+                .map_err(|_| ())?;
         let result_json = result_json(&simulation).map_err(|_| ())?;
         let result_key = cache_key("result", result_json.as_bytes());
         let provenance = format!(
