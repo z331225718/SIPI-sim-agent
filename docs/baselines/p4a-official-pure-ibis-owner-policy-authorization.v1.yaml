@@ -1,0 +1,15 @@
+schema: sipi.p4a-official-pure-ibis-owner-policy-authorization.v1
+status: authorized_external_oracle_only
+authorization_anchor: user_confirmation_2026-08-10
+asset_identity:
+  content_sha256: 46c53a49a31dea27769f0dddddadea72f03f1f956fb8e60aeaa24f83a7201b95
+  byte_length: 406532
+scope:
+  allowed_uses: [external_oracle, acceptance_selection_review]
+  external_custody: retained_external_operator_custody
+  third_party_rights_status: unverified
+  prohibited_uses: [git_asset, product_fixture, product_source, release_bundle, default_runtime, redistribution]
+non_claims:
+  - This owner policy authorization is not third-party license evidence or a redistribution right.
+  - The asset remains external-only and does not become a required profile without a separate owner selection.
+  - No product parser, runtime, simulator, or test fixture may consume the external bytes.

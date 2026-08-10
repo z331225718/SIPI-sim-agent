@@ -425,6 +425,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: []
+  - id: p4a-official-pure-ibis-external-structural-scope-preflight-spec-v1
+    kind: independent_spec
+    content_sha256: 365283c8eeb244e8a7d4a2486a11a3d2579123556bd3cf8c4dc63517a3aa9450
+    provenance:
+      source_ref: docs/clean-room/specs/p4a-official-pure-ibis-external-structural-scope-preflight.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: []
 scopes:
   - id: clean-room-process-template-v1
     paths: [docs/clean-room/**]
@@ -759,4 +767,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p4a-official-pure-ibis-license-identity-preflight-spec-v1]
+  - id: p4a-official-pure-ibis-external-structural-scope-preflight-v1
+    paths: [docs/baselines/p4a-official-pure-ibis-owner-policy-authorization.v1.yaml, docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml, docs/clean-room/specs/p4a-official-pure-ibis-external-structural-scope-preflight.v1.md, tools/observe_p4a_external_pure_ibis_structural_scope.py, tools/test_observe_p4a_external_pure_ibis_structural_scope.py, tools/verify_p4a_official_pure_ibis_structural_scope_preflight.py, tools/test_verify_p4a_official_pure_ibis_structural_scope_preflight.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p4a-official-pure-ibis-external-structural-scope-preflight-spec-v1]
+      spec_author: [p4a-official-pure-ibis-external-structural-scope-preflight-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p4a-official-pure-ibis-external-structural-scope-preflight-spec-v1]
 attestations: []

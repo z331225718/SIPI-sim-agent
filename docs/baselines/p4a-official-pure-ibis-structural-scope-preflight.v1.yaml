@@ -1,0 +1,44 @@
+schema: sipi.p4a.external-pure-ibis-structural-scope-preflight.v1
+status: structural_scope_pass_for_owner_selection
+promotion_eligible: false
+identity_preflight_ref:
+  path: docs/baselines/p4a-official-pure-ibis-license-identity-preflight.v1.yaml
+  content_sha256: 2dccbfdb90483ddbb232924d2a392d5bc880aafa2b3cbbcc06c3a0db7b2ff760
+owner_policy_ref:
+  path: docs/baselines/p4a-official-pure-ibis-owner-policy-authorization.v1.yaml
+  content_sha256: 6211cc6aa62366f0d428a442673172e5899f73f993ea709d6790da3974009808
+asset_identity:
+  content_sha256: 46c53a49a31dea27769f0dddddadea72f03f1f956fb8e60aeaa24f83a7201b95
+  byte_length: 406532
+observer:
+  source_sha256: 414e7d33b72693abedcd70f44fd87cd290d587aa80ec0c24cfc32d76c61a7433
+  mode: external_read_only
+  product_parser_not_used: true
+scan_scope:
+  allowed: [line_structure, bracket_headers, section_counts, identifier_digests, source_span_digests, fixed_indicator_counts]
+  forbidden: [numeric_tables, curves, parameter_values, package_pvt_evaluation, interpolation, simulation, ami_dll_calls]
+facts:
+  ibis_header: {count: 1, span_digest: dcb6b2889933e08df8b896267454e1c4d858f936a9a315dc5b7e50aca2d93c49}
+  component: {count: 1, span_digest: 03431b2c1e99903f1a1dfbb0e5e5082ea20e08f43afea8932879f39453855919}
+  model: {count: 14, span_digest: f506e3d344a77f670d1b7687d99f9b265f55a9337f0ffc65f17c24bd450b6dfc, identifier_digest: f57816aa073de9e5d4392044df0ced54571e42f70e8994f9dcf7ce7ad967238c}
+  model_selector: {count: 1, span_digest: 64abf63a6a05151082b2e7adb12c453670e92d9f1f877427a7691234d47e2be3, identifier_digest: 38d24de7ff5f21517797dc3a3644e3c511764d99511b5767060b341ddfdf1f46}
+  model_type_input: {count: 5, span_digest: 67b6bd44e6111dff3e9ed627bc3e709559aee36180d20e17e12b2eba5d1932f6}
+negative_observations:
+  indicator_rule_sha256: 2a16416dcf78ffec7f035c37028a538d482ad0bdb089d34a3b817bab0a58e977
+  counts: {algorithmic_model: 0, ami_file: 0, dynamic_library: 0, include: 0}
+  meaning: not_observed_in_declared_scope_only
+unexamined: [model_selector_choice, model_semantics, numeric_data, ami_binary_dependencies, license, electrical_behavior]
+classification:
+  boundary: external_only
+  third_party_rights_status: unverified
+  required: false
+  product_asset: false
+  parser_fixture: false
+  oracle_runnable: false
+  release_input: false
+  selection_eligibility: eligible_for_owner_selection
+non_claims:
+  - A zero indicator count is not a definitive absence claim outside the declared structural scan.
+  - Owner policy authorization is not third-party license evidence, redistribution permission, or a product-use approval.
+  - No model selector, PVT, terminal binding, stimulus, observable, tolerance, parser compatibility, or electrical behavior is selected here.
+  - The asset remains external-only and cannot be copied into Git, product source, tests, release bundles, or a default runtime.
