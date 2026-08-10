@@ -51,6 +51,12 @@ entries:
     entry_points: [evaluate_selected_differential_rc_load_v1]
     evidence_refs: [docs/clean-room/specs/p4a-selected-differential-rc-load.v1.md, crates/sipi-rx-load/src/lib.rs::tests::common_mode_ramp_preserves_each_leg_capacitor_and_ref_current]
     non_claim: This is not a channel termination solve or an IBIS composition.
+  - id: structural-inspect-stdin
+    scope: one product-owned JSON UTF-8 text through bounded structural parse and typed envelope reporting
+    status: implemented_self_tested
+    entry_points: [IbisInspectServiceV1]
+    evidence_refs: [docs/clean-room/specs/p4a-ibis-inspect-service.v1.md, crates/sipi-ibis/src/lib.rs::tests::inspect_service_reports_only_structural_and_envelope_facts, crates/sipi-cli/src/main.rs::tests::ibis_inspect_is_structural_only_and_rejects_other_ibis_commands]
+    non_claim: The stdin command neither evaluates electrical behavior nor accesses an external IBIS asset.
   - id: non-input-models
     scope: Output IO and Terminator model electrical semantics
     status: unsupported
@@ -75,12 +81,12 @@ entries:
     entry_points: []
     evidence_refs: [crates/sipi-ibis/src/lib.rs::tests::rejects_duplicate_or_algorithmic_selected_profile_sections]
     non_claim: Algorithmic Model attachment rejects in the selected pure-IBIS decoder.
-  - id: file-url-cli-default-route
-    scope: file URL external asset CLI and default backend routing
+  - id: file-url-and-default-route
+    scope: file URL external asset access and default backend routing
     status: unsupported
     entry_points: []
     evidence_refs: [docs/clean-room/specs/p4a-ibis-quasi-static-clamp-ccomp.v1.md]
-    non_claim: Product APIs are in-memory only; external comparison tools are migration-only.
+    non_claim: The only CLI surface accepts product-owned JSON text from stdin and has no file or URL asset route.
   - id: generic-ibis-certification
     scope: complete syntax semantic or physical compliance certification
     status: not_assessed
@@ -90,4 +96,4 @@ entries:
 non_claims:
   - This matrix is a fail-closed boundary record, not a release or MIT promotion decision.
   - External asset identity and comparison evidence remain external-only and are not product fixtures.
-  - No entry creates a parser file route CLI route AMI runtime or channel termination solver.
+  - No entry creates a parser file or URL asset route, AMI runtime, or channel termination solver.

@@ -108,12 +108,23 @@ fn link_noise_jitter_and_missing_stages_fail_closed() {
     let rejected = [
         request.replacen("\"plan\":", "\"seed\":7,\"plan\":", 1),
         request.replacen("\"rx\":", "\"noise\":{\"kind\":\"gaussian\"},\"rx\":", 1),
-        request.replacen("\"sample_count\":2", "\"jitter\":{\"kind\":\"random\"},\"sample_count\":2", 1),
+        request.replacen(
+            "\"sample_count\":2",
+            "\"jitter\":{\"kind\":\"random\"},\"sample_count\":2",
+            1,
+        ),
         request.replace("\"kind\":\"direct_launch\"", "\"kind\":\"prbs\""),
-        request.replacen("\"ffe\":", "\"dfe\":{\"kind\":\"decision_feedback\"},\"ffe\":", 1),
+        request.replacen(
+            "\"ffe\":",
+            "\"dfe\":{\"kind\":\"decision_feedback\"},\"ffe\":",
+            1,
+        ),
         request.replacen("\"ffe\":", "\"cdr\":{\"kind\":\"tracking\"},\"ffe\":", 1),
         request.replacen("\"ffe\":", "\"ber\":{\"kind\":\"measure\"},\"ffe\":", 1),
-        request.replace("\"ctle\":{\"kind\":\"bypass\"}", "\"ctle\":{\"kind\":\"peaking\"}"),
+        request.replace(
+            "\"ctle\":{\"kind\":\"bypass\"}",
+            "\"ctle\":{\"kind\":\"peaking\"}",
+        ),
     ];
     for (index, request) in rejected.iter().enumerate() {
         let root = std::env::temp_dir().join(format!(
@@ -167,6 +178,38 @@ fn stdin_validation_is_noninteractive_and_contract_checked() {
             .contains("\"command\":\"validate\"")
     );
     assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn ibis_inspect_stdin_reports_structure_without_electrical_claims() {
+    let request = br#"{"schema":"sipi.ibis.inspect.request.v1","source":{"encoding":"utf-8","text":"[IBIS Ver] 7.1\n[Model] rx_0\n"}}"#;
+    let mut child = sipi()
+        .args(["ibis", "inspect", "--stdin"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start sipi");
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(request)
+        .expect("write request");
+    let output = child.wait_with_output().expect("wait sipi");
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("UTF-8 stdout");
+    assert!(stdout.contains("\"command\":\"ibis\""));
+    assert!(stdout.contains("\"structural_parse\":\"accepted\""));
+    assert!(stdout.contains("\"electrical_behavior\":\"not_evaluated\""));
+    assert!(stdout.contains("\"external_profile_acceptance\":\"not_evaluated\""));
+    assert!(output.stderr.is_empty());
+
+    let rejected = sipi()
+        .args(["ibis", "inspect", "--file", "sample.ibs"])
+        .output()
+        .expect("run rejected command");
+    assert_eq!(rejected.status.code(), Some(4));
 }
 
 #[test]

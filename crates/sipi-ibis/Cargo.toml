@@ -11,7 +11,5 @@ description = "Clean-room structural IBIS parser and typed DC clamp evaluator."
 workspace = true
 
 [dependencies]
-sipi-types = { path = "../sipi-types" }
-
-[dev-dependencies]
 sha2 = "0.10"
+sipi-types = { path = "../sipi-types" }

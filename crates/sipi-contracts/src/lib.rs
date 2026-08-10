@@ -19,6 +19,7 @@ pub const VALIDATION_REQUEST_SCHEMA: &str = "sipi.validation-request.v1";
 pub const TRAN_RC_PULSE_REQUEST_SCHEMA: &str = "sipi.tran.rc-pulse-request.v1";
 pub const LINK_PLAN_SCHEMA: &str = "sipi.link-plan.v1";
 pub const LINK_CAUSAL_FIR_REQUEST_SCHEMA: &str = "sipi.link.causal-fir-request.v1";
+pub const IBIS_INSPECT_REQUEST_SCHEMA: &str = "sipi.ibis.inspect.request.v1";
 pub const RECEIVER_INPUT_SCHEMA: &str = "sipi.receiver-input.v1";
 pub const RECEIVER_SEMANTICS_SCHEMA: &str = "sipi.receiver-semantics.v1";
 pub const PLANNED_DOMAINS: [&str; 4] = ["tran", "channel", "ibis-ami", "com"];
@@ -31,6 +32,7 @@ pub enum ContractError {
     Link(LinkContractError),
     Receiver(ReceiverContractError),
     ReceiverSemantics(ReceiverSemanticContractError),
+    IbisInspect(IbisInspectContractError),
 }
 
 impl fmt::Display for ContractError {
@@ -42,6 +44,7 @@ impl fmt::Display for ContractError {
             Self::Link(error) => error.fmt(formatter),
             Self::Receiver(error) => error.fmt(formatter),
             Self::ReceiverSemantics(error) => error.fmt(formatter),
+            Self::IbisInspect(error) => error.fmt(formatter),
         }
     }
 }
@@ -71,6 +74,27 @@ impl From<ReceiverSemanticContractError> for ContractError {
         Self::ReceiverSemantics(value)
     }
 }
+
+impl From<IbisInspectContractError> for ContractError {
+    fn from(value: IbisInspectContractError) -> Self {
+        Self::IbisInspect(value)
+    }
+}
+
+/// Stable rejections for the in-memory IBIS structural inspection boundary.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum IbisInspectContractError {
+    UnsupportedEncoding,
+    EmptyText,
+}
+
+impl fmt::Display for IbisInspectContractError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "invalid IBIS inspect request: {self:?}")
+    }
+}
+
+impl Error for IbisInspectContractError {}
 
 /// Stable rejections for the deliberately narrow Link-stage contract.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -789,6 +813,58 @@ pub fn parse_link_causal_fir_request_v1(
         .try_into()
 }
 
+/// A product-owned request for structural inspection of one JSON UTF-8 text.
+/// It deliberately has no file, URL, binary, profile, or evaluation surface.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireIbisInspectRequestV1 {
+    pub schema: String,
+    pub source: WireIbisInspectSourceV1,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireIbisInspectSourceV1 {
+    pub encoding: String,
+    pub text: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct IbisInspectRequestV1 {
+    text: String,
+}
+
+impl IbisInspectRequestV1 {
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+}
+
+impl TryFrom<WireIbisInspectRequestV1> for IbisInspectRequestV1 {
+    type Error = ContractError;
+
+    fn try_from(value: WireIbisInspectRequestV1) -> Result<Self, Self::Error> {
+        if value.schema != IBIS_INSPECT_REQUEST_SCHEMA {
+            return Err(ContractError::Version);
+        }
+        if value.source.encoding != "utf-8" {
+            return Err(IbisInspectContractError::UnsupportedEncoding.into());
+        }
+        if value.source.text.is_empty() {
+            return Err(IbisInspectContractError::EmptyText.into());
+        }
+        Ok(Self {
+            text: value.source.text,
+        })
+    }
+}
+
+pub fn parse_ibis_inspect_request_v1(input: &[u8]) -> Result<IbisInspectRequestV1, ContractError> {
+    serde_json::from_slice::<WireIbisInspectRequestV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
 /// Product-owned receiver waveform boundary for the required RFM profile.
 ///
 /// The external RFM/current-drive provenance deliberately does not cross this
@@ -1200,6 +1276,10 @@ pub fn link_causal_fir_request_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireLinkCausalFirRequestV1))
 }
 
+pub fn ibis_inspect_request_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(WireIbisInspectRequestV1))
+}
+
 pub fn receiver_input_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireReceiverInputV1))
 }
@@ -1374,6 +1454,34 @@ mod tests {
     }
 
     #[test]
+    fn ibis_inspect_request_is_utf8_text_only_and_strict() {
+        let valid = br#"{"schema":"sipi.ibis.inspect.request.v1","source":{"encoding":"utf-8","text":"[IBIS Ver] 7.1\n"}}"#;
+        assert_eq!(
+            parse_ibis_inspect_request_v1(valid)
+                .expect("request")
+                .text(),
+            "[IBIS Ver] 7.1\n"
+        );
+        assert_eq!(
+            parse_ibis_inspect_request_v1(
+                br#"{"schema":"sipi.ibis.inspect.request.v1","source":{"encoding":"binary","text":"x"}}"#
+            ),
+            Err(ContractError::IbisInspect(
+                IbisInspectContractError::UnsupportedEncoding
+            ))
+        );
+        assert!(parse_ibis_inspect_request_v1(
+            br#"{"schema":"sipi.ibis.inspect.request.v1","source":{"encoding":"utf-8","text":"x","file":"sample.ibs"}}"#
+        )
+        .is_err());
+        assert!(
+            ibis_inspect_request_schema_json()
+                .expect("schema")
+                .starts_with(b"{")
+        );
+    }
+
+    #[test]
     fn tran_rc_pulse_request_is_typed_and_exact_profile_only() {
         let valid = br#"{"schema":"sipi.tran.rc-pulse-request.v1","request_id":"rc-pulse-1","resistance_ohms":1000.0,"capacitance_farads":0.000001,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000001,0.000002,0.000003],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.0,"delay_seconds":0.000001,"rise_seconds":0.000000001,"fall_seconds":0.000000001,"width_seconds":0.00001,"period_seconds":0.00002}}"#;
         assert!(parse_tran_rc_pulse_request_v1(valid).is_ok());
@@ -1446,6 +1554,16 @@ mod tests {
         assert!(baseline.ends_with(b"\n"));
         assert_eq!(
             link_plan_schema_json().expect("schema"),
+            &baseline[..baseline.len() - 1]
+        );
+    }
+
+    #[test]
+    fn tracked_ibis_inspect_schema_baseline_is_exactly_the_registered_export() {
+        let baseline = include_bytes!("../schemas/sipi.ibis.inspect.request.v1.schema.json");
+        assert!(baseline.ends_with(b"\n"));
+        assert_eq!(
+            ibis_inspect_request_schema_json().expect("schema"),
             &baseline[..baseline.len() - 1]
         );
     }

@@ -8,6 +8,7 @@
 
 use std::{error::Error, fmt, num::NonZeroUsize};
 
+use sha2::{Digest, Sha256};
 use sipi_types::{Amps, FiniteF64, Volts};
 
 /// A byte and physical-line location in one UTF-8-free ASCII source stream.
@@ -413,6 +414,109 @@ pub fn build_semantic_envelope_v1(
 /// owner selects a profile and independently freezes its semantic charter.
 pub fn profile_semantic_rules_status_v1() -> IbisSemanticDiagnosticCodeV1 {
     IbisSemanticDiagnosticCodeV1::ProfileRulesUnavailable
+}
+
+/// Pure in-memory structural inspection service for one product-owned text.
+pub struct IbisInspectServiceV1;
+
+impl IbisInspectServiceV1 {
+    /// Parses and builds a typed envelope without evaluating electrical behavior.
+    pub fn inspect(
+        text: &str,
+        limits: ParseLimitsV1,
+    ) -> Result<IbisInspectReportV1, IbisInspectErrorV1> {
+        let bytes = text.as_bytes();
+        let document =
+            parse_structural_v1(bytes, limits).map_err(IbisInspectErrorV1::Structural)?;
+        let envelope =
+            build_semantic_envelope_v1(&document).map_err(IbisInspectErrorV1::Semantic)?;
+        Ok(IbisInspectReportV1 {
+            input_byte_length: bytes.len(),
+            input_sha256: hex_sha256(bytes),
+            declared_version: envelope.version().spelling().to_owned(),
+            component_count: envelope.components().len(),
+            model_count: envelope.models().len(),
+            block_count: envelope.blocks().len(),
+        })
+    }
+}
+
+/// A structural/semantic result that deliberately has no electrical claim.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct IbisInspectReportV1 {
+    input_byte_length: usize,
+    input_sha256: String,
+    declared_version: String,
+    component_count: usize,
+    model_count: usize,
+    block_count: usize,
+}
+
+impl IbisInspectReportV1 {
+    pub const fn input_byte_length(&self) -> usize {
+        self.input_byte_length
+    }
+
+    pub fn input_sha256(&self) -> &str {
+        &self.input_sha256
+    }
+
+    pub fn declared_version(&self) -> &str {
+        &self.declared_version
+    }
+
+    pub const fn component_count(&self) -> usize {
+        self.component_count
+    }
+
+    pub const fn model_count(&self) -> usize {
+        self.model_count
+    }
+
+    pub const fn block_count(&self) -> usize {
+        self.block_count
+    }
+
+    pub const fn electrical_behavior_status(&self) -> &'static str {
+        "not_evaluated"
+    }
+
+    pub const fn external_profile_acceptance_status(&self) -> &'static str {
+        "not_evaluated"
+    }
+
+    pub const fn capability_matrix_id(&self) -> &'static str {
+        "sipi.p4a-ibis-conformance-matrix.v1"
+    }
+}
+
+/// Stable structural or semantic rejection from the inspect service.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum IbisInspectErrorV1 {
+    Structural(IbisDiagnosticV1),
+    Semantic(IbisSemanticDiagnosticV1),
+}
+
+impl fmt::Display for IbisInspectErrorV1 {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Structural(error) => error.fmt(formatter),
+            Self::Semantic(error) => error.fmt(formatter),
+        }
+    }
+}
+
+impl Error for IbisInspectErrorV1 {}
+
+fn hex_sha256(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let digest = Sha256::digest(bytes);
+    let mut text = String::with_capacity(digest.len() * 2);
+    for byte in digest {
+        text.push(HEX[usize::from(byte >> 4)] as char);
+        text.push(HEX[usize::from(byte & 0x0f)] as char);
+    }
+    text
 }
 
 /// Explicit hard bounds for one structural parse.
@@ -1719,6 +1823,43 @@ mod tests {
             profile_semantic_rules_status_v1(),
             IbisSemanticDiagnosticCodeV1::ProfileRulesUnavailable
         );
+    }
+
+    #[test]
+    fn inspect_service_reports_only_structural_and_envelope_facts() {
+        let report = IbisInspectServiceV1::inspect(
+            "[IBIS Ver] 7.1\n[Component] board_0\n[Model] rx_0\n",
+            limits(),
+        )
+        .expect("inspection");
+
+        assert_eq!(report.input_byte_length(), 48);
+        assert_eq!(
+            report.input_sha256(),
+            "a1275718c8b150431021aee40122401d5e5119ba914c1698ec75cc61f0292cba"
+        );
+        assert_eq!(report.declared_version(), "7.1");
+        assert_eq!(report.component_count(), 1);
+        assert_eq!(report.model_count(), 1);
+        assert_eq!(report.block_count(), 3);
+        assert_eq!(report.electrical_behavior_status(), "not_evaluated");
+        assert_eq!(report.external_profile_acceptance_status(), "not_evaluated");
+        assert_eq!(
+            report.capability_matrix_id(),
+            "sipi.p4a-ibis-conformance-matrix.v1"
+        );
+    }
+
+    #[test]
+    fn inspect_service_rejects_structural_or_envelope_failures() {
+        assert!(matches!(
+            IbisInspectServiceV1::inspect("[IBIS Ver] 7.1\n[Model]\n", limits()),
+            Err(IbisInspectErrorV1::Semantic(_))
+        ));
+        assert!(matches!(
+            IbisInspectServiceV1::inspect("[IBIS Ver] 7.1\n\0", limits()),
+            Err(IbisInspectErrorV1::Structural(_))
+        ));
     }
 
     fn knot(voltage: f64, current: f64) -> DcIvKnotV1 {

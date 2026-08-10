@@ -10,9 +10,11 @@ use std::{
 
 use sipi_contracts::{
     CAPABILITIES_SCHEMA, CapabilityCatalogV1, PLANNED_DOMAINS, RULE_LEDGER_V1,
-    capability_schema_json, deterministic_json, link_causal_fir_request_schema_json,
+    capability_schema_json, deterministic_json, ibis_inspect_request_schema_json,
+    link_causal_fir_request_schema_json, parse_ibis_inspect_request_v1,
     parse_link_causal_fir_request_v1, parse_tran_rc_pulse_request_v1, validate_request_v1,
 };
+use sipi_ibis::{IbisInspectServiceV1, ParseLimitsV1};
 use sipi_link::{ConvolutionLimitsV1, convolve_causal_fir_v1};
 use sipi_runtime::{CacheKeyBuilder, ResourceCost, RunId, RunPolicy, Runtime};
 use sipi_tran::{RcPulseTransientV1, simulate_rc_pulse_with_context};
@@ -34,6 +36,8 @@ fn main() {
     let command = arguments.first().map_or("help", String::as_str);
     let response = if arguments == ["validate", "--stdin"] {
         ProcessAdapter::validate_stdin()
+    } else if arguments == ["ibis", "inspect", "--stdin"] {
+        ProcessAdapter::ibis_inspect_stdin()
     } else if let [command, action, stdin, root, artifact_root, id, artifact_id] = &arguments[..]
         && command == "tran"
         && action == "run"
@@ -103,6 +107,18 @@ impl ProcessAdapter {
             Err(_) => return error(3, "contract_rejected", "Link request was rejected"),
         };
         run_causal_fir_link(artifact_root, artifact_id, &request)
+    }
+
+    fn ibis_inspect_stdin() -> Response {
+        let input = match read_stdin_request() {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        let request = match parse_ibis_inspect_request_v1(&input) {
+            Ok(request) => request,
+            Err(_) => return error(3, "contract_rejected", "IBIS inspect request was rejected"),
+        };
+        run_ibis_inspect(request.text())
     }
 }
 
@@ -300,6 +316,28 @@ fn run_causal_fir_link(
     }
 }
 
+fn run_ibis_inspect(text: &str) -> Response {
+    let limits = match ParseLimitsV1::try_new(1_048_576, 65_536, 16_384, 16_384) {
+        Ok(limits) => limits,
+        Err(_) => return error(6, "internal_contract_error", "IBIS limits are unavailable"),
+    };
+    match IbisInspectServiceV1::inspect(text, limits) {
+        Ok(report) => success(format!(
+            "{{\"schema\":\"sipi.ibis.inspect.response.v1\",\"input_byte_length\":{},\"input_sha256\":\"{}\",\"declared_version\":\"{}\",\"component_count\":{},\"model_count\":{},\"block_count\":{},\"structural_parse\":\"accepted\",\"typed_envelope\":\"accepted\",\"electrical_behavior\":\"{}\",\"external_profile_acceptance\":\"{}\",\"capability_matrix_id\":\"{}\"}}",
+            report.input_byte_length(),
+            report.input_sha256(),
+            report.declared_version(),
+            report.component_count(),
+            report.model_count(),
+            report.block_count(),
+            report.electrical_behavior_status(),
+            report.external_profile_acceptance_status(),
+            report.capability_matrix_id(),
+        )),
+        Err(_) => error(3, "contract_rejected", "IBIS text was rejected"),
+    }
+}
+
 fn cache_key(label: &str, value: &[u8]) -> String {
     let mut builder = CacheKeyBuilder::new();
     builder
@@ -432,6 +470,11 @@ impl CommandService {
                 "unsupported",
                 "Link requires the exact run --stdin artifact command",
             ),
+            [command, ..] if command == "ibis" => error(
+                4,
+                "unsupported",
+                "IBIS requires the exact inspect --stdin command",
+            ),
             _ => error(
                 64,
                 "usage",
@@ -513,8 +556,9 @@ fn doctor_json() -> String {
 
 fn schema_list_json() -> String {
     format!(
-        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{}\"]}}",
-        sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA
+        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{}\",\"{}\"]}}",
+        sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA,
+        sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA,
     )
 }
 
@@ -523,6 +567,8 @@ fn schema_show(id: &str) -> Response {
         capability_schema_json()
     } else if id == sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA {
         link_causal_fir_request_schema_json()
+    } else if id == sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA {
+        ibis_inspect_request_schema_json()
     } else {
         return error(64, "unknown_schema", "schema is not registered");
     };
@@ -541,7 +587,9 @@ fn schema_show(id: &str) -> Response {
 
 fn validate_self(schema: Option<&str>) -> Response {
     if schema.is_some_and(|id| {
-        id != CAPABILITIES_SCHEMA && id != sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA
+        id != CAPABILITIES_SCHEMA
+            && id != sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA
+            && id != sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA
     }) {
         return error(64, "unknown_schema", "schema is not registered");
     }
@@ -554,6 +602,7 @@ fn validate_self(schema: Option<&str>) -> Response {
             .all(|item| item.status == "unsupported")
         && deterministic_json(&catalog).is_ok()
         && !RULE_LEDGER_V1.is_empty()
+        && ibis_inspect_request_schema_json().is_ok()
         && link_causal_fir_request_schema_json().is_ok();
     if valid {
         success(
@@ -642,6 +691,20 @@ mod tests {
         assert_eq!(
             dispatch(&args(&["inspect", "capability", "unknown", "--json"])).code,
             64
+        );
+    }
+
+    #[test]
+    fn ibis_inspect_is_structural_only_and_rejects_other_ibis_commands() {
+        let response = run_ibis_inspect("[IBIS Ver] 7.1\n[Model] rx_0\n");
+        assert_eq!(response.code, 0);
+        let body = response.stdout.expect("response");
+        assert!(body.contains("\"structural_parse\":\"accepted\""));
+        assert!(body.contains("\"electrical_behavior\":\"not_evaluated\""));
+        assert!(body.contains("\"external_profile_acceptance\":\"not_evaluated\""));
+        assert_eq!(
+            dispatch(&args(&["ibis", "inspect", "--file", "sample.ibs"])).code,
+            4
         );
     }
 

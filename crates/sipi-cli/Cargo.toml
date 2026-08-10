@@ -14,6 +14,7 @@ path = "src/main.rs"
 [dependencies]
 sipi-artifacts = { path = "../sipi-artifacts" }
 sipi-contracts = { path = "../sipi-contracts" }
+sipi-ibis = { path = "../sipi-ibis" }
 sipi-link = { path = "../sipi-link" }
 sipi-runtime = { path = "../sipi-runtime" }
 sipi-tran = { path = "../sipi-tran" }
