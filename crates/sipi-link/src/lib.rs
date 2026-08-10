@@ -1,15 +1,21 @@
 #![forbid(unsafe_code)]
 
-//! Product-owned, deterministic causal FIR convolution for the P3B boundary.
+//! Product-owned, deterministic Link primitives for the P3B boundary.
 //!
-//! This crate has no S-parameter resolver, equalizer, clock, decision logic,
-//! I/O, CLI, or external-oracle dependency. It consumes only the validated
-//! `sipi.link-plan.v1` causal FIR contract.
+//! It contains direct causal-FIR convolution and one approved fixed,
+//! data-aided receiver. It has no S-parameter resolver, equalizer, I/O, CLI,
+//! or external-oracle dependency.
 
 use std::{error::Error, fmt, num::NonZeroUsize};
 
 use sipi_contracts::LinkPlanV1;
 use sipi_types::{Axis, NonZeroStep, Seconds, TypeError, Volts, Waveform};
+
+mod receiver;
+
+pub use receiver::{
+    ReceiverDecisionV1, ReceiverError, ReceiverResultV1, ReferenceBitsV1, run_fixed_receiver_v1,
+};
 
 /// Stable, explicit bounds for one causal FIR operation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

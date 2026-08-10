@@ -496,4 +496,13 @@ scopes:
       implementer: [p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
       comparator: []
       auditor: [p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
+  - id: p3b-approved-fixed-receiver-library-v1
+    paths: [crates/sipi-link/src/receiver.rs, docs/clean-room/specs/p3b-approved-fixed-receiver.v1.md, docs/clean-room/specs/p3b-approved-fixed-receiver-erasure-amendment.v1.md]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
+      implementer: [p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
+      comparator: []
+      auditor: [p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
 attestations: []
