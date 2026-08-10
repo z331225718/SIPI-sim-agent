@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 3fdf65143e9ce0b78763c822fe915b96b36ac9961c6f59c39eddc73bd5cde2ee
+  tracked_paths_sha256: 8c362ddb7fedad70a9f66bf97feccf9b9ab48f0c13102d6e08ba11e3e739176d
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -828,6 +828,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-11-p5-com-r480-acceptance-boundary.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-11-p5-com-r480-reference-availability-preflight.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
