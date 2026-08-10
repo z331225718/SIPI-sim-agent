@@ -1,0 +1,37 @@
+schema: sipi.channel.receiver-candidate-readiness.v1
+status: candidate_ready_for_owner_selection
+candidate_profile_id: channel-rfm-block-2-current-drive-v1
+candidate_identity:
+  repository: pybert-f6ba031
+  commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7
+  path: tests/golden/rust_migration/agent_spice_rfm/block_2.rfm
+  git_blob: 9a087a9f75c58d3d1fb15efee2628001a601a546
+  content_sha256: 5716f691a69174cfe88980ffd96bfc867f30f9ee92b6b85d3fb6b8c8b3636a53
+external_observation:
+  platform: windows-x86_64
+  engine_sha256: 111ff6e1a1a8f7f39782a355722c56f4d8e7392bff6d389445ba87dee73928dc
+  transfer: current_drive_voltage_response
+  current_to_voltage_sign: -1
+  fft_size: 1024
+  current_sample_count: 1024
+  sample_interval_seconds: 1.0e-12
+  input_ports: [1]
+  output_ports: [2]
+  samples_per_ui: 8
+  evidence_ref: docs/baselines/audits/2026-08-08-m5.md#m5b-03c
+owner_decision:
+  required_by: null
+  decision: pending
+missing_semantics:
+  product_stimulus_and_causal_link_waveform: missing_owner_selection
+  p3a_periodic_kernel_causalization: missing_owner_selection
+  ctle_transfer_normalization_and_state: missing_owner_selection
+  ffe_tap_order_cursor_units_sign_and_initial_state: missing_owner_selection
+  dfe_tap_order_cursor_units_sign_and_initial_state: missing_owner_selection
+  cdr_clock_source_acquisition_lock_reset_and_cancel: missing_owner_selection
+  ber_bit_source_alignment_threshold_warmup_window_metric_and_tolerance: missing_owner_selection
+  external_reference_environment_and_authorized_fixture_scope: missing_owner_selection
+non_claims:
+  - This record is a candidate admission preflight, not a required-profile decision.
+  - It does not define DFE, CDR, CTLE, FFE, BER, causalization, or a receiver API.
+  - It does not establish RFM Link parity, physical oracle independence, or a production route.
