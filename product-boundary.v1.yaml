@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: d375f2fe4d253e476beb86fea1f9ce3ddf0a245a42a43308fbd2021c452d0f10
+  tracked_paths_sha256: 7115f5b87e56903a14cbcdbc5ccbf8a39410a1fb4db526aea9ab2ee8d0b85d42
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1128,6 +1128,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-11-p7-external-history-citations.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-11-p7-fixed-tran-candidate-performance.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
