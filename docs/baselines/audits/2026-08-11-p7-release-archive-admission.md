@@ -19,3 +19,12 @@ An independent Orca review reported no P1 or P2 findings. It noted the
 intentional producer-format restriction (no data descriptors or ZIP64) and
 the fail-closed private verifier coupling; neither changes the blocked
 promotion state.
+
+The external observation was then replayed for commit
+`c7c97b27e5cfb508b938cb4f325937f3cdab4b98`. Two fresh locked builds produced
+the same `sipi.exe` digest
+`cf36303e8997124c8bc1f9d53ea410eb09a6b17431453ef1dd2fb0cca73adfd8`.
+The composition evidence remained `incomplete` and blocked. A 318907-byte
+external ZIP with that executable and the exact `git archive` bytes of
+`LICENSE` passed structural admission. The archive scanner report remains
+blocked and records no release approval.
