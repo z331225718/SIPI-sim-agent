@@ -1,0 +1,35 @@
+{
+  "schema": "sipi.p7-evidence-anchor.v1",
+  "kind": "evidence_anchor_not_release",
+  "record_commit": "aae3f9fc382b85bd6ef120b81cd561afd4ac96c8",
+  "candidate_source_commit": "5edced573a8df3889965a768b860a03c33790444",
+  "candidate_tree": "7e14d559c0ce8b0732591df7c0b18ecd86054346",
+  "candidate_cargo_lock_sha256": "4471bb00b7fcc78a78a836ec47b994e503ab66a923a8a952c4a1057a134e2865",
+  "candidate_toolchain_sha256": "512bedfbbe3c4ef614fbb901b3661f40b4adb701d26c94664e79ca765aa3d109",
+  "candidate_executable_sha256": "cf36303e8997124c8bc1f9d53ea410eb09a6b17431453ef1dd2fb0cca73adfd8",
+  "evidence": {
+    "policy_sha256": "700abb092a2da02331ff93407965d7e2414a3f14832def90127d0cc361645d28",
+    "twin_report_sha256": "77812781d38833d563addb6fa8729763524de66e3ca77521419a77f7521b7164",
+    "composition_report_sha256": "3e4f9a2e0457e3856cc10bd80221c7e3cc3e9e2dfeb9da06b21a6fdd5db184b3",
+    "archive_report_sha256": "32c2e2bf127948a47686151e870a25ceb83a4d51702e9043c0d8cf49c86d38cf",
+    "install_report_sha256": "251cb2b3fc2a22e0daaf97c85464981a324e90ca640f5cac14f5f4eb6aba6df7",
+    "candidate_observation_sha256": "5f1a2ce267caa00b28bfa7e921f9114bbb310e2d5b260b4cc98669e46e5bd3eb",
+    "candidate_evaluation_sha256": "80dd6b4c1e6cc0abdc04f47a8ed3c34c373d99eb2e63cff91da9a3314a43a675"
+  },
+  "global_blockers": [
+    "license_notice_pending",
+    "fresh_machine_evidence_missing",
+    "uncertified_domain_profiles",
+    "external_asset_admission_blocked",
+    "legacy_retirement_not_approved"
+  ],
+  "audit_ref": "docs/baselines/audits/2026-08-11-p7-fixed-tran-candidate-performance.md",
+  "promotion_status": "blocked",
+  "release_candidate": false,
+  "non_claims": [
+    "not_a_release_tag_or_candidate",
+    "not_a_release_approval",
+    "not_a_license_or_notice_clearance",
+    "not_a_fresh_machine_or_profile_certification"
+  ]
+}
