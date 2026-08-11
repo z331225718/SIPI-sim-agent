@@ -251,7 +251,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 #### P3C：指标与报告
 
 - [ ] **P3C-01** 实现被 required 示例使用的 eye、jitter、bathtub 指标；每项独立 capability。
-- [ ] **P3C-02** 记录 metric tolerance、数组 compare、missing/finite/shape 报告。
+- [ ] **P3C-02** **P3C-02a 已完成：** `sipi-compare` 对调用者已对齐的 finite array 提供严格、单向 reference-to-candidate absolute/relative tolerance report；shape、unit、semantic binding、missing、finite 与算术溢出均 fail-closed，且不做任何对齐/转换或外部比较。eye/jitter/bathtub metric、profile compare 与 `sipi compare` 仍未实现。证据见 [2026-08-11-p3c-array-compare.md](docs/baselines/audits/2026-08-11-p3c-array-compare.md)。
 - [ ] **P3C-03** 接入 `sipi channel run` 和 `sipi compare`。
 
 ### 9.3 退出条件

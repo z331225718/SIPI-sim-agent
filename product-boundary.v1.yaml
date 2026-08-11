@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: c9a2ce9ff7d3e7277fdfea80f7b2a34896ed866170c7042cca8b5c149cdc7f3a
+  tracked_paths_sha256: 68882464fc0d8c02548edf3159310351d838ad92114ea243b11a2ef1bc6557d5
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -192,6 +192,18 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-cli/tests/p6_current_topology.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-compare/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-compare/src/lib.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -947,6 +959,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-11-p3c-array-compare.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-11-p4a-ibis-conformance-matrix.md:
       rule: historical-docs
       class: migration_only
@@ -1632,6 +1650,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3b-rfm-receiver-handoff-replay.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-array-compare.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
