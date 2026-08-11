@@ -41,3 +41,9 @@ also validates the real `sipi commands --json` response. The reviewer
 confirmed the product-boundary and release-license rebinding and that the
 uncommitted `uv.lock` was excluded. Its two P3 test-coverage observations do
 not weaken the gate: an unexpected verifier result remains fail-closed.
+
+P3A-14 subsequently generated a verified v4 external report for the same
+exact S2P object and the current product candidate. The active Channel row now
+binds v4, no longer carries the source-drift blocker, and still remains
+`specified`; v3 stays in the historical index and must continue to report
+exact source drift.
