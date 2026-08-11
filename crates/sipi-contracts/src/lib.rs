@@ -24,6 +24,8 @@ pub const IBIS_INSPECT_REQUEST_SCHEMA: &str = "sipi.ibis.inspect.request.v1";
 pub const IBIS_DC_EVALUATE_REQUEST_SCHEMA: &str = "sipi.ibis.input-typ-dc-evaluate.request.v1";
 pub const IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA: &str =
     "sipi.ibis.input-typ-quasi-static-evaluate.request.v1";
+pub const RX_LOAD_DIFFERENTIAL_RC_EVALUATE_REQUEST_SCHEMA: &str =
+    "sipi.rx-load.selected-differential-rc-evaluate.request.v1";
 pub const RECEIVER_INPUT_SCHEMA: &str = "sipi.receiver-input.v1";
 pub const RECEIVER_SEMANTICS_SCHEMA: &str = "sipi.receiver-semantics.v1";
 pub const PROJECT_PLAN_SCHEMA: &str = "sipi.project.v1";
@@ -42,6 +44,7 @@ pub enum ContractError {
     IbisInspect(IbisInspectContractError),
     IbisDcEvaluate(IbisDcEvaluateContractError),
     IbisQuasiStaticEvaluate(IbisQuasiStaticEvaluateContractError),
+    RxLoadDifferentialRcEvaluate(RxLoadDifferentialRcEvaluateContractError),
     Project(ProjectContractError),
 }
 
@@ -57,6 +60,7 @@ impl fmt::Display for ContractError {
             Self::IbisInspect(error) => error.fmt(formatter),
             Self::IbisDcEvaluate(error) => error.fmt(formatter),
             Self::IbisQuasiStaticEvaluate(error) => error.fmt(formatter),
+            Self::RxLoadDifferentialRcEvaluate(error) => error.fmt(formatter),
             Self::Project(error) => error.fmt(formatter),
         }
     }
@@ -103,6 +107,12 @@ impl From<IbisDcEvaluateContractError> for ContractError {
 impl From<IbisQuasiStaticEvaluateContractError> for ContractError {
     fn from(value: IbisQuasiStaticEvaluateContractError) -> Self {
         Self::IbisQuasiStaticEvaluate(value)
+    }
+}
+
+impl From<RxLoadDifferentialRcEvaluateContractError> for ContractError {
+    fn from(value: RxLoadDifferentialRcEvaluateContractError) -> Self {
+        Self::RxLoadDifferentialRcEvaluate(value)
     }
 }
 
@@ -186,6 +196,24 @@ impl fmt::Display for IbisQuasiStaticEvaluateContractError {
 }
 
 impl Error for IbisQuasiStaticEvaluateContractError {}
+
+/// Stable request-boundary rejections for the fixed P/N/REF differential R-C
+/// constitutive relation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RxLoadDifferentialRcEvaluateContractError {
+    NonFiniteProbe,
+}
+
+impl fmt::Display for RxLoadDifferentialRcEvaluateContractError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            formatter,
+            "invalid selected differential R-C load evaluate request: {self:?}"
+        )
+    }
+}
+
+impl Error for RxLoadDifferentialRcEvaluateContractError {}
 
 /// Stable rejections for the deliberately narrow Link-stage contract.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1355,6 +1383,89 @@ pub fn parse_ibis_quasi_static_evaluate_request_v1(
         .try_into()
 }
 
+/// A product-owned request for the one selected continuous P/N/REF R-C load.
+/// It does not accept component values, time steps, samples, topology choices,
+/// or an implicit global reference node.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireRxLoadDifferentialRcEvaluateRequestV1 {
+    pub schema: String,
+    pub probe: WireRxLoadDifferentialRcProbeV1,
+}
+
+#[derive(Clone, Copy, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireRxLoadDifferentialRcProbeV1 {
+    pub p_to_ref_volts: f64,
+    pub n_to_ref_volts: f64,
+    pub p_to_ref_slope_volts_per_second: f64,
+    pub n_to_ref_slope_volts_per_second: f64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RxLoadDifferentialRcEvaluateRequestV1 {
+    p_to_ref_volts: Volts,
+    n_to_ref_volts: Volts,
+    p_to_ref_slope_volts_per_second: FiniteF64,
+    n_to_ref_slope_volts_per_second: FiniteF64,
+}
+
+impl RxLoadDifferentialRcEvaluateRequestV1 {
+    pub const fn p_to_ref_volts(&self) -> Volts {
+        self.p_to_ref_volts
+    }
+
+    pub const fn n_to_ref_volts(&self) -> Volts {
+        self.n_to_ref_volts
+    }
+
+    pub fn p_to_ref_slope_volts_per_second(&self) -> f64 {
+        self.p_to_ref_slope_volts_per_second.get()
+    }
+
+    pub fn n_to_ref_slope_volts_per_second(&self) -> f64 {
+        self.n_to_ref_slope_volts_per_second.get()
+    }
+}
+
+impl TryFrom<WireRxLoadDifferentialRcEvaluateRequestV1> for RxLoadDifferentialRcEvaluateRequestV1 {
+    type Error = ContractError;
+
+    fn try_from(value: WireRxLoadDifferentialRcEvaluateRequestV1) -> Result<Self, Self::Error> {
+        if value.schema != RX_LOAD_DIFFERENTIAL_RC_EVALUATE_REQUEST_SCHEMA {
+            return Err(ContractError::Version);
+        }
+        let p_to_ref_volts = Volts::try_new(value.probe.p_to_ref_volts)
+            .map_err(|_| RxLoadDifferentialRcEvaluateContractError::NonFiniteProbe)?;
+        let n_to_ref_volts = Volts::try_new(value.probe.n_to_ref_volts)
+            .map_err(|_| RxLoadDifferentialRcEvaluateContractError::NonFiniteProbe)?;
+        let p_to_ref_slope_volts_per_second = FiniteF64::try_new(
+            value.probe.p_to_ref_slope_volts_per_second,
+            "P-to-REF voltage slope in volts per second",
+        )
+        .map_err(|_| RxLoadDifferentialRcEvaluateContractError::NonFiniteProbe)?;
+        let n_to_ref_slope_volts_per_second = FiniteF64::try_new(
+            value.probe.n_to_ref_slope_volts_per_second,
+            "N-to-REF voltage slope in volts per second",
+        )
+        .map_err(|_| RxLoadDifferentialRcEvaluateContractError::NonFiniteProbe)?;
+        Ok(Self {
+            p_to_ref_volts,
+            n_to_ref_volts,
+            p_to_ref_slope_volts_per_second,
+            n_to_ref_slope_volts_per_second,
+        })
+    }
+}
+
+pub fn parse_rx_load_differential_rc_evaluate_request_v1(
+    input: &[u8],
+) -> Result<RxLoadDifferentialRcEvaluateRequestV1, ContractError> {
+    serde_json::from_slice::<WireRxLoadDifferentialRcEvaluateRequestV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
 /// A caller-owned request to verify and project one already-published local
 /// artifact. It deliberately has no file enumeration, URL, or payload surface.
 #[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
@@ -1929,6 +2040,18 @@ pub fn product_example_request_json_v1(command_id: &str) -> Result<Option<Vec<u8
             })
             .map(Some)
         }
+        "rx-load.differential-rc-evaluate" => {
+            deterministic_json(&WireRxLoadDifferentialRcEvaluateRequestV1 {
+                schema: RX_LOAD_DIFFERENTIAL_RC_EVALUATE_REQUEST_SCHEMA.to_owned(),
+                probe: WireRxLoadDifferentialRcProbeV1 {
+                    p_to_ref_volts: 0.5,
+                    n_to_ref_volts: -0.5,
+                    p_to_ref_slope_volts_per_second: 1.0e9,
+                    n_to_ref_slope_volts_per_second: -1.0e9,
+                },
+            })
+            .map(Some)
+        }
         "project.run" => deterministic_json(&WireFixedProjectRunRequestV1 {
             schema: FIXED_PROJECT_RUN_REQUEST_SCHEMA.to_owned(),
             plan: WireProjectPlanV1 {
@@ -2006,6 +2129,10 @@ pub fn ibis_dc_evaluate_request_schema_json() -> Result<Vec<u8>, ContractError> 
 
 pub fn ibis_quasi_static_evaluate_request_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireIbisQuasiStaticEvaluateRequestV1))
+}
+
+pub fn rx_load_differential_rc_evaluate_request_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(WireRxLoadDifferentialRcEvaluateRequestV1))
 }
 
 pub fn artifact_report_request_schema_json() -> Result<Vec<u8>, ContractError> {
@@ -2254,6 +2381,15 @@ mod tests {
     }
 
     #[test]
+    fn tracked_rx_load_differential_rc_evaluate_schema_baseline_is_exactly_the_registered_export() {
+        let baseline = include_bytes!(
+            "../schemas/sipi.rx-load.selected-differential-rc-evaluate.request.v1.schema.json"
+        );
+        let exported = rx_load_differential_rc_evaluate_request_schema_json().expect("schema");
+        assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
+    }
+
+    #[test]
     fn tracked_project_schema_baseline_is_exactly_the_registered_export() {
         let baseline = include_bytes!("../schemas/sipi.project.v1.schema.json");
         assert!(baseline.ends_with(b"\n"));
@@ -2376,6 +2512,24 @@ mod tests {
         ));
         assert!(parse_ibis_quasi_static_evaluate_request_v1(
             br#"{"schema":"sipi.ibis.input-typ-quasi-static-evaluate.request.v1","source":{"encoding":"utf-8","text":"x","file":"sample.ibs"},"selection":{"ibis_version":"7.1","model_selector":"m","corner":"typical"},"probe":{"gnd_clamp_drive_volts":0.0,"power_clamp_drive_volts":0.0,"sig_to_ref_slope_volts_per_second":0.0}}"#
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn selected_differential_rc_load_request_is_strict_and_requires_all_probe_terms() {
+        let valid = br#"{"schema":"sipi.rx-load.selected-differential-rc-evaluate.request.v1","probe":{"p_to_ref_volts":0.5,"n_to_ref_volts":-0.5,"p_to_ref_slope_volts_per_second":1000000000.0,"n_to_ref_slope_volts_per_second":-1000000000.0}}"#;
+        let request = parse_rx_load_differential_rc_evaluate_request_v1(valid).expect("request");
+        assert_eq!(request.p_to_ref_volts().get(), 0.5);
+        assert_eq!(request.n_to_ref_slope_volts_per_second(), -1.0e9);
+        assert!(matches!(
+            parse_rx_load_differential_rc_evaluate_request_v1(
+                br#"{"schema":"sipi.rx-load.selected-differential-rc-evaluate.request.v1","probe":{"p_to_ref_volts":0.0,"n_to_ref_volts":0.0,"p_to_ref_slope_volts_per_second":null,"n_to_ref_slope_volts_per_second":0.0}}"#
+            ),
+            Err(ContractError::Json(_))
+        ));
+        assert!(parse_rx_load_differential_rc_evaluate_request_v1(
+            br#"{"schema":"sipi.rx-load.selected-differential-rc-evaluate.request.v1","probe":{"p_to_ref_volts":0.0,"n_to_ref_volts":0.0,"p_to_ref_slope_volts_per_second":0.0,"n_to_ref_slope_volts_per_second":0.0,"resistance_ohms":50.0}}"#
         )
         .is_err());
     }

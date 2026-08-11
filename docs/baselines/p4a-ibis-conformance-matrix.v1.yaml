@@ -69,6 +69,12 @@ entries:
     entry_points: [IbisQuasiStaticEvaluateServiceV1, sipi_ibis_quasi_static_evaluate_stdin]
     evidence_refs: [docs/clean-room/specs/p4a-ibis-input-typ-quasi-static-cli.v1.md, crates/sipi-ibis/src/lib.rs::tests::quasi_static_service_adds_only_the_explicit_c_comp_slope_current, crates/sipi-cli/tests/cli.rs::ibis_quasi_static_evaluate_stdin_requires_an_explicit_slope]
     non_claim: Caller input is unattested; this memoryless constitutive route has no time step, state, integration, or external transient/profile acceptance.
+  - id: selected-differential-rc-load-evaluate-stdin
+    scope: fixed continuous P/N/REF 100 ohm plus per-leg 1 pF load with explicit voltage and slope probe
+    status: implemented_self_tested
+    entry_points: [evaluate_selected_differential_rc_load_v1, sipi_rx_load_differential_rc_evaluate_stdin]
+    evidence_refs: [docs/clean-room/specs/p4a-selected-differential-rc-load-cli.v1.md, crates/sipi-rx-load/src/lib.rs::tests::common_mode_ramp_preserves_each_leg_capacitor_and_ref_current, crates/sipi-cli/tests/cli.rs::selected_differential_rc_load_evaluate_requires_explicit_p_n_ref_probe]
+    non_claim: This selected continuous load route does not solve a channel termination, infer a reference node or slope, integrate time, compose with IBIS or AMI, or claim external parity.
   - id: non-input-models
     scope: Output IO and Terminator model electrical semantics
     status: unsupported

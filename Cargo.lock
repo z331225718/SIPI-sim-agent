@@ -346,6 +346,7 @@ dependencies = [
  "sipi-link",
  "sipi-pipeline",
  "sipi-runtime",
+ "sipi-rx-load",
  "sipi-tran",
  "sipi-types",
 ]

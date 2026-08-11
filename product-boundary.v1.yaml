@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 5a149f91f918a0637ad6582513fddc5caf7246b7833b61f58bcfe4e470af02d0
+  tracked_paths_sha256: 209ef8c885464690e3fc55dc6c6d2393b0924e06534519dbdb534635c00f0452
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -282,6 +282,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-contracts/schemas/sipi.receiver-semantics.v1.schema.json:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-contracts/schemas/sipi.rx-load.selected-differential-rc-evaluate.request.v1.schema.json:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1032,6 +1038,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-11-p4a-ibis-structural-inspect.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-11-p4a-selected-differential-rc-load-cli.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -1902,6 +1914,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p4a-receiver-topology-and-acceptance.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p4a-selected-differential-rc-load-cli.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
