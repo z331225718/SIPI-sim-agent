@@ -203,9 +203,11 @@ ideal-source/R/grounded-C、固定网格和显式初值。下列泛化任务仍�
 - [x] **P2-02a** 建立不导出领域 API 的 `sipi-tran` package boundary；这不能替代 P2-02，后者仍须 required TRAN profile 与 clean-room 语义规格。
 - [x] **P2-02b** 冻结用户选择的 `rc.cir` external-only identity contract；数值语义与容差由 P2-03a 单独冻结。
 - [x] **P2-02c** 实现仅覆盖 fixed `RcPulseTransientV1` 的 `sipi-tran` clean-room library；拒绝 netlist/parser/OP/AC/通用 MNA 与外部 fallback。
+- [x] **P2-02d** 将 fixed wrapper 收敛到唯一、参数化但拓扑固定的一节点 RC/PULSE library core；该 core 仍不开放 CLI/wire request、netlist或通用电路模型。整改后的 Orca 只读复审为 0 P1/0 P2，见 [evidence](docs/baselines/audits/2026-08-11-p2-one-node-rc-pulse.md)。
 - [x] **P2-06a** 以工作树外的固定 Git object oracle 复跑 `tran-rc-pulse-v1`，并比较产品 typed result；报告仅保存身份、f64le 哈希与误差指标，不复制 fixture 或 waveform。
 - [x] **P2-08a** 冻结严格的产品 owned `sipi.tran.rc-pulse-request.v1`；仅接受已认证 RC/PULSE 参数，拒绝 netlist、路径、未知字段和任意扩展参数。
 - [x] **P2-03a** 冻结 RC/PULSE typed request 的独立数值语义与可执行 acceptance policy；不实现 parser、OP、AC 或通用 MNA。
+- [x] **P2-03b** 冻结一节点 RC/PULSE 的显式 PULSE、输出轴、backward-Euler、breakpoint/资源与 cooperative checkpoint 语义；fixed `tran-rc-pulse-v1` 的 external acceptance 范围不变。
 - [ ] **P2-02** 将可接受内核收敛为 `sipi-tran` library；CLI/worker 只调用 library，不复制 solver。
 - [ ] **P2-03** 冻结 netlist/circuit request、器件支持矩阵、solver/convergence policy 和 error taxonomy。
 - [ ] **P2-04** 固定时间积分、初值、容差、step control、输出采样和 measurement 语义。
