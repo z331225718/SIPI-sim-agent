@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: c97600cfbe4ef21612a83204418e1ba46f75d0d2ca4bb17976ca826d4f02a4f2
+  tracked_paths_sha256: 29429b8da430fa58e02d9a71f4d180fe715035fe9b0df4f673e96c28bd83a92d
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1355,6 +1355,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-12-p3c-prbs9-waveform-jitter-preflight.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-12-p4b-ads-pcie-gen5-dual-ami-asset-preflight.md:
       rule: historical-docs
       class: migration_only
@@ -1590,6 +1596,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3b-link-stage-capability-ledger.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-prbs9-waveform-jitter-preflight.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2040,6 +2052,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-array-compare.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-prbs9-waveform-jitter-preflight.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7085,6 +7103,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_prbs9_waveform_jitter_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p4a_electrical_endpoint_semantic_contract.py:
       rule: migration-tools
       class: migration_only
@@ -7524,6 +7548,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3b_link_stage_capabilities.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_prbs9_waveform_jitter_preflight.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
