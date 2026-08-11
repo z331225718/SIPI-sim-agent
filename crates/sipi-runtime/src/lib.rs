@@ -82,6 +82,32 @@ pub struct RunPolicy {
     max_accounted_bytes: u64,
 }
 
+/// Read-only identity of the cooperative policy attached to a run.
+///
+/// This is an observation surface, not a second policy constructor. Callers
+/// use it when a higher-level contract requires the supplied context to match
+/// an explicitly declared budget exactly.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RunPolicySnapshotV1 {
+    timeout: Duration,
+    max_work_units: u64,
+    max_accounted_bytes: u64,
+}
+
+impl RunPolicySnapshotV1 {
+    pub const fn timeout(&self) -> Duration {
+        self.timeout
+    }
+
+    pub const fn max_work_units(&self) -> u64 {
+        self.max_work_units
+    }
+
+    pub const fn max_accounted_bytes(&self) -> u64 {
+        self.max_accounted_bytes
+    }
+}
+
 impl RunPolicy {
     pub fn try_new(
         timeout: Duration,
@@ -100,6 +126,14 @@ impl RunPolicy {
 
     pub const fn timeout(&self) -> Duration {
         self.timeout
+    }
+
+    pub const fn snapshot(&self) -> RunPolicySnapshotV1 {
+        RunPolicySnapshotV1 {
+            timeout: self.timeout,
+            max_work_units: self.max_work_units,
+            max_accounted_bytes: self.max_accounted_bytes,
+        }
     }
 }
 
@@ -180,6 +214,7 @@ pub struct RunContext {
 struct Shared {
     id: RunId,
     deadline: Instant,
+    timeout: Duration,
     max_work_units: u64,
     max_accounted_bytes: u64,
     state: AtomicU8,
@@ -229,6 +264,7 @@ impl Runtime {
         let shared = Arc::new(Shared {
             id,
             deadline,
+            timeout: policy.timeout,
             max_work_units: policy.max_work_units,
             max_accounted_bytes: policy.max_accounted_bytes,
             state: AtomicU8::new(RUNNING),
@@ -275,6 +311,17 @@ impl RunController {
 }
 
 impl RunContext {
+    pub fn run_id(&self) -> &RunId {
+        &self.shared.id
+    }
+
+    pub fn policy_snapshot(&self) -> RunPolicySnapshotV1 {
+        RunPolicySnapshotV1 {
+            timeout: self.shared.timeout,
+            max_work_units: self.shared.max_work_units,
+            max_accounted_bytes: self.shared.max_accounted_bytes,
+        }
+    }
     pub fn checkpoint(&self) -> Result<(), RuntimeFailure> {
         if self.shared.cancelled.load(Ordering::Acquire) {
             return Err(self.finish(RunState::Cancelled));
@@ -514,6 +561,29 @@ mod tests {
         assert!(RunId::try_new("bad/path").is_err());
         assert!(RunPolicy::try_new(Duration::ZERO, 1, 1).is_err());
         assert!(RunPolicy::try_new(Duration::from_secs(1), 0, 1).is_err());
+    }
+
+    #[test]
+    fn context_exposes_its_immutable_identity_and_policy_snapshot() {
+        let policy = RunPolicy::try_new(Duration::from_millis(7), 11, 13).unwrap();
+        assert_eq!(
+            policy.snapshot(),
+            RunPolicySnapshotV1 {
+                timeout: Duration::from_millis(7),
+                max_work_units: 11,
+                max_accounted_bytes: 13,
+            }
+        );
+        let (_, context) = Runtime::start(RunId::try_new("snapshot-1").unwrap(), policy).unwrap();
+        assert_eq!(context.run_id().as_str(), "snapshot-1");
+        assert_eq!(
+            context.policy_snapshot(),
+            RunPolicySnapshotV1 {
+                timeout: Duration::from_millis(7),
+                max_work_units: 11,
+                max_accounted_bytes: 13,
+            }
+        );
     }
 
     #[test]

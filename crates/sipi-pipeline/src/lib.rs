@@ -18,8 +18,14 @@ use sipi_contracts::{
     PROJECT_PLAN_SCHEMA, WireProjectEdgeSourceV1, WireProjectPlanV1, WireProjectPortRefV1,
 };
 
+mod project_attempt;
 mod tran_to_link;
 
+pub use project_attempt::{
+    CompletedFixedTranCausalFirProjectAttemptV1, FixedTranCausalFirProjectAdmissionV1,
+    FixedTranCausalFirProjectBindingV1, FixedTranCausalFirProjectError,
+    run_fixed_tran_causal_fir_project_attempt_v1, validate_fixed_tran_causal_fir_project_v1,
+};
 pub use tran_to_link::{
     CausalFirConsumerConfigV1, CompletedEdgeAttemptV1, EdgeDigestV1, RecordedTranToLinkExecutionV1,
     TRAN_RC_PULSE_LAUNCH_CONTRACT_V1, TRAN_RC_PULSE_TO_CAUSAL_FIR_EDGE_SCHEMA_V1,
@@ -373,6 +379,14 @@ pub const TRAN_RC_PULSE_REQUEST_CONTRACT_V1: &str = "sipi.tran.rc-pulse-request.
 pub const TRAN_RC_PULSE_RESULT_CONTRACT_V1: &str = "sipi.tran.rc-pulse-result.v1";
 pub const LINK_CAUSAL_FIR_REQUEST_CONTRACT_V1: &str = "sipi.link.causal-fir-request.v1";
 pub const LINK_CAUSAL_FIR_RESULT_CONTRACT_V1: &str = "sipi.link.causal-fir-result.v1";
+/// The sole executable P6 composite node. It is deliberately not a generic
+/// edge adapter: its one input is the fixed TRAN request plus causal-FIR
+/// policy supplied through an in-memory binding.
+pub const FIXED_TRAN_CAUSAL_FIR_PROJECT_KIND_V1: &str = "project.tran-rc-pulse-to-causal-fir";
+pub const FIXED_TRAN_CAUSAL_FIR_PROJECT_BINDING_CONTRACT_V1: &str =
+    "sipi.project.tran-rc-pulse-to-causal-fir-binding.v1";
+pub const FIXED_TRAN_CAUSAL_FIR_PROJECT_SCHEMA_V1: &str =
+    "sipi.project-attempt.tran-rc-pulse-to-causal-fir.v1";
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ProjectPlanError {
@@ -581,6 +595,19 @@ fn production_catalog() -> BTreeMap<&'static str, NodeSignature> {
                 }],
                 outputs: vec![PortContract {
                     port: "result",
+                    contract: LINK_CAUSAL_FIR_RESULT_CONTRACT_V1,
+                }],
+            },
+        ),
+        (
+            FIXED_TRAN_CAUSAL_FIR_PROJECT_KIND_V1,
+            NodeSignature {
+                inputs: vec![PortContract {
+                    port: "binding",
+                    contract: FIXED_TRAN_CAUSAL_FIR_PROJECT_BINDING_CONTRACT_V1,
+                }],
+                outputs: vec![PortContract {
+                    port: "received",
                     contract: LINK_CAUSAL_FIR_RESULT_CONTRACT_V1,
                 }],
             },
