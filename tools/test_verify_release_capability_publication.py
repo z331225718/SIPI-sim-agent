@@ -93,7 +93,7 @@ class PublicationTests(unittest.TestCase):
     def test_channel_cli_requires_current_candidate_evidence_without_claiming_general_support(self) -> None:
         publication = self.publication()
         channel = next(row for row in publication["rows"] if row["id"] == "channel")
-        channel["evidence_ids"].remove("channel-s2p-cli-current-external-compare-v2")
+        channel["evidence_ids"].remove("channel-s2p-cli-current-external-compare-v3")
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
@@ -103,7 +103,7 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
         publication = self.publication()
-        evidence = next(entry for entry in publication["report_index"] if entry["id"] == "channel-s2p-cli-current-external-compare-v2")
+        evidence = next(entry for entry in publication["report_index"] if entry["id"] == "channel-s2p-cli-current-external-compare-v3")
         evidence["evidence_state"] = "specified"
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)

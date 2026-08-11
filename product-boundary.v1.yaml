@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 90165f01631ae509ab578bc5128127a1e5e7d5fc5393b1e4ea8c6edd60fd3669
+  tracked_paths_sha256: 2b6e4ad05b5f69013ab9e7a8edb943f883db78462fc4ad8d3ae7a19160db4a2e
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -294,6 +294,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-contracts/schemas/sipi.receiver-semantics.v1.schema.json:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-contracts/schemas/sipi.receiver.diagnostic-run-request.v1.schema.json:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1055,6 +1061,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-11-p3a-matched-s2p-cli-current-evidence-rebinding-v3.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-11-p3a-matched-s2p-cli-current-evidence-rebinding.md:
       rule: historical-docs
       class: migration_only
@@ -1080,6 +1092,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-11-p3b-delegated-phase-policy.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-11-p3b-receiver-diagnostic-cli.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -1416,6 +1434,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/channel-s2p-matched-cli-current-external-compare-evidence.v2.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/channel-s2p-matched-cli-current-external-compare-evidence.v3.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7218,6 +7242,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_channel_s2p_matched_cli_current_external_compare_evidence_v2.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_channel_s2p_matched_cli_current_external_compare_evidence_v3.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
