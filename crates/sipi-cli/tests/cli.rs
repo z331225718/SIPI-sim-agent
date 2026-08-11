@@ -134,6 +134,23 @@ fn run_artifact_report(root: &Path, artifact_id: &str) -> Output {
     child.wait_with_output().expect("wait sipi")
 }
 
+fn run_with_stdin(arguments: &[&str], request: &[u8]) -> Output {
+    let mut child = sipi()
+        .args(arguments)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start sipi");
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(request)
+        .expect("write request");
+    child.wait_with_output().expect("wait sipi")
+}
+
 #[test]
 fn capabilities_are_machine_readable_and_uncertified() {
     let output = sipi()
@@ -187,6 +204,7 @@ fn protocol_catalog_and_product_examples_are_machine_readable() {
             "channel.run",
             "sipi.channel.matched-two-port-kernel-run-request.v1",
         ),
+        ("compare.run", "sipi.compare.aligned-arrays-request.v1"),
         (
             "project.run",
             "sipi.project.fixed-tran-causal-fir-run-request.v1",
@@ -440,6 +458,47 @@ fn channel_run_stdin_resolves_only_the_bounded_matched_periodic_kernel() {
     let stderr = String::from_utf8(unsupported.stderr).expect("UTF-8 stderr");
     assert!(stderr.contains("\"code\":\"unsupported\""));
     assert!(stderr.contains("\"rule_id\":\"cli.command-shape.v1\""));
+}
+
+#[test]
+fn compare_run_stdin_compares_only_caller_aligned_arrays() {
+    let request = br#"{"schema":"sipi.compare.aligned-arrays-request.v1","reference":{"shape":[2],"unit":"v","semantic_binding_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","values":[0.0,2.0]},"candidate":{"shape":[2],"unit":"v","semantic_binding_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","values":[0.0,2.01]},"tolerance":{"absolute":0.001,"relative":0.001}}"#;
+    let output = run_with_stdin(&["compare", "run", "--stdin"], request);
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("UTF-8 stdout");
+    assert!(stdout.contains("sipi.compare.aligned-arrays-run-result.v1"));
+    assert!(stdout.contains("\"passed\":false"));
+    assert!(stdout.contains("\"mismatch_count\":1"));
+    assert!(stdout.contains("\"evaluation_scope\":\"caller_aligned_arrays_only\""));
+    assert!(!stdout.contains("\"values\""));
+    assert!(output.stderr.is_empty());
+
+    let rejected = run_with_stdin(
+        &["compare", "run", "--stdin"],
+        br#"{"schema":"sipi.compare.aligned-arrays-request.v1","reference":{"shape":[1],"unit":"v","semantic_binding_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","values":[0.0],"path":"outside"},"candidate":{"shape":[1],"unit":"v","semantic_binding_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","values":[0.0]},"tolerance":{"absolute":0.0,"relative":0.0}}"#,
+    );
+    assert_eq!(rejected.status.code(), Some(3));
+    let rejected_stdout = String::from_utf8(rejected.stdout).expect("UTF-8 stdout");
+    assert!(rejected_stdout.contains("\"status\":\"invalid\""));
+    assert!(!rejected_stdout.contains("outside"));
+    assert!(
+        String::from_utf8(rejected.stderr)
+            .expect("UTF-8 stderr")
+            .contains("contract_rejected")
+    );
+
+    let unsupported = sipi().args(["compare", "run"]).output().expect("run sipi");
+    assert_eq!(unsupported.status.code(), Some(4));
+    assert!(
+        String::from_utf8(unsupported.stdout)
+            .expect("UTF-8 stdout")
+            .contains("\"status\":\"unsupported\"")
+    );
+    assert!(
+        String::from_utf8(unsupported.stderr)
+            .expect("UTF-8 stderr")
+            .contains("\"code\":\"unsupported\"")
+    );
 }
 
 #[test]

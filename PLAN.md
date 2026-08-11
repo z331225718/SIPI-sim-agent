@@ -260,8 +260,8 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 #### P3C：指标与报告
 
 - [ ] **P3C-01** `blocked_missing_metric_profile_semantics_and_accepted_receiver_stage`：已 required 的 S2P 仅认证 matched kernel，RFM profile 又在批准的 CDR unique-margin gate 处 `cdr_ambiguous`；均未冻结 eye folding/bin、jitter/TIE reference 或 bathtub/BER estimator/tolerance。禁止自行引入默认 PRBS、clock、bins 或 metric 语义。
-- [ ] **P3C-02** **P3C-02a 已完成：** `sipi-compare` 对调用者已对齐的 finite array 提供严格、单向 reference-to-candidate absolute/relative tolerance report；shape、unit、semantic binding、missing、finite 与算术溢出均 fail-closed，且不做任何对齐/转换或外部比较。eye/jitter/bathtub metric、profile compare 与 `sipi compare` 仍未实现。证据见 [2026-08-11-p3c-array-compare.md](docs/baselines/audits/2026-08-11-p3c-array-compare.md)。
-- [ ] **P3C-03** 接入 `sipi channel run` 和 `sipi compare`。
+- [ ] **P3C-02** **P3C-02a 已完成：** `sipi-compare` 对调用者已对齐的 finite array 提供严格、单向 reference-to-candidate absolute/relative tolerance report；shape、unit、semantic binding、missing、finite 与算术溢出均 fail-closed，且不做任何对齐/转换或外部比较。eye/jitter/bathtub metric 与 profile compare 仍未实现。证据见 [2026-08-11-p3c-array-compare.md](docs/baselines/audits/2026-08-11-p3c-array-compare.md)。
+- [ ] **P3C-03** **P3C-03a 已完成：** `sipi compare run --stdin` 仅执行 product-owned 的显式 aligned-array request；数值 mismatch 是 `passed=false` 的正常结果，结构/容量/finite/tolerance 违规均 fail-closed。它不做 source/profile/file/URL/artifact/oracle 输入、对齐或单位变换，也不实现 channel binding、eye/jitter/bathtub/BER。见 [2026-08-11-p3c-aligned-array-compare-cli.md](docs/baselines/audits/2026-08-11-p3c-aligned-array-compare-cli.md)。
 
 ### 9.3 退出条件
 

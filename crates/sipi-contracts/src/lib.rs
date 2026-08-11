@@ -23,6 +23,7 @@ pub const LINK_PLAN_SCHEMA: &str = "sipi.link-plan.v1";
 pub const LINK_CAUSAL_FIR_REQUEST_SCHEMA: &str = "sipi.link.causal-fir-request.v1";
 pub const CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA: &str =
     "sipi.channel.matched-two-port-kernel-run-request.v1";
+pub const ARRAY_COMPARE_REQUEST_SCHEMA: &str = "sipi.compare.aligned-arrays-request.v1";
 pub const IBIS_INSPECT_REQUEST_SCHEMA: &str = "sipi.ibis.inspect.request.v1";
 pub const IBIS_DC_EVALUATE_REQUEST_SCHEMA: &str = "sipi.ibis.input-typ-dc-evaluate.request.v1";
 pub const IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA: &str =
@@ -43,6 +44,7 @@ pub enum ContractError {
     Version,
     Link(LinkContractError),
     ChannelMatchedKernel(ChannelMatchedKernelContractError),
+    ArrayCompare(ArrayCompareContractError),
     Receiver(ReceiverContractError),
     ReceiverSemantics(ReceiverSemanticContractError),
     IbisInspect(IbisInspectContractError),
@@ -60,6 +62,7 @@ impl fmt::Display for ContractError {
             Self::Version => write!(formatter, "unsupported contract version"),
             Self::Link(error) => error.fmt(formatter),
             Self::ChannelMatchedKernel(error) => error.fmt(formatter),
+            Self::ArrayCompare(error) => error.fmt(formatter),
             Self::Receiver(error) => error.fmt(formatter),
             Self::ReceiverSemantics(error) => error.fmt(formatter),
             Self::IbisInspect(error) => error.fmt(formatter),
@@ -88,6 +91,12 @@ impl From<LinkContractError> for ContractError {
 impl From<ChannelMatchedKernelContractError> for ContractError {
     fn from(value: ChannelMatchedKernelContractError) -> Self {
         Self::ChannelMatchedKernel(value)
+    }
+}
+
+impl From<ArrayCompareContractError> for ContractError {
+    fn from(value: ArrayCompareContractError) -> Self {
+        Self::ArrayCompare(value)
     }
 }
 
@@ -184,6 +193,28 @@ impl fmt::Display for ChannelMatchedKernelContractError {
 }
 
 impl Error for ChannelMatchedKernelContractError {}
+
+/// Stable request-boundary rejections for caller-aligned array comparison.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ArrayCompareContractError {
+    EmptyShape,
+    TooManyDimensions,
+    ZeroDimension,
+    TooManyElements,
+    LengthMismatch,
+    InvalidUnit,
+    InvalidSemanticBinding,
+    NonFiniteValue,
+    InvalidTolerance,
+}
+
+impl fmt::Display for ArrayCompareContractError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "invalid aligned-array compare request: {self:?}")
+    }
+}
+
+impl Error for ArrayCompareContractError {}
 
 /// Stable request-boundary rejections for the selected Input/TYP DC route.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1284,6 +1315,193 @@ pub fn parse_channel_matched_two_port_kernel_run_request_v1(
         .try_into()
 }
 
+/// The bounded product request for comparing two already-aligned numeric arrays.
+/// It deliberately carries no source path, profile, axis transform, unit
+/// conversion, external oracle, or metric-specific interpretation.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireArrayCompareRequestV1 {
+    pub schema: String,
+    pub reference: WireAlignedArrayCompareInputV1,
+    pub candidate: WireAlignedArrayCompareInputV1,
+    pub tolerance: WireArrayCompareToleranceV1,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireAlignedArrayCompareInputV1 {
+    pub shape: Vec<usize>,
+    pub unit: String,
+    pub semantic_binding_sha256: String,
+    pub values: Vec<f64>,
+}
+
+#[derive(Clone, Copy, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireArrayCompareToleranceV1 {
+    pub absolute: f64,
+    pub relative: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ArrayCompareRequestV1 {
+    reference: AlignedArrayCompareInputV1,
+    candidate: AlignedArrayCompareInputV1,
+    tolerance: ArrayCompareToleranceV1,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct AlignedArrayCompareInputV1 {
+    shape: Vec<usize>,
+    unit: String,
+    semantic_binding_sha256: String,
+    values: Vec<f64>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ArrayCompareToleranceV1 {
+    absolute: f64,
+    relative: f64,
+}
+
+pub const MAX_ARRAY_COMPARE_DIMENSIONS_V1: usize = 8;
+pub const MAX_ARRAY_COMPARE_ELEMENTS_V1: usize = 4_096;
+
+impl ArrayCompareRequestV1 {
+    pub fn reference(&self) -> &AlignedArrayCompareInputV1 {
+        &self.reference
+    }
+
+    pub fn candidate(&self) -> &AlignedArrayCompareInputV1 {
+        &self.candidate
+    }
+
+    pub const fn tolerance(&self) -> ArrayCompareToleranceV1 {
+        self.tolerance
+    }
+}
+
+impl AlignedArrayCompareInputV1 {
+    pub fn shape(&self) -> &[usize] {
+        &self.shape
+    }
+
+    pub fn unit(&self) -> &str {
+        &self.unit
+    }
+
+    pub fn semantic_binding_sha256(&self) -> &str {
+        &self.semantic_binding_sha256
+    }
+
+    pub fn values(&self) -> &[f64] {
+        &self.values
+    }
+}
+
+impl ArrayCompareToleranceV1 {
+    pub const fn absolute(self) -> f64 {
+        self.absolute
+    }
+
+    pub const fn relative(self) -> f64 {
+        self.relative
+    }
+}
+
+impl TryFrom<WireArrayCompareRequestV1> for ArrayCompareRequestV1 {
+    type Error = ContractError;
+
+    fn try_from(value: WireArrayCompareRequestV1) -> Result<Self, Self::Error> {
+        if value.schema != ARRAY_COMPARE_REQUEST_SCHEMA {
+            return Err(ContractError::Version);
+        }
+        let reference = validate_aligned_array_compare_input(value.reference)?;
+        let candidate = validate_aligned_array_compare_input(value.candidate)?;
+        if !value.tolerance.absolute.is_finite()
+            || value.tolerance.absolute < 0.0
+            || !value.tolerance.relative.is_finite()
+            || value.tolerance.relative < 0.0
+        {
+            return Err(ArrayCompareContractError::InvalidTolerance.into());
+        }
+        Ok(Self {
+            reference,
+            candidate,
+            tolerance: ArrayCompareToleranceV1 {
+                absolute: value.tolerance.absolute,
+                relative: value.tolerance.relative,
+            },
+        })
+    }
+}
+
+fn validate_aligned_array_compare_input(
+    input: WireAlignedArrayCompareInputV1,
+) -> Result<AlignedArrayCompareInputV1, ContractError> {
+    if input.shape.is_empty() {
+        return Err(ArrayCompareContractError::EmptyShape.into());
+    }
+    if input.shape.len() > MAX_ARRAY_COMPARE_DIMENSIONS_V1 {
+        return Err(ArrayCompareContractError::TooManyDimensions.into());
+    }
+    let mut element_count = 1_usize;
+    for dimension in &input.shape {
+        if *dimension == 0 {
+            return Err(ArrayCompareContractError::ZeroDimension.into());
+        }
+        element_count = element_count
+            .checked_mul(*dimension)
+            .ok_or(ArrayCompareContractError::TooManyElements)?;
+        if element_count > MAX_ARRAY_COMPARE_ELEMENTS_V1 {
+            return Err(ArrayCompareContractError::TooManyElements.into());
+        }
+    }
+    if input.values.len() != element_count {
+        return Err(ArrayCompareContractError::LengthMismatch.into());
+    }
+    if !valid_array_compare_unit(&input.unit) {
+        return Err(ArrayCompareContractError::InvalidUnit.into());
+    }
+    if !valid_array_compare_binding(&input.semantic_binding_sha256) {
+        return Err(ArrayCompareContractError::InvalidSemanticBinding.into());
+    }
+    if input.values.iter().any(|value| !value.is_finite()) {
+        return Err(ArrayCompareContractError::NonFiniteValue.into());
+    }
+    Ok(AlignedArrayCompareInputV1 {
+        shape: input.shape,
+        unit: input.unit,
+        semantic_binding_sha256: input.semantic_binding_sha256,
+        values: input.values,
+    })
+}
+
+fn valid_array_compare_unit(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 64
+        && value.bytes().enumerate().all(|(index, byte)| {
+            byte.is_ascii_lowercase()
+                || byte.is_ascii_digit()
+                || (index > 0 && matches!(byte, b'.' | b'_' | b'-' | b'/'))
+        })
+}
+
+fn valid_array_compare_binding(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+pub fn parse_array_compare_request_v1(
+    input: &[u8],
+) -> Result<ArrayCompareRequestV1, ContractError> {
+    serde_json::from_slice::<WireArrayCompareRequestV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
 /// A product-owned Input/TYP static clamp request. The text is caller-provided
 /// UTF-8; it has no file, URL, asset identity, or external acceptance surface.
 #[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
@@ -2180,6 +2398,26 @@ pub fn product_example_request_json_v1(command_id: &str) -> Result<Option<Vec<u8
             },
         })
         .map(Some),
+        "compare.run" => deterministic_json(&WireArrayCompareRequestV1 {
+            schema: ARRAY_COMPARE_REQUEST_SCHEMA.to_owned(),
+            reference: WireAlignedArrayCompareInputV1 {
+                shape: vec![3],
+                unit: "v".to_owned(),
+                semantic_binding_sha256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_owned(),
+                values: vec![0.0, 1.0, 2.0],
+            },
+            candidate: WireAlignedArrayCompareInputV1 {
+                shape: vec![3],
+                unit: "v".to_owned(),
+                semantic_binding_sha256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_owned(),
+                values: vec![0.0, 1.000_5, 2.0],
+            },
+            tolerance: WireArrayCompareToleranceV1 {
+                absolute: 0.001,
+                relative: 0.0,
+            },
+        })
+        .map(Some),
         "ibis.inspect" => deterministic_json(&WireIbisInspectRequestV1 {
             schema: IBIS_INSPECT_REQUEST_SCHEMA.to_owned(),
             source: WireIbisInspectSourceV1 {
@@ -2310,6 +2548,10 @@ pub fn link_causal_fir_request_schema_json() -> Result<Vec<u8>, ContractError> {
 
 pub fn channel_matched_two_port_kernel_run_request_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireChannelMatchedTwoPortKernelRunRequestV1))
+}
+
+pub fn array_compare_request_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(WireArrayCompareRequestV1))
 }
 
 pub fn ibis_inspect_request_schema_json() -> Result<Vec<u8>, ContractError> {
@@ -2691,6 +2933,37 @@ mod tests {
     }
 
     #[test]
+    fn array_compare_request_requires_explicit_aligned_finite_inputs() {
+        let request = product_example_request_json_v1("compare.run")
+            .expect("example")
+            .expect("compare example");
+        let parsed = parse_array_compare_request_v1(&request).expect("request");
+        assert_eq!(parsed.reference().shape(), &[3]);
+        assert_eq!(parsed.candidate().unit(), "v");
+        assert_eq!(parsed.tolerance().absolute(), 0.001);
+        assert!(parse_array_compare_request_v1(
+            br#"{"schema":"sipi.compare.aligned-arrays-request.v1","reference":{"shape":[1],"unit":"v","semantic_binding_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","values":[0.0]},"candidate":{"shape":[1],"unit":"v","semantic_binding_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","values":[0.0]},"tolerance":{"absolute":-1.0,"relative":0.0}}"#
+        )
+        .is_err());
+        assert!(parse_array_compare_request_v1(
+            br#"{"schema":"sipi.compare.aligned-arrays-request.v1","reference":{"shape":[1],"unit":"v","semantic_binding_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","values":[0.0],"path":"x"},"candidate":{"shape":[1],"unit":"v","semantic_binding_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","values":[0.0]},"tolerance":{"absolute":0.0,"relative":0.0}}"#
+        )
+        .is_err());
+        let oversized = format!(
+            "{{\"schema\":\"{ARRAY_COMPARE_REQUEST_SCHEMA}\",\"reference\":{{\"shape\":[{}],\"unit\":\"v\",\"semantic_binding_sha256\":\"{}\",\"values\":[]}},\"candidate\":{{\"shape\":[1],\"unit\":\"v\",\"semantic_binding_sha256\":\"{}\",\"values\":[0.0]}},\"tolerance\":{{\"absolute\":0.0,\"relative\":0.0}}}}",
+            MAX_ARRAY_COMPARE_ELEMENTS_V1 + 1,
+            "a".repeat(64),
+            "a".repeat(64),
+        );
+        assert!(parse_array_compare_request_v1(oversized.as_bytes()).is_err());
+        assert!(
+            array_compare_request_schema_json()
+                .expect("schema")
+                .starts_with(b"{")
+        );
+    }
+
+    #[test]
     fn ibis_dc_evaluate_request_is_typical_only_and_strict() {
         let valid = br#"{"schema":"sipi.ibis.input-typ-dc-evaluate.request.v1","source":{"encoding":"utf-8","text":"[IBIS Ver] 7.1\n"},"selection":{"ibis_version":"7.1","model_selector":"product_input","corner":"typical"},"probe":{"gnd_clamp_drive_volts":0.0,"power_clamp_drive_volts":1.0}}"#;
         let request = parse_ibis_dc_evaluate_request_v1(valid).expect("valid request");
@@ -2886,6 +3159,14 @@ mod tests {
             "../schemas/sipi.channel.matched-two-port-kernel-run-request.v1.schema.json"
         );
         let exported = channel_matched_two_port_kernel_run_request_schema_json().expect("schema");
+        assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
+    }
+
+    #[test]
+    fn tracked_array_compare_request_schema_baseline_is_exactly_the_registered_export() {
+        let baseline =
+            include_bytes!("../schemas/sipi.compare.aligned-arrays-request.v1.schema.json");
+        let exported = array_compare_request_schema_json().expect("schema");
         assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
     }
 

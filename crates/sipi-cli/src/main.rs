@@ -11,24 +11,28 @@ use std::{
 
 use sha2::{Digest, Sha256};
 use sipi_channel::{ChannelLimitsV1, resolve_matched_kernel_v1};
+use sipi_compare::{
+    ARRAY_COMPARE_POLICY_V1, AlignedArrayV1, ArrayShapeV1, SemanticBindingDigestV1, ToleranceV1,
+    UnitTagV1, compare_arrays_v1,
+};
 use sipi_contracts::{
-    ARTIFACT_REPORT_REQUEST_SCHEMA, CAPABILITIES_SCHEMA,
+    ARRAY_COMPARE_REQUEST_SCHEMA, ARTIFACT_REPORT_REQUEST_SCHEMA, CAPABILITIES_SCHEMA,
     CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA, CapabilityCatalogV1,
     FIXED_PROJECT_RUN_REQUEST_SCHEMA, IBIS_DC_EVALUATE_REQUEST_SCHEMA,
     IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA, LINK_PLAN_SCHEMA, PLANNED_DOMAINS, RULE_LEDGER_V1,
-    TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA, artifact_report_request_schema_json,
-    capability_schema_json, channel_matched_two_port_kernel_run_request_schema_json,
-    deterministic_json, fixed_project_run_request_schema_json,
-    ibis_dc_evaluate_request_schema_json, ibis_inspect_request_schema_json,
-    ibis_quasi_static_evaluate_request_schema_json, link_causal_fir_request_schema_json,
-    link_plan_schema_json, parse_artifact_report_request_v1,
-    parse_channel_matched_two_port_kernel_run_request_v1, parse_fixed_project_run_request_v1,
-    parse_ibis_dc_evaluate_request_v1, parse_ibis_inspect_request_v1,
-    parse_ibis_quasi_static_evaluate_request_v1, parse_link_causal_fir_request_v1,
-    parse_rx_load_differential_rc_evaluate_request_v1, parse_tran_one_node_rc_pulse_request_v1,
-    parse_tran_rc_pulse_request_v1, product_example_request_json_v1, project_plan_schema_json,
-    receiver_input_schema_json, receiver_semantics_schema_json,
-    rx_load_differential_rc_evaluate_request_schema_json,
+    TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA, array_compare_request_schema_json,
+    artifact_report_request_schema_json, capability_schema_json,
+    channel_matched_two_port_kernel_run_request_schema_json, deterministic_json,
+    fixed_project_run_request_schema_json, ibis_dc_evaluate_request_schema_json,
+    ibis_inspect_request_schema_json, ibis_quasi_static_evaluate_request_schema_json,
+    link_causal_fir_request_schema_json, link_plan_schema_json, parse_array_compare_request_v1,
+    parse_artifact_report_request_v1, parse_channel_matched_two_port_kernel_run_request_v1,
+    parse_fixed_project_run_request_v1, parse_ibis_dc_evaluate_request_v1,
+    parse_ibis_inspect_request_v1, parse_ibis_quasi_static_evaluate_request_v1,
+    parse_link_causal_fir_request_v1, parse_rx_load_differential_rc_evaluate_request_v1,
+    parse_tran_one_node_rc_pulse_request_v1, parse_tran_rc_pulse_request_v1,
+    product_example_request_json_v1, project_plan_schema_json, receiver_input_schema_json,
+    receiver_semantics_schema_json, rx_load_differential_rc_evaluate_request_schema_json,
     tran_one_node_rc_pulse_request_schema_json, tran_rc_pulse_request_schema_json,
     validate_request_v1, validation_request_schema_json,
 };
@@ -427,12 +431,12 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
     CommandDescriptorV1 {
         id: "compare.run",
         route: &["compare", "run"],
-        availability: CommandAvailabilityV1::Unavailable,
-        transport: "none",
-        request_schema: None,
-        response_schema: None,
-        unavailable_reason: Some("external_comparator_not_exposed"),
-        nonclaim: "no_oracle_or_comparison_workflow",
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some(ARRAY_COMPARE_REQUEST_SCHEMA),
+        response_schema: Some("sipi.compare.aligned-arrays-run-result.v1"),
+        unavailable_reason: None,
+        nonclaim: "caller_aligned_arrays_only",
     },
     CommandDescriptorV1 {
         id: "report.inspect",
@@ -611,6 +615,15 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
     CommandProtocolProfileV1 {
+        command_id: "compare.run",
+        example_id: Some("product-owned-minimal-v1"),
+        required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: Some("compare.aligned-arrays.v1"),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
+    CommandProtocolProfileV1 {
         command_id: "project.run",
         example_id: Some("product-owned-minimal-v1"),
         required_options: &["--artifact-root", "--artifact-id"],
@@ -653,6 +666,8 @@ fn main() {
         ProcessAdapter::rx_load_differential_rc_evaluate_stdin()
     } else if arguments == ["channel", "run", "--stdin"] {
         ProcessAdapter::channel_run_stdin()
+    } else if arguments == ["compare", "run", "--stdin"] {
+        ProcessAdapter::compare_run_stdin()
     } else if arguments == ["report", "inspect", "--stdin"] {
         ProcessAdapter::report_inspect_stdin()
     } else if let [command, action, stdin, root, artifact_root, id, artifact_id] = &arguments[..]
@@ -764,6 +779,24 @@ impl ProcessAdapter {
             Err(_) => return error(3, "contract_rejected", "channel request was rejected"),
         };
         run_matched_channel_kernel(request.text())
+    }
+
+    fn compare_run_stdin() -> Response {
+        let input = match read_stdin_request() {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        let request = match parse_array_compare_request_v1(&input) {
+            Ok(request) => request,
+            Err(_) => {
+                return error(
+                    3,
+                    "contract_rejected",
+                    "aligned-array compare request was rejected",
+                );
+            }
+        };
+        run_array_compare(&request)
     }
 
     fn project_run_stdin(artifact_root: &str, artifact_id: &str) -> Response {
@@ -1414,6 +1447,60 @@ fn run_matched_channel_kernel(text: &str) -> Response {
     ))
 }
 
+fn run_array_compare(request: &sipi_contracts::ArrayCompareRequestV1) -> Response {
+    let reference = match compare_input_from_contract(request.reference()) {
+        Ok(value) => value,
+        Err(()) => return error(3, "contract_rejected", "reference array was rejected"),
+    };
+    let candidate = match compare_input_from_contract(request.candidate()) {
+        Ok(value) => value,
+        Err(()) => return error(3, "contract_rejected", "candidate array was rejected"),
+    };
+    let tolerance = match ToleranceV1::try_new(
+        request.tolerance().absolute(),
+        request.tolerance().relative(),
+    ) {
+        Ok(value) => value,
+        Err(_) => return error(3, "contract_rejected", "comparison tolerance was rejected"),
+    };
+    let report = match compare_arrays_v1(Some(&reference), Some(&candidate), tolerance) {
+        Ok(report) => report,
+        Err(_) => return error(3, "contract_rejected", "aligned arrays were rejected"),
+    };
+    let shape = report
+        .shape()
+        .dimensions()
+        .iter()
+        .map(usize::to_string)
+        .collect::<Vec<_>>()
+        .join(",");
+    let first_mismatch_index = report
+        .first_mismatch_index()
+        .map_or_else(|| "null".to_owned(), |index| index.to_string());
+    success(format!(
+        "{{\"schema\":\"sipi.compare.aligned-arrays-run-result.v1\",\"policy\":\"{}\",\"reference_digest\":\"{}\",\"candidate_digest\":\"{}\",\"shape\":[{shape}],\"unit\":\"{}\",\"semantic_binding_sha256\":\"{}\",\"passed\":{},\"mismatch_count\":{},\"max_absolute_error\":{},\"max_allowed_error\":{},\"first_mismatch_index\":{first_mismatch_index},\"evaluation_scope\":\"caller_aligned_arrays_only\",\"external_profile_acceptance\":\"not_evaluated\"}}",
+        ARRAY_COMPARE_POLICY_V1,
+        report.reference_digest(),
+        report.candidate_digest(),
+        report.unit().as_str(),
+        report.semantic_binding().as_str(),
+        report.passed(),
+        report.mismatch_count(),
+        report.max_absolute_error(),
+        report.max_allowed_error(),
+    ))
+}
+
+fn compare_input_from_contract(
+    input: &sipi_contracts::AlignedArrayCompareInputV1,
+) -> Result<AlignedArrayV1, ()> {
+    let shape = ArrayShapeV1::try_new(input.shape().to_vec()).map_err(|_| ())?;
+    let unit = UnitTagV1::try_new(input.unit()).map_err(|_| ())?;
+    let binding =
+        SemanticBindingDigestV1::try_new(input.semantic_binding_sha256()).map_err(|_| ())?;
+    AlignedArrayV1::try_new(shape, unit, binding, input.values().to_vec()).map_err(|_| ())
+}
+
 fn run_ibis_dc_evaluate(request: &sipi_contracts::IbisDcEvaluateRequestV1) -> Response {
     let limits = match ParseLimitsV1::try_new(1_048_576, 65_536, 16_384, 16_384) {
         Ok(limits) => limits,
@@ -1713,6 +1800,7 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["tran", "one-node-rc-pulse"]
             | ["link", "run"]
             | ["channel", "run"]
+            | ["compare", "run"]
             | ["project", "run"]
             | ["report", "inspect"]
     )
@@ -1786,6 +1874,8 @@ fn schema_bytes(id: &str) -> Result<Option<Vec<u8>>, sipi_contracts::ContractErr
         link_causal_fir_request_schema_json().map(Some)
     } else if id == CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA {
         channel_matched_two_port_kernel_run_request_schema_json().map(Some)
+    } else if id == ARRAY_COMPARE_REQUEST_SCHEMA {
+        array_compare_request_schema_json().map(Some)
     } else if id == sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA {
         ibis_inspect_request_schema_json().map(Some)
     } else if id == IBIS_DC_EVALUATE_REQUEST_SCHEMA {
@@ -2066,6 +2156,11 @@ impl CommandService {
                 "unsupported",
                 "Channel requires the exact run --stdin command",
             ),
+            [command, ..] if command == "compare" => error(
+                4,
+                "unsupported",
+                "compare requires the exact run --stdin command",
+            ),
             [command, ..] if command == "project" => error(
                 4,
                 "unsupported",
@@ -2179,7 +2274,7 @@ fn doctor_json() -> String {
 
 fn schema_list_json() -> String {
     format!(
-        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA}\",\"{}\",\"{}\"]}}",
+        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA}\",\"{ARRAY_COMPARE_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA}\",\"{}\",\"{}\"]}}",
         IBIS_DC_EVALUATE_REQUEST_SCHEMA,
         IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA,
         sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA,
@@ -2224,6 +2319,7 @@ fn validate_self(schema: Option<&str>) -> Response {
         id != CAPABILITIES_SCHEMA
             && id != ARTIFACT_REPORT_REQUEST_SCHEMA
             && id != CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA
+            && id != ARRAY_COMPARE_REQUEST_SCHEMA
             && id != sipi_contracts::VALIDATION_REQUEST_SCHEMA
             && id != sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA
             && id != TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA
@@ -2252,6 +2348,7 @@ fn validate_self(schema: Option<&str>) -> Response {
         && validation_request_schema_json().is_ok()
         && artifact_report_request_schema_json().is_ok()
         && channel_matched_two_port_kernel_run_request_schema_json().is_ok()
+        && array_compare_request_schema_json().is_ok()
         && tran_rc_pulse_request_schema_json().is_ok()
         && tran_one_node_rc_pulse_request_schema_json().is_ok()
         && ibis_inspect_request_schema_json().is_ok()
@@ -2344,7 +2441,6 @@ mod tests {
             ["ami", "run"].as_slice(),
             ["com", "run"].as_slice(),
             ["project", "validate"].as_slice(),
-            ["compare", "run"].as_slice(),
             ["report", "show"].as_slice(),
         ] {
             let response = dispatch(&args(command));
@@ -2370,6 +2466,7 @@ mod tests {
             "ibis.quasi-static-evaluate",
             "rx-load.differential-rc-evaluate",
             "channel.run",
+            "compare.run",
             "tran.run",
             "link.run",
             "project.run",
@@ -2560,7 +2657,7 @@ mod tests {
     fn schema_list_uses_the_schema_inventory_order() {
         assert_eq!(
             schema_list_json(),
-            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.one-node-rc-pulse-request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
+            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.compare.aligned-arrays-request.v1\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.one-node-rc-pulse-request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
         );
     }
 
