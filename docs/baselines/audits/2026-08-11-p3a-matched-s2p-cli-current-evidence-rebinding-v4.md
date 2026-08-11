@@ -23,3 +23,10 @@ product crate trees plus `Cargo.lock`; v1, v2, and v3 remain historical
 source-drift records. The acceptance remains only the selected matched-S21
 periodic V/V kernel: ordinary caller input is unattested, and this is not
 general Touchstone, reflection, Link/eye/BER, artifact, or release evidence.
+
+One read-only Orca OpenCode audit of commit `56a6c2d` reported `0 P1 / 0 P2`.
+It independently confirmed the v4 report/hash and product-tree bindings, the
+historical v1/v2/v3 drift results, active-ledger v4-only shape, boundary
+rebinding, and exclusion of the user's uncommitted `uv.lock`. The review noted
+two nonblocking P3 coverage opportunities for exceptional verifier branches;
+both remain fail-closed and do not alter this evidence's scope or acceptance.
