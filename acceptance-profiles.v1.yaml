@@ -41,9 +41,9 @@ profiles:
       - {path: tests/golden/rust_migration/agent_spice_rfm/block_2.rfm, git_blob: 9a087a9f75c58d3d1fb15efee2628001a601a546, content_sha256: 5716f691a69174cfe88980ffd96bfc867f30f9ee92b6b85d3fb6b8c8b3636a53, redistribution: external_only}
     source_license_evidence: license-manifest.v1.yaml#pybert-main-source
     environment: {platform: windows-x86_64, provenance_status: evidence_incomplete, provenance_ref: docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm-same-config-receiver-parity}
-    acceptance: {observable: external current-drive receive-voltage handoff followed by approved fixed receiver decisions and BER, comparator_ref: tools/replay_channel_rfm_receiver_handoff.py, tolerance_policy_ref: docs/baselines/channel-rfm-receiver-semantic-approval.v1.yaml, status: required_pending_receiver_compare, required_by: user-confirmed-2026-08-10-channel-rfm-receiver}
+    acceptance: {observable: external current-drive receive-voltage handoff followed by profile-scoped delegated-policy receiver decisions and BER diagnostics, comparator_ref: tools/compare_channel_rfm_receiver_delegated_policy.py, tolerance_policy_ref: docs/baselines/channel-rfm-receiver-delegated-phase-amendment.v1.yaml, status: required_delegated_policy_agreement_not_lock_accepted, required_by: user-confirmed-2026-08-10-channel-rfm-receiver}
     evidence_refs: [docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm-same-config-receiver-parity, docs/baselines/audits/2026-08-10-p3b-rfm-receiver-handoff-replay.md]
-    notes: Approved receiver semantics are product-owned. The direct same-source reference-bit observer and receive-voltage to ReceiverInputV1 replay are accepted; fixed-receiver execution and profile-limited receiver compare remain pending.
+    notes: Approved v1 receiver semantics remain historical. Revision 2 externally observed delegated-policy semantic agreement on two fresh RFM handoffs; it is not a CDR-lock, receiver-parity, or required-profile acceptance claim.
   - id: ibis-ami-example-rx-raw-abi-v1
     capability: ibis_ami
     boundary: oracle_only
