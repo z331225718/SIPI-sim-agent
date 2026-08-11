@@ -119,7 +119,7 @@ flowchart LR
 | P0 | 产品边界、许可、clean-room、示例清单 | 进行中；v0.2 基线与 P0-A 已审计 |
 | P1 | Rust workspace、contracts/artifacts/runtime、统一 CLI 骨架 | P1-01 已建立 quarantine foundation；领域能力仍未开始 |
 | P2 | TRAN 原生纵向切片 | fixed RC/PULSE profile 已完成 Rust library/CLI/oracle compare；general TRAN 与 release promotion 未开始 |
-| P3 | Channel clean-room Rust 纵向切片 | `channel_16ghz_3db` 已选为 required profile，matched-S2P 观察/spec 预检已接受；产品实现未开始 |
+| P3 | Channel clean-room Rust 纵向切片 | 限定 matched-S21 periodic kernel、严格 Touchstone 输入和 `channel run` 已实现；`channel_16ghz_3db` 的 kernel core external compare 已接受，Link/eye/BER/receiver 仍未完成 |
 | P4 | IBIS parser + AMI semantic/host | 有 `sipi-ami` candidate 和单 fixture 证据 |
 | P5 | COM Rust 行为 profile | 未开始；有 MIT source/oracle |
 | P6 | 跨域 pipeline、完整 CLI、AI 可发现性 | 有 Python MVP，Rust 未开始 |
@@ -243,6 +243,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 - [x] **P3A-05** `channel_16ghz_3db` required fixture 的 frozen matched-S21 discrete V/V response kernel 已完成 Git-object lineage 与 external observer→Rust compare；Link/stage、RFM、Touchstone 公共输入仍未开始。
 - [x] **P3A-06** clean-room `sipi-touchstone` 只接受 bounded in-memory `# Hz S RI R 50.0` two-port ASCII/RI rows，并在 DC、bit-exact uniform Hz grid 与 real-50-ohm 条件下直接映射到既有 matched spectrum；无文件/CLI/Link/外部资产输入，也不提升 selected-profile acceptance。证据见 [2026-08-11-p3a-touchstone-parser.md](docs/baselines/audits/2026-08-11-p3a-touchstone-parser.md)。
 - [x] **P3A-07** `sipi channel run --stdin` 只接收 product-owned inline UTF-8 text，经唯一 strict Touchstone parser、matched admission 与 `S21` periodic-kernel resolver 输出有界 V/V kernel；无文件/URL/artifact、termination/reflection、causalization 或 Link simulation，caller input 始终 `unattested`。证据见 [2026-08-11-p3a-matched-channel-cli-run.md](docs/baselines/audits/2026-08-11-p3a-matched-channel-cli-run.md)。
+- [x] **P3A-08** selected `channel_16ghz_3db` 的历史 policy/preflight 不改写；新增 hash-only external evidence，重新绑定当前 matched-kernel product source、两次 standard-DFT observer、external Git object 与误差门。该 profile 仅在 matched-S21 periodic discrete V/V kernel core 范围 accepted；`channel run` caller input、Link、general Touchstone 与 release status 不升级。见 [2026-08-11-p3a-matched-s2p-evidence-reconciliation.md](docs/baselines/audits/2026-08-11-p3a-matched-s2p-evidence-reconciliation.md)。
 
 #### P3B：Link Stages
 

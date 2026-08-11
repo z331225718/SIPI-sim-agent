@@ -164,20 +164,32 @@ def _compare(expected: list[float], actual: list[float], absolute: float, relati
     worst_index = 0
     max_abs = -1.0
     max_rel = 0.0
+    max_normalized = 0.0
+    allowed_at_worst = absolute
     passed = True
     for index, (left, right) in enumerate(zip(expected, actual, strict=True)):
         if not math.isfinite(left) or not math.isfinite(right):
             raise ComparatorError("kernel comparison received non-finite value")
         difference = abs(left - right)
         scale = max(abs(left), abs(right))
-        if difference > absolute + relative * scale:
+        allowed = absolute + relative * scale
+        if difference > allowed:
             passed = False
+        max_normalized = max(max_normalized, difference / allowed)
         if difference > max_abs:
             max_abs = difference
             worst_index = index
+            allowed_at_worst = absolute + relative * scale
         if scale:
             max_rel = max(max_rel, difference / scale)
-    return {"passed": passed, "max_absolute_error": max_abs, "max_relative_error": max_rel, "worst_index": worst_index}
+    return {
+        "passed": passed,
+        "max_absolute_error": max_abs,
+        "max_relative_error": max_rel,
+        "max_normalized_error_ratio": max_normalized,
+        "allowed_error_at_worst_index": allowed_at_worst,
+        "worst_index": worst_index,
+    }
 
 
 def _scrubbed_environment(temp_root: Path) -> dict[str, str]:

@@ -37,6 +37,7 @@
     {"id":"tran-rc-pulse-contract","kind":"acceptance_contract","path":"docs/baselines/tran-rc-pulse-acceptance.v1.yaml","subject":"tran-rc-pulse","evidence_state":"specified"},
     {"id":"tran-rc-pulse-external-compare","kind":"external_compare_evidence","path":"docs/baselines/tran-rc-pulse-external-compare-evidence.v1.yaml","subject":"tran-rc-pulse","evidence_state":"observed"},
     {"id":"channel-s2p-contract","kind":"acceptance_contract","path":"docs/baselines/channel-s2p-matched-acceptance.v1.yaml","subject":"channel","evidence_state":"specified"},
+    {"id":"channel-s2p-external-compare","kind":"external_compare_evidence","path":"docs/baselines/channel-s2p-matched-external-compare-evidence.v1.yaml","subject":"channel","evidence_state":"observed"},
     {"id":"p3a-matched-channel-cli-run","kind":"capability_contract","path":"docs/baselines/audits/2026-08-11-p3a-matched-channel-cli-run.md","subject":"channel","evidence_state":"specified"},
     {"id":"p4a-ibis-input-typ-static","kind":"acceptance_report","path":"docs/baselines/p4a-ibis-input-typ-static-acceptance.v1.yaml","subject":"ibis","evidence_state":"observed"},
     {"id":"p4a-ibis-dc-cli","kind":"capability_contract","path":"docs/baselines/p4a-ibis-conformance-matrix.v1.yaml","subject":"ibis","evidence_state":"specified"},

@@ -47,8 +47,10 @@ class MatchedS2pComparatorTests(unittest.TestCase):
     def test_kernel_comparison_and_binary_output_are_fail_closed(self) -> None:
         passed = _compare([0.0, 1.0], [0.0, 1.00001], 1.0e-9, 1.0e-5)
         self.assertTrue(passed["passed"])
+        self.assertLessEqual(passed["max_normalized_error_ratio"], 1.0)
         rejected = _compare([0.0, 1.0], [0.0, 1.01], 1.0e-9, 1.0e-5)
         self.assertFalse(rejected["passed"])
+        self.assertGreater(rejected["max_normalized_error_ratio"], 1.0)
         with self.assertRaisesRegex(ComparatorError, "magic"):
             parse_product_kernel(b"invalid")
         with self.assertRaisesRegex(ComparatorError, "non-finite"):

@@ -385,6 +385,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, comparator, auditor]
     derived_from: [p3a-s2p-matched-channel-spec-v1]
+  - id: p3a-s2p-matched-external-evidence-spec-v1
+    kind: independent_spec
+    content_sha256: 21e523dfce0f0a8a057f0b99f4a2c9d16fcb3c3dc7ef8c8ad0cc3cdfa5937174
+    provenance:
+      source_ref: docs/clean-room/specs/p3a-s2p-matched-external-evidence.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, comparator, auditor]
+    derived_from: [p3a-s2p-matched-channel-acceptance-spec-v1, p3a-s2p-matched-channel-comparator-spec-v1]
   - id: p3b-link-stage-contract-spec-v1
     kind: independent_spec
     content_sha256: 40925733577d95e351735b84d7fe2ee9a8f1a01ed71231b4383b7148b83a42c8
@@ -964,6 +972,15 @@ scopes:
       implementer: []
       comparator: [p3a-s2p-matched-channel-comparator-spec-v1, pybert-channel-16ghz-3db-fixture-f6ba031]
       auditor: [p3a-s2p-matched-channel-comparator-spec-v1, pybert-channel-16ghz-3db-fixture-f6ba031]
+  - id: p3a-s2p-matched-external-evidence-v1
+    paths: [acceptance-profiles.v1.yaml, docs/baselines/channel-s2p-matched-external-compare-evidence.v1.yaml, docs/baselines/release-capability-publication.v1.yaml, docs/baselines/audits/2026-08-11-p3a-matched-s2p-evidence-reconciliation.md, docs/clean-room/specs/p3a-s2p-matched-external-evidence.v1.md, tools/compare_channel_s2p_matched.py, tools/verify_channel_s2p_matched_external_compare_evidence.py, tools/test_compare_channel_s2p_matched.py, tools/test_verify_channel_s2p_matched_external_compare_evidence.py]
+    state: planned
+    role_material_allowlists:
+      observer: [pybert-channel-16ghz-3db-fixture-f6ba031]
+      spec_author: [p3a-s2p-matched-external-evidence-spec-v1]
+      implementer: []
+      comparator: [p3a-s2p-matched-channel-comparator-spec-v1, p3a-s2p-matched-external-evidence-spec-v1, pybert-channel-16ghz-3db-fixture-f6ba031]
+      auditor: [p3a-s2p-matched-external-evidence-spec-v1, pybert-channel-16ghz-3db-fixture-f6ba031]
   - id: p3b-link-stage-contract-v1
     paths: [docs/clean-room/specs/p3b-link-stage-contract.v1.md, crates/sipi-contracts/**]
     state: planned
