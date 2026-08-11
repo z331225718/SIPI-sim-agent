@@ -32,3 +32,12 @@ P3 observation was closed by requiring the exact command-manifest v1 field
 set, validated route/id uniqueness, approved transports, and consistent
 availability/reason fields before ledger binding. The publication remains
 provisional and blocked.
+
+The continuation reconciliation commit `5de78c2` received one further
+read-only Orca OpenCode audit. It reported `0 P1 / 0 P2`: v3 is retained in
+the historical index, only exact `evidence_product_source_drift` permits the
+active Channel row to remain specified and blocked, and the publication now
+also validates the real `sipi commands --json` response. The reviewer
+confirmed the product-boundary and release-license rebinding and that the
+uncommitted `uv.lock` was excluded. Its two P3 test-coverage observations do
+not weaken the gate: an unexpected verifier result remains fail-closed.
