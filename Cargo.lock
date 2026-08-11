@@ -422,6 +422,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "sipi-touchstone"
+version = "0.1.0"
+dependencies = [
+ "sipi-channel",
+ "sipi-types",
+]
+
+[[package]]
 name = "sipi-tran"
 version = "0.1.0"
 dependencies = [

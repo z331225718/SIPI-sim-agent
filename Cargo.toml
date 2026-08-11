@@ -14,6 +14,7 @@ members = [
   "crates/sipi-pipeline",
   "crates/sipi-runtime",
   "crates/sipi-rx-load",
+  "crates/sipi-touchstone",
   "crates/sipi-tran",
   "crates/sipi-types",
 ]

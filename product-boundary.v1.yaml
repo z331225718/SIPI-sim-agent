@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: e085439f23a818f622b50974dd8f6b9924c0811b6b696bb9119b9b3a72d6adc5
+  tracked_paths_sha256: 0da269914504e10af2e4ae37d95565e8d7b6d558ce533fed72529e230622c9fa
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -444,6 +444,18 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-rx-load/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-touchstone/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-touchstone/src/lib.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -996,6 +1008,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-11-p2-tran-external-compare-evidence-reconciliation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-11-p3a-touchstone-parser.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -1746,6 +1764,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3a-s2p-matched-channel.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3a-touchstone-two-port-parser.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

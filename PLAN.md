@@ -241,6 +241,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 - [x] **P3A-03** clean-room `sipi-channel` 实现 matched two-port `S21` 到离散 V/V kernel 的唯一 resolver；只接收产品自有均匀矩阵，不含 adapter、Touchstone、Python 或额外数值路径。
 - [x] **P3A-04** 以项目自有网络恒等式覆盖有限网格 passivity、reciprocity、losslessness 与 Parseval；causality 明确为 not-assessed，未作物理认证。
 - [x] **P3A-05** `channel_16ghz_3db` required fixture 的 frozen matched-S21 discrete V/V response kernel 已完成 Git-object lineage 与 external observer→Rust compare；Link/stage、RFM、Touchstone 公共输入仍未开始。
+- [x] **P3A-06** clean-room `sipi-touchstone` 只接受 bounded in-memory `# Hz S RI R 50.0` two-port ASCII/RI rows，并在 DC、bit-exact uniform Hz grid 与 real-50-ohm 条件下直接映射到既有 matched spectrum；无文件/CLI/Link/外部资产输入，也不提升 selected-profile acceptance。证据见 [2026-08-11-p3a-touchstone-parser.md](docs/baselines/audits/2026-08-11-p3a-touchstone-parser.md)。
 
 #### P3B：Link Stages
 

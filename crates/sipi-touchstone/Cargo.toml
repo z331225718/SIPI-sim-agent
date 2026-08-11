@@ -1,0 +1,15 @@
+[package]
+name = "sipi-touchstone"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Clean-room strict Touchstone two-port admission boundary."
+
+[dependencies]
+sipi-channel = { path = "../sipi-channel" }
+sipi-types = { path = "../sipi-types" }
+
+[lints]
+workspace = true

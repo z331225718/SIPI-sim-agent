@@ -353,6 +353,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: []
+  - id: p3a-touchstone-two-port-parser-spec-v1
+    kind: independent_spec
+    content_sha256: 108eda204616d8b4cd30557d56ed994973b70956718b7a1b15aeeee92bf696ac
+    provenance:
+      source_ref: docs/clean-room/specs/p3a-touchstone-two-port-parser.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p3a-s2p-matched-channel-spec-v1]
   - id: p3a-s2p-matched-channel-acceptance-spec-v1
     kind: independent_spec
     content_sha256: 5bb8f3971fdafb25e34f93469de74eea9f2c3d71065ecbc36a683ab10e472c71
@@ -921,6 +929,15 @@ scopes:
       implementer: [p3a-s2p-matched-channel-spec-v1]
       comparator: []
       auditor: [p3a-s2p-matched-channel-spec-v1]
+  - id: p3a-touchstone-two-port-parser-v1
+    paths: [Cargo.toml, Cargo.lock, crates/sipi-touchstone/**, docs/clean-room/specs/p3a-touchstone-two-port-parser.v1.md]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3a-touchstone-two-port-parser-spec-v1]
+      implementer: [p3a-touchstone-two-port-parser-spec-v1]
+      comparator: []
+      auditor: [p3a-touchstone-two-port-parser-spec-v1]
   - id: p3a-s2p-matched-channel-comparator-v1
     paths: [docs/clean-room/specs/p3a-s2p-matched-channel-comparator.v1.md, tools/compare_channel_s2p_matched.py, tools/test_compare_channel_s2p_matched.py]
     state: planned
