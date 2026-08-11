@@ -6,11 +6,13 @@ import copy
 import importlib.util
 import json
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tools"))
 SPEC = importlib.util.spec_from_file_location("p7_publication", ROOT / "tools" / "verify_release_capability_publication.py")
 assert SPEC and SPEC.loader
 GATE = importlib.util.module_from_spec(SPEC)
@@ -78,6 +80,18 @@ class PublicationTests(unittest.TestCase):
             GATE.validate(publication, manifest_for(self.publication()), ROOT)
         publication = self.publication()
         publication["report_index"][0]["path"] = "C:/private/report.md"
+        with self.assertRaises(GATE.PublicationError):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+
+    def test_accepted_tran_requires_the_verified_external_evidence(self) -> None:
+        publication = self.publication()
+        tran = next(row for row in publication["rows"] if row["id"] == "tran-rc-pulse")
+        tran["evidence_ids"].remove("tran-rc-pulse-external-compare")
+        with self.assertRaises(GATE.PublicationError):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+        publication = self.publication()
+        evidence = next(entry for entry in publication["report_index"] if entry["id"] == "tran-rc-pulse-external-compare")
+        evidence["evidence_state"] = "specified"
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 

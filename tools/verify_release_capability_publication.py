@@ -10,6 +10,9 @@ import re
 import sys
 from typing import Any
 
+from verify_tran_rc_pulse_acceptance import _load as load_yaml
+from verify_tran_rc_pulse_external_compare_evidence import EvidenceError, verify_document as verify_tran_evidence
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = "sipi.release-capability-publication.v1"
@@ -198,6 +201,30 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
         index_by_id[entry_id] = entry
     if any(evidence not in index_by_id for row in rows for evidence in row["evidence_ids"]):
         raise PublicationError("publication_evidence_reference_invalid")
+    _validate_profile_scoped_external_acceptance(rows, index_by_id)
+
+
+def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]) -> None:
+    tran = next((row for row in rows if row["id"] == "tran-rc-pulse"), None)
+    if tran is None:
+        raise PublicationError("publication_tran_row_missing")
+    compare_id = "tran-rc-pulse-external-compare"
+    if tran["acceptance_state"] == "accepted":
+        if (
+            tran["external_oracle"] is not True
+            or compare_id not in tran["evidence_ids"]
+            or "external_compare_not_executed" in tran["blockers"]
+        ):
+            raise PublicationError("publication_tran_acceptance_binding_invalid")
+        entry = index_by_id.get(compare_id)
+        if entry is None or entry["kind"] != "external_compare_evidence" or entry["subject"] != "tran-rc-pulse" or entry["evidence_state"] != "observed":
+            raise PublicationError("publication_tran_acceptance_binding_invalid")
+        try:
+            verify_tran_evidence(load_yaml(ROOT / entry["path"]))
+        except (EvidenceError, OSError, RuntimeError):
+            raise PublicationError("publication_tran_external_evidence_invalid") from None
+    elif compare_id in tran["evidence_ids"]:
+        raise PublicationError("publication_tran_evidence_state_drift")
 
 
 def render(publication: dict[str, Any]) -> str:

@@ -313,6 +313,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, comparator, auditor]
     derived_from: [p2-tran-rc-pulse-semantic-contract-spec-v1]
+  - id: p2-tran-rc-pulse-external-compare-evidence-spec-v1
+    kind: independent_spec
+    content_sha256: 915b4b1a46fec0273145c5e47579c3871f2a0ad86c64e63bd2e9293e5f4e24bc
+    provenance:
+      source_ref: docs/clean-room/specs/p2-tran-rc-pulse-external-compare-evidence.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, comparator, auditor]
+    derived_from: [p2-tran-rc-pulse-acceptance-contract-spec-v1, p2-tran-rc-pulse-comparator-spec-v1]
   - id: p2-tran-fixed-cli-run-spec-v1
     kind: independent_spec
     content_sha256: b9508969a67333d0d8fcc92cde08c480c082f8703c56773e57e08bfe36caf1c8
@@ -832,6 +840,15 @@ scopes:
       implementer: [p2-tran-rc-pulse-acceptance-contract-spec-v1]
       comparator: [agent-spice-rc-pulse-fixture-2cc92316]
       auditor: [p2-tran-rc-pulse-acceptance-contract-spec-v1, agent-spice-license-2cc92316, agent-spice-rc-pulse-fixture-2cc92316]
+  - id: p2-tran-rc-pulse-external-compare-evidence-v1
+    paths: [docs/baselines/tran-rc-pulse-external-compare-evidence.v1.yaml, docs/clean-room/specs/p2-tran-rc-pulse-external-compare-evidence.v1.md, tools/verify_tran_rc_pulse_external_compare_evidence.py, tools/test_verify_tran_rc_pulse_external_compare_evidence.py]
+    state: planned
+    role_material_allowlists:
+      observer: [agent-spice-license-2cc92316, agent-spice-rc-pulse-fixture-2cc92316]
+      spec_author: [p2-tran-rc-pulse-external-compare-evidence-spec-v1]
+      implementer: []
+      comparator: [agent-spice-rc-pulse-fixture-2cc92316]
+      auditor: [p2-tran-rc-pulse-external-compare-evidence-spec-v1, agent-spice-license-2cc92316, agent-spice-rc-pulse-fixture-2cc92316]
   - id: p2-tran-rc-pulse-semantic-contract-v1
     paths: [docs/clean-room/specs/p2-tran-rc-pulse-semantic-contract.v1.md]
     state: planned

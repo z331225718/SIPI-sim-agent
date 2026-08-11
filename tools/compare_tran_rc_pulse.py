@@ -167,6 +167,7 @@ def _compare(name: str, expected: list[float], actual: list[float], absolute: fl
     worst_index = 0
     max_abs = -1.0
     max_rel = 0.0
+    allowed_at_worst = 0.0
     passed = True
     for index, (left, right) in enumerate(zip(expected, actual, strict=True)):
         difference = abs(left - right)
@@ -177,6 +178,7 @@ def _compare(name: str, expected: list[float], actual: list[float], absolute: fl
         if difference > max_abs:
             max_abs = difference
             worst_index = index
+            allowed_at_worst = threshold
         if scale != 0.0:
             max_rel = max(max_rel, difference / scale)
     return {
@@ -186,6 +188,7 @@ def _compare(name: str, expected: list[float], actual: list[float], absolute: fl
         "relative_tolerance": relative,
         "max_absolute_error": max_abs,
         "max_relative_error": max_rel,
+        "allowed_error_at_worst_index": allowed_at_worst,
         "worst_index": worst_index,
     }
 

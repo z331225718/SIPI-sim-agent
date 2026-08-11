@@ -60,6 +60,7 @@ class TranRcPulseComparatorTests(unittest.TestCase):
         accepted = _compare("v(out)", [0.0, 1.0], [0.0, 1.0005], 2.0e-6, 5.0e-4)
         self.assertTrue(accepted["passed"])
         self.assertEqual(accepted["worst_index"], 1)
+        self.assertGreaterEqual(accepted["allowed_error_at_worst_index"], accepted["max_absolute_error"])
         rejected = _compare("v(out)", [0.0, 1.0], [0.0, 1.01], 2.0e-6, 5.0e-4)
         self.assertFalse(rejected["passed"])
 
