@@ -86,11 +86,11 @@ class PublicationTests(unittest.TestCase):
     def test_accepted_tran_requires_the_verified_external_evidence(self) -> None:
         publication = self.publication()
         tran = next(row for row in publication["rows"] if row["id"] == "tran-rc-pulse")
-        tran["evidence_ids"].remove("tran-rc-pulse-external-compare")
+        tran["evidence_ids"].remove("tran-rc-pulse-current-external-compare")
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
         publication = self.publication()
-        evidence = next(entry for entry in publication["report_index"] if entry["id"] == "tran-rc-pulse-external-compare")
+        evidence = next(entry for entry in publication["report_index"] if entry["id"] == "tran-rc-pulse-current-external-compare")
         evidence["evidence_state"] = "specified"
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)

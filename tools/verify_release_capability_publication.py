@@ -11,7 +11,7 @@ import sys
 from typing import Any
 
 from verify_tran_rc_pulse_acceptance import _load as load_yaml
-from verify_tran_rc_pulse_external_compare_evidence import EvidenceError, verify_document as verify_tran_evidence
+from verify_tran_rc_pulse_current_external_compare_evidence import EvidenceError, verify_document as verify_tran_evidence
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -208,7 +208,7 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
     tran = next((row for row in rows if row["id"] == "tran-rc-pulse"), None)
     if tran is None:
         raise PublicationError("publication_tran_row_missing")
-    compare_id = "tran-rc-pulse-external-compare"
+    compare_id = "tran-rc-pulse-current-external-compare"
     if tran["acceptance_state"] == "accepted":
         if (
             tran["external_oracle"] is not True
