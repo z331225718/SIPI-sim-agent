@@ -22,6 +22,8 @@ pub const LINK_PLAN_SCHEMA: &str = "sipi.link-plan.v1";
 pub const LINK_CAUSAL_FIR_REQUEST_SCHEMA: &str = "sipi.link.causal-fir-request.v1";
 pub const IBIS_INSPECT_REQUEST_SCHEMA: &str = "sipi.ibis.inspect.request.v1";
 pub const IBIS_DC_EVALUATE_REQUEST_SCHEMA: &str = "sipi.ibis.input-typ-dc-evaluate.request.v1";
+pub const IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA: &str =
+    "sipi.ibis.input-typ-quasi-static-evaluate.request.v1";
 pub const RECEIVER_INPUT_SCHEMA: &str = "sipi.receiver-input.v1";
 pub const RECEIVER_SEMANTICS_SCHEMA: &str = "sipi.receiver-semantics.v1";
 pub const PROJECT_PLAN_SCHEMA: &str = "sipi.project.v1";
@@ -39,6 +41,7 @@ pub enum ContractError {
     ReceiverSemantics(ReceiverSemanticContractError),
     IbisInspect(IbisInspectContractError),
     IbisDcEvaluate(IbisDcEvaluateContractError),
+    IbisQuasiStaticEvaluate(IbisQuasiStaticEvaluateContractError),
     Project(ProjectContractError),
 }
 
@@ -53,6 +56,7 @@ impl fmt::Display for ContractError {
             Self::ReceiverSemantics(error) => error.fmt(formatter),
             Self::IbisInspect(error) => error.fmt(formatter),
             Self::IbisDcEvaluate(error) => error.fmt(formatter),
+            Self::IbisQuasiStaticEvaluate(error) => error.fmt(formatter),
             Self::Project(error) => error.fmt(formatter),
         }
     }
@@ -93,6 +97,12 @@ impl From<IbisInspectContractError> for ContractError {
 impl From<IbisDcEvaluateContractError> for ContractError {
     fn from(value: IbisDcEvaluateContractError) -> Self {
         Self::IbisDcEvaluate(value)
+    }
+}
+
+impl From<IbisQuasiStaticEvaluateContractError> for ContractError {
+    fn from(value: IbisQuasiStaticEvaluateContractError) -> Self {
+        Self::IbisQuasiStaticEvaluate(value)
     }
 }
 
@@ -153,6 +163,29 @@ impl fmt::Display for IbisDcEvaluateContractError {
 }
 
 impl Error for IbisDcEvaluateContractError {}
+
+/// Stable request-boundary rejections for the selected Input/TYP
+/// quasi-static constitutive route.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum IbisQuasiStaticEvaluateContractError {
+    UnsupportedEncoding,
+    EmptyText,
+    InvalidSelection,
+    UnsupportedCorner,
+    NonFiniteProbe,
+    NonFiniteSlope,
+}
+
+impl fmt::Display for IbisQuasiStaticEvaluateContractError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            formatter,
+            "invalid IBIS quasi-static evaluate request: {self:?}"
+        )
+    }
+}
+
+impl Error for IbisQuasiStaticEvaluateContractError {}
 
 /// Stable rejections for the deliberately narrow Link-stage contract.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1219,6 +1252,109 @@ pub fn parse_ibis_dc_evaluate_request_v1(
         .try_into()
 }
 
+/// A product-owned Input/TYP quasi-static clamp request. It provides the
+/// continuous SIG-to-REF slope explicitly; it does not accept a time step,
+/// waveform, history, asset identity, or external acceptance surface.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireIbisQuasiStaticEvaluateRequestV1 {
+    pub schema: String,
+    pub source: WireIbisInspectSourceV1,
+    pub selection: WireIbisDcSelectionV1,
+    pub probe: WireIbisQuasiStaticProbeV1,
+}
+
+#[derive(Clone, Copy, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireIbisQuasiStaticProbeV1 {
+    pub gnd_clamp_drive_volts: f64,
+    pub power_clamp_drive_volts: f64,
+    pub sig_to_ref_slope_volts_per_second: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct IbisQuasiStaticEvaluateRequestV1 {
+    text: String,
+    ibis_version: String,
+    model_selector: String,
+    gnd_clamp_drive_volts: Volts,
+    power_clamp_drive_volts: Volts,
+    sig_to_ref_slope_volts_per_second: FiniteF64,
+}
+
+impl IbisQuasiStaticEvaluateRequestV1 {
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
+    pub fn ibis_version(&self) -> &str {
+        &self.ibis_version
+    }
+
+    pub fn model_selector(&self) -> &str {
+        &self.model_selector
+    }
+
+    pub const fn gnd_clamp_drive_volts(&self) -> Volts {
+        self.gnd_clamp_drive_volts
+    }
+
+    pub const fn power_clamp_drive_volts(&self) -> Volts {
+        self.power_clamp_drive_volts
+    }
+
+    pub fn sig_to_ref_slope_volts_per_second(&self) -> f64 {
+        self.sig_to_ref_slope_volts_per_second.get()
+    }
+}
+
+impl TryFrom<WireIbisQuasiStaticEvaluateRequestV1> for IbisQuasiStaticEvaluateRequestV1 {
+    type Error = ContractError;
+
+    fn try_from(value: WireIbisQuasiStaticEvaluateRequestV1) -> Result<Self, Self::Error> {
+        if value.schema != IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA {
+            return Err(ContractError::Version);
+        }
+        if value.source.encoding != "utf-8" {
+            return Err(IbisQuasiStaticEvaluateContractError::UnsupportedEncoding.into());
+        }
+        if value.source.text.is_empty() {
+            return Err(IbisQuasiStaticEvaluateContractError::EmptyText.into());
+        }
+        if value.selection.corner != "typical" {
+            return Err(IbisQuasiStaticEvaluateContractError::UnsupportedCorner.into());
+        }
+        if value.selection.ibis_version.is_empty() || value.selection.model_selector.is_empty() {
+            return Err(IbisQuasiStaticEvaluateContractError::InvalidSelection.into());
+        }
+        let gnd_clamp_drive_volts = Volts::try_new(value.probe.gnd_clamp_drive_volts)
+            .map_err(|_| IbisQuasiStaticEvaluateContractError::NonFiniteProbe)?;
+        let power_clamp_drive_volts = Volts::try_new(value.probe.power_clamp_drive_volts)
+            .map_err(|_| IbisQuasiStaticEvaluateContractError::NonFiniteProbe)?;
+        let sig_to_ref_slope_volts_per_second = FiniteF64::try_new(
+            value.probe.sig_to_ref_slope_volts_per_second,
+            "SIG-to-REF voltage slope in volts per second",
+        )
+        .map_err(|_| IbisQuasiStaticEvaluateContractError::NonFiniteSlope)?;
+        Ok(Self {
+            text: value.source.text,
+            ibis_version: value.selection.ibis_version,
+            model_selector: value.selection.model_selector,
+            gnd_clamp_drive_volts,
+            power_clamp_drive_volts,
+            sig_to_ref_slope_volts_per_second,
+        })
+    }
+}
+
+pub fn parse_ibis_quasi_static_evaluate_request_v1(
+    input: &[u8],
+) -> Result<IbisQuasiStaticEvaluateRequestV1, ContractError> {
+    serde_json::from_slice::<WireIbisQuasiStaticEvaluateRequestV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
 /// A caller-owned request to verify and project one already-published local
 /// artifact. It deliberately has no file enumeration, URL, or payload surface.
 #[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
@@ -1773,6 +1909,26 @@ pub fn product_example_request_json_v1(command_id: &str) -> Result<Option<Vec<u8
             },
         })
         .map(Some),
+        "ibis.quasi-static-evaluate" => {
+            deterministic_json(&WireIbisQuasiStaticEvaluateRequestV1 {
+                schema: IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA.to_owned(),
+                source: WireIbisInspectSourceV1 {
+                    encoding: "utf-8".to_owned(),
+                    text: "[IBIS Ver] 7.1\n[Model] product_input\nModel_type Input\nC_comp 1pF\n[GND_clamp]\n-1V -1A\n1V 1A\n[POWER_clamp]\n-1V 1A\n1V -1A\n".to_owned(),
+                },
+                selection: WireIbisDcSelectionV1 {
+                    ibis_version: "7.1".to_owned(),
+                    model_selector: "product_input".to_owned(),
+                    corner: "typical".to_owned(),
+                },
+                probe: WireIbisQuasiStaticProbeV1 {
+                    gnd_clamp_drive_volts: 0.5,
+                    power_clamp_drive_volts: 0.0,
+                    sig_to_ref_slope_volts_per_second: 1.0e9,
+                },
+            })
+            .map(Some)
+        }
         "project.run" => deterministic_json(&WireFixedProjectRunRequestV1 {
             schema: FIXED_PROJECT_RUN_REQUEST_SCHEMA.to_owned(),
             plan: WireProjectPlanV1 {
@@ -1846,6 +2002,10 @@ pub fn ibis_inspect_request_schema_json() -> Result<Vec<u8>, ContractError> {
 
 pub fn ibis_dc_evaluate_request_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireIbisDcEvaluateRequestV1))
+}
+
+pub fn ibis_quasi_static_evaluate_request_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(WireIbisQuasiStaticEvaluateRequestV1))
 }
 
 pub fn artifact_report_request_schema_json() -> Result<Vec<u8>, ContractError> {
@@ -2085,6 +2245,15 @@ mod tests {
     }
 
     #[test]
+    fn tracked_ibis_quasi_static_evaluate_schema_baseline_is_exactly_the_registered_export() {
+        let baseline = include_bytes!(
+            "../schemas/sipi.ibis.input-typ-quasi-static-evaluate.request.v1.schema.json"
+        );
+        let exported = ibis_quasi_static_evaluate_request_schema_json().expect("schema");
+        assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
+    }
+
+    #[test]
     fn tracked_project_schema_baseline_is_exactly_the_registered_export() {
         let baseline = include_bytes!("../schemas/sipi.project.v1.schema.json");
         assert!(baseline.ends_with(b"\n"));
@@ -2182,6 +2351,31 @@ mod tests {
         .is_err());
         assert!(parse_ibis_dc_evaluate_request_v1(
             br#"{"schema":"sipi.ibis.input-typ-dc-evaluate.request.v1","source":{"encoding":"utf-8","text":"x"},"selection":{"ibis_version":"7.1","model_selector":"m","corner":"typical"},"probe":{"gnd_clamp_drive_volts":null,"power_clamp_drive_volts":0.0}}"#
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn ibis_quasi_static_evaluate_request_requires_a_finite_explicit_slope() {
+        let valid = br#"{"schema":"sipi.ibis.input-typ-quasi-static-evaluate.request.v1","source":{"encoding":"utf-8","text":"[IBIS Ver] 7.1\n"},"selection":{"ibis_version":"7.1","model_selector":"product_input","corner":"typical"},"probe":{"gnd_clamp_drive_volts":0.0,"power_clamp_drive_volts":1.0,"sig_to_ref_slope_volts_per_second":-1.0e9}}"#;
+        let request = parse_ibis_quasi_static_evaluate_request_v1(valid).expect("valid request");
+        assert_eq!(request.sig_to_ref_slope_volts_per_second(), -1.0e9);
+        assert!(matches!(
+            parse_ibis_quasi_static_evaluate_request_v1(
+                br#"{"schema":"sipi.ibis.input-typ-quasi-static-evaluate.request.v1","source":{"encoding":"utf-8","text":"x"},"selection":{"ibis_version":"7.1","model_selector":"m","corner":"typical"},"probe":{"gnd_clamp_drive_volts":0.0,"power_clamp_drive_volts":0.0,"sig_to_ref_slope_volts_per_second":null}}"#
+            ),
+            Err(ContractError::Json(_))
+        ));
+        assert!(matches!(
+            parse_ibis_quasi_static_evaluate_request_v1(
+                br#"{"schema":"sipi.ibis.input-typ-quasi-static-evaluate.request.v1","source":{"encoding":"utf-8","text":"x"},"selection":{"ibis_version":"7.1","model_selector":"m","corner":"maximum"},"probe":{"gnd_clamp_drive_volts":0.0,"power_clamp_drive_volts":0.0,"sig_to_ref_slope_volts_per_second":0.0}}"#
+            ),
+            Err(ContractError::IbisQuasiStaticEvaluate(
+                IbisQuasiStaticEvaluateContractError::UnsupportedCorner
+            ))
+        ));
+        assert!(parse_ibis_quasi_static_evaluate_request_v1(
+            br#"{"schema":"sipi.ibis.input-typ-quasi-static-evaluate.request.v1","source":{"encoding":"utf-8","text":"x","file":"sample.ibs"},"selection":{"ibis_version":"7.1","model_selector":"m","corner":"typical"},"probe":{"gnd_clamp_drive_volts":0.0,"power_clamp_drive_volts":0.0,"sig_to_ref_slope_volts_per_second":0.0}}"#
         )
         .is_err());
     }

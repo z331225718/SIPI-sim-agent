@@ -611,6 +611,112 @@ impl fmt::Display for IbisDcEvaluateErrorV1 {
 
 impl Error for IbisDcEvaluateErrorV1 {}
 
+/// Pure in-memory service for the selected Input/TYP quasi-static clamp scope.
+/// It consumes caller-provided text and an explicit SIG-to-REF slope; no time
+/// step, waveform history, file, URL, external asset, or AMI behavior exists
+/// at this boundary.
+pub struct IbisQuasiStaticEvaluateServiceV1;
+
+impl IbisQuasiStaticEvaluateServiceV1 {
+    pub fn evaluate(
+        text: &str,
+        profile: &SelectedDcClampProfileV1,
+        state: QuasiStaticClampStateV1,
+        limits: ParseLimitsV1,
+    ) -> Result<IbisQuasiStaticEvaluateReportV1, IbisQuasiStaticEvaluateErrorV1> {
+        let bytes = text.as_bytes();
+        let document = parse_structural_v1(bytes, limits)
+            .map_err(IbisQuasiStaticEvaluateErrorV1::Structural)?;
+        let envelope = build_semantic_envelope_v1(&document)
+            .map_err(IbisQuasiStaticEvaluateErrorV1::Semantic)?;
+        let decoded = decode_selected_dc_clamps_v1(&envelope, profile)
+            .map_err(IbisQuasiStaticEvaluateErrorV1::Profile)?;
+        let model = InputClampConstitutiveV1::try_new(decoded.model().clone(), decoded.c_comp())
+            .map_err(IbisQuasiStaticEvaluateErrorV1::Constitutive)?;
+        let response = evaluate_quasi_static_clamps_v1(&model, state)
+            .map_err(IbisQuasiStaticEvaluateErrorV1::Constitutive)?;
+        Ok(IbisQuasiStaticEvaluateReportV1 {
+            input_byte_length: bytes.len(),
+            input_sha256: hex_sha256(bytes),
+            ibis_version: profile.ibis_version().to_owned(),
+            model_selector: profile.model_selector().to_owned(),
+            gnd_current: response.gnd_current(),
+            power_current: response.power_current(),
+            c_comp_current: response.c_comp_current(),
+            total_shunt_current: response.total_shunt_current(),
+        })
+    }
+}
+
+/// Bounded projection of a successful quasi-static constitutive evaluation.
+#[derive(Clone, Debug, PartialEq)]
+pub struct IbisQuasiStaticEvaluateReportV1 {
+    input_byte_length: usize,
+    input_sha256: String,
+    ibis_version: String,
+    model_selector: String,
+    gnd_current: Amps,
+    power_current: Amps,
+    c_comp_current: Amps,
+    total_shunt_current: Amps,
+}
+
+impl IbisQuasiStaticEvaluateReportV1 {
+    pub const fn input_byte_length(&self) -> usize {
+        self.input_byte_length
+    }
+
+    pub fn input_sha256(&self) -> &str {
+        &self.input_sha256
+    }
+
+    pub fn ibis_version(&self) -> &str {
+        &self.ibis_version
+    }
+
+    pub fn model_selector(&self) -> &str {
+        &self.model_selector
+    }
+
+    pub const fn gnd_current(&self) -> Amps {
+        self.gnd_current
+    }
+
+    pub const fn power_current(&self) -> Amps {
+        self.power_current
+    }
+
+    pub const fn c_comp_current(&self) -> Amps {
+        self.c_comp_current
+    }
+
+    pub const fn total_shunt_current(&self) -> Amps {
+        self.total_shunt_current
+    }
+}
+
+/// Stable rejection families for the quasi-static constitutive service.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum IbisQuasiStaticEvaluateErrorV1 {
+    Structural(IbisDiagnosticV1),
+    Semantic(IbisSemanticDiagnosticV1),
+    Profile(IbisProfileDiagnosticV1),
+    Constitutive(InputClampConstitutiveErrorV1),
+}
+
+impl fmt::Display for IbisQuasiStaticEvaluateErrorV1 {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Structural(error) => error.fmt(formatter),
+            Self::Semantic(error) => error.fmt(formatter),
+            Self::Profile(error) => error.fmt(formatter),
+            Self::Constitutive(error) => error.fmt(formatter),
+        }
+    }
+}
+
+impl Error for IbisQuasiStaticEvaluateErrorV1 {}
+
 fn hex_sha256(bytes: &[u8]) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let digest = Sha256::digest(bytes);
@@ -2207,6 +2313,49 @@ mod tests {
             ),
             Err(IbisDcEvaluateErrorV1::Dc(
                 DcClampErrorV1::OutOfDomain { .. }
+            ))
+        ));
+    }
+
+    #[test]
+    fn quasi_static_service_adds_only_the_explicit_c_comp_slope_current() {
+        let profile = SelectedDcClampProfileV1::try_new(
+            "7.1",
+            "product_input_model",
+            DcClampCornerV1::Typical,
+        )
+        .expect("profile");
+        let source = selected_input_source(b"");
+        let report = IbisQuasiStaticEvaluateServiceV1::evaluate(
+            std::str::from_utf8(&source).expect("UTF-8"),
+            &profile,
+            QuasiStaticClampStateV1::try_new(
+                Volts::try_new(0.5).expect("finite"),
+                Volts::try_new(0.0).expect("finite"),
+                1.0e9,
+            )
+            .expect("state"),
+            limits(),
+        )
+        .expect("quasi-static evaluation");
+        assert_eq!(report.gnd_current().get(), 1.0);
+        assert_eq!(report.power_current().get(), 1.0);
+        assert_eq!(report.c_comp_current().get(), 0.0025);
+        assert_eq!(report.total_shunt_current().get(), 2.0025);
+        assert!(matches!(
+            IbisQuasiStaticEvaluateServiceV1::evaluate(
+                std::str::from_utf8(&source).expect("UTF-8"),
+                &profile,
+                QuasiStaticClampStateV1::try_new(
+                    Volts::try_new(3.0).expect("finite"),
+                    Volts::try_new(0.0).expect("finite"),
+                    1.0e9,
+                )
+                .expect("state"),
+                limits(),
+            ),
+            Err(IbisQuasiStaticEvaluateErrorV1::Constitutive(
+                InputClampConstitutiveErrorV1::Dc(DcClampErrorV1::OutOfDomain { .. })
             ))
         ));
     }

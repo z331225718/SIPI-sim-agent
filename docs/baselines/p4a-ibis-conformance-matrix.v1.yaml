@@ -63,6 +63,12 @@ entries:
     entry_points: [IbisDcEvaluateServiceV1, sipi_ibis_dc_evaluate_stdin]
     evidence_refs: [docs/clean-room/specs/p4a-ibis-input-typ-static-dc-cli.v1.md, crates/sipi-ibis/src/lib.rs::tests::dc_evaluate_service_returns_only_selected_static_current_facts, crates/sipi-cli/tests/cli.rs::ibis_dc_evaluate_stdin_evaluates_only_caller_supplied_static_clamps]
     non_claim: Caller input is unattested; this static route does not inherit external profile acceptance or evaluate C_comp transient behavior.
+  - id: input-typ-quasi-static-evaluate-stdin
+    scope: caller-provided UTF-8 Input Typical model with two explicit clamp drives and one explicit SIG-to-REF slope
+    status: implemented_self_tested
+    entry_points: [IbisQuasiStaticEvaluateServiceV1, sipi_ibis_quasi_static_evaluate_stdin]
+    evidence_refs: [docs/clean-room/specs/p4a-ibis-input-typ-quasi-static-cli.v1.md, crates/sipi-ibis/src/lib.rs::tests::quasi_static_service_adds_only_the_explicit_c_comp_slope_current, crates/sipi-cli/tests/cli.rs::ibis_quasi_static_evaluate_stdin_requires_an_explicit_slope]
+    non_claim: Caller input is unattested; this memoryless constitutive route has no time step, state, integration, or external transient/profile acceptance.
   - id: non-input-models
     scope: Output IO and Terminator model electrical semantics
     status: unsupported
