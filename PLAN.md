@@ -387,7 +387,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 - [ ] **P7-05** **P7-05a 已完成（provisional）：** 发布由 product command manifest 绑定的 pre-release capability/evidence ledger，逐项列出 command surface、acceptance state、安全 evidence index、blocker 与 non-claim；顶层固定 `release_ready=false` 与 `promotion_status=blocked`。真正 release capability matrix 仍等待法律/NOTICE、fresh-machine 和 profile gates。
 - [ ] **P7-06** 对 owner-approved workload 执行性能/RSS 门；无批准预算只记录 observation。
 - [ ] **P7-07** 形成 release candidate tag，绑定源码、工具链、工件和审计结论。
-- [ ] **P7-08** 用户批准后删除已替代的 Python/adapter/runtime，并同批移除专属 drift gate。
+- [ ] **P7-08** `blocked_no_path_scoped_replacement_and_retirement_approval`：现有 Rust CLI 仅覆盖窄 TRAN、causal-FIR 与 IBIS structural/DC；Python platform、adapter、engine、fixture 与 M0-M5 drift evidence 仍是 migration/oracle/non-product evidence。未具备逐路径 replacement mapping、required profile accepted、同批 drift-gate removal、release/license/fresh-machine gates 和明确 retirement approval 前禁止删除。
 - [ ] **P7-09** **P7-09a 已完成（provisional）：** P7 publication docs 的 external-history registry 只允许 `alias + immutable full hash` marker，拒绝 local/source path、branch/tag、镜像与产品材料 promotion。它不迁移、删除或法律清洗既有历史；P7-08 owner-approved deletion 和最终 release audit 仍待完成。
 
 ### 13.2 发布声明
