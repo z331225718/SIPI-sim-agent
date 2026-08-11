@@ -26,9 +26,9 @@ profiles:
       - {path: models/sp_file/channel_16ghz_3db.s2p, git_blob: e10bfb4a43731645984f1f5e24bd3fbf2268dedd, content_sha256: 9d4cfeaad7c971fa45454f639b40e08c538855058f326fbdec64298b8933b5ad, redistribution: authorized_test_only}
     source_license_evidence: license-manifest.v1.yaml#pybert-main-source
     environment: {platform: windows-x86_64, provenance_status: evidence_incomplete, provenance_ref: docs/baselines/audits/2026-08-08-m5.md#m5b-03c}
-    acceptance: {observable: matched S21 discrete voltage-gain kernel, comparator_ref: external-standard-dft-observer, tolerance_policy_ref: docs/baselines/channel-s2p-matched-acceptance.v1.yaml, status: required_accepted_matched_kernel_core_only, required_by: user-confirmed-2026-08-10-channel_16ghz_3db}
-    evidence_refs: [docs/baselines/audits/2026-08-08-m5.md#m5b-03c, docs/baselines/channel-s2p-matched-external-compare-evidence.v1.yaml]
-    notes: Accepted only for the external-only selected matched-S21 discrete kernel core. Public CLI caller input, Link simulation, and generic S-parameter support remain unattested.
+    acceptance: {observable: matched S21 discrete voltage-gain kernel, comparator_ref: external-standard-dft-observer, tolerance_policy_ref: docs/baselines/channel-s2p-matched-acceptance.v1.yaml, status: required_accepted_matched_kernel_cli_e2e_only, required_by: user-confirmed-2026-08-10-channel_16ghz_3db}
+    evidence_refs: [docs/baselines/audits/2026-08-08-m5.md#m5b-03c, docs/baselines/channel-s2p-matched-external-compare-evidence.v1.yaml, docs/baselines/channel-s2p-matched-cli-external-compare-evidence.v1.yaml]
+    notes: Accepted only for the exact external-only selected matched-S21 periodic discrete kernel through the bounded CLI path. Ordinary public caller input, Link simulation, and generic S-parameter support remain unattested.
   - id: channel-rfm-block-2-current-drive-v1
     capability: channel
     boundary: oracle_only

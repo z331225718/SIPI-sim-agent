@@ -121,6 +121,7 @@ def verify_document(document: object, source_roots: dict[str, Path] | None = Non
                 "required_pending_preflight",
                 "required_pending_numerical_compare",
                 "required_accepted_matched_kernel_core_only",
+                "required_accepted_matched_kernel_cli_e2e_only",
                 "required_delegated_policy_agreement_not_lock_accepted",
                 "required_blocked_missing_receiver_semantics",
                 "required_blocked_missing_authorized_reference_bit_source",
