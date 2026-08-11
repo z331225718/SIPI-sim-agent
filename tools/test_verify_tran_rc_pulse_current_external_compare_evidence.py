@@ -11,32 +11,40 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
-SPEC = importlib.util.spec_from_file_location(
-    "current_tran_evidence", ROOT / "tools" / "verify_tran_rc_pulse_current_external_compare_evidence.py"
-)
-assert SPEC and SPEC.loader
-GATE = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(GATE)
+def load_gate(name: str, filename: str):
+    spec = importlib.util.spec_from_file_location(name, ROOT / "tools" / filename)
+    assert spec and spec.loader
+    gate = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gate)
+    return gate
+
+
+GATE_V1 = load_gate("current_tran_evidence_v1", "verify_tran_rc_pulse_current_external_compare_evidence.py")
+GATE_V2 = load_gate("current_tran_evidence_v2", "verify_tran_rc_pulse_current_external_compare_evidence_v2.py")
 
 
 class CurrentTranEvidenceTests(unittest.TestCase):
-    def document(self) -> dict:
-        return copy.deepcopy(GATE._load(GATE.EVIDENCE))
+    def document(self, gate) -> dict:
+        return copy.deepcopy(gate._load(gate.EVIDENCE))
 
-    def test_current_candidate_evidence_is_bound(self) -> None:
-        result = GATE.verify_document(self.document())
+    def test_prior_current_evidence_remains_drifted(self) -> None:
+        with self.assertRaisesRegex(GATE_V1.EvidenceError, "evidence_product_source_drift"):
+            GATE_V1.verify_document(self.document(GATE_V1))
+
+    def test_v2_current_candidate_evidence_is_bound(self) -> None:
+        result = GATE_V2.verify_document(self.document(GATE_V2))
         self.assertTrue(result["valid"])
         self.assertEqual(result["evidence_level"], "hash_only_attestation")
 
     def test_rejects_historical_schema_and_product_drift(self) -> None:
-        wrong_schema = self.document()
-        wrong_schema["schema"] = GATE.HISTORICAL_SCHEMA
-        with self.assertRaises(GATE.EvidenceError):
-            GATE.verify_document(wrong_schema)
-        drift = self.document()
+        wrong_schema = self.document(GATE_V2)
+        wrong_schema["schema"] = GATE_V2.HISTORICAL_SCHEMA
+        with self.assertRaises(GATE_V2.EvidenceError):
+            GATE_V2.verify_document(wrong_schema)
+        drift = self.document(GATE_V2)
         drift["product"]["source_trees"]["sipi-tran"] = "0" * 40
-        with self.assertRaises(GATE.EvidenceError):
-            GATE.verify_document(drift)
+        with self.assertRaises(GATE_V2.EvidenceError):
+            GATE_V2.verify_document(drift)
 
 
 if __name__ == "__main__":
