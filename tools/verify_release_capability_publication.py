@@ -12,7 +12,7 @@ from typing import Any
 
 from verify_tran_rc_pulse_acceptance import _load as load_yaml
 from verify_tran_rc_pulse_current_external_compare_evidence import EvidenceError, verify_document as verify_tran_evidence
-from verify_channel_s2p_matched_cli_current_external_compare_evidence import (
+from verify_channel_s2p_matched_cli_current_external_compare_evidence_v2 import (
     EvidenceError as ChannelEvidenceError,
     verify_document as verify_channel_cli_evidence,
 )
@@ -231,7 +231,7 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
         raise PublicationError("publication_tran_evidence_state_drift")
 
     channel = next((row for row in rows if row["id"] == "channel"), None)
-    compare_id = "channel-s2p-cli-current-external-compare"
+    compare_id = "channel-s2p-cli-current-external-compare-v2"
     if channel is None:
         raise PublicationError("publication_channel_row_missing")
     if (

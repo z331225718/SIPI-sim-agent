@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: ba80ccd8375799b91c48065fbdb204e4d14a49710050a6b882ba9fb477409664
+  tracked_paths_sha256: 90165f01631ae509ab578bc5128127a1e5e7d5fc5393b1e4ea8c6edd60fd3669
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1049,6 +1049,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-11-p3a-matched-s2p-cli-current-evidence-rebinding-v2.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-11-p3a-matched-s2p-cli-current-evidence-rebinding.md:
       rule: historical-docs
       class: migration_only
@@ -1409,6 +1415,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/channel-s2p-matched-cli-current-external-compare-evidence.v2.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/channel-s2p-matched-cli-external-compare-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -1416,6 +1428,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/channel-s2p-matched-external-compare-evidence.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/channel-s2p-matched-external-compare-evidence.v2.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7199,6 +7217,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_channel_s2p_matched_cli_current_external_compare_evidence_v2.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_channel_s2p_matched_cli_external_compare_evidence.py:
       rule: migration-tools
       class: migration_only
@@ -7206,6 +7230,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_channel_s2p_matched_external_compare_evidence.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_channel_s2p_matched_external_compare_evidence_v2.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

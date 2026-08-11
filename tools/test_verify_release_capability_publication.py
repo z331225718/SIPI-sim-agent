@@ -86,14 +86,14 @@ class PublicationTests(unittest.TestCase):
     def test_accepted_tran_requires_the_verified_external_evidence(self) -> None:
         publication = self.publication()
         tran = next(row for row in publication["rows"] if row["id"] == "tran-rc-pulse")
-        tran["evidence_ids"].remove("tran-rc-pulse-current-external-compare")
+        tran["acceptance_state"] = "accepted"
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
     def test_channel_cli_requires_current_candidate_evidence_without_claiming_general_support(self) -> None:
         publication = self.publication()
         channel = next(row for row in publication["rows"] if row["id"] == "channel")
-        channel["evidence_ids"].remove("channel-s2p-cli-current-external-compare")
+        channel["evidence_ids"].remove("channel-s2p-cli-current-external-compare-v2")
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
@@ -103,7 +103,7 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
         publication = self.publication()
-        evidence = next(entry for entry in publication["report_index"] if entry["id"] == "tran-rc-pulse-current-external-compare")
+        evidence = next(entry for entry in publication["report_index"] if entry["id"] == "channel-s2p-cli-current-external-compare-v2")
         evidence["evidence_state"] = "specified"
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import importlib.util
 import json
 import sys
 import tempfile
@@ -13,12 +12,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
-SPEC = importlib.util.spec_from_file_location(
-    "channel_evidence", ROOT / "tools" / "verify_channel_s2p_matched_external_compare_evidence.py"
-)
-assert SPEC and SPEC.loader
-GATE = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(GATE)
+import verify_channel_s2p_matched_external_compare_evidence as GATE
+import verify_channel_s2p_matched_external_compare_evidence_v2 as GATE_V2
 
 
 def digest(character: str) -> str:
@@ -27,7 +22,7 @@ def digest(character: str) -> str:
 
 class ChannelEvidenceTests(unittest.TestCase):
     def evidence(self) -> dict:
-        return copy.deepcopy(GATE._load(GATE.EVIDENCE))
+        return copy.deepcopy(GATE._load(GATE_V2.EVIDENCE))
 
     def report(self, evidence: dict) -> dict:
         return {
@@ -61,10 +56,11 @@ class ChannelEvidenceTests(unittest.TestCase):
             "non_claims": list(GATE.REPORT_NON_CLAIMS),
         }
 
-    def test_current_evidence_binds_to_current_product_inputs(self) -> None:
-        result = GATE.verify_document(self.evidence())
+    def test_prior_evidence_remains_drifted_and_v2_binds_to_current_product_inputs(self) -> None:
+        with self.assertRaisesRegex(GATE.EvidenceError, "evidence_product_source_drift"):
+            GATE.verify_document(copy.deepcopy(GATE._load(GATE.EVIDENCE)))
+        result = GATE_V2.verify_document(self.evidence())
         self.assertTrue(result["valid"])
-        self.assertEqual(result["evidence_level"], "hash_only_attestation")
 
     def test_rejects_policy_source_product_and_metric_drift(self) -> None:
         cases = [
@@ -83,7 +79,7 @@ class ChannelEvidenceTests(unittest.TestCase):
                 value = self.evidence()
                 mutate(value)
                 with self.assertRaises(GATE.EvidenceError):
-                    GATE.verify_document(value)
+                    GATE_V2.verify_document(value)
 
     def test_external_report_is_hash_bound_and_exact(self) -> None:
         evidence = self.evidence()
@@ -92,20 +88,26 @@ class ChannelEvidenceTests(unittest.TestCase):
             path = Path(directory) / "report.json"
             path.write_text(json.dumps(report, sort_keys=True), encoding="utf-8")
             evidence["external_report"]["sha256"] = GATE._sha256_file(path)
-            bound = GATE.verify_document(evidence, path)
+            historical_shape = copy.deepcopy(evidence)
+            historical_shape["schema"] = GATE.SCHEMA
+            bound = GATE.verify_document(historical_shape, path)
             self.assertTrue(bound["report_bound"])
             self.assertEqual(bound["evidence_level"], "fresh_report_bound")
             report["comparison"]["passed"] = False
             path.write_text(json.dumps(report, sort_keys=True), encoding="utf-8")
             evidence["external_report"]["sha256"] = GATE._sha256_file(path)
-            with self.assertRaises(GATE.EvidenceError):
-                GATE.verify_document(evidence, path)
+            historical_shape = copy.deepcopy(evidence)
+            historical_shape["schema"] = GATE.SCHEMA
+            with self.assertRaisesRegex(GATE.EvidenceError, "external_report_"):
+                GATE.verify_document(historical_shape, path)
             report = self.report(evidence)
             report["non_claims"][0] = "promoted"
             path.write_text(json.dumps(report, sort_keys=True), encoding="utf-8")
             evidence["external_report"]["sha256"] = GATE._sha256_file(path)
-            with self.assertRaises(GATE.EvidenceError):
-                GATE.verify_document(evidence, path)
+            historical_shape = copy.deepcopy(evidence)
+            historical_shape["schema"] = GATE.SCHEMA
+            with self.assertRaisesRegex(GATE.EvidenceError, "external_report_"):
+                GATE.verify_document(historical_shape, path)
 
 
 if __name__ == "__main__":

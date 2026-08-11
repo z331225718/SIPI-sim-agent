@@ -154,7 +154,15 @@ def _validate_report_binding(evidence: dict[str, Any], report: dict[str, Any], p
         raise EvidenceError("external_report_comparison_mismatch")
 
 
-def verify_document(document: object, report_path: Path | None = None, source_root: Path | None = None) -> dict[str, Any]:
+def verify_document(
+    document: object,
+    report_path: Path | None = None,
+    source_root: Path | None = None,
+    *,
+    core_evidence_path: Path = CORE_EVIDENCE,
+    core_evidence_verifier: Any = verify_core_evidence,
+    core_evidence_schema: str = "sipi.channel.s2p-matched.external-compare-evidence.v1",
+) -> dict[str, Any]:
     keys = {
         "schema", "status", "profile_id", "contract", "core_evidence", "comparator",
         "external_report", "source", "environment", "observer", "request", "product",
@@ -171,9 +179,9 @@ def verify_document(document: object, report_path: Path | None = None, source_ro
     if source_root is not None and not verify_policy(policy, source_root)["valid"]:
         raise EvidenceError("evidence_policy_invalid")
     core = document["core_evidence"]
-    if not _exact(core, {"schema", "sha256"}) or core["schema"] != "sipi.channel.s2p-matched.external-compare-evidence.v1" or core["sha256"] != _sha256_file(CORE_EVIDENCE):
+    if not _exact(core, {"schema", "sha256"}) or core["schema"] != core_evidence_schema or core["sha256"] != _sha256_file(core_evidence_path):
         raise EvidenceError("evidence_core_invalid")
-    if not verify_core_evidence(_load(CORE_EVIDENCE), source_root=source_root)["valid"]:
+    if not core_evidence_verifier(_load(core_evidence_path), source_root=source_root)["valid"]:
         raise EvidenceError("evidence_core_invalid")
     comparator = document["comparator"]
     if not _exact(comparator, {"path", "sha256"}) or comparator["path"] != "tools/compare_channel_s2p_matched_cli.py" or comparator["sha256"] != _sha256_file(COMPARATOR):
