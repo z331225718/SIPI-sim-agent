@@ -657,6 +657,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p1-cli-process-contract-spec-v1, p4a-ibis-structural-parser-foundation-spec-v1, p4a-ibis-typed-semantic-envelope-foundation-spec-v1]
+  - id: p4a-ibis-input-typ-static-dc-cli-spec-v1
+    kind: independent_spec
+    content_sha256: b98783f2cff06dce58e8543d26070651546f13672b0252dfcab279551ba7acb3
+    provenance:
+      source_ref: docs/clean-room/specs/p4a-ibis-input-typ-static-dc-cli.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p1-cli-process-contract-spec-v1, p4a-ibis-selected-dc-clamp-decoder-spec-v1, p4a-ibis-dc-clamp-evaluator-spec-v1]
   - id: p4a-ibis-input-typ-static-comparator-spec-v1
     kind: independent_spec
     content_sha256: 273985d0d49da95bd88b976f3f9687b1f5b3d74ef852c980de7bd857c31518c3
@@ -1125,14 +1133,14 @@ scopes:
       comparator: []
       auditor: [p4a-ibis71-behavior-scope-preflight-spec-v1]
   - id: p4a-ibis-structural-parser-foundation-v1
-    paths: [Cargo.toml, Cargo.lock, crates/sipi-ibis/**, docs/clean-room/specs/p4a-ibis-structural-parser-foundation.v1.md, docs/clean-room/specs/p4a-ibis-typed-semantic-envelope-foundation.v1.md, docs/clean-room/specs/p4a-ibis-dc-clamp-evaluator.v1.md, docs/clean-room/specs/p4a-ibis-selected-dc-clamp-decoder.v1.md, docs/clean-room/specs/p4a-ibis-quasi-static-clamp-ccomp.v1.md, docs/clean-room/specs/p4a-ibis-inspect-service.v1.md]
+    paths: [Cargo.toml, Cargo.lock, crates/sipi-ibis/**, crates/sipi-contracts/src/lib.rs, crates/sipi-contracts/schemas/schema-inventory.v1.json, crates/sipi-contracts/schemas/sipi.ibis.input-typ-dc-evaluate.request.v1.schema.json, crates/sipi-cli/src/main.rs, crates/sipi-cli/tests/cli.rs, docs/clean-room/specs/p4a-ibis-structural-parser-foundation.v1.md, docs/clean-room/specs/p4a-ibis-typed-semantic-envelope-foundation.v1.md, docs/clean-room/specs/p4a-ibis-dc-clamp-evaluator.v1.md, docs/clean-room/specs/p4a-ibis-selected-dc-clamp-decoder.v1.md, docs/clean-room/specs/p4a-ibis-quasi-static-clamp-ccomp.v1.md, docs/clean-room/specs/p4a-ibis-inspect-service.v1.md, docs/clean-room/specs/p4a-ibis-input-typ-static-dc-cli.v1.md]
     state: planned
     role_material_allowlists:
       observer: []
-      spec_author: [p4a-ibis-structural-parser-foundation-spec-v1, p4a-ibis-typed-semantic-envelope-foundation-spec-v1, p4a-ibis-dc-clamp-evaluator-spec-v1, p4a-ibis-selected-dc-clamp-decoder-spec-v1, p4a-ibis-quasi-static-clamp-ccomp-spec-v1, p4a-ibis-inspect-service-spec-v1]
-      implementer: [p4a-ibis-structural-parser-foundation-spec-v1, p4a-ibis-typed-semantic-envelope-foundation-spec-v1, p4a-ibis-dc-clamp-evaluator-spec-v1, p4a-ibis-selected-dc-clamp-decoder-spec-v1, p4a-ibis-quasi-static-clamp-ccomp-spec-v1, p4a-ibis-inspect-service-spec-v1]
+      spec_author: [p4a-ibis-structural-parser-foundation-spec-v1, p4a-ibis-typed-semantic-envelope-foundation-spec-v1, p4a-ibis-dc-clamp-evaluator-spec-v1, p4a-ibis-selected-dc-clamp-decoder-spec-v1, p4a-ibis-quasi-static-clamp-ccomp-spec-v1, p4a-ibis-inspect-service-spec-v1, p4a-ibis-input-typ-static-dc-cli-spec-v1]
+      implementer: [p4a-ibis-structural-parser-foundation-spec-v1, p4a-ibis-typed-semantic-envelope-foundation-spec-v1, p4a-ibis-dc-clamp-evaluator-spec-v1, p4a-ibis-selected-dc-clamp-decoder-spec-v1, p4a-ibis-quasi-static-clamp-ccomp-spec-v1, p4a-ibis-inspect-service-spec-v1, p4a-ibis-input-typ-static-dc-cli-spec-v1]
       comparator: []
-      auditor: [p4a-ibis-structural-parser-foundation-spec-v1, p4a-ibis-typed-semantic-envelope-foundation-spec-v1, p4a-ibis-dc-clamp-evaluator-spec-v1, p4a-ibis-selected-dc-clamp-decoder-spec-v1, p4a-ibis-quasi-static-clamp-ccomp-spec-v1, p4a-ibis-inspect-service-spec-v1]
+      auditor: [p4a-ibis-structural-parser-foundation-spec-v1, p4a-ibis-typed-semantic-envelope-foundation-spec-v1, p4a-ibis-dc-clamp-evaluator-spec-v1, p4a-ibis-selected-dc-clamp-decoder-spec-v1, p4a-ibis-quasi-static-clamp-ccomp-spec-v1, p4a-ibis-inspect-service-spec-v1, p4a-ibis-input-typ-static-dc-cli-spec-v1]
   - id: p4a-official-pure-ibis-discovery-preflight-v1
     paths: [docs/baselines/p4a-official-pure-ibis-discovery-preflight.v1.yaml, docs/clean-room/specs/p4a-official-pure-ibis-discovery-preflight.v1.md, tools/verify_p4a_official_pure_ibis_discovery_preflight.py, tools/test_verify_p4a_official_pure_ibis_discovery_preflight.py]
     state: planned

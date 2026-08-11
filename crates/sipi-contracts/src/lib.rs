@@ -21,6 +21,7 @@ pub const TRAN_RC_PULSE_REQUEST_SCHEMA: &str = "sipi.tran.rc-pulse-request.v1";
 pub const LINK_PLAN_SCHEMA: &str = "sipi.link-plan.v1";
 pub const LINK_CAUSAL_FIR_REQUEST_SCHEMA: &str = "sipi.link.causal-fir-request.v1";
 pub const IBIS_INSPECT_REQUEST_SCHEMA: &str = "sipi.ibis.inspect.request.v1";
+pub const IBIS_DC_EVALUATE_REQUEST_SCHEMA: &str = "sipi.ibis.input-typ-dc-evaluate.request.v1";
 pub const RECEIVER_INPUT_SCHEMA: &str = "sipi.receiver-input.v1";
 pub const RECEIVER_SEMANTICS_SCHEMA: &str = "sipi.receiver-semantics.v1";
 pub const PROJECT_PLAN_SCHEMA: &str = "sipi.project.v1";
@@ -37,6 +38,7 @@ pub enum ContractError {
     Receiver(ReceiverContractError),
     ReceiverSemantics(ReceiverSemanticContractError),
     IbisInspect(IbisInspectContractError),
+    IbisDcEvaluate(IbisDcEvaluateContractError),
     Project(ProjectContractError),
 }
 
@@ -50,6 +52,7 @@ impl fmt::Display for ContractError {
             Self::Receiver(error) => error.fmt(formatter),
             Self::ReceiverSemantics(error) => error.fmt(formatter),
             Self::IbisInspect(error) => error.fmt(formatter),
+            Self::IbisDcEvaluate(error) => error.fmt(formatter),
             Self::Project(error) => error.fmt(formatter),
         }
     }
@@ -84,6 +87,12 @@ impl From<ReceiverSemanticContractError> for ContractError {
 impl From<IbisInspectContractError> for ContractError {
     fn from(value: IbisInspectContractError) -> Self {
         Self::IbisInspect(value)
+    }
+}
+
+impl From<IbisDcEvaluateContractError> for ContractError {
+    fn from(value: IbisDcEvaluateContractError) -> Self {
+        Self::IbisDcEvaluate(value)
     }
 }
 
@@ -126,6 +135,24 @@ impl fmt::Display for IbisInspectContractError {
 }
 
 impl Error for IbisInspectContractError {}
+
+/// Stable request-boundary rejections for the selected Input/TYP DC route.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum IbisDcEvaluateContractError {
+    UnsupportedEncoding,
+    EmptyText,
+    InvalidSelection,
+    UnsupportedCorner,
+    NonFiniteProbe,
+}
+
+impl fmt::Display for IbisDcEvaluateContractError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "invalid IBIS DC evaluate request: {self:?}")
+    }
+}
+
+impl Error for IbisDcEvaluateContractError {}
 
 /// Stable rejections for the deliberately narrow Link-stage contract.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1094,6 +1121,104 @@ pub fn parse_ibis_inspect_request_v1(input: &[u8]) -> Result<IbisInspectRequestV
         .try_into()
 }
 
+/// A product-owned Input/TYP static clamp request. The text is caller-provided
+/// UTF-8; it has no file, URL, asset identity, or external acceptance surface.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireIbisDcEvaluateRequestV1 {
+    pub schema: String,
+    pub source: WireIbisInspectSourceV1,
+    pub selection: WireIbisDcSelectionV1,
+    pub probe: WireIbisDcProbeV1,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireIbisDcSelectionV1 {
+    pub ibis_version: String,
+    pub model_selector: String,
+    pub corner: String,
+}
+
+#[derive(Clone, Copy, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireIbisDcProbeV1 {
+    pub gnd_clamp_drive_volts: f64,
+    pub power_clamp_drive_volts: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct IbisDcEvaluateRequestV1 {
+    text: String,
+    ibis_version: String,
+    model_selector: String,
+    gnd_clamp_drive_volts: Volts,
+    power_clamp_drive_volts: Volts,
+}
+
+impl IbisDcEvaluateRequestV1 {
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
+    pub fn ibis_version(&self) -> &str {
+        &self.ibis_version
+    }
+
+    pub fn model_selector(&self) -> &str {
+        &self.model_selector
+    }
+
+    pub const fn gnd_clamp_drive_volts(&self) -> Volts {
+        self.gnd_clamp_drive_volts
+    }
+
+    pub const fn power_clamp_drive_volts(&self) -> Volts {
+        self.power_clamp_drive_volts
+    }
+}
+
+impl TryFrom<WireIbisDcEvaluateRequestV1> for IbisDcEvaluateRequestV1 {
+    type Error = ContractError;
+
+    fn try_from(value: WireIbisDcEvaluateRequestV1) -> Result<Self, Self::Error> {
+        if value.schema != IBIS_DC_EVALUATE_REQUEST_SCHEMA {
+            return Err(ContractError::Version);
+        }
+        if value.source.encoding != "utf-8" {
+            return Err(IbisDcEvaluateContractError::UnsupportedEncoding.into());
+        }
+        if value.source.text.is_empty() {
+            return Err(IbisDcEvaluateContractError::EmptyText.into());
+        }
+        if value.selection.corner != "typical" {
+            return Err(IbisDcEvaluateContractError::UnsupportedCorner.into());
+        }
+        if value.selection.ibis_version.is_empty() || value.selection.model_selector.is_empty() {
+            return Err(IbisDcEvaluateContractError::InvalidSelection.into());
+        }
+        let gnd_clamp_drive_volts = Volts::try_new(value.probe.gnd_clamp_drive_volts)
+            .map_err(|_| IbisDcEvaluateContractError::NonFiniteProbe)?;
+        let power_clamp_drive_volts = Volts::try_new(value.probe.power_clamp_drive_volts)
+            .map_err(|_| IbisDcEvaluateContractError::NonFiniteProbe)?;
+        Ok(Self {
+            text: value.source.text,
+            ibis_version: value.selection.ibis_version,
+            model_selector: value.selection.model_selector,
+            gnd_clamp_drive_volts,
+            power_clamp_drive_volts,
+        })
+    }
+}
+
+pub fn parse_ibis_dc_evaluate_request_v1(
+    input: &[u8],
+) -> Result<IbisDcEvaluateRequestV1, ContractError> {
+    serde_json::from_slice::<WireIbisDcEvaluateRequestV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
 /// A caller-owned request to verify and project one already-published local
 /// artifact. It deliberately has no file enumeration, URL, or payload surface.
 #[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
@@ -1631,6 +1756,23 @@ pub fn product_example_request_json_v1(command_id: &str) -> Result<Option<Vec<u8
             },
         })
         .map(Some),
+        "ibis.dc-evaluate" => deterministic_json(&WireIbisDcEvaluateRequestV1 {
+            schema: IBIS_DC_EVALUATE_REQUEST_SCHEMA.to_owned(),
+            source: WireIbisInspectSourceV1 {
+                encoding: "utf-8".to_owned(),
+                text: "[IBIS Ver] 7.1\n[Model] product_input\nModel_type Input\nC_comp 1pF\n[GND_clamp]\n-1V -1A\n1V 1A\n[POWER_clamp]\n-1V 1A\n1V -1A\n".to_owned(),
+            },
+            selection: WireIbisDcSelectionV1 {
+                ibis_version: "7.1".to_owned(),
+                model_selector: "product_input".to_owned(),
+                corner: "typical".to_owned(),
+            },
+            probe: WireIbisDcProbeV1 {
+                gnd_clamp_drive_volts: 0.5,
+                power_clamp_drive_volts: 0.0,
+            },
+        })
+        .map(Some),
         "project.run" => deterministic_json(&WireFixedProjectRunRequestV1 {
             schema: FIXED_PROJECT_RUN_REQUEST_SCHEMA.to_owned(),
             plan: WireProjectPlanV1 {
@@ -1700,6 +1842,10 @@ pub fn link_causal_fir_request_schema_json() -> Result<Vec<u8>, ContractError> {
 
 pub fn ibis_inspect_request_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireIbisInspectRequestV1))
+}
+
+pub fn ibis_dc_evaluate_request_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(WireIbisDcEvaluateRequestV1))
 }
 
 pub fn artifact_report_request_schema_json() -> Result<Vec<u8>, ContractError> {
@@ -1931,6 +2077,14 @@ mod tests {
     }
 
     #[test]
+    fn tracked_ibis_dc_evaluate_schema_baseline_is_exactly_the_registered_export() {
+        let baseline =
+            include_bytes!("../schemas/sipi.ibis.input-typ-dc-evaluate.request.v1.schema.json");
+        let exported = ibis_dc_evaluate_request_schema_json().expect("schema");
+        assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
+    }
+
+    #[test]
     fn tracked_project_schema_baseline_is_exactly_the_registered_export() {
         let baseline = include_bytes!("../schemas/sipi.project.v1.schema.json");
         assert!(baseline.ends_with(b"\n"));
@@ -2005,6 +2159,31 @@ mod tests {
                 .expect("schema")
                 .starts_with(b"{")
         );
+    }
+
+    #[test]
+    fn ibis_dc_evaluate_request_is_typical_only_and_strict() {
+        let valid = br#"{"schema":"sipi.ibis.input-typ-dc-evaluate.request.v1","source":{"encoding":"utf-8","text":"[IBIS Ver] 7.1\n"},"selection":{"ibis_version":"7.1","model_selector":"product_input","corner":"typical"},"probe":{"gnd_clamp_drive_volts":0.0,"power_clamp_drive_volts":1.0}}"#;
+        let request = parse_ibis_dc_evaluate_request_v1(valid).expect("valid request");
+        assert_eq!(request.ibis_version(), "7.1");
+        assert_eq!(request.model_selector(), "product_input");
+        assert_eq!(request.gnd_clamp_drive_volts().get(), 0.0);
+        assert!(matches!(
+            parse_ibis_dc_evaluate_request_v1(
+                br#"{"schema":"sipi.ibis.input-typ-dc-evaluate.request.v1","source":{"encoding":"utf-8","text":"x"},"selection":{"ibis_version":"7.1","model_selector":"m","corner":"minimum"},"probe":{"gnd_clamp_drive_volts":0.0,"power_clamp_drive_volts":0.0}}"#
+            ),
+            Err(ContractError::IbisDcEvaluate(
+                IbisDcEvaluateContractError::UnsupportedCorner
+            ))
+        ));
+        assert!(parse_ibis_dc_evaluate_request_v1(
+            br#"{"schema":"sipi.ibis.input-typ-dc-evaluate.request.v1","source":{"encoding":"utf-8","text":"x","path":"sample.ibs"},"selection":{"ibis_version":"7.1","model_selector":"m","corner":"typical"},"probe":{"gnd_clamp_drive_volts":0.0,"power_clamp_drive_volts":0.0}}"#
+        )
+        .is_err());
+        assert!(parse_ibis_dc_evaluate_request_v1(
+            br#"{"schema":"sipi.ibis.input-typ-dc-evaluate.request.v1","source":{"encoding":"utf-8","text":"x"},"selection":{"ibis_version":"7.1","model_selector":"m","corner":"typical"},"probe":{"gnd_clamp_drive_volts":null,"power_clamp_drive_volts":0.0}}"#
+        )
+        .is_err());
     }
 
     #[test]

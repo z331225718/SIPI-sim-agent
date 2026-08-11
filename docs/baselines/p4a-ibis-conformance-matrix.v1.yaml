@@ -57,6 +57,12 @@ entries:
     entry_points: [IbisInspectServiceV1]
     evidence_refs: [docs/clean-room/specs/p4a-ibis-inspect-service.v1.md, crates/sipi-ibis/src/lib.rs::tests::inspect_service_reports_only_structural_and_envelope_facts, crates/sipi-cli/src/main.rs::tests::ibis_inspect_is_structural_only_and_rejects_other_ibis_commands]
     non_claim: The stdin command neither evaluates electrical behavior nor accesses an external IBIS asset.
+  - id: input-typ-static-dc-evaluate-stdin
+    scope: caller-provided UTF-8 Input Typical model with two explicit static clamp drives
+    status: implemented_self_tested
+    entry_points: [IbisDcEvaluateServiceV1, sipi_ibis_dc_evaluate_stdin]
+    evidence_refs: [docs/clean-room/specs/p4a-ibis-input-typ-static-dc-cli.v1.md, crates/sipi-ibis/src/lib.rs::tests::dc_evaluate_service_returns_only_selected_static_current_facts, crates/sipi-cli/tests/cli.rs::ibis_dc_evaluate_stdin_evaluates_only_caller_supplied_static_clamps]
+    non_claim: Caller input is unattested; this static route does not inherit external profile acceptance or evaluate C_comp transient behavior.
   - id: non-input-models
     scope: Output IO and Terminator model electrical semantics
     status: unsupported

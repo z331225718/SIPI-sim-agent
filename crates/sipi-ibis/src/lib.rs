@@ -508,6 +508,109 @@ impl fmt::Display for IbisInspectErrorV1 {
 
 impl Error for IbisInspectErrorV1 {}
 
+/// Pure in-memory service for the selected Input/TYP static DC clamp scope.
+/// It deliberately consumes caller-provided text only; no external asset,
+/// file, URL, package, PVT fallback, transient, or AMI behavior is involved.
+pub struct IbisDcEvaluateServiceV1;
+
+impl IbisDcEvaluateServiceV1 {
+    pub fn evaluate(
+        text: &str,
+        profile: &SelectedDcClampProfileV1,
+        probe: DcClampProbeV1,
+        limits: ParseLimitsV1,
+    ) -> Result<IbisDcEvaluateReportV1, IbisDcEvaluateErrorV1> {
+        let bytes = text.as_bytes();
+        let document =
+            parse_structural_v1(bytes, limits).map_err(IbisDcEvaluateErrorV1::Structural)?;
+        let envelope =
+            build_semantic_envelope_v1(&document).map_err(IbisDcEvaluateErrorV1::Semantic)?;
+        let decoded = decode_selected_dc_clamps_v1(&envelope, profile)
+            .map_err(IbisDcEvaluateErrorV1::Profile)?;
+        let response =
+            evaluate_dc_clamps_v1(decoded.model(), probe).map_err(IbisDcEvaluateErrorV1::Dc)?;
+        Ok(IbisDcEvaluateReportV1 {
+            input_byte_length: bytes.len(),
+            input_sha256: hex_sha256(bytes),
+            ibis_version: profile.ibis_version().to_owned(),
+            model_selector: profile.model_selector().to_owned(),
+            gnd_current: response.gnd_current(),
+            power_current: response.power_current(),
+            total_shunt_current: response.total_shunt_current(),
+        })
+    }
+}
+
+/// Bounded projection of a successful static DC evaluation.
+#[derive(Clone, Debug, PartialEq)]
+pub struct IbisDcEvaluateReportV1 {
+    input_byte_length: usize,
+    input_sha256: String,
+    ibis_version: String,
+    model_selector: String,
+    gnd_current: Amps,
+    power_current: Amps,
+    total_shunt_current: Amps,
+}
+
+impl IbisDcEvaluateReportV1 {
+    pub const fn input_byte_length(&self) -> usize {
+        self.input_byte_length
+    }
+
+    pub fn input_sha256(&self) -> &str {
+        &self.input_sha256
+    }
+
+    pub fn ibis_version(&self) -> &str {
+        &self.ibis_version
+    }
+
+    pub fn model_selector(&self) -> &str {
+        &self.model_selector
+    }
+
+    pub const fn gnd_current(&self) -> Amps {
+        self.gnd_current
+    }
+
+    pub const fn power_current(&self) -> Amps {
+        self.power_current
+    }
+
+    pub const fn total_shunt_current(&self) -> Amps {
+        self.total_shunt_current
+    }
+
+    pub const fn c_comp_current_amps(&self) -> f64 {
+        // This route is static DC only. The declaration is validated by the
+        // selected decoder but its current contribution is exactly zero.
+        0.0
+    }
+}
+
+/// Stable rejection families for the static DC service.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum IbisDcEvaluateErrorV1 {
+    Structural(IbisDiagnosticV1),
+    Semantic(IbisSemanticDiagnosticV1),
+    Profile(IbisProfileDiagnosticV1),
+    Dc(DcClampErrorV1),
+}
+
+impl fmt::Display for IbisDcEvaluateErrorV1 {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Structural(error) => error.fmt(formatter),
+            Self::Semantic(error) => error.fmt(formatter),
+            Self::Profile(error) => error.fmt(formatter),
+            Self::Dc(error) => error.fmt(formatter),
+        }
+    }
+}
+
+impl Error for IbisDcEvaluateErrorV1 {}
+
 fn hex_sha256(bytes: &[u8]) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let digest = Sha256::digest(bytes);
@@ -2066,6 +2169,46 @@ mod tests {
         assert_eq!(result.gnd_current().get(), 1.0);
         assert_eq!(result.power_current().get(), 1.0);
         assert_eq!(result.capacitive_current().get(), 0.0);
+    }
+
+    #[test]
+    fn dc_evaluate_service_returns_only_selected_static_current_facts() {
+        let profile = SelectedDcClampProfileV1::try_new(
+            "7.1",
+            "product_input_model",
+            DcClampCornerV1::Typical,
+        )
+        .expect("profile");
+        let report = IbisDcEvaluateServiceV1::evaluate(
+            std::str::from_utf8(&selected_input_source(b"")).expect("UTF-8"),
+            &profile,
+            DcClampProbeV1::new(
+                Volts::try_new(0.5).expect("finite"),
+                Volts::try_new(0.0).expect("finite"),
+            ),
+            limits(),
+        )
+        .expect("DC evaluation");
+        assert_eq!(report.ibis_version(), "7.1");
+        assert_eq!(report.model_selector(), "product_input_model");
+        assert_eq!(report.gnd_current().get(), 1.0);
+        assert_eq!(report.power_current().get(), 1.0);
+        assert_eq!(report.total_shunt_current().get(), 2.0);
+        assert_eq!(report.c_comp_current_amps(), 0.0);
+        assert!(matches!(
+            IbisDcEvaluateServiceV1::evaluate(
+                std::str::from_utf8(&selected_input_source(b"")).expect("UTF-8"),
+                &profile,
+                DcClampProbeV1::new(
+                    Volts::try_new(3.0).expect("finite"),
+                    Volts::try_new(0.0).expect("finite"),
+                ),
+                limits(),
+            ),
+            Err(IbisDcEvaluateErrorV1::Dc(
+                DcClampErrorV1::OutOfDomain { .. }
+            ))
+        ));
     }
 
     #[test]

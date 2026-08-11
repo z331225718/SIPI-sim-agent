@@ -11,17 +11,21 @@ use std::{
 use sha2::{Digest, Sha256};
 use sipi_contracts::{
     ARTIFACT_REPORT_REQUEST_SCHEMA, CAPABILITIES_SCHEMA, CapabilityCatalogV1,
-    FIXED_PROJECT_RUN_REQUEST_SCHEMA, LINK_PLAN_SCHEMA, PLANNED_DOMAINS, RULE_LEDGER_V1,
-    artifact_report_request_schema_json, capability_schema_json, deterministic_json,
-    fixed_project_run_request_schema_json, ibis_inspect_request_schema_json,
+    FIXED_PROJECT_RUN_REQUEST_SCHEMA, IBIS_DC_EVALUATE_REQUEST_SCHEMA, LINK_PLAN_SCHEMA,
+    PLANNED_DOMAINS, RULE_LEDGER_V1, artifact_report_request_schema_json, capability_schema_json,
+    deterministic_json, fixed_project_run_request_schema_json,
+    ibis_dc_evaluate_request_schema_json, ibis_inspect_request_schema_json,
     link_causal_fir_request_schema_json, link_plan_schema_json, parse_artifact_report_request_v1,
-    parse_fixed_project_run_request_v1, parse_ibis_inspect_request_v1,
-    parse_link_causal_fir_request_v1, parse_tran_rc_pulse_request_v1,
-    product_example_request_json_v1, project_plan_schema_json, receiver_input_schema_json,
-    receiver_semantics_schema_json, tran_rc_pulse_request_schema_json, validate_request_v1,
-    validation_request_schema_json,
+    parse_fixed_project_run_request_v1, parse_ibis_dc_evaluate_request_v1,
+    parse_ibis_inspect_request_v1, parse_link_causal_fir_request_v1,
+    parse_tran_rc_pulse_request_v1, product_example_request_json_v1, project_plan_schema_json,
+    receiver_input_schema_json, receiver_semantics_schema_json, tran_rc_pulse_request_schema_json,
+    validate_request_v1, validation_request_schema_json,
 };
-use sipi_ibis::{IbisInspectServiceV1, ParseLimitsV1};
+use sipi_ibis::{
+    DcClampCornerV1, DcClampProbeV1, IbisDcEvaluateServiceV1, IbisInspectServiceV1, ParseLimitsV1,
+    SelectedDcClampProfileV1,
+};
 use sipi_link::{ConvolutionLimitsV1, convolve_causal_fir_v1};
 use sipi_pipeline::{
     CausalFirConsumerConfigV1, FixedTranCausalFirProjectBindingV1,
@@ -289,6 +293,16 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         nonclaim: "structural_inspection_only",
     },
     CommandDescriptorV1 {
+        id: "ibis.dc-evaluate",
+        route: &["ibis", "dc-evaluate"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some(IBIS_DC_EVALUATE_REQUEST_SCHEMA),
+        response_schema: Some("sipi.ibis.input-typ-dc-evaluate.response.v1"),
+        unavailable_reason: None,
+        nonclaim: "caller_input_static_dc_only",
+    },
+    CommandDescriptorV1 {
         id: "tran.run",
         route: &["tran", "run"],
         availability: CommandAvailabilityV1::Available,
@@ -482,6 +496,15 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
     CommandProtocolProfileV1 {
+        command_id: "ibis.dc-evaluate",
+        example_id: Some("product-owned-minimal-v1"),
+        required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: Some("ibis.input-typ.static-dc.v1"),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
+    CommandProtocolProfileV1 {
         command_id: "tran.run",
         example_id: Some("product-owned-minimal-v1"),
         required_options: &["--artifact-root", "--artifact-id"],
@@ -534,6 +557,8 @@ fn main() {
         ProcessAdapter::validate_stdin()
     } else if arguments == ["ibis", "inspect", "--stdin"] {
         ProcessAdapter::ibis_inspect_stdin()
+    } else if arguments == ["ibis", "dc-evaluate", "--stdin"] {
+        ProcessAdapter::ibis_dc_evaluate_stdin()
     } else if arguments == ["report", "inspect", "--stdin"] {
         ProcessAdapter::report_inspect_stdin()
     } else if let [command, action, stdin, root, artifact_root, id, artifact_id] = &arguments[..]
@@ -637,6 +662,18 @@ impl ProcessAdapter {
             Err(_) => return error(3, "contract_rejected", "IBIS inspect request was rejected"),
         };
         run_ibis_inspect(request.text())
+    }
+
+    fn ibis_dc_evaluate_stdin() -> Response {
+        let input = match read_stdin_request() {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        let request = match parse_ibis_dc_evaluate_request_v1(&input) {
+            Ok(request) => request,
+            Err(_) => return error(3, "contract_rejected", "IBIS DC request was rejected"),
+        };
+        run_ibis_dc_evaluate(&request)
     }
 
     fn report_inspect_stdin() -> Response {
@@ -1045,6 +1082,38 @@ fn run_ibis_inspect(text: &str) -> Response {
     }
 }
 
+fn run_ibis_dc_evaluate(request: &sipi_contracts::IbisDcEvaluateRequestV1) -> Response {
+    let limits = match ParseLimitsV1::try_new(1_048_576, 65_536, 16_384, 16_384) {
+        Ok(limits) => limits,
+        Err(_) => return error(6, "internal_contract_error", "IBIS limits are unavailable"),
+    };
+    let profile = match SelectedDcClampProfileV1::try_new(
+        request.ibis_version(),
+        request.model_selector(),
+        DcClampCornerV1::Typical,
+    ) {
+        Ok(profile) => profile,
+        Err(_) => return error(3, "contract_rejected", "IBIS selection was rejected"),
+    };
+    let probe = DcClampProbeV1::new(
+        request.gnd_clamp_drive_volts(),
+        request.power_clamp_drive_volts(),
+    );
+    match IbisDcEvaluateServiceV1::evaluate(request.text(), &profile, probe, limits) {
+        Ok(report) => success(format!(
+            "{{\"schema\":\"sipi.ibis.input-typ-dc-evaluate.response.v1\",\"input_byte_length\":{},\"input_sha256\":\"{}\",\"selection\":{{\"ibis_version\":\"{}\",\"model_selector\":\"{}\",\"corner\":\"typical\"}},\"gnd_clamp_current_amps\":{},\"power_clamp_current_amps\":{},\"total_shunt_current_amps\":{},\"c_comp_current_amps\":0,\"evaluation_scope\":\"input_typical_static_dc\",\"external_profile_acceptance\":\"caller_input_unattested\",\"capability_matrix_id\":\"sipi.p4a-ibis-conformance-matrix.v1\"}}",
+            report.input_byte_length(),
+            report.input_sha256(),
+            report.ibis_version(),
+            report.model_selector(),
+            report.gnd_current().get(),
+            report.power_current().get(),
+            report.total_shunt_current().get(),
+        )),
+        Err(_) => error(3, "contract_rejected", "IBIS DC evaluation was rejected"),
+    }
+}
+
 fn cache_key(label: &str, value: &[u8]) -> String {
     let mut builder = CacheKeyBuilder::new();
     builder
@@ -1191,6 +1260,7 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["validate"]
             | ["inspect", "self"]
             | ["ibis", "inspect"]
+            | ["ibis", "dc-evaluate"]
             | ["tran", "run"]
             | ["link", "run"]
             | ["project", "run"]
@@ -1264,6 +1334,8 @@ fn schema_bytes(id: &str) -> Result<Option<Vec<u8>>, sipi_contracts::ContractErr
         link_causal_fir_request_schema_json().map(Some)
     } else if id == sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA {
         ibis_inspect_request_schema_json().map(Some)
+    } else if id == IBIS_DC_EVALUATE_REQUEST_SCHEMA {
+        ibis_dc_evaluate_request_schema_json().map(Some)
     } else if id == ARTIFACT_REPORT_REQUEST_SCHEMA {
         artifact_report_request_schema_json().map(Some)
     } else if id == sipi_contracts::PROJECT_PLAN_SCHEMA {
@@ -1539,7 +1611,7 @@ impl CommandService {
             [command, ..] if command == "ibis" => error(
                 4,
                 "unsupported",
-                "IBIS requires the exact inspect --stdin command",
+                "IBIS requires an exact supported --stdin command",
             ),
             [command, ..] if command == "report" => error(
                 4,
@@ -1644,7 +1716,8 @@ fn doctor_json() -> String {
 
 fn schema_list_json() -> String {
     format!(
-        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"]}}",
+        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"]}}",
+        IBIS_DC_EVALUATE_REQUEST_SCHEMA,
         sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA,
         LINK_PLAN_SCHEMA,
         sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA,
@@ -1688,6 +1761,7 @@ fn validate_self(schema: Option<&str>) -> Response {
             && id != sipi_contracts::VALIDATION_REQUEST_SCHEMA
             && id != sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA
             && id != sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA
+            && id != IBIS_DC_EVALUATE_REQUEST_SCHEMA
             && id != LINK_PLAN_SCHEMA
             && id != sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA
             && id != sipi_contracts::PROJECT_PLAN_SCHEMA
@@ -1710,6 +1784,7 @@ fn validate_self(schema: Option<&str>) -> Response {
         && artifact_report_request_schema_json().is_ok()
         && tran_rc_pulse_request_schema_json().is_ok()
         && ibis_inspect_request_schema_json().is_ok()
+        && ibis_dc_evaluate_request_schema_json().is_ok()
         && link_plan_schema_json().is_ok()
         && link_causal_fir_request_schema_json().is_ok()
         && project_plan_schema_json().is_ok()
@@ -1819,6 +1894,7 @@ mod tests {
         for command in [
             "validate",
             "ibis.inspect",
+            "ibis.dc-evaluate",
             "tran.run",
             "link.run",
             "project.run",
@@ -1865,6 +1941,11 @@ mod tests {
             .expect("IBIS example")
             .expect("registered IBIS example");
         assert!(parse_ibis_inspect_request_v1(&ibis).is_ok());
+
+        let ibis_dc = product_example_request_json_v1("ibis.dc-evaluate")
+            .expect("IBIS DC example")
+            .expect("registered IBIS DC example");
+        assert!(parse_ibis_dc_evaluate_request_v1(&ibis_dc).is_ok());
 
         let tran = product_example_request_json_v1("tran.run")
             .expect("TRAN example")
@@ -1981,7 +2062,7 @@ mod tests {
     fn schema_list_uses_the_schema_inventory_order() {
         assert_eq!(
             schema_list_json(),
-            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
+            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
         );
     }
 
