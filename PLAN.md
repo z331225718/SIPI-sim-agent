@@ -250,7 +250,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 
 #### P3C：指标与报告
 
-- [ ] **P3C-01** 实现被 required 示例使用的 eye、jitter、bathtub 指标；每项独立 capability。
+- [ ] **P3C-01** `blocked_missing_metric_profile_semantics_and_accepted_receiver_stage`：已 required 的 S2P 仅认证 matched kernel，RFM profile 又在批准的 CDR unique-margin gate 处 `cdr_ambiguous`；均未冻结 eye folding/bin、jitter/TIE reference 或 bathtub/BER estimator/tolerance。禁止自行引入默认 PRBS、clock、bins 或 metric 语义。
 - [ ] **P3C-02** **P3C-02a 已完成：** `sipi-compare` 对调用者已对齐的 finite array 提供严格、单向 reference-to-candidate absolute/relative tolerance report；shape、unit、semantic binding、missing、finite 与算术溢出均 fail-closed，且不做任何对齐/转换或外部比较。eye/jitter/bathtub metric、profile compare 与 `sipi compare` 仍未实现。证据见 [2026-08-11-p3c-array-compare.md](docs/baselines/audits/2026-08-11-p3c-array-compare.md)。
 - [ ] **P3C-03** 接入 `sipi channel run` 和 `sipi compare`。
 
@@ -380,7 +380,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 
 ### 13.1 发布任务
 
-- [ ] **P7-01** Windows x86_64 clean twin build、locked dependency、可复现性差异报告。
+- [ ] **P7-01** **P7-01a 已完成（provisional）：** Windows x86_64 clean twin build gate 从同一 Git `HEAD` archive 物化两份外部源码，使用独立 target、`--release --locked --offline` 和固定 `/Brepro` 构建 `sipi-cli`，仅在 size 与 SHA-256 精确相同才接受，并生成脱敏差异报告。它不构成 release/archive/SBOM/PE closure/fresh-machine 认证。
 - [ ] **P7-02** 生成 SBOM、NOTICE、license report 和 PE normal/delay import closure。
 - [ ] **P7-03** 扫描 release archive，拒绝 Python、vendor asset、private fixture、blocked material 和绝对路径。
 - [ ] **P7-04** fresh machine/VM 安装 smoke，运行每个 certified profile 和 fail-closed case。
