@@ -1,0 +1,11 @@
+{
+  "schema": "sipi.external-history-citations.v1",
+  "publication_scope": "p7_release_publication_docs_only",
+  "promotion_status": "blocked",
+  "non_claims": ["not_a_history_mirror", "not_a_license_determination", "not_a_clean_room_legal_conclusion", "does_not_remove_existing_migration_material"],
+  "release_docs": ["docs/baselines/p7-external-history-citations.md"],
+  "entries": [
+    {"id":"agent-spice-2cc92316","repository_alias":"agent-spice","canonical_origin":"https://github.com/z331225718/agent-spice.git","object_format":"sha1","object_hash":"2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5","role":"oracle","evidence_ref":"docs/baselines/p7-external-history-citations.md","use":"hash_reference_only","material_ref":"agent-spice-rc-pulse-fixture-2cc92316","product_material_status":"prohibited"},
+    {"id":"pybert-f6ba031","repository_alias":"pybert","canonical_origin":"https://github.com/z331225718/Py-bert-agent.git","object_format":"sha1","object_hash":"f6ba0311350fc67bd90fa13b8d578312f956d7e7","role":"oracle","evidence_ref":"docs/baselines/p7-external-history-citations.md","use":"hash_reference_only","material_ref":"pybert-channel-16ghz-3db-fixture-f6ba031","product_material_status":"prohibited"}
+  ]
+}

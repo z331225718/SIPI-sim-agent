@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 393f06f7409d2c5265ba682d037e79e8f8b1a207dbd5f1fefcc6c63ee055f66c
+  tracked_paths_sha256: 681de7b82d6b7fbed81c05aba540fd2a670823deeddbe5def84ec4a74735614f
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1127,6 +1127,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-11-p7-external-history-citations.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-11-p7-isolated-install.md:
       rule: historical-docs
       class: migration_only
@@ -1265,6 +1271,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/external-history-citations.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/ibis-example-rx-candidate-inventory.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -1398,6 +1410,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p5-agent-com-git-object-preflight.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p7-external-history-citations.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -1902,6 +1920,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p6-tran-to-link-edge.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p7-external-history-citations.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -6575,6 +6599,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_external_history_citations.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_license_manifest.py:
       rule: migration-tools
       class: migration_only
@@ -6804,6 +6834,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_com_r480_reference_availability.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_external_history_citations.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

@@ -388,7 +388,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 - [ ] **P7-06** 对 owner-approved workload 执行性能/RSS 门；无批准预算只记录 observation。
 - [ ] **P7-07** 形成 release candidate tag，绑定源码、工具链、工件和审计结论。
 - [ ] **P7-08** 用户批准后删除已替代的 Python/adapter/runtime，并同批移除专属 drift gate。
-- [ ] **P7-09** 旧历史保留在原仓/evidence repo，只在产品文档引用 hash；不导入非 MIT 历史。
+- [ ] **P7-09** **P7-09a 已完成（provisional）：** P7 publication docs 的 external-history registry 只允许 `alias + immutable full hash` marker，拒绝 local/source path、branch/tag、镜像与产品材料 promotion。它不迁移、删除或法律清洗既有历史；P7-08 owner-approved deletion 和最终 release audit 仍待完成。
 
 ### 13.2 发布声明
 
