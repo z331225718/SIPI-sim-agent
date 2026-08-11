@@ -381,7 +381,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 ### 13.1 发布任务
 
 - [ ] **P7-01** **P7-01a 已完成（provisional）：** Windows x86_64 clean twin build gate 从同一 Git `HEAD` archive 物化两份外部源码，使用独立 target、`--release --locked --offline` 和固定 `/Brepro` 构建 `sipi-cli`，仅在 size 与 SHA-256 精确相同才接受，并生成脱敏差异报告。它不构成 release/archive/SBOM/PE closure/fresh-machine 认证。
-- [ ] **P7-02** 生成 SBOM、NOTICE、license report 和 PE normal/delay import closure。
+- [ ] **P7-02** **P7-02a 已完成（provisional）：** 对外部 Windows x86_64 stage 绑定 P7-01a twin-build、当前锁定 Cargo resolution、provisional license manifest 和 P1 layout observation，生成 composition/NOTICE-gap/static normal-import evidence report。该报告固定 `promotion_status=blocked`；SPDX/CycloneDX SBOM、授权 NOTICE、license compatibility，以及 PE dynamic/runtime closure 仍是 release blocker。
 - [ ] **P7-03** 扫描 release archive，拒绝 Python、vendor asset、private fixture、blocked material 和绝对路径。
 - [ ] **P7-04** fresh machine/VM 安装 smoke，运行每个 certified profile 和 fail-closed case。
 - [ ] **P7-05** 发布 capability matrix、acceptance report index、non-claims 和 known limitations。
