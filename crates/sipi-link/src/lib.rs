@@ -15,7 +15,8 @@ use sipi_types::{Axis, NonZeroStep, Seconds, TypeError, Volts, Waveform};
 mod receiver;
 
 pub use receiver::{
-    ReceiverDecisionV1, ReceiverError, ReceiverResultV1, ReferenceBitsV1, run_fixed_receiver_v1,
+    ReceiverDecisionV1, ReceiverError, ReceiverPhaseSelectionV2, ReceiverResultV1, ReferenceBitsV1,
+    run_fixed_receiver_delegated_ambiguity_v2, run_fixed_receiver_v1,
 };
 
 /// Stable, explicit bounds for one causal FIR operation.

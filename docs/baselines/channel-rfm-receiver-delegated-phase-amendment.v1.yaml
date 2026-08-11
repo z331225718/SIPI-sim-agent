@@ -1,0 +1,29 @@
+schema: sipi.channel.receiver-delegated-phase-amendment.v1
+status: approved_delegated_policy
+profile_id: channel-rfm-block-2-current-drive-v1
+revision: 2
+approved_by: project_owner_delegated_policy
+approved_at_utc: "2026-08-11T04:29:32Z"
+approval_ref: user-delegated-autonomy-2026-08-11
+base_charter:
+  approval_ref: docs/baselines/channel-rfm-receiver-semantic-approval.v1.yaml
+  erasure_amendment_ref: docs/baselines/channel-rfm-receiver-erasure-amendment.v1.yaml
+  primary_spec_ref: docs/clean-room/specs/p3b-approved-fixed-receiver.v1.md
+amendment_spec_ref: docs/clean-room/specs/p3b-delegated-phase-selection.v2.md
+phase_policy:
+  candidate_count: 8
+  training_symbols: 32
+  score: absolute_class_separation
+  unique_margin_relative: 0.01
+  unique_winner: preserve_locked_v1_behavior
+  ambiguous_contender_floor: best_score_divided_by_1_01
+  ambiguous_selection: lowest_phase_index
+  ambiguous_phase_selection: delegated_ambiguous_tie_break
+  ambiguous_cdr_lock_state: policy_selected_not_locked
+  result_scope: policy_selected_diagnostic
+  unqualified_status: cdr_unqualified
+non_claims:
+  - This amendment applies only to the named external-oracle receiver profile.
+  - A policy-selected phase is not a clock-recovery lock or physical timing claim.
+  - Delegated-policy diagnostic agreement is not external receiver parity or required-profile acceptance.
+  - Product code still does not read RFM, Python, engine, or external oracle inputs.

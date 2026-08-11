@@ -60,10 +60,21 @@ impl ReceiverDecisionV1 {
     }
 }
 
+/// How this profile selected its fixed sampling phase.
+///
+/// The delegated tie-break is a profile-scoped diagnostic policy, never a
+/// clock-recovery lock claim.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ReceiverPhaseSelectionV2 {
+    UniqueLocked,
+    DelegatedAmbiguousTieBreak,
+}
+
 /// Immutable observations emitted by the approved fixed receiver.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ReceiverResultV1 {
     phase: usize,
+    phase_selection: ReceiverPhaseSelectionV2,
     center: Volts,
     amplitude: Volts,
     frozen_taps: [FiniteF64; TAP_COUNT],
@@ -77,7 +88,11 @@ impl ReceiverResultV1 {
     }
 
     pub fn locked(&self) -> bool {
-        true
+        self.phase_selection == ReceiverPhaseSelectionV2::UniqueLocked
+    }
+
+    pub fn phase_selection(&self) -> ReceiverPhaseSelectionV2 {
+        self.phase_selection
     }
 
     pub fn center(&self) -> Volts {
@@ -115,6 +130,7 @@ pub enum ReceiverError {
     InvalidReferenceBitCount,
     InsufficientTrainingSymbols,
     CdrAmbiguous,
+    CdrUnqualified,
     AmplitudeTooSmall,
     NumericOverflow,
 }
@@ -133,6 +149,7 @@ struct PhaseCalibration {
     center: f64,
     amplitude: f64,
     score: f64,
+    selection: ReceiverPhaseSelectionV2,
 }
 
 /// Executes the sole approved data-aided, fixed-phase receiver behavior.
@@ -144,7 +161,30 @@ pub fn run_fixed_receiver_v1(
     input: &ReceiverInputV1,
     reference: &ReferenceBitsV1,
 ) -> Result<ReceiverResultV1, ReceiverError> {
-    let calibration = select_phase(input, reference)?;
+    run_with_calibration(input, reference, select_phase_v1(input, reference)?)
+}
+
+/// Executes revision 2 of the profile with an explicit delegated policy for
+/// otherwise-qualified phase ambiguity.
+///
+/// The resulting phase is policy-selected, not clock-locked. Callers must use
+/// [`ReceiverResultV1::phase_selection`] before making any acceptance claim.
+pub fn run_fixed_receiver_delegated_ambiguity_v2(
+    input: &ReceiverInputV1,
+    reference: &ReferenceBitsV1,
+) -> Result<ReceiverResultV1, ReceiverError> {
+    run_with_calibration(
+        input,
+        reference,
+        select_phase_delegated_v2(input, reference)?,
+    )
+}
+
+fn run_with_calibration(
+    input: &ReceiverInputV1,
+    reference: &ReferenceBitsV1,
+    calibration: PhaseCalibration,
+) -> Result<ReceiverResultV1, ReceiverError> {
     if calibration.amplitude.abs() < MINIMUM_AMPLITUDE_VOLTS {
         return Err(ReceiverError::AmplitudeTooSmall);
     }
@@ -197,6 +237,7 @@ pub fn run_fixed_receiver_v1(
 
     Ok(ReceiverResultV1 {
         phase: calibration.phase,
+        phase_selection: calibration.selection,
         center: Volts::try_new(calibration.center).map_err(|_| ReceiverError::NumericOverflow)?,
         amplitude: Volts::try_new(calibration.amplitude)
             .map_err(|_| ReceiverError::NumericOverflow)?,
@@ -206,10 +247,10 @@ pub fn run_fixed_receiver_v1(
     })
 }
 
-fn select_phase(
+fn phase_candidates(
     input: &ReceiverInputV1,
     reference: &ReferenceBitsV1,
-) -> Result<PhaseCalibration, ReceiverError> {
+) -> Result<Vec<PhaseCalibration>, ReceiverError> {
     let mut candidates = Vec::with_capacity(SAMPLES_PER_UI);
     for phase in 0..SAMPLES_PER_UI {
         let mut one_sum = 0.0;
@@ -234,9 +275,17 @@ fn select_phase(
             center: checked_divide(checked_add(mean_one, mean_zero)?, 2.0)?,
             amplitude: checked_divide(difference, 2.0)?,
             score: difference.abs(),
+            selection: ReceiverPhaseSelectionV2::UniqueLocked,
         });
     }
-    let mut ordered = candidates;
+    Ok(candidates)
+}
+
+fn select_phase_v1(
+    input: &ReceiverInputV1,
+    reference: &ReferenceBitsV1,
+) -> Result<PhaseCalibration, ReceiverError> {
+    let mut ordered = phase_candidates(input, reference)?;
     ordered.sort_by(|left, right| right.score.total_cmp(&left.score));
     let best = ordered[0];
     let second = ordered[1];
@@ -248,6 +297,32 @@ fn select_phase(
         return Err(ReceiverError::CdrAmbiguous);
     }
     Ok(best)
+}
+
+fn select_phase_delegated_v2(
+    input: &ReceiverInputV1,
+    reference: &ReferenceBitsV1,
+) -> Result<PhaseCalibration, ReceiverError> {
+    let candidates = phase_candidates(input, reference)?;
+    let mut ordered = candidates.clone();
+    ordered.sort_by(|left, right| right.score.total_cmp(&left.score));
+    let best = ordered[0];
+    let second = ordered[1];
+    if best.score == 0.0 || !best.score.is_finite() {
+        return Err(ReceiverError::CdrUnqualified);
+    }
+    let margin = checked_divide(best.score - second.score, best.score)?;
+    if best.score != second.score && margin >= MINIMUM_PHASE_MARGIN {
+        return Ok(best);
+    }
+    let contender_floor = checked_divide(best.score, 1.0 + MINIMUM_PHASE_MARGIN)?;
+    let mut selected = candidates
+        .into_iter()
+        .filter(|candidate| candidate.score >= contender_floor)
+        .min_by_key(|candidate| candidate.phase)
+        .ok_or(ReceiverError::CdrUnqualified)?;
+    selected.selection = ReceiverPhaseSelectionV2::DelegatedAmbiguousTieBreak;
+    Ok(selected)
 }
 
 fn normalized_samples(
@@ -372,6 +447,10 @@ mod tests {
         let result = run_fixed_receiver_v1(&input(3, 1.0, |_, value| value), &bits()).unwrap();
         assert_eq!(result.phase(), 3);
         assert!(result.locked());
+        assert_eq!(
+            result.phase_selection(),
+            ReceiverPhaseSelectionV2::UniqueLocked
+        );
         assert_eq!(result.decisions().len(), MEASUREMENT_SYMBOLS);
         assert_eq!(result.error_count(), 0);
         assert_eq!(result.ber_denominator(), 96);
@@ -402,6 +481,48 @@ mod tests {
         assert_eq!(
             run_fixed_receiver_v1(&input(2, 1.0e-7, |_, value| value), &bits()),
             Err(ReceiverError::AmplitudeTooSmall)
+        );
+    }
+
+    #[test]
+    fn delegated_policy_selects_lowest_qualified_ambiguous_phase_without_lock_claim() {
+        let ambiguous = input(0, 1.0, |_, value| value);
+        let mut samples = ambiguous.receive().to_vec();
+        for index in 0..SYMBOL_COUNT {
+            samples[1 + SAMPLES_PER_UI * index] = samples[SAMPLES_PER_UI * index];
+        }
+        let tied = ReceiverInputV1::try_new(ambiguous.timebase(), samples, 8, RxStagesV1::bypass())
+            .unwrap();
+        assert_eq!(
+            run_fixed_receiver_v1(&tied, &bits()),
+            Err(ReceiverError::CdrAmbiguous)
+        );
+        let result = run_fixed_receiver_delegated_ambiguity_v2(&tied, &bits()).unwrap();
+        assert_eq!(result.phase(), 0);
+        assert!(!result.locked());
+        assert_eq!(
+            result.phase_selection(),
+            ReceiverPhaseSelectionV2::DelegatedAmbiguousTieBreak
+        );
+        assert_eq!(result.ber_denominator(), MEASUREMENT_SYMBOLS);
+    }
+
+    #[test]
+    fn delegated_policy_preserves_unique_margin_and_rejects_unqualified_signal() {
+        let unique =
+            run_fixed_receiver_delegated_ambiguity_v2(&input(2, 1.0, |_, value| value), &bits())
+                .unwrap();
+        assert_eq!(unique.phase(), 2);
+        assert!(unique.locked());
+        assert_eq!(
+            unique.phase_selection(),
+            ReceiverPhaseSelectionV2::UniqueLocked
+        );
+
+        let zero = input(0, 0.0, |_, value| value);
+        assert_eq!(
+            run_fixed_receiver_delegated_ambiguity_v2(&zero, &bits()),
+            Err(ReceiverError::CdrUnqualified)
         );
     }
 

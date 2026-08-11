@@ -15,12 +15,16 @@ use std::{
 };
 
 use sipi_contracts::{ReceiverInputV1, RxStagesV1, UniformTimebaseV1};
-use sipi_link::{ReceiverDecisionV1, ReferenceBitsV1, run_fixed_receiver_v1};
+use sipi_link::{
+    ReceiverDecisionV1, ReceiverPhaseSelectionV2, ReferenceBitsV1,
+    run_fixed_receiver_delegated_ambiguity_v2, run_fixed_receiver_v1,
+};
 use sipi_types::{Seconds, Volts};
 
 const WAVEFORM_BYTES: usize = 1024 * size_of::<f64>();
 const BIT_COUNT: usize = 128;
 const RESULT_SCHEMA: &str = "sipi.receiver-observer-runner.v1";
+const DELEGATED_RESULT_SCHEMA: &str = "sipi.receiver-delegated-policy-observer-runner.v1";
 
 #[derive(Debug)]
 struct RunnerError(&'static str);
@@ -210,6 +214,72 @@ fn replay_or_record_rejection(
     Ok(())
 }
 
+fn delegated_selection_code(selection: ReceiverPhaseSelectionV2) -> (&'static str, &'static str) {
+    match selection {
+        ReceiverPhaseSelectionV2::UniqueLocked => ("unique_locked", "locked"),
+        ReceiverPhaseSelectionV2::DelegatedAmbiguousTieBreak => (
+            "delegated_ambiguous_tie_break",
+            "policy_selected_not_locked",
+        ),
+    }
+}
+
+fn replay_delegated_policy_or_record_rejection(
+    root: &Path,
+    waveform: &Path,
+    bits: &Path,
+    output: &Path,
+) -> Result<(), Box<dyn Error>> {
+    let (input, reference) = load_input(root, waveform, bits)?;
+    let output = contained_new(root, output)?;
+    let mut file = File::create_new(output)?;
+    match run_fixed_receiver_delegated_ambiguity_v2(&input, &reference) {
+        Ok(result) => {
+            let decisions = result
+                .decisions()
+                .iter()
+                .copied()
+                .map(decision_code)
+                .collect::<String>();
+            let (phase_selection, cdr_lock_state) =
+                delegated_selection_code(result.phase_selection());
+            write!(
+                file,
+                concat!(
+                    "{{\"schema\":\"{}\",\"status\":\"accepted\",\"phase\":{},",
+                    "\"phaseSelection\":\"{}\",\"cdrLockState\":\"{}\",",
+                    "\"centerVolts\":{},\"amplitudeVolts\":{},\"frozenTaps\":[{},{},{},{},{}],",
+                    "\"decisions\":\"{}\",\"errorCount\":{},\"berNumerator\":{},\"berDenominator\":{}}}\n"
+                ),
+                DELEGATED_RESULT_SCHEMA,
+                result.phase(),
+                phase_selection,
+                cdr_lock_state,
+                result.center().get(),
+                result.amplitude().get(),
+                result.frozen_taps()[0].get(),
+                result.frozen_taps()[1].get(),
+                result.frozen_taps()[2].get(),
+                result.frozen_taps()[3].get(),
+                result.frozen_taps()[4].get(),
+                decisions,
+                result.error_count(),
+                result.error_count(),
+                result.ber_denominator(),
+            )?;
+        }
+        Err(error) => {
+            writeln!(
+                file,
+                "{{\"schema\":\"{}\",\"status\":\"rejected\",\"reason\":\"{:?}\"}}",
+                DELEGATED_RESULT_SCHEMA, error
+            )?;
+        }
+    }
+    file.sync_all()?;
+    Ok(())
+}
+
 fn validate_input(
     root: &Path,
     waveform: &Path,
@@ -245,6 +315,16 @@ fn replay_receiver_input() {
     let bits = environment_path("SIPI_RECEIVER_HANDOFF_BITS").unwrap();
     let output = environment_path("SIPI_RECEIVER_HANDOFF_OUTPUT").unwrap();
     replay_or_record_rejection(&root, &waveform, &bits, &output).unwrap();
+}
+
+#[test]
+#[ignore = "external observer orchestration supplies hash-checked sidecars"]
+fn replay_receiver_delegated_policy_input() {
+    let root = environment_path("SIPI_RECEIVER_HANDOFF_ROOT").unwrap();
+    let waveform = environment_path("SIPI_RECEIVER_HANDOFF_WAVEFORM").unwrap();
+    let bits = environment_path("SIPI_RECEIVER_HANDOFF_BITS").unwrap();
+    let output = environment_path("SIPI_RECEIVER_HANDOFF_OUTPUT").unwrap();
+    replay_delegated_policy_or_record_rejection(&root, &waveform, &bits, &output).unwrap();
 }
 
 #[test]
@@ -301,6 +381,19 @@ mod tests {
         assert!(result.contains(RESULT_SCHEMA));
         assert!(result.contains("\"phase\":3"));
         assert!(result.contains("\"berDenominator\":96"));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn delegated_policy_runner_emits_its_non_lock_selection_state() {
+        let root = root("delegated");
+        let (waveform, bits) = write_sidecars(&root);
+        let output = root.join("receiver-delegated-result.json");
+        replay_delegated_policy_or_record_rejection(&root, &waveform, &bits, &output).unwrap();
+        let result = fs::read_to_string(&output).unwrap();
+        assert!(result.contains(DELEGATED_RESULT_SCHEMA));
+        assert!(result.contains("\"phaseSelection\":\"unique_locked\""));
+        assert!(result.contains("\"cdrLockState\":\"locked\""));
         fs::remove_dir_all(root).unwrap();
     }
 

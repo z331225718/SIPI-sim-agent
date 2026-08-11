@@ -449,6 +449,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, comparator, auditor]
     derived_from: [p3b-rfm-receiver-handoff-replay-spec-v1, p3b-receiver-charter-evaluator-spec-v1]
+  - id: p3b-delegated-phase-selection-spec-v2
+    kind: independent_spec
+    content_sha256: 8c1c0b78a2650f80665c628ce17133a8a8fc81f9bb90f6bc92358f10a73028d7
+    provenance:
+      source_ref: docs/clean-room/specs/p3b-delegated-phase-selection.v2.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, comparator, auditor]
+    derived_from: [p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1]
   - id: pybert-channel-16ghz-3db-fixture-f6ba031
     kind: oracle_fixture
     content_sha256: 9d4cfeaad7c971fa45454f639b40e08c538855058f326fbdec64298b8933b5ad
@@ -992,6 +1000,15 @@ scopes:
       implementer: []
       comparator: [p3b-rfm-receiver-charter-compare-spec-v1, p3b-rfm-receiver-handoff-replay-spec-v1, p3b-receiver-charter-evaluator-spec-v1, pybert-rfm-reference-bits-generator-199696a, pybert-rfm-current-domain-observer-api-199696a]
       auditor: [p3b-rfm-receiver-charter-compare-spec-v1, p3b-rfm-receiver-handoff-replay-spec-v1, p3b-receiver-charter-evaluator-spec-v1, p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1, pybert-rfm-reference-bits-generator-199696a, pybert-rfm-current-domain-observer-api-199696a]
+  - id: p3b-delegated-phase-selection-v2
+    paths: [docs/baselines/channel-rfm-receiver-delegated-phase-amendment.v1.yaml, docs/baselines/channel-rfm-receiver-delegated-policy-compare.v1.yaml, docs/clean-room/specs/p3b-delegated-phase-selection.v2.md, crates/sipi-link/src/receiver.rs, crates/sipi-link/src/lib.rs, crates/sipi-link/tests/receiver_observer_runner.rs, tools/verify_channel_rfm_receiver_delegated_phase_amendment.py, tools/test_verify_channel_rfm_receiver_delegated_phase_amendment.py, tools/evaluate_fixed_receiver_delegated_policy.py, tools/test_evaluate_fixed_receiver_delegated_policy.py, tools/compare_channel_rfm_receiver_delegated_policy.py, tools/test_compare_channel_rfm_receiver_delegated_policy.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3b-delegated-phase-selection-spec-v2]
+      implementer: [p3b-delegated-phase-selection-spec-v2]
+      comparator: [p3b-delegated-phase-selection-spec-v2, p3b-rfm-receiver-handoff-replay-spec-v1, pybert-rfm-reference-bits-generator-199696a, pybert-rfm-current-domain-observer-api-199696a]
+      auditor: [p3b-delegated-phase-selection-spec-v2, p3b-approved-fixed-receiver-spec-v1, p3b-approved-fixed-receiver-erasure-amendment-spec-v1, p3b-rfm-receiver-handoff-replay-spec-v1, pybert-rfm-reference-bits-generator-199696a, pybert-rfm-current-domain-observer-api-199696a]
   - id: p4b-ami-candidate-quarantine-preflight-v1
     paths: [docs/baselines/ami-candidate-quarantine-preflight.v1.yaml, docs/clean-room/specs/p4b-ami-candidate-quarantine-preflight.v1.md, tools/verify_p4b_ami_candidate_preflight.py, tools/test_verify_p4b_ami_candidate_preflight.py]
     state: planned

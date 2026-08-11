@@ -1,0 +1,21 @@
+schema: sipi.channel.rfm-receiver-delegated-policy-compare-policy.v1
+status: external_compare_pending_execution
+profile_id: channel-rfm-block-2-current-drive-v1
+handoff_policy_ref: docs/baselines/channel-rfm-receiver-handoff-replay.v1.yaml
+amendment_ref: docs/baselines/channel-rfm-receiver-delegated-phase-amendment.v1.yaml
+evaluator:
+  path: tools/evaluate_fixed_receiver_delegated_policy.py
+  schema: sipi.receiver-delegated-policy-evaluator.v1
+product_runner:
+  target: receiver_observer_runner
+  invocation: ignored_test_only
+  test: replay_receiver_delegated_policy_input
+  stable_cli_or_ffi: forbidden
+required_replays: 2
+continuous_tolerance:
+  absolute_volts: 1.0e-9
+  relative: 1.0e-6
+non_claims:
+  - The report compares only two implementations of the delegated policy on externally generated inputs.
+  - A policy-selected phase is not reported as a CDR lock.
+  - The report is not retained receiver parity, RFM solver parity, Link parity, or required-profile acceptance.

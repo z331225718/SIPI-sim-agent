@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: abcb94c9f200e86a8c100f388ad961866d8d177d005901e96ed56f9750cd07a5
+  tracked_paths_sha256: 4f19798269a8fd8b831027fb77392b39a68878f93179548476c1f860ecbb3f71
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1193,6 +1193,18 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/channel-rfm-receiver-delegated-phase-amendment.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/channel-rfm-receiver-delegated-policy-compare.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/channel-rfm-receiver-erasure-amendment.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -1674,6 +1686,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3b-causal-fir-convolution.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3b-delegated-phase-selection.v2.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -6323,6 +6341,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/compare_channel_rfm_receiver_delegated_policy.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/compare_channel_s2p_matched.py:
       rule: migration-tools
       class: migration_only
@@ -6354,6 +6378,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/evaluate_fixed_receiver_charter.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/evaluate_fixed_receiver_delegated_policy.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -6437,6 +6467,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_compare_channel_rfm_receiver_delegated_policy.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_compare_channel_s2p_matched.py:
       rule: migration-tools
       class: migration_only
@@ -6456,6 +6492,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_evaluate_fixed_receiver_charter.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_evaluate_fixed_receiver_delegated_policy.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -6564,6 +6606,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_rust_candidate_source_map.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_channel_rfm_receiver_delegated_phase_amendment.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -6810,6 +6858,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_acceptance_profiles.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_channel_rfm_receiver_delegated_phase_amendment.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
