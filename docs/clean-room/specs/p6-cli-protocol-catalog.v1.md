@@ -13,6 +13,14 @@ commands explicitly have no request example. Every `stdin_json_v1` route has
 exactly one `product-owned-minimal-v1` example, constructed from validated Rust
 wire types rather than copied fixtures or result snapshots.
 
+For an AI client, a `constructible` request is only a request that passes the
+product schema and cross-field admission. It becomes `admitted` only after all
+catalogued caller bindings have been supplied; TRAN and Link require the
+explicit invocation bindings `/invocation/artifact_root` and
+`/invocation/artifact_id`. It is `executed` only after the ordinary runtime
+path succeeds. Neither an example nor a constructible request promises that a
+machine-local artifact destination is usable.
+
 `sipi protocols --json` returns the catalog. `sipi example <command-id> --json`
 returns only the corresponding request body and its identity metadata. It never
 creates an artifact, starts a runtime, accesses a file or URL, or returns a
@@ -25,6 +33,12 @@ one profile; every stdin request must have a registered request schema and
 example; every profile must point back to an available command; and request
 schema hashes are recomputed from the contract authority. Unknown commands,
 static commands, and unavailable commands do not have examples.
+
+The catalog also publishes the finite diagnostic-code registry. Every process
+diagnostic carries a stable `code`, `stage`, optional JSON `pointer`, and
+`rule_id`; clients can branch on those fields without parsing the human message
+or an operating-system error. The registry deliberately does not include
+arbitrary paths, external runtime output, input echoes, or foreign error text.
 
 This is a discoverable protocol contract, not a generic schema service, file or
 URL API, project executor, external comparator, artifact viewer, or a claim

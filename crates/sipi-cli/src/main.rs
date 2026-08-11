@@ -61,9 +61,111 @@ struct CommandProtocolProfileV1 {
     command_id: &'static str,
     example_id: Option<&'static str>,
     required_options: &'static [&'static str],
+    caller_bindings: &'static [CallerBindingV1],
+    validation_rule_id: Option<&'static str>,
     successful_exit: i32,
     diagnostic_contract: &'static str,
 }
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct CallerBindingV1 {
+    pointer: &'static str,
+    role: &'static str,
+    explicit_required: bool,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct DiagnosticCodeV1 {
+    code: &'static str,
+    stage: &'static str,
+    rule_id: &'static str,
+}
+
+const ARTIFACT_DESTINATION_BINDINGS: &[CallerBindingV1] = &[
+    CallerBindingV1 {
+        pointer: "/invocation/artifact_root",
+        role: "local_artifact_destination",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/invocation/artifact_id",
+        role: "artifact_identity",
+        explicit_required: true,
+    },
+];
+
+const DIAGNOSTIC_CODES_V1: &[DiagnosticCodeV1] = &[
+    DiagnosticCodeV1 {
+        code: "usage",
+        stage: "protocol",
+        rule_id: "cli.route.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "invalid_input",
+        stage: "protocol",
+        rule_id: "cli.stdin-json.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "contract_rejected",
+        stage: "schema",
+        rule_id: "contract.cross-field.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "capability_unavailable",
+        stage: "protocol",
+        rule_id: "cli.capability-admission.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "unsupported",
+        stage: "protocol",
+        rule_id: "cli.command-shape.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "example_not_applicable",
+        stage: "protocol",
+        rule_id: "cli.example-admission.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "unknown_command_example",
+        stage: "protocol",
+        rule_id: "cli.example-admission.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "unknown_schema",
+        stage: "schema",
+        rule_id: "cli.schema-registry.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "unknown_capability",
+        stage: "protocol",
+        rule_id: "cli.capability-registry.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "invalid_artifact_id",
+        stage: "admission",
+        rule_id: "artifact.id.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "operational_failure",
+        stage: "runtime",
+        rule_id: "runtime.execution.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "internal_failure",
+        stage: "runtime",
+        rule_id: "runtime.internal.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "internal_contract_error",
+        stage: "schema",
+        rule_id: "contract.registry.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "self_check_failed",
+        stage: "schema",
+        rule_id: "cli.self-check.v1",
+    },
+];
 
 const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
     CommandDescriptorV1 {
@@ -263,6 +365,8 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         command_id: "version",
         example_id: None,
         required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: None,
         successful_exit: 0,
         diagnostic_contract: "no_stdin_or_diagnostics_on_success",
     },
@@ -270,6 +374,8 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         command_id: "doctor",
         example_id: None,
         required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: None,
         successful_exit: 0,
         diagnostic_contract: "no_stdin_or_diagnostics_on_success",
     },
@@ -277,6 +383,8 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         command_id: "capabilities",
         example_id: None,
         required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: None,
         successful_exit: 0,
         diagnostic_contract: "no_stdin_or_diagnostics_on_success",
     },
@@ -284,6 +392,8 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         command_id: "commands",
         example_id: None,
         required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: None,
         successful_exit: 0,
         diagnostic_contract: "no_stdin_or_diagnostics_on_success",
     },
@@ -291,6 +401,8 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         command_id: "protocols",
         example_id: None,
         required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: None,
         successful_exit: 0,
         diagnostic_contract: "no_stdin_or_diagnostics_on_success",
     },
@@ -298,6 +410,8 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         command_id: "example",
         example_id: None,
         required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: None,
         successful_exit: 0,
         diagnostic_contract: "example_not_applicable_to_static_discovery",
     },
@@ -305,6 +419,8 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         command_id: "schema",
         example_id: None,
         required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: None,
         successful_exit: 0,
         diagnostic_contract: "no_stdin_or_diagnostics_on_success",
     },
@@ -312,6 +428,8 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         command_id: "validate",
         example_id: Some("product-owned-minimal-v1"),
         required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: Some("contract.v1.version"),
         successful_exit: 0,
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
@@ -319,6 +437,8 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         command_id: "inspect.self",
         example_id: None,
         required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: None,
         successful_exit: 0,
         diagnostic_contract: "no_stdin_or_diagnostics_on_success",
     },
@@ -326,6 +446,8 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         command_id: "ibis.inspect",
         example_id: Some("product-owned-minimal-v1"),
         required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: Some("ibis.inspect.structural.v1"),
         successful_exit: 0,
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
@@ -333,6 +455,8 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         command_id: "tran.run",
         example_id: Some("product-owned-minimal-v1"),
         required_options: &["--artifact-root", "--artifact-id"],
+        caller_bindings: ARTIFACT_DESTINATION_BINDINGS,
+        validation_rule_id: Some("tran.rc-pulse.profile"),
         successful_exit: 0,
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
@@ -340,6 +464,8 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         command_id: "link.run",
         example_id: Some("product-owned-minimal-v1"),
         required_options: &["--artifact-root", "--artifact-id"],
+        caller_bindings: ARTIFACT_DESTINATION_BINDINGS,
+        validation_rule_id: Some("link.v1.causal-fir"),
         successful_exit: 0,
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
@@ -766,15 +892,21 @@ fn command_protocol_profiles_are_valid(
                     .required_options
                     .iter()
                     .all(|option| option.starts_with("--"))
+                && matches[0].caller_bindings.iter().all(|binding| {
+                    binding.pointer.starts_with("/invocation/")
+                        && !binding.role.is_empty()
+                        && binding.explicit_required
+                })
                 && if descriptor.transport == "stdin_json_v1" {
                     descriptor.request_schema.is_some()
                         && matches[0].example_id.is_some()
+                        && matches[0].validation_rule_id.is_some()
                         && product_example_request_json_v1(descriptor.id)
                             .ok()
                             .flatten()
                             .is_some()
                 } else {
-                    matches[0].example_id.is_none()
+                    matches[0].example_id.is_none() && matches[0].validation_rule_id.is_none()
                 }
         })
         && profiles.iter().all(|profile| {
@@ -903,24 +1035,54 @@ fn command_protocol_catalog_json() -> Result<String, sipi_contracts::ContractErr
             let example_id = profile
                 .example_id
                 .map_or_else(|| "null".to_owned(), |value| format!("\"{value}\""));
+            let validation_rule_id = profile.validation_rule_id.map_or_else(
+                || "null".to_owned(),
+                |value| format!("\"{value}\""),
+            );
             let options = profile
                 .required_options
                 .iter()
                 .map(|option| format!("\"{option}\""))
                 .collect::<Vec<_>>()
                 .join(",");
+            let caller_bindings = profile
+                .caller_bindings
+                .iter()
+                .map(|binding| {
+                    format!(
+                        "{{\"pointer\":\"{}\",\"role\":\"{}\",\"explicit_required\":{}}}",
+                        binding.pointer, binding.role, binding.explicit_required
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(",");
             format!(
-                "{{\"command_id\":\"{}\",\"transport\":\"{}\",\"request_schema\":{request_schema},\"request_schema_sha256\":{request_schema_sha256},\"response_schema\":{response_schema},\"example_id\":{example_id},\"required_options\":[{options}],\"successful_exit\":{},\"diagnostic_contract\":\"{}\"}}",
+                "{{\"command_id\":\"{}\",\"transport\":\"{}\",\"request_schema\":{request_schema},\"request_schema_sha256\":{request_schema_sha256},\"response_schema\":{response_schema},\"example_id\":{example_id},\"construction_state\":\"{}\",\"validation_rule_id\":{validation_rule_id},\"caller_bindings\":[{caller_bindings}],\"required_options\":[{options}],\"successful_exit\":{},\"diagnostic_contract\":\"{}\"}}",
                 profile.command_id,
                 descriptor.transport,
+                if descriptor.transport == "stdin_json_v1" {
+                    "constructible"
+                } else {
+                    "not_applicable"
+                },
                 profile.successful_exit,
                 profile.diagnostic_contract,
             )
         })
         .collect::<Vec<_>>()
         .join(",");
+    let diagnostics = DIAGNOSTIC_CODES_V1
+        .iter()
+        .map(|diagnostic| {
+            format!(
+                "{{\"code\":\"{}\",\"stage\":\"{}\",\"rule_id\":\"{}\"}}",
+                diagnostic.code, diagnostic.stage, diagnostic.rule_id
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
     Ok(format!(
-        "{{\"schema\":\"{COMMAND_PROTOCOL_CATALOG_SCHEMA}\",\"profiles\":[{profiles}]}}"
+        "{{\"schema\":\"{COMMAND_PROTOCOL_CATALOG_SCHEMA}\",\"profiles\":[{profiles}],\"diagnostic_codes\":[{diagnostics}]}}"
     ))
 }
 
@@ -1140,8 +1302,18 @@ fn envelope_json(command: &str, response: &Response) -> String {
 }
 
 fn diagnostic_json(command: &str, message: &str) -> String {
+    let diagnostic = DIAGNOSTIC_CODES_V1
+        .iter()
+        .find(|diagnostic| diagnostic.code == message)
+        .unwrap_or_else(|| {
+            DIAGNOSTIC_CODES_V1
+                .iter()
+                .find(|diagnostic| diagnostic.code == "internal_failure")
+                .expect("diagnostic registry has an internal fallback")
+        });
     format!(
-        "{{\"schema\":\"sipi.cli.diagnostic.v1\",\"sequence\":1,\"severity\":\"error\",\"code\":\"{message}\",\"command\":\"{command}\",\"request_id\":null,\"location\":null,\"message\":\"command failed\"}}"
+        "{{\"schema\":\"sipi.cli.diagnostic.v1\",\"sequence\":1,\"severity\":\"error\",\"code\":\"{}\",\"command\":\"{command}\",\"command_id\":\"{command}\",\"request_id\":null,\"stage\":\"{}\",\"location\":null,\"pointer\":null,\"rule_id\":\"{}\",\"message\":\"command failed\"}}",
+        diagnostic.code, diagnostic.stage, diagnostic.rule_id
     )
 }
 
@@ -1370,6 +1542,10 @@ mod tests {
             );
         }
         assert!(catalog.contains("\"request_schema_sha256\":\""));
+        assert!(catalog.contains("\"construction_state\":\"constructible\""));
+        assert!(catalog.contains("\"pointer\":\"/invocation/artifact_root\""));
+        assert!(catalog.contains("\"validation_rule_id\":\"tran.rc-pulse.profile\""));
+        assert!(catalog.contains("\"diagnostic_codes\":["));
         assert_eq!(
             dispatch(&args(&["example", "channel.run", "--json"])).code,
             4
@@ -1403,6 +1579,19 @@ mod tests {
                 .expect("unknown example lookup")
                 .is_none()
         );
+    }
+
+    #[test]
+    fn diagnostics_are_registered_machine_fields_without_user_text() {
+        let unavailable = diagnostic_json("channel", "capability_unavailable");
+        assert!(unavailable.contains("\"stage\":\"protocol\""));
+        assert!(unavailable.contains("\"rule_id\":\"cli.capability-admission.v1\""));
+        assert!(unavailable.contains("\"pointer\":null"));
+        assert!(!unavailable.contains("C:\\"));
+
+        let unknown = diagnostic_json("unknown", "not-in-the-registry");
+        assert!(unknown.contains("\"code\":\"internal_failure\""));
+        assert!(unknown.contains("\"stage\":\"runtime\""));
     }
 
     #[test]

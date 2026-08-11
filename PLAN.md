@@ -352,8 +352,8 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 - [ ] **P6-03** **P6-03a 已完成：** 现有 fixed TRAN→causal-FIR edge 具有专用 schema、单端 voltage/common-reference map、单位/axis admission、policy 与 canonical f64-bit SHA-256 input/output identity record，并可从 typed values重算校验；它不是通用 edge schema、artifact/provenance、project executor 或外部连接。其余 edge 待能力到位后分别纳入。
 - [ ] **P6-04** **P6-04a 已完成：** 唯一 fixed TRAN→causal-FIR edge 可在调用者提供的协作式 `RunContext` 中执行 attempt `1`，共享 TRAN/FIR checkpoint 和 checked work/byte admission；取消、deadline、资源或计算失败不返回 result/record。retry、cache、持久状态与 project executor 仍未实现。
 - [ ] **P6-05** **P6-05a 已完成：** 版本化 command manifest 成为当前命令发现、capabilities 与 dispatcher 的单一来源；实际 handler 保持 available，`channel/ami/com/project/compare/report` 被识别后以稳定 `capability_unavailable` fail-closed。project execution、channel resolver、AMI/COM、compare/report workflow 仍待各自能力完成。
-- [ ] **P6-06** 稳定 JSON/NDJSON、exit code、schema discovery、example request 和 capability diagnostics。
-- [ ] **P6-07** 建立 AI conformance：从 `schema + capabilities` 可构造合法请求，错误无需解析任意文本。
+- [x] **P6-06** **P6-06a 已完成：** `protocols --json`/`example <command-id> --json` 将 available command、request schema SHA-256、产品自有最小 request、所需 invocation options 和稳定 diagnostic registry 关联；schema discovery 保持 inventory 顺序，unavailable route 不获得示例或执行路径。
+- [ ] **P6-07** **P6-07a 已完成：** AI 可从 catalog/schema/example 构造 `constructible` request，并显式区分 artifact root/id 等 caller binding 成立后的 `admitted` 与实际 `executed`；所有 process diagnostics 提供稳定 `code/stage/pointer/rule_id`，无需解析消息文本。通用 agent API、project executor、外部 compare 与 unavailable domain 仍未实现。
 - [ ] **P6-08** 建立端到端 artifact/provenance viewer/report；不泄露绝对路径和私有资产内容。
 - [ ] **P6-09** fail-closed 测试：缺 edge、hash 漂移、worker crash、partial output、cancel、resource limit。
 - [ ] **P6-10** 保持未来 service/GUI 只调用同一 Rust contract，不创建第二套平台语义。

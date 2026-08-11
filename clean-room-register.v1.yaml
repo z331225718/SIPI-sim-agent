@@ -123,7 +123,7 @@ materials:
     derived_from: [p1-cli-discovery-spec-v1, p1-cli-process-contract-spec-v1, p1-contracts-foundation-spec-v1]
   - id: p6-cli-protocol-catalog-spec-v1
     kind: independent_spec
-    content_sha256: f2193727f9a78764421f46c567c896bccaaa5da3ece1789c10bedec3f134784f
+    content_sha256: dbea6c93282144123fe4581993828e7c7ff5a203335a2b063df4df7c88382a23
     provenance:
       source_ref: docs/clean-room/specs/p6-cli-protocol-catalog.v1.md
       license_evidence: project-authored-MIT-boundary-pending-promotion

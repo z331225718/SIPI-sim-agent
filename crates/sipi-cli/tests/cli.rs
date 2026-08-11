@@ -201,10 +201,10 @@ fn run_is_explicitly_unsupported() {
             .unwrap()
             .contains("\"status\":\"unsupported\"")
     );
-    assert_eq!(
-        String::from_utf8(output.stderr).expect("UTF-8 stderr"),
-        "{\"schema\":\"sipi.cli.diagnostic.v1\",\"sequence\":1,\"severity\":\"error\",\"code\":\"unsupported\",\"command\":\"run\",\"request_id\":null,\"location\":null,\"message\":\"command failed\"}\n"
-    );
+    let diagnostic = String::from_utf8(output.stderr).expect("UTF-8 stderr");
+    assert!(diagnostic.contains("\"code\":\"unsupported\""));
+    assert!(diagnostic.contains("\"stage\":\"protocol\""));
+    assert!(diagnostic.contains("\"rule_id\":\"cli.command-shape.v1\""));
 }
 
 #[test]
@@ -290,10 +290,10 @@ fn fixed_tran_stdin_run_publishes_a_two_file_artifact() {
         String::from_utf8(duplicate.stdout).expect("duplicate stdout"),
         "{\"schema\":\"sipi.cli.response.v1\",\"protocol\":1,\"command\":\"tran\",\"request_id\":null,\"status\":\"failed\",\"result\":null,\"diagnostic_count\":1}\n"
     );
-    assert_eq!(
-        String::from_utf8(duplicate.stderr).expect("duplicate stderr"),
-        "{\"schema\":\"sipi.cli.diagnostic.v1\",\"sequence\":1,\"severity\":\"error\",\"code\":\"operational_failure\",\"command\":\"tran\",\"request_id\":null,\"location\":null,\"message\":\"command failed\"}\n"
-    );
+    let duplicate_diagnostic = String::from_utf8(duplicate.stderr).expect("duplicate stderr");
+    assert!(duplicate_diagnostic.contains("\"code\":\"operational_failure\""));
+    assert!(duplicate_diagnostic.contains("\"stage\":\"runtime\""));
+    assert!(duplicate_diagnostic.contains("\"rule_id\":\"runtime.execution.v1\""));
     assert_eq!(
         std::fs::read(root.join("rc-pulse-1").join("success.json")).expect("success"),
         success
