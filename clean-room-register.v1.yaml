@@ -593,6 +593,22 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p4b-ami-private-worker-spec-v1]
+  - id: ads-pcie-gen5-dual-ami-hash-only-fixture-v1
+    kind: oracle_fixture
+    content_sha256: 7da0e7c0367e7174945eadfa1c49dc88e9cd99e5a2309b64b884721e54290bf7
+    provenance:
+      source_ref: external/ads/pcie-gen5-dual-ami/hash-only
+      license_evidence: external-user-provided-rights-unverified
+    allowed_roles: [observer, auditor]
+    derived_from: []
+  - id: p4b-ads-pcie-gen5-dual-ami-asset-preflight-spec-v1
+    kind: independent_spec
+    content_sha256: 9527e72368d5ecec625b232799edae201f90ab0a3f2ff9200305c314f31f5b0a
+    provenance:
+      source_ref: docs/clean-room/specs/p4b-ads-pcie-gen5-dual-ami-asset-preflight.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [ads-pcie-gen5-dual-ami-hash-only-fixture-v1]
   - id: pybert-example-rx-ibs-fixture-f6ba031
     kind: oracle_fixture
     content_sha256: 37b7bf1b6c50fe56c4daaad344de1b3cabe7a7f139ca1b76c4058a943f39fbe9
@@ -1179,6 +1195,15 @@ scopes:
       implementer: [p4b-external-ami-asset-set-spec-v1]
       comparator: []
       auditor: [p4b-external-ami-asset-set-spec-v1]
+  - id: p4b-ads-pcie-gen5-dual-ami-asset-preflight-v1
+    paths: [docs/baselines/p4b-ads-pcie-gen5-dual-ami-asset-preflight.v1.yaml, docs/clean-room/specs/p4b-ads-pcie-gen5-dual-ami-asset-preflight.v1.md, tools/observe_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py, tools/test_observe_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py, tools/verify_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py, tools/test_verify_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py]
+    state: planned
+    role_material_allowlists:
+      observer: [ads-pcie-gen5-dual-ami-hash-only-fixture-v1, p4b-ads-pcie-gen5-dual-ami-asset-preflight-spec-v1]
+      spec_author: [p4b-ads-pcie-gen5-dual-ami-asset-preflight-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [ads-pcie-gen5-dual-ami-hash-only-fixture-v1, p4b-ads-pcie-gen5-dual-ami-asset-preflight-spec-v1]
   - id: p4a-ibis-example-rx-candidate-inventory-v1
     paths: [docs/baselines/ibis-example-rx-candidate-inventory.v1.yaml, docs/clean-room/specs/p4a-ibis-example-rx-candidate-inventory.v1.md, tools/verify_p4a_ibis_example_rx_candidate_inventory.py, tools/test_verify_p4a_ibis_example_rx_candidate_inventory.py]
     state: planned

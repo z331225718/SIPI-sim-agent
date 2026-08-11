@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 8087d09136084a1f8ee2d4e0d832fb3d12dfdef5c94a382db8f56b21ebd53464
+  tracked_paths_sha256: c97600cfbe4ef21612a83204418e1ba46f75d0d2ca4bb17976ca826d4f02a4f2
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1355,6 +1355,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-12-p4b-ads-pcie-gen5-dual-ami-asset-preflight.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/capabilities.baseline.v1.json:
       rule: historical-docs
       class: migration_only
@@ -1650,6 +1656,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p4b-ads-pcie-gen5-dual-ami-asset-preflight.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2148,6 +2160,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p4a-selected-differential-rc-load.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p4b-ads-pcie-gen5-dual-ami-asset-preflight.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -6737,6 +6755,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/replay_channel_rfm_receiver_handoff.py:
       rule: migration-tools
       class: migration_only
@@ -6906,6 +6930,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_observe_p4a_external_pure_ibis_structural_scope.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_observe_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7104,6 +7134,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p4a_official_pure_ibis_structural_scope_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7542,6 +7578,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p4a_official_pure_ibis_structural_scope_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

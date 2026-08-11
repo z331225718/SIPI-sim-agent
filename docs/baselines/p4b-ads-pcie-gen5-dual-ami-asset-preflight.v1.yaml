@@ -1,0 +1,89 @@
+schema: sipi.p4b-ads-pcie-gen5-dual-ami-asset-preflight.v1
+status: external_only_identity_observed_worker_blocked
+asset_set:
+  id: ads-pcie-gen5-dual-ami-windows-x64-v1
+  platform: windows-x86_64
+  source_custody: unversioned_content_hash_only
+  absolute_path_retained: false
+  packaging: prohibited
+  product_asset: false
+  release_input: false
+  default_runtime: false
+  worker_admission: blocked_unverified_rights_and_runtime_closure
+  assets:
+    - id: pcie-gen5-ibis
+      kind: ibis
+      logical_name: pcie_gen5.ibs
+      role: shared_input_model
+      byte_length: 5537
+      sha256: 9ff15bf9a5ad685d0ad700b26287b5f50e1c6e1ff9c6808e5a0f0ef86896d665
+      third_party_rights_status: unverified
+    - id: pcie-tx-ami
+      kind: ami_text
+      logical_name: ctspcie_tx_gen5.ami
+      role: tx_parameter_text
+      byte_length: 3280
+      sha256: 9272e241901d8fa749909e501c6625e508961f581e624c3f64d18a27a2408fb0
+      third_party_rights_status: unverified
+    - id: pcie-rx-ami
+      kind: ami_text
+      logical_name: ctspcie_rx_gen5.ami
+      role: rx_parameter_text
+      byte_length: 7489
+      sha256: 9e6206eddd32ab9d1a2ec8237d84608509131f7c3fc309c4f90f44a87f8905c1
+      third_party_rights_status: unverified
+    - id: pcie-tx-dll
+      kind: dll
+      logical_name: ctspcie_tx_win64.dll
+      role: tx_primary_dynamic_library
+      byte_length: 370045
+      sha256: 05d299826a9c69ae8ac3d236d88adcad5860fc7e229243f1541d1734b8ed28ea
+      third_party_rights_status: unverified
+    - id: pcie-rx-dll
+      kind: dll
+      logical_name: ctspcie_rx_win64.dll
+      role: rx_primary_dynamic_library
+      byte_length: 8850494
+      sha256: 88a284f0967ad332f6230a8c5e791f47e9d22a05ae6778426c35707a18a3ab63
+      third_party_rights_status: unverified
+  asset_set_digest: 7da0e7c0367e7174945eadfa1c49dc88e9cd99e5a2309b64b884721e54290bf7
+  bindings:
+    - model_id: pcie_tx
+      ibis_asset: pcie-gen5-ibis
+      ami_asset: pcie-tx-ami
+      dll_asset: pcie-tx-dll
+      ibis_declared_platform: Windows_mingw64-g++_64
+      ami_root: whistler_tx
+      ami_version: '6.1'
+      binding_status: identity_observed_not_runtime_verified
+    - model_id: pcie_rx
+      ibis_asset: pcie-gen5-ibis
+      ami_asset: pcie-rx-ami
+      dll_asset: pcie-rx-dll
+      ibis_declared_platform: Windows_mingw64-g++_64
+      ami_root: whistler_rx
+      ami_version: '6.1'
+      binding_status: identity_observed_not_runtime_verified
+  ibis_version: '5.1'
+  static_abi_surface:
+    machine: windows-x86_64
+    exports: [AMI_Close, AMI_GetWave, AMI_Init]
+    normal_imports: [kernel32.dll, msvcrt.dll, user32.dll]
+    delay_imports: []
+    dynamic_dependency_closure: blocked_not_assessed
+owner_authorization:
+  actor: user
+  decision_ref: user-approved-2026-08-11-p4b-dual-ami-external-observer
+  scope: external_oracle_candidate
+  authorization_status: scoped_owner_permission_only
+external_observation:
+  schema: sipi.p4b-ads-pcie-gen5-dual-ami-asset-observation.v1
+  report_content_sha256: 2734418992a10865943b618e3786b01e578749d3709f4d75f6a812833a0c05b2
+  custody: external_only
+  report_path_retained: false
+non_claims:
+  - Not worker admission, runtime load, or GetWave evidence.
+  - Not a complete static or dynamic dependency closure.
+  - Not third-party rights, redistribution, packaging, release, or default-route evidence.
+  - Not IBIS/AMI compatibility, TX-to-RX composition, or numerical parity.
+  - Not PRBS, CDR, DFE, channel, eye, jitter, BER, or ADS acceptance.
