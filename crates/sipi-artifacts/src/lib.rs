@@ -20,6 +20,61 @@ const MANIFEST_NAME: &str = "success.json";
 const STAGING_NAME: &str = ".staging";
 static NEXT_STAGING_NONCE: AtomicUsize = AtomicUsize::new(0);
 
+pub const ARTIFACT_REPORT_SCHEMA_V1: &str = "sipi.artifact-report.v1";
+
+/// Bounds the metadata work accepted by the read-only artifact report path.
+///
+/// The report does not open payload content for presentation. It reads each
+/// payload only to recompute the published integrity digest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ArtifactReportPolicyV1 {
+    maximum_manifest_bytes: u64,
+    maximum_entry_count: usize,
+    maximum_total_payload_bytes: u64,
+    maximum_report_bytes: usize,
+}
+
+impl ArtifactReportPolicyV1 {
+    pub fn try_new(
+        maximum_manifest_bytes: u64,
+        maximum_entry_count: usize,
+        maximum_total_payload_bytes: u64,
+        maximum_report_bytes: usize,
+    ) -> Result<Self, ArtifactError> {
+        if maximum_manifest_bytes == 0
+            || maximum_entry_count == 0
+            || maximum_total_payload_bytes == 0
+            || maximum_report_bytes == 0
+        {
+            return Err(ArtifactError::LimitExceeded);
+        }
+        Ok(Self {
+            maximum_manifest_bytes,
+            maximum_entry_count,
+            maximum_total_payload_bytes,
+            maximum_report_bytes,
+        })
+    }
+}
+
+/// A verified metadata-only projection of one sealed artifact.
+///
+/// File paths, payload bytes, caller paths, and environment data are never
+/// included. Entry hashes are sorted by hash rather than publication path.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct ArtifactReportV1 {
+    pub schema: String,
+    pub artifact_id: String,
+    pub verified: bool,
+    pub manifest_schema: String,
+    pub manifest_sha256: String,
+    pub entry_count: usize,
+    pub total_payload_bytes: u64,
+    pub entry_content_sha256: Vec<String>,
+    pub integrity_lineage: String,
+    pub verifier_policy: String,
+}
+
 #[derive(Debug)]
 pub enum ArtifactError {
     InvalidId,
@@ -113,6 +168,15 @@ impl ArtifactRoot {
         })
     }
 
+    /// Opens an existing application-owned root without creating any entries.
+    pub fn open_existing(root: impl AsRef<Path>) -> Result<Self, ArtifactError> {
+        let root = root.as_ref();
+        require_directory(root)?;
+        Ok(Self {
+            root: root.to_path_buf(),
+        })
+    }
+
     pub fn verify_published(&self, id: &str) -> Result<SuccessManifest, ArtifactError> {
         validate_id(id)?;
         let directory = self.root.join(id);
@@ -143,6 +207,78 @@ impl ArtifactRoot {
             }
         }
         Ok(manifest)
+    }
+
+    /// Re-verifies one published artifact and projects only allowlisted
+    /// integrity metadata. This never creates, changes, or enumerates roots.
+    pub fn inspect_verified_v1(
+        &self,
+        id: &str,
+        policy: ArtifactReportPolicyV1,
+    ) -> Result<ArtifactReportV1, ArtifactError> {
+        validate_id(id)?;
+        let directory = self.root.join(id);
+        require_directory(&directory)?;
+
+        let manifest_path = directory.join(MANIFEST_NAME);
+        let manifest_bytes =
+            read_regular_file_limited(&manifest_path, policy.maximum_manifest_bytes)?;
+        let manifest_sha256 = sha256_bytes(&manifest_bytes);
+        let manifest: SuccessManifest =
+            serde_json::from_slice(&manifest_bytes).map_err(|_| ArtifactError::Manifest)?;
+        validate_manifest(&manifest, id)?;
+        if manifest.files.len() > policy.maximum_entry_count {
+            return Err(ArtifactError::LimitExceeded);
+        }
+
+        let expected = manifest
+            .files
+            .iter()
+            .map(|record| record.path.clone())
+            .chain(std::iter::once(MANIFEST_NAME.to_owned()))
+            .collect::<BTreeSet<_>>();
+        if list_regular_files(&directory)? != expected {
+            return Err(ArtifactError::Manifest);
+        }
+
+        let mut total_payload_bytes = 0_u64;
+        let mut entry_content_sha256 = Vec::with_capacity(manifest.files.len());
+        for record in &manifest.files {
+            total_payload_bytes = total_payload_bytes
+                .checked_add(record.bytes)
+                .ok_or(ArtifactError::LimitExceeded)?;
+            if total_payload_bytes > policy.maximum_total_payload_bytes {
+                return Err(ArtifactError::LimitExceeded);
+            }
+
+            let path = directory.join(&record.path);
+            require_regular_file(&path)?;
+            let (bytes, hash) = hash_reader(File::open(path)?, record.bytes)?;
+            if bytes != record.bytes || hash != record.sha256 {
+                return Err(ArtifactError::HashMismatch);
+            }
+            entry_content_sha256.push(hash);
+        }
+        entry_content_sha256.sort_unstable();
+
+        let report = ArtifactReportV1 {
+            schema: ARTIFACT_REPORT_SCHEMA_V1.to_owned(),
+            artifact_id: id.to_owned(),
+            verified: true,
+            manifest_schema: manifest.schema,
+            manifest_sha256,
+            entry_count: entry_content_sha256.len(),
+            total_payload_bytes,
+            entry_content_sha256,
+            integrity_lineage: "unavailable".to_owned(),
+            verifier_policy: "sipi.artifact-report-policy.v1".to_owned(),
+        };
+        let report_bytes =
+            sipi_contracts::deterministic_json(&report).map_err(|_| ArtifactError::Manifest)?;
+        if report_bytes.len() > policy.maximum_report_bytes {
+            return Err(ArtifactError::LimitExceeded);
+        }
+        Ok(report)
     }
 }
 
@@ -409,6 +545,28 @@ fn hash_reader(reader: impl Read, maximum: u64) -> Result<(u64, String), Artifac
     copy_and_hash(reader, io::sink(), maximum)
 }
 
+fn read_regular_file_limited(path: &Path, maximum: u64) -> Result<Vec<u8>, ArtifactError> {
+    require_regular_file(path)?;
+    let metadata = fs::metadata(path)?;
+    if metadata.len() > maximum {
+        return Err(ArtifactError::LimitExceeded);
+    }
+    let mut bytes = Vec::new();
+    File::open(path)?
+        .take(maximum.saturating_add(1))
+        .read_to_end(&mut bytes)?;
+    if bytes.len() as u64 > maximum {
+        return Err(ArtifactError::LimitExceeded);
+    }
+    Ok(bytes)
+}
+
+fn sha256_bytes(bytes: &[u8]) -> String {
+    let mut hash = Sha256::new();
+    hash.update(bytes);
+    format!("{:x}", hash.finalize())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -467,6 +625,48 @@ mod tests {
         fs::write(root.join("result-1").join("data.bin"), b"changed").unwrap();
         assert!(matches!(
             store.verify_published("result-1"),
+            Err(ArtifactError::HashMismatch)
+        ));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn verified_report_is_metadata_only_and_rejects_tampering_or_excess() {
+        let root = root();
+        let store = ArtifactRoot::open_or_create(&root).unwrap();
+        let mut stage = store.begin("result-1").unwrap();
+        stage
+            .stage_reader("private-name.json", &b"payload-content"[..], 100)
+            .unwrap();
+        stage.seal().unwrap().publish_new().unwrap();
+        let success_before = fs::read(root.join("result-1").join(MANIFEST_NAME)).unwrap();
+
+        let reader = ArtifactRoot::open_existing(&root).unwrap();
+        let policy = ArtifactReportPolicyV1::try_new(4096, 4, 100, 4096).unwrap();
+        let report = reader.inspect_verified_v1("result-1", policy).unwrap();
+        assert_eq!(report.schema, ARTIFACT_REPORT_SCHEMA_V1);
+        assert!(report.verified);
+        assert_eq!(report.entry_count, 1);
+        let bytes = sipi_contracts::deterministic_json(&report).unwrap();
+        assert!(
+            !String::from_utf8(bytes)
+                .unwrap()
+                .contains("private-name.json")
+        );
+        assert_eq!(
+            fs::read(root.join("result-1").join(MANIFEST_NAME)).unwrap(),
+            success_before
+        );
+        assert!(matches!(
+            reader.inspect_verified_v1(
+                "result-1",
+                ArtifactReportPolicyV1::try_new(4096, 4, 1, 4096).unwrap()
+            ),
+            Err(ArtifactError::LimitExceeded)
+        ));
+        fs::write(root.join("result-1").join("private-name.json"), b"changed").unwrap();
+        assert!(matches!(
+            reader.inspect_verified_v1("result-1", policy),
             Err(ArtifactError::HashMismatch)
         ));
         let _ = fs::remove_dir_all(root);

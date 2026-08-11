@@ -61,6 +61,27 @@ fn run_link(root: &Path, request: &[u8]) -> Output {
     child.wait_with_output().expect("wait sipi")
 }
 
+fn run_artifact_report(root: &Path, artifact_id: &str) -> Output {
+    let root = root.to_string_lossy().replace('\\', "\\\\");
+    let request = format!(
+        "{{\"schema\":\"sipi.artifact-report-request.v1\",\"artifact_root\":\"{root}\",\"artifact_id\":\"{artifact_id}\"}}"
+    );
+    let mut child = sipi()
+        .args(["report", "inspect", "--stdin"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start sipi");
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(request.as_bytes())
+        .expect("write request");
+    child.wait_with_output().expect("wait sipi")
+}
+
 #[test]
 fn capabilities_are_machine_readable_and_uncertified() {
     let output = sipi()
@@ -306,5 +327,32 @@ fn fixed_tran_stdin_run_publishes_a_two_file_artifact() {
         std::fs::read(root.join("rc-pulse-1").join("provenance.json")).expect("provenance"),
         provenance
     );
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn report_inspect_projects_only_verified_artifact_metadata() {
+    let root = std::env::temp_dir().join(format!("sipi-cli-process-report-{}", std::process::id()));
+    assert!(run_fixed_tran(&root).status.success());
+    let report = run_artifact_report(&root, "rc-pulse-1");
+    assert!(report.status.success());
+    let stdout = String::from_utf8(report.stdout).expect("report stdout");
+    assert!(stdout.contains("\"schema\":\"sipi.artifact-report.v1\""));
+    assert!(stdout.contains("\"verified\":true"));
+    assert!(stdout.contains("\"integrity_lineage\":\"unavailable\""));
+    assert!(!stdout.contains(root.to_string_lossy().as_ref()));
+    assert!(!stdout.contains("result.json"));
+    assert!(report.stderr.is_empty());
+
+    std::fs::write(root.join("rc-pulse-1").join("result.json"), b"tampered")
+        .expect("tamper payload");
+    let rejected = run_artifact_report(&root, "rc-pulse-1");
+    assert_eq!(rejected.status.code(), Some(5));
+    let rejected_stdout = String::from_utf8(rejected.stdout).expect("failure envelope");
+    assert!(rejected_stdout.contains("\"result\":null"));
+    assert!(!rejected_stdout.contains("sipi.artifact-report.v1"));
+    let diagnostic = String::from_utf8(rejected.stderr).expect("diagnostic");
+    assert!(diagnostic.contains("\"code\":\"operational_failure\""));
+    assert!(diagnostic.contains("\"stage\":\"runtime\""));
     let _ = std::fs::remove_dir_all(root);
 }

@@ -10,9 +10,10 @@ use std::{
 
 use sha2::{Digest, Sha256};
 use sipi_contracts::{
-    CAPABILITIES_SCHEMA, CapabilityCatalogV1, LINK_PLAN_SCHEMA, PLANNED_DOMAINS, RULE_LEDGER_V1,
-    capability_schema_json, deterministic_json, ibis_inspect_request_schema_json,
-    link_causal_fir_request_schema_json, link_plan_schema_json, parse_ibis_inspect_request_v1,
+    ARTIFACT_REPORT_REQUEST_SCHEMA, CAPABILITIES_SCHEMA, CapabilityCatalogV1, LINK_PLAN_SCHEMA,
+    PLANNED_DOMAINS, RULE_LEDGER_V1, artifact_report_request_schema_json, capability_schema_json,
+    deterministic_json, ibis_inspect_request_schema_json, link_causal_fir_request_schema_json,
+    link_plan_schema_json, parse_artifact_report_request_v1, parse_ibis_inspect_request_v1,
     parse_link_causal_fir_request_v1, parse_tran_rc_pulse_request_v1,
     product_example_request_json_v1, project_plan_schema_json, receiver_input_schema_json,
     receiver_semantics_schema_json, tran_rc_pulse_request_schema_json, validate_request_v1,
@@ -90,6 +91,19 @@ const ARTIFACT_DESTINATION_BINDINGS: &[CallerBindingV1] = &[
     CallerBindingV1 {
         pointer: "/invocation/artifact_id",
         role: "artifact_identity",
+        explicit_required: true,
+    },
+];
+
+const ARTIFACT_INSPECTION_BINDINGS: &[CallerBindingV1] = &[
+    CallerBindingV1 {
+        pointer: "/artifact_root",
+        role: "caller_owned_artifact_root",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/artifact_id",
+        role: "published_artifact_identity",
         explicit_required: true,
     },
 ];
@@ -349,14 +363,24 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         nonclaim: "no_oracle_or_comparison_workflow",
     },
     CommandDescriptorV1 {
+        id: "report.inspect",
+        route: &["report", "inspect"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some(ARTIFACT_REPORT_REQUEST_SCHEMA),
+        response_schema: Some(sipi_artifacts::ARTIFACT_REPORT_SCHEMA_V1),
+        unavailable_reason: None,
+        nonclaim: "verified_integrity_metadata_only",
+    },
+    CommandDescriptorV1 {
         id: "report.show",
         route: &["report", "show"],
         availability: CommandAvailabilityV1::Unavailable,
         transport: "none",
         request_schema: None,
         response_schema: None,
-        unavailable_reason: Some("artifact_report_viewer_not_implemented"),
-        nonclaim: "no_artifact_or_provenance_viewer",
+        unavailable_reason: Some("artifact_payload_preview_not_implemented"),
+        nonclaim: "no_payload_or_external_provenance_viewer",
     },
 ];
 
@@ -469,6 +493,15 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         successful_exit: 0,
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
+    CommandProtocolProfileV1 {
+        command_id: "report.inspect",
+        example_id: None,
+        required_options: &[],
+        caller_bindings: ARTIFACT_INSPECTION_BINDINGS,
+        validation_rule_id: Some("artifact.report.request.v1"),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
 ];
 
 struct Response {
@@ -486,6 +519,8 @@ fn main() {
         ProcessAdapter::validate_stdin()
     } else if arguments == ["ibis", "inspect", "--stdin"] {
         ProcessAdapter::ibis_inspect_stdin()
+    } else if arguments == ["report", "inspect", "--stdin"] {
+        ProcessAdapter::report_inspect_stdin()
     } else if let [command, action, stdin, root, artifact_root, id, artifact_id] = &arguments[..]
         && command == "tran"
         && action == "run"
@@ -567,6 +602,24 @@ impl ProcessAdapter {
             Err(_) => return error(3, "contract_rejected", "IBIS inspect request was rejected"),
         };
         run_ibis_inspect(request.text())
+    }
+
+    fn report_inspect_stdin() -> Response {
+        let input = match read_stdin_request() {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        let request = match parse_artifact_report_request_v1(&input) {
+            Ok(request) => request,
+            Err(_) => {
+                return error(
+                    3,
+                    "contract_rejected",
+                    "artifact report request was rejected",
+                );
+            }
+        };
+        run_artifact_report(request.artifact_root(), request.artifact_id())
     }
 }
 
@@ -764,6 +817,42 @@ fn run_causal_fir_link(
     }
 }
 
+fn run_artifact_report(artifact_root: &str, artifact_id: &str) -> Response {
+    let root = match sipi_artifacts::ArtifactRoot::open_existing(Path::new(artifact_root)) {
+        Ok(root) => root,
+        Err(_) => return error(5, "operational_failure", "artifact root is unavailable"),
+    };
+    let policy =
+        match sipi_artifacts::ArtifactReportPolicyV1::try_new(65_536, 64, 16 * 1024 * 1024, 16_384)
+        {
+            Ok(policy) => policy,
+            Err(_) => {
+                return error(
+                    6,
+                    "internal_failure",
+                    "artifact report policy is unavailable",
+                );
+            }
+        };
+    match root.inspect_verified_v1(artifact_id, policy) {
+        Ok(report) => match deterministic_json(&report) {
+            Ok(bytes) => match String::from_utf8(bytes) {
+                Ok(value) => success(value),
+                Err(_) => error(6, "internal_failure", "artifact report is not UTF-8"),
+            },
+            Err(_) => error(6, "internal_failure", "artifact report is unavailable"),
+        },
+        Err(sipi_artifacts::ArtifactError::InvalidId) => {
+            error(2, "invalid_artifact_id", "artifact id is invalid")
+        }
+        Err(_) => error(
+            5,
+            "operational_failure",
+            "artifact report verification failed",
+        ),
+    }
+}
+
 fn run_ibis_inspect(text: &str) -> Response {
     let limits = match ParseLimitsV1::try_new(1_048_576, 65_536, 16_384, 16_384) {
         Ok(limits) => limits,
@@ -893,18 +982,20 @@ fn command_protocol_profiles_are_valid(
                     .iter()
                     .all(|option| option.starts_with("--"))
                 && matches[0].caller_bindings.iter().all(|binding| {
-                    binding.pointer.starts_with("/invocation/")
+                    binding.pointer.starts_with('/')
                         && !binding.role.is_empty()
                         && binding.explicit_required
                 })
                 && if descriptor.transport == "stdin_json_v1" {
                     descriptor.request_schema.is_some()
-                        && matches[0].example_id.is_some()
                         && matches[0].validation_rule_id.is_some()
-                        && product_example_request_json_v1(descriptor.id)
-                            .ok()
-                            .flatten()
-                            .is_some()
+                        && match matches[0].example_id {
+                            Some(_) => product_example_request_json_v1(descriptor.id)
+                                .ok()
+                                .flatten()
+                                .is_some(),
+                            None => !matches[0].caller_bindings.is_empty(),
+                        }
                 } else {
                     matches[0].example_id.is_none() && matches[0].validation_rule_id.is_none()
                 }
@@ -932,6 +1023,7 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["ibis", "inspect"]
             | ["tran", "run"]
             | ["link", "run"]
+            | ["report", "inspect"]
     )
 }
 
@@ -1001,6 +1093,8 @@ fn schema_bytes(id: &str) -> Result<Option<Vec<u8>>, sipi_contracts::ContractErr
         link_causal_fir_request_schema_json().map(Some)
     } else if id == sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA {
         ibis_inspect_request_schema_json().map(Some)
+    } else if id == ARTIFACT_REPORT_REQUEST_SCHEMA {
+        artifact_report_request_schema_json().map(Some)
     } else if id == sipi_contracts::PROJECT_PLAN_SCHEMA {
         project_plan_schema_json().map(Some)
     } else if id == sipi_contracts::RECEIVER_INPUT_SCHEMA {
@@ -1116,13 +1210,20 @@ fn command_example(id: &str) -> Response {
             "command protocol profile is missing",
         );
     };
+    if profile.example_id.is_none() {
+        return error(
+            4,
+            "example_not_applicable",
+            "command requires caller-owned admission bindings",
+        );
+    }
     match product_example_request_json_v1(id) {
         Ok(Some(bytes)) => match String::from_utf8(bytes) {
             Ok(request) => success(format!(
                 "{{\"schema\":\"sipi.command-example.v1\",\"command_id\":\"{id}\",\"example_id\":\"{}\",\"request_schema\":\"{}\",\"request\":{request}}}",
                 profile
                     .example_id
-                    .expect("validated stdin profile has an example"),
+                    .expect("profile was admitted as example-bearing"),
                 descriptor
                     .request_schema
                     .expect("validated stdin descriptor has a request schema"),
@@ -1262,6 +1363,11 @@ impl CommandService {
                 "unsupported",
                 "IBIS requires the exact inspect --stdin command",
             ),
+            [command, ..] if command == "report" => error(
+                4,
+                "unsupported",
+                "report requires the exact inspect --stdin command",
+            ),
             _ => error(
                 64,
                 "usage",
@@ -1360,7 +1466,7 @@ fn doctor_json() -> String {
 
 fn schema_list_json() -> String {
     format!(
-        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"]}}",
+        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"]}}",
         sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA,
         LINK_PLAN_SCHEMA,
         sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA,
@@ -1399,6 +1505,7 @@ fn schema_show(id: &str) -> Response {
 fn validate_self(schema: Option<&str>) -> Response {
     if schema.is_some_and(|id| {
         id != CAPABILITIES_SCHEMA
+            && id != ARTIFACT_REPORT_REQUEST_SCHEMA
             && id != sipi_contracts::VALIDATION_REQUEST_SCHEMA
             && id != sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA
             && id != sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA
@@ -1420,6 +1527,7 @@ fn validate_self(schema: Option<&str>) -> Response {
         && deterministic_json(&catalog).is_ok()
         && !RULE_LEDGER_V1.is_empty()
         && validation_request_schema_json().is_ok()
+        && artifact_report_request_schema_json().is_ok()
         && tran_rc_pulse_request_schema_json().is_ok()
         && ibis_inspect_request_schema_json().is_ok()
         && link_plan_schema_json().is_ok()
@@ -1525,7 +1633,7 @@ mod tests {
     }
 
     #[test]
-    fn protocol_catalog_binds_every_available_stdin_command_to_a_product_example() {
+    fn protocol_catalog_binds_examples_or_explicit_caller_admission() {
         let catalog = command_protocol_catalog_json().expect("protocol catalog");
         assert!(catalog.starts_with("{\"schema\":\"sipi.command-protocol-catalog.v1\""));
         for command in ["validate", "ibis.inspect", "tran.run", "link.run"] {
@@ -1546,8 +1654,15 @@ mod tests {
         assert!(catalog.contains("\"pointer\":\"/invocation/artifact_root\""));
         assert!(catalog.contains("\"validation_rule_id\":\"tran.rc-pulse.profile\""));
         assert!(catalog.contains("\"diagnostic_codes\":["));
+        assert!(catalog.contains("\"command_id\":\"report.inspect\""));
+        assert!(catalog.contains("\"pointer\":\"/artifact_root\""));
+        assert!(catalog.contains("\"role\":\"caller_owned_artifact_root\""));
         assert_eq!(
             dispatch(&args(&["example", "channel.run", "--json"])).code,
+            4
+        );
+        assert_eq!(
+            dispatch(&args(&["example", "report.inspect", "--json"])).code,
             4
         );
         assert_eq!(dispatch(&args(&["example", "version", "--json"])).code, 4);
@@ -1670,7 +1785,7 @@ mod tests {
     fn schema_list_uses_the_schema_inventory_order() {
         assert_eq!(
             schema_list_json(),
-            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
+            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
         );
     }
 
@@ -1684,6 +1799,10 @@ mod tests {
         assert!(body.contains("\"external_profile_acceptance\":\"not_evaluated\""));
         assert_eq!(
             dispatch(&args(&["ibis", "inspect", "--file", "sample.ibs"])).code,
+            4
+        );
+        assert_eq!(
+            dispatch(&args(&["report", "inspect", "--file", "artifact"])).code,
             4
         );
     }
@@ -1710,6 +1829,32 @@ mod tests {
             run_fixed_tran(&root_text, "rc-pulse-1", rc_pulse_request()).code,
             5
         );
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn artifact_report_is_verified_metadata_without_payload_or_path_leaks() {
+        let nonce = TEST_NONCE.fetch_add(1, Ordering::Relaxed);
+        let root = std::env::temp_dir().join(format!("sipi-cli-report-{nonce}"));
+        let root_text = root.to_string_lossy();
+        assert_eq!(
+            run_fixed_tran(&root_text, "rc-pulse-1", rc_pulse_request()).code,
+            0
+        );
+        let report = run_artifact_report(&root_text, "rc-pulse-1");
+        assert_eq!(report.code, 0);
+        let body = report.stdout.expect("report body");
+        assert!(body.contains("\"schema\":\"sipi.artifact-report.v1\""));
+        assert!(body.contains("\"verified\":true"));
+        assert!(body.contains("\"integrity_lineage\":\"unavailable\""));
+        assert!(!body.contains(root_text.as_ref()));
+        assert!(!body.contains("result.json"));
+        assert!(!body.contains("backward_euler_rc_pulse_v1"));
+        std::fs::write(root.join("rc-pulse-1").join("result.json"), b"tampered")
+            .expect("tamper payload");
+        let rejected = run_artifact_report(&root_text, "rc-pulse-1");
+        assert_eq!(rejected.code, 5);
+        assert!(rejected.stdout.is_none());
         let _ = std::fs::remove_dir_all(root);
     }
 

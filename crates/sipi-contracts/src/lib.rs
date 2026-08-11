@@ -15,6 +15,7 @@ use sipi_types::{
 };
 
 pub const CAPABILITIES_SCHEMA: &str = "sipi.capabilities.v1";
+pub const ARTIFACT_REPORT_REQUEST_SCHEMA: &str = "sipi.artifact-report-request.v1";
 pub const VALIDATION_REQUEST_SCHEMA: &str = "sipi.validation-request.v1";
 pub const TRAN_RC_PULSE_REQUEST_SCHEMA: &str = "sipi.tran.rc-pulse-request.v1";
 pub const LINK_PLAN_SCHEMA: &str = "sipi.link-plan.v1";
@@ -992,6 +993,68 @@ pub fn parse_ibis_inspect_request_v1(input: &[u8]) -> Result<IbisInspectRequestV
         .try_into()
 }
 
+/// A caller-owned request to verify and project one already-published local
+/// artifact. It deliberately has no file enumeration, URL, or payload surface.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireArtifactReportRequestV1 {
+    pub schema: String,
+    pub artifact_root: String,
+    pub artifact_id: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ArtifactReportRequestV1 {
+    artifact_root: String,
+    artifact_id: String,
+}
+
+impl ArtifactReportRequestV1 {
+    pub fn artifact_root(&self) -> &str {
+        &self.artifact_root
+    }
+
+    pub fn artifact_id(&self) -> &str {
+        &self.artifact_id
+    }
+}
+
+impl TryFrom<WireArtifactReportRequestV1> for ArtifactReportRequestV1 {
+    type Error = ContractError;
+
+    fn try_from(value: WireArtifactReportRequestV1) -> Result<Self, Self::Error> {
+        if value.schema != ARTIFACT_REPORT_REQUEST_SCHEMA {
+            return Err(ContractError::Version);
+        }
+        if value.artifact_root.is_empty()
+            || value.artifact_root.len() > 4096
+            || value.artifact_root.contains('\0')
+            || value.artifact_root.contains("://")
+            || value
+                .artifact_root
+                .split(['/', '\\'])
+                .any(|segment| matches!(segment, "." | ".."))
+        {
+            return Err(ContractError::Json("invalid artifact root".to_owned()));
+        }
+        if !valid_artifact_id(&value.artifact_id) {
+            return Err(ContractError::Json("invalid artifact id".to_owned()));
+        }
+        Ok(Self {
+            artifact_root: value.artifact_root,
+            artifact_id: value.artifact_id,
+        })
+    }
+}
+
+pub fn parse_artifact_report_request_v1(
+    input: &[u8],
+) -> Result<ArtifactReportRequestV1, ContractError> {
+    serde_json::from_slice::<WireArtifactReportRequestV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
 /// Product-owned receiver waveform boundary for the required RFM profile.
 ///
 /// The external RFM/current-drive provenance deliberately does not cross this
@@ -1495,6 +1558,10 @@ pub fn ibis_inspect_request_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireIbisInspectRequestV1))
 }
 
+pub fn artifact_report_request_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(WireArtifactReportRequestV1))
+}
+
 pub fn receiver_input_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireReceiverInputV1))
 }
@@ -1521,6 +1588,14 @@ fn token(value: &str) -> bool {
         && value.bytes().all(|byte| {
             byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'.' | b'_' | b'-')
         })
+}
+
+fn valid_artifact_id(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 128
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
 }
 
 fn require_link_schema(schema: &str) -> Result<(), ContractError> {
@@ -1711,6 +1786,13 @@ mod tests {
     }
 
     #[test]
+    fn tracked_artifact_report_request_schema_baseline_is_exactly_the_registered_export() {
+        let baseline = include_bytes!("../schemas/sipi.artifact-report-request.v1.schema.json");
+        let exported = artifact_report_request_schema_json().expect("schema");
+        assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
+    }
+
+    #[test]
     fn tracked_tran_request_schema_baseline_is_exactly_the_registered_export() {
         let baseline = include_bytes!("../schemas/sipi.tran.rc-pulse-request.v1.schema.json");
         let exported = tran_rc_pulse_request_schema_json().expect("schema");
@@ -1751,6 +1833,22 @@ mod tests {
                 .expect("schema")
                 .starts_with(b"{")
         );
+    }
+
+    #[test]
+    fn artifact_report_request_requires_explicit_local_root_and_artifact_identity() {
+        let valid = br#"{"schema":"sipi.artifact-report-request.v1","artifact_root":"external-artifacts","artifact_id":"result-1"}"#;
+        let request = parse_artifact_report_request_v1(valid).expect("valid report request");
+        assert_eq!(request.artifact_root(), "external-artifacts");
+        assert_eq!(request.artifact_id(), "result-1");
+        for invalid in [
+            br#"{"schema":"sipi.artifact-report-request.v1","artifact_root":"https://example.invalid","artifact_id":"result-1"}"#.as_slice(),
+            br#"{"schema":"sipi.artifact-report-request.v1","artifact_root":"../outside","artifact_id":"result-1"}"#.as_slice(),
+            br#"{"schema":"sipi.artifact-report-request.v1","artifact_root":"root","artifact_id":"../result"}"#.as_slice(),
+            br#"{"schema":"sipi.artifact-report-request.v1","artifact_root":"root","artifact_id":"result-1","file":"payload.json"}"#.as_slice(),
+        ] {
+            assert!(parse_artifact_report_request_v1(invalid).is_err());
+        }
     }
 
     #[test]
