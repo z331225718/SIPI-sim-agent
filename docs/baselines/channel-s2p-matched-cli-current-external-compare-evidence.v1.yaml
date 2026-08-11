@@ -1,0 +1,73 @@
+schema: sipi.channel.s2p-matched.cli-current-external-compare-evidence.v1
+status: accepted
+profile_id: channel-s2p-channel-16ghz-3db-v1
+contract:
+  schema: sipi.channel.s2p-matched-acceptance.v1
+  sha256: fdda42b6c62e0e66afbd04d62e53f13a299b2d973157a68c86d267187ee0affe
+core_evidence:
+  schema: sipi.channel.s2p-matched.external-compare-evidence.v1
+  sha256: 9fc875da56b98cdef83ad7a5b25780b73c507963ffd940d50433567cb8eb33f5
+comparator:
+  path: tools/compare_channel_s2p_matched_cli.py
+  sha256: d0ef6c8ade5e65963164a90f914b5062faa862486cd5992e6521f94f73eb45a0
+external_report:
+  schema: sipi.channel.required-profile-cli-compare.v1
+  sha256: 13d8967362798701fa2b065a1aae3b18184f70ee8b6bc52f7dcb7e84faf4829d
+  custody: operator_external_only
+source:
+  canonical_origin: https://github.com/z331225718/Py-bert-agent.git
+  commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7
+  tree: ac7006ea26cf9e8d885c0e4f1b82797d2e9342a1
+  path: models/sp_file/channel_16ghz_3db.s2p
+  git_blob: e10bfb4a43731645984f1f5e24bd3fbf2268dedd
+  content_sha256: 9d4cfeaad7c971fa45454f639b40e08c538855058f326fbdec64298b8933b5ad
+  redistribution: external_only
+environment:
+  platform: windows-x86_64
+  environment_hash: 6a14994f38865b46f0d2d5019d4f57af0779fc2c686846ec17037f35556616cd
+observer:
+  implementation: standard_dft_observer_v1
+  fresh_runs: 2
+  kernel_sha256_f64le: 53dca00f78394404036a57035edd7ff7dff6d81e8df79495c09ec627b4dd81a0
+  fft_length: 400
+  sample_interval_seconds: 2.5e-11
+request:
+  schema: sipi.channel.matched-two-port-kernel-run-request.v1
+  sha256: c3d3bf9e8b882187d39ebd8ef2fad5720882f626125bf1bc85cb560620ed8423
+  source_byte_length: 21873
+  source_sha256: 9d4cfeaad7c971fa45454f639b40e08c538855058f326fbdec64298b8933b5ad
+product:
+  source_commit: d875433d07a58e3f8821b2eeaa5af5ca25f5caf2
+  source_tree: 13ce0964abafb04a1471df6c4f2beec1339c41ab
+  source_trees:
+    sipi-cli: d378eb757a0fe1fad2e41520686ebbfeba2a6494
+    sipi-contracts: 57fc8767d387c36efe7a562f1c392dec8c3308d5
+    sipi-touchstone: bef8324c6b4c62eadcd2f0c9dda03a9a15d2d472
+    sipi-channel: 0e477eef3f5a92d856d2dc866ffbfd0200eda779
+    sipi-types: 4c6e6b0acee259ca513a8f205a1abbea541a579e
+  cargo_lock_blob: 927c96b0cf02e9211841c7dae86818249aa3715e
+  cargo_lock_sha256: 3f3be9a1ea4aab7b467b11131a23772eeabaa8c54263a32c9c6cebe7cd56227e
+  executable: sipi.exe
+  executable_sha256: 0f5d20d7784b4ebfa3095ad3ec59c6522e38ccb633440d0f33c6aaf3d8741d0e
+  executable_bytes: 1821696
+  cli_kernel_sha256_f64le: 5e96e6fa2154c91520b4bbf90901a2a70c1313298d7b8528af4ebaba20da0cf0
+response:
+  schema: sipi.channel.matched-two-port-kernel-run-result.v1
+  stdout_sha256: 8b83d2ab0fc57e09a9493d1468c8af66a4b635223bc0e5c615f2fd2b9a4e7bab
+  command: channel
+  status: ok
+  diagnostic_count: 0
+  evaluation_scope: matched_s21_periodic_kernel_only
+  external_profile_acceptance: caller_input_unattested
+comparison:
+  absolute_tolerance: 1.0e-9
+  relative_tolerance: 1.0e-5
+  max_absolute_error: 9.792141327392284e-15
+  max_relative_error: 6.079017923026167e-9
+  max_normalized_error_ratio: 7.789698985496182e-6
+  allowed_error_at_worst_index: 1.4894732025338619e-9
+  worst_index: 365
+non_claims:
+  - This gate accepts only the selected external S2P text through the bounded CLI path.
+  - Ordinary caller input remains unattested at runtime because the CLI has no external asset identity.
+  - It does not establish general Touchstone, reflection, Link/eye/BER, artifact, or release behavior.

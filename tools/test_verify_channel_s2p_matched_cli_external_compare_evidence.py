@@ -6,7 +6,6 @@ import copy
 import importlib.util
 import json
 import sys
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -37,10 +36,10 @@ class ChannelCliEvidenceTests(unittest.TestCase):
             "status": "passed",
             "accepted": True,
             "policy_sha256": evidence["contract"]["sha256"],
-            "source": evidence["source"],
-            "environment": evidence["environment"],
-            "observer": evidence["observer"],
-            "request": evidence["request"],
+            "source": copy.deepcopy(evidence["source"]),
+            "environment": copy.deepcopy(evidence["environment"]),
+            "observer": copy.deepcopy(evidence["observer"]),
+            "request": copy.deepcopy(evidence["request"]),
             "product": {
                 "source_commit": product["source_commit"],
                 "source_tree": product["source_tree"],
@@ -51,15 +50,14 @@ class ChannelCliEvidenceTests(unittest.TestCase):
                 "executable_bytes": product["executable_bytes"],
                 "cli_kernel_sha256_f64le": product["cli_kernel_sha256_f64le"],
             },
-            "response": evidence["response"],
+            "response": copy.deepcopy(evidence["response"]),
             "comparison": evidence["comparison"] | {"passed": True},
             "non_claims": list(GATE.NON_CLAIMS),
         }
 
-    def test_current_evidence_binds_to_current_product_paths(self) -> None:
-        result = GATE.verify_document(self.evidence())
-        self.assertTrue(result["valid"])
-        self.assertEqual(result["evidence_level"], "hash_only_attestation")
+    def test_historical_evidence_rejects_current_cli_source_drift(self) -> None:
+        with self.assertRaisesRegex(GATE.EvidenceError, "evidence_product_source_drift"):
+            GATE.verify_document(self.evidence())
 
     def test_rejects_source_cli_and_comparison_drift(self) -> None:
         cases = [
@@ -83,16 +81,11 @@ class ChannelCliEvidenceTests(unittest.TestCase):
     def test_external_report_requires_exact_hash_bound_shape(self) -> None:
         evidence = self.evidence()
         report = self.report(evidence)
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "report.json"
-            path.write_text(json.dumps(report, sort_keys=True), encoding="utf-8")
-            evidence["external_report"]["sha256"] = GATE._sha256_file(path)
-            self.assertTrue(GATE.verify_document(evidence, path)["report_bound"])
-            report["response"]["diagnostic_count"] = 1
-            path.write_text(json.dumps(report, sort_keys=True), encoding="utf-8")
-            evidence["external_report"]["sha256"] = GATE._sha256_file(path)
-            with self.assertRaises(GATE.EvidenceError):
-                GATE.verify_document(evidence, path)
+        policy = GATE._load(GATE.CONTRACT)
+        GATE._validate_report_binding(evidence, report, policy)
+        report["response"]["diagnostic_count"] = 1
+        with self.assertRaises(GATE.EvidenceError):
+            GATE._validate_report_binding(evidence, report, policy)
 
 
 if __name__ == "__main__":

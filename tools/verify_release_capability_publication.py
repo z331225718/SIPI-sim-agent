@@ -12,6 +12,10 @@ from typing import Any
 
 from verify_tran_rc_pulse_acceptance import _load as load_yaml
 from verify_tran_rc_pulse_current_external_compare_evidence import EvidenceError, verify_document as verify_tran_evidence
+from verify_channel_s2p_matched_cli_current_external_compare_evidence import (
+    EvidenceError as ChannelEvidenceError,
+    verify_document as verify_channel_cli_evidence,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -225,6 +229,31 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
             raise PublicationError("publication_tran_external_evidence_invalid") from None
     elif compare_id in tran["evidence_ids"]:
         raise PublicationError("publication_tran_evidence_state_drift")
+
+    channel = next((row for row in rows if row["id"] == "channel"), None)
+    compare_id = "channel-s2p-cli-current-external-compare"
+    if channel is None:
+        raise PublicationError("publication_channel_row_missing")
+    if (
+        channel["acceptance_state"] != "specified"
+        or channel["external_oracle"] is not True
+        or compare_id not in channel["evidence_ids"]
+        or "caller_input_unattested" not in channel["blockers"]
+        or "periodic_kernel_not_link_simulation" not in channel["blockers"]
+    ):
+        raise PublicationError("publication_channel_acceptance_binding_invalid")
+    entry = index_by_id.get(compare_id)
+    if (
+        entry is None
+        or entry["kind"] != "external_compare_evidence"
+        or entry["subject"] != "channel"
+        or entry["evidence_state"] != "observed"
+    ):
+        raise PublicationError("publication_channel_acceptance_binding_invalid")
+    try:
+        verify_channel_cli_evidence(load_yaml(ROOT / entry["path"]))
+    except (ChannelEvidenceError, OSError, RuntimeError):
+        raise PublicationError("publication_channel_external_evidence_invalid") from None
 
 
 def render(publication: dict[str, Any]) -> str:
