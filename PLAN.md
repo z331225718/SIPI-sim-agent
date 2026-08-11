@@ -355,7 +355,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 - [x] **P6-06** **P6-06a 已完成：** `protocols --json`/`example <command-id> --json` 将 available command、request schema SHA-256、产品自有最小 request、所需 invocation options 和稳定 diagnostic registry 关联；schema discovery 保持 inventory 顺序，unavailable route 不获得示例或执行路径。
 - [ ] **P6-07** **P6-07a 已完成：** AI 可从 catalog/schema/example 构造 `constructible` request，并显式区分 artifact root/id 等 caller binding 成立后的 `admitted` 与实际 `executed`；所有 process diagnostics 提供稳定 `code/stage/pointer/rule_id`，无需解析消息文本。通用 agent API、project executor、外部 compare 与 unavailable domain 仍未实现。
 - [ ] **P6-08** **P6-08a 已完成：** `report inspect --stdin` 只对 caller-owned root 中已封存并重新验证的 artifact 输出路径/文件名/payload 均隐藏的完整性 metadata 投影；manifest/payload hash、sealed 集合和固定预算任一不符均 fail-closed。它不是 payload viewer、provenance graph、project report、external compare 或授权声明。
-- [ ] **P6-09** fail-closed 测试：缺 edge、hash 漂移、worker crash、partial output、cancel、resource limit。
+- [ ] **P6-09** **P6-09a 已完成：** 当前 fixed TRAN→causal-FIR attempt→P1 artifact/report 拓扑已建立跨 crate 负向集成门：错误 project cross-domain edge、record policy drift、cancel/resource、未封存 staging 与篡改发布内容均 fail-closed；正向 control 仍可验证 record 与受限 integrity report。worker crash 对当前 P6 无 worker dispatch 的拓扑为 `not_applicable_current_topology`，仅由 P4B 独立覆盖；multi-edge/project executor/AMI/COM 集成待后续真实运行路径出现后再纳入。
 - [ ] **P6-10** 保持未来 service/GUI 只调用同一 Rust contract，不创建第二套平台语义。
 
 ### 12.2 AI 验收题

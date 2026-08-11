@@ -344,6 +344,7 @@ dependencies = [
  "sipi-contracts",
  "sipi-ibis",
  "sipi-link",
+ "sipi-pipeline",
  "sipi-runtime",
  "sipi-tran",
  "sipi-types",

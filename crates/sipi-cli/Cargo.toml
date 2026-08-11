@@ -21,5 +21,8 @@ sipi-tran = { path = "../sipi-tran" }
 sipi-types = { path = "../sipi-types" }
 sha2 = "0.10"
 
+[dev-dependencies]
+sipi-pipeline = { path = "../sipi-pipeline" }
+
 [lints]
 workspace = true

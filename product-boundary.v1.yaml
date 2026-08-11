@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 85f0fc88abc61a674de8bcd4a0b049e539c5ac90092ddb3d03cac63bcb8ba2b7
+  tracked_paths_sha256: c9a2ce9ff7d3e7277fdfea80f7b2a34896ed866170c7042cca8b5c149cdc7f3a
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -186,6 +186,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-cli/tests/cli.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-cli/tests/p6_current_topology.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1073,6 +1079,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-11-p6-current-topology-negative-gate.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-11-p6-project-dag-contract.md:
       rule: historical-docs
       class: migration_only
@@ -1800,6 +1812,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p6-command-manifest.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p6-current-topology-negative-gate.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
