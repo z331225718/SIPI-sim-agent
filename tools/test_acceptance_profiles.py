@@ -21,6 +21,17 @@ class AcceptanceProfileTests(unittest.TestCase):
         self.assertEqual(report["profile_count"], 4)
         self.assertEqual(report["required_profile_count"], 3)
 
+    def test_current_rfm_receiver_profile_remains_required_but_not_lock_accepted(self) -> None:
+        profile = next(item for item in self.document()["profiles"] if item["id"] == "channel-rfm-block-2-current-drive-v1")
+        acceptance = profile["acceptance"]
+        self.assertEqual(profile["boundary"], "oracle_only")
+        self.assertEqual(acceptance["required_by"], "user-confirmed-2026-08-10-channel-rfm-receiver")
+        self.assertEqual(acceptance["status"], "required_delegated_policy_agreement_not_lock_accepted")
+        self.assertEqual(acceptance["comparator_ref"], "tools/compare_channel_rfm_receiver_delegated_policy.py")
+        notes = profile["notes"].lower()
+        self.assertIn("not a cdr-lock", notes)
+        self.assertIn("not a cdr-lock, receiver-parity, or required-profile acceptance claim", notes)
+
     def test_unknown_fields_and_unsafe_paths_fail_closed(self) -> None:
         invalid = self.document()
         invalid["unknown"] = True

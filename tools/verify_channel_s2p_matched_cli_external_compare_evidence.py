@@ -12,7 +12,10 @@ from pathlib import Path
 from typing import Any
 
 from verify_channel_s2p_matched_acceptance import _load, verify_document as verify_policy
-from verify_channel_s2p_matched_external_compare_evidence import verify_document as verify_core_evidence
+from verify_channel_s2p_matched_external_compare_evidence import (
+    EvidenceError as CoreEvidenceError,
+    verify_document as verify_core_evidence,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -181,7 +184,11 @@ def verify_document(
     core = document["core_evidence"]
     if not _exact(core, {"schema", "sha256"}) or core["schema"] != core_evidence_schema or core["sha256"] != _sha256_file(core_evidence_path):
         raise EvidenceError("evidence_core_invalid")
-    if not core_evidence_verifier(_load(core_evidence_path), source_root=source_root)["valid"]:
+    try:
+        core_evidence = core_evidence_verifier(_load(core_evidence_path), source_root=source_root)
+    except CoreEvidenceError as error:
+        raise EvidenceError(str(error)) from error
+    if not core_evidence["valid"]:
         raise EvidenceError("evidence_core_invalid")
     comparator = document["comparator"]
     if not _exact(comparator, {"path", "sha256"}) or comparator["path"] != "tools/compare_channel_s2p_matched_cli.py" or comparator["sha256"] != _sha256_file(COMPARATOR):

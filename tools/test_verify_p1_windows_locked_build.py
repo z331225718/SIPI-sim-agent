@@ -17,7 +17,29 @@ SPEC.loader.exec_module(GATE)
 class WindowsLockedBuildGateTests(unittest.TestCase):
     def test_inventory_baselines_are_hash_bound(self) -> None:
         entries = GATE.load_inventory(ROOT)
-        self.assertEqual([entry["id"] for entry in entries], ["sipi.capabilities.v1"])
+        self.assertEqual(
+            [entry["id"] for entry in entries],
+            [
+                "sipi.artifact-report-request.v1",
+                "sipi.capabilities.v1",
+                "sipi.channel.matched-two-port-kernel-run-request.v1",
+                "sipi.compare.aligned-arrays-request.v1",
+                "sipi.ibis.input-typ-dc-evaluate.request.v1",
+                "sipi.ibis.input-typ-quasi-static-evaluate.request.v1",
+                "sipi.ibis.inspect.request.v1",
+                "sipi.link-plan.v1",
+                "sipi.link.causal-fir-request.v1",
+                "sipi.project.fixed-tran-causal-fir-run-request.v1",
+                "sipi.project.v1",
+                "sipi.receiver-input.v1",
+                "sipi.receiver-semantics.v1",
+                "sipi.receiver.diagnostic-run-request.v1",
+                "sipi.rx-load.selected-differential-rc-evaluate.request.v1",
+                "sipi.tran.one-node-rc-pulse-request.v1",
+                "sipi.tran.rc-pulse-request.v1",
+                "sipi.validation-request.v1",
+            ],
+        )
 
     def test_cli_response_requires_exact_success_shape(self) -> None:
         valid = {

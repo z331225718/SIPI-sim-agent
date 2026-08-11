@@ -22,7 +22,7 @@ class AcceptanceTests(unittest.TestCase):
     def test_selected_external_profile_is_valid_without_asset_bytes(self) -> None:
         report = GATE.validate(self.document)
         self.assertTrue(report["valid"])
-        self.assertEqual(report["status"], "required_pending_i_v_compare")
+        self.assertEqual(report["status"], "required_accepted_external_compare")
 
     def test_rejects_hidden_profile_scope_or_tolerance_drift(self) -> None:
         for mutate in (
