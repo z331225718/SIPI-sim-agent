@@ -18,6 +18,7 @@ pub const CAPABILITIES_SCHEMA: &str = "sipi.capabilities.v1";
 pub const ARTIFACT_REPORT_REQUEST_SCHEMA: &str = "sipi.artifact-report-request.v1";
 pub const VALIDATION_REQUEST_SCHEMA: &str = "sipi.validation-request.v1";
 pub const TRAN_RC_PULSE_REQUEST_SCHEMA: &str = "sipi.tran.rc-pulse-request.v1";
+pub const TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA: &str = "sipi.tran.one-node-rc-pulse-request.v1";
 pub const LINK_PLAN_SCHEMA: &str = "sipi.link-plan.v1";
 pub const LINK_CAUSAL_FIR_REQUEST_SCHEMA: &str = "sipi.link.causal-fir-request.v1";
 pub const CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA: &str =
@@ -734,6 +735,23 @@ pub struct TranPulseV1 {
     pub fall_seconds: f64,
     pub width_seconds: f64,
     pub period_seconds: f64,
+}
+
+/// Product-owned request for the bounded one-node RC/PULSE topology.
+///
+/// The topology is fixed: ideal periodic PULSE, one series resistor, and one
+/// capacitor to an explicit reference. It is deliberately not a netlist or a
+/// generic circuit request.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TranOneNodeRcPulseRequestV1 {
+    pub schema: String,
+    pub request_id: String,
+    pub resistance_ohms: f64,
+    pub capacitance_farads: f64,
+    pub initial_voltage_out_volts: f64,
+    pub output_times_seconds: Vec<f64>,
+    pub pulse: TranPulseV1,
 }
 
 /// Product-owned Link-stage plan. It is a typed boundary, not an executor.
@@ -1903,6 +1921,20 @@ pub fn parse_tran_rc_pulse_request_v1(input: &[u8]) -> Result<TranRcPulseRequest
     Ok(request)
 }
 
+pub fn parse_tran_one_node_rc_pulse_request_v1(
+    input: &[u8],
+) -> Result<TranOneNodeRcPulseRequestV1, ContractError> {
+    let request: TranOneNodeRcPulseRequestV1 =
+        serde_json::from_slice(input).map_err(|error| ContractError::Json(error.to_string()))?;
+    if request.schema != TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA
+        || !valid_request_id(&request.request_id)
+        || !is_valid_one_node_rc_pulse_request(&request)
+    {
+        return Err(ContractError::Version);
+    }
+    Ok(request)
+}
+
 fn is_exact_rc_pulse_profile(request: &TranRcPulseRequestV1) -> bool {
     request.resistance_ohms == 1.0e3
         && request.capacitance_farads == 1.0e-6
@@ -1918,6 +1950,49 @@ fn is_exact_rc_pulse_profile(request: &TranRcPulseRequestV1) -> bool {
                 width_seconds: 1.0e-5,
                 period_seconds: 2.0e-5,
             }
+}
+
+fn is_valid_one_node_rc_pulse_request(request: &TranOneNodeRcPulseRequestV1) -> bool {
+    const MAX_OUTPUT_SAMPLES: usize = 4096;
+    let scalar_values = [
+        request.resistance_ohms,
+        request.capacitance_farads,
+        request.initial_voltage_out_volts,
+        request.pulse.voltage_low_volts,
+        request.pulse.voltage_high_volts,
+        request.pulse.delay_seconds,
+        request.pulse.rise_seconds,
+        request.pulse.fall_seconds,
+        request.pulse.width_seconds,
+        request.pulse.period_seconds,
+    ];
+    if !scalar_values.into_iter().all(f64::is_finite)
+        || request.resistance_ohms <= 0.0
+        || request.capacitance_farads <= 0.0
+        || request.pulse.delay_seconds < 0.0
+        || request.pulse.rise_seconds <= 0.0
+        || request.pulse.fall_seconds <= 0.0
+        || request.pulse.width_seconds < 0.0
+        || request.pulse.period_seconds <= 0.0
+        || request.output_times_seconds.is_empty()
+        || request.output_times_seconds.len() > MAX_OUTPUT_SAMPLES
+        || request.output_times_seconds[0] != 0.0
+        || !request
+            .output_times_seconds
+            .iter()
+            .all(|value| value.is_finite())
+        || request
+            .output_times_seconds
+            .windows(2)
+            .any(|pair| pair[0] >= pair[1])
+    {
+        return false;
+    }
+    let corner_end = request.pulse.delay_seconds
+        + request.pulse.rise_seconds
+        + request.pulse.width_seconds
+        + request.pulse.fall_seconds;
+    corner_end.is_finite() && corner_end <= request.pulse.period_seconds
 }
 
 pub fn validate_request_v1(input: &[u8]) -> Result<(), ContractError> {
@@ -2049,6 +2124,24 @@ pub fn product_example_request_json_v1(command_id: &str) -> Result<Option<Vec<u8
                 fall_seconds: 1.0e-9,
                 width_seconds: 1.0e-5,
                 period_seconds: 2.0e-5,
+            },
+        })
+        .map(Some),
+        "tran.one-node-rc-pulse" => deterministic_json(&TranOneNodeRcPulseRequestV1 {
+            schema: TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA.to_owned(),
+            request_id: "example-one-node-rc-pulse-1".to_owned(),
+            resistance_ohms: 1_000.0,
+            capacitance_farads: 2.0e-9,
+            initial_voltage_out_volts: 0.0,
+            output_times_seconds: vec![0.0, 1.0e-9, 2.0e-9, 3.0e-9],
+            pulse: TranPulseV1 {
+                voltage_low_volts: 0.0,
+                voltage_high_volts: 1.2,
+                delay_seconds: 0.5e-9,
+                rise_seconds: 0.2e-9,
+                fall_seconds: 0.2e-9,
+                width_seconds: 1.0e-9,
+                period_seconds: 4.0e-9,
             },
         })
         .map(Some),
@@ -2201,6 +2294,10 @@ pub fn validation_request_schema_json() -> Result<Vec<u8>, ContractError> {
 
 pub fn tran_rc_pulse_request_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(TranRcPulseRequestV1))
+}
+
+pub fn tran_one_node_rc_pulse_request_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(TranOneNodeRcPulseRequestV1))
 }
 
 pub fn link_plan_schema_json() -> Result<Vec<u8>, ContractError> {
@@ -2527,6 +2624,14 @@ mod tests {
     }
 
     #[test]
+    fn tracked_one_node_tran_request_schema_baseline_is_exactly_the_registered_export() {
+        let baseline =
+            include_bytes!("../schemas/sipi.tran.one-node-rc-pulse-request.v1.schema.json");
+        let exported = tran_one_node_rc_pulse_request_schema_json().expect("schema");
+        assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
+    }
+
+    #[test]
     fn validation_request_uses_the_existing_validated_waveform_path() {
         let valid = br#"{"schema":"sipi.validation-request.v1","request_id":"request-1","subject":{"schema":"sipi.contract.v1","axis":{"encoding":"explicit","values":[0.0,1.0]},"samples":[1.0,2.0]}}"#;
         assert!(validate_request_v1(valid).is_ok());
@@ -2681,6 +2786,18 @@ mod tests {
             br#"{"schema":"sipi.tran.rc-pulse-request.v1","request_id":"rc-pulse-1","resistance_ohms":1000.0,"capacitance_farads":0.000001,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000001,0.000002,0.000003],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.0,"delay_seconds":0.000001,"rise_seconds":0.000000001,"fall_seconds":0.000000001,"width_seconds":0.00001,"period_seconds":0.00002},"legacy_netlist":"rc.cir"}"#
         )
         .is_err());
+    }
+
+    #[test]
+    fn one_node_tran_request_is_bounded_and_strict() {
+        let valid = br#"{"schema":"sipi.tran.one-node-rc-pulse-request.v1","request_id":"one-node-1","resistance_ohms":1000.0,"capacitance_farads":0.000000002,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000000001,0.000000002],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.2,"delay_seconds":0.0000000005,"rise_seconds":0.0000000002,"fall_seconds":0.0000000002,"width_seconds":0.000000001,"period_seconds":0.000000004}}"#;
+        assert!(parse_tran_one_node_rc_pulse_request_v1(valid).is_ok());
+        assert!(parse_tran_one_node_rc_pulse_request_v1(
+            br#"{"schema":"sipi.tran.one-node-rc-pulse-request.v1","request_id":"one-node-1","resistance_ohms":0.0,"capacitance_farads":0.000000002,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000000001],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.2,"delay_seconds":0.0000000005,"rise_seconds":0.0000000002,"fall_seconds":0.0000000002,"width_seconds":0.000000001,"period_seconds":0.000000004}}"#
+        ).is_err());
+        assert!(parse_tran_one_node_rc_pulse_request_v1(
+            br#"{"schema":"sipi.tran.one-node-rc-pulse-request.v1","request_id":"one-node-1","resistance_ohms":1000.0,"capacitance_farads":0.000000002,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000000001],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.2,"delay_seconds":0.0000000005,"rise_seconds":0.0000000002,"fall_seconds":0.0000000002,"width_seconds":0.000000004,"period_seconds":0.000000004}}"#
+        ).is_err());
     }
 
     #[test]

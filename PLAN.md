@@ -204,6 +204,7 @@ ideal-source/R/grounded-C、固定网格和显式初值。下列泛化任务仍�
 - [x] **P2-02b** 冻结用户选择的 `rc.cir` external-only identity contract；数值语义与容差由 P2-03a 单独冻结。
 - [x] **P2-02c** 实现仅覆盖 fixed `RcPulseTransientV1` 的 `sipi-tran` clean-room library；拒绝 netlist/parser/OP/AC/通用 MNA 与外部 fallback。
 - [x] **P2-02d** 将 fixed wrapper 收敛到唯一、参数化但拓扑固定的一节点 RC/PULSE library core；该 core 仍不开放 CLI/wire request、netlist或通用电路模型。整改后的 Orca 只读复审为 0 P1/0 P2，见 [evidence](docs/baselines/audits/2026-08-11-p2-one-node-rc-pulse.md)。
+- [x] **P2-02e** 将该唯一内核接为独立 `sipi tran one-node-rc-pulse --stdin` artifact route：严格 product-owned request 仅允许显式 axis、R、C、初值与周期 PULSE；固定 4096 output / 16384 breakpoint bounds，仍拒绝 netlist、节点、器件、积分策略和任何 fallback。它不改变 externally accepted fixed wrapper，见 [evidence](docs/baselines/audits/2026-08-11-p2-one-node-rc-pulse-cli.md)。
 - [x] **P2-06a** 以工作树外的固定 Git object oracle 复跑 `tran-rc-pulse-v1`，并比较产品 typed result；报告仅保存身份、f64le 哈希与误差指标，不复制 fixture 或 waveform。
 - [x] **P2-06b** 当前 candidate 的 `sipi-tran` source/lock 漂移后重新以 clean archives 构建固定 external oracle 与 product harness；双次 oracle replay、三组数组比较和 source-tree/lock/executable/report binding 均通过。历史 attestation 保留，release ledger 只引用此 current-candidate evidence；范围仍仅 fixed RC/PULSE wrapper。
 - [x] **P2-08a** 冻结严格的产品 owned `sipi.tran.rc-pulse-request.v1`；仅接受已认证 RC/PULSE 参数，拒绝 netlist、路径、未知字段和任意扩展参数。

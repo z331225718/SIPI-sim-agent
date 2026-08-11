@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: b47693a66ffe93a76b7291bb9740f7fa9a4b85ec9fabf9ce6acc2087cc9be75b
+  tracked_paths_sha256: f9a47e0df23f9364970ca6f59e8cccee847d55d8a7da65cc9433b755c70e7f5f
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -294,6 +294,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-contracts/schemas/sipi.rx-load.selected-differential-rc-evaluate.request.v1.schema.json:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-contracts/schemas/sipi.tran.one-node-rc-pulse-request.v1.schema.json:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1002,6 +1008,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-10-rfm-readiness-evidence-anchor.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-11-p2-one-node-rc-pulse-cli.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

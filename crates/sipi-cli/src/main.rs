@@ -16,18 +16,21 @@ use sipi_contracts::{
     CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA, CapabilityCatalogV1,
     FIXED_PROJECT_RUN_REQUEST_SCHEMA, IBIS_DC_EVALUATE_REQUEST_SCHEMA,
     IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA, LINK_PLAN_SCHEMA, PLANNED_DOMAINS, RULE_LEDGER_V1,
-    artifact_report_request_schema_json, capability_schema_json,
-    channel_matched_two_port_kernel_run_request_schema_json, deterministic_json,
-    fixed_project_run_request_schema_json, ibis_dc_evaluate_request_schema_json,
-    ibis_inspect_request_schema_json, ibis_quasi_static_evaluate_request_schema_json,
-    link_causal_fir_request_schema_json, link_plan_schema_json, parse_artifact_report_request_v1,
+    TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA, artifact_report_request_schema_json,
+    capability_schema_json, channel_matched_two_port_kernel_run_request_schema_json,
+    deterministic_json, fixed_project_run_request_schema_json,
+    ibis_dc_evaluate_request_schema_json, ibis_inspect_request_schema_json,
+    ibis_quasi_static_evaluate_request_schema_json, link_causal_fir_request_schema_json,
+    link_plan_schema_json, parse_artifact_report_request_v1,
     parse_channel_matched_two_port_kernel_run_request_v1, parse_fixed_project_run_request_v1,
     parse_ibis_dc_evaluate_request_v1, parse_ibis_inspect_request_v1,
     parse_ibis_quasi_static_evaluate_request_v1, parse_link_causal_fir_request_v1,
-    parse_rx_load_differential_rc_evaluate_request_v1, parse_tran_rc_pulse_request_v1,
-    product_example_request_json_v1, project_plan_schema_json, receiver_input_schema_json,
-    receiver_semantics_schema_json, rx_load_differential_rc_evaluate_request_schema_json,
-    tran_rc_pulse_request_schema_json, validate_request_v1, validation_request_schema_json,
+    parse_rx_load_differential_rc_evaluate_request_v1, parse_tran_one_node_rc_pulse_request_v1,
+    parse_tran_rc_pulse_request_v1, product_example_request_json_v1, project_plan_schema_json,
+    receiver_input_schema_json, receiver_semantics_schema_json,
+    rx_load_differential_rc_evaluate_request_schema_json,
+    tran_one_node_rc_pulse_request_schema_json, tran_rc_pulse_request_schema_json,
+    validate_request_v1, validation_request_schema_json,
 };
 use sipi_ibis::{
     DcClampCornerV1, DcClampProbeV1, IbisDcEvaluateServiceV1, IbisInspectServiceV1,
@@ -48,8 +51,11 @@ use sipi_touchstone::{
     TouchstoneParseLimitsV1, admit_matched_two_port_spectrum_v1,
     parse_touchstone_hz_s_ri_50_two_port_v1,
 };
-use sipi_tran::{RcPulseTransientV1, simulate_rc_pulse_with_context};
-use sipi_types::AxisView;
+use sipi_tran::{
+    IdealPulseV1, OneNodeRcPulseLimitsV1, OneNodeRcPulseRequestV1, RcPulseTransientV1,
+    simulate_one_node_rc_pulse_with_context, simulate_rc_pulse_with_context,
+};
+use sipi_types::{AxisView, FiniteF64, Ohms, Seconds, Volts};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const TARGET: &str = "x86_64-pc-windows-msvc";
@@ -349,6 +355,16 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         nonclaim: "fixed_rc_pulse_profile_only",
     },
     CommandDescriptorV1 {
+        id: "tran.one-node-rc-pulse",
+        route: &["tran", "one-node-rc-pulse"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some(TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA),
+        response_schema: Some("sipi.tran.one-node-rc-pulse-run-result.v1"),
+        unavailable_reason: None,
+        nonclaim: "bounded_product_owned_one_node_rc_pulse_only",
+    },
+    CommandDescriptorV1 {
         id: "link.run",
         route: &["link", "run"],
         availability: CommandAvailabilityV1::Available,
@@ -568,6 +584,15 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
     CommandProtocolProfileV1 {
+        command_id: "tran.one-node-rc-pulse",
+        example_id: Some("product-owned-minimal-v1"),
+        required_options: &["--artifact-root", "--artifact-id"],
+        caller_bindings: ARTIFACT_DESTINATION_BINDINGS,
+        validation_rule_id: Some("tran.one-node-rc-pulse.v1"),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
+    CommandProtocolProfileV1 {
         command_id: "link.run",
         example_id: Some("product-owned-minimal-v1"),
         required_options: &["--artifact-root", "--artifact-id"],
@@ -639,6 +664,14 @@ fn main() {
     {
         ProcessAdapter::tran_run_stdin(artifact_root, artifact_id)
     } else if let [command, action, stdin, root, artifact_root, id, artifact_id] = &arguments[..]
+        && command == "tran"
+        && action == "one-node-rc-pulse"
+        && stdin == "--stdin"
+        && root == "--artifact-root"
+        && id == "--artifact-id"
+    {
+        ProcessAdapter::tran_one_node_rc_pulse_stdin(artifact_root, artifact_id)
+    } else if let [command, action, stdin, root, artifact_root, id, artifact_id] = &arguments[..]
         && command == "link"
         && action == "run"
         && stdin == "--stdin"
@@ -695,6 +728,18 @@ impl ProcessAdapter {
             return error(3, "contract_rejected", "TRAN request was rejected");
         }
         run_fixed_tran(artifact_root, artifact_id, &input)
+    }
+
+    fn tran_one_node_rc_pulse_stdin(artifact_root: &str, artifact_id: &str) -> Response {
+        let input = match read_stdin_request() {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        let request = match parse_tran_one_node_rc_pulse_request_v1(&input) {
+            Ok(request) => request,
+            Err(_) => return error(3, "contract_rejected", "one-node TRAN request was rejected"),
+        };
+        run_one_node_tran(artifact_root, artifact_id, &request)
     }
 
     fn link_run_stdin(artifact_root: &str, artifact_id: &str) -> Response {
@@ -901,6 +946,134 @@ fn run_fixed_tran_with_policy(
             "TRAN run did not publish an artifact",
         ),
     }
+}
+
+fn run_one_node_tran(
+    artifact_root: &str,
+    artifact_id: &str,
+    request: &sipi_contracts::TranOneNodeRcPulseRequestV1,
+) -> Response {
+    const MAX_OUTPUT_SAMPLES: usize = 4096;
+    const MAX_BREAKPOINTS: usize = 16_384;
+    let policy = match RunPolicy::try_new(Duration::from_secs(1), 32_768, 8 * 1_024 * 1_024) {
+        Ok(policy) => policy,
+        Err(_) => return error(6, "internal_failure", "run policy is unavailable"),
+    };
+    let id = match RunId::try_new(artifact_id) {
+        Ok(id) => id,
+        Err(_) => return error(2, "invalid_artifact_id", "artifact id is invalid"),
+    };
+    let (_, context) = match Runtime::start(id, policy) {
+        Ok(run) => run,
+        Err(_) => return error(6, "internal_failure", "runtime is unavailable"),
+    };
+    let canonical_request = match deterministic_json(request) {
+        Ok(bytes) => bytes,
+        Err(_) => {
+            return error(
+                6,
+                "internal_contract_error",
+                "TRAN request cannot be serialized",
+            );
+        }
+    };
+    let typed_request = match one_node_request(request) {
+        Ok(request) => request,
+        Err(_) => return error(3, "contract_rejected", "one-node TRAN request was rejected"),
+    };
+    let limits = OneNodeRcPulseLimitsV1::new(
+        NonZeroUsize::new(MAX_OUTPUT_SAMPLES).expect("constant output limit"),
+        NonZeroUsize::new(MAX_BREAKPOINTS).expect("constant breakpoint limit"),
+    );
+    let request_key = cache_key("request", &canonical_request);
+    let root = Path::new(artifact_root);
+    let result = Runtime::execute(&context, |context| -> Result<_, ()> {
+        context
+            .consume(ResourceCost {
+                work_units: MAX_BREAKPOINTS as u64,
+                accounted_bytes: canonical_request.len() as u64 + 4 * 1_024 * 1_024,
+            })
+            .map_err(|_| ())?;
+        let simulation = simulate_one_node_rc_pulse_with_context(&typed_request, limits, context)
+            .map_err(|_| ())?;
+        let result_json = one_node_result_json(&simulation).map_err(|_| ())?;
+        let result_key = cache_key("result", result_json.as_bytes());
+        let provenance = format!(
+            "{{\"schema\":\"sipi.tran.one-node-rc-pulse.provenance.v1\",\"topology\":\"ideal_pulse_series_r_capacitor_to_explicit_ref\",\"algorithm\":\"backward_euler_one_node_rc_pulse_v1\",\"request_cache_key\":\"{request_key}\",\"result_cache_key\":\"{result_key}\",\"max_output_samples\":{MAX_OUTPUT_SAMPLES},\"max_integration_breakpoints\":{MAX_BREAKPOINTS},\"contract\":\"{TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA}\",\"target\":\"{TARGET}\"}}"
+        );
+        let store = sipi_artifacts::ArtifactRoot::open_or_create(root).map_err(|_| ())?;
+        let mut staging = store.begin(artifact_id).map_err(|_| ())?;
+        staging
+            .stage_reader(
+                "request.json",
+                Cursor::new(canonical_request.as_slice()),
+                1_048_576,
+            )
+            .map_err(|_| ())?;
+        staging
+            .stage_reader(
+                "result.json",
+                Cursor::new(result_json.into_bytes()),
+                1_048_576,
+            )
+            .map_err(|_| ())?;
+        staging
+            .stage_reader(
+                "provenance.json",
+                Cursor::new(provenance.into_bytes()),
+                16_384,
+            )
+            .map_err(|_| ())?;
+        let manifest = staging
+            .seal()
+            .and_then(|sealed| sealed.publish_new())
+            .map_err(|_| ())?;
+        Ok((request_key, result_key, manifest))
+    });
+    match result {
+        Ok((request_key, result_key, manifest)) => success(format!(
+            "{{\"schema\":\"sipi.tran.one-node-rc-pulse-run-result.v1\",\"artifact_id\":\"{}\",\"request_cache_key\":\"{}\",\"result_cache_key\":\"{}\",\"manifest_schema\":\"{}\",\"file_count\":{}}}",
+            manifest.artifact_id,
+            request_key,
+            result_key,
+            manifest.schema,
+            manifest.files.len()
+        )),
+        Err(_) => error(
+            5,
+            "operational_failure",
+            "one-node TRAN run did not publish an artifact",
+        ),
+    }
+}
+
+fn one_node_request(
+    request: &sipi_contracts::TranOneNodeRcPulseRequestV1,
+) -> Result<OneNodeRcPulseRequestV1, ()> {
+    let pulse = IdealPulseV1::try_new(
+        Volts::try_new(request.pulse.voltage_low_volts).map_err(|_| ())?,
+        Volts::try_new(request.pulse.voltage_high_volts).map_err(|_| ())?,
+        Seconds::try_new(request.pulse.delay_seconds).map_err(|_| ())?,
+        Seconds::try_new(request.pulse.rise_seconds).map_err(|_| ())?,
+        Seconds::try_new(request.pulse.fall_seconds).map_err(|_| ())?,
+        Seconds::try_new(request.pulse.width_seconds).map_err(|_| ())?,
+        Seconds::try_new(request.pulse.period_seconds).map_err(|_| ())?,
+    )
+    .map_err(|_| ())?;
+    let output_times = request
+        .output_times_seconds
+        .iter()
+        .copied()
+        .map(|value| Seconds::try_new(value).map_err(|_| ()))
+        .collect::<Result<Vec<_>, _>>()?;
+    OneNodeRcPulseRequestV1::try_new(
+        output_times,
+        Ohms::try_new(request.resistance_ohms).map_err(|_| ())?,
+        FiniteF64::try_new(request.capacitance_farads, "capacitance farads").map_err(|_| ())?,
+        Volts::try_new(request.initial_voltage_out_volts).map_err(|_| ())?,
+        pulse,
+    )
+    .map_err(|_| ())
 }
 
 fn run_causal_fir_link(
@@ -1393,6 +1566,32 @@ fn result_json(result: &sipi_tran::RcPulseTransientResultV1) -> Result<String, &
     ))
 }
 
+fn one_node_result_json(
+    result: &sipi_tran::RcPulseTransientResultV1,
+) -> Result<String, &'static str> {
+    let AxisView::Explicit(times) = result.time_axis().view() else {
+        return Err("one-node result must have an explicit time axis");
+    };
+    Ok(format!(
+        "{{\"schema\":\"sipi.tran.one-node-rc-pulse-result.v1\",\"topology\":\"ideal_pulse_series_r_capacitor_to_explicit_ref\",\"time_seconds\":{},\"voltage_in_volts\":{},\"voltage_out_volts\":{}}}",
+        json_values(times.iter().map(|value| value.get())),
+        json_values(
+            result
+                .voltage_in()
+                .samples()
+                .iter()
+                .map(|value| value.get())
+        ),
+        json_values(
+            result
+                .voltage_out()
+                .samples()
+                .iter()
+                .map(|value| value.get())
+        ),
+    ))
+}
+
 fn link_result_json(result: &sipi_link::ReceivedVoltageSamplesV1) -> Result<String, &'static str> {
     let AxisView::Uniform { start, step, count } = result.waveform().axis().view() else {
         return Err("Link result must have a uniform time axis");
@@ -1511,6 +1710,7 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["ibis", "quasi-static-evaluate"]
             | ["rx-load", "differential-rc-evaluate"]
             | ["tran", "run"]
+            | ["tran", "one-node-rc-pulse"]
             | ["link", "run"]
             | ["channel", "run"]
             | ["project", "run"]
@@ -1578,6 +1778,8 @@ fn schema_bytes(id: &str) -> Result<Option<Vec<u8>>, sipi_contracts::ContractErr
         validation_request_schema_json().map(Some)
     } else if id == sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA {
         tran_rc_pulse_request_schema_json().map(Some)
+    } else if id == TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA {
+        tran_one_node_rc_pulse_request_schema_json().map(Some)
     } else if id == LINK_PLAN_SCHEMA {
         link_plan_schema_json().map(Some)
     } else if id == sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA {
@@ -1946,7 +2148,7 @@ fn capabilities_json() -> String {
         .iter()
         .map(|domain| {
             if *domain == "tran" && manifest_available("tran.run") {
-                "{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"}".to_owned()
+                "{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_and_one_node_rc_pulse_only\"}".to_owned()
             } else if *domain == "channel" && manifest_available("channel.run") {
                 "{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"matched_s21_periodic_kernel_only\"}".to_owned()
             } else {
@@ -1977,7 +2179,7 @@ fn doctor_json() -> String {
 
 fn schema_list_json() -> String {
     format!(
-        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"]}}",
+        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA}\",\"{}\",\"{}\"]}}",
         IBIS_DC_EVALUATE_REQUEST_SCHEMA,
         IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA,
         sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA,
@@ -2024,6 +2226,7 @@ fn validate_self(schema: Option<&str>) -> Response {
             && id != CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA
             && id != sipi_contracts::VALIDATION_REQUEST_SCHEMA
             && id != sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA
+            && id != TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA
             && id != sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA
             && id != IBIS_DC_EVALUATE_REQUEST_SCHEMA
             && id != IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA
@@ -2050,6 +2253,7 @@ fn validate_self(schema: Option<&str>) -> Response {
         && artifact_report_request_schema_json().is_ok()
         && channel_matched_two_port_kernel_run_request_schema_json().is_ok()
         && tran_rc_pulse_request_schema_json().is_ok()
+        && tran_one_node_rc_pulse_request_schema_json().is_ok()
         && ibis_inspect_request_schema_json().is_ok()
         && ibis_dc_evaluate_request_schema_json().is_ok()
         && ibis_quasi_static_evaluate_request_schema_json().is_ok()
@@ -2116,7 +2320,7 @@ mod tests {
         assert_eq!(
             response.stdout.as_deref(),
             Some(
-                "{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"},{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"matched_s21_periodic_kernel_only\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]}"
+                "{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_and_one_node_rc_pulse_only\"},{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"matched_s21_periodic_kernel_only\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]}"
             )
         );
     }
@@ -2356,7 +2560,7 @@ mod tests {
     fn schema_list_uses_the_schema_inventory_order() {
         assert_eq!(
             schema_list_json(),
-            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
+            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.one-node-rc-pulse-request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
         );
     }
 

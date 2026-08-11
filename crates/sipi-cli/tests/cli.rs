@@ -9,6 +9,7 @@ fn sipi() -> Command {
 }
 
 const RC_PULSE_REQUEST: &[u8] = br#"{"schema":"sipi.tran.rc-pulse-request.v1","request_id":"rc-pulse-1","resistance_ohms":1000.0,"capacitance_farads":0.000001,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000001,0.000002,0.000003],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.0,"delay_seconds":0.000001,"rise_seconds":0.000000001,"fall_seconds":0.000000001,"width_seconds":0.00001,"period_seconds":0.00002}}"#;
+const ONE_NODE_RC_PULSE_REQUEST: &[u8] = br#"{"schema":"sipi.tran.one-node-rc-pulse-request.v1","request_id":"one-node-1","resistance_ohms":1000.0,"capacitance_farads":0.000000002,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000000001,0.000000002,0.000000003],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.2,"delay_seconds":0.0000000005,"rise_seconds":0.0000000002,"fall_seconds":0.0000000002,"width_seconds":0.000000001,"period_seconds":0.000000004}}"#;
 const LINK_REQUEST: &[u8] = br#"{"schema":"sipi.link.causal-fir-request.v1","request_id":"link-1","plan":{"schema":"sipi.link-plan.v1","timebase":{"start_seconds":0.0,"sample_interval_seconds":1.0,"sample_count":2},"tx":{"kind":"direct_launch"},"stimulus_volts":[1.0,2.0],"channel":{"kind":"causal_fir","sample_interval_seconds":1.0,"gain_v_per_v":[3.0,4.0]},"rx":{"ctle":{"kind":"bypass"},"ffe":{"kind":"bypass"}}},"limits":{"max_output_samples":8,"max_multiply_accumulates":8}}"#;
 const FIXED_PROJECT_REQUEST: &[u8] = br#"{"schema":"sipi.project.fixed-tran-causal-fir-run-request.v1","plan":{"schema":"sipi.project.v1","project_id":"cli-fixed-project-1","seed_hex":"0000000000000000000000000000000000000000000000000000000000000000","resource_policy":{"timeout_millis":1000,"max_work_units":100,"max_accounted_bytes":2048},"inputs":[{"id":"binding","contract":"sipi.project.tran-rc-pulse-to-causal-fir-binding.v1"}],"nodes":[{"id":"run","kind":"project.tran-rc-pulse-to-causal-fir"}],"edges":[{"from":{"kind":"project_input","input_id":"binding"},"to":{"node_id":"run","port":"binding"},"contract":"sipi.project.tran-rc-pulse-to-causal-fir-binding.v1"}],"requested_outputs":[{"node_id":"run","port":"received","contract":"sipi.link.causal-fir-result.v1"}]},"consumer":{"sample_interval_seconds":0.000001,"gain_v_per_v":[1.0],"max_output_samples":8,"max_multiply_accumulates":16}}"#;
 
@@ -33,6 +34,31 @@ fn run_fixed_tran(root: &Path) -> Output {
         .take()
         .expect("stdin")
         .write_all(RC_PULSE_REQUEST)
+        .expect("write request");
+    child.wait_with_output().expect("wait sipi")
+}
+
+fn run_one_node_tran(root: &Path, request: &[u8]) -> Output {
+    let mut child = sipi()
+        .args([
+            "tran",
+            "one-node-rc-pulse",
+            "--stdin",
+            "--artifact-root",
+            root.to_string_lossy().as_ref(),
+            "--artifact-id",
+            "one-node-1",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start sipi");
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(request)
         .expect("write request");
     child.wait_with_output().expect("wait sipi")
 }
@@ -118,7 +144,7 @@ fn capabilities_are_machine_readable_and_uncertified() {
     assert!(output.status.success());
     assert_eq!(
         String::from_utf8(output.stdout).expect("UTF-8 stdout"),
-        "{\"schema\":\"sipi.cli.response.v1\",\"protocol\":1,\"command\":\"capabilities\",\"request_id\":null,\"status\":\"ok\",\"result\":{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"},{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"matched_s21_periodic_kernel_only\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]},\"diagnostic_count\":0}\n"
+        "{\"schema\":\"sipi.cli.response.v1\",\"protocol\":1,\"command\":\"capabilities\",\"request_id\":null,\"status\":\"ok\",\"result\":{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_and_one_node_rc_pulse_only\"},{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"matched_s21_periodic_kernel_only\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]},\"diagnostic_count\":0}\n"
     );
     assert!(output.stderr.is_empty());
 }
@@ -152,6 +178,10 @@ fn protocol_catalog_and_product_examples_are_machine_readable() {
             "sipi.rx-load.selected-differential-rc-evaluate.request.v1",
         ),
         ("tran.run", "sipi.tran.rc-pulse-request.v1"),
+        (
+            "tran.one-node-rc-pulse",
+            "sipi.tran.one-node-rc-pulse-request.v1",
+        ),
         ("link.run", "sipi.link.causal-fir-request.v1"),
         (
             "channel.run",
@@ -609,6 +639,60 @@ fn fixed_tran_stdin_run_publishes_a_two_file_artifact() {
         std::fs::read(root.join("rc-pulse-1").join("provenance.json")).expect("provenance"),
         provenance
     );
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn one_node_tran_stdin_run_publishes_a_bounded_three_file_artifact() {
+    let root =
+        std::env::temp_dir().join(format!("sipi-cli-process-one-node-{}", std::process::id()));
+    let output = run_one_node_tran(&root, ONE_NODE_RC_PULSE_REQUEST);
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout");
+    assert!(stdout.contains("sipi.tran.one-node-rc-pulse-run-result.v1"));
+    assert!(stdout.contains("\"file_count\":3"));
+    assert!(output.stderr.is_empty());
+    let artifact = root.join("one-node-1");
+    assert!(artifact.join("success.json").is_file());
+    assert!(artifact.join("request.json").is_file());
+    assert!(artifact.join("result.json").is_file());
+    assert!(artifact.join("provenance.json").is_file());
+    let result = std::fs::read_to_string(artifact.join("result.json")).expect("result");
+    assert!(result.contains("ideal_pulse_series_r_capacitor_to_explicit_ref"));
+    assert!(result.contains("\"time_seconds\":[0,0.000000001,0.000000002,0.000000003]"));
+
+    let duplicate = run_one_node_tran(&root, ONE_NODE_RC_PULSE_REQUEST);
+    assert_eq!(duplicate.status.code(), Some(5));
+    assert!(
+        String::from_utf8(duplicate.stdout)
+            .expect("duplicate stdout")
+            .contains("\"result\":null")
+    );
+
+    let malformed = br#"{"schema":"sipi.tran.one-node-rc-pulse-request.v1","request_id":"one-node-1","resistance_ohms":1000.0,"capacitance_farads":0.000000002,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000000001],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.2,"delay_seconds":0.0000000005,"rise_seconds":0.0000000002,"fall_seconds":0.0000000002,"width_seconds":0.000000001,"period_seconds":0.000000004},"netlist":"rc.cir"}"#;
+    let rejected = run_one_node_tran(&root, malformed);
+    assert_eq!(rejected.status.code(), Some(3));
+    assert!(
+        String::from_utf8(rejected.stderr)
+            .expect("diagnostic")
+            .contains("\"code\":\"contract_rejected\"")
+    );
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn one_node_tran_breakpoint_budget_fails_before_publication() {
+    let root =
+        std::env::temp_dir().join(format!("sipi-cli-one-node-budget-{}", std::process::id()));
+    let request = br#"{"schema":"sipi.tran.one-node-rc-pulse-request.v1","request_id":"budget-1","resistance_ohms":1000.0,"capacitance_farads":0.000000002,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.001],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.2,"delay_seconds":0.00000001,"rise_seconds":0.00000001,"fall_seconds":0.00000001,"width_seconds":0.00000001,"period_seconds":0.0000001}}"#;
+    let output = run_one_node_tran(&root, request);
+    assert_eq!(output.status.code(), Some(5));
+    assert!(
+        String::from_utf8(output.stdout)
+            .expect("failure envelope")
+            .contains("\"result\":null")
+    );
+    assert!(!root.join("one-node-1").join("success.json").exists());
     let _ = std::fs::remove_dir_all(root);
 }
 
