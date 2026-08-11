@@ -8,14 +8,18 @@ from pathlib import Path
 import re
 import sys
 from typing import Any
+from urllib.parse import urlsplit
 
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = ROOT / "docs" / "baselines" / "external-history-citations.v1.yaml"
 REGISTER = ROOT / "clean-room-register.v1.yaml"
 SCHEMA = "sipi.external-history-citations.v1"
-MARKER = re.compile(r"history-ref:([a-z0-9][a-z0-9-]*)@([0-9a-f]{40})")
+MARKER = re.compile(r"(?<![a-z0-9-])history-ref:([a-z0-9][a-z0-9-]*)@([0-9a-f]{40})(?![0-9a-f])")
 FORBIDDEN = ("file://", "external/", "engines/", "..", "\\\\", "c:/", "c:\\\\")
+SAFE_RELEASE_DOC = re.compile(r"docs/baselines/(?:[A-Za-z0-9][A-Za-z0-9._-]*/)*[A-Za-z0-9][A-Za-z0-9._-]*\.md")
+GITHUB_ORIGIN = re.compile(r"https://github\.com/[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*\.git")
+UNIX_ABSOLUTE_PATH = re.compile(r"(?<![A-Za-z0-9_:/])/(?:[A-Za-z0-9._~-]+/)+[A-Za-z0-9._~-]*")
 
 
 class CitationError(RuntimeError):
@@ -33,8 +37,27 @@ def load(path: Path) -> dict[str, Any]:
 
 
 def safe_doc(path: str) -> bool:
-    candidate = Path(path)
-    return not candidate.is_absolute() and candidate.is_relative_to(Path("docs/baselines")) and ".." not in candidate.parts and candidate.suffix == ".md"
+    return isinstance(path, str) and bool(SAFE_RELEASE_DOC.fullmatch(path))
+
+
+def safe_origin(origin: object) -> bool:
+    if not isinstance(origin, str) or not GITHUB_ORIGIN.fullmatch(origin):
+        return False
+    try:
+        parsed = urlsplit(origin)
+    except ValueError:
+        return False
+    return (
+        parsed.scheme == "https"
+        and parsed.hostname == "github.com"
+        and parsed.username is None
+        and parsed.password is None
+        and parsed.port is None
+        and not parsed.query
+        and not parsed.fragment
+        and "\\" not in origin
+        and "%" not in origin
+    )
 
 
 def material_kind(material_id: str) -> str | None:
@@ -70,7 +93,7 @@ def validate(document: dict[str, Any], root: Path) -> None:
             raise CitationError("entry_policy_invalid")
         if entry["role"] not in {"oracle", "provenance", "license_evidence"} or not re.fullmatch(r"[0-9a-f]{40}", entry["object_hash"]):
             raise CitationError("entry_identity_invalid")
-        if not isinstance(entry["canonical_origin"], str) or not entry["canonical_origin"].startswith("https://"):
+        if not safe_origin(entry["canonical_origin"]):
             raise CitationError("entry_origin_invalid")
         if entry["evidence_ref"] not in docs or material_kind(entry["material_ref"]) not in {"oracle_fixture", "pybert_source", "non_mit_source", "mit_source"}:
             raise CitationError("entry_material_invalid")
@@ -79,7 +102,7 @@ def validate(document: dict[str, Any], root: Path) -> None:
     for path in docs:
         text = (root / path).read_text(encoding="utf-8")
         lowered = text.lower()
-        if any(token in lowered for token in FORBIDDEN):
+        if any(token in lowered for token in FORBIDDEN) or UNIX_ABSOLUTE_PATH.search(text):
             raise CitationError("release_doc_unsafe_reference")
         observed.update(MARKER.findall(text))
     if observed != markers:

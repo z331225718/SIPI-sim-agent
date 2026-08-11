@@ -17,3 +17,9 @@ For the current product command manifest capture, the command-response SHA-256
 was `15c1e6f0ebf420c0e6928bc00f8ff36fe3abf0fa2f6bd80ded3091570ba07847`.
 The deterministic rendered publication had SHA-256
 `2355357d7c388e26d16b64b63290df901ef4fa95cfd6f2320d76a71a88d3a5bd`.
+
+One Orca read-only review found no P1 or P2 findings. Its descriptor-shape
+P3 observation was closed by requiring the exact command-manifest v1 field
+set, validated route/id uniqueness, approved transports, and consistent
+availability/reason fields before ledger binding. The publication remains
+provisional and blocked.

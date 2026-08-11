@@ -211,7 +211,7 @@ materials:
     derived_from: [p7-release-archive-admission-spec-v1, p1-cli-process-contract-spec-v1]
   - id: p7-release-capability-publication-spec-v1
     kind: independent_spec
-    content_sha256: 12d74cbeaca36dee413da16fd1b6e4ccb6edd51cf303f649f98a2d92463f7dbd
+    content_sha256: bd11a871d8e122fe7780db51ccca564e6b6f846c3552115b1908956d215df3b7
     provenance:
       source_ref: docs/clean-room/specs/p7-release-capability-publication.v1.md
       license_evidence: project-authored-MIT-boundary-pending-promotion
@@ -219,7 +219,7 @@ materials:
     derived_from: [p7-isolated-install-admission-spec-v1, p6-command-manifest-spec-v1]
   - id: p7-external-history-citations-spec-v1
     kind: independent_spec
-    content_sha256: 158692f432ab55a27e2f864565b54e48cac87b91c50661f6712817ab7944f937
+    content_sha256: eed75f0f0691b745d6576e5797dddbfe2eb1ae2f91140c6bf224b70a3bef708d
     provenance:
       source_ref: docs/clean-room/specs/p7-external-history-citations.v1.md
       license_evidence: project-authored-MIT-boundary-pending-promotion

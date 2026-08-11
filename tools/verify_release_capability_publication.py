@@ -17,6 +17,12 @@ COMMAND_SCHEMA = "sipi.command-manifest.v1"
 PUBLICATION = ROOT / "docs" / "baselines" / "release-capability-publication.v1.yaml"
 FORBIDDEN_TOKENS = ("certified", "release-ready", "release_ready", "legal approved", "legally approved")
 SAFE_REPORT_ROOT = Path("docs/baselines")
+COMMAND_DESCRIPTOR_FIELDS = {
+    "id", "route", "availability", "transport", "request_schema",
+    "response_schema", "unavailable_reason", "nonclaim",
+}
+COMMAND_ID = re.compile(r"[a-z0-9][a-z0-9.-]*")
+ROUTE_TOKEN = re.compile(r"[a-z][a-z-]*")
 
 
 class PublicationError(RuntimeError):
@@ -34,15 +40,63 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def command_manifest(document: dict[str, Any]) -> list[dict[str, Any]]:
-    result = document.get("result") if document.get("schema") == "sipi.cli.response.v1" else document
+    if document.get("schema") == "sipi.cli.response.v1":
+        expected = {"schema", "protocol", "command", "request_id", "status", "result", "diagnostic_count"}
+        if (
+            set(document) != expected
+            or document["protocol"] != 1
+            or document["command"] != "commands"
+            or document["request_id"] is not None
+            or document["status"] != "ok"
+            or document["diagnostic_count"] != 0
+        ):
+            raise PublicationError("command_manifest_invalid")
+        result = document["result"]
+    else:
+        result = document
     if not isinstance(result, dict) or result.get("schema") != COMMAND_SCHEMA:
+        raise PublicationError("command_manifest_invalid")
+    if set(result) != {"schema", "commands"}:
         raise PublicationError("command_manifest_invalid")
     commands = result.get("commands")
     if not isinstance(commands, list) or not commands:
         raise PublicationError("command_manifest_invalid")
-    if any(not isinstance(command, dict) for command in commands):
-        raise PublicationError("command_manifest_invalid")
+    validate_command_descriptors(commands)
     return commands
+
+
+def validate_command_descriptors(commands: list[dict[str, Any]]) -> None:
+    seen_ids: set[str] = set()
+    seen_routes: set[tuple[str, ...]] = set()
+    for command in commands:
+        if not isinstance(command, dict) or set(command) != COMMAND_DESCRIPTOR_FIELDS:
+            raise PublicationError("command_manifest_invalid")
+        command_id = command["id"]
+        route = command["route"]
+        availability = command["availability"]
+        transport = command["transport"]
+        schemas = (command["request_schema"], command["response_schema"])
+        reason = command["unavailable_reason"]
+        nonclaim = command["nonclaim"]
+        if (
+            not isinstance(command_id, str)
+            or not COMMAND_ID.fullmatch(command_id)
+            or command_id in seen_ids
+            or not isinstance(route, list)
+            or not route
+            or any(not isinstance(token, str) or not ROUTE_TOKEN.fullmatch(token) for token in route)
+            or tuple(route) in seen_routes
+            or availability not in {"available", "unavailable"}
+            or transport not in {"none", "stdin_json_v1"}
+            or any(value is not None and (not isinstance(value, str) or not value) for value in schemas)
+            or not isinstance(nonclaim, str)
+            or not nonclaim
+            or (availability == "available" and reason is not None)
+            or (availability == "unavailable" and (not isinstance(reason, str) or not reason))
+        ):
+            raise PublicationError("command_manifest_invalid")
+        seen_ids.add(command_id)
+        seen_routes.add(tuple(route))
 
 
 def safe_report_path(relative: str) -> bool:
@@ -82,6 +136,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
         if not isinstance(value, list) or not value or any(not isinstance(item, str) or not item for item in value):
             raise PublicationError("publication_global_fields_invalid")
 
+    validate_command_descriptors(manifest)
     manifest_by_id = {item.get("id"): item for item in manifest}
     if len(manifest_by_id) != len(manifest) or None in manifest_by_id:
         raise PublicationError("command_manifest_duplicate")

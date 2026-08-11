@@ -6,6 +6,7 @@ import copy
 import importlib.util
 import json
 from pathlib import Path
+import tempfile
 import unittest
 
 
@@ -42,6 +43,39 @@ class CitationTests(unittest.TestCase):
         document["entries"].pop()
         with self.assertRaises(GATE.CitationError):
             GATE.validate(document, ROOT)
+
+    def test_rejects_unsafe_origin_and_release_doc_paths(self) -> None:
+        for origin in (
+            "https://",
+            "https://user@github.com/z331225718/agent-spice.git",
+            "https://github.com/z331225718/agent-spice.git?ref=main",
+            "https://github.com/z331225718/agent-spice.git#main",
+            "https://github.com/z331225718%2Fagent-spice.git",
+            "https://git.example/owner/repo.git",
+        ):
+            with self.subTest(origin=origin):
+                document = self.registry()
+                document["entries"][0]["canonical_origin"] = origin
+                with self.assertRaises(GATE.CitationError):
+                    GATE.validate(document, ROOT)
+        for path in ("/tmp/a.md", "//host/a.md", "C:/private.md", r"\\server\share\a.md", "docs/baselines/../a.md"):
+            self.assertFalse(GATE.safe_doc(path))
+
+    def test_rejects_unix_absolute_path_in_release_doc(self) -> None:
+        document = self.registry()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            path = root / "docs" / "baselines" / "audit.md"
+            path.parent.mkdir(parents=True)
+            markers = "\n".join(
+                f"history-ref:{entry['id']}@{entry['object_hash']}" for entry in document["entries"]
+            )
+            path.write_text(f"{markers}\nunsafe: (/tmp/private)\n", encoding="utf-8")
+            document["release_docs"] = ["docs/baselines/audit.md"]
+            for entry in document["entries"]:
+                entry["evidence_ref"] = "docs/baselines/audit.md"
+            with self.assertRaises(GATE.CitationError):
+                GATE.validate(document, root)
 
 
 if __name__ == "__main__":

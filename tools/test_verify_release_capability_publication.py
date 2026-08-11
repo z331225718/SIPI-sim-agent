@@ -18,7 +18,20 @@ SPEC.loader.exec_module(GATE)
 
 
 def manifest_for(publication: dict) -> list[dict]:
-    return [{"id": row["command_id"], "availability": row["product_surface"]} for row in publication["rows"]]
+    commands = []
+    for row in publication["rows"]:
+        availability = row["product_surface"]
+        commands.append({
+            "id": row["command_id"],
+            "route": row["command_id"].split("."),
+            "availability": availability,
+            "transport": "none",
+            "request_schema": None,
+            "response_schema": None,
+            "unavailable_reason": None if availability == "available" else "test_unavailable",
+            "nonclaim": "test_nonclaim",
+        })
+    return commands
 
 
 class PublicationTests(unittest.TestCase):
@@ -29,6 +42,23 @@ class PublicationTests(unittest.TestCase):
         publication = self.publication()
         GATE.validate(publication, manifest_for(publication), ROOT)
         self.assertEqual(GATE.render(publication), GATE.render(publication))
+
+    def test_accepts_only_the_expected_command_response_wrapper(self) -> None:
+        publication = self.publication()
+        body = {"schema": GATE.COMMAND_SCHEMA, "commands": manifest_for(publication)}
+        wrapper = {
+            "schema": "sipi.cli.response.v1",
+            "protocol": 1,
+            "command": "commands",
+            "request_id": None,
+            "status": "ok",
+            "result": body,
+            "diagnostic_count": 0,
+        }
+        self.assertEqual(GATE.command_manifest(wrapper), body["commands"])
+        wrapper["diagnostic_count"] = 1
+        with self.assertRaises(GATE.PublicationError):
+            GATE.command_manifest(wrapper)
 
     def test_rejects_command_drift_and_missing_coverage(self) -> None:
         publication = self.publication()
@@ -50,6 +80,36 @@ class PublicationTests(unittest.TestCase):
         publication["report_index"][0]["path"] = "C:/private/report.md"
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
+
+    def test_rejects_malformed_command_descriptors(self) -> None:
+        cases = [
+            ("missing_route", lambda command: command.pop("route")),
+            ("unknown_field", lambda command: command.update({"extra": True})),
+            ("bad_transport", lambda command: command.update({"transport": "file"})),
+            ("available_reason", lambda command: command.update({"unavailable_reason": "wrong"})),
+            ("non_string_schema", lambda command: command.update({"request_schema": 1})),
+            ("empty_nonclaim", lambda command: command.update({"nonclaim": ""})),
+        ]
+        for label, mutate in cases:
+            with self.subTest(label=label):
+                publication = self.publication()
+                manifest = manifest_for(publication)
+                mutate(manifest[0])
+                with self.assertRaises(GATE.PublicationError):
+                    GATE.validate(publication, manifest, ROOT)
+
+        publication = self.publication()
+        manifest = manifest_for(publication)
+        manifest[1]["route"] = manifest[0]["route"]
+        with self.assertRaises(GATE.PublicationError):
+            GATE.validate(publication, manifest, ROOT)
+
+        publication = self.publication()
+        manifest = manifest_for(publication)
+        unavailable = next(command for command in manifest if command["availability"] == "unavailable")
+        unavailable["unavailable_reason"] = None
+        with self.assertRaises(GATE.PublicationError):
+            GATE.validate(publication, manifest, ROOT)
 
 
 if __name__ == "__main__":

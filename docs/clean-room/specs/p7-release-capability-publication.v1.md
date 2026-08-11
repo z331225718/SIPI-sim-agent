@@ -10,6 +10,11 @@ present; it does not imply external acceptance or release certification.
 `blocked` rows require a stable blocker. All global publication states remain
 `release_ready: false` and `promotion_status: blocked`.
 
+The consumed command manifest has the exact v1 descriptor fields, unique
+stable ids and routes, approved transport values, and consistent availability
+and unavailable-reason fields. Missing or additional descriptor fields are
+rejected before the publication rows are bound.
+
 Only repository-relative references below `docs/baselines` are admitted. The
 publication contains no external asset paths or bytes, user paths, executable
 identities, waveform data, legal conclusion, or release approval.
