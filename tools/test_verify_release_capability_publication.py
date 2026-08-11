@@ -5,10 +5,14 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import os
 from pathlib import Path
+from shutil import which
+import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,6 +40,29 @@ def manifest_for(publication: dict) -> list[dict]:
     return commands
 
 
+def product_manifest() -> list[dict]:
+    cargo = os.environ.get("CARGO") or which("cargo")
+    if cargo is None:
+        suffix = ".exe" if os.name == "nt" else ""
+        candidate = Path(os.environ.get("CARGO_HOME", Path.home() / ".cargo")) / "bin" / f"cargo{suffix}"
+        if candidate.is_file():
+            cargo = str(candidate)
+    if cargo is None:
+        raise AssertionError("cargo executable is unavailable")
+    completed = subprocess.run(
+        [cargo, "run", "--locked", "-p", "sipi-cli", "--", "commands", "--json"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="strict",
+        timeout=120,
+    )
+    if completed.returncode != 0:
+        raise AssertionError(f"product command manifest failed: {completed.stderr}")
+    return GATE.command_manifest(json.loads(completed.stdout))
+
+
 class PublicationTests(unittest.TestCase):
     def publication(self) -> dict:
         return json.loads((ROOT / "docs" / "baselines" / "release-capability-publication.v1.yaml").read_text(encoding="utf-8"))
@@ -44,6 +71,10 @@ class PublicationTests(unittest.TestCase):
         publication = self.publication()
         GATE.validate(publication, manifest_for(publication), ROOT)
         self.assertEqual(GATE.render(publication), GATE.render(publication))
+
+    def test_current_publication_binds_the_actual_product_command_manifest(self) -> None:
+        publication = self.publication()
+        GATE.validate(publication, product_manifest(), ROOT)
 
     def test_accepts_only_the_expected_command_response_wrapper(self) -> None:
         publication = self.publication()
@@ -96,10 +127,21 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
-    def test_channel_cli_requires_current_candidate_evidence_without_claiming_general_support(self) -> None:
+    def test_channel_cli_requires_recorded_source_drift_without_claiming_general_support(self) -> None:
         publication = self.publication()
         channel = next(row for row in publication["rows"] if row["id"] == "channel")
-        channel["evidence_ids"].remove("channel-s2p-cli-current-external-compare-v3")
+        channel["blockers"].remove("current_external_compare_evidence_source_drift")
+        with self.assertRaises(GATE.PublicationError):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        channel = next(row for row in publication["rows"] if row["id"] == "channel")
+        channel["evidence_ids"].append("channel-s2p-cli-current-external-compare-v3")
+        with self.assertRaises(GATE.PublicationError):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+        publication = self.publication()
+        evidence = next(entry for entry in publication["report_index"] if entry["id"] == "channel-s2p-cli-current-external-compare-v3")
+        evidence["evidence_state"] = "specified"
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
@@ -108,11 +150,20 @@ class PublicationTests(unittest.TestCase):
         channel["acceptance_state"] = "accepted"
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
+
         publication = self.publication()
-        evidence = next(entry for entry in publication["report_index"] if entry["id"] == "channel-s2p-cli-current-external-compare-v3")
-        evidence["evidence_state"] = "specified"
-        with self.assertRaises(GATE.PublicationError):
-            GATE.validate(publication, manifest_for(publication), ROOT)
+        with patch.object(GATE, "verify_channel_cli_evidence", return_value={"valid": True}):
+            with self.assertRaisesRegex(GATE.PublicationError, "publication_channel_current_evidence_not_drifted"):
+                GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        with patch.object(
+            GATE,
+            "verify_channel_cli_evidence",
+            side_effect=GATE.ChannelEvidenceError("evidence_product_invalid"),
+        ):
+            with self.assertRaisesRegex(GATE.PublicationError, "publication_channel_external_evidence_invalid"):
+                GATE.validate(publication, manifest_for(publication), ROOT)
 
     def test_rejects_malformed_command_descriptors(self) -> None:
         cases = [

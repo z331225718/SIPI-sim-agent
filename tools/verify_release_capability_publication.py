@@ -232,14 +232,16 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
 
     channel = next((row for row in rows if row["id"] == "channel"), None)
     compare_id = "channel-s2p-cli-current-external-compare-v3"
+    source_drift_blocker = "current_external_compare_evidence_source_drift"
     if channel is None:
         raise PublicationError("publication_channel_row_missing")
     if (
         channel["acceptance_state"] != "specified"
         or channel["external_oracle"] is not True
-        or compare_id not in channel["evidence_ids"]
+        or compare_id in channel["evidence_ids"]
         or "caller_input_unattested" not in channel["blockers"]
         or "periodic_kernel_not_link_simulation" not in channel["blockers"]
+        or source_drift_blocker not in channel["blockers"]
     ):
         raise PublicationError("publication_channel_acceptance_binding_invalid")
     entry = index_by_id.get(compare_id)
@@ -252,8 +254,13 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
         raise PublicationError("publication_channel_acceptance_binding_invalid")
     try:
         verify_channel_cli_evidence(load_yaml(ROOT / entry["path"]))
-    except (ChannelEvidenceError, OSError, RuntimeError):
+    except ChannelEvidenceError as error:
+        if str(error) == "evidence_product_source_drift":
+            return
         raise PublicationError("publication_channel_external_evidence_invalid") from None
+    except (OSError, RuntimeError):
+        raise PublicationError("publication_channel_external_evidence_invalid") from None
+    raise PublicationError("publication_channel_current_evidence_not_drifted")
 
 
 def render(publication: dict[str, Any]) -> str:

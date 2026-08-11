@@ -31,10 +31,9 @@ class ChannelCliCurrentEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex((GATE.EvidenceError, CoreEvidenceError), "evidence_product_source_drift"):
             GATE_V2.verify_document(copy.deepcopy(GATE_V2._load(GATE_V2.EVIDENCE)))
 
-    def test_v3_evidence_binds_to_current_product_paths(self) -> None:
-        result = GATE_V3.verify_document(copy.deepcopy(GATE_V3._load(GATE_V3.EVIDENCE)))
-        self.assertTrue(result["valid"])
-        self.assertEqual(result["evidence_level"], "hash_only_attestation")
+    def test_v3_evidence_remains_drifted_after_contract_schema_changes(self) -> None:
+        with self.assertRaisesRegex((GATE.EvidenceError, CoreEvidenceError), "evidence_product_source_drift"):
+            GATE_V3.verify_document(copy.deepcopy(GATE_V3._load(GATE_V3.EVIDENCE)))
 
     def test_rejects_current_schema_and_source_drift(self) -> None:
         bad_schema = copy.deepcopy(GATE_V3._load(GATE_V3.EVIDENCE))
@@ -47,7 +46,7 @@ class ChannelCliCurrentEvidenceTests(unittest.TestCase):
         with self.assertRaises((GATE.EvidenceError, CoreEvidenceError)):
             GATE_V3.verify_document(bad_tree)
 
-    def test_requires_an_exact_current_candidate_report(self) -> None:
+    def test_current_source_drift_rejects_even_an_exact_historical_report(self) -> None:
         evidence = copy.deepcopy(GATE_V3._load(GATE_V3.EVIDENCE))
         product = evidence["product"]
         report = {
@@ -78,11 +77,7 @@ class ChannelCliCurrentEvidenceTests(unittest.TestCase):
             path = Path(directory) / "report.json"
             path.write_text(json.dumps(report, sort_keys=True), encoding="utf-8")
             evidence["external_report"]["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
-            self.assertTrue(GATE_V3.verify_document(evidence, path)["report_bound"])
-            report["product"]["source_commit"] = "0" * 40
-            path.write_text(json.dumps(report, sort_keys=True), encoding="utf-8")
-            evidence["external_report"]["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
-            with self.assertRaises((GATE.EvidenceError, CoreEvidenceError)):
+            with self.assertRaisesRegex((GATE.EvidenceError, CoreEvidenceError), "evidence_product_source_drift"):
                 GATE_V3.verify_document(evidence, path)
 
 
