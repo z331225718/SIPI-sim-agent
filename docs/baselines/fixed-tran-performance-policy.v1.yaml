@@ -1,0 +1,50 @@
+{
+  "schema": "sipi.fixed-tran-performance-policy.v1",
+  "status": "delegated_approved",
+  "policy_version": "p7-06a-delegated-1",
+  "delegated_approval": {
+    "owner": "project_owner_delegated_policy",
+    "approved_at_utc": "2026-08-11T03:33:14Z",
+    "approval_ref": "user-delegated-numeric-policy-2026-08-11",
+    "scope": "windows_x86_64_fixed_tran_rc_pulse_archive_candidate_only"
+  },
+  "baseline": {
+    "observation_sha256": "f6bcef3ee820919062018a6c3d37128260ca4cc28e8bb8c8867e3e98d060ae4f",
+    "p1_locked_build_report_sha256": "a17d68e504d5112b401aac970431e31460db67faecc975a19fe0d1bb6a9de1f7",
+    "identity": {
+      "commit": "a634582da67d058160ab550771199771acba3f2e",
+      "cargo_lock_sha256": "9aa2ad452831d420403a60c6ca17ff5393a7959c7328bc95893b145407b239e7",
+      "executable_sha256": "5239611e2426dee29a9000394e0229305fc2110832d1af61310645838f649d82"
+    },
+    "observed_medians": {
+      "wall_time_ns": 24848100,
+      "peak_working_set_bytes": 4259840
+    },
+    "evidence_ref": "docs/baselines/audits/2026-08-11-p7-fixed-tran-performance-policy.md"
+  },
+  "workload": {
+    "profile_id": "tran-rc-pulse-v1",
+    "request_schema": "sipi.tran.rc-pulse-request.v1",
+    "request_sha256": "c15d50c083cdb37e9e4ee8d095b29327638da4b1db04d06b1707b27a5256c859",
+    "platform": "windows-x86_64",
+    "executable_kind": "p7-admitted-archive-direct-installed-sipi-exe"
+  },
+  "measurement_protocol": {
+    "warmup_count": 3,
+    "measured_count": 10,
+    "wall_clock": "perf_counter_ns",
+    "peak_working_set": "GetProcessMemoryInfo.PeakWorkingSetSize"
+  },
+  "thresholds": {
+    "median_wall_time_ns_max": 30000000,
+    "median_peak_working_set_bytes_max": 5000000
+  },
+  "statistical_rule": "median_of_exactly_ten_measured_runs_only",
+  "over_limit_disposition": "block_release_candidate",
+  "non_claims": [
+    "not_a_hard_cpu_rss_or_oom_limit",
+    "not_a_cross_machine_benchmark",
+    "not_a_service_gui_or_throughput_policy",
+    "not_a_final_release_approval"
+  ]
+}

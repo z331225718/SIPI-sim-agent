@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 681de7b82d6b7fbed81c05aba540fd2a670823deeddbe5def84ec4a74735614f
+  tracked_paths_sha256: a96787fd5cb82631d8adea19f48566caf2519b1bb836b6dfedd55506b7a45259
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1133,6 +1133,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-11-p7-fixed-tran-performance-policy.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-11-p7-isolated-install.md:
       rule: historical-docs
       class: migration_only
@@ -1272,6 +1278,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/external-history-citations.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/fixed-tran-performance-policy.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -1926,6 +1938,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p7-external-history-citations.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p7-fixed-tran-performance-policy.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -6695,6 +6713,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p7_fixed_tran_performance_policy.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p7_isolated_install.py:
       rule: migration-tools
       class: migration_only
@@ -7050,6 +7074,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p5_agent_com_git_object_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p7_fixed_tran_performance_policy.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
