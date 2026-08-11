@@ -3,27 +3,31 @@
 use std::{
     env,
     io::{self, Cursor, Read},
+    num::NonZeroUsize,
     path::Path,
     process,
     time::Duration,
 };
 
 use sha2::{Digest, Sha256};
+use sipi_channel::{ChannelLimitsV1, resolve_matched_kernel_v1};
 use sipi_contracts::{
-    ARTIFACT_REPORT_REQUEST_SCHEMA, CAPABILITIES_SCHEMA, CapabilityCatalogV1,
+    ARTIFACT_REPORT_REQUEST_SCHEMA, CAPABILITIES_SCHEMA,
+    CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA, CapabilityCatalogV1,
     FIXED_PROJECT_RUN_REQUEST_SCHEMA, IBIS_DC_EVALUATE_REQUEST_SCHEMA,
     IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA, LINK_PLAN_SCHEMA, PLANNED_DOMAINS, RULE_LEDGER_V1,
-    artifact_report_request_schema_json, capability_schema_json, deterministic_json,
+    artifact_report_request_schema_json, capability_schema_json,
+    channel_matched_two_port_kernel_run_request_schema_json, deterministic_json,
     fixed_project_run_request_schema_json, ibis_dc_evaluate_request_schema_json,
     ibis_inspect_request_schema_json, ibis_quasi_static_evaluate_request_schema_json,
     link_causal_fir_request_schema_json, link_plan_schema_json, parse_artifact_report_request_v1,
-    parse_fixed_project_run_request_v1, parse_ibis_dc_evaluate_request_v1,
-    parse_ibis_inspect_request_v1, parse_ibis_quasi_static_evaluate_request_v1,
-    parse_link_causal_fir_request_v1, parse_rx_load_differential_rc_evaluate_request_v1,
-    parse_tran_rc_pulse_request_v1, product_example_request_json_v1, project_plan_schema_json,
-    receiver_input_schema_json, receiver_semantics_schema_json,
-    rx_load_differential_rc_evaluate_request_schema_json, tran_rc_pulse_request_schema_json,
-    validate_request_v1, validation_request_schema_json,
+    parse_channel_matched_two_port_kernel_run_request_v1, parse_fixed_project_run_request_v1,
+    parse_ibis_dc_evaluate_request_v1, parse_ibis_inspect_request_v1,
+    parse_ibis_quasi_static_evaluate_request_v1, parse_link_causal_fir_request_v1,
+    parse_rx_load_differential_rc_evaluate_request_v1, parse_tran_rc_pulse_request_v1,
+    product_example_request_json_v1, project_plan_schema_json, receiver_input_schema_json,
+    receiver_semantics_schema_json, rx_load_differential_rc_evaluate_request_schema_json,
+    tran_rc_pulse_request_schema_json, validate_request_v1, validation_request_schema_json,
 };
 use sipi_ibis::{
     DcClampCornerV1, DcClampProbeV1, IbisDcEvaluateServiceV1, IbisInspectServiceV1,
@@ -39,6 +43,10 @@ use sipi_runtime::{CacheKeyBuilder, ResourceCost, RunId, RunPolicy, Runtime};
 use sipi_rx_load::{
     DIFFERENTIAL_RESISTANCE_OHMS, DifferentialRcLoadProbeV1, LEG_CAPACITANCE_FARADS,
     evaluate_selected_differential_rc_load_v1,
+};
+use sipi_touchstone::{
+    TouchstoneParseLimitsV1, admit_matched_two_port_spectrum_v1,
+    parse_touchstone_hz_s_ri_50_two_port_v1,
 };
 use sipi_tran::{RcPulseTransientV1, simulate_rc_pulse_with_context};
 use sipi_types::AxisView;
@@ -353,12 +361,12 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
     CommandDescriptorV1 {
         id: "channel.run",
         route: &["channel", "run"],
-        availability: CommandAvailabilityV1::Unavailable,
-        transport: "none",
-        request_schema: None,
-        response_schema: None,
-        unavailable_reason: Some("channel_profile_not_admitted"),
-        nonclaim: "no_s_parameter_or_channel_resolver",
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some(CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA),
+        response_schema: Some("sipi.channel.matched-two-port-kernel-run-result.v1"),
+        unavailable_reason: None,
+        nonclaim: "matched_s21_periodic_kernel_only",
     },
     CommandDescriptorV1 {
         id: "ami.run",
@@ -569,6 +577,15 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
     CommandProtocolProfileV1 {
+        command_id: "channel.run",
+        example_id: Some("product-owned-minimal-v1"),
+        required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: Some("channel.matched-two-port-kernel.v1"),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
+    CommandProtocolProfileV1 {
         command_id: "project.run",
         example_id: Some("product-owned-minimal-v1"),
         required_options: &["--artifact-root", "--artifact-id"],
@@ -609,6 +626,8 @@ fn main() {
         ProcessAdapter::ibis_quasi_static_evaluate_stdin()
     } else if arguments == ["rx-load", "differential-rc-evaluate", "--stdin"] {
         ProcessAdapter::rx_load_differential_rc_evaluate_stdin()
+    } else if arguments == ["channel", "run", "--stdin"] {
+        ProcessAdapter::channel_run_stdin()
     } else if arguments == ["report", "inspect", "--stdin"] {
         ProcessAdapter::report_inspect_stdin()
     } else if let [command, action, stdin, root, artifact_root, id, artifact_id] = &arguments[..]
@@ -688,6 +707,18 @@ impl ProcessAdapter {
             Err(_) => return error(3, "contract_rejected", "Link request was rejected"),
         };
         run_causal_fir_link(artifact_root, artifact_id, &request)
+    }
+
+    fn channel_run_stdin() -> Response {
+        let input = match read_stdin_request() {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        let request = match parse_channel_matched_two_port_kernel_run_request_v1(&input) {
+            Ok(request) => request,
+            Err(_) => return error(3, "contract_rejected", "channel request was rejected"),
+        };
+        run_matched_channel_kernel(request.text())
     }
 
     fn project_run_stdin(artifact_root: &str, artifact_id: &str) -> Response {
@@ -1168,6 +1199,48 @@ fn run_ibis_inspect(text: &str) -> Response {
     }
 }
 
+fn run_matched_channel_kernel(text: &str) -> Response {
+    const MAXIMUM_ONE_SIDED_SAMPLES: usize = 201;
+    let limits = TouchstoneParseLimitsV1::new(
+        NonZeroUsize::new(1_048_576).expect("nonzero input limit"),
+        NonZeroUsize::new(65_536).expect("nonzero line limit"),
+        NonZeroUsize::new(MAXIMUM_ONE_SIDED_SAMPLES).expect("nonzero record limit"),
+    );
+    let parsed = match parse_touchstone_hz_s_ri_50_two_port_v1(text.as_bytes(), limits) {
+        Ok(parsed) => parsed,
+        Err(_) => return error(3, "contract_rejected", "channel text was rejected"),
+    };
+    let spectrum = match admit_matched_two_port_spectrum_v1(&parsed) {
+        Ok(spectrum) => spectrum,
+        Err(_) => return error(3, "contract_rejected", "channel spectrum was rejected"),
+    };
+    let kernel = match resolve_matched_kernel_v1(
+        &spectrum,
+        ChannelLimitsV1::new(
+            NonZeroUsize::new(MAXIMUM_ONE_SIDED_SAMPLES).expect("nonzero kernel limit"),
+        ),
+    ) {
+        Ok(kernel) => kernel,
+        Err(_) => return error(3, "contract_rejected", "channel kernel was rejected"),
+    };
+    let gain = kernel
+        .gain()
+        .iter()
+        .map(|value| value.get().to_string())
+        .collect::<Vec<_>>()
+        .join(",");
+    success(format!(
+        "{{\"schema\":\"sipi.channel.matched-two-port-kernel-run-result.v1\",\"input_byte_length\":{},\"input_sha256\":\"{}\",\"one_sided_sample_count\":{},\"frequency_step_hz\":{},\"reference_impedance_ohms\":{},\"kernel_sample_count\":{},\"sample_interval_seconds\":{},\"gain_v_per_v\":[{gain}],\"evaluation_scope\":\"matched_s21_periodic_kernel_only\",\"external_profile_acceptance\":\"caller_input_unattested\"}}",
+        text.len(),
+        sha256_hex(text.as_bytes()),
+        spectrum.sample_count(),
+        spectrum.frequency_step().get(),
+        spectrum.reference_impedance().get(),
+        kernel.gain().len(),
+        kernel.sample_interval().get(),
+    ))
+}
+
 fn run_ibis_dc_evaluate(request: &sipi_contracts::IbisDcEvaluateRequestV1) -> Response {
     let limits = match ParseLimitsV1::try_new(1_048_576, 65_536, 16_384, 16_384) {
         Ok(limits) => limits,
@@ -1439,6 +1512,7 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["rx-load", "differential-rc-evaluate"]
             | ["tran", "run"]
             | ["link", "run"]
+            | ["channel", "run"]
             | ["project", "run"]
             | ["report", "inspect"]
     )
@@ -1508,6 +1582,8 @@ fn schema_bytes(id: &str) -> Result<Option<Vec<u8>>, sipi_contracts::ContractErr
         link_plan_schema_json().map(Some)
     } else if id == sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA {
         link_causal_fir_request_schema_json().map(Some)
+    } else if id == CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA {
+        channel_matched_two_port_kernel_run_request_schema_json().map(Some)
     } else if id == sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA {
         ibis_inspect_request_schema_json().map(Some)
     } else if id == IBIS_DC_EVALUATE_REQUEST_SCHEMA {
@@ -1783,6 +1859,11 @@ impl CommandService {
                 "unsupported",
                 "Link requires the exact run --stdin artifact command",
             ),
+            [command, ..] if command == "channel" => error(
+                4,
+                "unsupported",
+                "Channel requires the exact run --stdin command",
+            ),
             [command, ..] if command == "project" => error(
                 4,
                 "unsupported",
@@ -1866,8 +1947,8 @@ fn capabilities_json() -> String {
         .map(|domain| {
             if *domain == "tran" && manifest_available("tran.run") {
                 "{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"}".to_owned()
-            } else if *domain == "channel" && manifest_available("link.run") {
-                "{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"causal_fir_link_only\"}".to_owned()
+            } else if *domain == "channel" && manifest_available("channel.run") {
+                "{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"matched_s21_periodic_kernel_only\"}".to_owned()
             } else {
                 format!(
                     "{{\"domain\":\"{domain}\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}}"
@@ -1896,7 +1977,7 @@ fn doctor_json() -> String {
 
 fn schema_list_json() -> String {
     format!(
-        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"]}}",
+        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"]}}",
         IBIS_DC_EVALUATE_REQUEST_SCHEMA,
         IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA,
         sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA,
@@ -1940,6 +2021,7 @@ fn validate_self(schema: Option<&str>) -> Response {
     if schema.is_some_and(|id| {
         id != CAPABILITIES_SCHEMA
             && id != ARTIFACT_REPORT_REQUEST_SCHEMA
+            && id != CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA
             && id != sipi_contracts::VALIDATION_REQUEST_SCHEMA
             && id != sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA
             && id != sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA
@@ -1966,6 +2048,7 @@ fn validate_self(schema: Option<&str>) -> Response {
         && !RULE_LEDGER_V1.is_empty()
         && validation_request_schema_json().is_ok()
         && artifact_report_request_schema_json().is_ok()
+        && channel_matched_two_port_kernel_run_request_schema_json().is_ok()
         && tran_rc_pulse_request_schema_json().is_ok()
         && ibis_inspect_request_schema_json().is_ok()
         && ibis_dc_evaluate_request_schema_json().is_ok()
@@ -2025,7 +2108,7 @@ mod tests {
     }
 
     #[test]
-    fn capability_inventory_exposes_only_the_fixed_tran_and_causal_fir_profiles() {
+    fn capability_inventory_exposes_the_bounded_matched_channel_kernel() {
         let response = dispatch(&args(&["capabilities", "--json"]));
 
         assert_eq!(response.code, 0);
@@ -2033,7 +2116,7 @@ mod tests {
         assert_eq!(
             response.stdout.as_deref(),
             Some(
-                "{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"},{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"causal_fir_link_only\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]}"
+                "{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"},{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"matched_s21_periodic_kernel_only\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]}"
             )
         );
     }
@@ -2054,7 +2137,6 @@ mod tests {
         assert_eq!(commands_response.stdout.as_deref(), Some(manifest.as_str()));
 
         for command in [
-            ["channel", "run"].as_slice(),
             ["ami", "run"].as_slice(),
             ["com", "run"].as_slice(),
             ["project", "validate"].as_slice(),
@@ -2083,6 +2165,7 @@ mod tests {
             "ibis.dc-evaluate",
             "ibis.quasi-static-evaluate",
             "rx-load.differential-rc-evaluate",
+            "channel.run",
             "tran.run",
             "link.run",
             "project.run",
@@ -2108,10 +2191,6 @@ mod tests {
         assert!(catalog.contains("\"pointer\":\"/artifact_root\""));
         assert!(catalog.contains("\"role\":\"caller_owned_artifact_root\""));
         assert_eq!(
-            dispatch(&args(&["example", "channel.run", "--json"])).code,
-            4
-        );
-        assert_eq!(
             dispatch(&args(&["example", "report.inspect", "--json"])).code,
             4
         );
@@ -2129,6 +2208,11 @@ mod tests {
             .expect("IBIS example")
             .expect("registered IBIS example");
         assert!(parse_ibis_inspect_request_v1(&ibis).is_ok());
+
+        let channel = product_example_request_json_v1("channel.run")
+            .expect("channel example")
+            .expect("registered channel example");
+        assert!(parse_channel_matched_two_port_kernel_run_request_v1(&channel).is_ok());
 
         let ibis_dc = product_example_request_json_v1("ibis.dc-evaluate")
             .expect("IBIS DC example")
@@ -2159,10 +2243,22 @@ mod tests {
             .expect("project example")
             .expect("registered project example");
         assert!(parse_fixed_project_run_request_v1(&project).is_ok());
-        assert!(
-            product_example_request_json_v1("channel.run")
-                .expect("unknown example lookup")
-                .is_none()
+    }
+
+    #[test]
+    fn channel_kernel_route_is_bounded_and_does_not_claim_link_acceptance() {
+        let response = run_matched_channel_kernel(
+            "# Hz S RI R 50.0\n0 0 0 1 0 0 0 0 0\n1000000 0 0 1 0 0 0 0 0\n",
+        );
+        assert_eq!(response.code, 0);
+        let body = response.stdout.expect("channel response");
+        assert!(body.contains("sipi.channel.matched-two-port-kernel-run-result.v1"));
+        assert!(body.contains("\"gain_v_per_v\":[1,0]"));
+        assert!(body.contains("\"evaluation_scope\":\"matched_s21_periodic_kernel_only\""));
+        assert!(body.contains("\"external_profile_acceptance\":\"caller_input_unattested\""));
+        assert_eq!(
+            run_matched_channel_kernel("# Hz S MA R 50.0\n0 0 0 1 0 0 0 0 0\n").code,
+            3
         );
     }
 
@@ -2260,7 +2356,7 @@ mod tests {
     fn schema_list_uses_the_schema_inventory_order() {
         assert_eq!(
             schema_list_json(),
-            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
+            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
         );
     }
 

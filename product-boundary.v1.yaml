@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 0da269914504e10af2e4ae37d95565e8d7b6d558ce533fed72529e230622c9fa
+  tracked_paths_sha256: 438937df697ad27c5d3e0c9d4eeec0fcc744b9345dfb38975f26f25f2b000fe8
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -228,6 +228,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-contracts/schemas/sipi.capabilities.v1.schema.json:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-contracts/schemas/sipi.channel.matched-two-port-kernel-run-request.v1.schema.json:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1013,6 +1019,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-11-p3a-matched-channel-cli-run.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-11-p3a-touchstone-parser.md:
       rule: historical-docs
       class: migration_only
@@ -1746,6 +1758,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p2-tran-rc-pulse-semantic-contract.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3a-matched-channel-cli-run.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

@@ -118,7 +118,7 @@ fn capabilities_are_machine_readable_and_uncertified() {
     assert!(output.status.success());
     assert_eq!(
         String::from_utf8(output.stdout).expect("UTF-8 stdout"),
-        "{\"schema\":\"sipi.cli.response.v1\",\"protocol\":1,\"command\":\"capabilities\",\"request_id\":null,\"status\":\"ok\",\"result\":{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"},{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"causal_fir_link_only\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]},\"diagnostic_count\":0}\n"
+        "{\"schema\":\"sipi.cli.response.v1\",\"protocol\":1,\"command\":\"capabilities\",\"request_id\":null,\"status\":\"ok\",\"result\":{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_profile_only\"},{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"matched_s21_periodic_kernel_only\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]},\"diagnostic_count\":0}\n"
     );
     assert!(output.stderr.is_empty());
 }
@@ -154,6 +154,10 @@ fn protocol_catalog_and_product_examples_are_machine_readable() {
         ("tran.run", "sipi.tran.rc-pulse-request.v1"),
         ("link.run", "sipi.link.causal-fir-request.v1"),
         (
+            "channel.run",
+            "sipi.channel.matched-two-port-kernel-run-request.v1",
+        ),
+        (
             "project.run",
             "sipi.project.fixed-tran-causal-fir-run-request.v1",
         ),
@@ -168,17 +172,6 @@ fn protocol_catalog_and_product_examples_are_machine_readable() {
         assert!(example_stdout.contains(request_schema));
         assert!(example.stderr.is_empty());
     }
-
-    let unavailable = sipi()
-        .args(["example", "channel.run", "--json"])
-        .output()
-        .expect("run rejected sipi example");
-    assert_eq!(unavailable.status.code(), Some(4));
-    assert!(
-        String::from_utf8(unavailable.stderr)
-            .expect("UTF-8 stderr")
-            .contains("example_not_applicable")
-    );
 
     let missing_id = sipi()
         .args(["example", "--json"])
@@ -360,6 +353,63 @@ fn ibis_inspect_stdin_reports_structure_without_electrical_claims() {
         .output()
         .expect("run rejected command");
     assert_eq!(rejected.status.code(), Some(4));
+}
+
+#[test]
+fn channel_run_stdin_resolves_only_the_bounded_matched_periodic_kernel() {
+    let request = br##"{"schema":"sipi.channel.matched-two-port-kernel-run-request.v1","source":{"encoding":"utf-8","text":"# Hz S RI R 50.0\n0 0 0 1 0 0 0 0 0\n1000000 0 0 1 0 0 0 0 0\n"}}"##;
+    let mut child = sipi()
+        .args(["channel", "run", "--stdin"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start sipi");
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(request)
+        .expect("write request");
+    let output = child.wait_with_output().expect("wait sipi");
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("UTF-8 stdout");
+    assert!(stdout.contains("sipi.channel.matched-two-port-kernel-run-result.v1"));
+    assert!(stdout.contains("\"gain_v_per_v\":[1,0]"));
+    assert!(stdout.contains("\"evaluation_scope\":\"matched_s21_periodic_kernel_only\""));
+    assert!(stdout.contains("\"external_profile_acceptance\":\"caller_input_unattested\""));
+    assert!(output.stderr.is_empty());
+
+    let mut rejected = sipi()
+        .args(["channel", "run", "--stdin"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start rejected sipi");
+    let mut rejected_stdin = rejected.stdin.take().expect("stdin");
+    rejected_stdin
+        .write_all(br##"{"schema":"sipi.channel.matched-two-port-kernel-run-request.v1","source":{"encoding":"utf-8","text":"# Hz S MA R 50.0\n"}}"##)
+        .expect("write rejected request");
+    drop(rejected_stdin);
+    let output = rejected.wait_with_output().expect("wait rejected sipi");
+    assert_eq!(output.status.code(), Some(3));
+    assert!(
+        String::from_utf8(output.stderr)
+            .expect("stderr")
+            .contains("contract_rejected")
+    );
+
+    let unsupported = sipi()
+        .args(["channel", "run"])
+        .output()
+        .expect("run incomplete channel command");
+    assert_eq!(unsupported.status.code(), Some(4));
+    let stdout = String::from_utf8(unsupported.stdout).expect("UTF-8 stdout");
+    assert!(stdout.contains("\"status\":\"unsupported\""));
+    let stderr = String::from_utf8(unsupported.stderr).expect("UTF-8 stderr");
+    assert!(stderr.contains("\"code\":\"unsupported\""));
+    assert!(stderr.contains("\"rule_id\":\"cli.command-shape.v1\""));
 }
 
 #[test]

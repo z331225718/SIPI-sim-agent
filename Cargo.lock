@@ -341,12 +341,14 @@ version = "0.1.0"
 dependencies = [
  "sha2",
  "sipi-artifacts",
+ "sipi-channel",
  "sipi-contracts",
  "sipi-ibis",
  "sipi-link",
  "sipi-pipeline",
  "sipi-runtime",
  "sipi-rx-load",
+ "sipi-touchstone",
  "sipi-tran",
  "sipi-types",
 ]

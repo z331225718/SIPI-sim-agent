@@ -20,6 +20,8 @@ pub const VALIDATION_REQUEST_SCHEMA: &str = "sipi.validation-request.v1";
 pub const TRAN_RC_PULSE_REQUEST_SCHEMA: &str = "sipi.tran.rc-pulse-request.v1";
 pub const LINK_PLAN_SCHEMA: &str = "sipi.link-plan.v1";
 pub const LINK_CAUSAL_FIR_REQUEST_SCHEMA: &str = "sipi.link.causal-fir-request.v1";
+pub const CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA: &str =
+    "sipi.channel.matched-two-port-kernel-run-request.v1";
 pub const IBIS_INSPECT_REQUEST_SCHEMA: &str = "sipi.ibis.inspect.request.v1";
 pub const IBIS_DC_EVALUATE_REQUEST_SCHEMA: &str = "sipi.ibis.input-typ-dc-evaluate.request.v1";
 pub const IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA: &str =
@@ -39,6 +41,7 @@ pub enum ContractError {
     Type(TypeError),
     Version,
     Link(LinkContractError),
+    ChannelMatchedKernel(ChannelMatchedKernelContractError),
     Receiver(ReceiverContractError),
     ReceiverSemantics(ReceiverSemanticContractError),
     IbisInspect(IbisInspectContractError),
@@ -55,6 +58,7 @@ impl fmt::Display for ContractError {
             Self::Type(error) => error.fmt(formatter),
             Self::Version => write!(formatter, "unsupported contract version"),
             Self::Link(error) => error.fmt(formatter),
+            Self::ChannelMatchedKernel(error) => error.fmt(formatter),
             Self::Receiver(error) => error.fmt(formatter),
             Self::ReceiverSemantics(error) => error.fmt(formatter),
             Self::IbisInspect(error) => error.fmt(formatter),
@@ -77,6 +81,12 @@ impl From<TypeError> for ContractError {
 impl From<LinkContractError> for ContractError {
     fn from(value: LinkContractError) -> Self {
         Self::Link(value)
+    }
+}
+
+impl From<ChannelMatchedKernelContractError> for ContractError {
+    fn from(value: ChannelMatchedKernelContractError) -> Self {
+        Self::ChannelMatchedKernel(value)
     }
 }
 
@@ -155,6 +165,24 @@ impl fmt::Display for IbisInspectContractError {
 }
 
 impl Error for IbisInspectContractError {}
+
+/// Stable request-boundary rejections for the matched two-port kernel route.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ChannelMatchedKernelContractError {
+    UnsupportedEncoding,
+    EmptyText,
+}
+
+impl fmt::Display for ChannelMatchedKernelContractError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            formatter,
+            "invalid matched channel kernel request: {self:?}"
+        )
+    }
+}
+
+impl Error for ChannelMatchedKernelContractError {}
 
 /// Stable request-boundary rejections for the selected Input/TYP DC route.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1182,6 +1210,62 @@ pub fn parse_ibis_inspect_request_v1(input: &[u8]) -> Result<IbisInspectRequestV
         .try_into()
 }
 
+/// A product-owned request for a bounded inline Touchstone-derived kernel.
+/// It deliberately excludes files, URLs, assets, terminations, and FFT options.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireChannelMatchedTwoPortKernelRunRequestV1 {
+    pub schema: String,
+    pub source: WireChannelTouchstoneSourceV1,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireChannelTouchstoneSourceV1 {
+    pub encoding: String,
+    pub text: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ChannelMatchedTwoPortKernelRunRequestV1 {
+    text: String,
+}
+
+impl ChannelMatchedTwoPortKernelRunRequestV1 {
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+}
+
+impl TryFrom<WireChannelMatchedTwoPortKernelRunRequestV1>
+    for ChannelMatchedTwoPortKernelRunRequestV1
+{
+    type Error = ContractError;
+
+    fn try_from(value: WireChannelMatchedTwoPortKernelRunRequestV1) -> Result<Self, Self::Error> {
+        if value.schema != CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA {
+            return Err(ContractError::Version);
+        }
+        if value.source.encoding != "utf-8" {
+            return Err(ChannelMatchedKernelContractError::UnsupportedEncoding.into());
+        }
+        if value.source.text.is_empty() {
+            return Err(ChannelMatchedKernelContractError::EmptyText.into());
+        }
+        Ok(Self {
+            text: value.source.text,
+        })
+    }
+}
+
+pub fn parse_channel_matched_two_port_kernel_run_request_v1(
+    input: &[u8],
+) -> Result<ChannelMatchedTwoPortKernelRunRequestV1, ContractError> {
+    serde_json::from_slice::<WireChannelMatchedTwoPortKernelRunRequestV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
 /// A product-owned Input/TYP static clamp request. The text is caller-provided
 /// UTF-8; it has no file, URL, asset identity, or external acceptance surface.
 #[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
@@ -1995,6 +2079,14 @@ pub fn product_example_request_json_v1(command_id: &str) -> Result<Option<Vec<u8
             },
         })
         .map(Some),
+        "channel.run" => deterministic_json(&WireChannelMatchedTwoPortKernelRunRequestV1 {
+            schema: CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA.to_owned(),
+            source: WireChannelTouchstoneSourceV1 {
+                encoding: "utf-8".to_owned(),
+                text: "! product-owned matched through\n# Hz S RI R 50.0\n0 0 0 1 0 1 0 0 0\n1000000 0 0 1 0 1 0 0 0\n".to_owned(),
+            },
+        })
+        .map(Some),
         "ibis.inspect" => deterministic_json(&WireIbisInspectRequestV1 {
             schema: IBIS_INSPECT_REQUEST_SCHEMA.to_owned(),
             source: WireIbisInspectSourceV1 {
@@ -2117,6 +2209,10 @@ pub fn link_plan_schema_json() -> Result<Vec<u8>, ContractError> {
 
 pub fn link_causal_fir_request_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireLinkCausalFirRequestV1))
+}
+
+pub fn channel_matched_two_port_kernel_run_request_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(WireChannelMatchedTwoPortKernelRunRequestV1))
 }
 
 pub fn ibis_inspect_request_schema_json() -> Result<Vec<u8>, ContractError> {
@@ -2467,6 +2563,29 @@ mod tests {
     }
 
     #[test]
+    fn channel_matched_kernel_request_is_inline_utf8_text_only_and_strict() {
+        let valid = br##"{"schema":"sipi.channel.matched-two-port-kernel-run-request.v1","source":{"encoding":"utf-8","text":"# Hz S RI R 50.0\n0 0 0 1 0 0 0 0 0\n1 0 0 1 0 0 0 0 0\n"}}"##;
+        assert!(parse_channel_matched_two_port_kernel_run_request_v1(valid).is_ok());
+        assert_eq!(
+            parse_channel_matched_two_port_kernel_run_request_v1(
+                br#"{"schema":"sipi.channel.matched-two-port-kernel-run-request.v1","source":{"encoding":"binary","text":"x"}}"#
+            ),
+            Err(ContractError::ChannelMatchedKernel(
+                ChannelMatchedKernelContractError::UnsupportedEncoding
+            ))
+        );
+        assert!(parse_channel_matched_two_port_kernel_run_request_v1(
+            br#"{"schema":"sipi.channel.matched-two-port-kernel-run-request.v1","source":{"encoding":"utf-8","text":"x","file":"sample.s2p"}}"#
+        )
+        .is_err());
+        assert!(
+            channel_matched_two_port_kernel_run_request_schema_json()
+                .expect("schema")
+                .starts_with(b"{")
+        );
+    }
+
+    #[test]
     fn ibis_dc_evaluate_request_is_typical_only_and_strict() {
         let valid = br#"{"schema":"sipi.ibis.input-typ-dc-evaluate.request.v1","source":{"encoding":"utf-8","text":"[IBIS Ver] 7.1\n"},"selection":{"ibis_version":"7.1","model_selector":"product_input","corner":"typical"},"probe":{"gnd_clamp_drive_volts":0.0,"power_clamp_drive_volts":1.0}}"#;
         let request = parse_ibis_dc_evaluate_request_v1(valid).expect("valid request");
@@ -2642,6 +2761,15 @@ mod tests {
             ibis_inspect_request_schema_json().expect("schema"),
             &baseline[..baseline.len() - 1]
         );
+    }
+
+    #[test]
+    fn tracked_channel_matched_kernel_request_schema_baseline_is_exactly_the_registered_export() {
+        let baseline = include_bytes!(
+            "../schemas/sipi.channel.matched-two-port-kernel-run-request.v1.schema.json"
+        );
+        let exported = channel_matched_two_port_kernel_run_request_schema_json().expect("schema");
+        assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
     }
 
     fn required_receiver_wire() -> WireReceiverInputV1 {

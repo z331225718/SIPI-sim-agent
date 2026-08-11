@@ -47,6 +47,12 @@ impl MatchedTwoPortSpectrumV1 {
     pub fn sample_count(&self) -> usize {
         self.samples.len()
     }
+    pub fn reference_impedance(&self) -> Ohms {
+        self.reference_impedance
+    }
+    pub fn frequency_step(&self) -> Hertz {
+        self.frequency_step
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

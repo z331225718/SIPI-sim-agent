@@ -361,6 +361,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3a-s2p-matched-channel-spec-v1]
+  - id: p3a-matched-channel-cli-run-spec-v1
+    kind: independent_spec
+    content_sha256: 8a4c9521937fd4fab7e2fb4d15c45504eaf0c7652016e48989113094f03efce4
+    provenance:
+      source_ref: docs/clean-room/specs/p3a-matched-channel-cli-run.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p3a-s2p-matched-channel-spec-v1, p3a-touchstone-two-port-parser-spec-v1, p1-contracts-foundation-spec-v1, p1-cli-process-contract-spec-v1]
   - id: p3a-s2p-matched-channel-acceptance-spec-v1
     kind: independent_spec
     content_sha256: 5bb8f3971fdafb25e34f93469de74eea9f2c3d71065ecbc36a683ab10e472c71
@@ -938,6 +946,15 @@ scopes:
       implementer: [p3a-touchstone-two-port-parser-spec-v1]
       comparator: []
       auditor: [p3a-touchstone-two-port-parser-spec-v1]
+  - id: p3a-matched-channel-cli-run-v1
+    paths: [Cargo.toml, Cargo.lock, crates/sipi-channel/src/lib.rs, crates/sipi-touchstone/**, crates/sipi-contracts/src/lib.rs, crates/sipi-contracts/schemas/schema-inventory.v1.json, crates/sipi-contracts/schemas/sipi.channel.matched-two-port-kernel-run-request.v1.schema.json, crates/sipi-cli/Cargo.toml, crates/sipi-cli/src/main.rs, crates/sipi-cli/tests/cli.rs, docs/clean-room/specs/p3a-matched-channel-cli-run.v1.md]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3a-matched-channel-cli-run-spec-v1]
+      implementer: [p3a-matched-channel-cli-run-spec-v1]
+      comparator: []
+      auditor: [p3a-matched-channel-cli-run-spec-v1]
   - id: p3a-s2p-matched-channel-comparator-v1
     paths: [docs/clean-room/specs/p3a-s2p-matched-channel-comparator.v1.md, tools/compare_channel_s2p_matched.py, tools/test_compare_channel_s2p_matched.py]
     state: planned

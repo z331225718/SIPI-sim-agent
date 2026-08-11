@@ -13,6 +13,7 @@ path = "src/main.rs"
 
 [dependencies]
 sipi-artifacts = { path = "../sipi-artifacts" }
+sipi-channel = { path = "../sipi-channel" }
 sipi-contracts = { path = "../sipi-contracts" }
 sipi-ibis = { path = "../sipi-ibis" }
 sipi-link = { path = "../sipi-link" }
@@ -20,6 +21,7 @@ sipi-pipeline = { path = "../sipi-pipeline" }
 sipi-runtime = { path = "../sipi-runtime" }
 sipi-rx-load = { path = "../sipi-rx-load" }
 sipi-tran = { path = "../sipi-tran" }
+sipi-touchstone = { path = "../sipi-touchstone" }
 sipi-types = { path = "../sipi-types" }
 sha2 = "0.10"
 
