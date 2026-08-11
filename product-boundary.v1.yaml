@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: a412555e8917ee5e29af60a1462944439f4fc06df6c842cb1a5d4f4a0c43d679
+  tracked_paths_sha256: c5d775b0e05cc5b037ef39ac82c0d358fcf2478c99a8be9a2648e84852de7c3e
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1127,6 +1127,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-11-p7-release-archive-admission.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-11-p7-release-composition.md:
       rule: historical-docs
       class: migration_only
@@ -1878,6 +1884,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p6-tran-to-link-edge.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p7-release-archive-admission.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -6623,6 +6635,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p7_release_archive.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p7_release_composition.py:
       rule: migration-tools
       class: migration_only
@@ -6954,6 +6972,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p5_agent_com_git_object_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p7_release_archive.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
