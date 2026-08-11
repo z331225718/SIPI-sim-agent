@@ -1,0 +1,40 @@
+{
+  "schema": "sipi.release-capability-publication.v1",
+  "publication_scope": "pre_release_evidence",
+  "release_ready": false,
+  "promotion_status": "blocked",
+  "global_blockers": ["license_notice_pending", "fresh_machine_evidence_missing", "uncertified_domain_profiles"],
+  "non_claims": ["not_release_notes", "not_legal_clearance", "not_fresh_machine_certification", "not_profile_certification"],
+  "rows": [
+    {"id":"version","domain":"foundation","product_surface":"available","command_id":"version","acceptance_state":"not_evaluated","platform":"windows_x86_64","evidence_ids":["p7-isolated-install"],"external_oracle":false,"blockers":["release_promotion_blocked"],"non_claims":["static_identity_only"]},
+    {"id":"doctor","domain":"foundation","product_surface":"available","command_id":"doctor","acceptance_state":"not_evaluated","platform":"windows_x86_64","evidence_ids":["p7-isolated-install"],"external_oracle":false,"blockers":["external_runtime_not_checked"],"non_claims":["not_install_health_certification"]},
+    {"id":"capabilities","domain":"foundation","product_surface":"available","command_id":"capabilities","acceptance_state":"specified","platform":"windows_x86_64","evidence_ids":["p6-command-manifest"],"external_oracle":false,"blockers":["scope_limited"],"non_claims":["not_release_capability_certification"]},
+    {"id":"commands","domain":"foundation","product_surface":"available","command_id":"commands","acceptance_state":"specified","platform":"windows_x86_64","evidence_ids":["p6-command-manifest"],"external_oracle":false,"blockers":["scope_limited"],"non_claims":["command_discovery_only"]},
+    {"id":"protocols","domain":"foundation","product_surface":"available","command_id":"protocols","acceptance_state":"specified","platform":"windows_x86_64","evidence_ids":["p6-command-manifest"],"external_oracle":false,"blockers":["scope_limited"],"non_claims":["protocol_discovery_only"]},
+    {"id":"example","domain":"foundation","product_surface":"available","command_id":"example","acceptance_state":"specified","platform":"windows_x86_64","evidence_ids":["p6-command-manifest"],"external_oracle":false,"blockers":["examples_are_not_results"],"non_claims":["not_an_artifact_or_result"]},
+    {"id":"schema","domain":"foundation","product_surface":"available","command_id":"schema","acceptance_state":"specified","platform":"windows_x86_64","evidence_ids":["p6-command-manifest"],"external_oracle":false,"blockers":["scope_limited"],"non_claims":["schema_discovery_only"]},
+    {"id":"validate","domain":"foundation","product_surface":"available","command_id":"validate","acceptance_state":"specified","platform":"windows_x86_64","evidence_ids":["p6-command-manifest"],"external_oracle":false,"blockers":["does_not_execute_simulation"],"non_claims":["not_a_simulation"]},
+    {"id":"inspect-self","domain":"foundation","product_surface":"available","command_id":"inspect.self","acceptance_state":"specified","platform":"windows_x86_64","evidence_ids":["p6-command-manifest"],"external_oracle":false,"blockers":["static_only"],"non_claims":["not_runtime_diagnostics"]},
+    {"id":"ibis-inspect","domain":"ibis","product_surface":"available","command_id":"ibis.inspect","acceptance_state":"specified","platform":"windows_x86_64","evidence_ids":["p4a-ibis-input-typ-static"],"external_oracle":false,"blockers":["electrical_behavior_not_evaluated"],"non_claims":["not_general_ibis_compatibility"]},
+    {"id":"tran-rc-pulse","domain":"tran","product_surface":"available","command_id":"tran.run","acceptance_state":"specified","platform":"windows_x86_64","evidence_ids":["tran-rc-pulse-contract","p7-isolated-install"],"external_oracle":true,"blockers":["external_compare_not_executed"],"non_claims":["not_general_tran_or_netlist_support"]},
+    {"id":"link-causal-fir","domain":"link","product_surface":"available","command_id":"link.run","acceptance_state":"specified","platform":"windows_x86_64","evidence_ids":["link-stage-ledger"],"external_oracle":false,"blockers":["no_required_link_profile_accepted"],"non_claims":["not_s2p_or_receiver_parity"]},
+    {"id":"channel","domain":"channel","product_surface":"unavailable","command_id":"channel.run","acceptance_state":"blocked","platform":"windows_x86_64","evidence_ids":["channel-s2p-contract"],"external_oracle":true,"blockers":["external_kernel_compare_not_executed"],"non_claims":["no_channel_resolver"]},
+    {"id":"ami","domain":"ami","product_surface":"unavailable","command_id":"ami.run","acceptance_state":"blocked","platform":"windows_x86_64","evidence_ids":["p4a-ibis-input-typ-static"],"external_oracle":true,"blockers":["external_ami_asset_not_admitted"],"non_claims":["no_vendor_dll_or_ami_workflow"]},
+    {"id":"com","domain":"com","product_surface":"unavailable","command_id":"com.run","acceptance_state":"blocked","platform":"windows_x86_64","evidence_ids":["com-r480-acceptance"],"external_oracle":true,"blockers":["authoritative_reference_missing"],"non_claims":["no_com_solver_or_oracle_workflow"]},
+    {"id":"project-validate","domain":"project","product_surface":"unavailable","command_id":"project.validate","acceptance_state":"blocked","platform":"windows_x86_64","evidence_ids":["p6-command-manifest"],"external_oracle":false,"blockers":["project_execution_not_implemented"],"non_claims":["no_project_execution"]},
+    {"id":"project-run","domain":"project","product_surface":"unavailable","command_id":"project.run","acceptance_state":"blocked","platform":"windows_x86_64","evidence_ids":["p6-command-manifest"],"external_oracle":false,"blockers":["project_execution_not_implemented"],"non_claims":["no_project_execution"]},
+    {"id":"compare","domain":"compare","product_surface":"unavailable","command_id":"compare.run","acceptance_state":"blocked","platform":"windows_x86_64","evidence_ids":["p3c-array-compare"],"external_oracle":false,"blockers":["external_comparator_not_exposed"],"non_claims":["no_oracle_workflow"]},
+    {"id":"report-inspect","domain":"report","product_surface":"available","command_id":"report.inspect","acceptance_state":"specified","platform":"windows_x86_64","evidence_ids":["p7-isolated-install"],"external_oracle":false,"blockers":["integrity_metadata_only"],"non_claims":["not_payload_or_external_provenance_viewer"]},
+    {"id":"report-show","domain":"report","product_surface":"unavailable","command_id":"report.show","acceptance_state":"blocked","platform":"windows_x86_64","evidence_ids":["p6-command-manifest"],"external_oracle":false,"blockers":["artifact_payload_preview_not_implemented"],"non_claims":["no_payload_or_external_provenance_viewer"]}
+  ],
+  "report_index": [
+    {"id":"p6-command-manifest","kind":"capability_contract","path":"docs/baselines/audits/2026-08-11-p6-command-manifest.md","subject":"foundation","evidence_state":"specified"},
+    {"id":"p7-isolated-install","kind":"install_observation","path":"docs/baselines/audits/2026-08-11-p7-isolated-install.md","subject":"foundation","evidence_state":"observed"},
+    {"id":"tran-rc-pulse-contract","kind":"acceptance_contract","path":"docs/baselines/tran-rc-pulse-acceptance.v1.yaml","subject":"tran-rc-pulse","evidence_state":"specified"},
+    {"id":"channel-s2p-contract","kind":"acceptance_contract","path":"docs/baselines/channel-s2p-matched-acceptance.v1.yaml","subject":"channel","evidence_state":"specified"},
+    {"id":"p4a-ibis-input-typ-static","kind":"acceptance_report","path":"docs/baselines/p4a-ibis-input-typ-static-acceptance.v1.yaml","subject":"ibis","evidence_state":"observed"},
+    {"id":"link-stage-ledger","kind":"capability_ledger","path":"docs/baselines/p3b-link-stage-capability-ledger.v1.yaml","subject":"link","evidence_state":"specified"},
+    {"id":"com-r480-acceptance","kind":"acceptance_contract","path":"docs/baselines/com-r480-acceptance.v1.yaml","subject":"com","evidence_state":"blocked"},
+    {"id":"p3c-array-compare","kind":"product_contract","path":"docs/baselines/audits/2026-08-11-p3c-array-compare.md","subject":"compare","evidence_state":"specified"}
+  ]
+}

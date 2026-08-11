@@ -384,7 +384,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 - [ ] **P7-02** **P7-02a 已完成（provisional）：** 对外部 Windows x86_64 stage 绑定 P7-01a twin-build、当前锁定 Cargo resolution、provisional license manifest 和 P1 layout observation，生成 composition/NOTICE-gap/static normal-import evidence report。该报告固定 `promotion_status=blocked`；SPDX/CycloneDX SBOM、授权 NOTICE、license compatibility，以及 PE dynamic/runtime closure 仍是 release blocker。
 - [ ] **P7-03** **P7-03a 已完成（provisional）：** 对外部 ZIP 做 bounded/no-extract archive-admission scan，只接受 `sipi.exe` 与 root `LICENSE` 的闭合两文件 capsule，并把前者绑定 P7-02a stage、后者绑定同一 source commit。未知文件、Python/vendor/IBIS/AMI/fixture、Windows 路径绕过与不受支持 ZIP 特性全部拒绝；报告固定 `promotion_status=blocked`。最终 archive、SBOM/NOTICE、签名和 release approval 仍未完成。
 - [ ] **P7-04** **P7-04a 已完成（provisional）：** 在同一宿主的新建外部安装前缀中重验 P7-03a archive，再直接执行已安装的 `sipi.exe`，覆盖产品发现、TRAN artifact/report 与 recognized-unavailable 拒绝；报告固定 `fresh_machine=false`、`fresh_user=not_assessed`、`promotion_status=blocked`。实际 fresh machine/VM、fresh user、系统 loader/runtime 与每个 certified profile 的最终安装 smoke 仍待完成。
-- [ ] **P7-05** 发布 capability matrix、acceptance report index、non-claims 和 known limitations。
+- [ ] **P7-05** **P7-05a 已完成（provisional）：** 发布由 product command manifest 绑定的 pre-release capability/evidence ledger，逐项列出 command surface、acceptance state、安全 evidence index、blocker 与 non-claim；顶层固定 `release_ready=false` 与 `promotion_status=blocked`。真正 release capability matrix 仍等待法律/NOTICE、fresh-machine 和 profile gates。
 - [ ] **P7-06** 对 owner-approved workload 执行性能/RSS 门；无批准预算只记录 observation。
 - [ ] **P7-07** 形成 release candidate tag，绑定源码、工具链、工件和审计结论。
 - [ ] **P7-08** 用户批准后删除已替代的 Python/adapter/runtime，并同批移除专属 drift gate。
