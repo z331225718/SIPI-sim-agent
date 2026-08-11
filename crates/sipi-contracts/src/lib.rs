@@ -24,6 +24,8 @@ pub const IBIS_INSPECT_REQUEST_SCHEMA: &str = "sipi.ibis.inspect.request.v1";
 pub const RECEIVER_INPUT_SCHEMA: &str = "sipi.receiver-input.v1";
 pub const RECEIVER_SEMANTICS_SCHEMA: &str = "sipi.receiver-semantics.v1";
 pub const PROJECT_PLAN_SCHEMA: &str = "sipi.project.v1";
+pub const FIXED_PROJECT_RUN_REQUEST_SCHEMA: &str =
+    "sipi.project.fixed-tran-causal-fir-run-request.v1";
 pub const PLANNED_DOMAINS: [&str; 4] = ["tran", "channel", "ibis-ami", "com"];
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -248,6 +250,92 @@ pub struct WireProjectPlanV1 {
     pub nodes: Vec<WireProjectNodeV1>,
     pub edges: Vec<WireProjectEdgeV1>,
     pub requested_outputs: Vec<WireProjectOutputRefV1>,
+}
+
+/// Product-owned request for the one executable composite project route.
+///
+/// It intentionally carries no generic node value map, file path, asset, or
+/// legacy profile selector. The fixed TRAN request is implicit in the sole
+/// admissible project topology; callers provide only the causal-FIR policy.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireFixedProjectRunRequestV1 {
+    pub schema: String,
+    pub plan: WireProjectPlanV1,
+    pub consumer: WireFixedProjectCausalFirConsumerV1,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireFixedProjectCausalFirConsumerV1 {
+    pub sample_interval_seconds: f64,
+    pub gain_v_per_v: Vec<f64>,
+    pub max_output_samples: usize,
+    pub max_multiply_accumulates: usize,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FixedProjectRunRequestV1 {
+    plan: WireProjectPlanV1,
+    channel: CausalFirChannelV1,
+    limits: LinkExecutionLimitsV1,
+}
+
+impl FixedProjectRunRequestV1 {
+    pub fn plan(&self) -> &WireProjectPlanV1 {
+        &self.plan
+    }
+
+    pub fn channel(&self) -> &CausalFirChannelV1 {
+        &self.channel
+    }
+
+    pub const fn limits(&self) -> LinkExecutionLimitsV1 {
+        self.limits
+    }
+}
+
+impl TryFrom<WireFixedProjectRunRequestV1> for FixedProjectRunRequestV1 {
+    type Error = ContractError;
+
+    fn try_from(value: WireFixedProjectRunRequestV1) -> Result<Self, Self::Error> {
+        if value.schema != FIXED_PROJECT_RUN_REQUEST_SCHEMA {
+            return Err(ContractError::Version);
+        }
+        value.plan.validate_boundary()?;
+        let channel = CausalFirChannelV1::try_new(
+            Seconds::try_new(value.consumer.sample_interval_seconds)?,
+            value
+                .consumer
+                .gain_v_per_v
+                .into_iter()
+                .map(|value| FiniteF64::try_new(value, "causal FIR gain"))
+                .collect::<Result<Vec<_>, _>>()?,
+        )?;
+        Ok(Self {
+            plan: value.plan,
+            channel,
+            limits: LinkExecutionLimitsV1::try_new(
+                value.consumer.max_output_samples,
+                value.consumer.max_multiply_accumulates,
+            )?,
+        })
+    }
+}
+
+impl From<&FixedProjectRunRequestV1> for WireFixedProjectRunRequestV1 {
+    fn from(value: &FixedProjectRunRequestV1) -> Self {
+        Self {
+            schema: FIXED_PROJECT_RUN_REQUEST_SCHEMA.to_owned(),
+            plan: value.plan.clone(),
+            consumer: WireFixedProjectCausalFirConsumerV1 {
+                sample_interval_seconds: value.channel.sample_interval().get(),
+                gain_v_per_v: value.channel.gain().iter().map(|gain| gain.get()).collect(),
+                max_output_samples: value.limits.max_output_samples.get(),
+                max_multiply_accumulates: value.limits.max_multiply_accumulates.get(),
+            },
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
@@ -941,6 +1029,19 @@ pub fn parse_link_causal_fir_request_v1(
         .try_into()
 }
 
+/// Parses the only executable P6 composite-project request.
+///
+/// The wire contract admits the project declaration and its explicit causal
+/// FIR consumer policy. `sipi-pipeline` performs the stricter topology
+/// admission immediately before execution.
+pub fn parse_fixed_project_run_request_v1(
+    input: &[u8],
+) -> Result<FixedProjectRunRequestV1, ContractError> {
+    serde_json::from_slice::<WireFixedProjectRunRequestV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
 /// A product-owned request for structural inspection of one JSON UTF-8 text.
 /// It deliberately has no file, URL, binary, profile, or evaluation surface.
 #[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
@@ -1530,6 +1631,49 @@ pub fn product_example_request_json_v1(command_id: &str) -> Result<Option<Vec<u8
             },
         })
         .map(Some),
+        "project.run" => deterministic_json(&WireFixedProjectRunRequestV1 {
+            schema: FIXED_PROJECT_RUN_REQUEST_SCHEMA.to_owned(),
+            plan: WireProjectPlanV1 {
+                schema: PROJECT_PLAN_SCHEMA.to_owned(),
+                project_id: "example-fixed-project-1".to_owned(),
+                seed_hex: "00".repeat(32),
+                resource_policy: WireProjectResourcePolicyV1 {
+                    timeout_millis: 1_000,
+                    max_work_units: 100,
+                    max_accounted_bytes: 2_048,
+                },
+                inputs: vec![WireProjectInputV1 {
+                    id: "binding".to_owned(),
+                    contract: "sipi.project.tran-rc-pulse-to-causal-fir-binding.v1".to_owned(),
+                }],
+                nodes: vec![WireProjectNodeV1 {
+                    id: "run".to_owned(),
+                    kind: "project.tran-rc-pulse-to-causal-fir".to_owned(),
+                }],
+                edges: vec![WireProjectEdgeV1 {
+                    from: WireProjectEdgeSourceV1::ProjectInput {
+                        input_id: "binding".to_owned(),
+                    },
+                    to: WireProjectPortRefV1 {
+                        node_id: "run".to_owned(),
+                        port: "binding".to_owned(),
+                    },
+                    contract: "sipi.project.tran-rc-pulse-to-causal-fir-binding.v1".to_owned(),
+                }],
+                requested_outputs: vec![WireProjectOutputRefV1 {
+                    node_id: "run".to_owned(),
+                    port: "received".to_owned(),
+                    contract: "sipi.link.causal-fir-result.v1".to_owned(),
+                }],
+            },
+            consumer: WireFixedProjectCausalFirConsumerV1 {
+                sample_interval_seconds: 1.0e-6,
+                gain_v_per_v: vec![1.0],
+                max_output_samples: 8,
+                max_multiply_accumulates: 16,
+            },
+        })
+        .map(Some),
         _ => Ok(None),
     }
 }
@@ -1572,6 +1716,10 @@ pub fn receiver_semantics_schema_json() -> Result<Vec<u8>, ContractError> {
 
 pub fn project_plan_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireProjectPlanV1))
+}
+
+pub fn fixed_project_run_request_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(WireFixedProjectRunRequestV1))
 }
 
 fn require_schema(schema: &str) -> Result<(), ContractError> {
@@ -1756,6 +1904,30 @@ mod tests {
                 .expect("schema")
                 .starts_with(b"{")
         );
+    }
+
+    #[test]
+    fn fixed_project_run_request_requires_its_versioned_consumer_policy() {
+        let example = product_example_request_json_v1("project.run")
+            .expect("example")
+            .expect("project example");
+        let request = parse_fixed_project_run_request_v1(&example).expect("request");
+        assert_eq!(request.plan().project_id, "example-fixed-project-1");
+        assert_eq!(request.channel().sample_interval().get(), 1.0e-6);
+        assert_eq!(request.limits().max_output_samples().get(), 8);
+        assert!(parse_fixed_project_run_request_v1(
+            br#"{"schema":"sipi.project.fixed-tran-causal-fir-run-request.v0","plan":{},"consumer":{}}"#
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn tracked_fixed_project_run_schema_baseline_is_exactly_the_registered_export() {
+        let baseline = include_bytes!(
+            "../schemas/sipi.project.fixed-tran-causal-fir-run-request.v1.schema.json"
+        );
+        let exported = fixed_project_run_request_schema_json().expect("schema");
+        assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
     }
 
     #[test]

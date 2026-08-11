@@ -16,13 +16,11 @@ sipi-artifacts = { path = "../sipi-artifacts" }
 sipi-contracts = { path = "../sipi-contracts" }
 sipi-ibis = { path = "../sipi-ibis" }
 sipi-link = { path = "../sipi-link" }
+sipi-pipeline = { path = "../sipi-pipeline" }
 sipi-runtime = { path = "../sipi-runtime" }
 sipi-tran = { path = "../sipi-tran" }
 sipi-types = { path = "../sipi-types" }
 sha2 = "0.10"
-
-[dev-dependencies]
-sipi-pipeline = { path = "../sipi-pipeline" }
 
 [lints]
 workspace = true

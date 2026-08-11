@@ -10,6 +10,7 @@ fn sipi() -> Command {
 
 const RC_PULSE_REQUEST: &[u8] = br#"{"schema":"sipi.tran.rc-pulse-request.v1","request_id":"rc-pulse-1","resistance_ohms":1000.0,"capacitance_farads":0.000001,"initial_voltage_out_volts":0.0,"output_times_seconds":[0.0,0.000001,0.000002,0.000003],"pulse":{"voltage_low_volts":0.0,"voltage_high_volts":1.0,"delay_seconds":0.000001,"rise_seconds":0.000000001,"fall_seconds":0.000000001,"width_seconds":0.00001,"period_seconds":0.00002}}"#;
 const LINK_REQUEST: &[u8] = br#"{"schema":"sipi.link.causal-fir-request.v1","request_id":"link-1","plan":{"schema":"sipi.link-plan.v1","timebase":{"start_seconds":0.0,"sample_interval_seconds":1.0,"sample_count":2},"tx":{"kind":"direct_launch"},"stimulus_volts":[1.0,2.0],"channel":{"kind":"causal_fir","sample_interval_seconds":1.0,"gain_v_per_v":[3.0,4.0]},"rx":{"ctle":{"kind":"bypass"},"ffe":{"kind":"bypass"}}},"limits":{"max_output_samples":8,"max_multiply_accumulates":8}}"#;
+const FIXED_PROJECT_REQUEST: &[u8] = br#"{"schema":"sipi.project.fixed-tran-causal-fir-run-request.v1","plan":{"schema":"sipi.project.v1","project_id":"cli-fixed-project-1","seed_hex":"0000000000000000000000000000000000000000000000000000000000000000","resource_policy":{"timeout_millis":1000,"max_work_units":100,"max_accounted_bytes":2048},"inputs":[{"id":"binding","contract":"sipi.project.tran-rc-pulse-to-causal-fir-binding.v1"}],"nodes":[{"id":"run","kind":"project.tran-rc-pulse-to-causal-fir"}],"edges":[{"from":{"kind":"project_input","input_id":"binding"},"to":{"node_id":"run","port":"binding"},"contract":"sipi.project.tran-rc-pulse-to-causal-fir-binding.v1"}],"requested_outputs":[{"node_id":"run","port":"received","contract":"sipi.link.causal-fir-result.v1"}]},"consumer":{"sample_interval_seconds":0.000001,"gain_v_per_v":[1.0],"max_output_samples":8,"max_multiply_accumulates":16}}"#;
 
 fn run_fixed_tran(root: &Path) -> Output {
     let mut child = sipi()
@@ -46,6 +47,31 @@ fn run_link(root: &Path, request: &[u8]) -> Output {
             root.to_string_lossy().as_ref(),
             "--artifact-id",
             "link-1",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start sipi");
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(request)
+        .expect("write request");
+    child.wait_with_output().expect("wait sipi")
+}
+
+fn run_fixed_project(root: &Path, request: &[u8]) -> Output {
+    let mut child = sipi()
+        .args([
+            "project",
+            "run",
+            "--stdin",
+            "--artifact-root",
+            root.to_string_lossy().as_ref(),
+            "--artifact-id",
+            "project-1",
         ])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -115,6 +141,10 @@ fn protocol_catalog_and_product_examples_are_machine_readable() {
         ("ibis.inspect", "sipi.ibis.inspect.request.v1"),
         ("tran.run", "sipi.tran.rc-pulse-request.v1"),
         ("link.run", "sipi.link.causal-fir-request.v1"),
+        (
+            "project.run",
+            "sipi.project.fixed-tran-causal-fir-run-request.v1",
+        ),
     ] {
         let example = sipi()
             .args(["example", command, "--json"])
@@ -173,6 +203,40 @@ fn causal_fir_link_run_publishes_full_linear_tail() {
         br#"{"schema":"sipi.link.causal-fir-request.v1","request_id":"link-1","unexpected":true}"#,
     );
     assert_eq!(bad.status.code(), Some(3));
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn fixed_project_run_publishes_only_the_admitted_composite_artifact() {
+    let root = std::env::temp_dir().join(format!("sipi-cli-project-{}", std::process::id()));
+    let output = run_fixed_project(&root, FIXED_PROJECT_REQUEST);
+    assert!(output.status.success());
+    assert!(
+        String::from_utf8(output.stdout)
+            .expect("stdout")
+            .contains("sipi.project.fixed-tran-causal-fir-run-result.v1")
+    );
+    let artifact = root.join("project-1");
+    for entry in [
+        "success.json",
+        "request.json",
+        "received-waveform.json",
+        "edge-record.json",
+        "provenance.json",
+    ] {
+        assert!(artifact.join(entry).is_file(), "{entry}");
+    }
+    assert_eq!(
+        run_fixed_project(&root, FIXED_PROJECT_REQUEST)
+            .status
+            .code(),
+        Some(5)
+    );
+    let rejected = run_fixed_project(
+        &std::env::temp_dir().join(format!("sipi-cli-project-bad-{}", std::process::id())),
+        br#"{"schema":"sipi.project.fixed-tran-causal-fir-run-request.v1","unexpected":true}"#,
+    );
+    assert_eq!(rejected.status.code(), Some(3));
     let _ = std::fs::remove_dir_all(root);
 }
 

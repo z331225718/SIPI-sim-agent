@@ -10,10 +10,12 @@ use std::{
 
 use sha2::{Digest, Sha256};
 use sipi_contracts::{
-    ARTIFACT_REPORT_REQUEST_SCHEMA, CAPABILITIES_SCHEMA, CapabilityCatalogV1, LINK_PLAN_SCHEMA,
-    PLANNED_DOMAINS, RULE_LEDGER_V1, artifact_report_request_schema_json, capability_schema_json,
-    deterministic_json, ibis_inspect_request_schema_json, link_causal_fir_request_schema_json,
-    link_plan_schema_json, parse_artifact_report_request_v1, parse_ibis_inspect_request_v1,
+    ARTIFACT_REPORT_REQUEST_SCHEMA, CAPABILITIES_SCHEMA, CapabilityCatalogV1,
+    FIXED_PROJECT_RUN_REQUEST_SCHEMA, LINK_PLAN_SCHEMA, PLANNED_DOMAINS, RULE_LEDGER_V1,
+    artifact_report_request_schema_json, capability_schema_json, deterministic_json,
+    fixed_project_run_request_schema_json, ibis_inspect_request_schema_json,
+    link_causal_fir_request_schema_json, link_plan_schema_json, parse_artifact_report_request_v1,
+    parse_fixed_project_run_request_v1, parse_ibis_inspect_request_v1,
     parse_link_causal_fir_request_v1, parse_tran_rc_pulse_request_v1,
     product_example_request_json_v1, project_plan_schema_json, receiver_input_schema_json,
     receiver_semantics_schema_json, tran_rc_pulse_request_schema_json, validate_request_v1,
@@ -21,6 +23,10 @@ use sipi_contracts::{
 };
 use sipi_ibis::{IbisInspectServiceV1, ParseLimitsV1};
 use sipi_link::{ConvolutionLimitsV1, convolve_causal_fir_v1};
+use sipi_pipeline::{
+    CausalFirConsumerConfigV1, FixedTranCausalFirProjectBindingV1,
+    run_fixed_tran_causal_fir_project_attempt_v1, validate_fixed_tran_causal_fir_project_v1,
+};
 use sipi_runtime::{CacheKeyBuilder, ResourceCost, RunId, RunPolicy, Runtime};
 use sipi_tran::{RcPulseTransientV1, simulate_rc_pulse_with_context};
 use sipi_types::AxisView;
@@ -345,12 +351,12 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
     CommandDescriptorV1 {
         id: "project.run",
         route: &["project", "run"],
-        availability: CommandAvailabilityV1::Unavailable,
-        transport: "none",
-        request_schema: None,
-        response_schema: None,
-        unavailable_reason: Some("project_execution_not_implemented"),
-        nonclaim: "no_project_execution",
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some(FIXED_PROJECT_RUN_REQUEST_SCHEMA),
+        response_schema: Some("sipi.project.fixed-tran-causal-fir-run-result.v1"),
+        unavailable_reason: None,
+        nonclaim: "one_fixed_composite_project_route_only",
     },
     CommandDescriptorV1 {
         id: "compare.run",
@@ -494,6 +500,15 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
     CommandProtocolProfileV1 {
+        command_id: "project.run",
+        example_id: Some("product-owned-minimal-v1"),
+        required_options: &["--artifact-root", "--artifact-id"],
+        caller_bindings: ARTIFACT_DESTINATION_BINDINGS,
+        validation_rule_id: Some("project.fixed-tran-causal-fir.admission"),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
+    CommandProtocolProfileV1 {
         command_id: "report.inspect",
         example_id: None,
         required_options: &[],
@@ -537,6 +552,14 @@ fn main() {
         && id == "--artifact-id"
     {
         ProcessAdapter::link_run_stdin(artifact_root, artifact_id)
+    } else if let [command, action, stdin, root, artifact_root, id, artifact_id] = &arguments[..]
+        && command == "project"
+        && action == "run"
+        && stdin == "--stdin"
+        && root == "--artifact-root"
+        && id == "--artifact-id"
+    {
+        ProcessAdapter::project_run_stdin(artifact_root, artifact_id)
     } else {
         dispatch(&arguments)
     };
@@ -590,6 +613,18 @@ impl ProcessAdapter {
             Err(_) => return error(3, "contract_rejected", "Link request was rejected"),
         };
         run_causal_fir_link(artifact_root, artifact_id, &request)
+    }
+
+    fn project_run_stdin(artifact_root: &str, artifact_id: &str) -> Response {
+        let input = match read_stdin_request() {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        let request = match parse_fixed_project_run_request_v1(&input) {
+            Ok(request) => request,
+            Err(_) => return error(3, "contract_rejected", "project request was rejected"),
+        };
+        run_fixed_project(artifact_root, artifact_id, &request)
     }
 
     fn ibis_inspect_stdin() -> Response {
@@ -817,6 +852,141 @@ fn run_causal_fir_link(
     }
 }
 
+fn run_fixed_project(
+    artifact_root: &str,
+    artifact_id: &str,
+    request: &sipi_contracts::FixedProjectRunRequestV1,
+) -> Response {
+    let canonical_request =
+        match deterministic_json(&sipi_contracts::WireFixedProjectRunRequestV1::from(request)) {
+            Ok(bytes) => bytes,
+            Err(_) => {
+                return error(
+                    6,
+                    "internal_contract_error",
+                    "project request cannot be serialized",
+                );
+            }
+        };
+    let limits = match ConvolutionLimitsV1::try_new(
+        request.limits().max_output_samples().get(),
+        request.limits().max_multiply_accumulates().get(),
+    ) {
+        Ok(limits) => limits,
+        Err(_) => return error(3, "contract_rejected", "project limits were rejected"),
+    };
+    let consumer = match CausalFirConsumerConfigV1::try_new(request.channel().clone(), limits) {
+        Ok(consumer) => consumer,
+        Err(_) => {
+            return error(
+                3,
+                "contract_rejected",
+                "project consumer policy was rejected",
+            );
+        }
+    };
+    let binding =
+        FixedTranCausalFirProjectBindingV1::new(RcPulseTransientV1::fixed_profile(), consumer);
+    let admission = match validate_fixed_tran_causal_fir_project_v1(request.plan().clone(), binding)
+    {
+        Ok(admission) => admission,
+        Err(_) => {
+            return error(3, "contract_rejected", "project topology was rejected");
+        }
+    };
+    let project_policy = admission.plan().resource_policy();
+    let policy = match RunPolicy::try_new(
+        Duration::from_millis(project_policy.timeout_millis()),
+        project_policy.max_work_units(),
+        project_policy.max_accounted_bytes(),
+    ) {
+        Ok(policy) => policy,
+        Err(_) => return error(3, "contract_rejected", "project policy was rejected"),
+    };
+    let run_id = match RunId::try_new(admission.plan().project_id()) {
+        Ok(id) => id,
+        Err(_) => return error(3, "contract_rejected", "project id was rejected"),
+    };
+    let (_, context) = match Runtime::start(run_id, policy) {
+        Ok(run) => run,
+        Err(_) => return error(6, "internal_failure", "project runtime is unavailable"),
+    };
+    let attempt = match run_fixed_tran_causal_fir_project_attempt_v1(&admission, &context) {
+        Ok(attempt) => attempt,
+        Err(_) => return error(5, "operational_failure", "project attempt did not complete"),
+    };
+    let received_json = match link_result_json(attempt.received()) {
+        Ok(result) => result,
+        Err(_) => {
+            return error(
+                6,
+                "internal_contract_error",
+                "project result cannot be serialized",
+            );
+        }
+    };
+    let edge_json = project_edge_record_json(attempt.edge_record());
+    let project_digest = attempt.project_digest().hex();
+    let binding_digest = attempt.binding_digest().hex();
+    let received_digest = attempt.edge_record().received_output_digest().hex();
+    let request_digest = cache_key("project-request", &canonical_request);
+    let provenance = format!(
+        "{{\"schema\":\"sipi.project.fixed-tran-causal-fir-provenance.v1\",\"algorithm\":\"fixed-tran-to-causal-fir.v1\",\"project_digest\":\"{project_digest}\",\"binding_digest\":\"{binding_digest}\",\"request_digest\":\"{request_digest}\",\"received_output_digest\":\"{received_digest}\",\"attempt_index\":1,\"target\":\"{TARGET}\"}}"
+    );
+    let publication = sipi_artifacts::ArtifactRoot::open_or_create(Path::new(artifact_root))
+        .and_then(|store| store.begin(artifact_id))
+        .and_then(|mut staging| {
+            staging.stage_reader("request.json", Cursor::new(canonical_request), 1_048_576)?;
+            staging.stage_reader(
+                "received-waveform.json",
+                Cursor::new(received_json.into_bytes()),
+                1_048_576,
+            )?;
+            staging.stage_reader(
+                "edge-record.json",
+                Cursor::new(edge_json.into_bytes()),
+                16_384,
+            )?;
+            staging.stage_reader(
+                "provenance.json",
+                Cursor::new(provenance.into_bytes()),
+                16_384,
+            )?;
+            staging.seal()?.publish_new()
+        });
+    match publication {
+        Ok(manifest) => success(format!(
+            "{{\"schema\":\"sipi.project.fixed-tran-causal-fir-run-result.v1\",\"artifact_id\":\"{}\",\"project_digest\":\"{project_digest}\",\"binding_digest\":\"{binding_digest}\",\"received_output_digest\":\"{received_digest}\",\"manifest_schema\":\"{}\",\"file_count\":{}}}",
+            manifest.artifact_id,
+            manifest.schema,
+            manifest.files.len()
+        )),
+        Err(_) => error(
+            5,
+            "operational_failure",
+            "project run did not publish an artifact",
+        ),
+    }
+}
+
+fn project_edge_record_json(record: &sipi_pipeline::TranRcPulseToCausalFirEdgeRecordV1) -> String {
+    format!(
+        "{{\"schema\":\"{}\",\"implementation_revision\":\"{}\",\"producer_contract\":\"{}\",\"producer_profile\":\"{}\",\"producer_output_port\":\"{}\",\"consumer_contract\":\"{}\",\"consumer_input_port\":\"{}\",\"signal_map\":\"{}\",\"producer_artifact_digest\":\"{}\",\"consumer_input_digest\":\"{}\",\"consumer_policy_digest\":\"{}\",\"received_output_digest\":\"{}\"}}",
+        record.schema(),
+        record.implementation_revision(),
+        record.producer_contract(),
+        record.producer_profile(),
+        record.producer_output_port(),
+        record.consumer_contract(),
+        record.consumer_input_port(),
+        record.signal_map(),
+        record.producer_artifact_digest().hex(),
+        record.consumer_input_digest().hex(),
+        record.consumer_policy_digest().hex(),
+        record.received_output_digest().hex(),
+    )
+}
+
 fn run_artifact_report(artifact_root: &str, artifact_id: &str) -> Response {
     let root = match sipi_artifacts::ArtifactRoot::open_existing(Path::new(artifact_root)) {
         Ok(root) => root,
@@ -1023,6 +1193,7 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["ibis", "inspect"]
             | ["tran", "run"]
             | ["link", "run"]
+            | ["project", "run"]
             | ["report", "inspect"]
     )
 }
@@ -1097,6 +1268,8 @@ fn schema_bytes(id: &str) -> Result<Option<Vec<u8>>, sipi_contracts::ContractErr
         artifact_report_request_schema_json().map(Some)
     } else if id == sipi_contracts::PROJECT_PLAN_SCHEMA {
         project_plan_schema_json().map(Some)
+    } else if id == FIXED_PROJECT_RUN_REQUEST_SCHEMA {
+        fixed_project_run_request_schema_json().map(Some)
     } else if id == sipi_contracts::RECEIVER_INPUT_SCHEMA {
         receiver_input_schema_json().map(Some)
     } else if id == sipi_contracts::RECEIVER_SEMANTICS_SCHEMA {
@@ -1358,6 +1531,11 @@ impl CommandService {
                 "unsupported",
                 "Link requires the exact run --stdin artifact command",
             ),
+            [command, ..] if command == "project" => error(
+                4,
+                "unsupported",
+                "Project requires the exact run --stdin artifact command",
+            ),
             [command, ..] if command == "ibis" => error(
                 4,
                 "unsupported",
@@ -1466,10 +1644,11 @@ fn doctor_json() -> String {
 
 fn schema_list_json() -> String {
     format!(
-        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"]}}",
+        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"]}}",
         sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA,
         LINK_PLAN_SCHEMA,
         sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA,
+        FIXED_PROJECT_RUN_REQUEST_SCHEMA,
         sipi_contracts::PROJECT_PLAN_SCHEMA,
         sipi_contracts::RECEIVER_INPUT_SCHEMA,
         sipi_contracts::RECEIVER_SEMANTICS_SCHEMA,
@@ -1512,6 +1691,7 @@ fn validate_self(schema: Option<&str>) -> Response {
             && id != LINK_PLAN_SCHEMA
             && id != sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA
             && id != sipi_contracts::PROJECT_PLAN_SCHEMA
+            && id != FIXED_PROJECT_RUN_REQUEST_SCHEMA
             && id != sipi_contracts::RECEIVER_INPUT_SCHEMA
             && id != sipi_contracts::RECEIVER_SEMANTICS_SCHEMA
     }) {
@@ -1533,6 +1713,7 @@ fn validate_self(schema: Option<&str>) -> Response {
         && link_plan_schema_json().is_ok()
         && link_causal_fir_request_schema_json().is_ok()
         && project_plan_schema_json().is_ok()
+        && fixed_project_run_request_schema_json().is_ok()
         && receiver_input_schema_json().is_ok()
         && receiver_semantics_schema_json().is_ok()
         && command_protocol_profiles_are_valid(COMMAND_MANIFEST_V1, COMMAND_PROTOCOL_PROFILES_V1)
@@ -1616,7 +1797,6 @@ mod tests {
             ["ami", "run"].as_slice(),
             ["com", "run"].as_slice(),
             ["project", "validate"].as_slice(),
-            ["project", "run"].as_slice(),
             ["compare", "run"].as_slice(),
             ["report", "show"].as_slice(),
         ] {
@@ -1636,7 +1816,13 @@ mod tests {
     fn protocol_catalog_binds_examples_or_explicit_caller_admission() {
         let catalog = command_protocol_catalog_json().expect("protocol catalog");
         assert!(catalog.starts_with("{\"schema\":\"sipi.command-protocol-catalog.v1\""));
-        for command in ["validate", "ibis.inspect", "tran.run", "link.run"] {
+        for command in [
+            "validate",
+            "ibis.inspect",
+            "tran.run",
+            "link.run",
+            "project.run",
+        ] {
             assert!(catalog.contains(&format!("\"command_id\":\"{command}\"")));
             assert!(catalog.contains("\"example_id\":\"product-owned-minimal-v1\""));
             let response = dispatch(&args(&["example", command, "--json"]));
@@ -1689,6 +1875,11 @@ mod tests {
             .expect("Link example")
             .expect("registered Link example");
         assert!(parse_link_causal_fir_request_v1(&link).is_ok());
+
+        let project = product_example_request_json_v1("project.run")
+            .expect("project example")
+            .expect("registered project example");
+        assert!(parse_fixed_project_run_request_v1(&project).is_ok());
         assert!(
             product_example_request_json_v1("channel.run")
                 .expect("unknown example lookup")
@@ -1755,6 +1946,11 @@ mod tests {
         assert_eq!(response.code, 4);
         assert_eq!(response.stdout, None);
         assert_eq!(response.stderr.as_deref(), Some("unsupported"));
+
+        let project = dispatch(&args(&["project", "run"]));
+        assert_eq!(project.code, 4);
+        assert_eq!(project.stdout, None);
+        assert_eq!(project.stderr.as_deref(), Some("unsupported"));
     }
 
     #[test]
@@ -1785,7 +1981,7 @@ mod tests {
     fn schema_list_uses_the_schema_inventory_order() {
         assert_eq!(
             schema_list_json(),
-            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
+            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
         );
     }
 
@@ -1828,6 +2024,49 @@ mod tests {
         assert_eq!(
             run_fixed_tran(&root_text, "rc-pulse-1", rc_pulse_request()).code,
             5
+        );
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn fixed_project_run_publishes_the_admitted_edge_record() {
+        let nonce = TEST_NONCE.fetch_add(1, Ordering::Relaxed);
+        let root = std::env::temp_dir().join(format!("sipi-cli-project-{nonce}"));
+        let request_bytes = product_example_request_json_v1("project.run")
+            .expect("request")
+            .expect("project request");
+        let request = parse_fixed_project_run_request_v1(&request_bytes).expect("parse request");
+        let response = run_fixed_project(
+            &root.to_string_lossy(),
+            "fixed-project-artifact-1",
+            &request,
+        );
+        assert_eq!(response.code, 0);
+        assert!(
+            response.stdout.as_deref().is_some_and(
+                |body| body.contains("sipi.project.fixed-tran-causal-fir-run-result.v1")
+            )
+        );
+        let artifact = root.join("fixed-project-artifact-1");
+        for entry in [
+            "success.json",
+            "request.json",
+            "received-waveform.json",
+            "edge-record.json",
+            "provenance.json",
+        ] {
+            assert!(artifact.join(entry).is_file(), "{entry}");
+        }
+        let report = run_artifact_report(&root.to_string_lossy(), "fixed-project-artifact-1");
+        assert_eq!(report.code, 0);
+        assert!(
+            !run_fixed_project(
+                &root.to_string_lossy(),
+                "fixed-project-artifact-1",
+                &request
+            )
+            .stdout
+            .is_some_and(|body| body.contains("run-result"))
         );
         let _ = std::fs::remove_dir_all(root);
     }

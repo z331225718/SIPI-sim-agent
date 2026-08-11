@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: cc76720ba253c0cebd62f39dcb6f3c12499f0a6e1e3b26a8de275a124873dc22
+  tracked_paths_sha256: 6d4a28f797bf3be9771b7d27917fda841e55af27e8961057701922380f0ba768
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -246,6 +246,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-contracts/schemas/sipi.link.causal-fir-request.v1.schema.json:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-contracts/schemas/sipi.project.fixed-tran-causal-fir-run-request.v1.schema.json:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1121,6 +1127,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-11-p6-fixed-project-cli-run.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-11-p6-project-dag-contract.md:
       rule: historical-docs
       class: migration_only
@@ -1962,6 +1974,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p6-fixed-project-attempt.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p6-fixed-project-cli-run.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
