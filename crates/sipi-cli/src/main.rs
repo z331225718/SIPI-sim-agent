@@ -19,9 +19,9 @@ use sipi_contracts::{
     ARRAY_COMPARE_REQUEST_SCHEMA, ARTIFACT_REPORT_REQUEST_SCHEMA, CAPABILITIES_SCHEMA,
     CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA, CapabilityCatalogV1,
     FIXED_PROJECT_RUN_REQUEST_SCHEMA, IBIS_DC_EVALUATE_REQUEST_SCHEMA,
-    IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA, LINK_PLAN_SCHEMA, PLANNED_DOMAINS, RULE_LEDGER_V1,
-    TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA, array_compare_request_schema_json,
-    artifact_report_request_schema_json, capability_schema_json,
+    IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA, LINK_PLAN_SCHEMA, PLANNED_DOMAINS,
+    RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA, RULE_LEDGER_V1, TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA,
+    array_compare_request_schema_json, artifact_report_request_schema_json, capability_schema_json,
     channel_matched_two_port_kernel_run_request_schema_json, deterministic_json,
     fixed_project_run_request_schema_json, ibis_dc_evaluate_request_schema_json,
     ibis_inspect_request_schema_json, ibis_quasi_static_evaluate_request_schema_json,
@@ -29,9 +29,10 @@ use sipi_contracts::{
     parse_artifact_report_request_v1, parse_channel_matched_two_port_kernel_run_request_v1,
     parse_fixed_project_run_request_v1, parse_ibis_dc_evaluate_request_v1,
     parse_ibis_inspect_request_v1, parse_ibis_quasi_static_evaluate_request_v1,
-    parse_link_causal_fir_request_v1, parse_rx_load_differential_rc_evaluate_request_v1,
-    parse_tran_one_node_rc_pulse_request_v1, parse_tran_rc_pulse_request_v1,
-    product_example_request_json_v1, project_plan_schema_json, receiver_input_schema_json,
+    parse_link_causal_fir_request_v1, parse_receiver_diagnostic_run_request_v1,
+    parse_rx_load_differential_rc_evaluate_request_v1, parse_tran_one_node_rc_pulse_request_v1,
+    parse_tran_rc_pulse_request_v1, product_example_request_json_v1, project_plan_schema_json,
+    receiver_diagnostic_run_request_schema_json, receiver_input_schema_json,
     receiver_semantics_schema_json, rx_load_differential_rc_evaluate_request_schema_json,
     tran_one_node_rc_pulse_request_schema_json, tran_rc_pulse_request_schema_json,
     validate_request_v1, validation_request_schema_json,
@@ -41,7 +42,10 @@ use sipi_ibis::{
     IbisQuasiStaticEvaluateServiceV1, ParseLimitsV1, QuasiStaticClampStateV1,
     SelectedDcClampProfileV1,
 };
-use sipi_link::{ConvolutionLimitsV1, convolve_causal_fir_v1};
+use sipi_link::{
+    ConvolutionLimitsV1, ReceiverPhaseSelectionV2, ReferenceBitsV1, convolve_causal_fir_v1,
+    run_fixed_receiver_delegated_ambiguity_v2,
+};
 use sipi_pipeline::{
     CausalFirConsumerConfigV1, FixedTranCausalFirProjectBindingV1,
     run_fixed_tran_causal_fir_project_attempt_v1, validate_fixed_tran_causal_fir_project_v1,
@@ -379,6 +383,16 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         nonclaim: "causal_fir_direct_launch_only",
     },
     CommandDescriptorV1 {
+        id: "link.receiver.run",
+        route: &["link", "receiver", "run"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some(RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA),
+        response_schema: Some("sipi.receiver.diagnostic-run-result.v1"),
+        unavailable_reason: None,
+        nonclaim: "product_owned_diagnostic_not_rfm_parity_or_clock_lock",
+    },
+    CommandDescriptorV1 {
         id: "channel.run",
         route: &["channel", "run"],
         availability: CommandAvailabilityV1::Available,
@@ -606,6 +620,15 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
     CommandProtocolProfileV1 {
+        command_id: "link.receiver.run",
+        example_id: Some("product-owned-minimal-v1"),
+        required_options: &["--artifact-root", "--artifact-id"],
+        caller_bindings: ARTIFACT_DESTINATION_BINDINGS,
+        validation_rule_id: Some("receiver.diagnostic.v1.profile"),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
+    CommandProtocolProfileV1 {
         command_id: "channel.run",
         example_id: Some("product-owned-minimal-v1"),
         required_options: &[],
@@ -694,6 +717,24 @@ fn main() {
         && id == "--artifact-id"
     {
         ProcessAdapter::link_run_stdin(artifact_root, artifact_id)
+    } else if let [
+        command,
+        receiver,
+        action,
+        stdin,
+        root,
+        artifact_root,
+        id,
+        artifact_id,
+    ] = &arguments[..]
+        && command == "link"
+        && receiver == "receiver"
+        && action == "run"
+        && stdin == "--stdin"
+        && root == "--artifact-root"
+        && id == "--artifact-id"
+    {
+        ProcessAdapter::link_receiver_run_stdin(artifact_root, artifact_id)
     } else if let [command, action, stdin, root, artifact_root, id, artifact_id] = &arguments[..]
         && command == "project"
         && action == "run"
@@ -767,6 +808,24 @@ impl ProcessAdapter {
             Err(_) => return error(3, "contract_rejected", "Link request was rejected"),
         };
         run_causal_fir_link(artifact_root, artifact_id, &request)
+    }
+
+    fn link_receiver_run_stdin(artifact_root: &str, artifact_id: &str) -> Response {
+        let input = match read_stdin_request() {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        let request = match parse_receiver_diagnostic_run_request_v1(&input) {
+            Ok(request) => request,
+            Err(_) => {
+                return error(
+                    3,
+                    "contract_rejected",
+                    "diagnostic receiver request was rejected",
+                );
+            }
+        };
+        run_diagnostic_receiver(artifact_root, artifact_id, &request)
     }
 
     fn channel_run_stdin() -> Response {
@@ -1208,6 +1267,114 @@ fn run_causal_fir_link(
             5,
             "operational_failure",
             "Link run did not publish an artifact",
+        ),
+    }
+}
+
+fn run_diagnostic_receiver(
+    artifact_root: &str,
+    artifact_id: &str,
+    request: &sipi_contracts::ReceiverDiagnosticRunRequestV1,
+) -> Response {
+    const MAX_ACCOUNTED_BYTES: u64 = 128 * 1024;
+    let policy = match RunPolicy::try_new(Duration::from_secs(1), 4_096, MAX_ACCOUNTED_BYTES) {
+        Ok(policy) => policy,
+        Err(_) => return error(6, "internal_failure", "run policy is unavailable"),
+    };
+    let id = match RunId::try_new(artifact_id) {
+        Ok(id) => id,
+        Err(_) => return error(2, "invalid_artifact_id", "artifact id is invalid"),
+    };
+    let (_, context) = match Runtime::start(id, policy) {
+        Ok(run) => run,
+        Err(_) => return error(6, "internal_failure", "runtime is unavailable"),
+    };
+    let canonical_input =
+        match deterministic_json(&sipi_contracts::WireReceiverInputV1::from(request.input())) {
+            Ok(value) => value,
+            Err(_) => {
+                return error(
+                    6,
+                    "internal_contract_error",
+                    "receiver input cannot be serialized",
+                );
+            }
+        };
+    let canonical_reference = match deterministic_json(&request.reference_bits().to_vec()) {
+        Ok(value) => value,
+        Err(_) => {
+            return error(
+                6,
+                "internal_contract_error",
+                "receiver reference cannot be serialized",
+            );
+        }
+    };
+    let reference = match ReferenceBitsV1::try_new(request.reference_bits().to_vec()) {
+        Ok(reference) => reference,
+        Err(_) => {
+            return error(
+                3,
+                "contract_rejected",
+                "receiver reference bits were rejected",
+            );
+        }
+    };
+    let input_digest = sha256_hex(&canonical_input);
+    let reference_digest = sha256_hex(&canonical_reference);
+    let root = Path::new(artifact_root);
+    let result = Runtime::execute(&context, |context| -> Result<_, ()> {
+        context
+            .consume(ResourceCost {
+                work_units: 1_024,
+                accounted_bytes: canonical_input
+                    .len()
+                    .checked_add(canonical_reference.len())
+                    .and_then(|size| size.checked_add(16_384))
+                    .ok_or(())? as u64,
+            })
+            .map_err(|_| ())?;
+        context.checkpoint().map_err(|_| ())?;
+        let receiver = run_fixed_receiver_delegated_ambiguity_v2(request.input(), &reference)
+            .map_err(|_| ())?;
+        context.checkpoint().map_err(|_| ())?;
+        let result_json =
+            diagnostic_receiver_result_json(request.profile_id(), &receiver).map_err(|_| ())?;
+        let result_digest = sha256_hex(result_json.as_bytes());
+        let provenance = format!(
+            "{{\"schema\":\"sipi.receiver.diagnostic.provenance.v1\",\"mode\":\"product_owned_diagnostic\",\"clock_policy\":\"policy_selected_not_locked\",\"external_rfm\":false,\"acceptance\":false,\"profile_id\":\"{}\",\"input_sha256\":\"{input_digest}\",\"reference_bits_sha256\":\"{reference_digest}\",\"result_sha256\":\"{result_digest}\",\"algorithm\":\"data_aided_fixed_training_receiver_delegated_ambiguity_v2\",\"contract\":\"{RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA}\",\"target\":\"{TARGET}\"}}",
+            request.profile_id()
+        );
+        let store = sipi_artifacts::ArtifactRoot::open_or_create(root).map_err(|_| ())?;
+        let mut staging = store.begin(artifact_id).map_err(|_| ())?;
+        staging
+            .stage_reader("result.json", Cursor::new(result_json.into_bytes()), 16_384)
+            .map_err(|_| ())?;
+        staging
+            .stage_reader(
+                "provenance.json",
+                Cursor::new(provenance.into_bytes()),
+                16_384,
+            )
+            .map_err(|_| ())?;
+        context.checkpoint().map_err(|_| ())?;
+        let manifest = staging
+            .seal()
+            .and_then(|sealed| sealed.publish_new())
+            .map_err(|_| ())?;
+        Ok((result_digest, manifest))
+    });
+    match result {
+        Ok((result_digest, manifest)) => success(format!(
+            "{{\"schema\":\"sipi.receiver.diagnostic-run-result.v1\",\"artifact_id\":\"{}\",\"result_sha256\":\"{result_digest}\",\"mode\":\"product_owned_diagnostic\",\"clock_policy\":\"policy_selected_not_locked\",\"external_rfm\":false,\"acceptance\":false,\"manifest_schema\":\"{}\",\"file_count\":{}}}",
+            manifest.artifact_id,
+            manifest.schema,
+            manifest.files.len()
+        )),
+        Err(_) => error(
+            5,
+            "operational_failure",
+            "diagnostic receiver run did not publish an artifact",
         ),
     }
 }
@@ -1692,6 +1859,41 @@ fn link_result_json(result: &sipi_link::ReceivedVoltageSamplesV1) -> Result<Stri
     ))
 }
 
+fn diagnostic_receiver_result_json(
+    profile_id: &str,
+    result: &sipi_link::ReceiverResultV1,
+) -> Result<String, &'static str> {
+    let phase_selection = match result.phase_selection() {
+        ReceiverPhaseSelectionV2::UniqueLocked => "unique_phase",
+        ReceiverPhaseSelectionV2::DelegatedAmbiguousTieBreak => "delegated_ambiguous_tie_break",
+    };
+    let decision_digest = receiver_decision_digest(result.decisions());
+    Ok(format!(
+        "{{\"schema\":\"sipi.receiver.diagnostic-result.v1\",\"mode\":\"product_owned_diagnostic\",\"clock_policy\":\"policy_selected_not_locked\",\"external_rfm\":false,\"acceptance\":false,\"profile_id\":\"{profile_id}\",\"phase\":{},\"phase_selection\":\"{phase_selection}\",\"phase_score\":{},\"phase_margin\":{},\"center_volts\":{},\"amplitude_volts\":{},\"frozen_taps\":{},\"error_count\":{},\"ber_denominator\":{},\"ber\":{},\"decision_sha256\":\"{decision_digest}\"}}",
+        result.phase(),
+        result.phase_score().get(),
+        result.phase_margin().get(),
+        result.center().get(),
+        result.amplitude().get(),
+        json_values(result.frozen_taps().iter().map(|tap| tap.get())),
+        result.error_count(),
+        result.ber_denominator(),
+        result.ber(),
+    ))
+}
+
+fn receiver_decision_digest(decisions: &[sipi_link::ReceiverDecisionV1]) -> String {
+    let mut encoded = Vec::with_capacity(decisions.len());
+    for decision in decisions {
+        encoded.push(match decision {
+            sipi_link::ReceiverDecisionV1::Positive => b'P',
+            sipi_link::ReceiverDecisionV1::Negative => b'N',
+            sipi_link::ReceiverDecisionV1::Erasure => b'E',
+        });
+    }
+    sha256_hex(&encoded)
+}
+
 fn json_values(values: impl ExactSizeIterator<Item = f64>) -> String {
     let mut result = String::from("[");
     for (index, value) in values.enumerate() {
@@ -1799,6 +2001,7 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["tran", "run"]
             | ["tran", "one-node-rc-pulse"]
             | ["link", "run"]
+            | ["link", "receiver", "run"]
             | ["channel", "run"]
             | ["compare", "run"]
             | ["project", "run"]
@@ -1892,6 +2095,8 @@ fn schema_bytes(id: &str) -> Result<Option<Vec<u8>>, sipi_contracts::ContractErr
         fixed_project_run_request_schema_json().map(Some)
     } else if id == sipi_contracts::RECEIVER_INPUT_SCHEMA {
         receiver_input_schema_json().map(Some)
+    } else if id == RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA {
+        receiver_diagnostic_run_request_schema_json().map(Some)
     } else if id == sipi_contracts::RECEIVER_SEMANTICS_SCHEMA {
         receiver_semantics_schema_json().map(Some)
     } else {
@@ -2274,7 +2479,7 @@ fn doctor_json() -> String {
 
 fn schema_list_json() -> String {
     format!(
-        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA}\",\"{ARRAY_COMPARE_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA}\",\"{}\",\"{}\"]}}",
+        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA}\",\"{ARRAY_COMPARE_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA}\",\"{}\",\"{}\"]}}",
         IBIS_DC_EVALUATE_REQUEST_SCHEMA,
         IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA,
         sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA,
@@ -2284,6 +2489,7 @@ fn schema_list_json() -> String {
         sipi_contracts::PROJECT_PLAN_SCHEMA,
         sipi_contracts::RECEIVER_INPUT_SCHEMA,
         sipi_contracts::RECEIVER_SEMANTICS_SCHEMA,
+        RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA,
         sipi_contracts::RX_LOAD_DIFFERENTIAL_RC_EVALUATE_REQUEST_SCHEMA,
         sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA,
         sipi_contracts::VALIDATION_REQUEST_SCHEMA,
@@ -2657,7 +2863,7 @@ mod tests {
     fn schema_list_uses_the_schema_inventory_order() {
         assert_eq!(
             schema_list_json(),
-            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.compare.aligned-arrays-request.v1\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.one-node-rc-pulse-request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
+            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.compare.aligned-arrays-request.v1\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.receiver.diagnostic-run-request.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.one-node-rc-pulse-request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
         );
     }
 

@@ -88,6 +88,53 @@ fn run_link(root: &Path, request: &[u8]) -> Output {
     child.wait_with_output().expect("wait sipi")
 }
 
+fn diagnostic_receiver_request() -> Vec<u8> {
+    let reference_bits = (0..128)
+        .map(|index| (index % 2 == 0).to_string())
+        .collect::<Vec<_>>()
+        .join(",");
+    let receive_volts = (0..1024)
+        .map(|index| {
+            if index % 8 == 3 {
+                if (index / 8) % 2 == 0 { "1" } else { "-1" }
+            } else {
+                "0"
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    format!(
+        "{{\"schema\":\"sipi.receiver.diagnostic-run-request.v1\",\"profile_id\":\"channel-rfm-block-2-current-drive-v1\",\"input\":{{\"schema\":\"sipi.receiver-input.v1\",\"timebase\":{{\"start_seconds\":0,\"sample_interval_seconds\":1e-12,\"sample_count\":1024}},\"receive_volts\":[{receive_volts}],\"samples_per_ui\":8,\"frontend\":{{\"ctle\":{{\"kind\":\"bypass\"}},\"ffe\":{{\"kind\":\"bypass\"}}}}}},\"reference_bits\":[{reference_bits}]}}"
+    )
+    .into_bytes()
+}
+
+fn run_diagnostic_receiver(root: &Path, request: &[u8]) -> Output {
+    let mut child = sipi()
+        .args([
+            "link",
+            "receiver",
+            "run",
+            "--stdin",
+            "--artifact-root",
+            root.to_string_lossy().as_ref(),
+            "--artifact-id",
+            "receiver-1",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start sipi");
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(request)
+        .expect("write request");
+    child.wait_with_output().expect("wait sipi")
+}
+
 fn run_fixed_project(root: &Path, request: &[u8]) -> Output {
     let mut child = sipi()
         .args([
@@ -201,6 +248,10 @@ fn protocol_catalog_and_product_examples_are_machine_readable() {
         ),
         ("link.run", "sipi.link.causal-fir-request.v1"),
         (
+            "link.receiver.run",
+            "sipi.receiver.diagnostic-run-request.v1",
+        ),
+        (
             "channel.run",
             "sipi.channel.matched-two-port-kernel-run-request.v1",
         ),
@@ -257,6 +308,54 @@ fn causal_fir_link_run_publishes_full_linear_tail() {
     );
     assert_eq!(bad.status.code(), Some(3));
     let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn diagnostic_receiver_run_publishes_only_non_sensitive_diagnostics() {
+    let root = std::env::temp_dir().join(format!(
+        "sipi-cli-process-receiver-diagnostic-{}",
+        std::process::id()
+    ));
+    let request = diagnostic_receiver_request();
+    let output = run_diagnostic_receiver(&root, &request);
+    assert!(output.status.success());
+    assert!(output.stderr.is_empty());
+    let stdout = String::from_utf8(output.stdout).expect("stdout");
+    assert!(stdout.contains("sipi.receiver.diagnostic-run-result.v1"));
+    assert!(stdout.contains("product_owned_diagnostic"));
+    assert!(stdout.contains("policy_selected_not_locked"));
+    assert!(stdout.contains("\"external_rfm\":false"));
+    assert!(stdout.contains("\"acceptance\":false"));
+
+    let artifact = root.join("receiver-1");
+    assert!(artifact.join("success.json").is_file());
+    assert!(artifact.join("result.json").is_file());
+    assert!(artifact.join("provenance.json").is_file());
+    assert!(!artifact.join("request.json").exists());
+    let result = std::fs::read_to_string(artifact.join("result.json")).expect("result");
+    let provenance = std::fs::read_to_string(artifact.join("provenance.json")).expect("provenance");
+    for sensitive in ["receive_volts", "\"reference_bits\":[", "\"decisions\":["] {
+        assert!(!result.contains(sensitive));
+        assert!(!provenance.contains(sensitive));
+    }
+    assert!(result.contains("decision_sha256"));
+    assert!(provenance.contains("policy_selected_not_locked"));
+
+    assert_eq!(
+        run_diagnostic_receiver(&root, &request).status.code(),
+        Some(5)
+    );
+    let bad_root = std::env::temp_dir().join(format!(
+        "sipi-cli-process-receiver-diagnostic-bad-{}",
+        std::process::id()
+    ));
+    let bad = run_diagnostic_receiver(
+        &bad_root,
+        br#"{"schema":"sipi.receiver.diagnostic-run-request.v1"}"#,
+    );
+    assert_eq!(bad.status.code(), Some(3));
+    let _ = std::fs::remove_dir_all(root);
+    let _ = std::fs::remove_dir_all(bad_root);
 }
 
 #[test]

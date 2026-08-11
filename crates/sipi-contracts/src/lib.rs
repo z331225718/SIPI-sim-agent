@@ -32,6 +32,8 @@ pub const RX_LOAD_DIFFERENTIAL_RC_EVALUATE_REQUEST_SCHEMA: &str =
     "sipi.rx-load.selected-differential-rc-evaluate.request.v1";
 pub const RECEIVER_INPUT_SCHEMA: &str = "sipi.receiver-input.v1";
 pub const RECEIVER_SEMANTICS_SCHEMA: &str = "sipi.receiver-semantics.v1";
+pub const RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA: &str = "sipi.receiver.diagnostic-run-request.v1";
+pub const RECEIVER_DIAGNOSTIC_PROFILE_ID: &str = "channel-rfm-block-2-current-drive-v1";
 pub const PROJECT_PLAN_SCHEMA: &str = "sipi.project.v1";
 pub const FIXED_PROJECT_RUN_REQUEST_SCHEMA: &str =
     "sipi.project.fixed-tran-causal-fir-run-request.v1";
@@ -47,6 +49,7 @@ pub enum ContractError {
     ArrayCompare(ArrayCompareContractError),
     Receiver(ReceiverContractError),
     ReceiverSemantics(ReceiverSemanticContractError),
+    ReceiverDiagnostic(ReceiverDiagnosticContractError),
     IbisInspect(IbisInspectContractError),
     IbisDcEvaluate(IbisDcEvaluateContractError),
     IbisQuasiStaticEvaluate(IbisQuasiStaticEvaluateContractError),
@@ -65,6 +68,7 @@ impl fmt::Display for ContractError {
             Self::ArrayCompare(error) => error.fmt(formatter),
             Self::Receiver(error) => error.fmt(formatter),
             Self::ReceiverSemantics(error) => error.fmt(formatter),
+            Self::ReceiverDiagnostic(error) => error.fmt(formatter),
             Self::IbisInspect(error) => error.fmt(formatter),
             Self::IbisDcEvaluate(error) => error.fmt(formatter),
             Self::IbisQuasiStaticEvaluate(error) => error.fmt(formatter),
@@ -109,6 +113,12 @@ impl From<ReceiverContractError> for ContractError {
 impl From<ReceiverSemanticContractError> for ContractError {
     fn from(value: ReceiverSemanticContractError) -> Self {
         Self::ReceiverSemantics(value)
+    }
+}
+
+impl From<ReceiverDiagnosticContractError> for ContractError {
+    fn from(value: ReceiverDiagnosticContractError) -> Self {
+        Self::ReceiverDiagnostic(value)
     }
 }
 
@@ -337,6 +347,22 @@ impl fmt::Display for ReceiverSemanticContractError {
 }
 
 impl Error for ReceiverSemanticContractError {}
+
+/// Stable rejections for the product-owned diagnostic receiver route.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ReceiverDiagnosticContractError {
+    UnsupportedProfile,
+    InvalidReferenceBitCount,
+    InsufficientTrainingSymbols,
+}
+
+impl fmt::Display for ReceiverDiagnosticContractError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "invalid diagnostic receiver request: {self:?}")
+    }
+}
+
+impl Error for ReceiverDiagnosticContractError {}
 
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -579,7 +605,7 @@ pub struct RuleLedgerEntry {
     pub test_id: &'static str,
 }
 
-pub const RULE_LEDGER_V1: [RuleLedgerEntry; 13] = [
+pub const RULE_LEDGER_V1: [RuleLedgerEntry; 15] = [
     RuleLedgerEntry {
         id: "contract.v1.version",
         owner: "contract",
@@ -656,6 +682,20 @@ pub const RULE_LEDGER_V1: [RuleLedgerEntry; 13] = [
         wire_type: "receiver_input",
         code: "unsupported_stage",
         test_id: "receiver_frontend_is_bypass_only",
+    },
+    RuleLedgerEntry {
+        id: "receiver.diagnostic.v1.profile",
+        owner: "contract",
+        wire_type: "receiver_diagnostic_run_request",
+        code: "unsupported_profile",
+        test_id: "receiver_diagnostic_request_is_fixed_profile_only",
+    },
+    RuleLedgerEntry {
+        id: "receiver.diagnostic.v1.reference-bits",
+        owner: "contract",
+        wire_type: "receiver_diagnostic_run_request",
+        code: "invalid_reference_bits",
+        test_id: "receiver_diagnostic_request_requires_explicit_training_bits",
     },
     RuleLedgerEntry {
         id: "receiver.semantics.v1.explicit-inputs",
@@ -1871,6 +1911,41 @@ pub struct ReceiverInputV1 {
     frontend: RxStagesV1,
 }
 
+/// Product-owned request for the fixed, diagnostic-only receiver stage.
+///
+/// The profile, waveform shape, reference bits, and frontend are all explicit.
+/// It deliberately carries no RFM, S-parameter, file, URL, or external-engine
+/// provenance.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireReceiverDiagnosticRunRequestV1 {
+    pub schema: String,
+    pub profile_id: String,
+    pub input: WireReceiverInputV1,
+    pub reference_bits: Vec<bool>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ReceiverDiagnosticRunRequestV1 {
+    profile_id: String,
+    input: ReceiverInputV1,
+    reference_bits: Vec<bool>,
+}
+
+impl ReceiverDiagnosticRunRequestV1 {
+    pub fn profile_id(&self) -> &str {
+        &self.profile_id
+    }
+
+    pub fn input(&self) -> &ReceiverInputV1 {
+        &self.input
+    }
+
+    pub fn reference_bits(&self) -> &[bool] {
+        &self.reference_bits
+    }
+}
+
 /// Caller-supplied preparation for a future receiver algorithm.
 ///
 /// No method in this crate evaluates DFE feedback, recovers a clock, makes a
@@ -2108,8 +2183,53 @@ impl From<&ReceiverInputV1> for WireReceiverInputV1 {
     }
 }
 
+impl TryFrom<WireReceiverDiagnosticRunRequestV1> for ReceiverDiagnosticRunRequestV1 {
+    type Error = ContractError;
+
+    fn try_from(value: WireReceiverDiagnosticRunRequestV1) -> Result<Self, Self::Error> {
+        if value.schema != RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA {
+            return Err(ContractError::Version);
+        }
+        if value.profile_id != RECEIVER_DIAGNOSTIC_PROFILE_ID {
+            return Err(ReceiverDiagnosticContractError::UnsupportedProfile.into());
+        }
+        if value.reference_bits.len() != 128 {
+            return Err(ReceiverDiagnosticContractError::InvalidReferenceBitCount.into());
+        }
+        if !value.reference_bits[..32].contains(&true)
+            || !value.reference_bits[..32].contains(&false)
+        {
+            return Err(ReceiverDiagnosticContractError::InsufficientTrainingSymbols.into());
+        }
+        Ok(Self {
+            profile_id: value.profile_id,
+            input: value.input.try_into()?,
+            reference_bits: value.reference_bits,
+        })
+    }
+}
+
+impl From<&ReceiverDiagnosticRunRequestV1> for WireReceiverDiagnosticRunRequestV1 {
+    fn from(value: &ReceiverDiagnosticRunRequestV1) -> Self {
+        Self {
+            schema: RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA.to_owned(),
+            profile_id: value.profile_id.clone(),
+            input: WireReceiverInputV1::from(&value.input),
+            reference_bits: value.reference_bits.clone(),
+        }
+    }
+}
+
 pub fn parse_receiver_input_v1(input: &[u8]) -> Result<ReceiverInputV1, ContractError> {
     serde_json::from_slice::<WireReceiverInputV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
+pub fn parse_receiver_diagnostic_run_request_v1(
+    input: &[u8],
+) -> Result<ReceiverDiagnosticRunRequestV1, ContractError> {
+    serde_json::from_slice::<WireReceiverDiagnosticRunRequestV1>(input)
         .map_err(|error| ContractError::Json(error.to_string()))?
         .try_into()
 }
@@ -2398,6 +2518,38 @@ pub fn product_example_request_json_v1(command_id: &str) -> Result<Option<Vec<u8
             },
         })
         .map(Some),
+        "link.receiver.run" => {
+            let reference_bits = (0..128).map(|index| index % 2 == 0).collect::<Vec<_>>();
+            let receive_volts = (0..1024)
+                .map(|index| {
+                    if index % 8 == 3 {
+                        if reference_bits[index / 8] { 1.0 } else { -1.0 }
+                    } else {
+                        0.0
+                    }
+                })
+                .collect();
+            deterministic_json(&WireReceiverDiagnosticRunRequestV1 {
+                schema: RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA.to_owned(),
+                profile_id: RECEIVER_DIAGNOSTIC_PROFILE_ID.to_owned(),
+                input: WireReceiverInputV1 {
+                    schema: RECEIVER_INPUT_SCHEMA.to_owned(),
+                    timebase: WireUniformTimebaseV1 {
+                        start_seconds: 0.0,
+                        sample_interval_seconds: 1.0e-12,
+                        sample_count: 1024,
+                    },
+                    receive_volts,
+                    samples_per_ui: 8,
+                    frontend: WireRxStagesV1 {
+                        ctle: WireCtleStageV1::Bypass,
+                        ffe: WireFfeStageV1::Bypass,
+                    },
+                },
+                reference_bits,
+            })
+            .map(Some)
+        }
         "compare.run" => deterministic_json(&WireArrayCompareRequestV1 {
             schema: ARRAY_COMPARE_REQUEST_SCHEMA.to_owned(),
             reference: WireAlignedArrayCompareInputV1 {
@@ -2576,6 +2728,10 @@ pub fn artifact_report_request_schema_json() -> Result<Vec<u8>, ContractError> {
 
 pub fn receiver_input_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireReceiverInputV1))
+}
+
+pub fn receiver_diagnostic_run_request_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(WireReceiverDiagnosticRunRequestV1))
 }
 
 pub fn receiver_semantics_schema_json() -> Result<Vec<u8>, ContractError> {
@@ -3187,6 +3343,27 @@ mod tests {
         }
     }
 
+    fn required_receiver_diagnostic_wire() -> WireReceiverDiagnosticRunRequestV1 {
+        let reference_bits = (0..128).map(|index| index % 2 == 0).collect::<Vec<_>>();
+        WireReceiverDiagnosticRunRequestV1 {
+            schema: RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA.to_owned(),
+            profile_id: RECEIVER_DIAGNOSTIC_PROFILE_ID.to_owned(),
+            input: WireReceiverInputV1 {
+                receive_volts: (0..1024)
+                    .map(|index| {
+                        if index % 8 == 3 {
+                            if reference_bits[index / 8] { 1.0 } else { -1.0 }
+                        } else {
+                            0.0
+                        }
+                    })
+                    .collect(),
+                ..required_receiver_wire()
+            },
+            reference_bits,
+        }
+    }
+
     #[test]
     fn required_receiver_input_is_typed_and_bypass_only() {
         let wire = required_receiver_wire();
@@ -3232,6 +3409,62 @@ mod tests {
                 .expect("schema")
                 .starts_with(b"{")
         );
+    }
+
+    #[test]
+    fn receiver_diagnostic_request_is_fixed_profile_only() {
+        let wire = required_receiver_diagnostic_wire();
+        let bytes = deterministic_json(&wire).expect("wire");
+        let request = parse_receiver_diagnostic_run_request_v1(&bytes).expect("diagnostic request");
+        assert_eq!(request.profile_id(), RECEIVER_DIAGNOSTIC_PROFILE_ID);
+        assert_eq!(request.input().receive().len(), 1024);
+        assert_eq!(request.reference_bits().len(), 128);
+
+        let mut wrong_profile = wire;
+        wrong_profile.profile_id = "other".to_owned();
+        assert_eq!(
+            ReceiverDiagnosticRunRequestV1::try_from(wrong_profile),
+            Err(ContractError::ReceiverDiagnostic(
+                ReceiverDiagnosticContractError::UnsupportedProfile
+            ))
+        );
+    }
+
+    #[test]
+    fn receiver_diagnostic_request_requires_explicit_training_bits() {
+        let mut missing = required_receiver_diagnostic_wire();
+        missing.reference_bits.pop();
+        assert_eq!(
+            ReceiverDiagnosticRunRequestV1::try_from(missing),
+            Err(ContractError::ReceiverDiagnostic(
+                ReceiverDiagnosticContractError::InvalidReferenceBitCount
+            ))
+        );
+        let mut one_class = required_receiver_diagnostic_wire();
+        one_class.reference_bits[..32].fill(true);
+        assert_eq!(
+            ReceiverDiagnosticRunRequestV1::try_from(one_class),
+            Err(ContractError::ReceiverDiagnostic(
+                ReceiverDiagnosticContractError::InsufficientTrainingSymbols
+            ))
+        );
+    }
+
+    #[test]
+    fn receiver_diagnostic_schema_is_available_from_the_contract_authority() {
+        assert!(
+            receiver_diagnostic_run_request_schema_json()
+                .expect("schema")
+                .starts_with(b"{")
+        );
+    }
+
+    #[test]
+    fn tracked_receiver_diagnostic_schema_baseline_is_exactly_the_registered_export() {
+        let baseline =
+            include_bytes!("../schemas/sipi.receiver.diagnostic-run-request.v1.schema.json");
+        let exported = receiver_diagnostic_run_request_schema_json().expect("schema");
+        assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
     }
 
     fn required_receiver_semantics_wire() -> WireReceiverSemanticsV1 {

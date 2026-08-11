@@ -3,7 +3,7 @@ status: provisional
 scope: sipi.link.causal-fir-request.v1
 profile_context:
   receiver_profile: channel-rfm-block-2-current-drive-v1
-  receiver_profile_status: blocked_cdr_ambiguous_under_approved_charter
+  receiver_profile_status: runnable_policy_selected_not_lock_accepted
 entries:
   - id: direct_launch
     interface: plan.tx
@@ -66,7 +66,14 @@ entries:
     implementation_ref: crates/sipi-link/src/receiver.rs#run_fixed_receiver_v1
     test_ref: crates/sipi-link/src/receiver.rs#selects_a_unique_phase_and_produces_exact_clean_decisions
     blocked_by: blocked_cdr_ambiguous_under_approved_charter
+  - id: fixed_receiver_diagnostic_cli
+    interface: link.receiver.run
+    disposition: product_owned_diagnostic
+    implementation_ref: crates/sipi-cli/src/main.rs#run_diagnostic_receiver
+    test_ref: crates/sipi-cli/tests/cli.rs#diagnostic_receiver_run_publishes_only_non_sensitive_diagnostics
+    non_claim: not_rfm_parity_or_clock_lock
 non_claims:
   - No seed, PRBS, noise, jitter, DFE, CDR, or BER stage is accepted by sipi.link.causal-fir-request.v1.
   - Explicit CTLE and FFE bypass are the only supported no-op stages.
-  - The fixed receiver library is not a link CLI stage or required-profile acceptance.
+  - The fixed receiver library is not a causal-FIR Link stage or required-profile acceptance.
+  - The receiver diagnostic CLI is caller-supplied input only, policy-selected-not-locked, and not RFM parity.

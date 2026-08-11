@@ -75,6 +75,8 @@ pub enum ReceiverPhaseSelectionV2 {
 pub struct ReceiverResultV1 {
     phase: usize,
     phase_selection: ReceiverPhaseSelectionV2,
+    phase_score: FiniteF64,
+    phase_margin: FiniteF64,
     center: Volts,
     amplitude: Volts,
     frozen_taps: [FiniteF64; TAP_COUNT],
@@ -93,6 +95,14 @@ impl ReceiverResultV1 {
 
     pub fn phase_selection(&self) -> ReceiverPhaseSelectionV2 {
         self.phase_selection
+    }
+
+    pub fn phase_score(&self) -> FiniteF64 {
+        self.phase_score
+    }
+
+    pub fn phase_margin(&self) -> FiniteF64 {
+        self.phase_margin
     }
 
     pub fn center(&self) -> Volts {
@@ -149,6 +159,7 @@ struct PhaseCalibration {
     center: f64,
     amplitude: f64,
     score: f64,
+    margin: f64,
     selection: ReceiverPhaseSelectionV2,
 }
 
@@ -238,6 +249,10 @@ fn run_with_calibration(
     Ok(ReceiverResultV1 {
         phase: calibration.phase,
         phase_selection: calibration.selection,
+        phase_score: FiniteF64::try_new(calibration.score, "fixed receiver phase score")
+            .map_err(|_| ReceiverError::NumericOverflow)?,
+        phase_margin: FiniteF64::try_new(calibration.margin, "fixed receiver phase margin")
+            .map_err(|_| ReceiverError::NumericOverflow)?,
         center: Volts::try_new(calibration.center).map_err(|_| ReceiverError::NumericOverflow)?,
         amplitude: Volts::try_new(calibration.amplitude)
             .map_err(|_| ReceiverError::NumericOverflow)?,
@@ -275,6 +290,7 @@ fn phase_candidates(
             center: checked_divide(checked_add(mean_one, mean_zero)?, 2.0)?,
             amplitude: checked_divide(difference, 2.0)?,
             score: difference.abs(),
+            margin: 0.0,
             selection: ReceiverPhaseSelectionV2::UniqueLocked,
         });
     }
@@ -287,7 +303,7 @@ fn select_phase_v1(
 ) -> Result<PhaseCalibration, ReceiverError> {
     let mut ordered = phase_candidates(input, reference)?;
     ordered.sort_by(|left, right| right.score.total_cmp(&left.score));
-    let best = ordered[0];
+    let mut best = ordered[0];
     let second = ordered[1];
     if best.score == 0.0
         || !best.score.is_finite()
@@ -296,6 +312,7 @@ fn select_phase_v1(
     {
         return Err(ReceiverError::CdrAmbiguous);
     }
+    best.margin = checked_divide(best.score - second.score, best.score)?;
     Ok(best)
 }
 
@@ -306,13 +323,14 @@ fn select_phase_delegated_v2(
     let candidates = phase_candidates(input, reference)?;
     let mut ordered = candidates.clone();
     ordered.sort_by(|left, right| right.score.total_cmp(&left.score));
-    let best = ordered[0];
+    let mut best = ordered[0];
     let second = ordered[1];
     if best.score == 0.0 || !best.score.is_finite() {
         return Err(ReceiverError::CdrUnqualified);
     }
     let margin = checked_divide(best.score - second.score, best.score)?;
     if best.score != second.score && margin >= MINIMUM_PHASE_MARGIN {
+        best.margin = margin;
         return Ok(best);
     }
     let contender_floor = checked_divide(best.score, 1.0 + MINIMUM_PHASE_MARGIN)?;
@@ -322,6 +340,7 @@ fn select_phase_delegated_v2(
         .min_by_key(|candidate| candidate.phase)
         .ok_or(ReceiverError::CdrUnqualified)?;
     selected.selection = ReceiverPhaseSelectionV2::DelegatedAmbiguousTieBreak;
+    selected.margin = margin;
     Ok(selected)
 }
 

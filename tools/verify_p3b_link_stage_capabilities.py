@@ -26,8 +26,15 @@ EXPECTED = {
     "cdr_stage": ("plan.rx.cdr", "reject"),
     "ber_stage": ("plan.rx.ber", "reject"),
     "fixed_receiver_library": ("sipi-link::run_fixed_receiver_v1", "library_only_profile_blocked"),
+    "fixed_receiver_diagnostic_cli": ("link.receiver.run", "product_owned_diagnostic"),
 }
-DISPOSITIONS = {"supported", "explicit_bypass", "reject", "library_only_profile_blocked"}
+DISPOSITIONS = {
+    "supported",
+    "explicit_bypass",
+    "reject",
+    "library_only_profile_blocked",
+    "product_owned_diagnostic",
+}
 
 
 def verify(document: object) -> dict:
@@ -42,7 +49,7 @@ def verify(document: object) -> dict:
         blockers.append("ledger scope drifted")
     if document["profile_context"] != {
         "receiver_profile": "channel-rfm-block-2-current-drive-v1",
-        "receiver_profile_status": "blocked_cdr_ambiguous_under_approved_charter",
+        "receiver_profile_status": "runnable_policy_selected_not_lock_accepted",
     }:
         blockers.append("receiver profile context drifted")
     entries = document["entries"]
@@ -60,17 +67,29 @@ def verify(document: object) -> dict:
             blockers.append(f"{entry_id}: interface or disposition drifted")
             continue
         allowed = {"id", "interface", "disposition", "test_ref"}
-        if disposition in {"supported", "explicit_bypass", "library_only_profile_blocked"}:
+        if disposition in {
+            "supported",
+            "explicit_bypass",
+            "library_only_profile_blocked",
+            "product_owned_diagnostic",
+        }:
             allowed.add("implementation_ref")
         if disposition == "reject":
             allowed.add("required_owner_input")
         if disposition == "library_only_profile_blocked":
             allowed.add("blocked_by")
+        if disposition == "product_owned_diagnostic":
+            allowed.add("non_claim")
         if set(entry) != allowed:
             blockers.append(f"{entry_id}: fields are invalid")
         if not isinstance(entry.get("test_ref"), str) or not entry["test_ref"]:
             blockers.append(f"{entry_id}: missing test anchor")
-        if disposition in {"supported", "explicit_bypass", "library_only_profile_blocked"} and (
+        if disposition in {
+            "supported",
+            "explicit_bypass",
+            "library_only_profile_blocked",
+            "product_owned_diagnostic",
+        } and (
             not isinstance(entry.get("implementation_ref"), str) or not entry["implementation_ref"]
         ):
             blockers.append(f"{entry_id}: missing implementation anchor")
@@ -80,7 +99,9 @@ def verify(document: object) -> dict:
             blockers.append(f"{entry_id}: missing owner input")
         if disposition == "library_only_profile_blocked" and entry.get("blocked_by") != "blocked_cdr_ambiguous_under_approved_charter":
             blockers.append(f"{entry_id}: blocked status drifted")
-    if not isinstance(document["non_claims"], list) or len(document["non_claims"]) != 3 or not all(
+        if disposition == "product_owned_diagnostic" and entry.get("non_claim") != "not_rfm_parity_or_clock_lock":
+            blockers.append(f"{entry_id}: diagnostic non-claim drifted")
+    if not isinstance(document["non_claims"], list) or len(document["non_claims"]) != 4 or not all(
         isinstance(value, str) and value for value in document["non_claims"]
     ):
         blockers.append("non-claims are incomplete")
