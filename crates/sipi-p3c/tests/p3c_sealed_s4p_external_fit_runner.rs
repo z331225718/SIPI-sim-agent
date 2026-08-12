@@ -13,7 +13,9 @@ use std::{
 
 use sha2::{Digest, Sha256};
 use sipi_artifacts::ArtifactRoot;
-use sipi_channel::fit_selected_p3c_real_constrained_fixed_pole_v1;
+use sipi_channel::{
+    fit_selected_p3c_real_constrained_fixed_pole_v1, RealConstrainedFixedPoleFitErrorV1,
+};
 use sipi_p3c::{
     admit_selected_p3c_sealed_s4p_v2, SelectedP3cSealedS4pIdentityV2,
     SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1,
@@ -27,9 +29,17 @@ const RUNNER_SCHEMA: &str = "sipi.p3c.sealed-selected-s4p-real-constrained-fit-r
 struct RunFact {
     manifest_sha256: String,
     record_count: usize,
-    order: usize,
-    model_sha256: String,
-    metrics_sha256: String,
+    outcome: FitOutcome,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+enum FitOutcome {
+    Admitted {
+        order: usize,
+        model_sha256: String,
+        metrics_sha256: String,
+    },
+    NoOrderMeetsAdmission,
 }
 
 fn sha256_reader(mut reader: impl Read) -> io::Result<(u64, String)> {
@@ -172,15 +182,24 @@ fn observe_once(source: &Path, index: usize) -> Result<RunFact, String> {
         {
             return Err("admission_provenance_mismatch".to_owned());
         }
-        let fit = fit_selected_p3c_real_constrained_fixed_pole_v1(admitted.transfer())
-            .map_err(|error| format!("fit:{error}"))?;
-        let (model_sha256, metrics_sha256) = model_and_metrics_sha256(&fit)?;
+        let outcome = match fit_selected_p3c_real_constrained_fixed_pole_v1(admitted.transfer()) {
+            Ok(fit) => {
+                let (model_sha256, metrics_sha256) = model_and_metrics_sha256(&fit)?;
+                FitOutcome::Admitted {
+                    order: fit.order(),
+                    model_sha256,
+                    metrics_sha256,
+                }
+            }
+            Err(RealConstrainedFixedPoleFitErrorV1::NoOrderMeetsAdmission) => {
+                FitOutcome::NoOrderMeetsAdmission
+            }
+            Err(error) => return Err(format!("fit:{error}")),
+        };
         Ok(RunFact {
             manifest_sha256,
             record_count: admitted.record_count(),
-            order: fit.order(),
-            model_sha256,
-            metrics_sha256,
+            outcome,
         })
     })();
     let cleanup = fs::remove_dir_all(&root).map_err(|error| format!("root_cleanup:{error}"));
@@ -198,20 +217,38 @@ fn required_path(name: &str) -> Result<PathBuf, String> {
         .ok_or_else(|| format!("{name}_not_absolute"))
 }
 
-fn write_report(report: &Path, first: &RunFact, second: &RunFact) -> Result<(), String> {
+fn run_json(fact: &RunFact) -> String {
+    match &fact.outcome {
+        FitOutcome::Admitted { order, model_sha256, metrics_sha256 } => format!(
+            "{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"fit_status\":\"admitted\",\"order\":{},\"model_sha256\":\"{}\",\"metrics_sha256\":\"{}\"}}",
+            fact.manifest_sha256, fact.record_count, order, model_sha256, metrics_sha256,
+        ),
+        FitOutcome::NoOrderMeetsAdmission => format!(
+            "{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"fit_status\":\"no_order_meets_admission\"}}",
+            fact.manifest_sha256, fact.record_count,
+        ),
+    }
+}
+
+fn write_report(
+    report: &Path,
+    status: &str,
+    reason: Option<&str>,
+    first: &RunFact,
+    second: &RunFact,
+) -> Result<(), String> {
     fs::create_dir_all(
         report
             .parent()
             .ok_or_else(|| "report_parent_missing".to_owned())?,
     )
     .map_err(|error| format!("report_parent_create:{error}"))?;
+    let reason = reason
+        .map(|value| format!("\"{value}\""))
+        .unwrap_or_else(|| "null".to_owned());
     let payload = format!(
-        concat!("{{\"schema\":\"{}\",\"status\":\"observed\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"source_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[",
-        "{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"order\":{},\"model_sha256\":\"{}\",\"metrics_sha256\":\"{}\"}},",
-        "{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"order\":{},\"model_sha256\":\"{}\",\"metrics_sha256\":\"{}\"}}],\"cleanup_status\":\"complete\"}}\n"),
-        RUNNER_SCHEMA, SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_SHA256_V1,
-        first.manifest_sha256, first.record_count, first.order, first.model_sha256, first.metrics_sha256,
-        second.manifest_sha256, second.record_count, second.order, second.model_sha256, second.metrics_sha256,
+        "{{\"schema\":\"{}\",\"status\":\"{}\",\"reason\":{},\"source_byte_length\":{},\"source_sha256\":\"{}\",\"source_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n",
+        RUNNER_SCHEMA, status, reason, SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_SHA256_V1, run_json(first), run_json(second),
     );
     fs::write(report, payload).map_err(|error| format!("report_write:{error}"))
 }
@@ -222,14 +259,21 @@ fn run() -> Result<(), String> {
     let first = observe_once(&source, 1)?;
     let second = observe_once(&source, 2)?;
     if first.record_count != second.record_count
-        || first.order != second.order
-        || first.model_sha256 != second.model_sha256
-        || first.metrics_sha256 != second.metrics_sha256
         || first.manifest_sha256 == second.manifest_sha256
+        || first.outcome != second.outcome
     {
         return Err("fresh_runs_not_independent_or_repeatable".to_owned());
     }
-    write_report(&report, &first, &second)
+    match &first.outcome {
+        FitOutcome::Admitted { .. } => write_report(&report, "observed", None, &first, &second),
+        FitOutcome::NoOrderMeetsAdmission => write_report(
+            &report,
+            "rejected",
+            Some("no_order_meets_admission"),
+            &first,
+            &second,
+        ),
+    }
 }
 
 #[test]

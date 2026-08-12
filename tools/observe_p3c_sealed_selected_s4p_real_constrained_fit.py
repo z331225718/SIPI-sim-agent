@@ -84,22 +84,32 @@ def parse_runner_report(path: Path) -> dict[str, Any]:
         value = json.loads(path.read_text(encoding="ascii"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ObservationError("runner_report_invalid") from error
-    required = {"schema", "status", "source_byte_length", "source_sha256", "source_identity_checks", "fresh_runs", "cleanup_status"}
-    if not isinstance(value, dict) or set(value) != required or value.get("schema") != RUNNER_SCHEMA or value.get("status") != "observed" or value.get("source_byte_length") != SOURCE_LENGTH or value.get("source_sha256") != SOURCE_SHA256 or value.get("source_identity_checks") != "before_stage_after_equal" or value.get("cleanup_status") != "complete":
+    required = {"schema", "status", "reason", "source_byte_length", "source_sha256", "source_identity_checks", "fresh_runs", "cleanup_status"}
+    if not isinstance(value, dict) or set(value) != required or value.get("schema") != RUNNER_SCHEMA or value.get("status") not in {"observed", "rejected"} or value.get("source_byte_length") != SOURCE_LENGTH or value.get("source_sha256") != SOURCE_SHA256 or value.get("source_identity_checks") != "before_stage_after_equal" or value.get("cleanup_status") != "complete":
         raise ObservationError("runner_report_contract_invalid")
     runs = value["fresh_runs"]
     if not isinstance(runs, list) or len(runs) != 2:
         raise ObservationError("runner_runs_invalid")
+    admitted = value["status"] == "observed"
+    if (admitted and value["reason"] is not None) or (not admitted and value["reason"] != "no_order_meets_admission"):
+        raise ObservationError("runner_report_reason_invalid")
+    expected_run_keys = {"manifest_sha256", "record_count", "fit_status", "order", "model_sha256", "metrics_sha256"} if admitted else {"manifest_sha256", "record_count", "fit_status"}
     for run in runs:
-        if not isinstance(run, dict) or set(run) != {"manifest_sha256", "record_count", "order", "model_sha256", "metrics_sha256"}:
+        if not isinstance(run, dict) or set(run) != expected_run_keys:
             raise ObservationError("runner_run_shape_invalid")
-        for key in ("manifest_sha256", "model_sha256", "metrics_sha256"):
+        hash_keys = ("manifest_sha256", "model_sha256", "metrics_sha256") if admitted else ("manifest_sha256",)
+        for key in hash_keys:
             if not isinstance(run[key], str) or len(run[key]) != 64 or set(run[key]) - set("0123456789abcdef"):
                 raise ObservationError("runner_hash_invalid")
-        if not isinstance(run["record_count"], int) or isinstance(run["record_count"], bool) or run["record_count"] <= 0 or run["order"] not in (8, 12, 16):
+        if not isinstance(run["record_count"], int) or isinstance(run["record_count"], bool) or run["record_count"] <= 0:
+            raise ObservationError("runner_run_value_invalid")
+        if admitted and (run["fit_status"] != "admitted" or run["order"] not in (8, 12, 16)):
+            raise ObservationError("runner_run_value_invalid")
+        if not admitted and run["fit_status"] != "no_order_meets_admission":
             raise ObservationError("runner_run_value_invalid")
     first, second = runs
-    if first["manifest_sha256"] == second["manifest_sha256"] or any(first[key] != second[key] for key in ("record_count", "order", "model_sha256", "metrics_sha256")):
+    comparable = ("record_count", "order", "model_sha256", "metrics_sha256") if admitted else ("record_count", "fit_status")
+    if first["manifest_sha256"] == second["manifest_sha256"] or any(first[key] != second[key] for key in comparable):
         raise ObservationError("fresh_run_consistency_invalid")
     return value
 
@@ -122,7 +132,10 @@ def run_observation(source: Path, report: Path, cargo: Path) -> dict[str, Any]:
     if source_identity(source) != before:
         raise ObservationError("source_changed_during_observation")
     first = runner["fresh_runs"][0]
-    return {"schema": SCHEMA, "status": "observed", "custody": "external_only", "report_path_retained": False, "selected_source": {"byte_length": before[0], "sha256": before[1]}, "clean_archive_commit": commit, "product_source_inventory": inventory, "runner": {"source_sha256": inventory[RUNNER.as_posix()], "report_sha256": runner_sha256}, "fresh_custody_runs": 2, "manifest_sha256s": [run["manifest_sha256"] for run in runner["fresh_runs"]], "record_count": first["record_count"], "order": first["order"], "model_sha256": first["model_sha256"], "metrics_sha256": first["metrics_sha256"], "source_identity_checks": "before_stage_after_equal", "cleanup_status": "complete", "non_claims": ["The selected S4P bytes, temporary ArtifactRoots, runner report, and all absolute paths remain outside the worktree.", "This observes only fixed static admission and fit identity, not stepping, waveform, ADS equivalence, receiver, AMI, IBIS, DLL, or release acceptance."]}
+    result = {"schema": SCHEMA, "status": runner["status"], "reason": runner["reason"], "custody": "external_only", "report_path_retained": False, "selected_source": {"byte_length": before[0], "sha256": before[1]}, "clean_archive_commit": commit, "product_source_inventory": inventory, "runner": {"source_sha256": inventory[RUNNER.as_posix()], "report_sha256": runner_sha256}, "fresh_custody_runs": 2, "manifest_sha256s": [run["manifest_sha256"] for run in runner["fresh_runs"]], "record_count": first["record_count"], "source_identity_checks": "before_stage_after_equal", "cleanup_status": "complete", "non_claims": ["The selected S4P bytes, temporary ArtifactRoots, runner report, and all absolute paths remain outside the worktree.", "This observes only fixed static admission and fit identity, not stepping, waveform, ADS equivalence, receiver, AMI, IBIS, DLL, or release acceptance."]}
+    if runner["status"] == "observed":
+        result.update({key: first[key] for key in ("order", "model_sha256", "metrics_sha256")})
+    return result
 
 
 def main(argv: list[str] | None = None) -> int:
