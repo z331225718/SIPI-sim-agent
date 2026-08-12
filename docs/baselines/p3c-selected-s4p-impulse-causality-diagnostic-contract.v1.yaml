@@ -22,6 +22,7 @@ diagnostic_quadrature:
   metrics:
     - negative_energy_fraction
     - negative_peak_fraction
+    - signed_peak_index
     - canonical_sampled_impulse_sha256
 gates:
   causality_threshold: pending_owner_decision

@@ -33,6 +33,7 @@ struct RunFact {
     impulse_sha256: String,
     negative_energy_fraction_bits: u64,
     negative_peak_fraction_bits: u64,
+    signed_peak_index: isize,
 }
 
 fn sha256_reader(mut reader: impl Read) -> std::io::Result<(u64, String)> {
@@ -81,7 +82,7 @@ fn sha256_bytes(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
-fn diagnostic(points: &[(f64, f64, f64)]) -> Result<(String, u64, u64), String> {
+fn diagnostic(points: &[(f64, f64, f64)]) -> Result<(String, u64, u64, isize), String> {
     if points.len() < 2
         || points[0].0.to_bits() != 0.0_f64.to_bits()
         || points
@@ -123,6 +124,11 @@ fn diagnostic(points: &[(f64, f64, f64)]) -> Result<(String, u64, u64), String> 
     if !peak.is_finite() || peak == 0.0 {
         return Err("zero_impulse_diagnostic".to_owned());
     }
+    let peak_position = samples
+        .iter()
+        .position(|sample| sample.abs().to_bits() == peak.to_bits())
+        .ok_or_else(|| "peak_position_missing".to_owned())?;
+    let signed_peak_index = peak_position as isize - HALF_WINDOW_SAMPLES as isize;
     let (negative_energy, nonnegative_energy, negative_peak) =
         samples.iter().enumerate().try_fold(
             (0.0_f64, 0.0_f64, 0.0_f64),
@@ -158,6 +164,7 @@ fn diagnostic(points: &[(f64, f64, f64)]) -> Result<(String, u64, u64), String> 
         format!("{:x}", digest.finalize()),
         negative_energy_fraction.to_bits(),
         negative_peak.to_bits(),
+        signed_peak_index,
     ))
 }
 
@@ -211,14 +218,19 @@ fn observe_once(source: &Path, index: usize) -> Result<RunFact, String> {
             .zip(admitted.transfer().transfer())
             .map(|(frequency, value)| (frequency.get(), value.real(), value.imaginary()))
             .collect::<Vec<_>>();
-        let (impulse_sha256, negative_energy_fraction_bits, negative_peak_fraction_bits) =
-            diagnostic(&points)?;
+        let (
+            impulse_sha256,
+            negative_energy_fraction_bits,
+            negative_peak_fraction_bits,
+            signed_peak_index,
+        ) = diagnostic(&points)?;
         Ok(RunFact {
             manifest_sha256,
             record_count: admitted.record_count(),
             impulse_sha256,
             negative_energy_fraction_bits,
             negative_peak_fraction_bits,
+            signed_peak_index,
         })
     })();
     let cleanup = fs::remove_dir_all(&root).map_err(|error| format!("root_cleanup:{error}"));
@@ -244,7 +256,7 @@ fn write_report(report: &Path, first: &RunFact, second: &RunFact) -> Result<(), 
     )
     .map_err(|error| format!("report_parent_create:{error}"))?;
     let row = |fact: &RunFact| {
-        format!("{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"impulse_sha256\":\"{}\",\"negative_energy_fraction_bits\":\"{:016x}\",\"negative_peak_fraction_bits\":\"{:016x}\"}}", fact.manifest_sha256, fact.record_count, fact.impulse_sha256, fact.negative_energy_fraction_bits, fact.negative_peak_fraction_bits)
+        format!("{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"impulse_sha256\":\"{}\",\"negative_energy_fraction_bits\":\"{:016x}\",\"negative_peak_fraction_bits\":\"{:016x}\",\"signed_peak_index\":{}}}", fact.manifest_sha256, fact.record_count, fact.impulse_sha256, fact.negative_energy_fraction_bits, fact.negative_peak_fraction_bits, fact.signed_peak_index)
     };
     let payload = format!("{{\"schema\":\"{}\",\"status\":\"observed\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"source_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n", SCHEMA, SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_SHA256_V1, row(first), row(second));
     fs::write(report, payload).map_err(|error| format!("report_write:{error}"))
@@ -259,6 +271,7 @@ fn run() -> Result<(), String> {
         || first.impulse_sha256 != second.impulse_sha256
         || first.negative_energy_fraction_bits != second.negative_energy_fraction_bits
         || first.negative_peak_fraction_bits != second.negative_peak_fraction_bits
+        || first.signed_peak_index != second.signed_peak_index
         || first.manifest_sha256 == second.manifest_sha256
     {
         return Err("fresh_runs_not_independent_or_repeatable".to_owned());
