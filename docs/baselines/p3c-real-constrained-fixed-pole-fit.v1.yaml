@@ -1,0 +1,68 @@
+schema: sipi.p3c-real-constrained-fixed-pole-fit.v1
+status: product_owned_real_constrained_fixed_pole_identification_implemented_sealed_s4p_and_stepping_blocked
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-12-p3c-04f-execution-contract
+  scope: selected_static_hdiff_real_constrained_fixed_pole_fit_only
+execution_contract_sha256: 3f5276be09e1cb57fbee8ff4b9882f5ec75faa423d791be88bec8d3b19c2dfaa
+input_boundary:
+  source_type: selected_p3c_static_differential_transfer_v1
+  product_owned_memory_only: true
+  required_first_frequency_hz: 0.0
+  required_last_frequency_hz: 4.0e+10
+  minimum_samples: 32
+  external_s4p_custody_admitted: false
+  ads_grid_or_waveform_input: prohibited
+algorithm:
+  model_domain: continuous_time
+  normalized_variable: s=j*f/40000000000
+  canonical_model: positive_imaginary_pole_residue_pairs
+  pair_response: r_over_s_minus_p_plus_conjugate_r_over_s_minus_conjugate_p
+  coefficient_basis: stacked_real_and_imaginary_real_constrained_least_squares
+  direct_term: prohibited
+  derivative_term: prohibited
+  explicit_delay: prohibited
+  pole_relocation: prohibited
+  pole_reflection_or_repair: prohibited
+  residue_average_projection_or_imaginary_discard: prohibited
+  orders: [8, 12, 16]
+  positive_imaginary_poles: log_spaced_10mhz_to_40ghz_with_negative_real_part_0.05_times_imaginary_magnitude
+  pair_order: ascending_positive_imaginary_frequency
+  weighting: inverse_reference_magnitude_floor_1e-15
+  rank_precheck: thin_svd_relative_smallest_singular_value_gt_1e-12
+  residue_solver: faer_0_24_4_column_pivoted_qr_single_thread_no_rayon
+  order_selection: first_allowlisted_order_passing_all_metrics
+fit_admission:
+  relative_rms_error_max: 0.005
+  maximum_normalized_absolute_error_max: 0.03
+  dc_relative_error_max: 0.005
+  zero_signal_norm: reject
+  zero_dc_reference: reject
+  nonfinite_or_unpaired_model: reject
+implementation:
+  crate: sipi-channel
+  module: p3c_real_constrained_fixed_pole_fit_v1
+  public_cli: absent
+  coefficient_artifact: absent
+admission:
+  real_constrained_fixed_pole_identification_implemented: true
+  sealed_s4p_admission_implemented: false
+  analytic_stepping_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - selected_external_s4p_artifact_admission_missing
+  - analytic_direct_stepping_implementation_missing
+  - candidate_waveform_generation_missing
+  - external_reference_binding_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not general rational fitting, vector fitting, pole stabilization, causality/passivity repair, or ADS emulation.
+  - Not S4P-to-waveform, state-space executor, artifact, or public command.
+  - Not candidate waveform, external-reference, eye, jitter, receiver, AMI, IBIS, DLL, or release acceptance.
