@@ -23,3 +23,9 @@ python -m py_compile tools/observe_p3c_sealed_selected_s4p_real_constrained_fit.
 
 下一步只能在 clean archive 上对 exact external source 运行两次 observer；fit 不通过时必须记录
 rejected observation，不能放宽 order 或 admission thresholds。
+
+补充：clean archive `848df45` 的两次实际观察均返回
+`NoOrderMeetsAdmission`。Orca OpenCode 对 hash-only rejected evidence 复审为
+`0 P1 / 0 P2`；其发现的 release-boundary CRLF hash 误改已在提交前恢复为现有
+release preflight 所要求的 worktree-byte hash。该负向结果不提升 fit admission 或任何
+后续 gate。
