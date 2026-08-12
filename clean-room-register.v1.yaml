@@ -425,6 +425,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, auditor]
     derived_from: []
+  - id: p3c-prbs9-waveform-jitter-contract-spec-v1
+    kind: independent_spec
+    content_sha256: 61f7484914953c39a725ef11164e706f39ce2ab96ccb1fcabe2cd5f9d7ae66e5
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-prbs9-waveform-jitter-contract.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, auditor]
+    derived_from: [p3c-prbs9-waveform-jitter-preflight-spec-v1]
   - id: p3b-causal-fir-cli-run-spec-v1
     kind: independent_spec
     content_sha256: 5caca9c27e49a2929300a3f6d2eece00c46b562931e716d69c16bb477a28154e
@@ -1041,6 +1049,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-prbs9-waveform-jitter-preflight-spec-v1]
+  - id: p3c-prbs9-waveform-jitter-contract-v1
+    paths: [docs/baselines/p3c-prbs9-waveform-jitter-contract.v1.yaml, docs/clean-room/specs/p3c-prbs9-waveform-jitter-contract.v1.md, tools/verify_p3c_prbs9_waveform_jitter_contract.py, tools/test_verify_p3c_prbs9_waveform_jitter_contract.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3c-prbs9-waveform-jitter-preflight-spec-v1, p3c-prbs9-waveform-jitter-contract-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-prbs9-waveform-jitter-preflight-spec-v1, p3c-prbs9-waveform-jitter-contract-spec-v1]
   - id: p3b-causal-fir-cli-run-v1
     paths: [docs/clean-room/specs/p3b-causal-fir-cli-run.v1.md, crates/sipi-cli/**, crates/sipi-contracts/**]
     state: planned
