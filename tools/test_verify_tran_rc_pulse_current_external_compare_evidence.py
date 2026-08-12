@@ -31,10 +31,9 @@ class CurrentTranEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE_V1.EvidenceError, "evidence_product_source_drift"):
             GATE_V1.verify_document(self.document(GATE_V1))
 
-    def test_v2_current_candidate_evidence_is_bound(self) -> None:
-        result = GATE_V2.verify_document(self.document(GATE_V2))
-        self.assertTrue(result["valid"])
-        self.assertEqual(result["evidence_level"], "hash_only_attestation")
+    def test_v2_current_candidate_evidence_is_historical_after_lock_drift(self) -> None:
+        with self.assertRaisesRegex(GATE_V2.EvidenceError, "evidence_product_source_drift"):
+            GATE_V2.verify_document(self.document(GATE_V2))
 
     def test_rejects_historical_schema_and_product_drift(self) -> None:
         wrong_schema = self.document(GATE_V2)

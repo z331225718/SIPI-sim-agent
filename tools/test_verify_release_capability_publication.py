@@ -114,11 +114,17 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
-    def test_accepted_tran_requires_the_verified_external_evidence(self) -> None:
+    def test_tran_historical_evidence_requires_exact_source_drift_state(self) -> None:
         publication = self.publication()
         tran = next(row for row in publication["rows"] if row["id"] == "tran-rc-pulse")
-        tran["evidence_ids"].remove("tran-rc-pulse-current-external-compare-v2")
-        with self.assertRaises(GATE.PublicationError):
+        tran["blockers"].remove("current_external_compare_evidence_source_drift")
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_tran_evidence_state_drift"):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        tran = next(row for row in publication["rows"] if row["id"] == "tran-rc-pulse")
+        tran["evidence_ids"].append("tran-rc-pulse-current-external-compare-v2")
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_tran_evidence_state_drift"):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
     def test_prbs9_artifact_metric_route_stays_identity_only_and_non_acceptance(self) -> None:
@@ -142,7 +148,7 @@ class PublicationTests(unittest.TestCase):
 
         publication = self.publication()
         tran = next(row for row in publication["rows"] if row["id"] == "tran-rc-pulse")
-        tran["acceptance_state"] = "specified"
+        tran["acceptance_state"] = "accepted"
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 

@@ -553,6 +553,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3c-selected-four-port-static-bench-spec-v1]
+  - id: p3c-fixed-rational-execution-contract-spec-v1
+    kind: independent_spec
+    content_sha256: ea3c4d0f13689f9b21db70605ec262a59b8dcf8b350b05c9acbe1c492b54832b
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-fixed-rational-execution-contract.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, auditor]
+    derived_from: [p3c-fixed-pole-rational-identification-core-spec-v1]
   - id: p3b-causal-fir-cli-run-spec-v1
     kind: independent_spec
     content_sha256: 5caca9c27e49a2929300a3f6d2eece00c46b562931e716d69c16bb477a28154e
@@ -1285,6 +1293,15 @@ scopes:
       implementer: [p3c-fixed-pole-rational-identification-core-spec-v1]
       comparator: []
       auditor: [p3c-fixed-pole-rational-identification-core-spec-v1]
+  - id: p3c-fixed-rational-execution-contract-v1
+    paths: [docs/baselines/p3c-fixed-rational-execution-contract.v1.yaml, docs/clean-room/specs/p3c-fixed-rational-execution-contract.v1.md, tools/verify_p3c_fixed_rational_execution_contract.py, tools/test_verify_p3c_fixed_rational_execution_contract.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3c-fixed-rational-execution-contract-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-fixed-rational-execution-contract-spec-v1]
   - id: p3b-causal-fir-cli-run-v1
     paths: [docs/clean-room/specs/p3b-causal-fir-cli-run.v1.md, crates/sipi-cli/**, crates/sipi-contracts/**]
     state: planned

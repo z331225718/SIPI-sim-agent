@@ -1,0 +1,101 @@
+schema: sipi.p3c-fixed-rational-execution-contract.v1
+status: product_fixed_rational_execution_contract_specified_real_model_hardening_and_sealed_s4p_runtime_pending
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-12-p3c-04f-execution-contract
+  scope: selected_profile_fixed_pole_real_model_and_direct_stepping_semantics_only
+predecessor_bindings:
+  rational_route_preflight_sha256: 33be456ec98c37c5e9146d295a5394a664866bc8b826b790b6577b6fd8b0c4e3
+  fixed_pole_identification_sha256: 2dc2413332f8a32fdd589553afe84bd7fe0c6ecf3a610f696ebad3cd0cb79af6
+model_contract:
+  fit_route: fixed_allowlisted_orders_8_12_16_final_for_selected_profile
+  domain: continuous_time
+  signal_kind: real_siso_scalar_differential_transfer
+  canonical_authority: positive_imaginary_pole_residue_pairs
+  canonical_expression: H(s)=sum_over_pairs(2*Re(r_k/(s-p_k)))
+  strictly_proper_required: true
+  direct_term: prohibited
+  derivative_term: prohibited
+  explicit_delay: prohibited
+  relocating_vector_fit: not_required_for_selected_profile
+  pole_residue_realness:
+    positive_imaginary_member: canonical_stored_member_only
+    negative_imaginary_member: exact_conjugate_derived_only
+    fitting: real_constrained_basis_required
+    postfit_average_projection_or_imaginary_discard: prohibited
+    stability: every_pole_strictly_left_half_plane
+    pair_order: ascending_positive_imaginary_frequency
+    nonfinite_or_unpaired_model: reject
+fit_admission:
+  reference_core: p3c_fixed_pole_rational_identification_core_v1
+  required_orders: [8, 12, 16]
+  relative_rms_error_max: 0.005
+  maximum_normalized_absolute_error_max: 0.03
+  dc_relative_error_max: 0.005
+  failed_fit: reject_without_algorithm_fallback
+out_of_band_policy:
+  strategy: global_strictly_proper_rational_continuation
+  product_semantics: true
+  ads_equivalence_claim: prohibited
+  band_limit_filter: prohibited
+  phase_delay_extraction: prohibited
+source_policy:
+  signal: differential_prbs9_levels_plus_minus_1_volt
+  edge: linear_ramp
+  edge_duration_seconds: 1.0e-16
+  transition_interval: half_open_ui_boundary_to_boundary_plus_100as
+  plateau_after_transition: true
+  unchanged_symbol: hold_previous_level
+  ads_edge_shape_equivalence_claim: prohibited
+time_and_state_policy:
+  ui_seconds: 3.125e-11
+  osr: 32
+  dt_seconds: 9.765625e-13
+  sample_count: 49056
+  output_interval: half_open_0_to_3x511_ui
+  output_strobe: y_at_n_times_dt_for_n_0_to_49055
+  initial_state: zero
+  first_symbol: level_effective_at_t0_without_preceding_bit_or_initial_ramp
+  ui_boundary_order: record_output_then_advance_new_source_segment
+  warmup: first_two_prbs_periods_are_explicit_input_only
+recurrence_policy:
+  representation: conjugate_pair_analytic_piecewise_affine_input_recurrence
+  pair_output: sum_2_times_real_pair_state
+  numerical_primitives: fixed_complex_exponential_and_expm1
+  generic_matrix_exponential: prohibited
+  ode_solver: prohibited
+  adaptive_step: prohibited
+  resampling: prohibited
+  alignment_gain_dc_or_polarity_fit: prohibited
+  passivity_enforcement: none_diagnostic_only
+  pole_or_residue_repair: prohibited
+  finite_or_imaginary_residual_failure: reject
+caller_surface:
+  caller_overrides: prohibited
+  public_cli: absent
+  artifact_input_or_output: absent
+  external_s4p_custody_admitted: false
+admission:
+  execution_contract_specified: true
+  real_constrained_fit_hardening_implemented: false
+  sealed_s4p_admission_implemented: false
+  analytic_stepping_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - real_constrained_fixed_pole_fit_hardening_missing
+  - selected_external_s4p_artifact_admission_missing
+  - analytic_direct_stepping_implementation_missing
+  - candidate_waveform_generation_missing
+  - external_reference_binding_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not ADS convolution, interpolation, extrapolation, source-edge, or transient-engine equivalence.
+  - Not general rational fitting, vector fitting, S4P, state-space, netlist, or ODE-solver support.
+  - Not candidate waveform, external-reference, eye, jitter, receiver, AMI, IBIS, DLL, or release acceptance.

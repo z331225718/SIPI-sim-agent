@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: bd44a042bbff0fd13b7f53b35bd11978f57ddea5edcb4247138605e38af9b101
+  tracked_paths_sha256: f469862c4162ef8f62b57207622bd4988533b4a1b8c6901059c96679462e2902
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1415,6 +1415,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-12-p3c-fixed-rational-execution-contract.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-12-p3c-prbs9-metric-artifact-cli.md:
       rule: historical-docs
       class: migration_only
@@ -1734,6 +1740,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-fixed-pole-rational-identification-core.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-fixed-rational-execution-contract.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2268,6 +2280,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-fixed-pole-rational-identification-core.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-fixed-rational-execution-contract.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7433,6 +7451,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_fixed_rational_execution_contract.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_prbs9_metric_artifact_cli.py:
       rule: migration-tools
       class: migration_only
@@ -7956,6 +7980,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_fixed_pole_rational_identification_core.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_fixed_rational_execution_contract.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

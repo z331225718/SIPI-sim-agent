@@ -249,6 +249,7 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
     if tran is None:
         raise PublicationError("publication_tran_row_missing")
     compare_id = "tran-rc-pulse-current-external-compare-v2"
+    tran_source_drift_blocker = "current_external_compare_evidence_source_drift"
     if tran["acceptance_state"] == "accepted":
         if (
             tran["external_oracle"] is not True
@@ -263,8 +264,31 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
             verify_tran_evidence(load_yaml(ROOT / entry["path"]))
         except (EvidenceError, OSError, RuntimeError):
             raise PublicationError("publication_tran_external_evidence_invalid") from None
-    elif compare_id in tran["evidence_ids"]:
+    elif (
+        tran["acceptance_state"] != "specified"
+        or tran["external_oracle"] is not False
+        or compare_id in tran["evidence_ids"]
+        or tran_source_drift_blocker not in tran["blockers"]
+    ):
         raise PublicationError("publication_tran_evidence_state_drift")
+    else:
+        entry = index_by_id.get(compare_id)
+        if (
+            entry is None
+            or entry["kind"] != "external_compare_evidence"
+            or entry["subject"] != "tran-rc-pulse"
+            or entry["evidence_state"] != "observed"
+        ):
+            raise PublicationError("publication_tran_evidence_state_drift")
+        try:
+            verify_tran_evidence(load_yaml(ROOT / entry["path"]))
+        except EvidenceError as error:
+            if str(error) != "evidence_product_source_drift":
+                raise PublicationError("publication_tran_historical_evidence_invalid") from None
+        except (OSError, RuntimeError):
+            raise PublicationError("publication_tran_historical_evidence_invalid") from None
+        else:
+            raise PublicationError("publication_tran_historical_evidence_not_drifted")
 
     channel = next((row for row in rows if row["id"] == "channel"), None)
     compare_id = "channel-s2p-cli-current-external-compare-v4"
