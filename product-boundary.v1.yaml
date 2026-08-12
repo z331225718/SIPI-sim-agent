@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 86f015ffe9a65fff129c2aa11afa5648dc7c003a4f0f85194280c54481962bec
+  tracked_paths_sha256: 4ff7b030da2af55df667d9f6f5bc9f87b1aeef8e3115e3a75ac5e56b6d2b1b94
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -462,6 +462,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-p3c/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/tests/p3c_sealed_s4p_external_fit_runner.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1512,6 +1518,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-12-p3c-selected-s4p-external-static-custody.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-12-p3c-selected-s4p-real-constrained-fit-harness.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7164,6 +7176,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/observe_p3c_sealed_selected_s4p_custody.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/observe_p3c_sealed_selected_s4p_real_constrained_fit.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
