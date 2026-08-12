@@ -8,6 +8,13 @@ use std::{error::Error, fmt, num::NonZeroUsize};
 use rustfft::{FftPlanner, num_complex::Complex};
 use sipi_types::{Complex64, FiniteF64, Hertz, Ohms, Seconds};
 
+pub mod p3c_fixed_four_port_bench_v1;
+pub use p3c_fixed_four_port_bench_v1::{
+    FixedFourPortBenchError, FourPortS, SELECTED_P3C_PORT_COUNT, SelectedP3cFourPortSpectrumV1,
+    SelectedP3cPortMapV1, SelectedP3cStaticDifferentialTransferV1,
+    reduce_selected_p3c_fixed_four_port_bench_v1,
+};
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TwoPortS {
     pub s11: Complex64,

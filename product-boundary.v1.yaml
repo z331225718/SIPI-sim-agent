@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 17014d36d65aa747b84507809076522c6089228b09bd95aa0fde317e838228b4
+  tracked_paths_sha256: 968cc4c69563b75f4fd05782872644bdaba4b679aed25343544886f5a2fffc8a
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -8017,6 +8017,48 @@ inventory:
       distribution: evidence
     uv.lock:
       rule: migration-metadata
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    crates/sipi-channel/src/p3c_fixed_four_port_bench_v1.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-touchstone/src/selected_four_port_v1.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    docs/baselines/audits/2026-08-12-p3c-selected-four-port-static-bench.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-selected-four-port-static-bench.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-selected-four-port-static-bench.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p3c_selected_four_port_static_bench.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_selected_four_port_static_bench.py:
+      rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
       provenance: project_authored

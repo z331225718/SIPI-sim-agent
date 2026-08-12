@@ -11,6 +11,8 @@ use std::{error::Error, fmt, num::NonZeroUsize};
 use sipi_channel::{MatchedTwoPortSpectrumV1, TwoPortS};
 use sipi_types::{Complex64, Hertz, Ohms};
 
+pub mod selected_four_port_v1;
+
 /// Bounded parsing limits supplied by the caller. They carry no file or
 /// transport policy; the parser operates only on the bytes it receives.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

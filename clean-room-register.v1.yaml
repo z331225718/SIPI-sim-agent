@@ -497,6 +497,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3c-prbs9-metric-core-spec-v2, p1-artifacts-foundation-spec-v1, p1-cli-process-contract-spec-v1]
+  - id: p3c-selected-four-port-static-bench-spec-v1
+    kind: independent_spec
+    content_sha256: 1cf3edb26a988899d8664c6615afe6bcbed776bc7c00183b5ed823b08ea18a9d
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-selected-four-port-static-bench.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: []
   - id: p3b-causal-fir-cli-run-spec-v1
     kind: independent_spec
     content_sha256: 5caca9c27e49a2929300a3f6d2eece00c46b562931e716d69c16bb477a28154e
@@ -1184,6 +1192,15 @@ scopes:
       implementer: [p3c-prbs9-metric-artifact-cli-spec-v1]
       comparator: []
       auditor: [p3c-prbs9-metric-artifact-cli-spec-v1]
+  - id: p3c-selected-four-port-static-bench-v1
+    paths: [docs/baselines/p3c-selected-four-port-static-bench.v1.yaml, docs/clean-room/specs/p3c-selected-four-port-static-bench.v1.md, crates/sipi-touchstone/src/lib.rs, crates/sipi-touchstone/src/selected_four_port_v1.rs, crates/sipi-channel/src/lib.rs, crates/sipi-channel/src/p3c_fixed_four_port_bench_v1.rs, tools/verify_p3c_selected_four_port_static_bench.py, tools/test_verify_p3c_selected_four_port_static_bench.py, tools/verify_release_capability_publication.py, tools/test_verify_release_capability_publication.py, docs/baselines/release-capability-publication.v1.yaml]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3c-selected-four-port-static-bench-spec-v1]
+      implementer: [p3c-selected-four-port-static-bench-spec-v1]
+      comparator: []
+      auditor: [p3c-selected-four-port-static-bench-spec-v1]
   - id: p3b-causal-fir-cli-run-v1
     paths: [docs/clean-room/specs/p3b-causal-fir-cli-run.v1.md, crates/sipi-cli/**, crates/sipi-contracts/**]
     state: planned

@@ -1,0 +1,56 @@
+schema: sipi.p3c-selected-four-port-static-bench.v1
+status: product_owned_static_parser_and_fixed_bench_reduction_specified_time_domain_executor_blocked
+authority:
+  actor: user
+  decision_ref: user-authorized-2026-08-12-p3c-product-candidate-follows-ads-bench
+  scope: selected_static_four_port_input_and_matched_bench_reduction_only
+external_selection:
+  logical_name: channel_gen5_highloss.s4p
+  byte_length: 1834156
+  sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  port_map: [tx_plus, rx_plus, tx_minus, rx_minus]
+  asset_bytes_tracked: false
+lexical_boundary:
+  ports: 4
+  option_line: "# Hz S RI R 50.0"
+  data_format: ri
+  parameter: s
+  reference_impedance_ohms: 50.0
+  public_matrix_order: incident_port_column_then_output_port_row
+  continuation_lines: data_tokens_only
+  unsupported_keywords: reject
+  nonfinite_values: reject
+  nonincreasing_frequency: reject
+fixed_bench:
+  tx_sources: complementary_ideal_prbssrc_each_internal_50_ohm
+  rx_loads: two_50_ohm_to_global_ground
+  observation: differential_rx_plus_minus_rx_minus
+  reduction: "(S21-S23-S41+S43)/4"
+  caller_selectable_topology: false
+implementation:
+  lexical_crate: sipi-touchstone
+  lexical_module: selected_four_port_v1
+  static_crate: sipi-channel
+  static_module: p3c_fixed_four_port_bench_v1
+  time_domain_executor: not_implemented
+admission:
+  external_static_admission_evaluated: false
+  candidate_waveform_generated: false
+  external_reference_binding: not_evaluated
+  accepted_receiver: false
+  acceptance_ready: false
+  promotion_eligible: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - fresh_selected_s4p_static_custody_missing
+  - time_domain_network_policy_missing
+  - candidate_waveform_generation_missing
+  - external_reference_binding_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not general Touchstone, S-parameter, mixed-mode, or network-solver support.
+  - Not ADS transient parity, causal/passive channel evidence, or an impulse response.
+  - Not PRBS9 waveform, eye, jitter, receiver, AMI, IBIS, DLL, or release acceptance.

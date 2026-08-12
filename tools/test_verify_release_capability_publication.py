@@ -149,24 +149,24 @@ class PublicationTests(unittest.TestCase):
     def test_channel_cli_requires_current_evidence_without_claiming_general_support(self) -> None:
         publication = self.publication()
         channel = next(row for row in publication["rows"] if row["id"] == "channel")
-        channel["evidence_ids"].remove("channel-s2p-cli-current-external-compare-v4")
+        channel["blockers"].remove("current_external_compare_evidence_source_drift")
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
         publication = self.publication()
         channel = next(row for row in publication["rows"] if row["id"] == "channel")
-        channel["evidence_ids"].append("channel-s2p-cli-current-external-compare-v3")
+        channel["evidence_ids"].append("channel-s2p-cli-current-external-compare-v4")
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
         publication = self.publication()
-        evidence = next(entry for entry in publication["report_index"] if entry["id"] == "channel-s2p-cli-current-external-compare-v3")
+        evidence = next(entry for entry in publication["report_index"] if entry["id"] == "channel-s2p-cli-current-external-compare-v4")
         evidence["evidence_state"] = "specified"
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
         publication = self.publication()
         channel = next(row for row in publication["rows"] if row["id"] == "channel")
-        channel["blockers"].append("current_external_compare_evidence_source_drift")
+        channel["external_oracle"] = True
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
@@ -182,13 +182,13 @@ class PublicationTests(unittest.TestCase):
             "verify_current_channel_cli_evidence",
             side_effect=GATE.CurrentChannelEvidenceError("evidence_product_invalid"),
         ):
-            with self.assertRaisesRegex(GATE.PublicationError, "publication_channel_external_evidence_invalid"):
+            with self.assertRaisesRegex(GATE.PublicationError, "publication_channel_historical_evidence_invalid"):
                 GATE.validate(publication, manifest_for(publication), ROOT)
 
         publication = self.publication()
         with patch.object(
             GATE,
-            "verify_channel_cli_evidence",
+            "verify_current_channel_cli_evidence",
             return_value={"valid": True},
         ):
             with self.assertRaisesRegex(GATE.PublicationError, "publication_channel_historical_evidence_not_drifted"):
