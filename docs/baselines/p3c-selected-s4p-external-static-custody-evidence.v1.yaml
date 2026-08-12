@@ -1,0 +1,59 @@
+schema: sipi.p3c-selected-s4p-external-static-custody-evidence.v1
+status: external_only_selected_s4p_static_custody_observed_v2_fit_and_stepping_blocked
+authority:
+  actor: user
+  decision_ref: user-authorized-2026-08-12-p3c-04i-custody-observation
+  scope: exact_selected_s4p_seal_and_static_admission_only
+contract_sha256: 745acfed28749a04d6e6f1c1a8e8bc01745f1560fea737c159de74565cd3c72e
+lexical_amendment_sha256: bfc9962452cc9eb31a14bb4bffe09d090ac621e16d5e40e18f4c3f3f78b25f6d
+external_observation:
+  schema: sipi.p3c.sealed-selected-s4p-custody-observation.v1
+  status: observed
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 1839
+  report_content_sha256: f14110a4d0137620e5ae6ecf17aa8057e8f191fc05704f5eef99f10ce98e0c57
+  clean_archive_commit: 6e6668443aab6dc0a0af51f494eb3ff95068d28e
+  selected_source:
+    byte_length: 1834156
+    sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  source_identity_checks: before_stage_after_equal
+  fresh_custody_runs: 2
+  manifest_sha256s:
+    - e29a16282de0c3650bb327c4852af5694280f96ae4e0ff7bc92fb3737a43576f
+    - f722622178a6ee3112b9e2bb5a7e5e2fabbf47831f133b083f477ff272863fd6
+  record_count: 2002
+  cleanup_status: complete
+  runner:
+    source_sha256: 9d8a32ff671a7b68a4c2b069e72205e1799aa1633c8f438af5e7ec9e3ccb3a70
+    report_sha256: 4b3cd530c5dba101b47fd00365ba12601b938612bed472961d2e882e1e297aa4
+product_source_inventory:
+  Cargo.lock: d1248e7537ad15263b84b41f172ed73090faf6da7e5fbf3c7afac60e1e3e4583
+  crates/sipi-artifacts/src/lib.rs: 85b475ec865779dbe3e21b54759ca9075b8a4516714d7192ba4b214075861997
+  crates/sipi-channel/src/p3c_fixed_four_port_bench_v1.rs: 248bf24c494d9c956a96e2781f35f546d5de9f70f6157457da7a54aeb60baa70
+  crates/sipi-p3c/Cargo.toml: ef5e9a8951ffccbbd83472dbda8b4fad0a5ca3714bb7975755c0f85d59c0d8d8
+  crates/sipi-p3c/src/lib.rs: aaf4b40fcc17d4ff2ae4ab512ecf7d68416dea6aaa8c4254521ae1ab57813b36
+  crates/sipi-p3c/tests/p3c_sealed_s4p_external_runner.rs: 9d8a32ff671a7b68a4c2b069e72205e1799aa1633c8f438af5e7ec9e3ccb3a70
+  crates/sipi-touchstone/src/selected_four_port_v1.rs: 53b11a0cf08b0505c190b244c47f13e22f7b2b3c1f6ea712b6aba533a8805f80
+admission:
+  external_static_custody_observed: true
+  selected_external_s4p_static_admitted: true
+  real_constrained_fit_invoked: false
+  analytic_stepping_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - real_constrained_fit_invocation_on_external_s4p_missing
+  - analytic_direct_stepping_implementation_missing
+  - candidate_waveform_generation_missing
+  - external_reference_binding_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not hostile-filesystem containment, asset ownership, redistribution, fit, stepping, waveform, or ADS equivalence.
+  - Not receiver, AMI, IBIS, DLL, product-runtime, or release acceptance.

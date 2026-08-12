@@ -43,10 +43,6 @@ class ObservationError(RuntimeError):
     """A fail-closed external custody observation error."""
 
 
-def sha256_bytes(value: bytes) -> str:
-    return hashlib.sha256(value).hexdigest()
-
-
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -175,8 +171,6 @@ def run_observation(source: Path, report: Path, cargo: Path) -> dict[str, Any]:
             raise ObservationError("clean_archive_runner_failed")
         runner = parse_runner_report(runner_report)
         runner_sha256 = sha256_file(runner_report)
-        runner_stdout_sha256 = sha256_bytes(completed.stdout)
-        runner_stderr_sha256 = sha256_bytes(completed.stderr)
     source_after = source_identity(source)
     if source_before != source_after:
         raise ObservationError("source_changed_during_observation")
@@ -191,8 +185,6 @@ def run_observation(source: Path, report: Path, cargo: Path) -> dict[str, Any]:
         "runner": {
             "source_sha256": inventory[RUNNER.as_posix()],
             "report_sha256": runner_sha256,
-            "stdout_sha256": runner_stdout_sha256,
-            "stderr_sha256": runner_stderr_sha256,
         },
         "fresh_custody_runs": 2,
         "manifest_sha256s": [run["manifest_sha256"] for run in runner["fresh_runs"]],
@@ -219,7 +211,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         report = require_external_report(arguments.report)
         report.parent.mkdir(parents=True, exist_ok=True)
-        report.write_text(json.dumps(result, sort_keys=True, separators=(",", ":")) + "\n", encoding="ascii")
+        report.write_bytes((json.dumps(result, sort_keys=True, separators=(",", ":")) + "\n").encode("ascii"))
     except (ObservationError, OSError):
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
         return 2

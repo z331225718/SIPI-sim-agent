@@ -1353,7 +1353,7 @@ scopes:
       comparator: []
       auditor: [p3c-sealed-selected-s4p-static-admission-spec-v1]
   - id: p3c-selected-s4p-external-static-custody-observation-v1
-    paths: [crates/sipi-p3c/tests/p3c_sealed_s4p_external_runner.rs, docs/baselines/p3c-selected-s4p-external-static-custody-observation-contract.v1.yaml, docs/clean-room/specs/p3c-selected-s4p-external-static-custody-observation.v1.md, tools/observe_p3c_sealed_selected_s4p_custody.py, tools/test_observe_p3c_sealed_selected_s4p_custody.py, tools/verify_p3c_selected_s4p_external_static_custody_observation_contract.py, tools/test_verify_p3c_selected_s4p_external_static_custody_observation_contract.py]
+    paths: [crates/sipi-p3c/tests/p3c_sealed_s4p_external_runner.rs, docs/baselines/p3c-selected-s4p-external-static-custody-observation-contract.v1.yaml, docs/baselines/p3c-selected-s4p-external-static-custody-evidence.v1.yaml, docs/clean-room/specs/p3c-selected-s4p-external-static-custody-observation.v1.md, tools/observe_p3c_sealed_selected_s4p_custody.py, tools/test_observe_p3c_sealed_selected_s4p_custody.py, tools/verify_p3c_selected_s4p_external_static_custody_observation_contract.py, tools/test_verify_p3c_selected_s4p_external_static_custody_observation_contract.py, tools/verify_p3c_selected_s4p_external_static_custody_evidence.py, tools/test_verify_p3c_selected_s4p_external_static_custody_evidence.py]
     state: planned
     role_material_allowlists:
       observer: [p3c-selected-s4p-external-static-custody-observation-spec-v1]
