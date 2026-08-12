@@ -1370,6 +1370,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-real-constrained-fixed-pole-fit-spec-v1]
+  - id: p3c-selected-s4p-impulse-causality-diagnostic-v1
+    paths: [crates/sipi-p3c/tests/p3c_sealed_s4p_external_impulse_diagnostic_runner.rs, docs/baselines/p3c-selected-s4p-impulse-causality-diagnostic-contract.v1.yaml, tools/observe_p3c_sealed_selected_s4p_impulse_diagnostic.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: []
+      implementer: []
+      comparator: []
+      auditor: []
   - id: p3c-selected-four-port-lexical-amendment-v1
     paths: [crates/sipi-touchstone/src/selected_four_port_v1.rs, crates/sipi-p3c/src/lib.rs, crates/sipi-p3c/tests/p3c_sealed_s4p_external_runner.rs, docs/baselines/p3c-selected-four-port-lexical-amendment.v1.yaml, docs/clean-room/specs/p3c-selected-four-port-lexical-amendment.v1.md, tools/verify_p3c_selected_four_port_lexical_amendment.py, tools/test_verify_p3c_selected_four_port_lexical_amendment.py]
     state: planned

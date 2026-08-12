@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: e61bde9e1b2c46c4b558e4e71d02045287845909cf0bc5c60b36bcf31603d3cd
+  tracked_paths_sha256: e066510ca882072178a3c2a5b6af5a0ff182cae55a55c1bca4061b598abea128
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -468,6 +468,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-p3c/tests/p3c_sealed_s4p_external_fit_runner.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/tests/p3c_sealed_s4p_external_impulse_diagnostic_runner.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1884,6 +1890,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-selected-s4p-external-static-custody-observation-contract.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-selected-s4p-impulse-causality-diagnostic-contract.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7182,6 +7194,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/observe_p3c_sealed_selected_s4p_custody.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/observe_p3c_sealed_selected_s4p_impulse_diagnostic.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

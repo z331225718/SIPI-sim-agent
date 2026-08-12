@@ -1,0 +1,32 @@
+schema: sipi.p3c-selected-s4p-impulse-causality-diagnostic-contract.v1
+status: external_only_diagnostic_authorized_pending_owner_thresholds
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-12-exact-grid-impulse-route
+  scope: exact_selected_s4p_static_transfer_causality_diagnostic_only
+input:
+  required_static_admission: admit_selected_p3c_sealed_s4p_v2
+  source_sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  transfer: Hdiff=(S21-S23-S41+S43)/4
+  no_fit_interpolation_resampling_window_taper_delay_extraction: true
+diagnostic_quadrature:
+  source_frequency_nodes: original_positive_nodes_only
+  negative_frequency_extension: H_negative_f_equals_conjugate_H_positive_f
+  integration: deterministic_composite_trapezoid
+  accumulation_order: ascending_frequency_then_ascending_time
+  band_policy: observed_0hz_to_40ghz_only_no_extension
+  time_axis:
+    dt_seconds: 9.765625e-13
+    half_window_samples: 49056
+    evaluated_indices: -49056_to_49056_inclusive
+  metrics:
+    - negative_energy_fraction
+    - negative_peak_fraction
+    - canonical_sampled_impulse_sha256
+gates:
+  causality_threshold: pending_owner_decision
+  sampled_four_port_passivity_threshold: pending_owner_decision
+  diagnostic_result_is_not_admission: true
+non_claims:
+  - Not an impulse execution policy, causal repair, passivity certification, or ADS equivalence.
+  - Not PRBS9 source modeling, convolution, waveform, receiver, metric, or release acceptance.
