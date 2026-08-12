@@ -1,0 +1,51 @@
+schema: sipi.p3c-selected-s4p-real-constrained-fit-rejected-observation.v1
+status: external_only_selected_s4p_real_constrained_fit_rejected_no_order_meets_admission
+authority:
+  actor: user
+  decision_ref: user-authorized-2026-08-12-p3c-04i-follow-on-fit-observation
+  scope: exact_selected_s4p_static_admission_then_frozen_fit_observation_only
+external_observation:
+  schema: sipi.p3c.sealed-selected-s4p-real-constrained-fit-observation.v1
+  status: rejected
+  reason: no_order_meets_admission
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 2026
+  report_content_sha256: 81e0c4fb254a4e6660124f20b81feae226f6f670ab7732da3e6aaa1a797170da
+  clean_archive_commit: 848df45bbe866d50d92878adc23beffd7652fc89
+  selected_source:
+    byte_length: 1834156
+    sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  source_identity_checks: before_stage_after_equal
+  fresh_custody_runs: 2
+  manifest_sha256s:
+    - 7245dae9b9503dff80cb6e2da57008a05dddca2209f65f369cb3c87c7018432e
+    - fd2f2a044f3c9dff53a3146c6b09b64c0b31b61a0a05936f08182a662bf11d62
+  record_count: 2002
+  cleanup_status: complete
+  runner:
+    source_sha256: 4e07f1be742b7dbbe269525af2bf27cf5c16b39c2f786c45c7166689ba5b3a67
+    report_sha256: 37f8c26f61daec54debe1c4e0bb84227038098e5c2eefe36b7d6d46e88284312
+admission:
+  external_static_custody_observed: true
+  selected_external_s4p_static_admitted: true
+  real_constrained_fit_invoked: true
+  real_constrained_fit_admitted: false
+  analytic_stepping_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - exact_selected_s4p_fails_frozen_orders_8_12_16_fit_admission
+  - analytic_direct_stepping_implementation_missing
+  - candidate_waveform_generation_missing
+  - external_reference_binding_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not a relaxed fit, coefficient artifact, stepping, waveform, ADS equivalence, or candidate acceptance.
+  - Not receiver, AMI, IBIS, DLL, product-runtime, or release acceptance.

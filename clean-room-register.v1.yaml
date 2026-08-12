@@ -1361,6 +1361,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-selected-s4p-external-static-custody-observation-spec-v1]
+  - id: p3c-selected-s4p-real-constrained-fit-rejected-observation-v1
+    paths: [crates/sipi-p3c/tests/p3c_sealed_s4p_external_fit_runner.rs, docs/baselines/p3c-selected-s4p-real-constrained-fit-rejected-observation.v1.yaml, tools/observe_p3c_sealed_selected_s4p_real_constrained_fit.py, tools/verify_p3c_selected_s4p_real_constrained_fit_rejected_observation.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3c-real-constrained-fixed-pole-fit-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-real-constrained-fixed-pole-fit-spec-v1]
   - id: p3c-selected-four-port-lexical-amendment-v1
     paths: [crates/sipi-touchstone/src/selected_four_port_v1.rs, crates/sipi-p3c/src/lib.rs, crates/sipi-p3c/tests/p3c_sealed_s4p_external_runner.rs, docs/baselines/p3c-selected-four-port-lexical-amendment.v1.yaml, docs/clean-room/specs/p3c-selected-four-port-lexical-amendment.v1.md, tools/verify_p3c_selected_four_port_lexical_amendment.py, tools/test_verify_p3c_selected_four_port_lexical_amendment.py]
     state: planned

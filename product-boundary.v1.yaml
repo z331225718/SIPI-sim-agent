@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 4ff7b030da2af55df667d9f6f5bc9f87b1aeef8e3115e3a75ac5e56b6d2b1b94
+  tracked_paths_sha256: e61bde9e1b2c46c4b558e4e71d02045287845909cf0bc5c60b36bcf31603d3cd
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1884,6 +1884,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-selected-s4p-external-static-custody-observation-contract.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-selected-s4p-real-constrained-fit-rejected-observation.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8226,6 +8232,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_selected_s4p_external_static_custody_observation_contract.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_selected_s4p_real_constrained_fit_rejected_observation.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
