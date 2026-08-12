@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 0720907de75a4503a3fd3895dda9276d1a23da7ef548731ee116dae16b202f0b
+  tracked_paths_sha256: b1fd59922cacf67f5c48647913ff37168f04e24219037785950d9f143496eff3
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1355,6 +1355,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-12-p3c-external-ads-prbs9-reference-attempt.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-12-p3c-prbs9-waveform-jitter-contract.md:
       rule: historical-docs
       class: migration_only
@@ -1602,6 +1608,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3b-link-stage-capability-ledger.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-external-ads-prbs9-reference-attempt.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2064,6 +2076,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-array-compare.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-external-ads-prbs9-reference-attempt.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -6815,6 +6833,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/run_p3c_external_ads_prbs9_reference.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/sync_contracts_schemas.py:
       rule: migration-tools
       class: migration_only
@@ -6995,6 +7019,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_run_p3c_external_ads_prbs9_reference.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_rust_candidate_source_map.py:
       rule: migration-tools
       class: migration_only
@@ -7116,6 +7146,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p3b_link_stage_capabilities.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p3c_external_ads_prbs9_reference_attempt.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7572,6 +7608,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3b_link_stage_capabilities.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_external_ads_prbs9_reference_attempt.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

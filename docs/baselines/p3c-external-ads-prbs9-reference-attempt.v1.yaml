@@ -1,0 +1,60 @@
+schema: sipi.p3c-external-ads-prbs9-reference-attempt.v1
+status: external_ads_runtime_observed_reference_contract_rejected
+authority:
+  actor: user
+  decision_ref: user-authorized-2026-08-12-local-ads-python-reference-lane
+  scope: external_ads_ideal_load_only_not_p4b_or_product_runtime
+external_observation:
+  schema: sipi.p3c-external-ads-prbs9-reference-observation.v1
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 2429
+  report_content_sha256: eed37c9434b78ef6bd05ef754bd2a5bb6dfc4cb0508d873f8a897a2a58502f9a
+  ads:
+    product: ads_2026_update1
+    python_version: 3.13.2
+    simulator_build: hpeesofsim_635_shp_2025-10-26
+  fresh_run_count: 2
+  canonical_payload_repeatability: identical
+source:
+  logical_name: channel_gen5_highloss.s4p
+  byte_length: 1834156
+  sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  port_map: {port_1: tx_plus, port_2: rx_plus, port_3: tx_minus, port_4: rx_minus}
+stimulus:
+  prbs_period_sha256: 4437fb3beb2fa1ca99b4177673c53fc20089ac9cf68b1adaa1e0fad14d742127
+  seed_hex: 0x1a5
+  periods: 3
+  symbol_rate_gbaud: 32.0
+  samples_per_ui: 32
+topology:
+  tx: two_complementary_ideal_prbssrc_sources_with_internal_50_ohm_rout
+  channel: four_port_touchstone
+  rx: two_50_ohm_to_global_ground_loads
+  observation: V(rxp)-V(rxm)
+output:
+  ads_samples_inclusive: 49057
+  contract_half_open_samples: 49056
+  sample_interval_seconds: 9.765625e-13
+  canonical_payload_format: little_endian_f64_time_tx_differential_rx_differential
+  canonical_payload_sha256: 5ec5211a273d313655f0b8ced35d58ea89d0bba113f5edc3fd9712218f46e726
+  third_period_payload_sha256: 402596d9f5ab37e37cc3f4927f55170ab007159376174453fc65b78e3a80d31c
+contract_result:
+  reference_contract_match: false
+  mismatch_reason: ads_prbssrc_clamps_requested_zero_rise_and_fall_to_100_asec
+  source_edge_floor_seconds: 1.0e-16
+admission:
+  acceptance_ready: false
+  promotion_eligible: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  external_reference_observed: false
+  release_ledger_promoted: false
+blockers:
+  - ads_rectangular_nrz_source_edge_floor_owner_disposition_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not a P3C waveform, eye, jitter, receiver, or release acceptance result.
+  - Not product runtime, AMI, IBIS, DLL, CDR, equalizer, or statistical-eye execution.
+  - Not authorization to alter the rectangular-NRZ contract or suppress the ADS source-edge floor.
