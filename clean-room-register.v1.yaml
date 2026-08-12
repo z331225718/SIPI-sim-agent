@@ -681,6 +681,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [ads-pcie-gen5-dual-ami-hash-only-fixture-v1]
+  - id: p4b-dual-ami-pe-loader-declarations-spec-v1
+    kind: independent_spec
+    content_sha256: ffafeea2249df4875b70633ac7a5860fe9327bc6c13ae0d1b2e0542d400c720b
+    provenance:
+      source_ref: docs/clean-room/specs/p4b-dual-ami-pe-loader-declarations.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [ads-pcie-gen5-dual-ami-hash-only-fixture-v1, p4b-ads-pcie-gen5-dual-ami-asset-preflight-spec-v1]
   - id: pybert-example-rx-ibs-fixture-f6ba031
     kind: oracle_fixture
     content_sha256: 37b7bf1b6c50fe56c4daaad344de1b3cabe7a7f139ca1b76c4058a943f39fbe9
@@ -1339,6 +1347,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [ads-pcie-gen5-dual-ami-hash-only-fixture-v1, p4b-ads-pcie-gen5-dual-ami-asset-preflight-spec-v1]
+  - id: p4b-dual-ami-pe-loader-declarations-v1
+    paths: [docs/baselines/p4b-dual-ami-pe-loader-declarations.v1.yaml, docs/clean-room/specs/p4b-dual-ami-pe-loader-declarations.v1.md, tools/observe_p4b_dual_ami_pe_loader_declarations.py, tools/verify_p4b_dual_ami_pe_loader_declarations.py, tools/test_verify_p4b_dual_ami_pe_loader_declarations.py]
+    state: planned
+    role_material_allowlists:
+      observer: [ads-pcie-gen5-dual-ami-hash-only-fixture-v1, p4b-dual-ami-pe-loader-declarations-spec-v1]
+      spec_author: [p4b-dual-ami-pe-loader-declarations-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [ads-pcie-gen5-dual-ami-hash-only-fixture-v1, p4b-dual-ami-pe-loader-declarations-spec-v1]
   - id: p4a-ibis-example-rx-candidate-inventory-v1
     paths: [docs/baselines/ibis-example-rx-candidate-inventory.v1.yaml, docs/clean-room/specs/p4a-ibis-example-rx-candidate-inventory.v1.md, tools/verify_p4a_ibis_example_rx_candidate_inventory.py, tools/test_verify_p4a_ibis_example_rx_candidate_inventory.py]
     state: planned

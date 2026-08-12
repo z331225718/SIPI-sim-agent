@@ -1,0 +1,55 @@
+schema: sipi.p4b-dual-ami-pe-loader-declarations.v1
+status: external_only_static_loader_declarations_observed_dynamic_runtime_closure_and_worker_admission_blocked
+authority:
+  actor: user
+  decision_ref: user-approved-2026-08-12-p4b-static-loader-declarations
+  scope: external_oracle_candidate_static_pe_declarations_only
+binding:
+  p4b05b_baseline_sha256: 7e9281833b13a38be8d523619afc5f4e163e330a314325e8ff3ea4f3faa13dcd
+  external_report_sha256: d748193ab62a2f91f1ab6c14f8697658209210b0c5a15052d777554254aa9df4
+  canonical_payload_sha256: 330874cb653d6d472dd279794e55d1e48df5bf115e0a7287985a2220d06979a5
+  custody: external_only
+  report_path_retained: false
+  fresh_materializations: 2
+dlls:
+  pcie-tx-dll:
+    byte_length: 370045
+    sha256: 05d299826a9c69ae8ac3d236d88adcad5860fc7e229243f1541d1734b8ed28ea
+    machine: windows-x86_64
+    is_dll: true
+    normal_import_modules: [kernel32.dll, msvcrt.dll, user32.dll]
+    normal_import_symbol_count: 120
+    normal_import_symbol_manifest_sha256: 469f3d78f21a24f7788f925f01ce0e8778ccf9e70567442aacf751ea1690c040
+    delay_imports: []
+    bound_imports: []
+    export_forwarders: []
+    embedded_manifests: []
+    tls_directory: present
+    clr_directory: absent
+    dynamic_loader_capability_indicators: []
+  pcie-rx-dll:
+    byte_length: 8850494
+    sha256: 88a284f0967ad332f6230a8c5e791f47e9d22a05ae6778426c35707a18a3ab63
+    machine: windows-x86_64
+    is_dll: true
+    normal_import_modules: [kernel32.dll, msvcrt.dll, user32.dll]
+    normal_import_symbol_count: 126
+    normal_import_symbol_manifest_sha256: 1009c13ac574a286de77d1d5685f312be86f239d81633eddc2d0ab2f4dfe74ab
+    delay_imports: []
+    bound_imports: []
+    export_forwarders: []
+    embedded_manifests: []
+    tls_directory: present
+    clr_directory: absent
+    dynamic_loader_capability_indicators: []
+gates:
+  dynamic_dependency_closure: blocked_not_assessed
+  worker_admission: blocked_unverified_rights_and_runtime_closure
+  p4b_ami_runtime_invoked: false
+  product_runtime_invoked: false
+  release_ledger_promoted: false
+non_claims:
+  - Static declarations do not establish complete static or dynamic dependency closure.
+  - No DLL load, ADS invocation, AMI worker, or GetWave action occurred.
+  - No sidecar file is admitted by this observation.
+  - Not rights, packaging, release, default-route, compatibility, composition, or parity evidence.

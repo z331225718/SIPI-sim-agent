@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: b2e629de1a231e40d0c51721f21438a959d3c681045c4d3d96b7bc241d830ae2
+  tracked_paths_sha256: e9666aa5bb6b5e7e69ecfa7dda06f3c04ed5c6a29a592a7915eb86fe4bf8f496
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1409,6 +1409,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-12-p4b-dual-ami-pe-loader-declarations.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/capabilities.baseline.v1.json:
       rule: historical-docs
       class: migration_only
@@ -1752,6 +1758,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p4b-ads-pcie-gen5-dual-ami-asset-preflight.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p4b-dual-ami-pe-loader-declarations.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2322,6 +2334,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p4b-ami-text-structural-foundation.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p4b-dual-ami-pe-loader-declarations.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -6893,6 +6911,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p4b_dual_ami_pe_loader_declarations.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/replay_channel_rfm_receiver_handoff.py:
       rule: migration-tools
       class: migration_only
@@ -7332,6 +7356,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p4b_ami_candidate_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p4b_dual_ami_pe_loader_declarations.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7818,6 +7848,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p4b_ami_candidate_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p4b_dual_ami_pe_loader_declarations.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
