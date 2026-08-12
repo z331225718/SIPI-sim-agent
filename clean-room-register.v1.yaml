@@ -521,6 +521,22 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-ads-transient-policy-surface-observation-v1]
+  - id: p3c-ads-explicit-convolution-sweep-observation-v1
+    kind: oracle_fixture
+    content_sha256: e992a607dd58cab38bb43e74b9c03ab4620db7ed2853436777ba8c9f8103cd65
+    provenance:
+      source_ref: external/ads/p3c-explicit-convolution-sweep/observation-hash-only
+      license_evidence: external-user-authorized-ads-oracle-sweep-only
+    allowed_roles: [observer, auditor]
+    derived_from: [p3c-ads-transient-policy-surface-observation-v1]
+  - id: p3c-ads-explicit-convolution-sweep-observation-spec-v1
+    kind: independent_spec
+    content_sha256: 504d318381af5ae01f39d39d8f11febf9d56a2de28e3dba8b73086f9a73b7ac0
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-ads-explicit-convolution-sweep-observation.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-ads-explicit-convolution-sweep-observation-v1]
   - id: p3b-causal-fir-cli-run-spec-v1
     kind: independent_spec
     content_sha256: 5caca9c27e49a2929300a3f6d2eece00c46b562931e716d69c16bb477a28154e
@@ -1226,6 +1242,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-ads-transient-policy-surface-observation-v1, p3c-ads-transient-policy-surface-observation-spec-v1]
+  - id: p3c-ads-explicit-convolution-sweep-observation-v1
+    paths: [docs/baselines/p3c-ads-explicit-convolution-sweep-observation.v1.yaml, docs/clean-room/specs/p3c-ads-explicit-convolution-sweep-observation.v1.md, tools/observe_p3c_ads_explicit_convolution_sweep.py, tools/test_observe_p3c_ads_explicit_convolution_sweep.py, tools/verify_p3c_ads_explicit_convolution_sweep_observation.py, tools/test_verify_p3c_ads_explicit_convolution_sweep_observation.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-ads-explicit-convolution-sweep-observation-v1, p3c-ads-explicit-convolution-sweep-observation-spec-v1]
+      spec_author: [p3c-ads-explicit-convolution-sweep-observation-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-ads-explicit-convolution-sweep-observation-v1, p3c-ads-explicit-convolution-sweep-observation-spec-v1]
   - id: p3b-causal-fir-cli-run-v1
     paths: [docs/clean-room/specs/p3b-causal-fir-cli-run.v1.md, crates/sipi-cli/**, crates/sipi-contracts/**]
     state: planned

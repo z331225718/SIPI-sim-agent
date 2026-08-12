@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 8f99828c94217966648ea869303b9b76fc944b2781eec6428d1205438add7d6c
+  tracked_paths_sha256: 0cc235edf695aeb79ff719b2fc4e3e2bb3a74a710fe7bad699e99c11cb1035cc
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1379,6 +1379,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-12-p3c-ads-explicit-convolution-sweep-observation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-12-p3c-ads-transient-policy-surface-observation.md:
       rule: historical-docs
       class: migration_only
@@ -1680,6 +1686,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3b-link-stage-capability-ledger.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-ads-explicit-convolution-sweep-observation.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2190,6 +2202,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3b-rfm-receiver-handoff-replay.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-ads-explicit-convolution-sweep-observation.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -6971,6 +6989,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p3c_ads_explicit_convolution_sweep.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/observe_p3c_ads_transient_policy_surface.py:
       rule: migration-tools
       class: migration_only
@@ -7169,6 +7193,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_observe_p3c_ads_explicit_convolution_sweep.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_observe_p4a_external_pure_ibis_structural_scope.py:
       rule: migration-tools
       class: migration_only
@@ -7326,6 +7356,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p3b_link_stage_capabilities.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p3c_ads_explicit_convolution_sweep_observation.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7836,6 +7872,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3b_link_stage_capabilities.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_ads_explicit_convolution_sweep_observation.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

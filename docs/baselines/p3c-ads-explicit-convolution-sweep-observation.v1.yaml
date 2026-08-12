@@ -1,0 +1,75 @@
+schema: sipi.p3c-ads-explicit-convolution-sweep-observation.v1
+status: external_ads_explicit_convolution_candidate_observed_product_executor_policy_still_blocked
+authority:
+  actor: user
+  decision_ref: user-authorized-2026-08-12-p3c-follow-ads-documentation-explicit-sweep
+  scope: external_ads_explicit_convolution_sweep_only_not_product_executor
+external_observation:
+  custody: external_only_hash_only
+  report_path_retained: false
+  report_byte_length: 7596
+  report_content_sha256: e992a607dd58cab38bb43e74b9c03ab4620db7ed2853436777ba8c9f8103cd65
+  fresh_observations: 2
+  canonical_repeatability: identical
+source:
+  logical_name: channel_gen5_highloss.s4p
+  byte_length: 1834156
+  sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  asset_bytes_tracked: false
+runner:
+  logical_name: run_p3c_external_ads_prbs9_reference.py
+  sha256: 94b76e640a8ad823f6e66fc2f0aff8eb33771ca9c2a5ab14923e58b5bf1353bc
+sweep:
+  logical_name: observe_p3c_ads_explicit_convolution_sweep.py
+  sha256: 9fedb2c8477fa2bf58c5b107eb593b8d930989214363c62b526481bc1c24f183
+explicit_ads_surface:
+  fmax_hz: 4.0e+10
+  source_edge_seconds: 1.0e-16
+  imp_mode: 1
+  imp_approx: false
+  imp_enforce_passivity: true
+  grid_lengths: [512, 1024, 2048, 4096, 8192, 16384]
+  no_frequency_range_extrapolation: true
+  interpolation_and_extrapolation_algorithm_observed: false
+screening:
+  waveform_nrmse_limit: 0.01
+  compare_window: third_period_strict_index_only
+  alignment: forbidden
+candidates:
+  - {grid_length: 512, delta_frequency_hz: 1.5625e+8, impulse_duration_seconds: 6.4e-9, third_period_nrmse: 1.4427344750535527, within_waveform_limit: false}
+  - {grid_length: 1024, delta_frequency_hz: 7.8125e+7, impulse_duration_seconds: 1.28e-8, third_period_nrmse: 0.04200230109637168, within_waveform_limit: false}
+  - {grid_length: 2048, delta_frequency_hz: 3.90625e+7, impulse_duration_seconds: 2.56e-8, third_period_nrmse: 0.0, within_waveform_limit: true}
+  - {grid_length: 4096, delta_frequency_hz: 1.953125e+7, impulse_duration_seconds: 5.12e-8, third_period_nrmse: 0.013663706128436025, within_waveform_limit: false}
+  - {grid_length: 8192, delta_frequency_hz: 9.765625e+6, impulse_duration_seconds: 1.024e-7, third_period_nrmse: 0.03438979059648014, within_waveform_limit: false}
+  - {grid_length: 16384, delta_frequency_hz: 4.8828125e+6, impulse_duration_seconds: 2.048e-7, third_period_nrmse: 0.046874379619914745, within_waveform_limit: false}
+selected_external_candidate:
+  grid_length: 2048
+  delta_frequency_hz: 3.90625e+7
+  impulse_duration_seconds: 2.56e-8
+  third_period_nrmse: 0.0
+  adaptive_waveform_identity_match: true
+  product_policy_selected: false
+admission:
+  external_ads_runtime_observed: true
+  explicit_ads_candidate_observed: true
+  product_deterministic_time_domain_policy_observed: false
+  product_executor_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - product_input_construction_and_impulse_grid_mapping_missing
+  - product_output_strobe_mapping_missing
+  - product_interpolation_and_extrapolation_algorithm_missing
+  - product_causality_and_passivity_algorithm_missing
+  - candidate_waveform_generation_missing
+  - external_reference_binding_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not an implementation or disclosure of the ADS adaptive or proprietary convolution engine.
+  - Not a product S4P-to-waveform executor, candidate waveform, or receiver acceptance result.
+  - Not AMI/IBIS/DLL runtime, P4B admission, statistical-eye, or release evidence.
