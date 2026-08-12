@@ -1,0 +1,61 @@
+schema: sipi.p3c-sealed-selected-s4p-static-admission.v1
+status: product_internal_sealed_selected_s4p_intake_implemented_external_custody_observation_and_stepping_blocked
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-12-p3c-rational-route-recommendation
+  scope: selected_p3c_sealed_artifact_to_static_hdiff_only
+selected_asset:
+  logical_name: channel_gen5_highloss.s4p
+  sealed_file_name: channel.s4p
+  byte_length: 1834156
+  sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  port_map: [tx_plus, rx_plus, tx_minus, rx_minus]
+  asset_bytes_tracked: false
+input_contract:
+  root_assumption: caller_selected_sipi_published_root_no_hostile_concurrent_writer
+  caller_identity: artifact_id_and_manifest_sha256_only
+  exact_sealed_files: [channel.s4p]
+  manifest_schema: sipi.artifact-manifest.v1
+  metadata_sidecar: absent
+  caller_path_url_payload_name_hash_length_port_map_or_limit_override: prohibited
+verification:
+  artifact_primitive: consume_exact_verified_v1
+  manifest_recheck_after_payload_read: required
+  exact_payload_length: required
+  exact_payload_sha256: required
+  parser: selected_four_port_hz_s_ri_50_v1
+  static_reduction: Hdiff=(S21-S23-S41+S43)/4
+  parser_limits: fixed_product_internal
+  symlink_reparse_and_extra_file: reject
+  source_change_or_manifest_drift: reject
+implementation:
+  crate: sipi-p3c
+  module: lib
+  public_cli: absent
+  public_wire_schema: absent
+  artifact_publication: absent
+admission:
+  sealed_s4p_intake_implemented: true
+  external_static_custody_observed: false
+  selected_external_s4p_static_admitted: false
+  real_constrained_fit_invoked: false
+  analytic_stepping_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - two_fresh_external_sealed_s4p_custody_observations_missing
+  - real_constrained_fit_invocation_on_external_s4p_missing
+  - analytic_direct_stepping_implementation_missing
+  - candidate_waveform_generation_missing
+  - external_reference_binding_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not hostile-filesystem containment, asset ownership, packaging admission, or external custody observation.
+  - Not general Touchstone, S-parameter, artifact, or caller-selected topology support.
+  - Not external S4P fit, candidate waveform, external-reference, eye, jitter, receiver, AMI, IBIS, DLL, or release acceptance.

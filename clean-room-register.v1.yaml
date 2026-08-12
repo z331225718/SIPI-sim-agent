@@ -569,6 +569,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3c-fixed-rational-execution-contract-spec-v1]
+  - id: p3c-sealed-selected-s4p-static-admission-spec-v1
+    kind: independent_spec
+    content_sha256: 6c389a819d813eeb9669c6249a3f452c53fc0d9c7041a289d041bbd85c53d43e
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-sealed-selected-s4p-static-admission.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p3c-selected-four-port-static-bench-spec-v1, p3c-real-constrained-fixed-pole-fit-spec-v1]
   - id: p3b-causal-fir-cli-run-spec-v1
     kind: independent_spec
     content_sha256: 5caca9c27e49a2929300a3f6d2eece00c46b562931e716d69c16bb477a28154e
@@ -1319,6 +1327,15 @@ scopes:
       implementer: [p3c-real-constrained-fixed-pole-fit-spec-v1]
       comparator: []
       auditor: [p3c-real-constrained-fixed-pole-fit-spec-v1]
+  - id: p3c-sealed-selected-s4p-static-admission-v1
+    paths: [Cargo.toml, Cargo.lock, crates/sipi-p3c/**, docs/baselines/p3c-sealed-selected-s4p-static-admission.v1.yaml, docs/clean-room/specs/p3c-sealed-selected-s4p-static-admission.v1.md, tools/verify_p3c_sealed_selected_s4p_static_admission.py, tools/test_verify_p3c_sealed_selected_s4p_static_admission.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3c-sealed-selected-s4p-static-admission-spec-v1]
+      implementer: [p3c-sealed-selected-s4p-static-admission-spec-v1]
+      comparator: []
+      auditor: [p3c-sealed-selected-s4p-static-admission-spec-v1]
   - id: p3b-causal-fir-cli-run-v1
     paths: [docs/clean-room/specs/p3b-causal-fir-cli-run.v1.md, crates/sipi-cli/**, crates/sipi-contracts/**]
     state: planned

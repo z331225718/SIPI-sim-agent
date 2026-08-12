@@ -881,6 +881,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sipi-p3c"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "sipi-artifacts",
+ "sipi-channel",
+ "sipi-touchstone",
+]
+
+[[package]]
 name = "sipi-pipeline"
 version = "0.1.0"
 dependencies = [

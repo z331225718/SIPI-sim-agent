@@ -1,0 +1,17 @@
+[package]
+name = "sipi-p3c"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Internal sealed intake for the selected P3C four-port profile."
+
+[dependencies]
+sha2 = "0.10"
+sipi-artifacts = { path = "../sipi-artifacts" }
+sipi-channel = { path = "../sipi-channel" }
+sipi-touchstone = { path = "../sipi-touchstone" }
+
+[lints]
+workspace = true

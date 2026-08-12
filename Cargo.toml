@@ -12,6 +12,7 @@ members = [
   "crates/sipi-layout",
   "crates/sipi-link",
   "crates/sipi-pipeline",
+  "crates/sipi-p3c",
   "crates/sipi-runtime",
   "crates/sipi-rx-load",
   "crates/sipi-touchstone",

@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 2d083047f8e97662c0f01c540b4c22b3c83e9337663ac8a7b1ff81223314dcf4
+  tracked_paths_sha256: 8e0f4f87d8c9adf5f12b64e7fd4a35109c51222ef416496f289f94cc82bed147
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -450,6 +450,18 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-link/tests/receiver_observer_runner.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/src/lib.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1475,6 +1487,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-12-p3c-sealed-selected-s4p-static-admission.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-12-p3c-selected-four-port-static-bench.md:
       rule: historical-docs
       class: migration_only
@@ -1806,6 +1824,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-real-constrained-fixed-pole-fit.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-sealed-selected-s4p-static-admission.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2352,6 +2376,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-real-constrained-fixed-pole-fit.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-sealed-selected-s4p-static-admission.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7529,6 +7559,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_sealed_selected_s4p_static_admission.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_selected_four_port_static_bench.py:
       rule: migration-tools
       class: migration_only
@@ -8064,6 +8100,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_real_constrained_fixed_pole_fit.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_sealed_selected_s4p_static_admission.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
