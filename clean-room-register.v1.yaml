@@ -545,6 +545,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, auditor]
     derived_from: [p3c-selected-four-port-static-bench-spec-v1, p3c-ads-explicit-convolution-sweep-observation-spec-v1]
+  - id: p3c-fixed-pole-rational-identification-core-spec-v1
+    kind: independent_spec
+    content_sha256: 349a1a44f77ef192e9a9b6fcce3efc5a8aa561ac166c94da9042471360d8f29c
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-fixed-pole-rational-identification-core.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p3c-selected-four-port-static-bench-spec-v1]
   - id: p3b-causal-fir-cli-run-spec-v1
     kind: independent_spec
     content_sha256: 5caca9c27e49a2929300a3f6d2eece00c46b562931e716d69c16bb477a28154e
@@ -1268,6 +1276,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-product-rational-candidate-policy-preflight-spec-v1]
+  - id: p3c-fixed-pole-rational-identification-core-v1
+    paths: [docs/baselines/p3c-fixed-pole-rational-identification-core.v1.yaml, docs/clean-room/specs/p3c-fixed-pole-rational-identification-core.v1.md, crates/sipi-channel/Cargo.toml, crates/sipi-channel/src/lib.rs, crates/sipi-channel/src/p3c_fixed_pole_rational_fit_v1.rs, tools/verify_p3c_fixed_pole_rational_identification_core.py, tools/test_verify_p3c_fixed_pole_rational_identification_core.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3c-fixed-pole-rational-identification-core-spec-v1]
+      implementer: [p3c-fixed-pole-rational-identification-core-spec-v1]
+      comparator: []
+      auditor: [p3c-fixed-pole-rational-identification-core-spec-v1]
   - id: p3b-causal-fir-cli-run-v1
     paths: [docs/clean-room/specs/p3b-causal-fir-cli-run.v1.md, crates/sipi-cli/**, crates/sipi-contracts/**]
     state: planned

@@ -2,7 +2,7 @@ schema: sipi.license-manifest.v2
 status: provisional
 release_boundary:
   path: product-boundary.v1.yaml
-  sha256: 95d5fea9142e85d6db2096666931d6f83b46ac61235d72f39b17b4ceacaf0866
+  sha256: 4385bf3fee29263eb373edd911e35f4d326204f9badd55d9cf672ceeaaf4c103
   status: provisional
 legacy_evidence:
   - id: legacy-license-manifest-v1
@@ -94,18 +94,18 @@ release_inputs:
       sbom_component_id: pkg:cargo/pelite
       status: pending
       owner_action: {owner: sipi-license-owner, action: review pelite distribution and NOTICE, approval_ref: null}
-    - id: candidate-faer
+    - id: rust-faer
       component: faer
       role: runtime
       source: https://crates.io/crates/faer
       requested_version: "0.24.4"
       resolved_artifact: {version: null, sha256: null}
       declared_spdx: pending-observation
-      license_evidence_ref: docs/baselines/tran-provenance-preflight.v1.yaml
+      license_evidence_ref: docs/baselines/p3c-fixed-pole-rational-identification-core.v1.yaml
       notice_requirement: pending
       sbom_component_id: pkg:cargo/faer
       status: pending
-      owner_action: {owner: sipi-license-owner, action: review quarantined sipi-circuit faer dependency and NOTICE, approval_ref: null}
+      owner_action: {owner: sipi-license-owner, action: review direct faer rational-identification dependency and NOTICE, approval_ref: null}
     - id: candidate-num-complex
       component: num-complex
       role: runtime
@@ -179,9 +179,9 @@ release_inputs:
       status: pending
       source_evidence_ref: evidence/third-party/pelite-license-pending
       output_notice_id: NOTICE/pelite
-    - dependency: candidate-faer
+    - dependency: rust-faer
       status: pending
-      source_evidence_ref: docs/baselines/tran-provenance-preflight.v1.yaml
+      source_evidence_ref: docs/baselines/p3c-fixed-pole-rational-identification-core.v1.yaml
       output_notice_id: NOTICE/faer
     - dependency: candidate-num-complex
       status: pending

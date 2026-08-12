@@ -8,6 +8,7 @@ publish = false
 description = "Clean-room matched two-port channel kernel primitive."
 
 [dependencies]
+faer = { version = "0.24.4", default-features = false, features = ["std", "linalg"] }
 rustfft = "6.4.1"
 sipi-types = { path = "../sipi-types" }
 

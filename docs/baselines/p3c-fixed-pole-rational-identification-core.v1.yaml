@@ -1,0 +1,67 @@
+schema: sipi.p3c-fixed-pole-rational-identification-core.v1
+status: product_owned_fixed_pole_residue_identification_specified_relocating_fit_and_executor_blocked
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-12-p3c-rational-route-recommendation
+  scope: selected_static_hdiff_fixed_pole_fit_only
+input_boundary:
+  source_type: selected_p3c_static_differential_transfer_v1
+  product_owned_memory_only: true
+  required_first_frequency_hz: 0.0
+  required_last_frequency_hz: 4.0e+10
+  minimum_samples: 32
+  external_s4p_custody_admitted: false
+  ads_grid_or_waveform_input: prohibited
+algorithm:
+  model_domain: continuous_time
+  normalized_variable: s=j*f/40000000000
+  canonical_form: sum(r_k/(s-p_k))
+  direct_term: prohibited
+  derivative_term: prohibited
+  explicit_delay: prohibited
+  pole_relocation: prohibited
+  pole_reflection_or_repair: prohibited
+  orders: [8, 12, 16]
+  initial_poles: conjugate_pairs_log_spaced_10mhz_to_40ghz_with_negative_real_part_0.05_times_imaginary_magnitude
+  weighting: inverse_reference_magnitude_floor_1e-15
+  rank_precheck: thin_svd_relative_smallest_singular_value_gt_1e-12
+  residue_solver: faer_0_24_4_column_pivoted_qr_single_thread_no_rayon
+  order_selection: first_allowlisted_order_passing_all_metrics
+fit_admission:
+  relative_rms_error_max: 0.005
+  maximum_normalized_absolute_error_max: 0.03
+  dc_relative_error_max: 0.005
+  zero_signal_norm: reject
+  zero_dc_reference: reject
+implementation:
+  crate: sipi-channel
+  module: p3c_fixed_pole_rational_fit_v1
+  faer_default_features: false
+  faer_features: [std, linalg]
+  public_cli: absent
+  coefficient_artifact: absent
+admission:
+  fixed_pole_residue_identification_implemented: true
+  relocating_vector_fit_implemented: false
+  state_space_model_generated: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - full_relocating_vector_fit_policy_and_implementation_missing
+  - selected_external_s4p_artifact_admission_missing
+  - out_of_band_continuation_or_band_limit_policy_missing
+  - source_between_strobes_policy_missing
+  - strobe_initial_state_and_recurrence_policy_missing
+  - candidate_waveform_generation_missing
+  - external_reference_binding_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not full vector fitting, pole relocation, pole stabilization, causality/passivity repair, or ADS emulation.
+  - Not a state-space executor, S4P-to-waveform implementation, artifact, or public command.
+  - Not candidate waveform, external-reference, eye, jitter, receiver, AMI, IBIS, DLL, or release acceptance.
