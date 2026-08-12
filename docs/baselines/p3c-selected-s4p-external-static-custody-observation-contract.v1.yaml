@@ -1,0 +1,54 @@
+schema: sipi.p3c-selected-s4p-external-static-custody-observation-contract.v1
+status: external_only_two_fresh_custody_observation_authorized_pending
+authority:
+  actor: user
+  decision_ref: user-authorized-2026-08-12-p3c-04i-custody-observation
+  scope: exact_selected_s4p_seal_and_static_admission_only
+selected_asset:
+  logical_name: channel_gen5_highloss.s4p
+  byte_length: 1834156
+  sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  asset_bytes_tracked: false
+execution:
+  custody: external_only
+  clean_git_archive: required
+  runner: p3c_sealed_s4p_external_runner
+  fresh_temporary_artifact_roots: 2
+  artifact_id_reuse_between_runs: prohibited
+  source_identity_checks: before_stage_after_equal
+  sealed_file: channel.s4p
+  required_product_api: admit_selected_p3c_sealed_s4p_v1
+  report_path: external_only_hash_and_aggregate_facts
+  no_hostile_concurrent_writer_assumption: required
+  cleanup_failure: reject
+required_observation:
+  source_identity: exact_length_and_sha256
+  each_run: exact_seal_then_static_admission
+  manifest_identities: distinct
+  record_count: equal_and_positive
+  source_or_manifest_drift: reject
+  report_retention_in_repository: prohibited
+admission:
+  custody_observation_harness_implemented: true
+  external_static_custody_observed: false
+  selected_external_s4p_static_admitted: false
+  real_constrained_fit_invoked: false
+  analytic_stepping_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - two_fresh_external_sealed_s4p_custody_observations_missing
+  - real_constrained_fit_invocation_on_external_s4p_missing
+  - analytic_direct_stepping_implementation_missing
+  - candidate_waveform_generation_missing
+  - external_reference_binding_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not hostile-filesystem containment, asset ownership, redistribution, fit, stepping, waveform, or ADS equivalence.
+  - Not receiver, AMI, IBIS, DLL, product-runtime, or release acceptance.

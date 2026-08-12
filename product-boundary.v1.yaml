@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 8e0f4f87d8c9adf5f12b64e7fd4a35109c51222ef416496f289f94cc82bed147
+  tracked_paths_sha256: 534d530c7d627aadfe3f4843494712e98439ccbcf4ef0f6dc79c7e874eaf01af
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -462,6 +462,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-p3c/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/tests/p3c_sealed_s4p_external_runner.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1841,6 +1847,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3c-selected-s4p-external-static-custody-observation-contract.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p4a-electrical-endpoint-semantic-contract.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -2388,6 +2400,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-selected-four-port-static-bench.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-selected-s4p-external-static-custody-observation.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7115,6 +7133,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p3c_sealed_selected_s4p_custody.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/observe_p4a_external_pure_ibis_structural_scope.py:
       rule: migration-tools
       class: migration_only
@@ -7308,6 +7332,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_observe_p3c_ads_explicit_convolution_sweep.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_observe_p3c_sealed_selected_s4p_custody.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7566,6 +7596,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p3c_selected_four_port_static_bench.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p3c_selected_s4p_external_static_custody_observation_contract.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8112,6 +8148,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_selected_four_port_static_bench.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_selected_s4p_external_static_custody_observation_contract.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

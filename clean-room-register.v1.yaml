@@ -577,6 +577,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3c-selected-four-port-static-bench-spec-v1, p3c-real-constrained-fixed-pole-fit-spec-v1]
+  - id: p3c-selected-s4p-external-static-custody-observation-spec-v1
+    kind: independent_spec
+    content_sha256: 0d182e2279a83453d04b20866d18d7759ce79f504513a54f11d9e3bacacde208
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-selected-s4p-external-static-custody-observation.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-sealed-selected-s4p-static-admission-spec-v1]
   - id: p3b-causal-fir-cli-run-spec-v1
     kind: independent_spec
     content_sha256: 5caca9c27e49a2929300a3f6d2eece00c46b562931e716d69c16bb477a28154e
@@ -1336,6 +1344,15 @@ scopes:
       implementer: [p3c-sealed-selected-s4p-static-admission-spec-v1]
       comparator: []
       auditor: [p3c-sealed-selected-s4p-static-admission-spec-v1]
+  - id: p3c-selected-s4p-external-static-custody-observation-v1
+    paths: [crates/sipi-p3c/tests/p3c_sealed_s4p_external_runner.rs, docs/baselines/p3c-selected-s4p-external-static-custody-observation-contract.v1.yaml, docs/clean-room/specs/p3c-selected-s4p-external-static-custody-observation.v1.md, tools/observe_p3c_sealed_selected_s4p_custody.py, tools/test_observe_p3c_sealed_selected_s4p_custody.py, tools/verify_p3c_selected_s4p_external_static_custody_observation_contract.py, tools/test_verify_p3c_selected_s4p_external_static_custody_observation_contract.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-selected-s4p-external-static-custody-observation-spec-v1]
+      spec_author: [p3c-selected-s4p-external-static-custody-observation-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-selected-s4p-external-static-custody-observation-spec-v1]
   - id: p3b-causal-fir-cli-run-v1
     paths: [docs/clean-room/specs/p3b-causal-fir-cli-run.v1.md, crates/sipi-cli/**, crates/sipi-contracts/**]
     state: planned
