@@ -1,0 +1,62 @@
+schema: sipi.p3c-ads-transient-policy-surface-observation.v1
+status: external_ads_transient_policy_surface_observed_product_deterministic_time_domain_policy_missing
+authority:
+  actor: user
+  decision_ref: user-authorized-2026-08-12-p3c-ads-policy-surface-observation
+  scope: external_ads_documentation_and_generated_netlist_observation_only
+external_observation:
+  custody: external_only_hash_only
+  report_path_retained: false
+  report_byte_length: 2594
+  report_content_sha256: 3bdbb5d01290790c3cddef353f3f224e47cfaf379905c8076ca11186be01e2c3
+  fresh_observations: 2
+  canonical_repeatability: identical
+source:
+  logical_name: channel_gen5_highloss.s4p
+  byte_length: 1834156
+  sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  asset_bytes_tracked: false
+runner:
+  logical_name: run_p3c_external_ads_prbs9_reference.py
+  sha256: 94b76e640a8ad823f6e66fc2f0aff8eb33771ca9c2a5ab14923e58b5bf1353bc
+documentation:
+  channel_convolution: {logical_name: Differential_Channel_Simulator_-_Convolution.html, byte_length: 57677, sha256: 94556c3c3a59ee30bb733e92ec795c7d15bb126820e74d57aec9276c7275b667}
+  simulation_controllers: {logical_name: Simulation_and_Optimization_Controllers.html, byte_length: 135600, sha256: 290ae0dc3771afbbf9e14f326e5b0fc1b131272e10ca96dfbfa3c85193330bca}
+  transient_parameters: {logical_name: Transient_Simulation_Parameters.html, byte_length: 150522, sha256: 45372e9c7c79492bf6023a4e860f05a20caf0ef5e2a083407c119909afc187bf}
+  transient_troubleshooting: {logical_name: Troubleshooting_a_Transient-Convolution_Simulation.html, byte_length: 78496, sha256: 621851d5d3bd754b898c27bccd641da3dae08954ef902f72b6609bd8f093a7e0}
+generated_netlist:
+  source_edge_seconds: 1.0e-16
+  max_time_step_seconds: 9.765625e-13
+  output_points: all_strobe_points
+  low_frequency_extrapolation: enabled_transient_engine_adaptive_start_frequency
+  approximate_linear_models: disabled
+  convolution_mode: 1
+  controller_passivity_enforcement: enabled
+  snp_component_passivity_override: not_declared
+  initial_conditions: disabled
+unresolved_product_policy:
+  - convolution_frequency_grid_and_delta_frequency_not_explicit
+  - maximum_frequency_not_explicit
+  - impulse_length_and_truncation_not_explicit
+  - frequency_interpolation_and_extrapolation_algorithm_not_selected
+  - causalization_and_passivity_handling_algorithm_not_selected
+  - linear_convolution_startup_history_and_output_strobe_algorithm_not_selected
+admission:
+  ads_policy_surface_observed: true
+  product_deterministic_time_domain_policy_observed: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - product_deterministic_time_domain_policy_missing
+  - candidate_waveform_generation_missing
+  - external_reference_binding_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not an ADS-parity algorithm, product waveform, or candidate acceptance result.
+  - Not a selected interpolation, extrapolation, causalization, passivity, or convolution policy.
+  - Not ADS/AMI/IBIS/DLL runtime, receiver, statistical-eye, or release evidence.

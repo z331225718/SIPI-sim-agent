@@ -505,6 +505,22 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: []
+  - id: p3c-ads-transient-policy-surface-observation-v1
+    kind: oracle_fixture
+    content_sha256: 3bdbb5d01290790c3cddef353f3f224e47cfaf379905c8076ca11186be01e2c3
+    provenance:
+      source_ref: external/ads/p3c-transient-policy-surface/observation-hash-only
+      license_evidence: external-user-authorized-ads-documentation-observation-only
+    allowed_roles: [observer, auditor]
+    derived_from: []
+  - id: p3c-ads-transient-policy-surface-observation-spec-v1
+    kind: independent_spec
+    content_sha256: b444ad5c9f4def3bfb5243e33a3195ad94cb4ac7049941ec5e830d6d99be12b1
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-ads-transient-policy-surface-observation.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-ads-transient-policy-surface-observation-v1]
   - id: p3b-causal-fir-cli-run-spec-v1
     kind: independent_spec
     content_sha256: 5caca9c27e49a2929300a3f6d2eece00c46b562931e716d69c16bb477a28154e
@@ -1201,6 +1217,15 @@ scopes:
       implementer: [p3c-selected-four-port-static-bench-spec-v1]
       comparator: []
       auditor: [p3c-selected-four-port-static-bench-spec-v1]
+  - id: p3c-ads-transient-policy-surface-observation-v1
+    paths: [docs/baselines/p3c-ads-transient-policy-surface-observation.v1.yaml, docs/clean-room/specs/p3c-ads-transient-policy-surface-observation.v1.md, tools/observe_p3c_ads_transient_policy_surface.py, tools/verify_p3c_ads_transient_policy_surface_observation.py, tools/test_verify_p3c_ads_transient_policy_surface_observation.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-ads-transient-policy-surface-observation-v1, p3c-ads-transient-policy-surface-observation-spec-v1]
+      spec_author: [p3c-ads-transient-policy-surface-observation-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-ads-transient-policy-surface-observation-v1, p3c-ads-transient-policy-surface-observation-spec-v1]
   - id: p3b-causal-fir-cli-run-v1
     paths: [docs/clean-room/specs/p3b-causal-fir-cli-run.v1.md, crates/sipi-cli/**, crates/sipi-contracts/**]
     state: planned
