@@ -1,7 +1,7 @@
 schema: sipi.clean-room-register.v1
 status: provisional
 policy:
-  implementation_allowed: [public_standard, mit_source, independent_spec]
+  implementation_allowed: [public_standard, mit_source, bsd3_source, independent_spec]
   implementation_forbidden: [non_mit_source, pybert_source, oracle_fixture, prohibited_implementation_input]
 principals:
   - id: clean-room-observer-assignment-pending
@@ -593,6 +593,38 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-selected-s4p-external-static-custody-observation-spec-v1]
+  - id: p3c-agent-com-sparam-ieee-bsd-lineage-observation-spec-v1
+    kind: independent_spec
+    content_sha256: 5ca4c73ba10b141d9f927a6d34dac7b333afb70cb44d7eb06d1c2540eb28b479
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-agent-com-sparam-ieee-bsd-lineage-observation.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-agent-com-sparam-source-authorization-preflight-spec-v1]
+  - id: ieee-802-com-interp-sparam-bsd3-v1
+    kind: bsd3_source
+    content_sha256: 259762276a3711eb6e9186993ae1cf38b9cb60d4819f263dc7770788a7f90e27
+    provenance:
+      source_ref: https://opensource.ieee.org/802-com/com_code/-/blob/d4ecd4597a98782887933b5df4c4796da2474195/src/interp_Sparam.m
+      license_evidence: docs/baselines/p3c-agent-com-sparam-ieee-bsd-lineage-observation.v1.yaml
+    allowed_roles: [observer, spec_author, implementer, auditor]
+    derived_from: []
+  - id: ieee-802-com-s21-to-impulse-dc-bsd3-v1
+    kind: bsd3_source
+    content_sha256: b2884926b204fdfddc1c309c35d46ed7744c696e19df3abcd7d91157e9e539c0
+    provenance:
+      source_ref: https://opensource.ieee.org/802-com/com_code/-/blob/d4ecd4597a98782887933b5df4c4796da2474195/src/s21_to_impulse_DC.m
+      license_evidence: docs/baselines/p3c-agent-com-sparam-ieee-bsd-lineage-observation.v1.yaml
+    allowed_roles: [observer, spec_author, implementer, auditor]
+    derived_from: []
+  - id: ieee-802-com-causality-delay-bsd3-v1
+    kind: bsd3_source
+    content_sha256: a74fcd1724109c9e25b21deb4f6c308994ef21a1422503c2e5c2a755050e8823
+    provenance:
+      source_ref: https://opensource.ieee.org/802-com/com_code/-/blob/d4ecd4597a98782887933b5df4c4796da2474195/src/calculate_delay_CausalityEnforcement.m
+      license_evidence: docs/baselines/p3c-agent-com-sparam-ieee-bsd-lineage-observation.v1.yaml
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: []
   - id: p3c-selected-four-port-lexical-amendment-spec-v1
     kind: independent_spec
     content_sha256: 07af1ed7e906e3ee77f51e806aaf7dcd837311fcc0d2443f337318a166edc5bf
@@ -1396,6 +1428,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-agent-com-sparam-source-authorization-preflight-spec-v1]
+  - id: p3c-agent-com-sparam-ieee-bsd-lineage-observation-v1
+    paths: [docs/adr/ADR-014-selective-bsd3-direct-port-boundary.md, docs/baselines/p3c-agent-com-sparam-ieee-bsd-lineage-observation.v1.yaml, docs/clean-room/specs/p3c-agent-com-sparam-ieee-bsd-lineage-observation.v1.md, tools/verify_p3c_agent_com_sparam_ieee_bsd_lineage_observation.py, tools/test_verify_p3c_agent_com_sparam_ieee_bsd_lineage_observation.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-agent-com-sparam-ieee-bsd-lineage-observation-spec-v1, ieee-802-com-interp-sparam-bsd3-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1, ieee-802-com-causality-delay-bsd3-v1]
+      spec_author: [p3c-agent-com-sparam-ieee-bsd-lineage-observation-spec-v1, ieee-802-com-interp-sparam-bsd3-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1, ieee-802-com-causality-delay-bsd3-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-agent-com-sparam-ieee-bsd-lineage-observation-spec-v1, ieee-802-com-interp-sparam-bsd3-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1, ieee-802-com-causality-delay-bsd3-v1]
   - id: p3c-selected-four-port-lexical-amendment-v1
     paths: [crates/sipi-touchstone/src/selected_four_port_v1.rs, crates/sipi-p3c/src/lib.rs, crates/sipi-p3c/tests/p3c_sealed_s4p_external_runner.rs, docs/baselines/p3c-selected-four-port-lexical-amendment.v1.yaml, docs/clean-room/specs/p3c-selected-four-port-lexical-amendment.v1.md, tools/verify_p3c_selected_four_port_lexical_amendment.py, tools/test_verify_p3c_selected_four_port_lexical_amendment.py]
     state: planned

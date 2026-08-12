@@ -2,7 +2,11 @@
 
 The root [LICENSE](LICENSE) applies only to SIPI-sim-agent first-party files
 that `product-boundary.v1.yaml` classifies as `product_candidate` with
-`license: MIT`.
+`license: MIT`. A future, explicitly admitted direct translation of a
+third-party BSD-3-Clause source remains under its own BSD-3-Clause notice; it
+is not relicensed by the root MIT file. Such a path requires a per-file source
+record, a source-specific SPDX expression, NOTICE/SBOM coverage, and a release
+admission. No such product path is admitted by this document.
 
 It does not relicense third-party dependencies, migration-only code, external
 or oracle-only assets, quarantined material, vendor DLLs, IBIS/AMI models, or

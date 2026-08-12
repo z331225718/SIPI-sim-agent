@@ -1,0 +1,79 @@
+schema: sipi.p3c.agent-com-sparam-ieee-bsd-lineage-observation.v1
+status: selective_upstream_bsd3_source_input_observed_direct_port_implementation_pending
+authority:
+  actor: user
+  decision_ref: user-authorized-2026-08-12-ieee8023-gitlab-provenance-and-selective-mixed-license-direct-port
+  direct_port_implementation_started: false
+  product_policy_selected: false
+  release_admitted: false
+agent_com_source:
+  canonical_origin: https://github.com/z331225718/agent-com.git
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  root_license_spdx: MIT
+ieee_802_com_source:
+  canonical_origin: https://opensource.ieee.org/802-com/com_code.git
+  commit: d4ecd4597a98782887933b5df4c4796da2474195
+  tree: e0f5ccbee1421a06a2e201622cdeb70e3b1d9760
+  object_format: sha1
+  root_license:
+    path: LICENSE
+    git_blob: 0d136a232fee2359fb9e2fc03c2b86baf99c6b06
+    byte_length: 1516
+    content_sha256: f5532297b5eeef9ef3236a38ecb5973d6521b542f567db15c4025e1f71d91631
+    observed_spdx: BSD-3-Clause
+    copyright_marker: Copyright (c) 2025, 802-COM Authors
+paths:
+  - agent_com:
+      path: src/agent_com/signal/interpolation.py
+      git_blob: 87898d999ec20ac8f531bba72efbbd83d9e43d43
+      content_sha256: eab64c2f260778f468cef50b102749919704420d22914c1302a22a8b94da5a5b
+      lineage_marker: Port `interp_Sparam` (r4.80 source lines 6319--6515)
+    ieee_802_com:
+      path: src/interp_Sparam.m
+      git_blob: 85b52ff25dbb5bb91f032a03d7cdd311e33af432
+      byte_length: 10085
+      content_sha256: 259762276a3711eb6e9186993ae1cf38b9cb60d4819f263dc7770788a7f90e27
+      required_markers: ['SPDX-License-Identifier: BSD-3-Clause', 'Copyright 2025 802-COM Authors', 'function [Sout] = interp_Sparam']
+    source_input_status: admitted_bsd3_notice_and_product_policy_pending
+  - agent_com:
+      path: src/agent_com/signal/fd_to_td.py
+      git_blob: 6f3af024ea20df0011843ea19a090788f1aabbc9
+      content_sha256: 703a360837cbaa18494ee03ba8df8d908dc6bf3c516d80d3dddf83af6637c687
+      lineage_marker: Port `s21_to_impulse_DC` (r4.80 source lines 10091--10160)
+    ieee_802_com:
+      path: src/s21_to_impulse_DC.m
+      git_blob: f426fb2119dc1cf9c2a2f677e60c3a1f31cb27a3
+      byte_length: 4208
+      content_sha256: b2884926b204fdfddc1c309c35d46ed7744c696e19df3abcd7d91157e9e539c0
+      required_markers: ['SPDX-License-Identifier: BSD-3-Clause', 'Copyright 2025 802-COM Authors', 'function [voltage, t_base, causality_correction_dB, truncation_dB]']
+    source_input_status: admitted_bsd3_notice_and_product_policy_pending
+  - agent_com:
+      path: src/agent_com/signal/causality.py
+      git_blob: 13555c329187385f4c8bc610c1ce62cc89acac6c
+      content_sha256: d9c75b356a053f1e68d81ffd4c979f9f8746a76c509840ff29aac4a759a917f7
+      lineage_marker: Minimum-phase causality correction and delay estimation from r4.80.
+    ieee_802_com:
+      path: src/calculate_delay_CausalityEnforcement.m
+      git_blob: 6b2dcb7d83f0dbf48e749e5200850fffea73791e
+      byte_length: 7395
+      content_sha256: a74fcd1724109c9e25b21deb4f6c308994ef21a1422503c2e5c2a755050e8823
+      required_markers: ['SPDX-License-Identifier: BSD-3-Clause', 'Copyright 2025 802-COM Authors', 'function [delay_sec, delay_idx]= calculate_delay_CausalityEnforcement']
+    source_input_status: blocked_named_author_chain_confirmation_pending
+required_before_implementation:
+  - dedicated_rust_implementation_scope_with_exact_source_binding
+  - source_specific_spdx_notice_and_sbom_entries
+  - product_sparameter_policy_selected_independently
+  - translated_dependency_closure_reviewed
+  - release_archive_license_admission
+blockers:
+  - direct_port_implementation_not_started
+  - product_sparameter_policy_not_selected
+  - translated_dependency_closure_and_notice_plan_missing
+  - causality_named_author_chain_confirmation_missing
+  - p5_authoritative_r480_reference_missing
+non_claims:
+  - IEEE standards, meeting material, and the Agent-COM root MIT license are not used as a code relicensing grant.
+  - The observed path pairing is provenance evidence only and does not claim semantic or output equivalence.
+  - This record admits neither a general Agent-COM import nor PyBERT, PyAMI, MATLAB, workbook, fixture, or oracle material.
+  - No candidate execution, P5 authoritative reference, receiver acceptance, ADS or AMI runtime, source-drift repair, or release promotion is evaluated.

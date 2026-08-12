@@ -11,8 +11,9 @@ native candidate.
 
 For a domain scope, the observer, specification author, implementer,
 comparator, and auditor must be assigned before use. The implementer allowlist
-may contain only `public_standard`, `mit_source`, or independently-authored,
-fully-declared `independent_spec` material. A specification cannot conceal a
+may contain only `public_standard`, `mit_source`, `bsd3_source`, or independently-authored,
+fully-declared `independent_spec` material. Each `bsd3_source` use must name
+its immutable upstream object and preserve BSD-3-Clause attribution. A specification cannot conceal a
 prohibited ancestor through `derived_from`.
 
 Run `python -B tools/verify_clean_room_register.py` to validate the registry.

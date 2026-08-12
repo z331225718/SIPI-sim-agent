@@ -3,7 +3,7 @@
 > 状态：已接受的产品重基线
 > 日期：2026-08-09
 > 目标读者：平台架构、TRAN/Channel/IBIS-AMI/COM 开发者、测试与发布维护者
-> 决策记录：[ADR-011](docs/adr/ADR-011-native-mit-rust-product-boundary.md)
+> 决策记录：[ADR-011](docs/adr/ADR-011-native-mit-rust-product-boundary.md)、[ADR-014](docs/adr/ADR-014-selective-bsd3-direct-port-boundary.md)
 
 ## 1. 结论
 
@@ -11,8 +11,8 @@
 
 1. **一个公开产品入口。** 用户和自动化只需要 `sipi` CLI；TRAN、Channel、IBIS-AMI、COM 和跨域流水线通过稳定、可发现、版本化的命令与 JSON 契约暴露。
 2. **一个 Rust 产品实现。** 发布运行时、领域内核、契约、工件管理、流水线和 CLI 均由同一 Rust workspace 提供。允许内部隔离 worker，但不把 Python、MATLAB 或旧项目可执行文件作为产品运行依赖。
-3. **第一方源码采用 MIT。** 最终产品仓中的第一方可发布源码统一为 MIT。MIT-compatible 第三方依赖保留其原许可证、NOTICE 和 SBOM；供应商 DLL、IBIS/AMI 模型及不可再分发 oracle 默认由用户外部提供，不进入发行包。
-4. **非 MIT 第一方实现采用可审计 clean-room 重做。** 非 MIT 源码不能被翻译、搬运或通过 history rewrite 进入产品实现。旧实现只可在隔离的观察侧充当黑盒 oracle；实现侧只接收公开标准、授权材料和独立行为规格。
+3. **第一方源码采用 MIT。** 最终产品仓中的第一方可发布源码统一为 MIT。逐路径获准的 MIT-compatible 第三方直接移植保留其自身许可证、NOTICE 和 SBOM；供应商 DLL、IBIS/AMI 模型及不可再分发 oracle 默认由用户外部提供，不进入发行包。
+4. **受限实现采用可审计 clean-room 重做。** 没有逐路径再分发许可的源码不能被翻译、搬运或通过 history rewrite 进入产品实现。旧实现只可在隔离的观察侧充当黑盒 oracle；实现侧只接收公开标准、授权材料和独立行为规格。
 5. **准确性按已定义 profile 认证。** 三个旧项目已经通过的例子成为带来源、输入哈希、stage、容差和非宣称范围的验收 profile。通过一个例子只认证该 profile，不能外推为整个标准或所有模型的准确性。
 6. **旧平台代码降级为迁移设施。** 当前 Python contracts/runtime/adapters、旧 engine bundle、PyBERT CI/nightly 和跨仓比较器可继续产生证据，但不是终态产品架构。删除仍受用户批准、golden 完备和漂移门同批移除约束。
 
@@ -80,7 +80,7 @@
 | --- | --- | --- |
 | 本项目新写的第一方源码 | MIT，文件与包元数据一致 | 可以 |
 | 已确认 MIT 的旧项目源码 | 可直接复用或移植，保留版权与来源 | 通过来源审计后可以 |
-| BSD/Apache-2.0 等 MIT-compatible 依赖 | 作为第三方依赖使用，不改写其许可证 | 完成 NOTICE/SBOM 后可以 |
+| BSD/Apache-2.0 等 MIT-compatible 依赖或逐路径直接移植 | 保留其许可证、版权和 NOTICE，不改写为 MIT | 完成 per-path admission、NOTICE/SBOM 后可以 |
 | 非 MIT 第一方实现 | clean-room 行为重做，原源码不迁入 | 原源码不可以；新实现通过审计后可以 |
 | 用户/供应商模型与 DLL | 外部引用，逐项 hash 和授权用途 | 默认不可以 |
 | 来源或授权不明的代码/数据/模型 | `blocked_unknown` | 不可以 |
@@ -92,6 +92,7 @@
 所有可能影响实现或验收的材料必须进入版本化清单，并归入以下一种状态：
 
 - `mit_source`：已核验为 MIT，可直接复用。
+- `bsd3_source`：已核验为 BSD-3-Clause；只可按逐路径 admission 直接翻译，并保留完整 notice。
 - `compatible_dependency`：可分发的第三方依赖，保留其许可证和 NOTICE。
 - `public_standard`：公开标准或公开、可引用的技术资料。
 - `oracle_black_box`：只允许观察输入/输出，不向实现侧暴露源码。
@@ -106,7 +107,7 @@
 严格 clean-room 采用两侧隔离：
 
 1. **观察/规格侧**可运行经授权的旧实现，阅读公开标准，并产出独立行为规格。规格只描述输入、输出、单位、状态机、边界条件、已观察行为、容差和非宣称，不能包含受限源码片段、控制流翻译或可识别实现细节。
-2. **实现侧**只读取 allowlist 中的 `public_standard`、`mit_source`、自有测试和独立行为规格，在 Rust 中独立设计实现。
+2. **实现侧**只读取 allowlist 中的 `public_standard`、`mit_source`、逐路径获准的 `bsd3_source`、自有测试和独立行为规格，在 Rust 中独立设计实现。
 3. **比较侧**在工作树外运行旧 oracle 与 Rust candidate，生成内容寻址的结构化报告；受限输入/输出只有在许可允许时才存储。
 4. **审计侧**核验材料清单、角色记录、提交 provenance、依赖许可和行为比较，不以代码“看起来不同”替代来源证据。
 

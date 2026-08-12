@@ -2,13 +2,14 @@
 
 面向 SI/PI、串行链路和 IEEE 802.3 COM 分析的原生仿真平台。
 
-当前状态：`v0.2` 产品重基线。终态为第一方 MIT、Rust-only 的统一平台；旧项目只作为已授权 MIT 源码候选或工作树外 oracle，不作为产品运行依赖。
+当前状态：`v0.2` 产品重基线。终态为 Rust-only 的统一平台：第一方源码为 MIT，逐文件获准的第三方直接移植保留其自身兼容许可证；旧项目只作为已授权源码候选或工作树外 oracle，不作为产品运行依赖。
 
 ## 核心文档
 
 - [SPEC.md](SPEC.md)：产品范围、目标架构、公共契约、引擎边界和验收标准。
 - [PLAN.md](PLAN.md)：纵向能力计划、任务依赖、质量门禁和旧资产处置。
 - [ADR-011](docs/adr/ADR-011-native-mit-rust-product-boundary.md)：MIT 第一方源码、Rust-only 终态和旧项目 oracle 边界。
+- [ADR-014](docs/adr/ADR-014-selective-bsd3-direct-port-boundary.md)：按路径保留 BSD-3-Clause 的直接移植边界。
 
 ## 一句话架构
 
@@ -29,7 +30,7 @@
 - `sipi` 单一公开 CLI，稳定 JSON schema、capabilities、errors 和 provenance。
 - TRAN、Channel、IBIS、AMI、COM 独立 Rust crates。
 - typed pipeline、内容寻址工件、stage compare 和 profile 级能力认证。
-- MIT 第一方源码边界；compatible 依赖保留其许可证，供应商模型/DLL 默认外部提供。
+- MIT 第一方源码边界；获准的第三方直接移植和依赖保留其许可证，供应商模型/DLL 默认外部提供。
 - 面向 AI 的机器可发现接口，不提供隐式 fallback 或任意 shell 能力。
 
 实施从 [PLAN.md](PLAN.md) 的 `P0` 产品/clean-room 边界开始。
@@ -38,7 +39,8 @@
 
 根 [LICENSE](LICENSE) 仅覆盖
 [`product-boundary.v1.yaml`](product-boundary.v1.yaml) 中标为
-`product_candidate`、`license: MIT` 的第一方文件。当前清单是
+`product_candidate`、`license: MIT` 的第一方文件。获准的第三方直接移植必须由
+其路径记录的许可证、NOTICE 和 SBOM 覆盖，根许可证不改写它们。当前清单是
 `provisional`：Python 迁移设施、旧引擎、候选 Rust crate、fixtures 和外部资产
 不会因根许可证而被重新授权或纳入发行物。完整范围见
 [LICENSE-SCOPE.md](LICENSE-SCOPE.md)。

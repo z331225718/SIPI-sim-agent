@@ -21,13 +21,14 @@ ROLES = {"observer", "spec_author", "implementer", "comparator", "auditor", "rel
 MATERIAL_KINDS = {
     "public_standard",
     "mit_source",
+    "bsd3_source",
     "independent_spec",
     "non_mit_source",
     "pybert_source",
     "oracle_fixture",
     "prohibited_implementation_input",
 }
-IMPLEMENTATION_KINDS = {"public_standard", "mit_source", "independent_spec"}
+IMPLEMENTATION_KINDS = {"public_standard", "mit_source", "bsd3_source", "independent_spec"}
 STATES = {
     "planned": 0,
     "observation_sealed": 1,

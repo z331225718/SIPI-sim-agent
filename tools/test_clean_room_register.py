@@ -41,7 +41,7 @@ def registry() -> dict:
         "schema": "sipi.clean-room-register.v1",
         "status": "provisional",
         "policy": {
-            "implementation_allowed": ["public_standard", "mit_source", "independent_spec"],
+            "implementation_allowed": ["public_standard", "mit_source", "bsd3_source", "independent_spec"],
             "implementation_forbidden": ["non_mit_source", "pybert_source", "oracle_fixture", "prohibited_implementation_input"],
         },
         "principals": principals,
@@ -130,6 +130,41 @@ class CleanRoomRegisterTests(unittest.TestCase):
         report = verify_document(invalid)
         self.assertFalse(report["valid"])
         self.assertTrue(any("invalid observer allowlist" in item for item in report["blockers"]))
+
+    def test_bsd3_source_is_allowed_only_as_a_declared_implementation_material(self) -> None:
+        allowed = registry()
+        allowed["materials"].append(
+            {
+                "id": "bsd3-source",
+                "kind": "bsd3_source",
+                "content_sha256": "c" * 64,
+                "provenance": {
+                    "source_ref": "https://example.invalid/upstream/file.m",
+                    "license_evidence": "docs/licenses/upstream-bsd3.md",
+                },
+                "allowed_roles": ["observer", "spec_author", "implementer", "auditor"],
+                "derived_from": [],
+            }
+        )
+        allowed["scopes"][0]["role_material_allowlists"]["implementer"] = ["bsd3-source"]
+        report = verify_document(allowed)
+        self.assertTrue(report["valid"], report["blockers"])
+
+        rejected = copy.deepcopy(allowed)
+        rejected["materials"].append(
+            {
+                "id": "blocked-parent",
+                "kind": "prohibited_implementation_input",
+                "content_sha256": "d" * 64,
+                "provenance": {"source_ref": "external/blocked", "license_evidence": "external/license"},
+                "allowed_roles": ["observer"],
+                "derived_from": [],
+            }
+        )
+        rejected["materials"][1]["derived_from"] = ["blocked-parent"]
+        report = verify_document(rejected)
+        self.assertFalse(report["valid"])
+        self.assertTrue(any("forbidden ancestor" in item for item in report["blockers"]))
 
     def test_attestation_hash_signature_and_role_separation_fail_closed(self) -> None:
         invalid = strict_registry()
