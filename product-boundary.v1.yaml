@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: e066510ca882072178a3c2a5b6af5a0ff182cae55a55c1bca4061b598abea128
+  tracked_paths_sha256: a9187ae6cb25dfe3f8f9d1c3a163facb61cf7937f569ab9713b2f23ab8269cac
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1433,6 +1433,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-12-p3c-agent-com-sparam-source-authorization-preflight.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-12-p3c-external-ads-prbs9-reference-attempt.md:
       rule: historical-docs
       class: migration_only
@@ -1788,6 +1794,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-ads-transient-policy-surface-observation.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-agent-com-sparam-source-authorization-preflight.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2364,6 +2376,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-ads-transient-policy-surface-observation.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-agent-com-sparam-source-authorization-preflight.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7589,6 +7607,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_agent_com_sparam_source_authorization_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_external_ads_prbs9_reference.py:
       rule: migration-tools
       class: migration_only
@@ -8148,6 +8172,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_ads_transient_policy_surface_observation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_agent_com_sparam_source_authorization_preflight.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

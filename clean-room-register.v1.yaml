@@ -585,6 +585,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-sealed-selected-s4p-static-admission-spec-v1]
+  - id: p3c-agent-com-sparam-source-authorization-preflight-spec-v1
+    kind: independent_spec
+    content_sha256: de15dfd2341f7a04dbbab5508187d27ab87de425056d6b0ff33c8d8e75b4883b
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-agent-com-sparam-source-authorization-preflight.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-selected-s4p-external-static-custody-observation-spec-v1]
   - id: p3c-selected-four-port-lexical-amendment-spec-v1
     kind: independent_spec
     content_sha256: 07af1ed7e906e3ee77f51e806aaf7dcd837311fcc0d2443f337318a166edc5bf
@@ -1379,6 +1387,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: []
+  - id: p3c-agent-com-sparam-source-authorization-preflight-v1
+    paths: [docs/baselines/p3c-agent-com-sparam-source-authorization-preflight.v1.yaml, docs/clean-room/specs/p3c-agent-com-sparam-source-authorization-preflight.v1.md, tools/verify_p3c_agent_com_sparam_source_authorization_preflight.py, tools/test_verify_p3c_agent_com_sparam_source_authorization_preflight.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-agent-com-sparam-source-authorization-preflight-spec-v1]
+      spec_author: [p3c-agent-com-sparam-source-authorization-preflight-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-agent-com-sparam-source-authorization-preflight-spec-v1]
   - id: p3c-selected-four-port-lexical-amendment-v1
     paths: [crates/sipi-touchstone/src/selected_four_port_v1.rs, crates/sipi-p3c/src/lib.rs, crates/sipi-p3c/tests/p3c_sealed_s4p_external_runner.rs, docs/baselines/p3c-selected-four-port-lexical-amendment.v1.yaml, docs/clean-room/specs/p3c-selected-four-port-lexical-amendment.v1.md, tools/verify_p3c_selected_four_port_lexical_amendment.py, tools/test_verify_p3c_selected_four_port_lexical_amendment.py]
     state: planned

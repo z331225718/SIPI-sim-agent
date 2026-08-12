@@ -1,0 +1,54 @@
+schema: sipi.p3c.agent-com-sparam-source-authorization-preflight.v1
+status: per_path_static_review_observed_direct_port_blocked
+authority:
+  actor: user
+  decision_ref: user-authorized-2026-08-12-agent-com-sparam-per-path-audit
+  conditional_mode: direct_licensed_port_mixed_license_after_admission
+  direct_port_admitted: false
+source:
+  canonical_origin: https://github.com/z331225718/agent-com.git
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  object_format: sha1
+  root_license:
+    path: LICENSE
+    git_blob: 55aac2e4f8c36a978d315efb02815972579b8293
+    content_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+    observed_spdx: MIT
+candidates:
+  - path: src/agent_com/signal/interpolation.py
+    git_blob: 87898d999ec20ac8f531bba72efbbd83d9e43d43
+    byte_length: 8693
+    content_sha256: eab64c2f260778f468cef50b102749919704420d22914c1302a22a8b94da5a5b
+    declared_lineage_markers: [Port `interp_Sparam` (r4.80 source lines 6319--6515)]
+    direct_imports: [numpy, agent_com.compat, agent_com.errors]
+    review_status: blocked_declared_r480_lineage_requires_upstream_provenance
+  - path: src/agent_com/signal/fd_to_td.py
+    git_blob: 6f3af024ea20df0011843ea19a090788f1aabbc9
+    byte_length: 5831
+    content_sha256: 703a360837cbaa18494ee03ba8df8d908dc6bf3c516d80d3dddf83af6637c687
+    declared_lineage_markers: [Port `s21_to_impulse_DC` (r4.80 source lines 10091--10160)]
+    direct_imports: [numpy, agent_com.errors, agent_com.runtime, agent_com.signal.interpolation]
+    review_status: blocked_declared_r480_lineage_requires_upstream_provenance
+  - path: src/agent_com/signal/causality.py
+    git_blob: 13555c329187385f4c8bc610c1ce62cc89acac6c
+    byte_length: 3809
+    content_sha256: d9c75b356a053f1e68d81ffd4c979f9f8746a76c509840ff29aac4a759a917f7
+    declared_lineage_markers: [Minimum-phase causality correction and delay estimation from r4.80., Preserve the source's self-difference bug for the R480 profile.]
+    direct_imports: [numpy, agent_com.errors, agent_com.signal.fd_to_td, agent_com.signal.interpolation]
+    review_status: blocked_declared_r480_lineage_requires_upstream_provenance
+review_requirements:
+  per_path: [upstream_provenance, copyright_holder, relicensing_right, exact_spdx, notice_attribution, dependency_closure, distribution_scope]
+  product_policy: [complex_interpolation, dc_policy, out_of_band_policy, hermitian_ifft_scaling, delay_policy, causality_policy, passivity_policy, impulse_truncation, linear_convolution]
+  excluded_material: [matlab_src, workbooks, fixtures, benchmarks, oracle_outputs, matlab_runtime]
+blockers:
+  - upstream_provenance_and_relicensing_rights_not_independently_confirmed
+  - per_path_notice_and_attribution_decisions_missing
+  - translated_dependency_closure_and_notice_plan_missing
+  - product_sparameter_policy_not_selected
+  - p5_authoritative_r480_reference_missing
+non_claims:
+  - Root MIT evidence and the owner authorization do not by themselves admit a direct port or a release input.
+  - This static review does not execute agent-com, MATLAB, PyBERT, PyAMI, ADS, or any oracle.
+  - This record does not choose interpolation, DC, out-of-band, delay, causality, passivity, IFFT, truncation, or convolution semantics.
+  - Historical rational rejection, source drift, P5 reference blocking, and release fail-closed gates remain unchanged.
