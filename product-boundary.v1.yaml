@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 4b3cd646cf0257580e0493044b2e239882ed218c37a0d9eb2e5bf7949ff731c9
+  tracked_paths_sha256: b2e629de1a231e40d0c51721f21438a959d3c681045c4d3d96b7bc241d830ae2
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1373,6 +1373,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-12-p3c-prbs9-metric-core.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-12-p3c-prbs9-waveform-jitter-contract-v2.md:
       rule: historical-docs
       class: migration_only
@@ -1644,6 +1650,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-external-ads-prbs9-reference.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-prbs9-metric-core.v2.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2130,6 +2142,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-external-ads-prbs9-reference.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-prbs9-metric-core.v2.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7223,6 +7241,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_prbs9_metric_core_v2.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_prbs9_waveform_jitter_contract.py:
       rule: migration-tools
       class: migration_only
@@ -7698,6 +7722,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_external_ads_prbs9_reference_attempt.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_prbs9_metric_core_v2.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

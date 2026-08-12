@@ -1,0 +1,61 @@
+schema: sipi.p3c-prbs9-metric-core.v2
+status: product_owned_strict_grid_waveform_eye_tie_core_specified_not_profile_accepted
+authority:
+  actor: user
+  decision_ref: user-approved-2026-08-12-p3c-discrete-eye-tie-rules
+  scope: discrete_sampled_eye_and_crossing_tie_formula_only_not_cli_or_acceptance
+contract_binding:
+  contract_v2_content_sha256: f47329b6ddda01cbcde1f24e21cb93e03f8ef6139ea2d43ff74cad9e2049d2b5
+  supersedes_nrmse_core_v1_as_current_implementation: true
+profile:
+  total_samples: 49056
+  compared_sample_range: [32704, 49056]
+  samples_per_ui: 32
+  waveform_nrmse_limit: 0.01
+  eye:
+    phase: sample_index_modulo_32
+    partition: frozen_prbs9_current_ui
+    opening: min_high_minus_max_low
+    width_center_phase: 16
+    width: contiguous_positive_bins_containing_center_times_dt
+    wraparound: prohibited
+    interpolation: prohibited
+    relative_error_limit: 0.01
+    zero_reference_metric: reject
+  tie:
+    nominal_transition_window: left_closed_right_open_plus_or_minus_half_ui
+    rising_crossing: left_negative_right_nonnegative
+    falling_crossing: left_positive_right_nonpositive
+    interpolation: linear_between_adjacent_samples
+    matching: same_ideal_transition_index_only
+    crossings_per_window: exactly_one_or_reject
+    zero_plateau: reject
+    tie_mean_removal: prohibited
+    paired_rmse_limit_seconds: 3.125e-13
+input_boundary:
+  scope: caller_supplied_strict_grid_waveforms_only
+  requires_full_three_period_finite_waveforms: true
+  reads_external_assets: false
+  external_reference_binding: not_evaluated
+implementation:
+  crate: sipi-compare
+  module: prbs9_waveform_v2
+  public_entrypoint: compare_prbs9_metrics_v2
+  policy: sipi.compare.prbs9-v2.third-period-strict-grid-nrmse.v1
+admission:
+  candidate_waveform_eye_jitter_acceptance_evaluated: false
+  accepted_receiver: false
+  acceptance_ready: false
+  promotion_eligible: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - profile_specific_cli_transport_missing
+  - external_reference_binding_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not an ADS, AMI, DLL, IBIS, CDR, or external-oracle runtime.
+  - Not waveform, eye, jitter, receiver, or release acceptance evidence.
+  - Not a CLI, file, URL, artifact, seed, axis, alignment, or tolerance input surface.

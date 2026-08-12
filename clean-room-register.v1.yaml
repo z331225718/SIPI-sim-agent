@@ -481,6 +481,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, auditor]
     derived_from: [p3c-prbs9-waveform-jitter-contract-spec-v2]
+  - id: p3c-prbs9-metric-core-spec-v2
+    kind: independent_spec
+    content_sha256: cfc53a85ad0c4120c6d6420e4fc47d3d08b3d37a5a2be1ab5b22dc92299c82ee
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-prbs9-metric-core.v2.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p3c-prbs9-waveform-jitter-contract-spec-v2, p3c-prbs9-waveform-nrmse-core-spec-v1]
   - id: p3b-causal-fir-cli-run-spec-v1
     kind: independent_spec
     content_sha256: 5caca9c27e49a2929300a3f6d2eece00c46b562931e716d69c16bb477a28154e
@@ -1142,6 +1150,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-prbs9-waveform-nrmse-core-spec-v1]
+  - id: p3c-prbs9-metric-core-v2
+    paths: [docs/baselines/p3c-prbs9-metric-core.v2.yaml, docs/clean-room/specs/p3c-prbs9-metric-core.v2.md, crates/sipi-compare/src/lib.rs, crates/sipi-compare/src/prbs9_waveform_v2.rs, tools/verify_p3c_prbs9_metric_core_v2.py, tools/test_verify_p3c_prbs9_metric_core_v2.py, tools/verify_p3c_prbs9_waveform_nrmse_core.py, tools/test_verify_p3c_prbs9_waveform_nrmse_core.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3c-prbs9-metric-core-spec-v2]
+      implementer: [p3c-prbs9-metric-core-spec-v2]
+      comparator: []
+      auditor: [p3c-prbs9-metric-core-spec-v2]
   - id: p3b-causal-fir-cli-run-v1
     paths: [docs/clean-room/specs/p3b-causal-fir-cli-run.v1.md, crates/sipi-cli/**, crates/sipi-contracts/**]
     state: planned
