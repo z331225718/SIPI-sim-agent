@@ -473,6 +473,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-external-ads-prbs9-reference-observation-v2, p3c-prbs9-waveform-jitter-contract-spec-v2]
+  - id: p3c-prbs9-waveform-nrmse-core-spec-v1
+    kind: independent_spec
+    content_sha256: 6641455108b5f90d4787d9976ec2a3e0c829942857eab178e930bb9c8b641e0d
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-prbs9-waveform-nrmse-core.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, auditor]
+    derived_from: [p3c-prbs9-waveform-jitter-contract-spec-v2]
   - id: p3b-causal-fir-cli-run-spec-v1
     kind: independent_spec
     content_sha256: 5caca9c27e49a2929300a3f6d2eece00c46b562931e716d69c16bb477a28154e
@@ -1125,6 +1133,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-external-ads-prbs9-reference-observation-v2, p3c-external-ads-prbs9-reference-spec-v1]
+  - id: p3c-prbs9-waveform-nrmse-core-v1
+    paths: [docs/baselines/p3c-prbs9-waveform-nrmse-core.v1.yaml, docs/clean-room/specs/p3c-prbs9-waveform-nrmse-core.v1.md, crates/sipi-compare/src/lib.rs, crates/sipi-compare/src/prbs9_waveform_v2.rs, tools/verify_p3c_prbs9_waveform_nrmse_core.py, tools/test_verify_p3c_prbs9_waveform_nrmse_core.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3c-prbs9-waveform-nrmse-core-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-prbs9-waveform-nrmse-core-spec-v1]
   - id: p3b-causal-fir-cli-run-v1
     paths: [docs/clean-room/specs/p3b-causal-fir-cli-run.v1.md, crates/sipi-cli/**, crates/sipi-contracts/**]
     state: planned

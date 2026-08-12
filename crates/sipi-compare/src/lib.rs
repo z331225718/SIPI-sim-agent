@@ -6,6 +6,8 @@
 //! files, or know any simulation domain. Callers must establish those facts
 //! before constructing [`AlignedArrayV1`].
 
+pub mod prbs9_waveform_v2;
+
 use std::{error::Error, fmt};
 
 use sha2::{Digest, Sha256};

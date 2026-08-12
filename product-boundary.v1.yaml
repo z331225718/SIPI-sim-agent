@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: d026a7a67d88979dd2553a2004d80d416e785207e6b191b36149722587bc825f
+  tracked_paths_sha256: 4b3cd646cf0257580e0493044b2e239882ed218c37a0d9eb2e5bf7949ff731c9
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -204,6 +204,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-compare/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-compare/src/prbs9_waveform_v2.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1385,6 +1391,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-12-p3c-prbs9-waveform-nrmse-core.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-12-p4b-ads-pcie-gen5-dual-ami-asset-preflight.md:
       rule: historical-docs
       class: migration_only
@@ -1650,6 +1662,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-prbs9-waveform-jitter-preflight.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-prbs9-waveform-nrmse-core.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2130,6 +2148,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-prbs9-waveform-jitter-preflight.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-prbs9-waveform-nrmse-core.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7217,6 +7241,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_prbs9_waveform_nrmse_core.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p4a_electrical_endpoint_semantic_contract.py:
       rule: migration-tools
       class: migration_only
@@ -7686,6 +7716,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_prbs9_waveform_jitter_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_prbs9_waveform_nrmse_core.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

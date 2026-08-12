@@ -1,0 +1,47 @@
+schema: sipi.p3c-prbs9-waveform-nrmse-core.v1
+status: product_owned_strict_grid_waveform_nrmse_specified_not_profile_accepted
+contract_binding:
+  contract_v2_content_sha256: f47329b6ddda01cbcde1f24e21cb93e03f8ef6139ea2d43ff74cad9e2049d2b5
+profile:
+  total_samples: 49056
+  compared_start: 32704
+  compared_samples: 16352
+  waveform_nrmse_limit: 0.01
+  formula: sqrt(sum((candidate-reference)^2)/sum(reference^2))
+  alignment: prohibited
+  resampling: prohibited
+  gain_fit: prohibited
+  dc_removal: prohibited
+  polarity_flip: prohibited
+  zero_reference_norm: reject
+input_boundary:
+  scope: caller_supplied_strict_grid_waveforms_only
+  requires_full_three_period_finite_waveforms: true
+  reads_external_assets: false
+  external_reference_binding: not_evaluated
+implementation:
+  crate: sipi-compare
+  module: prbs9_waveform_v2
+  public_entrypoint: compare_prbs9_waveform_nrmse_v2
+  policy: sipi.compare.prbs9-v2.third-period-strict-grid-nrmse.v1
+  eye_metrics: not_implemented
+  jitter_metrics: not_implemented
+admission:
+  candidate_waveform_eye_jitter_acceptance_evaluated: false
+  accepted_receiver: false
+  acceptance_ready: false
+  promotion_eligible: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - profile_specific_cli_transport_missing
+  - external_reference_binding_missing
+  - sampled_eye_discrete_semantics_pending
+  - crossing_tie_discrete_semantics_pending
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not an ADS, AMI, DLL, IBIS, CDR, or external-oracle runtime.
+  - Not waveform, eye, jitter, receiver, or release acceptance evidence.
+  - Not a CLI, file, URL, artifact, seed, axis, alignment, or tolerance input surface.
