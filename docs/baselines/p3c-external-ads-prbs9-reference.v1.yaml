@@ -1,0 +1,70 @@
+schema: sipi.p3c-external-ads-prbs9-reference.v1
+status: external_ads_reference_observed_contract_v2_matched_candidate_and_receiver_acceptance_pending
+authority:
+  actor: user
+  decision_ref: user-authorized-2026-08-12-p3c-ads-prbssrc-100as-source-edge
+  scope: external_ads_oracle_reference_only_not_product_or_p4b_runtime
+contract_binding:
+  contract_v1_content_sha256: 7c55086abe681e4a4a64aec15379eb839fc3514a94b2f4b3d920ec9c9f391751
+  contract_v2_content_sha256: f47329b6ddda01cbcde1f24e21cb93e03f8ef6139ea2d43ff74cad9e2049d2b5
+  historical_attempt_content_sha256: 083b20ad6d7c386370230fb5819c168146f484024de6b0d553a1577c052df3e7
+external_observation:
+  schema: sipi.p3c-external-ads-prbs9-reference-observation.v2
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 2639
+  report_content_sha256: bc542f13dae25d0261dc001f814fc1b721cdf534455589448cdaa4f6ae05b695
+clean_archive:
+  commit: e167c579ec85c1d8c49301f8eaefa832bc9f5c3a
+  tree: d8c8b7ab35257209377170e782a038ba5145fb56
+  runner_sha256: 5c67ffeae954c34dbcf31096093d1a3f44a2eaeeb15ca3bb009b7139fe78c663
+ads:
+  product: ads_2026_update1
+  python_version: 3.13.2
+  simulator_build: hpeesofsim_635_shp_2025-10-26
+source:
+  logical_name: channel_gen5_highloss.s4p
+  byte_length: 1834156
+  sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  port_map: {port_1: tx_plus, port_2: rx_plus, port_3: tx_minus, port_4: rx_minus}
+source_edge:
+  component_semantics: ads_prbssrc
+  edge_shape_code: 0
+  rise_time_seconds: 1.0e-16
+  fall_time_seconds: 1.0e-16
+  transition_reference: 0.0
+  clamp_warning_observed: false
+fresh_runs:
+  count: 2
+  manifest_byte_length: 2479
+  manifest_sha256: 37930afa7f151cd6ca317f17ebb544dfb9c5a56a4a4c455b35f0114dc4fb94f9
+  netlist_sha256: 2784e9e8d42c7ecdc3459b79a5f9cd79cc86131f839c86b1658e8d40b1d9aaf9
+  canonical_payload_repeatability: identical
+output:
+  observation_node: V(rxp)-V(rxm)
+  unit: volts_differential
+  ads_samples_inclusive: 49057
+  contract_half_open_samples: 49056
+  third_period_samples: 16352
+  canonical_payload_sha256: 5ec5211a273d313655f0b8ced35d58ea89d0bba113f5edc3fd9712218f46e726
+  third_period_payload_sha256: 402596d9f5ab37e37cc3f4927f55170ab007159376174453fc65b78e3a80d31c
+  historical_waveform_identity_match: true
+admission:
+  external_ads_runtime_observed: true
+  reference_contract_match: true
+  external_reference_observed: true
+  candidate_waveform_eye_jitter_acceptance_evaluated: false
+  accepted_receiver: false
+  acceptance_ready: false
+  promotion_eligible: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - candidate_waveform_eye_jitter_comparator_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not a product waveform, eye, jitter, receiver, or release acceptance result.
+  - Not product runtime, AMI, IBIS, DLL, CDR, equalizer, or statistical-eye execution.
+  - Not authorization to promote P4B, release compare, or release ledger evidence.

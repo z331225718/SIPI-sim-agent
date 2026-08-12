@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 4241f3091a49dacbea206b750ff6b054b3b44695b8a7b2b93588b4fe881ab371
+  tracked_paths_sha256: d026a7a67d88979dd2553a2004d80d416e785207e6b191b36149722587bc825f
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1361,6 +1361,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-12-p3c-external-ads-prbs9-reference.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-12-p3c-prbs9-waveform-jitter-contract-v2.md:
       rule: historical-docs
       class: migration_only
@@ -1620,6 +1626,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-external-ads-prbs9-reference-attempt.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-external-ads-prbs9-reference.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2094,6 +2106,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-external-ads-prbs9-reference-attempt.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-external-ads-prbs9-reference.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7169,6 +7187,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_external_ads_prbs9_reference.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_external_ads_prbs9_reference_attempt.py:
       rule: migration-tools
       class: migration_only
@@ -7632,6 +7656,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3b_link_stage_capabilities.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_external_ads_prbs9_reference.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

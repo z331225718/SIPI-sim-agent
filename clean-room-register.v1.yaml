@@ -457,6 +457,22 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-external-ads-prbs9-reference-observation-v1, p3c-prbs9-waveform-jitter-contract-spec-v1]
+  - id: p3c-external-ads-prbs9-reference-observation-v2
+    kind: oracle_fixture
+    content_sha256: bc542f13dae25d0261dc001f814fc1b721cdf534455589448cdaa4f6ae05b695
+    provenance:
+      source_ref: external/ads/p3c-prbs9-v2-clean-archive/observation-hash-only
+      license_evidence: external-user-authorized-ads-oracle-only
+    allowed_roles: [observer, auditor]
+    derived_from: [p3c-external-ads-prbs9-reference-observation-v1]
+  - id: p3c-external-ads-prbs9-reference-spec-v1
+    kind: independent_spec
+    content_sha256: 90ec05a0883794dc1b30d4334eff594ddbee3ae0696e4a59c2ff0176c747317e
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-external-ads-prbs9-reference.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-external-ads-prbs9-reference-observation-v2, p3c-prbs9-waveform-jitter-contract-spec-v2]
   - id: p3b-causal-fir-cli-run-spec-v1
     kind: independent_spec
     content_sha256: 5caca9c27e49a2929300a3f6d2eece00c46b562931e716d69c16bb477a28154e
@@ -1100,6 +1116,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-external-ads-prbs9-reference-observation-v1, p3c-external-ads-prbs9-reference-attempt-spec-v1]
+  - id: p3c-external-ads-prbs9-reference-v1
+    paths: [docs/baselines/p3c-external-ads-prbs9-reference.v1.yaml, docs/clean-room/specs/p3c-external-ads-prbs9-reference.v1.md, tools/verify_p3c_external_ads_prbs9_reference.py, tools/test_verify_p3c_external_ads_prbs9_reference.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-external-ads-prbs9-reference-observation-v2, p3c-external-ads-prbs9-reference-spec-v1]
+      spec_author: [p3c-external-ads-prbs9-reference-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-external-ads-prbs9-reference-observation-v2, p3c-external-ads-prbs9-reference-spec-v1]
   - id: p3b-causal-fir-cli-run-v1
     paths: [docs/clean-room/specs/p3b-causal-fir-cli-run.v1.md, crates/sipi-cli/**, crates/sipi-contracts/**]
     state: planned
