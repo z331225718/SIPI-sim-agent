@@ -1,6 +1,8 @@
 //! Strict lexical admission for the selected P3C four-port Touchstone input.
 //!
-//! It accepts only `# Hz S RI R 50.0` records and produces no file identity,
+//! Version 1 accepts only `# Hz S RI R 50.0`; version 2 additionally accepts
+//! the separately allowlisted `# Hz S RI R 50` spelling. Neither version
+//! normalizes option-line numeric tokens. Both produce no file identity,
 //! time-domain model, interpolation, repair, or waveform. The fixed bench
 //! reduction lives separately in `sipi-channel`.
 
@@ -115,13 +117,10 @@ fn parse_record(
     })
 }
 
-/// Parse only the selected four-port `Hz S RI R 50.0` lexical subset.
-///
-/// Data records may span data-only continuation lines, but option lines and
-/// Touchstone keywords are never accepted after data begins.
-pub fn parse_selected_four_port_hz_s_ri_50_v1(
+fn parse_selected_four_port_with_allowed_options(
     bytes: &[u8],
     limits: TouchstoneParseLimitsV1,
+    allowed_options: &[&[u8]],
 ) -> Result<ParsedSelectedFourPortV1, SelectedFourPortTouchstoneErrorV1> {
     if bytes.len() > limits.max_input_bytes.get() {
         return Err(SelectedFourPortTouchstoneErrorV1::InputLimitExceeded);
@@ -151,7 +150,7 @@ pub fn parse_selected_four_port_hz_s_ri_50_v1(
             if saw_option {
                 return Err(SelectedFourPortTouchstoneErrorV1::DuplicateOptionLine);
             }
-            if content != b"# Hz S RI R 50.0" {
+            if !allowed_options.contains(&content) {
                 return Err(SelectedFourPortTouchstoneErrorV1::UnsupportedOptionLine);
             }
             saw_option = true;
@@ -186,6 +185,32 @@ pub fn parse_selected_four_port_hz_s_ri_50_v1(
         return Err(SelectedFourPortTouchstoneErrorV1::EmptyDocument);
     }
     Ok(ParsedSelectedFourPortV1 { rows })
+}
+
+/// Parse only the original selected four-port `Hz S RI R 50.0` lexical
+/// subset. This frozen entry point never accepts the `R 50` spelling.
+///
+/// Data records may span data-only continuation lines, but option lines and
+/// Touchstone keywords are never accepted after data begins.
+pub fn parse_selected_four_port_hz_s_ri_50_v1(
+    bytes: &[u8],
+    limits: TouchstoneParseLimitsV1,
+) -> Result<ParsedSelectedFourPortV1, SelectedFourPortTouchstoneErrorV1> {
+    parse_selected_four_port_with_allowed_options(bytes, limits, &[b"# Hz S RI R 50.0"])
+}
+
+/// Parse the amended selected four-port lexical profile. It accepts exactly
+/// the two approved option-line spellings and does not perform numeric token
+/// normalization.
+pub fn parse_selected_four_port_hz_s_ri_50_v2(
+    bytes: &[u8],
+    limits: TouchstoneParseLimitsV1,
+) -> Result<ParsedSelectedFourPortV1, SelectedFourPortTouchstoneErrorV1> {
+    parse_selected_four_port_with_allowed_options(
+        bytes,
+        limits,
+        &[b"# Hz S RI R 50", b"# Hz S RI R 50.0"],
+    )
 }
 
 /// Bind the parsed spectrum to the only product-side P3C static bench.
@@ -282,6 +307,28 @@ mod tests {
             parse_selected_four_port_hz_s_ri_50_v1(b"# Hz S RI R 50.0\n0 0", limits()).unwrap_err(),
             SelectedFourPortTouchstoneErrorV1::MalformedRecord
         );
+    }
+
+    #[test]
+    fn v2_accepts_only_the_two_approved_reference_impedance_spellings() {
+        let row = record(0.0, &[]);
+        let with_integer = format!("# Hz S RI R 50\n{row}");
+        let with_decimal = format!("# Hz S RI R 50.0\n{row}");
+        assert_eq!(
+            parse_selected_four_port_hz_s_ri_50_v2(with_integer.as_bytes(), limits()).unwrap(),
+            parse_selected_four_port_hz_s_ri_50_v2(with_decimal.as_bytes(), limits()).unwrap(),
+        );
+        assert_eq!(
+            parse_selected_four_port_hz_s_ri_50_v1(with_integer.as_bytes(), limits()).unwrap_err(),
+            SelectedFourPortTouchstoneErrorV1::UnsupportedOptionLine,
+        );
+        for spelling in ["050", "50.", "50.00", "5e1", "+50", "49.999"] {
+            let source = format!("# Hz S RI R {spelling}\n{row}");
+            assert_eq!(
+                parse_selected_four_port_hz_s_ri_50_v2(source.as_bytes(), limits()).unwrap_err(),
+                SelectedFourPortTouchstoneErrorV1::UnsupportedOptionLine,
+            );
+        }
     }
 
     #[test]

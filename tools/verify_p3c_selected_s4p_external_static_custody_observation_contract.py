@@ -32,9 +32,10 @@ def verify(document: object) -> dict[str, object]:
         raise VerificationError("custody_contract_asset_invalid")
     if document.get("execution") != {
         "custody": "external_only", "clean_git_archive": "required",
-        "runner": "p3c_sealed_s4p_external_runner", "fresh_temporary_artifact_roots": 2,
+        "runner": "p3c_sealed_s4p_external_runner_v2", "fresh_temporary_artifact_roots": 2,
         "artifact_id_reuse_between_runs": "prohibited", "source_identity_checks": "before_stage_after_equal",
-        "sealed_file": "channel.s4p", "required_product_api": "admit_selected_p3c_sealed_s4p_v1",
+        "sealed_file": "channel.s4p", "lexical_profile": "selected_four_port_hz_s_ri_50_v2",
+        "required_product_api": "admit_selected_p3c_sealed_s4p_v2",
         "report_path": "external_only_hash_and_aggregate_facts",
         "no_hostile_concurrent_writer_assumption": "required", "cleanup_failure": "reject",
     }:
@@ -58,7 +59,7 @@ def verify(document: object) -> dict[str, object]:
     observer = OBSERVER.read_text(encoding="utf-8")
     required_runner = [
         "#[ignore", "source_identity(source)?", "stage_reader(SELECTED_P3C_S4P_FILE_NAME_V1",
-        "admit_selected_p3c_sealed_s4p_v1", "fs::remove_dir_all", "first.manifest_sha256 == second.manifest_sha256",
+        "admit_selected_p3c_sealed_s4p_v2", "fs::remove_dir_all", "first.manifest_sha256 == second.manifest_sha256",
     ]
     required_observer = [
         "git", "archive", "clean_archive", "--locked", "--offline", "parse_runner_report",

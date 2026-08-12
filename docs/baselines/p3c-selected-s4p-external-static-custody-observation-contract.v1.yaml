@@ -12,12 +12,13 @@ selected_asset:
 execution:
   custody: external_only
   clean_git_archive: required
-  runner: p3c_sealed_s4p_external_runner
+  runner: p3c_sealed_s4p_external_runner_v2
   fresh_temporary_artifact_roots: 2
   artifact_id_reuse_between_runs: prohibited
   source_identity_checks: before_stage_after_equal
   sealed_file: channel.s4p
-  required_product_api: admit_selected_p3c_sealed_s4p_v1
+  lexical_profile: selected_four_port_hz_s_ri_50_v2
+  required_product_api: admit_selected_p3c_sealed_s4p_v2
   report_path: external_only_hash_and_aggregate_facts
   no_hostile_concurrent_writer_assumption: required
   cleanup_failure: reject

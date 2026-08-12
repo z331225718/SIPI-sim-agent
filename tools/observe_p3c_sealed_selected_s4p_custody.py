@@ -34,7 +34,7 @@ INVENTORY_PATHS = (
     Path("crates/sipi-touchstone/src/selected_four_port_v1.rs"),
 )
 SCHEMA = "sipi.p3c.sealed-selected-s4p-custody-observation.v1"
-RUNNER_SCHEMA = "sipi.p3c.sealed-selected-s4p-custody-runner.v1"
+RUNNER_SCHEMA = "sipi.p3c.sealed-selected-s4p-custody-runner.v2"
 SOURCE_LENGTH = 1_834_156
 SOURCE_SHA256 = "25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47"
 
@@ -164,7 +164,7 @@ def run_observation(source: Path, report: Path, cargo: Path) -> dict[str, Any]:
             }
         )
         completed = subprocess.run(
-            [str(cargo), "test", "-p", "sipi-p3c", "--locked", "--offline", "--test", "p3c_sealed_s4p_external_runner", "--", "--ignored", "--exact", "p3c_sealed_s4p_external_runner"],
+            [str(cargo), "test", "-p", "sipi-p3c", "--locked", "--offline", "--test", "p3c_sealed_s4p_external_runner", "--", "--ignored", "--exact", "p3c_sealed_s4p_external_runner_v2"],
             cwd=archive_root,
             env=environment,
             capture_output=True,

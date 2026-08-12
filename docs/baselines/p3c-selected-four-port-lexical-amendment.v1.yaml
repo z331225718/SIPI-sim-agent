@@ -1,0 +1,57 @@
+schema: sipi.p3c-selected-four-port-lexical-amendment.v1
+status: product_lexical_v2_implemented_historical_v1_external_admission_rejected_pending_fresh_v2_custody
+authority:
+  actor: user
+  decision_ref: user-authorized-2026-08-12-p3c-04i-lexical-mismatch-remediation
+  scope: selected_exact_s4p_option_line_spelling_only
+historical_v1_rejected_observation:
+  schema: sipi.p3c.sealed-selected-s4p-custody-observation.v1
+  status: rejected
+  reason: clean_archive_runner_failed
+  report_byte_length: 125
+  report_content_sha256: 095d64e4ce2a5f5aaefaceb8055f2bd2667de5c4d5a0fb65714c8b4984292a13
+  clean_archive_commit: ac08d7830024cbc02630e26f5f508385b9ced77b
+  selected_source:
+    byte_length: 1834156
+    sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  observed_failure: unsupported_option_line
+  parser_profile: selected_four_port_hz_s_ri_50_v1
+  source_drift_preserved: true
+amendment:
+  v1_option_line_exact: "# Hz S RI R 50.0"
+  v2_option_lines_exact: ["# Hz S RI R 50", "# Hz S RI R 50.0"]
+  other_numeric_spellings: reject
+  generic_numeric_option_normalization: prohibited
+  option_token_case_or_whitespace_normalization: prohibited
+  data_format_parameter_unit_or_impedance_change: prohibited
+implementation:
+  lexical_module: crates/sipi-touchstone/src/selected_four_port_v1.rs
+  frozen_v1_parser: parse_selected_four_port_hz_s_ri_50_v1
+  amended_v2_parser: parse_selected_four_port_hz_s_ri_50_v2
+  frozen_v1_sealed_admission: admit_selected_p3c_sealed_s4p_v1
+  amended_v2_sealed_admission: admit_selected_p3c_sealed_s4p_v2
+admission:
+  lexical_v2_implemented: true
+  sealed_s4p_v2_intake_implemented: true
+  external_static_custody_observed: false
+  selected_external_s4p_static_admitted: false
+  real_constrained_fit_invoked: false
+  analytic_stepping_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - two_fresh_external_sealed_s4p_v2_custody_observations_missing
+  - real_constrained_fit_invocation_on_external_s4p_missing
+  - analytic_direct_stepping_implementation_missing
+  - candidate_waveform_generation_missing
+  - external_reference_binding_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not general Touchstone option parsing, numeric normalization, asset custody, fit, stepping, waveform, or ADS equivalence.
+  - Not receiver, AMI, IBIS, DLL, product-runtime, or release acceptance.

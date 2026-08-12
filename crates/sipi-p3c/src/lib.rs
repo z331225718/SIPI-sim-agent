@@ -16,7 +16,7 @@ use sipi_channel::{
 use sipi_touchstone::{
     TouchstoneParseLimitsV1, selected_four_port_v1::{
         SelectedFourPortTouchstoneErrorV1, admit_selected_p3c_fixed_four_port_v1,
-        parse_selected_four_port_hz_s_ri_50_v1,
+        parse_selected_four_port_hz_s_ri_50_v1, parse_selected_four_port_hz_s_ri_50_v2,
     },
 };
 
@@ -51,6 +51,32 @@ impl SelectedP3cSealedS4pIdentityV1 {
     pub fn manifest_sha256(&self) -> &str { &self.manifest_sha256 }
 }
 
+/// The v2 lexical profile intentionally keeps the same opaque caller surface
+/// while selecting the separately versioned `R 50`/`R 50.0` parser allowlist.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SelectedP3cSealedS4pIdentityV2 {
+    artifact_id: String,
+    manifest_sha256: String,
+}
+
+impl SelectedP3cSealedS4pIdentityV2 {
+    pub fn try_new(artifact_id: impl Into<String>, manifest_sha256: impl Into<String>) -> Result<Self, SelectedP3cSealedS4pAdmissionErrorV2> {
+        let artifact_id = artifact_id.into();
+        let manifest_sha256 = manifest_sha256.into();
+        if artifact_id.is_empty()
+            || artifact_id.len() > 128
+            || !artifact_id.bytes().all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+            || !is_lowercase_sha256(&manifest_sha256)
+        {
+            return Err(SelectedP3cSealedS4pAdmissionErrorV2::InvalidIdentity);
+        }
+        Ok(Self { artifact_id, manifest_sha256 })
+    }
+
+    pub fn artifact_id(&self) -> &str { &self.artifact_id }
+    pub fn manifest_sha256(&self) -> &str { &self.manifest_sha256 }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct AdmittedSelectedP3cStaticTransferV1 {
     artifact_id: String,
@@ -62,6 +88,25 @@ pub struct AdmittedSelectedP3cStaticTransferV1 {
 }
 
 impl AdmittedSelectedP3cStaticTransferV1 {
+    pub fn artifact_id(&self) -> &str { &self.artifact_id }
+    pub fn manifest_sha256(&self) -> &str { &self.manifest_sha256 }
+    pub fn source_sha256(&self) -> &str { &self.source_sha256 }
+    pub fn source_byte_length(&self) -> u64 { self.source_byte_length }
+    pub fn record_count(&self) -> usize { self.record_count }
+    pub fn transfer(&self) -> &SelectedP3cStaticDifferentialTransferV1 { &self.transfer }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct AdmittedSelectedP3cStaticTransferV2 {
+    artifact_id: String,
+    manifest_sha256: String,
+    source_sha256: String,
+    source_byte_length: u64,
+    record_count: usize,
+    transfer: SelectedP3cStaticDifferentialTransferV1,
+}
+
+impl AdmittedSelectedP3cStaticTransferV2 {
     pub fn artifact_id(&self) -> &str { &self.artifact_id }
     pub fn manifest_sha256(&self) -> &str { &self.manifest_sha256 }
     pub fn source_sha256(&self) -> &str { &self.source_sha256 }
@@ -87,6 +132,24 @@ impl fmt::Display for SelectedP3cSealedS4pAdmissionErrorV1 {
 }
 
 impl Error for SelectedP3cSealedS4pAdmissionErrorV1 {}
+
+#[derive(Debug)]
+pub enum SelectedP3cSealedS4pAdmissionErrorV2 {
+    InvalidIdentity,
+    Artifact(ArtifactError),
+    SourceLengthMismatch,
+    SourceHashMismatch,
+    Parser(SelectedFourPortTouchstoneErrorV1),
+    Reduction(FixedFourPortBenchError),
+}
+
+impl fmt::Display for SelectedP3cSealedS4pAdmissionErrorV2 {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "selected P3C sealed S4P v2 admission failed: {self:?}")
+    }
+}
+
+impl Error for SelectedP3cSealedS4pAdmissionErrorV2 {}
 
 fn is_lowercase_sha256(value: &str) -> bool {
     value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
@@ -125,6 +188,25 @@ fn admit_bytes(
     Ok((transfer, record_count))
 }
 
+fn admit_bytes_v2(
+    bytes: &[u8],
+) -> Result<(SelectedP3cStaticDifferentialTransferV1, usize), SelectedP3cSealedS4pAdmissionErrorV2> {
+    if bytes.len() as u64 != SELECTED_P3C_S4P_BYTE_LENGTH_V1 {
+        return Err(SelectedP3cSealedS4pAdmissionErrorV2::SourceLengthMismatch);
+    }
+    if sha256(bytes) != SELECTED_P3C_S4P_SHA256_V1 {
+        return Err(SelectedP3cSealedS4pAdmissionErrorV2::SourceHashMismatch);
+    }
+    let parsed = parse_selected_four_port_hz_s_ri_50_v2(bytes, parser_limits())
+        .map_err(SelectedP3cSealedS4pAdmissionErrorV2::Parser)?;
+    let record_count = parsed.rows().len();
+    let spectrum = admit_selected_p3c_fixed_four_port_v1(&parsed)
+        .map_err(SelectedP3cSealedS4pAdmissionErrorV2::Parser)?;
+    let transfer = reduce_selected_p3c_fixed_four_port_bench_v1(&spectrum)
+        .map_err(SelectedP3cSealedS4pAdmissionErrorV2::Reduction)?;
+    Ok((transfer, record_count))
+}
+
 /// Consume the one exact selected S4P from a caller-selected SIPI published
 /// root. The root retains `ArtifactRoot` v1's no-hostile-concurrent-writer
 /// assumption; this is local integrity admission, not a hostile-filesystem
@@ -143,6 +225,31 @@ pub fn admit_selected_p3c_sealed_s4p_v1(
     let bytes = files.file(SELECTED_P3C_S4P_FILE_NAME_V1).ok_or(SelectedP3cSealedS4pAdmissionErrorV1::SourceLengthMismatch)?;
     let (transfer, record_count) = admit_bytes(bytes, SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_SHA256_V1)?;
     Ok(AdmittedSelectedP3cStaticTransferV1 {
+        artifact_id: files.artifact_id().to_owned(),
+        manifest_sha256: files.manifest_sha256().to_owned(),
+        source_sha256: SELECTED_P3C_S4P_SHA256_V1.to_owned(),
+        source_byte_length: SELECTED_P3C_S4P_BYTE_LENGTH_V1,
+        record_count,
+        transfer,
+    })
+}
+
+/// Consume the same fixed source through the amended v2 lexical profile. It
+/// has no caller-controlled option-line normalization and remains static-only.
+pub fn admit_selected_p3c_sealed_s4p_v2(
+    root: &ArtifactRoot,
+    identity: &SelectedP3cSealedS4pIdentityV2,
+) -> Result<AdmittedSelectedP3cStaticTransferV2, SelectedP3cSealedS4pAdmissionErrorV2> {
+    let files = root.consume_exact_verified_v1(
+        identity.artifact_id(),
+        identity.manifest_sha256(),
+        &[(SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_BYTE_LENGTH_V1)],
+        VerifiedConsumptionPolicyV1::try_new(MAX_MANIFEST_BYTES, SELECTED_P3C_S4P_BYTE_LENGTH_V1)
+            .expect("fixed consumption policy is valid"),
+    ).map_err(SelectedP3cSealedS4pAdmissionErrorV2::Artifact)?;
+    let bytes = files.file(SELECTED_P3C_S4P_FILE_NAME_V1).ok_or(SelectedP3cSealedS4pAdmissionErrorV2::SourceLengthMismatch)?;
+    let (transfer, record_count) = admit_bytes_v2(bytes)?;
+    Ok(AdmittedSelectedP3cStaticTransferV2 {
         artifact_id: files.artifact_id().to_owned(),
         manifest_sha256: files.manifest_sha256().to_owned(),
         source_sha256: SELECTED_P3C_S4P_SHA256_V1.to_owned(),
@@ -210,5 +317,6 @@ mod tests {
     fn identity_rejects_path_and_hash_override_surfaces() {
         assert!(SelectedP3cSealedS4pIdentityV1::try_new("../network", "0".repeat(64)).is_err());
         assert!(SelectedP3cSealedS4pIdentityV1::try_new("network", "A".repeat(64)).is_err());
+        assert!(SelectedP3cSealedS4pIdentityV2::try_new("../network", "0".repeat(64)).is_err());
     }
 }

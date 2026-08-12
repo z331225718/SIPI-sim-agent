@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 534d530c7d627aadfe3f4843494712e98439ccbcf4ef0f6dc79c7e874eaf01af
+  tracked_paths_sha256: 2ea4bf698ce2afd677000acf37d4f2759b554f59f0eee8bddcc7efaf42f91cba
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1499,6 +1499,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-12-p3c-selected-four-port-lexical-amendment.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-12-p3c-selected-four-port-static-bench.md:
       rule: historical-docs
       class: migration_only
@@ -1836,6 +1842,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-sealed-selected-s4p-static-admission.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-selected-four-port-lexical-amendment.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2394,6 +2406,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-sealed-selected-s4p-static-admission.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-selected-four-port-lexical-amendment.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7595,6 +7613,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_selected_four_port_lexical_amendment.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_selected_four_port_static_bench.py:
       rule: migration-tools
       class: migration_only
@@ -8142,6 +8166,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_sealed_selected_s4p_static_admission.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_selected_four_port_lexical_amendment.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

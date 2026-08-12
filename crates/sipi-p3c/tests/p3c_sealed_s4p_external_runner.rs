@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-//! External-only custody runner for the selected P3C S4P profile.
+//! External-only custody runner for the selected P3C S4P lexical v2 profile.
 //!
 //! This ignored test is invoked only by the external observer from a clean Git
 //! archive. It writes hashes and aggregate facts to an external report; it
@@ -18,13 +18,13 @@ use sha2::{Digest, Sha256};
 use sipi_artifacts::ArtifactRoot;
 use sipi_p3c::{
     SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1,
-    SELECTED_P3C_S4P_SHA256_V1, SelectedP3cSealedS4pIdentityV1,
-    admit_selected_p3c_sealed_s4p_v1,
+    SELECTED_P3C_S4P_SHA256_V1, SelectedP3cSealedS4pIdentityV2,
+    admit_selected_p3c_sealed_s4p_v2,
 };
 
 const SOURCE_ENV: &str = "SIPI_P3C_SEALED_S4P_EXTERNAL_SOURCE";
 const REPORT_ENV: &str = "SIPI_P3C_SEALED_S4P_RUNNER_REPORT";
-const RUNNER_SCHEMA: &str = "sipi.p3c.sealed-selected-s4p-custody-runner.v1";
+const RUNNER_SCHEMA: &str = "sipi.p3c.sealed-selected-s4p-custody-runner.v2";
 
 #[derive(Debug)]
 struct RunFact {
@@ -95,9 +95,9 @@ fn observe_once(source: &Path, index: usize) -> Result<RunFact, String> {
             .map_err(|error| format!("manifest_read:{error}"))?;
         let manifest_sha256 = sha256_bytes(&manifest);
         let reader = ArtifactRoot::open_existing(&root).map_err(|error| format!("artifact_reopen:{error:?}"))?;
-        let identity = SelectedP3cSealedS4pIdentityV1::try_new(&artifact_id, &manifest_sha256)
+        let identity = SelectedP3cSealedS4pIdentityV2::try_new(&artifact_id, &manifest_sha256)
             .map_err(|error| format!("identity:{error}"))?;
-        let admitted = admit_selected_p3c_sealed_s4p_v1(&reader, &identity)
+        let admitted = admit_selected_p3c_sealed_s4p_v2(&reader, &identity)
             .map_err(|error| format!("admission:{error}"))?;
         if admitted.source_byte_length() != before.0
             || admitted.source_sha256() != before.1
@@ -164,6 +164,6 @@ fn run() -> Result<(), String> {
 
 #[test]
 #[ignore = "external-only custody observation; requires explicit external source and report paths"]
-fn p3c_sealed_s4p_external_runner() {
-    run().unwrap_or_else(|error| panic!("p3c_sealed_s4p_external_runner_failed:{error}"));
+fn p3c_sealed_s4p_external_runner_v2() {
+    run().unwrap_or_else(|error| panic!("p3c_sealed_s4p_external_runner_v2_failed:{error}"));
 }

@@ -15,7 +15,8 @@ test-only runner there, and passes the external source to that runner. The
 runner reopens the source for each of two independent temporary `ArtifactRoot`
 materializations, verifies source identity before staging and after sealing,
 publishes exactly `channel.s4p`, and invokes
-`admit_selected_p3c_sealed_s4p_v1`.
+`admit_selected_p3c_sealed_s4p_v2`. The earlier v1 observation remains a
+rejected historical lexical-profile mismatch.
 
 Both runs must return positive equal record counts and distinct manifest
 digests. Source drift, manifest drift, parse/reduction failure, root reuse, or
