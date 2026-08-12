@@ -537,6 +537,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-ads-explicit-convolution-sweep-observation-v1]
+  - id: p3c-product-rational-candidate-policy-preflight-spec-v1
+    kind: independent_spec
+    content_sha256: 48d0e98e86559e7644990e3fcd9d95294dba55bfd2ee203dffcb490c6d9d8cdd
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-product-rational-candidate-policy-preflight.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, auditor]
+    derived_from: [p3c-selected-four-port-static-bench-spec-v1, p3c-ads-explicit-convolution-sweep-observation-spec-v1]
   - id: p3b-causal-fir-cli-run-spec-v1
     kind: independent_spec
     content_sha256: 5caca9c27e49a2929300a3f6d2eece00c46b562931e716d69c16bb477a28154e
@@ -1251,6 +1259,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-ads-explicit-convolution-sweep-observation-v1, p3c-ads-explicit-convolution-sweep-observation-spec-v1]
+  - id: p3c-product-rational-candidate-policy-preflight-v1
+    paths: [docs/baselines/p3c-product-rational-candidate-policy-preflight.v1.yaml, docs/clean-room/specs/p3c-product-rational-candidate-policy-preflight.v1.md, tools/verify_p3c_product_rational_candidate_policy_preflight.py, tools/test_verify_p3c_product_rational_candidate_policy_preflight.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3c-product-rational-candidate-policy-preflight-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-product-rational-candidate-policy-preflight-spec-v1]
   - id: p3b-causal-fir-cli-run-v1
     paths: [docs/clean-room/specs/p3b-causal-fir-cli-run.v1.md, crates/sipi-cli/**, crates/sipi-contracts/**]
     state: planned

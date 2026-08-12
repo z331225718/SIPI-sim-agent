@@ -1,0 +1,77 @@
+schema: sipi.p3c-product-rational-candidate-policy-preflight.v1
+status: product_rational_candidate_route_selected_nonexecuting_fit_source_step_and_out_of_band_policy_pending
+authority:
+  actor: user
+  decision_ref: user-authorized-2026-08-12-p3c-product-rational-state-space-route
+  scope: fixed_scalar_hdiff_rational_candidate_route_preflight_only
+input_boundary:
+  source: p3c_selected_four_port_static_bench_v1
+  scalar_transfer: Hdiff=(S21-S23-S41+S43)/4
+  frequency_nodes: original_selected_s4p_nodes_only
+  external_s4p_custody_admitted: false
+  ads_n2048_grid_product_input: prohibited
+  ads_waveform_or_adaptive_output_product_input: prohibited
+selected_model_route:
+  domain: continuous_time
+  signal_kind: real_siso_scalar_differential_transfer
+  canonical_authority: pole_residue
+  canonical_expression: H(s)=sum(r_k/(s-p_k))
+  frequency_variable: s=j*2*pi*f
+  strictly_proper_required: true
+  direct_term: prohibited
+  derivative_term: prohibited
+  state_space_representation: deterministic_derived_only
+  explicit_delay: pending_owner_policy
+  passivity_enforcement: pending_owner_policy
+pending_fit_policy:
+  frequency_scaling: pending_owner_policy
+  dc_constraint: pending_owner_policy
+  sample_weighting: pending_owner_policy
+  initial_poles: pending_owner_policy
+  order_ladder_and_maximum: pending_owner_policy
+  iteration_and_relocation_rule: pending_owner_policy
+  least_squares_solver_and_rank_tolerance: pending_owner_policy
+  convergence_and_order_selection: pending_owner_policy
+  fit_error_metrics_and_tolerances: pending_owner_policy
+  stability_margin_and_conjugate_canonicalization: pending_owner_policy
+  near_cancellation_and_duplicate_pole_policy: pending_owner_policy
+  fit_implementation_identity_and_threading: pending_owner_policy
+pending_execution_policy:
+  out_of_band_continuation_or_band_limit: pending_owner_policy
+  source_between_strobes: pending_owner_policy
+  first_symbol_and_ui_boundary_ownership: pending_owner_policy
+  initial_state: pending_owner_policy
+  strobe_mapping: pending_owner_policy
+  pole_residue_recurrence_and_numeric_identity: pending_owner_policy
+  finite_and_imaginary_residual_policy: pending_owner_policy
+  adaptive_step_or_resampling: prohibited
+  alignment_gain_dc_or_polarity_fit: prohibited
+future_model_envelope:
+  tracked_coefficients: false
+  required_bindings: [selected_s4p_identity, hdiff_digest, policy_digest, fit_implementation_identity, order, canonical_pole_residue_digest, fit_metrics, stable, strictly_proper]
+  caller_override: prohibited
+admission:
+  executor_admission: false
+  fitter_implemented: false
+  state_space_model_generated: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - exact_rational_fit_algorithm_and_numerics_missing
+  - out_of_band_policy_missing
+  - source_between_strobes_policy_missing
+  - strobe_and_initial_state_policy_missing
+  - external_selected_s4p_static_custody_missing
+  - candidate_waveform_generation_missing
+  - external_reference_binding_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not an ADS convolution, interpolation, extrapolation, causality, passivity, or strobe algorithm.
+  - Not a fitter, state-space executor, S4P-to-waveform implementation, model coefficient record, or public command.
+  - Not candidate waveform, external-reference, eye, jitter, receiver, AMI, IBIS, DLL, or release acceptance.
