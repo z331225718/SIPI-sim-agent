@@ -1,0 +1,57 @@
+schema: sipi.p3c-prbs9-metric-artifact-cli.v1
+status: product_owned_sealed_artifact_metric_route_specified_not_profile_accepted
+authority:
+  actor: user
+  decision_ref: user-approved-2026-08-12-p3c-sealed-artifact-cli
+  scope: fixed_prbs9_v2_artifact_input_only_not_external_reference_binding
+command:
+  id: compare.prbs9-metrics.run
+  route: [compare, prbs9-metrics]
+  stdin_schema: sipi.compare.prbs9-metric-artifacts-request.v1
+  contract_v2_content_sha256: f47329b6ddda01cbcde1f24e21cb93e03f8ef6139ea2d43ff74cad9e2049d2b5
+  artifact_root_assumption: caller_selected_sipi_published_root_no_hostile_concurrent_writer
+request_boundary:
+  fields: [schema, contract_sha256, reference, candidate]
+  reference_candidate_fields: [artifact_id, manifest_sha256]
+  deny_unknown_fields: true
+  forbidden: [waveform_values, path, url, axis, seed, tolerance, alignment, profile_override]
+artifact_boundary:
+  exact_files: [success.json, waveform.json, waveform.f64le]
+  manifest_maximum_bytes: 65536
+  waveform_metadata_maximum_bytes: 4096
+  waveform_payload_exact_bytes: 392448
+  artifact_total_payload_maximum_bytes: 396544
+  quantity: differential_voltage
+  unit: volts_differential
+  timebase_profile: prbs9-v2-32gtps-osr32-three-period-half-open
+  sample_count: 49056
+  encoding: ieee754-binary64-little-endian
+  rejects: [symlink_or_reparse, path_escape, unsealed, extra_or_missing_file, manifest_drift, payload_hash_or_length_drift, nonfinite_sample]
+metric_core:
+  entrypoint: compare_prbs9_metrics_v2
+  no_alignment_or_resampling: true
+  requires_both_artifacts_verified_before_compare: true
+response:
+  exposes: [artifact_id, manifest_sha256, payload_sha256, waveform_digest, strict_grid_metrics]
+  excludes: [artifact_root, relative_filename, waveform_samples]
+  external_reference_binding: not_evaluated
+  external_profile_acceptance: not_evaluated
+admission:
+  external_ads_runtime_observed: false
+  candidate_waveform_eye_jitter_acceptance_evaluated: false
+  accepted_receiver: false
+  acceptance_ready: false
+  promotion_eligible: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - caller_supplied_artifact_identity_only
+  - external_reference_binding_not_implemented
+  - candidate_profile_acceptance_not_evaluated
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not an ADS/reference/receiver/release acceptance route.
+  - Not an AMI, IBIS, DLL, CDR, or external-oracle runtime.
+  - Not a hostile-writer-safe artifact reader or external provenance verifier.

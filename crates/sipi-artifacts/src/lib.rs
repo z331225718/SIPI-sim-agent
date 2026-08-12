@@ -22,6 +22,54 @@ static NEXT_STAGING_NONCE: AtomicUsize = AtomicUsize::new(0);
 
 pub const ARTIFACT_REPORT_SCHEMA_V1: &str = "sipi.artifact-report.v1";
 
+/// Bounds one exact, sealed-artifact payload consumption.
+///
+/// This is for caller-selected roots which still obey this crate's v1
+/// no-hostile-concurrent-writer assumption. It returns owned bytes only after
+/// the same read has been checked against the sealed manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct VerifiedConsumptionPolicyV1 {
+    maximum_manifest_bytes: u64,
+    maximum_total_bytes: u64,
+}
+
+impl VerifiedConsumptionPolicyV1 {
+    pub fn try_new(
+        maximum_manifest_bytes: u64,
+        maximum_total_bytes: u64,
+    ) -> Result<Self, ArtifactError> {
+        if maximum_manifest_bytes == 0 || maximum_total_bytes == 0 {
+            return Err(ArtifactError::LimitExceeded);
+        }
+        Ok(Self {
+            maximum_manifest_bytes,
+            maximum_total_bytes,
+        })
+    }
+}
+
+/// Owned bytes from one exact sealed-artifact read.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VerifiedFilesV1 {
+    artifact_id: String,
+    manifest_sha256: String,
+    files: BTreeMap<String, Vec<u8>>,
+}
+
+impl VerifiedFilesV1 {
+    pub fn artifact_id(&self) -> &str {
+        &self.artifact_id
+    }
+
+    pub fn manifest_sha256(&self) -> &str {
+        &self.manifest_sha256
+    }
+
+    pub fn file(&self, path: &str) -> Option<&[u8]> {
+        self.files.get(path).map(Vec::as_slice)
+    }
+}
+
 /// Bounds the metadata work accepted by the read-only artifact report path.
 ///
 /// The report does not open payload content for presentation. It reads each
@@ -207,6 +255,95 @@ impl ArtifactRoot {
             }
         }
         Ok(manifest)
+    }
+
+    /// Consumes exactly the requested sealed files into owned memory.
+    ///
+    /// The root is not a hostile-writer boundary. Callers that need that
+    /// property must first materialize an independently safe snapshot.
+    pub fn consume_exact_verified_v1(
+        &self,
+        id: &str,
+        expected_manifest_sha256: &str,
+        expected_files: &[(&str, u64)],
+        policy: VerifiedConsumptionPolicyV1,
+    ) -> Result<VerifiedFilesV1, ArtifactError> {
+        validate_id(id)?;
+        if !is_lowercase_sha256(expected_manifest_sha256)
+            || expected_files.is_empty()
+            || expected_files.iter().any(|(_, maximum)| *maximum == 0)
+            || expected_files.len()
+                != expected_files
+                    .iter()
+                    .map(|(path, _)| *path)
+                    .collect::<BTreeSet<_>>()
+                    .len()
+        {
+            return Err(ArtifactError::Manifest);
+        }
+        for (path, _) in expected_files {
+            validate_path(path)?;
+        }
+        let directory = self.root.join(id);
+        require_directory(&directory)?;
+        let manifest_path = directory.join(MANIFEST_NAME);
+        let manifest_bytes =
+            read_regular_file_limited(&manifest_path, policy.maximum_manifest_bytes)?;
+        let manifest_sha256 = sha256_bytes(&manifest_bytes);
+        if manifest_sha256 != expected_manifest_sha256 {
+            return Err(ArtifactError::HashMismatch);
+        }
+        let manifest: SuccessManifest =
+            serde_json::from_slice(&manifest_bytes).map_err(|_| ArtifactError::Manifest)?;
+        validate_manifest(&manifest, id)?;
+        let expected = expected_files
+            .iter()
+            .map(|(path, _)| (*path).to_owned())
+            .collect::<BTreeSet<_>>();
+        let listed = manifest
+            .files
+            .iter()
+            .map(|record| record.path.clone())
+            .collect::<BTreeSet<_>>();
+        let expected_directory_files = expected
+            .iter()
+            .cloned()
+            .chain(std::iter::once(MANIFEST_NAME.to_owned()))
+            .collect();
+        if listed != expected || list_regular_files(&directory)? != expected_directory_files {
+            return Err(ArtifactError::Manifest);
+        }
+        let mut total = 0_u64;
+        let mut files = BTreeMap::new();
+        for record in &manifest.files {
+            let maximum = expected_files
+                .iter()
+                .find_map(|(path, maximum)| (*path == record.path).then_some(*maximum))
+                .ok_or(ArtifactError::Manifest)?;
+            if record.bytes > maximum {
+                return Err(ArtifactError::LimitExceeded);
+            }
+            total = total
+                .checked_add(record.bytes)
+                .ok_or(ArtifactError::LimitExceeded)?;
+            if total > policy.maximum_total_bytes {
+                return Err(ArtifactError::LimitExceeded);
+            }
+            let bytes = read_regular_file_limited(&directory.join(&record.path), record.bytes)?;
+            if bytes.len() as u64 != record.bytes || sha256_bytes(&bytes) != record.sha256 {
+                return Err(ArtifactError::HashMismatch);
+            }
+            files.insert(record.path.clone(), bytes);
+        }
+        let rechecked = read_regular_file_limited(&manifest_path, policy.maximum_manifest_bytes)?;
+        if rechecked != manifest_bytes || sha256_bytes(&rechecked) != expected_manifest_sha256 {
+            return Err(ArtifactError::HashMismatch);
+        }
+        Ok(VerifiedFilesV1 {
+            artifact_id: id.to_owned(),
+            manifest_sha256,
+            files,
+        })
     }
 
     /// Re-verifies one published artifact and projects only allowlisted
@@ -475,7 +612,7 @@ fn list_regular_files_inner(
             format!("{}/{}", relative.display(), name)
         };
         let metadata = fs::symlink_metadata(&path)?;
-        if metadata.file_type().is_symlink() {
+        if is_unsafe_link(&metadata) {
             return Err(ArtifactError::Manifest);
         }
         if metadata.is_file() {
@@ -499,7 +636,7 @@ fn entry_exists(path: &Path) -> Result<bool, ArtifactError> {
 
 fn require_directory(path: &Path) -> Result<(), ArtifactError> {
     let metadata = fs::symlink_metadata(path)?;
-    if metadata.file_type().is_symlink() || !metadata.is_dir() {
+    if is_unsafe_link(&metadata) || !metadata.is_dir() {
         Err(ArtifactError::InvalidPath)
     } else {
         Ok(())
@@ -508,10 +645,25 @@ fn require_directory(path: &Path) -> Result<(), ArtifactError> {
 
 fn require_regular_file(path: &Path) -> Result<(), ArtifactError> {
     let metadata = fs::symlink_metadata(path)?;
-    if metadata.file_type().is_symlink() || !metadata.is_file() {
+    if is_unsafe_link(&metadata) || !metadata.is_file() {
         Err(ArtifactError::InvalidPath)
     } else {
         Ok(())
+    }
+}
+
+fn is_unsafe_link(metadata: &fs::Metadata) -> bool {
+    if metadata.file_type().is_symlink() {
+        return true;
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        return metadata.file_attributes() & 0x400 != 0;
+    }
+    #[cfg(not(windows))]
+    {
+        false
     }
 }
 
@@ -626,6 +778,46 @@ mod tests {
         assert!(matches!(
             store.verify_published("result-1"),
             Err(ArtifactError::HashMismatch)
+        ));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn exact_verified_consumption_returns_only_sealed_requested_bytes() {
+        let root = root();
+        let store = ArtifactRoot::open_or_create(&root).unwrap();
+        let mut stage = store.begin("pair-1").unwrap();
+        stage
+            .stage_reader("waveform.json", &b"metadata"[..], 100)
+            .unwrap();
+        stage
+            .stage_reader("waveform.f64le", &b"payload"[..], 100)
+            .unwrap();
+        stage.seal().unwrap().publish_new().unwrap();
+        let manifest = fs::read(root.join("pair-1").join(MANIFEST_NAME)).unwrap();
+        let digest = sha256_bytes(&manifest);
+        let reader = ArtifactRoot::open_existing(&root).unwrap();
+        let files = reader
+            .consume_exact_verified_v1(
+                "pair-1",
+                &digest,
+                &[("waveform.json", 100), ("waveform.f64le", 100)],
+                VerifiedConsumptionPolicyV1::try_new(4096, 200).unwrap(),
+            )
+            .unwrap();
+        assert_eq!(files.artifact_id(), "pair-1");
+        assert_eq!(files.manifest_sha256(), digest);
+        assert_eq!(files.file("waveform.json"), Some(&b"metadata"[..]));
+        assert_eq!(files.file("waveform.f64le"), Some(&b"payload"[..]));
+
+        assert!(matches!(
+            reader.consume_exact_verified_v1(
+                "pair-1",
+                &digest,
+                &[("waveform.json", 100)],
+                VerifiedConsumptionPolicyV1::try_new(4096, 200).unwrap(),
+            ),
+            Err(ArtifactError::Manifest)
         ));
         let _ = fs::remove_dir_all(root);
     }

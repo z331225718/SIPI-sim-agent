@@ -4,6 +4,9 @@ use std::{
     process::{Command, Output, Stdio},
 };
 
+use sha2::{Digest, Sha256};
+use sipi_artifacts::ArtifactRoot;
+
 fn sipi() -> Command {
     Command::new(env!("CARGO_BIN_EXE_sipi"))
 }
@@ -48,6 +51,67 @@ fn run_one_node_tran(root: &Path, request: &[u8]) -> Output {
             root.to_string_lossy().as_ref(),
             "--artifact-id",
             "one-node-1",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start sipi");
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(request)
+        .expect("write request");
+    child.wait_with_output().expect("wait sipi")
+}
+
+fn prbs9_waveform() -> Vec<f64> {
+    let mut state = 0x1a5_u16;
+    let mut bits = [false; 511];
+    for bit in &mut bits {
+        *bit = state & 0x100 != 0;
+        let feedback = ((state >> 8) ^ (state >> 4)) & 1;
+        state = ((state << 1) & 0x1ff) | feedback;
+    }
+    (0..49_056)
+        .map(|index| if bits[(index / 32) % 511] { 1.0 } else { -1.0 })
+        .collect()
+}
+
+fn sha256(bytes: &[u8]) -> String {
+    format!("{:x}", Sha256::digest(bytes))
+}
+
+fn publish_prbs9_waveform_artifact(root: &Path, id: &str, values: &[f64]) -> String {
+    let payload = values
+        .iter()
+        .flat_map(|value| value.to_le_bytes())
+        .collect::<Vec<_>>();
+    let metadata = format!(
+        "{{\"schema\":\"sipi.compare.prbs9-waveform-artifact.v1\",\"contract_sha256\":\"f47329b6ddda01cbcde1f24e21cb93e03f8ef6139ea2d43ff74cad9e2049d2b5\",\"quantity\":\"differential_voltage\",\"unit\":\"volts_differential\",\"timebase_profile\":\"prbs9-v2-32gtps-osr32-three-period-half-open\",\"sample_count\":49056,\"encoding\":\"ieee754-binary64-little-endian\",\"payload\":{{\"byte_length\":392448,\"sha256\":\"{}\"}}}}",
+        sha256(&payload)
+    );
+    let store = ArtifactRoot::open_or_create(root).expect("artifact root");
+    let mut stage = store.begin(id).expect("stage");
+    stage
+        .stage_reader("waveform.json", metadata.as_bytes(), 4096)
+        .expect("metadata");
+    stage
+        .stage_reader("waveform.f64le", payload.as_slice(), 392_448)
+        .expect("payload");
+    stage.seal().expect("seal").publish_new().expect("publish");
+    sha256(&std::fs::read(root.join(id).join("success.json")).expect("success"))
+}
+
+fn run_prbs9_metrics(root: &Path, request: &[u8]) -> Output {
+    let mut child = sipi()
+        .args([
+            "compare",
+            "prbs9-metrics",
+            "--stdin",
+            "--artifact-root",
+            root.to_string_lossy().as_ref(),
         ])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -878,5 +942,39 @@ fn report_inspect_projects_only_verified_artifact_metadata() {
     let diagnostic = String::from_utf8(rejected.stderr).expect("diagnostic");
     assert!(diagnostic.contains("\"code\":\"operational_failure\""));
     assert!(diagnostic.contains("\"stage\":\"runtime\""));
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn prbs9_metric_route_consumes_only_exact_sealed_artifacts() {
+    let root = std::env::temp_dir().join(format!("sipi-cli-prbs9-{}", std::process::id()));
+    let waveform = prbs9_waveform();
+    let reference_manifest = publish_prbs9_waveform_artifact(&root, "reference-1", &waveform);
+    let candidate_manifest = publish_prbs9_waveform_artifact(&root, "candidate-1", &waveform);
+    let request = format!(
+        "{{\"schema\":\"sipi.compare.prbs9-metric-artifacts-request.v1\",\"contract_sha256\":\"f47329b6ddda01cbcde1f24e21cb93e03f8ef6139ea2d43ff74cad9e2049d2b5\",\"reference\":{{\"artifact_id\":\"reference-1\",\"manifest_sha256\":\"{reference_manifest}\"}},\"candidate\":{{\"artifact_id\":\"candidate-1\",\"manifest_sha256\":\"{candidate_manifest}\"}}}}"
+    );
+    let output = run_prbs9_metrics(&root, request.as_bytes());
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout");
+    assert!(stdout.contains("sipi.compare.prbs9-metric-artifacts-run-result.v1"));
+    assert!(stdout.contains("\"within_metric_limits\":true"));
+    assert!(stdout.contains("\"external_reference_binding\":\"not_evaluated\""));
+    assert!(!stdout.contains(root.to_string_lossy().as_ref()));
+    assert!(!stdout.contains("waveform.f64le"));
+    assert!(output.stderr.is_empty());
+
+    let unknown = request.replace("\"candidate\":", "\"values\":[],\"candidate\":");
+    let rejected = run_prbs9_metrics(&root, unknown.as_bytes());
+    assert_eq!(rejected.status.code(), Some(3));
+    let diagnostic = String::from_utf8(rejected.stderr).expect("diagnostic");
+    assert!(diagnostic.contains("\"code\":\"contract_rejected\""));
+
+    std::fs::write(root.join("reference-1").join("extra.bin"), b"extra").expect("extra");
+    let rejected = run_prbs9_metrics(&root, request.as_bytes());
+    assert_eq!(rejected.status.code(), Some(3));
+    let stdout = String::from_utf8(rejected.stdout).expect("failure stdout");
+    assert!(!stdout.contains(root.to_string_lossy().as_ref()));
+    assert!(!stdout.contains("extra.bin"));
     let _ = std::fs::remove_dir_all(root);
 }

@@ -121,6 +121,25 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
+    def test_prbs9_artifact_metric_route_stays_identity_only_and_non_acceptance(self) -> None:
+        publication = self.publication()
+        row = next(item for item in publication["rows"] if item["id"] == "prbs9-metric-artifact-compare")
+        row["external_oracle"] = True
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_prbs9_artifact_metric_binding_invalid"):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        row = next(item for item in publication["rows"] if item["id"] == "prbs9-metric-artifact-compare")
+        row["acceptance_state"] = "accepted"
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_prbs9_artifact_metric_binding_invalid"):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        row = next(item for item in publication["rows"] if item["id"] == "prbs9-metric-artifact-compare")
+        row["blockers"].remove("external_reference_binding_not_implemented")
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_prbs9_artifact_metric_binding_invalid"):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+
         publication = self.publication()
         tran = next(row for row in publication["rows"] if row["id"] == "tran-rc-pulse")
         tran["acceptance_state"] = "specified"

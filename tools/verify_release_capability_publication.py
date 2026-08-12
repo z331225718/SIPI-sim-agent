@@ -33,7 +33,7 @@ COMMAND_DESCRIPTOR_FIELDS = {
     "response_schema", "unavailable_reason", "nonclaim",
 }
 COMMAND_ID = re.compile(r"[a-z0-9][a-z0-9.-]*")
-ROUTE_TOKEN = re.compile(r"[a-z][a-z-]*")
+ROUTE_TOKEN = re.compile(r"[a-z][a-z0-9-]*")
 
 
 class PublicationError(RuntimeError):
@@ -210,6 +210,38 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     if any(evidence not in index_by_id for row in rows for evidence in row["evidence_ids"]):
         raise PublicationError("publication_evidence_reference_invalid")
     _validate_profile_scoped_external_acceptance(rows, index_by_id)
+    _validate_prbs9_artifact_metric_route(rows, index_by_id)
+
+
+def _validate_prbs9_artifact_metric_route(
+    rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]
+) -> None:
+    row = next((item for item in rows if item["id"] == "prbs9-metric-artifact-compare"), None)
+    evidence_id = "p3c-prbs9-metric-artifact-cli"
+    expected_blockers = {
+        "caller_supplied_artifact_identity_only",
+        "external_reference_binding_not_implemented",
+        "candidate_profile_acceptance_not_evaluated",
+        "accepted_receiver_stage_missing",
+    }
+    if (
+        row is None
+        or row["command_id"] != "compare.prbs9-metrics.run"
+        or row["product_surface"] != "available"
+        or row["acceptance_state"] != "specified"
+        or row["external_oracle"] is not False
+        or evidence_id not in row["evidence_ids"]
+        or not expected_blockers.issubset(row["blockers"])
+    ):
+        raise PublicationError("publication_prbs9_artifact_metric_binding_invalid")
+    evidence = index_by_id.get(evidence_id)
+    if (
+        evidence is None
+        or evidence["kind"] != "capability_contract"
+        or evidence["subject"] != "compare"
+        or evidence["evidence_state"] != "specified"
+    ):
+        raise PublicationError("publication_prbs9_artifact_metric_evidence_invalid")
 
 
 def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]) -> None:

@@ -10,16 +10,19 @@ use std::{
 };
 
 use sha2::{Digest, Sha256};
+use sipi_artifacts::{ArtifactRoot, VerifiedConsumptionPolicyV1};
 use sipi_channel::{ChannelLimitsV1, resolve_matched_kernel_v1};
 use sipi_compare::{
     ARRAY_COMPARE_POLICY_V1, AlignedArrayV1, ArrayShapeV1, SemanticBindingDigestV1, ToleranceV1,
     UnitTagV1, compare_arrays_v1,
+    prbs9_waveform_v2::{Prbs9WaveformPairV2, compare_prbs9_metrics_v2},
 };
 use sipi_contracts::{
     ARRAY_COMPARE_REQUEST_SCHEMA, ARTIFACT_REPORT_REQUEST_SCHEMA, CAPABILITIES_SCHEMA,
     CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA, CapabilityCatalogV1,
     FIXED_PROJECT_RUN_REQUEST_SCHEMA, IBIS_DC_EVALUATE_REQUEST_SCHEMA,
     IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA, LINK_PLAN_SCHEMA, PLANNED_DOMAINS,
+    PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA, PRBS9_WAVEFORM_ARTIFACT_BYTE_LENGTH_V1,
     RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA, RULE_LEDGER_V1, TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA,
     array_compare_request_schema_json, artifact_report_request_schema_json, capability_schema_json,
     channel_matched_two_port_kernel_run_request_schema_json, deterministic_json,
@@ -29,9 +32,11 @@ use sipi_contracts::{
     parse_artifact_report_request_v1, parse_channel_matched_two_port_kernel_run_request_v1,
     parse_fixed_project_run_request_v1, parse_ibis_dc_evaluate_request_v1,
     parse_ibis_inspect_request_v1, parse_ibis_quasi_static_evaluate_request_v1,
-    parse_link_causal_fir_request_v1, parse_receiver_diagnostic_run_request_v1,
+    parse_link_causal_fir_request_v1, parse_prbs9_metric_artifacts_request_v1,
+    parse_prbs9_waveform_artifact_v1, parse_receiver_diagnostic_run_request_v1,
     parse_rx_load_differential_rc_evaluate_request_v1, parse_tran_one_node_rc_pulse_request_v1,
-    parse_tran_rc_pulse_request_v1, product_example_request_json_v1, project_plan_schema_json,
+    parse_tran_rc_pulse_request_v1, prbs9_metric_artifacts_request_schema_json,
+    product_example_request_json_v1, project_plan_schema_json,
     receiver_diagnostic_run_request_schema_json, receiver_input_schema_json,
     receiver_semantics_schema_json, rx_load_differential_rc_evaluate_request_schema_json,
     tran_one_node_rc_pulse_request_schema_json, tran_rc_pulse_request_schema_json,
@@ -144,6 +149,34 @@ const ARTIFACT_INSPECTION_BINDINGS: &[CallerBindingV1] = &[
     CallerBindingV1 {
         pointer: "/artifact_id",
         role: "published_artifact_identity",
+        explicit_required: true,
+    },
+];
+
+const PRBS9_METRIC_ARTIFACT_BINDINGS: &[CallerBindingV1] = &[
+    CallerBindingV1 {
+        pointer: "/invocation/artifact_root",
+        role: "caller_selected_sipi_published_root_no_hostile_concurrent_writer",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/reference/artifact_id",
+        role: "sealed_reference_artifact_identity",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/reference/manifest_sha256",
+        role: "sealed_reference_manifest_identity",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/candidate/artifact_id",
+        role: "sealed_candidate_artifact_identity",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/candidate/manifest_sha256",
+        role: "sealed_candidate_manifest_identity",
         explicit_required: true,
     },
 ];
@@ -453,6 +486,16 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         nonclaim: "caller_aligned_arrays_only",
     },
     CommandDescriptorV1 {
+        id: "compare.prbs9-metrics.run",
+        route: &["compare", "prbs9-metrics"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some(sipi_contracts::PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA),
+        response_schema: Some("sipi.compare.prbs9-metric-artifacts-run-result.v1"),
+        unavailable_reason: None,
+        nonclaim: "caller_selected_sealed_artifacts_only",
+    },
+    CommandDescriptorV1 {
         id: "report.inspect",
         route: &["report", "inspect"],
         availability: CommandAvailabilityV1::Available,
@@ -647,6 +690,15 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
     CommandProtocolProfileV1 {
+        command_id: "compare.prbs9-metrics.run",
+        example_id: None,
+        required_options: &["--artifact-root"],
+        caller_bindings: PRBS9_METRIC_ARTIFACT_BINDINGS,
+        validation_rule_id: Some("compare.prbs9-metrics.sealed-artifacts.v1"),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
+    CommandProtocolProfileV1 {
         command_id: "project.run",
         example_id: Some("product-owned-minimal-v1"),
         required_options: &["--artifact-root", "--artifact-id"],
@@ -691,6 +743,13 @@ fn main() {
         ProcessAdapter::channel_run_stdin()
     } else if arguments == ["compare", "run", "--stdin"] {
         ProcessAdapter::compare_run_stdin()
+    } else if let [command, action, stdin, root, artifact_root] = &arguments[..]
+        && command == "compare"
+        && action == "prbs9-metrics"
+        && stdin == "--stdin"
+        && root == "--artifact-root"
+    {
+        ProcessAdapter::compare_prbs9_metrics_stdin(artifact_root)
     } else if arguments == ["report", "inspect", "--stdin"] {
         ProcessAdapter::report_inspect_stdin()
     } else if let [command, action, stdin, root, artifact_root, id, artifact_id] = &arguments[..]
@@ -856,6 +915,18 @@ impl ProcessAdapter {
             }
         };
         run_array_compare(&request)
+    }
+
+    fn compare_prbs9_metrics_stdin(artifact_root: &str) -> Response {
+        let input = match read_stdin_request() {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        let request = match parse_prbs9_metric_artifacts_request_v1(&input) {
+            Ok(request) => request,
+            Err(_) => return error(3, "contract_rejected", "PRBS9 metric request was rejected"),
+        };
+        run_prbs9_metric_artifact_compare(artifact_root, &request)
     }
 
     fn project_run_stdin(artifact_root: &str, artifact_id: &str) -> Response {
@@ -1658,6 +1729,141 @@ fn run_array_compare(request: &sipi_contracts::ArrayCompareRequestV1) -> Respons
     ))
 }
 
+fn run_prbs9_metric_artifact_compare(
+    artifact_root: &str,
+    request: &sipi_contracts::Prbs9MetricArtifactsRequestV1,
+) -> Response {
+    let store = match ArtifactRoot::open_existing(Path::new(artifact_root)) {
+        Ok(store) => store,
+        Err(_) => {
+            return error(
+                3,
+                "contract_rejected",
+                "sealed artifact inputs were rejected",
+            );
+        }
+    };
+    let reference = match consume_prbs9_waveform_artifact(
+        &store,
+        request.reference().artifact_id(),
+        request.reference().manifest_sha256(),
+    ) {
+        Ok(waveform) => waveform,
+        Err(()) => {
+            return error(
+                3,
+                "contract_rejected",
+                "sealed artifact inputs were rejected",
+            );
+        }
+    };
+    let candidate = match consume_prbs9_waveform_artifact(
+        &store,
+        request.candidate().artifact_id(),
+        request.candidate().manifest_sha256(),
+    ) {
+        Ok(waveform) => waveform,
+        Err(()) => {
+            return error(
+                3,
+                "contract_rejected",
+                "sealed artifact inputs were rejected",
+            );
+        }
+    };
+    let pair = match Prbs9WaveformPairV2::try_new(reference.values, candidate.values) {
+        Ok(pair) => pair,
+        Err(_) => return error(3, "contract_rejected", "PRBS9 waveforms were rejected"),
+    };
+    let report = match compare_prbs9_metrics_v2(&pair) {
+        Ok(report) => report,
+        Err(_) => return error(3, "contract_rejected", "PRBS9 metrics were rejected"),
+    };
+    let reference_eye = report.reference_eye();
+    let candidate_eye = report.candidate_eye();
+    let reference_tie = report.reference_tie();
+    let candidate_tie = report.candidate_tie();
+    success(format!(
+        "{{\"schema\":\"sipi.compare.prbs9-metric-artifacts-run-result.v1\",\"contract_sha256\":\"{}\",\"reference\":{{\"artifact_id\":\"{}\",\"manifest_sha256\":\"{}\",\"payload_sha256\":\"{}\",\"waveform_digest\":\"{}\"}},\"candidate\":{{\"artifact_id\":\"{}\",\"manifest_sha256\":\"{}\",\"payload_sha256\":\"{}\",\"waveform_digest\":\"{}\"}},\"compared_start\":{},\"compared_samples\":{},\"waveform_nrmse\":{},\"waveform_nrmse_limit\":{},\"within_waveform_nrmse_limit\":{},\"reference_eye\":{{\"height_volts\":{},\"width_seconds\":{}}},\"candidate_eye\":{{\"height_volts\":{},\"width_seconds\":{}}},\"eye_height_relative_error\":{},\"eye_width_relative_error\":{},\"within_eye_limits\":{},\"reference_tie\":{{\"raw_rms_seconds\":{},\"crossing_count\":{}}},\"candidate_tie\":{{\"raw_rms_seconds\":{},\"crossing_count\":{}}},\"paired_tie_rmse_seconds\":{},\"within_tie_limit\":{},\"within_metric_limits\":{},\"evaluation_scope\":\"caller_selected_sealed_artifacts_only\",\"external_reference_binding\":\"not_evaluated\",\"external_profile_acceptance\":\"not_evaluated\"}}",
+        report.contract_sha256(),
+        request.reference().artifact_id(),
+        request.reference().manifest_sha256(),
+        reference.payload_sha256,
+        report.reference_digest(),
+        request.candidate().artifact_id(),
+        request.candidate().manifest_sha256(),
+        candidate.payload_sha256,
+        report.candidate_digest(),
+        report.compared_start(),
+        report.compared_samples(),
+        report.waveform_nrmse(),
+        report.waveform_nrmse_limit(),
+        report.within_waveform_nrmse_limit(),
+        reference_eye.height_volts(),
+        reference_eye.width_seconds(),
+        candidate_eye.height_volts(),
+        candidate_eye.width_seconds(),
+        report.eye_height_relative_error(),
+        report.eye_width_relative_error(),
+        report.within_eye_limits(),
+        reference_tie.raw_rms_seconds(),
+        reference_tie.crossing_count(),
+        candidate_tie.raw_rms_seconds(),
+        candidate_tie.crossing_count(),
+        report.paired_tie_rmse_seconds(),
+        report.within_tie_limit(),
+        report.within_metric_limits(),
+    ))
+}
+
+struct ConsumedPrbs9WaveformArtifact {
+    values: Vec<f64>,
+    payload_sha256: String,
+}
+
+fn consume_prbs9_waveform_artifact(
+    store: &ArtifactRoot,
+    artifact_id: &str,
+    manifest_sha256: &str,
+) -> Result<ConsumedPrbs9WaveformArtifact, ()> {
+    let files = store
+        .consume_exact_verified_v1(
+            artifact_id,
+            manifest_sha256,
+            &[
+                ("waveform.json", 4096),
+                ("waveform.f64le", PRBS9_WAVEFORM_ARTIFACT_BYTE_LENGTH_V1),
+            ],
+            VerifiedConsumptionPolicyV1::try_new(65_536, 396_544).map_err(|_| ())?,
+        )
+        .map_err(|_| ())?;
+    let metadata =
+        parse_prbs9_waveform_artifact_v1(files.file("waveform.json").ok_or(())?).map_err(|_| ())?;
+    let payload = files.file("waveform.f64le").ok_or(())?;
+    if payload.len() as u64 != PRBS9_WAVEFORM_ARTIFACT_BYTE_LENGTH_V1
+        || metadata.payload_sha256() != sha256_hex(payload)
+    {
+        return Err(());
+    }
+    let mut values = Vec::with_capacity(payload.len() / 8);
+    let chunks = payload.chunks_exact(8);
+    if !chunks.remainder().is_empty() {
+        return Err(());
+    }
+    for bytes in chunks {
+        let array: [u8; 8] = bytes.try_into().map_err(|_| ())?;
+        let value = f64::from_le_bytes(array);
+        if !value.is_finite() {
+            return Err(());
+        }
+        values.push(value);
+    }
+    Ok(ConsumedPrbs9WaveformArtifact {
+        values,
+        payload_sha256: metadata.payload_sha256().to_owned(),
+    })
+}
+
 fn compare_input_from_contract(
     input: &sipi_contracts::AlignedArrayCompareInputV1,
 ) -> Result<AlignedArrayV1, ()> {
@@ -1916,9 +2122,9 @@ fn command_manifest_is_valid(manifest: &[CommandDescriptorV1]) -> bool {
             && !descriptor.route.is_empty()
             && descriptor.route.iter().all(|token| {
                 !token.is_empty()
-                    && token
-                        .bytes()
-                        .all(|byte| byte.is_ascii_lowercase() || byte == b'-')
+                    && token.bytes().all(|byte| {
+                        byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-'
+                    })
             })
             && matches!(descriptor.transport, "none" | "stdin_json_v1")
             && match descriptor.availability {
@@ -2004,6 +2210,7 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["link", "receiver", "run"]
             | ["channel", "run"]
             | ["compare", "run"]
+            | ["compare", "prbs9-metrics"]
             | ["project", "run"]
             | ["report", "inspect"]
     )
@@ -2079,6 +2286,8 @@ fn schema_bytes(id: &str) -> Result<Option<Vec<u8>>, sipi_contracts::ContractErr
         channel_matched_two_port_kernel_run_request_schema_json().map(Some)
     } else if id == ARRAY_COMPARE_REQUEST_SCHEMA {
         array_compare_request_schema_json().map(Some)
+    } else if id == PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA {
+        prbs9_metric_artifacts_request_schema_json().map(Some)
     } else if id == sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA {
         ibis_inspect_request_schema_json().map(Some)
     } else if id == IBIS_DC_EVALUATE_REQUEST_SCHEMA {
@@ -2479,7 +2688,7 @@ fn doctor_json() -> String {
 
 fn schema_list_json() -> String {
     format!(
-        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA}\",\"{ARRAY_COMPARE_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA}\",\"{}\",\"{}\"]}}",
+        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA}\",\"{ARRAY_COMPARE_REQUEST_SCHEMA}\",\"{PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA}\",\"{}\",\"{}\"]}}",
         IBIS_DC_EVALUATE_REQUEST_SCHEMA,
         IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA,
         sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA,
@@ -2526,6 +2735,7 @@ fn validate_self(schema: Option<&str>) -> Response {
             && id != ARTIFACT_REPORT_REQUEST_SCHEMA
             && id != CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA
             && id != ARRAY_COMPARE_REQUEST_SCHEMA
+            && id != PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA
             && id != sipi_contracts::VALIDATION_REQUEST_SCHEMA
             && id != sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA
             && id != TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA
@@ -2555,6 +2765,7 @@ fn validate_self(schema: Option<&str>) -> Response {
         && artifact_report_request_schema_json().is_ok()
         && channel_matched_two_port_kernel_run_request_schema_json().is_ok()
         && array_compare_request_schema_json().is_ok()
+        && prbs9_metric_artifacts_request_schema_json().is_ok()
         && tran_rc_pulse_request_schema_json().is_ok()
         && tran_one_node_rc_pulse_request_schema_json().is_ok()
         && ibis_inspect_request_schema_json().is_ok()
@@ -2863,7 +3074,7 @@ mod tests {
     fn schema_list_uses_the_schema_inventory_order() {
         assert_eq!(
             schema_list_json(),
-            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.compare.aligned-arrays-request.v1\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.receiver.diagnostic-run-request.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.one-node-rc-pulse-request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
+            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.compare.aligned-arrays-request.v1\",\"sipi.compare.prbs9-metric-artifacts-request.v1\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.receiver.diagnostic-run-request.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.one-node-rc-pulse-request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
         );
     }
 

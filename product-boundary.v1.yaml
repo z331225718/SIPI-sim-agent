@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: e9666aa5bb6b5e7e69ecfa7dda06f3c04ed5c6a29a592a7915eb86fe4bf8f496
+  tracked_paths_sha256: 17014d36d65aa747b84507809076522c6089228b09bd95aa0fde317e838228b4
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -246,6 +246,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-contracts/schemas/sipi.compare.aligned-arrays-request.v1.schema.json:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-contracts/schemas/sipi.compare.prbs9-metric-artifacts-request.v1.schema.json:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1373,6 +1379,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-12-p3c-prbs9-metric-artifact-cli.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-12-p3c-prbs9-metric-core.md:
       rule: historical-docs
       class: migration_only
@@ -1656,6 +1668,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-external-ads-prbs9-reference.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-prbs9-metric-artifact-cli.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2154,6 +2172,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-external-ads-prbs9-reference.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-prbs9-metric-artifact-cli.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7265,6 +7289,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_prbs9_metric_artifact_cli.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_prbs9_metric_core_v2.py:
       rule: migration-tools
       class: migration_only
@@ -7752,6 +7782,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_external_ads_prbs9_reference_attempt.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_prbs9_metric_artifact_cli.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

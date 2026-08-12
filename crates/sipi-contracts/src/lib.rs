@@ -24,6 +24,15 @@ pub const LINK_CAUSAL_FIR_REQUEST_SCHEMA: &str = "sipi.link.causal-fir-request.v
 pub const CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA: &str =
     "sipi.channel.matched-two-port-kernel-run-request.v1";
 pub const ARRAY_COMPARE_REQUEST_SCHEMA: &str = "sipi.compare.aligned-arrays-request.v1";
+pub const PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA: &str =
+    "sipi.compare.prbs9-metric-artifacts-request.v1";
+pub const PRBS9_METRIC_CONTRACT_SHA256_V2: &str =
+    "f47329b6ddda01cbcde1f24e21cb93e03f8ef6139ea2d43ff74cad9e2049d2b5";
+pub const PRBS9_WAVEFORM_ARTIFACT_SCHEMA_V1: &str = "sipi.compare.prbs9-waveform-artifact.v1";
+pub const PRBS9_WAVEFORM_ARTIFACT_TIMEBASE_PROFILE_V1: &str =
+    "prbs9-v2-32gtps-osr32-three-period-half-open";
+pub const PRBS9_WAVEFORM_ARTIFACT_SAMPLE_COUNT_V1: usize = 49_056;
+pub const PRBS9_WAVEFORM_ARTIFACT_BYTE_LENGTH_V1: u64 = 392_448;
 pub const IBIS_INSPECT_REQUEST_SCHEMA: &str = "sipi.ibis.inspect.request.v1";
 pub const IBIS_DC_EVALUATE_REQUEST_SCHEMA: &str = "sipi.ibis.input-typ-dc-evaluate.request.v1";
 pub const IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA: &str =
@@ -1542,6 +1551,153 @@ pub fn parse_array_compare_request_v1(
         .try_into()
 }
 
+/// Opaque sealed-artifact identities for the fixed PRBS9 metric profile.
+/// Waveform bytes, axes, tolerances, and profile overrides are intentionally
+/// absent from this stdin contract.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WirePrbs9MetricArtifactsRequestV1 {
+    pub schema: String,
+    pub contract_sha256: String,
+    pub reference: WireSealedArtifactIdentityV1,
+    pub candidate: WireSealedArtifactIdentityV1,
+}
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireSealedArtifactIdentityV1 {
+    pub artifact_id: String,
+    pub manifest_sha256: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Prbs9MetricArtifactsRequestV1 {
+    reference: SealedArtifactIdentityV1,
+    candidate: SealedArtifactIdentityV1,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SealedArtifactIdentityV1 {
+    artifact_id: String,
+    manifest_sha256: String,
+}
+
+impl Prbs9MetricArtifactsRequestV1 {
+    pub fn reference(&self) -> &SealedArtifactIdentityV1 {
+        &self.reference
+    }
+    pub fn candidate(&self) -> &SealedArtifactIdentityV1 {
+        &self.candidate
+    }
+}
+impl SealedArtifactIdentityV1 {
+    pub fn artifact_id(&self) -> &str {
+        &self.artifact_id
+    }
+    pub fn manifest_sha256(&self) -> &str {
+        &self.manifest_sha256
+    }
+}
+
+impl TryFrom<WirePrbs9MetricArtifactsRequestV1> for Prbs9MetricArtifactsRequestV1 {
+    type Error = ContractError;
+    fn try_from(value: WirePrbs9MetricArtifactsRequestV1) -> Result<Self, Self::Error> {
+        if value.schema != PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA
+            || value.contract_sha256 != PRBS9_METRIC_CONTRACT_SHA256_V2
+        {
+            return Err(ContractError::Version);
+        }
+        let identity = |value: WireSealedArtifactIdentityV1| -> Result<SealedArtifactIdentityV1, ContractError> {
+            if !valid_artifact_id(&value.artifact_id) || !valid_array_compare_binding(&value.manifest_sha256) {
+                return Err(ContractError::Json("invalid sealed artifact identity".to_owned()));
+            }
+            Ok(SealedArtifactIdentityV1 { artifact_id: value.artifact_id, manifest_sha256: value.manifest_sha256 })
+        };
+        let reference = identity(value.reference)?;
+        let candidate = identity(value.candidate)?;
+        if reference.artifact_id == candidate.artifact_id {
+            return Err(ContractError::Json(
+                "artifact identities must differ".to_owned(),
+            ));
+        }
+        Ok(Self {
+            reference,
+            candidate,
+        })
+    }
+}
+
+pub fn parse_prbs9_metric_artifacts_request_v1(
+    input: &[u8],
+) -> Result<Prbs9MetricArtifactsRequestV1, ContractError> {
+    serde_json::from_slice::<WirePrbs9MetricArtifactsRequestV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
+/// Sealed waveform metadata for the fixed PRBS9 metric profile. This is an
+/// artifact payload descriptor, not a caller-configurable metric profile.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WirePrbs9WaveformArtifactV1 {
+    pub schema: String,
+    pub contract_sha256: String,
+    pub quantity: String,
+    pub unit: String,
+    pub timebase_profile: String,
+    pub sample_count: usize,
+    pub encoding: String,
+    pub payload: WirePrbs9WaveformArtifactPayloadV1,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WirePrbs9WaveformArtifactPayloadV1 {
+    pub byte_length: u64,
+    pub sha256: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Prbs9WaveformArtifactV1 {
+    payload_sha256: String,
+}
+
+impl Prbs9WaveformArtifactV1 {
+    pub fn payload_sha256(&self) -> &str {
+        &self.payload_sha256
+    }
+}
+
+impl TryFrom<WirePrbs9WaveformArtifactV1> for Prbs9WaveformArtifactV1 {
+    type Error = ContractError;
+
+    fn try_from(value: WirePrbs9WaveformArtifactV1) -> Result<Self, Self::Error> {
+        if value.schema != PRBS9_WAVEFORM_ARTIFACT_SCHEMA_V1
+            || value.contract_sha256 != PRBS9_METRIC_CONTRACT_SHA256_V2
+            || value.quantity != "differential_voltage"
+            || value.unit != "volts_differential"
+            || value.timebase_profile != PRBS9_WAVEFORM_ARTIFACT_TIMEBASE_PROFILE_V1
+            || value.sample_count != PRBS9_WAVEFORM_ARTIFACT_SAMPLE_COUNT_V1
+            || value.encoding != "ieee754-binary64-little-endian"
+            || value.payload.byte_length != PRBS9_WAVEFORM_ARTIFACT_BYTE_LENGTH_V1
+            || !valid_array_compare_binding(&value.payload.sha256)
+        {
+            return Err(ContractError::Version);
+        }
+        Ok(Self {
+            payload_sha256: value.payload.sha256,
+        })
+    }
+}
+
+pub fn parse_prbs9_waveform_artifact_v1(
+    input: &[u8],
+) -> Result<Prbs9WaveformArtifactV1, ContractError> {
+    serde_json::from_slice::<WirePrbs9WaveformArtifactV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
 /// A product-owned Input/TYP static clamp request. The text is caller-provided
 /// UTF-8; it has no file, URL, asset identity, or external acceptance surface.
 #[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
@@ -2706,6 +2862,10 @@ pub fn array_compare_request_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireArrayCompareRequestV1))
 }
 
+pub fn prbs9_metric_artifacts_request_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(WirePrbs9MetricArtifactsRequestV1))
+}
+
 pub fn ibis_inspect_request_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireIbisInspectRequestV1))
 }
@@ -3120,6 +3280,57 @@ mod tests {
     }
 
     #[test]
+    fn prbs9_metric_artifact_request_and_metadata_are_fixed_and_strict() {
+        let digest = "a".repeat(64);
+        let request = format!(
+            "{{\"schema\":\"{PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA}\",\"contract_sha256\":\"{PRBS9_METRIC_CONTRACT_SHA256_V2}\",\"reference\":{{\"artifact_id\":\"reference-1\",\"manifest_sha256\":\"{digest}\"}},\"candidate\":{{\"artifact_id\":\"candidate-1\",\"manifest_sha256\":\"{digest}\"}}}}"
+        );
+        let parsed = parse_prbs9_metric_artifacts_request_v1(request.as_bytes()).expect("request");
+        assert_eq!(parsed.reference().artifact_id(), "reference-1");
+        assert_eq!(parsed.candidate().manifest_sha256(), digest);
+        assert!(
+            parse_prbs9_metric_artifacts_request_v1(
+                request
+                    .replace("\"candidate\":", "\"axis\":[],\"candidate\":")
+                    .as_bytes()
+            )
+            .is_err()
+        );
+        assert!(
+            parse_prbs9_metric_artifacts_request_v1(
+                request.replace("candidate-1", "reference-1").as_bytes()
+            )
+            .is_err()
+        );
+
+        let metadata = format!(
+            "{{\"schema\":\"{PRBS9_WAVEFORM_ARTIFACT_SCHEMA_V1}\",\"contract_sha256\":\"{PRBS9_METRIC_CONTRACT_SHA256_V2}\",\"quantity\":\"differential_voltage\",\"unit\":\"volts_differential\",\"timebase_profile\":\"{PRBS9_WAVEFORM_ARTIFACT_TIMEBASE_PROFILE_V1}\",\"sample_count\":{PRBS9_WAVEFORM_ARTIFACT_SAMPLE_COUNT_V1},\"encoding\":\"ieee754-binary64-little-endian\",\"payload\":{{\"byte_length\":{PRBS9_WAVEFORM_ARTIFACT_BYTE_LENGTH_V1},\"sha256\":\"{digest}\"}}}}"
+        );
+        assert_eq!(
+            parse_prbs9_waveform_artifact_v1(metadata.as_bytes())
+                .expect("metadata")
+                .payload_sha256(),
+            digest
+        );
+        assert!(
+            parse_prbs9_waveform_artifact_v1(
+                metadata
+                    .replace("\"sample_count\":49056", "\"sample_count\":49055")
+                    .as_bytes()
+            )
+            .is_err()
+        );
+        assert!(
+            parse_prbs9_waveform_artifact_v1(
+                metadata
+                    .replace("\"payload\":", "\"seed\":1,\"payload\":")
+                    .as_bytes()
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
     fn ibis_dc_evaluate_request_is_typical_only_and_strict() {
         let valid = br#"{"schema":"sipi.ibis.input-typ-dc-evaluate.request.v1","source":{"encoding":"utf-8","text":"[IBIS Ver] 7.1\n"},"selection":{"ibis_version":"7.1","model_selector":"product_input","corner":"typical"},"probe":{"gnd_clamp_drive_volts":0.0,"power_clamp_drive_volts":1.0}}"#;
         let request = parse_ibis_dc_evaluate_request_v1(valid).expect("valid request");
@@ -3323,6 +3534,14 @@ mod tests {
         let baseline =
             include_bytes!("../schemas/sipi.compare.aligned-arrays-request.v1.schema.json");
         let exported = array_compare_request_schema_json().expect("schema");
+        assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
+    }
+
+    #[test]
+    fn tracked_prbs9_metric_artifact_request_schema_is_exactly_the_registered_export() {
+        let baseline =
+            include_bytes!("../schemas/sipi.compare.prbs9-metric-artifacts-request.v1.schema.json");
+        let exported = prbs9_metric_artifacts_request_schema_json().expect("schema");
         assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
     }
 

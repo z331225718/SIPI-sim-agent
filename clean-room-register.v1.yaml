@@ -489,6 +489,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3c-prbs9-waveform-jitter-contract-spec-v2, p3c-prbs9-waveform-nrmse-core-spec-v1]
+  - id: p3c-prbs9-metric-artifact-cli-spec-v1
+    kind: independent_spec
+    content_sha256: 30137ffd81cfbe8ff621a4bb218835eac8bcd3767d418cfb573e215a9eacaaa5
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-prbs9-metric-artifact-cli.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p3c-prbs9-metric-core-spec-v2, p1-artifacts-foundation-spec-v1, p1-cli-process-contract-spec-v1]
   - id: p3b-causal-fir-cli-run-spec-v1
     kind: independent_spec
     content_sha256: 5caca9c27e49a2929300a3f6d2eece00c46b562931e716d69c16bb477a28154e
@@ -1167,6 +1175,15 @@ scopes:
       implementer: [p3c-prbs9-metric-core-spec-v2]
       comparator: []
       auditor: [p3c-prbs9-metric-core-spec-v2]
+  - id: p3c-prbs9-metric-artifact-cli-v1
+    paths: [docs/baselines/p3c-prbs9-metric-artifact-cli.v1.yaml, docs/clean-room/specs/p3c-prbs9-metric-artifact-cli.v1.md, crates/sipi-artifacts/src/lib.rs, crates/sipi-contracts/src/lib.rs, crates/sipi-contracts/schemas/schema-inventory.v1.json, crates/sipi-contracts/schemas/sipi.compare.prbs9-metric-artifacts-request.v1.schema.json, crates/sipi-cli/src/main.rs, crates/sipi-cli/tests/cli.rs, tools/verify_p3c_prbs9_metric_artifact_cli.py, tools/test_verify_p3c_prbs9_metric_artifact_cli.py, tools/verify_release_capability_publication.py, tools/test_verify_release_capability_publication.py, docs/baselines/release-capability-publication.v1.yaml]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3c-prbs9-metric-artifact-cli-spec-v1]
+      implementer: [p3c-prbs9-metric-artifact-cli-spec-v1]
+      comparator: []
+      auditor: [p3c-prbs9-metric-artifact-cli-spec-v1]
   - id: p3b-causal-fir-cli-run-v1
     paths: [docs/clean-room/specs/p3b-causal-fir-cli-run.v1.md, crates/sipi-cli/**, crates/sipi-contracts/**]
     state: planned
