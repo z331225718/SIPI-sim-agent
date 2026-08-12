@@ -433,6 +433,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, auditor]
     derived_from: [p3c-prbs9-waveform-jitter-preflight-spec-v1]
+  - id: p3c-prbs9-waveform-jitter-contract-spec-v2
+    kind: independent_spec
+    content_sha256: 18620d0452ba6a7472445813cf4641f887b3ec7feb4bd29b916c443b5c359407
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-prbs9-waveform-jitter-contract.v2.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, auditor]
+    derived_from: [p3c-prbs9-waveform-jitter-contract-spec-v1]
   - id: p3c-external-ads-prbs9-reference-observation-v1
     kind: oracle_fixture
     content_sha256: eed37c9434b78ef6bd05ef754bd2a5bb6dfc4cb0508d873f8a897a2a58502f9a
@@ -1074,6 +1082,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-prbs9-waveform-jitter-preflight-spec-v1, p3c-prbs9-waveform-jitter-contract-spec-v1]
+  - id: p3c-prbs9-waveform-jitter-contract-v2
+    paths: [docs/baselines/p3c-prbs9-waveform-jitter-contract.v2.yaml, docs/clean-room/specs/p3c-prbs9-waveform-jitter-contract.v2.md, tools/verify_p3c_prbs9_waveform_jitter_contract_v2.py, tools/test_verify_p3c_prbs9_waveform_jitter_contract_v2.py, tools/run_p3c_external_ads_prbs9_reference.py, tools/test_run_p3c_external_ads_prbs9_reference.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3c-prbs9-waveform-jitter-contract-spec-v1, p3c-prbs9-waveform-jitter-contract-spec-v2]
+      implementer: []
+      comparator: []
+      auditor: [p3c-prbs9-waveform-jitter-contract-spec-v1, p3c-prbs9-waveform-jitter-contract-spec-v2]
   - id: p3c-external-ads-prbs9-reference-attempt-v1
     paths: [docs/baselines/p3c-external-ads-prbs9-reference-attempt.v1.yaml, docs/clean-room/specs/p3c-external-ads-prbs9-reference-attempt.v1.md, tools/run_p3c_external_ads_prbs9_reference.py, tools/test_run_p3c_external_ads_prbs9_reference.py, tools/verify_p3c_external_ads_prbs9_reference_attempt.py, tools/test_verify_p3c_external_ads_prbs9_reference_attempt.py]
     state: planned

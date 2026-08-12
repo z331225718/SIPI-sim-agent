@@ -1,0 +1,110 @@
+schema: sipi.p3c-prbs9-waveform-jitter-contract.v2
+status: specified_external_ads_100as_reference_and_accepted_receiver_pending
+supersedes:
+  schema: sipi.p3c-prbs9-waveform-jitter-contract.v1
+  content_sha256: 7c55086abe681e4a4a64aec15379eb839fc3514a94b2f4b3d920ec9c9f391751
+  reason: user_authorized_ads_prbssrc_finite_100as_source_edge_semantics
+authority:
+  actor: user
+  decision_ref: user-authorized-2026-08-12-p3c-ads-prbssrc-100as-source-edge
+  scope: metric_semantics_and_external_ads_source_edge_only_not_runtime_or_acceptance
+stimulus:
+  signal_quantity: differential_voltage_volts
+  levels_volts: [-1.0, 1.0]
+  modulation: finite_edge_nrz
+  transition:
+    component_semantics: ads_prbssrc
+    edge_shape_code: 0
+    rise_time_seconds: 1.0e-16
+    fall_time_seconds: 1.0e-16
+    transition_reference: 0.0
+    transition_starts_at: symbol_boundary
+  prbs:
+    polynomial: x9+x5+1
+    lfsr_form: fibonacci
+    state_bit_order: s8_msb_to_s0_lsb
+    initial_state_hex: 0x1a5
+    output_bit: pre_shift_s8
+    feedback_bit: s8_xor_s4
+    state_transition: left_shift_mask_0x1ff_then_append_feedback_to_s0
+    bit_to_level: {zero: -1.0, one: 1.0}
+    period_bits: 511
+    serialized_period: ascii_0_or_1_in_emission_order
+    period_sha256: 4437fb3beb2fa1ca99b4177673c53fc20089ac9cf68b1adaa1e0fad14d742127
+timebase:
+  symbol_rate_gbaud: 32.0
+  ui_seconds: 3.125e-11
+  samples_per_ui: 32
+  sample_interval_seconds: 9.765625e-13
+  sample_zero: first_symbol_start
+window:
+  total_prbs_periods: 3
+  warmup_prbs_periods: 2
+  compared_prbs_period: 3
+  compared_samples: 16352
+  reference_and_candidate_same_index_required: true
+  reference_and_candidate_same_seed_required: true
+reference:
+  origin: local_ads_same_bench
+  observation_node: same_named_differential_post_channel_node
+  source_identity: null
+  bench_identity: null
+  waveform_identity: null
+  stage_identity: null
+  external_observed: false
+waveform_compare:
+  unit: volts_differential
+  alignment: prohibited
+  resampling: prohibited
+  gain_fit: prohibited
+  dc_removal: prohibited
+  polarity_flip: prohibited
+  formula: sqrt(sum((candidate-reference)^2)/sum(reference^2))
+  zero_reference_norm: reject
+  relative_rms_error_limit: 0.01
+eye:
+  cdr: not_used
+  fold_phase: sample_index_modulo_32
+  symbol_partition: ideal_prbs_symbol_of_current_ui
+  phase_opening_volts: min(high_samples)-max(low_samples)
+  height_volts: max(phase_opening_volts)
+  width_seconds: longest_contiguous_discrete_positive_opening_interval_containing_phase_16_times_ui_over_32
+  interpolation: prohibited
+  comparison: relative_error_each_of_height_and_width
+  zero_reference_metric: reject
+  relative_error_limit: 0.01
+jitter:
+  signal_class: nrz
+  threshold_volts: 0.0
+  interpolation: linear_between_adjacent_samples
+  nominal_transition: ui_boundary_for_each_adjacent_prbs_symbol_change
+  matching_window: half_open_plus_or_minus_half_ui
+  crossings_per_matching_window: exactly_one_or_reject
+  tie_seconds: crossing_time_minus_nominal_transition_time
+  tie_mean_removal: prohibited
+  report_metric: sqrt(mean(tie_seconds^2))
+  compare_metric: sqrt(mean((candidate_tie_seconds-reference_tie_seconds)^2))
+  compare_error_limit_ui: 0.01
+  compare_error_limit_seconds: 3.125e-13
+statistical_eye:
+  status: blocked_missing_immutable_pybert_observation_and_contour_semantics
+  snr: excluded
+  contour: pending_immutable_source_ber_axes_noise_jitter_and_tolerance
+admission:
+  metric_semantics_ready: true
+  acceptance_ready: false
+  promotion_eligible: false
+  runtime_invoked: false
+  ads_runtime_invoked: false
+  ami_runtime_invoked: false
+  external_reference_observed: false
+  release_ledger_promoted: false
+blockers:
+  - immutable_ads_bench_and_waveform_reference_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not ADS, AMI, DLL, PyBERT, channel, receiver, or CDR runtime evidence.
+  - Not a waveform, eye, jitter, bathtub, BER, or statistical-contour acceptance result.
+  - Not a third-party asset admission, worker admission, release promotion, or product capability promotion.
+  - Not permission to align, resample, phase shift, fit gain, remove DC, flip polarity, or de-mean TIE.

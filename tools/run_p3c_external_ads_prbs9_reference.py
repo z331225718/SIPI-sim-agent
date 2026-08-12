@@ -96,12 +96,15 @@ def check_s4p_header(source: Path) -> None:
         raise ExternalReferenceError("s4p_authoritative_port_map_missing")
 
 
-def build_netlist(bit_sequence: str) -> str:
+def build_netlist(bit_sequence: str, *, edge_rise_fall_seconds: float = 0.0) -> str:
     """Use ADS PRBSsrc explicit bits so ADS cannot choose an LFSR convention."""
     if len(bit_sequence) != PERIOD_BITS * PERIODS:
         raise ExternalReferenceError("stimulus_length_invalid")
+    if edge_rise_fall_seconds not in (0.0, 1.0e-16):
+        raise ExternalReferenceError("source_edge_not_authorized")
     stop = f"{PERIOD_BITS * PERIODS * UI_SECONDS:.17g} sec"
     step = f"{SAMPLE_INTERVAL_SECONDS:.17g} sec"
+    edge = f"{edge_rise_fall_seconds:.17g} sec"
     return "\n".join(
         [
             (
@@ -109,7 +112,7 @@ def build_netlist(bit_sequence: str) -> str:
                 f'BitSequence="{bit_sequence}" Trigger=0 VtriggerThreshold=0.5 V TriggerEdge=0 '
                 'Vlow=-0.5 V Vhigh=0.5 V Rout=50 Ohm PAMencoding=0 PAMlevels=2 '
                 'EnableDeEmphasis=0 DeEmphasisMode=0 DeEmphasis=0.0 DeEmphasisTaps=1 '
-                'EmphasisSpan=0.0 EdgeShape=0 BitRate=32 GHz RiseTime=0 sec FallTime=0 sec '
+                f'EmphasisSpan=0.0 EdgeShape=0 BitRate=32 GHz RiseTime={edge} FallTime={edge} '
                 'TransitReference=0.0 Delay=0 sec EnableRJ=0 RJrms=0 sec RJbw=1 THz '
                 'EnablePJ=0 PJwave[1]=0 PJamp[1]=0 sec PJfreq[1]=100 MHz'
             ),
@@ -118,7 +121,7 @@ def build_netlist(bit_sequence: str) -> str:
                 f'BitSequence="{bit_sequence}" Trigger=0 VtriggerThreshold=0.5 V TriggerEdge=0 '
                 'Vlow=0.5 V Vhigh=-0.5 V Rout=50 Ohm PAMencoding=0 PAMlevels=2 '
                 'EnableDeEmphasis=0 DeEmphasisMode=0 DeEmphasis=0.0 DeEmphasisTaps=1 '
-                'EmphasisSpan=0.0 EdgeShape=0 BitRate=32 GHz RiseTime=0 sec FallTime=0 sec '
+                f'EmphasisSpan=0.0 EdgeShape=0 BitRate=32 GHz RiseTime={edge} FallTime={edge} '
                 'TransitReference=0.0 Delay=0 sec EnableRJ=0 RJrms=0 sec RJbw=1 THz '
                 'EnablePJ=0 PJwave[1]=0 PJamp[1]=0 sec PJfreq[1]=100 MHz'
             ),
@@ -153,7 +156,7 @@ def assert_netlist_isolated(netlist: str) -> None:
             raise ExternalReferenceError("netlist_topology_incomplete")
 
 
-def materialize_run(source: Path, destination: Path, *, dry_run: bool) -> dict[str, Any]:
+def materialize_run(source: Path, destination: Path, *, dry_run: bool, edge_rise_fall_seconds: float = 0.0) -> dict[str, Any]:
     if destination.exists():
         raise ExternalReferenceError("run_directory_must_not_exist")
     destination.mkdir(parents=True)
@@ -164,7 +167,7 @@ def materialize_run(source: Path, destination: Path, *, dry_run: bool) -> dict[s
     if source.stat().st_size != copied.stat().st_size or sha256_file(source) != sha256_file(copied):
         raise ExternalReferenceError("s4p_copy_source_drift")
     sequence = prbs9_period() * PERIODS
-    netlist = build_netlist(sequence)
+    netlist = build_netlist(sequence, edge_rise_fall_seconds=edge_rise_fall_seconds)
     assert_netlist_isolated(netlist)
     netlist_path = destination / "p3c_prbs9_ideal_load.ckt"
     netlist_path.write_text(netlist, encoding="ascii", newline="\n")
@@ -179,7 +182,7 @@ def materialize_run(source: Path, destination: Path, *, dry_run: bool) -> dict[s
         "port_map": {"port_1": "tx_plus", "port_2": "rx_plus", "port_3": "tx_minus", "port_4": "rx_minus"},
         "stimulus": {"seed_hex": "0x1a5", "period_sha256": PERIOD_SHA256, "period_bits": PERIOD_BITS, "periods": PERIODS, "serialized_three_period_sha256": sha256_file_bytes(sequence.encode("ascii"))},
         "timebase": {"ui_seconds": UI_SECONDS, "samples_per_ui": SAMPLES_PER_UI, "sample_interval_seconds": SAMPLE_INTERVAL_SECONDS, "sample_count_expected": TOTAL_SAMPLES, "third_period_start_index": COMPARE_START, "third_period_sample_count": COMPARE_SAMPLES},
-        "topology": {"tx": "two_complementary_ideal_prbssrc_sources_with_internal_50_ohm_rout", "channel": "four_port_touchstone", "rx": "two_50_ohm_to_global_ground_loads", "reference_node": "global_ground_0", "observation": "V(rxp)-V(rxm)"},
+        "topology": {"tx": "two_complementary_ideal_prbssrc_sources_with_internal_50_ohm_rout", "channel": "four_port_touchstone", "rx": "two_50_ohm_to_global_ground_loads", "reference_node": "global_ground_0", "observation": "V(rxp)-V(rxm)", "rise_time_seconds": edge_rise_fall_seconds, "fall_time_seconds": edge_rise_fall_seconds},
         "generated": {"netlist_sha256": sha256_file(netlist_path), "netlist_byte_length": netlist_path.stat().st_size},
     }
     if not dry_run:
@@ -291,6 +294,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--s4p", required=True, type=Path)
     parser.add_argument("--output-root", required=True, type=Path)
     parser.add_argument("--run-id", required=True)
+    parser.add_argument("--edge-rise-fall-seconds", type=float, default=0.0)
     parser.add_argument("--run", action="store_true", help="Invoke ADS after static generation checks.")
     arguments = parser.parse_args(argv)
     try:
@@ -299,7 +303,7 @@ def main(argv: list[str] | None = None) -> int:
         output_root = require_external_path(arguments.output_root, kind="output_root")
         if not valid_run_id(arguments.run_id):
             raise ExternalReferenceError("run_id_invalid")
-        result = materialize_run(source, output_root / arguments.run_id, dry_run=not arguments.run)
+        result = materialize_run(source, output_root / arguments.run_id, dry_run=not arguments.run, edge_rise_fall_seconds=arguments.edge_rise_fall_seconds)
     except (OSError, ValueError, ExternalReferenceError) as error:
         print(json.dumps({"status": "rejected", "reason": str(error)}, sort_keys=True))
         return 2
