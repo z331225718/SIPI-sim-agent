@@ -1468,7 +1468,7 @@ scopes:
     role_material_allowlists:
       observer: []
       spec_author: [p3c-ieee-bsd-interp-direct-port-spec-v1, ieee-802-com-interp-sparam-bsd3-v1]
-      implementer: [p3c-ieee-bsd-interp-direct-port-spec-v1, ieee-802-com-interp-sparam-bsd3-v1, p1-types-foundation-spec-v1]
+      implementer: [p3c-ieee-bsd-interp-direct-port-spec-v1, ieee-802-com-interp-sparam-bsd3-v1, p1-types-foundation-spec-v1, p3a-s2p-matched-channel-spec-v1, p3c-selected-four-port-static-bench-spec-v1]
       comparator: []
       auditor: [p3c-ieee-bsd-interp-direct-port-spec-v1, ieee-802-com-interp-sparam-bsd3-v1]
   - id: p3c-selected-four-port-lexical-amendment-v1
