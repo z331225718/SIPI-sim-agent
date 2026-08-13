@@ -8,6 +8,7 @@ publish = false
 description = "Selected BSD-3-Clause IEEE 802-COM S-parameter interpolation port."
 
 [dependencies]
+rustfft = "6.4.1"
 sipi-channel = { path = "../sipi-channel" }
 sipi-types = { path = "../sipi-types" }
 

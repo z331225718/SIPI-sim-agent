@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 7d35e48514ea180addb90d5516a7fbd2da85a6dfc90a63cf041e874990c8d5c4
+  tracked_paths_sha256: bd1ce8c8b83ccbc59c21d3c4de3ced312d362b46b27c215854e3f23c72bbc3e8
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -438,6 +438,12 @@ inventory:
       provenance: clean_room
       distribution: non-distributed
     crates/sipi-ieee-com-sparam/src/lib.rs:
+      rule: p3c-ieee-bsd-interpolation-direct-port
+      class: quarantine
+      license: BSD-3-Clause
+      provenance: clean_room
+      distribution: non-distributed
+    crates/sipi-ieee-com-sparam/src/s21_to_raw_periodic_v1.rs:
       rule: p3c-ieee-bsd-interpolation-direct-port
       class: quarantine
       license: BSD-3-Clause
@@ -1901,6 +1907,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3c-ieee-bsd-raw-periodic-direct-port.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p3c-prbs9-metric-artifact-cli.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -2508,6 +2520,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-ieee-bsd-interp-direct-port.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-ieee-bsd-raw-periodic-direct-port.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7769,6 +7787,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_ieee_bsd_raw_periodic_direct_port.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_prbs9_metric_artifact_cli.py:
       rule: migration-tools
       class: migration_only
@@ -8358,6 +8382,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_ieee_bsd_interp_direct_port.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_ieee_bsd_raw_periodic_direct_port.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

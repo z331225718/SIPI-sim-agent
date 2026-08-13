@@ -16,3 +16,18 @@ phase unwrap/anti-causal reject, `linear_trend_to_DC_log_trend_to_inf`, and
 P3C policy and rejects every other branch, debug bypass, and undefined source
 branch. It does not port `s21_to_impulse_DC.m` or
 `calculate_delay_CausalityEnforcement.m`.
+
+## Raw Periodic Inverse Transform
+
+- Source: `src/s21_to_impulse_DC.m`
+- Git blob: `f426fb2119dc1cf9c2a2f677e60c3a1f31cb27a3`
+- SHA-256: `b2884926b204fdfddc1c309c35d46ed7744c696e19df3abcd7d91157e9e539c0`
+- License: BSD-3-Clause; full notice: `NOTICE-IEEE-802-COM.md`
+
+`src/s21_to_raw_periodic_v1.rs` ports only the source's Hermitian spectrum
+construction and its unshifted inverse-transform/time-base leaf. The Rust file
+adds the fixed P3C endpoint and inverse-imaginary residual rejection gates
+before projecting permitted endpoint residue to real values. It does not port
+source interpolation, zero-value replacement, causality enforcement, delay
+estimation, truncation, rectangular pulse construction, or convolution. It
+does not depend on `calculate_delay_CausalityEnforcement.m`.

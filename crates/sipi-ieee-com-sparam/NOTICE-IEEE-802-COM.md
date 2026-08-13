@@ -1,7 +1,7 @@
 # IEEE 802-COM Notice
 
-This crate contains a direct port of the selected `interp_Sparam.m` source
-object identified in `SOURCE-MAP.md`.
+This crate contains direct ports of the selected `interp_Sparam.m` and
+`s21_to_impulse_DC.m` source objects identified in `SOURCE-MAP.md`.
 
 Copyright 2025 802-COM Authors
 

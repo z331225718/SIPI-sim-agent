@@ -1,0 +1,82 @@
+schema: sipi.p3c-ieee-bsd-raw-periodic-direct-port.v1
+status: selected_ieee_bsd3_raw_periodic_inverse_transform_implemented_causal_route_not_admitted
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-14-p3c-04q-raw-periodic-ifft-policy
+  direct_port_implementation_started: true
+  product_policy_selected: true
+  release_admitted: false
+source:
+  canonical_origin: https://opensource.ieee.org/802-com/com_code.git
+  commit: d4ecd4597a98782887933b5df4c4796da2474195
+  path: src/s21_to_impulse_DC.m
+  git_blob: f426fb2119dc1cf9c2a2f677e60c3a1f31cb27a3
+  content_sha256: b2884926b204fdfddc1c309c35d46ed7744c696e19df3abcd7d91157e9e539c0
+  license: BSD-3-Clause
+  excluded_source_objects:
+    - ieee-802-com-causality-delay-bsd3-v1
+policy:
+  input_type: sipi_ieee_com_sparam::SelectedP3cUniformSpectrumV1
+  one_sided_bin_requirement: at_least_two
+  transform_length: two_times_one_sided_bin_count_minus_two
+  hermitian_layout: real_dc_positive_interior_real_nyquist_conjugate_negative_interior
+  endpoint_imaginary_residual:
+    absolute_limit: 1.0e-12
+    relative_limit: 1.0e-10
+    scale: maximum_one_sided_complex_magnitude
+    allowed_action: bounded_projection_to_real
+  inverse:
+    implementation: rustfft_6_4_1_inverse
+    exponent_sign: positive
+    normalization: one_over_n
+    imaginary_residual:
+      absolute_limit: 1.0e-12
+      relative_limit: 1.0e-10
+      scale: maximum_absolute_real_inverse_sample
+  time_axis:
+    sample_interval: one_over_n_times_frequency_step
+    indices: half_open_zero_to_n_minus_one
+    fftshift: prohibited
+    time_shift: prohibited
+    delay_removal: prohibited
+    alignment: prohibited
+  truncation: none_full_period_retained
+  caller_overrides: prohibited
+implementation:
+  crate: crates/sipi-ieee-com-sparam
+  rust_path: crates/sipi-ieee-com-sparam/src/s21_to_raw_periodic_v1.rs
+  api: inverse_selected_p3c_uniform_spectrum_v1
+  output_type: SelectedP3cRawPeriodicResponseV1
+  package_license: BSD-3-Clause
+  source_spdx: BSD-3-Clause
+  notice_path: crates/sipi-ieee-com-sparam/NOTICE-IEEE-802-COM.md
+  source_map_path: crates/sipi-ieee-com-sparam/SOURCE-MAP.md
+gates:
+  raw_periodic_inverse_transform_implemented: true
+  s21_to_impulse_selected_transform_subset_implemented: true
+  causal_impulse_admitted: false
+  causality_enforcement_implemented: false
+  delay_extraction_implemented: false
+  passivity_repair_implemented: false
+  truncation_implemented: false
+  convolution_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  p4b_ami_runtime_invoked: false
+  p5_reference_evaluated: false
+  release_ledger_promoted: false
+blockers:
+  - external_selected_raw_periodic_response_observation_missing
+  - causality_delay_passivity_policy_not_implemented
+  - candidate_convolution_and_waveform_route_not_implemented
+  - external_reference_binding_not_implemented
+  - accepted_receiver_stage_missing
+  - p5_authoritative_r480_reference_missing
+  - release_license_notice_and_archive_admission_pending
+non_claims:
+  - Raw periodic response is not a causal impulse, causal FIR, or physical channel causality claim.
+  - The bounded endpoint projection is a fixed product admission gate, not endpoint repair, time shift, delay removal, or alignment.
+  - This is not ADS or COM parity, an external selected-input observation, receiver, AMI, IBIS, DLL, P5 reference, candidate metric, or release acceptance.
+  - No causality helper, MATLAB, Agent-COM, PyBERT, PyAMI, ADS, fixture, or oracle output is imported or executed.

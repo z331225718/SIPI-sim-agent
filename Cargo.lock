@@ -865,6 +865,7 @@ dependencies = [
 name = "sipi-ieee-com-sparam"
 version = "0.1.0"
 dependencies = [
+ "rustfft",
  "sipi-channel",
  "sipi-types",
 ]
