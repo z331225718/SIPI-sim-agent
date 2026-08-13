@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: bd1ce8c8b83ccbc59c21d3c4de3ced312d362b46b27c215854e3f23c72bbc3e8
+  tracked_paths_sha256: b9f12ee10a2f2b09d67dadd9723b447756fce5552ecdefb12bf29559aeda2dce
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1614,6 +1614,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-13-p3c-selected-s4p-uniform-spectrum-observation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-14-p3c-ieee-bsd-raw-periodic-direct-port.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
