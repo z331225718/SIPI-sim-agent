@@ -4,6 +4,7 @@ members = [
   "crates/sipi-channel",
   "crates/sipi-compare",
   "crates/sipi-ibis",
+  "crates/sipi-ieee-com-sparam",
   "crates/sipi-artifacts",
   "crates/sipi-ami-text",
   "crates/sipi-ami-host",

@@ -862,6 +862,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "sipi-ieee-com-sparam"
+version = "0.1.0"
+dependencies = [
+ "sipi-channel",
+ "sipi-types",
+]
+
+[[package]]
 name = "sipi-layout"
 version = "0.1.0"
 dependencies = [

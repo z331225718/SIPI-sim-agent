@@ -1,0 +1,68 @@
+schema: sipi.p3c-ieee-bsd-interp-direct-port.v1
+status: selected_ieee_bsd3_interpolation_leaf_implemented_impulse_route_not_admitted
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-13-selected-ieee-bsd-uniform-grid-interpolation-policy
+  direct_port_implementation_started: true
+  product_policy_selected: true
+  release_admitted: false
+source:
+  canonical_origin: https://opensource.ieee.org/802-com/com_code.git
+  commit: d4ecd4597a98782887933b5df4c4796da2474195
+  path: src/interp_Sparam.m
+  git_blob: 85b52ff25dbb5bb91f032a03d7cdd311e33af432
+  content_sha256: 259762276a3711eb6e9186993ae1cf38b9cb60d4819f263dc7770788a7f90e27
+  license: BSD-3-Clause
+  excluded_source_objects:
+    - ieee-802-com-s21-to-impulse-dc-bsd3-v1
+    - ieee-802-com-causality-delay-bsd3-v1
+policy:
+  input_type: sipi_channel::SelectedP3cStaticDifferentialTransferV1
+  sample_interval_seconds: 9.765625e-13
+  nyquist_hertz: 512000000000.0
+  output_grid: source_df_then_positive_matlab_round_to_nyquist
+  max_output_bins: 1048576
+  magnitude_branch: linear_trend_to_DC_log_trend_to_inf
+  phase_branch: trend_and_shift_to_DC
+  phase_unwrap: enabled
+  anti_causal_mean_phase_slope: reject
+  debug_bypass: prohibited
+  caller_overrides: prohibited
+implementation:
+  crate: crates/sipi-ieee-com-sparam
+  rust_path: crates/sipi-ieee-com-sparam/src/interp_sparam_v1.rs
+  api: interpolate_selected_p3c_hdiff_v1
+  package_license: BSD-3-Clause
+  source_spdx: BSD-3-Clause
+  notice_path: crates/sipi-ieee-com-sparam/NOTICE-IEEE-802-COM.md
+  source_map_path: crates/sipi-ieee-com-sparam/SOURCE-MAP.md
+  selected_interpolation_core_implemented: true
+gates:
+  uniform_spectrum_is_not_causalized: true
+  s21_to_impulse_direct_port_implemented: false
+  ifft_implemented: false
+  causality_enforcement_implemented: false
+  delay_extraction_implemented: false
+  passivity_repair_implemented: false
+  truncation_implemented: false
+  convolution_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  p4b_ami_runtime_invoked: false
+  release_ledger_promoted: false
+blockers:
+  - raw_impulse_ifft_policy_not_implemented
+  - causality_and_delay_policy_not_implemented
+  - candidate_convolution_and_waveform_route_not_implemented
+  - external_reference_binding_not_implemented
+  - accepted_receiver_stage_missing
+  - p5_authoritative_r480_reference_missing
+  - release_license_notice_and_archive_admission_pending
+non_claims:
+  - Uniform-grid interpolation is not causality enforcement or a causal FIR admission.
+  - Out-of-band values are fixed product IEEE-port semantics, not ADS equivalence or measured data.
+  - This is not a general S-parameter parser, interpolation API, COM solver, or caller-configurable policy.
+  - No MATLAB, Agent-COM, PyBERT, PyAMI, ADS, AMI, DLL, fixture, or oracle output is imported or executed.
+  - No candidate waveform, receiver, metric acceptance, P5 reference, source-drift repair, or release capability is accepted.

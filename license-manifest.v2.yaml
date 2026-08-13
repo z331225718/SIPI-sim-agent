@@ -2,7 +2,7 @@ schema: sipi.license-manifest.v2
 status: provisional
 release_boundary:
   path: product-boundary.v1.yaml
-  sha256: 8c10945cc02a81e5f0613053b39a584bb57a06d104dbe43c0fb8fc9048f32e59
+  sha256: acd5d05bf0deb5116ca003bca4e9ce086e24bcbe80e5a7b3cece678fa019748d
   status: provisional
 legacy_evidence:
   - id: legacy-license-manifest-v1
@@ -106,6 +106,18 @@ release_inputs:
       sbom_component_id: pkg:cargo/faer
       status: pending
       owner_action: {owner: sipi-license-owner, action: review direct faer rational-identification dependency and NOTICE, approval_ref: null}
+    - id: ieee-802-com-interp-sparam-direct-port
+      component: ieee-802-com-interp-sparam
+      role: runtime
+      source: https://opensource.ieee.org/802-com/com_code/-/blob/d4ecd4597a98782887933b5df4c4796da2474195/src/interp_Sparam.m
+      requested_version: d4ecd4597a98782887933b5df4c4796da2474195
+      resolved_artifact: {version: null, sha256: null}
+      declared_spdx: BSD-3-Clause
+      license_evidence_ref: docs/baselines/p3c-agent-com-sparam-ieee-bsd-lineage-observation.v1.yaml
+      notice_requirement: required
+      sbom_component_id: pkg:generic/ieee-802-com-interp-sparam@d4ecd4597a98782887933b5df4c4796da2474195
+      status: pending
+      owner_action: {owner: sipi-license-owner, action: review selected BSD direct-port distribution and NOTICE, approval_ref: null}
     - id: candidate-num-complex
       component: num-complex
       role: runtime
@@ -183,6 +195,10 @@ release_inputs:
       status: pending
       source_evidence_ref: docs/baselines/p3c-fixed-pole-rational-identification-core.v1.yaml
       output_notice_id: NOTICE/faer
+    - dependency: ieee-802-com-interp-sparam-direct-port
+      status: pending
+      source_evidence_ref: docs/baselines/p3c-agent-com-sparam-ieee-bsd-lineage-observation.v1.yaml
+      output_notice_id: NOTICE/ieee-802-com-interp-sparam
     - dependency: candidate-num-complex
       status: pending
       source_evidence_ref: docs/baselines/tran-provenance-preflight.v1.yaml

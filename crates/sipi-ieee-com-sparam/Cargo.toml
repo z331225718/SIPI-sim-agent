@@ -1,0 +1,15 @@
+[package]
+name = "sipi-ieee-com-sparam"
+version.workspace = true
+edition.workspace = true
+license = "BSD-3-Clause"
+rust-version.workspace = true
+publish = false
+description = "Selected BSD-3-Clause IEEE 802-COM S-parameter interpolation port."
+
+[dependencies]
+sipi-channel = { path = "../sipi-channel" }
+sipi-types = { path = "../sipi-types" }
+
+[lints]
+workspace = true

@@ -609,6 +609,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-agent-com-sparam-source-authorization-preflight-spec-v1]
+  - id: p3c-ieee-bsd-interp-direct-port-spec-v1
+    kind: independent_spec
+    content_sha256: 24339c739ff1664498f39e5e3c74d11c658317f2af57d2fa65d0b5fb0c406459
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-ieee-bsd-interp-direct-port.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p3c-agent-com-sparam-ieee-bsd-lineage-observation-spec-v1]
   - id: ieee-802-com-interp-sparam-bsd3-v1
     kind: bsd3_source
     content_sha256: 259762276a3711eb6e9186993ae1cf38b9cb60d4819f263dc7770788a7f90e27
@@ -1454,6 +1462,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-agent-com-sparam-ieee-bsd-lineage-observation-spec-v1, ieee-802-com-interp-sparam-bsd3-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1, ieee-802-com-causality-delay-bsd3-v1]
+  - id: p3c-ieee-bsd-interp-direct-port-v1
+    paths: [Cargo.toml, Cargo.lock, crates/sipi-ieee-com-sparam/**, docs/baselines/p3c-ieee-bsd-interp-direct-port.v1.yaml, docs/clean-room/specs/p3c-ieee-bsd-interp-direct-port.v1.md, tools/verify_p3c_ieee_bsd_interp_direct_port.py, tools/test_verify_p3c_ieee_bsd_interp_direct_port.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3c-ieee-bsd-interp-direct-port-spec-v1, ieee-802-com-interp-sparam-bsd3-v1]
+      implementer: [p3c-ieee-bsd-interp-direct-port-spec-v1, ieee-802-com-interp-sparam-bsd3-v1, p1-types-foundation-spec-v1]
+      comparator: []
+      auditor: [p3c-ieee-bsd-interp-direct-port-spec-v1, ieee-802-com-interp-sparam-bsd3-v1]
   - id: p3c-selected-four-port-lexical-amendment-v1
     paths: [crates/sipi-touchstone/src/selected_four_port_v1.rs, crates/sipi-p3c/src/lib.rs, crates/sipi-p3c/tests/p3c_sealed_s4p_external_runner.rs, docs/baselines/p3c-selected-four-port-lexical-amendment.v1.yaml, docs/clean-room/specs/p3c-selected-four-port-lexical-amendment.v1.md, tools/verify_p3c_selected_four_port_lexical_amendment.py, tools/test_verify_p3c_selected_four_port_lexical_amendment.py]
     state: planned
