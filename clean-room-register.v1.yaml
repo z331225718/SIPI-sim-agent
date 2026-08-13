@@ -587,7 +587,7 @@ materials:
     derived_from: [p3c-sealed-selected-s4p-static-admission-spec-v1]
   - id: p3c-selected-s4p-impulse-causality-diagnostic-evidence-spec-v1
     kind: independent_spec
-    content_sha256: 0f618e5a22944401a6d31ea17aee076cefcff224a67f96353066df53881a1e5d
+    content_sha256: 7e9faf4f4eaec09dd6d8924ae8af2e0b21efb1986f24d22a27886cd3dcaddc21
     provenance:
       source_ref: docs/clean-room/specs/p3c-selected-s4p-impulse-causality-diagnostic-evidence.v1.md
       license_evidence: project-authored-MIT-boundary-pending-promotion

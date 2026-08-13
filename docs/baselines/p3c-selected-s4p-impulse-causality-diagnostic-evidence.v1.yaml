@@ -14,6 +14,15 @@ external_observation:
     byte_length: 1834156
     sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
   clean_archive_commit: bc331c889213d7f287c4f5d833b129af5e95dfa6
+  product_source_inventory:
+    Cargo.lock: d1248e7537ad15263b84b41f172ed73090faf6da7e5fbf3c7afac60e1e3e4583
+    crates/sipi-artifacts/src/lib.rs: 85b475ec865779dbe3e21b54759ca9075b8a4516714d7192ba4b214075861997
+    crates/sipi-channel/src/p3c_fixed_four_port_bench_v1.rs: 248bf24c494d9c956a96e2781f35f546d5de9f70f6157457da7a54aeb60baa70
+    crates/sipi-p3c/Cargo.toml: ef5e9a8951ffccbbd83472dbda8b4fad0a5ca3714bb7975755c0f85d59c0d8d8
+    crates/sipi-p3c/src/lib.rs: aaf4b40fcc17d4ff2ae4ab512ecf7d68416dea6aaa8c4254521ae1ab57813b36
+    crates/sipi-p3c/tests/p3c_sealed_s4p_external_impulse_diagnostic_runner.rs: 04fe5a98b22651328c5fd4ff9233a2a5100e65f7148a88aa5320dec6aae7016d
+    crates/sipi-touchstone/src/selected_four_port_v1.rs: 53b11a0cf08b0505c190b244c47f13e22f7b2b3c1f6ea712b6aba533a8805f80
+  runner_source_sha256: 04fe5a98b22651328c5fd4ff9233a2a5100e65f7148a88aa5320dec6aae7016d
   fresh_custody_runs: 2
   manifest_sha256s:
     - 442c5c89eff11e2f6719b9a92d492f92febb91fb61f8e8286ed69d6b63591253
@@ -27,7 +36,7 @@ external_observation:
   cleanup_status: complete
 observed_interpretation:
   exact_grid_impulse_diagnostic_observed: true
-  finite_band_raw_quadrature_has_material_negative_time_content: true
+  finite_band_raw_quadrature_negative_time_content_observed: true
   threshold_selected: false
   causal_impulse_admitted: false
   sampled_four_port_passivity_admitted: false

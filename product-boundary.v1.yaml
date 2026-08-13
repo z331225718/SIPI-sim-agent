@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: a9d4272db5955c7608a2a57975a4ff40b8274348660d1cdf324d034f6f1161b5
+  tracked_paths_sha256: be1828f4b18092a865c5a905d8bf2946e1a4adac51ed216d30d60d04032f90be
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1560,6 +1560,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-12-p4b-dual-ami-pe-loader-declarations.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-13-p3c-selected-s4p-raw-impulse-diagnostic.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

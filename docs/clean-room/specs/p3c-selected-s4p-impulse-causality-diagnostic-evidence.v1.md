@@ -9,7 +9,7 @@ temporary artifact roots, detailed report, and absolute paths remain external.
 
 ## Result Boundary
 
-The observation has material negative-time energy and peak content. It is not
+The observation has recorded negative-time energy and peak content. It is not
 a causality finding about the physical channel. It means only that this
 finite-band, no-repair quadrature cannot be promoted to a product causal
 impulse policy without an explicit product decision.
