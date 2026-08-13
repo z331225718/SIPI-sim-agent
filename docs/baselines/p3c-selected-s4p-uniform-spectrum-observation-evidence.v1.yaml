@@ -1,0 +1,70 @@
+schema: sipi.p3c-selected-s4p-uniform-spectrum-observation-evidence.v1
+status: external_selected_s4p_uniform_spectrum_observed_raw_transform_policy_pending
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-13-selected-ieee-bsd-uniform-grid-interpolation-policy
+  scope: exact_selected_s4p_static_admission_then_frozen_interpolation_observation_only
+external_observation:
+  schema: sipi.p3c.sealed-selected-s4p-uniform-spectrum-observation.v1
+  status: observed
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 2458
+  report_content_sha256: 7f615eacd92179be172fbf1e8f585742a25b9b8f2904517fea24a9d66372e47b
+  clean_archive_commit: 5cca95c512db68b71cfaa3c3186d83e7d3d7351f
+  selected_source:
+    byte_length: 1834156
+    sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  source_identity_checks: before_stage_after_equal
+  fresh_custody_runs: 2
+  manifest_sha256s:
+    - 87db36b7c02de92168c3f7059c4a649572f2faabf8efa521662decbdf2bcead4
+    - 29ca18553a0cbc15b4ad2a268eaef8a0e0add7f5dc8cd9cf6be2eaceac50219f
+  record_count: 2002
+  outcome:
+    interpolation_status: admitted
+    bin_count: 25601
+    frequency_step_bits: 417312d000000000
+    dc_real_bits: 3fddf6d654b71fcc
+    dc_imaginary_bits: '0000000000000000'
+    nyquist_real_bits: 000efe1add365007
+    nyquist_imaginary_bits: 00059671589f8d45
+    spectrum_sha256: 07e0ee6371326063f8b7747f61b92f2433bf6263a51be8f74f4e5adef83939e8
+  cleanup_status: complete
+  runner:
+    source_sha256: e28cbd3c8d2f64567a87171d6be66a77ba457bf27dd3bd53eaeff7baeb732f2d
+    report_sha256: bc8b0c3a858e7b526cd95e975536447501612fed5af49d8d1c817935f9b36a7d
+admission:
+  external_static_custody_observed: true
+  selected_external_s4p_static_admitted: true
+  selected_interpolation_invoked: true
+  selected_interpolation_admitted: true
+  selected_external_uniform_spectrum_observed: true
+  s21_to_impulse_direct_port_implemented: false
+  ifft_implemented: false
+  causality_enforcement_implemented: false
+  delay_extraction_implemented: false
+  passivity_repair_implemented: false
+  truncation_implemented: false
+  convolution_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  p5_reference_evaluated: false
+  release_ledger_promoted: false
+blockers:
+  - raw_impulse_ifft_policy_not_implemented
+  - causality_delay_passivity_policy_not_implemented
+  - candidate_convolution_and_waveform_route_not_implemented
+  - external_reference_binding_not_implemented
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+  - p5_authoritative_r480_reference_missing
+  - release_license_notice_and_archive_admission_pending
+non_claims:
+  - Not an IFFT, raw periodic response, causal impulse, delay/causality/passivity decision, truncation, convolution, or waveform.
+  - Not ADS, COM, receiver, AMI, IBIS, DLL, P5 reference, candidate metric, or release acceptance.
+  - The historical raw exact-grid impulse diagnostic remains historical evidence with its source-drift and non-admission intact.
