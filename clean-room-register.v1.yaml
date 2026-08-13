@@ -585,6 +585,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-sealed-selected-s4p-static-admission-spec-v1]
+  - id: p3c-selected-s4p-impulse-causality-diagnostic-evidence-spec-v1
+    kind: independent_spec
+    content_sha256: 0f618e5a22944401a6d31ea17aee076cefcff224a67f96353066df53881a1e5d
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-selected-s4p-impulse-causality-diagnostic-evidence.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-selected-s4p-external-static-custody-observation-spec-v1]
   - id: p3c-agent-com-sparam-source-authorization-preflight-spec-v1
     kind: independent_spec
     content_sha256: de15dfd2341f7a04dbbab5508187d27ab87de425056d6b0ff33c8d8e75b4883b
@@ -1419,6 +1427,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: []
+  - id: p3c-selected-s4p-impulse-causality-diagnostic-evidence-v1
+    paths: [docs/baselines/p3c-selected-s4p-impulse-causality-diagnostic-evidence.v1.yaml, docs/clean-room/specs/p3c-selected-s4p-impulse-causality-diagnostic-evidence.v1.md, tools/verify_p3c_selected_s4p_impulse_causality_diagnostic_evidence.py, tools/test_verify_p3c_selected_s4p_impulse_causality_diagnostic_evidence.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-selected-s4p-impulse-causality-diagnostic-evidence-spec-v1]
+      spec_author: [p3c-selected-s4p-impulse-causality-diagnostic-evidence-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-selected-s4p-impulse-causality-diagnostic-evidence-spec-v1]
   - id: p3c-agent-com-sparam-source-authorization-preflight-v1
     paths: [docs/baselines/p3c-agent-com-sparam-source-authorization-preflight.v1.yaml, docs/clean-room/specs/p3c-agent-com-sparam-source-authorization-preflight.v1.md, tools/verify_p3c_agent_com_sparam_source_authorization_preflight.py, tools/test_verify_p3c_agent_com_sparam_source_authorization_preflight.py]
     state: planned
