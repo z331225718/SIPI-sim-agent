@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 8355d76031209021378ad7b405abb9181d52c2d467a5f5bdfb65b598c659b481
+  tracked_paths_sha256: cf8527ccf08ec20869088ab9833bedf1c6b6e961f0897270a947440bd8e0e967
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -510,6 +510,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-p3c/tests/p3c_sealed_s4p_external_runner.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/tests/p3c_sealed_s4p_external_uniform_spectrum_runner.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -2568,6 +2574,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-selected-s4p-impulse-causality-diagnostic-evidence.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-selected-s4p-uniform-spectrum-observation.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7308,6 +7320,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/observe_p3c_sealed_selected_s4p_real_constrained_fit.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/observe_p3c_sealed_selected_s4p_uniform_spectrum.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

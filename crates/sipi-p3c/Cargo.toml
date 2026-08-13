@@ -13,5 +13,8 @@ sipi-artifacts = { path = "../sipi-artifacts" }
 sipi-channel = { path = "../sipi-channel" }
 sipi-touchstone = { path = "../sipi-touchstone" }
 
+[dev-dependencies]
+sipi-ieee-com-sparam = { path = "../sipi-ieee-com-sparam" }
+
 [lints]
 workspace = true
