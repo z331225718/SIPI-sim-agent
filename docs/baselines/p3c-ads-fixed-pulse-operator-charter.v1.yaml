@@ -1,0 +1,53 @@
+schema: sipi.p3c-ads-fixed-pulse-operator-charter.v1
+status: specified_external_only_owner_confirmation_pending
+authority:
+  actor: product
+  scope: one_fixed_external_operator_observation_not_a_product_policy
+  owner_confirmation_required_before_evidence: true
+predecessor:
+  causality_transfer_delta:
+    path: docs/baselines/p3c-selected-causality-transfer-delta-observation.v1.yaml
+    result: raw_to_bounded_delta_observed_without_cause_identification
+topology:
+  exact_components: [V_Source:SOURCE_P, V_Source:SOURCE_M, R:TX_PLUS_SERIES, R:TX_MINUS_SERIES, SnP:CHANNEL, R:RX_PLUS_LOAD, R:RX_MINUS_LOAD, Tran:TRAN]
+  forbidden_tokens: [PRBSsrc, AMI, IBIS, .dll, GetWave, ctspcie]
+  source_resistance_ohms: 50.0
+  receiver_load_resistance_ohms: 50.0
+  port_order: [tx_plus, rx_plus, tx_minus, rx_minus]
+pulse:
+  open_circuit_differential_volts: 1.0
+  common_mode_volts: 0.0
+  edge_seconds: 1.0e-16
+  width_ui: 1
+  start: 511_ui_plus_half_dt
+  product_sample_indices: [16353, 16385]
+timebase:
+  ui_seconds: 3.125e-11
+  samples_per_ui: 32
+  sample_interval_seconds: 9.765625e-13
+  half_open_samples: 49056
+  ads_inclusive_samples: 49057
+controller:
+  imp_max_freq_hz: 40000000000.0
+  imp_delta_freq_hz: 39062500.0
+  imp_mode: 1
+  passivity_enforced: true
+product_path:
+  selected_s4p_sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  stages: [sealed_s4p_v2_admission, ieee_uniform_interpolation, bounded_causality_32_iterations, truncation_1e-3, direct_full_linear_convolution]
+  transforms_prohibited: [alignment, resampling, gain_fit, dc_removal, polarity_flip, fft, circular_convolution]
+admission:
+  external_ads_fixed_pulse_operator_observed: false
+  product_fixed_pulse_operator_invoked: false
+  strict_sampled_operator_delta_evaluated: false
+  prbssrc_removed_from_diagnostic_topology: false
+  causality_cause_identified: false
+  candidate_waveform_accepted: false
+  release_ledger_promoted: false
+blockers:
+  - owner_confirmation_for_external_fixed_pulse_observation_missing
+  - two_fresh_clean_archive_observations_missing
+  - fixed_pulse_operator_result_does_not_identify_ads_internal_semantics
+non_claims:
+  - This does not determine an ADS output-strobe, convolution, causality, or passivity cause.
+  - This does not modify product source, causality, interpolation, truncation, candidate, metric, receiver, P4B, P5, or release policy.
