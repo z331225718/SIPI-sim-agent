@@ -1,0 +1,43 @@
+schema: sipi.p3c.ads-pre-final-spectrum-comparison-charter.v1
+status: specified_owner_authorized_payload_layout_observation_pending
+authority:
+  actor: user
+  decision_ref: user-authorized-spectrum-payload-comparison-2026-08-14
+  scope: one_fixed_external_ads_dataset_pre_to_final_strict_axis_comparison_only
+predecessor:
+  path: docs/baselines/p3c-ads-passivity-action-surface-observation-evidence.v1.yaml
+  result: documented_pre_correction_surface_observed_correction_magnitude_unevaluated
+external_help_allowlist:
+  basename: Transient_Simulation_Parameters.html
+  byte_length: 150522
+  sha256: 45372e9c7c79492bf6023a4e860f05a20caf0ef5e2a083407c119909afc187bf
+  documented_fields: [ImpSaveSpectrum, CMP1_FFT_IMP, CMP1_S0]
+fixed_input:
+  netlist_delta_from_p3c_04aw: none
+  matrix_dimension: 4
+  members_per_surface: 16
+  surface_kinds: [CMP1_S0, CMP1_FFT_IMP]
+strict_grid_gate:
+  member_axes_must_match_within_surface: true
+  pre_to_final_axes_must_match_exactly: true
+  interpolation_or_resampling: prohibited
+  axis_mismatch_outcome: pre_final_axis_not_identical
+freshness:
+  clean_archive_required: true
+  fresh_runs: 2
+  source_before_copy_after_identity_required: true
+admission:
+  saved_pre_to_final_spectrum_comparison_evaluated: false
+  full_matrix_delta_observed: false
+  selected_hdiff_delta_observed: false
+  passivity_correction_surface_delta_evaluated: false
+  passivity_algorithm_or_repair_implemented: false
+  waveform_mismatch_cause_identified: false
+  candidate_waveform_accepted: false
+  release_ledger_promoted: false
+blockers:
+  - two_fresh_strict_axis_observations_missing
+  - pre_to_final_spectra_not_yet_proven_comparable
+non_claims:
+  - CMP1_FFT_IMP minus CMP1_S0 is not automatically a pure passivity-correction magnitude.
+  - This does not alter product passivity, causality, candidate, receiver, P4B, P5, or release policy.
