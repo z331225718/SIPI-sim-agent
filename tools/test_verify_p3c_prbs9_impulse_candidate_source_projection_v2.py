@@ -31,11 +31,11 @@ def rejected(mutator) -> None:
 
 
 def main() -> int:
-    assert GATE.verify_document(document())["owner_confirmation_pending"] is True
+    assert GATE.verify_document(document())["owner_confirmation_pending"] is False
     rejected(lambda value: value["policy_candidate"]["ui_boundary_for_global_ui_greater_than_zero"].__setitem__("phase_0", "current_symbol_level"))
     rejected(lambda value: value["policy_candidate"].__setitem__("source_amplitude_volts_differential", [-0.5, 0.5]))
-    rejected(lambda value: value["owner_confirmation"].__setitem__("phase_0_prior_phase_1_current", True))
-    rejected(lambda value: value["admission"].__setitem__("selected_source_projection_v2_implemented", True))
+    rejected(lambda value: value["owner_confirmation"].__setitem__("phase_0_prior_phase_1_current", False))
+    rejected(lambda value: value["admission"].__setitem__("selected_source_projection_v2_implemented", False))
     print("p3c_prbs9_impulse_candidate_source_projection_v2_mutation_tests_passed")
     return 0
 

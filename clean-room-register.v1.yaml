@@ -729,6 +729,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3c-ieee-bsd-truncation-direct-port-spec-v1, p1-types-foundation-spec-v1, p1-contracts-foundation-spec-v1, p3b-link-stage-contract-spec-v1, p3b-causal-fir-convolution-spec-v1]
+  - id: p3c-prbs9-impulse-candidate-source-projection-spec-v2
+    kind: independent_spec
+    content_sha256: d90aa81a60a6c85aa0836fbed90e575c54840f85598b3c536b7caabb48ff1745
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-prbs9-impulse-candidate-source-projection.v2.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p3c-prbs9-impulse-candidate-bridge-spec-v1]
   - id: p3c-selected-s4p-candidate-observation-spec-v1
     kind: independent_spec
     content_sha256: cba339135b830e38ddb3eb968ba454040428509eccb32a1c22a5f59a45a043c2
@@ -2302,12 +2310,12 @@ scopes:
       comparator: []
       auditor: [p3c-external-ads-prbs9-reference-spec-v1]
   - id: p3c-prbs9-impulse-candidate-source-projection-v2
-    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-prbs9-impulse-candidate-source-projection.v2.yaml, docs/clean-room/specs/p3c-prbs9-impulse-candidate-source-projection.v2.md, tools/verify_p3c_prbs9_impulse_candidate_source_projection_v2.py, tools/test_verify_p3c_prbs9_impulse_candidate_source_projection_v2.py]
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, crates/sipi-p3c/src/lib.rs, crates/sipi-p3c/src/prbs9_impulse_candidate_v2.rs, docs/baselines/p3c-prbs9-impulse-candidate-source-projection.v2.yaml, docs/clean-room/specs/p3c-prbs9-impulse-candidate-source-projection.v2.md, tools/verify_p3c_prbs9_impulse_candidate_source_projection_v2.py, tools/test_verify_p3c_prbs9_impulse_candidate_source_projection_v2.py]
     state: planned
     role_material_allowlists:
-      observer: [p3c-external-ads-prbs9-reference-spec-v1]
-      spec_author: [p3c-external-ads-prbs9-reference-spec-v1]
-      implementer: []
+      observer: []
+      spec_author: [p3c-prbs9-impulse-candidate-source-projection-spec-v2]
+      implementer: [p3c-prbs9-impulse-candidate-source-projection-spec-v2, p3c-prbs9-impulse-candidate-bridge-spec-v1, p3c-ieee-bsd-truncation-direct-port-spec-v1, p1-types-foundation-spec-v1, p1-contracts-foundation-spec-v1, p3b-link-stage-contract-spec-v1, p3b-causal-fir-convolution-spec-v1]
       comparator: []
-      auditor: [p3c-external-ads-prbs9-reference-spec-v1]
+      auditor: [p3c-prbs9-impulse-candidate-source-projection-spec-v2, p3c-prbs9-impulse-candidate-bridge-spec-v1, p3c-ieee-bsd-truncation-direct-port-spec-v1, p1-types-foundation-spec-v1, p1-contracts-foundation-spec-v1, p3b-link-stage-contract-spec-v1, p3b-causal-fir-convolution-spec-v1]
 attestations: []

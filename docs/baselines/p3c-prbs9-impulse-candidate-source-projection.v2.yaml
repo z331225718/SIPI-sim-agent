@@ -1,8 +1,8 @@
 schema: sipi.p3c-prbs9-impulse-candidate-source-projection.v2
-status: specified_pending_owner_finite_edge_boundary_projection_confirmation
+status: owner_confirmed_v2_source_projection_implemented_external_observation_pending
 authority:
   actor: user
-  decision_ref: user-continuation-2026-08-14
+  decision_ref: user-confirmed-2026-08-14-p3c-finite-edge-boundary-projection-v2
   scope: selected_candidate_source_projection_v2_only_not_metric_or_release_policy
 supersedes:
   path: docs/baselines/p3c-prbs9-impulse-candidate-bridge.v1.yaml
@@ -36,13 +36,13 @@ implementation_boundary:
   reuse: [selected_truncated_response_kernel, direct_full_linear_convolution, full_tail_59926, prefix_49056, third_period_window_32704_49056]
   unchanged_public_contracts: [selected_highloss_waveform_only_v3_metric, selected_highloss_waveform_only_v3_cli, one_percent_waveform_limit]
 owner_confirmation:
-  phase_0_prior_phase_1_current: false
-  sample_zero_first_symbol_current: false
-  product_amplitude_remains_plus_or_minus_one_volt: false
-  v2_selected_policy_v1_historical_only: false
+  phase_0_prior_phase_1_current: true
+  sample_zero_first_symbol_current: true
+  product_amplitude_remains_plus_or_minus_one_volt: true
+  v2_selected_policy_v1_historical_only: true
 admission:
-  finite_edge_boundary_projection_v2_specified: false
-  selected_source_projection_v2_implemented: false
+  finite_edge_boundary_projection_v2_specified: true
+  selected_source_projection_v2_implemented: true
   product_projection_v2_source_strobe_match_observed: false
   current_v2_candidate_waveform_evaluated: false
   selected_highloss_waveform_only_profile_accepted: false
@@ -52,11 +52,6 @@ admission:
   acceptance_ready: false
   release_ledger_promoted: false
 blockers:
-  - owner_finite_edge_boundary_phase_rule_confirmation_missing
-  - owner_sample_zero_semantics_confirmation_missing
-  - owner_product_amplitude_confirmation_missing
-  - owner_v2_current_policy_and_v1_historical_confirmation_missing
-  - v2_source_projection_not_implemented
   - v2_source_only_strobe_observation_missing
   - v2_candidate_waveform_observation_missing
   - accepted_receiver_stage_missing
