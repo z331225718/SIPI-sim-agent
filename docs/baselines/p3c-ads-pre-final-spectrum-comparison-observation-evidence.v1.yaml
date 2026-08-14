@@ -1,0 +1,67 @@
+schema: sipi.p3c.ads-pre-final-spectrum-comparison-observation-evidence.v1
+status: external_ads_pre_to_final_spectrum_axis_mismatch_observed
+authority:
+  actor: user
+  decision_ref: user-authorized-spectrum-payload-comparison-2026-08-14
+  scope: one_fixed_external_ads_dataset_pre_to_final_strict_axis_comparison_only
+predecessor:
+  path: docs/baselines/p3c-ads-passivity-action-surface-observation-evidence.v1.yaml
+  result: documented_pre_correction_surface_observed_correction_magnitude_unevaluated
+external_observation:
+  schema: sipi.p3c.ads-pre-final-spectrum-comparison-observation.v1
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 1714
+  report_content_sha256: 48ceab1617d8fec8b94a0da5d6f1e7382eeede50f5086aee53d5bd4e01cc66b3
+  clean_archive_commit: b52b2b114eb5befbfaf6eac41455ca9796ae7685
+  clean_archive_tree: a40f0d3126f535f5a9ac5bbe2db226751581aead
+  source_byte_length: 1834156
+  source_sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  ads_help_byte_length: 150522
+  ads_help_sha256: 45372e9c7c79492bf6023a4e860f05a20caf0ef5e2a083407c119909afc187bf
+  runner_source_sha256: b4a9b8926038ca8317212936b37986e21354c6933840eb46e575fe9d62e6cf8c
+  observer_source_sha256: 64603699141353cd44e249104b96ea6eefc9cf478a277910af5eb06d3b88fed3
+  predecessor_runner_sha256: dd5c60b8364d2b9ad6f17dafdfd1c55cc4be4dcae11aa495a024337f5b4e723f
+  fresh_runs: 2
+  ads_netlist_byte_length: 1760
+  ads_netlist_sha256: 6f720d8375726b1d7b0c42fbc7579372c1fea0ca5929c21d9823ccae4c2838e8
+  pre_final_axis_comparison:
+    matrix_dimension: 4
+    members_per_surface: 16
+    outcome: pre_final_axis_not_identical
+    s0:
+      point_count: 1024
+      first_frequency_bits: '0000000000000000'
+      last_frequency_bits: '42229bb708380000'
+      first_step_bits: '4182a05f20000000'
+      axis_sha256: 113345df1bc9be1d2848904f66bfacdab743b6eed925c80936bab92c8e467b04
+    fft_imp:
+      point_count: 4096
+      first_frequency_bits: '0000000000000000'
+      last_frequency_bits: '42229f351a0e0000'
+      first_step_bits: '4162a05f20000000'
+      axis_sha256: c89382203cdebf38fbcf18a98025138e4be6b0dab9acc3889becca55cf0f9705
+  cleanup_status: complete
+independent_audit:
+  reviewer: Orca_reused_OpenCode_terminal
+  terminal: term_2de7cb74-b803-4e20-bb5b-4803777c24f8
+  status: pending_read_only_audit
+admission:
+  saved_pre_to_final_spectrum_comparison_evaluated: true
+  strict_pre_to_final_axis_identity_evaluated: true
+  full_matrix_delta_observed: false
+  selected_hdiff_delta_observed: false
+  passivity_correction_surface_delta_evaluated: false
+  passivity_algorithm_or_repair_implemented: false
+  waveform_mismatch_cause_identified: false
+  candidate_waveform_accepted: false
+  release_ledger_promoted: false
+blockers:
+  - pre_to_final_frequency_axes_not_identical
+  - complex_payload_delta_not_evaluable_without_transform_policy
+  - ads_passivity_algorithm_not_observed_or_ported
+  - waveform_mismatch_cause_not_identified
+non_claims:
+  - The exact member axes differ; no interpolation, resampling, nearest-bin matching, or complex payload delta was performed.
+  - This cannot be called a passivity-correction magnitude and does not identify a waveform mismatch cause.
+  - No product passivity, causality, candidate, receiver, P4B, P5, or release policy changed.

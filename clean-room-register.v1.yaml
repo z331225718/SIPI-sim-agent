@@ -2490,4 +2490,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-ads-pre-final-spectrum-comparison-spec-v1]
+  - id: p3c-ads-pre-final-spectrum-comparison-evidence-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-pre-final-spectrum-comparison-charter.v1.yaml, docs/baselines/p3c-ads-pre-final-spectrum-comparison-observation-evidence.v1.yaml, docs/clean-room/specs/p3c-ads-pre-final-spectrum-comparison.v1.md, tools/verify_p3c_ads_pre_final_spectrum_comparison_observation.py, tools/test_verify_p3c_ads_pre_final_spectrum_comparison_observation.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-ads-pre-final-spectrum-comparison-spec-v1]
+      spec_author: [p3c-ads-pre-final-spectrum-comparison-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-ads-pre-final-spectrum-comparison-spec-v1]
 attestations: []

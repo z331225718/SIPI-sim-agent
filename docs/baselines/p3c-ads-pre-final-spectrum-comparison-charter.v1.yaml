@@ -1,5 +1,5 @@
 schema: sipi.p3c.ads-pre-final-spectrum-comparison-charter.v1
-status: specified_owner_authorized_payload_layout_observation_pending
+status: specified_owner_authorized_payload_layout_observation_completed_axis_mismatch
 authority:
   actor: user
   decision_ref: user-authorized-spectrum-payload-comparison-2026-08-14
@@ -27,7 +27,7 @@ freshness:
   fresh_runs: 2
   source_before_copy_after_identity_required: true
 admission:
-  saved_pre_to_final_spectrum_comparison_evaluated: false
+  saved_pre_to_final_spectrum_comparison_evaluated: true
   full_matrix_delta_observed: false
   selected_hdiff_delta_observed: false
   passivity_correction_surface_delta_evaluated: false
@@ -36,8 +36,8 @@ admission:
   candidate_waveform_accepted: false
   release_ledger_promoted: false
 blockers:
-  - two_fresh_strict_axis_observations_missing
-  - pre_to_final_spectra_not_yet_proven_comparable
+  - pre_to_final_frequency_axes_not_identical
+  - complex_payload_delta_not_evaluable_without_transform_policy
 non_claims:
   - CMP1_FFT_IMP minus CMP1_S0 is not automatically a pure passivity-correction magnitude.
   - This does not alter product passivity, causality, candidate, receiver, P4B, P5, or release policy.
