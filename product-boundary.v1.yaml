@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: a7323dde5d9436dd3fe7153ff188abd1e575e770fa7112d1a5a4622204b8a868
+  tracked_paths_sha256: 65bc74052d2dde6fdde86ce0c4990814c24c2546bf566d15495a5ed0a1cad36a
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -2238,6 +2238,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-selected-oob-zero-extension-external-runner.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-selected-oob-zero-extension-sensitivity-observation-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8363,6 +8369,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_selected_oob_zero_extension_sensitivity_observation_evidence.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_selected_s4p_candidate_observation_evidence.py:
       rule: migration-tools
       class: migration_only
@@ -9054,6 +9066,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_selected_oob_zero_extension_diagnostic_core.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_selected_oob_zero_extension_sensitivity_observation_evidence.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
