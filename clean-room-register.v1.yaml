@@ -505,6 +505,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3c-prbs9-metric-core-spec-v2, p3c-prbs9-metric-artifact-cli-spec-v1]
+  - id: p3c-selected-highloss-residual-diagnostic-spec-v1
+    kind: independent_spec
+    content_sha256: 38ff53933df8de241e23c2c371bcd9efa8e2a2170d9f853f774700e7ff861be5
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-selected-highloss-residual-diagnostic.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, implementer, auditor]
+    derived_from: [p3c-selected-highloss-prbs9-waveform-only-spec-v3]
   - id: p3c-selected-four-port-static-bench-spec-v1
     kind: independent_spec
     content_sha256: 1cf3edb26a988899d8664c6615afe6bcbed776bc7c00183b5ed823b08ea18a9d
@@ -2187,4 +2195,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-external-ads-selected-highloss-waveform-only-observation-spec-v3, p3c-external-ads-selected-highloss-waveform-only-observation-evidence-spec-v3]
+  - id: p3c-selected-highloss-residual-diagnostic-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, crates/sipi-compare/src/selected_highloss_prbs9_waveform_only_v3.rs, crates/sipi-p3c/tests/p3c_external_ads_selected_highloss_residual_diagnostic_runner.rs, docs/baselines/p3c-selected-highloss-residual-diagnostic-core.v1.yaml, docs/clean-room/specs/p3c-selected-highloss-residual-diagnostic.v1.md, tools/verify_p3c_selected_highloss_residual_diagnostic_core.py, tools/test_verify_p3c_selected_highloss_residual_diagnostic_core.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-selected-highloss-residual-diagnostic-spec-v1]
+      spec_author: [p3c-selected-highloss-residual-diagnostic-spec-v1]
+      implementer: [p3c-selected-highloss-residual-diagnostic-spec-v1]
+      comparator: []
+      auditor: [p3c-selected-highloss-residual-diagnostic-spec-v1]
 attestations: []

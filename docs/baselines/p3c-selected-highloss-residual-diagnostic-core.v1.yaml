@@ -1,0 +1,55 @@
+schema: sipi.p3c-selected-highloss-residual-diagnostic-core.v1
+status: product_owned_selected_highloss_strict_index_residual_diagnostic_implemented_external_observation_pending
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-14-closed-eye-waveform-only
+  scope: exact_selected_highloss_raw_post_channel_profile_only
+predecessor:
+  path: docs/baselines/p3c-selected-highloss-prbs9-waveform-only-core.v3.yaml
+  contract_sha256: db0d9a663b311105be329d79060f05a5179f40fd7eccf448faf85d45b73da64a
+profile:
+  total_samples: 49056
+  fixed_period_windows: [[0, 16352], [16352, 32704], [32704, 49056]]
+  ui_partition: {third_period_uis: 511, samples_per_ui: 32}
+  residual: candidate_minus_reference_same_index_only
+  period_statistics: [reference_rms, candidate_rms, residual_rms, signed_residual_mean, residual_nrmse, residual_digest, maximum_absolute_residual, maximum_absolute_residual_offset]
+  third_period_ui_statistics: [residual_energy_vector_digest, maximum_energy_ui_offset_lowest_index_tiebreak]
+  third_period_nrmse_must_match_v3: true
+prohibitions:
+  - alignment
+  - lag_or_correlation_search
+  - fold_or_phase_search
+  - resampling
+  - gain_fit
+  - dc_removal
+  - polarity_flip
+  - fft_or_frequency_transform
+  - adjusted_or_recomputed_acceptance_metric
+implementation:
+  crate: sipi-compare
+  module: selected_highloss_prbs9_waveform_only_v3
+  entrypoint: diagnose_selected_highloss_prbs9_residual_v1
+  public_cli: absent
+  external_asset_reads: absent
+admission:
+  selected_waveform_residual_diagnostic_defined: true
+  external_selected_waveform_residual_diagnostic_invoked: false
+  period_partition_residuals_observed: false
+  third_period_diagnostic_matches_v3_nrmse: false
+  selected_highloss_waveform_only_profile_accepted: false
+  sampled_eye_evaluated: false
+  crossing_tie_evaluated: false
+  accepted_receiver: false
+  acceptance_ready: false
+  promotion_eligible: false
+  release_ledger_promoted: false
+blockers:
+  - external_two_fresh_residual_diagnostic_observation_missing
+  - selected_waveform_nrmse_exceeds_fixed_one_percent_limit
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+  - physical_causality_fir_passivity_and_100as_ads_parity_not_established
+non_claims:
+  - This is a strict-index diagnostic and does not alter v3 acceptance semantics.
+  - It is not a waveform repair, an eye/TIE metric, a frequency diagnostic, or ADS parity.
+  - No residual value vector, waveform, path, or external payload is retained.

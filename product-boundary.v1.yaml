@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 4ca4182b37f7808286f0e19af41a78be539634b94f67280e8e0be7a04f146449
+  tracked_paths_sha256: 7f0be162e142cdf7e3ec1bf1fa406014df17cbdf8a04bb6a45a1763e10c925c4
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -534,6 +534,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-p3c/tests/p3c_external_ads_reference_metric_runner.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/tests/p3c_external_ads_selected_highloss_residual_diagnostic_runner.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -2207,6 +2213,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3c-selected-highloss-residual-diagnostic-core.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p3c-selected-s4p-candidate-observation-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -2910,6 +2922,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-selected-highloss-prbs9-waveform-only.v3.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-selected-highloss-residual-diagnostic.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8291,6 +8309,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_selected_highloss_residual_diagnostic_core.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_selected_s4p_candidate_observation_evidence.py:
       rule: migration-tools
       class: migration_only
@@ -8964,6 +8988,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_selected_highloss_prbs9_waveform_only_v3.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_selected_highloss_residual_diagnostic_core.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

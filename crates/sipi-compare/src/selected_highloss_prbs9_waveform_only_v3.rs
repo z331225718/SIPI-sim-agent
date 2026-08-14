@@ -15,6 +15,10 @@ pub const SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_CONTRACT_SHA256_V3: &str =
 pub const SELECTED_HIGHLOSS_PRBS9_TOTAL_SAMPLES_V3: usize = 49_056;
 pub const SELECTED_HIGHLOSS_PRBS9_THIRD_PERIOD_START_V3: usize = 32_704;
 pub const SELECTED_HIGHLOSS_PRBS9_THIRD_PERIOD_SAMPLES_V3: usize = 16_352;
+pub const SELECTED_HIGHLOSS_PRBS9_PERIOD_SAMPLES_V3: usize = 16_352;
+pub const SELECTED_HIGHLOSS_PRBS9_PERIOD_COUNT_V3: usize = 3;
+pub const SELECTED_HIGHLOSS_PRBS9_UI_SAMPLES_V3: usize = 32;
+pub const SELECTED_HIGHLOSS_PRBS9_UIS_PER_PERIOD_V3: usize = 511;
 pub const SELECTED_HIGHLOSS_PRBS9_WAVEFORM_NRMSE_LIMIT_V3: f64 = 0.01;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -56,6 +60,44 @@ pub struct SelectedHighlossPrbs9WaveformOnlyReportV3 {
     candidate_digest: String,
     waveform_nrmse: f64,
     within_waveform_nrmse_limit: bool,
+}
+
+/// A fixed strict-index residual summary. This is diagnostic-only and has no
+/// acceptance fields or transform controls.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SelectedHighlossPrbs9ResidualPeriodV1 {
+    reference_rms: f64,
+    candidate_rms: f64,
+    residual_rms: f64,
+    residual_mean: f64,
+    residual_nrmse: f64,
+    residual_digest: String,
+    maximum_absolute_residual: f64,
+    maximum_absolute_residual_offset: usize,
+}
+
+impl SelectedHighlossPrbs9ResidualPeriodV1 {
+    pub fn reference_rms(&self) -> f64 { self.reference_rms }
+    pub fn candidate_rms(&self) -> f64 { self.candidate_rms }
+    pub fn residual_rms(&self) -> f64 { self.residual_rms }
+    pub fn residual_mean(&self) -> f64 { self.residual_mean }
+    pub fn residual_nrmse(&self) -> f64 { self.residual_nrmse }
+    pub fn residual_digest(&self) -> &str { &self.residual_digest }
+    pub fn maximum_absolute_residual(&self) -> f64 { self.maximum_absolute_residual }
+    pub fn maximum_absolute_residual_offset(&self) -> usize { self.maximum_absolute_residual_offset }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SelectedHighlossPrbs9ResidualDiagnosticV1 {
+    periods: [SelectedHighlossPrbs9ResidualPeriodV1; SELECTED_HIGHLOSS_PRBS9_PERIOD_COUNT_V3],
+    third_period_ui_energy_digest: String,
+    third_period_maximum_energy_ui_offset: usize,
+}
+
+impl SelectedHighlossPrbs9ResidualDiagnosticV1 {
+    pub fn periods(&self) -> &[SelectedHighlossPrbs9ResidualPeriodV1; SELECTED_HIGHLOSS_PRBS9_PERIOD_COUNT_V3] { &self.periods }
+    pub fn third_period_ui_energy_digest(&self) -> &str { &self.third_period_ui_energy_digest }
+    pub fn third_period_maximum_energy_ui_offset(&self) -> usize { self.third_period_maximum_energy_ui_offset }
 }
 
 impl SelectedHighlossPrbs9WaveformOnlyReportV3 {
@@ -154,18 +196,90 @@ impl ScaledSumSquares {
             .is_finite()
             .then_some((self.scale / divisor.scale) * (self.sum / divisor.sum).sqrt())
     }
+    fn rms(&self, count: usize) -> Option<f64> {
+        if count == 0 {
+            return None;
+        }
+        if self.is_zero() {
+            return Some(0.0);
+        }
+        let value = self.scale * (self.sum / count as f64).sqrt();
+        value.is_finite().then_some(value)
+    }
+    fn energy(&self) -> Option<f64> {
+        if self.is_zero() {
+            return Some(0.0);
+        }
+        let value = self.scale * self.scale * self.sum;
+        value.is_finite().then_some(value)
+    }
 }
 
 /// Evaluates only strict third-period raw waveform NRMSE, with no transform.
 pub fn compare_selected_highloss_prbs9_waveform_only_v3(
     pair: &SelectedHighlossPrbs9WaveformPairV3,
 ) -> Result<SelectedHighlossPrbs9WaveformOnlyReportV3, SelectedHighlossPrbs9WaveformOnlyErrorV3> {
-    let range = SELECTED_HIGHLOSS_PRBS9_THIRD_PERIOD_START_V3
-        ..SELECTED_HIGHLOSS_PRBS9_THIRD_PERIOD_START_V3
-            + SELECTED_HIGHLOSS_PRBS9_THIRD_PERIOD_SAMPLES_V3;
+    let waveform_nrmse = nrmse_for_range(pair, SELECTED_HIGHLOSS_PRBS9_THIRD_PERIOD_START_V3, SELECTED_HIGHLOSS_PRBS9_THIRD_PERIOD_SAMPLES_V3)?;
+    Ok(SelectedHighlossPrbs9WaveformOnlyReportV3 {
+        reference_digest: pair.reference_digest(),
+        candidate_digest: pair.candidate_digest(),
+        waveform_nrmse,
+        within_waveform_nrmse_limit: waveform_nrmse
+            <= SELECTED_HIGHLOSS_PRBS9_WAVEFORM_NRMSE_LIMIT_V3,
+    })
+}
+
+/// Diagnoses fixed period partitions without changing the v3 comparison.
+pub fn diagnose_selected_highloss_prbs9_residual_v1(
+    pair: &SelectedHighlossPrbs9WaveformPairV3,
+) -> Result<SelectedHighlossPrbs9ResidualDiagnosticV1, SelectedHighlossPrbs9WaveformOnlyErrorV3> {
+    let periods = [
+        residual_period(pair, 0)?,
+        residual_period(pair, SELECTED_HIGHLOSS_PRBS9_PERIOD_SAMPLES_V3)?,
+        residual_period(pair, SELECTED_HIGHLOSS_PRBS9_PERIOD_SAMPLES_V3 * 2)?,
+    ];
+    let mut energies = Vec::with_capacity(SELECTED_HIGHLOSS_PRBS9_UIS_PER_PERIOD_V3);
+    let third_start = SELECTED_HIGHLOSS_PRBS9_THIRD_PERIOD_START_V3;
+    for ui_offset in 0..SELECTED_HIGHLOSS_PRBS9_UIS_PER_PERIOD_V3 {
+        let start = third_start + ui_offset * SELECTED_HIGHLOSS_PRBS9_UI_SAMPLES_V3;
+        let mut sum = ScaledSumSquares::default();
+        for index in start..start + SELECTED_HIGHLOSS_PRBS9_UI_SAMPLES_V3 {
+            let difference = pair.candidate()[index] - pair.reference()[index];
+            if !difference.is_finite() {
+                return Err(SelectedHighlossPrbs9WaveformOnlyErrorV3::NumericOverflow { index });
+            }
+            sum.add(difference);
+        }
+        energies.push(sum.energy().ok_or(SelectedHighlossPrbs9WaveformOnlyErrorV3::NumericOverflow { index: start })?);
+    }
+    let (maximum_energy, maximum_energy_ui_offset) = energies.iter().copied().enumerate().fold(
+        (f64::NEG_INFINITY, 0_usize),
+        |current, (offset, energy)| if energy > current.0 { (energy, offset) } else { current },
+    );
+    if !maximum_energy.is_finite() {
+        return Err(SelectedHighlossPrbs9WaveformOnlyErrorV3::NumericOverflow { index: third_start });
+    }
+    let mut digest = Sha256::new();
+    digest.update(b"sipi.compare.selected-highloss-prbs9-residual-ui-energy.v1\0");
+    digest.update((energies.len() as u64).to_be_bytes());
+    for energy in energies {
+        digest.update(energy.to_bits().to_be_bytes());
+    }
+    Ok(SelectedHighlossPrbs9ResidualDiagnosticV1 {
+        periods,
+        third_period_ui_energy_digest: format!("{:x}", digest.finalize()),
+        third_period_maximum_energy_ui_offset: maximum_energy_ui_offset,
+    })
+}
+
+fn nrmse_for_range(
+    pair: &SelectedHighlossPrbs9WaveformPairV3,
+    start: usize,
+    count: usize,
+) -> Result<f64, SelectedHighlossPrbs9WaveformOnlyErrorV3> {
     let mut reference_sum = ScaledSumSquares::default();
     let mut error_sum = ScaledSumSquares::default();
-    for index in range {
+    for index in start..start + count {
         let difference = pair.candidate()[index] - pair.reference()[index];
         if !difference.is_finite() {
             return Err(SelectedHighlossPrbs9WaveformOnlyErrorV3::NumericOverflow { index });
@@ -178,15 +292,59 @@ pub fn compare_selected_highloss_prbs9_waveform_only_v3(
     }
     let waveform_nrmse = error_sum.ratio_sqrt(&reference_sum).ok_or(
         SelectedHighlossPrbs9WaveformOnlyErrorV3::NumericOverflow {
-            index: SELECTED_HIGHLOSS_PRBS9_THIRD_PERIOD_START_V3,
+            index: start,
         },
     )?;
-    Ok(SelectedHighlossPrbs9WaveformOnlyReportV3 {
-        reference_digest: pair.reference_digest(),
-        candidate_digest: pair.candidate_digest(),
-        waveform_nrmse,
-        within_waveform_nrmse_limit: waveform_nrmse
-            <= SELECTED_HIGHLOSS_PRBS9_WAVEFORM_NRMSE_LIMIT_V3,
+    Ok(waveform_nrmse)
+}
+
+fn residual_period(
+    pair: &SelectedHighlossPrbs9WaveformPairV3,
+    start: usize,
+) -> Result<SelectedHighlossPrbs9ResidualPeriodV1, SelectedHighlossPrbs9WaveformOnlyErrorV3> {
+    let mut reference_sum = ScaledSumSquares::default();
+    let mut candidate_sum = ScaledSumSquares::default();
+    let mut residual_sum = ScaledSumSquares::default();
+    let mut residual_mean = 0.0;
+    let mut maximum_absolute_residual = 0.0;
+    let mut maximum_absolute_residual_offset = 0;
+    let mut digest = Sha256::new();
+    digest.update(b"sipi.compare.selected-highloss-prbs9-residual-period.v1\0");
+    digest.update((SELECTED_HIGHLOSS_PRBS9_PERIOD_SAMPLES_V3 as u64).to_be_bytes());
+    for offset in 0..SELECTED_HIGHLOSS_PRBS9_PERIOD_SAMPLES_V3 {
+        let index = start + offset;
+        let difference = pair.candidate()[index] - pair.reference()[index];
+        if !difference.is_finite() {
+            return Err(SelectedHighlossPrbs9WaveformOnlyErrorV3::NumericOverflow { index });
+        }
+        reference_sum.add(pair.reference()[index]);
+        candidate_sum.add(pair.candidate()[index]);
+        residual_sum.add(difference);
+        let next_mean = residual_mean + (difference - residual_mean) / (offset + 1) as f64;
+        if !next_mean.is_finite() {
+            return Err(SelectedHighlossPrbs9WaveformOnlyErrorV3::NumericOverflow { index });
+        }
+        residual_mean = next_mean;
+        let absolute = difference.abs();
+        if absolute > maximum_absolute_residual {
+            maximum_absolute_residual = absolute;
+            maximum_absolute_residual_offset = offset;
+        }
+        digest.update(difference.to_bits().to_be_bytes());
+    }
+    let reference_rms = reference_sum.rms(SELECTED_HIGHLOSS_PRBS9_PERIOD_SAMPLES_V3).ok_or(SelectedHighlossPrbs9WaveformOnlyErrorV3::NumericOverflow { index: start })?;
+    let candidate_rms = candidate_sum.rms(SELECTED_HIGHLOSS_PRBS9_PERIOD_SAMPLES_V3).ok_or(SelectedHighlossPrbs9WaveformOnlyErrorV3::NumericOverflow { index: start })?;
+    let residual_rms = residual_sum.rms(SELECTED_HIGHLOSS_PRBS9_PERIOD_SAMPLES_V3).ok_or(SelectedHighlossPrbs9WaveformOnlyErrorV3::NumericOverflow { index: start })?;
+    let residual_nrmse = residual_sum.ratio_sqrt(&reference_sum).ok_or(SelectedHighlossPrbs9WaveformOnlyErrorV3::ZeroReferenceNorm)?;
+    Ok(SelectedHighlossPrbs9ResidualPeriodV1 {
+        reference_rms,
+        candidate_rms,
+        residual_rms,
+        residual_mean,
+        residual_nrmse,
+        residual_digest: format!("{:x}", digest.finalize()),
+        maximum_absolute_residual,
+        maximum_absolute_residual_offset,
     })
 }
 
@@ -301,5 +459,71 @@ mod tests {
             ),
             Err(SelectedHighlossPrbs9WaveformOnlyErrorV3::ZeroReferenceNorm)
         ));
+    }
+
+    #[test]
+    fn residual_diagnostic_partitions_all_periods_without_changing_v3_nrmse() {
+        let reference = vec![2.0; SELECTED_HIGHLOSS_PRBS9_TOTAL_SAMPLES_V3];
+        let mut candidate = reference.clone();
+        candidate[0] = 3.0;
+        candidate[SELECTED_HIGHLOSS_PRBS9_PERIOD_SAMPLES_V3] = 0.0;
+        candidate[SELECTED_HIGHLOSS_PRBS9_THIRD_PERIOD_START_V3 + 7] = 1.0;
+        candidate[SELECTED_HIGHLOSS_PRBS9_THIRD_PERIOD_START_V3 + 9] = 1.0;
+        let pair = SelectedHighlossPrbs9WaveformPairV3::try_new(reference, candidate).unwrap();
+        let diagnostic = diagnose_selected_highloss_prbs9_residual_v1(&pair).unwrap();
+        assert_eq!(diagnostic.periods().len(), SELECTED_HIGHLOSS_PRBS9_PERIOD_COUNT_V3);
+        assert_eq!(diagnostic.periods()[0].maximum_absolute_residual_offset(), 0);
+        assert_eq!(diagnostic.periods()[1].maximum_absolute_residual_offset(), 0);
+        assert_eq!(diagnostic.periods()[2].maximum_absolute_residual_offset(), 7);
+        assert_eq!(diagnostic.third_period_maximum_energy_ui_offset(), 0);
+        assert_eq!(
+            diagnostic.periods()[2].residual_nrmse().to_bits(),
+            compare_selected_highloss_prbs9_waveform_only_v3(&pair)
+                .unwrap()
+                .waveform_nrmse()
+                .to_bits()
+        );
+        assert_ne!(
+            diagnostic.periods()[0].residual_digest(),
+            diagnostic.periods()[1].residual_digest()
+        );
+    }
+
+    #[test]
+    fn residual_diagnostic_rejects_zero_period_reference_energy() {
+        let mut reference = vec![1.0; SELECTED_HIGHLOSS_PRBS9_TOTAL_SAMPLES_V3];
+        reference[..SELECTED_HIGHLOSS_PRBS9_PERIOD_SAMPLES_V3].fill(0.0);
+        let candidate = reference.clone();
+        let pair = SelectedHighlossPrbs9WaveformPairV3::try_new(reference, candidate).unwrap();
+        assert_eq!(
+            diagnose_selected_highloss_prbs9_residual_v1(&pair),
+            Err(SelectedHighlossPrbs9WaveformOnlyErrorV3::ZeroReferenceNorm)
+        );
+    }
+
+    #[test]
+    fn residual_diagnostic_is_directional_and_uses_lowest_index_ties() {
+        let reference = vec![2.0; SELECTED_HIGHLOSS_PRBS9_TOTAL_SAMPLES_V3];
+        let mut candidate = reference.clone();
+        candidate[3] = 3.0;
+        candidate[11] = 3.0;
+        let forward = diagnose_selected_highloss_prbs9_residual_v1(
+            &SelectedHighlossPrbs9WaveformPairV3::try_new(reference.clone(), candidate.clone())
+                .unwrap(),
+        )
+        .unwrap();
+        let reverse = diagnose_selected_highloss_prbs9_residual_v1(
+            &SelectedHighlossPrbs9WaveformPairV3::try_new(candidate, reference).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(forward.periods()[0].maximum_absolute_residual_offset(), 3);
+        assert_eq!(
+            forward.periods()[0].residual_mean().to_bits(),
+            (-reverse.periods()[0].residual_mean()).to_bits()
+        );
+        assert_ne!(
+            forward.periods()[0].residual_digest(),
+            reverse.periods()[0].residual_digest()
+        );
     }
 }
