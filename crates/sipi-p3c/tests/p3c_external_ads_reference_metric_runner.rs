@@ -97,7 +97,7 @@ fn candidate(source: &Path, root: &Path, index: usize) -> Result<Vec<f64>, Strin
     Ok(generate_selected_p3c_prbs9_impulse_candidate_v1(&truncated).map_err(|_| "candidate_convolution".to_owned())?.waveform_prefix().iter().map(|value| value.get()).collect())
 }
 
-fn run_once(source: &Path, reference: &Path, cli: &Path, index: usize) -> Result<String, String> {
+fn run_once(source: &Path, reference: &Path, cli: &Path, index: usize) -> Result<(bool, String), String> {
     let s4p_root = fresh("sipi-p3c-metric-s4p", index)?; let metric_root = fresh("sipi-p3c-metric-artifacts", index)?;
     let result = (|| {
         let candidate_values = candidate(source, &s4p_root, index)?;
@@ -108,9 +108,13 @@ fn run_once(source: &Path, reference: &Path, cli: &Path, index: usize) -> Result
         let mut child = Command::new(cli).args(["compare", "prbs9-metrics", "--stdin", "--artifact-root", metric_root.to_string_lossy().as_ref()]).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().map_err(|_| "cli_spawn".to_owned())?;
         child.stdin.take().ok_or_else(|| "cli_stdin".to_owned())?.write_all(request.as_bytes()).map_err(|_| "cli_write".to_owned())?;
         let output = child.wait_with_output().map_err(|_| "cli_wait".to_owned())?;
-        if !output.status.success() || !output.stderr.is_empty() { return Err("cli_rejected".to_owned()); }
+        let exit_code = output.status.code().unwrap_or(-1);
+        if exit_code == 3 {
+            return Ok((false, format!("{{\"status\":\"rejected\",\"stage\":\"cli\",\"exit_code\":{exit_code}}}")));
+        }
+        if !output.status.success() || !output.stderr.is_empty() { return Err("cli_failed".to_owned()); }
         let response = String::from_utf8(output.stdout).map_err(|_| "cli_utf8".to_owned())?;
-        Ok(format!("{{\"reference_manifest_sha256\":\"{reference_manifest}\",\"candidate_manifest_sha256\":\"{candidate_manifest}\",\"reference_rx_payload_sha256\":\"{reference_payload_sha}\",\"candidate_payload_sha256\":\"{candidate_payload_sha}\",\"cli_result\":{}}}", response.trim()))
+        Ok((true, format!("{{\"status\":\"admitted\",\"reference_manifest_sha256\":\"{reference_manifest}\",\"candidate_manifest_sha256\":\"{candidate_manifest}\",\"reference_rx_payload_sha256\":\"{reference_payload_sha}\",\"candidate_payload_sha256\":\"{candidate_payload_sha}\",\"cli_result\":{}}}", response.trim())))
     })();
     let left = fs::remove_dir_all(&s4p_root); let right = fs::remove_dir_all(&metric_root);
     if left.is_err() || right.is_err() { return Err("cleanup".to_owned()); } result
@@ -121,6 +125,10 @@ fn run_once(source: &Path, reference: &Path, cli: &Path, index: usize) -> Result
 fn p3c_external_ads_reference_metric_runner_v1() {
     let source = env_path(SOURCE).unwrap(); let reference = env_path(REFERENCE).unwrap(); let cli = env_path(CLI).unwrap(); let report = env_path(REPORT).unwrap();
     assert!(!report.exists() && !report.starts_with(env::current_dir().unwrap()));
-    let first = run_once(&source, &reference, &cli, 1).unwrap(); let second = run_once(&source, &reference, &cli, 2).unwrap();
-    fs::write(report, format!("{{\"schema\":\"sipi.p3c.external-ads-reference-metric-runner.v1\",\"runs\":[{first},{second}],\"cleanup_status\":\"complete\"}}\n")).unwrap();
+    let (first_admitted, first) = run_once(&source, &reference, &cli, 1).unwrap();
+    let (second_admitted, second) = run_once(&source, &reference, &cli, 2).unwrap();
+    assert_eq!(first_admitted, second_admitted, "run_outcome_mismatch");
+    if !first_admitted { assert_eq!(first, second, "rejected_run_mismatch"); }
+    let outcome = if first_admitted { "admitted" } else { "rejected" };
+    fs::write(report, format!("{{\"schema\":\"sipi.p3c.external-ads-reference-metric-runner.v1\",\"outcome\":\"{outcome}\",\"runs\":[{first},{second}],\"cleanup_status\":\"complete\"}}\n")).unwrap();
 }
