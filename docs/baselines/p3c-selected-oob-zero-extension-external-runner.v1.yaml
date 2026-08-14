@@ -1,0 +1,36 @@
+schema: sipi.p3c-selected-oob-zero-extension-external-runner.v1
+status: external_only_two_fresh_baseline_and_zero_oob_observation_prepared_not_run
+authority:
+  actor: user
+  decision_ref: user-continuation-2026-08-14
+  scope: selected_oob_zero_extension_sensitivity_observation_only
+predecessor:
+  path: docs/baselines/p3c-selected-oob-zero-extension-diagnostic-core.v1.yaml
+  status: product_owned_selected_oob_zero_extension_diagnostic_implemented_external_observation_pending
+runner:
+  path: crates/sipi-p3c/tests/p3c_selected_oob_zero_extension_external_runner.rs
+  mode: ignored_external_release_test
+  input_custody: two_fresh_sealed_selected_s4p_roots
+  reference: immutable_ads_canonical_rx_differential_column
+  variants: [baseline_current_product_spectrum, strict_gt_40ghz_positive_zero]
+  common_downstream_path: [bounded_causality, fixed_1e-3_truncation, ui_boundary_right_continuous_prbs9, direct_full_linear_convolution, strict_v3_nrmse]
+  baseline_requirement: third_period_nrmse_bits_must_equal_3f9c4139b95fcc93
+  report_retention: hash_only_external
+admission:
+  external_oob_extension_sensitivity_invoked: false
+  baseline_current_candidate_reproduced: false
+  oob_extension_sensitivity_observed: false
+  zero_oob_variant_admitted_as_product_policy: false
+  selected_highloss_waveform_only_profile_accepted: false
+  acceptance_ready: false
+  promotion_eligible: false
+  release_ledger_promoted: false
+blockers:
+  - clean_archive_two_fresh_external_run_missing
+  - same_variant_baseline_and_zero_oob_report_missing
+  - oob_diagnostic_opencode_audit_pending
+  - waveform_only_product_source_drift
+non_claims:
+  - The runner does not select an interpolation policy, import ADS N=2048 semantics, or choose the lower-NRMSE variant.
+  - It does not retain S4P, ADS, spectrum, waveform, or path bytes in repository evidence.
+  - A zero-OOB result is diagnostic only and cannot become a candidate acceptance result.

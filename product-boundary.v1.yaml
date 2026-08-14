@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: c04d055a7c0a4343afb3704adbadbe0339f3bee57a1a138f68efe9318f677961
+  tracked_paths_sha256: a7323dde5d9436dd3fe7153ff188abd1e575e770fa7112d1a5a4622204b8a868
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -594,6 +594,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-p3c/tests/p3c_sealed_s4p_external_uniform_spectrum_runner.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/tests/p3c_selected_oob_zero_extension_external_runner.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -2226,6 +2232,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-selected-oob-zero-extension-diagnostic-core.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-selected-oob-zero-extension-external-runner.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

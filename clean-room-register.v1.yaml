@@ -2238,4 +2238,13 @@ scopes:
       implementer: [p3c-selected-oob-zero-extension-diagnostic-spec-v1]
       comparator: []
       auditor: [p3c-selected-oob-zero-extension-diagnostic-spec-v1]
+  - id: p3c-selected-oob-zero-extension-external-runner-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, crates/sipi-p3c/Cargo.toml, crates/sipi-p3c/tests/p3c_selected_oob_zero_extension_external_runner.rs, docs/baselines/p3c-selected-oob-zero-extension-external-runner.v1.yaml, docs/clean-room/specs/p3c-selected-oob-zero-extension-diagnostic.v1.md]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-selected-oob-zero-extension-diagnostic-spec-v1]
+      spec_author: [p3c-selected-oob-zero-extension-diagnostic-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-selected-oob-zero-extension-diagnostic-spec-v1]
 attestations: []
