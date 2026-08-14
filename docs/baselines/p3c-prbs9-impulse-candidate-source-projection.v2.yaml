@@ -1,0 +1,67 @@
+schema: sipi.p3c-prbs9-impulse-candidate-source-projection.v2
+status: specified_pending_owner_finite_edge_boundary_projection_confirmation
+authority:
+  actor: user
+  decision_ref: user-continuation-2026-08-14
+  scope: selected_candidate_source_projection_v2_only_not_metric_or_release_policy
+supersedes:
+  path: docs/baselines/p3c-prbs9-impulse-candidate-bridge.v1.yaml
+  source_policy_only: true
+  historical_v1_semantics_retained: ui_boundary_right_continuous_level_change
+predecessors:
+  source_only_observation:
+    path: docs/baselines/p3c-ads-prbssrc-source-only-matched-load-observation-evidence.v1.yaml
+    finding: interior_strict_match_and_boundary_old_level_observed
+  waveform_contract_v2:
+    path: docs/baselines/p3c-prbs9-waveform-jitter-contract.v2.yaml
+    unchanged: [same_index_compare, no_alignment, no_resampling, no_gain_fit, no_dc_removal, no_polarity_flip, relative_rms_error_limit]
+policy_candidate:
+  name: finite_edge_boundary_pretransition_phase1_new_level
+  source_amplitude_volts_differential: [-1.0, 1.0]
+  sample_zero:
+    symbol: first_symbol
+    value: current_symbol_level
+    predecessor: absent
+  ui_boundary_for_global_ui_greater_than_zero:
+    phase_0: prior_symbol_level
+    phases_1_through_31: current_symbol_level
+  period_boundary: applies_same_prior_symbol_rule
+  unchanged_symbol: prior_and_current_levels_equal_without_special_case
+  timebase: {samples_per_ui: 32, sample_interval_bits: 3d712e0be826d695, periods: 3, warmup_periods: 2}
+  forbidden: [sample_axis_shift, prbs_rotation, interpolation, resampling, gain_fit, dc_removal, polarity_flip, runtime_projection_mode, caller_projection_override, half_scale_product_stimulus]
+implementation_boundary:
+  new_api: generate_selected_p3c_prbs9_impulse_candidate_v2
+  new_module: crates/sipi-p3c/src/prbs9_impulse_candidate_v2.rs
+  v1_api_unchanged: generate_selected_p3c_prbs9_impulse_candidate_v1
+  reuse: [selected_truncated_response_kernel, direct_full_linear_convolution, full_tail_59926, prefix_49056, third_period_window_32704_49056]
+  unchanged_public_contracts: [selected_highloss_waveform_only_v3_metric, selected_highloss_waveform_only_v3_cli, one_percent_waveform_limit]
+owner_confirmation:
+  phase_0_prior_phase_1_current: false
+  sample_zero_first_symbol_current: false
+  product_amplitude_remains_plus_or_minus_one_volt: false
+  v2_selected_policy_v1_historical_only: false
+admission:
+  finite_edge_boundary_projection_v2_specified: false
+  selected_source_projection_v2_implemented: false
+  product_projection_v2_source_strobe_match_observed: false
+  current_v2_candidate_waveform_evaluated: false
+  selected_highloss_waveform_only_profile_accepted: false
+  source_explains_full_channel_residual: false
+  causal_fir_admitted: false
+  accepted_receiver: false
+  acceptance_ready: false
+  release_ledger_promoted: false
+blockers:
+  - owner_finite_edge_boundary_phase_rule_confirmation_missing
+  - owner_sample_zero_semantics_confirmation_missing
+  - owner_product_amplitude_confirmation_missing
+  - owner_v2_current_policy_and_v1_historical_confirmation_missing
+  - v2_source_projection_not_implemented
+  - v2_source_only_strobe_observation_missing
+  - v2_candidate_waveform_observation_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - This proposed discrete boundary ownership is not time alignment, PRBS rotation, or continuous-time ADS source equivalence.
+  - The source-only observation does not prove this policy will resolve the full-channel residual.
+  - The fixed half-scale matched-load diagnostic mapping does not alter the product differential stimulus amplitude.

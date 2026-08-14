@@ -2301,4 +2301,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-external-ads-prbs9-reference-spec-v1]
+  - id: p3c-prbs9-impulse-candidate-source-projection-v2
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-prbs9-impulse-candidate-source-projection.v2.yaml, docs/clean-room/specs/p3c-prbs9-impulse-candidate-source-projection.v2.md, tools/verify_p3c_prbs9_impulse_candidate_source_projection_v2.py, tools/test_verify_p3c_prbs9_impulse_candidate_source_projection_v2.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-external-ads-prbs9-reference-spec-v1]
+      spec_author: [p3c-external-ads-prbs9-reference-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-external-ads-prbs9-reference-spec-v1]
 attestations: []
