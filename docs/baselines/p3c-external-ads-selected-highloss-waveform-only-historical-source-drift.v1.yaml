@@ -1,0 +1,41 @@
+schema: sipi.p3c-external-ads-selected-highloss-waveform-only-historical-source-drift.v1
+status: historical_waveform_only_observation_source_drifted_current_external_binding_unavailable
+authority:
+  actor: project
+  decision_ref: historical-evidence-source-drift-preservation
+  scope: preserve_the_04ag_selected_highloss_waveform_only_observation_without_reclassification_or_gate_relaxation
+historical_record:
+  id: selected-highloss-waveform-only-v3
+  evidence: docs/baselines/p3c-external-ads-selected-highloss-waveform-only-observation-evidence.v3.yaml
+  content_sha256: bbd3afa54e57aa64fbd48878074460cc5137073fcbfa9c76a4b29c9eda705a63
+  verifier: tools/verify_p3c_external_ads_selected_highloss_waveform_only_observation_evidence.py
+  expected_error: waveform_only_product_source_drift
+current_state:
+  current_external_observation_available: false
+  current_external_reference_binding_evaluated: false
+  current_waveform_nrmse_evaluated: false
+  current_selected_highloss_waveform_only_profile_accepted: false
+  reconciliation_only: true
+gates:
+  historical_record_rewritten: false
+  historical_record_current: false
+  selected_highloss_waveform_only_contract_ready: true
+  current_external_reference_binding_evaluated: false
+  current_waveform_nrmse_evaluated: false
+  sampled_eye_evaluated: false
+  crossing_tie_evaluated: false
+  selected_highloss_waveform_only_profile_accepted: false
+  accepted_receiver: false
+  acceptance_ready: false
+  promotion_eligible: false
+  release_ledger_promoted: false
+blockers:
+  - waveform_only_product_source_drift
+  - current_external_waveform_only_observation_missing
+  - selected_waveform_nrmse_exceeds_fixed_one_percent_limit_historically
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Source drift makes the 04ag observation unusable as current external binding or NRMSE evidence; it does not erase the recorded historical fact.
+  - This reconciliation changes neither the v3 waveform-only contract nor the public CLI and does not create a current replacement observation.
+  - It does not evaluate eye, TIE, receiver, causal FIR, passivity, ADS parity, P4B, P5, or release.
