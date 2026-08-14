@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: f653f848c04a2b5f8c1a66ada71dc7d5b9363c538aa3f78addb6c43a738cfe9c
+  tracked_paths_sha256: a3c9147c2bff0966a43176988f1984ffa98b4b4a70a1ef32cb4195c2d1134fe7
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1655,6 +1655,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-14-p3c-selected-s4p-causality-observation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-14-p3c-selected-s4p-raw-periodic-observation.md:
       rule: historical-docs
       class: migration_only
@@ -2028,6 +2034,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-selected-four-port-static-bench.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-selected-s4p-causality-observation-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2664,6 +2676,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-selected-four-port-static-bench.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-selected-s4p-causality-observation-evidence.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7973,6 +7991,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_selected_s4p_causality_observation_evidence.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_selected_s4p_external_static_custody_evidence.py:
       rule: migration-tools
       class: migration_only
@@ -8586,6 +8610,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_selected_four_port_static_bench.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_selected_s4p_causality_observation_evidence.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

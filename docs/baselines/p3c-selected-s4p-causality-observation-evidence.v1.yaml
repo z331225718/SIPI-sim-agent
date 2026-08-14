@@ -1,0 +1,87 @@
+schema: sipi.p3c-selected-s4p-causality-observation-evidence.v1
+status: external_selected_s4p_bounded_causality_observed_candidate_route_pending
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-14-p3c-04t-inline-causality-policy
+  scope: exact_selected_s4p_static_admission_then_frozen_interpolation_and_bounded_causality_observation_only
+external_observation:
+  schema: sipi.p3c.sealed-selected-s4p-causality-observation.v1
+  status: observed
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 3342
+  report_content_sha256: a31bfb1807261f5af6c433429f828762aa90e0861e59175e81eae25deda750a9
+  clean_archive_commit: 8e5d33d31982aa483c971615b91686ff8557c831
+  selected_source: {byte_length: 1834156, sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47}
+  source_identity_checks: before_stage_after_equal
+  fresh_custody_runs: 2
+  manifest_sha256s: [bd2319598fe5687e8c87c02da81bba495a52f428b5af5398a65d036776d7015e, c4fe594837e0aa4992ee66664ddd2515edda774729206f843ba09ffb08735fb5]
+  record_count: 2002
+  outcome:
+    causality_status: admitted
+    uniform_bin_count: 25601
+    causal_sample_count: 51200
+    sample_interval_bits: 3d712e0be826d695
+    iteration_count: 32
+    final_error_bits: 3f90f46429650cfa
+    stop: successive_error_difference
+    causal_response_sha256: d111d4024eb26436fa8cced56026ecb5231df888499d7d7e122379c01078d949
+  cleanup_status: complete
+  runner:
+    source_sha256: 7e0ffec717d3b5fcf41f2fce6e96a54da1de8ee7209a479edac08f1685cbc543
+    report_sha256: 5192a4b12e70c1edac43285720ad8464242a06cf171edea8888bfec310db7360
+  product_source_inventory:
+    Cargo.lock: 3c2e71b21ec09e65a90fd1b42dd0353147607ea4d1645210d3ead3e094aea762
+    Cargo.toml: ccfb303fa9c3593a19d5f9c240b7d9aebddbf33bfd658d5a444ba06734cc3ca2
+    crates/sipi-artifacts/src/lib.rs: 85b475ec865779dbe3e21b54759ca9075b8a4516714d7192ba4b214075861997
+    crates/sipi-channel/src/p3c_fixed_four_port_bench_v1.rs: 248bf24c494d9c956a96e2781f35f546d5de9f70f6157457da7a54aeb60baa70
+    crates/sipi-ieee-com-sparam/Cargo.toml: 044d3d837957f99bf3429d7c51cf1b32129ae2744d921bd95def313a0aa1942b
+    crates/sipi-ieee-com-sparam/NOTICE-IEEE-802-COM.md: bddd0b824dd61554c17c53ccd6fc0f2065ef8de5007928908c8323e8bb04eca9
+    crates/sipi-ieee-com-sparam/SOURCE-MAP.md: 566f2a53f3a5d2523372db25e6874b1ebf5eac88a7758fa252c6e2e39bf29579
+    crates/sipi-ieee-com-sparam/src/lib.rs: 56a78a4d1a646105f12551787a48eace08b3d2968e65fabcaf024e51dba5b0f2
+    crates/sipi-ieee-com-sparam/src/interp_sparam_v1.rs: e93d51b8b18aefae6c95465fee404f5934551c98c4cd6a0c102de05eed3951de
+    crates/sipi-ieee-com-sparam/src/s21_to_raw_periodic_v1.rs: db1ca2b97038c4e5c56260f152abe19dddd27a9c73f6975f8c63d728d376f43b
+    crates/sipi-ieee-com-sparam/src/s21_to_causal_v1.rs: 8b073eac2341aaead0a75c446bf6518fbd8a4f171adcf766322ed7428707f804
+    crates/sipi-p3c/Cargo.toml: b783524b83cc3d950d6fb1666767a2c38bf162066fc114d30881412ee774b47d
+    crates/sipi-p3c/src/lib.rs: aaf4b40fcc17d4ff2ae4ab512ecf7d68416dea6aaa8c4254521ae1ab57813b36
+    crates/sipi-p3c/tests/p3c_sealed_s4p_external_causality_runner.rs: 7e0ffec717d3b5fcf41f2fce6e96a54da1de8ee7209a479edac08f1685cbc543
+    crates/sipi-touchstone/src/lib.rs: 359b0c44894d6cf2b03eca19626d180a9f921695a71681e901c5bcb0c77fc5cc
+    crates/sipi-touchstone/src/selected_four_port_v1.rs: 53b11a0cf08b0505c190b244c47f13e22f7b2b3c1f6ea712b6aba533a8805f80
+    crates/sipi-types/src/lib.rs: b54f9e937bab7fc7830e56ef4f2ec861caf1ffed7a5718cf45bae92397ee5576
+admission:
+  external_static_custody_observed: true
+  selected_external_s4p_static_admitted: true
+  selected_interpolation_invoked: true
+  selected_interpolation_admitted: true
+  selected_external_uniform_spectrum_observed: true
+  external_selected_raw_periodic_transform_invoked: true
+  external_selected_raw_periodic_transform_admitted: true
+  external_selected_raw_periodic_response_observed: true
+  external_selected_causality_invoked: true
+  external_selected_causality_admitted: true
+  external_selected_causality_observed: true
+  causal_impulse_admitted: false
+  delay_extraction_implemented: false
+  passivity_repair_implemented: false
+  truncation_implemented: false
+  linear_convolution_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  p5_reference_evaluated: false
+  release_ledger_promoted: false
+blockers:
+  - bounded_causality_response_not_admitted_as_causal_impulse_or_fir
+  - delay_and_passivity_policy_not_implemented
+  - truncation_and_linear_convolution_not_implemented
+  - external_reference_binding_not_implemented
+  - accepted_receiver_stage_missing
+  - p5_authoritative_r480_reference_missing
+  - release_license_notice_and_archive_admission_pending
+non_claims:
+  - Two fresh custody runs in one clean-archive process establish repeatability, not independent toolchain reproduction or physical correctness.
+  - The bounded response is not an admitted causal impulse or FIR, and is not delay, passivity, truncation, convolution, waveform, ADS or COM parity.
+  - Not receiver, AMI, IBIS, DLL, P5 reference, candidate metric, or release acceptance.
