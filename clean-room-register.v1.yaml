@@ -641,6 +641,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3c-ieee-bsd-inline-causality-source-preflight-spec-v1]
+  - id: p3c-ieee-bsd-truncation-direct-port-spec-v1
+    kind: independent_spec
+    content_sha256: 0bb21a1e36f704a82a766b96a9932796412cfdfffb413dbaff57679b57365d7f
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-ieee-bsd-truncation-direct-port.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p3c-ieee-bsd-inline-causality-direct-port-spec-v1]
   - id: p3c-selected-s4p-causality-observation-spec-v1
     kind: independent_spec
     content_sha256: d0dfcc2bd867981dae3cffb870bf6d40f864e81d209c1974882243dc23ff095a
@@ -1570,6 +1578,15 @@ scopes:
       implementer: [p3c-ieee-bsd-inline-causality-direct-port-spec-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1, p3c-ieee-bsd-interp-direct-port-spec-v1, p3c-ieee-bsd-raw-periodic-direct-port-spec-v1, p1-types-foundation-spec-v1, p3a-s2p-matched-channel-spec-v1, p3c-selected-four-port-static-bench-spec-v1]
       comparator: []
       auditor: [p3c-ieee-bsd-inline-causality-direct-port-spec-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1]
+  - id: p3c-ieee-bsd-truncation-direct-port-v1
+    paths: [Cargo.lock, crates/sipi-ieee-com-sparam/**, docs/baselines/p3c-ieee-bsd-truncation-direct-port.v1.yaml, docs/clean-room/specs/p3c-ieee-bsd-truncation-direct-port.v1.md, tools/verify_p3c_ieee_bsd_truncation_direct_port.py, tools/test_verify_p3c_ieee_bsd_truncation_direct_port.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3c-ieee-bsd-truncation-direct-port-spec-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1]
+      implementer: [p3c-ieee-bsd-truncation-direct-port-spec-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1, p3c-ieee-bsd-inline-causality-direct-port-spec-v1, p1-types-foundation-spec-v1]
+      comparator: []
+      auditor: [p3c-ieee-bsd-truncation-direct-port-spec-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1]
   - id: p3c-selected-s4p-causality-observation-v1
     paths: [crates/sipi-p3c/Cargo.toml, crates/sipi-p3c/tests/p3c_sealed_s4p_external_causality_runner.rs, docs/clean-room/specs/p3c-selected-s4p-causality-observation.v1.md, tools/observe_p3c_sealed_selected_s4p_causality.py]
     state: planned

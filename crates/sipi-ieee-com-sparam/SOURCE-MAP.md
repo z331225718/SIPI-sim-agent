@@ -17,6 +17,20 @@ P3C policy and rejects every other branch, debug bypass, and undefined source
 branch. It does not port `s21_to_impulse_DC.m` or
 `calculate_delay_CausalityEnforcement.m`.
 
+## Fixed Response Truncation
+
+- Source: `src/s21_to_impulse_DC.m`, lines 96--102
+- Git blob: `f426fb2119dc1cf9c2a2f677e60c3a1f31cb27a3`
+- SHA-256: `b2884926b204fdfddc1c309c35d46ed7744c696e19df3abcd7d91157e9e539c0`
+- License: BSD-3-Clause; full notice: `NOTICE-IEEE-802-COM.md`
+
+`src/s21_to_truncated_v1.rs` ports only the last strict peak-relative sample
+selection and prefix retention leaf. It fixes the owner-selected `1e-3`
+threshold, preserves leading samples and the original `dt`, and reports only a
+finite dropped/total L2 ratio plus a structural zero-tail diagnostic. It does
+not extract or shift delay, normalize, causalize, repair passivity, convolve,
+construct a waveform, or call `calculate_delay_CausalityEnforcement.m`.
+
 ## Raw Periodic Inverse Transform
 
 - Source: `src/s21_to_impulse_DC.m`

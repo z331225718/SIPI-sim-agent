@@ -1,0 +1,74 @@
+schema: sipi.p3c-ieee-bsd-truncation-direct-port.v1
+status: selected_ieee_bsd3_truncation_implemented_external_observation_pending
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-14-p3c-04v-truncation-policy
+  direct_port_implementation_started: true
+  product_policy_selected: true
+  release_admitted: false
+source:
+  canonical_origin: https://opensource.ieee.org/802-com/com_code.git
+  commit: d4ecd4597a98782887933b5df4c4796da2474195
+  path: src/s21_to_impulse_DC.m
+  git_blob: f426fb2119dc1cf9c2a2f677e60c3a1f31cb27a3
+  content_sha256: b2884926b204fdfddc1c309c35d46ed7744c696e19df3abcd7d91157e9e539c0
+  license: BSD-3-Clause
+  included_upstream_lines: [96, 102]
+  excluded_source_objects: [ieee-802-com-causality-delay-bsd3-v1]
+policy:
+  input_type: sipi_ieee_com_sparam::SelectedP3cCausalResponseV1
+  threshold: 1.0e-3
+  crossing: last_absolute_sample_strictly_greater_than_peak_times_threshold
+  retained_interval: zero_based_half_open_zero_to_last_crossing_plus_one
+  preserve_leading_samples: true
+  preserve_sample_interval: true
+  delay_extraction: prohibited
+  time_shift: prohibited
+  normalization: prohibited
+  input_sample_limit: 51200
+  diagnostic:
+    dropped_l2_over_total_l2: finite_only
+    zero_tail: structural_enum
+    acceptance_gate: none
+  rejects: [empty_input, all_zero_input, nonfinite_calculation, input_sample_limit_exceeded]
+  caller_overrides: prohibited
+implementation:
+  crate: crates/sipi-ieee-com-sparam
+  rust_path: crates/sipi-ieee-com-sparam/src/s21_to_truncated_v1.rs
+  api: truncate_selected_p3c_response_v1
+  output_type: SelectedP3cTruncatedResponseV1
+  package_license: BSD-3-Clause
+  source_spdx: BSD-3-Clause
+  notice_path: crates/sipi-ieee-com-sparam/NOTICE-IEEE-802-COM.md
+  source_map_path: crates/sipi-ieee-com-sparam/SOURCE-MAP.md
+gates:
+  truncation_direct_port_implemented: true
+  selected_truncation_policy_implemented: true
+  external_selected_truncation_invoked: false
+  external_selected_truncation_admitted: false
+  causal_impulse_admitted: false
+  delay_extraction_implemented: false
+  passivity_repair_implemented: false
+  linear_convolution_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  p5_reference_evaluated: false
+  release_ledger_promoted: false
+blockers:
+  - external_selected_truncation_observation_missing
+  - bounded_response_not_admitted_as_causal_impulse_or_fir
+  - named_author_helper_remains_blocked_for_delay_path
+  - passivity_policy_not_implemented
+  - linear_convolution_and_candidate_waveform_route_not_implemented
+  - external_reference_binding_not_implemented
+  - accepted_receiver_stage_missing
+  - p5_authoritative_r480_reference_missing
+  - release_license_notice_and_archive_admission_pending
+non_claims:
+  - This is a fixed direct port of only the source truncation leaf, not delay extraction, causal-FIR admission, or a general response conditioning service.
+  - It is not passivity repair, convolution, a candidate waveform, ADS or COM parity, or physical causal-channel acceptance.
+  - No external selected-input result, receiver, AMI, IBIS, DLL, P5 reference, candidate metric, or release capability is evaluated.

@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: a3c9147c2bff0966a43176988f1984ffa98b4b4a70a1ef32cb4195c2d1134fe7
+  tracked_paths_sha256: 1c704cb960968e45df7e97fdf2b6e4e71a07ef80e3422d4a447f280cab82f38a
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -450,6 +450,12 @@ inventory:
       provenance: clean_room
       distribution: non-distributed
     crates/sipi-ieee-com-sparam/src/s21_to_raw_periodic_v1.rs:
+      rule: p3c-ieee-bsd-interpolation-direct-port
+      class: quarantine
+      license: BSD-3-Clause
+      provenance: clean_room
+      distribution: non-distributed
+    crates/sipi-ieee-com-sparam/src/s21_to_truncated_v1.rs:
       rule: p3c-ieee-bsd-interpolation-direct-port
       class: quarantine
       license: BSD-3-Clause
@@ -1655,6 +1661,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-14-p3c-ieee-bsd-truncation-direct-port.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-14-p3c-selected-s4p-causality-observation.md:
       rule: historical-docs
       class: migration_only
@@ -1968,6 +1980,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-ieee-bsd-raw-periodic-direct-port.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-ieee-bsd-truncation-direct-port.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2610,6 +2628,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-ieee-bsd-raw-periodic-direct-port.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-ieee-bsd-truncation-direct-port.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7925,6 +7949,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_ieee_bsd_truncation_direct_port.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_prbs9_metric_artifact_cli.py:
       rule: migration-tools
       class: migration_only
@@ -8544,6 +8574,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_ieee_bsd_raw_periodic_direct_port.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_ieee_bsd_truncation_direct_port.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

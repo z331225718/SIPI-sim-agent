@@ -71,6 +71,24 @@ impl SelectedP3cCausalResponseV1 {
     }
 }
 
+#[cfg(test)]
+pub(crate) fn test_causal_response(
+    samples: &[f64],
+    sample_interval: f64,
+) -> SelectedP3cCausalResponseV1 {
+    SelectedP3cCausalResponseV1 {
+        sample_interval: Seconds::try_new(sample_interval).unwrap(),
+        samples: samples
+            .iter()
+            .map(|value| FiniteF64::try_new(*value, "test causal sample").unwrap())
+            .collect::<Vec<_>>()
+            .into_boxed_slice(),
+        iteration_count: 1,
+        final_error: FiniteF64::try_new(0.0, "test final error").unwrap(),
+        stop: SelectedP3cCausalityStopV1::RelativeError,
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CausalityEnforcementErrorV1 {
     RawPeriodicInput(RawPeriodicTransformErrorV1),
@@ -310,7 +328,9 @@ mod tests {
             1.0,
         );
         assert!(matches!(
-            enforce_selected_p3c_causality_v1(&projected).unwrap().stop(),
+            enforce_selected_p3c_causality_v1(&projected)
+                .unwrap()
+                .stop(),
             SelectedP3cCausalityStopV1::RelativeError
                 | SelectedP3cCausalityStopV1::SuccessiveErrorDifference
         ));
