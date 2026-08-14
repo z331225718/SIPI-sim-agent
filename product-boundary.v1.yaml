@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 1c704cb960968e45df7e97fdf2b6e4e71a07ef80e3422d4a447f280cab82f38a
+  tracked_paths_sha256: 96062c4ac10a3239fe7a470ce4c142e7d58da51a0c567de8d662a7dfa1c87b6f
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -540,6 +540,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-p3c/tests/p3c_sealed_s4p_external_runner.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/tests/p3c_sealed_s4p_external_truncation_runner.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1679,6 +1685,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-14-p3c-selected-s4p-truncation-runner.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/capabilities.baseline.v1.json:
       rule: historical-docs
       class: migration_only
@@ -2736,6 +2748,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-selected-s4p-raw-periodic-observation.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-selected-s4p-truncation-observation.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

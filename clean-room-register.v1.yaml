@@ -649,6 +649,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3c-ieee-bsd-inline-causality-direct-port-spec-v1]
+  - id: p3c-selected-s4p-truncation-observation-spec-v1
+    kind: independent_spec
+    content_sha256: 80b53b08563e9546d282580685e48f567e5932e0bc6a468df21ed250b1a312ae
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-selected-s4p-truncation-observation.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-ieee-bsd-truncation-direct-port-spec-v1]
   - id: p3c-selected-s4p-causality-observation-spec-v1
     kind: independent_spec
     content_sha256: d0dfcc2bd867981dae3cffb870bf6d40f864e81d209c1974882243dc23ff095a
@@ -1587,6 +1595,15 @@ scopes:
       implementer: [p3c-ieee-bsd-truncation-direct-port-spec-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1, p3c-ieee-bsd-inline-causality-direct-port-spec-v1, p1-types-foundation-spec-v1]
       comparator: []
       auditor: [p3c-ieee-bsd-truncation-direct-port-spec-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1]
+  - id: p3c-selected-s4p-truncation-observation-v1
+    paths: [crates/sipi-p3c/Cargo.toml, crates/sipi-p3c/tests/p3c_sealed_s4p_external_truncation_runner.rs, docs/clean-room/specs/p3c-selected-s4p-truncation-observation.v1.md]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-selected-s4p-truncation-observation-spec-v1]
+      spec_author: [p3c-selected-s4p-truncation-observation-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-selected-s4p-truncation-observation-spec-v1, p3c-ieee-bsd-truncation-direct-port-spec-v1]
   - id: p3c-selected-s4p-causality-observation-v1
     paths: [crates/sipi-p3c/Cargo.toml, crates/sipi-p3c/tests/p3c_sealed_s4p_external_causality_runner.rs, docs/clean-room/specs/p3c-selected-s4p-causality-observation.v1.md, tools/observe_p3c_sealed_selected_s4p_causality.py]
     state: planned
