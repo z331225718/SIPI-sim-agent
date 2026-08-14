@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 1efcd3df550743708e152ad9176c355b826a7a55f7d27d4d2fc388eb1afa4e9f
+  tracked_paths_sha256: ebfb42c38b081082f618fb4c6db60191b0ab070a6ae057e5bc2dd4006c442a08
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -2268,6 +2268,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-selected-highloss-residual-diagnostic-core.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-selected-highloss-residual-diagnostic-v2-observation-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8525,6 +8531,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_selected_highloss_residual_diagnostic_v2_observation_evidence.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_selected_highloss_waveform_only_v2_observation_evidence.py:
       rule: migration-tools
       class: migration_only
@@ -9264,6 +9276,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_selected_highloss_residual_diagnostic_core.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_selected_highloss_residual_diagnostic_v2_observation_evidence.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
