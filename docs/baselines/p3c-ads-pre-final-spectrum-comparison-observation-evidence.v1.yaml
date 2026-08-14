@@ -45,7 +45,8 @@ external_observation:
 independent_audit:
   reviewer: Orca_reused_OpenCode_terminal
   terminal: term_2de7cb74-b803-4e20-bb5b-4803777c24f8
-  status: pending_read_only_audit
+  status: completed
+  result: no_high_or_critical_findings
 admission:
   saved_pre_to_final_spectrum_comparison_evaluated: true
   strict_pre_to_final_axis_identity_evaluated: true

@@ -72,7 +72,7 @@ def verify(document: object, current: bool = True) -> dict[str, object]:
     fail(tree.returncode != 0 or tree.stdout.strip() != TREE, "archive")
     if current:
         fail(archive_inventory() != INVENTORY, "source_drift")
-    fail(document["independent_audit"] != {"reviewer": "Orca_reused_OpenCode_terminal", "terminal": "term_2de7cb74-b803-4e20-bb5b-4803777c24f8", "status": "pending_read_only_audit"}, "audit")
+    fail(document["independent_audit"] != {"reviewer": "Orca_reused_OpenCode_terminal", "terminal": "term_2de7cb74-b803-4e20-bb5b-4803777c24f8", "status": "completed", "result": "no_high_or_critical_findings"}, "audit")
     true = {"saved_pre_to_final_spectrum_comparison_evaluated", "strict_pre_to_final_axis_identity_evaluated"}
     false = {"full_matrix_delta_observed", "selected_hdiff_delta_observed", "passivity_correction_surface_delta_evaluated", "passivity_algorithm_or_repair_implemented", "waveform_mismatch_cause_identified", "candidate_waveform_accepted", "release_ledger_promoted"}
     admission = document["admission"]
