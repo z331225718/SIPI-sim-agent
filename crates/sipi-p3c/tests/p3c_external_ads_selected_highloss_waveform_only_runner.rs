@@ -327,10 +327,22 @@ fn invoke_cli(
     if !output.status.success() || !output.stderr.is_empty() {
         return Err("cli_rejected".to_owned());
     }
-    let response: Value = serde_json::from_slice(&output.stdout)
+    let envelope: Value = serde_json::from_slice(&output.stdout)
         .map_err(|_| "cli_response_json".to_owned())?;
-    let object = response
+    let envelope = envelope
         .as_object()
+        .ok_or_else(|| "cli_response_shape".to_owned())?;
+    if string_field(envelope, "schema")? != "sipi.cli.response.v1"
+        || envelope.get("protocol").and_then(Value::as_u64) != Some(1)
+        || string_field(envelope, "command")? != "compare"
+        || string_field(envelope, "status")? != "ok"
+        || envelope.get("diagnostic_count").and_then(Value::as_u64) != Some(0)
+    {
+        return Err("cli_envelope_contract".to_owned());
+    }
+    let object = envelope
+        .get("result")
+        .and_then(Value::as_object)
         .ok_or_else(|| "cli_response_shape".to_owned())?;
     if string_field(object, "schema")?
         != "sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-run-result.v3"

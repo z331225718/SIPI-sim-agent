@@ -2171,7 +2171,7 @@ scopes:
       comparator: []
       auditor: [p3c-selected-highloss-prbs9-waveform-only-spec-v3]
   - id: p3c-external-ads-selected-highloss-waveform-only-observation-v3
-    paths: [Cargo.lock, PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, crates/sipi-p3c/Cargo.toml, crates/sipi-p3c/tests/p3c_external_ads_selected_highloss_waveform_only_runner.rs, docs/baselines/audits/2026-08-14-p3c-external-ads-selected-highloss-waveform-only-runner.md, docs/clean-room/specs/p3c-external-ads-selected-highloss-waveform-only-observation.v3.md, tools/verify_release_license_preflight.py, tools/test_release_license_preflight.py]
+    paths: [Cargo.lock, PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, crates/sipi-p3c/Cargo.toml, crates/sipi-p3c/tests/p3c_external_ads_selected_highloss_waveform_only_runner.rs, docs/baselines/audits/2026-08-14-p3c-external-ads-selected-highloss-waveform-only-runner.md, docs/baselines/audits/2026-08-14-p3c-waveform-only-runner-envelope-fix.md, docs/clean-room/specs/p3c-external-ads-selected-highloss-waveform-only-observation.v3.md, tools/verify_release_license_preflight.py, tools/test_release_license_preflight.py]
     state: planned
     role_material_allowlists:
       observer: [p3c-external-ads-selected-highloss-waveform-only-observation-spec-v3]
