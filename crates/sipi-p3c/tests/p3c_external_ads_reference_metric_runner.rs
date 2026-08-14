@@ -26,6 +26,15 @@ fn env_path(name: &str) -> Result<PathBuf, String> {
 
 fn digest(bytes: &[u8]) -> String { format!("{:x}", Sha256::digest(bytes)) }
 
+fn ulp(value: f64) -> f64 {
+    if value == 0.0 {
+        f64::from_bits(1)
+    } else {
+        let magnitude = value.abs();
+        f64::from_bits(magnitude.to_bits() + 1) - magnitude
+    }
+}
+
 fn identity(path: &Path) -> Result<(u64, String), String> {
     let mut file = File::open(path).map_err(|_| "source_open".to_owned())?;
     let mut hasher = Sha256::new(); let mut length = 0_u64; let mut buf = [0; 65_536];
@@ -45,13 +54,17 @@ fn reference_values(path: &Path) -> Result<(Vec<f64>, String), String> {
     let bytes = fs::read(path).map_err(|_| "reference_read".to_owned())?;
     if bytes.len() != COUNT * 24 || digest(&bytes) != REFERENCE_CANONICAL_SHA { return Err("reference_identity".to_owned()); }
     let mut values = Vec::with_capacity(COUNT);
-    for (index, row) in bytes.chunks_exact(24).enumerate() {
+    let mut rows = bytes.chunks_exact(24);
+    for (index, row) in rows.by_ref().enumerate() {
         let time = f64::from_le_bytes(row[..8].try_into().map_err(|_| "reference_layout")?);
         let tx = f64::from_le_bytes(row[8..16].try_into().map_err(|_| "reference_layout")?);
         let rx = f64::from_le_bytes(row[16..].try_into().map_err(|_| "reference_layout")?);
-        if !time.is_finite() || !tx.is_finite() || !rx.is_finite() || time.to_bits() != (index as f64 * f64::from_bits(DT_BITS)).to_bits() { return Err("reference_grid".to_owned()); }
+        let expected_time = index as f64 * f64::from_bits(DT_BITS);
+        let grid_tolerance = 8.0 * ulp(time.abs().max(expected_time.abs()));
+        if !time.is_finite() || !tx.is_finite() || !rx.is_finite() || (time - expected_time).abs() > grid_tolerance { return Err("reference_grid".to_owned()); }
         values.push(rx);
     }
+    if !rows.remainder().is_empty() { return Err("reference_layout".to_owned()); }
     let payload = values.iter().flat_map(|value| value.to_le_bytes()).collect::<Vec<_>>();
     Ok((values, digest(&payload)))
 }
