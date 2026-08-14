@@ -745,6 +745,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-external-ads-reference-metric-observation-evidence-spec-v1]
+  - id: p3c-external-ads-selected-highloss-waveform-only-observation-spec-v3
+    kind: independent_spec
+    content_sha256: 36752c63ef1e78f19149a11d54aa592da02907881228f157ddb8f35a6502324e
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-external-ads-selected-highloss-waveform-only-observation.v3.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-selected-highloss-prbs9-waveform-only-spec-v3, p3c-selected-s4p-candidate-observation-spec-v1]
   - id: p3c-selected-s4p-raw-periodic-observation-spec-v1
     kind: independent_spec
     content_sha256: 9f3da6111b2d9257cd2cfe60773cb4133ef0ce8043e5ede4c6a9f41c5e489608
@@ -2162,4 +2170,13 @@ scopes:
       implementer: [p3c-selected-highloss-prbs9-waveform-only-spec-v3]
       comparator: []
       auditor: [p3c-selected-highloss-prbs9-waveform-only-spec-v3]
+  - id: p3c-external-ads-selected-highloss-waveform-only-observation-v3
+    paths: [Cargo.lock, PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, crates/sipi-p3c/Cargo.toml, crates/sipi-p3c/tests/p3c_external_ads_selected_highloss_waveform_only_runner.rs, docs/baselines/audits/2026-08-14-p3c-external-ads-selected-highloss-waveform-only-runner.md, docs/clean-room/specs/p3c-external-ads-selected-highloss-waveform-only-observation.v3.md, tools/verify_release_license_preflight.py, tools/test_release_license_preflight.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-external-ads-selected-highloss-waveform-only-observation-spec-v3]
+      spec_author: [p3c-external-ads-selected-highloss-waveform-only-observation-spec-v3]
+      implementer: []
+      comparator: []
+      auditor: [p3c-external-ads-selected-highloss-waveform-only-observation-spec-v3]
 attestations: []

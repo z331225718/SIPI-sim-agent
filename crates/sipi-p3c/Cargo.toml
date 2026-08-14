@@ -18,6 +18,7 @@ sipi-touchstone = { path = "../sipi-touchstone" }
 sipi-types = { path = "../sipi-types" }
 
 [dev-dependencies]
+serde_json = "1"
 sipi-compare = { path = "../sipi-compare" }
 
 [lints]
