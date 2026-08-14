@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 9a9cd9223ae9013eb151f294a1dfe77ad4ca1f7c73e021e7ecab2261fa5f825d
+  tracked_paths_sha256: 52c9f02a465242219e9c435789b1eb2468a686f0e689d09d075416448c22b179
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1620,6 +1620,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-13-p3c-selected-s4p-uniform-spectrum-observation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-14-p3c-ieee-bsd-inline-causality-source-preflight.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
