@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: f7a18d37726847c291cbf8d3d552b0464e8062db7f4e371dea8e739ac7ff23d9
+  tracked_paths_sha256: 6876c1339be1931e79a10056a3a73101df69cb48102bae859aaa10fd81bfe9d0
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -7926,6 +7926,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/observe_p3c_ads_explicit_convolution_sweep.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/observe_p3c_ads_fixed_pulse_operator.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
