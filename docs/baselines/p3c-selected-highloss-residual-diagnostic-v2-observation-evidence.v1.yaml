@@ -1,0 +1,105 @@
+schema: sipi.p3c-selected-highloss-residual-diagnostic-v2-observation-evidence.v1
+status: external_selected_finite_edge_v2_residual_diagnostic_observed_acceptance_unchanged
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-14-p3c-finite-edge-boundary-projection-v2
+  scope: selected_v2_candidate_strict_index_time_domain_diagnostic_only
+predecessor:
+  source_projection_v2: docs/baselines/p3c-prbs9-impulse-candidate-source-projection.v2.yaml
+  candidate_waveform_v2: docs/baselines/p3c-selected-highloss-waveform-only-v2-observation-evidence.v1.yaml
+external_observation:
+  schema: sipi.p3c.external-ads-selected-highloss-residual-v2-runner.v1
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 3698
+  report_content_sha256: 8dffd68c1788039ad0967451f206e436f684f7943ff531cac8f3636dd4f5ee5a
+  clean_archive_commit: b61bb1abf0ad1a200d97bc818cbfe1b174abfa2e
+  clean_archive_tree: 2725e2d23ced8fd6ea05faed3bf7585e9018a446
+  source_sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  ads_canonical_triple_payload_sha256: 5ec5211a273d313655f0b8ced35d58ea89d0bba113f5edc3fd9712218f46e726
+  reference_rx_payload_sha256: 2cf94baf436bd04ff86baeca7d03eab1e6d9a8ce019163d43987a0200eb1bfa5
+  candidate_prefix_sha256: 46b95963363de9439194ebcbf034088cdf984ea5c7d1b72ba3bb1ebf67a1ae3d
+  fresh_runs: 2
+  record_count: 2002
+  source_manifests:
+    - 865eb3278d210e85f0381a11ee891f62b688ccf599ef4e54f01cebf51310b3f1
+    - 270732cbe8163316c8694e7805001a22ca0f03abb4dde9d8a9f26a8b874cea1a
+  fixed_period_windows: [[0, 16352], [16352, 32704], [32704, 49056]]
+  periods:
+    - reference_rms_bits: 3fd0119711422e56
+      candidate_rms_bits: 3fbee75fc93d18ff
+      residual_rms_bits: 3fcbc114e8478b29
+      residual_mean_bits: bfbc2ecfae47e2c4
+      residual_nrmse_bits: 3feba2b31caf847a
+      residual_sha256: e1ce554701280ad629a7a846a07b0be750c12b3a99261c003043b7fe9796eea7
+      maximum_absolute_residual_bits: 3fde0dc51f230179
+      maximum_absolute_residual_offset: 3369
+    - reference_rms_bits: 3fc0fca907ad6765
+      candidate_rms_bits: 3fc0fbb3807b80fc
+      residual_rms_bits: 3f6fa863c2be474a
+      residual_mean_bits: bee46da1a824d53b
+      residual_nrmse_bits: 3f9dd184d3632100
+      residual_sha256: 77ea01259456a224cac1274b7d9f81910cfd1e7a8d247005571d3b2081062991
+      maximum_absolute_residual_bits: 3f91817a41c2ea6c
+      maximum_absolute_residual_offset: 11069
+    - reference_rms_bits: 3fc0fca907d2456d
+      candidate_rms_bits: 3fc0fbb3807b80fc
+      residual_rms_bits: 3f6fa863bc91eb34
+      residual_mean_bits: bee46da444a42b5e
+      residual_nrmse_bits: 3f9dd184cd51df98
+      residual_sha256: 78fbfb975c07996ba0b27c3d388a57c45ebe8aaf1b5f5e4fe47f177bb874fe7c
+      maximum_absolute_residual_bits: 3f91817a41c2ea50
+      maximum_absolute_residual_offset: 11069
+  third_period_ui_residual_energy_sha256: 250970dc91a7f40c0cd39dbf8861670286c6bacc7d6ee5520c4b0be775af35e7
+  third_period_maximum_energy_ui_offset: 346
+  cleanup_status: complete
+  source_inventory:
+    Cargo.lock: d10679ecbb0884cc3325f9b67afaf9a8d61a9f826c262f6fefd437538df34e99
+    Cargo.toml: ccfb303fa9c3593a19d5f9c240b7d9aebddbf33bfd658d5a444ba06734cc3ca2
+    rust-toolchain.toml: 512bedfbbe3c4ef614fbb901b3661f40b4adb701d26c94664e79ca765aa3d109
+    crates/sipi-artifacts/Cargo.toml: 37817d937973b48c42d935a314a67130921b3537b6a45ba1fb242e5217b6789c
+    crates/sipi-artifacts/src/lib.rs: 85b475ec865779dbe3e21b54759ca9075b8a4516714d7192ba4b214075861997
+    crates/sipi-touchstone/Cargo.toml: 7fcfb8330e8962e20b1e60a0c93dc7eda8e7a363895dd23a0a4ea76cad772fcb
+    crates/sipi-touchstone/src/lib.rs: 359b0c44894d6cf2b03eca19626d180a9f921695a71681e901c5bcb0c77fc5cc
+    crates/sipi-touchstone/src/selected_four_port_v1.rs: 53b11a0cf08b0505c190b244c47f13e22f7b2b3c1f6ea712b6aba533a8805f80
+    crates/sipi-channel/Cargo.toml: a079c508b5e6ce5efeac13edb44c0fb6e7efab90819e47aa1bc6e0960889f63f
+    crates/sipi-channel/src/p3c_fixed_four_port_bench_v1.rs: 248bf24c494d9c956a96e2781f35f546d5de9f70f6157457da7a54aeb60baa70
+    crates/sipi-ieee-com-sparam/Cargo.toml: 044d3d837957f99bf3429d7c51cf1b32129ae2744d921bd95def313a0aa1942b
+    crates/sipi-ieee-com-sparam/src/interp_sparam_v1.rs: dbc0273cbf151447f9f21d039534effe501823da953eaac0d00314e646971d75
+    crates/sipi-ieee-com-sparam/src/s21_to_causal_v1.rs: ae41af1c8bbbf2a706b772e2f457cf97cedce0f38e90158703ed007f11f1a5e1
+    crates/sipi-ieee-com-sparam/src/s21_to_truncated_v1.rs: dc0923ee6398e990594e9b001993ecdbd9798f865546339e57f1b8417063b407
+    crates/sipi-p3c/Cargo.toml: 0ecfe1113ccd171470b06e0e7d69571085ed53e2cd5c6cdd6f27f0b81b4b2c75
+    crates/sipi-p3c/src/lib.rs: 678cd5e7fee9ef7efb17be080ea6a0a57bd3ef9c64723db318fad077978823ab
+    crates/sipi-p3c/src/prbs9_impulse_candidate_v2.rs: eb3ffda067bdd23d3e09aae5210cd4b5252a551fb684a61b03febe74fc4a636a
+    crates/sipi-p3c/tests/p3c_external_ads_selected_highloss_residual_diagnostic_runner.rs: 003d33f75cab0e40f30f845be8dc186634664fe164a76e8cad576b6a890c3374
+    crates/sipi-compare/Cargo.toml: 1993118a1551c0605cfa04d0346770d41966c433885c91a952207731483e8755
+    crates/sipi-compare/src/lib.rs: a083df07f481beded3b6697de880a56732b088c8ad85cb3b3693f0be0e56329f
+    crates/sipi-compare/src/selected_highloss_prbs9_waveform_only_v3.rs: 17f1101587d4d00e570ebf6b746bd7919d47f04200139add4c26be2b0a9261e4
+    crates/sipi-contracts/Cargo.toml: e9ec60833778d8888af64796df9202934247e365575dcbc88722f27f5668f20c
+    crates/sipi-contracts/src/lib.rs: d7ce9ee9dbe4459ed44a0d604c50c9ffbd44b33d7ff29571b2393123c7152a5b
+    crates/sipi-link/Cargo.toml: e89c97fc9c75427394e6d5ffff736c8bea40e4b4af831a6d289325388327b343
+    crates/sipi-link/src/lib.rs: 03ee95a4ffb365610206bce3c4437bf713d463e81d8b39e2f521f1aaf62d09e6
+    crates/sipi-runtime/Cargo.toml: ec6a2b537040bd2ed1f7bb27bd464330d61b9bbf5ec9f159f8411222e6f1f625
+    crates/sipi-runtime/src/lib.rs: b71283852cae625891d33739e69b1de9e635d8d8d957c0ab4341e5ce55fa2d9d
+    crates/sipi-types/Cargo.toml: c5c112540ec14ffcd319a5b15553422409ced82ea541630bd659a916ba4bf31e
+    crates/sipi-types/src/lib.rs: b54f9e937bab7fc7830e56ef4f2ec861caf1ffed7a5718cf45bae92397ee5576
+    docs/clean-room/specs/p3c-selected-highloss-residual-diagnostic-v2-observation.v1.md: cc571be0644a56ad99b3820ed925a1da1e81295a99606e1517c5f0fc22941a60
+admission:
+  external_selected_v2_residual_diagnostic_invoked: true
+  external_selected_v2_residual_diagnostic_repeatable: true
+  current_v2_candidate_baseline_reproduced: true
+  period_partition_residuals_observed: true
+  third_period_diagnostic_matches_v3_nrmse: true
+  selected_highloss_waveform_only_profile_accepted: false
+  acceptance_ready: false
+  release_ledger_promoted: false
+blockers:
+  - selected_highloss_waveform_nrmse_exceeds_fixed_one_percent_limit
+  - strict_v2_source_strobe_identity_not_observed_and_no_source_tolerance_authorized
+  - residual_spectral_distribution_observation_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - This records raw strict-index period partitions; it does not alter the v3 NRMSE or its one-percent limit.
+  - This is not a frequency diagnostic, waveform repair, source-policy change, ADS parity, receiver acceptance, or release evidence.
+  - Product source inventory is bound to the clean archive; uv.lock, paths, waveform values, residual vectors, and the external report are not retained.
