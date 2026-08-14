@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 15bec9c61ec73d5d72060d41598e9c36210e324b1b13ced9ce09e2ad8a438173
+  tracked_paths_sha256: f653f848c04a2b5f8c1a66ada71dc7d5b9363c538aa3f78addb6c43a738cfe9c
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -504,6 +504,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-p3c/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/tests/p3c_sealed_s4p_external_causality_runner.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -2658,6 +2664,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-selected-four-port-static-bench.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-selected-s4p-causality-observation.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7416,6 +7428,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/observe_p3c_ads_transient_policy_surface.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/observe_p3c_sealed_selected_s4p_causality.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
