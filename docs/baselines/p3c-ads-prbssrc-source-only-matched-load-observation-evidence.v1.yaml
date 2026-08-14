@@ -1,0 +1,74 @@
+schema: sipi.p3c-ads-prbssrc-source-only-matched-load-observation-evidence.v1
+status: external_ads_source_only_matched_load_observed_product_policy_unchanged
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-14-p3c-source-only-matched-load
+  scope: external_ads_source_only_strobe_observation_not_product_policy_or_channel_acceptance
+predecessor:
+  charter:
+    path: docs/baselines/p3c-ads-prbssrc-source-only-matched-load-charter.v1.yaml
+    status: specified_owner_confirmed_external_runner_pending
+external_observation:
+  schema: sipi.p3c.ads-prbssrc-source-only-observation.v1
+  status: observed
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 8910
+  report_content_sha256: 17d9d1dc59bf76f285c211e9b4db2856ae47868ad43035d034158aed2b6e2773
+  clean_archive_commit: e7488eedccb8d71f070937780eab40a670b83d03
+  clean_archive_tree: 1d35a504bbc8a2f88d591e26228e93ce01c49190
+  ads_product: keysight_ads_2026_update1
+  ads_python_version: "3.13.2"
+  fixed_mapping: ads_loaded_differential_equals_0.5_times_product_projection
+  ads_inclusive_samples: 49057
+  canonical_half_open_samples: 49056
+  fresh_runs: 2
+  netlist_sha256: 638e6c24d65fd2adc92ea7f6b52cb6f3477d837f2290579a5562e97d42c0cdc1
+  canonical_payload_sha256: c30e226b1133737f35886e86f4bf50c6f49e78fe35859922435ad12009edce1f
+  period_nrmse_bits: [3fcff7fae8cb112f, 3fd004001b2ab3db, 3fd00401631b60af]
+  third_period:
+    nrmse_bits: 3fd00401631b60af
+    residual_sha256: 09c23aa84a6237035afdb031ec732f4cd938e07426a7866c02fc47b4d89c555b
+    common_mode_sha256: f0c18774d9f6613750f7c679f39e3a7e791ddd8704edcfa00b48b057af8a1543
+    common_mode_max_absolute_bits: 3cc2000000000000
+  third_period_ui_boundary:
+    sample_count: 511
+    nrmse_bits: 3ff6a648844b4de4
+    residual_sha256: c14b2199ccda8bd81ccf9b8cc1b3b4c0b159c372972ab6c73b47ed28a1e95f3c
+    max_absolute_residual_bits: 3ff0000000000000
+    max_absolute_residual_first_index: 34816
+  third_period_ui_interior:
+    sample_count: 15841
+    nrmse_bits: "0000000000000000"
+    residual_sha256: f416f1232170b120a2f06f14edfbc86d29230a8070e8ce49cbb0a948cf09de76
+    max_absolute_residual_bits: "0000000000000000"
+    max_absolute_residual_first_index: 32705
+  cleanup_status: complete
+  source_inventory:
+    docs/baselines/p3c-ads-prbssrc-source-only-matched-load-charter.v1.yaml: 475ed1d807f03f3bdf33b6d199110c4b42e2bfd737183d6619980319841666d9
+    tools/observe_p3c_ads_prbs9_source_only.py: 2b2a668015bbcd0776813e6ec0cc11285f209eb82ba7d199ad9362db69399fe6
+    tools/run_p3c_external_ads_prbs9_source_only.py: bd0011d9d2a87a3cc955eeb91f9bf2d4adb299a2fda98b5886fd537d3e0929c1
+    tools/test_observe_p3c_ads_prbs9_source_only.py: 2cfcfd5389755e5d98768c871209bc855ea1cc9d02bc5445c2f0e8842561e39f
+    tools/test_run_p3c_external_ads_prbs9_source_only.py: c11ec313bebc526835fb29bff17742a99a6fb1c743fc5892645d6f19d6ac17cf
+admission:
+  external_ads_source_only_matched_load_observed: true
+  ads_prbssrc_strobe_semantics_observed: true
+  right_continuous_projection_strict_diagnostic_evaluated: true
+  source_only_observation_repeatable: true
+  product_source_policy_changed: false
+  product_source_policy_admitted: false
+  source_explains_full_channel_residual: false
+  candidate_waveform_accepted: false
+  causalization_policy_changed: false
+  accepted_receiver: false
+  release_ledger_promoted: false
+blockers:
+  - owner_product_source_discretization_policy_decision_pending
+  - source_only_observation_does_not_establish_full_channel_residual_causation
+  - selected_waveform_nrmse_exceeds_fixed_one_percent_limit
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - The exact interior match and UI-boundary mismatch are source-only diagnostic facts, not an ADS parity claim.
+  - This observation does not authorize a changed product source projection, alignment, fitted gain, or a new waveform acceptance result.
+  - No channel, S4P, causalization, passivity, receiver, P4B, P5, or release gate is established.
