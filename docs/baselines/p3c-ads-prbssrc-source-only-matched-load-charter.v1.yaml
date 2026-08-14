@@ -1,0 +1,78 @@
+schema: sipi.p3c-ads-prbssrc-source-only-matched-load-charter.v1
+status: specified_pending_owner_topology_and_fixed_thevenin_mapping_confirmation
+authority:
+  actor: user
+  decision_ref: user-continuation-2026-08-14
+  scope: external_ads_source_only_observation_charter_not_runtime_or_policy_change
+predecessors:
+  waveform_contract_v2:
+    path: docs/baselines/p3c-prbs9-waveform-jitter-contract.v2.yaml
+    content_sha256: f47329b6ddda01cbcde1f24e21cb93e03f8ef6139ea2d43ff74cad9e2049d2b5
+  oob_sensitivity:
+    path: docs/baselines/p3c-selected-oob-zero-extension-sensitivity-observation-evidence.v1.yaml
+    result: strict_gt_40ghz_positive_zero_changed_nrmse_only_by_approximately_3_62e-9
+  truncation_sensitivity:
+    path: docs/baselines/p3c-selected-truncation-waveform-sensitivity-observation-evidence.v1.yaml
+    result: full_bounded_causality_diagnostic_remains_above_fixed_one_percent_limit
+topology:
+  components_exact: [PRBSsrc:TXP, PRBSsrc:TXM, R:TX_PLUS_MATCH, R:TX_MINUS_MATCH, Tran:TRAN]
+  forbidden_component_tokens: [SnP, channel, rxp, rxm, ami, ibis, .dll, getwave, ctspcie]
+  sources:
+    txp: {node: txp, vlow_volts: -0.5, vhigh_volts: 0.5, rout_ohms: 50.0}
+    txm: {node: txm, vlow_volts: 0.5, vhigh_volts: -0.5, rout_ohms: 50.0}
+    shared_prbssrc_parameters: {mode: 2, register_length: 9, taps: "10001110", seed: "10101010", explicit_three_period_sequence: required, bit_rate_ghz: 32.0, edge_shape_code: 0, rise_fall_seconds: 1.0e-16, rj: disabled, pj: disabled, de_emphasis: disabled}
+  loads:
+    tx_plus_match: {node: txp, reference_node: global_ground_0, resistance_ohms: 50.0}
+    tx_minus_match: {node: txm, reference_node: global_ground_0, resistance_ohms: 50.0}
+  observation: V(txp)-V(txm)
+timebase:
+  ui_seconds: 3.125e-11
+  samples_per_ui: 32
+  sample_interval_seconds: 9.765625e-13
+  total_samples_half_open: 49056
+  ads_inclusive_samples: 49057
+  endpoint_policy: discard_only_final_inclusive_ads_endpoint
+fixed_diagnostic_mapping:
+  product_projection: right_continuous_prbs9_differential_levels_plus_or_minus_one_volt
+  expected_ads_loaded_differential: 0.5_times_product_projection
+  basis: two_independent_50_ohm_thevenin_source_and_50_ohm_to_ground_load_dividers
+  gain_fit: prohibited
+  alignment: prohibited
+  resampling: prohibited
+  delay_or_phase_shift: prohibited
+  dc_removal: prohibited
+  polarity_flip: prohibited
+diagnostics:
+  periods: three_fixed_nonoverlapping_16352_sample_windows
+  third_period: strict_same_index_nrmse
+  partitions: [ui_boundary_index_mod_32_equals_0, ui_interior_index_mod_32_not_equal_0]
+  summaries: [reference_rms_bits, ads_rms_bits, residual_rms_bits, signed_residual_mean_bits, nrmse_bits, residual_digest, max_absolute_residual_bits_and_first_index, common_mode_digest]
+  thresholds: none_observation_only
+owner_confirmation:
+  topology_confirmed: false
+  thevenin_half_scale_mapping_confirmed: false
+  diagnostic_partition_confirmation: false
+  external_ads_runner_authorized: false
+admission:
+  external_ads_source_only_matched_load_observed: false
+  ads_prbssrc_strobe_semantics_observed: false
+  right_continuous_projection_strict_diagnostic_evaluated: false
+  product_source_policy_changed: false
+  product_source_policy_admitted: false
+  source_explains_full_channel_residual: false
+  candidate_waveform_accepted: false
+  causalization_policy_changed: false
+  accepted_receiver: false
+  release_ledger_promoted: false
+blockers:
+  - owner_source_only_matched_load_topology_confirmation_missing
+  - owner_fixed_thevenin_half_scale_mapping_confirmation_missing
+  - owner_diagnostic_partition_confirmation_missing
+  - source_only_external_observation_not_run
+  - selected_waveform_nrmse_exceeds_fixed_one_percent_limit
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - This is not a channel, S4P, receiver, AMI, IBIS, DLL, CDR, or product runtime observation.
+  - The half-scale relation is a proposed fixed Thevenin mapping, not a fitted gain or an ADS parity claim.
+  - UI-boundary and interior partitions are diagnostic only and cannot alter the product source policy or acceptance gate.
