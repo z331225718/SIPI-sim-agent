@@ -529,6 +529,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-selected-highloss-residual-diagnostic-v2-observation-spec-v1]
+  - id: p3c-selected-causality-transfer-delta-observation-spec-v1
+    kind: independent_spec
+    content_sha256: 8bf9bc61f9bb831d5cae805d8339e00674a5617c6be0a6669b80f0175cc78841
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-selected-causality-transfer-delta-observation.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-selected-highloss-residual-dft-v2-observation-spec-v1]
   - id: p3c-selected-highloss-waveform-only-historical-source-drift-spec-v1
     kind: independent_spec
     content_sha256: 068a5d117b0743ed739de3a8f72f9a4ee4d42ff6714eaa0ad302a46caa52a7ee
@@ -2404,4 +2412,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-selected-highloss-waveform-only-v2-observation-spec-v1]
+  - id: p3c-selected-causality-transfer-delta-observation-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, crates/sipi-p3c/tests/p3c_sealed_s4p_external_causality_transfer_delta_runner.rs, docs/baselines/p3c-selected-causality-transfer-delta-observation.v1.yaml, docs/clean-room/specs/p3c-selected-causality-transfer-delta-observation.v1.md]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-selected-causality-transfer-delta-observation-spec-v1]
+      spec_author: [p3c-selected-causality-transfer-delta-observation-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-selected-causality-transfer-delta-observation-spec-v1]
 attestations: []

@@ -1,0 +1,42 @@
+schema: sipi.p3c-selected-causality-transfer-delta-observation.v1
+status: planned_external_only
+authority:
+  actor: product
+  decision_ref: fixed-p3c-04as-causality-transfer-delta-observation-v1
+  scope: selected_raw_to_bounded_causality_delta_only
+fixed_observation:
+  source: sealed_selected_s4p_v2
+  raw_response: selected_raw_periodic_response_v1
+  bounded_response: selected_bounded_causality_response_v1
+  dft:
+    samples: 51200
+    one_sided_bins: 25601
+    sample_interval_bits: 3d712e0be826d695
+    frequency_step_bits: 417312d000000000
+    window: rectangular
+    forward_sign: negative
+    normalization: none
+    factorization: [32, 32, 2, 25]
+    bands: [[0, 1], [1, 801], [801, 2001], [2001, 25601]]
+  residual_peak_frequency_bracket_bins: [203, 204]
+admission:
+  raw_to_causal_transfer_delta_defined: true
+  raw_to_causal_transfer_delta_invoked: false
+  raw_to_causal_transfer_delta_observed: false
+  residual_peak_frequency_bracket_observed: false
+  causality_cause_identified: false
+  causality_policy_changed: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  acceptance_ready: false
+  release_ledger_promoted: false
+blockers:
+  - two_fresh_external_causality_transfer_delta_observations_missing
+  - transfer_delta_observation_does_not_identify_physical_cause
+  - selected_highloss_waveform_nrmse_exceeds_fixed_one_percent_limit
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Raw and bounded response spectra are reconstructed independently; the original uniform spectrum is not substituted for either observation.
+  - No checkpoint, tolerance, phase, delay, gain, alignment, or frequency-policy parameter is caller-selectable or swept.
+  - This observation does not admit causality, passivity, a causal FIR, a candidate waveform, reference parity, receiver behavior, or release capability.
