@@ -1,0 +1,32 @@
+schema: sipi.p3c-selected-s4p-historical-observation-source-drift.v1
+status: historical_observations_source_drifted_current_truncation_chain_evidence_only
+authority:
+  actor: project
+  decision_ref: historical-evidence-source-drift-preservation
+  scope: reconcile_prior_selected_s4p_observations_without_rewriting_them_or_relaxing_any_gate
+historical_records:
+  - {id: selected-static-custody-v2, evidence: docs/baselines/p3c-selected-s4p-external-static-custody-evidence.v1.yaml, verifier: tools/verify_p3c_selected_s4p_external_static_custody_evidence.py, expected_error: static_custody_evidence_product_source_drift}
+  - {id: selected-uniform-spectrum-v1, evidence: docs/baselines/p3c-selected-s4p-uniform-spectrum-observation-evidence.v1.yaml, verifier: tools/verify_p3c_selected_s4p_uniform_spectrum_observation_evidence.py, expected_error: uniform_spectrum_product_source_drift}
+  - {id: selected-raw-periodic-v1, evidence: docs/baselines/p3c-selected-s4p-raw-periodic-observation-evidence.v1.yaml, verifier: tools/verify_p3c_selected_s4p_raw_periodic_observation_evidence.py, expected_error: raw_periodic_product_source_drift}
+  - {id: selected-bounded-causality-v1, evidence: docs/baselines/p3c-selected-s4p-causality-observation-evidence.v1.yaml, verifier: tools/verify_p3c_selected_s4p_causality_observation_evidence.py, expected_error: causality_product_source_drift}
+current_successor:
+  evidence: docs/baselines/p3c-selected-s4p-truncation-observation-evidence.v1.yaml
+  verifier: tools/verify_p3c_selected_s4p_truncation_observation_evidence.py
+  required_status: external_selected_s4p_truncation_observed_causal_fir_and_candidate_route_pending
+  required_result: {valid: true, truncation_observed: true, release_admitted: false}
+gates:
+  historical_records_rewritten: false
+  historical_records_current: false
+  current_selected_truncation_chain_observed: true
+  causal_impulse_admitted: false
+  delay_extraction_implemented: false
+  passivity_repair_implemented: false
+  linear_convolution_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  release_ledger_promoted: false
+non_claims:
+  - Source drift makes each historical record unusable as current evidence; it does not erase its recorded historical fact.
+  - Current truncation-chain observation replaces none of the historical records and does not admit causal impulse/FIR, delay, passivity, convolution, waveform, reference, receiver, or release capability.
