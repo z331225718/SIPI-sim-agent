@@ -20,6 +20,17 @@ use sipi_touchstone::{
     },
 };
 
+mod p3c_truncation_waveform_sensitivity_v1;
+
+pub use p3c_truncation_waveform_sensitivity_v1::{
+    diagnose_selected_p3c_full_causal_third_period_v1,
+    P3C_FULL_CAUSAL_RESPONSE_SAMPLES_V1, P3C_TRUNCATION_SENSITIVITY_MACS_V1,
+    P3C_TRUNCATION_SENSITIVITY_SAMPLE_INTERVAL_BITS_V1,
+    P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_SAMPLES_V1,
+    P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_START_V1,
+    SelectedP3cFullCausalThirdPeriodDiagnosticV1, TruncationWaveformSensitivityErrorV1,
+};
+
 pub const SELECTED_P3C_S4P_FILE_NAME_V1: &str = "channel.s4p";
 pub const SELECTED_P3C_S4P_BYTE_LENGTH_V1: u64 = 1_834_156;
 pub const SELECTED_P3C_S4P_SHA256_V1: &str = "25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47";

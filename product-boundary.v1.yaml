@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 65bc74052d2dde6fdde86ce0c4990814c24c2546bf566d15495a5ed0a1cad36a
+  tracked_paths_sha256: 1fe14fc72c1aeee353317c1dafdfa250630c705baa1fa282aa03ac9b9381b4ea
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -522,6 +522,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-p3c/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/src/p3c_truncation_waveform_sensitivity_v1.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -2315,6 +2321,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3c-selected-truncation-waveform-sensitivity-core.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p4a-electrical-endpoint-semantic-contract.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -3048,6 +3060,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-selected-s4p-uniform-spectrum-observation.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-selected-truncation-waveform-sensitivity.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8429,6 +8447,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_selected_truncation_waveform_sensitivity_core.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p4a_electrical_endpoint_semantic_contract.py:
       rule: migration-tools
       class: migration_only
@@ -9132,6 +9156,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_selected_s4p_uniform_spectrum_observation_evidence.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_selected_truncation_waveform_sensitivity_core.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

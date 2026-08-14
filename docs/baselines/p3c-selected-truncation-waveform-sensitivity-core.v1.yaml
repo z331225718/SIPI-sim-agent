@@ -1,0 +1,54 @@
+schema: sipi.p3c-selected-truncation-waveform-sensitivity-core.v1
+status: product_owned_selected_truncation_waveform_sensitivity_diagnostic_implemented_external_observation_pending
+authority:
+  actor: user
+  decision_ref: user-continuation-2026-08-14
+  scope: external_diagnostic_only_full_bounded_causality_response_third_period
+predecessors:
+  oob_sensitivity:
+    path: docs/baselines/p3c-selected-oob-zero-extension-sensitivity-observation-evidence.v1.yaml
+    status: external_selected_oob_extension_sensitivity_observed_acceptance_unchanged
+profile:
+  input: selected_bounded_causal_response_only
+  kernel_samples: 51200
+  output_window: [32704, 49056]
+  output_samples: 16352
+  source: fixed_prbs9_osr32_ui_boundary_right_continuous_zero_prehistory
+  accumulation: direct_kernel_index_ascending
+  multiply_accumulates: 668477936
+  sample_interval_bits: 3d712e0be826d695
+prohibitions:
+  - fft
+  - circular_convolution
+  - tail_selection
+  - delay_extraction
+  - alignment
+  - resampling
+  - gain_fit
+  - dc_removal
+  - polarity_flip
+  - product_policy_change
+admission:
+  selected_truncation_waveform_sensitivity_diagnostic_defined: true
+  external_full_causal_third_period_diagnostic_invoked: false
+  current_truncated_baseline_reproduced: false
+  truncation_waveform_sensitivity_observed: false
+  bounded_causal_response_admitted_as_kernel: false
+  causal_fir_admitted: false
+  truncation_policy_changed: false
+  candidate_waveform_generated: false
+  selected_highloss_waveform_only_profile_accepted: false
+  acceptance_ready: false
+  promotion_eligible: false
+  release_ledger_promoted: false
+blockers:
+  - clean_archive_two_fresh_truncation_sensitivity_observations_missing
+  - bounded_causal_response_not_admitted_as_kernel
+  - waveform_only_product_source_drift
+  - selected_waveform_nrmse_exceeds_fixed_one_percent_limit
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - The complete bounded-causality response is diagnostic input only, not a CausalFirChannel or product kernel.
+  - This does not change the selected 1e-3 truncation policy or evaluate a replacement candidate.
+  - No ADS parity, physical causality, passivity, receiver, P4B, P5, or release admission is established.
