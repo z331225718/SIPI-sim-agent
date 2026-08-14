@@ -11,10 +11,11 @@ description = "Internal sealed intake for the selected P3C four-port profile."
 sha2 = "0.10"
 sipi-artifacts = { path = "../sipi-artifacts" }
 sipi-channel = { path = "../sipi-channel" }
-sipi-touchstone = { path = "../sipi-touchstone" }
-
-[dev-dependencies]
+sipi-contracts = { path = "../sipi-contracts" }
 sipi-ieee-com-sparam = { path = "../sipi-ieee-com-sparam" }
+sipi-link = { path = "../sipi-link" }
+sipi-touchstone = { path = "../sipi-touchstone" }
+sipi-types = { path = "../sipi-types" }
 
 [lints]
 workspace = true

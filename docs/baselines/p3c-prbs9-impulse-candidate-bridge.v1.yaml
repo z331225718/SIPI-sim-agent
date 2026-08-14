@@ -1,0 +1,74 @@
+schema: sipi.p3c-prbs9-impulse-candidate-bridge.v1
+status: fixed_prbs9_discrete_convolution_implemented_external_candidate_observation_pending
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-14-p3c-osr32-ui-boundary-right-continuous-projection
+  scope: selected_truncated_response_to_internal_fixed_prbs9_direct_linear_convolution_only
+policy:
+  stimulus:
+    polynomial: x9+x5+1
+    seed_hex: 0x1a5
+    period_sha256: 4437fb3beb2fa1ca99b4177673c53fc20089ac9cf68b1adaa1e0fad14d742127
+    levels_volts_differential: [-1.0, 1.0]
+    ui_seconds: 3.125e-11
+    samples_per_ui: 32
+    sample_interval_bits: 3d712e0be826d695
+    projection: ui_boundary_right_continuous_level_change
+    first_symbol_at_t0: true
+    predecessor: absent
+    sub_strobe_100as_resolution: not_implemented
+    ads_edge_shape_parity: not_claimed
+    periods: 3
+    warmup_periods: 2
+  kernel:
+    input_type: sipi_ieee_com_sparam::SelectedP3cTruncatedResponseV1
+    expected_samples: 10871
+    preserve_delay: true
+    passivity_repair: prohibited
+    sample_interval_match: exact_bits
+    tap_scaling: discrete_gain_no_dt_factor
+  convolution:
+    implementation: sipi_link::convolve_causal_fir_v1
+    direct_full_linear: true
+    fft: prohibited
+    circular_wrap: prohibited
+    zero_prehistory: true
+    full_output_samples: 59926
+    multiply_accumulates: 533287776
+    strict_grid_prefix_samples: 49056
+    metric_window: [32704, 49056]
+    alignment: prohibited
+    resampling: prohibited
+implementation:
+  crate: crates/sipi-p3c
+  rust_path: crates/sipi-p3c/src/prbs9_impulse_candidate_v1.rs
+  api: generate_selected_p3c_prbs9_impulse_candidate_v1
+  output_type: SelectedP3cPrbs9ImpulseCandidateV1
+gates:
+  fixed_prbs9_source_projection_implemented: true
+  selected_discrete_linear_convolution_implemented: true
+  selected_truncated_response_admitted_as_discrete_convolution_kernel: false
+  external_selected_candidate_convolution_invoked: false
+  candidate_waveform_generated: false
+  causal_impulse_admitted: false
+  delay_extraction_implemented: false
+  passivity_repair_implemented: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  p5_reference_evaluated: false
+  release_ledger_promoted: false
+blockers:
+  - exact_selected_truncated_kernel_external_admission_missing
+  - external_selected_candidate_convolution_observation_missing
+  - bounded_response_not_admitted_as_physical_causal_impulse_or_fir
+  - external_reference_binding_not_implemented
+  - accepted_receiver_stage_missing
+  - p5_authoritative_r480_reference_missing
+  - release_license_notice_and_archive_admission_pending
+non_claims:
+  - This fixed discrete projection does not resolve the 100 as sub-strobe transition or claim ADS EdgeShape parity.
+  - This is not generic PRBS, generic convolution, physical causal-FIR, delay, passivity, or S-parameter solver support.
+  - No external selected candidate, reference compare, receiver, AMI, IBIS, DLL, P5, metric acceptance, or release capability is evaluated.

@@ -320,3 +320,13 @@ mod tests {
         assert!(SelectedP3cSealedS4pIdentityV2::try_new("../network", "0".repeat(64)).is_err());
     }
 }
+mod prbs9_impulse_candidate_v1;
+
+pub use prbs9_impulse_candidate_v1::{
+    generate_selected_p3c_prbs9_impulse_candidate_v1, Prbs9ImpulseCandidateErrorV1,
+    SelectedP3cPrbs9ImpulseCandidateV1, P3C_PRBS9_OSR_V1, P3C_PRBS9_PERIOD_SHA256_V1,
+    P3C_PRBS9_PERIOD_UI_V1, P3C_PRBS9_SAMPLE_INTERVAL_BITS_V1,
+    P3C_PRBS9_THIRD_PERIOD_START_V1, P3C_PRBS9_TOTAL_SAMPLES_V1,
+    P3C_SELECTED_FULL_LINEAR_MACS_V1, P3C_SELECTED_FULL_LINEAR_SAMPLES_V1,
+    P3C_SELECTED_TRUNCATED_RESPONSE_SAMPLES_V1,
+};

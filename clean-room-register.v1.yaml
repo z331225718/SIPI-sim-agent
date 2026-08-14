@@ -689,6 +689,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-selected-s4p-truncation-observation-evidence-spec-v1]
+  - id: p3c-prbs9-impulse-candidate-bridge-spec-v1
+    kind: independent_spec
+    content_sha256: 50b3ed082c11cd25361190244d4960202b83325a2b27ad6731dadc07544088a6
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-prbs9-impulse-candidate-bridge.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p3c-ieee-bsd-truncation-direct-port-spec-v1, p1-types-foundation-spec-v1, p1-contracts-foundation-spec-v1, p3b-link-stage-contract-spec-v1, p3b-causal-fir-convolution-spec-v1]
   - id: p3c-selected-s4p-raw-periodic-observation-spec-v1
     kind: independent_spec
     content_sha256: 9f3da6111b2d9257cd2cfe60773cb4133ef0ce8043e5ede4c6a9f41c5e489608
@@ -1656,6 +1664,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-selected-s4p-historical-observation-source-drift-spec-v1]
+  - id: p3c-prbs9-impulse-candidate-bridge-v1
+    paths: [Cargo.lock, crates/sipi-p3c/Cargo.toml, crates/sipi-p3c/src/lib.rs, crates/sipi-p3c/src/prbs9_impulse_candidate_v1.rs, docs/baselines/p3c-prbs9-impulse-candidate-bridge.v1.yaml, docs/clean-room/specs/p3c-prbs9-impulse-candidate-bridge.v1.md, tools/verify_p3c_prbs9_impulse_candidate_bridge.py, tools/test_verify_p3c_prbs9_impulse_candidate_bridge.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3c-prbs9-impulse-candidate-bridge-spec-v1]
+      implementer: [p3c-prbs9-impulse-candidate-bridge-spec-v1, p3c-ieee-bsd-truncation-direct-port-spec-v1, p1-types-foundation-spec-v1, p1-contracts-foundation-spec-v1, p3b-link-stage-contract-spec-v1, p3b-causal-fir-convolution-spec-v1]
+      comparator: []
+      auditor: [p3c-prbs9-impulse-candidate-bridge-spec-v1, p3c-ieee-bsd-truncation-direct-port-spec-v1, p1-types-foundation-spec-v1, p1-contracts-foundation-spec-v1, p3b-link-stage-contract-spec-v1, p3b-causal-fir-convolution-spec-v1]
   - id: p3c-selected-s4p-uniform-spectrum-observation-v1
     paths: [crates/sipi-p3c/Cargo.toml, crates/sipi-p3c/tests/p3c_sealed_s4p_external_uniform_spectrum_runner.rs, docs/clean-room/specs/p3c-selected-s4p-uniform-spectrum-observation.v1.md, tools/observe_p3c_sealed_selected_s4p_uniform_spectrum.py]
     state: planned

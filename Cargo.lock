@@ -896,8 +896,11 @@ dependencies = [
  "sha2",
  "sipi-artifacts",
  "sipi-channel",
+ "sipi-contracts",
  "sipi-ieee-com-sparam",
+ "sipi-link",
  "sipi-touchstone",
+ "sipi-types",
 ]
 
 [[package]]

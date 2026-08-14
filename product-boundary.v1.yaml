@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: fd1fd09bfd1cf1c9ba77f2e5dbdb2500cb28dc023369faa35cefde9a24474f83
+  tracked_paths_sha256: 0ee968d7eca522b76e8b92b32b520d4f0016ec64d444b3084ae925b823e38dbc
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -510,6 +510,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-p3c/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/src/prbs9_impulse_candidate_v1.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1673,6 +1679,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-14-p3c-prbs9-impulse-candidate-bridge.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-14-p3c-selected-s4p-causality-observation.md:
       rule: historical-docs
       class: migration_only
@@ -2010,6 +2022,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-ieee-bsd-truncation-direct-port.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-prbs9-impulse-candidate-bridge.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2670,6 +2688,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-ieee-bsd-truncation-direct-port.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-prbs9-impulse-candidate-bridge.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8009,6 +8033,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_prbs9_impulse_candidate_bridge.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_prbs9_metric_artifact_cli.py:
       rule: migration-tools
       class: migration_only
@@ -8646,6 +8676,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_ieee_bsd_truncation_direct_port.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_prbs9_impulse_candidate_bridge.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
