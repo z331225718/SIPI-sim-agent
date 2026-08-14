@@ -1,0 +1,119 @@
+schema: sipi.p3c-selected-truncation-waveform-sensitivity-observation-evidence.v1
+status: external_selected_truncation_waveform_sensitivity_observed_acceptance_unchanged
+authority:
+  actor: user
+  decision_ref: user-confirmed-ui-boundary-right-continuous-projection-2026-08-14
+  scope: selected_full_bounded_causality_third_period_diagnostic_only
+predecessors:
+  core:
+    path: docs/baselines/p3c-selected-truncation-waveform-sensitivity-core.v1.yaml
+    status: product_owned_external_diagnostic_core_implemented_external_observation_pending
+  runner:
+    path: docs/baselines/p3c-selected-truncation-waveform-sensitivity-external-runner.v1.yaml
+    status: external_only_two_fresh_selected_full_causal_and_truncated_observation_prepared_not_run
+  oob_sensitivity:
+    path: docs/baselines/p3c-selected-oob-zero-extension-sensitivity-observation-evidence.v1.yaml
+    status: external_selected_oob_extension_sensitivity_observed_acceptance_unchanged
+external_observation:
+  schema: sipi.p3c.selected-truncation-waveform-sensitivity-runner.v1
+  status: observed
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 1662
+  report_content_sha256: 6af54b68a04ad78b47e5f8329bd50c7038c7289eccd7b90920e14d9906e80051
+  clean_archive_commit: 4df6d891ab8ba3363926fc0909a2e83246c2ce6f
+  clean_archive_tree: 3756661425d2759aaa7e7e96ad608d7d8ba49be9
+  runner_sha256: f97bc0e6d3cfc182f334950a2317375d6503b42f9f25464d8ac78824771d1e1f
+  release_build:
+    profile: release
+    target: x86_64-pc-windows-msvc
+    rustc_release: 1.97.0
+    executable_sha256: 4240d3bea944d5626c590e6c2a3b55bfd82b46a40e30ea51f2ef3c78e467cd1e
+  selected_source:
+    byte_length: 1834156
+    sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  ads_reference_input:
+    canonical_triple_payload_sha256: 5ec5211a273d313655f0b8ced35d58ea89d0bba113f5edc3fd9712218f46e726
+    extracted_rx_payload_sha256: 2cf94baf436bd04ff86baeca7d03eab1e6d9a8ce019163d43987a0200eb1bfa5
+    custody_recovery: two_fresh_external_ads_v2_runs_identical
+  source_reference_identity_checks: before_stage_after_equal
+  fresh_custody_runs: 2
+  source_manifest_sha256s: [76a01a8aab1e6a907bad35c650da3db4d6988c6caa8e3c2f7aac09167139cb46, 9dff2819b5185f18ed462dd0356ae81aa160ffad100194fbae347aa5eed51d9f]
+  record_count: 2002
+  causality_iterations: 32
+  bounded_causal_response_sha256: f0f6ef483944dd19ba01bd1285319b1bae7610bb87f010a7289259cbba1ecb6a
+  retained_taps: 10871
+  truncated_baseline:
+    prefix_sha256: 939b7062795430f2f92702e8e2eb070d84636a42a589adcf89aee0b0f48a8769
+    waveform_nrmse_bits: 3f9c4139b95fcc93
+  full_bounded_causality_diagnostic:
+    third_period_sha256: 9821ec6df888862d91fd9ae7a880d2d994c171cde0ac310492b22eb3833cfef4
+    waveform_nrmse_bits: 3f9c3312e1103fee
+  cleanup_status: complete
+  product_source_inventory:
+    Cargo.lock: d10679ecbb0884cc3325f9b67afaf9a8d61a9f826c262f6fefd437538df34e99
+    Cargo.toml: ccfb303fa9c3593a19d5f9c240b7d9aebddbf33bfd658d5a444ba06734cc3ca2
+    rust-toolchain.toml: 512bedfbbe3c4ef614fbb901b3661f40b4adb701d26c94664e79ca765aa3d109
+    crates/sipi-artifacts/Cargo.toml: 37817d937973b48c42d935a314a67130921b3537b6a45ba1fb242e5217b6789c
+    crates/sipi-artifacts/src/lib.rs: 85b475ec865779dbe3e21b54759ca9075b8a4516714d7192ba4b214075861997
+    crates/sipi-channel/Cargo.toml: a079c508b5e6ce5efeac13edb44c0fb6e7efab90819e47aa1bc6e0960889f63f
+    crates/sipi-channel/src/lib.rs: d0c8070ba7d270a91e0db5882996f64b09f29f00ca97b556ac73d4eeff4e3892
+    crates/sipi-channel/src/p3c_fixed_four_port_bench_v1.rs: 248bf24c494d9c956a96e2781f35f546d5de9f70f6157457da7a54aeb60baa70
+    crates/sipi-channel/src/p3c_fixed_pole_rational_fit_v1.rs: d6332988b74f5adfd5342c97f5377a87873e1daea61cac018b9d81a9cc699460
+    crates/sipi-channel/src/p3c_real_constrained_fixed_pole_fit_v1.rs: b47f4e7d446ce557173bae1e8148927b28e7d95bd1c93835c8c1976f3f5d6c1c
+    crates/sipi-compare/Cargo.toml: 1993118a1551c0605cfa04d0346770d41966c433885c91a952207731483e8755
+    crates/sipi-compare/src/lib.rs: a083df07f481beded3b6697de880a56732b088c8ad85cb3b3693f0be0e56329f
+    crates/sipi-compare/src/prbs9_waveform_v2.rs: c350592227f1d5da8653535ffc81349e65c7aab812889bcdeb162a32a567b4ff
+    crates/sipi-compare/src/selected_highloss_prbs9_waveform_only_v3.rs: 17f1101587d4d00e570ebf6b746bd7919d47f04200139add4c26be2b0a9261e4
+    crates/sipi-contracts/Cargo.toml: e9ec60833778d8888af64796df9202934247e365575dcbc88722f27f5668f20c
+    crates/sipi-contracts/src/lib.rs: d7ce9ee9dbe4459ed44a0d604c50c9ffbd44b33d7ff29571b2393123c7152a5b
+    crates/sipi-ieee-com-sparam/Cargo.toml: 044d3d837957f99bf3429d7c51cf1b32129ae2744d921bd95def313a0aa1942b
+    crates/sipi-ieee-com-sparam/NOTICE-IEEE-802-COM.md: bddd0b824dd61554c17c53ccd6fc0f2065ef8de5007928908c8323e8bb04eca9
+    crates/sipi-ieee-com-sparam/SOURCE-MAP.md: 61361ed7fbd36950a939ba0896966547858c08b57dc538374eccf96e18d47e29
+    crates/sipi-ieee-com-sparam/src/interp_sparam_v1.rs: dbc0273cbf151447f9f21d039534effe501823da953eaac0d00314e646971d75
+    crates/sipi-ieee-com-sparam/src/lib.rs: 212ae29809cdec4331bc000935a41d3aaa9d52fd1479cbf544e0f1deb02348cb
+    crates/sipi-ieee-com-sparam/src/s21_to_causal_v1.rs: ae41af1c8bbbf2a706b772e2f457cf97cedce0f38e90158703ed007f11f1a5e1
+    crates/sipi-ieee-com-sparam/src/s21_to_raw_periodic_v1.rs: db1ca2b97038c4e5c56260f152abe19dddd27a9c73f6975f8c63d728d376f43b
+    crates/sipi-ieee-com-sparam/src/s21_to_truncated_v1.rs: dc0923ee6398e990594e9b001993ecdbd9798f865546339e57f1b8417063b407
+    crates/sipi-link/Cargo.toml: e89c97fc9c75427394e6d5ffff736c8bea40e4b4af831a6d289325388327b343
+    crates/sipi-link/src/lib.rs: 03ee95a4ffb365610206bce3c4437bf713d463e81d8b39e2f521f1aaf62d09e6
+    crates/sipi-p3c/Cargo.toml: 0ecfe1113ccd171470b06e0e7d69571085ed53e2cd5c6cdd6f27f0b81b4b2c75
+    crates/sipi-p3c/src/lib.rs: f103aa35aa9f2a8d072ee264e524aca8c868e762dc93e41cb98769cfcc597979
+    crates/sipi-p3c/src/prbs9_impulse_candidate_v1.rs: 7f71d56d3def987dca01454b4443ec24fbbc116d4cfe05360c65a86e93af5092
+    crates/sipi-p3c/src/p3c_truncation_waveform_sensitivity_v1.rs: 2f96b0369a68a68263f96d17761fa37e21af8e7bf965d42ad914387df2458a37
+    crates/sipi-p3c/tests/p3c_selected_truncation_waveform_sensitivity_external_runner.rs: f97bc0e6d3cfc182f334950a2317375d6503b42f9f25464d8ac78824771d1e1f
+    crates/sipi-runtime/Cargo.toml: ec6a2b537040bd2ed1f7bb27bd464330d61b9bbf5ec9f159f8411222e6f1f625
+    crates/sipi-runtime/src/lib.rs: b71283852cae625891d33739e69b1de9e635d8d8d957c0ab4341e5ce55fa2d9d
+    crates/sipi-touchstone/Cargo.toml: 7fcfb8330e8962e20b1e60a0c93dc7eda8e7a363895dd23a0a4ea76cad772fcb
+    crates/sipi-touchstone/src/lib.rs: 359b0c44894d6cf2b03eca19626d180a9f921695a71681e901c5bcb0c77fc5cc
+    crates/sipi-touchstone/src/selected_four_port_v1.rs: 53b11a0cf08b0505c190b244c47f13e22f7b2b3c1f6ea712b6aba533a8805f80
+    crates/sipi-types/Cargo.toml: c5c112540ec14ffcd319a5b15553422409ced82ea541630bd659a916ba4bf31e
+    crates/sipi-types/src/lib.rs: b54f9e937bab7fc7830e56ef4f2ec861caf1ffed7a5718cf45bae92397ee5576
+admission:
+  selected_truncation_waveform_sensitivity_diagnostic_defined: true
+  external_full_causal_third_period_diagnostic_invoked: true
+  current_truncated_baseline_reproduced: true
+  truncation_waveform_sensitivity_observed: true
+  bounded_causal_response_admitted_as_kernel: false
+  causal_fir_admitted: false
+  truncation_policy_changed: false
+  full_branch_candidate_or_accepted: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  selected_highloss_waveform_only_profile_accepted: false
+  accepted_receiver: false
+  acceptance_ready: false
+  promotion_eligible: false
+  release_ledger_promoted: false
+blockers:
+  - bounded_causal_response_diagnostic_variant_not_authorized_as_candidate_kernel
+  - truncation_policy_change_requires_owner_decision
+  - waveform_only_product_source_drift
+  - selected_waveform_nrmse_exceeds_fixed_one_percent_limit
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - The full bounded-causality response is an external diagnostic kernel, not an admitted causal FIR or candidate waveform.
+  - The diagnostic retains fixed 1e-3 truncation as the current product policy and makes no policy selection.
+  - The ADS payload is hash-bound diagnostic input only and does not restore current waveform-only reference binding.
+  - No ADS parity, passivity, receiver, P4B, P5, or release admission is established.

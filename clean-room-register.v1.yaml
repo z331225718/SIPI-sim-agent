@@ -2274,4 +2274,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-selected-oob-zero-extension-diagnostic-spec-v1]
+  - id: p3c-selected-truncation-waveform-sensitivity-observation-evidence-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-selected-truncation-waveform-sensitivity-observation-evidence.v1.yaml, docs/clean-room/specs/p3c-selected-truncation-waveform-sensitivity.v1.md, tools/verify_p3c_selected_truncation_waveform_sensitivity_observation_evidence.py, tools/test_verify_p3c_selected_truncation_waveform_sensitivity_observation_evidence.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-selected-oob-zero-extension-diagnostic-spec-v1]
+      spec_author: [p3c-selected-oob-zero-extension-diagnostic-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-selected-oob-zero-extension-diagnostic-spec-v1]
 attestations: []

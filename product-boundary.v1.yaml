@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 1792dd210544ea2a73ef3d7b4f27b48b38cd0ee38442987b68de29122861e665
+  tracked_paths_sha256: 74b06c0dcee22c9c29c87fffd94f896e2846b0457e9ea830c1065a28913e0d1e
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -2334,6 +2334,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-selected-truncation-waveform-sensitivity-external-runner.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-selected-truncation-waveform-sensitivity-observation-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8465,6 +8471,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_selected_truncation_waveform_sensitivity_observation_evidence.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p4a_electrical_endpoint_semantic_contract.py:
       rule: migration-tools
       class: migration_only
@@ -9174,6 +9186,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_selected_truncation_waveform_sensitivity_core.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_selected_truncation_waveform_sensitivity_observation_evidence.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
