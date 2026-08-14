@@ -366,7 +366,16 @@ fn p3c_external_ads_selected_highloss_residual_dft_runner_v2() {
     let first = run_once(&source, &reference, 1).unwrap();
     let second = run_once(&source, &reference, 2).unwrap();
     assert_ne!(first.source_manifest_sha256, second.source_manifest_sha256);
-    assert_eq!(first, second);
+    assert_eq!(first.record_count, second.record_count);
+    assert_eq!(first.reference_rx_payload_sha256, second.reference_rx_payload_sha256);
+    assert_eq!(first.candidate_prefix_sha256, second.candidate_prefix_sha256);
+    assert_eq!(first.time_nrmse_bits, second.time_nrmse_bits);
+    assert_eq!(first.frequency_nrmse_bits, second.frequency_nrmse_bits);
+    assert_eq!(first.reference_spectrum_sha256, second.reference_spectrum_sha256);
+    assert_eq!(first.candidate_spectrum_sha256, second.candidate_spectrum_sha256);
+    assert_eq!(first.residual_spectrum_sha256, second.residual_spectrum_sha256);
+    assert_eq!(first.maximum_residual_energy_bin, second.maximum_residual_energy_bin);
+    assert_eq!(first.bands, second.bands);
     let payload = format!("{{\"schema\":\"{REPORT_SCHEMA}\",\"status\":\"observed\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"ads_canonical_triple_payload_sha256\":\"{ADS_CANONICAL_SHA256}\",\"contract_sha256\":\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_CONTRACT_SHA256_V3}\",\"fixed_dft\":{{\"samples\":{THIRD_SAMPLES},\"sample_interval_bits\":\"{DT_BITS:016x}\",\"window\":\"rectangular\",\"forward_sign\":\"negative\",\"normalization\":\"none\",\"factorization\":[32,7,73],\"bands\":[[0,1],[1,256],[256,639],[639,{ONE_SIDED_BINS}]]}},\"source_reference_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n", SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_SHA256_V1, run_json(&first), run_json(&second));
     serde_json::from_str::<Value>(&payload).expect("report_json");
     fs::create_dir_all(report.parent().unwrap()).unwrap();
