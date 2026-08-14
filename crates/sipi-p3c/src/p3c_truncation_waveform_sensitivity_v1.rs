@@ -71,12 +71,12 @@ pub fn diagnose_selected_p3c_full_causal_third_period_v1(
     }
     let source = projected_prbs9_source();
     let samples = convolve_fixed_range(&source, kernel.samples(), P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_START_V1, P3C_TRUNCATION_SENSITIVITY_TOTAL_PRBS9_SAMPLES_V1)?;
+    let endpoint_sum = (P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_START_V1 + 1)
+        .checked_add(P3C_TRUNCATION_SENSITIVITY_TOTAL_PRBS9_SAMPLES_V1)
+        .ok_or(TruncationWaveformSensitivityErrorV1::FixedWorkMismatch)?;
     let expected_work = P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_SAMPLES_V1
-        .checked_mul(
-            (P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_START_V1 + 1
-                + P3C_TRUNCATION_SENSITIVITY_TOTAL_PRBS9_SAMPLES_V1)
-                / 2,
-        )
+        .checked_mul(endpoint_sum)
+        .and_then(|value| value.checked_div(2))
         .ok_or(TruncationWaveformSensitivityErrorV1::FixedWorkMismatch)?;
     if expected_work != P3C_TRUNCATION_SENSITIVITY_MACS_V1 {
         return Err(TruncationWaveformSensitivityErrorV1::FixedWorkMismatch);
@@ -180,5 +180,15 @@ mod tests {
             .collect::<Vec<_>>()
             .windows(2)
             .any(|pair| pair[0][0] != pair[1][0]));
+    }
+
+    #[test]
+    fn fixed_work_count_preserves_the_half_operation() {
+        let endpoint_sum = (P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_START_V1 + 1)
+            + P3C_TRUNCATION_SENSITIVITY_TOTAL_PRBS9_SAMPLES_V1;
+        assert_eq!(
+            P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_SAMPLES_V1 * endpoint_sum / 2,
+            P3C_TRUNCATION_SENSITIVITY_MACS_V1,
+        );
     }
 }
