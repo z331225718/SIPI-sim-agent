@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 1fe14fc72c1aeee353317c1dafdfa250630c705baa1fa282aa03ac9b9381b4ea
+  tracked_paths_sha256: 1792dd210544ea2a73ef3d7b4f27b48b38cd0ee38442987b68de29122861e665
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -606,6 +606,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-p3c/tests/p3c_selected_oob_zero_extension_external_runner.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/tests/p3c_selected_truncation_waveform_sensitivity_external_runner.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -2322,6 +2328,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-selected-truncation-waveform-sensitivity-core.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-selected-truncation-waveform-sensitivity-external-runner.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

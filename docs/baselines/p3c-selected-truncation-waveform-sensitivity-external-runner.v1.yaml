@@ -1,0 +1,33 @@
+schema: sipi.p3c-selected-truncation-waveform-sensitivity-external-runner.v1
+status: external_only_two_fresh_truncation_sensitivity_observation_prepared_not_run
+authority:
+  actor: user
+  decision_ref: user-continuation-2026-08-14
+  scope: selected_full_bounded_causality_third_period_sensitivity_only
+predecessor:
+  path: docs/baselines/p3c-selected-truncation-waveform-sensitivity-core.v1.yaml
+  status: product_owned_selected_truncation_waveform_sensitivity_diagnostic_implemented_external_observation_pending
+runner:
+  path: crates/sipi-p3c/tests/p3c_selected_truncation_waveform_sensitivity_external_runner.rs
+  mode: ignored_external_release_test
+  input_custody: two_fresh_sealed_selected_s4p_roots
+  reference: immutable_ads_canonical_rx_differential_column
+  baseline: selected_fixed_1e-3_truncated_candidate_must_reproduce_3f9c4139b95fcc93
+  diagnostic: full_51200_bounded_causality_response_third_period_only
+  report_retention: hash_only_external
+admission:
+  external_full_causal_third_period_diagnostic_invoked: false
+  current_truncated_baseline_reproduced: false
+  truncation_waveform_sensitivity_observed: false
+  bounded_causal_response_admitted_as_kernel: false
+  truncation_policy_changed: false
+  selected_highloss_waveform_only_profile_accepted: false
+  release_ledger_promoted: false
+blockers:
+  - clean_archive_two_fresh_external_run_missing
+  - truncation_sensitivity_opencode_audit_pending
+  - waveform_only_product_source_drift
+non_claims:
+  - The full response is diagnostic only and cannot be a CausalFirChannel or candidate waveform.
+  - The runner does not change truncation, interpolation, causality, source, or acceptance policy.
+  - It retains no S4P, ADS, causal-response, waveform, or path bytes in repository evidence.
