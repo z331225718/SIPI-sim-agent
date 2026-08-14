@@ -19,6 +19,7 @@ RUNNER = Path("tools/run_p3c_external_ads_fixed_pulse_passivity_surface.py")
 PREDECESSOR = Path("tools/run_p3c_external_ads_fixed_pulse_operator.py")
 SCHEMA = "sipi.p3c.ads-fixed-pulse-passivity-surface-observation.v1"
 HELP_EXPECTED = "Transient_Simulation_Parameters.html"
+HELP_IDENTITY = (150_522, "45372e9c7c79492bf6023a4e860f05a20caf0ef5e2a083407c119909afc187bf")
 EXPECTED_SURFACE = {
     "vectorset_count": 65,
     "s0_vectorset_count": 16,
@@ -57,7 +58,10 @@ def source_identity(path: Path) -> tuple[int, str]:
 def help_identity(path: Path) -> tuple[int, str]:
     if path.name != HELP_EXPECTED:
         raise ObservationError("ads_help_allowlist_mismatch")
-    return path.stat().st_size, sha256(path)
+    identity = path.stat().st_size, sha256(path)
+    if identity != HELP_IDENTITY:
+        raise ObservationError("ads_help_identity_mismatch")
+    return identity
 
 
 def clean_archive(destination: Path) -> tuple[str, str, dict[str, str]]:

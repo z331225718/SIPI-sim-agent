@@ -9,6 +9,8 @@ predecessor:
   result: fixed_pulse_operator_delta_observed_without_cause_identification
 external_help_allowlist:
   basename: Transient_Simulation_Parameters.html
+  byte_length: 150522
+  sha256: 45372e9c7c79492bf6023a4e860f05a20caf0ef5e2a083407c119909afc187bf
   documented_fields: [ImpEnforcePassivity, ImpSaveSpectrum, CMP1_S0]
   free_text_logs_prohibited: true
 fixed_delta:
