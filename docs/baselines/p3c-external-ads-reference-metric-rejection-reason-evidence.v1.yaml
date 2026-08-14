@@ -1,0 +1,96 @@
+schema: sipi.p3c-external-ads-reference-metric-rejection-reason-evidence.v1
+status: external_reference_bound_direct_metric_core_rejection_reason_observed
+authority:
+  actor: user
+  decision_ref: user-continuation-2026-08-14
+  scope: reason_only_external_metric_diagnostic_without_contract_amendment
+supersedes_historical_observation:
+  path: docs/baselines/p3c-external-ads-reference-metric-observation-evidence.v1.yaml
+  content_sha256: 06c66d82fff4ea7b1d1a369556c86f37bf657ce04e6f84f316e9a94260f69e9e
+  current_verifier_result: metric_product_source_drift
+  historical_rejection_cause: unobserved
+external_observation:
+  schema: sipi.p3c.external-ads-reference-metric-runner.v1
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 780
+  report_content_sha256: f8635a962b24559827fea0d4fd18f5b4c8f1ada76f2a6af9ad5cb5e6142b40e3
+  clean_archive_commit: 0e90bce3d900504bf0c02ef5ddc66c21b73ecfb6
+  clean_archive_tree: f44c0f9e29fd23e67b7f00364435b3be5456e469
+  selected_source: {byte_length: 1834156, sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47}
+  ads_canonical_triple_payload: {byte_length: 1177344, sha256: 5ec5211a273d313655f0b8ced35d58ea89d0bba113f5edc3fd9712218f46e726, rx_column: differential_voltage}
+  contract_sha256: f47329b6ddda01cbcde1f24e21cb93e03f8ef6139ea2d43ff74cad9e2049d2b5
+  source_identity_checks: before_stage_after_equal
+  fresh_custody_runs: 2
+  report_outcome:
+    outcome: rejected
+    runs:
+      - {status: rejected, stage: cli, exit_code: 3, direct_core_reason: zero_reference_eye_width, cli_stdout_byte_length: 139, cli_stdout_sha256: ec76b0cc0e9d04abb36f31b680969ed1bd674b08cad1474a55dce6b627d03bd6, cli_stderr_byte_length: 267, cli_stderr_sha256: 3e067de4d9fc655dd6ba03ca92e2aea6dc9905b1a2496ce5d53a7b7dd2a2e34d}
+      - {status: rejected, stage: cli, exit_code: 3, direct_core_reason: zero_reference_eye_width, cli_stdout_byte_length: 139, cli_stdout_sha256: ec76b0cc0e9d04abb36f31b680969ed1bd674b08cad1474a55dce6b627d03bd6, cli_stderr_byte_length: 267, cli_stderr_sha256: 3e067de4d9fc655dd6ba03ca92e2aea6dc9905b1a2496ce5d53a7b7dd2a2e34d}
+  cleanup_status: complete
+  release_build: {profile: release, target: x86_64-pc-windows-msvc, rustc_release: 1.97.0, executable_sha256: 34b6a17a6bfbf4b4b57c97a4907fc7fc40d3eb105d010100d374d4f3f7a46791}
+  runner_sha256: 9376daee21d578c24a6cc67dc5ea19024f38b9e7308569c0b950769e255d5d06
+  product_source_inventory:
+    Cargo.lock: 8fb7d483370926cc527fb6b835f3e0e45a619073bdc170782570c33c8771d0b8
+    Cargo.toml: ccfb303fa9c3593a19d5f9c240b7d9aebddbf33bfd658d5a444ba06734cc3ca2
+    rust-toolchain.toml: 512bedfbbe3c4ef614fbb901b3661f40b4adb701d26c94664e79ca765aa3d109
+    crates/sipi-artifacts/Cargo.toml: 37817d937973b48c42d935a314a67130921b3537b6a45ba1fb242e5217b6789c
+    crates/sipi-artifacts/src/lib.rs: 85b475ec865779dbe3e21b54759ca9075b8a4516714d7192ba4b214075861997
+    crates/sipi-channel/Cargo.toml: a079c508b5e6ce5efeac13edb44c0fb6e7efab90819e47aa1bc6e0960889f63f
+    crates/sipi-channel/src/lib.rs: d0c8070ba7d270a91e0db5882996f64b09f29f00ca97b556ac73d4eeff4e3892
+    crates/sipi-channel/src/p3c_fixed_four_port_bench_v1.rs: 248bf24c494d9c956a96e2781f35f546d5de9f70f6157457da7a54aeb60baa70
+    crates/sipi-cli/Cargo.toml: ac2f2f17f7a67c7aeb6b174219672850f996aaa4e3be548c22b97f5110e153c9
+    crates/sipi-cli/src/main.rs: d7b72072a5cf8dcba96bb59f04c8f72134f1f9de0d060e278ae79bf394173be9
+    crates/sipi-compare/Cargo.toml: 1993118a1551c0605cfa04d0346770d41966c433885c91a952207731483e8755
+    crates/sipi-compare/src/lib.rs: ffbd6197667a3be950304ca76b5aee2094aa625dc2656b59699895e3269660a3
+    crates/sipi-compare/src/prbs9_waveform_v2.rs: c350592227f1d5da8653535ffc81349e65c7aab812889bcdeb162a32a567b4ff
+    crates/sipi-contracts/Cargo.toml: e9ec60833778d8888af64796df9202934247e365575dcbc88722f27f5668f20c
+    crates/sipi-contracts/src/lib.rs: 3a51c779e0bbaf8be99c554ac7844387685f88bc1de8c6bdbdf719f710501418
+    crates/sipi-contracts/schemas/sipi.compare.prbs9-metric-artifacts-request.v1.schema.json: 098a7811555d332644c094290b488a594b13ce3b7c0dfacdbcdbf60986bd1533
+    crates/sipi-ieee-com-sparam/Cargo.toml: 044d3d837957f99bf3429d7c51cf1b32129ae2744d921bd95def313a0aa1942b
+    crates/sipi-ieee-com-sparam/NOTICE-IEEE-802-COM.md: bddd0b824dd61554c17c53ccd6fc0f2065ef8de5007928908c8323e8bb04eca9
+    crates/sipi-ieee-com-sparam/SOURCE-MAP.md: 61361ed7fbd36950a939ba0896966547858c08b57dc538374eccf96e18d47e29
+    crates/sipi-ieee-com-sparam/src/lib.rs: fef05a7739029be453440ba3aff888949c227cf3d89fe20c0923656b92d7bb22
+    crates/sipi-ieee-com-sparam/src/interp_sparam_v1.rs: e93d51b8b18aefae6c95465fee404f5934551c98c4cd6a0c102de05eed3951de
+    crates/sipi-ieee-com-sparam/src/s21_to_raw_periodic_v1.rs: db1ca2b97038c4e5c56260f152abe19dddd27a9c73f6975f8c63d728d376f43b
+    crates/sipi-ieee-com-sparam/src/s21_to_causal_v1.rs: ae41af1c8bbbf2a706b772e2f457cf97cedce0f38e90158703ed007f11f1a5e1
+    crates/sipi-ieee-com-sparam/src/s21_to_truncated_v1.rs: dc0923ee6398e990594e9b001993ecdbd9798f865546339e57f1b8417063b407
+    crates/sipi-link/Cargo.toml: e89c97fc9c75427394e6d5ffff736c8bea40e4b4af831a6d289325388327b343
+    crates/sipi-link/src/lib.rs: 03ee95a4ffb365610206bce3c4437bf713d463e81d8b39e2f521f1aaf62d09e6
+    crates/sipi-p3c/Cargo.toml: 4675c078d115f3b2102e16b1841a7b1c1662b3825f655b9015c89922b0909903
+    crates/sipi-p3c/src/lib.rs: 233ac9f3ce6ca52e8e382241db9f8bc7ae648365f08bb951cbd3e61d8690e24e
+    crates/sipi-p3c/src/prbs9_impulse_candidate_v1.rs: 7f71d56d3def987dca01454b4443ec24fbbc116d4cfe05360c65a86e93af5092
+    crates/sipi-p3c/tests/p3c_external_ads_reference_metric_runner.rs: 9376daee21d578c24a6cc67dc5ea19024f38b9e7308569c0b950769e255d5d06
+    crates/sipi-runtime/Cargo.toml: ec6a2b537040bd2ed1f7bb27bd464330d61b9bbf5ec9f159f8411222e6f1f625
+    crates/sipi-runtime/src/lib.rs: b71283852cae625891d33739e69b1de9e635d8d8d957c0ab4341e5ce55fa2d9d
+    crates/sipi-touchstone/Cargo.toml: 7fcfb8330e8962e20b1e60a0c93dc7eda8e7a363895dd23a0a4ea76cad772fcb
+    crates/sipi-touchstone/src/lib.rs: 359b0c44894d6cf2b03eca19626d180a9f921695a71681e901c5bcb0c77fc5cc
+    crates/sipi-touchstone/src/selected_four_port_v1.rs: 53b11a0cf08b0505c190b244c47f13e22f7b2b3c1f6ea712b6aba533a8805f80
+    crates/sipi-types/Cargo.toml: c5c112540ec14ffcd319a5b15553422409ced82ea541630bd659a916ba4bf31e
+    crates/sipi-types/src/lib.rs: b54f9e937bab7fc7830e56ef4f2ec861caf1ffed7a5718cf45bae92397ee5576
+admission:
+  external_ads_reference_bound_to_metric_input: true
+  external_reference_binding_evaluated: true
+  direct_metric_core_diagnostic_invoked: true
+  metric_rejection_reason_observed: true
+  product_compare_cli_invoked: true
+  candidate_metric_evaluation_rejected: false
+  waveform_nrmse_evaluated: false
+  sampled_eye_evaluated: false
+  crossing_tie_evaluated: false
+  candidate_waveform_eye_tie_metrics_accepted: false
+  accepted_receiver: false
+  acceptance_ready: false
+  promotion_eligible: false
+  release_ledger_promoted: false
+blockers:
+  - sampled_eye_reference_width_zero_structural_rejection_observed
+  - owner_delay_aware_sampled_eye_contract_decision_required
+  - waveform_eye_tie_metric_values_not_observed
+  - accepted_receiver_stage_missing
+  - physical_causality_fir_passivity_and_100as_ads_parity_not_established
+  - p4b_p5_and_release_evidence_pending
+non_claims:
+  - The direct-core reason locates a structural rejection only; it is not a waveform, eye, TIE, receiver, or profile acceptance result.
+  - This evidence applies no alignment, resampling, gain, DC, polarity, crossing-window, or contract-tolerance change.
+  - The external report, artifact roots, source paths, waveform arrays, sample indices, and diagnostic streams are not retained.

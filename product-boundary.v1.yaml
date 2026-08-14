@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: d48b3bbf3ba4bb425feb201f2d562723bb5e7147690e99eabd0c7914db56d44f
+  tracked_paths_sha256: f7fc9efaf6a497d9d79bb5d319b2d02df470ab0387e9b3faff420041d9f970e9
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1673,6 +1673,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-14-p3c-external-ads-reference-metric-rejection-reason.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-14-p3c-ieee-bsd-inline-causality-direct-port.md:
       rule: historical-docs
       class: migration_only
@@ -2010,6 +2016,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-external-ads-reference-metric-observation-evidence.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-external-ads-reference-metric-rejection-reason-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2694,6 +2706,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-external-ads-reference-metric-observation-evidence.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-external-ads-reference-metric-rejection-reason-evidence.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8057,6 +8075,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_external_ads_reference_metric_rejection_reason_evidence.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_fixed_pole_rational_identification_core.py:
       rule: migration-tools
       class: migration_only
@@ -8712,6 +8736,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_external_ads_reference_metric_observation_evidence.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_external_ads_reference_metric_rejection_reason_evidence.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

@@ -729,6 +729,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-external-ads-reference-metric-binding-spec-v1]
+  - id: p3c-external-ads-reference-metric-rejection-reason-evidence-spec-v1
+    kind: independent_spec
+    content_sha256: 283890689e040ee4e67e2fa50eb08cc6bcd029691d81a2857d35ff231a79fe18
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-external-ads-reference-metric-rejection-reason-evidence.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-external-ads-reference-metric-observation-evidence-spec-v1]
   - id: p3c-selected-s4p-raw-periodic-observation-spec-v1
     kind: independent_spec
     content_sha256: 9f3da6111b2d9257cd2cfe60773cb4133ef0ce8043e5ede4c6a9f41c5e489608
@@ -2128,4 +2136,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-external-ads-reference-metric-binding-spec-v1, p3c-external-ads-reference-metric-observation-evidence-spec-v1]
+  - id: p3c-external-ads-reference-metric-rejection-reason-evidence-v1
+    paths: [Cargo.lock, PLAN.md, crates/sipi-compare/Cargo.toml, crates/sipi-compare/src/prbs9_waveform_v2.rs, crates/sipi-p3c/Cargo.toml, crates/sipi-p3c/tests/p3c_external_ads_reference_metric_runner.rs, docs/baselines/p3c-external-ads-reference-metric-rejection-reason-evidence.v1.yaml, docs/clean-room/specs/p3c-external-ads-reference-metric-rejection-reason-evidence.v1.md, tools/verify_p3c_external_ads_reference_metric_rejection_reason_evidence.py, tools/test_verify_p3c_external_ads_reference_metric_rejection_reason_evidence.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-external-ads-reference-metric-rejection-reason-evidence-spec-v1]
+      spec_author: [p3c-external-ads-reference-metric-rejection-reason-evidence-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-external-ads-reference-metric-rejection-reason-evidence-spec-v1]
 attestations: []
