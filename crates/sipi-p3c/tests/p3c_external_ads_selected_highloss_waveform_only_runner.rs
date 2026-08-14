@@ -492,10 +492,8 @@ fn p3c_external_ads_selected_highloss_waveform_only_runner_v3() {
     assert_eq!(first.candidate_prefix_sha256, second.candidate_prefix_sha256);
     assert_eq!(first.metric, second.metric);
     fs::create_dir_all(report.parent().unwrap()).unwrap();
-    fs::write(
-        report,
-        format!(
-            "{{\"schema\":\"{REPORT_SCHEMA}\",\"status\":\"{}\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"ads_canonical_triple_payload_sha256\":\"{ADS_CANONICAL_SHA256}\",\"contract_sha256\":\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_CONTRACT_SHA256_V3}\",\"source_reference_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\\n",
+    let payload = format!(
+            "{{\"schema\":\"{REPORT_SCHEMA}\",\"status\":\"{}\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"ads_canonical_triple_payload_sha256\":\"{ADS_CANONICAL_SHA256}\",\"contract_sha256\":\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_CONTRACT_SHA256_V3}\",\"source_reference_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n",
             if first.metric.within_selected_waveform_only_profile {
                 "accepted"
             } else {
@@ -505,7 +503,7 @@ fn p3c_external_ads_selected_highloss_waveform_only_runner_v3() {
             SELECTED_P3C_S4P_SHA256_V1,
             run_json(&first),
             run_json(&second),
-        ),
-    )
-    .unwrap();
+    );
+    serde_json::from_str::<Value>(&payload).expect("report_json");
+    fs::write(report, payload).unwrap();
 }
