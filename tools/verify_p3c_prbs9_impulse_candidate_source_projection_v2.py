@@ -19,7 +19,7 @@ class VerificationError(ValueError):
 def verify_document(document: object) -> dict[str, object]:
     if not isinstance(document, dict) or document.get("schema") != SCHEMA:
         raise VerificationError("schema_invalid")
-    if document.get("status") != "owner_confirmed_v2_source_projection_implemented_source_strobe_strict_identity_not_established":
+    if document.get("status") != "owner_confirmed_v2_candidate_waveform_observed_not_accepted":
         raise VerificationError("status_invalid")
     if document.get("authority") != {"actor": "user", "decision_ref": "user-confirmed-2026-08-14-p3c-finite-edge-boundary-projection-v2", "scope": "selected_candidate_source_projection_v2_only_not_metric_or_release_policy"}:
         raise VerificationError("authority_invalid")
@@ -34,7 +34,8 @@ def verify_document(document: object) -> dict[str, object]:
     if confirmation != {"phase_0_prior_phase_1_current": True, "sample_zero_first_symbol_current": True, "product_amplitude_remains_plus_or_minus_one_volt": True, "v2_selected_policy_v1_historical_only": True}:
         raise VerificationError("owner_confirmation_gate")
     true_keys = {"finite_edge_boundary_projection_v2_specified", "selected_source_projection_v2_implemented"}
-    false_keys = {"product_projection_v2_source_strobe_match_observed", "current_v2_candidate_waveform_evaluated", "selected_highloss_waveform_only_profile_accepted", "source_explains_full_channel_residual", "causal_fir_admitted", "accepted_receiver", "acceptance_ready", "release_ledger_promoted"}
+    true_keys.add("current_v2_candidate_waveform_evaluated")
+    false_keys = {"product_projection_v2_source_strobe_match_observed", "selected_highloss_waveform_only_profile_accepted", "source_explains_full_channel_residual", "causal_fir_admitted", "accepted_receiver", "acceptance_ready", "release_ledger_promoted"}
     admission = document.get("admission")
     if (
         not isinstance(admission, dict)
@@ -45,7 +46,7 @@ def verify_document(document: object) -> dict[str, object]:
         raise VerificationError("gate_promotion")
     if document.get("blockers") != [
         "strict_v2_source_strobe_identity_not_observed_and_no_source_tolerance_authorized",
-        "v2_candidate_waveform_observation_missing",
+        "selected_highloss_waveform_nrmse_exceeds_fixed_one_percent_limit",
         "accepted_receiver_stage_missing",
         "statistical_eye_contour_semantics_missing",
     ]:

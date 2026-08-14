@@ -1,5 +1,5 @@
 schema: sipi.p3c-prbs9-impulse-candidate-source-projection.v2
-status: owner_confirmed_v2_source_projection_implemented_source_strobe_strict_identity_not_established
+status: owner_confirmed_v2_candidate_waveform_observed_not_accepted
 authority:
   actor: user
   decision_ref: user-confirmed-2026-08-14-p3c-finite-edge-boundary-projection-v2
@@ -44,7 +44,7 @@ admission:
   finite_edge_boundary_projection_v2_specified: true
   selected_source_projection_v2_implemented: true
   product_projection_v2_source_strobe_match_observed: false
-  current_v2_candidate_waveform_evaluated: false
+  current_v2_candidate_waveform_evaluated: true
   selected_highloss_waveform_only_profile_accepted: false
   source_explains_full_channel_residual: false
   causal_fir_admitted: false
@@ -53,7 +53,7 @@ admission:
   release_ledger_promoted: false
 blockers:
   - strict_v2_source_strobe_identity_not_observed_and_no_source_tolerance_authorized
-  - v2_candidate_waveform_observation_missing
+  - selected_highloss_waveform_nrmse_exceeds_fixed_one_percent_limit
   - accepted_receiver_stage_missing
   - statistical_eye_contour_semantics_missing
 non_claims:

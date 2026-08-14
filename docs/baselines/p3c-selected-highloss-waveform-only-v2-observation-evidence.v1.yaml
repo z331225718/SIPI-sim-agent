@@ -1,0 +1,53 @@
+schema: sipi.p3c-selected-highloss-waveform-only-v2-observation-evidence.v1
+status: external_selected_finite_edge_v2_candidate_waveform_observed_not_accepted
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-14-p3c-finite-edge-boundary-projection-v2
+  scope: selected_v2_candidate_waveform_only_not_receiver_or_release_acceptance
+predecessor:
+  source_projection_v2: docs/baselines/p3c-prbs9-impulse-candidate-source-projection.v2.yaml
+  source_only_v2: docs/baselines/p3c-ads-prbssrc-source-only-v2-observation-evidence.v1.yaml
+external_observation:
+  schema: sipi.p3c.external-ads-selected-highloss-waveform-only-v2-runner.v1
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 2416
+  report_content_sha256: 09ec29941fbddd9c6724e40e9603a877dc382aa010fbfe9445d2f23ea05ccf4f
+  clean_archive_commit: f2555d6125237708107830f125f966e4add20e70
+  clean_archive_tree: 87a0eeb899ddb7bc0a870cf5743ec7676e897280
+  source_sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  ads_canonical_triple_payload_sha256: 5ec5211a273d313655f0b8ced35d58ea89d0bba113f5edc3fd9712218f46e726
+  reference_rx_payload_sha256: 2cf94baf436bd04ff86baeca7d03eab1e6d9a8ce019163d43987a0200eb1bfa5
+  candidate_prefix_sha256: 46b95963363de9439194ebcbf034088cdf984ea5c7d1b72ba3bb1ebf67a1ae3d
+  candidate_payload_sha256: 3bc73cc7f1bc09ec03c1266b5a3faa3353e9307e6832a81f51a8c1d55efcec3d
+  fresh_runs: 2
+  record_count: 2002
+  waveform_nrmse_bits: 3f9dd184cd51df98
+  waveform_nrmse_limit_bits: 3f847ae147ae147b
+  within_waveform_nrmse_limit: false
+  within_selected_waveform_only_profile: false
+  cleanup_status: complete
+  source_inventory:
+    crates/sipi-p3c/tests/p3c_external_ads_selected_highloss_waveform_only_runner.rs: 07a852911a0bea6a2ddda8ef3631738477d9b15f6b93506e02dd30a778964992
+    crates/sipi-p3c/src/prbs9_impulse_candidate_v2.rs: eb3ffda067bdd23d3e09aae5210cd4b5252a551fb684a61b03febe74fc4a636a
+    crates/sipi-ieee-com-sparam/src/interp_sparam_v1.rs: dbc0273cbf151447f9f21d039534effe501823da953eaac0d00314e646971d75
+    crates/sipi-ieee-com-sparam/src/s21_to_causal_v1.rs: ae41af1c8bbbf2a706b772e2f457cf97cedce0f38e90158703ed007f11f1a5e1
+    crates/sipi-ieee-com-sparam/src/s21_to_truncated_v1.rs: dc0923ee6398e990594e9b001993ecdbd9798f865546339e57f1b8417063b407
+    crates/sipi-compare/src/selected_highloss_prbs9_waveform_only_v3.rs: 17f1101587d4d00e570ebf6b746bd7919d47f04200139add4c26be2b0a9261e4
+    crates/sipi-cli/src/main.rs: 277b6fa403ee9eaea9685a5883e7dfbe9fc4825277849f7c1bab6a23f18ad99d
+admission:
+  external_selected_v2_candidate_convolution_invoked: true
+  external_selected_v2_candidate_convolution_admitted: true
+  current_v2_candidate_waveform_evaluated: true
+  selected_highloss_waveform_only_profile_accepted: false
+  accepted_receiver: false
+  acceptance_ready: false
+  release_ledger_promoted: false
+blockers:
+  - selected_highloss_waveform_nrmse_exceeds_fixed_one_percent_limit
+  - strict_v2_source_strobe_identity_not_observed_and_no_source_tolerance_authorized
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - This result is a strict same-index waveform-only observation, not ADS solver parity or receiver acceptance.
+  - The source policy was not changed in response to the observed mismatch.

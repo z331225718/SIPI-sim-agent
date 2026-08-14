@@ -2361,4 +2361,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-selected-highloss-waveform-only-v2-observation-spec-v1]
+  - id: p3c-selected-highloss-waveform-only-v2-observation-evidence-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-selected-highloss-waveform-only-v2-observation-evidence.v1.yaml, docs/clean-room/specs/p3c-selected-highloss-waveform-only-v2-observation.v1.md, tools/verify_p3c_selected_highloss_waveform_only_v2_observation_evidence.py, tools/test_verify_p3c_selected_highloss_waveform_only_v2_observation_evidence.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-selected-highloss-waveform-only-v2-observation-spec-v1]
+      spec_author: [p3c-selected-highloss-waveform-only-v2-observation-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-selected-highloss-waveform-only-v2-observation-spec-v1]
 attestations: []
