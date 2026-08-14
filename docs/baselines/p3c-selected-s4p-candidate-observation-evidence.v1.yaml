@@ -1,0 +1,108 @@
+schema: sipi.p3c-selected-s4p-candidate-observation-evidence.v1
+status: external_selected_prbs9_candidate_waveform_observed_reference_compare_pending
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-14-p3c-osr32-ui-boundary-right-continuous-projection
+  scope: exact_selected_s4p_to_fixed_prbs9_candidate_observation_only
+external_observation:
+  schema: sipi.p3c.sealed-selected-s4p-candidate-runner.v1
+  status: observed
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 2035
+  report_content_sha256: 83e8228ef8d8f5cefde03f181d8894cbf8b070757a30d3b425f589412a0a8688
+  clean_archive_commit: 1af5c23bdc3350d74d7bc63264908d3e57b02a5c
+  clean_archive_tree: 3537a7b62a00b6664f161aed96126a7c08a2d7fe
+  bridge_predecessor_commit: 3e3a36e667741caf3f797edb459614748afa3809
+  selected_source:
+    byte_length: 1834156
+    sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  source_identity_checks: before_stage_after_equal
+  fresh_custody_runs: 2
+  manifest_sha256s: [6a6d3f5cf5fe32ab6d740cf6dbec6c9eb8703f5608334f3c7850f3a973b8cc69, c6aa2fd6acae97d1b04c5d56522484265ac80cc026194072ea28407cdcbf0829]
+  release_build:
+    profile: release
+    target: x86_64-pc-windows-msvc
+    rustc_release: 1.97.0
+    executable_sha256: 030f01392d1b6f3d82df55db31cbb35cd7cccd162b04dd5d3e20ff086928a066
+  record_count: 2002
+  outcome:
+    uniform_bin_count: 25601
+    causal_sample_count: 51200
+    iteration_count: 32
+    retained_sample_count: 10871
+    sample_interval_bits: 3d712e0be826d695
+    dropped_l2_over_total_l2_bits: 3f625ac4b27fdb73
+    tail: nonzero_tail
+    truncated_response_sha256: c0b21cfe4d61ac3ce33a5695b198c0d4bf9ae1d80227dcc5b14a9ab37d9adf0b
+    full_linear_sample_count: 59926
+    strict_grid_prefix_sample_count: 49056
+    third_period_sample_count: 16352
+    multiply_accumulates: 533287776
+    full_linear_response_sha256: d4ddefab57014d6d2c588f60c69a63395076075361fcc8eb86e099c462bd8128
+    strict_grid_prefix_sha256: 1f53dbd18262f098ee24c0aebb827c7b3c2b03bfca4eb85bb3276dd33c99a7fb
+    third_period_sha256: f478b7c626be3594fa9783226d6542350a47926296c80e3b3c14b01f2a1af732
+  cleanup_status: complete
+  runner_sha256: 133f79853f6b906d355da71814c6ced1a0e8a133991575539196ce77f76b03a7
+  product_source_inventory:
+    Cargo.lock: e5398819749b051e99709aa44bef310ccf9c7ec06a6040c2e29de55cabd0dcbe
+    Cargo.toml: ccfb303fa9c3593a19d5f9c240b7d9aebddbf33bfd658d5a444ba06734cc3ca2
+    rust-toolchain.toml: 512bedfbbe3c4ef614fbb901b3661f40b4adb701d26c94664e79ca765aa3d109
+    crates/sipi-artifacts/Cargo.toml: 37817d937973b48c42d935a314a67130921b3537b6a45ba1fb242e5217b6789c
+    crates/sipi-artifacts/src/lib.rs: 85b475ec865779dbe3e21b54759ca9075b8a4516714d7192ba4b214075861997
+    crates/sipi-channel/Cargo.toml: a079c508b5e6ce5efeac13edb44c0fb6e7efab90819e47aa1bc6e0960889f63f
+    crates/sipi-channel/src/lib.rs: d0c8070ba7d270a91e0db5882996f64b09f29f00ca97b556ac73d4eeff4e3892
+    crates/sipi-channel/src/p3c_fixed_four_port_bench_v1.rs: 248bf24c494d9c956a96e2781f35f546d5de9f70f6157457da7a54aeb60baa70
+    crates/sipi-contracts/Cargo.toml: e9ec60833778d8888af64796df9202934247e365575dcbc88722f27f5668f20c
+    crates/sipi-contracts/src/lib.rs: 3a51c779e0bbaf8be99c554ac7844387685f88bc1de8c6bdbdf719f710501418
+    crates/sipi-ieee-com-sparam/Cargo.toml: 044d3d837957f99bf3429d7c51cf1b32129ae2744d921bd95def313a0aa1942b
+    crates/sipi-ieee-com-sparam/SOURCE-MAP.md: 61361ed7fbd36950a939ba0896966547858c08b57dc538374eccf96e18d47e29
+    crates/sipi-ieee-com-sparam/NOTICE-IEEE-802-COM.md: bddd0b824dd61554c17c53ccd6fc0f2065ef8de5007928908c8323e8bb04eca9
+    crates/sipi-ieee-com-sparam/src/interp_sparam_v1.rs: e93d51b8b18aefae6c95465fee404f5934551c98c4cd6a0c102de05eed3951de
+    crates/sipi-ieee-com-sparam/src/lib.rs: fef05a7739029be453440ba3aff888949c227cf3d89fe20c0923656b92d7bb22
+    crates/sipi-ieee-com-sparam/src/s21_to_causal_v1.rs: ae41af1c8bbbf2a706b772e2f457cf97cedce0f38e90158703ed007f11f1a5e1
+    crates/sipi-ieee-com-sparam/src/s21_to_raw_periodic_v1.rs: db1ca2b97038c4e5c56260f152abe19dddd27a9c73f6975f8c63d728d376f43b
+    crates/sipi-ieee-com-sparam/src/s21_to_truncated_v1.rs: dc0923ee6398e990594e9b001993ecdbd9798f865546339e57f1b8417063b407
+    crates/sipi-link/Cargo.toml: e89c97fc9c75427394e6d5ffff736c8bea40e4b4af831a6d289325388327b343
+    crates/sipi-link/src/lib.rs: 03ee95a4ffb365610206bce3c4437bf713d463e81d8b39e2f521f1aaf62d09e6
+    crates/sipi-p3c/Cargo.toml: 55972bdf8b0777398104b7c66a45c9b90173d4ff9493ed2029b6406a43b99d44
+    crates/sipi-p3c/src/lib.rs: 233ac9f3ce6ca52e8e382241db9f8bc7ae648365f08bb951cbd3e61d8690e24e
+    crates/sipi-p3c/src/prbs9_impulse_candidate_v1.rs: 7f71d56d3def987dca01454b4443ec24fbbc116d4cfe05360c65a86e93af5092
+    crates/sipi-p3c/tests/p3c_sealed_s4p_external_candidate_runner.rs: 133f79853f6b906d355da71814c6ced1a0e8a133991575539196ce77f76b03a7
+    crates/sipi-runtime/Cargo.toml: ec6a2b537040bd2ed1f7bb27bd464330d61b9bbf5ec9f159f8411222e6f1f625
+    crates/sipi-runtime/src/lib.rs: b71283852cae625891d33739e69b1de9e635d8d8d957c0ab4341e5ce55fa2d9d
+    crates/sipi-touchstone/Cargo.toml: 7fcfb8330e8962e20b1e60a0c93dc7eda8e7a363895dd23a0a4ea76cad772fcb
+    crates/sipi-touchstone/src/lib.rs: 359b0c44894d6cf2b03eca19626d180a9f921695a71681e901c5bcb0c77fc5cc
+    crates/sipi-touchstone/src/selected_four_port_v1.rs: 53b11a0cf08b0505c190b244c47f13e22f7b2b3c1f6ea712b6aba533a8805f80
+    crates/sipi-types/Cargo.toml: c5c112540ec14ffcd319a5b15553422409ced82ea541630bd659a916ba4bf31e
+    crates/sipi-types/src/lib.rs: b54f9e937bab7fc7830e56ef4f2ec861caf1ffed7a5718cf45bae92397ee5576
+historical_predecessor:
+  evidence_commit: 8a2613b707c00d1a24661e7083fec722ce3feba3
+  current_verifier_result: source_drift
+  exact_token: truncation_product_source_drift
+admission:
+  selected_truncated_response_admitted_as_discrete_convolution_kernel: true
+  external_selected_candidate_convolution_invoked: true
+  external_selected_candidate_convolution_admitted: true
+  candidate_waveform_generated: true
+  external_selected_candidate_waveform_observed: true
+  causal_impulse_admitted: false
+  delay_extraction_implemented: false
+  passivity_repair_implemented: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  p5_reference_evaluated: false
+  release_ledger_promoted: false
+blockers:
+  - bounded_response_not_admitted_as_physical_causal_impulse_or_fir
+  - 100as_sub_strobe_resolution_and_ads_edge_shape_parity_not_implemented
+  - external_reference_binding_not_implemented
+  - candidate_metric_acceptance_not_evaluated
+  - accepted_receiver_stage_missing
+  - release_license_notice_and_archive_admission_pending
+non_claims:
+  - Fresh custody runs are not independent toolchain reproduction, ADS/COM parity, or public product runtime.
+  - No physical causality/FIR, delay, passivity, 100 as sub-strobe behavior, external reference, metric, receiver, P4B, P5, or release admission is established.
