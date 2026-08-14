@@ -1,5 +1,5 @@
 schema: sipi.p3c-ads-passivity-action-surface-charter.v1
-status: specified_owner_authorized_external_observation_pending
+status: specified_owner_authorized_external_observation_completed
 authority:
   actor: user
   decision_ref: user-authorized-passivity-action-surface-2026-08-14
@@ -30,17 +30,16 @@ freshness:
   distinct_work_directories_required: true
   source_before_copy_after_identity_required: true
 admission:
-  ads_passivity_action_surface_documented: false
-  selected_run_passivity_action_observability_evaluated: false
-  documented_pre_correction_surface_observed: false
+  ads_passivity_action_surface_documented: true
+  selected_run_passivity_action_observability_evaluated: true
+  documented_pre_correction_surface_observed: true
   correction_magnitude_evaluated: false
   passivity_algorithm_or_repair_implemented: false
   waveform_mismatch_cause_identified: false
   candidate_waveform_accepted: false
   release_ledger_promoted: false
 blockers:
-  - fresh_external_action_surface_observation_missing
-  - independent_audit_pending
+  - correction_magnitude_not_evaluated
 non_claims:
   - This does not determine whether a nonzero ADS passivity correction occurred.
   - This does not alter product causality, passivity, candidate, receiver, P4B, P5, or release policy.

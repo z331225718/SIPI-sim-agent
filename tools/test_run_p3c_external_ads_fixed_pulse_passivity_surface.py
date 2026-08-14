@@ -24,7 +24,10 @@ class PassivitySurfaceTests(unittest.TestCase):
         self.assertEqual(len(names), 65)
         self.assertEqual(sum(".CMP1_S0(" in name for name in names), 16)
         self.assertEqual(names[-1], "TRAN.TRAN")
-        self.assertEqual(SURFACE.canonical_vectorset_identity(names), SURFACE.canonical_vectorset_identity(names))
+        self.assertEqual(
+            SURFACE.canonical_vectorset_identity(names),
+            "d8a2e18a8237e81b7f0ce559b26116bae2aa82b5672a54e81a948bb8c07b3087",
+        )
 
 
 if __name__ == "__main__":
