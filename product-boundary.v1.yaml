@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 06ae52b6fb96581e8871c388aa0b67f698bff3ff8db3d19e199dc749a31f14e0
+  tracked_paths_sha256: d95217e6382fc451a3938888f655d5b549ff6cc4f225b11deef159da53ef0b90
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1626,6 +1626,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-14-p3c-ieee-bsd-raw-periodic-direct-port.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-14-p3c-selected-s4p-raw-periodic-observation.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
