@@ -1,0 +1,51 @@
+schema: sipi.p3c-selected-highloss-prbs9-waveform-only-core.v3
+status: product_owned_selected_highloss_strict_grid_waveform_only_core_specified_not_profile_accepted
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-14-closed-eye-waveform-only
+  scope: exact_selected_highloss_raw_post_channel_profile_only
+contract_binding:
+  content_sha256: db0d9a663b311105be329d79060f05a5179f40fd7eccf448faf85d45b73da64a
+  path: docs/baselines/p3c-selected-highloss-prbs9-waveform-only-contract.v3.yaml
+profile:
+  total_samples: 49056
+  compared_sample_range: [32704, 49056]
+  waveform_nrmse_formula: sqrt(sum((candidate-reference)^2)/sum(reference^2))
+  waveform_nrmse_limit: 0.01
+  same_index_only: true
+  alignment: prohibited
+  resampling: prohibited
+  gain_fit: prohibited
+  dc_removal: prohibited
+  polarity_flip: prohibited
+  sampled_eye: excluded_not_evaluated_for_this_selected_closed_eye_profile
+  crossing_tie: excluded_not_evaluated_for_this_selected_closed_eye_profile
+input_boundary:
+  scope: caller_supplied_strict_grid_waveforms_only
+  requires_full_three_period_finite_waveforms: true
+  reads_external_assets: false
+  external_reference_binding: not_evaluated
+implementation:
+  crate: sipi-compare
+  module: selected_highloss_prbs9_waveform_only_v3
+  public_entrypoint: compare_selected_highloss_prbs9_waveform_only_v3
+admission:
+  selected_highloss_waveform_only_contract_ready: true
+  external_reference_bound_to_v3_waveform_input: false
+  waveform_nrmse_evaluated: false
+  sampled_eye_evaluated: false
+  crossing_tie_evaluated: false
+  selected_highloss_waveform_only_profile_accepted: false
+  accepted_receiver: false
+  acceptance_ready: false
+  promotion_eligible: false
+  release_ledger_promoted: false
+blockers:
+  - selected_external_reference_and_candidate_waveform_compare_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+  - physical_causality_fir_passivity_and_100as_ads_parity_not_established
+non_claims:
+  - Not a general closed-eye fallback or a change to the v2 waveform-eye-TIE profile.
+  - Not an ADS, AMI, DLL, IBIS, CDR, receiver, or external-oracle runtime.
+  - Not eye, TIE, BER, receiver, statistical-eye, release, or promotion acceptance.

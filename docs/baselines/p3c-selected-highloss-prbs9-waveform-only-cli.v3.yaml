@@ -1,0 +1,60 @@
+schema: sipi.p3c-selected-highloss-prbs9-waveform-only-cli.v3
+status: product_owned_selected_highloss_waveform_only_sealed_artifact_route_specified_not_profile_accepted
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-14-closed-eye-waveform-only
+  scope: exact_selected_highloss_raw_post_channel_profile_only
+command:
+  id: compare.prbs9-waveform-only.run
+  route: [compare, prbs9-waveform-only]
+  stdin_schema: sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-request.v3
+  contract_v3_content_sha256: db0d9a663b311105be329d79060f05a5179f40fd7eccf448faf85d45b73da64a
+  artifact_root_assumption: caller_selected_sipi_published_root_no_hostile_concurrent_writer
+request_boundary:
+  fields: [schema, contract_sha256, reference, candidate]
+  reference_candidate_fields: [artifact_id, manifest_sha256]
+  deny_unknown_fields: true
+  forbidden: [waveform_values, path, url, axis, seed, tolerance, alignment, profile_override]
+artifact_boundary:
+  exact_files: [success.json, waveform.json, waveform.f64le]
+  manifest_maximum_bytes: 65536
+  waveform_metadata_maximum_bytes: 4096
+  waveform_payload_exact_bytes: 392448
+  artifact_total_payload_maximum_bytes: 396544
+  quantity: differential_voltage
+  unit: volts_differential
+  timebase_profile: selected-highloss-prbs9-v3-32gtps-osr32-three-period-half-open
+  sample_count: 49056
+  encoding: ieee754-binary64-little-endian
+  rejects: [symlink_or_reparse, path_escape, unsealed, extra_or_missing_file, manifest_drift, payload_hash_or_length_drift, nonfinite_sample]
+waveform_core:
+  entrypoint: compare_selected_highloss_prbs9_waveform_only_v3
+  no_alignment_or_resampling: true
+  requires_both_artifacts_verified_before_compare: true
+response:
+  exposes: [artifact_id, manifest_sha256, payload_sha256, waveform_digest, waveform_nrmse]
+  excludes: [artifact_root, relative_filename, waveform_samples, eye_metrics, tie_metrics]
+  sampled_eye: excluded_not_evaluated_for_this_selected_closed_eye_profile
+  crossing_tie: excluded_not_evaluated_for_this_selected_closed_eye_profile
+  external_reference_binding: not_evaluated
+  external_profile_acceptance: not_evaluated
+admission:
+  product_waveform_only_cli_invoked: false
+  external_reference_bound_to_v3_waveform_input: false
+  selected_highloss_waveform_only_profile_accepted: false
+  sampled_eye_evaluated: false
+  crossing_tie_evaluated: false
+  accepted_receiver: false
+  acceptance_ready: false
+  promotion_eligible: false
+  release_ledger_promoted: false
+blockers:
+  - caller_supplied_artifact_identity_only
+  - external_reference_binding_not_implemented
+  - selected_profile_acceptance_not_evaluated
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - Not a general closed-eye fallback or a change to compare.prbs9-metrics.run.
+  - Not an ADS/reference/receiver/release acceptance route.
+  - Not a hostile-writer-safe artifact reader or external provenance verifier.

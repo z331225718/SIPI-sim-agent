@@ -1,0 +1,87 @@
+schema: sipi.p3c-selected-highloss-prbs9-waveform-only-contract.v3
+status: specified_selected_highloss_waveform_only_profile_external_compare_pending
+supersedes:
+  schema: sipi.p3c-prbs9-waveform-jitter-contract.v2
+  content_sha256: f47329b6ddda01cbcde1f24e21cb93e03f8ef6139ea2d43ff74cad9e2049d2b5
+  scope: selected_highloss_raw_post_channel_profile_only
+  reason: owner_confirmed_closed_eye_profile_compares_waveform_only
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-14-closed-eye-waveform-only
+  scope: exact_selected_highloss_raw_post_channel_profile_only
+selected_profile:
+  s4p: {byte_length: 1834156, sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47}
+  ads_canonical_triple_payload: {byte_length: 1177344, sha256: 5ec5211a273d313655f0b8ced35d58ea89d0bba113f5edc3fd9712218f46e726, observed_column: rx_differential_voltage}
+  observation_node: same_named_differential_post_channel_node
+  receiver_or_equalizer_stage: none
+  source_edge: {component_semantics: ads_prbssrc, edge_shape_code: 0, rise_time_seconds: 1.0e-16, fall_time_seconds: 1.0e-16}
+stimulus:
+  signal_quantity: differential_voltage_volts
+  levels_volts: [-1.0, 1.0]
+  prbs:
+    polynomial: x9+x5+1
+    lfsr_form: fibonacci
+    state_bit_order: s8_msb_to_s0_lsb
+    initial_state_hex: 0x1a5
+    output_bit: pre_shift_s8
+    feedback_bit: s8_xor_s4
+    state_transition: left_shift_mask_0x1ff_then_append_feedback_to_s0
+    bit_to_level: {zero: -1.0, one: 1.0}
+    period_bits: 511
+    serialized_period: ascii_0_or_1_in_emission_order
+    period_sha256: 4437fb3beb2fa1ca99b4177673c53fc20089ac9cf68b1adaa1e0fad14d742127
+timebase:
+  symbol_rate_gbaud: 32.0
+  ui_seconds: 3.125e-11
+  samples_per_ui: 32
+  sample_interval_seconds: 9.765625e-13
+  sample_zero: first_symbol_start
+window:
+  total_prbs_periods: 3
+  warmup_prbs_periods: 2
+  compared_prbs_period: 3
+  compared_start: 32704
+  compared_samples: 16352
+  reference_and_candidate_same_index_required: true
+  reference_and_candidate_same_seed_required: true
+waveform_compare:
+  unit: volts_differential
+  alignment: prohibited
+  resampling: prohibited
+  gain_fit: prohibited
+  dc_removal: prohibited
+  polarity_flip: prohibited
+  formula: sqrt(sum((candidate-reference)^2)/sum(reference^2))
+  zero_reference_norm: reject
+  relative_rms_error_limit: 0.01
+eye:
+  status: excluded_not_evaluated_for_this_selected_closed_eye_profile
+  reason: raw_post_channel_reference_has_no_positive_sampled_eye_opening_at_any_phase
+jitter:
+  status: excluded_not_evaluated_for_this_selected_closed_eye_profile
+  reason: raw_post_channel_reference_does_not_supply_exactly_one_crossing_per_selected_nominal_transition_window
+diagnostic_basis:
+  status: external_only_observed_not_algorithm_input
+  best_fixed_delay_samples: 3434
+  best_fixed_delay_ui: 107.3125
+  shifted_phase_opening_max_volts: -0.3359726016963649
+  expected_transitions: 256
+  exactly_one_crossing: 58
+  missing_crossings: 197
+  multiple_crossings: 1
+admission:
+  waveform_semantics_ready: true
+  sampled_eye_evaluated: false
+  crossing_tie_evaluated: false
+  acceptance_ready: false
+  promotion_eligible: false
+  release_ledger_promoted: false
+blockers:
+  - selected_external_reference_and_candidate_waveform_compare_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+  - physical_causality_fir_passivity_and_100as_ads_parity_not_established
+non_claims:
+  - This selected waveform-only profile is not a general closed-eye fallback.
+  - Diagnostic delay, phase opening, and crossing counts are not alignment, fold-origin, CDR, or runtime inputs.
+  - Eye, TIE, BER, receiver, AMI, COM, P4B, P5, release, and promotion acceptance are not evaluated.

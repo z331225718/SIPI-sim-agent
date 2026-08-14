@@ -16,6 +16,9 @@ use sipi_compare::{
     ARRAY_COMPARE_POLICY_V1, AlignedArrayV1, ArrayShapeV1, SemanticBindingDigestV1, ToleranceV1,
     UnitTagV1, compare_arrays_v1,
     prbs9_waveform_v2::{Prbs9WaveformPairV2, compare_prbs9_metrics_v2},
+    selected_highloss_prbs9_waveform_only_v3::{
+        SelectedHighlossPrbs9WaveformPairV3, compare_selected_highloss_prbs9_waveform_only_v3,
+    },
 };
 use sipi_contracts::{
     ARRAY_COMPARE_REQUEST_SCHEMA, ARTIFACT_REPORT_REQUEST_SCHEMA, CAPABILITIES_SCHEMA,
@@ -24,6 +27,8 @@ use sipi_contracts::{
     IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA, LINK_PLAN_SCHEMA, PLANNED_DOMAINS,
     PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA, PRBS9_WAVEFORM_ARTIFACT_BYTE_LENGTH_V1,
     RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA, RULE_LEDGER_V1, TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA,
+    SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACTS_REQUEST_SCHEMA_V3,
+    SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_BYTE_LENGTH_V3,
     array_compare_request_schema_json, artifact_report_request_schema_json, capability_schema_json,
     channel_matched_two_port_kernel_run_request_schema_json, deterministic_json,
     fixed_project_run_request_schema_json, ibis_dc_evaluate_request_schema_json,
@@ -34,13 +39,16 @@ use sipi_contracts::{
     parse_ibis_inspect_request_v1, parse_ibis_quasi_static_evaluate_request_v1,
     parse_link_causal_fir_request_v1, parse_prbs9_metric_artifacts_request_v1,
     parse_prbs9_waveform_artifact_v1, parse_receiver_diagnostic_run_request_v1,
+    parse_selected_highloss_prbs9_waveform_only_artifact_v3,
+    parse_selected_highloss_prbs9_waveform_only_artifacts_request_v3,
     parse_rx_load_differential_rc_evaluate_request_v1, parse_tran_one_node_rc_pulse_request_v1,
     parse_tran_rc_pulse_request_v1, prbs9_metric_artifacts_request_schema_json,
     product_example_request_json_v1, project_plan_schema_json,
     receiver_diagnostic_run_request_schema_json, receiver_input_schema_json,
     receiver_semantics_schema_json, rx_load_differential_rc_evaluate_request_schema_json,
     tran_one_node_rc_pulse_request_schema_json, tran_rc_pulse_request_schema_json,
-    validate_request_v1, validation_request_schema_json,
+    selected_highloss_prbs9_waveform_only_artifacts_request_schema_json, validate_request_v1,
+    validation_request_schema_json,
 };
 use sipi_ibis::{
     DcClampCornerV1, DcClampProbeV1, IbisDcEvaluateServiceV1, IbisInspectServiceV1,
@@ -496,6 +504,16 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         nonclaim: "caller_selected_sealed_artifacts_only",
     },
     CommandDescriptorV1 {
+        id: "compare.prbs9-waveform-only.run",
+        route: &["compare", "prbs9-waveform-only"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some(SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACTS_REQUEST_SCHEMA_V3),
+        response_schema: Some("sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-run-result.v3"),
+        unavailable_reason: None,
+        nonclaim: "selected_highloss_raw_post_channel_waveform_only",
+    },
+    CommandDescriptorV1 {
         id: "report.inspect",
         route: &["report", "inspect"],
         availability: CommandAvailabilityV1::Available,
@@ -699,6 +717,15 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
     CommandProtocolProfileV1 {
+        command_id: "compare.prbs9-waveform-only.run",
+        example_id: None,
+        required_options: &["--artifact-root"],
+        caller_bindings: PRBS9_METRIC_ARTIFACT_BINDINGS,
+        validation_rule_id: Some("compare.selected-highloss.prbs9-waveform-only.sealed-artifacts.v3"),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
+    CommandProtocolProfileV1 {
         command_id: "project.run",
         example_id: Some("product-owned-minimal-v1"),
         required_options: &["--artifact-root", "--artifact-id"],
@@ -750,6 +777,13 @@ fn main() {
         && root == "--artifact-root"
     {
         ProcessAdapter::compare_prbs9_metrics_stdin(artifact_root)
+    } else if let [command, action, stdin, root, artifact_root] = &arguments[..]
+        && command == "compare"
+        && action == "prbs9-waveform-only"
+        && stdin == "--stdin"
+        && root == "--artifact-root"
+    {
+        ProcessAdapter::compare_selected_highloss_prbs9_waveform_only_stdin(artifact_root)
     } else if arguments == ["report", "inspect", "--stdin"] {
         ProcessAdapter::report_inspect_stdin()
     } else if let [command, action, stdin, root, artifact_root, id, artifact_id] = &arguments[..]
@@ -927,6 +961,25 @@ impl ProcessAdapter {
             Err(_) => return error(3, "contract_rejected", "PRBS9 metric request was rejected"),
         };
         run_prbs9_metric_artifact_compare(artifact_root, &request)
+    }
+
+    fn compare_selected_highloss_prbs9_waveform_only_stdin(artifact_root: &str) -> Response {
+        let input = match read_stdin_request() {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        let request = match parse_selected_highloss_prbs9_waveform_only_artifacts_request_v3(&input)
+        {
+            Ok(request) => request,
+            Err(_) => {
+                return error(
+                    3,
+                    "contract_rejected",
+                    "selected highloss waveform-only request was rejected",
+                );
+            }
+        };
+        run_selected_highloss_prbs9_waveform_only_artifact_compare(artifact_root, &request)
     }
 
     fn project_run_stdin(artifact_root: &str, artifact_id: &str) -> Response {
@@ -1816,6 +1869,65 @@ fn run_prbs9_metric_artifact_compare(
     ))
 }
 
+fn run_selected_highloss_prbs9_waveform_only_artifact_compare(
+    artifact_root: &str,
+    request: &sipi_contracts::SelectedHighlossPrbs9WaveformOnlyArtifactsRequestV3,
+) -> Response {
+    let store = match ArtifactRoot::open_existing(Path::new(artifact_root)) {
+        Ok(store) => store,
+        Err(_) => return error(3, "contract_rejected", "sealed artifact inputs were rejected"),
+    };
+    let reference = match consume_selected_highloss_prbs9_waveform_only_artifact(
+        &store,
+        request.reference().artifact_id(),
+        request.reference().manifest_sha256(),
+    ) {
+        Ok(waveform) => waveform,
+        Err(()) => return error(3, "contract_rejected", "sealed artifact inputs were rejected"),
+    };
+    let candidate = match consume_selected_highloss_prbs9_waveform_only_artifact(
+        &store,
+        request.candidate().artifact_id(),
+        request.candidate().manifest_sha256(),
+    ) {
+        Ok(waveform) => waveform,
+        Err(()) => return error(3, "contract_rejected", "sealed artifact inputs were rejected"),
+    };
+    let pair = match SelectedHighlossPrbs9WaveformPairV3::try_new(reference.values, candidate.values)
+    {
+        Ok(pair) => pair,
+        Err(_) => return error(3, "contract_rejected", "selected waveforms were rejected"),
+    };
+    let report = match compare_selected_highloss_prbs9_waveform_only_v3(&pair) {
+        Ok(report) => report,
+        Err(_) => {
+            return error(
+                3,
+                "contract_rejected",
+                "selected waveform comparison was rejected",
+            );
+        }
+    };
+    success(format!(
+        "{{\"schema\":\"sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-run-result.v3\",\"contract_sha256\":\"{}\",\"reference\":{{\"artifact_id\":\"{}\",\"manifest_sha256\":\"{}\",\"payload_sha256\":\"{}\",\"waveform_digest\":\"{}\"}},\"candidate\":{{\"artifact_id\":\"{}\",\"manifest_sha256\":\"{}\",\"payload_sha256\":\"{}\",\"waveform_digest\":\"{}\"}},\"compared_start\":{},\"compared_samples\":{},\"waveform_nrmse\":{},\"waveform_nrmse_limit\":{},\"within_waveform_nrmse_limit\":{},\"within_selected_waveform_only_profile\":{},\"sampled_eye\":\"excluded_not_evaluated_for_this_selected_closed_eye_profile\",\"crossing_tie\":\"excluded_not_evaluated_for_this_selected_closed_eye_profile\",\"evaluation_scope\":\"selected_highloss_raw_post_channel_sealed_artifacts_only\",\"external_reference_binding\":\"not_evaluated\",\"external_profile_acceptance\":\"not_evaluated\"}}",
+        report.contract_sha256(),
+        request.reference().artifact_id(),
+        request.reference().manifest_sha256(),
+        reference.payload_sha256,
+        report.reference_digest(),
+        request.candidate().artifact_id(),
+        request.candidate().manifest_sha256(),
+        candidate.payload_sha256,
+        report.candidate_digest(),
+        report.compared_start(),
+        report.compared_samples(),
+        report.waveform_nrmse(),
+        report.waveform_nrmse_limit(),
+        report.within_waveform_nrmse_limit(),
+        report.within_selected_waveform_only_profile(),
+    ))
+}
+
 struct ConsumedPrbs9WaveformArtifact {
     values: Vec<f64>,
     payload_sha256: String,
@@ -1841,6 +1953,54 @@ fn consume_prbs9_waveform_artifact(
         parse_prbs9_waveform_artifact_v1(files.file("waveform.json").ok_or(())?).map_err(|_| ())?;
     let payload = files.file("waveform.f64le").ok_or(())?;
     if payload.len() as u64 != PRBS9_WAVEFORM_ARTIFACT_BYTE_LENGTH_V1
+        || metadata.payload_sha256() != sha256_hex(payload)
+    {
+        return Err(());
+    }
+    let mut values = Vec::with_capacity(payload.len() / 8);
+    let chunks = payload.chunks_exact(8);
+    if !chunks.remainder().is_empty() {
+        return Err(());
+    }
+    for bytes in chunks {
+        let array: [u8; 8] = bytes.try_into().map_err(|_| ())?;
+        let value = f64::from_le_bytes(array);
+        if !value.is_finite() {
+            return Err(());
+        }
+        values.push(value);
+    }
+    Ok(ConsumedPrbs9WaveformArtifact {
+        values,
+        payload_sha256: metadata.payload_sha256().to_owned(),
+    })
+}
+
+fn consume_selected_highloss_prbs9_waveform_only_artifact(
+    store: &ArtifactRoot,
+    artifact_id: &str,
+    manifest_sha256: &str,
+) -> Result<ConsumedPrbs9WaveformArtifact, ()> {
+    let files = store
+        .consume_exact_verified_v1(
+            artifact_id,
+            manifest_sha256,
+            &[
+                ("waveform.json", 4096),
+                (
+                    "waveform.f64le",
+                    SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_BYTE_LENGTH_V3,
+                ),
+            ],
+            VerifiedConsumptionPolicyV1::try_new(65_536, 396_544).map_err(|_| ())?,
+        )
+        .map_err(|_| ())?;
+    let metadata = parse_selected_highloss_prbs9_waveform_only_artifact_v3(
+        files.file("waveform.json").ok_or(())?,
+    )
+    .map_err(|_| ())?;
+    let payload = files.file("waveform.f64le").ok_or(())?;
+    if payload.len() as u64 != SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_BYTE_LENGTH_V3
         || metadata.payload_sha256() != sha256_hex(payload)
     {
         return Err(());
@@ -2211,6 +2371,7 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["channel", "run"]
             | ["compare", "run"]
             | ["compare", "prbs9-metrics"]
+            | ["compare", "prbs9-waveform-only"]
             | ["project", "run"]
             | ["report", "inspect"]
     )
@@ -2288,6 +2449,8 @@ fn schema_bytes(id: &str) -> Result<Option<Vec<u8>>, sipi_contracts::ContractErr
         array_compare_request_schema_json().map(Some)
     } else if id == PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA {
         prbs9_metric_artifacts_request_schema_json().map(Some)
+    } else if id == SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACTS_REQUEST_SCHEMA_V3 {
+        selected_highloss_prbs9_waveform_only_artifacts_request_schema_json().map(Some)
     } else if id == sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA {
         ibis_inspect_request_schema_json().map(Some)
     } else if id == IBIS_DC_EVALUATE_REQUEST_SCHEMA {
@@ -2688,7 +2851,7 @@ fn doctor_json() -> String {
 
 fn schema_list_json() -> String {
     format!(
-        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA}\",\"{ARRAY_COMPARE_REQUEST_SCHEMA}\",\"{PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA}\",\"{}\",\"{}\"]}}",
+        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA}\",\"{ARRAY_COMPARE_REQUEST_SCHEMA}\",\"{PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA}\",\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACTS_REQUEST_SCHEMA_V3}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA}\",\"{}\",\"{}\"]}}",
         IBIS_DC_EVALUATE_REQUEST_SCHEMA,
         IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA,
         sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA,
@@ -2736,6 +2899,7 @@ fn validate_self(schema: Option<&str>) -> Response {
             && id != CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA
             && id != ARRAY_COMPARE_REQUEST_SCHEMA
             && id != PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA
+            && id != SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACTS_REQUEST_SCHEMA_V3
             && id != sipi_contracts::VALIDATION_REQUEST_SCHEMA
             && id != sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA
             && id != TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA
@@ -3074,7 +3238,7 @@ mod tests {
     fn schema_list_uses_the_schema_inventory_order() {
         assert_eq!(
             schema_list_json(),
-            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.compare.aligned-arrays-request.v1\",\"sipi.compare.prbs9-metric-artifacts-request.v1\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.receiver.diagnostic-run-request.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.one-node-rc-pulse-request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
+            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.compare.aligned-arrays-request.v1\",\"sipi.compare.prbs9-metric-artifacts-request.v1\",\"sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-request.v3\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.receiver.diagnostic-run-request.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.one-node-rc-pulse-request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
         );
     }
 

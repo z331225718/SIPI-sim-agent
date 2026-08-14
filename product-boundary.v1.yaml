@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: f7fc9efaf6a497d9d79bb5d319b2d02df470ab0387e9b3faff420041d9f970e9
+  tracked_paths_sha256: 7e42bca9ae588d497f7bdc8ecf69d75636c09bc4febc055121604e1f5457e841
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -233,6 +233,12 @@ inventory:
       license: LicenseRef-Provenance-Pending
       provenance: project_authored
       distribution: non-distributed
+    crates/sipi-compare/src/selected_highloss_prbs9_waveform_only_v3.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     crates/sipi-contracts/Cargo.toml:
       rule: p1-rust-foundation
       class: quarantine
@@ -270,6 +276,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-contracts/schemas/sipi.compare.prbs9-metric-artifacts-request.v1.schema.json:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-contracts/schemas/sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-request.v3.schema.json:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1709,6 +1721,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-14-p3c-selected-highloss-prbs9-waveform-only-v3.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-14-p3c-selected-s4p-candidate-runner.md:
       rule: historical-docs
       class: migration_only
@@ -2136,6 +2154,24 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-selected-four-port-static-bench.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-selected-highloss-prbs9-waveform-only-cli.v3.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-selected-highloss-prbs9-waveform-only-contract.v3.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-selected-highloss-prbs9-waveform-only-core.v3.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2826,6 +2862,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-selected-four-port-static-bench.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-selected-highloss-prbs9-waveform-only.v3.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8195,6 +8237,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_selected_highloss_prbs9_waveform_only_v3.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_selected_s4p_candidate_observation_evidence.py:
       rule: migration-tools
       class: migration_only
@@ -8856,6 +8904,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_selected_four_port_static_bench.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_selected_highloss_prbs9_waveform_only_v3.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

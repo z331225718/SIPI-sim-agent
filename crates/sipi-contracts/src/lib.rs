@@ -33,6 +33,16 @@ pub const PRBS9_WAVEFORM_ARTIFACT_TIMEBASE_PROFILE_V1: &str =
     "prbs9-v2-32gtps-osr32-three-period-half-open";
 pub const PRBS9_WAVEFORM_ARTIFACT_SAMPLE_COUNT_V1: usize = 49_056;
 pub const PRBS9_WAVEFORM_ARTIFACT_BYTE_LENGTH_V1: u64 = 392_448;
+pub const SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACTS_REQUEST_SCHEMA_V3: &str =
+    "sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-request.v3";
+pub const SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_CONTRACT_SHA256_V3: &str =
+    "db0d9a663b311105be329d79060f05a5179f40fd7eccf448faf85d45b73da64a";
+pub const SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACT_SCHEMA_V3: &str =
+    "sipi.compare.selected-highloss-prbs9-waveform-only-artifact.v3";
+pub const SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_TIMEBASE_PROFILE_V3: &str =
+    "selected-highloss-prbs9-v3-32gtps-osr32-three-period-half-open";
+pub const SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_SAMPLE_COUNT_V3: usize = 49_056;
+pub const SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_BYTE_LENGTH_V3: u64 = 392_448;
 pub const IBIS_INSPECT_REQUEST_SCHEMA: &str = "sipi.ibis.inspect.request.v1";
 pub const IBIS_DC_EVALUATE_REQUEST_SCHEMA: &str = "sipi.ibis.input-typ-dc-evaluate.request.v1";
 pub const IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA: &str =
@@ -1698,6 +1708,140 @@ pub fn parse_prbs9_waveform_artifact_v1(
         .try_into()
 }
 
+/// Opaque sealed-artifact identities for the selected high-loss waveform-only
+/// profile. The v3 route is intentionally independent from the v2 metric
+/// route so a caller cannot downgrade a generic eye/TIE request at runtime.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireSelectedHighlossPrbs9WaveformOnlyArtifactsRequestV3 {
+    pub schema: String,
+    pub contract_sha256: String,
+    pub reference: WireSealedArtifactIdentityV1,
+    pub candidate: WireSealedArtifactIdentityV1,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SelectedHighlossPrbs9WaveformOnlyArtifactsRequestV3 {
+    reference: SealedArtifactIdentityV1,
+    candidate: SealedArtifactIdentityV1,
+}
+
+impl SelectedHighlossPrbs9WaveformOnlyArtifactsRequestV3 {
+    pub fn reference(&self) -> &SealedArtifactIdentityV1 {
+        &self.reference
+    }
+
+    pub fn candidate(&self) -> &SealedArtifactIdentityV1 {
+        &self.candidate
+    }
+}
+
+impl TryFrom<WireSelectedHighlossPrbs9WaveformOnlyArtifactsRequestV3>
+    for SelectedHighlossPrbs9WaveformOnlyArtifactsRequestV3
+{
+    type Error = ContractError;
+
+    fn try_from(
+        value: WireSelectedHighlossPrbs9WaveformOnlyArtifactsRequestV3,
+    ) -> Result<Self, Self::Error> {
+        if value.schema != SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACTS_REQUEST_SCHEMA_V3
+            || value.contract_sha256 != SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_CONTRACT_SHA256_V3
+        {
+            return Err(ContractError::Version);
+        }
+        let identity = |value: WireSealedArtifactIdentityV1| -> Result<SealedArtifactIdentityV1, ContractError> {
+            if !valid_artifact_id(&value.artifact_id)
+                || !valid_array_compare_binding(&value.manifest_sha256)
+            {
+                return Err(ContractError::Json("invalid sealed artifact identity".to_owned()));
+            }
+            Ok(SealedArtifactIdentityV1 {
+                artifact_id: value.artifact_id,
+                manifest_sha256: value.manifest_sha256,
+            })
+        };
+        let reference = identity(value.reference)?;
+        let candidate = identity(value.candidate)?;
+        if reference.artifact_id == candidate.artifact_id {
+            return Err(ContractError::Json(
+                "artifact identities must differ".to_owned(),
+            ));
+        }
+        Ok(Self {
+            reference,
+            candidate,
+        })
+    }
+}
+
+pub fn parse_selected_highloss_prbs9_waveform_only_artifacts_request_v3(
+    input: &[u8],
+) -> Result<SelectedHighlossPrbs9WaveformOnlyArtifactsRequestV3, ContractError> {
+    serde_json::from_slice::<WireSelectedHighlossPrbs9WaveformOnlyArtifactsRequestV3>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
+/// Sealed waveform metadata for the selected high-loss waveform-only profile.
+/// This is not a generic metric mode or a caller-configurable downgrade.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireSelectedHighlossPrbs9WaveformOnlyArtifactV3 {
+    pub schema: String,
+    pub contract_sha256: String,
+    pub quantity: String,
+    pub unit: String,
+    pub timebase_profile: String,
+    pub sample_count: usize,
+    pub encoding: String,
+    pub payload: WirePrbs9WaveformArtifactPayloadV1,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SelectedHighlossPrbs9WaveformOnlyArtifactV3 {
+    payload_sha256: String,
+}
+
+impl SelectedHighlossPrbs9WaveformOnlyArtifactV3 {
+    pub fn payload_sha256(&self) -> &str {
+        &self.payload_sha256
+    }
+}
+
+impl TryFrom<WireSelectedHighlossPrbs9WaveformOnlyArtifactV3>
+    for SelectedHighlossPrbs9WaveformOnlyArtifactV3
+{
+    type Error = ContractError;
+
+    fn try_from(
+        value: WireSelectedHighlossPrbs9WaveformOnlyArtifactV3,
+    ) -> Result<Self, Self::Error> {
+        if value.schema != SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACT_SCHEMA_V3
+            || value.contract_sha256 != SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_CONTRACT_SHA256_V3
+            || value.quantity != "differential_voltage"
+            || value.unit != "volts_differential"
+            || value.timebase_profile != SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_TIMEBASE_PROFILE_V3
+            || value.sample_count != SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_SAMPLE_COUNT_V3
+            || value.encoding != "ieee754-binary64-little-endian"
+            || value.payload.byte_length != SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_BYTE_LENGTH_V3
+            || !valid_array_compare_binding(&value.payload.sha256)
+        {
+            return Err(ContractError::Version);
+        }
+        Ok(Self {
+            payload_sha256: value.payload.sha256,
+        })
+    }
+}
+
+pub fn parse_selected_highloss_prbs9_waveform_only_artifact_v3(
+    input: &[u8],
+) -> Result<SelectedHighlossPrbs9WaveformOnlyArtifactV3, ContractError> {
+    serde_json::from_slice::<WireSelectedHighlossPrbs9WaveformOnlyArtifactV3>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
 /// A product-owned Input/TYP static clamp request. The text is caller-provided
 /// UTF-8; it has no file, URL, asset identity, or external acceptance surface.
 #[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
@@ -2866,6 +3010,13 @@ pub fn prbs9_metric_artifacts_request_schema_json() -> Result<Vec<u8>, ContractE
     deterministic_json(&schema_for!(WirePrbs9MetricArtifactsRequestV1))
 }
 
+pub fn selected_highloss_prbs9_waveform_only_artifacts_request_schema_json(
+) -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(
+        WireSelectedHighlossPrbs9WaveformOnlyArtifactsRequestV3
+    ))
+}
+
 pub fn ibis_inspect_request_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireIbisInspectRequestV1))
 }
@@ -3331,6 +3482,47 @@ mod tests {
     }
 
     #[test]
+    fn selected_highloss_waveform_only_artifacts_are_fixed_and_not_v2_compatible() {
+        let digest = "a".repeat(64);
+        let request = format!(
+            "{{\"schema\":\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACTS_REQUEST_SCHEMA_V3}\",\"contract_sha256\":\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_CONTRACT_SHA256_V3}\",\"reference\":{{\"artifact_id\":\"reference-1\",\"manifest_sha256\":\"{digest}\"}},\"candidate\":{{\"artifact_id\":\"candidate-1\",\"manifest_sha256\":\"{digest}\"}}}}"
+        );
+        assert_eq!(
+            parse_selected_highloss_prbs9_waveform_only_artifacts_request_v3(request.as_bytes())
+                .expect("request")
+                .reference()
+                .artifact_id(),
+            "reference-1"
+        );
+        assert!(parse_prbs9_metric_artifacts_request_v1(request.as_bytes()).is_err());
+        assert!(
+            parse_selected_highloss_prbs9_waveform_only_artifacts_request_v3(
+                request
+                    .replace("\"candidate\":", "\"profile\":\"v2\",\"candidate\":")
+                    .as_bytes()
+            )
+            .is_err()
+        );
+
+        let metadata = format!(
+            "{{\"schema\":\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACT_SCHEMA_V3}\",\"contract_sha256\":\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_CONTRACT_SHA256_V3}\",\"quantity\":\"differential_voltage\",\"unit\":\"volts_differential\",\"timebase_profile\":\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_TIMEBASE_PROFILE_V3}\",\"sample_count\":{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_SAMPLE_COUNT_V3},\"encoding\":\"ieee754-binary64-little-endian\",\"payload\":{{\"byte_length\":{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_BYTE_LENGTH_V3},\"sha256\":\"{digest}\"}}}}"
+        );
+        assert_eq!(
+            parse_selected_highloss_prbs9_waveform_only_artifact_v3(metadata.as_bytes())
+                .expect("metadata")
+                .payload_sha256(),
+            digest
+        );
+        assert!(parse_prbs9_waveform_artifact_v1(metadata.as_bytes()).is_err());
+        assert!(parse_selected_highloss_prbs9_waveform_only_artifact_v3(
+            metadata
+                .replace("\"payload\":", "\"alignment\":\"none\",\"payload\":")
+                .as_bytes()
+        )
+        .is_err());
+    }
+
+    #[test]
     fn ibis_dc_evaluate_request_is_typical_only_and_strict() {
         let valid = br#"{"schema":"sipi.ibis.input-typ-dc-evaluate.request.v1","source":{"encoding":"utf-8","text":"[IBIS Ver] 7.1\n"},"selection":{"ibis_version":"7.1","model_selector":"product_input","corner":"typical"},"probe":{"gnd_clamp_drive_volts":0.0,"power_clamp_drive_volts":1.0}}"#;
         let request = parse_ibis_dc_evaluate_request_v1(valid).expect("valid request");
@@ -3542,6 +3734,17 @@ mod tests {
         let baseline =
             include_bytes!("../schemas/sipi.compare.prbs9-metric-artifacts-request.v1.schema.json");
         let exported = prbs9_metric_artifacts_request_schema_json().expect("schema");
+        assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
+    }
+
+    #[test]
+    fn tracked_selected_highloss_waveform_only_artifact_request_schema_is_exactly_the_registered_export(
+    ) {
+        let baseline = include_bytes!(
+            "../schemas/sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-request.v3.schema.json"
+        );
+        let exported =
+            selected_highloss_prbs9_waveform_only_artifacts_request_schema_json().expect("schema");
         assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
     }
 

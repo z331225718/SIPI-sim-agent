@@ -127,6 +127,54 @@ fn run_prbs9_metrics(root: &Path, request: &[u8]) -> Output {
     child.wait_with_output().expect("wait sipi")
 }
 
+fn publish_selected_highloss_waveform_only_artifact(
+    root: &Path,
+    id: &str,
+    values: &[f64],
+) -> String {
+    let payload = values
+        .iter()
+        .flat_map(|value| value.to_le_bytes())
+        .collect::<Vec<_>>();
+    let metadata = format!(
+        "{{\"schema\":\"sipi.compare.selected-highloss-prbs9-waveform-only-artifact.v3\",\"contract_sha256\":\"db0d9a663b311105be329d79060f05a5179f40fd7eccf448faf85d45b73da64a\",\"quantity\":\"differential_voltage\",\"unit\":\"volts_differential\",\"timebase_profile\":\"selected-highloss-prbs9-v3-32gtps-osr32-three-period-half-open\",\"sample_count\":49056,\"encoding\":\"ieee754-binary64-little-endian\",\"payload\":{{\"byte_length\":392448,\"sha256\":\"{}\"}}}}",
+        sha256(&payload)
+    );
+    let store = ArtifactRoot::open_or_create(root).expect("artifact root");
+    let mut stage = store.begin(id).expect("stage");
+    stage
+        .stage_reader("waveform.json", metadata.as_bytes(), 4096)
+        .expect("metadata");
+    stage
+        .stage_reader("waveform.f64le", payload.as_slice(), 392_448)
+        .expect("payload");
+    stage.seal().expect("seal").publish_new().expect("publish");
+    sha256(&std::fs::read(root.join(id).join("success.json")).expect("success"))
+}
+
+fn run_selected_highloss_waveform_only(root: &Path, request: &[u8]) -> Output {
+    let mut child = sipi()
+        .args([
+            "compare",
+            "prbs9-waveform-only",
+            "--stdin",
+            "--artifact-root",
+            root.to_string_lossy().as_ref(),
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start sipi");
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(request)
+        .expect("write request");
+    child.wait_with_output().expect("wait sipi")
+}
+
 fn run_link(root: &Path, request: &[u8]) -> Output {
     let mut child = sipi()
         .args([
@@ -976,5 +1024,38 @@ fn prbs9_metric_route_consumes_only_exact_sealed_artifacts() {
     let stdout = String::from_utf8(rejected.stdout).expect("failure stdout");
     assert!(!stdout.contains(root.to_string_lossy().as_ref()));
     assert!(!stdout.contains("extra.bin"));
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn selected_highloss_waveform_only_route_is_separate_from_v2_metrics() {
+    let root = std::env::temp_dir().join(format!(
+        "sipi-cli-selected-highloss-waveform-only-{}",
+        std::process::id()
+    ));
+    let waveform = vec![0.1; 49_056];
+    let reference_manifest =
+        publish_selected_highloss_waveform_only_artifact(&root, "reference-1", &waveform);
+    let candidate_manifest =
+        publish_selected_highloss_waveform_only_artifact(&root, "candidate-1", &waveform);
+    let request = format!(
+        "{{\"schema\":\"sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-request.v3\",\"contract_sha256\":\"db0d9a663b311105be329d79060f05a5179f40fd7eccf448faf85d45b73da64a\",\"reference\":{{\"artifact_id\":\"reference-1\",\"manifest_sha256\":\"{reference_manifest}\"}},\"candidate\":{{\"artifact_id\":\"candidate-1\",\"manifest_sha256\":\"{candidate_manifest}\"}}}}"
+    );
+    let output = run_selected_highloss_waveform_only(&root, request.as_bytes());
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout");
+    assert!(stdout.contains("sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-run-result.v3"));
+    assert!(stdout.contains("\"within_selected_waveform_only_profile\":true"));
+    assert!(stdout.contains("\"sampled_eye\":\"excluded_not_evaluated_for_this_selected_closed_eye_profile\""));
+    assert!(!stdout.contains("within_metric_limits"));
+    assert!(output.stderr.is_empty());
+
+    let rejected = run_prbs9_metrics(&root, request.as_bytes());
+    assert_eq!(rejected.status.code(), Some(3));
+    let rejected = run_selected_highloss_waveform_only(
+        &root,
+        request.replace("\"candidate\":", "\"profile\":\"v2\",\"candidate\":").as_bytes(),
+    );
+    assert_eq!(rejected.status.code(), Some(3));
     let _ = std::fs::remove_dir_all(root);
 }

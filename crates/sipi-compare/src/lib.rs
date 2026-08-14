@@ -7,6 +7,7 @@
 //! before constructing [`AlignedArrayV1`].
 
 pub mod prbs9_waveform_v2;
+pub mod selected_highloss_prbs9_waveform_only_v3;
 
 use std::{error::Error, fmt};
 

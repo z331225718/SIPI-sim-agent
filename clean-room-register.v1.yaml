@@ -497,6 +497,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3c-prbs9-metric-core-spec-v2, p1-artifacts-foundation-spec-v1, p1-cli-process-contract-spec-v1]
+  - id: p3c-selected-highloss-prbs9-waveform-only-spec-v3
+    kind: independent_spec
+    content_sha256: 3b8f96973e5a797d92565e5be47ae07e4235694862dc2d19436b971c8ceea040
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-selected-highloss-prbs9-waveform-only.v3.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: [p3c-prbs9-metric-core-spec-v2, p3c-prbs9-metric-artifact-cli-spec-v1]
   - id: p3c-selected-four-port-static-bench-spec-v1
     kind: independent_spec
     content_sha256: 1cf3edb26a988899d8664c6615afe6bcbed776bc7c00183b5ed823b08ea18a9d
@@ -2145,4 +2153,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-external-ads-reference-metric-rejection-reason-evidence-spec-v1]
+  - id: p3c-selected-highloss-prbs9-waveform-only-v3
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, docs/baselines/audits/2026-08-14-p3c-selected-highloss-prbs9-waveform-only-v3.md, docs/baselines/p3c-selected-highloss-prbs9-waveform-only-contract.v3.yaml, docs/baselines/p3c-selected-highloss-prbs9-waveform-only-core.v3.yaml, docs/baselines/p3c-selected-highloss-prbs9-waveform-only-cli.v3.yaml, docs/clean-room/specs/p3c-selected-highloss-prbs9-waveform-only.v3.md, crates/sipi-compare/src/lib.rs, crates/sipi-compare/src/selected_highloss_prbs9_waveform_only_v3.rs, crates/sipi-contracts/src/lib.rs, crates/sipi-contracts/schemas/schema-inventory.v1.json, crates/sipi-contracts/schemas/sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-request.v3.schema.json, crates/sipi-cli/src/main.rs, crates/sipi-cli/tests/cli.rs, docs/baselines/release-capability-publication.v1.yaml, tools/verify_p3c_selected_highloss_prbs9_waveform_only_v3.py, tools/test_verify_p3c_selected_highloss_prbs9_waveform_only_v3.py]
+    state: planned
+    role_material_allowlists:
+      observer: []
+      spec_author: [p3c-selected-highloss-prbs9-waveform-only-spec-v3]
+      implementer: [p3c-selected-highloss-prbs9-waveform-only-spec-v3]
+      comparator: []
+      auditor: [p3c-selected-highloss-prbs9-waveform-only-spec-v3]
 attestations: []
