@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 45b4d3644db6d1995e9e09a006d17df457adb0679f5d205c664b8f0d93973008
+  tracked_paths_sha256: b319553be84802221b86ec6eb84c4546572a822fe471f14a3e7e1c883e4db5ad
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -576,6 +576,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-p3c/tests/p3c_sealed_s4p_external_causality_runner.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/tests/p3c_sealed_s4p_external_causality_transfer_delta_runner.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -2243,6 +2249,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3c-selected-causality-transfer-delta-observation.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p3c-selected-four-port-lexical-amendment.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -3042,6 +3054,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-sealed-selected-s4p-static-admission.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-selected-causality-transfer-delta-observation.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8525,6 +8543,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_selected_causality_transfer_delta_observation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_selected_four_port_lexical_amendment.py:
       rule: migration-tools
       class: migration_only
@@ -9276,6 +9300,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_sealed_selected_s4p_static_admission.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_selected_causality_transfer_delta_observation.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
