@@ -1,8 +1,8 @@
 schema: sipi.p3c-ads-prbssrc-source-only-matched-load-charter.v1
-status: specified_pending_owner_topology_and_fixed_thevenin_mapping_confirmation
+status: specified_owner_confirmed_external_runner_pending
 authority:
   actor: user
-  decision_ref: user-continuation-2026-08-14
+  decision_ref: user-confirmed-2026-08-14-p3c-source-only-matched-load
   scope: external_ads_source_only_observation_charter_not_runtime_or_policy_change
 predecessors:
   waveform_contract_v2:
@@ -49,10 +49,18 @@ diagnostics:
   summaries: [reference_rms_bits, ads_rms_bits, residual_rms_bits, signed_residual_mean_bits, nrmse_bits, residual_digest, max_absolute_residual_bits_and_first_index, common_mode_digest]
   thresholds: none_observation_only
 owner_confirmation:
-  topology_confirmed: false
-  thevenin_half_scale_mapping_confirmed: false
-  diagnostic_partition_confirmation: false
-  external_ads_runner_authorized: false
+  topology_confirmed: true
+  thevenin_half_scale_mapping_confirmed: true
+  diagnostic_partition_confirmation: true
+  external_ads_runner_authorized: true
+runner:
+  status: external_only_two_fresh_observation_prepared_not_run
+  ads_executor: tools/run_p3c_external_ads_prbs9_source_only.py
+  observer: tools/observe_p3c_ads_prbs9_source_only.py
+  source_payload: little_endian_f64_time_loaded_differential_common_mode
+  report_retention: hash_only_external
+  clean_archive_required: true
+  forbidden_input_assets: [S4P, AMI, IBIS, DLL]
 admission:
   external_ads_source_only_matched_load_observed: false
   ads_prbssrc_strobe_semantics_observed: false
@@ -65,9 +73,6 @@ admission:
   accepted_receiver: false
   release_ledger_promoted: false
 blockers:
-  - owner_source_only_matched_load_topology_confirmation_missing
-  - owner_fixed_thevenin_half_scale_mapping_confirmation_missing
-  - owner_diagnostic_partition_confirmation_missing
   - source_only_external_observation_not_run
   - selected_waveform_nrmse_exceeds_fixed_one_percent_limit
   - accepted_receiver_stage_missing

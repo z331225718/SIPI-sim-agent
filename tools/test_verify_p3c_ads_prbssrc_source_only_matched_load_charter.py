@@ -31,11 +31,11 @@ def rejected(mutator) -> None:
 
 
 def main() -> int:
-    assert GATE.verify_document(document())["owner_confirmation_pending"] is True
+    assert GATE.verify_document(document())["owner_confirmation_pending"] is False
     rejected(lambda value: value["topology"]["loads"]["tx_plus_match"].__setitem__("resistance_ohms", 100.0))
     rejected(lambda value: value["topology"].__setitem__("observation", "V(rxp)-V(rxm)"))
     rejected(lambda value: value["fixed_diagnostic_mapping"].__setitem__("gain_fit", "allowed"))
-    rejected(lambda value: value["owner_confirmation"].__setitem__("external_ads_runner_authorized", True))
+    rejected(lambda value: value["owner_confirmation"].__setitem__("external_ads_runner_authorized", False))
     rejected(lambda value: value["admission"].__setitem__("product_source_policy_changed", True))
     print("p3c_ads_prbssrc_source_only_matched_load_charter_mutation_tests_passed")
     return 0

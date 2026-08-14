@@ -2284,7 +2284,7 @@ scopes:
       comparator: []
       auditor: [p3c-selected-oob-zero-extension-diagnostic-spec-v1]
   - id: p3c-ads-prbssrc-source-only-matched-load-charter-v1
-    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-prbssrc-source-only-matched-load-charter.v1.yaml, docs/clean-room/specs/p3c-ads-prbssrc-source-only-matched-load.v1.md, tools/verify_p3c_ads_prbssrc_source_only_matched_load_charter.py, tools/test_verify_p3c_ads_prbssrc_source_only_matched_load_charter.py]
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-prbssrc-source-only-matched-load-charter.v1.yaml, docs/clean-room/specs/p3c-ads-prbssrc-source-only-matched-load.v1.md, tools/run_p3c_external_ads_prbs9_source_only.py, tools/observe_p3c_ads_prbs9_source_only.py, tools/test_run_p3c_external_ads_prbs9_source_only.py, tools/test_observe_p3c_ads_prbs9_source_only.py, tools/verify_p3c_ads_prbssrc_source_only_matched_load_charter.py, tools/test_verify_p3c_ads_prbssrc_source_only_matched_load_charter.py]
     state: planned
     role_material_allowlists:
       observer: [p3c-external-ads-prbs9-reference-spec-v1]
