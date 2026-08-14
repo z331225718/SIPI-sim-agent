@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: d95217e6382fc451a3938888f655d5b549ff6cc4f225b11deef159da53ef0b90
+  tracked_paths_sha256: 9a9cd9223ae9013eb151f294a1dfe77ad4ca1f7c73e021e7ecab2261fa5f825d
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1919,6 +1919,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3c-ieee-bsd-inline-causality-source-preflight.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p3c-ieee-bsd-interp-direct-port.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -2538,6 +2544,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-fixed-rational-execution-contract.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-ieee-bsd-inline-causality-source-preflight.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7823,6 +7835,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_ieee_bsd_inline_causality_source_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_ieee_bsd_interp_direct_port.py:
       rule: migration-tools
       class: migration_only
@@ -8424,6 +8442,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_fixed_rational_execution_contract.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_ieee_bsd_inline_causality_source_preflight.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

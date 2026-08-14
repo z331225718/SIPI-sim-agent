@@ -625,6 +625,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: [p3c-ieee-bsd-interp-direct-port-spec-v1]
+  - id: p3c-ieee-bsd-inline-causality-source-preflight-spec-v1
+    kind: independent_spec
+    content_sha256: ec94eb4ff72544de036111ec01e7aa6384896ab542981f6c5652d20202e5ab3c
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-ieee-bsd-inline-causality-source-preflight.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-ieee-bsd-raw-periodic-direct-port-spec-v1]
   - id: p3c-selected-s4p-raw-periodic-observation-spec-v1
     kind: independent_spec
     content_sha256: 9f3da6111b2d9257cd2cfe60773cb4133ef0ce8043e5ede4c6a9f41c5e489608
@@ -1520,6 +1528,15 @@ scopes:
       implementer: [p3c-ieee-bsd-raw-periodic-direct-port-spec-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1, p3c-ieee-bsd-interp-direct-port-spec-v1, p1-types-foundation-spec-v1, p3a-s2p-matched-channel-spec-v1, p3c-selected-four-port-static-bench-spec-v1]
       comparator: []
       auditor: [p3c-ieee-bsd-raw-periodic-direct-port-spec-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1]
+  - id: p3c-ieee-bsd-inline-causality-source-preflight-v1
+    paths: [docs/baselines/p3c-ieee-bsd-inline-causality-source-preflight.v1.yaml, docs/clean-room/specs/p3c-ieee-bsd-inline-causality-source-preflight.v1.md, tools/verify_p3c_ieee_bsd_inline_causality_source_preflight.py, tools/test_verify_p3c_ieee_bsd_inline_causality_source_preflight.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-ieee-bsd-inline-causality-source-preflight-spec-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1, ieee-802-com-interp-sparam-bsd3-v1]
+      spec_author: [p3c-ieee-bsd-inline-causality-source-preflight-spec-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1, ieee-802-com-interp-sparam-bsd3-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-ieee-bsd-inline-causality-source-preflight-spec-v1, ieee-802-com-s21-to-impulse-dc-bsd3-v1, ieee-802-com-interp-sparam-bsd3-v1]
   - id: p3c-selected-s4p-uniform-spectrum-observation-v1
     paths: [crates/sipi-p3c/Cargo.toml, crates/sipi-p3c/tests/p3c_sealed_s4p_external_uniform_spectrum_runner.rs, docs/clean-room/specs/p3c-selected-s4p-uniform-spectrum-observation.v1.md, tools/observe_p3c_sealed_selected_s4p_uniform_spectrum.py]
     state: planned

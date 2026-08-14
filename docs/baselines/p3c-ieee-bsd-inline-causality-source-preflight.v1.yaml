@@ -1,0 +1,87 @@
+schema: sipi.p3c-ieee-bsd-inline-causality-source-preflight.v1
+status: ieee_bsd_inline_causality_loop_observed_policy_and_implementation_pending
+authority:
+  actor: user
+  decision_ref: user-authorized-2026-08-12-ieee8023-gitlab-provenance-and-selective-mixed-license-direct-port
+  scope: source_and_dependency_observation_only
+  direct_port_implementation_started: false
+  product_policy_selected: false
+  release_admitted: false
+source:
+  canonical_origin: https://opensource.ieee.org/802-com/com_code.git
+  commit: d4ecd4597a98782887933b5df4c4796da2474195
+  path: src/s21_to_impulse_DC.m
+  git_blob: f426fb2119dc1cf9c2a2f677e60c3a1f31cb27a3
+  byte_length: 4208
+  content_sha256: b2884926b204fdfddc1c309c35d46ed7744c696e19df3abcd7d91157e9e539c0
+  license: BSD-3-Clause
+  eligible_material: ieee-802-com-s21-to-impulse-dc-bsd3-v1
+inline_causality_loop:
+  upstream_lines: [66, 94]
+  method_marker: Alternating Projections Method
+  required_inputs:
+    - EC_PULSE_TOL
+    - EC_REL_TOL
+    - EC_DIFF_TOL
+    - ENFORCE_CAUSALITY
+  observed_operations:
+    - first_half_abs_peak_threshold
+    - zero_prefix_through_start_index
+    - zero_second_half_from_floor_half_index
+    - fixed_magnitude_phase_projection
+    - fft_ifft_iteration
+    - relative_or_successive_difference_stop
+  direct_calls:
+    - interp_Sparam
+    - fft
+    - ifft
+  excluded_from_this_loop:
+    - calculate_delay_CausalityEnforcement
+    - impulse_response_truncation_threshold
+    - delay_extraction
+    - passivity_repair
+dependency_boundary:
+  allowed_existing_materials:
+    - ieee-802-com-s21-to-impulse-dc-bsd3-v1
+    - ieee-802-com-interp-sparam-bsd3-v1
+  blocked_materials:
+    - ieee-802-com-causality-delay-bsd3-v1
+  conclusion: named_author_helper_is_not_a_direct_dependency_of_the_observed_inline_loop
+implementation_preconditions:
+  - owner_freezes_ec_pulse_rel_and_difference_tolerances
+  - owner_freezes_bounded_iteration_count
+  - owner_freezes_matlab_to_rust_index_endpoint_mapping
+  - owner_freezes_error_denominator_and_zero_no_crossing_nonconvergence_behavior
+  - dedicated_bsd3_scope_source_map_notice_sbom_and_mutation_verifier
+gates:
+  inline_causality_source_observed: true
+  inline_causality_dependency_closure_observed: true
+  causality_policy_selected: false
+  causality_enforcement_implemented: false
+  causal_impulse_admitted: false
+  delay_extraction_implemented: false
+  passivity_repair_implemented: false
+  truncation_implemented: false
+  linear_convolution_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  p5_reference_evaluated: false
+  release_ledger_promoted: false
+blockers:
+  - inline_causality_policy_values_and_failure_semantics_not_owner_confirmed
+  - named_author_helper_remains_blocked_for_delay_path
+  - truncation_policy_not_selected
+  - linear_convolution_and_candidate_waveform_route_not_implemented
+  - external_reference_binding_not_implemented
+  - accepted_receiver_stage_missing
+  - p5_authoritative_r480_reference_missing
+  - release_license_notice_and_archive_admission_pending
+non_claims:
+  - This admits no Rust implementation, output, causality result, physical causal channel, or COM/ADS parity.
+  - The named-author helper remains blocked and is not relabeled or used through this source observation.
+  - The upstream loop's unbounded while, MATLAB indexing, numerical tolerances, delay, and truncation are not product semantics until explicitly frozen.
+  - No candidate waveform, receiver, AMI, IBIS, DLL, P5 reference, metric acceptance, or release capability is evaluated.
