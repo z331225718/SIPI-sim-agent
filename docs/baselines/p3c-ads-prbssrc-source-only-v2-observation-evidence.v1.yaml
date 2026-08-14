@@ -1,0 +1,72 @@
+schema: sipi.p3c-ads-prbssrc-source-only-v2-observation-evidence.v1
+status: external_ads_source_only_v2_observed_strict_bitwise_identity_not_established
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-14-p3c-finite-edge-boundary-projection-v2
+  scope: external_ads_source_only_v2_diagnostic_not_channel_or_acceptance_policy
+predecessor:
+  source_projection_v2:
+    path: docs/baselines/p3c-prbs9-impulse-candidate-source-projection.v2.yaml
+    status: owner_confirmed_v2_source_projection_implemented_external_observation_pending
+external_observation:
+  schema: sipi.p3c.ads-prbssrc-source-only-v2-observation.v1
+  status: observed
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 6484
+  report_content_sha256: 566a60e654b9f9b1d22fc8a998b587a53209e0076845b153c8866138006ec1a5
+  clean_archive_commit: 993bb11a99c9fe79ecf4f8eded80ed8a2e71ad60
+  clean_archive_tree: bcd301aaafa1a92edb7560ce93a207e19453f199
+  fixed_mapping: ads_loaded_differential_equals_0.5_times_product_finite_edge_projection_v2
+  ads_inclusive_samples: 49057
+  canonical_half_open_samples: 49056
+  fresh_runs: 2
+  netlist_sha256: 638e6c24d65fd2adc92ea7f6b52cb6f3477d837f2290579a5562e97d42c0cdc1
+  canonical_payload_sha256: c30e226b1133737f35886e86f4bf50c6f49e78fe35859922435ad12009edce1f
+  period_nrmse_bits: [3e53244c8f3b792f, 3e9d085d3f575331, 3e774941faa1f303]
+  third_period:
+    nrmse_bits: 3e774941faa1f303
+    residual_sha256: f6097820747aadb9b63178f2b962f8c90f4f323da67b456df81eeb1180310834
+    max_absolute_residual_bits: 3ebaa535d3c80000
+    max_absolute_residual_first_index: 32704
+  third_period_ui_boundary:
+    sample_count: 511
+    nrmse_bits: 3ea0773eea805ee1
+    residual_sha256: d4ca9f1b24940e34fb3adbf724da2ae54f4994e1f1f3e75962378560565dc5c2
+    max_absolute_residual_bits: 3ebaa535d3c80000
+    max_absolute_residual_first_index: 32704
+  third_period_ui_interior:
+    sample_count: 15841
+    nrmse_bits: "0000000000000000"
+    residual_sha256: f328b62ce7a45f96df60bbf382b6e9f6c5ab8888fdfac8b7e1c39fb5bc2278aa
+    max_absolute_residual_bits: "0000000000000000"
+    max_absolute_residual_first_index: 32705
+  cleanup_status: complete
+  source_inventory:
+    tools/run_p3c_external_ads_prbs9_source_only.py: bd0011d9d2a87a3cc955eeb91f9bf2d4adb299a2fda98b5886fd537d3e0929c1
+    tools/observe_p3c_ads_prbs9_source_only_v2.py: 4a9ceafef5354f83395f7207560506d38801a5e847329a9b27e5dc1806b5d99d
+    docs/clean-room/specs/p3c-ads-prbssrc-source-only-v2-observation.v1.md: 995981b9b3053ae42adb17bb1c004f077b164e8f920bbb9d87913f94ab102076
+strict_numeric_result:
+  exact_bitwise_identity_observed: false
+  interior_exact_bitwise_identity_observed: true
+  boundary_exact_bitwise_identity_observed: false
+  no_source_policy_mutation_authorized: true
+admission:
+  external_ads_source_only_v2_observation_invoked: true
+  external_ads_source_only_v2_observation_repeatable: true
+  product_projection_v2_source_strobe_match_observed: false
+  product_source_policy_changed_by_observation: false
+  current_v2_candidate_waveform_evaluated: false
+  selected_highloss_waveform_only_profile_accepted: false
+  causal_fir_admitted: false
+  accepted_receiver: false
+  acceptance_ready: false
+  release_ledger_promoted: false
+blockers:
+  - strict_v2_source_strobe_identity_not_observed_and_no_source_tolerance_authorized
+  - v2_candidate_waveform_observation_missing
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - The small nonzero boundary residual is recorded without a tolerance, repair, or source-policy fallback.
+  - This source-only observation does not establish full-channel ADS parity, causal FIR admission, or waveform acceptance.

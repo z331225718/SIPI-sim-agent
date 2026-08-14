@@ -1,5 +1,5 @@
 schema: sipi.p3c-prbs9-impulse-candidate-source-projection.v2
-status: owner_confirmed_v2_source_projection_implemented_external_observation_pending
+status: owner_confirmed_v2_source_projection_implemented_source_strobe_strict_identity_not_established
 authority:
   actor: user
   decision_ref: user-confirmed-2026-08-14-p3c-finite-edge-boundary-projection-v2
@@ -52,7 +52,7 @@ admission:
   acceptance_ready: false
   release_ledger_promoted: false
 blockers:
-  - v2_source_only_strobe_observation_missing
+  - strict_v2_source_strobe_identity_not_observed_and_no_source_tolerance_authorized
   - v2_candidate_waveform_observation_missing
   - accepted_receiver_stage_missing
   - statistical_eye_contour_semantics_missing

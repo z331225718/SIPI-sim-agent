@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 76a795c5643a5fe80a4030f8e60021a33689b3d78dc523e21c7360f9887e4133
+  tracked_paths_sha256: bc184627c30a4bfb3835a2242125841a6cf416a46d7195d674dd08d0ad68400c
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -2064,6 +2064,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-ads-prbssrc-source-only-matched-load-observation-evidence.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-ads-prbssrc-source-only-v2-observation-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8309,6 +8315,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_ads_prbssrc_source_only_v2_observation_evidence.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_ads_transient_policy_surface_observation.py:
       rule: migration-tools
       class: migration_only
@@ -9036,6 +9048,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_ads_prbssrc_source_only_matched_load_observation_evidence.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_ads_prbssrc_source_only_v2_observation_evidence.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

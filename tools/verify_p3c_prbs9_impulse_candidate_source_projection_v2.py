@@ -19,7 +19,7 @@ class VerificationError(ValueError):
 def verify_document(document: object) -> dict[str, object]:
     if not isinstance(document, dict) or document.get("schema") != SCHEMA:
         raise VerificationError("schema_invalid")
-    if document.get("status") != "owner_confirmed_v2_source_projection_implemented_external_observation_pending":
+    if document.get("status") != "owner_confirmed_v2_source_projection_implemented_source_strobe_strict_identity_not_established":
         raise VerificationError("status_invalid")
     if document.get("authority") != {"actor": "user", "decision_ref": "user-confirmed-2026-08-14-p3c-finite-edge-boundary-projection-v2", "scope": "selected_candidate_source_projection_v2_only_not_metric_or_release_policy"}:
         raise VerificationError("authority_invalid")
@@ -44,7 +44,7 @@ def verify_document(document: object) -> dict[str, object]:
     ):
         raise VerificationError("gate_promotion")
     if document.get("blockers") != [
-        "v2_source_only_strobe_observation_missing",
+        "strict_v2_source_strobe_identity_not_observed_and_no_source_tolerance_authorized",
         "v2_candidate_waveform_observation_missing",
         "accepted_receiver_stage_missing",
         "statistical_eye_contour_semantics_missing",
