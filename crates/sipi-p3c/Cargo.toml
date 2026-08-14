@@ -17,5 +17,8 @@ sipi-link = { path = "../sipi-link" }
 sipi-touchstone = { path = "../sipi-touchstone" }
 sipi-types = { path = "../sipi-types" }
 
+[dev-dependencies]
+sipi-compare = { path = "../sipi-compare" }
+
 [lints]
 workspace = true

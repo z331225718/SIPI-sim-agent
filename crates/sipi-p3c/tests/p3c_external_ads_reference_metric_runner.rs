@@ -6,6 +6,7 @@ use std::{env, fs::{self, File}, io::{Read, Write}, path::{Path, PathBuf}, proce
 
 use sha2::{Digest, Sha256};
 use sipi_artifacts::ArtifactRoot;
+use sipi_compare::prbs9_waveform_v2::{compare_prbs9_metrics_v2, Prbs9WaveformMetricErrorV2, Prbs9WaveformPairV2};
 use sipi_ieee_com_sparam::{enforce_selected_p3c_causality_v1, interpolate_selected_p3c_hdiff_v1, truncate_selected_p3c_response_v1};
 use sipi_p3c::{admit_selected_p3c_sealed_s4p_v2, generate_selected_p3c_prbs9_impulse_candidate_v1, SelectedP3cSealedS4pIdentityV2, SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1};
 
@@ -97,11 +98,34 @@ fn candidate(source: &Path, root: &Path, index: usize) -> Result<Vec<f64>, Strin
     Ok(generate_selected_p3c_prbs9_impulse_candidate_v1(&truncated).map_err(|_| "candidate_convolution".to_owned())?.waveform_prefix().iter().map(|value| value.get()).collect())
 }
 
+fn metric_reason(reference: Vec<f64>, candidate: Vec<f64>) -> &'static str {
+    let pair = match Prbs9WaveformPairV2::try_new(reference, candidate) {
+        Ok(pair) => pair,
+        Err(_) => return "pair_rejection",
+    };
+    match compare_prbs9_metrics_v2(&pair) {
+        Ok(_) => "core_ok",
+        Err(Prbs9WaveformMetricErrorV2::ZeroReferenceNorm) => "zero_reference_norm",
+        Err(Prbs9WaveformMetricErrorV2::ZeroReferenceEyeMetric { metric: "height" }) => "zero_reference_eye_height",
+        Err(Prbs9WaveformMetricErrorV2::ZeroReferenceEyeMetric { metric: "width" }) => "zero_reference_eye_width",
+        Err(Prbs9WaveformMetricErrorV2::ZeroReferenceEyeMetric { .. }) => "numeric_rejection",
+        Err(Prbs9WaveformMetricErrorV2::ZeroPlateau { waveform: "reference", .. }) => "zero_plateau_reference",
+        Err(Prbs9WaveformMetricErrorV2::ZeroPlateau { waveform: "candidate", .. }) => "zero_plateau_candidate",
+        Err(Prbs9WaveformMetricErrorV2::ZeroPlateau { .. }) => "numeric_rejection",
+        Err(Prbs9WaveformMetricErrorV2::CrossingCount { waveform: "reference", actual: 0, .. }) => "crossing_missing_reference",
+        Err(Prbs9WaveformMetricErrorV2::CrossingCount { waveform: "candidate", actual: 0, .. }) => "crossing_missing_candidate",
+        Err(Prbs9WaveformMetricErrorV2::CrossingCount { waveform: "reference", .. }) => "crossing_multiple_reference",
+        Err(Prbs9WaveformMetricErrorV2::CrossingCount { waveform: "candidate", .. }) => "crossing_multiple_candidate",
+        Err(Prbs9WaveformMetricErrorV2::CrossingCount { .. } | Prbs9WaveformMetricErrorV2::NumericOverflow { .. } | Prbs9WaveformMetricErrorV2::LengthMismatch { .. } | Prbs9WaveformMetricErrorV2::NonFiniteValue { .. }) => "numeric_rejection",
+    }
+}
+
 fn run_once(source: &Path, reference: &Path, cli: &Path, index: usize) -> Result<(bool, String), String> {
     let s4p_root = fresh("sipi-p3c-metric-s4p", index)?; let metric_root = fresh("sipi-p3c-metric-artifacts", index)?;
     let result = (|| {
         let candidate_values = candidate(source, &s4p_root, index)?;
         let (reference_values, reference_payload_sha) = reference_values(reference)?;
+        let direct_core_reason = metric_reason(reference_values.clone(), candidate_values.clone());
         let (reference_manifest, _) = publish(&metric_root, &format!("reference-{index}"), &reference_values)?;
         let (candidate_manifest, candidate_payload_sha) = publish(&metric_root, &format!("candidate-{index}"), &candidate_values)?;
         let request = format!("{{\"schema\":\"sipi.compare.prbs9-metric-artifacts-request.v1\",\"contract_sha256\":\"{CONTRACT}\",\"reference\":{{\"artifact_id\":\"reference-{index}\",\"manifest_sha256\":\"{reference_manifest}\"}},\"candidate\":{{\"artifact_id\":\"candidate-{index}\",\"manifest_sha256\":\"{candidate_manifest}\"}}}}");
@@ -110,7 +134,11 @@ fn run_once(source: &Path, reference: &Path, cli: &Path, index: usize) -> Result
         let output = child.wait_with_output().map_err(|_| "cli_wait".to_owned())?;
         let exit_code = output.status.code().unwrap_or(-1);
         if exit_code == 3 {
-            return Ok((false, format!("{{\"status\":\"rejected\",\"stage\":\"cli\",\"exit_code\":{exit_code}}}")));
+            let stdout = String::from_utf8(output.stdout).map_err(|_| "cli_utf8".to_owned())?;
+            let stderr = String::from_utf8(output.stderr).map_err(|_| "cli_utf8".to_owned())?;
+            if !stdout.contains("\"command\":\"compare\"") || !stdout.contains("\"status\":\"invalid\"") || !stdout.contains("\"result\":null") || !stderr.contains("\"code\":\"contract_rejected\"") || !stderr.contains("\"stage\":\"schema\"") || !stderr.contains("\"rule_id\":\"contract.cross-field.v1\"") { return Err("cli_rejection_envelope".to_owned()); }
+            let token = if direct_core_reason == "core_ok" { "core_ok_cli_rejected" } else { direct_core_reason };
+            return Ok((false, format!("{{\"status\":\"rejected\",\"stage\":\"cli\",\"exit_code\":{exit_code},\"direct_core_reason\":\"{token}\",\"cli_stdout_byte_length\":{},\"cli_stdout_sha256\":\"{}\",\"cli_stderr_byte_length\":{},\"cli_stderr_sha256\":\"{}\"}}", stdout.len(), digest(stdout.as_bytes()), stderr.len(), digest(stderr.as_bytes()))));
         }
         if !output.status.success() || !output.stderr.is_empty() { return Err("cli_failed".to_owned()); }
         let response = String::from_utf8(output.stdout).map_err(|_| "cli_utf8".to_owned())?;

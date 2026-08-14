@@ -2120,7 +2120,7 @@ scopes:
       comparator: []
       auditor: [p5-com-r480-oracle-invocation-surface-preflight-spec-v1]
   - id: p3c-external-ads-reference-metric-binding-v1
-    paths: [PLAN.md, crates/sipi-p3c/tests/p3c_external_ads_reference_metric_runner.rs, docs/baselines/p3c-external-ads-reference-metric-observation-evidence.v1.yaml, docs/clean-room/specs/p3c-external-ads-reference-metric-binding.v1.md, docs/clean-room/specs/p3c-external-ads-reference-metric-observation-evidence.v1.md, tools/verify_p3c_external_ads_reference_metric_observation_evidence.py, tools/test_verify_p3c_external_ads_reference_metric_observation_evidence.py]
+    paths: [Cargo.lock, PLAN.md, crates/sipi-compare/Cargo.toml, crates/sipi-compare/src/prbs9_waveform_v2.rs, crates/sipi-p3c/Cargo.toml, crates/sipi-p3c/tests/p3c_external_ads_reference_metric_runner.rs, docs/baselines/p3c-external-ads-reference-metric-observation-evidence.v1.yaml, docs/clean-room/specs/p3c-external-ads-reference-metric-binding.v1.md, docs/clean-room/specs/p3c-external-ads-reference-metric-observation-evidence.v1.md, tools/verify_p3c_external_ads_reference_metric_observation_evidence.py, tools/test_verify_p3c_external_ads_reference_metric_observation_evidence.py]
     state: planned
     role_material_allowlists:
       observer: [p3c-external-ads-reference-metric-binding-spec-v1, p3c-external-ads-reference-metric-observation-evidence-spec-v1]
