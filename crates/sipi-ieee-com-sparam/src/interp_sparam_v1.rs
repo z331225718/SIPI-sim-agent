@@ -22,6 +22,9 @@ use sipi_types::{Complex64, Hertz};
 pub const SELECTED_SAMPLE_INTERVAL_SECONDS_V1: f64 = 9.765_625e-13;
 pub const SELECTED_NYQUIST_HERTZ_V1: f64 = 512.0e9;
 pub const SELECTED_MAX_OUTPUT_BINS_V1: usize = 1_048_576;
+pub const SELECTED_OOB_ZERO_EXTENSION_BIN_COUNT_V1: usize = 25_601;
+pub const SELECTED_OOB_ZERO_EXTENSION_FIRST_ZERO_INDEX_V1: usize = 2_001;
+pub const SELECTED_OOB_ZERO_EXTENSION_FREQUENCY_STEP_HERTZ_V1: f64 = 20.0e6;
 const EPSILON: f64 = f64::EPSILON;
 const REALMIN: f64 = f64::MIN_POSITIVE;
 const LOW_FREQUENCY_GROUP_DELAY_COUNT: usize = 50;
@@ -89,6 +92,23 @@ impl fmt::Display for InterpSparamErrorV1 {
 
 impl Error for InterpSparamErrorV1 {}
 
+/// Errors from the fixed selected `>40 GHz` zero-extension diagnostic.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum OobZeroExtensionDiagnosticErrorV1 {
+    SelectedGridMismatch,
+}
+
+impl fmt::Display for OobZeroExtensionDiagnosticErrorV1 {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            formatter,
+            "selected >40 GHz zero-extension diagnostic failed: {self:?}"
+        )
+    }
+}
+
+impl Error for OobZeroExtensionDiagnosticErrorV1 {}
+
 /// Interpolate the admitted scalar `Hdiff` with the fixed selected policy.
 ///
 /// The source grid chooses `df = fin[1] - fin[0]`; the output is the exact
@@ -154,6 +174,39 @@ pub fn interpolate_selected_p3c_hdiff_v1(
     Ok(SelectedP3cUniformSpectrumV1 {
         frequency_step: Hertz::try_new(output_step)
             .map_err(|_| InterpSparamErrorV1::NonFiniteCalculation)?,
+        values: values.into_boxed_slice(),
+    })
+}
+
+/// Produce the one fixed diagnostic ablation of the selected uniform spectrum.
+///
+/// Bins through exactly 40 GHz are copied bit-for-bit. Every bin strictly
+/// above 40 GHz is replaced by canonical positive complex zero. This is only
+/// a sensitivity input: it is neither an interpolation policy change nor an
+/// ADS-equivalence or candidate-acceptance claim.
+pub fn zero_extend_selected_p3c_oob_diagnostic_v1(
+    input: &SelectedP3cUniformSpectrumV1,
+) -> Result<SelectedP3cUniformSpectrumV1, OobZeroExtensionDiagnosticErrorV1> {
+    if input.sample_count() != SELECTED_OOB_ZERO_EXTENSION_BIN_COUNT_V1
+        || input.frequency_step().get().to_bits()
+            != SELECTED_OOB_ZERO_EXTENSION_FREQUENCY_STEP_HERTZ_V1.to_bits()
+    {
+        return Err(OobZeroExtensionDiagnosticErrorV1::SelectedGridMismatch);
+    }
+    let values = input
+        .values()
+        .iter()
+        .enumerate()
+        .map(|(index, value)| {
+            if index < SELECTED_OOB_ZERO_EXTENSION_FIRST_ZERO_INDEX_V1 {
+                *value
+            } else {
+                Complex64::try_new(0.0, 0.0).expect("canonical zero is finite")
+            }
+        })
+        .collect::<Vec<_>>();
+    Ok(SelectedP3cUniformSpectrumV1 {
+        frequency_step: input.frequency_step(),
         values: values.into_boxed_slice(),
     })
 }
@@ -511,5 +564,41 @@ mod tests {
         );
         let wrapped = unwrap_phase(&[complex(-1.0, 0.1), complex(-1.0, -0.1)]).unwrap();
         assert!(wrapped[1] > wrapped[0]);
+    }
+
+    #[test]
+    fn oob_zero_extension_preserves_through_40ghz_and_rejects_other_grids() {
+        let values = (0..SELECTED_OOB_ZERO_EXTENSION_BIN_COUNT_V1)
+            .map(|index| complex(index as f64, -(index as f64)))
+            .collect();
+        let input =
+            test_uniform_spectrum(values, SELECTED_OOB_ZERO_EXTENSION_FREQUENCY_STEP_HERTZ_V1);
+        let output = zero_extend_selected_p3c_oob_diagnostic_v1(&input).unwrap();
+        assert_eq!(
+            output.sample_count(),
+            SELECTED_OOB_ZERO_EXTENSION_BIN_COUNT_V1
+        );
+        for index in 0..SELECTED_OOB_ZERO_EXTENSION_FIRST_ZERO_INDEX_V1 {
+            assert_eq!(
+                output.values()[index].real().to_bits(),
+                input.values()[index].real().to_bits()
+            );
+            assert_eq!(
+                output.values()[index].imaginary().to_bits(),
+                input.values()[index].imaginary().to_bits()
+            );
+        }
+        for value in &output.values()[SELECTED_OOB_ZERO_EXTENSION_FIRST_ZERO_INDEX_V1..] {
+            assert_eq!(value.real().to_bits(), 0.0_f64.to_bits());
+            assert_eq!(value.imaginary().to_bits(), 0.0_f64.to_bits());
+        }
+        let wrong_grid = test_uniform_spectrum(
+            vec![complex(1.0, 0.0); SELECTED_OOB_ZERO_EXTENSION_BIN_COUNT_V1],
+            20.0e6 + 1.0,
+        );
+        assert_eq!(
+            zero_extend_selected_p3c_oob_diagnostic_v1(&wrong_grid).unwrap_err(),
+            OobZeroExtensionDiagnosticErrorV1::SelectedGridMismatch
+        );
     }
 }

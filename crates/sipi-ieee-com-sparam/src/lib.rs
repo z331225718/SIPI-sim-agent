@@ -11,7 +11,8 @@ pub mod s21_to_raw_periodic_v1;
 pub mod s21_to_truncated_v1;
 
 pub use interp_sparam_v1::{
-    interpolate_selected_p3c_hdiff_v1, InterpSparamErrorV1, SelectedP3cUniformSpectrumV1,
+    interpolate_selected_p3c_hdiff_v1, zero_extend_selected_p3c_oob_diagnostic_v1,
+    InterpSparamErrorV1, OobZeroExtensionDiagnosticErrorV1, SelectedP3cUniformSpectrumV1,
 };
 pub use s21_to_causal_v1::{
     enforce_selected_p3c_causality_v1, CausalityEnforcementErrorV1, SelectedP3cCausalResponseV1,

@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 7f0be162e142cdf7e3ec1bf1fa406014df17cbdf8a04bb6a45a1763e10c925c4
+  tracked_paths_sha256: c04d055a7c0a4343afb3704adbadbe0339f3bee57a1a138f68efe9318f677961
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -2075,6 +2075,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3c-external-ads-selected-highloss-waveform-only-historical-source-drift.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p3c-external-ads-selected-highloss-waveform-only-observation-evidence.v3.yaml:
       rule: historical-docs
       class: migration_only
@@ -2214,6 +2220,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-selected-highloss-residual-diagnostic-core.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-selected-oob-zero-extension-diagnostic-core.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -2795,6 +2807,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/clean-room/specs/p3c-external-ads-selected-highloss-waveform-only-historical-source-drift.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/clean-room/specs/p3c-external-ads-selected-highloss-waveform-only-observation-evidence.v3.md:
       rule: historical-docs
       class: migration_only
@@ -2928,6 +2946,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-selected-highloss-residual-diagnostic.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-selected-oob-zero-extension-diagnostic.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8183,6 +8207,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_external_ads_selected_highloss_waveform_only_historical_source_drift.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_external_ads_selected_highloss_waveform_only_observation_evidence.py:
       rule: migration-tools
       class: migration_only
@@ -8310,6 +8340,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p3c_selected_highloss_residual_diagnostic_core.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p3c_selected_oob_zero_extension_diagnostic_core.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8867,6 +8903,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_p3c_external_ads_selected_highloss_waveform_only_historical_source_drift.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_p3c_external_ads_selected_highloss_waveform_only_observation_evidence.py:
       rule: migration-tools
       class: migration_only
@@ -8994,6 +9036,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_selected_highloss_residual_diagnostic_core.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_selected_oob_zero_extension_diagnostic_core.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

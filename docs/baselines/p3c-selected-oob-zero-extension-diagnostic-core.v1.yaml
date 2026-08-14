@@ -1,0 +1,61 @@
+schema: sipi.p3c-selected-oob-zero-extension-diagnostic-core.v1
+status: product_owned_selected_oob_zero_extension_diagnostic_implemented_external_observation_pending
+authority:
+  actor: user
+  decision_ref: user-continuation-2026-08-14
+  scope: selected_20mhz_512ghz_spectrum_sensitivity_only
+predecessors:
+  interpolation_policy:
+    path: docs/baselines/p3c-ieee-bsd-interp-direct-port.v1.yaml
+    status: product_owned_selected_ieee_bsd_interpolation_leaf_implemented
+  waveform_only_observation:
+    path: docs/baselines/p3c-external-ads-selected-highloss-waveform-only-historical-source-drift.v1.yaml
+    status: historical_waveform_only_observation_source_drifted_current_external_binding_unavailable
+profile:
+  input: selected_uniform_spectrum_only
+  input_bin_count: 25601
+  frequency_step_hertz: 20000000.0
+  preserve_inclusive_frequency_hertz: 40000000000.0
+  first_zeroed_bin_index: 2001
+  zeroed_bin_range: [2001, 25601]
+  replacement: canonical_positive_complex_zero
+  caller_configuration: absent
+prohibitions:
+  - cutoff_sweep
+  - taper
+  - window
+  - smoothing
+  - normalization
+  - interpolation_policy_change
+  - ads_grid_or_policy_import
+  - causality_bypass
+  - best_variant_selection
+  - candidate_acceptance
+implementation:
+  crate: sipi-ieee-com-sparam
+  module: interp_sparam_v1
+  entrypoint: zero_extend_selected_p3c_oob_diagnostic_v1
+  public_cli: absent
+  external_asset_reads: absent
+admission:
+  selected_oob_zero_extension_diagnostic_defined: true
+  external_oob_extension_sensitivity_invoked: false
+  baseline_current_candidate_reproduced: false
+  oob_extension_sensitivity_observed: false
+  product_interpolation_policy_changed: false
+  selected_highloss_waveform_only_profile_accepted: false
+  accepted_receiver: false
+  acceptance_ready: false
+  promotion_eligible: false
+  release_ledger_promoted: false
+blockers:
+  - two_fresh_external_oob_sensitivity_observations_missing
+  - baseline_current_candidate_reproduction_missing
+  - waveform_only_product_source_drift
+  - selected_waveform_nrmse_exceeds_fixed_one_percent_limit_historically
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - This diagnostic tests only sensitivity to the current product high-frequency continuation; it does not select a new interpolation policy.
+  - The zero-extension branch is not an ADS model, a causalization bypass, or a candidate accepted for the waveform-only profile.
+  - It does not retain spectra, waveforms, source paths, or external payloads.
