@@ -2,7 +2,7 @@ schema: sipi.license-manifest.v2
 status: provisional
 release_boundary:
   path: product-boundary.v1.yaml
-  sha256: 2d0fee56d1ec07d4478863753a63bbd08553d84e8044e6826dbec8cf8fc8a7f6
+  sha256: c57b9996c13a08b28050ea867f39cb2840e35296ede65515f9a0fbbd1ab30e4c
   status: provisional
 legacy_evidence:
   - id: legacy-license-manifest-v1
