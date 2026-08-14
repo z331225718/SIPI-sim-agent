@@ -54,6 +54,17 @@ impl SelectedP3cUniformSpectrumV1 {
     }
 }
 
+#[cfg(test)]
+pub(crate) fn test_uniform_spectrum(
+    values: Vec<Complex64>,
+    frequency_step: f64,
+) -> SelectedP3cUniformSpectrumV1 {
+    SelectedP3cUniformSpectrumV1 {
+        frequency_step: Hertz::try_new(frequency_step).unwrap(),
+        values: values.into_boxed_slice(),
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum InterpSparamErrorV1 {
     TooFewInputSamples,
@@ -408,7 +419,7 @@ fn linear_interpolate(
 mod tests {
     use super::*;
     use sipi_channel::{
-        FourPortS, SelectedP3cFourPortSpectrumV1, reduce_selected_p3c_fixed_four_port_bench_v1,
+        reduce_selected_p3c_fixed_four_port_bench_v1, FourPortS, SelectedP3cFourPortSpectrumV1,
     };
     use sipi_types::Ohms;
 

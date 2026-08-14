@@ -1,0 +1,95 @@
+schema: sipi.p3c-ieee-bsd-inline-causality-direct-port.v1
+status: selected_ieee_bsd3_bounded_inline_causality_implemented_external_admission_pending
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-14-p3c-04t-inline-causality-policy
+  direct_port_implementation_started: true
+  product_policy_selected: true
+  release_admitted: false
+source:
+  canonical_origin: https://opensource.ieee.org/802-com/com_code.git
+  commit: d4ecd4597a98782887933b5df4c4796da2474195
+  path: src/s21_to_impulse_DC.m
+  git_blob: f426fb2119dc1cf9c2a2f677e60c3a1f31cb27a3
+  content_sha256: b2884926b204fdfddc1c309c35d46ed7744c696e19df3abcd7d91157e9e539c0
+  license: BSD-3-Clause
+  included_upstream_lines: [66, 88, 92, 94]
+  excluded_source_objects:
+    - ieee-802-com-causality-delay-bsd3-v1
+policy:
+  input_type: sipi_ieee_com_sparam::SelectedP3cUniformSpectrumV1
+  prerequisite: selected_raw_periodic_inverse_transform_v1
+  enforce_causality: true
+  pulse_tolerance: 0.05
+  relative_tolerance: 0.006
+  successive_difference_tolerance: 1.0e-4
+  maximum_iterations: 256
+  first_half: zero_based_half_open_zero_to_floor_length_divided_by_two
+  threshold: first_absolute_sample_strictly_greater_than_first_half_absolute_peak_times_pulse_tolerance
+  zero_windows:
+    prefix: zero_based_inclusive_zero_through_start
+    suffix: zero_based_half_open_floor_length_divided_by_two_to_length
+  phase_projection: fixed_hermitian_magnitude_current_fft_phase
+  forward_transform: rustfft_6_4_1_forward
+  inverse_transform: rustfft_6_4_1_inverse_positive_sign_one_over_n
+  inverse_imaginary_residual:
+    absolute_limit: 1.0e-12
+    relative_limit: 1.0e-10
+    scale: maximum_absolute_real_inverse_sample
+  error:
+    numerator: maximum_absolute_current_minus_projected_sample
+    denominator: signed_maximum_current_zero_window_sample
+    reject_when: nonpositive_or_nonfinite
+  stop:
+    relative_error_strictly_less_than_relative_tolerance: true
+    successive_error_absolute_difference_strictly_less_than_difference_tolerance: true
+    output: source_pre_projection_zero_window_response
+  rejects:
+    - initial_all_zero
+    - no_first_half_threshold_crossing
+    - zero_window_all_zero
+    - nonpositive_or_nonfinite_error_denominator
+    - nonfinite_calculation
+    - inverse_imaginary_residual_excess
+    - iteration_limit_exhausted
+  caller_overrides: prohibited
+implementation:
+  crate: crates/sipi-ieee-com-sparam
+  rust_path: crates/sipi-ieee-com-sparam/src/s21_to_causal_v1.rs
+  api: enforce_selected_p3c_causality_v1
+  output_type: SelectedP3cCausalResponseV1
+  package_license: BSD-3-Clause
+  source_spdx: BSD-3-Clause
+  notice_path: crates/sipi-ieee-com-sparam/NOTICE-IEEE-802-COM.md
+  source_map_path: crates/sipi-ieee-com-sparam/SOURCE-MAP.md
+gates:
+  inline_causality_direct_port_implemented: true
+  bounded_causality_policy_implemented: true
+  external_selected_causality_invoked: false
+  external_selected_causality_admitted: false
+  causal_impulse_admitted: false
+  delay_extraction_implemented: false
+  passivity_repair_implemented: false
+  truncation_implemented: false
+  linear_convolution_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  p5_reference_evaluated: false
+  release_ledger_promoted: false
+blockers:
+  - external_selected_causality_observation_missing
+  - named_author_helper_remains_blocked_for_delay_path
+  - truncation_policy_not_selected
+  - linear_convolution_and_candidate_waveform_route_not_implemented
+  - external_reference_binding_not_implemented
+  - accepted_receiver_stage_missing
+  - p5_authoritative_r480_reference_missing
+  - release_license_notice_and_archive_admission_pending
+non_claims:
+  - This is a bounded product direct port of only the inline source loop, not a general causality algorithm or named-author helper admission.
+  - It is not delay extraction, passivity repair, truncation, convolution, a candidate waveform, ADS or COM parity, or physical causal-channel acceptance.
+  - No external selected-input result, receiver, AMI, IBIS, DLL, P5 reference, candidate metric, or release capability is evaluated.

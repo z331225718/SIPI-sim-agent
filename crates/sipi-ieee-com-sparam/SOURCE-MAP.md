@@ -31,3 +31,23 @@ before projecting permitted endpoint residue to real values. It does not port
 source interpolation, zero-value replacement, causality enforcement, delay
 estimation, truncation, rectangular pulse construction, or convolution. It
 does not depend on `calculate_delay_CausalityEnforcement.m`.
+
+## Bounded Inline Causality Enforcement
+
+- Source: `src/s21_to_impulse_DC.m`, lines 66--88 and the enabled branch at
+  lines 92--94
+- Git blob: `f426fb2119dc1cf9c2a2f677e60c3a1f31cb27a3`
+- SHA-256: `b2884926b204fdfddc1c309c35d46ed7744c696e19df3abcd7d91157e9e539c0`
+- License: BSD-3-Clause; full notice: `NOTICE-IEEE-802-COM.md`
+
+`src/s21_to_causal_v1.rs` ports only the inline Alternating Projections loop.
+It fixes causality enabled, `EC_PULSE_TOL=0.05`, `EC_REL_TOL=0.006`,
+`EC_DIFF_TOL=1e-4`, and a 256-iteration fail-closed cap. The product's frozen
+zero windows are `[0, start]` and `[floor(L/2), L)` in zero-based indexing.
+All-zero input or window, absent first-half threshold crossing, non-positive or
+non-finite error denominator, non-finite arithmetic, residual excess, and
+iteration exhaustion reject. The stop result remains the source loop's
+pre-projection zero-window response. This port does not include the source's
+all-zero epsilon substitution, interpolation, delay estimation, truncation,
+passivity repair, pulse construction, convolution, or
+`calculate_delay_CausalityEnforcement.m`.
