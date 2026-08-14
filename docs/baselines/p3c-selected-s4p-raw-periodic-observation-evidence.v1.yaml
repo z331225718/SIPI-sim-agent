@@ -1,0 +1,76 @@
+schema: sipi.p3c-selected-s4p-raw-periodic-observation-evidence.v1
+status: external_selected_s4p_raw_periodic_observed_causality_and_candidate_route_pending
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-14-p3c-04q-raw-periodic-ifft-policy
+  scope: exact_selected_s4p_static_admission_then_frozen_interpolation_and_raw_periodic_observation_only
+external_observation:
+  schema: sipi.p3c.sealed-selected-s4p-raw-periodic-observation.v1
+  status: observed
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 3480
+  report_content_sha256: b96a90333d23d3a9b9177c94ec72c0656477420573910db43f3424b0ef9e8bd0
+  clean_archive_commit: ffb29589950515073d2f2a2da9732e92f5c98da6
+  selected_source:
+    byte_length: 1834156
+    sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  source_identity_checks: before_stage_after_equal
+  fresh_custody_runs: 2
+  manifest_sha256s:
+    - 26eca8e8361874ea0a440784702f1678c29678473ee7a072f63b9d503afcdd68
+    - dbc282a8b0bb2a0bdfc5b709cc879b308662d9e8978dbe2a65f1f8c8da403f41
+  record_count: 2002
+  outcome:
+    raw_periodic_status: admitted
+    uniform_bin_count: 25601
+    raw_sample_count: 51200
+    frequency_step_bits: 417312d000000000
+    sample_interval_bits: 3d712e0be826d695
+    endpoint_imaginary_residue_bits: 00059671589f8d45
+    inverse_imaginary_residue_bits: 3c22544746104795
+    endpoint_imaginary_residue_bound_bits: 3dca49efbe2db7a4
+    inverse_imaginary_residue_bound_bits: 3d7644d126d40f3c
+    uniform_spectrum_sha256: 07e0ee6371326063f8b7747f61b92f2433bf6263a51be8f74f4e5adef83939e8
+    raw_response_sha256: 4077e5a734ee9509267a85622830144aab31b69ed1eb86ed744eba1ab552ba3d
+  cleanup_status: complete
+  runner:
+    source_sha256: a94b707ffbc0259fde81c2845c74a59b389a87d050dac7ddab9c6a2cc657a2fe
+    report_sha256: 222cbd139397feb43393a4551f2ecf7a37287ccaeb5eb3bc4dd3230fd5b8adca
+admission:
+  external_static_custody_observed: true
+  selected_external_s4p_static_admitted: true
+  selected_interpolation_invoked: true
+  selected_interpolation_admitted: true
+  selected_external_uniform_spectrum_observed: true
+  external_selected_raw_periodic_transform_invoked: true
+  external_selected_raw_periodic_transform_admitted: true
+  external_selected_raw_periodic_response_observed: true
+  causal_impulse_admitted: false
+  causality_enforcement_implemented: false
+  delay_extraction_implemented: false
+  passivity_repair_implemented: false
+  truncation_implemented: false
+  linear_convolution_implemented: false
+  candidate_waveform_generated: false
+  external_reference_binding_evaluated: false
+  candidate_metric_acceptance_evaluated: false
+  accepted_receiver: false
+  product_runtime_invoked: false
+  p4b_ami_runtime_invoked: false
+  p5_reference_evaluated: false
+  release_ledger_promoted: false
+blockers:
+  - causality_delay_and_passivity_policy_not_implemented
+  - raw_periodic_response_is_not_a_causal_impulse_or_fir
+  - linear_convolution_and_candidate_waveform_route_not_implemented
+  - external_reference_binding_not_implemented
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+  - p5_authoritative_r480_reference_missing
+  - release_license_notice_and_archive_admission_pending
+non_claims:
+  - Two fresh custody runs in one clean-archive process establish repeatability, not independent toolchain reproduction or physical correctness.
+  - The unshifted full periodic response is not a causal impulse, FIR, delay, passivity result, truncation, convolution, or waveform.
+  - Not ADS, COM, receiver, AMI, IBIS, DLL, P5 reference, candidate metric, or release acceptance.
+  - The historical exact-grid diagnostic and rational-fit rejection retain their historical source-drift and non-admission status.

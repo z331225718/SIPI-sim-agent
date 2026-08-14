@@ -633,6 +633,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-ieee-bsd-raw-periodic-direct-port-spec-v1]
+  - id: p3c-selected-s4p-raw-periodic-observation-evidence-spec-v1
+    kind: independent_spec
+    content_sha256: 4a8f3242c5f5c96b2d7bb63e0a25b928a97f399c4f60f89e8c73ec2fd72ed63d
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-selected-s4p-raw-periodic-observation-evidence.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-selected-s4p-raw-periodic-observation-spec-v1]
   - id: p3c-selected-s4p-uniform-spectrum-observation-spec-v1
     kind: independent_spec
     content_sha256: c9f365cd3d6ad50e136b0ea72f794533eaca3c9c6010accb944b2bc34f0165b5
@@ -1539,6 +1547,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-selected-s4p-raw-periodic-observation-spec-v1]
+  - id: p3c-selected-s4p-raw-periodic-observation-evidence-v1
+    paths: [PLAN.md, docs/baselines/p3c-selected-s4p-raw-periodic-observation-evidence.v1.yaml, docs/clean-room/specs/p3c-selected-s4p-raw-periodic-observation-evidence.v1.md, tools/verify_p3c_selected_s4p_raw_periodic_observation_evidence.py, tools/test_verify_p3c_selected_s4p_raw_periodic_observation_evidence.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-selected-s4p-raw-periodic-observation-evidence-spec-v1]
+      spec_author: [p3c-selected-s4p-raw-periodic-observation-evidence-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-selected-s4p-raw-periodic-observation-evidence-spec-v1]
   - id: p3c-selected-four-port-lexical-amendment-v1
     paths: [crates/sipi-touchstone/src/selected_four_port_v1.rs, crates/sipi-p3c/src/lib.rs, crates/sipi-p3c/tests/p3c_sealed_s4p_external_runner.rs, docs/baselines/p3c-selected-four-port-lexical-amendment.v1.yaml, docs/clean-room/specs/p3c-selected-four-port-lexical-amendment.v1.md, tools/verify_p3c_selected_four_port_lexical_amendment.py, tools/test_verify_p3c_selected_four_port_lexical_amendment.py]
     state: planned
