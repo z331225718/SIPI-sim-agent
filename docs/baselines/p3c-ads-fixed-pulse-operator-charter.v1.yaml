@@ -1,9 +1,10 @@
 schema: sipi.p3c-ads-fixed-pulse-operator-charter.v1
-status: specified_external_only_owner_confirmation_pending
+status: specified_owner_confirmed_external_observation_completed
 authority:
-  actor: product
+  actor: user
   scope: one_fixed_external_operator_observation_not_a_product_policy
-  owner_confirmation_required_before_evidence: true
+  decision_ref: user-active-goal-continue-2026-08-14
+  owner_confirmation_required_before_evidence: false
 predecessor:
   causality_transfer_delta:
     path: docs/baselines/p3c-selected-causality-transfer-delta-observation.v1.yaml
@@ -37,16 +38,14 @@ product_path:
   stages: [sealed_s4p_v2_admission, ieee_uniform_interpolation, bounded_causality_32_iterations, truncation_1e-3, direct_full_linear_convolution]
   transforms_prohibited: [alignment, resampling, gain_fit, dc_removal, polarity_flip, fft, circular_convolution]
 admission:
-  external_ads_fixed_pulse_operator_observed: false
-  product_fixed_pulse_operator_invoked: false
-  strict_sampled_operator_delta_evaluated: false
-  prbssrc_removed_from_diagnostic_topology: false
+  external_ads_fixed_pulse_operator_observed: true
+  product_fixed_pulse_operator_invoked: true
+  strict_sampled_operator_delta_evaluated: true
+  prbssrc_removed_from_diagnostic_topology: true
   causality_cause_identified: false
   candidate_waveform_accepted: false
   release_ledger_promoted: false
 blockers:
-  - owner_confirmation_for_external_fixed_pulse_observation_missing
-  - two_fresh_clean_archive_observations_missing
   - fixed_pulse_operator_result_does_not_identify_ads_internal_semantics
 non_claims:
   - This does not determine an ADS output-strobe, convolution, causality, or passivity cause.

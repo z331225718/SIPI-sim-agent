@@ -2438,4 +2438,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-ads-fixed-pulse-operator-observation-spec-v1]
+  - id: p3c-ads-fixed-pulse-operator-observation-evidence-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-fixed-pulse-operator-charter.v1.yaml, docs/baselines/p3c-ads-fixed-pulse-operator-observation-evidence.v1.yaml, docs/clean-room/specs/p3c-ads-fixed-pulse-operator-observation.v1.md, tools/verify_p3c_ads_fixed_pulse_operator_observation.py, tools/test_verify_p3c_ads_fixed_pulse_operator_observation.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-ads-fixed-pulse-operator-observation-spec-v1]
+      spec_author: [p3c-ads-fixed-pulse-operator-observation-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-ads-fixed-pulse-operator-observation-spec-v1]
 attestations: []

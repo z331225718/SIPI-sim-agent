@@ -1,0 +1,94 @@
+schema: sipi.p3c-ads-fixed-pulse-operator-observation-evidence.v1
+status: external_ads_fixed_pulse_operator_observed_acceptance_unchanged
+authority:
+  actor: user
+  decision_ref: user-active-goal-continue-2026-08-14
+  scope: one_external_fixed_pulse_operator_observation_only
+predecessor:
+  charter: docs/baselines/p3c-ads-fixed-pulse-operator-charter.v1.yaml
+external_observation:
+  schema: sipi.p3c.ads-fixed-pulse-operator-observation.v1
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 4733
+  report_content_sha256: e676e89d4a7235ec2f96abc6188a3238841fbb5d4cfcf4d6d05caa12a8221abd
+  clean_archive_commit: 8ffe954bc5fb45a87f428f9cce7e466820fffa16
+  clean_archive_tree: ac5f4d9d1bbff82032a05a26cebf3ac627b57901
+  source_byte_length: 1834156
+  source_sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  fresh_runs: 2
+  source_manifests: [4e4f5e3bb87eedd41cf9fd7805cc00a41549841017936f9b4d5d5c62246e2f31, 126a882a7953fb77c94234df6bf65031e7c7c26f603b0001dc4dab74f78b717b]
+  ads_netlist_sha256: 5a9e7f1b0f969220832e2baa776640bc76ef5183ac8bf63e5a94b7a488cb1a82
+  ads_canonical_payload_sha256: 04c1c1ebc601805e51a282dbeb888a4a7fc1a81b0c7b39e09371e29c7ca7b691
+  runner_source_sha256: 6e6b601a17d5554ae5308cb988e884f8d6c864c2c211251870f4f8751587f7a2
+  runner_report_sha256: 9d7277d139d98dc0c80879fdaf9a240900b6f5899845c0a883124bcffae83ff3
+  record_count: 2002
+  uniform_bin_count: 25601
+  causality_iterations: 32
+  causality_stop: successive_error_difference
+  retained_taps: 10871
+  input_sha256: d535ff4309ba80894ceabf70429ed1a93e405052c312e5fde238b919ff76343a
+  ads_tx_sha256: 2bdc73fe69b9707a1e6bccff7dad01f9e28c58c0bdab8d361d87042bf9f95838
+  ads_rx_sha256: d6f9950857a7c6fcc867ded9e576577b23124630948e7456262b7474c7751d4d
+  product_prefix_sha256: 70f677bf414fb8e710de42e2fd030e6aced5c13b02a921dbb7ec0a271b3ee6a7
+  residual_sha256: 20bf25b42077d7c885ecf32781170232983b153a34df67541e590c382b7f562d
+  pre_pulse_reference_rms_bits: '0000000000000000'
+  pre_pulse_product_rms_bits: '0000000000000000'
+  pre_pulse_residual_rms_bits: '0000000000000000'
+  post_pulse_reference_rms_bits: 3f71315e2e5dcd3d
+  post_pulse_product_rms_bits: 3f712f502bac9a64
+  post_pulse_residual_rms_bits: 3f1fb5a9082d3174
+  post_pulse_nrmse_bits: 3f9d827486f044c1
+  strict_identity: false
+  cleanup_status: complete
+  source_inventory:
+    Cargo.lock: d10679ecbb0884cc3325f9b67afaf9a8d61a9f826c262f6fefd437538df34e99
+    Cargo.toml: ccfb303fa9c3593a19d5f9c240b7d9aebddbf33bfd658d5a444ba06734cc3ca2
+    crates/sipi-artifacts/Cargo.toml: 37817d937973b48c42d935a314a67130921b3537b6a45ba1fb242e5217b6789c
+    crates/sipi-artifacts/src/lib.rs: 85b475ec865779dbe3e21b54759ca9075b8a4516714d7192ba4b214075861997
+    crates/sipi-channel/Cargo.toml: a079c508b5e6ce5efeac13edb44c0fb6e7efab90819e47aa1bc6e0960889f63f
+    crates/sipi-channel/src/p3c_fixed_four_port_bench_v1.rs: 248bf24c494d9c956a96e2781f35f546d5de9f70f6157457da7a54aeb60baa70
+    crates/sipi-contracts/Cargo.toml: e9ec60833778d8888af64796df9202934247e365575dcbc88722f27f5668f20c
+    crates/sipi-contracts/src/lib.rs: d7ce9ee9dbe4459ed44a0d604c50c9ffbd44b33d7ff29571b2393123c7152a5b
+    crates/sipi-ieee-com-sparam/Cargo.toml: 044d3d837957f99bf3429d7c51cf1b32129ae2744d921bd95def313a0aa1942b
+    crates/sipi-ieee-com-sparam/src/interp_sparam_v1.rs: dbc0273cbf151447f9f21d039534effe501823da953eaac0d00314e646971d75
+    crates/sipi-ieee-com-sparam/src/lib.rs: 212ae29809cdec4331bc000935a41d3aaa9d52fd1479cbf544e0f1deb02348cb
+    crates/sipi-ieee-com-sparam/src/s21_to_causal_v1.rs: ae41af1c8bbbf2a706b772e2f457cf97cedce0f38e90158703ed007f11f1a5e1
+    crates/sipi-ieee-com-sparam/src/s21_to_truncated_v1.rs: dc0923ee6398e990594e9b001993ecdbd9798f865546339e57f1b8417063b407
+    crates/sipi-link/Cargo.toml: e89c97fc9c75427394e6d5ffff736c8bea40e4b4af831a6d289325388327b343
+    crates/sipi-link/src/lib.rs: 03ee95a4ffb365610206bce3c4437bf713d463e81d8b39e2f521f1aaf62d09e6
+    crates/sipi-p3c/Cargo.toml: 0ecfe1113ccd171470b06e0e7d69571085ed53e2cd5c6cdd6f27f0b81b4b2c75
+    crates/sipi-p3c/src/lib.rs: 678cd5e7fee9ef7efb17be080ea6a0a57bd3ef9c64723db318fad077978823ab
+    crates/sipi-p3c/tests/p3c_external_ads_fixed_pulse_operator_runner.rs: 6e6b601a17d5554ae5308cb988e884f8d6c864c2c211251870f4f8751587f7a2
+    crates/sipi-touchstone/Cargo.toml: 7fcfb8330e8962e20b1e60a0c93dc7eda8e7a363895dd23a0a4ea76cad772fcb
+    crates/sipi-touchstone/src/selected_four_port_v1.rs: 53b11a0cf08b0505c190b244c47f13e22f7b2b3c1f6ea712b6aba533a8805f80
+    crates/sipi-types/Cargo.toml: c5c112540ec14ffcd319a5b15553422409ced82ea541630bd659a916ba4bf31e
+    crates/sipi-types/src/lib.rs: b54f9e937bab7fc7830e56ef4f2ec861caf1ffed7a5718cf45bae92397ee5576
+    rust-toolchain.toml: 512bedfbbe3c4ef614fbb901b3661f40b4adb701d26c94664e79ca765aa3d109
+    tools/observe_p3c_ads_fixed_pulse_operator.py: 78ae702517f6358665b0260f8361fb1565100b7492fcc942678a51c771905646
+    tools/run_p3c_external_ads_fixed_pulse_operator.py: 806147101f559a865c14cc89290ad596d4dce91aad8048d35f33a8f97654d360
+fixed_observation:
+  pulse: {start_index: 16353, end_index_exclusive: 16385, one_volt_sample_count: 32, edge_seconds: 1.0e-16, width_ui: 1}
+  controller: {imp_max_freq_hz: 40000000000.0, imp_delta_freq_hz: 39062500.0, imp_mode: 1, passivity_enforced: true}
+  comparison: strict_same_global_sample_index_no_transform
+independent_audit:
+  reviewer: Orca_reused_OpenCode_terminal
+  status: pending_platform_unavailable_terminal_exited
+  result: not_run
+admission:
+  external_ads_fixed_pulse_operator_observed: true
+  product_fixed_pulse_operator_invoked: true
+  strict_sampled_operator_delta_evaluated: true
+  prbssrc_removed_from_diagnostic_topology: true
+  ads_internal_semantics_identified: false
+  causality_cause_identified: false
+  candidate_waveform_accepted: false
+  release_ledger_promoted: false
+blockers:
+  - ads_output_strobe_and_convolution_semantics_not_separated
+  - causality_policy_cause_not_identified
+  - selected_prbs9_waveform_nrmse_exceeds_fixed_one_percent_limit
+non_claims:
+  - The fixed post-pulse NRMSE is an unthresholded diagnostic fact, not a profile acceptance metric.
+  - This does not identify ADS output-strobe or convolution semantics, physical causality, passivity, or an ADS-equivalent product path.
+  - No source, waveform, S4P, residual array, ADS workspace, or absolute path is retained in the repository.
