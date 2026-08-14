@@ -1,0 +1,44 @@
+schema: sipi.p3c-ads-passivity-action-surface-charter.v1
+status: specified_owner_authorized_external_observation_pending
+authority:
+  actor: user
+  decision_ref: user-authorized-passivity-action-surface-2026-08-14
+  scope: one_fixed_external_ads_dataset_action_surface_observation_only
+predecessor:
+  path: docs/baselines/p3c-ads-fixed-pulse-operator-observation-evidence.v1.yaml
+  result: fixed_pulse_operator_delta_observed_without_cause_identification
+external_help_allowlist:
+  basename: Transient_Simulation_Parameters.html
+  documented_fields: [ImpEnforcePassivity, ImpSaveSpectrum, CMP1_S0]
+  free_text_logs_prohibited: true
+fixed_delta:
+  predecessor_netlist: p3c_fixed_pulse_operator
+  sole_added_token: ImpSaveSpectrum=yes
+  electrical_topology_changed: false
+  numerical_controller_changed: false
+required_dataset_surface:
+  component: CHANNEL
+  matrix_dimension: 4
+  vectorset_count: 65
+  s0_vectorset_count: 16
+  kinds_per_matrix_member: [CMP1_IMP, CMP1_OR, CMP1_FFT_IMP, CMP1_S0]
+freshness:
+  clean_archive_required: true
+  fresh_runs: 2
+  distinct_work_directories_required: true
+  source_before_copy_after_identity_required: true
+admission:
+  ads_passivity_action_surface_documented: false
+  selected_run_passivity_action_observability_evaluated: false
+  documented_pre_correction_surface_observed: false
+  correction_magnitude_evaluated: false
+  passivity_algorithm_or_repair_implemented: false
+  waveform_mismatch_cause_identified: false
+  candidate_waveform_accepted: false
+  release_ledger_promoted: false
+blockers:
+  - fresh_external_action_surface_observation_missing
+  - independent_audit_pending
+non_claims:
+  - This does not determine whether a nonzero ADS passivity correction occurred.
+  - This does not alter product causality, passivity, candidate, receiver, P4B, P5, or release policy.

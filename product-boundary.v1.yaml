@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 09db498e83b4a56e08e666fb6565a62b415d7fc7eb4570f9c30bec7cfa6ff7b4
+  tracked_paths_sha256: 08b1af54394b56733bb9939ec8e5e6b7d4cc16be7993bbc97ac674356a11980d
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -2087,6 +2087,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3c-ads-passivity-action-surface-charter.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p3c-ads-prbssrc-source-only-matched-load-charter.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -2886,6 +2892,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-ads-fixed-pulse-operator-observation.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-ads-passivity-action-surface-observation.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7943,6 +7955,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p3c_ads_fixed_pulse_passivity_surface.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/observe_p3c_ads_prbs9_source_only.py:
       rule: migration-tools
       class: migration_only
@@ -8034,6 +8052,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/run_p3c_external_ads_fixed_pulse_operator.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/run_p3c_external_ads_fixed_pulse_passivity_surface.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8207,6 +8231,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_observe_p3c_ads_fixed_pulse_passivity_surface.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_observe_p3c_ads_prbs9_source_only.py:
       rule: migration-tools
       class: migration_only
@@ -8256,6 +8286,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_run_p3c_external_ads_fixed_pulse_operator.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_run_p3c_external_ads_fixed_pulse_passivity_surface.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
