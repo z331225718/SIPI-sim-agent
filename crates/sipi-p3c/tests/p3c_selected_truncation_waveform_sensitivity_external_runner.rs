@@ -182,7 +182,8 @@ fn run_once(source: &Path, reference_path: &Path, index: usize) -> Result<RunFac
         if u64::from_str_radix(&truncated_nrmse_bits, 16).ok() != Some(BASELINE_NRMSE_BITS) {
             return Err("baseline_nrmse_not_reproduced".to_owned());
         }
-        let full = diagnose_selected_p3c_full_causal_third_period_v1(&causal).map_err(|_| "full_causal_diagnostic".to_owned())?;
+        let full = diagnose_selected_p3c_full_causal_third_period_v1(&causal)
+            .map_err(|error| format!("full_causal_diagnostic:{error:?}"))?;
         let full_values = full.samples().iter().map(|sample| sample.get()).collect::<Vec<_>>();
         let mut full_for_metric = vec![0.0; P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_START_V1];
         full_for_metric.extend_from_slice(&full_values);
