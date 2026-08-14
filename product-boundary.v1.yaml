@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: efc57b63a0d7d6b2161a44586526b874a7bd4628dd8d2280d8a6fce4923fe878
+  tracked_paths_sha256: 76a795c5643a5fe80a4030f8e60021a33689b3d78dc523e21c7360f9887e4133
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -2826,6 +2826,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-ads-prbssrc-source-only-matched-load.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-ads-prbssrc-source-only-v2-observation.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7847,6 +7853,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p3c_ads_prbs9_source_only_v2.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/observe_p3c_ads_transient_policy_surface.py:
       rule: migration-tools
       class: migration_only
@@ -8094,6 +8106,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_observe_p3c_ads_prbs9_source_only.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_observe_p3c_ads_prbs9_source_only_v2.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
