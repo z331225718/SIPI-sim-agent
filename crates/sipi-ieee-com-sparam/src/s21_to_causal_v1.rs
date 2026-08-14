@@ -110,13 +110,11 @@ pub fn enforce_selected_p3c_causality_v1(
     if current.iter().all(|value| *value == 0.0) {
         return Err(CausalityEnforcementErrorV1::InputAllZero);
     }
-    let half = current.len() / 2;
     let start = first_half_start_index(&current)?;
     let magnitude = hermitian_magnitude(input)?;
     let mut previous_error = f64::INFINITY;
     for iteration in 1..=SELECTED_CAUSALITY_MAX_ITERATIONS_V1 {
-        current[..=start].fill(0.0);
-        current[half..].fill(0.0);
+        apply_source_zero_windows(&mut current, start)?;
         if current.iter().all(|value| *value == 0.0) {
             return Err(CausalityEnforcementErrorV1::IterationBecameAllZero);
         }
@@ -160,6 +158,25 @@ pub fn enforce_selected_p3c_causality_v1(
         current = modified;
     }
     Err(CausalityEnforcementErrorV1::IterationLimitExceeded)
+}
+
+// MATLAB's `floor(L/2):end` is one-based.  Its zero-based start is therefore
+// `floor(L/2) - 1`, retaining the source overlap with the first-half window.
+fn apply_source_zero_windows(
+    samples: &mut [f64],
+    start: usize,
+) -> Result<(), CausalityEnforcementErrorV1> {
+    let suffix_start = samples
+        .len()
+        .checked_div(2)
+        .and_then(|half| half.checked_sub(1))
+        .ok_or(CausalityEnforcementErrorV1::NonFiniteCalculation)?;
+    if start >= samples.len() {
+        return Err(CausalityEnforcementErrorV1::NonFiniteCalculation);
+    }
+    samples[..=start].fill(0.0);
+    samples[suffix_start..].fill(0.0);
+    Ok(())
 }
 
 fn first_half_start_index(samples: &[f64]) -> Result<usize, CausalityEnforcementErrorV1> {
@@ -283,19 +300,20 @@ mod tests {
             first_half_start_index(&[0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0]),
             Err(CausalityEnforcementErrorV1::NoFirstHalfThresholdCrossing)
         );
-        let delayed = test_uniform_spectrum(
+        let projected = test_uniform_spectrum(
             (0..5)
                 .map(|index| {
-                    let phase = -std::f64::consts::TAU * 4.0 * index as f64 / 8.0;
-                    complex(phase.cos(), phase.sin())
+                    let phase = -std::f64::consts::TAU * 2.0 * index as f64 / 8.0;
+                    complex(1.0 + 0.5 * phase.cos(), 0.5 * phase.sin())
                 })
                 .collect(),
             1.0,
         );
-        assert_eq!(
-            enforce_selected_p3c_causality_v1(&delayed).unwrap().stop(),
+        assert!(matches!(
+            enforce_selected_p3c_causality_v1(&projected).unwrap().stop(),
             SelectedP3cCausalityStopV1::RelativeError
-        );
+                | SelectedP3cCausalityStopV1::SuccessiveErrorDifference
+        ));
     }
 
     #[test]
@@ -306,5 +324,12 @@ mod tests {
             -> Result<SelectedP3cCausalResponseV1, CausalityEnforcementErrorV1> =
             enforce_selected_p3c_causality_v1;
         let _ = function;
+    }
+
+    #[test]
+    fn source_one_based_suffix_window_includes_zero_based_half_minus_one() {
+        let mut samples = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0];
+        apply_source_zero_windows(&mut samples, 1).unwrap();
+        assert_eq!(samples, [0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
     }
 }

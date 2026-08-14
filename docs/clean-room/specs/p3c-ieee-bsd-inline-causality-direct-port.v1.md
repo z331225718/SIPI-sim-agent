@@ -12,7 +12,9 @@ causal-response candidate. It is not a general causality service.
 The owner selected `ENFORCE_CAUSALITY=true`, pulse/relative/difference
 tolerances `0.05`/`0.006`/`1e-4`, and a 256 iteration cap. The first-half
 threshold is strict. In Rust zero-based indexing, each iteration clears
-`[0,start]` and `[floor(L/2),L)`. The relative error divides by the signed
+`[0,start]` and `[floor(L/2)-1,L)`. The suffix preserves the IEEE source's
+one-based `floor(L/2):end` endpoint, including its overlap with the first-half
+window. The relative error divides by the signed
 maximum of the zero-window response; a non-positive or non-finite denominator
 rejects. On either source stop condition, the output is the pre-projection
 zero-window response. All listed failure conditions reject with no partial

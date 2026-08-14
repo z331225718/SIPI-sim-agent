@@ -635,7 +635,7 @@ materials:
     derived_from: [p3c-ieee-bsd-raw-periodic-direct-port-spec-v1]
   - id: p3c-ieee-bsd-inline-causality-direct-port-spec-v1
     kind: independent_spec
-    content_sha256: 50f43ce9caa3e501710014900f10028ea24a0bab0f6515edc3867dc9c7fdf326
+    content_sha256: a538cb3d3218e43fb83e686e2bbd13a889287e9cff20b87cc5a68f4adfd7e4de
     provenance:
       source_ref: docs/clean-room/specs/p3c-ieee-bsd-inline-causality-direct-port.v1.md
       license_evidence: project-authored-MIT-boundary-pending-promotion

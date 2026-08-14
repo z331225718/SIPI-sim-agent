@@ -43,7 +43,8 @@ does not depend on `calculate_delay_CausalityEnforcement.m`.
 `src/s21_to_causal_v1.rs` ports only the inline Alternating Projections loop.
 It fixes causality enabled, `EC_PULSE_TOL=0.05`, `EC_REL_TOL=0.006`,
 `EC_DIFF_TOL=1e-4`, and a 256-iteration fail-closed cap. The product's frozen
-zero windows are `[0, start]` and `[floor(L/2), L)` in zero-based indexing.
+zero windows are `[0, start]` and `[floor(L/2)-1, L)` in zero-based indexing;
+the latter is the exact translation of MATLAB's one-based `floor(L/2):end`.
 All-zero input or window, absent first-half threshold crossing, non-positive or
 non-finite error denominator, non-finite arithmetic, residual excess, and
 iteration exhaustion reject. The stop result remains the source loop's

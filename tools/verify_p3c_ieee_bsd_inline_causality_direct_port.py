@@ -38,7 +38,7 @@ def verify_document(document: object) -> dict[str, object]:
     policy = document.get("policy")
     if not isinstance(policy, dict) or policy.get("enforce_causality") is not True or policy.get("pulse_tolerance") != 0.05 or policy.get("relative_tolerance") != 0.006 or policy.get("successive_difference_tolerance") != 1.0e-4 or policy.get("maximum_iterations") != 256 or policy.get("caller_overrides") != "prohibited":
         raise DirectPortError("causality_direct_port_policy_invalid")
-    if policy.get("zero_windows") != {"prefix": "zero_based_inclusive_zero_through_start", "suffix": "zero_based_half_open_floor_length_divided_by_two_to_length"} or policy.get("error", {}).get("reject_when") != "nonpositive_or_nonfinite" or policy.get("stop", {}).get("output") != "source_pre_projection_zero_window_response":
+    if policy.get("zero_windows") != {"prefix": "zero_based_inclusive_zero_through_start", "suffix": "zero_based_half_open_floor_length_divided_by_two_minus_one_to_length"} or policy.get("error", {}).get("reject_when") != "nonpositive_or_nonfinite" or policy.get("stop", {}).get("output") != "source_pre_projection_zero_window_response":
         raise DirectPortError("causality_direct_port_semantics_relaxed")
     gates = document.get("gates")
     true_keys = {"inline_causality_direct_port_implemented", "bounded_causality_policy_implemented"}

@@ -28,7 +28,7 @@ policy:
   threshold: first_absolute_sample_strictly_greater_than_first_half_absolute_peak_times_pulse_tolerance
   zero_windows:
     prefix: zero_based_inclusive_zero_through_start
-    suffix: zero_based_half_open_floor_length_divided_by_two_to_length
+    suffix: zero_based_half_open_floor_length_divided_by_two_minus_one_to_length
   phase_projection: fixed_hermitian_magnitude_current_fft_phase
   forward_transform: rustfft_6_4_1_forward
   inverse_transform: rustfft_6_4_1_inverse_positive_sign_one_over_n
