@@ -2413,7 +2413,7 @@ scopes:
       comparator: []
       auditor: [p3c-selected-highloss-waveform-only-v2-observation-spec-v1]
   - id: p3c-selected-causality-transfer-delta-observation-v1
-    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, crates/sipi-p3c/tests/p3c_sealed_s4p_external_causality_transfer_delta_runner.rs, docs/baselines/p3c-selected-causality-transfer-delta-observation.v1.yaml, docs/clean-room/specs/p3c-selected-causality-transfer-delta-observation.v1.md]
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, crates/sipi-p3c/tests/p3c_sealed_s4p_external_causality_transfer_delta_runner.rs, docs/baselines/p3c-selected-causality-transfer-delta-observation.v1.yaml, docs/clean-room/specs/p3c-selected-causality-transfer-delta-observation.v1.md, tools/verify_p3c_selected_causality_transfer_delta_observation.py, tools/test_verify_p3c_selected_causality_transfer_delta_observation.py]
     state: planned
     role_material_allowlists:
       observer: [p3c-selected-causality-transfer-delta-observation-spec-v1]
