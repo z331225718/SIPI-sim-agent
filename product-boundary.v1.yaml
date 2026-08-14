@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: bc184627c30a4bfb3835a2242125841a6cf416a46d7195d674dd08d0ad68400c
+  tracked_paths_sha256: 8500d2da427335f3dc6ea54288d32fa0a718fac92ce21f5acdf6bec22085d179
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -3042,6 +3042,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-selected-highloss-residual-diagnostic.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-selected-highloss-waveform-only-v2-observation.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

@@ -745,6 +745,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-prbs9-impulse-candidate-source-projection-spec-v2]
+  - id: p3c-selected-highloss-waveform-only-v2-observation-spec-v1
+    kind: independent_spec
+    content_sha256: 91f0d3b4a2fa5b52dbf86dac7c20f6934890ac594e05ff9451330f43814a44ba
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-selected-highloss-waveform-only-v2-observation.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-prbs9-impulse-candidate-source-projection-spec-v2]
   - id: p3c-selected-s4p-candidate-observation-spec-v1
     kind: independent_spec
     content_sha256: cba339135b830e38ddb3eb968ba454040428509eccb32a1c22a5f59a45a043c2
@@ -2344,4 +2352,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-ads-prbssrc-source-only-v2-observation-spec-v1]
+  - id: p3c-selected-highloss-waveform-only-v2-observation-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, crates/sipi-p3c/Cargo.toml, crates/sipi-p3c/tests/p3c_external_ads_selected_highloss_waveform_only_runner.rs, docs/clean-room/specs/p3c-selected-highloss-waveform-only-v2-observation.v1.md]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-selected-highloss-waveform-only-v2-observation-spec-v1]
+      spec_author: [p3c-selected-highloss-waveform-only-v2-observation-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-selected-highloss-waveform-only-v2-observation-spec-v1]
 attestations: []
