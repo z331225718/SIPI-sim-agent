@@ -521,6 +521,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-selected-highloss-residual-diagnostic-spec-v1, p3c-prbs9-impulse-candidate-source-projection-spec-v2]
+  - id: p3c-selected-highloss-residual-dft-v2-observation-spec-v1
+    kind: independent_spec
+    content_sha256: add9a23ec41d609dab8a5ac56d8501ef8dd3b35693c5c7b351ff42139bc88e94
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-selected-highloss-residual-dft-v2-observation.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-selected-highloss-residual-diagnostic-v2-observation-spec-v1]
   - id: p3c-selected-highloss-waveform-only-historical-source-drift-spec-v1
     kind: independent_spec
     content_sha256: 068a5d117b0743ed739de3a8f72f9a4ee4d42ff6714eaa0ad302a46caa52a7ee
@@ -2261,6 +2269,15 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-selected-highloss-residual-diagnostic-spec-v1, p3c-selected-highloss-residual-diagnostic-v2-observation-spec-v1]
+  - id: p3c-selected-highloss-residual-dft-v2-observation-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, crates/sipi-p3c/tests/p3c_external_ads_selected_highloss_residual_dft_runner.rs, docs/clean-room/specs/p3c-selected-highloss-residual-dft-v2-observation.v1.md, docs/baselines/p3c-selected-highloss-residual-dft-v2-observation-evidence.v1.yaml, tools/verify_p3c_selected_highloss_residual_dft_v2_observation_evidence.py, tools/test_verify_p3c_selected_highloss_residual_dft_v2_observation_evidence.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-selected-highloss-residual-dft-v2-observation-spec-v1]
+      spec_author: [p3c-selected-highloss-residual-dft-v2-observation-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-selected-highloss-residual-dft-v2-observation-spec-v1]
   - id: p3c-selected-highloss-waveform-only-historical-source-drift-v1
     paths: [PLAN.md, clean-room-register.v1.yaml, docs/baselines/p3c-external-ads-selected-highloss-waveform-only-historical-source-drift.v1.yaml, docs/clean-room/specs/p3c-external-ads-selected-highloss-waveform-only-historical-source-drift.v1.md, tools/verify_p3c_external_ads_selected_highloss_waveform_only_historical_source_drift.py, tools/test_verify_p3c_external_ads_selected_highloss_waveform_only_historical_source_drift.py]
     state: planned
