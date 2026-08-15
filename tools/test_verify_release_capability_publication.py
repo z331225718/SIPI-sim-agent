@@ -152,6 +152,53 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
+    def test_selected_highloss_waveform_only_route_stays_specified_and_non_acceptance(self) -> None:
+        def selected_row(publication: dict) -> dict:
+            return next(item for item in publication["rows"] if item["id"] == "selected-highloss-prbs9-waveform-only-compare")
+
+        publication = self.publication()
+        selected_row(publication)["acceptance_state"] = "accepted"
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_selected_highloss_waveform_only_binding_invalid"):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        selected_row(publication)["external_oracle"] = True
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_selected_highloss_waveform_only_binding_invalid"):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+
+        required_blockers = [
+            "caller_supplied_artifact_identity_only",
+            "external_reference_binding_not_implemented",
+            "selected_profile_acceptance_not_evaluated",
+            "accepted_receiver_stage_missing",
+            "statistical_eye_contour_semantics_missing",
+        ]
+        for blocker in required_blockers:
+            with self.subTest(blocker=blocker):
+                publication = self.publication()
+                selected_row(publication)["blockers"].remove(blocker)
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_selected_highloss_waveform_only_binding_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        selected_row(publication)["evidence_ids"] = ["p3c-prbs9-metric-artifact-cli"]
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_selected_highloss_waveform_only_binding_invalid"):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+
+        index_mutations = {
+            "kind": "external_compare_evidence",
+            "path": "docs/baselines/p3c-prbs9-metric-artifact-cli.v1.yaml",
+            "subject": "receiver",
+            "evidence_state": "observed",
+        }
+        for field, value in index_mutations.items():
+            with self.subTest(index_field=field):
+                publication = self.publication()
+                evidence = next(item for item in publication["report_index"] if item["id"] == "p3c-selected-highloss-prbs9-waveform-only-cli")
+                evidence[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_selected_highloss_waveform_only_evidence_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
     def test_channel_cli_requires_current_evidence_without_claiming_general_support(self) -> None:
         publication = self.publication()
         channel = next(row for row in publication["rows"] if row["id"] == "channel")

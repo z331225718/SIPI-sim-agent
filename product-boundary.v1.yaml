@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 30524fe3a83d2e742110f8b0101e6a511147ad7b349d5a5ecc37756c7267d4c0
+  tracked_paths_sha256: 08e860cbe1cca0c5685e2a9a69bb4b90dcc28a4d59f733f52ec0be0583702300
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1866,6 +1866,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-15-p3c-ads-transient-noncausal-delay-policy-surface-preparation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-15-p7-waveform-only-publication-gate-consistency.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

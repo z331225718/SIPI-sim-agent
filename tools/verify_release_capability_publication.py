@@ -211,6 +211,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
         raise PublicationError("publication_evidence_reference_invalid")
     _validate_profile_scoped_external_acceptance(rows, index_by_id)
     _validate_prbs9_artifact_metric_route(rows, index_by_id)
+    _validate_selected_highloss_waveform_only_route(rows, index_by_id)
 
 
 def _validate_prbs9_artifact_metric_route(
@@ -242,6 +243,41 @@ def _validate_prbs9_artifact_metric_route(
         or evidence["evidence_state"] != "specified"
     ):
         raise PublicationError("publication_prbs9_artifact_metric_evidence_invalid")
+
+
+def _validate_selected_highloss_waveform_only_route(
+    rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]
+) -> None:
+    row = next((item for item in rows if item["id"] == "selected-highloss-prbs9-waveform-only-compare"), None)
+    evidence_id = "p3c-selected-highloss-prbs9-waveform-only-cli"
+    expected_blockers = {
+        "caller_supplied_artifact_identity_only",
+        "external_reference_binding_not_implemented",
+        "selected_profile_acceptance_not_evaluated",
+        "accepted_receiver_stage_missing",
+        "statistical_eye_contour_semantics_missing",
+    }
+    expected_nonclaim = "not_general_closed_eye_fallback_or_receiver_or_release_acceptance"
+    if (
+        row is None
+        or row["command_id"] != "compare.prbs9-waveform-only.run"
+        or row["product_surface"] != "available"
+        or row["acceptance_state"] != "specified"
+        or row["external_oracle"] is not False
+        or evidence_id not in row["evidence_ids"]
+        or not expected_blockers.issubset(row["blockers"])
+        or expected_nonclaim not in row["non_claims"]
+    ):
+        raise PublicationError("publication_selected_highloss_waveform_only_binding_invalid")
+    evidence = index_by_id.get(evidence_id)
+    if (
+        evidence is None
+        or evidence["kind"] != "capability_contract"
+        or evidence["path"] != "docs/baselines/p3c-selected-highloss-prbs9-waveform-only-cli.v3.yaml"
+        or evidence["subject"] != "compare"
+        or evidence["evidence_state"] != "specified"
+    ):
+        raise PublicationError("publication_selected_highloss_waveform_only_evidence_invalid")
 
 
 def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]) -> None:
