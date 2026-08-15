@@ -1,0 +1,35 @@
+schema: sipi.p7-compiled-license-metadata-normalization-evidence.v1
+kind: external_structural_metadata_observation_not_license_decision
+input:
+  sha256: 3a5da5b5ec1a64eb523eb1cd4d586156b9d326237d3615afe024078f3542bd29
+  bytes: 57976
+  package_set_sha256: ff34e43289a5ba721ac8f5487894d7afd64481f0e71a795ece822a1fe229e927
+external_report:
+  sha256: d023d4680dda293bc2df746f2f2a24b9e40978504b4acaaa5d4b0cb480e15017
+  bytes: 1209
+result:
+  record_count: 86
+  category_counts:
+    declared_string_unparsed: 73
+    license_file_declared: 0
+    workspace_inherited_declared_unresolved: 0
+    metadata_absent: 0
+    conflicting_or_unbound: 13
+  normalized_records_sha256: d0cb395ea32228de4131c0e5dce51aa0484f85bd689b368c2efada398e63b07c
+  unresolved_set_sha256: 678479d6023e26b7b9eaba0c2930edaec4cba3c5b09b751c1c530df03bfec27f
+gates:
+  compiled_license_metadata_structurally_normalized: true
+  unresolved_categories_observed: true
+  dependency_snapshot_ready: false
+  dependencies_approved: false
+  notices_approved: false
+  first_party_approved: false
+  release_sbom: false
+  release_ready: false
+  promotion_status: blocked
+non_claims:
+  - license_concluded_NOASSERTION
+  - notice_requirement_not_evaluated
+  - not_an_spdx_or_cyclonedx_sbom
+  - not_a_notice_or_legal_compatibility_decision
+  - not_a_dependency_or_first_party_approval

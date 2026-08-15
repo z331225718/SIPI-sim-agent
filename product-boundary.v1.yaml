@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 3fcf8c88031039ce695e025cc3eff95d92c9bc7fbee7fb6e7e153cc5647ee8a1
+  tracked_paths_sha256: d1b59cf44afe575c0b0e3a2d51456cc18fd9e38bd474f51bff3ebf25b2aaaa17
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -2826,6 +2826,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p7-candidate-build-license-material-observation-evidence.v2.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p7-compiled-license-metadata-normalization-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -9527,6 +9533,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p7_compiled_license_metadata_normalization_evidence.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p7_current_candidate_chain_rebinding_preflight.py:
       rule: migration-tools
       class: migration_only
@@ -10398,6 +10410,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p7_candidate_build_license_material_observation_evidence_v2.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p7_compiled_license_metadata_normalization_evidence.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

@@ -81,3 +81,16 @@ decide license compatibility, NOTICE obligations, dependency or first-party
 approval, strict manifest readiness, fresh-machine status, or release
 eligibility. The v1 metadata-superset rejection remains historical evidence
 and is not reinterpreted as a missing actual build closure.
+
+## P7-07d Compiled Metadata Structural Normalization
+
+The P7-07d normalizer consumed only the exact hash-only P7-07c external report.
+It performed no Cargo build, archive acquisition, network access, or license
+semantic rewrite. The result records 73 literal declared license strings as
+unparsed structural metadata and retains the 13 workspace records as
+conflicting-or-unbound because the prior report deliberately did not carry an
+inheritance source value.
+
+This is not an SPDX or CycloneDX SBOM, NOTICE review, legal compatibility
+decision, dependency approval, first-party approval, strict manifest
+promotion, or release evidence. Those gates remain false or blocked.
