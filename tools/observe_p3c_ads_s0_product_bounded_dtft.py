@@ -139,7 +139,7 @@ def observe(source: Path, help_file: Path, report: Path) -> dict[str, Any]:
                 raise ObservationError("payload_identity")
             product_report = root / f"product-{run_id}.json"
             environment = os.environ.copy()
-            environment.update({"SIPI_P3C_SOURCE": str(source), "SIPI_P3C_ADS_S0_HDIFF_PAYLOAD": str(payload), "SIPI_P3C_REPORT": str(product_report), "CARGO_TARGET_DIR": str(target), "CARGO_INCREMENTAL": "0"})
+            environment.update({"SIPI_P3C_SOURCE": str(source), "SIPI_P3C_ADS_S0_HDIFF_PAYLOAD": str(payload), "SIPI_P3C_REPORT": str(product_report), "SIPI_P3C_RUN_ID": run_id, "CARGO_TARGET_DIR": str(target), "CARGO_INCREMENTAL": "0"})
             product = subprocess.run([str(cargo()), "test", "--release", "--locked", "--offline", "-p", "sipi-p3c", "--test", RUST_RUNNER.stem, "--", "--ignored", "--exact", "p3c_ads_s0_product_bounded_dtft_runner_v1"], cwd=archive, env=environment, check=False, capture_output=True, text=True, encoding="utf-8", errors="strict")
             if product.returncode:
                 raise ObservationError("product_dtft_rejected")

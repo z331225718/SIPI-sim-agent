@@ -25,6 +25,7 @@ use sipi_p3c::{
 const SOURCE_ENV: &str = "SIPI_P3C_SOURCE";
 const ADS_S0_PAYLOAD_ENV: &str = "SIPI_P3C_ADS_S0_HDIFF_PAYLOAD";
 const REPORT_ENV: &str = "SIPI_P3C_REPORT";
+const RUN_ID_ENV: &str = "SIPI_P3C_RUN_ID";
 const REPORT_SCHEMA: &str = "sipi.p3c.ads-s0-product-bounded-dtft-runner.v1";
 const PAYLOAD_MAGIC: &[u8] = b"sipi.p3c.ads-s0-hdiff-payload.v1\0";
 const ADS_S0_POINTS: usize = 1_024;
@@ -105,6 +106,14 @@ struct Fact {
 fn required_path(name: &str) -> Result<PathBuf, String> {
     let path = PathBuf::from(env::var_os(name).ok_or_else(|| format!("{name}_missing"))?);
     path.is_absolute().then_some(path).ok_or_else(|| format!("{name}_not_absolute"))
+}
+
+fn required_run_id() -> Result<String, String> {
+    let value = env::var(RUN_ID_ENV).map_err(|_| "run_id_missing".to_owned())?;
+    if value.is_empty() || value.len() > 64 || !value.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'-') {
+        return Err("run_id_invalid".to_owned());
+    }
+    Ok(value)
 }
 
 fn sha256(bytes: &[u8]) -> String {
@@ -262,22 +271,22 @@ fn fresh_root() -> Result<PathBuf, String> {
     Ok(root)
 }
 
-fn evaluate(source: &Path, payload_path: &Path) -> Result<Fact, String> {
+fn evaluate(source: &Path, payload_path: &Path, run_id: &str) -> Result<Fact, String> {
     let before = source_identity(source)?;
     let payload = read_ads_s0_payload(payload_path)?;
     let root = fresh_root()?;
     let result = (|| {
         let store = ArtifactRoot::open_or_create(&root).map_err(|_| "artifact_root".to_owned())?;
-        let artifact_id = "ads-s0-product-bounded-dtft";
-        let mut stage = store.begin(artifact_id).map_err(|_| "artifact_begin".to_owned())?;
+        let artifact_id = format!("ads-s0-product-bounded-dtft-{run_id}");
+        let mut stage = store.begin(&artifact_id).map_err(|_| "artifact_begin".to_owned())?;
         stage.stage_reader(SELECTED_P3C_S4P_FILE_NAME_V1, File::open(source).map_err(|_| "source_reopen".to_owned())?, SELECTED_P3C_S4P_BYTE_LENGTH_V1).map_err(|_| "artifact_stage".to_owned())?;
         stage.seal().map_err(|_| "artifact_seal".to_owned())?.publish_new().map_err(|_| "artifact_publish".to_owned())?;
         if source_identity(source)? != before {
             return Err("source_drift".to_owned());
         }
-        let manifest = sha256(&fs::read(root.join(artifact_id).join("success.json")).map_err(|_| "manifest".to_owned())?);
+        let manifest = sha256(&fs::read(root.join(&artifact_id).join("success.json")).map_err(|_| "manifest".to_owned())?);
         let reader = ArtifactRoot::open_existing(&root).map_err(|_| "artifact_reopen".to_owned())?;
-        let identity = SelectedP3cSealedS4pIdentityV2::try_new(artifact_id, &manifest).map_err(|_| "identity".to_owned())?;
+        let identity = SelectedP3cSealedS4pIdentityV2::try_new(&artifact_id, &manifest).map_err(|_| "identity".to_owned())?;
         let admitted = admit_selected_p3c_sealed_s4p_v2(&reader, &identity).map_err(|_| "admission".to_owned())?;
         let uniform = interpolate_selected_p3c_hdiff_v1(admitted.transfer()).map_err(|_| "interpolation".to_owned())?;
         let bounded = enforce_selected_p3c_causality_v1(&uniform).map_err(|_| "causality".to_owned())?;
@@ -354,8 +363,9 @@ fn p3c_ads_s0_product_bounded_dtft_runner_v1() {
     let source = required_path(SOURCE_ENV).unwrap();
     let payload = required_path(ADS_S0_PAYLOAD_ENV).unwrap();
     let report = required_path(REPORT_ENV).unwrap();
+    let run_id = required_run_id().unwrap();
     assert!(!report.exists());
-    let value = evaluate(&source, &payload).unwrap();
+    let value = evaluate(&source, &payload, &run_id).unwrap();
     let output = json(&value);
     serde_json::from_str::<serde_json::Value>(&output).unwrap();
     fs::create_dir_all(report.parent().unwrap()).unwrap();
