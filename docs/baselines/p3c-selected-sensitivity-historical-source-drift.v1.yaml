@@ -1,0 +1,27 @@
+schema: sipi.p3c.selected-sensitivity-historical-source-drift.v1
+status: historical_oob_and_truncation_sensitivity_observations_source_drifted
+historical_records:
+  - id: selected-oob-zero-extension-v1
+    evidence: docs/baselines/p3c-selected-oob-zero-extension-sensitivity-observation-evidence.v1.yaml
+    evidence_sha256: 0d0b48f31938a42fa3b96b6123cbff61dfcccb586d456ea2db626754d89e8923
+    verifier: tools/verify_p3c_selected_oob_zero_extension_sensitivity_observation_evidence.py
+    expected_error: oob_product_source_drift
+  - id: selected-truncation-sensitivity-v1
+    evidence: docs/baselines/p3c-selected-truncation-waveform-sensitivity-observation-evidence.v1.yaml
+    evidence_sha256: 4f33480a5fe50cb1828e9c60506d9edb5a97efa9ff4026ae43c5c5cf4dbbaaec
+    verifier: tools/verify_p3c_selected_truncation_waveform_sensitivity_observation_evidence.py
+    expected_error: truncation_sensitivity_product_source_drift
+gates:
+  historical_records_rewritten: false
+  historical_records_current: false
+  current_oob_sensitivity_available: false
+  current_truncation_sensitivity_available: false
+  candidate_waveform_generated: false
+  candidate_metric_acceptance_evaluated: false
+  causal_impulse_admitted: false
+  passivity_repair_implemented: false
+  accepted_receiver: false
+  release_ledger_promoted: false
+non_claims:
+  - No current replacement evidence, policy selection, or external replay is established.
+  - Historical diagnostics do not admit a kernel, candidate, receiver, or release capability.

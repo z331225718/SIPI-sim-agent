@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: d882673f5b260e1db2cdfe5e721099bf2e968fd1b7e909347c61e8827a350838
+  tracked_paths_sha256: 283affc852d86400d3ba6e78aed04872df7e923dfd5c15925ffc1b823e210488
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -2568,6 +2568,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-selected-s4p-uniform-spectrum-observation-evidence.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-selected-sensitivity-historical-source-drift.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -9149,6 +9155,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_selected_sensitivity_historical_source_drift.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_selected_truncation_waveform_sensitivity_core.py:
       rule: migration-tools
       class: migration_only
@@ -9972,6 +9984,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_selected_s4p_uniform_spectrum_observation_evidence.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_selected_sensitivity_historical_source_drift.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
