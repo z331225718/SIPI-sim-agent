@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 516747a1181154c0ae6a8eb3f907da4e4e85aebb7219b9113e327e7192ed58ff
+  tracked_paths_sha256: ac7d329de114296904d231f8f10f8e7bc0aadc0a9b9c074e68c80712d8551ad6
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -8057,6 +8057,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p3c_ads_s0_product_bounded_dtft.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/observe_p3c_ads_transient_policy_surface.py:
       rule: migration-tools
       class: migration_only
@@ -8364,6 +8370,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_observe_p3c_ads_pre_final_spectrum_comparison.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_observe_p3c_ads_s0_product_bounded_dtft.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
