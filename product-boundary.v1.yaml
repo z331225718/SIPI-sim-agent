@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 727a501785739f7e8f4d73511247b17ec387f3a5318fca00e6aa3bba45051828
+  tracked_paths_sha256: 365c262870409e6a881113398ca06c22da4205b8d7d21e03ba5855382128934c
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1913,6 +1913,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-15-p7-bcryptprimitives-processprng-preflight.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-15-p7-causal-fir-link-publication-binding.md:
       rule: historical-docs
       class: migration_only
@@ -2778,6 +2784,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p5-agent-com-git-object-preflight.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p7-bcryptprimitives-processprng-preflight.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8411,6 +8423,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p7_bcryptprimitives_processprng_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/observe_p7_current_candidate_pe_rejection.py:
       rule: migration-tools
       class: migration_only
@@ -9389,6 +9407,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p7_bcryptprimitives_processprng_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p7_current_candidate_chain_rebinding_preflight.py:
       rule: migration-tools
       class: migration_only
@@ -10236,6 +10260,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p5_agent_com_git_object_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p7_bcryptprimitives_processprng_preflight.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

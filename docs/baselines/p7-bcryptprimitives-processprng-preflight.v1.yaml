@@ -1,0 +1,104 @@
+{
+  "schema": "sipi.p7-bcryptprimitives-processprng-preflight.v1",
+  "status": "external_processprng_loader_api_ownership_preflight_observed_policy_revision_pending",
+  "predecessor": {
+    "path": "docs/baselines/p7-current-candidate-static-pe-rejection-diagnosis.v1.yaml",
+    "sha256": "edb3c86c92222df0b1d06ef1c5bece91e7358dcac07fb8f8b3c870cad07965b1"
+  },
+  "candidate": {
+    "source_commit": "b775dde6d242e687eb71a30b9a83a87d8b31ba55",
+    "source_tree": "35be864a88573709c2b316e063bfe90eb54678e2",
+    "committed_product_inputs": "unchanged_since_static_pe_rejection_diagnosis"
+  },
+  "observer": {
+    "path": "tools/observe_p7_bcryptprimitives_processprng_preflight.py",
+    "sha256": "7f58c143db0770709feeb132893761f02d5348006e4be528b8f181fa447b651d"
+  },
+  "external_report": {
+    "schema": "sipi.p7-bcryptprimitives-processprng-preflight-observation.v1",
+    "sha256": "d56d5e45f8d79e9ffa86ab8fe5012db14c15ca000bbb32d88e9201f69f2fc55d",
+    "byte_length": 3281,
+    "custody": "operator_external_only"
+  },
+  "observation": {
+    "fresh_materializations": 2,
+    "executable": {
+      "byte_length": 3908608,
+      "sha256": "a3059d052df54c0f3ebbd727bd2f71760ff33f73af82e1e2f29c0ec35b8c882d"
+    },
+    "candidate_import_and_smoke": {
+      "machine": "windows-x86_64",
+      "delay_import_directory_present": false,
+      "bcryptprimitives_import": {"import_kind": "name", "symbols": ["ProcessPrng"]},
+      "normal_import_dlls": [
+        "api-ms-win-core-synch-l1-2-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-locale-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "bcryptprimitives.dll",
+        "kernel32.dll",
+        "ntdll.dll",
+        "vcruntime140.dll"
+      ],
+      "system32_only_smoke": {
+        "args": ["version", "--json"],
+        "exit_code": 0,
+        "stdout_sha256": "fd5ca3a9c17338be055b18c37d5ede95d88e929172d2cade97888504e9d68663",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_bytes": 221,
+        "stderr_bytes": 0
+      }
+    },
+    "authority": {
+      "process_prng": {"url": "https://learn.microsoft.com/en-us/windows/win32/seccng/processprng", "byte_length": 47908, "sha256": "cfba2a69317a9bcdc7795678d9d2af43a34037fc93c0e52f26560190ef9704f7"},
+      "rust_windows_msvc": {"url": "https://doc.rust-lang.org/beta/rustc/platform-support/windows-msvc.html", "byte_length": 26833, "sha256": "f6d7a79f6b03b9f3587f83731e8eb287406beea4c0d0a898b65d95a0f0d9ffa6"},
+      "api_set_loader": {"url": "https://learn.microsoft.com/en-us/windows/win32/apiindex/api-set-loader-operation", "byte_length": 51282, "sha256": "da077dde13ce9732ece339daf958ab8a86dc164ef169a2e90548f6a7a3b5c85f"},
+      "frozen_facts": {
+        "process_prng_dll": "bcryptprimitives.dll",
+        "process_prng_api_set": "CngRngExt",
+        "process_prng_minimum_client": "windows_8_desktop",
+        "process_prng_minimum_server": "windows_server_2008_r2_desktop",
+        "rust_target_client_floor": "windows_10",
+        "rust_target_server_floor": "windows_server_2016",
+        "api_set_mapping_device_dependent": true
+      }
+    },
+    "toolchain": {
+      "release": "1.97.0",
+      "host": "x86_64-pc-windows-msvc",
+      "version_sha256": "f3c960598a5e9037c4cf8e4aa06c018171abf07c381d165c3986c6a954dea1bb",
+      "std_rlib": {"byte_length": 5645404, "sha256": "7c30313feddcbc6da6bcfdd2989b2f3b77cb2b994f2ab0b2db3481be301d11f6", "processprng_tokens_present": true},
+      "workspace_or_locked_third_party_processprng_package_declared": false,
+      "ownership_assessment": "toolchain_standard_library_linkage_supported_not_product_callsite_provenance"
+    },
+    "same_host_system_dll": {
+      "regular_system32_file": true,
+      "byte_length": 695744,
+      "sha256": "686530e3ba655572df2a4bee40944284215a22b48847b5796816010f7581b8f5",
+      "signature_status": "valid_microsoft_windows",
+      "file_version": "10.0.28000.2704 (WinBuild.160101.0800)"
+    },
+    "distribution": "provided_by_operating_system_not_packaged_or_redistributed"
+  },
+  "gates": {
+    "layout_policy_v2_implemented": false,
+    "allowlist_expanded": false,
+    "static_or_dynamic_dependency_closure_evaluated": false,
+    "composition_invoked": false,
+    "archive_invoked": false,
+    "install_invoked": false,
+    "performance_observation_invoked": false,
+    "candidate_evaluation_invoked": false,
+    "current_candidate_p7_chain_admitted": false,
+    "release_candidate": false,
+    "promotion_status": "blocked"
+  },
+  "non_claims": [
+    "not_a_layout_policy_revision_or_allowlist_expansion",
+    "not_cross_version_or_cross_device_loader_closure",
+    "not_fresh_machine_or_security_review",
+    "not_release_readiness_or_promotion"
+  ]
+}
