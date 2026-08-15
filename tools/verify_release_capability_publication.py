@@ -66,6 +66,7 @@ P6_ARTIFACT_REPORT_AUDIT_SHA256 = "4574bf42788a087e9947f6017194a0cb75a5bdc7f1238
 P7_ISOLATED_INSTALL_AUDIT_SHA256 = "8682cd4718c4a9dbaf57635fe0386d159f2c54cc11a361c90566967bc6a3fb66"
 P2_ONE_NODE_RC_PULSE_CLI_AUDIT_SHA256 = "3fe3222b08b4b8e0026357b690db3daa5e190b230b92d6cac4baf6d2e8606738"
 P4A_IBIS_CONFORMANCE_MATRIX_SHA256 = "b918ef1a4580b269fb3a8f849164c4448cbed6fcce6bc4d13d9590241f6b0fb6"
+P4A_IBIS_STRUCTURAL_INSPECT_AUDIT_SHA256 = "85458c464ad85a6a52640c25cc7f234e316fa25aefc14a125d9028142687e17f"
 PRODUCT_OWNED_UNAVAILABLE_CATALOG_ROUTES_V1 = {
     "project-validate": {
         "domain": "project",
@@ -285,6 +286,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     _validate_caller_input_ibis_dc_route(rows, manifest_by_id, index_by_id, root)
     _validate_caller_input_ibis_quasi_static_route(rows, manifest_by_id, index_by_id, root)
     _validate_selected_differential_rc_load_route(rows, manifest_by_id, index_by_id, root)
+    _validate_structural_ibis_inspect_route(rows, manifest_by_id, index_by_id, root)
     _validate_accepted_evidence_authority(rows)
 
 
@@ -936,6 +938,38 @@ def _validate_selected_differential_rc_load_route(
         raise PublicationError("publication_selected_differential_rc_load_evidence_invalid")
     if result.get("valid") is not True or result.get("status") != "boundary_recorded" or cli_entry.get("status") != "implemented_self_tested":
         raise PublicationError("publication_selected_differential_rc_load_matrix_invalid")
+
+
+def _validate_structural_ibis_inspect_route(
+    rows: list[dict[str, Any]], manifest_by_id: dict[str, dict[str, Any]],
+    index_by_id: dict[str, dict[str, Any]], root: Path,
+) -> None:
+    evidence_id = "p4a-ibis-structural-inspect"
+    path = "docs/baselines/audits/2026-08-11-p4a-ibis-structural-inspect.md"
+    row = next((item for item in rows if item["id"] == "ibis-inspect"), None)
+    command = manifest_by_id.get("ibis.inspect")
+    if (
+        row is None or row["domain"] != "ibis" or row["command_id"] != "ibis.inspect"
+        or row["product_surface"] != "available" or row["acceptance_state"] != "specified"
+        or row["external_oracle"] is not False or row["evidence_ids"] != [evidence_id]
+        or row["blockers"] != ["electrical_behavior_not_evaluated"]
+        or row["non_claims"] != ["not_general_ibis_compatibility"]
+        or command is None or command["route"] != ["ibis", "inspect"]
+        or command["availability"] != "available" or command["transport"] != "stdin_json_v1"
+        or command["request_schema"] != "sipi.ibis.inspect.request.v1"
+        or command["response_schema"] != "sipi.ibis.inspect.response.v1"
+        or command["unavailable_reason"] is not None or command["nonclaim"] != "structural_inspection_only"
+    ):
+        raise PublicationError("publication_ibis_inspect_route_binding_invalid")
+    evidence = index_by_id.get(evidence_id)
+    if evidence is None or (evidence["kind"], evidence["path"], evidence["subject"], evidence["evidence_state"]) != ("capability_contract", path, "ibis", "specified"):
+        raise PublicationError("publication_ibis_inspect_evidence_invalid")
+    try:
+        actual_sha256 = hashlib.sha256((root / path).read_bytes()).hexdigest()
+    except OSError:
+        raise PublicationError("publication_ibis_inspect_evidence_invalid") from None
+    if actual_sha256 != P4A_IBIS_STRUCTURAL_INSPECT_AUDIT_SHA256:
+        raise PublicationError("publication_ibis_inspect_evidence_invalid")
 
 
 def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]) -> None:

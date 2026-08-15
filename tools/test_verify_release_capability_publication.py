@@ -100,8 +100,16 @@ def manifest_for(publication: dict) -> list[dict]:
         "response_schema": "sipi.rx-load.selected-differential-rc-evaluate.response.v1",
         "unavailable_reason": None, "nonclaim": "selected_continuous_constitutive_relation_only",
     }
+    ibis_inspect = {
+        "route": ["ibis", "inspect"], "availability": "available", "transport": "stdin_json_v1",
+        "request_schema": "sipi.ibis.inspect.request.v1", "response_schema": "sipi.ibis.inspect.response.v1",
+        "unavailable_reason": None, "nonclaim": "structural_inspection_only",
+    }
     commands = []
     for row in publication["rows"]:
+        if row["command_id"] == "ibis.inspect":
+            commands.append({"id": row["command_id"], **ibis_inspect})
+            continue
         if row["command_id"] == "link.receiver.run":
             commands.append({"id": row["command_id"], **receiver_diagnostic})
             continue
@@ -234,6 +242,7 @@ class PublicationTests(unittest.TestCase):
             "ibis-dc-evaluate": "publication_ibis_dc_route_binding_invalid",
             "ibis-quasi-static-evaluate": "publication_ibis_quasi_static_route_binding_invalid",
             "selected-differential-rc-load-evaluate": "publication_selected_differential_rc_load_route_binding_invalid",
+            "ibis-inspect": "publication_ibis_inspect_route_binding_invalid",
             "compare": "publication_aligned_array_compare_route_binding_invalid",
             "prbs9-metric-artifact-compare": "publication_prbs9_artifact_metric_binding_invalid",
             "selected-highloss-prbs9-waveform-only-compare": "publication_selected_highloss_waveform_only_binding_invalid",
@@ -1002,6 +1011,51 @@ class PublicationTests(unittest.TestCase):
                 evidence[field] = value
                 with self.assertRaisesRegex(GATE.PublicationError, "publication_selected_differential_rc_load_evidence_invalid"):
                     GATE.validate(publication, manifest_for(publication), ROOT)
+
+    def test_ibis_inspect_route_stays_structural_only(self) -> None:
+        def inspect_row(publication: dict) -> dict:
+            return next(item for item in publication["rows"] if item["id"] == "ibis-inspect")
+
+        for field, value in {
+            "acceptance_state": "not_evaluated", "external_oracle": True,
+            "blockers": ["bogus"], "non_claims": ["bogus"],
+            "evidence_ids": ["p6-command-manifest"],
+        }.items():
+            with self.subTest(row_field=field):
+                publication = self.publication()
+                inspect_row(publication)[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_ibis_inspect_route_binding_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        for field, value in {
+            "route": ["ibis", "parse"], "availability": "unavailable", "transport": "none",
+            "request_schema": None, "response_schema": None, "unavailable_reason": "wrong_reason",
+            "nonclaim": "wrong_nonclaim",
+        }.items():
+            with self.subTest(descriptor_field=field):
+                publication = self.publication()
+                manifest = manifest_for(publication)
+                descriptor = next(item for item in manifest if item["id"] == "ibis.inspect")
+                descriptor[field] = value
+                expected = "command_manifest_invalid" if field in {"availability", "unavailable_reason"} else "publication_ibis_inspect_route_binding_invalid"
+                with self.assertRaisesRegex(GATE.PublicationError, expected):
+                    GATE.validate(publication, manifest, ROOT)
+
+        for field, value in {
+            "kind": "acceptance_report", "path": "docs/baselines/p4a-ibis-input-typ-static-acceptance.v1.yaml",
+            "subject": "rx_load", "evidence_state": "observed",
+        }.items():
+            with self.subTest(index_field=field):
+                publication = self.publication()
+                evidence = next(item for item in publication["report_index"] if item["id"] == "p4a-ibis-structural-inspect")
+                evidence[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_ibis_inspect_evidence_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        with patch.object(GATE, "P4A_IBIS_STRUCTURAL_INSPECT_AUDIT_SHA256", "0" * 64):
+            with self.assertRaisesRegex(GATE.PublicationError, "publication_ibis_inspect_evidence_invalid"):
+                GATE.validate(publication, manifest_for(publication), ROOT)
 
     def test_channel_cli_requires_current_evidence_without_claiming_general_support(self) -> None:
         publication = self.publication()
