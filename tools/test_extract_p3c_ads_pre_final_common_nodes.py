@@ -99,6 +99,20 @@ def or_fixture() -> Dataset:
     return Dataset(blocks)
 
 
+def or_s0_fixture() -> Dataset:
+    blocks: dict[str, Block] = {}
+    s0_axis = [float(index) for index in range(1024)]
+    or_axis = [index / 4.0 for index in range(4096)]
+    for row in range(1, 5):
+        for column in range(1, 5):
+            base = complex(row * 10 + column, row - column)
+            original = [base + complex(index, -index) for index in range(4096)]
+            s0 = [original[4 * index] + complex(0.5, -0.25) for index in range(1024)]
+            blocks[f"TRAN.CHANNEL.CMP1_OR({row};{column})"] = Block(list(or_axis), original)
+            blocks[f"TRAN.CHANNEL.CMP1_S0({row};{column})"] = Block(list(s0_axis), s0)
+    return Dataset(blocks)
+
+
 class CommonNodeExtractionTests(unittest.TestCase):
     def test_exact_four_to_one_summary_has_explicit_coordinates(self) -> None:
         module = load_module(fixture())
@@ -159,6 +173,25 @@ class CommonNodeExtractionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(module.ExtractError, "or_member_axis_mismatch"):
                 module.extract_or(Path("external.ds"), Path(directory) / "or-hdiff.bin")
+
+    def test_or_s0_exact_four_to_one_exports_only_common_selected_pairs(self) -> None:
+        module = load_module(or_s0_fixture())
+        with tempfile.TemporaryDirectory() as directory:
+            payload = Path(directory) / "or-s0-hdiff.bin"
+            result = module.extract_or_s0_common(Path("external.ds"), payload)
+            self.assertEqual(result["common_node_count"], 1024)
+            self.assertEqual(result["mapping"], "or_index_equals_4_times_s0_index")
+            self.assertEqual(payload.stat().st_size, len(b"sipi.p3c.ads-or-s0-hdiff-payload.v1\0") + 8 + 1024 * 40)
+
+    def test_or_s0_frequency_bit_mismatch_rejects_without_resampling(self) -> None:
+        data = or_s0_fixture()
+        for row in range(1, 5):
+            for column in range(1, 5):
+                data.blocks[f"TRAN.CHANNEL.CMP1_OR({row};{column})"].frame.index.values[4] = 1.0000000000000002
+        module = load_module(data)
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(module.ExtractError, "or_s0_mapping_not_exact_four_to_one"):
+                module.extract_or_s0_common(Path("external.ds"), Path(directory) / "or-s0-hdiff.bin")
 
 
 if __name__ == "__main__":

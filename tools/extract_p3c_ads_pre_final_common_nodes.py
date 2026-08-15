@@ -121,6 +121,65 @@ def extract_or(dataset_path: Path, payload_path: Path) -> dict[str, object]:
     }
 
 
+def write_or_s0_hdiff_payload(
+    path: Path,
+    axis: tuple[float, ...],
+    original: list[complex],
+    s0: list[complex],
+) -> dict[str, object]:
+    if len(axis) != 1024 or len(original) != len(axis) or len(s0) != len(axis):
+        raise ExtractError("or_s0_hdiff_payload_shape_rejected")
+    payload = bytearray(b"sipi.p3c.ads-or-s0-hdiff-payload.v1\0")
+    payload.extend(len(axis).to_bytes(8, "big"))
+    for frequency, original_value, s0_value in zip(axis, original, s0, strict=True):
+        payload.extend(bits(frequency))
+        payload.extend(bits(original_value.real)); payload.extend(bits(original_value.imag))
+        payload.extend(bits(s0_value.real)); payload.extend(bits(s0_value.imag))
+    path.write_bytes(payload)
+    return {"byte_length": len(payload), "sha256": hashlib.sha256(payload).hexdigest()}
+
+
+def extract_or_s0_common(dataset_path: Path, payload_path: Path) -> dict[str, object]:
+    """Export only the exact OR[4k]/S0[k] selected Hdiff pairs."""
+    with ads_dataset.open_dataset_for_reading(dataset_path) as dataset:
+        blocks = {
+            (kind, row, column): read_block(dataset, kind, row, column)
+            for kind in ("OR", "S0") for row, column in MEMBERS
+        }
+    or_axes = [blocks[("OR", row, column)][0] for row, column in MEMBERS]
+    s0_axes = [blocks[("S0", row, column)][0] for row, column in MEMBERS]
+    if any(tuple(map(bits, axis)) != tuple(map(bits, or_axes[0])) for axis in or_axes[1:]) or any(tuple(map(bits, axis)) != tuple(map(bits, s0_axes[0])) for axis in s0_axes[1:]):
+        raise ExtractError("or_s0_member_axis_mismatch")
+    if len(or_axes[0]) != 4096 or len(s0_axes[0]) != 1024:
+        raise ExtractError("or_s0_axis_count_rejected")
+    if any(bits(or_axes[0][4 * index]) != bits(s0_axes[0][index]) for index in range(1024)):
+        raise ExtractError("or_s0_mapping_not_exact_four_to_one")
+
+    def reduce(kind: str, index: int) -> complex:
+        return (
+            blocks[(kind, 2, 1)][1][index]
+            - blocks[(kind, 2, 3)][1][index]
+            - blocks[(kind, 4, 1)][1][index]
+            + blocks[(kind, 4, 3)][1][index]
+        ) / 4.0
+
+    original = [reduce("OR", 4 * index) for index in range(1024)]
+    s0 = [reduce("S0", index) for index in range(1024)]
+    transition = [after - before for before, after in zip(original, s0, strict=True)]
+    return {
+        "common_node_count": 1024,
+        "mapping": "or_index_equals_4_times_s0_index",
+        "axis_sha256": hashlib.sha256(b"sipi.p3c.ads-or-s0.axis.v1\0" + b"".join(bits(value) for value in s0_axes[0])).hexdigest(),
+        "original_hdiff_sha256": digest(b"sipi.p3c.ads-or-s0.original.v1\0", original),
+        "s0_hdiff_sha256": digest(b"sipi.p3c.ads-or-s0.s0.v1\0", s0),
+        "documented_surface_transition": {
+            "sha256": digest(b"sipi.p3c.ads-or-s0.transition.v1\0", transition),
+            **l2_and_max(transition, matrix_layout=False),
+        },
+        "or_s0_hdiff_payload": write_or_s0_hdiff_payload(payload_path, s0_axes[0], original, s0),
+    }
+
+
 def extract(dataset_path: Path, s0_hdiff_payload: Path | None = None) -> dict[str, object]:
     with ads_dataset.open_dataset_for_reading(dataset_path) as dataset:
         blocks = {(kind, row, column): read_block(dataset, kind, row, column) for kind in ("S0", "FFT_IMP") for row, column in MEMBERS}
@@ -170,9 +229,9 @@ def extract(dataset_path: Path, s0_hdiff_payload: Path | None = None) -> dict[st
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--dataset", type=Path, required=True); group = parser.add_mutually_exclusive_group(); group.add_argument("--s0-hdiff-payload", type=Path); group.add_argument("--or-hdiff-payload", type=Path); args = parser.parse_args()
+    parser = argparse.ArgumentParser(); parser.add_argument("--dataset", type=Path, required=True); group = parser.add_mutually_exclusive_group(); group.add_argument("--s0-hdiff-payload", type=Path); group.add_argument("--or-hdiff-payload", type=Path); group.add_argument("--or-s0-hdiff-payload", type=Path); args = parser.parse_args()
     try:
-        result = extract_or(args.dataset, args.or_hdiff_payload) if args.or_hdiff_payload is not None else extract(args.dataset, args.s0_hdiff_payload)
+        result = extract_or_s0_common(args.dataset, args.or_s0_hdiff_payload) if args.or_s0_hdiff_payload is not None else extract_or(args.dataset, args.or_hdiff_payload) if args.or_hdiff_payload is not None else extract(args.dataset, args.s0_hdiff_payload)
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
     except (OSError, ValueError, ExtractError) as error: print(json.dumps({"status": "rejected", "reason": str(error)}, sort_keys=True)); return 2
     return 0

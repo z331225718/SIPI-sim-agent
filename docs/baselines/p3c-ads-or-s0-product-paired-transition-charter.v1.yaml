@@ -1,0 +1,59 @@
+schema: sipi.p3c.ads-or-s0-product-paired-transition-charter.v1
+status: specified_delegated_owner_discretion_external_diagnostic_pending
+authority:
+  actor: user
+  decision_ref: user-delegated-owner-discretion-2026-08-15
+  scope: one_fixed_exact_or_s0_common_axis_paired_transition_observation_only
+predecessors:
+  - path: docs/baselines/p3c-ads-or-product-raw-dtft-observation-evidence.v1.yaml
+    result: ads_original_spectrum_product_raw_delta_observed_not_cause_attribution
+  - path: docs/baselines/p3c-ads-s0-product-bounded-dtft-observation-evidence.v1.yaml
+    result: ads_s0_product_bounded_delta_observed_not_cause_attribution
+axis:
+  source: exact_ads_cmp1_s0_1024_node_axis
+  required_mapping: cmp1_or_index_equals_4_times_cmp1_s0_index
+  matching: bit_exact_every_member_then_fixed_hdiff_reduction
+  interpolation_or_resampling: prohibited
+surfaces:
+  ads_original: CMP1_OR
+  ads_s0: CMP1_S0
+  ads_transition_name: cmp1_or_to_cmp1_s0_documented_surface_transition
+  product_raw: SelectedP3cRawPeriodicResponseV1
+  product_bounded: SelectedP3cCausalResponseV1
+dtft:
+  definition: sum_n_0_to_51199_h_of_n_times_exp_negative_j_2pi_f_n_dt
+  sample_count: 51200
+  sample_interval_seconds: 9.765625e-13
+  window: rectangular_full_response
+  normalization: none
+  time_origin: sample_zero
+  summation_order: ascending_n
+derived:
+  ads_transition: s0_minus_original
+  product_transition: bounded_minus_raw
+  paired_transition_delta: ads_transition_minus_product_transition
+prohibitions:
+  - ads_on_off_variants
+  - parameter_or_threshold_scan
+  - delay_phase_gain_dc_or_alignment_transform
+  - fft_bin_interpolation_or_nearest_node
+  - candidate_waveform_generation
+  - ads_algorithm_oracle_fitting
+admission:
+  or_s0_exact_common_axis_bound: false
+  ads_documented_surface_transition_observed: false
+  product_raw_bounded_transition_observed: false
+  paired_transition_delta_observed: false
+  ads_algorithm_reproduced: false
+  causality_or_interpolation_cause_identified: false
+  candidate_waveform_accepted: false
+  release_ledger_promoted: false
+blockers:
+  - two_fresh_or_s0_paired_transition_observations_missing
+  - documented_surface_delta_not_algorithm_attribution
+  - waveform_mismatch_cause_not_identified
+non_claims:
+  - ADS help names CMP1_OR as an original spectrum and CMP1_S0 as a documented surface only.
+  - CMP1_OR to CMP1_S0 is not named an ADS causality algorithm or correction by this observation.
+  - The paired transition delta does not identify an ADS algorithm or waveform mismatch cause.
+  - This does not change product causality, interpolation, passivity, candidate, receiver, P4B, P5, or release policy.

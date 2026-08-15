@@ -1361,6 +1361,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-ads-s0-product-bounded-dtft-spec-v1]
+  - id: p3c-ads-or-s0-product-paired-transition-spec-v1
+    kind: independent_spec
+    content_sha256: 67f1f65b3340e6606310f1ff94985c632d632ea8832996eb40aa98a408664cfe
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-ads-or-s0-product-paired-transition.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-ads-or-product-raw-dtft-spec-v1]
 scopes:
   - id: clean-room-process-template-v1
     paths: [docs/clean-room/**]
@@ -2577,4 +2585,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-ads-or-product-raw-dtft-spec-v1]
+  - id: p3c-ads-or-s0-product-paired-transition-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-or-s0-product-paired-transition-charter.v1.yaml, docs/clean-room/specs/p3c-ads-or-s0-product-paired-transition.v1.md, crates/sipi-p3c/tests/p3c_ads_or_s0_product_paired_transition_runner.rs, tools/extract_p3c_ads_pre_final_common_nodes.py, tools/run_p3c_external_ads_or_s0_paired_transition.py, tools/test_extract_p3c_ads_pre_final_common_nodes.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-ads-or-s0-product-paired-transition-spec-v1]
+      spec_author: [p3c-ads-or-s0-product-paired-transition-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-ads-or-s0-product-paired-transition-spec-v1]
 attestations: []
