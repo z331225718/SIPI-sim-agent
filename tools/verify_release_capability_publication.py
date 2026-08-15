@@ -71,6 +71,12 @@ PRODUCT_OWNED_UNAVAILABLE_CATALOG_ROUTES_V1 = {
         "nonclaim": "no_payload_or_external_provenance_viewer",
     },
 }
+GLOBAL_BLOCKERS_V1 = frozenset({
+    "license_notice_pending", "fresh_machine_evidence_missing", "uncertified_domain_profiles",
+})
+GLOBAL_NON_CLAIMS_V1 = frozenset({
+    "not_release_notes", "not_legal_clearance", "not_fresh_machine_certification", "not_profile_certification",
+})
 
 
 class PublicationError(RuntimeError):
@@ -183,6 +189,10 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
         value = publication[key]
         if not isinstance(value, list) or not value or any(not isinstance(item, str) or not item for item in value):
             raise PublicationError("publication_global_fields_invalid")
+    if len(publication["global_blockers"]) != len(GLOBAL_BLOCKERS_V1) or set(publication["global_blockers"]) != GLOBAL_BLOCKERS_V1:
+        raise PublicationError("publication_global_blockers_invalid")
+    if len(publication["non_claims"]) != len(GLOBAL_NON_CLAIMS_V1) or set(publication["non_claims"]) != GLOBAL_NON_CLAIMS_V1:
+        raise PublicationError("publication_global_non_claims_invalid")
 
     validate_command_descriptors(manifest)
     manifest_by_id = {item.get("id"): item for item in manifest}

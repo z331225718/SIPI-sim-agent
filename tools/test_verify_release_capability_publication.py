@@ -249,6 +249,28 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
+    def test_global_release_blockers_and_non_claims_are_closed_v1_sets(self) -> None:
+        publication = self.publication()
+        for key, expected, error in (
+            ("global_blockers", GATE.GLOBAL_BLOCKERS_V1, "publication_global_blockers_invalid"),
+            ("non_claims", GATE.GLOBAL_NON_CLAIMS_V1, "publication_global_non_claims_invalid"),
+        ):
+            for removed in expected:
+                with self.subTest(key=key, removed=removed):
+                    mutated = self.publication()
+                    mutated[key].remove(removed)
+                    with self.assertRaisesRegex(GATE.PublicationError, error):
+                        GATE.validate(mutated, manifest_for(mutated), ROOT)
+            for value in (["bogus"], [*expected, "bogus"], [next(iter(expected))] * len(expected)):
+                with self.subTest(key=key, value=value):
+                    mutated = self.publication()
+                    mutated[key] = value
+                    with self.assertRaisesRegex(GATE.PublicationError, error):
+                        GATE.validate(mutated, manifest_for(mutated), ROOT)
+            reordered = self.publication()
+            reordered[key] = list(reversed(reordered[key]))
+            GATE.validate(reordered, manifest_for(reordered), ROOT)
+
     def test_tran_historical_evidence_requires_exact_source_drift_state(self) -> None:
         publication = self.publication()
         tran = next(row for row in publication["rows"] if row["id"] == "tran-rc-pulse")
