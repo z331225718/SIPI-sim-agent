@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 372ba827500042b4e264a07235c1ce2315efd5e49898e933596be1a3b9f98090
+  tracked_paths_sha256: 3fcf8c88031039ce695e025cc3eff95d92c9bc7fbee7fb6e7e153cc5647ee8a1
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -3882,6 +3882,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p7-candidate-build-license-material-observation.v2.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p7-compiled-license-metadata-normalization.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8339,6 +8345,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/normalize_p7_compiled_license_metadata.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/observe_com_r480_matlab_runner.py:
       rule: migration-tools
       class: migration_only
@@ -8718,6 +8730,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_m5a_agent_spice_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_normalize_p7_compiled_license_metadata.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
