@@ -3,8 +3,14 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 5f035438801e0668b28969cdfa22407b4af856cf39f96d8d0b4a89959fc7b556
+  tracked_paths_sha256: 63367a819c5da9bae5024ee93392016028305b314e1eb68f873f346ad9da3725
   entries:
+    .gitattributes:
+      rule: migration-metadata
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     .github/workflows/ci.yml:
       rule: github-migration
       class: migration_only
@@ -1848,6 +1854,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-14-p3c-waveform-only-runner-envelope-fix.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-15-p0-canonical-lf-materialization.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
