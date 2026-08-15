@@ -28,8 +28,20 @@ def manifest_for(publication: dict) -> list[dict]:
         "project.validate": ("project_execution_not_implemented", "no_project_execution"),
         "report.show": ("artifact_payload_preview_not_implemented", "no_payload_or_external_provenance_viewer"),
     }
+    receiver_diagnostic = {
+        "route": ["link", "receiver", "run"],
+        "availability": "available",
+        "transport": "stdin_json_v1",
+        "request_schema": "sipi.receiver.diagnostic-run-request.v1",
+        "response_schema": "sipi.receiver.diagnostic-run-result.v1",
+        "unavailable_reason": None,
+        "nonclaim": "product_owned_diagnostic_not_rfm_parity_or_clock_lock",
+    }
     commands = []
     for row in publication["rows"]:
+        if row["command_id"] == "link.receiver.run":
+            commands.append({"id": row["command_id"], **receiver_diagnostic})
+            continue
         availability = row["product_surface"]
         reason, nonclaim = unavailable.get(
             row["command_id"],
@@ -130,6 +142,7 @@ class PublicationTests(unittest.TestCase):
             "channel": "publication_channel_acceptance_binding_invalid",
             "prbs9-metric-artifact-compare": "publication_prbs9_artifact_metric_binding_invalid",
             "selected-highloss-prbs9-waveform-only-compare": "publication_selected_highloss_waveform_only_binding_invalid",
+            "link-receiver-diagnostic": "publication_receiver_diagnostic_route_binding_invalid",
         }
         publication = self.publication()
         available_ids = [row["id"] for row in publication["rows"] if row["product_surface"] == "available"]
@@ -400,6 +413,72 @@ class PublicationTests(unittest.TestCase):
                 evidence[field] = value
                 with self.assertRaisesRegex(GATE.PublicationError, "publication_product_unavailable_catalog_evidence_invalid"):
                     GATE.validate(publication, manifest_for(publication), ROOT)
+
+    def test_receiver_diagnostic_route_stays_product_owned_and_profile_blocked(self) -> None:
+        def receiver_row(publication: dict) -> dict:
+            return next(item for item in publication["rows"] if item["id"] == "link-receiver-diagnostic")
+
+        for field, value in {
+            "external_oracle": True,
+            "blockers": ["bogus"],
+            "non_claims": ["bogus"],
+            "evidence_ids": ["p7-isolated-install"],
+        }.items():
+            with self.subTest(row_field=field):
+                publication = self.publication()
+                receiver_row(publication)[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_receiver_diagnostic_route_binding_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        for field, value in {
+            "route": ["receiver", "diagnostic", "run"],
+            "availability": "unavailable",
+            "transport": "none",
+            "request_schema": None,
+            "response_schema": None,
+            "unavailable_reason": "wrong_reason",
+            "nonclaim": "wrong_nonclaim",
+        }.items():
+            with self.subTest(descriptor_field=field):
+                publication = self.publication()
+                manifest = manifest_for(publication)
+                descriptor = next(item for item in manifest if item["id"] == "link.receiver.run")
+                descriptor[field] = value
+                expected = "command_manifest_invalid" if field in {"availability", "unavailable_reason"} else "publication_receiver_diagnostic_route_binding_invalid"
+                with self.assertRaisesRegex(GATE.PublicationError, expected):
+                    GATE.validate(publication, manifest, ROOT)
+
+        for evidence_id, mutations in {
+            "link-stage-ledger": {
+                "kind": "capability_contract",
+                "path": "docs/baselines/audits/2026-08-11-p3b-receiver-diagnostic-cli.md",
+                "subject": "receiver",
+                "evidence_state": "observed",
+            },
+            "p3b-receiver-diagnostic-cli": {
+                "kind": "capability_ledger",
+                "path": "docs/baselines/p3b-link-stage-capability-ledger.v1.yaml",
+                "subject": "link",
+                "evidence_state": "observed",
+            },
+        }.items():
+            for field, value in mutations.items():
+                with self.subTest(evidence_id=evidence_id, index_field=field):
+                    publication = self.publication()
+                    evidence = next(item for item in publication["report_index"] if item["id"] == evidence_id)
+                    evidence[field] = value
+                    with self.assertRaisesRegex(GATE.PublicationError, "publication_receiver_diagnostic_evidence_invalid"):
+                        GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        with patch.object(GATE, "P3B_RECEIVER_DIAGNOSTIC_AUDIT_SHA256", "0" * 64):
+            with self.assertRaisesRegex(GATE.PublicationError, "publication_receiver_diagnostic_evidence_invalid"):
+                GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        with patch.object(GATE, "verify_link_stage_capabilities", return_value={"valid": False, "entry_count": 13}):
+            with self.assertRaisesRegex(GATE.PublicationError, "publication_receiver_diagnostic_ledger_invalid"):
+                GATE.validate(publication, manifest_for(publication), ROOT)
 
     def test_channel_cli_requires_current_evidence_without_claiming_general_support(self) -> None:
         publication = self.publication()

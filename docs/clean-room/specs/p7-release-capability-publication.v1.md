@@ -29,6 +29,12 @@ schemas. Their ledger rows remain blocked with the matching blocker/nonclaim,
 `external_oracle: false`, and the P6 command-manifest contract; this binding
 does not make the historical P6 audit a current manifest snapshot.
 
+The available `link.receiver.run` route is separately bound as a
+product-owned diagnostic. Its live descriptor, three ledger blockers, receiver
+non-claim, link-stage ledger, and pinned diagnostic contract remain exact. This
+does not turn a caller-supplied diagnostic into external RFM parity, clock lock,
+required-profile acceptance, or a release gate.
+
 Only repository-relative references below `docs/baselines` are admitted. The
 publication contains no external asset paths or bytes, user paths, executable
 identities, waveform data, legal conclusion, or release approval.

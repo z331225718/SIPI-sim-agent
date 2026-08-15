@@ -28,6 +28,7 @@ from verify_p4b_dual_ami_pe_loader_declarations import (
     GateError as AmiLoaderDeclarationError,
     verify as verify_ami_loader_declarations,
 )
+from verify_p3b_link_stage_capabilities import verify as verify_link_stage_capabilities
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,6 +45,7 @@ COMMAND_ID = re.compile(r"[a-z0-9][a-z0-9.-]*")
 ROUTE_TOKEN = re.compile(r"[a-z][a-z0-9-]*")
 ACCEPTANCE_AUTHORITY_ROWS_V1 = frozenset({"tran-rc-pulse"})
 COM_R480_ACCEPTANCE_SHA256 = "e90fca0d14968a04e09df90cd8bd4fcc7f749abfa07ad2b4b29dc297351ef03b"
+P3B_RECEIVER_DIAGNOSTIC_AUDIT_SHA256 = "ff59135f5339798c86d908fef388d3b3c873af32ec23d984a0f6cfdf963105e8"
 PRODUCT_OWNED_UNAVAILABLE_CATALOG_ROUTES_V1 = {
     "project-validate": {
         "domain": "project",
@@ -244,6 +246,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     _validate_ami_blocked_route(rows, index_by_id)
     _validate_com_blocked_route(rows, index_by_id, root)
     _validate_product_owned_unavailable_catalog_routes(rows, manifest_by_id, index_by_id)
+    _validate_receiver_diagnostic_route(rows, manifest_by_id, index_by_id, root)
     _validate_accepted_evidence_authority(rows)
 
 
@@ -455,6 +458,79 @@ def _validate_product_owned_unavailable_catalog_routes(
             or command["nonclaim"] != expected["nonclaim"]
         ):
             raise PublicationError("publication_product_unavailable_catalog_binding_invalid")
+
+
+def _validate_receiver_diagnostic_route(
+    rows: list[dict[str, Any]], manifest_by_id: dict[str, dict[str, Any]],
+    index_by_id: dict[str, dict[str, Any]], root: Path,
+) -> None:
+    ledger_id = "link-stage-ledger"
+    audit_id = "p3b-receiver-diagnostic-cli"
+    ledger_path = "docs/baselines/p3b-link-stage-capability-ledger.v1.yaml"
+    audit_path = "docs/baselines/audits/2026-08-11-p3b-receiver-diagnostic-cli.md"
+    row = next((item for item in rows if item["id"] == "link-receiver-diagnostic"), None)
+    command = manifest_by_id.get("link.receiver.run")
+    if (
+        row is None
+        or row["domain"] != "receiver"
+        or row["command_id"] != "link.receiver.run"
+        or row["product_surface"] != "available"
+        or row["acceptance_state"] != "specified"
+        or row["external_oracle"] is not False
+        or row["evidence_ids"] != [ledger_id, audit_id]
+        or row["blockers"] != [
+            "caller_supplied_input_only",
+            "policy_selected_not_locked",
+            "required_rfm_profile_not_accepted",
+        ]
+        or row["non_claims"] != ["not_rfm_receiver_parity_or_clock_recovery"]
+        or command is None
+        or command["route"] != ["link", "receiver", "run"]
+        or command["availability"] != "available"
+        or command["transport"] != "stdin_json_v1"
+        or command["request_schema"] != "sipi.receiver.diagnostic-run-request.v1"
+        or command["response_schema"] != "sipi.receiver.diagnostic-run-result.v1"
+        or command["unavailable_reason"] is not None
+        or command["nonclaim"] != "product_owned_diagnostic_not_rfm_parity_or_clock_lock"
+    ):
+        raise PublicationError("publication_receiver_diagnostic_route_binding_invalid")
+
+    expected_index = {
+        ledger_id: ("capability_ledger", ledger_path, "link", "specified"),
+        audit_id: ("capability_contract", audit_path, "receiver", "specified"),
+    }
+    for evidence_id, (kind, path, subject, evidence_state) in expected_index.items():
+        evidence = index_by_id.get(evidence_id)
+        if (
+            evidence is None
+            or evidence["kind"] != kind
+            or evidence["path"] != path
+            or evidence["subject"] != subject
+            or evidence["evidence_state"] != evidence_state
+        ):
+            raise PublicationError("publication_receiver_diagnostic_evidence_invalid")
+
+    try:
+        audit_sha256 = hashlib.sha256((root / audit_path).read_bytes()).hexdigest()
+        ledger = load_yaml(root / ledger_path)
+        result = verify_link_stage_capabilities(ledger)
+    except (OSError, RuntimeError, ValueError):
+        raise PublicationError("publication_receiver_diagnostic_ledger_invalid") from None
+    if audit_sha256 != P3B_RECEIVER_DIAGNOSTIC_AUDIT_SHA256:
+        raise PublicationError("publication_receiver_diagnostic_evidence_invalid")
+    entries = {
+        entry.get("id"): entry
+        for entry in ledger.get("entries", [])
+        if isinstance(entry, dict)
+    } if isinstance(ledger, dict) else {}
+    if (
+        result.get("valid") is not True
+        or result.get("entry_count") != 13
+        or entries.get("fixed_receiver_library", {}).get("disposition") != "library_only_profile_blocked"
+        or entries.get("fixed_receiver_diagnostic_cli", {}).get("disposition") != "product_owned_diagnostic"
+        or entries.get("fixed_receiver_diagnostic_cli", {}).get("non_claim") != "not_rfm_parity_or_clock_lock"
+    ):
+        raise PublicationError("publication_receiver_diagnostic_ledger_invalid")
 
 
 def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]) -> None:
