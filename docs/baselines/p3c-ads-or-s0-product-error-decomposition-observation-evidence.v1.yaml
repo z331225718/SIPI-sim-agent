@@ -1,0 +1,64 @@
+schema: sipi.p3c.ads-or-s0-product-error-decomposition-observation-evidence.v1
+status: external_same_axis_complex_error_decomposition_observed_acceptance_unchanged
+authority:
+  actor: user
+  decision_ref: user-delegated-owner-discretion-2026-08-15
+  scope: one_fixed_same_axis_complex_error_decomposition_observation_only
+predecessor:
+  path: docs/baselines/p3c-ads-or-s0-product-paired-transition-observation-evidence.v1.yaml
+  result: paired_transition_delta_observed_not_cause_attribution
+external_observation:
+  schema: sipi.p3c.ads-or-s0-product-error-decomposition-observation.v1
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 3635
+  report_content_sha256: c7523bbbc525673a9131e1773bd437a3b076aaa20733aed5e6f0dc0a09e6a2bd
+  clean_archive_commit: d0680c4f44bc8d0951fcd2f23c214e54bb001316
+  clean_archive_tree: dec604f9a0cf3bdb767de178981d35947df23652
+  source: {byte_length: 1834156, sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47}
+  ads_help: {byte_length: 150522, sha256: 45372e9c7c79492bf6023a4e860f05a20caf0ef5e2a083407c119909afc187bf}
+  fresh_runs: 2
+  tool_inventory:
+    ads_runner: 25ff36f0506d8ace1aeb980bcedf942f872f4d241367fb16eb6f7cf09e881e82
+    extractor: 708ce0190dd0ce645b6ae2a468f010b4dadc27856752f5af08c1e132901319da
+    product_runner: 8095c75b70ccd4bb67c18f52610dba3e16c37a82e0aa4a897b5f6245c55b0516
+    observer: 43a2ce7f74de03106a665ba9f118f0533e0fb07f6130d096977feba48973eedb
+  ads_netlist: {netlist_byte_length: 1760, netlist_sha256: 6f720d8375726b1d7b0c42fbc7579372c1fea0ca5929c21d9823ccae4c2838e8}
+  common_axis:
+    node_count: 1024
+    mapping: or_index_equals_4_times_s0_index
+    axis_sha256: 9a4c3f1dd879d6e08c4f598406fe62d231819daf9dbac1c3d7c960ae26c827c5
+    payload: {byte_length: 41004, sha256: 0bcf332816763fc160f5dd6d6aa30bdea5449e01579483e775e618fb7558eefc}
+  decomposition:
+    record_count: 2002
+    raw_sample_count: 51200
+    bounded_sample_count: 51200
+    sample_interval_bits: 3d712e0be826d695
+    causality_iterations: 32
+    causality_stop: successive_error_difference
+    pre: {sha256: 1e824373075c3ef71b098ba533e6b35b23b3b878083be1d9a262f375a7735b37, l2_squared_bits: 3ed0e4a368f3c8c8, max_abs_bits: 3f44a2e375e7a361, max_index: 14}
+    post: {sha256: 2bc9b379dae5dbba227743803cd4e6f5836815b03f29a7a71df1d49587bf63c6, l2_squared_bits: 3f739d2e3bee6f9f, max_abs_bits: 3f74dc06332b6fd3, max_index: 106}
+    paired: {sha256: dad92243662f37b37a882c2ddec4961b37da541daf692b4713a8a306f5604709, l2_squared_bits: 3f739ad5699f0a89, max_abs_bits: 3f74d2f837696359, max_index: 106}
+    cross_term_bits: bebe0568ad7d5495
+    closure: {sha256: 2dc10498360b88a293970ceb0b6680885ba2bab3e47c34de568e08231412359c, l2_squared_bits: 38abfa9182000000, max_abs_bits: 3c30000000000000, max_index: 51}
+  cleanup_status: complete
+independent_audit:
+  reviewer: Orca_reused_OpenCode_terminal
+  terminal: term_2de7cb74-b803-4e20-bb5b-4803777c24f8
+  status: completed
+  result: no_high_or_critical_findings
+  report: null
+admission:
+  same_axis_complex_error_decomposition_observed: true
+  pre_surface_delta_observed: true
+  post_surface_delta_reproduced: true
+  paired_transition_delta_reproduced: true
+  cross_term_observed: true
+  ads_algorithm_reproduced: false
+  causality_or_interpolation_cause_identified: false
+  candidate_waveform_accepted: false
+  release_ledger_promoted: false
+blockers: [documented_surface_delta_not_algorithm_attribution, waveform_mismatch_cause_not_identified]
+non_claims:
+  - Node sums and cross term are algebraic diagnostics, not physical energy, probability, or root-cause shares.
+  - This does not name an ADS algorithm or change a product policy, candidate, receiver, P4B, P5, or release gate.
