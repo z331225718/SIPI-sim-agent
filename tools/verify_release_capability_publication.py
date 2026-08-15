@@ -16,6 +16,10 @@ from verify_tran_rc_pulse_current_external_compare_evidence_v2 import (
     verify_document as verify_historical_tran_evidence,
 )
 from verify_tran_rc_pulse_current_external_compare_evidence_v3 import (
+    EvidenceError as PreviousTranEvidenceError,
+    verify_document as verify_previous_tran_evidence,
+)
+from verify_tran_rc_pulse_current_external_compare_evidence_v4 import (
     EvidenceError as CurrentTranEvidenceError,
     verify_document as verify_current_tran_evidence,
 )
@@ -1023,8 +1027,8 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
     tran = next((row for row in rows if row["id"] == "tran-rc-pulse"), None)
     if tran is None:
         raise PublicationError("publication_tran_row_missing")
-    current_compare_id = "tran-rc-pulse-current-external-compare-v3"
-    historical_compare_id = "tran-rc-pulse-current-external-compare-v2"
+    current_compare_id = "tran-rc-pulse-current-external-compare-v4"
+    historical_compare_id = "tran-rc-pulse-current-external-compare-v3"
     if (
         tran["acceptance_state"] != "accepted"
         or tran["external_oracle"] is not True
@@ -1040,7 +1044,7 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
     if current_entry != {
         "id": current_compare_id,
         "kind": "external_compare_evidence",
-        "path": "docs/baselines/tran-rc-pulse-current-external-compare-evidence.v3.yaml",
+        "path": "docs/baselines/tran-rc-pulse-current-external-compare-evidence.v4.yaml",
         "subject": "tran-rc-pulse",
         "evidence_state": "observed",
     }:
@@ -1054,14 +1058,14 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
     if historical_entry != {
         "id": historical_compare_id,
         "kind": "external_compare_evidence",
-        "path": "docs/baselines/tran-rc-pulse-current-external-compare-evidence.v2.yaml",
+        "path": "docs/baselines/tran-rc-pulse-current-external-compare-evidence.v3.yaml",
         "subject": "tran-rc-pulse",
         "evidence_state": "observed",
     }:
         raise PublicationError("publication_tran_historical_evidence_invalid")
     try:
-        verify_historical_tran_evidence(load_yaml(ROOT / historical_entry["path"]))
-    except HistoricalTranEvidenceError as error:
+        verify_previous_tran_evidence(load_yaml(ROOT / historical_entry["path"]))
+    except PreviousTranEvidenceError as error:
         if str(error) != "evidence_product_source_drift":
             raise PublicationError("publication_tran_historical_evidence_invalid") from None
     except (OSError, RuntimeError):

@@ -1,0 +1,49 @@
+schema: sipi.tran.rc-pulse.current-external-compare-evidence.v4
+status: accepted
+profile_id: tran-rc-pulse-v1
+contract:
+  schema: sipi.tran.rc-pulse.acceptance.v1
+  sha256: 690d42cc2498b49d5a6d5c971fcf2583fae7440340c25ad8d1332932ba51113d
+external_report:
+  schema: sipi.tran.rc-pulse.compare.v1
+  sha256: 854e34fd85bc5cef8018fb4387c6ecb8ecbb102dda9f14b872279bc0b05b84ce
+  custody: operator_external_only
+source:
+  canonical_origin: https://github.com/z331225718/agent-spice.git
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  path: native/AgentSpice.Engine/fixtures/rc.cir
+  git_blob: f9c29055902fe8aa2b268b4375a5bdbbf67df9da
+  content_sha256: bcdbd81a40dde01f0e72a8c36be928b6a7325fabbc25f83f72073757154dcefc
+  redistribution: external_only
+oracle:
+  executable_sha256: b264547fe26a256909997a247b9c23ecb891bdb15436b45295a06c4f222bbf1c
+  build_info_sha256: baf9e0a6e4de54f4b99a2ed8896f98d6be8984dcc1d43d4a4fd7817f38cd6f43
+product:
+  source_commit: 538b5dd08f734e5558b1179083c3d24a95aba02f
+  source_trees:
+    sipi-tran: fdc426b864c70ec50f2b47cd96d9a7185b407e4a
+    sipi-types: 4c6e6b0acee259ca513a8f205a1abbea541a579e
+    sipi-runtime: fa32fba371af288b03a2ce24ca03ccd409f85178
+  cargo_lock_blob: cc2dcb03e69c41f31e8269bda29e3c001244d79a
+  executable_sha256: 2a51c7b1158a17a412f6b05a01119b650eda03f6d2956a9e02734af67d8dfa67
+replays:
+  oracle_runs: 2
+  oracle_samples:
+    length: 4
+    time_sha256_f64le: 23b57ce7f6bce55bfaaeb36e45e6baf013ac1bf518c7a078c2c327ba1a36b6ea
+    voltage_in_sha256_f64le: c2678240d4475ab3b5f7904bbe2a167b44f4282b8ac4cf80b7e7b87ee210b2b5
+    voltage_out_sha256_f64le: d2cd8a207b765a5f8f2df403eb88509c8628b9e72bda1af23d01c54c85392442
+  product_samples:
+    length: 4
+    time_sha256_f64le: 23b57ce7f6bce55bfaaeb36e45e6baf013ac1bf518c7a078c2c327ba1a36b6ea
+    voltage_in_sha256_f64le: c2678240d4475ab3b5f7904bbe2a167b44f4282b8ac4cf80b7e7b87ee210b2b5
+    voltage_out_sha256_f64le: 2d0208d0232a939f9be2a65e8e9757f91ddfb997be0e9ce4d55c24dcbbe0113a
+comparison:
+  time_axis_seconds: {absolute_tolerance: 1.0e-15, relative_tolerance: 0.0, max_absolute_error: 0.0, max_relative_error: 0.0, allowed_error_at_worst_index: 1.0e-15, worst_index: 0}
+  voltage_in_volts: {absolute_tolerance: 1.0e-9, relative_tolerance: 1.0e-9, max_absolute_error: 0.0, max_relative_error: 0.0, allowed_error_at_worst_index: 1.0e-9, worst_index: 0}
+  voltage_out_volts: {absolute_tolerance: 2.0e-6, relative_tolerance: 5.0e-4, max_absolute_error: 9.963737488231927e-7, max_relative_error: 4.986852193371661e-4, allowed_error_at_worst_index: 2.9990006823819e-6, worst_index: 3}
+non_claims:
+  - The external report, fixture, executable, and waveform data remain outside the worktree.
+  - This evidence accepts only indexed time, v(in), and v(out) for the fixed RC/PULSE profile.
+  - It does not establish general TRAN, netlist parsing, OP, AC, release readiness, or legal clearance.

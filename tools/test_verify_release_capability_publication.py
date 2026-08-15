@@ -263,7 +263,7 @@ class PublicationTests(unittest.TestCase):
         }
         publication = self.publication()
         available_ids = [row["id"] for row in publication["rows"] if row["product_surface"] == "available"]
-        self.assertEqual(len(available_ids), 23)
+        self.assertEqual(len(available_ids), 24)
         for row_id in available_ids:
             with self.subTest(row_id=row_id):
                 mutated = self.publication()
@@ -326,16 +326,16 @@ class PublicationTests(unittest.TestCase):
 
         publication = self.publication()
         tran = next(row for row in publication["rows"] if row["id"] == "tran-rc-pulse")
-        tran["evidence_ids"].remove("tran-rc-pulse-current-external-compare-v3")
+        tran["evidence_ids"].remove("tran-rc-pulse-current-external-compare-v4")
         with self.assertRaisesRegex(GATE.PublicationError, "publication_tran_acceptance_binding_invalid"):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
         publication = self.publication()
         historical = next(
             entry for entry in publication["report_index"]
-            if entry["id"] == "tran-rc-pulse-current-external-compare-v2"
+            if entry["id"] == "tran-rc-pulse-current-external-compare-v3"
         )
-        historical["path"] = "docs/baselines/tran-rc-pulse-current-external-compare-evidence.v1.yaml"
+        historical["path"] = "docs/baselines/tran-rc-pulse-current-external-compare-evidence.v2.yaml"
         with self.assertRaisesRegex(GATE.PublicationError, "publication_tran_historical_evidence_invalid"):
             GATE.validate(publication, manifest_for(publication), ROOT)
 

@@ -22,6 +22,7 @@ def load_gate(name: str, filename: str):
 GATE_V1 = load_gate("current_tran_evidence_v1", "verify_tran_rc_pulse_current_external_compare_evidence.py")
 GATE_V2 = load_gate("current_tran_evidence_v2", "verify_tran_rc_pulse_current_external_compare_evidence_v2.py")
 GATE_V3 = load_gate("current_tran_evidence_v3", "verify_tran_rc_pulse_current_external_compare_evidence_v3.py")
+GATE_V4 = load_gate("current_tran_evidence_v4", "verify_tran_rc_pulse_current_external_compare_evidence_v4.py")
 
 
 class CurrentTranEvidenceTests(unittest.TestCase):
@@ -46,8 +47,9 @@ class CurrentTranEvidenceTests(unittest.TestCase):
         with self.assertRaises(GATE_V2.EvidenceError):
             GATE_V2.verify_document(drift)
 
-    def test_v3_current_candidate_evidence_is_valid(self) -> None:
-        self.assertTrue(GATE_V3.verify_document(self.document(GATE_V3))["valid"])
+    def test_v3_current_candidate_evidence_is_historical_after_pwl_source_change(self) -> None:
+        with self.assertRaisesRegex(GATE_V3.EvidenceError, "evidence_product_source_drift"):
+            GATE_V3.verify_document(self.document(GATE_V3))
 
     def test_v3_rejects_historical_schema_and_product_drift(self) -> None:
         wrong_schema = self.document(GATE_V3)
@@ -58,6 +60,19 @@ class CurrentTranEvidenceTests(unittest.TestCase):
         drift["product"]["cargo_lock_blob"] = "0" * 40
         with self.assertRaises(GATE_V3.EvidenceError):
             GATE_V3.verify_document(drift)
+
+    def test_v4_current_candidate_evidence_is_valid(self) -> None:
+        self.assertTrue(GATE_V4.verify_document(self.document(GATE_V4))["valid"])
+
+    def test_v4_rejects_historical_schema_and_product_drift(self) -> None:
+        wrong_schema = self.document(GATE_V4)
+        wrong_schema["schema"] = GATE_V4.HISTORICAL_SCHEMA
+        with self.assertRaises(GATE_V4.EvidenceError):
+            GATE_V4.verify_document(wrong_schema)
+        drift = self.document(GATE_V4)
+        drift["product"]["cargo_lock_blob"] = "0" * 40
+        with self.assertRaises(GATE_V4.EvidenceError):
+            GATE_V4.verify_document(drift)
 
 
 if __name__ == "__main__":
