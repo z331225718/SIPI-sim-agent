@@ -1,0 +1,7 @@
+# These governance files contain byte-level SHA-256 bindings. Keep their
+# checkout representation identical to their canonical Git blobs on Windows.
+license-manifest.v1.yaml text eol=lf
+license-manifest.v2.yaml text eol=lf
+product-boundary.v1.yaml text eol=lf
+rust-candidate-source-map.v1.yaml text eol=lf
+clean-room-register.v1.yaml text eol=lf

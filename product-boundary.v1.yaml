@@ -10451,6 +10451,7 @@ rules:
   reason: v0.2 product charter and MIT boundary policy
 - id: migration-metadata
   include:
+  - .gitattributes
   - .gitignore
   - pyproject.toml
   - uv.lock
