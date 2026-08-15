@@ -26,10 +26,11 @@ use sipi_contracts::{
     FIXED_PROJECT_RUN_REQUEST_SCHEMA, IBIS_DC_EVALUATE_REQUEST_SCHEMA,
     IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA, LINK_PLAN_SCHEMA, PLANNED_DOMAINS,
     PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA, PRBS9_WAVEFORM_ARTIFACT_BYTE_LENGTH_V1,
-    RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA, RULE_LEDGER_V1, TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA,
+    RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA, RULE_LEDGER_V1,
     SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACTS_REQUEST_SCHEMA_V3,
-    SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_BYTE_LENGTH_V3,
-    array_compare_request_schema_json, artifact_report_request_schema_json, capability_schema_json,
+    SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_BYTE_LENGTH_V3, TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA,
+    TRAN_ONE_NODE_RC_PWL_REQUEST_SCHEMA, array_compare_request_schema_json,
+    artifact_report_request_schema_json, capability_schema_json,
     channel_matched_two_port_kernel_run_request_schema_json, deterministic_json,
     fixed_project_run_request_schema_json, ibis_dc_evaluate_request_schema_json,
     ibis_inspect_request_schema_json, ibis_quasi_static_evaluate_request_schema_json,
@@ -39,16 +40,17 @@ use sipi_contracts::{
     parse_ibis_inspect_request_v1, parse_ibis_quasi_static_evaluate_request_v1,
     parse_link_causal_fir_request_v1, parse_prbs9_metric_artifacts_request_v1,
     parse_prbs9_waveform_artifact_v1, parse_receiver_diagnostic_run_request_v1,
+    parse_rx_load_differential_rc_evaluate_request_v1,
     parse_selected_highloss_prbs9_waveform_only_artifact_v3,
     parse_selected_highloss_prbs9_waveform_only_artifacts_request_v3,
-    parse_rx_load_differential_rc_evaluate_request_v1, parse_tran_one_node_rc_pulse_request_v1,
+    parse_tran_one_node_rc_pulse_request_v1, parse_tran_one_node_rc_pwl_request_v1,
     parse_tran_rc_pulse_request_v1, prbs9_metric_artifacts_request_schema_json,
     product_example_request_json_v1, project_plan_schema_json,
     receiver_diagnostic_run_request_schema_json, receiver_input_schema_json,
     receiver_semantics_schema_json, rx_load_differential_rc_evaluate_request_schema_json,
-    tran_one_node_rc_pulse_request_schema_json, tran_rc_pulse_request_schema_json,
-    selected_highloss_prbs9_waveform_only_artifacts_request_schema_json, validate_request_v1,
-    validation_request_schema_json,
+    selected_highloss_prbs9_waveform_only_artifacts_request_schema_json,
+    tran_one_node_rc_pulse_request_schema_json, tran_one_node_rc_pwl_request_schema_json,
+    tran_rc_pulse_request_schema_json, validate_request_v1, validation_request_schema_json,
 };
 use sipi_ibis::{
     DcClampCornerV1, DcClampProbeV1, IbisDcEvaluateServiceV1, IbisInspectServiceV1,
@@ -73,8 +75,10 @@ use sipi_touchstone::{
     parse_touchstone_hz_s_ri_50_two_port_v1,
 };
 use sipi_tran::{
-    IdealPulseV1, OneNodeRcPulseLimitsV1, OneNodeRcPulseRequestV1, RcPulseTransientV1,
-    simulate_one_node_rc_pulse_with_context, simulate_rc_pulse_with_context,
+    IdealPulseV1, OneNodeRcPulseLimitsV1, OneNodeRcPulseRequestV1, OneNodeRcPwlLimitsV1,
+    OneNodeRcPwlRequestV1, PiecewiseLinearVoltageV1, RcPulseTransientV1,
+    simulate_one_node_rc_pulse_with_context, simulate_one_node_rc_pwl_with_context,
+    simulate_rc_pulse_with_context,
 };
 use sipi_types::{AxisView, FiniteF64, Ohms, Seconds, Volts};
 
@@ -414,6 +418,16 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         nonclaim: "bounded_product_owned_one_node_rc_pulse_only",
     },
     CommandDescriptorV1 {
+        id: "tran.one-node-rc-pwl",
+        route: &["tran", "one-node-rc-pwl"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some(TRAN_ONE_NODE_RC_PWL_REQUEST_SCHEMA),
+        response_schema: Some("sipi.tran.one-node-rc-pwl-run-result.v1"),
+        unavailable_reason: None,
+        nonclaim: "bounded_product_owned_one_node_rc_pwl_only",
+    },
+    CommandDescriptorV1 {
         id: "link.run",
         route: &["link", "run"],
         availability: CommandAvailabilityV1::Available,
@@ -509,7 +523,9 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         availability: CommandAvailabilityV1::Available,
         transport: "stdin_json_v1",
         request_schema: Some(SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACTS_REQUEST_SCHEMA_V3),
-        response_schema: Some("sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-run-result.v3"),
+        response_schema: Some(
+            "sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-run-result.v3",
+        ),
         unavailable_reason: None,
         nonclaim: "selected_highloss_raw_post_channel_waveform_only",
     },
@@ -672,6 +688,15 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
     CommandProtocolProfileV1 {
+        command_id: "tran.one-node-rc-pwl",
+        example_id: Some("product-owned-minimal-v1"),
+        required_options: &["--artifact-root", "--artifact-id"],
+        caller_bindings: ARTIFACT_DESTINATION_BINDINGS,
+        validation_rule_id: Some("tran.one-node-rc-pwl.v1"),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
+    CommandProtocolProfileV1 {
         command_id: "link.run",
         example_id: Some("product-owned-minimal-v1"),
         required_options: &["--artifact-root", "--artifact-id"],
@@ -721,7 +746,9 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         example_id: None,
         required_options: &["--artifact-root"],
         caller_bindings: PRBS9_METRIC_ARTIFACT_BINDINGS,
-        validation_rule_id: Some("compare.selected-highloss.prbs9-waveform-only.sealed-artifacts.v3"),
+        validation_rule_id: Some(
+            "compare.selected-highloss.prbs9-waveform-only.sealed-artifacts.v3",
+        ),
         successful_exit: 0,
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
@@ -802,6 +829,14 @@ fn main() {
         && id == "--artifact-id"
     {
         ProcessAdapter::tran_one_node_rc_pulse_stdin(artifact_root, artifact_id)
+    } else if let [command, action, stdin, root, artifact_root, id, artifact_id] = &arguments[..]
+        && command == "tran"
+        && action == "one-node-rc-pwl"
+        && stdin == "--stdin"
+        && root == "--artifact-root"
+        && id == "--artifact-id"
+    {
+        ProcessAdapter::tran_one_node_rc_pwl_stdin(artifact_root, artifact_id)
     } else if let [command, action, stdin, root, artifact_root, id, artifact_id] = &arguments[..]
         && command == "link"
         && action == "run"
@@ -889,6 +924,24 @@ impl ProcessAdapter {
             Err(_) => return error(3, "contract_rejected", "one-node TRAN request was rejected"),
         };
         run_one_node_tran(artifact_root, artifact_id, &request)
+    }
+
+    fn tran_one_node_rc_pwl_stdin(artifact_root: &str, artifact_id: &str) -> Response {
+        let input = match read_stdin_request() {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        let request = match parse_tran_one_node_rc_pwl_request_v1(&input) {
+            Ok(request) => request,
+            Err(_) => {
+                return error(
+                    3,
+                    "contract_rejected",
+                    "one-node PWL TRAN request was rejected",
+                );
+            }
+        };
+        run_one_node_pwl_tran(artifact_root, artifact_id, &request)
     }
 
     fn link_run_stdin(artifact_root: &str, artifact_id: &str) -> Response {
@@ -1288,6 +1341,143 @@ fn one_node_request(
         FiniteF64::try_new(request.capacitance_farads, "capacitance farads").map_err(|_| ())?,
         Volts::try_new(request.initial_voltage_out_volts).map_err(|_| ())?,
         pulse,
+    )
+    .map_err(|_| ())
+}
+
+fn run_one_node_pwl_tran(
+    artifact_root: &str,
+    artifact_id: &str,
+    request: &sipi_contracts::TranOneNodeRcPwlRequestV1,
+) -> Response {
+    const MAX_OUTPUT_SAMPLES: usize = 4096;
+    const MAX_BREAKPOINTS: usize = 16_384;
+    let policy = match RunPolicy::try_new(Duration::from_secs(1), 32_768, 8 * 1_024 * 1_024) {
+        Ok(policy) => policy,
+        Err(_) => return error(6, "internal_failure", "run policy is unavailable"),
+    };
+    let id = match RunId::try_new(artifact_id) {
+        Ok(id) => id,
+        Err(_) => return error(2, "invalid_artifact_id", "artifact id is invalid"),
+    };
+    let (_, context) = match Runtime::start(id, policy) {
+        Ok(run) => run,
+        Err(_) => return error(6, "internal_failure", "runtime is unavailable"),
+    };
+    let canonical_request = match deterministic_json(request) {
+        Ok(bytes) => bytes,
+        Err(_) => {
+            return error(
+                6,
+                "internal_contract_error",
+                "TRAN request cannot be serialized",
+            );
+        }
+    };
+    let typed_request = match one_node_pwl_request(request) {
+        Ok(request) => request,
+        Err(_) => {
+            return error(
+                3,
+                "contract_rejected",
+                "one-node PWL TRAN request was rejected",
+            );
+        }
+    };
+    let limits = OneNodeRcPwlLimitsV1::new(
+        NonZeroUsize::new(MAX_OUTPUT_SAMPLES).expect("constant output limit"),
+        NonZeroUsize::new(MAX_BREAKPOINTS).expect("constant breakpoint limit"),
+    );
+    let request_key = cache_key("request", &canonical_request);
+    let root = Path::new(artifact_root);
+    let result = Runtime::execute(&context, |context| -> Result<_, ()> {
+        context
+            .consume(ResourceCost {
+                work_units: MAX_BREAKPOINTS as u64,
+                accounted_bytes: canonical_request.len() as u64 + 4 * 1_024 * 1_024,
+            })
+            .map_err(|_| ())?;
+        let simulation = simulate_one_node_rc_pwl_with_context(&typed_request, limits, context)
+            .map_err(|_| ())?;
+        let result_json = one_node_pwl_result_json(&simulation).map_err(|_| ())?;
+        let result_key = cache_key("result", result_json.as_bytes());
+        let provenance = format!(
+            "{{\"schema\":\"sipi.tran.one-node-rc-pwl.provenance.v1\",\"topology\":\"piecewise_linear_voltage_source_series_r_capacitor_to_explicit_ref\",\"algorithm\":\"backward_euler_one_node_rc_pwl_v1\",\"request_cache_key\":\"{request_key}\",\"result_cache_key\":\"{result_key}\",\"max_output_samples\":{MAX_OUTPUT_SAMPLES},\"max_integration_breakpoints\":{MAX_BREAKPOINTS},\"contract\":\"{TRAN_ONE_NODE_RC_PWL_REQUEST_SCHEMA}\",\"target\":\"{TARGET}\"}}"
+        );
+        let store = sipi_artifacts::ArtifactRoot::open_or_create(root).map_err(|_| ())?;
+        let mut staging = store.begin(artifact_id).map_err(|_| ())?;
+        staging
+            .stage_reader(
+                "request.json",
+                Cursor::new(canonical_request.as_slice()),
+                1_048_576,
+            )
+            .map_err(|_| ())?;
+        staging
+            .stage_reader(
+                "result.json",
+                Cursor::new(result_json.into_bytes()),
+                1_048_576,
+            )
+            .map_err(|_| ())?;
+        staging
+            .stage_reader(
+                "provenance.json",
+                Cursor::new(provenance.into_bytes()),
+                16_384,
+            )
+            .map_err(|_| ())?;
+        let manifest = staging
+            .seal()
+            .and_then(|sealed| sealed.publish_new())
+            .map_err(|_| ())?;
+        Ok((request_key, result_key, manifest))
+    });
+    match result {
+        Ok((request_key, result_key, manifest)) => success(format!(
+            "{{\"schema\":\"sipi.tran.one-node-rc-pwl-run-result.v1\",\"artifact_id\":\"{}\",\"request_cache_key\":\"{}\",\"result_cache_key\":\"{}\",\"manifest_schema\":\"{}\",\"file_count\":{}}}",
+            manifest.artifact_id,
+            request_key,
+            result_key,
+            manifest.schema,
+            manifest.files.len()
+        )),
+        Err(_) => error(
+            5,
+            "operational_failure",
+            "one-node PWL TRAN run did not publish an artifact",
+        ),
+    }
+}
+
+fn one_node_pwl_request(
+    request: &sipi_contracts::TranOneNodeRcPwlRequestV1,
+) -> Result<OneNodeRcPwlRequestV1, ()> {
+    let output_times = request
+        .output_times_seconds
+        .iter()
+        .copied()
+        .map(|value| Seconds::try_new(value).map_err(|_| ()))
+        .collect::<Result<Vec<_>, _>>()?;
+    let source_times = request
+        .source_knot_times_seconds
+        .iter()
+        .copied()
+        .map(|value| Seconds::try_new(value).map_err(|_| ()))
+        .collect::<Result<Vec<_>, _>>()?;
+    let source_values = request
+        .source_knot_voltages
+        .iter()
+        .copied()
+        .map(|value| Volts::try_new(value).map_err(|_| ()))
+        .collect::<Result<Vec<_>, _>>()?;
+    let source = PiecewiseLinearVoltageV1::try_new(source_times, source_values).map_err(|_| ())?;
+    OneNodeRcPwlRequestV1::try_new(
+        output_times,
+        Ohms::try_new(request.resistance_ohms).map_err(|_| ())?,
+        FiniteF64::try_new(request.capacitance_farads, "capacitance farads").map_err(|_| ())?,
+        Volts::try_new(request.initial_voltage_out_volts).map_err(|_| ())?,
+        source,
     )
     .map_err(|_| ())
 }
@@ -1875,7 +2065,13 @@ fn run_selected_highloss_prbs9_waveform_only_artifact_compare(
 ) -> Response {
     let store = match ArtifactRoot::open_existing(Path::new(artifact_root)) {
         Ok(store) => store,
-        Err(_) => return error(3, "contract_rejected", "sealed artifact inputs were rejected"),
+        Err(_) => {
+            return error(
+                3,
+                "contract_rejected",
+                "sealed artifact inputs were rejected",
+            );
+        }
     };
     let reference = match consume_selected_highloss_prbs9_waveform_only_artifact(
         &store,
@@ -1883,7 +2079,13 @@ fn run_selected_highloss_prbs9_waveform_only_artifact_compare(
         request.reference().manifest_sha256(),
     ) {
         Ok(waveform) => waveform,
-        Err(()) => return error(3, "contract_rejected", "sealed artifact inputs were rejected"),
+        Err(()) => {
+            return error(
+                3,
+                "contract_rejected",
+                "sealed artifact inputs were rejected",
+            );
+        }
     };
     let candidate = match consume_selected_highloss_prbs9_waveform_only_artifact(
         &store,
@@ -1891,13 +2093,19 @@ fn run_selected_highloss_prbs9_waveform_only_artifact_compare(
         request.candidate().manifest_sha256(),
     ) {
         Ok(waveform) => waveform,
-        Err(()) => return error(3, "contract_rejected", "sealed artifact inputs were rejected"),
+        Err(()) => {
+            return error(
+                3,
+                "contract_rejected",
+                "sealed artifact inputs were rejected",
+            );
+        }
     };
-    let pair = match SelectedHighlossPrbs9WaveformPairV3::try_new(reference.values, candidate.values)
-    {
-        Ok(pair) => pair,
-        Err(_) => return error(3, "contract_rejected", "selected waveforms were rejected"),
-    };
+    let pair =
+        match SelectedHighlossPrbs9WaveformPairV3::try_new(reference.values, candidate.values) {
+            Ok(pair) => pair,
+            Err(_) => return error(3, "contract_rejected", "selected waveforms were rejected"),
+        };
     let report = match compare_selected_highloss_prbs9_waveform_only_v3(&pair) {
         Ok(report) => report,
         Err(_) => {
@@ -2212,6 +2420,32 @@ fn one_node_result_json(
     ))
 }
 
+fn one_node_pwl_result_json(
+    result: &sipi_tran::RcPulseTransientResultV1,
+) -> Result<String, &'static str> {
+    let AxisView::Explicit(times) = result.time_axis().view() else {
+        return Err("one-node PWL result must have an explicit time axis");
+    };
+    Ok(format!(
+        "{{\"schema\":\"sipi.tran.one-node-rc-pwl-result.v1\",\"topology\":\"piecewise_linear_voltage_source_series_r_capacitor_to_explicit_ref\",\"time_seconds\":{},\"voltage_in_volts\":{},\"voltage_out_volts\":{}}}",
+        json_values(times.iter().map(|value| value.get())),
+        json_values(
+            result
+                .voltage_in()
+                .samples()
+                .iter()
+                .map(|value| value.get())
+        ),
+        json_values(
+            result
+                .voltage_out()
+                .samples()
+                .iter()
+                .map(|value| value.get())
+        ),
+    ))
+}
+
 fn link_result_json(result: &sipi_link::ReceivedVoltageSamplesV1) -> Result<String, &'static str> {
     let AxisView::Uniform { start, step, count } = result.waveform().axis().view() else {
         return Err("Link result must have a uniform time axis");
@@ -2366,6 +2600,7 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["rx-load", "differential-rc-evaluate"]
             | ["tran", "run"]
             | ["tran", "one-node-rc-pulse"]
+            | ["tran", "one-node-rc-pwl"]
             | ["link", "run"]
             | ["link", "receiver", "run"]
             | ["channel", "run"]
@@ -2439,6 +2674,8 @@ fn schema_bytes(id: &str) -> Result<Option<Vec<u8>>, sipi_contracts::ContractErr
         tran_rc_pulse_request_schema_json().map(Some)
     } else if id == TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA {
         tran_one_node_rc_pulse_request_schema_json().map(Some)
+    } else if id == TRAN_ONE_NODE_RC_PWL_REQUEST_SCHEMA {
+        tran_one_node_rc_pwl_request_schema_json().map(Some)
     } else if id == LINK_PLAN_SCHEMA {
         link_plan_schema_json().map(Some)
     } else if id == sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA {
@@ -2820,7 +3057,7 @@ fn capabilities_json() -> String {
         .iter()
         .map(|domain| {
             if *domain == "tran" && manifest_available("tran.run") {
-                "{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_and_one_node_rc_pulse_only\"}".to_owned()
+                "{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_and_bounded_one_node_rc_sources_only\"}".to_owned()
             } else if *domain == "channel" && manifest_available("channel.run") {
                 "{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"matched_s21_periodic_kernel_only\"}".to_owned()
             } else {
@@ -2998,7 +3235,7 @@ mod tests {
         assert_eq!(
             response.stdout.as_deref(),
             Some(
-                "{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_and_one_node_rc_pulse_only\"},{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"matched_s21_periodic_kernel_only\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]}"
+                "{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_and_bounded_one_node_rc_sources_only\"},{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"matched_s21_periodic_kernel_only\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]}"
             )
         );
     }

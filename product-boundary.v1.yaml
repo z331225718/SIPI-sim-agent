@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: d1b59cf44afe575c0b0e3a2d51456cc18fd9e38bd474f51bff3ebf25b2aaaa17
+  tracked_paths_sha256: 9a15b2b25a297b58bb6fe9c1c12e282104dbc1a291da3266a3e57ed7b4ff9977
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -360,6 +360,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-contracts/schemas/sipi.tran.one-node-rc-pulse-request.v1.schema.json:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-contracts/schemas/sipi.tran.one-node-rc-pwl-request.v1.schema.json:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -1871,6 +1877,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-15-p2-one-node-rc-pwl-cli.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-15-p3a-matched-s2p-cli-current-evidence-rebinding-v5.md:
       rule: historical-docs
       class: migration_only
@@ -3054,6 +3066,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p2-tran-one-node-rc-pulse.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p2-tran-one-node-rc-pwl.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

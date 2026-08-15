@@ -227,7 +227,7 @@ materials:
     derived_from: [p7-release-archive-admission-spec-v1, p1-cli-process-contract-spec-v1]
   - id: p7-release-capability-publication-spec-v1
     kind: independent_spec
-    content_sha256: dc0dc87e10e93e1a35a6ab7bf24480fdc8f7b8207aa2e58e4a0691df0fb110db
+    content_sha256: db3bd6378dfaa10417b5ae32dd1ea0a9bd5bcebc09c46b33b3184e27d8d975d7
     provenance:
       source_ref: docs/clean-room/specs/p7-release-capability-publication.v1.md
       license_evidence: project-authored-MIT-boundary-pending-promotion
@@ -302,6 +302,14 @@ materials:
     content_sha256: 72c58a3d902e409e11b53b1d2a67c65eb4ec7ea1fdfee609b19e38aea4528c63
     provenance:
       source_ref: docs/clean-room/specs/p2-tran-one-node-rc-pulse.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [spec_author, implementer, auditor]
+    derived_from: []
+  - id: p2-tran-one-node-rc-pwl-spec-v1
+    kind: independent_spec
+    content_sha256: ed3effb1d27af3fa85bd7d9fbabfaecc53ef3752c2d02e6917e833c273907a11
+    provenance:
+      source_ref: docs/clean-room/specs/p2-tran-one-node-rc-pwl.v1.md
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [spec_author, implementer, auditor]
     derived_from: []
@@ -1451,10 +1459,10 @@ scopes:
     state: planned
     role_material_allowlists:
       observer: []
-      spec_author: [p2-tran-package-foundation-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-one-node-rc-pulse-spec-v1]
-      implementer: [p2-tran-package-foundation-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-one-node-rc-pulse-spec-v1]
+      spec_author: [p2-tran-package-foundation-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-one-node-rc-pulse-spec-v1, p2-tran-one-node-rc-pwl-spec-v1]
+      implementer: [p2-tran-package-foundation-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-one-node-rc-pulse-spec-v1, p2-tran-one-node-rc-pwl-spec-v1]
       comparator: []
-      auditor: [p2-tran-package-foundation-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-one-node-rc-pulse-spec-v1]
+      auditor: [p2-tran-package-foundation-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-one-node-rc-pulse-spec-v1, p2-tran-one-node-rc-pwl-spec-v1]
   - id: p2-tran-rc-pulse-acceptance-contract-v1
     paths: [docs/baselines/tran-rc-pulse-acceptance.v1.yaml, docs/clean-room/specs/p2-tran-rc-pulse-acceptance-contract.v1.md, tools/verify_tran_rc_pulse_acceptance.py, tools/test_verify_tran_rc_pulse_acceptance.py]
     state: planned
@@ -1483,14 +1491,14 @@ scopes:
       comparator: []
       auditor: [p2-tran-rc-pulse-semantic-contract-spec-v1]
   - id: p2-tran-one-node-rc-pulse-v1
-    paths: [docs/clean-room/specs/p2-tran-one-node-rc-pulse.v1.md, crates/sipi-tran/**]
+    paths: [docs/clean-room/specs/p2-tran-one-node-rc-pulse.v1.md, docs/clean-room/specs/p2-tran-one-node-rc-pwl.v1.md, crates/sipi-tran/**]
     state: planned
     role_material_allowlists:
       observer: []
-      spec_author: [p2-tran-one-node-rc-pulse-spec-v1]
-      implementer: [p2-tran-one-node-rc-pulse-spec-v1]
+      spec_author: [p2-tran-one-node-rc-pulse-spec-v1, p2-tran-one-node-rc-pwl-spec-v1]
+      implementer: [p2-tran-one-node-rc-pulse-spec-v1, p2-tran-one-node-rc-pwl-spec-v1]
       comparator: []
-      auditor: [p2-tran-one-node-rc-pulse-spec-v1]
+      auditor: [p2-tran-one-node-rc-pulse-spec-v1, p2-tran-one-node-rc-pwl-spec-v1]
   - id: p2-tran-rc-pulse-comparator-v1
     paths: [docs/clean-room/specs/p2-tran-rc-pulse-comparator.v1.md, tools/compare_tran_rc_pulse.py, tools/test_compare_tran_rc_pulse.py]
     state: planned
@@ -1505,10 +1513,10 @@ scopes:
     state: planned
     role_material_allowlists:
       observer: []
-      spec_author: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-failure-gates-spec-v1]
-      implementer: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-failure-gates-spec-v1]
+      spec_author: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-one-node-rc-pwl-spec-v1, p2-tran-failure-gates-spec-v1]
+      implementer: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-one-node-rc-pwl-spec-v1, p2-tran-failure-gates-spec-v1]
       comparator: []
-      auditor: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-failure-gates-spec-v1]
+      auditor: [p2-tran-fixed-cli-run-spec-v1, p2-tran-rc-pulse-semantic-contract-spec-v1, p2-tran-one-node-rc-pwl-spec-v1, p2-tran-failure-gates-spec-v1]
   - id: p2-tran-performance-observation-v1
     paths: [docs/baselines/tran-rc-pulse-performance-budget.v1.yaml, docs/clean-room/specs/p2-tran-performance-observation.v1.md, tools/measure_tran_rc_pulse_performance.py, tools/verify_tran_rc_pulse_performance.py, tools/test_verify_tran_rc_pulse_performance.py]
     state: planned

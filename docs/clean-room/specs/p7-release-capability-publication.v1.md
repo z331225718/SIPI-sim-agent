@@ -70,6 +70,13 @@ product-owned one-node RC/PULSE contract. This does not create an external
 oracle, general TRAN/netlist or SPICE parity, multi-node/MNA/nonlinear support,
 or release acceptance.
 
+The available `tran.one-node-rc-pwl` route is separately bound to its bounded
+product-owned one-node RC/PWL contract. Its source and output axes are explicit
+and fully covered; it does not extrapolate or hold an input. This does not
+create an external oracle, general TRAN/netlist or SPICE parity, multi-node/MNA
+or nonlinear support, adaptive integration, channel or IBIS composition, or
+release acceptance.
+
 The available `ibis.dc-evaluate` route is separately bound to its caller-input
 static DC descriptor and the pinned P4A conformance matrix. The matrix entry
 for that stdin route remains `implemented_self_tested`; it cannot inherit the

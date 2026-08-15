@@ -82,6 +82,15 @@ def manifest_for(publication: dict) -> list[dict]:
         "unavailable_reason": None,
         "nonclaim": "bounded_product_owned_one_node_rc_pulse_only",
     }
+    one_node_rc_pwl = {
+        "route": ["tran", "one-node-rc-pwl"],
+        "availability": "available",
+        "transport": "stdin_json_v1",
+        "request_schema": "sipi.tran.one-node-rc-pwl-request.v1",
+        "response_schema": "sipi.tran.one-node-rc-pwl-run-result.v1",
+        "unavailable_reason": None,
+        "nonclaim": "bounded_product_owned_one_node_rc_pwl_only",
+    }
     ibis_dc = {
         "route": ["ibis", "dc-evaluate"], "availability": "available", "transport": "stdin_json_v1",
         "request_schema": "sipi.ibis.input-typ-dc-evaluate.request.v1",
@@ -127,6 +136,9 @@ def manifest_for(publication: dict) -> list[dict]:
             continue
         if row["command_id"] == "tran.one-node-rc-pulse":
             commands.append({"id": row["command_id"], **one_node_rc_pulse})
+            continue
+        if row["command_id"] == "tran.one-node-rc-pwl":
+            commands.append({"id": row["command_id"], **one_node_rc_pwl})
             continue
         if row["command_id"] == "ibis.dc-evaluate":
             commands.append({"id": row["command_id"], **ibis_dc})
@@ -239,6 +251,7 @@ class PublicationTests(unittest.TestCase):
             "link-causal-fir": "publication_causal_fir_link_route_binding_invalid",
             "report-inspect": "publication_artifact_report_inspect_route_binding_invalid",
             "tran-one-node-rc-pulse": "publication_one_node_rc_pulse_route_binding_invalid",
+            "tran-one-node-rc-pwl": "publication_one_node_rc_pwl_route_binding_invalid",
             "ibis-dc-evaluate": "publication_ibis_dc_route_binding_invalid",
             "ibis-quasi-static-evaluate": "publication_ibis_quasi_static_route_binding_invalid",
             "selected-differential-rc-load-evaluate": "publication_selected_differential_rc_load_route_binding_invalid",
@@ -903,6 +916,49 @@ class PublicationTests(unittest.TestCase):
         publication = self.publication()
         with patch.object(GATE, "P2_ONE_NODE_RC_PULSE_CLI_AUDIT_SHA256", "0" * 64):
             with self.assertRaisesRegex(GATE.PublicationError, "publication_one_node_rc_pulse_evidence_invalid"):
+                GATE.validate(publication, manifest_for(publication), ROOT)
+
+    def test_one_node_rc_pwl_route_stays_product_owned_and_non_oracle(self) -> None:
+        def one_node_row(publication: dict) -> dict:
+            return next(item for item in publication["rows"] if item["id"] == "tran-one-node-rc-pwl")
+
+        for field, value in {
+            "domain": "channel", "acceptance_state": "not_evaluated", "external_oracle": True,
+            "blockers": ["bogus"], "non_claims": ["bogus"], "evidence_ids": ["p7-isolated-install"],
+        }.items():
+            with self.subTest(row_field=field):
+                publication = self.publication()
+                one_node_row(publication)[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_one_node_rc_pwl_route_binding_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        for field, value in {
+            "route": ["tran", "one-node"], "availability": "unavailable", "transport": "none",
+            "request_schema": None, "response_schema": None, "unavailable_reason": "wrong_reason", "nonclaim": "wrong_nonclaim",
+        }.items():
+            with self.subTest(descriptor_field=field):
+                publication = self.publication()
+                manifest = manifest_for(publication)
+                descriptor = next(item for item in manifest if item["id"] == "tran.one-node-rc-pwl")
+                descriptor[field] = value
+                expected = "command_manifest_invalid" if field in {"availability", "unavailable_reason"} else "publication_one_node_rc_pwl_route_binding_invalid"
+                with self.assertRaisesRegex(GATE.PublicationError, expected):
+                    GATE.validate(publication, manifest, ROOT)
+
+        for field, value in {
+            "kind": "install_observation", "path": "docs/baselines/audits/2026-08-11-p7-isolated-install.md",
+            "subject": "foundation", "evidence_state": "observed",
+        }.items():
+            with self.subTest(index_field=field):
+                publication = self.publication()
+                evidence = next(item for item in publication["report_index"] if item["id"] == "p2-one-node-rc-pwl-cli")
+                evidence[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_one_node_rc_pwl_evidence_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        with patch.object(GATE, "P2_ONE_NODE_RC_PWL_CLI_AUDIT_SHA256", "0" * 64):
+            with self.assertRaisesRegex(GATE.PublicationError, "publication_one_node_rc_pwl_evidence_invalid"):
                 GATE.validate(publication, manifest_for(publication), ROOT)
 
     def test_ibis_dc_route_stays_caller_input_only(self) -> None:

@@ -65,6 +65,7 @@ P3B_LINK_STAGE_LEDGER_SHA256 = "0055a9fcdfd875f447a4e6ffe978f99d11ab6c03068c6748
 P6_ARTIFACT_REPORT_AUDIT_SHA256 = "4574bf42788a087e9947f6017194a0cb75a5bdc7f1238143e79c110f18ba3226"
 P7_ISOLATED_INSTALL_AUDIT_SHA256 = "8682cd4718c4a9dbaf57635fe0386d159f2c54cc11a361c90566967bc6a3fb66"
 P2_ONE_NODE_RC_PULSE_CLI_AUDIT_SHA256 = "3fe3222b08b4b8e0026357b690db3daa5e190b230b92d6cac4baf6d2e8606738"
+P2_ONE_NODE_RC_PWL_CLI_AUDIT_SHA256 = "79f82d24f8046811bb9ce98ed8fa9c103d480d175de7953040f622bfdfd4dfc1"
 P4A_IBIS_CONFORMANCE_MATRIX_SHA256 = "b918ef1a4580b269fb3a8f849164c4448cbed6fcce6bc4d13d9590241f6b0fb6"
 P4A_IBIS_STRUCTURAL_INSPECT_AUDIT_SHA256 = "85458c464ad85a6a52640c25cc7f234e316fa25aefc14a125d9028142687e17f"
 PRODUCT_OWNED_UNAVAILABLE_CATALOG_ROUTES_V1 = {
@@ -283,6 +284,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     _validate_causal_fir_link_route(rows, manifest_by_id, index_by_id, root)
     _validate_artifact_report_inspect_route(rows, manifest_by_id, index_by_id, root)
     _validate_one_node_rc_pulse_route(rows, manifest_by_id, index_by_id, root)
+    _validate_one_node_rc_pwl_route(rows, manifest_by_id, index_by_id, root)
     _validate_caller_input_ibis_dc_route(rows, manifest_by_id, index_by_id, root)
     _validate_caller_input_ibis_quasi_static_route(rows, manifest_by_id, index_by_id, root)
     _validate_selected_differential_rc_load_route(rows, manifest_by_id, index_by_id, root)
@@ -822,6 +824,51 @@ def _validate_one_node_rc_pulse_route(
         raise PublicationError("publication_one_node_rc_pulse_evidence_invalid") from None
     if actual_sha256 != P2_ONE_NODE_RC_PULSE_CLI_AUDIT_SHA256:
         raise PublicationError("publication_one_node_rc_pulse_evidence_invalid")
+
+
+def _validate_one_node_rc_pwl_route(
+    rows: list[dict[str, Any]], manifest_by_id: dict[str, dict[str, Any]],
+    index_by_id: dict[str, dict[str, Any]], root: Path,
+) -> None:
+    evidence_id = "p2-one-node-rc-pwl-cli"
+    path = "docs/baselines/audits/2026-08-15-p2-one-node-rc-pwl-cli.md"
+    row = next((item for item in rows if item["id"] == "tran-one-node-rc-pwl"), None)
+    command = manifest_by_id.get("tran.one-node-rc-pwl")
+    if (
+        row is None
+        or row["domain"] != "tran"
+        or row["command_id"] != "tran.one-node-rc-pwl"
+        or row["product_surface"] != "available"
+        or row["acceptance_state"] != "specified"
+        or row["external_oracle"] is not False
+        or row["evidence_ids"] != [evidence_id]
+        or row["blockers"] != ["product_owned_no_external_profile_compare"]
+        or row["non_claims"] != ["not_general_tran_netlist_or_spice_parity"]
+        or command is None
+        or command["route"] != ["tran", "one-node-rc-pwl"]
+        or command["availability"] != "available"
+        or command["transport"] != "stdin_json_v1"
+        or command["request_schema"] != "sipi.tran.one-node-rc-pwl-request.v1"
+        or command["response_schema"] != "sipi.tran.one-node-rc-pwl-run-result.v1"
+        or command["unavailable_reason"] is not None
+        or command["nonclaim"] != "bounded_product_owned_one_node_rc_pwl_only"
+    ):
+        raise PublicationError("publication_one_node_rc_pwl_route_binding_invalid")
+    evidence = index_by_id.get(evidence_id)
+    if (
+        evidence is None
+        or evidence["kind"] != "capability_contract"
+        or evidence["path"] != path
+        or evidence["subject"] != "tran-one-node-rc-pwl"
+        or evidence["evidence_state"] != "specified"
+    ):
+        raise PublicationError("publication_one_node_rc_pwl_evidence_invalid")
+    try:
+        actual_sha256 = hashlib.sha256((root / path).read_bytes()).hexdigest()
+    except OSError:
+        raise PublicationError("publication_one_node_rc_pwl_evidence_invalid") from None
+    if actual_sha256 != P2_ONE_NODE_RC_PWL_CLI_AUDIT_SHA256:
+        raise PublicationError("publication_one_node_rc_pwl_evidence_invalid")
 
 
 def _validate_caller_input_ibis_dc_route(
