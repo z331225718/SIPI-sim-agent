@@ -199,6 +199,56 @@ class PublicationTests(unittest.TestCase):
                 with self.assertRaisesRegex(GATE.PublicationError, "publication_selected_highloss_waveform_only_evidence_invalid"):
                     GATE.validate(publication, manifest_for(publication), ROOT)
 
+    def test_ami_route_stays_blocked_with_static_only_evidence(self) -> None:
+        def ami_row(publication: dict) -> dict:
+            return next(item for item in publication["rows"] if item["id"] == "ami")
+
+        publication = self.publication()
+        ami_row(publication)["acceptance_state"] = "accepted"
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_ami_blocked_route_binding_invalid"):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        ami_row(publication)["external_oracle"] = False
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_ami_blocked_route_binding_invalid"):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        ami_row(publication)["blockers"] = ["bogus"]
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_ami_blocked_route_binding_invalid"):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+
+        for evidence_id in ("p4b-dual-ami-asset-preflight", "p4b-dual-ami-pe-loader-declarations"):
+            with self.subTest(evidence_id=evidence_id):
+                publication = self.publication()
+                ami_row(publication)["evidence_ids"].remove(evidence_id)
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_ami_blocked_route_binding_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        index_mutations = {
+            "kind": "capability_contract",
+            "path": "docs/baselines/p4a-ibis-input-typ-static-acceptance.v1.yaml",
+            "subject": "ibis",
+            "evidence_state": "specified",
+        }
+        for field, value in index_mutations.items():
+            with self.subTest(index_field=field):
+                publication = self.publication()
+                evidence = next(item for item in publication["report_index"] if item["id"] == "p4b-dual-ami-asset-preflight")
+                evidence[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_ami_blocked_evidence_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        with patch.object(GATE, "verify_ami_preflight", return_value={"worker_admitted": True, "runtime_evidence": False, "release_input": False}):
+            with self.assertRaisesRegex(GATE.PublicationError, "publication_ami_blocked_evidence_promoted"):
+                GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        with patch.object(GATE, "verify_ami_loader_declarations", return_value={"worker_admitted": False, "runtime_invoked": True, "dynamic_closure": "blocked_not_assessed"}):
+            with self.assertRaisesRegex(GATE.PublicationError, "publication_ami_blocked_evidence_promoted"):
+                GATE.validate(publication, manifest_for(publication), ROOT)
+
     def test_channel_cli_requires_current_evidence_without_claiming_general_support(self) -> None:
         publication = self.publication()
         channel = next(row for row in publication["rows"] if row["id"] == "channel")

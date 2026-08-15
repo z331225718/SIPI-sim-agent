@@ -20,6 +20,14 @@ from verify_channel_s2p_matched_cli_current_external_compare_evidence_v4 import 
     EvidenceError as CurrentChannelEvidenceError,
     verify_document as verify_current_channel_cli_evidence,
 )
+from verify_p4b_ads_pcie_gen5_dual_ami_asset_preflight import (
+    PreflightError as AmiPreflightError,
+    verify_manifest as verify_ami_preflight,
+)
+from verify_p4b_dual_ami_pe_loader_declarations import (
+    GateError as AmiLoaderDeclarationError,
+    verify as verify_ami_loader_declarations,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -212,6 +220,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     _validate_profile_scoped_external_acceptance(rows, index_by_id)
     _validate_prbs9_artifact_metric_route(rows, index_by_id)
     _validate_selected_highloss_waveform_only_route(rows, index_by_id)
+    _validate_ami_blocked_route(rows, index_by_id)
 
 
 def _validate_prbs9_artifact_metric_route(
@@ -278,6 +287,58 @@ def _validate_selected_highloss_waveform_only_route(
         or evidence["evidence_state"] != "specified"
     ):
         raise PublicationError("publication_selected_highloss_waveform_only_evidence_invalid")
+
+
+def _validate_ami_blocked_route(rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]) -> None:
+    row = next((item for item in rows if item["id"] == "ami"), None)
+    preflight_id = "p4b-dual-ami-asset-preflight"
+    declarations_id = "p4b-dual-ami-pe-loader-declarations"
+    expected_blocker = "external_ami_asset_not_admitted"
+    expected_nonclaim = "no_vendor_dll_or_ami_workflow"
+    if (
+        row is None
+        or row["command_id"] != "ami.run"
+        or row["product_surface"] != "unavailable"
+        or row["acceptance_state"] != "blocked"
+        or row["external_oracle"] is not True
+        or expected_blocker not in row["blockers"]
+        or expected_nonclaim not in row["non_claims"]
+        or preflight_id not in row["evidence_ids"]
+        or declarations_id not in row["evidence_ids"]
+    ):
+        raise PublicationError("publication_ami_blocked_route_binding_invalid")
+
+    expected_entries = {
+        preflight_id: "docs/baselines/p4b-ads-pcie-gen5-dual-ami-asset-preflight.v1.yaml",
+        declarations_id: "docs/baselines/p4b-dual-ami-pe-loader-declarations.v1.yaml",
+    }
+    for evidence_id, path in expected_entries.items():
+        evidence = index_by_id.get(evidence_id)
+        if (
+            evidence is None
+            or evidence["kind"] != "blocked_evidence"
+            or evidence["path"] != path
+            or evidence["subject"] != "ami"
+            or evidence["evidence_state"] != "observed"
+        ):
+            raise PublicationError("publication_ami_blocked_evidence_invalid")
+
+    try:
+        preflight = verify_ami_preflight(ROOT, load_yaml(ROOT / expected_entries[preflight_id]))
+        declarations = verify_ami_loader_declarations(
+            load_yaml(ROOT / expected_entries[declarations_id]), root=ROOT
+        )
+    except (AmiPreflightError, AmiLoaderDeclarationError, OSError, RuntimeError, ValueError):
+        raise PublicationError("publication_ami_blocked_evidence_invalid") from None
+    if (
+        preflight.get("worker_admitted") is not False
+        or preflight.get("runtime_evidence") is not False
+        or preflight.get("release_input") is not False
+        or declarations.get("worker_admitted") is not False
+        or declarations.get("runtime_invoked") is not False
+        or declarations.get("dynamic_closure") != "blocked_not_assessed"
+    ):
+        raise PublicationError("publication_ami_blocked_evidence_promoted")
 
 
 def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]) -> None:
