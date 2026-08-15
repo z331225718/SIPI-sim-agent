@@ -59,6 +59,11 @@ historical install observation, and pinned P6 capability contract remain exact.
 This does not make `verified` an ownership, signature, authorization, payload,
 or external-provenance claim; `report.show` remains unavailable and blocked.
 
+The available `tran.one-node-rc-pulse` route is separately bound to its bounded
+product-owned one-node RC/PULSE contract. This does not create an external
+oracle, general TRAN/netlist or SPICE parity, multi-node/MNA/nonlinear support,
+or release acceptance.
+
 Only repository-relative references below `docs/baselines` are admitted. The
 publication contains no external asset paths or bytes, user paths, executable
 identities, waveform data, legal conclusion, or release approval.

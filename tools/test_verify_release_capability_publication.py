@@ -73,6 +73,15 @@ def manifest_for(publication: dict) -> list[dict]:
         "unavailable_reason": None,
         "nonclaim": "verified_integrity_metadata_only",
     }
+    one_node_rc_pulse = {
+        "route": ["tran", "one-node-rc-pulse"],
+        "availability": "available",
+        "transport": "stdin_json_v1",
+        "request_schema": "sipi.tran.one-node-rc-pulse-request.v1",
+        "response_schema": "sipi.tran.one-node-rc-pulse-run-result.v1",
+        "unavailable_reason": None,
+        "nonclaim": "bounded_product_owned_one_node_rc_pulse_only",
+    }
     commands = []
     for row in publication["rows"]:
         if row["command_id"] == "link.receiver.run":
@@ -89,6 +98,9 @@ def manifest_for(publication: dict) -> list[dict]:
             continue
         if row["command_id"] == "report.inspect":
             commands.append({"id": row["command_id"], **artifact_report_inspect})
+            continue
+        if row["command_id"] == "tran.one-node-rc-pulse":
+            commands.append({"id": row["command_id"], **one_node_rc_pulse})
             continue
         availability = row["product_surface"]
         reason, nonclaim = unavailable.get(
@@ -191,6 +203,7 @@ class PublicationTests(unittest.TestCase):
             "project-run": "publication_fixed_project_run_route_binding_invalid",
             "link-causal-fir": "publication_causal_fir_link_route_binding_invalid",
             "report-inspect": "publication_artifact_report_inspect_route_binding_invalid",
+            "tran-one-node-rc-pulse": "publication_one_node_rc_pulse_route_binding_invalid",
             "compare": "publication_aligned_array_compare_route_binding_invalid",
             "prbs9-metric-artifact-compare": "publication_prbs9_artifact_metric_binding_invalid",
             "selected-highloss-prbs9-waveform-only-compare": "publication_selected_highloss_waveform_only_binding_invalid",
@@ -775,6 +788,49 @@ class PublicationTests(unittest.TestCase):
                     evidence[field] = value
                     with self.assertRaisesRegex(GATE.PublicationError, "publication_artifact_report_inspect_evidence_invalid"):
                         GATE.validate(publication, manifest_for(publication), ROOT)
+
+    def test_one_node_rc_pulse_route_stays_product_owned_and_non_oracle(self) -> None:
+        def one_node_row(publication: dict) -> dict:
+            return next(item for item in publication["rows"] if item["id"] == "tran-one-node-rc-pulse")
+
+        for field, value in {
+            "domain": "channel", "acceptance_state": "not_evaluated", "external_oracle": True,
+            "blockers": ["bogus"], "non_claims": ["bogus"], "evidence_ids": ["p7-isolated-install"],
+        }.items():
+            with self.subTest(row_field=field):
+                publication = self.publication()
+                one_node_row(publication)[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_one_node_rc_pulse_route_binding_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        for field, value in {
+            "route": ["tran", "one-node"], "availability": "unavailable", "transport": "none",
+            "request_schema": None, "response_schema": None, "unavailable_reason": "wrong_reason", "nonclaim": "wrong_nonclaim",
+        }.items():
+            with self.subTest(descriptor_field=field):
+                publication = self.publication()
+                manifest = manifest_for(publication)
+                descriptor = next(item for item in manifest if item["id"] == "tran.one-node-rc-pulse")
+                descriptor[field] = value
+                expected = "command_manifest_invalid" if field in {"availability", "unavailable_reason"} else "publication_one_node_rc_pulse_route_binding_invalid"
+                with self.assertRaisesRegex(GATE.PublicationError, expected):
+                    GATE.validate(publication, manifest, ROOT)
+
+        for field, value in {
+            "kind": "install_observation", "path": "docs/baselines/audits/2026-08-11-p7-isolated-install.md",
+            "subject": "foundation", "evidence_state": "observed",
+        }.items():
+            with self.subTest(index_field=field):
+                publication = self.publication()
+                evidence = next(item for item in publication["report_index"] if item["id"] == "p2-one-node-rc-pulse-cli")
+                evidence[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_one_node_rc_pulse_evidence_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        with patch.object(GATE, "P2_ONE_NODE_RC_PULSE_CLI_AUDIT_SHA256", "0" * 64):
+            with self.assertRaisesRegex(GATE.PublicationError, "publication_one_node_rc_pulse_evidence_invalid"):
+                GATE.validate(publication, manifest_for(publication), ROOT)
 
         for constant in ("P6_ARTIFACT_REPORT_AUDIT_SHA256", "P7_ISOLATED_INSTALL_AUDIT_SHA256"):
             with self.subTest(constant=constant):

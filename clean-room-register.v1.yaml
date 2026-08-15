@@ -227,7 +227,7 @@ materials:
     derived_from: [p7-release-archive-admission-spec-v1, p1-cli-process-contract-spec-v1]
   - id: p7-release-capability-publication-spec-v1
     kind: independent_spec
-    content_sha256: 80cc67a32a0a5ffa91c67fcd7b09b8c9847a6098c771124d08e4def0a9128518
+    content_sha256: 917cbc4028ce987d8705c9904cdd55061e18a512de62362cee479e227c7cff49
     provenance:
       source_ref: docs/clean-room/specs/p7-release-capability-publication.v1.md
       license_evidence: project-authored-MIT-boundary-pending-promotion

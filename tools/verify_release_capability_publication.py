@@ -52,6 +52,7 @@ P6_FIXED_PROJECT_CLI_AUDIT_SHA256 = "ff51578cf1ec1ee24fe0d126d3d3d0770f22e997a7b
 P3B_LINK_STAGE_LEDGER_SHA256 = "0055a9fcdfd875f447a4e6ffe978f99d11ab6c03068c6748a358ea81fbfe3751"
 P6_ARTIFACT_REPORT_AUDIT_SHA256 = "4574bf42788a087e9947f6017194a0cb75a5bdc7f1238143e79c110f18ba3226"
 P7_ISOLATED_INSTALL_AUDIT_SHA256 = "8682cd4718c4a9dbaf57635fe0386d159f2c54cc11a361c90566967bc6a3fb66"
+P2_ONE_NODE_RC_PULSE_CLI_AUDIT_SHA256 = "3fe3222b08b4b8e0026357b690db3daa5e190b230b92d6cac4baf6d2e8606738"
 PRODUCT_OWNED_UNAVAILABLE_CATALOG_ROUTES_V1 = {
     "project-validate": {
         "domain": "project",
@@ -257,6 +258,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     _validate_fixed_project_run_route(rows, manifest_by_id, index_by_id, root)
     _validate_causal_fir_link_route(rows, manifest_by_id, index_by_id, root)
     _validate_artifact_report_inspect_route(rows, manifest_by_id, index_by_id, root)
+    _validate_one_node_rc_pulse_route(rows, manifest_by_id, index_by_id, root)
     _validate_accepted_evidence_authority(rows)
 
 
@@ -747,6 +749,51 @@ def _validate_artifact_report_inspect_route(
             raise PublicationError("publication_artifact_report_inspect_evidence_invalid") from None
         if actual_sha256 != expected_sha256:
             raise PublicationError("publication_artifact_report_inspect_evidence_invalid")
+
+
+def _validate_one_node_rc_pulse_route(
+    rows: list[dict[str, Any]], manifest_by_id: dict[str, dict[str, Any]],
+    index_by_id: dict[str, dict[str, Any]], root: Path,
+) -> None:
+    evidence_id = "p2-one-node-rc-pulse-cli"
+    path = "docs/baselines/audits/2026-08-11-p2-one-node-rc-pulse-cli.md"
+    row = next((item for item in rows if item["id"] == "tran-one-node-rc-pulse"), None)
+    command = manifest_by_id.get("tran.one-node-rc-pulse")
+    if (
+        row is None
+        or row["domain"] != "tran"
+        or row["command_id"] != "tran.one-node-rc-pulse"
+        or row["product_surface"] != "available"
+        or row["acceptance_state"] != "specified"
+        or row["external_oracle"] is not False
+        or row["evidence_ids"] != [evidence_id]
+        or row["blockers"] != ["product_owned_no_external_profile_compare"]
+        or row["non_claims"] != ["not_general_tran_netlist_or_spice_parity"]
+        or command is None
+        or command["route"] != ["tran", "one-node-rc-pulse"]
+        or command["availability"] != "available"
+        or command["transport"] != "stdin_json_v1"
+        or command["request_schema"] != "sipi.tran.one-node-rc-pulse-request.v1"
+        or command["response_schema"] != "sipi.tran.one-node-rc-pulse-run-result.v1"
+        or command["unavailable_reason"] is not None
+        or command["nonclaim"] != "bounded_product_owned_one_node_rc_pulse_only"
+    ):
+        raise PublicationError("publication_one_node_rc_pulse_route_binding_invalid")
+    evidence = index_by_id.get(evidence_id)
+    if (
+        evidence is None
+        or evidence["kind"] != "capability_contract"
+        or evidence["path"] != path
+        or evidence["subject"] != "tran-one-node-rc-pulse"
+        or evidence["evidence_state"] != "specified"
+    ):
+        raise PublicationError("publication_one_node_rc_pulse_evidence_invalid")
+    try:
+        actual_sha256 = hashlib.sha256((root / path).read_bytes()).hexdigest()
+    except OSError:
+        raise PublicationError("publication_one_node_rc_pulse_evidence_invalid") from None
+    if actual_sha256 != P2_ONE_NODE_RC_PULSE_CLI_AUDIT_SHA256:
+        raise PublicationError("publication_one_node_rc_pulse_evidence_invalid")
 
 
 def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]) -> None:
