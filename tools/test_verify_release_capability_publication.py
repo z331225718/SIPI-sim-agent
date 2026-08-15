@@ -37,10 +37,22 @@ def manifest_for(publication: dict) -> list[dict]:
         "unavailable_reason": None,
         "nonclaim": "product_owned_diagnostic_not_rfm_parity_or_clock_lock",
     }
+    aligned_array_compare = {
+        "route": ["compare", "run"],
+        "availability": "available",
+        "transport": "stdin_json_v1",
+        "request_schema": "sipi.compare.aligned-arrays-request.v1",
+        "response_schema": "sipi.compare.aligned-arrays-run-result.v1",
+        "unavailable_reason": None,
+        "nonclaim": "caller_aligned_arrays_only",
+    }
     commands = []
     for row in publication["rows"]:
         if row["command_id"] == "link.receiver.run":
             commands.append({"id": row["command_id"], **receiver_diagnostic})
+            continue
+        if row["command_id"] == "compare.run":
+            commands.append({"id": row["command_id"], **aligned_array_compare})
             continue
         availability = row["product_surface"]
         reason, nonclaim = unavailable.get(
@@ -140,6 +152,7 @@ class PublicationTests(unittest.TestCase):
         specialized_rejections = {
             "tran-rc-pulse": "publication_tran_acceptance_binding_invalid",
             "channel": "publication_channel_acceptance_binding_invalid",
+            "compare": "publication_aligned_array_compare_route_binding_invalid",
             "prbs9-metric-artifact-compare": "publication_prbs9_artifact_metric_binding_invalid",
             "selected-highloss-prbs9-waveform-only-compare": "publication_selected_highloss_waveform_only_binding_invalid",
             "link-receiver-diagnostic": "publication_receiver_diagnostic_route_binding_invalid",
@@ -474,6 +487,69 @@ class PublicationTests(unittest.TestCase):
         with patch.object(GATE, "P3B_RECEIVER_DIAGNOSTIC_AUDIT_SHA256", "0" * 64):
             with self.assertRaisesRegex(GATE.PublicationError, "publication_receiver_diagnostic_evidence_invalid"):
                 GATE.validate(publication, manifest_for(publication), ROOT)
+
+    def test_aligned_array_compare_route_stays_caller_owned_and_non_oracle(self) -> None:
+        def compare_row(publication: dict) -> dict:
+            return next(item for item in publication["rows"] if item["id"] == "compare")
+
+        for field, value in {
+            "external_oracle": True,
+            "blockers": ["bogus"],
+            "non_claims": ["bogus"],
+            "evidence_ids": ["p7-isolated-install"],
+        }.items():
+            with self.subTest(row_field=field):
+                publication = self.publication()
+                compare_row(publication)[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_aligned_array_compare_route_binding_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        for field, value in {
+            "route": ["compare", "arrays"],
+            "availability": "unavailable",
+            "transport": "none",
+            "request_schema": None,
+            "response_schema": None,
+            "unavailable_reason": "wrong_reason",
+            "nonclaim": "wrong_nonclaim",
+        }.items():
+            with self.subTest(descriptor_field=field):
+                publication = self.publication()
+                manifest = manifest_for(publication)
+                descriptor = next(item for item in manifest if item["id"] == "compare.run")
+                descriptor[field] = value
+                expected = "command_manifest_invalid" if field in {"availability", "unavailable_reason"} else "publication_aligned_array_compare_route_binding_invalid"
+                with self.assertRaisesRegex(GATE.PublicationError, expected):
+                    GATE.validate(publication, manifest, ROOT)
+
+        for evidence_id, mutations in {
+            "p3c-array-compare": {
+                "kind": "capability_contract",
+                "path": "docs/baselines/audits/2026-08-11-p3c-aligned-array-compare-cli.md",
+                "subject": "receiver",
+                "evidence_state": "observed",
+            },
+            "p3c-aligned-array-compare-cli": {
+                "kind": "product_contract",
+                "path": "docs/baselines/audits/2026-08-11-p3c-array-compare.md",
+                "subject": "receiver",
+                "evidence_state": "observed",
+            },
+        }.items():
+            for field, value in mutations.items():
+                with self.subTest(evidence_id=evidence_id, index_field=field):
+                    publication = self.publication()
+                    evidence = next(item for item in publication["report_index"] if item["id"] == evidence_id)
+                    evidence[field] = value
+                    with self.assertRaisesRegex(GATE.PublicationError, "publication_aligned_array_compare_evidence_invalid"):
+                        GATE.validate(publication, manifest_for(publication), ROOT)
+
+        for constant in ("P3C_ARRAY_COMPARE_AUDIT_SHA256", "P3C_ALIGNED_ARRAY_COMPARE_CLI_AUDIT_SHA256"):
+            with self.subTest(constant=constant):
+                publication = self.publication()
+                with patch.object(GATE, constant, "0" * 64):
+                    with self.assertRaisesRegex(GATE.PublicationError, "publication_aligned_array_compare_evidence_invalid"):
+                        GATE.validate(publication, manifest_for(publication), ROOT)
 
         publication = self.publication()
         with patch.object(GATE, "verify_link_stage_capabilities", return_value={"valid": False, "entry_count": 13}):

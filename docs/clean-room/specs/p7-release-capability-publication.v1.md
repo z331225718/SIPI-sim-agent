@@ -35,6 +35,12 @@ non-claim, link-stage ledger, and pinned diagnostic contract remain exact. This
 does not turn a caller-supplied diagnostic into external RFM parity, clock lock,
 required-profile acceptance, or a release gate.
 
+The available `compare.run` route is separately bound as a caller-owned
+aligned-array comparison. Its descriptor, explicit alignment/profile blockers,
+non-oracle ledger row, and two pinned product contracts remain exact. This does
+not create profile semantics, eye/jitter/bathtub/BER evaluation, external
+comparison, or release acceptance.
+
 Only repository-relative references below `docs/baselines` are admitted. The
 publication contains no external asset paths or bytes, user paths, executable
 identities, waveform data, legal conclusion, or release approval.

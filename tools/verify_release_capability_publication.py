@@ -46,6 +46,8 @@ ROUTE_TOKEN = re.compile(r"[a-z][a-z0-9-]*")
 ACCEPTANCE_AUTHORITY_ROWS_V1 = frozenset({"tran-rc-pulse"})
 COM_R480_ACCEPTANCE_SHA256 = "e90fca0d14968a04e09df90cd8bd4fcc7f749abfa07ad2b4b29dc297351ef03b"
 P3B_RECEIVER_DIAGNOSTIC_AUDIT_SHA256 = "ff59135f5339798c86d908fef388d3b3c873af32ec23d984a0f6cfdf963105e8"
+P3C_ARRAY_COMPARE_AUDIT_SHA256 = "25e7bcb2bb06c1c6978a3c6f0466cb18634d9ff72beb28e610f5831f0ac3cfce"
+P3C_ALIGNED_ARRAY_COMPARE_CLI_AUDIT_SHA256 = "0d2dada97845e901f95ec164aec3794bf0a8f827a4602d28d08e2f1a35877f64"
 PRODUCT_OWNED_UNAVAILABLE_CATALOG_ROUTES_V1 = {
     "project-validate": {
         "domain": "project",
@@ -247,6 +249,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     _validate_com_blocked_route(rows, index_by_id, root)
     _validate_product_owned_unavailable_catalog_routes(rows, manifest_by_id, index_by_id)
     _validate_receiver_diagnostic_route(rows, manifest_by_id, index_by_id, root)
+    _validate_aligned_array_compare_route(rows, manifest_by_id, index_by_id, root)
     _validate_accepted_evidence_authority(rows)
 
 
@@ -531,6 +534,62 @@ def _validate_receiver_diagnostic_route(
         or entries.get("fixed_receiver_diagnostic_cli", {}).get("non_claim") != "not_rfm_parity_or_clock_lock"
     ):
         raise PublicationError("publication_receiver_diagnostic_ledger_invalid")
+
+
+def _validate_aligned_array_compare_route(
+    rows: list[dict[str, Any]], manifest_by_id: dict[str, dict[str, Any]],
+    index_by_id: dict[str, dict[str, Any]], root: Path,
+) -> None:
+    substrate_id = "p3c-array-compare"
+    cli_id = "p3c-aligned-array-compare-cli"
+    substrate_path = "docs/baselines/audits/2026-08-11-p3c-array-compare.md"
+    cli_path = "docs/baselines/audits/2026-08-11-p3c-aligned-array-compare-cli.md"
+    row = next((item for item in rows if item["id"] == "compare"), None)
+    command = manifest_by_id.get("compare.run")
+    if (
+        row is None
+        or row["domain"] != "compare"
+        or row["command_id"] != "compare.run"
+        or row["product_surface"] != "available"
+        or row["acceptance_state"] != "specified"
+        or row["external_oracle"] is not False
+        or row["evidence_ids"] != [substrate_id, cli_id]
+        or row["blockers"] != [
+            "caller_supplied_alignment_and_semantic_binding",
+            "metric_profile_semantics_not_implemented",
+        ]
+        or row["non_claims"] != ["not_eye_jitter_bathtub_ber_or_external_oracle_workflow"]
+        or command is None
+        or command["route"] != ["compare", "run"]
+        or command["availability"] != "available"
+        or command["transport"] != "stdin_json_v1"
+        or command["request_schema"] != "sipi.compare.aligned-arrays-request.v1"
+        or command["response_schema"] != "sipi.compare.aligned-arrays-run-result.v1"
+        or command["unavailable_reason"] is not None
+        or command["nonclaim"] != "caller_aligned_arrays_only"
+    ):
+        raise PublicationError("publication_aligned_array_compare_route_binding_invalid")
+
+    expected_index = {
+        substrate_id: ("product_contract", substrate_path, "compare", "specified", P3C_ARRAY_COMPARE_AUDIT_SHA256),
+        cli_id: ("capability_contract", cli_path, "compare", "specified", P3C_ALIGNED_ARRAY_COMPARE_CLI_AUDIT_SHA256),
+    }
+    for evidence_id, (kind, path, subject, evidence_state, expected_sha256) in expected_index.items():
+        evidence = index_by_id.get(evidence_id)
+        if (
+            evidence is None
+            or evidence["kind"] != kind
+            or evidence["path"] != path
+            or evidence["subject"] != subject
+            or evidence["evidence_state"] != evidence_state
+        ):
+            raise PublicationError("publication_aligned_array_compare_evidence_invalid")
+        try:
+            actual_sha256 = hashlib.sha256((root / path).read_bytes()).hexdigest()
+        except OSError:
+            raise PublicationError("publication_aligned_array_compare_evidence_invalid") from None
+        if actual_sha256 != expected_sha256:
+            raise PublicationError("publication_aligned_array_compare_evidence_invalid")
 
 
 def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]) -> None:
