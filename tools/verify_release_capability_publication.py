@@ -42,6 +42,7 @@ COMMAND_DESCRIPTOR_FIELDS = {
 }
 COMMAND_ID = re.compile(r"[a-z0-9][a-z0-9.-]*")
 ROUTE_TOKEN = re.compile(r"[a-z][a-z0-9-]*")
+ACCEPTANCE_AUTHORITY_ROWS_V1 = frozenset({"tran-rc-pulse"})
 
 
 class PublicationError(RuntimeError):
@@ -224,6 +225,13 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     _validate_prbs9_artifact_metric_route(rows, index_by_id)
     _validate_selected_highloss_waveform_only_route(rows, index_by_id)
     _validate_ami_blocked_route(rows, index_by_id)
+    _validate_accepted_evidence_authority(rows)
+
+
+def _validate_accepted_evidence_authority(rows: list[dict[str, Any]]) -> None:
+    for row in rows:
+        if row["acceptance_state"] == "accepted" and row["id"] not in ACCEPTANCE_AUTHORITY_ROWS_V1:
+            raise PublicationError("publication_acceptance_authority_missing")
 
 
 def _validate_prbs9_artifact_metric_route(

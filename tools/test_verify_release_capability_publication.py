@@ -116,6 +116,34 @@ class PublicationTests(unittest.TestCase):
                     with self.assertRaisesRegex(GATE.PublicationError, "publication_surface_state_invalid"):
                         GATE.validate(publication, manifest_for(publication), ROOT)
 
+    def test_accepted_routes_require_explicit_evidence_authority(self) -> None:
+        specialized_rejections = {
+            "tran-rc-pulse": "publication_tran_acceptance_binding_invalid",
+            "channel": "publication_channel_acceptance_binding_invalid",
+            "prbs9-metric-artifact-compare": "publication_prbs9_artifact_metric_binding_invalid",
+            "selected-highloss-prbs9-waveform-only-compare": "publication_selected_highloss_waveform_only_binding_invalid",
+        }
+        publication = self.publication()
+        available_ids = [row["id"] for row in publication["rows"] if row["product_surface"] == "available"]
+        self.assertEqual(len(available_ids), 23)
+        for row_id in available_ids:
+            with self.subTest(row_id=row_id):
+                mutated = self.publication()
+                row = next(item for item in mutated["rows"] if item["id"] == row_id)
+                row["acceptance_state"] = "accepted"
+                row["external_oracle"] = True
+                expected = specialized_rejections.get(row_id, "publication_acceptance_authority_missing")
+                with self.assertRaisesRegex(GATE.PublicationError, expected):
+                    GATE.validate(mutated, manifest_for(mutated), ROOT)
+
+        publication = self.publication()
+        row = next(item for item in publication["rows"] if item["id"] == "version")
+        row["acceptance_state"] = "accepted"
+        row["external_oracle"] = True
+        row["evidence_ids"].append("tran-rc-pulse-current-external-compare-v2")
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_acceptance_authority_missing"):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+
     def test_rejects_promotion_and_unsafe_evidence(self) -> None:
         publication = self.publication()
         publication["promotion_status"] = "approved"

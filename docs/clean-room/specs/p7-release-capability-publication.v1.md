@@ -12,6 +12,11 @@ surface cannot be represented as accepted, specified, or not evaluated.
 `blocked` rows require a stable blocker. All global publication states remain
 `release_ready: false` and `promotion_status: blocked`.
 
+An `accepted` row also requires a route-specific v1 acceptance authority in
+the verifier. Availability, an external-oracle label, or an observed report
+alone cannot authorize acceptance. New accepted routes require a dedicated
+evidence verifier and an explicit authority-list update.
+
 The consumed command manifest has the exact v1 descriptor fields, unique
 stable ids and routes, approved transport values, and consistent availability
 and unavailable-reason fields. Missing or additional descriptor fields are
