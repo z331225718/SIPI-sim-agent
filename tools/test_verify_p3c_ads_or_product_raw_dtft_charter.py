@@ -19,12 +19,12 @@ class OrProductRawDtftCharterTests(unittest.TestCase):
     def setUp(self) -> None:
         self.document = yaml.safe_load((ROOT / "docs/baselines/p3c-ads-or-product-raw-dtft-charter.v1.yaml").read_text(encoding="utf-8"))
 
-    def test_current_charter_is_pending_and_fail_closed(self) -> None:
-        self.assertEqual(VERIFY.verify(self.document), {"valid": True, "external_payload_authorized": False, "admitted": False})
+    def test_current_charter_is_authorized_but_not_admitted(self) -> None:
+        self.assertEqual(VERIFY.verify(self.document), {"valid": True, "external_payload_authorized": True, "admitted": False})
 
     def test_payload_authorization_cannot_be_silently_promoted(self) -> None:
         value = copy.deepcopy(self.document)
-        value["ads_surface"]["source_payload_read_authorization"] = "authorized"
+        value["ads_surface"]["source_payload_read_authorization"] = "caller_selectable"
         with self.assertRaises(VERIFY.VerificationError):
             VERIFY.verify(value)
 

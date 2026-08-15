@@ -1,7 +1,8 @@
 # P3C ADS OR to Product Raw-Periodic DTFT Observation v1
 
-This pending, external-only diagnostic may proceed only after the owner authorizes
-temporary reads of the documented ADS `CMP1_OR` complex payload. It compares the
+This external-only diagnostic reads the user-authorized documented ADS `CMP1_OR`
+complex payload. ADS help calls that surface an original spectrum; it does not
+fully disclose the causal-stage algorithm. The diagnostic compares the
 fixed Hdiff reduction of that surface with a product
 `SelectedP3cRawPeriodicResponseV1` before causality, truncation, convolution, or
 candidate generation.
@@ -16,5 +17,5 @@ The observer may retain temporary external payloads only long enough to produce
 hash-only identities and aggregate deltas. It must not interpolate, resample,
 nearest-bin match, align, remove delay or phase, fit gain or DC, run causality,
 truncate, convolve, or generate a waveform. The result cannot identify an ADS
-algorithm or explain a waveform mismatch, and raw-periodic output is not a causal
+algorithm, a causal-stage position, or explain a waveform mismatch, and raw-periodic output is not a causal
 impulse or FIR admission.

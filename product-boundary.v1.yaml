@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: f6ae0ffaba532dbb4d80c34c32bf618d65e2863f0cfb1476dbf144e6fd033f36
+  tracked_paths_sha256: e7de0d223aa9de19beed71e8693bdfe308b1ecd4de54a47820dbcab72e06743f
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -540,6 +540,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-p3c/src/prbs9_impulse_candidate_v2.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/tests/p3c_ads_or_product_raw_dtft_runner.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -8051,6 +8057,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p3c_ads_or_product_raw_dtft.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/observe_p3c_ads_prbs9_source_only.py:
       rule: migration-tools
       class: migration_only
@@ -8172,6 +8184,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/run_p3c_external_ads_fixed_pulse_pre_final_spectrum.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/run_p3c_external_ads_original_product_raw_dtft.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8369,6 +8387,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_observe_p3c_ads_or_product_raw_dtft.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_observe_p3c_ads_prbs9_source_only.py:
       rule: migration-tools
       class: migration_only
@@ -8448,6 +8472,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_run_p3c_external_ads_fixed_pulse_pre_final_spectrum.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_run_p3c_external_ads_original_product_raw_dtft.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

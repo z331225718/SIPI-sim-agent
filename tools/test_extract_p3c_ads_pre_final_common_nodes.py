@@ -89,6 +89,16 @@ def fixture() -> Dataset:
     return Dataset(blocks)
 
 
+def or_fixture() -> Dataset:
+    blocks: dict[str, Block] = {}
+    axis = [float(index) * 2.5 for index in range(7)]
+    for row in range(1, 5):
+        for column in range(1, 5):
+            base = complex(row * 10 + column, row - column)
+            blocks[f"TRAN.CHANNEL.CMP1_OR({row};{column})"] = Block(list(axis), [base + complex(index, -index) for index in range(len(axis))])
+    return Dataset(blocks)
+
+
 class CommonNodeExtractionTests(unittest.TestCase):
     def test_exact_four_to_one_summary_has_explicit_coordinates(self) -> None:
         module = load_module(fixture())
@@ -133,6 +143,22 @@ class CommonNodeExtractionTests(unittest.TestCase):
             result = module.extract(Path("external.ds"), payload)
             self.assertEqual(result["s0_hdiff_payload"]["byte_length"], len(b"sipi.p3c.ads-s0-hdiff-payload.v1\0") + 8 + 1024 * 24)
             self.assertEqual(payload.stat().st_size, result["s0_hdiff_payload"]["byte_length"])
+
+    def test_or_payload_is_reduced_only_after_all_member_axes_match(self) -> None:
+        module = load_module(or_fixture())
+        with tempfile.TemporaryDirectory() as directory:
+            payload = Path(directory) / "or-hdiff.bin"
+            result = module.extract_or(Path("external.ds"), payload)
+            self.assertEqual(result["or_node_count"], 7)
+            self.assertEqual(payload.stat().st_size, len(b"sipi.p3c.ads-or-hdiff-payload.v1\0") + 8 + 7 * 24)
+
+    def test_or_member_axis_mismatch_is_rejected_before_payload_write(self) -> None:
+        data = or_fixture()
+        data.blocks["TRAN.CHANNEL.CMP1_OR(1;1)"].frame.index.values[1] = 2.75
+        module = load_module(data)
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(module.ExtractError, "or_member_axis_mismatch"):
+                module.extract_or(Path("external.ds"), Path(directory) / "or-hdiff.bin")
 
 
 if __name__ == "__main__":

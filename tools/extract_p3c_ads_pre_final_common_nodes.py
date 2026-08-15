@@ -90,6 +90,37 @@ def write_s0_hdiff_payload(path: Path, axis: tuple[float, ...], values: list[com
     return {"byte_length": len(payload), "sha256": hashlib.sha256(payload).hexdigest()}
 
 
+def write_or_hdiff_payload(path: Path, axis: tuple[float, ...], values: list[complex]) -> dict[str, object]:
+    if len(axis) < 2 or len(axis) != len(values):
+        raise ExtractError("or_hdiff_payload_shape_rejected")
+    payload = bytearray(b"sipi.p3c.ads-or-hdiff-payload.v1\0")
+    payload.extend(len(axis).to_bytes(8, "big"))
+    for frequency, value in zip(axis, values, strict=True):
+        payload.extend(bits(frequency))
+        payload.extend(bits(value.real))
+        payload.extend(bits(value.imag))
+    path.write_bytes(payload)
+    return {"byte_length": len(payload), "sha256": hashlib.sha256(payload).hexdigest()}
+
+
+def extract_or(dataset_path: Path, payload_path: Path) -> dict[str, object]:
+    with ads_dataset.open_dataset_for_reading(dataset_path) as dataset:
+        blocks = {(row, column): read_block(dataset, "OR", row, column) for row, column in MEMBERS}
+    axes = [blocks[(row, column)][0] for row, column in MEMBERS]
+    if any(tuple(map(bits, axis)) != tuple(map(bits, axes[0])) for axis in axes[1:]):
+        raise ExtractError("or_member_axis_mismatch")
+    hdiff = [
+        (blocks[(2, 1)][1][index] - blocks[(2, 3)][1][index] - blocks[(4, 1)][1][index] + blocks[(4, 3)][1][index]) / 4.0
+        for index in range(len(axes[0]))
+    ]
+    return {
+        "or_node_count": len(axes[0]),
+        "axis_sha256": hashlib.sha256(b"sipi.p3c.ads-or.axis.v1\0" + b"".join(bits(value) for value in axes[0])).hexdigest(),
+        "selected_hdiff_sha256": digest(b"sipi.p3c.ads-or.hdiff.v1\0", hdiff),
+        "or_hdiff_payload": write_or_hdiff_payload(payload_path, axes[0], hdiff),
+    }
+
+
 def extract(dataset_path: Path, s0_hdiff_payload: Path | None = None) -> dict[str, object]:
     with ads_dataset.open_dataset_for_reading(dataset_path) as dataset:
         blocks = {(kind, row, column): read_block(dataset, kind, row, column) for kind in ("S0", "FFT_IMP") for row, column in MEMBERS}
@@ -139,8 +170,10 @@ def extract(dataset_path: Path, s0_hdiff_payload: Path | None = None) -> dict[st
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--dataset", type=Path, required=True); parser.add_argument("--s0-hdiff-payload", type=Path); args = parser.parse_args()
-    try: print(json.dumps(extract(args.dataset, args.s0_hdiff_payload), sort_keys=True, separators=(",", ":")))
+    parser = argparse.ArgumentParser(); parser.add_argument("--dataset", type=Path, required=True); group = parser.add_mutually_exclusive_group(); group.add_argument("--s0-hdiff-payload", type=Path); group.add_argument("--or-hdiff-payload", type=Path); args = parser.parse_args()
+    try:
+        result = extract_or(args.dataset, args.or_hdiff_payload) if args.or_hdiff_payload is not None else extract(args.dataset, args.s0_hdiff_payload)
+        print(json.dumps(result, sort_keys=True, separators=(",", ":")))
     except (OSError, ValueError, ExtractError) as error: print(json.dumps({"status": "rejected", "reason": str(error)}, sort_keys=True)); return 2
     return 0
 

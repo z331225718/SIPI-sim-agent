@@ -1355,7 +1355,7 @@ materials:
     derived_from: [p3c-ads-pre-final-common-node-spec-v1]
   - id: p3c-ads-or-product-raw-dtft-spec-v1
     kind: independent_spec
-    content_sha256: 8164d99fbe85ab397c6155c3b8c2dac8d7ec9c165b427e471b39984948afe806
+    content_sha256: f1077a0dc85a3d05db36ba2de7fc8ee274beac0df51fd3fd0931d72968e26822
     provenance:
       source_ref: docs/clean-room/specs/p3c-ads-or-product-raw-dtft.v1.md
       license_evidence: project-authored-MIT-boundary-pending-promotion
@@ -2560,7 +2560,7 @@ scopes:
       comparator: []
       auditor: [p3c-ads-s0-product-bounded-dtft-spec-v1]
   - id: p3c-ads-or-product-raw-dtft-charter-v1
-    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-or-product-raw-dtft-charter.v1.yaml, docs/clean-room/specs/p3c-ads-or-product-raw-dtft.v1.md, tools/verify_p3c_ads_or_product_raw_dtft_charter.py, tools/test_verify_p3c_ads_or_product_raw_dtft_charter.py]
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-or-product-raw-dtft-charter.v1.yaml, docs/clean-room/specs/p3c-ads-or-product-raw-dtft.v1.md, crates/sipi-p3c/tests/p3c_ads_or_product_raw_dtft_runner.rs, tools/extract_p3c_ads_pre_final_common_nodes.py, tools/run_p3c_external_ads_original_product_raw_dtft.py, tools/observe_p3c_ads_or_product_raw_dtft.py, tools/test_extract_p3c_ads_pre_final_common_nodes.py, tools/test_run_p3c_external_ads_original_product_raw_dtft.py, tools/test_observe_p3c_ads_or_product_raw_dtft.py, tools/verify_p3c_ads_or_product_raw_dtft_charter.py, tools/test_verify_p3c_ads_or_product_raw_dtft_charter.py]
     state: planned
     role_material_allowlists:
       observer: [p3c-ads-or-product-raw-dtft-spec-v1]

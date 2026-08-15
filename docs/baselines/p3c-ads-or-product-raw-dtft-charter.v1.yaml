@@ -1,8 +1,8 @@
 schema: sipi.p3c.ads-or-product-raw-dtft-charter.v1
-status: specified_owner_authorization_pending_external_diagnostic_only
+status: specified_owner_authorized_external_diagnostic_pending
 authority:
   actor: user
-  decision_ref: owner-authorization-pending-2026-08-15-cmp1-or-payload
+  decision_ref: user-authorized-cmp1-or-payload-2026-08-15
   scope: one_fixed_ads_cmp1_or_to_product_raw_periodic_dtft_observation_only
 predecessor:
   path: docs/baselines/p3c-ads-s0-product-bounded-dtft-observation-evidence.v1.yaml
@@ -12,14 +12,14 @@ external_help_allowlist:
   byte_length: 150522
   sha256: 45372e9c7c79492bf6023a4e860f05a20caf0ef5e2a083407c119909afc187bf
   surface: CMP1_OR
-  required_authoritative_meaning: original_spectrum_before_causality
+  documented_meaning: original_spectrum
 ads_surface:
   matrix_dimension: 4
   members_per_surface: 16
   member_axes_must_match_exactly: true
   axis: cmp1_or_native_all_finite_strictly_increasing_frequency_nodes
   selected_reduction: s21_minus_s23_minus_s41_plus_s43_over_4
-  source_payload_read_authorization: pending
+  source_payload_read_authorization: authorized
 product_response:
   type: SelectedP3cRawPeriodicResponseV1
   sample_count: 51200
@@ -62,12 +62,11 @@ admission:
   candidate_waveform_accepted: false
   release_ledger_promoted: false
 blockers:
-  - owner_authorization_to_read_cmp1_or_payload_missing
-  - cmp1_or_authoritative_precausality_semantics_must_be_revalidated
   - two_fresh_external_cmp1_or_product_raw_observations_missing
-  - ads_or_product_raw_delta_not_cause_attribution
+  - ads_original_product_raw_delta_not_cause_attribution
 non_claims:
   - This future comparison is diagnostic only and does not reproduce an ADS algorithm.
+  - ADS help documents CMP1_OR as an original spectrum, not as a complete causal-stage algorithm disclosure.
   - A delta cannot by itself identify causality, interpolation, passivity, or waveform mismatch cause.
   - A raw periodic response is not a causal impulse or FIR admission.
   - This does not change product causality, interpolation, passivity, candidate, receiver, P4B, P5, or release policy.
