@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 8cfeb2d24d2912ebb492edeb4831c49ea653e58d95706d53e91d01b5151a7732
+  tracked_paths_sha256: 677ba44d1d103a9cc469396897bd491149d4385cc2a09468df2fe42afac32313
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -294,6 +294,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-contracts/schemas/sipi.ibis.input-typ-dc-evaluate.request.v1.schema.json:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-contracts/schemas/sipi.ibis.input-typ-quasi-static-artifact-evaluate.request.v1.schema.json:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -3690,6 +3696,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p4a-ibis-example-rx-candidate-inventory.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p4a-ibis-input-typ-quasi-static-artifact-cli.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

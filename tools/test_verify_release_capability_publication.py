@@ -103,6 +103,12 @@ def manifest_for(publication: dict) -> list[dict]:
         "response_schema": "sipi.ibis.input-typ-quasi-static-evaluate.response.v1",
         "unavailable_reason": None, "nonclaim": "caller_input_quasi_static_constitutive_only",
     }
+    ibis_quasi_static_artifact = {
+        "route": ["ibis", "quasi-static-evaluate-artifact"], "availability": "available", "transport": "stdin_json_v1",
+        "request_schema": "sipi.ibis.input-typ-quasi-static-artifact-evaluate.request.v1",
+        "response_schema": "sipi.ibis.input-typ-quasi-static-artifact-evaluate.response.v1",
+        "unavailable_reason": None, "nonclaim": "sealed_caller_asset_quasi_static_constitutive_only",
+    }
     differential_rc_load = {
         "route": ["rx-load", "differential-rc-evaluate"], "availability": "available", "transport": "stdin_json_v1",
         "request_schema": "sipi.rx-load.selected-differential-rc-evaluate.request.v1",
@@ -145,6 +151,9 @@ def manifest_for(publication: dict) -> list[dict]:
             continue
         if row["command_id"] == "ibis.quasi-static-evaluate":
             commands.append({"id": row["command_id"], **ibis_quasi_static})
+            continue
+        if row["command_id"] == "ibis.quasi-static-evaluate-artifact":
+            commands.append({"id": row["command_id"], **ibis_quasi_static_artifact})
             continue
         if row["command_id"] == "rx-load.differential-rc-evaluate":
             commands.append({"id": row["command_id"], **differential_rc_load})
@@ -254,6 +263,7 @@ class PublicationTests(unittest.TestCase):
             "tran-one-node-rc-pwl": "publication_one_node_rc_pwl_route_binding_invalid",
             "ibis-dc-evaluate": "publication_ibis_dc_route_binding_invalid",
             "ibis-quasi-static-evaluate": "publication_ibis_quasi_static_route_binding_invalid",
+            "ibis-quasi-static-artifact-evaluate": "publication_ibis_quasi_static_artifact_route_binding_invalid",
             "selected-differential-rc-load-evaluate": "publication_selected_differential_rc_load_route_binding_invalid",
             "ibis-inspect": "publication_ibis_inspect_route_binding_invalid",
             "compare": "publication_aligned_array_compare_route_binding_invalid",
@@ -263,7 +273,7 @@ class PublicationTests(unittest.TestCase):
         }
         publication = self.publication()
         available_ids = [row["id"] for row in publication["rows"] if row["product_surface"] == "available"]
-        self.assertEqual(len(available_ids), 24)
+        self.assertEqual(len(available_ids), 25)
         for row_id in available_ids:
             with self.subTest(row_id=row_id):
                 mutated = self.publication()
@@ -1067,6 +1077,40 @@ class PublicationTests(unittest.TestCase):
                 evidence[field] = value
                 with self.assertRaisesRegex(GATE.PublicationError, "publication_selected_differential_rc_load_evidence_invalid"):
                     GATE.validate(publication, manifest_for(publication), ROOT)
+
+    def test_sealed_ibis_quasi_static_route_stays_identity_only(self) -> None:
+        def route(publication: dict) -> dict:
+            return next(item for item in publication["rows"] if item["id"] == "ibis-quasi-static-artifact-evaluate")
+
+        for field, value in (
+            ("acceptance_state", "accepted"),
+            ("external_oracle", True),
+            ("blockers", ["bogus"]),
+            ("non_claims", ["bogus"]),
+            ("evidence_ids", ["p4a-ibis-quasi-static-cli"]),
+        ):
+            with self.subTest(row_field=field):
+                publication = self.publication()
+                route(publication)[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_ibis_quasi_static_artifact_route_binding_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        descriptor_fields = {
+            "route": ["ibis", "quasi-static-evaluate"],
+            "transport": "none",
+            "request_schema": None,
+            "response_schema": None,
+            "nonclaim": "caller_input_static_dc_only",
+        }
+        for field, value in descriptor_fields.items():
+            with self.subTest(descriptor_field=field):
+                publication = self.publication()
+                manifest = manifest_for(publication)
+                descriptor = next(item for item in manifest if item["id"] == "ibis.quasi-static-evaluate-artifact")
+                descriptor[field] = value
+                expected = "command_manifest_invalid" if field == "route" else "publication_ibis_quasi_static_artifact_route_binding_invalid"
+                with self.assertRaisesRegex(GATE.PublicationError, expected):
+                    GATE.validate(publication, manifest, ROOT)
 
     def test_ibis_inspect_route_stays_structural_only(self) -> None:
         def inspect_row(publication: dict) -> dict:
