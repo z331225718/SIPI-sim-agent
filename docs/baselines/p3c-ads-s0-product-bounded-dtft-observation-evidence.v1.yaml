@@ -51,8 +51,8 @@ external_observation:
 independent_audit:
   reviewer: Orca_reused_OpenCode_terminal
   terminal: term_2de7cb74-b803-4e20-bb5b-4803777c24f8
-  status: pending
-  result: platform_review_pending
+  status: blocked_platform_payment_required
+  result: review_not_completed
   report: null
 admission:
   ads_s0_product_bounded_axis_bound: true

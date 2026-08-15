@@ -20,7 +20,7 @@ class S0ProductDtftEvidenceTests(unittest.TestCase):
         self.document = yaml.safe_load((ROOT / "docs/baselines/p3c-ads-s0-product-bounded-dtft-observation-evidence.v1.yaml").read_text(encoding="utf-8"))
 
     def test_current_evidence_passes(self) -> None:
-        self.assertEqual(VERIFY.verify(self.document), {"valid": True, "ads_s0_nodes": 1024, "accepted": False, "audit": "pending"})
+        self.assertEqual(VERIFY.verify(self.document), {"valid": True, "ads_s0_nodes": 1024, "accepted": False, "audit": "blocked"})
 
     def test_dtft_delta_mutation_fails_closed(self) -> None:
         value = copy.deepcopy(self.document)

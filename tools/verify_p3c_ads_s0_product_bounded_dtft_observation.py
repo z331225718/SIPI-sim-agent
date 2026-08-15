@@ -67,7 +67,7 @@ def verify(document: object, current: bool = True) -> dict[str, object]:
     fail(tree.returncode != 0 or tree.stdout.strip() != TREE, "archive")
     if current:
         fail(archive_inventory() != INVENTORY, "source_drift")
-    pending = {"reviewer": "Orca_reused_OpenCode_terminal", "terminal": "term_2de7cb74-b803-4e20-bb5b-4803777c24f8", "status": "pending", "result": "platform_review_pending", "report": None}
+    pending = {"reviewer": "Orca_reused_OpenCode_terminal", "terminal": "term_2de7cb74-b803-4e20-bb5b-4803777c24f8", "status": "blocked_platform_payment_required", "result": "review_not_completed", "report": None}
     fail(document["independent_audit"] != pending, "audit")
     true = {"ads_s0_product_bounded_axis_bound", "product_bounded_dtft_invoked", "ads_prepassivity_product_bounded_delta_observed"}
     false = {"ads_algorithm_reproduced", "causality_or_interpolation_cause_identified", "candidate_waveform_accepted", "release_ledger_promoted"}
@@ -76,7 +76,7 @@ def verify(document: object, current: bool = True) -> dict[str, object]:
     fail(document["blockers"] != ["ads_prepassivity_product_bounded_delta_not_cause_attribution", "final_only_frequency_nodes_not_compared", "ads_passivity_algorithm_not_observed_or_ported", "waveform_mismatch_cause_not_identified"], "blockers")
     forbidden = ("file://", "http://", "https://", "c:\\", "spectrum: [", "waveform: [", "freqresp")
     fail(any(token in str(document).lower() for token in forbidden), "leak")
-    return {"valid": True, "ads_s0_nodes": 1024, "accepted": False, "audit": "pending"}
+    return {"valid": True, "ads_s0_nodes": 1024, "accepted": False, "audit": "blocked"}
 
 
 if __name__ == "__main__":
