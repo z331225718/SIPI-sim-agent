@@ -27,11 +27,11 @@ from verify_channel_s2p_matched_cli_current_external_compare_evidence_v3 import 
     EvidenceError as ChannelEvidenceError,
     verify_document as verify_channel_cli_evidence,
 )
-from verify_channel_s2p_matched_cli_current_external_compare_evidence_v4 import (
-    EvidenceError as HistoricalChannelEvidenceError,
-    verify_document as verify_historical_channel_cli_evidence,
-)
 from verify_channel_s2p_matched_cli_current_external_compare_evidence_v5 import (
+    EvidenceError as PreviousChannelEvidenceError,
+    verify_document as verify_previous_channel_cli_evidence,
+)
+from verify_channel_s2p_matched_cli_current_external_compare_evidence_v6 import (
     EvidenceError as CurrentChannelEvidenceError,
     verify_document as verify_current_channel_cli_evidence,
 )
@@ -1074,8 +1074,8 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
         raise PublicationError("publication_tran_historical_evidence_not_drifted")
 
     channel = next((row for row in rows if row["id"] == "channel"), None)
-    compare_id = "channel-s2p-cli-current-external-compare-v5"
-    historical_compare_id = "channel-s2p-cli-current-external-compare-v4"
+    compare_id = "channel-s2p-cli-current-external-compare-v6"
+    historical_compare_id = "channel-s2p-cli-current-external-compare-v5"
     source_drift_blocker = "current_external_compare_evidence_source_drift"
     if channel is None:
         raise PublicationError("publication_channel_row_missing")
@@ -1112,8 +1112,8 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
     ):
         raise PublicationError("publication_channel_historical_evidence_invalid")
     try:
-        verify_historical_channel_cli_evidence(load_yaml(ROOT / historical_entry["path"]))
-    except HistoricalChannelEvidenceError as error:
+        verify_previous_channel_cli_evidence(load_yaml(ROOT / historical_entry["path"]))
+    except PreviousChannelEvidenceError as error:
         if str(error) != "evidence_product_source_drift":
             raise PublicationError("publication_channel_historical_evidence_invalid") from None
     except (OSError, RuntimeError):

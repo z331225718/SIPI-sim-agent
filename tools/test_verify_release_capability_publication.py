@@ -1122,11 +1122,11 @@ class PublicationTests(unittest.TestCase):
 
         publication = self.publication()
         channel = next(row for row in publication["rows"] if row["id"] == "channel")
-        channel["evidence_ids"].remove("channel-s2p-cli-current-external-compare-v5")
+        channel["evidence_ids"].remove("channel-s2p-cli-current-external-compare-v6")
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
         publication = self.publication()
-        evidence = next(entry for entry in publication["report_index"] if entry["id"] == "channel-s2p-cli-current-external-compare-v5")
+        evidence = next(entry for entry in publication["report_index"] if entry["id"] == "channel-s2p-cli-current-external-compare-v6")
         evidence["evidence_state"] = "specified"
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
@@ -1155,7 +1155,7 @@ class PublicationTests(unittest.TestCase):
         publication = self.publication()
         with patch.object(
             GATE,
-            "verify_historical_channel_cli_evidence",
+            "verify_previous_channel_cli_evidence",
             return_value={"valid": True},
         ):
             with self.assertRaisesRegex(GATE.PublicationError, "publication_channel_historical_evidence_not_drifted"):
