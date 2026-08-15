@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 68de8365a5e2194af83fd7595eeb5a8b9df883c2d6bfc25c9bf4db3f6876c451
+  tracked_paths_sha256: 016d57505b8f0a8bae34b346d6b160c1bd568fca183e5c37525ca4d4a94d04fb
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -8087,6 +8087,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p3c_ads_or_s0_product_paired_transition.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/observe_p3c_ads_prbs9_source_only.py:
       rule: migration-tools
       class: migration_only
@@ -8418,6 +8424,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_observe_p3c_ads_or_product_raw_dtft.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_observe_p3c_ads_or_s0_product_paired_transition.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
