@@ -2672,7 +2672,7 @@ scopes:
       comparator: []
       auditor: [p3c-ads-transient-noncausal-delay-fresh-custody-spec-v1]
   - id: p3c-ads-transient-noncausal-delay-policy-surface-evidence-v1
-    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-transient-noncausal-delay-policy-surface-observation-evidence.v1.yaml, tools/verify_p3c_ads_transient_noncausal_delay_policy_surface_observation.py, tools/test_verify_p3c_ads_transient_noncausal_delay_policy_surface_observation.py]
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/audits/2026-08-15-p3c-ads-transient-noncausal-delay-policy-surface-observation.md, docs/baselines/p3c-ads-transient-noncausal-delay-policy-surface-observation-evidence.v1.yaml, tools/verify_p3c_ads_transient_noncausal_delay_policy_surface_observation.py, tools/test_verify_p3c_ads_transient_noncausal_delay_policy_surface_observation.py]
     state: planned
     role_material_allowlists:
       observer: [p3c-ads-transient-noncausal-delay-policy-surface-observation-v1, p3c-ads-transient-noncausal-delay-policy-surface-spec-v1, p3c-ads-transient-noncausal-delay-fresh-custody-spec-v1]

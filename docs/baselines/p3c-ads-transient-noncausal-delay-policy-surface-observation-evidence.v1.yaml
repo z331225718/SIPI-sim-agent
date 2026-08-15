@@ -39,10 +39,10 @@ external_observation:
     delay_extraction_implemented: false
     caller_delay_or_alignment_override: prohibited
 independent_audit:
-  reviewer: Orca_reused_OpenCode_terminal
-  terminal: term_2de7cb74-b803-4e20-bb5b-4803777c24f8
-  status: pending_platform_payment_required
-  result: not_run
+  reviewer: Orca_OMP_user_authorized_terminal
+  terminal: term_fa7831f5-ec22-4b3d-8737-25a919226b8b
+  status: completed
+  result: no_high_or_critical_findings
   report: null
 admission:
   ads_transient_noncausal_delay_policy_surface_documented: true
