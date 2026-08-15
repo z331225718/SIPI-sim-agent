@@ -256,7 +256,6 @@ fn axis_digest(axis: &[f64]) -> Result<String, String> {
     let mut digest = Sha256::new();
     // This is the extractor's fixed axis identity, not a second diagnostic hash.
     digest.update(b"sipi.p3c.ads-or-s0.axis.v1\0");
-    digest.update((POINTS as u64).to_be_bytes());
     for value in axis {
         digest.update(value.to_bits().to_be_bytes());
     }
@@ -450,6 +449,20 @@ fn transition_shape_rejects_wrong_axis_length() {
     assert_eq!(
         transitions(&[], &[], &[], &[]).unwrap_err(),
         "transition_shape"
+    );
+}
+
+#[test]
+fn axis_identity_has_no_second_count_encoding() {
+    let axis = (0..POINTS).map(|index| index as f64).collect::<Vec<_>>();
+    let mut expected = Sha256::new();
+    expected.update(b"sipi.p3c.ads-or-s0.axis.v1\0");
+    for frequency in &axis {
+        expected.update(frequency.to_bits().to_be_bytes());
+    }
+    assert_eq!(
+        axis_digest(&axis).unwrap(),
+        format!("{:x}", expected.finalize())
     );
 }
 
