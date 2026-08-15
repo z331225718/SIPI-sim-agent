@@ -82,6 +82,12 @@ def manifest_for(publication: dict) -> list[dict]:
         "unavailable_reason": None,
         "nonclaim": "bounded_product_owned_one_node_rc_pulse_only",
     }
+    ibis_dc = {
+        "route": ["ibis", "dc-evaluate"], "availability": "available", "transport": "stdin_json_v1",
+        "request_schema": "sipi.ibis.input-typ-dc-evaluate.request.v1",
+        "response_schema": "sipi.ibis.input-typ-dc-evaluate.response.v1",
+        "unavailable_reason": None, "nonclaim": "caller_input_static_dc_only",
+    }
     commands = []
     for row in publication["rows"]:
         if row["command_id"] == "link.receiver.run":
@@ -101,6 +107,9 @@ def manifest_for(publication: dict) -> list[dict]:
             continue
         if row["command_id"] == "tran.one-node-rc-pulse":
             commands.append({"id": row["command_id"], **one_node_rc_pulse})
+            continue
+        if row["command_id"] == "ibis.dc-evaluate":
+            commands.append({"id": row["command_id"], **ibis_dc})
             continue
         availability = row["product_surface"]
         reason, nonclaim = unavailable.get(
@@ -830,6 +839,26 @@ class PublicationTests(unittest.TestCase):
         publication = self.publication()
         with patch.object(GATE, "P2_ONE_NODE_RC_PULSE_CLI_AUDIT_SHA256", "0" * 64):
             with self.assertRaisesRegex(GATE.PublicationError, "publication_one_node_rc_pulse_evidence_invalid"):
+                GATE.validate(publication, manifest_for(publication), ROOT)
+
+    def test_ibis_dc_route_stays_caller_input_only(self) -> None:
+        def dc_row(publication: dict) -> dict:
+            return next(item for item in publication["rows"] if item["id"] == "ibis-dc-evaluate")
+
+        for field, value in {
+            "acceptance_state": "not_evaluated", "external_oracle": True,
+            "blockers": ["bogus"], "non_claims": ["bogus"],
+            "evidence_ids": ["p4a-ibis-input-typ-static"],
+        }.items():
+            with self.subTest(field=field):
+                publication = self.publication()
+                dc_row(publication)[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_ibis_dc_route_binding_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        with patch.object(GATE, "P4A_IBIS_CONFORMANCE_MATRIX_SHA256", "0" * 64):
+            with self.assertRaisesRegex(GATE.PublicationError, "publication_ibis_dc_evidence_invalid"):
                 GATE.validate(publication, manifest_for(publication), ROOT)
 
         for constant in ("P6_ARTIFACT_REPORT_AUDIT_SHA256", "P7_ISOLATED_INSTALL_AUDIT_SHA256"):
