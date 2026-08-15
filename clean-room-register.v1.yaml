@@ -2638,7 +2638,7 @@ scopes:
       comparator: []
       auditor: [p3c-ads-or-s0-product-error-decomposition-spec-v1]
   - id: p3c-ads-transient-noncausal-delay-policy-surface-v1
-    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-transient-noncausal-delay-policy-surface-charter.v1.yaml, docs/clean-room/specs/p3c-ads-transient-noncausal-delay-policy-surface.v1.md, tools/observe_p3c_ads_transient_noncausal_delay_policy.py, tools/test_observe_p3c_ads_transient_noncausal_delay_policy.py]
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-transient-noncausal-delay-policy-surface-charter.v1.yaml, docs/baselines/audits/2026-08-15-p3c-ads-transient-noncausal-delay-policy-surface-preparation.md, docs/clean-room/specs/p3c-ads-transient-noncausal-delay-policy-surface.v1.md, tools/observe_p3c_ads_transient_noncausal_delay_policy.py, tools/test_observe_p3c_ads_transient_noncausal_delay_policy.py]
     state: planned
     role_material_allowlists:
       observer: [p3c-ads-transient-noncausal-delay-policy-surface-spec-v1]
