@@ -254,7 +254,8 @@ fn axis_digest(axis: &[f64]) -> Result<String, String> {
         return Err("axis".to_owned());
     }
     let mut digest = Sha256::new();
-    digest.update(b"sipi.p3c.ads-or-s0.paired.axis.v1\0");
+    // This is the extractor's fixed axis identity, not a second diagnostic hash.
+    digest.update(b"sipi.p3c.ads-or-s0.axis.v1\0");
     digest.update((POINTS as u64).to_be_bytes());
     for value in axis {
         digest.update(value.to_bits().to_be_bytes());
