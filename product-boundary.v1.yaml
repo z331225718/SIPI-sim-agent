@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 08ca18aac60c784341c3ec7796777c6af1967bf6427f297cc61771bea1e5d1f5
+  tracked_paths_sha256: 8409fc4bd7512ba43a80ae5b72262d93f96ecd46a5e0dd941396728e2326b0d0
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -2814,6 +2814,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p7-bcryptprimitives-processprng-preflight.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p7-candidate-build-license-material-observation-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -9467,6 +9473,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p7_candidate_build_license_material_observation_evidence.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p7_current_candidate_chain_rebinding_preflight.py:
       rule: migration-tools
       class: migration_only
@@ -10326,6 +10338,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p7_bcryptprimitives_processprng_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p7_candidate_build_license_material_observation_evidence.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

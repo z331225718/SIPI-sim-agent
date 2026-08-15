@@ -1,0 +1,40 @@
+schema: sipi.p7-candidate-build-license-material-observation-evidence.v1
+kind: external_rejected_observation_not_license_decision
+candidate:
+  commit: f49849998a9b53fcf56be4a45b2f1fa0418d2588
+  tree: eb14221de2e742f88dcf18ec26e6790c1fb1005b
+  cargo_lock_sha256: d10679ecbb0884cc3325f9b67afaf9a8d61a9f826c262f6fefd437538df34e99
+  toolchain_sha256: 512bedfbbe3c4ef614fbb901b3661f40b4adb701d26c94664e79ca765aa3d109
+observer:
+  source_commit: 601f5612cd7b3be5f045633a18c64305b2afcf98
+  source_tree: aeab30836f37523193042166cfd3eb301dd96b43
+  path: tools/observe_p7_candidate_build_license_material.py
+  sha256: e942c6c3bba0007195d49f5c60e0023461fd1aeffc133a070f823459b0f3574f
+  clean_archive_execution: true
+  checkout_materialization: git_worktree_detached_core_autocrlf_false
+external_report:
+  sha256: 6880731516d993af68abe8202653b764d24262a8c0224e130c05c23ecafaf6eb
+  bytes: 1203
+result:
+  status: selected_windows_build_license_material_rejected
+  rejection_stage: build_closure
+  rejection_reason: cargo_metadata_failed
+  fresh_builds: 2
+  package_set_observed: false
+gates:
+  selected_windows_build_package_set_observed: false
+  license_declared_metadata_observed: false
+  dependency_snapshot_ready: false
+  dependencies_approved: false
+  notices_approved: false
+  first_party_approved: false
+  release_sbom: false
+  release_ready: false
+  promotion_status: blocked
+non_claims:
+  - offline_build_closure_not_observed
+  - not_a_complete_cargo_lock_snapshot
+  - not_an_spdx_or_cyclonedx_sbom
+  - not_a_notice_or_legal_compatibility_decision
+  - not_a_first_party_promotion_or_release_approval
+audit_ref: docs/baselines/audits/2026-08-15-p7-current-candidate-chain-observation.md

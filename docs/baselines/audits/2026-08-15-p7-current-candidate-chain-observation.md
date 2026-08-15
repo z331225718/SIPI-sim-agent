@@ -40,3 +40,18 @@ custody is incomplete, but it cannot fetch missing crates or turn declared
 metadata into a license, NOTICE, SBOM, dependency, first-party, or release
 decision. A later hash-only evidence record, if any, must run this committed
 observer from a clean archive and retain the existing blocked release state.
+
+## P7-07b Rejected Offline Closure Observation
+
+The committed observer was run from a clean detached `601f561` worktree
+against the immutable `f498499` candidate. Both independent locked/offline
+Windows build attempts rejected at Cargo metadata with the same
+`cargo_metadata_failed` token. The hash-only report is bound by
+`p7-candidate-build-license-material-observation-evidence.v1.yaml`; it does
+not contain a package inventory, cached archive content, license text, or a
+path. No network fetch was attempted or permitted.
+
+The result is a current local-custody blocker, not a legal conclusion: the
+build closure, literal license metadata, dependency snapshot, NOTICE review,
+first-party review, SPDX/SBOM, and release approval all remain unobserved or
+blocked.
