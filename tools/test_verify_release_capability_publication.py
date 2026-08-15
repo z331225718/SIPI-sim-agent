@@ -64,6 +64,15 @@ def manifest_for(publication: dict) -> list[dict]:
         "unavailable_reason": None,
         "nonclaim": "causal_fir_direct_launch_only",
     }
+    artifact_report_inspect = {
+        "route": ["report", "inspect"],
+        "availability": "available",
+        "transport": "stdin_json_v1",
+        "request_schema": "sipi.artifact-report-request.v1",
+        "response_schema": "sipi.artifact-report.v1",
+        "unavailable_reason": None,
+        "nonclaim": "verified_integrity_metadata_only",
+    }
     commands = []
     for row in publication["rows"]:
         if row["command_id"] == "link.receiver.run":
@@ -77,6 +86,9 @@ def manifest_for(publication: dict) -> list[dict]:
             continue
         if row["command_id"] == "link.run":
             commands.append({"id": row["command_id"], **causal_fir_link})
+            continue
+        if row["command_id"] == "report.inspect":
+            commands.append({"id": row["command_id"], **artifact_report_inspect})
             continue
         availability = row["product_surface"]
         reason, nonclaim = unavailable.get(
@@ -178,6 +190,7 @@ class PublicationTests(unittest.TestCase):
             "channel": "publication_channel_acceptance_binding_invalid",
             "project-run": "publication_fixed_project_run_route_binding_invalid",
             "link-causal-fir": "publication_causal_fir_link_route_binding_invalid",
+            "report-inspect": "publication_artifact_report_inspect_route_binding_invalid",
             "compare": "publication_aligned_array_compare_route_binding_invalid",
             "prbs9-metric-artifact-compare": "publication_prbs9_artifact_metric_binding_invalid",
             "selected-highloss-prbs9-waveform-only-compare": "publication_selected_highloss_waveform_only_binding_invalid",
@@ -704,6 +717,71 @@ class PublicationTests(unittest.TestCase):
                 GATE._validate_causal_fir_link_route(
                     rows, {item["id"]: item for item in manifest}, index_by_id, ROOT
                 )
+
+    def test_artifact_report_inspect_route_stays_metadata_only_and_non_oracle(self) -> None:
+        def report_row(publication: dict) -> dict:
+            return next(item for item in publication["rows"] if item["id"] == "report-inspect")
+
+        for field, value in {
+            "domain": "project",
+            "acceptance_state": "not_evaluated",
+            "external_oracle": True,
+            "blockers": ["bogus"],
+            "non_claims": ["bogus"],
+            "evidence_ids": ["p6-command-manifest"],
+        }.items():
+            with self.subTest(row_field=field):
+                publication = self.publication()
+                report_row(publication)[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_artifact_report_inspect_route_binding_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        for field, value in {
+            "route": ["report", "show"],
+            "availability": "unavailable",
+            "transport": "none",
+            "request_schema": None,
+            "response_schema": None,
+            "unavailable_reason": "wrong_reason",
+            "nonclaim": "wrong_nonclaim",
+        }.items():
+            with self.subTest(descriptor_field=field):
+                publication = self.publication()
+                manifest = manifest_for(publication)
+                descriptor = next(item for item in manifest if item["id"] == "report.inspect")
+                descriptor[field] = value
+                expected = "command_manifest_invalid" if field in {"route", "availability", "unavailable_reason"} else "publication_artifact_report_inspect_route_binding_invalid"
+                with self.assertRaisesRegex(GATE.PublicationError, expected):
+                    GATE.validate(publication, manifest, ROOT)
+
+        for evidence_id, mutations in {
+            "p7-isolated-install": {
+                "kind": "capability_contract",
+                "path": "docs/baselines/audits/2026-08-11-p6-command-manifest.md",
+                "subject": "report",
+                "evidence_state": "specified",
+            },
+            "p6-artifact-report": {
+                "kind": "install_observation",
+                "path": "docs/baselines/audits/2026-08-11-p7-isolated-install.md",
+                "subject": "foundation",
+                "evidence_state": "observed",
+            },
+        }.items():
+            for field, value in mutations.items():
+                with self.subTest(evidence_id=evidence_id, index_field=field):
+                    publication = self.publication()
+                    evidence = next(item for item in publication["report_index"] if item["id"] == evidence_id)
+                    evidence[field] = value
+                    with self.assertRaisesRegex(GATE.PublicationError, "publication_artifact_report_inspect_evidence_invalid"):
+                        GATE.validate(publication, manifest_for(publication), ROOT)
+
+        for constant in ("P6_ARTIFACT_REPORT_AUDIT_SHA256", "P7_ISOLATED_INSTALL_AUDIT_SHA256"):
+            with self.subTest(constant=constant):
+                publication = self.publication()
+                with patch.object(GATE, constant, "0" * 64):
+                    with self.assertRaisesRegex(GATE.PublicationError, "publication_artifact_report_inspect_evidence_invalid"):
+                        GATE.validate(publication, manifest_for(publication), ROOT)
 
     def test_channel_cli_requires_current_evidence_without_claiming_general_support(self) -> None:
         publication = self.publication()

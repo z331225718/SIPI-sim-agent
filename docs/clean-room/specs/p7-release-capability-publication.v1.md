@@ -53,6 +53,12 @@ nonclaim, and pinned P3B capability ledger remain exact. This does not create
 an external oracle, S2P channel support, receiver parity, PRBS/equalization,
 noise/jitter, DFE/CDR/BER, or release acceptance.
 
+The available `report.inspect` route is separately bound to its sealed-artifact
+integrity metadata projection. Its descriptor, metadata-only blocker/nonclaim,
+historical install observation, and pinned P6 capability contract remain exact.
+This does not make `verified` an ownership, signature, authorization, payload,
+or external-provenance claim; `report.show` remains unavailable and blocked.
+
 Only repository-relative references below `docs/baselines` are admitted. The
 publication contains no external asset paths or bytes, user paths, executable
 identities, waveform data, legal conclusion, or release approval.

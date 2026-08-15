@@ -50,6 +50,8 @@ P3C_ARRAY_COMPARE_AUDIT_SHA256 = "25e7bcb2bb06c1c6978a3c6f0466cb18634d9ff72beb28
 P3C_ALIGNED_ARRAY_COMPARE_CLI_AUDIT_SHA256 = "0d2dada97845e901f95ec164aec3794bf0a8f827a4602d28d08e2f1a35877f64"
 P6_FIXED_PROJECT_CLI_AUDIT_SHA256 = "ff51578cf1ec1ee24fe0d126d3d3d0770f22e997a7befd1739c0061e48af3975"
 P3B_LINK_STAGE_LEDGER_SHA256 = "0055a9fcdfd875f447a4e6ffe978f99d11ab6c03068c6748a358ea81fbfe3751"
+P6_ARTIFACT_REPORT_AUDIT_SHA256 = "4574bf42788a087e9947f6017194a0cb75a5bdc7f1238143e79c110f18ba3226"
+P7_ISOLATED_INSTALL_AUDIT_SHA256 = "8682cd4718c4a9dbaf57635fe0386d159f2c54cc11a361c90566967bc6a3fb66"
 PRODUCT_OWNED_UNAVAILABLE_CATALOG_ROUTES_V1 = {
     "project-validate": {
         "domain": "project",
@@ -254,6 +256,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     _validate_aligned_array_compare_route(rows, manifest_by_id, index_by_id, root)
     _validate_fixed_project_run_route(rows, manifest_by_id, index_by_id, root)
     _validate_causal_fir_link_route(rows, manifest_by_id, index_by_id, root)
+    _validate_artifact_report_inspect_route(rows, manifest_by_id, index_by_id, root)
     _validate_accepted_evidence_authority(rows)
 
 
@@ -688,6 +691,62 @@ def _validate_causal_fir_link_route(
         raise PublicationError("publication_causal_fir_link_evidence_invalid")
     if result.get("valid") is not True or result.get("entry_count") != 13:
         raise PublicationError("publication_causal_fir_link_ledger_invalid")
+
+
+def _validate_artifact_report_inspect_route(
+    rows: list[dict[str, Any]], manifest_by_id: dict[str, dict[str, Any]],
+    index_by_id: dict[str, dict[str, Any]], root: Path,
+) -> None:
+    install_id = "p7-isolated-install"
+    contract_id = "p6-artifact-report"
+    row = next((item for item in rows if item["id"] == "report-inspect"), None)
+    command = manifest_by_id.get("report.inspect")
+    if (
+        row is None
+        or row["domain"] != "report"
+        or row["command_id"] != "report.inspect"
+        or row["product_surface"] != "available"
+        or row["acceptance_state"] != "specified"
+        or row["external_oracle"] is not False
+        or row["evidence_ids"] != [install_id, contract_id]
+        or row["blockers"] != ["integrity_metadata_only"]
+        or row["non_claims"] != ["not_payload_or_external_provenance_viewer"]
+        or command is None
+        or command["route"] != ["report", "inspect"]
+        or command["availability"] != "available"
+        or command["transport"] != "stdin_json_v1"
+        or command["request_schema"] != "sipi.artifact-report-request.v1"
+        or command["response_schema"] != "sipi.artifact-report.v1"
+        or command["unavailable_reason"] is not None
+        or command["nonclaim"] != "verified_integrity_metadata_only"
+    ):
+        raise PublicationError("publication_artifact_report_inspect_route_binding_invalid")
+    expected_index = {
+        install_id: (
+            "install_observation", "docs/baselines/audits/2026-08-11-p7-isolated-install.md",
+            "foundation", "observed", P7_ISOLATED_INSTALL_AUDIT_SHA256,
+        ),
+        contract_id: (
+            "capability_contract", "docs/baselines/audits/2026-08-11-p6-artifact-report.md",
+            "report", "specified", P6_ARTIFACT_REPORT_AUDIT_SHA256,
+        ),
+    }
+    for evidence_id, (kind, path, subject, evidence_state, expected_sha256) in expected_index.items():
+        evidence = index_by_id.get(evidence_id)
+        if (
+            evidence is None
+            or evidence["kind"] != kind
+            or evidence["path"] != path
+            or evidence["subject"] != subject
+            or evidence["evidence_state"] != evidence_state
+        ):
+            raise PublicationError("publication_artifact_report_inspect_evidence_invalid")
+        try:
+            actual_sha256 = hashlib.sha256((root / path).read_bytes()).hexdigest()
+        except OSError:
+            raise PublicationError("publication_artifact_report_inspect_evidence_invalid") from None
+        if actual_sha256 != expected_sha256:
+            raise PublicationError("publication_artifact_report_inspect_evidence_invalid")
 
 
 def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]) -> None:
