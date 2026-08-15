@@ -41,6 +41,30 @@ class CandidateBuildLicenseMaterialTests(unittest.TestCase):
         manifest = b"[package]\nname = 'demo'\nversion = '1.2.3'\nlicense.workspace = true\n"
         self.assertEqual(OBSERVER._literal_license(manifest), (None, None))
 
+    def test_workspace_inherited_version_uses_candidate_workspace_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "Cargo.toml").write_text("[workspace.package]\nversion = '1.2.3'\n", encoding="utf-8")
+            manifest_path = root / "crates" / "demo" / "Cargo.toml"
+            manifest_path.parent.mkdir(parents=True)
+            manifest_path.write_text(
+                "[package]\nname = 'demo'\nversion.workspace = true\nlicense.workspace = true\n",
+                encoding="utf-8",
+            )
+            boundary = {
+                "crates/demo/Cargo.toml": {
+                    "rule": "test",
+                    "class": "quarantine",
+                    "license": "LicenseRef-Provenance-Pending",
+                    "provenance": "project_authored",
+                    "distribution": "non-distributed",
+                }
+            }
+            material = OBSERVER._workspace_material(root, manifest_path, boundary)
+            self.assertEqual(material["version"], "1.2.3")
+            self.assertEqual(material["version_source"], "workspace_package")
+            self.assertIsNone(material["literal_license"])
+
     def test_rejected_report_is_explicit_and_keeps_all_promotion_gates_blocked(self) -> None:
         report = OBSERVER._rejected_report(
             commit="a" * 40,

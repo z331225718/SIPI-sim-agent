@@ -31,6 +31,11 @@ it supplies no literal SPDX expression or file path to this observer. The
 observer records neither a substituted workspace value nor a legal conclusion
 from that declaration.
 
+For package identity only, a workspace package with `version.workspace = true`
+uses the literal `workspace.package.version` in the same candidate root. The
+report identifies that source separately; this mechanical version resolution
+does not resolve inherited license metadata.
+
 ## Exclusions
 
 The observation must not read the network, fetch missing archives, retain

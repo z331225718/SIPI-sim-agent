@@ -176,6 +176,19 @@ def _literal_license(manifest: bytes) -> tuple[str | None, str | None]:
     return license_value, license_file
 
 
+def _workspace_package_version(source_root: Path) -> str:
+    try:
+        document = tomllib.loads((source_root / "Cargo.toml").read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as error:
+        raise ObservationError("workspace_manifest_invalid") from error
+    workspace = document.get("workspace") if isinstance(document, dict) else None
+    package = workspace.get("package") if isinstance(workspace, dict) else None
+    version = package.get("version") if isinstance(package, dict) else None
+    if not isinstance(version, str) or not version:
+        raise ObservationError("workspace_manifest_invalid")
+    return version
+
+
 def _license_candidates(members: list[tarfile.TarInfo]) -> list[tarfile.TarInfo]:
     result: list[tarfile.TarInfo] = []
     for member in members:
@@ -252,7 +265,14 @@ def _workspace_material(source_root: Path, manifest_path: Path, boundary: dict[s
         package = tomllib.loads(manifest.decode("utf-8")).get("package")
     except (UnicodeDecodeError, tomllib.TOMLDecodeError) as error:
         raise ObservationError("workspace_manifest_invalid") from error
-    if not isinstance(package, dict) or not isinstance(package.get("name"), str) or not isinstance(package.get("version"), str):
+    if not isinstance(package, dict) or not isinstance(package.get("name"), str):
+        raise ObservationError("workspace_manifest_invalid")
+    version = package.get("version")
+    version_source = "manifest"
+    if version == {"workspace": True}:
+        version = _workspace_package_version(source_root)
+        version_source = "workspace_package"
+    if not isinstance(version, str) or not version:
         raise ObservationError("workspace_manifest_invalid")
     boundary_entry = boundary.get(relative_manifest)
     if not isinstance(boundary_entry, dict):
@@ -261,8 +281,8 @@ def _workspace_material(source_root: Path, manifest_path: Path, boundary: dict[s
     if set(boundary_entry) != required:
         raise ObservationError("workspace_boundary_class_missing")
     return {
-        "identity": f"workspace:{package['name']}@{package['version']}#{sha256(manifest)}", "kind": "workspace",
-        "name": package["name"], "version": package["version"], "manifest_path": relative_manifest,
+        "identity": f"workspace:{package['name']}@{version}#{sha256(manifest)}", "kind": "workspace",
+        "name": package["name"], "version": version, "version_source": version_source, "manifest_path": relative_manifest,
         "manifest_sha256": sha256(manifest), "literal_license": literal_license,
         "literal_license_file": literal_license_file, "boundary_class": boundary_entry,
         "license_materials": [], "license_concluded": "NOASSERTION", "notice_requirement": "not_evaluated",
