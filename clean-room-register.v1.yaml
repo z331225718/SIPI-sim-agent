@@ -2542,4 +2542,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-ads-s0-product-bounded-dtft-spec-v1]
+  - id: p3c-ads-s0-product-bounded-dtft-evidence-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-s0-product-bounded-dtft-charter.v1.yaml, docs/baselines/p3c-ads-s0-product-bounded-dtft-observation-evidence.v1.yaml, docs/clean-room/specs/p3c-ads-s0-product-bounded-dtft.v1.md, tools/verify_p3c_ads_s0_product_bounded_dtft_observation.py, tools/test_verify_p3c_ads_s0_product_bounded_dtft_observation.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-ads-s0-product-bounded-dtft-spec-v1]
+      spec_author: [p3c-ads-s0-product-bounded-dtft-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-ads-s0-product-bounded-dtft-spec-v1]
 attestations: []

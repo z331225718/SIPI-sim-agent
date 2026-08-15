@@ -1,0 +1,73 @@
+schema: sipi.p3c.ads-s0-product-bounded-dtft-observation-evidence.v1
+status: external_ads_s0_product_bounded_dtft_delta_observed_acceptance_unchanged
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-15-p3c-04ba-s0-product-bounded-dtft
+  scope: one_fixed_ads_s0_to_product_full_bounded_response_dtft_observation_only
+predecessor:
+  path: docs/baselines/p3c-ads-pre-final-common-node-observation-evidence.v1.yaml
+  result: common_node_pre_to_final_delta_observed_not_a_passivity_algorithm_claim
+external_observation:
+  schema: sipi.p3c.ads-s0-product-bounded-dtft-observation.v1
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 2161
+  report_content_sha256: b399bb5203fba17d24c42211201718a1b670d4d2790fb98a75ea08dcd175fda4
+  clean_archive_commit: 24c5dccfafcaa64c16357f2319966243f4d694dd
+  clean_archive_tree: 98828795f3f7c253463aefd2ed50cb3e817c2cfc
+  source_byte_length: 1834156
+  source_sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  ads_help_byte_length: 150522
+  ads_help_sha256: 45372e9c7c79492bf6023a4e860f05a20caf0ef5e2a083407c119909afc187bf
+  tool_inventory:
+    ads_runner: 4aca53e5596f74581f55b626fed3c1c46f5914266dd4813a62a5ef6b24142d81
+    extractor: 1a7d4128fb8b094cd311e80b7050925bd7b10c53e3dce153f930903cc5bdb7ff
+    product_runner: 3426777a6ad592173ce8347e1e75a102ee1945098266b57eed14663867f1fb70
+    observer: 9d85524752119d8564ab276afd424a0fdc1f160add29727507daaa762f03ba47
+  fresh_runs: 2
+  ads_netlist:
+    netlist_byte_length: 1760
+    netlist_sha256: 6f720d8375726b1d7b0c42fbc7579372c1fea0ca5929c21d9823ccae4c2838e8
+  ads_s0:
+    common_node_count: 1024
+    mapping: fft_imp_index_equals_4_times_s0_index
+    payload_byte_length: 24617
+    payload_sha256: aab3824204fc4789be5f2d4591c198f29cb78eac8a581d9ebb794c83c8a2907a
+    selected_hdiff_source_sha256: 53af1ada3aa95c757a5f4ae5302101b80ba1a69b75a531f9d6619730c49b2a3e
+  product_bounded_dtft:
+    record_count: 2002
+    bounded_sample_count: 51200
+    sample_interval_bits: 3d712e0be826d695
+    causality_iterations: 32
+    causality_stop: successive_error_difference
+    ads_s0_axis_sha256: 004a5b988d53e104d018836a6621cdbca7f989175ad1b3a84583f8416d1df26b
+    ads_s0_hdiff_sha256: abaf1ff18ec9396c20bb84f669f63532746e5f6ae1565d060bdd79f0212a8348
+    product_dtft_sha256: 552be338fb1f0c6b1ffdfb8d611a39df0df06c76bf3a27c8824f2d7d6169ffa9
+    delta_sha256: fb5a84a7a2931df3dbe712c124d5e8adda58f304c1a68a935b14256034a77958
+    delta_l2_squared_bits: 3f739d2e3bee6f9f
+    delta_max_abs_bits: 3f74dc06332b6fd3
+    delta_max_index: 106
+  cleanup_status: complete
+independent_audit:
+  reviewer: Orca_reused_OpenCode_terminal
+  terminal: term_2de7cb74-b803-4e20-bb5b-4803777c24f8
+  status: pending
+  result: platform_review_pending
+  report: null
+admission:
+  ads_s0_product_bounded_axis_bound: true
+  product_bounded_dtft_invoked: true
+  ads_prepassivity_product_bounded_delta_observed: true
+  ads_algorithm_reproduced: false
+  causality_or_interpolation_cause_identified: false
+  candidate_waveform_accepted: false
+  release_ledger_promoted: false
+blockers:
+  - ads_prepassivity_product_bounded_delta_not_cause_attribution
+  - final_only_frequency_nodes_not_compared
+  - ads_passivity_algorithm_not_observed_or_ported
+  - waveform_mismatch_cause_not_identified
+non_claims:
+  - This compares the documented ADS S0 surface with the product bounded response only.
+  - The delta does not identify an ADS algorithm, causality, interpolation, passivity, or waveform mismatch cause.
+  - This does not change product causality, interpolation, passivity, candidate, receiver, P4B, P5, or release policy.

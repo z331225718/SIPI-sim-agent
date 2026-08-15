@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: ac7d329de114296904d231f8f10f8e7bc0aadc0a9b9c074e68c80712d8551ad6
+  tracked_paths_sha256: 4abf813e7ba086de971cfd18093bda83ec08d45a9c428b6f4218a25e3eff5dac
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -2154,6 +2154,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-ads-s0-product-bounded-dtft-charter.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-ads-s0-product-bounded-dtft-observation-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8633,6 +8639,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_ads_s0_product_bounded_dtft_observation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_ads_transient_policy_surface_observation.py:
       rule: migration-tools
       class: migration_only
@@ -9414,6 +9426,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_ads_pre_final_spectrum_comparison_observation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_ads_s0_product_bounded_dtft_observation.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

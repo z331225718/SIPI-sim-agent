@@ -135,8 +135,7 @@ def observe(source: Path, help_file: Path, report: Path) -> dict[str, Any]:
                 raise ObservationError("ads_run_rejected")
             ads_manifest = read_ads_manifest(ads_root / run_id / "manifest.json")
             payload = ads_root / run_id / "s0-hdiff.bin"
-            if identity(payload, (ads_manifest["prepassivity_s0_hdiff"]["payload"]["byte_length"], ads_manifest["prepassivity_s0_hdiff"]["payload"]["sha256"]), "payload_identity") is None:
-                raise ObservationError("payload_identity")
+            identity(payload, (ads_manifest["prepassivity_s0_hdiff"]["payload"]["byte_length"], ads_manifest["prepassivity_s0_hdiff"]["payload"]["sha256"]), "payload_identity")
             product_report = root / f"product-{run_id}.json"
             environment = os.environ.copy()
             environment.update({"SIPI_P3C_SOURCE": str(source), "SIPI_P3C_ADS_S0_HDIFF_PAYLOAD": str(payload), "SIPI_P3C_REPORT": str(product_report), "SIPI_P3C_RUN_ID": run_id, "CARGO_TARGET_DIR": str(target), "CARGO_INCREMENTAL": "0"})
@@ -147,7 +146,11 @@ def observe(source: Path, help_file: Path, report: Path) -> dict[str, Any]:
             if product_fact["ads_s0_payload_byte_length"] != ads_manifest["prepassivity_s0_hdiff"]["payload"]["byte_length"] or product_fact["ads_s0_payload_sha256"] != ads_manifest["prepassivity_s0_hdiff"]["payload"]["sha256"]:
                 raise ObservationError("ads_product_binding")
             runs.append((ads_manifest, product_fact))
-        if runs[0][0]["generated"] != runs[1][0]["generated"] or runs[0][0]["prepassivity_s0_hdiff"] != runs[1][0]["prepassivity_s0_hdiff"] or runs[0][1].copy() | {"manifest_sha256": ""} != runs[1][1].copy() | {"manifest_sha256": ""}:
+        first_product = dict(runs[0][1])
+        second_product = dict(runs[1][1])
+        first_product.pop("manifest_sha256")
+        second_product.pop("manifest_sha256")
+        if runs[0][0]["generated"] != runs[1][0]["generated"] or runs[0][0]["prepassivity_s0_hdiff"] != runs[1][0]["prepassivity_s0_hdiff"] or first_product != second_product:
             raise ObservationError("fresh_drift")
         if runs[0][1]["manifest_sha256"] == runs[1][1]["manifest_sha256"]:
             raise ObservationError("manifest_not_fresh")
