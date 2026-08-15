@@ -55,3 +55,11 @@ The result is a current local-custody blocker, not a legal conclusion: the
 build closure, literal license metadata, dependency snapshot, NOTICE review,
 first-party review, SPDX/SBOM, and release approval all remain unobserved or
 blocked.
+
+## P7-07c Preparation
+
+The v1 rejection was limited to the `cargo metadata` super-set and is retained
+as historical evidence. The v2 observer therefore consumes only the actual
+`compiler-artifact` messages emitted by the fixed `sipi-cli` build, requiring
+Cargo's `manifest_path` rather than parsing a package ID or inheriting the
+lock-wide cache result. It remains non-networked and non-conclusive.
