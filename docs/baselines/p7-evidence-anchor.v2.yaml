@@ -1,0 +1,53 @@
+{
+  "schema": "sipi.p7-evidence-anchor.v2",
+  "kind": "evidence_anchor_not_release",
+  "candidate_source_commit": "f49849998a9b53fcf56be4a45b2f1fa0418d2588",
+  "candidate_tree": "eb14221de2e742f88dcf18ec26e6790c1fb1005b",
+  "candidate_cargo_lock_sha256": "d10679ecbb0884cc3325f9b67afaf9a8d61a9f826c262f6fefd437538df34e99",
+  "candidate_toolchain_sha256": "512bedfbbe3c4ef614fbb901b3661f40b4adb701d26c94664e79ca765aa3d109",
+  "candidate_executable": {
+    "sha256": "a3059d052df54c0f3ebbd727bd2f71760ff33f73af82e1e2f29c0ec35b8c882d",
+    "bytes": 3908608,
+    "platform": "windows-x86_64"
+  },
+  "recording": {
+    "candidate_tree_excludes_this_record": true,
+    "evidence_subject_is_candidate_source_commit_not_record_commit": true
+  },
+  "evidence": {
+    "layout_policy_sha256": "6bc3732cd128d3a16274ef02cf82e0499049a4016e83802cd07d14e75871ccf8",
+    "performance_policy_sha256": "b5060b700bcd899292c52d58d3d6402689e4233e379f931583bab684b3f0d2ec",
+    "twin_report": {"sha256": "dbc282424ea3fca17771489cb5c8a387005743fce18e548bdcec164a26b34a4f", "bytes": 1255},
+    "layout_report": {"sha256": "27c9b2c378ed91d6d6c938eb2d9f30f199f5ce7d932293c170e741ced3a29672", "bytes": 1724},
+    "composition_report": {"sha256": "d2a6cb1441c17afb880380164236d67d893290e6cd9ccf9910738a15ae269954", "bytes": 37966},
+    "archive_report": {"sha256": "2b8db17618f3b78e5f38a2cdf316e1f2ca3640a353edc92f74ea0fa446a082b7", "bytes": 1140},
+    "install_report": {"sha256": "db64186d4b9518ed8d84a3d5cdb36347b28abafc60df8caa2cd9a58d99366464", "bytes": 2032},
+    "performance_observation": {"sha256": "34e7c820890660cb10ce5b2baf02d4042296b0d50f12995a81e6273c70efc369", "bytes": 4368},
+    "candidate_evaluation": {"sha256": "929f92d7fabe078dd3cec96ba4e1bf17724ea698fb23f39f2302338274619165", "bytes": 1856}
+  },
+  "chain_state": {
+    "twin_build": "identical",
+    "static_layout": "layout_conformant",
+    "composition_evidence_status": "incomplete",
+    "archive_structural_admission": "conformant",
+    "install_environment_class": "same_host_isolated_prefix",
+    "performance_status": "observed_pending_owner_budget",
+    "performance_threshold_verdict": "pass",
+    "candidate_evaluation_status": "within_policy",
+    "promotion_status": "blocked",
+    "release_candidate": false
+  },
+  "global_blockers": [
+    "license_notice_pending",
+    "fresh_machine_evidence_missing",
+    "uncertified_domain_profiles"
+  ],
+  "audit_ref": "docs/baselines/audits/2026-08-15-p7-current-candidate-chain-observation.md",
+  "non_claims": [
+    "not_a_release_tag_or_candidate",
+    "not_a_release_approval_or_license_notice_clearance",
+    "not_a_fresh_machine_or_fresh_user_certification",
+    "not_a_dynamic_or_runtime_dependency_closure",
+    "not_a_cross_platform_or_profile_certification"
+  ]
+}

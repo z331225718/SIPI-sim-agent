@@ -15,6 +15,10 @@ SPEC = importlib.util.spec_from_file_location("anchor", ROOT / "tools" / "verify
 assert SPEC and SPEC.loader
 ANCHOR = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ANCHOR)
+V2_SPEC = importlib.util.spec_from_file_location("anchor_v2", ROOT / "tools" / "verify_p7_evidence_anchor_v2.py")
+assert V2_SPEC and V2_SPEC.loader
+ANCHOR_V2 = importlib.util.module_from_spec(V2_SPEC)
+V2_SPEC.loader.exec_module(ANCHOR_V2)
 
 
 class EvidenceAnchorTests(unittest.TestCase):
@@ -75,6 +79,27 @@ class EvidenceAnchorTests(unittest.TestCase):
             path.write_text(json.dumps(tampered), encoding="utf-8")
             with self.assertRaisesRegex(ANCHOR.AnchorError, "evaluation_digest_mismatch"):
                 ANCHOR.verify_external_evaluation(document, path)
+
+    def test_v2_current_candidate_anchor_keeps_candidate_and_release_separate(self) -> None:
+        document = json.loads((ROOT / "docs" / "baselines" / "p7-evidence-anchor.v2.yaml").read_text(encoding="utf-8"))
+        ANCHOR_V2.validate(document)
+        document["chain_state"]["release_candidate"] = True
+        with self.assertRaisesRegex(ANCHOR_V2.ObservationError, "chain_state_invalid"):
+            ANCHOR_V2.validate(document)
+
+    def test_v2_candidate_and_external_reference_mutations_fail_closed(self) -> None:
+        document = json.loads((ROOT / "docs" / "baselines" / "p7-evidence-anchor.v2.yaml").read_text(encoding="utf-8"))
+        document["candidate_tree"] = "0" * 40
+        with self.assertRaisesRegex(ANCHOR_V2.ObservationError, "candidate_git_identity_invalid"):
+            ANCHOR_V2.validate(document)
+        document = json.loads((ROOT / "docs" / "baselines" / "p7-evidence-anchor.v2.yaml").read_text(encoding="utf-8"))
+        document["evidence"]["twin_report"]["bytes"] = 0
+        with self.assertRaisesRegex(ANCHOR_V2.ObservationError, "report_reference_invalid"):
+            ANCHOR_V2.validate(document)
+        document = json.loads((ROOT / "docs" / "baselines" / "p7-evidence-anchor.v2.yaml").read_text(encoding="utf-8"))
+        document["recording"]["candidate_tree_excludes_this_record"] = False
+        with self.assertRaisesRegex(ANCHOR_V2.ObservationError, "candidate_record_separation_invalid"):
+            ANCHOR_V2.validate(document)
 
 
 if __name__ == "__main__":

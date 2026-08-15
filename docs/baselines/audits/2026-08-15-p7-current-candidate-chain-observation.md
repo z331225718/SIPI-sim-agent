@@ -1,0 +1,32 @@
+# P7-06g Current Candidate Chain Observation
+
+The external P7 chain was freshly observed for immutable candidate
+`f49849998a9b53fcf56be4a45b2f1fa0418d2588` and tree
+`eb14221de2e742f88dcf18ec26e6790c1fb1005b` after the canonical-LF P0
+materialization repair. The clean candidate root passed the P0 boundary,
+clean-room register, source-map, and provisional license preflight gates
+before the chain began.
+
+Two independent clean builds produced the same Windows x86_64 `sipi.exe`:
+SHA-256 `a3059d052df54c0f3ebbd727bd2f71760ff33f73af82e1e2f29c0ec35b8c882d`,
+3,908,608 bytes. The ProcessPrng-only layout v2 policy admitted that exact
+binary without delay imports. The downstream composition observation remained
+`incomplete`; its archive was structurally conformant, the isolated install
+was same-host only, and the fixed TRAN performance evaluation was within its
+delegated policy while promotion remained blocked.
+
+The companion v2 anchor records only report hashes and byte lengths. It binds
+the candidate source commit rather than this later evidence-record commit.
+The anchor verifier proves that the candidate tree cannot contain the anchor,
+so later governance records cannot be mistaken for the evaluated product
+candidate.
+
+This is not a release tag, release approval, license or NOTICE clearance,
+fresh-machine or fresh-user certification, dynamic/runtime dependency closure,
+or cross-platform/profile certification. The release publication ledger stays
+unchanged and blocked.
+
+The existing OMP reviewer terminal
+`term_fa7831f5-ec22-4b3d-8737-25a919226b8b` must review the final staged
+anchor/verifier scope before its commit. No external reports, executable bytes,
+archive payloads, paths, or performance samples are tracked here.

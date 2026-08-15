@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import subprocess
@@ -29,6 +30,7 @@ EVIDENCE_FIELDS = {
     "candidate_observation_sha256",
     "candidate_evaluation_sha256",
 }
+V2_SCHEMA = "sipi.p7-evidence-anchor.v2"
 
 
 class AnchorError(RuntimeError):
@@ -154,6 +156,15 @@ def verify_external_evaluation(anchor: dict[str, Any], path: Path) -> None:
             raise AnchorError("evaluation_chain_mismatch")
 
 
+def _load_v2_module():
+    specification = importlib.util.spec_from_file_location("p7_evidence_anchor_v2", ROOT / "tools" / "verify_p7_evidence_anchor_v2.py")
+    if specification is None or specification.loader is None:
+        raise AnchorError("v2_anchor_verifier_unavailable")
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    return module
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--anchor", type=Path, default=ANCHOR)
@@ -161,6 +172,14 @@ def main() -> int:
     arguments = parser.parse_args()
     try:
         anchor, raw = load_json(arguments.anchor)
+        if anchor.get("schema") == V2_SCHEMA:
+            if arguments.evaluation_report is not None:
+                raise AnchorError("v2_anchor_requires_v2_external_arguments")
+            v2 = _load_v2_module()
+            v2.validate(anchor)
+            record_commit = v2.validate_introduction(anchor, raw)
+            print(json.dumps({"schema": V2_SCHEMA, "valid": True, "anchor_sha256": sha256_bytes(raw), "record_commit": record_commit}, sort_keys=True))
+            return 0
         validate(anchor)
         if arguments.evaluation_report is not None:
             verify_external_evaluation(anchor, arguments.evaluation_report)
