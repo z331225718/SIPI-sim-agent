@@ -25,7 +25,7 @@ const SOURCE_ENV: &str = "SIPI_P3C_SOURCE";
 const PAYLOAD_ENV: &str = "SIPI_P3C_ADS_OR_S0_HDIFF_PAYLOAD";
 const REPORT_ENV: &str = "SIPI_P3C_REPORT";
 const RUN_ID_ENV: &str = "SIPI_P3C_RUN_ID";
-const SCHEMA: &str = "sipi.p3c.ads-or-s0-product-paired-transition-runner.v1";
+const SCHEMA: &str = "sipi.p3c.ads-or-s0-product-error-decomposition-runner.v1";
 const MAGIC: &[u8] = b"sipi.p3c.ads-or-s0-hdiff-payload.v1\0";
 const POINTS: usize = 1_024;
 const SAMPLES: usize = 51_200;
@@ -315,6 +315,56 @@ fn transitions(
     Ok((ads, product, paired))
 }
 
+fn error_decomposition(
+    original: &[Complex],
+    s0: &[Complex],
+    raw: &[Complex],
+    bounded: &[Complex],
+) -> Result<
+    (
+        Vec<Complex>,
+        Vec<Complex>,
+        Vec<Complex>,
+        Vec<Complex>,
+        Vec<Complex>,
+        f64,
+    ),
+    String,
+> {
+    let (ads_transition, product_transition, paired_delta) =
+        transitions(original, s0, raw, bounded)?;
+    let pre = original
+        .iter()
+        .zip(raw)
+        .map(|(ads, product)| ads.sub(*product))
+        .collect::<Vec<_>>();
+    let post = s0
+        .iter()
+        .zip(bounded)
+        .map(|(ads, product)| ads.sub(*product))
+        .collect::<Vec<_>>();
+    let closure = post
+        .iter()
+        .zip(pre.iter().zip(&paired_delta))
+        .map(|(post, (pre, paired))| post.sub(pre.add(*paired)))
+        .collect::<Vec<_>>();
+    let mut cross_term = 0.0;
+    for (pre, paired) in pre.iter().zip(&paired_delta) {
+        cross_term += 2.0 * pre.re.mul_add(paired.re, pre.im * paired.im);
+        if !cross_term.is_finite() {
+            return Err("cross_term_numeric".to_owned());
+        }
+    }
+    Ok((
+        pre,
+        post,
+        ads_transition,
+        product_transition,
+        closure,
+        cross_term,
+    ))
+}
+
 fn fresh_root() -> Result<PathBuf, String> {
     let nonce = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -395,13 +445,22 @@ fn evaluate(source: &Path, payload_path: &Path, id: &str) -> Result<serde_json::
                 finite_dtft(&bounded_values, *frequency, bounded.sample_interval().get())
             })
             .collect::<Result<Vec<_>, _>>()?;
-        let (ads_transition, product_transition, paired_delta) = transitions(
-            &payload.original,
-            &payload.s0,
-            &product_raw,
-            &product_bounded,
-        )?;
-        let (l2, maximum, index) = l2_and_max(&paired_delta)?;
+        let (pre, post, ads_transition, product_transition, closure, cross_term) =
+            error_decomposition(
+                &payload.original,
+                &payload.s0,
+                &product_raw,
+                &product_bounded,
+            )?;
+        let paired_delta = ads_transition
+            .iter()
+            .zip(&product_transition)
+            .map(|(ads, product)| ads.sub(*product))
+            .collect::<Vec<_>>();
+        let (pre_l2, pre_maximum, pre_index) = l2_and_max(&pre)?;
+        let (post_l2, post_maximum, post_index) = l2_and_max(&post)?;
+        let (paired_l2, paired_maximum, paired_index) = l2_and_max(&paired_delta)?;
+        let (closure_l2, closure_maximum, closure_index) = l2_and_max(&closure)?;
         let stop = match bounded.stop() {
             SelectedP3cCausalityStopV1::RelativeError => "relative_error",
             SelectedP3cCausalityStopV1::SuccessiveErrorDifference => "successive_error_difference",
@@ -413,7 +472,11 @@ fn evaluate(source: &Path, payload_path: &Path, id: &str) -> Result<serde_json::
             "ads_original_sha256": sequence_digest(b"sipi.p3c.ads-or-s0.paired.original.v1\0", &payload.axis, &payload.original)?, "ads_s0_sha256": sequence_digest(b"sipi.p3c.ads-or-s0.paired.s0.v1\0", &payload.axis, &payload.s0)?,
             "product_raw_sha256": sequence_digest(b"sipi.p3c.ads-or-s0.paired.raw.v1\0", &payload.axis, &product_raw)?, "product_bounded_sha256": sequence_digest(b"sipi.p3c.ads-or-s0.paired.bounded.v1\0", &payload.axis, &product_bounded)?,
             "ads_transition_sha256": sequence_digest(b"sipi.p3c.ads-or-s0.paired.ads-transition.v1\0", &payload.axis, &ads_transition)?, "product_transition_sha256": sequence_digest(b"sipi.p3c.ads-or-s0.paired.product-transition.v1\0", &payload.axis, &product_transition)?, "paired_delta_sha256": sequence_digest(b"sipi.p3c.ads-or-s0.paired.delta.v1\0", &payload.axis, &paired_delta)?,
-            "paired_delta_l2_squared_bits": format!("{:016x}", l2.to_bits()), "paired_delta_max_abs_bits": format!("{:016x}", maximum.to_bits()), "paired_delta_max_index": index, "cleanup_status": "complete"
+            "pre_delta_sha256": sequence_digest(b"sipi.p3c.ads-or-s0.decomposition.pre.v1\0", &payload.axis, &pre)?, "post_delta_sha256": sequence_digest(b"sipi.p3c.ads-or-s0.decomposition.post.v1\0", &payload.axis, &post)?, "closure_residual_sha256": sequence_digest(b"sipi.p3c.ads-or-s0.decomposition.closure.v1\0", &payload.axis, &closure)?,
+            "pre_delta_l2_squared_bits": format!("{:016x}", pre_l2.to_bits()), "pre_delta_max_abs_bits": format!("{:016x}", pre_maximum.to_bits()), "pre_delta_max_index": pre_index,
+            "post_delta_l2_squared_bits": format!("{:016x}", post_l2.to_bits()), "post_delta_max_abs_bits": format!("{:016x}", post_maximum.to_bits()), "post_delta_max_index": post_index,
+            "paired_delta_l2_squared_bits": format!("{:016x}", paired_l2.to_bits()), "paired_delta_max_abs_bits": format!("{:016x}", paired_maximum.to_bits()), "paired_delta_max_index": paired_index,
+            "cross_term_bits": format!("{:016x}", cross_term.to_bits()), "closure_residual_l2_squared_bits": format!("{:016x}", closure_l2.to_bits()), "closure_residual_max_abs_bits": format!("{:016x}", closure_maximum.to_bits()), "closure_residual_max_index": closure_index, "cleanup_status": "complete"
         }))
     })();
     let cleanup = fs::remove_dir_all(root).map_err(|_| "cleanup".to_owned());
@@ -434,6 +497,26 @@ fn paired_transition_subtracts_after_minus_before_on_both_sides() {
     assert_eq!(ads[0], Complex { re: 4.0, im: -1.0 });
     assert_eq!(product[0], Complex { re: 3.0, im: -2.0 });
     assert_eq!(paired[0], Complex { re: 1.0, im: 1.0 });
+}
+
+#[test]
+fn error_decomposition_closes_without_assigning_a_cause() {
+    let mut original = vec![Complex::ZERO; POINTS];
+    let mut raw = vec![Complex::ZERO; POINTS];
+    let mut s0 = vec![Complex::ZERO; POINTS];
+    let mut bounded = vec![Complex::ZERO; POINTS];
+    original[0] = Complex { re: 2.0, im: 0.0 };
+    raw[0] = Complex { re: 1.0, im: 0.0 };
+    s0[0] = Complex { re: 7.0, im: 0.0 };
+    bounded[0] = Complex { re: 3.0, im: 0.0 };
+    let (pre, post, ads, product, closure, cross) =
+        error_decomposition(&original, &s0, &raw, &bounded).unwrap();
+    assert_eq!(pre[0], Complex { re: 1.0, im: 0.0 });
+    assert_eq!(post[0], Complex { re: 4.0, im: 0.0 });
+    assert_eq!(ads[0], Complex { re: 5.0, im: 0.0 });
+    assert_eq!(product[0], Complex { re: 2.0, im: 0.0 });
+    assert_eq!(closure[0], Complex::ZERO);
+    assert_eq!(cross, 6.0);
 }
 
 #[test]

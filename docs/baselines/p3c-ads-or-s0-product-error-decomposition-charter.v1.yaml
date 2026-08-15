@@ -1,0 +1,48 @@
+schema: sipi.p3c.ads-or-s0-product-error-decomposition-charter.v1
+status: specified_delegated_owner_discretion_external_diagnostic_pending
+authority:
+  actor: user
+  decision_ref: user-delegated-owner-discretion-2026-08-15
+  scope: one_fixed_same_axis_complex_error_decomposition_observation_only
+predecessor:
+  path: docs/baselines/p3c-ads-or-s0-product-paired-transition-observation-evidence.v1.yaml
+  result: paired_transition_delta_observed_not_cause_attribution
+axis: exact_ads_cmp1_s0_1024_node_axis_with_or_index_equals_4_times_s0_index
+inputs:
+  ads_original: CMP1_OR
+  ads_s0: CMP1_S0
+  product_raw: SelectedP3cRawPeriodicResponseV1
+  product_bounded: SelectedP3cCausalResponseV1
+algebra:
+  pre_delta: original_minus_product_raw
+  post_delta: s0_minus_product_bounded
+  paired_transition_delta: s0_minus_original_minus_bounded_minus_raw
+  closure_identity: post_delta_equals_pre_delta_plus_paired_transition_delta
+  cross_term: 2_times_real_sum_pre_times_conjugate_paired_transition_delta
+reporting:
+  node_sum_l2_squared: diagnostic_only_not_continuous_band_energy
+  closure_residual: recorded_without_a_posteriori_tolerance
+prohibitions:
+  - ads_algorithm_or_cause_attribution
+  - threshold_or_parameter_scan
+  - interpolation_resampling_or_nearest_node
+  - phase_delay_gain_dc_or_alignment_transform
+  - candidate_waveform_generation
+admission:
+  same_axis_complex_error_decomposition_observed: false
+  pre_surface_delta_observed: false
+  post_surface_delta_reproduced: false
+  paired_transition_delta_reproduced: false
+  cross_term_observed: false
+  ads_algorithm_reproduced: false
+  causality_or_interpolation_cause_identified: false
+  candidate_waveform_accepted: false
+  release_ledger_promoted: false
+blockers:
+  - two_fresh_same_axis_complex_error_decomposition_observations_missing
+  - documented_surface_delta_not_algorithm_attribution
+  - waveform_mismatch_cause_not_identified
+non_claims:
+  - The node sums and cross term are algebraic diagnostics, not physical energy, probability, or root-cause shares.
+  - CMP1_OR to CMP1_S0 is not named an ADS causality algorithm by this diagnostic.
+  - This does not change product causality, interpolation, passivity, candidate, receiver, P4B, P5, or release policy.

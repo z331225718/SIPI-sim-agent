@@ -1369,6 +1369,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-ads-or-product-raw-dtft-spec-v1]
+  - id: p3c-ads-or-s0-product-error-decomposition-spec-v1
+    kind: independent_spec
+    content_sha256: 678cd486e99769dee96c5f003d72342e52c13fb283a5be3eedf52177fdcf65c0
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-ads-or-s0-product-error-decomposition.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-ads-or-s0-product-paired-transition-spec-v1]
 scopes:
   - id: clean-room-process-template-v1
     paths: [docs/clean-room/**]
@@ -2603,4 +2611,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-ads-or-s0-product-paired-transition-spec-v1]
+  - id: p3c-ads-or-s0-product-error-decomposition-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-or-s0-product-error-decomposition-charter.v1.yaml, docs/clean-room/specs/p3c-ads-or-s0-product-error-decomposition.v1.md, crates/sipi-p3c/tests/p3c_ads_or_s0_product_paired_transition_runner.rs]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-ads-or-s0-product-error-decomposition-spec-v1]
+      spec_author: [p3c-ads-or-s0-product-error-decomposition-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-ads-or-s0-product-error-decomposition-spec-v1]
 attestations: []

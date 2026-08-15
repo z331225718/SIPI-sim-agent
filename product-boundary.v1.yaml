@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 315ab7448fb7d7de80a52aacacaaf93ccf241a3962c5d7b892d9b846d4644f4e
+  tracked_paths_sha256: a380c1c89f12d5ad7809de3695d6d84629c2e9918a9a40101a2593d84c834e37
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -2123,6 +2123,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3c-ads-or-s0-product-error-decomposition-charter.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p3c-ads-or-s0-product-paired-transition-charter.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -2988,6 +2994,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-ads-or-product-raw-dtft.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-ads-or-s0-product-error-decomposition.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
