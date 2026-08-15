@@ -24,9 +24,17 @@ SPEC.loader.exec_module(GATE)
 
 
 def manifest_for(publication: dict) -> list[dict]:
+    unavailable = {
+        "project.validate": ("project_execution_not_implemented", "no_project_execution"),
+        "report.show": ("artifact_payload_preview_not_implemented", "no_payload_or_external_provenance_viewer"),
+    }
     commands = []
     for row in publication["rows"]:
         availability = row["product_surface"]
+        reason, nonclaim = unavailable.get(
+            row["command_id"],
+            (None if availability == "available" else "test_unavailable", "test_nonclaim"),
+        )
         commands.append({
             "id": row["command_id"],
             "route": row["command_id"].split("."),
@@ -34,8 +42,8 @@ def manifest_for(publication: dict) -> list[dict]:
             "transport": "none",
             "request_schema": None,
             "response_schema": None,
-            "unavailable_reason": None if availability == "available" else "test_unavailable",
-            "nonclaim": "test_nonclaim",
+            "unavailable_reason": reason,
+            "nonclaim": nonclaim,
         })
     return commands
 
@@ -343,6 +351,55 @@ class PublicationTests(unittest.TestCase):
         with patch.object(GATE, "verify_ami_loader_declarations", return_value={"worker_admitted": False, "runtime_invoked": True, "dynamic_closure": "blocked_not_assessed"}):
             with self.assertRaisesRegex(GATE.PublicationError, "publication_ami_blocked_evidence_promoted"):
                 GATE.validate(publication, manifest_for(publication), ROOT)
+
+    def test_product_owned_unavailable_catalog_routes_stay_bound_to_live_descriptors(self) -> None:
+        expected = {
+            "project-validate": ("project.validate", ["project", "validate"], "project_execution_not_implemented", "no_project_execution"),
+            "report-show": ("report.show", ["report", "show"], "artifact_payload_preview_not_implemented", "no_payload_or_external_provenance_viewer"),
+        }
+        for row_id, (command_id, route, reason, nonclaim) in expected.items():
+            with self.subTest(row_id=row_id):
+                for field, value in {
+                    "external_oracle": True,
+                    "blockers": ["bogus"],
+                    "non_claims": ["bogus"],
+                    "evidence_ids": ["p7-isolated-install"],
+                }.items():
+                    publication = self.publication()
+                    row = next(item for item in publication["rows"] if item["id"] == row_id)
+                    row[field] = value
+                    with self.assertRaisesRegex(GATE.PublicationError, "publication_product_unavailable_catalog_binding_invalid"):
+                        GATE.validate(publication, manifest_for(publication), ROOT)
+
+                descriptor_mutations = {
+                    "route": (["wrong", "route"], "publication_product_unavailable_catalog_binding_invalid"),
+                    "availability": ("available", "command_manifest_invalid"),
+                    "transport": ("stdin_json_v1", "publication_product_unavailable_catalog_binding_invalid"),
+                    "request_schema": ("sipi.test.request.v1", "publication_product_unavailable_catalog_binding_invalid"),
+                    "response_schema": ("sipi.test.response.v1", "publication_product_unavailable_catalog_binding_invalid"),
+                    "unavailable_reason": ("wrong_reason", "publication_product_unavailable_catalog_binding_invalid"),
+                    "nonclaim": ("wrong_nonclaim", "publication_product_unavailable_catalog_binding_invalid"),
+                }
+                for field, (value, error) in descriptor_mutations.items():
+                    publication = self.publication()
+                    manifest = manifest_for(publication)
+                    descriptor = next(item for item in manifest if item["id"] == command_id)
+                    descriptor[field] = value
+                    with self.assertRaisesRegex(GATE.PublicationError, error):
+                        GATE.validate(publication, manifest, ROOT)
+
+        for field, value in {
+            "kind": "install_observation",
+            "path": "docs/baselines/audits/2026-08-11-p7-isolated-install.md",
+            "subject": "project",
+            "evidence_state": "observed",
+        }.items():
+            with self.subTest(index_field=field):
+                publication = self.publication()
+                evidence = next(item for item in publication["report_index"] if item["id"] == "p6-command-manifest")
+                evidence[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_product_unavailable_catalog_evidence_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
 
     def test_channel_cli_requires_current_evidence_without_claiming_general_support(self) -> None:
         publication = self.publication()

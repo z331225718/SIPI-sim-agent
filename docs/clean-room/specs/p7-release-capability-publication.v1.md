@@ -22,6 +22,13 @@ stable ids and routes, approved transport values, and consistent availability
 and unavailable-reason fields. Missing or additional descriptor fields are
 rejected before the publication rows are bound.
 
+The product-owned unavailable catalog routes `project.validate` and
+`report.show` are additionally bound to their current descriptors: exact route,
+unavailable reason, nonclaim, `transport: none`, and null request/response
+schemas. Their ledger rows remain blocked with the matching blocker/nonclaim,
+`external_oracle: false`, and the P6 command-manifest contract; this binding
+does not make the historical P6 audit a current manifest snapshot.
+
 Only repository-relative references below `docs/baselines` are admitted. The
 publication contains no external asset paths or bytes, user paths, executable
 identities, waveform data, legal conclusion, or release approval.

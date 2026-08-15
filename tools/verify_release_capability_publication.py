@@ -44,6 +44,22 @@ COMMAND_ID = re.compile(r"[a-z0-9][a-z0-9.-]*")
 ROUTE_TOKEN = re.compile(r"[a-z][a-z0-9-]*")
 ACCEPTANCE_AUTHORITY_ROWS_V1 = frozenset({"tran-rc-pulse"})
 COM_R480_ACCEPTANCE_SHA256 = "e90fca0d14968a04e09df90cd8bd4fcc7f749abfa07ad2b4b29dc297351ef03b"
+PRODUCT_OWNED_UNAVAILABLE_CATALOG_ROUTES_V1 = {
+    "project-validate": {
+        "domain": "project",
+        "command_id": "project.validate",
+        "route": ["project", "validate"],
+        "reason": "project_execution_not_implemented",
+        "nonclaim": "no_project_execution",
+    },
+    "report-show": {
+        "domain": "report",
+        "command_id": "report.show",
+        "route": ["report", "show"],
+        "reason": "artifact_payload_preview_not_implemented",
+        "nonclaim": "no_payload_or_external_provenance_viewer",
+    },
+}
 
 
 class PublicationError(RuntimeError):
@@ -227,6 +243,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     _validate_selected_highloss_waveform_only_route(rows, index_by_id)
     _validate_ami_blocked_route(rows, index_by_id)
     _validate_com_blocked_route(rows, index_by_id, root)
+    _validate_product_owned_unavailable_catalog_routes(rows, manifest_by_id, index_by_id)
     _validate_accepted_evidence_authority(rows)
 
 
@@ -398,6 +415,46 @@ def _validate_com_blocked_route(
         or document.get("external_materials", {}).get("product_material") != "prohibited"
     ):
         raise PublicationError("publication_com_blocked_evidence_promoted")
+
+
+def _validate_product_owned_unavailable_catalog_routes(
+    rows: list[dict[str, Any]], manifest_by_id: dict[str, dict[str, Any]], index_by_id: dict[str, dict[str, Any]]
+) -> None:
+    evidence_id = "p6-command-manifest"
+    evidence = index_by_id.get(evidence_id)
+    if (
+        evidence is None
+        or evidence["kind"] != "capability_contract"
+        or evidence["path"] != "docs/baselines/audits/2026-08-11-p6-command-manifest.md"
+        or evidence["subject"] != "foundation"
+        or evidence["evidence_state"] != "specified"
+    ):
+        raise PublicationError("publication_product_unavailable_catalog_evidence_invalid")
+
+    rows_by_id = {row["id"]: row for row in rows}
+    for row_id, expected in PRODUCT_OWNED_UNAVAILABLE_CATALOG_ROUTES_V1.items():
+        row = rows_by_id.get(row_id)
+        command = manifest_by_id.get(expected["command_id"])
+        if (
+            row is None
+            or row["domain"] != expected["domain"]
+            or row["command_id"] != expected["command_id"]
+            or row["product_surface"] != "unavailable"
+            or row["acceptance_state"] != "blocked"
+            or row["external_oracle"] is not False
+            or row["evidence_ids"] != [evidence_id]
+            or row["blockers"] != [expected["reason"]]
+            or row["non_claims"] != [expected["nonclaim"]]
+            or command is None
+            or command["route"] != expected["route"]
+            or command["availability"] != "unavailable"
+            or command["transport"] != "none"
+            or command["request_schema"] is not None
+            or command["response_schema"] is not None
+            or command["unavailable_reason"] != expected["reason"]
+            or command["nonclaim"] != expected["nonclaim"]
+        ):
+            raise PublicationError("publication_product_unavailable_catalog_binding_invalid")
 
 
 def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]) -> None:
