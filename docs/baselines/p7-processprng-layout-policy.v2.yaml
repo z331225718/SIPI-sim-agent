@@ -1,0 +1,66 @@
+{
+  "schema": "sipi.p7-processprng-layout-policy.v2",
+  "status": "selected_windows10_server2016_desktop_layout_policy_defined_current_layout_observed_downstream_chain_pending",
+  "authority": "user_delegated_owner_discretion",
+  "preflight": {
+    "path": "docs/baselines/p7-bcryptprimitives-processprng-preflight.v1.yaml",
+    "sha256": "eda4083c9c4a89b9e23d436f6011f053b0b3979c748989b3203c6f1ff95c15a6"
+  },
+  "candidate": {
+    "source_commit": "b775dde6d242e687eb71a30b9a83a87d8b31ba55",
+    "source_tree": "35be864a88573709c2b316e063bfe90eb54678e2",
+    "committed_product_inputs": "unchanged_since_processprng_preflight"
+  },
+  "selected_platform_boundary": {
+    "target": "x86_64-pc-windows-msvc",
+    "minimum_supported_desktop": "windows_10_or_windows_server_2016",
+    "physical_dll_name_not_cross_device_api_set_policy": true
+  },
+  "policy": {
+    "schema": "sipi.release-layout-policy.v1",
+    "required_files": ["sipi.exe", "LICENSE"],
+    "normal_import_dll_allowlist": [
+      "api-ms-win-core-synch-l1-2-0.dll",
+      "api-ms-win-crt-heap-l1-1-0.dll",
+      "api-ms-win-crt-locale-l1-1-0.dll",
+      "api-ms-win-crt-math-l1-1-0.dll",
+      "api-ms-win-crt-runtime-l1-1-0.dll",
+      "api-ms-win-crt-stdio-l1-1-0.dll",
+      "bcryptprimitives.dll",
+      "kernel32.dll",
+      "ntdll.dll",
+      "vcruntime140.dll"
+    ],
+    "delta_from_v1": {"added_normal_import_dll": "bcryptprimitives.dll", "removed_normal_import_dlls": []},
+    "forbidden_import_dll_tokens": ["python", "pyami", "agent-spice"],
+    "smoke_commands": [["version", "--json"], ["capabilities", "--json"], ["doctor", "--json"], ["schema", "list", "--json"]],
+    "canonical_json_byte_length": 665,
+    "canonical_json_sha256": "6bc3732cd128d3a16274ef02cf82e0499049a4016e83802cd07d14e75871ccf8"
+  },
+  "external_layout_observation": {
+    "schema": "sipi.release-layout-report.v1",
+    "sha256": "27c9b2c378ed91d6d6c938eb2d9f30f199f5ce7d932293c170e741ced3a29672",
+    "byte_length": 1724,
+    "custody": "operator_external_only",
+    "status": "layout_conformant"
+  },
+  "gates": {
+    "layout_policy_v2_defined": true,
+    "allowlist_expanded_only_for_processprng": true,
+    "static_dependency_closure_evaluated": false,
+    "dynamic_runtime_closure_evaluated": false,
+    "composition_invoked": false,
+    "archive_invoked": false,
+    "install_invoked": false,
+    "performance_observation_invoked": false,
+    "candidate_evaluation_invoked": false,
+    "release_candidate": false,
+    "promotion_status": "blocked"
+  },
+  "non_claims": [
+    "not_cross_version_or_cross_device_loader_closure",
+    "not_a_static_or_dynamic_dependency_closure",
+    "not_a_product_callsite_provenance_or_security_review",
+    "not_a_fresh_machine_or_release_readiness_claim"
+  ]
+}
