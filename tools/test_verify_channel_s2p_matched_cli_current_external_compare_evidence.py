@@ -17,6 +17,7 @@ import verify_channel_s2p_matched_cli_current_external_compare_evidence as GATE
 import verify_channel_s2p_matched_cli_current_external_compare_evidence_v2 as GATE_V2
 import verify_channel_s2p_matched_cli_current_external_compare_evidence_v3 as GATE_V3
 import verify_channel_s2p_matched_cli_current_external_compare_evidence_v4 as GATE_V4
+import verify_channel_s2p_matched_cli_current_external_compare_evidence_v5 as GATE_V5
 from verify_channel_s2p_matched_external_compare_evidence import EvidenceError as CoreEvidenceError
 
 
@@ -36,10 +37,19 @@ class ChannelCliCurrentEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex((GATE.EvidenceError, CoreEvidenceError), "evidence_product_source_drift"):
             GATE_V3.verify_document(copy.deepcopy(GATE_V3._load(GATE_V3.EVIDENCE)))
 
-    def test_v4_evidence_binds_to_current_product_paths(self) -> None:
-        result = GATE_V4.verify_document(copy.deepcopy(GATE_V4._load(GATE_V4.EVIDENCE)))
+    def test_v4_evidence_remains_drifted_after_the_core_candidate_changes(self) -> None:
+        with self.assertRaisesRegex((GATE.EvidenceError, CoreEvidenceError), "evidence_product_source_drift"):
+            GATE_V4.verify_document(copy.deepcopy(GATE_V4._load(GATE_V4.EVIDENCE)))
+
+    def test_v5_evidence_binds_to_current_product_paths(self) -> None:
+        result = GATE_V5.verify_document(copy.deepcopy(GATE_V5._load(GATE_V5.EVIDENCE)))
         self.assertTrue(result["valid"])
         self.assertEqual(result["evidence_level"], "hash_only_attestation")
+
+        bad_tree = copy.deepcopy(GATE_V5._load(GATE_V5.EVIDENCE))
+        bad_tree["product"]["source_trees"]["sipi-channel"] = "0" * 40
+        with self.assertRaises((GATE.EvidenceError, CoreEvidenceError)):
+            GATE_V5.verify_document(bad_tree)
 
     def test_rejects_current_schema_and_source_drift(self) -> None:
         bad_schema = copy.deepcopy(GATE_V4._load(GATE_V4.EVIDENCE))
@@ -86,8 +96,8 @@ class ChannelCliCurrentEvidenceTests(unittest.TestCase):
             with self.assertRaisesRegex((GATE.EvidenceError, CoreEvidenceError), "evidence_product_source_drift"):
                 GATE_V3.verify_document(evidence, path)
 
-    def test_v4_requires_an_exact_current_candidate_report(self) -> None:
-        evidence = copy.deepcopy(GATE_V4._load(GATE_V4.EVIDENCE))
+    def test_v5_requires_an_exact_current_candidate_report(self) -> None:
+        evidence = copy.deepcopy(GATE_V5._load(GATE_V5.EVIDENCE))
         product = evidence["product"]
         report = {
             "schema": "sipi.channel.required-profile-cli-compare.v1",
@@ -117,12 +127,12 @@ class ChannelCliCurrentEvidenceTests(unittest.TestCase):
             path = Path(directory) / "report.json"
             path.write_text(json.dumps(report, sort_keys=True), encoding="utf-8")
             evidence["external_report"]["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
-            self.assertTrue(GATE_V4.verify_document(evidence, path)["report_bound"])
+            self.assertTrue(GATE_V5.verify_document(evidence, path)["report_bound"])
             report["product"]["source_commit"] = "0" * 40
             path.write_text(json.dumps(report, sort_keys=True), encoding="utf-8")
             evidence["external_report"]["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
             with self.assertRaises((GATE.EvidenceError, CoreEvidenceError)):
-                GATE_V4.verify_document(evidence, path)
+                GATE_V5.verify_document(evidence, path)
 
 
 if __name__ == "__main__":
