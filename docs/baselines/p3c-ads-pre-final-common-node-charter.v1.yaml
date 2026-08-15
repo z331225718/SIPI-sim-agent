@@ -1,0 +1,28 @@
+schema: sipi.p3c.ads-pre-final-common-node-charter.v1
+status: specified_owner_authorized_external_observation_pending
+authority:
+  actor: user
+  decision_ref: user-approved-exact-common-node-2026-08-15
+  scope: one_fixed_ads_exact_common_node_s0_to_final_observation_only
+predecessor:
+  path: docs/baselines/p3c-ads-pre-final-spectrum-comparison-observation-evidence.v1.yaml
+  result: full_axes_not_identical
+strict_mapping:
+  s0_point_count: 1024
+  fft_imp_point_count: 4096
+  required_mapping: fft_imp_index_equals_4_times_s0_index
+  all_16_members_required: true
+  interpolation_resampling_nearest_bin: prohibited
+payload_boundary:
+  dataset_api_axis_materialization: permitted_for_exact_axis_gate_only
+  final_only_complex_values: excluded_from_comparison_and_report
+admission:
+  pre_final_exact_common_nodes_evaluated: false
+  full_matrix_common_node_delta_observed: false
+  selected_hdiff_common_node_delta_observed: false
+  passivity_correction_surface_delta_evaluated: false
+  candidate_waveform_accepted: false
+  release_ledger_promoted: false
+non_claims:
+  - Full-axis mismatch remains historical evidence and is not relaxed.
+  - Common-node delta is not automatically a pure passivity-correction magnitude.

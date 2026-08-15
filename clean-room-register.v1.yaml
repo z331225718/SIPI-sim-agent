@@ -1337,6 +1337,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-ads-passivity-action-surface-observation-spec-v1]
+  - id: p3c-ads-pre-final-common-node-spec-v1
+    kind: independent_spec
+    content_sha256: fe3eca5f60e03fd6cfa8e1c1748e7abcd2a2af6120c488c9be11d72b0c67045b
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-ads-pre-final-common-node.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-ads-pre-final-spectrum-comparison-spec-v1]
 scopes:
   - id: clean-room-process-template-v1
     paths: [docs/clean-room/**]
@@ -2499,4 +2507,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-ads-pre-final-spectrum-comparison-spec-v1]
+  - id: p3c-ads-pre-final-common-node-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-pre-final-common-node-charter.v1.yaml, docs/clean-room/specs/p3c-ads-pre-final-common-node.v1.md, tools/extract_p3c_ads_pre_final_common_nodes.py, tools/run_p3c_external_ads_pre_final_common_nodes.py, tools/observe_p3c_ads_pre_final_common_nodes.py, tools/test_extract_p3c_ads_pre_final_common_nodes.py, tools/test_run_p3c_external_ads_pre_final_common_nodes.py, tools/test_observe_p3c_ads_pre_final_common_nodes.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-ads-pre-final-common-node-spec-v1]
+      spec_author: [p3c-ads-pre-final-common-node-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-ads-pre-final-common-node-spec-v1]
 attestations: []

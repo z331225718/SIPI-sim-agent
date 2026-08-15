@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 16c96ee8676e436cb64788a5c722c21f840dd5a08e6db9a1dd59ccc9ae0560da
+  tracked_paths_sha256: da2fae78afb7d26753e06de249d89b32561a139e2fba1ed691aedb7058b93a86
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -2117,6 +2117,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3c-ads-pre-final-common-node-charter.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p3c-ads-pre-final-spectrum-comparison-charter.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -2928,6 +2934,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-ads-prbssrc-source-only-v2-observation.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-ads-pre-final-common-node.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7943,6 +7955,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/extract_p3c_ads_pre_final_common_nodes.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/m0_artifact_mock.py:
       rule: migration-tools
       class: migration_only
@@ -7992,6 +8010,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/observe_p3c_ads_prbs9_source_only_v2.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/observe_p3c_ads_pre_final_common_nodes.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8111,6 +8135,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/run_p3c_external_ads_pre_final_common_nodes.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/sync_contracts_schemas.py:
       rule: migration-tools
       class: migration_only
@@ -8178,6 +8208,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_evaluate_fixed_receiver_delegated_policy.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_extract_p3c_ads_pre_final_common_nodes.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8285,6 +8321,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_observe_p3c_ads_pre_final_common_nodes.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_observe_p3c_ads_pre_final_spectrum_comparison.py:
       rule: migration-tools
       class: migration_only
@@ -8352,6 +8394,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_run_p3c_external_ads_prbs9_source_only.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_run_p3c_external_ads_pre_final_common_nodes.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
