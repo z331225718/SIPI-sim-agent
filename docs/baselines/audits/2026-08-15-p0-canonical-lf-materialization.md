@@ -18,5 +18,8 @@ specifications. Those specifications use the same canonical LF checkout rule;
 otherwise a default Windows checkout changes the bound source bytes before
 verification.
 
+The independent specification template is separately bound by the register
+and is likewise fixed to LF.
+
 The inventory writer also emits LF explicitly. A host-native text write would
 otherwise recreate a CRLF digest even when the input worktree was canonical.
