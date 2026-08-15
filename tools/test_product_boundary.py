@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import sys
+import tempfile
 import unittest
 
 from pathlib import Path
@@ -9,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from verify_product_boundary import _load_document, _paths_sha256, materialize_inventory, tracked_paths, verify_document
+from verify_product_boundary import _load_document, _paths_sha256, materialize_inventory, tracked_paths, verify_document, write_inventory
 
 
 def document() -> dict:
@@ -49,6 +50,13 @@ class ProductBoundaryTests(unittest.TestCase):
     def test_current_manifest_is_complete(self) -> None:
         report = verify_document(_load_document(ROOT / "product-boundary.v1.yaml"), tracked_paths(ROOT))
         self.assertTrue(report["valid"], report["blockers"])
+
+    def test_inventory_writer_uses_canonical_lf(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "product-boundary.v1.yaml"
+            path.write_bytes((ROOT / "product-boundary.v1.yaml").read_bytes())
+            write_inventory(path, ROOT)
+            self.assertNotIn(b"\r\n", path.read_bytes())
 
     def test_complete_inventory_is_valid(self) -> None:
         paths = ["LICENSE", "fixtures/legacy.bin", "src/lib.rs"]

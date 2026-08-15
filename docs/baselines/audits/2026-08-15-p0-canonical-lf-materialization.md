@@ -12,3 +12,6 @@ This record authorizes no normalization in a verifier. Instead,
 follow-up inventory regeneration and manifest rebinding must use those
 canonical bytes. The earlier P7 attempts remain historical materialization
 observations; this is not a product-source, license, or release promotion.
+
+The inventory writer also emits LF explicitly. A host-native text write would
+otherwise recreate a CRLF digest even when the input worktree was canonical.

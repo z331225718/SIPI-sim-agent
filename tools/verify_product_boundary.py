@@ -189,7 +189,8 @@ def write_inventory(path: Path, root: Path) -> dict:
         "tracked_paths_sha256": _paths_sha256(paths),
         "entries": entries,
     }
-    path.write_text(yaml.safe_dump(document, sort_keys=False, allow_unicode=False), encoding="utf-8")
+    with path.open("w", encoding="utf-8", newline="\n") as output:
+        output.write(yaml.safe_dump(document, sort_keys=False, allow_unicode=False))
     return {"tracked_path_count": len(paths), "inventory_sha256": _paths_sha256(paths)}
 
 
