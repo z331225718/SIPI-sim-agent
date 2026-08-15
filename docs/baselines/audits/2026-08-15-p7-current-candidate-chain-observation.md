@@ -30,3 +30,13 @@ The existing OMP reviewer terminal
 `term_fa7831f5-ec22-4b3d-8737-25a919226b8b` must review the final staged
 anchor/verifier scope before its commit. No external reports, executable bytes,
 archive payloads, paths, or performance samples are tracked here.
+
+## P7-07b Preparation
+
+The follow-on Cargo license-material observer is deliberately limited to the
+exact Windows `sipi-cli` build closure for the immutable `f498499` candidate.
+It can report a repeated locked/offline build rejection when local Cargo
+custody is incomplete, but it cannot fetch missing crates or turn declared
+metadata into a license, NOTICE, SBOM, dependency, first-party, or release
+decision. A later hash-only evidence record, if any, must run this committed
+observer from a clean archive and retain the existing blocked release state.
