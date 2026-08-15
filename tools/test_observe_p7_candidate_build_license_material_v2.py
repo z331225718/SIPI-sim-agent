@@ -37,6 +37,10 @@ class CandidateBuildLicenseMaterialTests(unittest.TestCase):
             with self.assertRaisesRegex(OBSERVER.ObservationError, "cargo_message_invalid"):
                 OBSERVER._cargo_build_artifacts("cargo", Path("C:/source"), Path("C:/target"))
 
+    def test_workspace_inherited_license_is_not_a_license_conclusion(self) -> None:
+        manifest = b"[package]\nname = 'demo'\nversion = '1.2.3'\nlicense.workspace = true\n"
+        self.assertEqual(OBSERVER._literal_license(manifest), (None, None))
+
     def test_rejected_report_is_explicit_and_keeps_all_promotion_gates_blocked(self) -> None:
         report = OBSERVER._rejected_report(
             commit="a" * 40,

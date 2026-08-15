@@ -25,6 +25,12 @@ path, SHA-256, and length of packaged `LICENSE*`, `COPYING*`, `NOTICE*`, and
 `COPYRIGHT*` candidates. Workspace packages are bound to their candidate
 archive manifest bytes and the candidate product-boundary classification.
 
+A Cargo workspace-inherited declaration such as `license.workspace = true` or
+`license-file.workspace = true` is retained only as an inherited declaration:
+it supplies no literal SPDX expression or file path to this observer. The
+observer records neither a substituted workspace value nor a legal conclusion
+from that declaration.
+
 ## Exclusions
 
 The observation must not read the network, fetch missing archives, retain

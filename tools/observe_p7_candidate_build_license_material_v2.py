@@ -165,6 +165,10 @@ def _literal_license(manifest: bytes) -> tuple[str | None, str | None]:
         raise ObservationError("package_manifest_invalid")
     license_value = package.get("license")
     license_file = package.get("license-file")
+    if license_value == {"workspace": True}:
+        license_value = None
+    if license_file == {"workspace": True}:
+        license_file = None
     if license_value is not None and not isinstance(license_value, str):
         raise ObservationError("package_manifest_invalid")
     if license_file is not None and not isinstance(license_file, str):
