@@ -1385,6 +1385,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-ads-or-s0-product-error-decomposition-spec-v1]
+  - id: p3c-ads-transient-noncausal-delay-fresh-custody-spec-v1
+    kind: independent_spec
+    content_sha256: 24666c0bba0544db1a5ebb8b775e97d7ebced7e583c5bc7fda5801583d0e3c22
+    provenance:
+      source_ref: docs/clean-room/specs/p3c-ads-transient-noncausal-delay-fresh-custody.v1.md
+      license_evidence: project-authored-MIT-boundary-pending-promotion
+    allowed_roles: [observer, spec_author, auditor]
+    derived_from: [p3c-ads-transient-noncausal-delay-policy-surface-spec-v1]
 scopes:
   - id: clean-room-process-template-v1
     paths: [docs/clean-room/**]
@@ -2646,4 +2654,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-ads-transient-noncausal-delay-policy-surface-spec-v1]
+  - id: p3c-ads-transient-noncausal-delay-fresh-custody-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/clean-room/specs/p3c-ads-transient-noncausal-delay-fresh-custody.v1.md, tools/observe_p3c_ads_transient_noncausal_delay_policy_fresh.py, tools/test_observe_p3c_ads_transient_noncausal_delay_policy_fresh.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-ads-transient-noncausal-delay-fresh-custody-spec-v1]
+      spec_author: [p3c-ads-transient-noncausal-delay-fresh-custody-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-ads-transient-noncausal-delay-fresh-custody-spec-v1]
 attestations: []

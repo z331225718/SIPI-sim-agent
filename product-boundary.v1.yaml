@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: c96298fab3984cd5620d4a92ff9b8383b4c419a4e44b97aae1e1fec5d8ef7ca7
+  tracked_paths_sha256: 704b6c028d7a49ec869d46c7e529d9af05f0e09b9433ad22a35a7532802a4104
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -3060,6 +3060,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-ads-s0-product-bounded-dtft.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-ads-transient-noncausal-delay-fresh-custody.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8171,6 +8177,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p3c_ads_transient_noncausal_delay_policy_fresh.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/observe_p3c_ads_transient_policy_surface.py:
       rule: migration-tools
       class: migration_only
@@ -8514,6 +8526,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_observe_p3c_ads_transient_noncausal_delay_policy.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_observe_p3c_ads_transient_noncausal_delay_policy_fresh.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
