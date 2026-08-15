@@ -63,3 +63,21 @@ as historical evidence. The v2 observer therefore consumes only the actual
 `compiler-artifact` messages emitted by the fixed `sipi-cli` build, requiring
 Cargo's `manifest_path` rather than parsing a package ID or inheriting the
 lock-wide cache result. It remains non-networked and non-conclusive.
+
+## P7-07c Actual-Build Closure Observation
+
+The amended observer was run from a clean detached `02fffad` worktree against
+the same immutable `f498499` candidate. Both independent locked/offline
+Windows `sipi-cli` builds completed and produced the same canonical closure:
+86 compiled packages, comprising 13 workspace packages and 73 registry
+packages. Every observed registry archive matched the candidate lock checksum.
+The hash-only v2 evidence binds the external report and inventory digest; it
+does not retain cache paths, crate bytes, license text, or a generated SBOM.
+
+This observation records only declared package metadata and packaged
+license-material identities. Workspace-inherited license declarations remain
+unresolved rather than being substituted from the workspace root. It does not
+decide license compatibility, NOTICE obligations, dependency or first-party
+approval, strict manifest readiness, fresh-machine status, or release
+eligibility. The v1 metadata-superset rejection remains historical evidence
+and is not reinterpreted as a missing actual build closure.
