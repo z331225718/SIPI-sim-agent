@@ -11,7 +11,14 @@ import sys
 from typing import Any
 
 from verify_tran_rc_pulse_acceptance import _load as load_yaml
-from verify_tran_rc_pulse_current_external_compare_evidence_v2 import EvidenceError, verify_document as verify_tran_evidence
+from verify_tran_rc_pulse_current_external_compare_evidence_v2 import (
+    EvidenceError as HistoricalTranEvidenceError,
+    verify_document as verify_historical_tran_evidence,
+)
+from verify_tran_rc_pulse_current_external_compare_evidence_v3 import (
+    EvidenceError as CurrentTranEvidenceError,
+    verify_document as verify_current_tran_evidence,
+)
 from verify_channel_s2p_matched_cli_current_external_compare_evidence_v3 import (
     EvidenceError as ChannelEvidenceError,
     verify_document as verify_channel_cli_evidence,
@@ -855,47 +862,51 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
     tran = next((row for row in rows if row["id"] == "tran-rc-pulse"), None)
     if tran is None:
         raise PublicationError("publication_tran_row_missing")
-    compare_id = "tran-rc-pulse-current-external-compare-v2"
-    tran_source_drift_blocker = "current_external_compare_evidence_source_drift"
-    if tran["acceptance_state"] == "accepted":
-        if (
-            tran["external_oracle"] is not True
-            or compare_id not in tran["evidence_ids"]
-            or "external_compare_not_executed" in tran["blockers"]
-        ):
-            raise PublicationError("publication_tran_acceptance_binding_invalid")
-        entry = index_by_id.get(compare_id)
-        if entry is None or entry["kind"] != "external_compare_evidence" or entry["subject"] != "tran-rc-pulse" or entry["evidence_state"] != "observed":
-            raise PublicationError("publication_tran_acceptance_binding_invalid")
-        try:
-            verify_tran_evidence(load_yaml(ROOT / entry["path"]))
-        except (EvidenceError, OSError, RuntimeError):
-            raise PublicationError("publication_tran_external_evidence_invalid") from None
-    elif (
-        tran["acceptance_state"] != "specified"
-        or tran["external_oracle"] is not False
-        or compare_id in tran["evidence_ids"]
-        or tran_source_drift_blocker not in tran["blockers"]
+    current_compare_id = "tran-rc-pulse-current-external-compare-v3"
+    historical_compare_id = "tran-rc-pulse-current-external-compare-v2"
+    if (
+        tran["acceptance_state"] != "accepted"
+        or tran["external_oracle"] is not True
+        or tran["evidence_ids"] != ["tran-rc-pulse-contract", "p7-isolated-install", current_compare_id]
+        or tran["blockers"] != ["release_promotion_blocked"]
+        or tran["non_claims"] != [
+            "fixed_profile_only_not_general_tran_or_netlist_support",
+            "not_cross_platform_or_release_certification",
+        ]
     ):
-        raise PublicationError("publication_tran_evidence_state_drift")
-    else:
-        entry = index_by_id.get(compare_id)
-        if (
-            entry is None
-            or entry["kind"] != "external_compare_evidence"
-            or entry["subject"] != "tran-rc-pulse"
-            or entry["evidence_state"] != "observed"
-        ):
-            raise PublicationError("publication_tran_evidence_state_drift")
-        try:
-            verify_tran_evidence(load_yaml(ROOT / entry["path"]))
-        except EvidenceError as error:
-            if str(error) != "evidence_product_source_drift":
-                raise PublicationError("publication_tran_historical_evidence_invalid") from None
-        except (OSError, RuntimeError):
+        raise PublicationError("publication_tran_acceptance_binding_invalid")
+    current_entry = index_by_id.get(current_compare_id)
+    if current_entry != {
+        "id": current_compare_id,
+        "kind": "external_compare_evidence",
+        "path": "docs/baselines/tran-rc-pulse-current-external-compare-evidence.v3.yaml",
+        "subject": "tran-rc-pulse",
+        "evidence_state": "observed",
+    }:
+        raise PublicationError("publication_tran_acceptance_binding_invalid")
+    try:
+        verify_current_tran_evidence(load_yaml(ROOT / current_entry["path"]))
+    except (CurrentTranEvidenceError, OSError, RuntimeError):
+        raise PublicationError("publication_tran_external_evidence_invalid") from None
+
+    historical_entry = index_by_id.get(historical_compare_id)
+    if historical_entry != {
+        "id": historical_compare_id,
+        "kind": "external_compare_evidence",
+        "path": "docs/baselines/tran-rc-pulse-current-external-compare-evidence.v2.yaml",
+        "subject": "tran-rc-pulse",
+        "evidence_state": "observed",
+    }:
+        raise PublicationError("publication_tran_historical_evidence_invalid")
+    try:
+        verify_historical_tran_evidence(load_yaml(ROOT / historical_entry["path"]))
+    except HistoricalTranEvidenceError as error:
+        if str(error) != "evidence_product_source_drift":
             raise PublicationError("publication_tran_historical_evidence_invalid") from None
-        else:
-            raise PublicationError("publication_tran_historical_evidence_not_drifted")
+    except (OSError, RuntimeError):
+        raise PublicationError("publication_tran_historical_evidence_invalid") from None
+    else:
+        raise PublicationError("publication_tran_historical_evidence_not_drifted")
 
     channel = next((row for row in rows if row["id"] == "channel"), None)
     compare_id = "channel-s2p-cli-current-external-compare-v5"

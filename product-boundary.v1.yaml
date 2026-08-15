@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 68bceceb906f9f99203afed0e10498405f4fab1ac70b7fab1a7b74a1ae9ff82e
+  tracked_paths_sha256: 4e5b0a7bac064cc5d9ebf6ce3b4274a8b6d61c46d71e265e049cba9e5862c3ed
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1853,6 +1853,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-15-p2-fixed-tran-current-evidence-rebinding-v3.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-15-p3a-matched-s2p-cli-current-evidence-rebinding-v5.md:
       rule: historical-docs
       class: migration_only
@@ -2832,6 +2838,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/tran-rc-pulse-current-external-compare-evidence.v2.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/tran-rc-pulse-current-external-compare-evidence.v3.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -10254,6 +10266,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_tran_rc_pulse_current_external_compare_evidence_v2.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_tran_rc_pulse_current_external_compare_evidence_v3.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

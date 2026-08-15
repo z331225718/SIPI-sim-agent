@@ -226,8 +226,11 @@ class PublicationTests(unittest.TestCase):
             with self.subTest(row_id=row_id):
                 mutated = self.publication()
                 row = next(item for item in mutated["rows"] if item["id"] == row_id)
-                row["acceptance_state"] = "accepted"
-                row["external_oracle"] = True
+                if row_id == "tran-rc-pulse":
+                    row["external_oracle"] = False
+                else:
+                    row["acceptance_state"] = "accepted"
+                    row["external_oracle"] = True
                 expected = specialized_rejections.get(row_id, "publication_acceptance_authority_missing")
                 with self.assertRaisesRegex(GATE.PublicationError, expected):
                     GATE.validate(mutated, manifest_for(mutated), ROOT)
@@ -272,17 +275,26 @@ class PublicationTests(unittest.TestCase):
             reordered[key] = list(reversed(reordered[key]))
             GATE.validate(reordered, manifest_for(reordered), ROOT)
 
-    def test_tran_historical_evidence_requires_exact_source_drift_state(self) -> None:
+    def test_tran_current_and_historical_evidence_require_exact_states(self) -> None:
         publication = self.publication()
         tran = next(row for row in publication["rows"] if row["id"] == "tran-rc-pulse")
-        tran["blockers"].remove("current_external_compare_evidence_source_drift")
-        with self.assertRaisesRegex(GATE.PublicationError, "publication_tran_evidence_state_drift"):
+        tran["blockers"].append("current_external_compare_evidence_source_drift")
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_tran_acceptance_binding_invalid"):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
         publication = self.publication()
         tran = next(row for row in publication["rows"] if row["id"] == "tran-rc-pulse")
-        tran["evidence_ids"].append("tran-rc-pulse-current-external-compare-v2")
-        with self.assertRaisesRegex(GATE.PublicationError, "publication_tran_evidence_state_drift"):
+        tran["evidence_ids"].remove("tran-rc-pulse-current-external-compare-v3")
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_tran_acceptance_binding_invalid"):
+            GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        historical = next(
+            entry for entry in publication["report_index"]
+            if entry["id"] == "tran-rc-pulse-current-external-compare-v2"
+        )
+        historical["path"] = "docs/baselines/tran-rc-pulse-current-external-compare-evidence.v1.yaml"
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_tran_historical_evidence_invalid"):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
     def test_prbs9_artifact_metric_route_stays_identity_only_and_non_acceptance(self) -> None:
@@ -306,7 +318,7 @@ class PublicationTests(unittest.TestCase):
 
         publication = self.publication()
         tran = next(row for row in publication["rows"] if row["id"] == "tran-rc-pulse")
-        tran["acceptance_state"] = "accepted"
+        tran["external_oracle"] = False
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
