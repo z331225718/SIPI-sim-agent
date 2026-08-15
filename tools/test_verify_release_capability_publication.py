@@ -284,6 +284,61 @@ class PublicationTests(unittest.TestCase):
             with self.assertRaisesRegex(GATE.PublicationError, "publication_ami_blocked_evidence_promoted"):
                 GATE.validate(publication, manifest_for(publication), ROOT)
 
+    def test_com_route_stays_bound_to_missing_authoritative_reference(self) -> None:
+        def com_row(publication: dict) -> dict:
+            return next(item for item in publication["rows"] if item["id"] == "com")
+
+        for field, value in {
+            "external_oracle": False,
+            "blockers": ["bogus"],
+            "non_claims": ["bogus"],
+            "evidence_ids": ["p6-command-manifest"],
+        }.items():
+            with self.subTest(row_field=field):
+                publication = self.publication()
+                com_row(publication)[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_com_blocked_route_binding_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        for field, value in {
+            "kind": "capability_contract",
+            "path": "docs/baselines/audits/2026-08-11-p6-command-manifest.md",
+            "subject": "foundation",
+            "evidence_state": "specified",
+        }.items():
+            with self.subTest(index_field=field):
+                publication = self.publication()
+                evidence = next(item for item in publication["report_index"] if item["id"] == "com-r480-acceptance")
+                evidence[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_com_blocked_evidence_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        with patch.object(GATE, "COM_R480_ACCEPTANCE_SHA256", "0" * 64):
+            with self.assertRaisesRegex(GATE.PublicationError, "publication_com_blocked_evidence_invalid"):
+                GATE.validate(publication, manifest_for(publication), ROOT)
+
+        document = GATE.load_yaml(ROOT / "docs/baselines/com-r480-acceptance.v1.yaml")
+        original_load_yaml = GATE.load_yaml
+        for section, field, value in (
+            ("authoritative_reference", "status", "available"),
+            ("comparison", "status", "ready"),
+            ("comparison", "result_status", "run"),
+            ("comparison", "product_self_comparison", "allowed"),
+            ("external_materials", "product_material", "allowed"),
+        ):
+            with self.subTest(section=section, field=field):
+                mutated = copy.deepcopy(document)
+                mutated[section][field] = value
+                publication = self.publication()
+                def load_yaml_for_com(path: Path) -> dict:
+                    if path == ROOT / "docs/baselines/com-r480-acceptance.v1.yaml":
+                        return mutated
+                    return original_load_yaml(path)
+                with patch.object(GATE, "load_yaml", side_effect=load_yaml_for_com):
+                    with self.assertRaisesRegex(GATE.PublicationError, "publication_com_blocked_evidence_promoted"):
+                        GATE.validate(publication, manifest_for(publication), ROOT)
+
         publication = self.publication()
         with patch.object(GATE, "verify_ami_loader_declarations", return_value={"worker_admitted": False, "runtime_invoked": True, "dynamic_closure": "blocked_not_assessed"}):
             with self.assertRaisesRegex(GATE.PublicationError, "publication_ami_blocked_evidence_promoted"):

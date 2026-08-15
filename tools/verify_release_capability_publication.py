@@ -43,6 +43,7 @@ COMMAND_DESCRIPTOR_FIELDS = {
 COMMAND_ID = re.compile(r"[a-z0-9][a-z0-9.-]*")
 ROUTE_TOKEN = re.compile(r"[a-z][a-z0-9-]*")
 ACCEPTANCE_AUTHORITY_ROWS_V1 = frozenset({"tran-rc-pulse"})
+COM_R480_ACCEPTANCE_SHA256 = "e90fca0d14968a04e09df90cd8bd4fcc7f749abfa07ad2b4b29dc297351ef03b"
 
 
 class PublicationError(RuntimeError):
@@ -225,6 +226,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     _validate_prbs9_artifact_metric_route(rows, index_by_id)
     _validate_selected_highloss_waveform_only_route(rows, index_by_id)
     _validate_ami_blocked_route(rows, index_by_id)
+    _validate_com_blocked_route(rows, index_by_id, root)
     _validate_accepted_evidence_authority(rows)
 
 
@@ -350,6 +352,52 @@ def _validate_ami_blocked_route(rows: list[dict[str, Any]], index_by_id: dict[st
         or declarations.get("dynamic_closure") != "blocked_not_assessed"
     ):
         raise PublicationError("publication_ami_blocked_evidence_promoted")
+
+
+def _validate_com_blocked_route(
+    rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]], root: Path
+) -> None:
+    row = next((item for item in rows if item["id"] == "com"), None)
+    evidence_id = "com-r480-acceptance"
+    path = "docs/baselines/com-r480-acceptance.v1.yaml"
+    if (
+        row is None
+        or row["command_id"] != "com.run"
+        or row["product_surface"] != "unavailable"
+        or row["acceptance_state"] != "blocked"
+        or row["external_oracle"] is not True
+        or "authoritative_reference_missing" not in row["blockers"]
+        or "no_com_solver_or_oracle_workflow" not in row["non_claims"]
+        or evidence_id not in row["evidence_ids"]
+    ):
+        raise PublicationError("publication_com_blocked_route_binding_invalid")
+    evidence = index_by_id.get(evidence_id)
+    if (
+        evidence is None
+        or evidence["kind"] != "acceptance_contract"
+        or evidence["path"] != path
+        or evidence["subject"] != "com"
+        or evidence["evidence_state"] != "blocked"
+    ):
+        raise PublicationError("publication_com_blocked_evidence_invalid")
+    document_path = root / path
+    try:
+        if hashlib.sha256(document_path.read_bytes()).hexdigest() != COM_R480_ACCEPTANCE_SHA256:
+            raise PublicationError("publication_com_blocked_evidence_invalid")
+        document = load_yaml(document_path)
+    except (OSError, RuntimeError, ValueError):
+        raise PublicationError("publication_com_blocked_evidence_invalid") from None
+    if (
+        document.get("schema") != "sipi.com.r480.acceptance.v1"
+        or document.get("authoritative_reference", {}).get("status") != "missing"
+        or document.get("authoritative_reference", {}).get("external_custody") != "required"
+        or document.get("comparison", {}).get("status") != "blocked_missing_authoritative_reference"
+        or document.get("comparison", {}).get("result_status") != "not_run"
+        or document.get("comparison", {}).get("product_self_comparison") != "forbidden"
+        or document.get("product_contract", {}).get("status") != "independent_clean_room_spec_required"
+        or document.get("external_materials", {}).get("product_material") != "prohibited"
+    ):
+        raise PublicationError("publication_com_blocked_evidence_promoted")
 
 
 def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]) -> None:
