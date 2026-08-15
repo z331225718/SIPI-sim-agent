@@ -47,6 +47,12 @@ and pinned P6 capability contract remain exact. This does not create a generic
 project executor, a second topology, retry/cache semantics, external-profile
 acceptance, or release evidence.
 
+The available `link.run` route is separately bound to its direct-launch
+causal-FIR-only profile. Its descriptor, blocked required-link-profile state,
+nonclaim, and pinned P3B capability ledger remain exact. This does not create
+an external oracle, S2P channel support, receiver parity, PRBS/equalization,
+noise/jitter, DFE/CDR/BER, or release acceptance.
+
 Only repository-relative references below `docs/baselines` are admitted. The
 publication contains no external asset paths or bytes, user paths, executable
 identities, waveform data, legal conclusion, or release approval.

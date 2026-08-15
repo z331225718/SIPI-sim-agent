@@ -49,6 +49,7 @@ P3B_RECEIVER_DIAGNOSTIC_AUDIT_SHA256 = "ff59135f5339798c86d908fef388d3b3c873af32
 P3C_ARRAY_COMPARE_AUDIT_SHA256 = "25e7bcb2bb06c1c6978a3c6f0466cb18634d9ff72beb28e610f5831f0ac3cfce"
 P3C_ALIGNED_ARRAY_COMPARE_CLI_AUDIT_SHA256 = "0d2dada97845e901f95ec164aec3794bf0a8f827a4602d28d08e2f1a35877f64"
 P6_FIXED_PROJECT_CLI_AUDIT_SHA256 = "ff51578cf1ec1ee24fe0d126d3d3d0770f22e997a7befd1739c0061e48af3975"
+P3B_LINK_STAGE_LEDGER_SHA256 = "0055a9fcdfd875f447a4e6ffe978f99d11ab6c03068c6748a358ea81fbfe3751"
 PRODUCT_OWNED_UNAVAILABLE_CATALOG_ROUTES_V1 = {
     "project-validate": {
         "domain": "project",
@@ -252,6 +253,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     _validate_receiver_diagnostic_route(rows, manifest_by_id, index_by_id, root)
     _validate_aligned_array_compare_route(rows, manifest_by_id, index_by_id, root)
     _validate_fixed_project_run_route(rows, manifest_by_id, index_by_id, root)
+    _validate_causal_fir_link_route(rows, manifest_by_id, index_by_id, root)
     _validate_accepted_evidence_authority(rows)
 
 
@@ -637,6 +639,55 @@ def _validate_fixed_project_run_route(
         raise PublicationError("publication_fixed_project_run_evidence_invalid") from None
     if actual_sha256 != P6_FIXED_PROJECT_CLI_AUDIT_SHA256:
         raise PublicationError("publication_fixed_project_run_evidence_invalid")
+
+
+def _validate_causal_fir_link_route(
+    rows: list[dict[str, Any]], manifest_by_id: dict[str, dict[str, Any]],
+    index_by_id: dict[str, dict[str, Any]], root: Path,
+) -> None:
+    evidence_id = "link-stage-ledger"
+    path = "docs/baselines/p3b-link-stage-capability-ledger.v1.yaml"
+    row = next((item for item in rows if item["id"] == "link-causal-fir"), None)
+    command = manifest_by_id.get("link.run")
+    if (
+        row is None
+        or row["domain"] != "link"
+        or row["command_id"] != "link.run"
+        or row["product_surface"] != "available"
+        or row["acceptance_state"] != "specified"
+        or row["external_oracle"] is not False
+        or row["evidence_ids"] != [evidence_id]
+        or row["blockers"] != ["no_required_link_profile_accepted"]
+        or row["non_claims"] != ["not_s2p_or_receiver_parity"]
+        or command is None
+        or command["route"] != ["link", "run"]
+        or command["availability"] != "available"
+        or command["transport"] != "stdin_json_v1"
+        or command["request_schema"] != "sipi.link.causal-fir-request.v1"
+        or command["response_schema"] != "sipi.link.run-result.v1"
+        or command["unavailable_reason"] is not None
+        or command["nonclaim"] != "causal_fir_direct_launch_only"
+    ):
+        raise PublicationError("publication_causal_fir_link_route_binding_invalid")
+    evidence = index_by_id.get(evidence_id)
+    if (
+        evidence is None
+        or evidence["kind"] != "capability_ledger"
+        or evidence["path"] != path
+        or evidence["subject"] != "link"
+        or evidence["evidence_state"] != "specified"
+    ):
+        raise PublicationError("publication_causal_fir_link_evidence_invalid")
+    try:
+        actual_sha256 = hashlib.sha256((root / path).read_bytes()).hexdigest()
+        ledger = load_yaml(root / path)
+        result = verify_link_stage_capabilities(ledger)
+    except (OSError, RuntimeError, ValueError):
+        raise PublicationError("publication_causal_fir_link_ledger_invalid") from None
+    if actual_sha256 != P3B_LINK_STAGE_LEDGER_SHA256:
+        raise PublicationError("publication_causal_fir_link_evidence_invalid")
+    if result.get("valid") is not True or result.get("entry_count") != 13:
+        raise PublicationError("publication_causal_fir_link_ledger_invalid")
 
 
 def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]) -> None:
