@@ -1,0 +1,49 @@
+schema: sipi.p3c-ads-transient-noncausal-delay-policy-surface-charter.v1
+status: specified_external_document_and_fixed_pwl_netlist_observation_pending
+authority:
+  actor: user
+  decision_ref: user-delegated-owner-discretion-2026-08-15
+  scope: one_read_only_ads_transient_noncausal_delay_policy_surface_observation_only
+inputs:
+  selected_s4p:
+    logical_name: channel_gen5_highloss.s4p
+    byte_length: 1834156
+    sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  ads_document:
+    logical_name: Troubleshooting_a_Transient-Convolution_Simulation.html
+    byte_length: 78496
+    sha256: 621851d5d3bd754b898c27bccd641da3dae08954ef902f72b6609bd8f093a7e0
+  fixed_pwl_netlist_builder: tools/run_p3c_external_ads_fixed_pulse_operator.py
+  product_no_delay_contract: docs/baselines/p3c-ieee-bsd-inline-causality-direct-port.v1.yaml
+observation:
+  runtime_invoked: false
+  ads_action_observed: false
+  fixed_pwl_controller:
+    imp_max_freq_hz: 40000000000.0
+    imp_delta_freq_hz: 39062500.0
+    imp_mode: 1
+    imp_noncausal_length: not_declared
+  required_document_facts:
+    - controller_introduces_delay_to_force_causality
+    - imp_noncausal_length_default_is_32
+    - documented_timestep_is_set_by_default_imp_max_freq
+  product_contract_facts:
+    delay_extraction_implemented: false
+    caller_delay_or_alignment_override: prohibited
+forbidden:
+  - derive_delay_seconds
+  - claim_selected_run_delay_action
+  - change_imp_noncausal_length
+  - run_parameter_sweep
+  - waveform_shift_or_alignment
+  - port_ads_proprietary_delay_algorithm
+gates:
+  ads_transient_noncausal_delay_policy_surface_documented: false
+  selected_netlist_implicit_noncausal_length_surface_observed: false
+  product_no_delay_contract_bound: false
+  selected_run_delay_action_observed: false
+  candidate_waveform_accepted: false
+  release_ledger_promoted: false
+non_claims:
+  - The documentation policy surface does not prove that this selected ADS run introduced a delay.
+  - No delay duration, ADS algorithm, alignment authorization, candidate acceptance, receiver, P4B, P5, or release result is derived.

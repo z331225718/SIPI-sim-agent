@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: cb43be48bb266291a2a3eb333091eb7bd4217aaa5e72b69a29a28b811c50af78
+  tracked_paths_sha256: 31081ac9f06938c34c09f09d3007e4f9094c2feb0372d3a8ff4ec9cc989a5db1
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -2213,6 +2213,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3c-ads-transient-noncausal-delay-policy-surface-charter.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p3c-ads-transient-policy-surface-observation.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -3048,6 +3054,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-ads-s0-product-bounded-dtft.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-ads-transient-noncausal-delay-policy-surface.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8147,6 +8159,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p3c_ads_transient_noncausal_delay_policy.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/observe_p3c_ads_transient_policy_surface.py:
       rule: migration-tools
       class: migration_only
@@ -8484,6 +8502,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_observe_p3c_ads_s0_product_bounded_dtft.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_observe_p3c_ads_transient_noncausal_delay_policy.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
