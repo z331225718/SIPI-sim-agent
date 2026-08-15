@@ -1,0 +1,80 @@
+{
+  "schema": "sipi.p7-current-candidate-static-pe-rejection-diagnosis.v1",
+  "status": "external_static_pe_rejection_diagnosed_current_candidate_chain_remains_blocked",
+  "preflight": {
+    "path": "docs/baselines/p7-current-candidate-chain-rebinding-preflight.v1.yaml",
+    "sha256": "e2b02b8c327b97e15e61fe8597cdcb7cdfaf88e89cd0462f7e7adbf04f24f21c"
+  },
+  "candidate": {
+    "source_commit": "b775dde6d242e687eb71a30b9a83a87d8b31ba55",
+    "source_tree": "35be864a88573709c2b316e063bfe90eb54678e2",
+    "committed_product_inputs": "unchanged_since_preflight"
+  },
+  "observer": {
+    "path": "tools/observe_p7_current_candidate_pe_rejection.py",
+    "sha256": "ef371d3e3b4093f6e1ac45ec8d982250ba88c41ab8ada368119fe0f11608f3d4"
+  },
+  "external_report": {
+    "schema": "sipi.p7-current-candidate-static-pe-rejection-observation.v1",
+    "sha256": "b0085bc44d229667e6daf82133664a66a7384b380c62bd5573d4e4096b3d35f3",
+    "byte_length": 1545,
+    "custody": "operator_external_only"
+  },
+  "inputs": {
+    "fresh_materializations": 2,
+    "policy_sha256": "a0ac8e7efd9d2c35a69aa6f48f8cb063cb837b779d18be0a21f39e0132e11ce2",
+    "executable_sha256": "a3059d052df54c0f3ebbd727bd2f71760ff33f73af82e1e2f29c0ec35b8c882d",
+    "executable_bytes": 3908608
+  },
+  "observation": {
+    "pe_parse_status": "parsed",
+    "machine": "windows-x86_64",
+    "delay_import_directory_present": false,
+    "normal_import_dlls": [
+      "api-ms-win-core-synch-l1-2-0.dll",
+      "api-ms-win-crt-heap-l1-1-0.dll",
+      "api-ms-win-crt-locale-l1-1-0.dll",
+      "api-ms-win-crt-math-l1-1-0.dll",
+      "api-ms-win-crt-runtime-l1-1-0.dll",
+      "api-ms-win-crt-stdio-l1-1-0.dll",
+      "bcryptprimitives.dll",
+      "kernel32.dll",
+      "ntdll.dll",
+      "vcruntime140.dll"
+    ],
+    "allowed_import_dlls": [
+      "api-ms-win-core-synch-l1-2-0.dll",
+      "api-ms-win-crt-heap-l1-1-0.dll",
+      "api-ms-win-crt-locale-l1-1-0.dll",
+      "api-ms-win-crt-math-l1-1-0.dll",
+      "api-ms-win-crt-runtime-l1-1-0.dll",
+      "api-ms-win-crt-stdio-l1-1-0.dll",
+      "kernel32.dll",
+      "ntdll.dll",
+      "vcruntime140.dll"
+    ],
+    "disallowed_import_dlls": ["bcryptprimitives.dll"],
+    "forbidden_token_import_dlls": [],
+    "rejection_classification": "normal_import_disallowed",
+    "canonical_observation_sha256": "8b8d26048c62624ed343993404e22918a4312f57133dc1aa904600cc0620133e"
+  },
+  "gates": {
+    "layout_policy_changed": false,
+    "allowlist_expanded": false,
+    "static_or_dynamic_dependency_closure_evaluated": false,
+    "composition_invoked": false,
+    "archive_invoked": false,
+    "install_invoked": false,
+    "performance_observation_invoked": false,
+    "candidate_evaluation_invoked": false,
+    "current_candidate_p7_chain_admitted": false,
+    "release_candidate": false,
+    "promotion_status": "blocked"
+  },
+  "non_claims": [
+    "not_a_layout_policy_change_or_allowlist_expansion",
+    "not_static_or_dynamic_dependency_closure",
+    "not_composition_archive_install_performance_or_candidate_evaluation",
+    "not_release_readiness_or_promotion"
+  ]
+}

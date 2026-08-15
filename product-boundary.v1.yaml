@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 0d00f7b2a09bd1425b753fac54b1f8dcfdc25ab810720cb4a8d0c6f3639c1c5a
+  tracked_paths_sha256: 727a501785739f7e8f4d73511247b17ec387f3a5318fca00e6aa3bba45051828
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1931,6 +1931,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-15-p7-current-static-pe-rejection-diagnosis.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-15-p7-fixed-project-publication-binding.md:
       rule: historical-docs
       class: migration_only
@@ -2778,6 +2784,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p7-current-candidate-chain-rebinding-preflight.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p7-current-candidate-static-pe-rejection-diagnosis.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8399,6 +8411,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p7_current_candidate_pe_rejection.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/replay_channel_rfm_receiver_handoff.py:
       rule: migration-tools
       class: migration_only
@@ -8706,6 +8724,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_observe_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_observe_p7_current_candidate_pe_rejection.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -9366,6 +9390,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p7_current_candidate_chain_rebinding_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p7_current_candidate_pe_rejection_diagnosis.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -10212,6 +10242,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p7_current_candidate_chain_rebinding_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p7_current_candidate_pe_rejection_diagnosis.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
