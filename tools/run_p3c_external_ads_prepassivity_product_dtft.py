@@ -45,7 +45,7 @@ def export_s0_hdiff(destination: Path) -> dict[str, Any]:
         summary = json.loads(result.stdout)
     except json.JSONDecodeError as error:
         raise PrepassivityDtftError("ads_s0_hdiff_export_invalid") from error
-    comparison = summary.get("common_node_comparison")
+    comparison = summary
     payload_identity = summary.get("s0_hdiff_payload")
     if not isinstance(comparison, dict) or comparison.get("common_node_count") != 1024 or comparison.get("mapping") != "fft_imp_index_equals_4_times_s0_index":
         raise PrepassivityDtftError("ads_s0_hdiff_axis_invalid")

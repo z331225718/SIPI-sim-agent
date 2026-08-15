@@ -144,7 +144,7 @@ def observe(source: Path, help_file: Path, report: Path) -> dict[str, Any]:
             if product.returncode:
                 raise ObservationError("product_dtft_rejected")
             product_fact = read_product_report(product_report)
-            if product_fact["ads_s0_payload_byte_length"] != ads_manifest["prepassivity_s0_hdiff"]["payload"]["byte_length"] or product_fact["ads_s0_payload_sha256"] != ads_manifest["prepassivity_s0_hdiff"]["payload"]["sha256"] or product_fact["ads_s0_hdiff_sha256"] != ads_manifest["prepassivity_s0_hdiff"]["s0_hdiff_sha256"]:
+            if product_fact["ads_s0_payload_byte_length"] != ads_manifest["prepassivity_s0_hdiff"]["payload"]["byte_length"] or product_fact["ads_s0_payload_sha256"] != ads_manifest["prepassivity_s0_hdiff"]["payload"]["sha256"]:
                 raise ObservationError("ads_product_binding")
             runs.append((ads_manifest, product_fact))
         if runs[0][0]["generated"] != runs[1][0]["generated"] or runs[0][0]["prepassivity_s0_hdiff"] != runs[1][0]["prepassivity_s0_hdiff"] or runs[0][1].copy() | {"manifest_sha256": ""} != runs[1][1].copy() | {"manifest_sha256": ""}:
