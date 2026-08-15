@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 28fcab839ab70f7ce00a4a63a7a9b51c846223f057131ec61dc670fa88751b47
+  tracked_paths_sha256: b15b246b646fa290202b86d2a9b65b9b03aef41cda482d4fa7a528ea9579c1e2
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1896,6 +1896,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-15-p7-com-blocked-evidence-binding.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-15-p7-fixed-project-publication-binding.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

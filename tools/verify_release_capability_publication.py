@@ -48,6 +48,7 @@ COM_R480_ACCEPTANCE_SHA256 = "e90fca0d14968a04e09df90cd8bd4fcc7f749abfa07ad2b4b2
 P3B_RECEIVER_DIAGNOSTIC_AUDIT_SHA256 = "ff59135f5339798c86d908fef388d3b3c873af32ec23d984a0f6cfdf963105e8"
 P3C_ARRAY_COMPARE_AUDIT_SHA256 = "25e7bcb2bb06c1c6978a3c6f0466cb18634d9ff72beb28e610f5831f0ac3cfce"
 P3C_ALIGNED_ARRAY_COMPARE_CLI_AUDIT_SHA256 = "0d2dada97845e901f95ec164aec3794bf0a8f827a4602d28d08e2f1a35877f64"
+P6_FIXED_PROJECT_CLI_AUDIT_SHA256 = "ff51578cf1ec1ee24fe0d126d3d3d0770f22e997a7befd1739c0061e48af3975"
 PRODUCT_OWNED_UNAVAILABLE_CATALOG_ROUTES_V1 = {
     "project-validate": {
         "domain": "project",
@@ -250,6 +251,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     _validate_product_owned_unavailable_catalog_routes(rows, manifest_by_id, index_by_id)
     _validate_receiver_diagnostic_route(rows, manifest_by_id, index_by_id, root)
     _validate_aligned_array_compare_route(rows, manifest_by_id, index_by_id, root)
+    _validate_fixed_project_run_route(rows, manifest_by_id, index_by_id, root)
     _validate_accepted_evidence_authority(rows)
 
 
@@ -590,6 +592,51 @@ def _validate_aligned_array_compare_route(
             raise PublicationError("publication_aligned_array_compare_evidence_invalid") from None
         if actual_sha256 != expected_sha256:
             raise PublicationError("publication_aligned_array_compare_evidence_invalid")
+
+
+def _validate_fixed_project_run_route(
+    rows: list[dict[str, Any]], manifest_by_id: dict[str, dict[str, Any]],
+    index_by_id: dict[str, dict[str, Any]], root: Path,
+) -> None:
+    evidence_id = "p6-fixed-project-cli-run"
+    path = "docs/baselines/audits/2026-08-11-p6-fixed-project-cli-run.md"
+    row = next((item for item in rows if item["id"] == "project-run"), None)
+    command = manifest_by_id.get("project.run")
+    if (
+        row is None
+        or row["domain"] != "project"
+        or row["command_id"] != "project.run"
+        or row["product_surface"] != "available"
+        or row["acceptance_state"] != "specified"
+        or row["external_oracle"] is not False
+        or row["evidence_ids"] != [evidence_id]
+        or row["blockers"] != ["single_fixed_project_topology_only"]
+        or row["non_claims"] != ["not_a_generic_project_executor"]
+        or command is None
+        or command["route"] != ["project", "run"]
+        or command["availability"] != "available"
+        or command["transport"] != "stdin_json_v1"
+        or command["request_schema"] != "sipi.project.fixed-tran-causal-fir-run-request.v1"
+        or command["response_schema"] != "sipi.project.fixed-tran-causal-fir-run-result.v1"
+        or command["unavailable_reason"] is not None
+        or command["nonclaim"] != "one_fixed_composite_project_route_only"
+    ):
+        raise PublicationError("publication_fixed_project_run_route_binding_invalid")
+    evidence = index_by_id.get(evidence_id)
+    if (
+        evidence is None
+        or evidence["kind"] != "capability_contract"
+        or evidence["path"] != path
+        or evidence["subject"] != "project"
+        or evidence["evidence_state"] != "specified"
+    ):
+        raise PublicationError("publication_fixed_project_run_evidence_invalid")
+    try:
+        actual_sha256 = hashlib.sha256((root / path).read_bytes()).hexdigest()
+    except OSError:
+        raise PublicationError("publication_fixed_project_run_evidence_invalid") from None
+    if actual_sha256 != P6_FIXED_PROJECT_CLI_AUDIT_SHA256:
+        raise PublicationError("publication_fixed_project_run_evidence_invalid")
 
 
 def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]) -> None:

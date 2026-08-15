@@ -41,6 +41,12 @@ non-oracle ledger row, and two pinned product contracts remain exact. This does
 not create profile semantics, eye/jitter/bathtub/BER evaluation, external
 comparison, or release acceptance.
 
+The available `project.run` route is separately bound to its one fixed
+TRAN-to-causal-FIR composite. Its descriptor, fixed-topology blocker, nonclaim,
+and pinned P6 capability contract remain exact. This does not create a generic
+project executor, a second topology, retry/cache semantics, external-profile
+acceptance, or release evidence.
+
 Only repository-relative references below `docs/baselines` are admitted. The
 publication contains no external asset paths or bytes, user paths, executable
 identities, waveform data, legal conclusion, or release approval.

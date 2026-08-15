@@ -46,6 +46,15 @@ def manifest_for(publication: dict) -> list[dict]:
         "unavailable_reason": None,
         "nonclaim": "caller_aligned_arrays_only",
     }
+    fixed_project_run = {
+        "route": ["project", "run"],
+        "availability": "available",
+        "transport": "stdin_json_v1",
+        "request_schema": "sipi.project.fixed-tran-causal-fir-run-request.v1",
+        "response_schema": "sipi.project.fixed-tran-causal-fir-run-result.v1",
+        "unavailable_reason": None,
+        "nonclaim": "one_fixed_composite_project_route_only",
+    }
     commands = []
     for row in publication["rows"]:
         if row["command_id"] == "link.receiver.run":
@@ -53,6 +62,9 @@ def manifest_for(publication: dict) -> list[dict]:
             continue
         if row["command_id"] == "compare.run":
             commands.append({"id": row["command_id"], **aligned_array_compare})
+            continue
+        if row["command_id"] == "project.run":
+            commands.append({"id": row["command_id"], **fixed_project_run})
             continue
         availability = row["product_surface"]
         reason, nonclaim = unavailable.get(
@@ -152,6 +164,7 @@ class PublicationTests(unittest.TestCase):
         specialized_rejections = {
             "tran-rc-pulse": "publication_tran_acceptance_binding_invalid",
             "channel": "publication_channel_acceptance_binding_invalid",
+            "project-run": "publication_fixed_project_run_route_binding_invalid",
             "compare": "publication_aligned_array_compare_route_binding_invalid",
             "prbs9-metric-artifact-compare": "publication_prbs9_artifact_metric_binding_invalid",
             "selected-highloss-prbs9-waveform-only-compare": "publication_selected_highloss_waveform_only_binding_invalid",
@@ -488,6 +501,11 @@ class PublicationTests(unittest.TestCase):
             with self.assertRaisesRegex(GATE.PublicationError, "publication_receiver_diagnostic_evidence_invalid"):
                 GATE.validate(publication, manifest_for(publication), ROOT)
 
+        publication = self.publication()
+        with patch.object(GATE, "verify_link_stage_capabilities", return_value={"valid": False, "entry_count": 13}):
+            with self.assertRaisesRegex(GATE.PublicationError, "publication_receiver_diagnostic_ledger_invalid"):
+                GATE.validate(publication, manifest_for(publication), ROOT)
+
     def test_aligned_array_compare_route_stays_caller_owned_and_non_oracle(self) -> None:
         def compare_row(publication: dict) -> dict:
             return next(item for item in publication["rows"] if item["id"] == "compare")
@@ -551,9 +569,58 @@ class PublicationTests(unittest.TestCase):
                     with self.assertRaisesRegex(GATE.PublicationError, "publication_aligned_array_compare_evidence_invalid"):
                         GATE.validate(publication, manifest_for(publication), ROOT)
 
+    def test_fixed_project_run_route_stays_single_topology_and_non_oracle(self) -> None:
+        def project_row(publication: dict) -> dict:
+            return next(item for item in publication["rows"] if item["id"] == "project-run")
+
+        for field, value in {
+            "domain": "compare",
+            "acceptance_state": "not_evaluated",
+            "external_oracle": True,
+            "blockers": ["bogus"],
+            "non_claims": ["bogus"],
+            "evidence_ids": ["p7-isolated-install"],
+        }.items():
+            with self.subTest(row_field=field):
+                publication = self.publication()
+                project_row(publication)[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_fixed_project_run_route_binding_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        for field, value in {
+            "route": ["project", "fixed"],
+            "availability": "unavailable",
+            "transport": "none",
+            "request_schema": None,
+            "response_schema": None,
+            "unavailable_reason": "wrong_reason",
+            "nonclaim": "wrong_nonclaim",
+        }.items():
+            with self.subTest(descriptor_field=field):
+                publication = self.publication()
+                manifest = manifest_for(publication)
+                descriptor = next(item for item in manifest if item["id"] == "project.run")
+                descriptor[field] = value
+                expected = "command_manifest_invalid" if field in {"availability", "unavailable_reason"} else "publication_fixed_project_run_route_binding_invalid"
+                with self.assertRaisesRegex(GATE.PublicationError, expected):
+                    GATE.validate(publication, manifest, ROOT)
+
+        for field, value in {
+            "kind": "product_contract",
+            "path": "docs/baselines/audits/2026-08-11-p3c-array-compare.md",
+            "subject": "compare",
+            "evidence_state": "observed",
+        }.items():
+            with self.subTest(index_field=field):
+                publication = self.publication()
+                evidence = next(item for item in publication["report_index"] if item["id"] == "p6-fixed-project-cli-run")
+                evidence[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_fixed_project_run_evidence_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
         publication = self.publication()
-        with patch.object(GATE, "verify_link_stage_capabilities", return_value={"valid": False, "entry_count": 13}):
-            with self.assertRaisesRegex(GATE.PublicationError, "publication_receiver_diagnostic_ledger_invalid"):
+        with patch.object(GATE, "P6_FIXED_PROJECT_CLI_AUDIT_SHA256", "0" * 64):
+            with self.assertRaisesRegex(GATE.PublicationError, "publication_fixed_project_run_evidence_invalid"):
                 GATE.validate(publication, manifest_for(publication), ROOT)
 
     def test_channel_cli_requires_current_evidence_without_claiming_general_support(self) -> None:
