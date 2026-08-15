@@ -47,3 +47,18 @@ exact S2P object and the current product candidate. The active Channel row now
 binds v4, no longer carries the source-drift blocker, and still remains
 `specified`; v3 stays in the historical index and must continue to report
 exact source drift.
+
+The later P7 consistency patches keep the same ledger provisional. The
+publication now rejects any missing, substituted, duplicated, or extra v1
+global blocker/non-claim entry, so the license/NOTICE, fresh-machine, and
+uncertified-profile release blockers cannot disappear from the record. It also
+binds `ibis.dc-evaluate` to its live caller-input static-DC descriptor and the
+pinned P4A conformance matrix entry. That entry remains
+`implemented_self_tested`; it does not inherit a separate external selected
+IBIS profile acceptance. These are gate-integrity repairs, not domain or
+release promotion.
+
+The user-authorized OMP review reused terminal
+`term_fa7831f5-ec22-4b3d-8737-25a919226b8b` and reported **0 High / 0
+Critical** findings for the scoped publication changes. No uncommitted Rust
+file or `uv.lock` was included.

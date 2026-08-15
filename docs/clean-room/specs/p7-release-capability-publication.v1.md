@@ -12,6 +12,12 @@ surface cannot be represented as accepted, specified, or not evaluated.
 `blocked` rows require a stable blocker. All global publication states remain
 `release_ready: false` and `promotion_status: blocked`.
 
+The v1 global blocker and non-claim lists are closed sets. They retain the
+license/NOTICE, fresh-machine, and uncertified-profile blockers and the four
+corresponding release non-claims; missing, substituted, duplicated, or added
+entries are rejected. This protects the blocked release posture without
+turning any individual domain capability into an accepted release input.
+
 An `accepted` row also requires a route-specific v1 acceptance authority in
 the verifier. Availability, an external-oracle label, or an observed report
 alone cannot authorize acceptance. New accepted routes require a dedicated
@@ -62,6 +68,13 @@ or external-provenance claim; `report.show` remains unavailable and blocked.
 The available `tran.one-node-rc-pulse` route is separately bound to its bounded
 product-owned one-node RC/PULSE contract. This does not create an external
 oracle, general TRAN/netlist or SPICE parity, multi-node/MNA/nonlinear support,
+or release acceptance.
+
+The available `ibis.dc-evaluate` route is separately bound to its caller-input
+static DC descriptor and the pinned P4A conformance matrix. The matrix entry
+for that stdin route remains `implemented_self_tested`; it cannot inherit the
+separate selected external IBIS profile acceptance. This does not create
+general IBIS compatibility, file/URL intake, transient behavior, AMI support,
 or release acceptance.
 
 Only repository-relative references below `docs/baselines` are admitted. The
