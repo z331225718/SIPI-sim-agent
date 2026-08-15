@@ -273,6 +273,7 @@ class PublicationTests(unittest.TestCase):
             "ibis-dc-evaluate": "publication_ibis_dc_route_binding_invalid",
             "ibis-quasi-static-evaluate": "publication_ibis_quasi_static_route_binding_invalid",
             "ibis-quasi-static-artifact-evaluate": "publication_ibis_quasi_static_artifact_route_binding_invalid",
+            "ibis-quasi-static-artifact-batch-evaluate": "publication_ibis_quasi_static_artifact_batch_route_binding_invalid",
             "selected-differential-rc-load-evaluate": "publication_selected_differential_rc_load_route_binding_invalid",
             "ibis-inspect": "publication_ibis_inspect_route_binding_invalid",
             "compare": "publication_aligned_array_compare_route_binding_invalid",
@@ -282,7 +283,7 @@ class PublicationTests(unittest.TestCase):
         }
         publication = self.publication()
         available_ids = [row["id"] for row in publication["rows"] if row["product_surface"] == "available"]
-        self.assertEqual(len(available_ids), 25)
+        self.assertEqual(len(available_ids), 26)
         for row_id in available_ids:
             with self.subTest(row_id=row_id):
                 mutated = self.publication()
@@ -1208,11 +1209,11 @@ class PublicationTests(unittest.TestCase):
 
         publication = self.publication()
         channel = next(row for row in publication["rows"] if row["id"] == "channel")
-        channel["evidence_ids"].remove("channel-s2p-cli-current-external-compare-v7")
+        channel["evidence_ids"].remove("channel-s2p-cli-current-external-compare-v8")
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
         publication = self.publication()
-        evidence = next(entry for entry in publication["report_index"] if entry["id"] == "channel-s2p-cli-current-external-compare-v7")
+        evidence = next(entry for entry in publication["report_index"] if entry["id"] == "channel-s2p-cli-current-external-compare-v8")
         evidence["evidence_state"] = "specified"
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
@@ -1241,7 +1242,7 @@ class PublicationTests(unittest.TestCase):
         publication = self.publication()
         with patch.object(
             GATE,
-            "verify_previous_channel_cli_evidence",
+            "verify_previous_current_channel_cli_evidence",
             return_value={"valid": True},
         ):
             with self.assertRaisesRegex(GATE.PublicationError, "publication_channel_historical_evidence_not_drifted"):
