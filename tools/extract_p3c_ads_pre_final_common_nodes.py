@@ -77,7 +77,20 @@ def read_block(dataset: object, kind: str, row: int, column: int) -> tuple[tuple
     return axis, values
 
 
-def extract(dataset_path: Path) -> dict[str, object]:
+def write_s0_hdiff_payload(path: Path, axis: tuple[float, ...], values: list[complex]) -> dict[str, object]:
+    if len(axis) != 1024 or len(values) != 1024:
+        raise ExtractError("s0_hdiff_payload_shape_rejected")
+    payload = bytearray(b"sipi.p3c.ads-s0-hdiff-payload.v1\0")
+    payload.extend(len(axis).to_bytes(8, "big"))
+    for frequency, value in zip(axis, values, strict=True):
+        payload.extend(bits(frequency))
+        payload.extend(bits(value.real))
+        payload.extend(bits(value.imag))
+    path.write_bytes(payload)
+    return {"byte_length": len(payload), "sha256": hashlib.sha256(payload).hexdigest()}
+
+
+def extract(dataset_path: Path, s0_hdiff_payload: Path | None = None) -> dict[str, object]:
     with ads_dataset.open_dataset_for_reading(dataset_path) as dataset:
         blocks = {(kind, row, column): read_block(dataset, kind, row, column) for kind in ("S0", "FFT_IMP") for row, column in MEMBERS}
     s0_axes = [blocks[("S0", row, column)][0] for row, column in MEMBERS]
@@ -105,7 +118,7 @@ def extract(dataset_path: Path) -> dict[str, object]:
             return (blocks[(kind, 2, 1)][1][mapping[index] if kind == "FFT_IMP" else index] - blocks[(kind, 2, 3)][1][mapping[index] if kind == "FFT_IMP" else index] - blocks[(kind, 4, 1)][1][mapping[index] if kind == "FFT_IMP" else index] + blocks[(kind, 4, 3)][1][mapping[index] if kind == "FFT_IMP" else index]) / 4.0
         h_s0.append(h("S0")); h_final.append(h("FFT_IMP"))
     h_delta = [value - source for value, source in zip(h_final, h_s0, strict=True)]
-    return {
+    result = {
         "common_node_count": len(mapping), "mapping": "fft_imp_index_equals_4_times_s0_index",
         "full_matrix": {
             "s0_sha256": digest(b"sipi.p3c.ads-common-node.full.s0.v1\0", s0_values),
@@ -120,11 +133,14 @@ def extract(dataset_path: Path) -> dict[str, object]:
             **l2_and_max(h_delta, matrix_layout=False),
         },
     }
+    if s0_hdiff_payload is not None:
+        result["s0_hdiff_payload"] = write_s0_hdiff_payload(s0_hdiff_payload, s0_axes[0], h_s0)
+    return result
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--dataset", type=Path, required=True); args = parser.parse_args()
-    try: print(json.dumps(extract(args.dataset), sort_keys=True, separators=(",", ":")))
+    parser = argparse.ArgumentParser(); parser.add_argument("--dataset", type=Path, required=True); parser.add_argument("--s0-hdiff-payload", type=Path); args = parser.parse_args()
+    try: print(json.dumps(extract(args.dataset, args.s0_hdiff_payload), sort_keys=True, separators=(",", ":")))
     except (OSError, ValueError, ExtractError) as error: print(json.dumps({"status": "rejected", "reason": str(error)}, sort_keys=True)); return 2
     return 0
 

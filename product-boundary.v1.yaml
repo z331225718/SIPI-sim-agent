@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 9dc7ad71571376bcec3fc08b18a8f251ae3b0ca8f3cf501ae88c07775bfb11b9
+  tracked_paths_sha256: 516747a1181154c0ae6a8eb3f907da4e4e85aebb7219b9113e327e7192ed58ff
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -540,6 +540,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-p3c/src/prbs9_impulse_candidate_v2.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-p3c/tests/p3c_ads_s0_product_bounded_dtft_runner.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -2147,6 +2153,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3c-ads-s0-product-bounded-dtft-charter.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p3c-ads-transient-policy-surface-observation.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -2958,6 +2970,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p3c-ads-pre-final-spectrum-comparison.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p3c-ads-s0-product-bounded-dtft.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8153,6 +8171,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/run_p3c_external_ads_prepassivity_product_dtft.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/sync_contracts_schemas.py:
       rule: migration-tools
       class: migration_only
@@ -8412,6 +8436,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_run_p3c_external_ads_pre_final_common_nodes.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_run_p3c_external_ads_prepassivity_product_dtft.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

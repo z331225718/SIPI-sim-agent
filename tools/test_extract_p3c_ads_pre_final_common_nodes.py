@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import tempfile
 import types
 import unittest
 from pathlib import Path
@@ -124,6 +125,14 @@ class CommonNodeExtractionTests(unittest.TestCase):
         module = load_module(data)
         with self.assertRaisesRegex(module.ExtractError, "common_node_mapping_not_exact_four_to_one"):
             module.extract(Path("external.ds"))
+
+    def test_payload_is_bounded_to_the_reduced_s0_hdiff_surface(self) -> None:
+        module = load_module(fixture())
+        with tempfile.TemporaryDirectory() as directory:
+            payload = Path(directory) / "s0-hdiff.bin"
+            result = module.extract(Path("external.ds"), payload)
+            self.assertEqual(result["s0_hdiff_payload"]["byte_length"], len(b"sipi.p3c.ads-s0-hdiff-payload.v1\0") + 8 + 1024 * 24)
+            self.assertEqual(payload.stat().st_size, result["s0_hdiff_payload"]["byte_length"])
 
 
 if __name__ == "__main__":

@@ -1,0 +1,48 @@
+schema: sipi.p3c-ads-s0-product-bounded-dtft-charter.v1
+status: specified_owner_authorized_external_diagnostic_pending
+authority:
+  actor: user
+  decision_ref: user-confirmed-2026-08-15-p3c-04ba-s0-product-bounded-dtft
+  scope: one_fixed_ads_s0_to_product_full_bounded_response_dtft_observation_only
+predecessor:
+  path: docs/baselines/p3c-ads-pre-final-common-node-observation-evidence.v1.yaml
+  result: common_node_pre_to_final_delta_observed_not_a_passivity_algorithm_claim
+evaluation_axis:
+  source: ads_cmp1_s0_all_1024_exact_frequency_nodes
+  axis_identity: each_16_member_axis_must_be_bit_identical
+  product_frequency_interpolation_or_nearest_bin: prohibited
+product_response:
+  type: SelectedP3cCausalResponseV1
+  sample_count: 51200
+  sample_interval_seconds: 9.765625e-13
+  source: selected_fixed_ieee_bsd_bounded_causality_leaf
+  truncation: prohibited
+dtft:
+  definition: sum_n_0_to_51199_h_of_n_times_exp_negative_j_2pi_f_n_dt
+  window: rectangular_full_response
+  normalization: none
+  time_origin: sample_zero
+  summation_order: ascending_n
+  rotor: one_fixed_negative_sign_complex_rotor_per_frequency
+  caller_overrides: prohibited
+prohibitions:
+  - fft_bin_interpolation
+  - product_or_ads_resampling
+  - delay_or_phase_removal
+  - gain_or_dc_fit
+  - alignment
+  - truncation
+  - candidate_waveform_generation
+  - ads_algorithm_oracle_fitting
+admission:
+  ads_s0_product_bounded_axis_bound: false
+  product_bounded_dtft_invoked: false
+  ads_prepassivity_product_bounded_delta_observed: false
+  ads_algorithm_reproduced: false
+  causality_or_interpolation_cause_identified: false
+  candidate_waveform_accepted: false
+  release_ledger_promoted: false
+non_claims:
+  - This compares an ADS documented pre-passivity surface with a product bounded response only.
+  - A delta does not identify an ADS algorithm, a passivity action, or a waveform mismatch cause.
+  - This does not change product causality, interpolation, passivity, candidate, receiver, P4B, P5, or release policy.
