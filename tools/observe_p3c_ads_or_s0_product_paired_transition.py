@@ -20,7 +20,7 @@ ADS_RUNNER = Path("tools/run_p3c_external_ads_or_s0_paired_transition.py")
 EXTRACTOR = Path("tools/extract_p3c_ads_pre_final_common_nodes.py")
 RUST_RUNNER = Path("crates/sipi-p3c/tests/p3c_ads_or_s0_product_paired_transition_runner.rs")
 OBSERVER = Path("tools/observe_p3c_ads_or_s0_product_paired_transition.py")
-SCHEMA = "sipi.p3c.ads-or-s0-product-paired-transition-observation.v1"
+SCHEMA = "sipi.p3c.ads-or-s0-product-error-decomposition-observation.v1"
 SOURCE = (1_834_156, "25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47")
 HELP = (150_522, "45372e9c7c79492bf6023a4e860f05a20caf0ef5e2a083407c119909afc187bf")
 INVENTORY = (ADS_RUNNER, EXTRACTOR, RUST_RUNNER, OBSERVER)
@@ -97,15 +97,15 @@ def read_product(path: Path) -> dict[str, Any]:
         value = json.loads(path.read_text(encoding="ascii"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ObservationError("product_report_invalid") from error
-    required = {"schema", "status", "manifest_sha256", "record_count", "common_node_count", "sample_interval_bits", "raw_sample_count", "bounded_sample_count", "causality_iterations", "causality_stop", "ads_payload_byte_length", "ads_payload_sha256", "axis_sha256", "ads_original_sha256", "ads_s0_sha256", "product_raw_sha256", "product_bounded_sha256", "ads_transition_sha256", "product_transition_sha256", "paired_delta_sha256", "paired_delta_l2_squared_bits", "paired_delta_max_abs_bits", "paired_delta_max_index", "cleanup_status"}
-    if not isinstance(value, dict) or set(value) != required or value["schema"] != "sipi.p3c.ads-or-s0-product-paired-transition-runner.v1" or value["status"] != "observed" or value["record_count"] != 2002 or value["common_node_count"] != 1024 or value["sample_interval_bits"] != "3d712e0be826d695" or value["raw_sample_count"] != 51_200 or value["bounded_sample_count"] != 51_200 or value["causality_iterations"] != 32 or value["causality_stop"] != "successive_error_difference" or value["cleanup_status"] != "complete":
+    required = {"schema", "status", "manifest_sha256", "record_count", "common_node_count", "sample_interval_bits", "raw_sample_count", "bounded_sample_count", "causality_iterations", "causality_stop", "ads_payload_byte_length", "ads_payload_sha256", "axis_sha256", "ads_original_sha256", "ads_s0_sha256", "product_raw_sha256", "product_bounded_sha256", "ads_transition_sha256", "product_transition_sha256", "paired_delta_sha256", "pre_delta_sha256", "post_delta_sha256", "closure_residual_sha256", "pre_delta_l2_squared_bits", "pre_delta_max_abs_bits", "pre_delta_max_index", "post_delta_l2_squared_bits", "post_delta_max_abs_bits", "post_delta_max_index", "paired_delta_l2_squared_bits", "paired_delta_max_abs_bits", "paired_delta_max_index", "cross_term_bits", "closure_residual_l2_squared_bits", "closure_residual_max_abs_bits", "closure_residual_max_index", "cleanup_status"}
+    if not isinstance(value, dict) or set(value) != required or value["schema"] != "sipi.p3c.ads-or-s0-product-error-decomposition-runner.v1" or value["status"] != "observed" or value["record_count"] != 2002 or value["common_node_count"] != 1024 or value["sample_interval_bits"] != "3d712e0be826d695" or value["raw_sample_count"] != 51_200 or value["bounded_sample_count"] != 51_200 or value["causality_iterations"] != 32 or value["causality_stop"] != "successive_error_difference" or value["cleanup_status"] != "complete":
         raise ObservationError("product_report_shape")
-    if not isinstance(value["ads_payload_byte_length"], int) or value["ads_payload_byte_length"] <= 0 or not isinstance(value["paired_delta_max_index"], int) or not 0 <= value["paired_delta_max_index"] < 1024:
+    if not isinstance(value["ads_payload_byte_length"], int) or value["ads_payload_byte_length"] <= 0 or any(not isinstance(value[key], int) or not 0 <= value[key] < 1024 for key in ("pre_delta_max_index", "post_delta_max_index", "paired_delta_max_index", "closure_residual_max_index")):
         raise ObservationError("product_report_count")
-    for key in ("manifest_sha256", "ads_payload_sha256", "axis_sha256", "ads_original_sha256", "ads_s0_sha256", "product_raw_sha256", "product_bounded_sha256", "ads_transition_sha256", "product_transition_sha256", "paired_delta_sha256"):
+    for key in ("manifest_sha256", "ads_payload_sha256", "axis_sha256", "ads_original_sha256", "ads_s0_sha256", "product_raw_sha256", "product_bounded_sha256", "ads_transition_sha256", "product_transition_sha256", "paired_delta_sha256", "pre_delta_sha256", "post_delta_sha256", "closure_residual_sha256"):
         if not hex_value(value[key]):
             raise ObservationError("product_report_digest")
-    if not hex_value(value["paired_delta_l2_squared_bits"], 16) or not hex_value(value["paired_delta_max_abs_bits"], 16):
+    if any(not hex_value(value[key], 16) for key in ("pre_delta_l2_squared_bits", "pre_delta_max_abs_bits", "post_delta_l2_squared_bits", "post_delta_max_abs_bits", "paired_delta_l2_squared_bits", "paired_delta_max_abs_bits", "cross_term_bits", "closure_residual_l2_squared_bits", "closure_residual_max_abs_bits")):
         raise ObservationError("product_report_bits")
     return value
 

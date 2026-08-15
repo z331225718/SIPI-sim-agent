@@ -27,12 +27,13 @@ class PairedTransitionObserverTests(unittest.TestCase):
 
     def test_product_report_rejects_out_of_range_first_maximum_index(self) -> None:
         value = {
-            "schema": "sipi.p3c.ads-or-s0-product-paired-transition-runner.v1", "status": "observed", "manifest_sha256": "0" * 64,
+            "schema": "sipi.p3c.ads-or-s0-product-error-decomposition-runner.v1", "status": "observed", "manifest_sha256": "0" * 64,
             "record_count": 2002, "common_node_count": 1024, "sample_interval_bits": "3d712e0be826d695", "raw_sample_count": 51200, "bounded_sample_count": 51200,
             "causality_iterations": 32, "causality_stop": "successive_error_difference", "ads_payload_byte_length": 1, "ads_payload_sha256": "0" * 64,
             "axis_sha256": "0" * 64, "ads_original_sha256": "0" * 64, "ads_s0_sha256": "0" * 64, "product_raw_sha256": "0" * 64, "product_bounded_sha256": "0" * 64,
-            "ads_transition_sha256": "0" * 64, "product_transition_sha256": "0" * 64, "paired_delta_sha256": "0" * 64,
-            "paired_delta_l2_squared_bits": "0" * 16, "paired_delta_max_abs_bits": "0" * 16, "paired_delta_max_index": 1024, "cleanup_status": "complete",
+            "ads_transition_sha256": "0" * 64, "product_transition_sha256": "0" * 64, "paired_delta_sha256": "0" * 64, "pre_delta_sha256": "0" * 64, "post_delta_sha256": "0" * 64, "closure_residual_sha256": "0" * 64,
+            "pre_delta_l2_squared_bits": "0" * 16, "pre_delta_max_abs_bits": "0" * 16, "pre_delta_max_index": 0, "post_delta_l2_squared_bits": "0" * 16, "post_delta_max_abs_bits": "0" * 16, "post_delta_max_index": 0,
+            "paired_delta_l2_squared_bits": "0" * 16, "paired_delta_max_abs_bits": "0" * 16, "paired_delta_max_index": 1024, "cross_term_bits": "0" * 16, "closure_residual_l2_squared_bits": "0" * 16, "closure_residual_max_abs_bits": "0" * 16, "closure_residual_max_index": 0, "cleanup_status": "complete",
         }
         path = ROOT / "target" / "paired-transition-invalid.json"; path.parent.mkdir(exist_ok=True); path.write_text(json.dumps(value), encoding="ascii")
         try:
