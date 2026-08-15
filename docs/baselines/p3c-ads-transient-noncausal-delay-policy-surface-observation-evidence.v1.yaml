@@ -1,0 +1,65 @@
+schema: sipi.p3c-ads-transient-noncausal-delay-policy-surface-observation-evidence.v1
+status: external_ads_transient_noncausal_delay_policy_surface_observed_no_selected_run_action_claim
+authority:
+  actor: user
+  decision_ref: user-delegated-owner-discretion-2026-08-15
+  scope: one_read_only_ads_transient_noncausal_delay_policy_surface_observation_only
+predecessors:
+  charter: docs/baselines/p3c-ads-transient-noncausal-delay-policy-surface-charter.v1.yaml
+  fresh_custody_spec: docs/clean-room/specs/p3c-ads-transient-noncausal-delay-fresh-custody.v1.md
+external_observation:
+  schema: sipi.p3c-ads-transient-noncausal-delay-policy-fresh-observation.v1
+  custody: external_only_hash_only
+  result_path_retained: false
+  result_byte_length: 1950
+  result_content_sha256: 8ae52a7220beb88d0102ed2fdd5c0edb12b8125260326ef97949db0b792b35d1
+  clean_archive_commit: 418a1908019428f43f34530f1801e3ca15f79ac0
+  clean_archive_tree: 8916cb56e8a41dd7da137090bd16b32e366900d9
+  fresh_observations: 2
+  canonical_repeatability: identical
+  cleanup_status: complete
+  source: {logical_name: channel_gen5_highloss.s4p, byte_length: 1834156, sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47}
+  ads_document: {logical_name: Troubleshooting_a_Transient-Convolution_Simulation.html, byte_length: 78496, sha256: 621851d5d3bd754b898c27bccd641da3dae08954ef902f72b6609bd8f093a7e0}
+  tool_inventory:
+    fresh_custody_harness: 9c2631286d18d44c6a3e210333470f55b112c4b287ac7d18e9cdcdae617b5077
+    child_observer: 892a93407ed58a5c07c133d5029a76969ede768bc091ac140cdf2e82868752cd
+    fixed_pwl_runner: 806147101f559a865c14cc89290ad596d4dce91aad8048d35f33a8f97654d360
+    product_no_delay_contract: bda815e60696a7108558d8403398eb6d5dcc39cf3b5ec5eff29149ce0bf13fcd
+  fixed_pwl_netlist:
+    sha256: 5a9e7f1b0f969220832e2baa776640bc76ef5183ac8bf63e5a94b7a488cb1a82
+    imp_max_freq_hz: 40000000000.0
+    imp_delta_freq_hz: 39062500.0
+    imp_mode: 1
+    imp_noncausal_length: not_declared
+  documented_policy:
+    controller_introduces_delay_to_force_causality: true
+    imp_noncausal_length_default: 32
+    timestep_relation: documentation_states_timestep_set_by_default_imp_max_freq
+  product_no_delay_contract:
+    delay_extraction_implemented: false
+    caller_delay_or_alignment_override: prohibited
+independent_audit:
+  reviewer: Orca_reused_OpenCode_terminal
+  terminal: term_2de7cb74-b803-4e20-bb5b-4803777c24f8
+  status: pending_platform_payment_required
+  result: not_run
+  report: null
+admission:
+  ads_transient_noncausal_delay_policy_surface_documented: true
+  selected_netlist_implicit_noncausal_length_surface_observed: true
+  product_no_delay_contract_bound: true
+  selected_run_delay_action_observed: false
+  delay_seconds_derived: false
+  ads_algorithm_reproduced: false
+  alignment_authorized: false
+  candidate_waveform_accepted: false
+  release_ledger_promoted: false
+blockers:
+  - selected_run_delay_action_not_observable_from_document_and_netlist_only
+  - exact_delay_seconds_not_authorized_or_observed
+  - documented_delay_policy_not_algorithm_attribution
+  - waveform_mismatch_cause_not_identified
+non_claims:
+  - The documentation policy surface does not prove that this selected ADS run introduced a delay.
+  - No delay duration, ADS algorithm, alignment authorization, candidate acceptance, receiver, P4B, P5, or release result is derived.
+  - No ADS document, S4P, netlist, external result, waveform, dataset, or absolute path is retained in the repository.

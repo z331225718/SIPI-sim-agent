@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 704b6c028d7a49ec869d46c7e529d9af05f0e09b9433ad22a35a7532802a4104
+  tracked_paths_sha256: fe4e5249d65a00e35fd2ea0304b9430e315b2fe3957986b1176b6fbeeeba81b3
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -2220,6 +2220,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-ads-transient-noncausal-delay-policy-surface-charter.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-ads-transient-noncausal-delay-policy-surface-observation-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8825,6 +8831,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_ads_transient_noncausal_delay_policy_surface_observation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_ads_transient_policy_surface_observation.py:
       rule: migration-tools
       class: migration_only
@@ -9636,6 +9648,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_ads_s0_product_bounded_dtft_observation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_ads_transient_noncausal_delay_policy_surface_observation.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

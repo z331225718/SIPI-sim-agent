@@ -1393,6 +1393,14 @@ materials:
       license_evidence: project-authored-MIT-boundary-pending-promotion
     allowed_roles: [observer, spec_author, auditor]
     derived_from: [p3c-ads-transient-noncausal-delay-policy-surface-spec-v1]
+  - id: p3c-ads-transient-noncausal-delay-policy-surface-observation-v1
+    kind: oracle_fixture
+    content_sha256: 8ae52a7220beb88d0102ed2fdd5c0edb12b8125260326ef97949db0b792b35d1
+    provenance:
+      source_ref: external/ads/p3c-transient-noncausal-delay-policy/fresh-output-hash-only
+      license_evidence: external-user-authorized-ads-documentation-observation-only
+    allowed_roles: [observer, auditor]
+    derived_from: [p3c-ads-transient-noncausal-delay-policy-surface-spec-v1, p3c-ads-transient-noncausal-delay-fresh-custody-spec-v1]
 scopes:
   - id: clean-room-process-template-v1
     paths: [docs/clean-room/**]
@@ -2663,4 +2671,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-ads-transient-noncausal-delay-fresh-custody-spec-v1]
+  - id: p3c-ads-transient-noncausal-delay-policy-surface-evidence-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-transient-noncausal-delay-policy-surface-observation-evidence.v1.yaml, tools/verify_p3c_ads_transient_noncausal_delay_policy_surface_observation.py, tools/test_verify_p3c_ads_transient_noncausal_delay_policy_surface_observation.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-ads-transient-noncausal-delay-policy-surface-observation-v1, p3c-ads-transient-noncausal-delay-policy-surface-spec-v1, p3c-ads-transient-noncausal-delay-fresh-custody-spec-v1]
+      spec_author: [p3c-ads-transient-noncausal-delay-policy-surface-spec-v1, p3c-ads-transient-noncausal-delay-fresh-custody-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-ads-transient-noncausal-delay-policy-surface-observation-v1, p3c-ads-transient-noncausal-delay-policy-surface-spec-v1, p3c-ads-transient-noncausal-delay-fresh-custody-spec-v1]
 attestations: []
