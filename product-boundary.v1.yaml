@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 058981a4af7e9544d5813123f15084c2ebd32e230dbe2964c2786f822aff99b7
+  tracked_paths_sha256: d279006464712d0cceb948f3779cbe22f7d53c67c158fdca58d8c6ab02d9e40b
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1956,6 +1956,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-15-p7-receiver-diagnostic-publication-binding.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-15-p7-selected-differential-rc-load-publication-binding.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

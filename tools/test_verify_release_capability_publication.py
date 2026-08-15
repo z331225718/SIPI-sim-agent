@@ -94,6 +94,12 @@ def manifest_for(publication: dict) -> list[dict]:
         "response_schema": "sipi.ibis.input-typ-quasi-static-evaluate.response.v1",
         "unavailable_reason": None, "nonclaim": "caller_input_quasi_static_constitutive_only",
     }
+    differential_rc_load = {
+        "route": ["rx-load", "differential-rc-evaluate"], "availability": "available", "transport": "stdin_json_v1",
+        "request_schema": "sipi.rx-load.selected-differential-rc-evaluate.request.v1",
+        "response_schema": "sipi.rx-load.selected-differential-rc-evaluate.response.v1",
+        "unavailable_reason": None, "nonclaim": "selected_continuous_constitutive_relation_only",
+    }
     commands = []
     for row in publication["rows"]:
         if row["command_id"] == "link.receiver.run":
@@ -119,6 +125,9 @@ def manifest_for(publication: dict) -> list[dict]:
             continue
         if row["command_id"] == "ibis.quasi-static-evaluate":
             commands.append({"id": row["command_id"], **ibis_quasi_static})
+            continue
+        if row["command_id"] == "rx-load.differential-rc-evaluate":
+            commands.append({"id": row["command_id"], **differential_rc_load})
             continue
         availability = row["product_surface"]
         reason, nonclaim = unavailable.get(
@@ -224,6 +233,7 @@ class PublicationTests(unittest.TestCase):
             "tran-one-node-rc-pulse": "publication_one_node_rc_pulse_route_binding_invalid",
             "ibis-dc-evaluate": "publication_ibis_dc_route_binding_invalid",
             "ibis-quasi-static-evaluate": "publication_ibis_quasi_static_route_binding_invalid",
+            "selected-differential-rc-load-evaluate": "publication_selected_differential_rc_load_route_binding_invalid",
             "compare": "publication_aligned_array_compare_route_binding_invalid",
             "prbs9-metric-artifact-compare": "publication_prbs9_artifact_metric_binding_invalid",
             "selected-highloss-prbs9-waveform-only-compare": "publication_selected_highloss_waveform_only_binding_invalid",
@@ -951,6 +961,46 @@ class PublicationTests(unittest.TestCase):
                 evidence = next(item for item in publication["report_index"] if item["id"] == "p4a-ibis-quasi-static-cli")
                 evidence[field] = value
                 with self.assertRaisesRegex(GATE.PublicationError, "publication_ibis_quasi_static_evidence_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+    def test_selected_differential_rc_load_route_stays_product_owned(self) -> None:
+        def rc_load_row(publication: dict) -> dict:
+            return next(item for item in publication["rows"] if item["id"] == "selected-differential-rc-load-evaluate")
+
+        for field, value in {
+            "acceptance_state": "not_evaluated", "external_oracle": True,
+            "blockers": ["bogus"], "non_claims": ["bogus"],
+            "evidence_ids": ["p4a-ibis-input-typ-static"],
+        }.items():
+            with self.subTest(row_field=field):
+                publication = self.publication()
+                rc_load_row(publication)[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_selected_differential_rc_load_route_binding_invalid"):
+                    GATE.validate(publication, manifest_for(publication), ROOT)
+
+        for field, value in {
+            "route": ["rx-load", "differential-rc"], "availability": "unavailable", "transport": "none",
+            "request_schema": None, "response_schema": None, "unavailable_reason": "wrong_reason",
+            "nonclaim": "wrong_nonclaim",
+        }.items():
+            with self.subTest(descriptor_field=field):
+                publication = self.publication()
+                manifest = manifest_for(publication)
+                descriptor = next(item for item in manifest if item["id"] == "rx-load.differential-rc-evaluate")
+                descriptor[field] = value
+                expected = "command_manifest_invalid" if field in {"availability", "unavailable_reason"} else "publication_selected_differential_rc_load_route_binding_invalid"
+                with self.assertRaisesRegex(GATE.PublicationError, expected):
+                    GATE.validate(publication, manifest, ROOT)
+
+        for field, value in {
+            "kind": "acceptance_report", "path": "docs/baselines/p4a-ibis-input-typ-static-acceptance.v1.yaml",
+            "subject": "ibis", "evidence_state": "observed",
+        }.items():
+            with self.subTest(index_field=field):
+                publication = self.publication()
+                evidence = next(item for item in publication["report_index"] if item["id"] == "p4a-selected-differential-rc-load-cli")
+                evidence[field] = value
+                with self.assertRaisesRegex(GATE.PublicationError, "publication_selected_differential_rc_load_evidence_invalid"):
                     GATE.validate(publication, manifest_for(publication), ROOT)
 
     def test_channel_cli_requires_current_evidence_without_claiming_general_support(self) -> None:

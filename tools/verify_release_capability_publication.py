@@ -284,6 +284,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     _validate_one_node_rc_pulse_route(rows, manifest_by_id, index_by_id, root)
     _validate_caller_input_ibis_dc_route(rows, manifest_by_id, index_by_id, root)
     _validate_caller_input_ibis_quasi_static_route(rows, manifest_by_id, index_by_id, root)
+    _validate_selected_differential_rc_load_route(rows, manifest_by_id, index_by_id, root)
     _validate_accepted_evidence_authority(rows)
 
 
@@ -896,6 +897,45 @@ def _validate_caller_input_ibis_quasi_static_route(
         raise PublicationError("publication_ibis_quasi_static_evidence_invalid")
     if result.get("valid") is not True or result.get("status") != "boundary_recorded" or cli_entry.get("status") != "implemented_self_tested":
         raise PublicationError("publication_ibis_quasi_static_matrix_invalid")
+
+
+def _validate_selected_differential_rc_load_route(
+    rows: list[dict[str, Any]], manifest_by_id: dict[str, dict[str, Any]],
+    index_by_id: dict[str, dict[str, Any]], root: Path,
+) -> None:
+    evidence_id = "p4a-selected-differential-rc-load-cli"
+    path = "docs/baselines/p4a-ibis-conformance-matrix.v1.yaml"
+    row = next((item for item in rows if item["id"] == "selected-differential-rc-load-evaluate"), None)
+    command = manifest_by_id.get("rx-load.differential-rc-evaluate")
+    if (
+        row is None or row["domain"] != "rx_load" or row["command_id"] != "rx-load.differential-rc-evaluate"
+        or row["product_surface"] != "available" or row["acceptance_state"] != "specified"
+        or row["external_oracle"] is not False or row["evidence_ids"] != [evidence_id]
+        or row["blockers"] != ["channel_integration_not_implemented", "external_profile_not_evaluated"]
+        or row["non_claims"] != ["not_termination_solve_or_ibis_ami_composition"]
+        or command is None or command["route"] != ["rx-load", "differential-rc-evaluate"]
+        or command["availability"] != "available" or command["transport"] != "stdin_json_v1"
+        or command["request_schema"] != "sipi.rx-load.selected-differential-rc-evaluate.request.v1"
+        or command["response_schema"] != "sipi.rx-load.selected-differential-rc-evaluate.response.v1"
+        or command["unavailable_reason"] is not None
+        or command["nonclaim"] != "selected_continuous_constitutive_relation_only"
+    ):
+        raise PublicationError("publication_selected_differential_rc_load_route_binding_invalid")
+    evidence = index_by_id.get(evidence_id)
+    if evidence is None or (evidence["kind"], evidence["path"], evidence["subject"], evidence["evidence_state"]) != ("capability_contract", path, "rx_load", "specified"):
+        raise PublicationError("publication_selected_differential_rc_load_evidence_invalid")
+    try:
+        actual_sha256 = hashlib.sha256((root / path).read_bytes()).hexdigest()
+        matrix = load_yaml(root / path)
+        result = validate_ibis_matrix(matrix)
+    except (OSError, RuntimeError, ValueError, MatrixError):
+        raise PublicationError("publication_selected_differential_rc_load_matrix_invalid") from None
+    entries = {entry.get("id"): entry for entry in matrix.get("entries", []) if isinstance(entry, dict)}
+    cli_entry = entries.get("selected-differential-rc-load-evaluate-stdin", {})
+    if actual_sha256 != P4A_IBIS_CONFORMANCE_MATRIX_SHA256:
+        raise PublicationError("publication_selected_differential_rc_load_evidence_invalid")
+    if result.get("valid") is not True or result.get("status") != "boundary_recorded" or cli_entry.get("status") != "implemented_self_tested":
+        raise PublicationError("publication_selected_differential_rc_load_matrix_invalid")
 
 
 def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], index_by_id: dict[str, dict[str, Any]]) -> None:
