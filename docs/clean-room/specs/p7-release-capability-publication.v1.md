@@ -6,7 +6,9 @@ states, safe baseline-report references, blockers, and non-claims.
 
 Every command has exactly one row. The row's product surface must match the
 current product manifest exactly. `available` only says a product handler is
-present; it does not imply external acceptance or release certification.
+present; it does not imply external acceptance or release certification. In
+v1, every manifest-`unavailable` command is ledger-`blocked`; an unavailable
+surface cannot be represented as accepted, specified, or not evaluated.
 `blocked` rows require a stable blocker. All global publication states remain
 `release_ready: false` and `promotion_status: blocked`.
 

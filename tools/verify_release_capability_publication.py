@@ -194,7 +194,10 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
                 raise PublicationError("publication_row_lists_invalid")
         if row["acceptance_state"] == "blocked" and not row["blockers"]:
             raise PublicationError("publication_blocker_missing")
-        if row["product_surface"] == "available" and row["acceptance_state"] == "blocked":
+        if (
+            (row["product_surface"] == "available" and row["acceptance_state"] == "blocked")
+            or (row["product_surface"] == "unavailable" and row["acceptance_state"] != "blocked")
+        ):
             raise PublicationError("publication_surface_state_invalid")
     if set(command_rows) != set(manifest_by_id):
         raise PublicationError("publication_command_coverage_missing")

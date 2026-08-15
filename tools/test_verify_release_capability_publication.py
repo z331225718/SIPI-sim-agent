@@ -104,6 +104,18 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(self.publication()), ROOT)
 
+    def test_unavailable_routes_must_stay_blocked(self) -> None:
+        unavailable_ids = ("ami", "com", "project-validate", "report-show")
+        for row_id in unavailable_ids:
+            for state in ("accepted", "specified", "not_evaluated"):
+                with self.subTest(row_id=row_id, state=state):
+                    publication = self.publication()
+                    row = next(item for item in publication["rows"] if item["id"] == row_id)
+                    self.assertEqual(row["product_surface"], "unavailable")
+                    row["acceptance_state"] = state
+                    with self.assertRaisesRegex(GATE.PublicationError, "publication_surface_state_invalid"):
+                        GATE.validate(publication, manifest_for(publication), ROOT)
+
     def test_rejects_promotion_and_unsafe_evidence(self) -> None:
         publication = self.publication()
         publication["promotion_status"] = "approved"
@@ -205,7 +217,7 @@ class PublicationTests(unittest.TestCase):
 
         publication = self.publication()
         ami_row(publication)["acceptance_state"] = "accepted"
-        with self.assertRaisesRegex(GATE.PublicationError, "publication_ami_blocked_route_binding_invalid"):
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_surface_state_invalid"):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
         publication = self.publication()
