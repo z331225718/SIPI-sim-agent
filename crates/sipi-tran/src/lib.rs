@@ -149,6 +149,128 @@ pub struct OneNodeRcPulseRequestV1 {
     pulse: IdealPulseV1,
 }
 
+/// Explicit caller-owned piecewise-linear voltage source.
+///
+/// The source is defined only on its finite knot axis. It does not hold its
+/// first or last value beyond that axis, and it has no periodic behavior.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PiecewiseLinearVoltageV1 {
+    knot_axis: Axis<Seconds>,
+    knot_values: Vec<Volts>,
+}
+
+impl PiecewiseLinearVoltageV1 {
+    pub fn try_new(knot_times: Vec<Seconds>, knot_values: Vec<Volts>) -> Result<Self, TranError> {
+        if knot_times.len() != knot_values.len() {
+            return Err(TranError::PwlKnotValueCountMismatch);
+        }
+        if knot_times.len() < 2 {
+            return Err(TranError::PwlKnotAxisTooShort);
+        }
+        validate_pwl_knot_times(&knot_times)?;
+        Ok(Self {
+            knot_axis: Axis::explicit(knot_times)?,
+            knot_values,
+        })
+    }
+
+    pub fn knot_axis(&self) -> &Axis<Seconds> {
+        &self.knot_axis
+    }
+
+    pub fn knot_values(&self) -> &[Volts] {
+        &self.knot_values
+    }
+
+    fn voltage_at(&self, time_s: f64) -> Result<f64, TranError> {
+        let times = explicit_axis_values(&self.knot_axis)?;
+        if time_s < times[0] || time_s > *times.last().expect("validated PWL knot axis") {
+            return Err(TranError::PwlOutsideCoverage);
+        }
+        match times.binary_search_by(|value| value.total_cmp(&time_s)) {
+            Ok(index) => Ok(self.knot_values[index].get()),
+            Err(upper) if upper > 0 && upper < times.len() => {
+                let lower = upper - 1;
+                let fraction = (time_s - times[lower]) / (times[upper] - times[lower]);
+                let value = self.knot_values[lower].get()
+                    + fraction * (self.knot_values[upper].get() - self.knot_values[lower].get());
+                if value.is_finite() {
+                    Ok(value)
+                } else {
+                    Err(TranError::NonFiniteComputation)
+                }
+            }
+            _ => Err(TranError::PwlOutsideCoverage),
+        }
+    }
+}
+
+/// Typed request for a one-node RC topology with an explicit PWL voltage source.
+///
+/// This is deliberately a fixed topology, not netlist text or a generic
+/// transient-circuit request. PWL knots and output samples begin at zero; the
+/// final PWL knot must exactly own the last requested output instant.
+#[derive(Clone, Debug, PartialEq)]
+pub struct OneNodeRcPwlRequestV1 {
+    output_axis: Axis<Seconds>,
+    resistance: Ohms,
+    capacitance_farads: FiniteF64,
+    initial_output: Volts,
+    source: PiecewiseLinearVoltageV1,
+}
+
+impl OneNodeRcPwlRequestV1 {
+    pub fn try_new(
+        output_times: Vec<Seconds>,
+        resistance: Ohms,
+        capacitance_farads: FiniteF64,
+        initial_output: Volts,
+        source: PiecewiseLinearVoltageV1,
+    ) -> Result<Self, TranError> {
+        validate_output_times(&output_times)?;
+        if resistance.get() <= 0.0 {
+            return Err(TranError::InvalidResistance);
+        }
+        if capacitance_farads.get() <= 0.0 {
+            return Err(TranError::InvalidCapacitance);
+        }
+        let source_times = explicit_axis_values(source.knot_axis())?;
+        if source_times[0] != 0.0
+            || *source_times.last().expect("validated PWL knot axis")
+                != output_times.last().expect("validated output axis").get()
+        {
+            return Err(TranError::PwlCoverageMismatch);
+        }
+        Ok(Self {
+            output_axis: Axis::explicit(output_times)?,
+            resistance,
+            capacitance_farads,
+            initial_output,
+            source,
+        })
+    }
+
+    pub fn output_axis(&self) -> &Axis<Seconds> {
+        &self.output_axis
+    }
+
+    pub const fn resistance(&self) -> Ohms {
+        self.resistance
+    }
+
+    pub const fn capacitance_farads(&self) -> FiniteF64 {
+        self.capacitance_farads
+    }
+
+    pub const fn initial_output(&self) -> Volts {
+        self.initial_output
+    }
+
+    pub fn source(&self) -> &PiecewiseLinearVoltageV1 {
+        &self.source
+    }
+}
+
 impl OneNodeRcPulseRequestV1 {
     pub fn try_new(
         output_times: Vec<Seconds>,
@@ -199,6 +321,25 @@ impl OneNodeRcPulseRequestV1 {
 pub struct OneNodeRcPulseLimitsV1 {
     max_output_samples: NonZeroUsize,
     max_integration_breakpoints: NonZeroUsize,
+}
+
+/// Explicit bounds for a one-node RC/PWL evaluation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct OneNodeRcPwlLimitsV1 {
+    max_output_samples: NonZeroUsize,
+    max_integration_breakpoints: NonZeroUsize,
+}
+
+impl OneNodeRcPwlLimitsV1 {
+    pub const fn new(
+        max_output_samples: NonZeroUsize,
+        max_integration_breakpoints: NonZeroUsize,
+    ) -> Self {
+        Self {
+            max_output_samples,
+            max_integration_breakpoints,
+        }
+    }
 }
 
 impl OneNodeRcPulseLimitsV1 {
@@ -268,6 +409,12 @@ pub enum TranError {
     InvalidPulseDuration,
     InvalidPulseWidth,
     InvalidPulseCornerOrder,
+    PwlKnotValueCountMismatch,
+    PwlKnotAxisTooShort,
+    InvalidPwlKnotAxisStart,
+    NonIncreasingPwlKnotAxis,
+    PwlCoverageMismatch,
+    PwlOutsideCoverage,
     OutputLimitExceeded,
     BreakpointLimitExceeded,
     BreakpointCountOverflow,
@@ -293,6 +440,16 @@ impl fmt::Display for TranError {
             Self::InvalidPulseCornerOrder => {
                 write!(formatter, "pulse corners must fit within one period")
             }
+            Self::PwlKnotValueCountMismatch => {
+                write!(formatter, "PWL knot times and values must have equal length")
+            }
+            Self::PwlKnotAxisTooShort => write!(formatter, "PWL source requires at least two knots"),
+            Self::InvalidPwlKnotAxisStart => write!(formatter, "PWL knot axis must start at zero"),
+            Self::NonIncreasingPwlKnotAxis => write!(formatter, "PWL knot axis must strictly increase"),
+            Self::PwlCoverageMismatch => {
+                write!(formatter, "PWL source must end at the final output time")
+            }
+            Self::PwlOutsideCoverage => write!(formatter, "PWL evaluation is outside source coverage"),
             Self::OutputLimitExceeded => write!(formatter, "output sample limit exceeded"),
             Self::BreakpointLimitExceeded => {
                 write!(formatter, "integration breakpoint limit exceeded")
@@ -334,6 +491,23 @@ pub fn simulate_one_node_rc_pulse_with_context(
     context: &RunContext,
 ) -> Result<RcPulseTransientResultV1, TranError> {
     simulate_one_node_rc_pulse_checked(request, limits, || context.checkpoint().map_err(Into::into))
+}
+
+/// Simulates a bounded one-node RC/PWL request with f64 backward Euler.
+pub fn simulate_one_node_rc_pwl(
+    request: &OneNodeRcPwlRequestV1,
+    limits: OneNodeRcPwlLimitsV1,
+) -> Result<RcPulseTransientResultV1, TranError> {
+    simulate_one_node_rc_pwl_checked(request, limits, || Ok(()))
+}
+
+/// Simulates a bounded one-node RC/PWL request with cooperative checkpoints.
+pub fn simulate_one_node_rc_pwl_with_context(
+    request: &OneNodeRcPwlRequestV1,
+    limits: OneNodeRcPwlLimitsV1,
+    context: &RunContext,
+) -> Result<RcPulseTransientResultV1, TranError> {
+    simulate_one_node_rc_pwl_checked(request, limits, || context.checkpoint().map_err(Into::into))
 }
 
 /// Simulates the exact fixed v1 RC/PULSE profile through the sole numerical core.
@@ -409,6 +583,61 @@ fn simulate_one_node_rc_pulse_checked(
     })
 }
 
+fn simulate_one_node_rc_pwl_checked(
+    request: &OneNodeRcPwlRequestV1,
+    limits: OneNodeRcPwlLimitsV1,
+    mut checkpoint: impl FnMut() -> Result<(), TranError>,
+) -> Result<RcPulseTransientResultV1, TranError> {
+    checkpoint()?;
+    let output_times = explicit_axis_values(request.output_axis())?;
+    if output_times.len() > limits.max_output_samples.get() {
+        return Err(TranError::OutputLimitExceeded);
+    }
+    let source_times = explicit_axis_values(request.source().knot_axis())?;
+    let breakpoints = build_pwl_breakpoints(&output_times, &source_times, limits, &mut checkpoint)?;
+    checkpoint()?;
+
+    let mut voltage_out = request.initial_output().get();
+    let mut voltage_in_samples = Vec::with_capacity(output_times.len());
+    let mut voltage_out_samples = Vec::with_capacity(output_times.len());
+    let mut output_index = 0usize;
+    let mut current_time = breakpoints[0];
+
+    voltage_in_samples.push(volts(request.source().voltage_at(current_time)?)?);
+    voltage_out_samples.push(volts(voltage_out)?);
+    output_index += 1;
+
+    for next_time in breakpoints.into_iter().skip(1) {
+        checkpoint()?;
+        voltage_out = backward_euler_step(
+            voltage_out,
+            request.source().voltage_at(next_time)?,
+            next_time - current_time,
+            request.resistance().get(),
+            request.capacitance_farads().get(),
+        )?;
+        current_time = next_time;
+        if output_index < output_times.len() && current_time == output_times[output_index] {
+            voltage_in_samples.push(volts(request.source().voltage_at(current_time)?)?);
+            voltage_out_samples.push(volts(voltage_out)?);
+            output_index += 1;
+        }
+    }
+
+    if output_index != output_times.len() {
+        return Err(TranError::BreakpointCountOverflow);
+    }
+    let axis = request.output_axis().clone();
+    let voltage_in = Waveform::try_new(axis.clone(), voltage_in_samples)?;
+    checkpoint()?;
+    let voltage_out = Waveform::try_new(axis.clone(), voltage_out_samples)?;
+    Ok(RcPulseTransientResultV1 {
+        time_axis: axis,
+        voltage_in,
+        voltage_out,
+    })
+}
+
 fn fixed_profile_request() -> Result<OneNodeRcPulseRequestV1, TranError> {
     let pulse = IdealPulseV1::try_new(
         volts(PULSE_LOW_V)?,
@@ -450,6 +679,19 @@ fn validate_output_times(times: &[Seconds]) -> Result<(), TranError> {
     }
     if times.windows(2).any(|pair| pair[0].get() >= pair[1].get()) {
         return Err(TranError::NonIncreasingOutputAxis);
+    }
+    Ok(())
+}
+
+fn validate_pwl_knot_times(times: &[Seconds]) -> Result<(), TranError> {
+    let Some(first) = times.first() else {
+        return Err(TranError::PwlKnotAxisTooShort);
+    };
+    if first.get() != 0.0 {
+        return Err(TranError::InvalidPwlKnotAxisStart);
+    }
+    if times.windows(2).any(|pair| pair[0].get() >= pair[1].get()) {
+        return Err(TranError::NonIncreasingPwlKnotAxis);
     }
     Ok(())
 }
@@ -501,6 +743,31 @@ fn build_breakpoints(
             return Err(TranError::BreakpointCountOverflow);
         }
         cycle_start = next_cycle_start;
+    }
+    Ok(values)
+}
+
+fn build_pwl_breakpoints(
+    output_times: &[f64],
+    source_times: &[f64],
+    limits: OneNodeRcPwlLimitsV1,
+    checkpoint: &mut impl FnMut() -> Result<(), TranError>,
+) -> Result<Vec<f64>, TranError> {
+    let mut values = output_times.to_vec();
+    if values.len() > limits.max_integration_breakpoints.get() {
+        return Err(TranError::BreakpointLimitExceeded);
+    }
+    for time in source_times {
+        checkpoint()?;
+        match values.binary_search_by(|value| value.total_cmp(time)) {
+            Ok(_) => {}
+            Err(index) => {
+                values.insert(index, *time);
+                if values.len() > limits.max_integration_breakpoints.get() {
+                    return Err(TranError::BreakpointLimitExceeded);
+                }
+            }
+        }
     }
     Ok(values)
 }
@@ -575,6 +842,45 @@ mod tests {
 
     fn limits(outputs: usize, breakpoints: usize) -> OneNodeRcPulseLimitsV1 {
         OneNodeRcPulseLimitsV1::new(
+            NonZeroUsize::new(outputs).unwrap(),
+            NonZeroUsize::new(breakpoints).unwrap(),
+        )
+    }
+
+    fn pwl_source(knots: &[(f64, f64)]) -> PiecewiseLinearVoltageV1 {
+        PiecewiseLinearVoltageV1::try_new(
+            knots
+                .iter()
+                .map(|(time, _)| seconds(*time))
+                .collect::<Result<Vec<_>, _>>()
+                .unwrap(),
+            knots
+                .iter()
+                .map(|(_, voltage)| volts(*voltage))
+                .collect::<Result<Vec<_>, _>>()
+                .unwrap(),
+        )
+        .unwrap()
+    }
+
+    fn pwl_request(output_times: &[f64], source: PiecewiseLinearVoltageV1) -> OneNodeRcPwlRequestV1 {
+        OneNodeRcPwlRequestV1::try_new(
+            output_times
+                .iter()
+                .copied()
+                .map(seconds)
+                .collect::<Result<Vec<_>, _>>()
+                .unwrap(),
+            Ohms::try_new(1.0).unwrap(),
+            FiniteF64::try_new(1.0, "capacitance farads").unwrap(),
+            volts(0.0).unwrap(),
+            source,
+        )
+        .unwrap()
+    }
+
+    fn pwl_limits(outputs: usize, breakpoints: usize) -> OneNodeRcPwlLimitsV1 {
+        OneNodeRcPwlLimitsV1::new(
             NonZeroUsize::new(outputs).unwrap(),
             NonZeroUsize::new(breakpoints).unwrap(),
         )
@@ -656,6 +962,86 @@ mod tests {
             assert!((shifted - (base + 3.0)).abs() <= 1.0e-13);
             assert!((scaled - base * 2.5).abs() <= 1.0e-13);
         }
+    }
+
+    #[test]
+    fn pwl_source_inserts_non_output_knot_before_backward_euler_step() {
+        let request = pwl_request(&[0.0, 2.0], pwl_source(&[(0.0, 0.0), (1.0, 1.0), (2.0, 1.0)]));
+        let result = simulate_one_node_rc_pwl(&request, pwl_limits(2, 3)).unwrap();
+        assert_eq!(
+            result
+                .voltage_in()
+                .samples()
+                .iter()
+                .map(|value| value.get())
+                .collect::<Vec<_>>(),
+            vec![0.0, 1.0]
+        );
+        assert_eq!(
+            output_values(&result)
+                .iter()
+                .map(|value| value.to_bits())
+                .collect::<Vec<_>>(),
+            vec![0, 4_604_930_618_986_332_160]
+        );
+    }
+
+    #[test]
+    fn pwl_interpolates_at_output_endpoints_and_is_deterministic() {
+        let request = pwl_request(
+            &[0.0, 0.5, 1.0],
+            pwl_source(&[(0.0, 0.0), (0.75, 1.5), (1.0, 2.0)]),
+        );
+        let first = simulate_one_node_rc_pwl(&request, pwl_limits(3, 4)).unwrap();
+        let second = simulate_one_node_rc_pwl(&request, pwl_limits(3, 4)).unwrap();
+        assert_eq!(first, second);
+        assert_eq!(
+            first
+                .voltage_in()
+                .samples()
+                .iter()
+                .map(|value| value.get())
+                .collect::<Vec<_>>(),
+            vec![0.0, 1.0, 2.0]
+        );
+    }
+
+    #[test]
+    fn pwl_axis_coverage_and_breakpoint_limits_fail_closed() {
+        assert_eq!(
+            PiecewiseLinearVoltageV1::try_new(vec![seconds(0.0).unwrap()], vec![volts(0.0).unwrap()]),
+            Err(TranError::PwlKnotAxisTooShort)
+        );
+        assert_eq!(
+            PiecewiseLinearVoltageV1::try_new(
+                vec![seconds(0.1).unwrap(), seconds(1.0).unwrap()],
+                vec![volts(0.0).unwrap(), volts(1.0).unwrap()],
+            ),
+            Err(TranError::InvalidPwlKnotAxisStart)
+        );
+        assert_eq!(
+            PiecewiseLinearVoltageV1::try_new(
+                vec![seconds(0.0).unwrap(), seconds(0.0).unwrap()],
+                vec![volts(0.0).unwrap(), volts(1.0).unwrap()],
+            ),
+            Err(TranError::NonIncreasingPwlKnotAxis)
+        );
+        let source = pwl_source(&[(0.0, 0.0), (1.0, 1.0)]);
+        assert_eq!(
+            OneNodeRcPwlRequestV1::try_new(
+                vec![seconds(0.0).unwrap(), seconds(2.0).unwrap()],
+                Ohms::try_new(1.0).unwrap(),
+                FiniteF64::try_new(1.0, "capacitance farads").unwrap(),
+                volts(0.0).unwrap(),
+                source,
+            ),
+            Err(TranError::PwlCoverageMismatch)
+        );
+        let request = pwl_request(&[0.0, 2.0], pwl_source(&[(0.0, 0.0), (1.0, 1.0), (2.0, 1.0)]));
+        assert_eq!(
+            simulate_one_node_rc_pwl(&request, pwl_limits(2, 2)),
+            Err(TranError::BreakpointLimitExceeded)
+        );
     }
 
     #[test]
