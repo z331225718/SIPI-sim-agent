@@ -75,6 +75,12 @@ entries:
     entry_points: [IbisQuasiStaticEvaluateServiceV1, sipi_ibis_quasi_static_evaluate_artifact_stdin]
     evidence_refs: [docs/clean-room/specs/p4a-ibis-input-typ-quasi-static-artifact-cli.v1.md, crates/sipi-cli/tests/cli.rs::ibis_quasi_static_artifact_evaluate_requires_one_exact_sealed_model]
     non_claim: Local artifact identity verification uses an app-owned no-hostile-concurrent-writer root and is not external profile acceptance, transient integration, or general IBIS support.
+  - id: input-typ-quasi-static-evaluate-sealed-artifact-batch
+    scope: exact sealed caller-owned model.ibs Input Typical model with an ordered bounded list of independent explicit clamp and SIG-to-REF slope probes
+    status: implemented_self_tested
+    entry_points: [IbisQuasiStaticBatchEvaluateServiceV1, sipi_ibis_quasi_static_evaluate_artifact_batch_stdin]
+    evidence_refs: [docs/clean-room/specs/p4a-ibis-input-typ-quasi-static-artifact-batch-cli.v1.md, crates/sipi-ibis/src/lib.rs::tests::quasi_static_batch_service_preserves_probe_order_and_is_all_or_nothing, crates/sipi-cli/tests/cli.rs::ibis_quasi_static_artifact_batch_evaluate_is_ordered_and_all_or_nothing]
+    non_claim: Each ordered probe is memoryless and independent; batch evaluation is not a transient trace, integration, external profile acceptance, or general IBIS support.
   - id: selected-differential-rc-load-evaluate-stdin
     scope: fixed continuous P/N/REF 100 ohm plus per-leg 1 pF load with explicit voltage and slope probe
     status: implemented_self_tested

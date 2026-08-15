@@ -24,26 +24,28 @@ use sipi_contracts::{
     ARRAY_COMPARE_REQUEST_SCHEMA, ARTIFACT_REPORT_REQUEST_SCHEMA, CAPABILITIES_SCHEMA,
     CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA, CapabilityCatalogV1,
     FIXED_PROJECT_RUN_REQUEST_SCHEMA, IBIS_DC_EVALUATE_REQUEST_SCHEMA,
-    IBIS_QUASI_STATIC_ARTIFACT_EVALUATE_REQUEST_SCHEMA,
-    IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA, LINK_PLAN_SCHEMA, PLANNED_DOMAINS,
-    PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA, PRBS9_WAVEFORM_ARTIFACT_BYTE_LENGTH_V1,
-    RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA, RULE_LEDGER_V1,
+    IBIS_QUASI_STATIC_ARTIFACT_BATCH_EVALUATE_REQUEST_SCHEMA,
+    IBIS_QUASI_STATIC_ARTIFACT_EVALUATE_REQUEST_SCHEMA, IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA,
+    LINK_PLAN_SCHEMA, PLANNED_DOMAINS, PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA,
+    PRBS9_WAVEFORM_ARTIFACT_BYTE_LENGTH_V1, RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA, RULE_LEDGER_V1,
     SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACTS_REQUEST_SCHEMA_V3,
     SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_BYTE_LENGTH_V3, TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA,
     TRAN_ONE_NODE_RC_PWL_REQUEST_SCHEMA, array_compare_request_schema_json,
     artifact_report_request_schema_json, capability_schema_json,
     channel_matched_two_port_kernel_run_request_schema_json, deterministic_json,
     fixed_project_run_request_schema_json, ibis_dc_evaluate_request_schema_json,
-    ibis_inspect_request_schema_json, ibis_quasi_static_artifact_evaluate_request_schema_json,
-    ibis_quasi_static_evaluate_request_schema_json,
-    link_causal_fir_request_schema_json, link_plan_schema_json, parse_array_compare_request_v1,
-    parse_artifact_report_request_v1, parse_channel_matched_two_port_kernel_run_request_v1,
-    parse_fixed_project_run_request_v1, parse_ibis_dc_evaluate_request_v1,
-    parse_ibis_inspect_request_v1, parse_ibis_quasi_static_artifact_evaluate_request_v1,
-    parse_ibis_quasi_static_evaluate_request_v1,
-    parse_link_causal_fir_request_v1, parse_prbs9_metric_artifacts_request_v1,
-    parse_prbs9_waveform_artifact_v1, parse_receiver_diagnostic_run_request_v1,
-    parse_rx_load_differential_rc_evaluate_request_v1,
+    ibis_inspect_request_schema_json,
+    ibis_quasi_static_artifact_batch_evaluate_request_schema_json,
+    ibis_quasi_static_artifact_evaluate_request_schema_json,
+    ibis_quasi_static_evaluate_request_schema_json, link_causal_fir_request_schema_json,
+    link_plan_schema_json, parse_array_compare_request_v1, parse_artifact_report_request_v1,
+    parse_channel_matched_two_port_kernel_run_request_v1, parse_fixed_project_run_request_v1,
+    parse_ibis_dc_evaluate_request_v1, parse_ibis_inspect_request_v1,
+    parse_ibis_quasi_static_artifact_batch_evaluate_request_v1,
+    parse_ibis_quasi_static_artifact_evaluate_request_v1,
+    parse_ibis_quasi_static_evaluate_request_v1, parse_link_causal_fir_request_v1,
+    parse_prbs9_metric_artifacts_request_v1, parse_prbs9_waveform_artifact_v1,
+    parse_receiver_diagnostic_run_request_v1, parse_rx_load_differential_rc_evaluate_request_v1,
     parse_selected_highloss_prbs9_waveform_only_artifact_v3,
     parse_selected_highloss_prbs9_waveform_only_artifacts_request_v3,
     parse_tran_one_node_rc_pulse_request_v1, parse_tran_one_node_rc_pwl_request_v1,
@@ -57,8 +59,8 @@ use sipi_contracts::{
 };
 use sipi_ibis::{
     DcClampCornerV1, DcClampProbeV1, IbisDcEvaluateServiceV1, IbisInspectServiceV1,
-    IbisQuasiStaticEvaluateServiceV1, ParseLimitsV1, QuasiStaticClampStateV1,
-    SelectedDcClampProfileV1,
+    IbisQuasiStaticBatchEvaluateServiceV1, IbisQuasiStaticEvaluateServiceV1, ParseLimitsV1,
+    QuasiStaticClampStateV1, SelectedDcClampProfileV1,
 };
 use sipi_link::{
     ConvolutionLimitsV1, ReceiverPhaseSelectionV2, ReferenceBitsV1, convolve_causal_fir_v1,
@@ -409,6 +411,18 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         nonclaim: "caller_input_quasi_static_constitutive_only",
     },
     CommandDescriptorV1 {
+        id: "ibis.quasi-static-evaluate-artifact-batch",
+        route: &["ibis", "quasi-static-evaluate-artifact-batch"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some(IBIS_QUASI_STATIC_ARTIFACT_BATCH_EVALUATE_REQUEST_SCHEMA),
+        response_schema: Some(
+            "sipi.ibis.input-typ-quasi-static-artifact-batch-evaluate.response.v1",
+        ),
+        unavailable_reason: None,
+        nonclaim: "sealed_caller_asset_bounded_quasi_static_constitutive_batch_only",
+    },
+    CommandDescriptorV1 {
         id: "ibis.quasi-static-evaluate-artifact",
         route: &["ibis", "quasi-static-evaluate-artifact"],
         availability: CommandAvailabilityV1::Available,
@@ -692,6 +706,15 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
     CommandProtocolProfileV1 {
+        command_id: "ibis.quasi-static-evaluate-artifact-batch",
+        example_id: None,
+        required_options: &["--artifact-root"],
+        caller_bindings: IBIS_QUASI_STATIC_ARTIFACT_BINDINGS,
+        validation_rule_id: Some("ibis.input-typ.quasi-static.sealed-artifact-batch.v1"),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
+    CommandProtocolProfileV1 {
         command_id: "ibis.quasi-static-evaluate-artifact",
         example_id: None,
         required_options: &["--artifact-root"],
@@ -831,6 +854,13 @@ fn main() {
         ProcessAdapter::ibis_dc_evaluate_stdin()
     } else if arguments == ["ibis", "quasi-static-evaluate", "--stdin"] {
         ProcessAdapter::ibis_quasi_static_evaluate_stdin()
+    } else if let [command, action, stdin, root, artifact_root] = &arguments[..]
+        && command == "ibis"
+        && action == "quasi-static-evaluate-artifact-batch"
+        && stdin == "--stdin"
+        && root == "--artifact-root"
+    {
+        ProcessAdapter::ibis_quasi_static_evaluate_artifact_batch_stdin(artifact_root)
     } else if let [command, action, stdin, root, artifact_root] = &arguments[..]
         && command == "ibis"
         && action == "quasi-static-evaluate-artifact"
@@ -1152,6 +1182,24 @@ impl ProcessAdapter {
             }
         };
         run_ibis_quasi_static_artifact_evaluate(artifact_root, &request)
+    }
+
+    fn ibis_quasi_static_evaluate_artifact_batch_stdin(artifact_root: &str) -> Response {
+        let input = match read_stdin_request() {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        let request = match parse_ibis_quasi_static_artifact_batch_evaluate_request_v1(&input) {
+            Ok(request) => request,
+            Err(_) => {
+                return error(
+                    3,
+                    "contract_rejected",
+                    "sealed IBIS quasi-static batch request was rejected",
+                );
+            }
+        };
+        run_ibis_quasi_static_artifact_batch_evaluate(artifact_root, &request)
     }
 
     fn rx_load_differential_rc_evaluate_stdin() -> Response {
@@ -2396,11 +2444,7 @@ fn run_ibis_quasi_static_artifact_evaluate(
     let store = match ArtifactRoot::open_existing(Path::new(artifact_root)) {
         Ok(store) => store,
         Err(_) => {
-            return error(
-                3,
-                "contract_rejected",
-                "sealed IBIS artifact was rejected",
-            );
+            return error(3, "contract_rejected", "sealed IBIS artifact was rejected");
         }
     };
     let files = match store.consume_exact_verified_v1(
@@ -2420,35 +2464,22 @@ fn run_ibis_quasi_static_artifact_evaluate(
     ) {
         Ok(files) => files,
         Err(_) => {
-            return error(
-                3,
-                "contract_rejected",
-                "sealed IBIS artifact was rejected",
-            );
+            return error(3, "contract_rejected", "sealed IBIS artifact was rejected");
         }
     };
     let bytes = match files.file("model.ibs") {
         Some(bytes) => bytes,
         None => {
-            return error(
-                3,
-                "contract_rejected",
-                "sealed IBIS artifact was rejected",
-            );
+            return error(3, "contract_rejected", "sealed IBIS artifact was rejected");
         }
     };
     let text = match std::str::from_utf8(bytes) {
         Ok(text) => text,
         Err(_) => {
-            return error(
-                3,
-                "contract_rejected",
-                "sealed IBIS artifact was rejected",
-            );
+            return error(3, "contract_rejected", "sealed IBIS artifact was rejected");
         }
     };
-    let limits = match ParseLimitsV1::try_new(MAXIMUM_IBIS_BYTES as usize, 65_536, 16_384, 16_384)
-    {
+    let limits = match ParseLimitsV1::try_new(MAXIMUM_IBIS_BYTES as usize, 65_536, 16_384, 16_384) {
         Ok(limits) => limits,
         Err(_) => return error(6, "internal_contract_error", "IBIS limits are unavailable"),
     };
@@ -2492,6 +2523,118 @@ fn run_ibis_quasi_static_artifact_evaluate(
             3,
             "contract_rejected",
             "IBIS quasi-static evaluation was rejected",
+        ),
+    }
+}
+
+fn run_ibis_quasi_static_artifact_batch_evaluate(
+    artifact_root: &str,
+    request: &sipi_contracts::IbisQuasiStaticArtifactBatchEvaluateRequestV1,
+) -> Response {
+    const MAXIMUM_IBIS_BYTES: u64 = 1_048_576;
+    let states = match request
+        .probes()
+        .iter()
+        .map(|probe| {
+            QuasiStaticClampStateV1::try_new(
+                probe.gnd_clamp_drive_volts(),
+                probe.power_clamp_drive_volts(),
+                probe.sig_to_ref_slope_volts_per_second(),
+            )
+        })
+        .collect::<Result<Vec<_>, _>>()
+    {
+        Ok(states) => states,
+        Err(_) => {
+            return error(
+                3,
+                "contract_rejected",
+                "IBIS quasi-static batch state was rejected",
+            );
+        }
+    };
+    let store = match ArtifactRoot::open_existing(Path::new(artifact_root)) {
+        Ok(store) => store,
+        Err(_) => {
+            return error(3, "contract_rejected", "sealed IBIS artifact was rejected");
+        }
+    };
+    let files = match store.consume_exact_verified_v1(
+        request.artifact().artifact_id(),
+        request.artifact().manifest_sha256(),
+        &[("model.ibs", MAXIMUM_IBIS_BYTES)],
+        match VerifiedConsumptionPolicyV1::try_new(65_536, MAXIMUM_IBIS_BYTES) {
+            Ok(policy) => policy,
+            Err(_) => {
+                return error(
+                    6,
+                    "internal_contract_error",
+                    "sealed IBIS artifact policy is unavailable",
+                );
+            }
+        },
+    ) {
+        Ok(files) => files,
+        Err(_) => {
+            return error(3, "contract_rejected", "sealed IBIS artifact was rejected");
+        }
+    };
+    let bytes = match files.file("model.ibs") {
+        Some(bytes) => bytes,
+        None => {
+            return error(3, "contract_rejected", "sealed IBIS artifact was rejected");
+        }
+    };
+    let text = match std::str::from_utf8(bytes) {
+        Ok(text) => text,
+        Err(_) => {
+            return error(3, "contract_rejected", "sealed IBIS artifact was rejected");
+        }
+    };
+    let limits = match ParseLimitsV1::try_new(MAXIMUM_IBIS_BYTES as usize, 65_536, 16_384, 16_384) {
+        Ok(limits) => limits,
+        Err(_) => return error(6, "internal_contract_error", "IBIS limits are unavailable"),
+    };
+    let profile = match SelectedDcClampProfileV1::try_new(
+        request.ibis_version(),
+        request.model_selector(),
+        DcClampCornerV1::Typical,
+    ) {
+        Ok(profile) => profile,
+        Err(_) => return error(3, "contract_rejected", "IBIS selection was rejected"),
+    };
+    match IbisQuasiStaticBatchEvaluateServiceV1::evaluate(text, &profile, &states, limits) {
+        Ok(report) => {
+            let probes = report
+                .probes()
+                .iter()
+                .map(|probe| {
+                    format!(
+                        "{{\"gnd_clamp_current_amps\":{},\"power_clamp_current_amps\":{},\"c_comp_current_amps\":{},\"total_shunt_current_amps\":{}}}",
+                        probe.gnd_current().get(),
+                        probe.power_current().get(),
+                        probe.c_comp_current().get(),
+                        probe.total_shunt_current().get(),
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(",");
+            success(format!(
+                "{{\"schema\":\"sipi.ibis.input-typ-quasi-static-artifact-batch-evaluate.response.v1\",\"artifact\":{{\"artifact_id\":\"{}\",\"manifest_sha256\":\"{}\",\"payload_sha256\":\"{}\",\"payload_byte_length\":{}}},\"selection\":{{\"ibis_version\":\"{}\",\"model_selector\":\"{}\",\"corner\":\"typical\"}},\"probe_count\":{},\"probes\":[{}],\"evaluation_scope\":\"input_typical_quasi_static_constitutive_sealed_caller_artifact_bounded_batch\",\"artifact_custody\":\"caller_asset_identity_verified\",\"artifact_root_threat_model\":\"caller_selected_sipi_published_root_no_hostile_concurrent_writer\",\"external_profile_acceptance\":\"not_evaluated\",\"capability_matrix_id\":\"sipi.p4a-ibis-conformance-matrix.v1\"}}",
+                request.artifact().artifact_id(),
+                request.artifact().manifest_sha256(),
+                sha256_hex(bytes),
+                bytes.len(),
+                report.ibis_version(),
+                report.model_selector(),
+                report.probes().len(),
+                probes,
+            ))
+        }
+        Err(_) => error(
+            3,
+            "contract_rejected",
+            "IBIS quasi-static batch evaluation was rejected",
         ),
     }
 }
@@ -2770,6 +2913,7 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["ibis", "inspect"]
             | ["ibis", "dc-evaluate"]
             | ["ibis", "quasi-static-evaluate"]
+            | ["ibis", "quasi-static-evaluate-artifact-batch"]
             | ["ibis", "quasi-static-evaluate-artifact"]
             | ["rx-load", "differential-rc-evaluate"]
             | ["tran", "run"]
@@ -2868,6 +3012,8 @@ fn schema_bytes(id: &str) -> Result<Option<Vec<u8>>, sipi_contracts::ContractErr
         ibis_dc_evaluate_request_schema_json().map(Some)
     } else if id == IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA {
         ibis_quasi_static_evaluate_request_schema_json().map(Some)
+    } else if id == IBIS_QUASI_STATIC_ARTIFACT_BATCH_EVALUATE_REQUEST_SCHEMA {
+        ibis_quasi_static_artifact_batch_evaluate_request_schema_json().map(Some)
     } else if id == IBIS_QUASI_STATIC_ARTIFACT_EVALUATE_REQUEST_SCHEMA {
         ibis_quasi_static_artifact_evaluate_request_schema_json().map(Some)
     } else if id == sipi_contracts::RX_LOAD_DIFFERENTIAL_RC_EVALUATE_REQUEST_SCHEMA {
@@ -3264,8 +3410,9 @@ fn doctor_json() -> String {
 
 fn schema_list_json() -> String {
     format!(
-        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA}\",\"{ARRAY_COMPARE_REQUEST_SCHEMA}\",\"{PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA}\",\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACTS_REQUEST_SCHEMA_V3}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA}\",\"{}\",\"{}\"]}}",
+        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA}\",\"{ARRAY_COMPARE_REQUEST_SCHEMA}\",\"{PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA}\",\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACTS_REQUEST_SCHEMA_V3}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA}\",\"{}\",\"{}\"]}}",
         IBIS_DC_EVALUATE_REQUEST_SCHEMA,
+        IBIS_QUASI_STATIC_ARTIFACT_BATCH_EVALUATE_REQUEST_SCHEMA,
         IBIS_QUASI_STATIC_ARTIFACT_EVALUATE_REQUEST_SCHEMA,
         IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA,
         sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA,
@@ -3320,6 +3467,7 @@ fn validate_self(schema: Option<&str>) -> Response {
             && id != sipi_contracts::IBIS_INSPECT_REQUEST_SCHEMA
             && id != IBIS_DC_EVALUATE_REQUEST_SCHEMA
             && id != IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA
+            && id != IBIS_QUASI_STATIC_ARTIFACT_BATCH_EVALUATE_REQUEST_SCHEMA
             && id != IBIS_QUASI_STATIC_ARTIFACT_EVALUATE_REQUEST_SCHEMA
             && id != sipi_contracts::RX_LOAD_DIFFERENTIAL_RC_EVALUATE_REQUEST_SCHEMA
             && id != LINK_PLAN_SCHEMA
@@ -3350,6 +3498,7 @@ fn validate_self(schema: Option<&str>) -> Response {
         && ibis_inspect_request_schema_json().is_ok()
         && ibis_dc_evaluate_request_schema_json().is_ok()
         && ibis_quasi_static_evaluate_request_schema_json().is_ok()
+        && ibis_quasi_static_artifact_batch_evaluate_request_schema_json().is_ok()
         && ibis_quasi_static_artifact_evaluate_request_schema_json().is_ok()
         && rx_load_differential_rc_evaluate_request_schema_json().is_ok()
         && link_plan_schema_json().is_ok()
@@ -3654,7 +3803,7 @@ mod tests {
     fn schema_list_uses_the_schema_inventory_order() {
         assert_eq!(
             schema_list_json(),
-            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.compare.aligned-arrays-request.v1\",\"sipi.compare.prbs9-metric-artifacts-request.v1\",\"sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-request.v3\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-artifact-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.receiver.diagnostic-run-request.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.one-node-rc-pulse-request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
+            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.compare.aligned-arrays-request.v1\",\"sipi.compare.prbs9-metric-artifacts-request.v1\",\"sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-request.v3\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-artifact-batch-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-artifact-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.receiver.diagnostic-run-request.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.one-node-rc-pulse-request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
         );
     }
 

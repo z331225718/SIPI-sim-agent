@@ -70,7 +70,7 @@ P6_ARTIFACT_REPORT_AUDIT_SHA256 = "4574bf42788a087e9947f6017194a0cb75a5bdc7f1238
 P7_ISOLATED_INSTALL_AUDIT_SHA256 = "8682cd4718c4a9dbaf57635fe0386d159f2c54cc11a361c90566967bc6a3fb66"
 P2_ONE_NODE_RC_PULSE_CLI_AUDIT_SHA256 = "3fe3222b08b4b8e0026357b690db3daa5e190b230b92d6cac4baf6d2e8606738"
 P2_ONE_NODE_RC_PWL_CLI_AUDIT_SHA256 = "79f82d24f8046811bb9ce98ed8fa9c103d480d175de7953040f622bfdfd4dfc1"
-P4A_IBIS_CONFORMANCE_MATRIX_SHA256 = "4a9575961b48dcdd82db4874c2e235c93bb2057ae315ad82eb2be2792e5f6bad"
+P4A_IBIS_CONFORMANCE_MATRIX_SHA256 = "7619545902753d7393dedd6e087f83741821dd09eb65fa7e8056454b431a1cf5"
 P4A_IBIS_STRUCTURAL_INSPECT_AUDIT_SHA256 = "85458c464ad85a6a52640c25cc7f234e316fa25aefc14a125d9028142687e17f"
 PRODUCT_OWNED_UNAVAILABLE_CATALOG_ROUTES_V1 = {
     "project-validate": {
@@ -291,6 +291,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     _validate_one_node_rc_pwl_route(rows, manifest_by_id, index_by_id, root)
     _validate_caller_input_ibis_dc_route(rows, manifest_by_id, index_by_id, root)
     _validate_caller_input_ibis_quasi_static_route(rows, manifest_by_id, index_by_id, root)
+    _validate_sealed_caller_asset_ibis_quasi_static_batch_route(rows, manifest_by_id, index_by_id, root)
     _validate_sealed_caller_asset_ibis_quasi_static_route(rows, manifest_by_id, index_by_id, root)
     _validate_selected_differential_rc_load_route(rows, manifest_by_id, index_by_id, root)
     _validate_structural_ibis_inspect_route(rows, manifest_by_id, index_by_id, root)
@@ -951,6 +952,46 @@ def _validate_caller_input_ibis_quasi_static_route(
         raise PublicationError("publication_ibis_quasi_static_evidence_invalid")
     if result.get("valid") is not True or result.get("status") != "boundary_recorded" or cli_entry.get("status") != "implemented_self_tested":
         raise PublicationError("publication_ibis_quasi_static_matrix_invalid")
+
+
+def _validate_sealed_caller_asset_ibis_quasi_static_batch_route(
+    rows: list[dict[str, Any]], manifest_by_id: dict[str, dict[str, Any]],
+    index_by_id: dict[str, dict[str, Any]], root: Path,
+) -> None:
+    evidence_id = "p4a-ibis-quasi-static-artifact-batch-cli"
+    matrix_path = "docs/baselines/p4a-ibis-conformance-matrix.v1.yaml"
+    row = next((item for item in rows if item["id"] == "ibis-quasi-static-artifact-batch-evaluate"), None)
+    command = manifest_by_id.get("ibis.quasi-static-evaluate-artifact-batch")
+    if (
+        row is None or row["domain"] != "ibis"
+        or row["command_id"] != "ibis.quasi-static-evaluate-artifact-batch"
+        or row["product_surface"] != "available" or row["acceptance_state"] != "specified"
+        or row["external_oracle"] is not False or row["evidence_ids"] != [evidence_id]
+        or row["blockers"] != ["caller_asset_identity_only", "external_profile_not_evaluated"]
+        or row["non_claims"] != ["not_transient_parity_or_general_ibis"]
+        or command is None or command["route"] != ["ibis", "quasi-static-evaluate-artifact-batch"]
+        or command["availability"] != "available" or command["transport"] != "stdin_json_v1"
+        or command["request_schema"] != "sipi.ibis.input-typ-quasi-static-artifact-batch-evaluate.request.v1"
+        or command["response_schema"] != "sipi.ibis.input-typ-quasi-static-artifact-batch-evaluate.response.v1"
+        or command["unavailable_reason"] is not None
+        or command["nonclaim"] != "sealed_caller_asset_bounded_quasi_static_constitutive_batch_only"
+    ):
+        raise PublicationError("publication_ibis_quasi_static_artifact_batch_route_binding_invalid")
+    evidence = index_by_id.get(evidence_id)
+    if evidence is None or (evidence["kind"], evidence["path"], evidence["subject"], evidence["evidence_state"]) != ("capability_contract", matrix_path, "ibis", "specified"):
+        raise PublicationError("publication_ibis_quasi_static_artifact_batch_evidence_invalid")
+    try:
+        actual_sha256 = hashlib.sha256((root / matrix_path).read_bytes()).hexdigest()
+        matrix = load_yaml(root / matrix_path)
+        result = validate_ibis_matrix(matrix)
+    except (OSError, RuntimeError, ValueError, MatrixError):
+        raise PublicationError("publication_ibis_quasi_static_artifact_batch_matrix_invalid") from None
+    entries = {entry.get("id"): entry for entry in matrix.get("entries", []) if isinstance(entry, dict)}
+    cli_entry = entries.get("input-typ-quasi-static-evaluate-sealed-artifact-batch", {})
+    if actual_sha256 != P4A_IBIS_CONFORMANCE_MATRIX_SHA256:
+        raise PublicationError("publication_ibis_quasi_static_artifact_batch_evidence_invalid")
+    if result.get("valid") is not True or result.get("status") != "boundary_recorded" or cli_entry.get("status") != "implemented_self_tested":
+        raise PublicationError("publication_ibis_quasi_static_artifact_batch_matrix_invalid")
 
 
 def _validate_sealed_caller_asset_ibis_quasi_static_route(

@@ -142,6 +142,29 @@ fn run_ibis_quasi_static_artifact_evaluate(root: &Path, request: &[u8]) -> Outpu
     child.wait_with_output().expect("wait sipi")
 }
 
+fn run_ibis_quasi_static_artifact_batch_evaluate(root: &Path, request: &[u8]) -> Output {
+    let mut child = sipi()
+        .args([
+            "ibis",
+            "quasi-static-evaluate-artifact-batch",
+            "--stdin",
+            "--artifact-root",
+            root.to_string_lossy().as_ref(),
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start sipi");
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(request)
+        .expect("write request");
+    child.wait_with_output().expect("wait sipi")
+}
+
 fn publish_prbs9_waveform_artifact(root: &Path, id: &str, values: &[f64]) -> String {
     let payload = values
         .iter()
@@ -934,10 +957,9 @@ fn ibis_quasi_static_artifact_evaluate_requires_one_exact_sealed_model() {
     let extra_manifest = sha256(
         &std::fs::read(bad_root.join("ibis-model-extra").join("success.json")).expect("success"),
     );
-    let extra_request = request.replace("ibis-model-1", "ibis-model-extra").replace(
-        &manifest_sha256,
-        &extra_manifest,
-    );
+    let extra_request = request
+        .replace("ibis-model-1", "ibis-model-extra")
+        .replace(&manifest_sha256, &extra_manifest);
     let rejected = run_ibis_quasi_static_artifact_evaluate(&bad_root, extra_request.as_bytes());
     assert_eq!(rejected.status.code(), Some(3));
     let rejected_stdout = String::from_utf8(rejected.stdout).expect("UTF-8 stdout");
@@ -946,6 +968,59 @@ fn ibis_quasi_static_artifact_evaluate_requires_one_exact_sealed_model() {
 
     let _ = std::fs::remove_dir_all(root);
     let _ = std::fs::remove_dir_all(bad_root);
+}
+
+#[test]
+fn ibis_quasi_static_artifact_batch_evaluate_is_ordered_and_all_or_nothing() {
+    let root = std::env::temp_dir().join(format!(
+        "sipi-cli-ibis-quasi-static-artifact-batch-{}",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&root);
+    let model = b"[IBIS Ver] 7.1\n[Model] product_input\nModel_type Input\nC_comp 1pF\n[GND_clamp]\n-1V -1A\n1V 1A\n[POWER_clamp]\n-1V 1A\n1V -1A\n";
+    let manifest_sha256 = publish_ibis_model_artifact(&root, "ibis-model-batch-1", model);
+    let request = format!(
+        "{{\"schema\":\"sipi.ibis.input-typ-quasi-static-artifact-batch-evaluate.request.v1\",\"artifact\":{{\"artifact_id\":\"ibis-model-batch-1\",\"manifest_sha256\":\"{manifest_sha256}\"}},\"selection\":{{\"ibis_version\":\"7.1\",\"model_selector\":\"product_input\",\"corner\":\"typical\"}},\"probes\":[{{\"gnd_clamp_drive_volts\":0.0,\"power_clamp_drive_volts\":0.0,\"sig_to_ref_slope_volts_per_second\":0.0}},{{\"gnd_clamp_drive_volts\":0.5,\"power_clamp_drive_volts\":0.0,\"sig_to_ref_slope_volts_per_second\":1000000000.0}}]}}"
+    );
+    let output = run_ibis_quasi_static_artifact_batch_evaluate(&root, request.as_bytes());
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("UTF-8 stdout");
+    assert!(
+        stdout.contains("sipi.ibis.input-typ-quasi-static-artifact-batch-evaluate.response.v1")
+    );
+    assert!(stdout.contains("\"probe_count\":2"));
+    assert!(stdout.contains("\"total_shunt_current_amps\":0}"));
+    assert!(stdout.contains("\"total_shunt_current_amps\":0.501}"));
+    assert!(stdout.contains("\"artifact_custody\":\"caller_asset_identity_verified\""));
+    assert!(!stdout.contains("[GND_clamp]"));
+    assert!(output.stderr.is_empty());
+
+    let empty = request.replacen(
+        "[{\"gnd_clamp_drive_volts\":0.0,\"power_clamp_drive_volts\":0.0,\"sig_to_ref_slope_volts_per_second\":0.0},{\"gnd_clamp_drive_volts\":0.5,\"power_clamp_drive_volts\":0.0,\"sig_to_ref_slope_volts_per_second\":1000000000.0}]",
+        "[]",
+        1,
+    );
+    let rejected = run_ibis_quasi_static_artifact_batch_evaluate(&root, empty.as_bytes());
+    assert_eq!(rejected.status.code(), Some(3));
+    assert!(
+        String::from_utf8(rejected.stdout)
+            .expect("UTF-8 stdout")
+            .contains("\"result\":null")
+    );
+
+    let out_of_domain = request.replace(
+        "\"gnd_clamp_drive_volts\":0.5",
+        "\"gnd_clamp_drive_volts\":3.0",
+    );
+    let rejected = run_ibis_quasi_static_artifact_batch_evaluate(&root, out_of_domain.as_bytes());
+    assert_eq!(rejected.status.code(), Some(3));
+    assert!(
+        String::from_utf8(rejected.stdout)
+            .expect("UTF-8 stdout")
+            .contains("\"result\":null")
+    );
+
+    let _ = std::fs::remove_dir_all(root);
 }
 
 #[test]

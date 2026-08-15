@@ -695,6 +695,113 @@ impl IbisQuasiStaticEvaluateReportV1 {
     }
 }
 
+/// One result from a bounded list of independent quasi-static probes.
+#[derive(Clone, Debug, PartialEq)]
+pub struct IbisQuasiStaticBatchProbeReportV1 {
+    gnd_current: Amps,
+    power_current: Amps,
+    c_comp_current: Amps,
+    total_shunt_current: Amps,
+}
+
+impl IbisQuasiStaticBatchProbeReportV1 {
+    pub const fn gnd_current(&self) -> Amps {
+        self.gnd_current
+    }
+
+    pub const fn power_current(&self) -> Amps {
+        self.power_current
+    }
+
+    pub const fn c_comp_current(&self) -> Amps {
+        self.c_comp_current
+    }
+
+    pub const fn total_shunt_current(&self) -> Amps {
+        self.total_shunt_current
+    }
+}
+
+/// Bounded projection of a one-parse, one-decode quasi-static batch.
+#[derive(Clone, Debug, PartialEq)]
+pub struct IbisQuasiStaticBatchEvaluateReportV1 {
+    input_byte_length: usize,
+    input_sha256: String,
+    ibis_version: String,
+    model_selector: String,
+    probes: Vec<IbisQuasiStaticBatchProbeReportV1>,
+}
+
+impl IbisQuasiStaticBatchEvaluateReportV1 {
+    pub const fn input_byte_length(&self) -> usize {
+        self.input_byte_length
+    }
+
+    pub fn input_sha256(&self) -> &str {
+        &self.input_sha256
+    }
+
+    pub fn ibis_version(&self) -> &str {
+        &self.ibis_version
+    }
+
+    pub fn model_selector(&self) -> &str {
+        &self.model_selector
+    }
+
+    pub fn probes(&self) -> &[IbisQuasiStaticBatchProbeReportV1] {
+        &self.probes
+    }
+}
+
+/// Pure in-memory service for a bounded set of independent selected Input/TYP
+/// quasi-static clamp probes. The source is parsed and decoded exactly once;
+/// no time axis, interpolation, integration, or cross-probe state exists.
+pub struct IbisQuasiStaticBatchEvaluateServiceV1;
+
+impl IbisQuasiStaticBatchEvaluateServiceV1 {
+    pub fn evaluate(
+        text: &str,
+        profile: &SelectedDcClampProfileV1,
+        states: &[QuasiStaticClampStateV1],
+        limits: ParseLimitsV1,
+    ) -> Result<IbisQuasiStaticBatchEvaluateReportV1, IbisQuasiStaticEvaluateErrorV1> {
+        if states.is_empty() {
+            return Err(IbisQuasiStaticEvaluateErrorV1::EmptyBatch);
+        }
+        let bytes = text.as_bytes();
+        let document = parse_structural_v1(bytes, limits)
+            .map_err(IbisQuasiStaticEvaluateErrorV1::Structural)?;
+        let envelope = build_semantic_envelope_v1(&document)
+            .map_err(IbisQuasiStaticEvaluateErrorV1::Semantic)?;
+        let decoded = decode_selected_dc_clamps_v1(&envelope, profile)
+            .map_err(IbisQuasiStaticEvaluateErrorV1::Profile)?;
+        let model = InputClampConstitutiveV1::try_new(decoded.model().clone(), decoded.c_comp())
+            .map_err(IbisQuasiStaticEvaluateErrorV1::Constitutive)?;
+        let probes = states
+            .iter()
+            .copied()
+            .map(|state| {
+                evaluate_quasi_static_clamps_v1(&model, state)
+                    .map(|response| IbisQuasiStaticBatchProbeReportV1 {
+                        gnd_current: response.gnd_current(),
+                        power_current: response.power_current(),
+                        c_comp_current: response.c_comp_current(),
+                        total_shunt_current: response.total_shunt_current(),
+                    })
+                    .map_err(IbisQuasiStaticEvaluateErrorV1::Constitutive)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(IbisQuasiStaticBatchEvaluateReportV1 {
+            input_byte_length: bytes.len(),
+            input_sha256: hex_sha256(bytes),
+            ibis_version: profile.ibis_version().to_owned(),
+            model_selector: profile.model_selector().to_owned(),
+            probes,
+        })
+    }
+}
+
 /// Stable rejection families for the quasi-static constitutive service.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum IbisQuasiStaticEvaluateErrorV1 {
@@ -702,6 +809,7 @@ pub enum IbisQuasiStaticEvaluateErrorV1 {
     Semantic(IbisSemanticDiagnosticV1),
     Profile(IbisProfileDiagnosticV1),
     Constitutive(InputClampConstitutiveErrorV1),
+    EmptyBatch,
 }
 
 impl fmt::Display for IbisQuasiStaticEvaluateErrorV1 {
@@ -711,6 +819,7 @@ impl fmt::Display for IbisQuasiStaticEvaluateErrorV1 {
             Self::Semantic(error) => error.fmt(formatter),
             Self::Profile(error) => error.fmt(formatter),
             Self::Constitutive(error) => error.fmt(formatter),
+            Self::EmptyBatch => write!(formatter, "quasi-static batch has no probes"),
         }
     }
 }
@@ -2352,6 +2461,71 @@ mod tests {
                     1.0e9,
                 )
                 .expect("state"),
+                limits(),
+            ),
+            Err(IbisQuasiStaticEvaluateErrorV1::Constitutive(
+                InputClampConstitutiveErrorV1::Dc(DcClampErrorV1::OutOfDomain { .. })
+            ))
+        ));
+    }
+
+    #[test]
+    fn quasi_static_batch_service_preserves_probe_order_and_is_all_or_nothing() {
+        let profile = SelectedDcClampProfileV1::try_new(
+            "7.1",
+            "product_input_model",
+            DcClampCornerV1::Typical,
+        )
+        .expect("profile");
+        let source = selected_input_source(b"");
+        let states = [
+            QuasiStaticClampStateV1::try_new(
+                Volts::try_new(0.0).expect("finite"),
+                Volts::try_new(0.0).expect("finite"),
+                0.0,
+            )
+            .expect("state"),
+            QuasiStaticClampStateV1::try_new(
+                Volts::try_new(0.5).expect("finite"),
+                Volts::try_new(0.0).expect("finite"),
+                1.0e9,
+            )
+            .expect("state"),
+        ];
+        let report = IbisQuasiStaticBatchEvaluateServiceV1::evaluate(
+            std::str::from_utf8(&source).expect("UTF-8"),
+            &profile,
+            &states,
+            limits(),
+        )
+        .expect("batch evaluation");
+        assert_eq!(report.probes().len(), 2);
+        assert_eq!(report.probes()[0].total_shunt_current().get(), 1.0);
+        assert_eq!(report.probes()[1].total_shunt_current().get(), 2.0025);
+        assert_eq!(
+            IbisQuasiStaticBatchEvaluateServiceV1::evaluate(
+                std::str::from_utf8(&source).expect("UTF-8"),
+                &profile,
+                &[],
+                limits(),
+            ),
+            Err(IbisQuasiStaticEvaluateErrorV1::EmptyBatch)
+        );
+
+        let invalid_states = [
+            states[0],
+            QuasiStaticClampStateV1::try_new(
+                Volts::try_new(3.0).expect("finite"),
+                Volts::try_new(0.0).expect("finite"),
+                0.0,
+            )
+            .expect("state"),
+        ];
+        assert!(matches!(
+            IbisQuasiStaticBatchEvaluateServiceV1::evaluate(
+                std::str::from_utf8(&source).expect("UTF-8"),
+                &profile,
+                &invalid_states,
                 limits(),
             ),
             Err(IbisQuasiStaticEvaluateErrorV1::Constitutive(

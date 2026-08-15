@@ -50,6 +50,8 @@ pub const IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA: &str =
     "sipi.ibis.input-typ-quasi-static-evaluate.request.v1";
 pub const IBIS_QUASI_STATIC_ARTIFACT_EVALUATE_REQUEST_SCHEMA: &str =
     "sipi.ibis.input-typ-quasi-static-artifact-evaluate.request.v1";
+pub const IBIS_QUASI_STATIC_ARTIFACT_BATCH_EVALUATE_REQUEST_SCHEMA: &str =
+    "sipi.ibis.input-typ-quasi-static-artifact-batch-evaluate.request.v1";
 pub const RX_LOAD_DIFFERENTIAL_RC_EVALUATE_REQUEST_SCHEMA: &str =
     "sipi.rx-load.selected-differential-rc-evaluate.request.v1";
 pub const RECEIVER_INPUT_SCHEMA: &str = "sipi.receiver-input.v1";
@@ -277,6 +279,8 @@ pub enum IbisQuasiStaticEvaluateContractError {
     UnsupportedCorner,
     NonFiniteProbe,
     NonFiniteSlope,
+    EmptyProbeBatch,
+    ProbeBatchLimitExceeded,
 }
 
 impl fmt::Display for IbisQuasiStaticEvaluateContractError {
@@ -1981,6 +1985,48 @@ pub struct WireIbisQuasiStaticProbeV1 {
     pub sig_to_ref_slope_volts_per_second: f64,
 }
 
+/// One independent operating point for the selected memoryless Input/TYP
+/// constitutive relation. It deliberately carries no time coordinate.
+#[derive(Clone, Debug, PartialEq)]
+pub struct IbisQuasiStaticProbeV1 {
+    gnd_clamp_drive_volts: Volts,
+    power_clamp_drive_volts: Volts,
+    sig_to_ref_slope_volts_per_second: FiniteF64,
+}
+
+impl IbisQuasiStaticProbeV1 {
+    pub const fn gnd_clamp_drive_volts(&self) -> Volts {
+        self.gnd_clamp_drive_volts
+    }
+
+    pub const fn power_clamp_drive_volts(&self) -> Volts {
+        self.power_clamp_drive_volts
+    }
+
+    pub fn sig_to_ref_slope_volts_per_second(&self) -> f64 {
+        self.sig_to_ref_slope_volts_per_second.get()
+    }
+}
+
+fn parse_ibis_quasi_static_probe_v1(
+    value: WireIbisQuasiStaticProbeV1,
+) -> Result<IbisQuasiStaticProbeV1, ContractError> {
+    let gnd_clamp_drive_volts = Volts::try_new(value.gnd_clamp_drive_volts)
+        .map_err(|_| IbisQuasiStaticEvaluateContractError::NonFiniteProbe)?;
+    let power_clamp_drive_volts = Volts::try_new(value.power_clamp_drive_volts)
+        .map_err(|_| IbisQuasiStaticEvaluateContractError::NonFiniteProbe)?;
+    let sig_to_ref_slope_volts_per_second = FiniteF64::try_new(
+        value.sig_to_ref_slope_volts_per_second,
+        "SIG-to-REF voltage slope in volts per second",
+    )
+    .map_err(|_| IbisQuasiStaticEvaluateContractError::NonFiniteSlope)?;
+    Ok(IbisQuasiStaticProbeV1 {
+        gnd_clamp_drive_volts,
+        power_clamp_drive_volts,
+        sig_to_ref_slope_volts_per_second,
+    })
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct IbisQuasiStaticEvaluateRequestV1 {
     text: String,
@@ -2086,6 +2132,45 @@ pub struct IbisQuasiStaticArtifactEvaluateRequestV1 {
     sig_to_ref_slope_volts_per_second: FiniteF64,
 }
 
+/// A sealed-artifact request that evaluates a bounded list of independent
+/// quasi-static probes after one parse/decode of the exact `model.ibs` payload.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WireIbisQuasiStaticArtifactBatchEvaluateRequestV1 {
+    pub schema: String,
+    pub artifact: WireSealedArtifactIdentityV1,
+    pub selection: WireIbisDcSelectionV1,
+    pub probes: Vec<WireIbisQuasiStaticProbeV1>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct IbisQuasiStaticArtifactBatchEvaluateRequestV1 {
+    artifact: SealedArtifactIdentityV1,
+    ibis_version: String,
+    model_selector: String,
+    probes: Vec<IbisQuasiStaticProbeV1>,
+}
+
+impl IbisQuasiStaticArtifactBatchEvaluateRequestV1 {
+    pub const MAXIMUM_PROBES: usize = 1024;
+
+    pub fn artifact(&self) -> &SealedArtifactIdentityV1 {
+        &self.artifact
+    }
+
+    pub fn ibis_version(&self) -> &str {
+        &self.ibis_version
+    }
+
+    pub fn model_selector(&self) -> &str {
+        &self.model_selector
+    }
+
+    pub fn probes(&self) -> &[IbisQuasiStaticProbeV1] {
+        &self.probes
+    }
+}
+
 impl IbisQuasiStaticArtifactEvaluateRequestV1 {
     pub fn artifact(&self) -> &SealedArtifactIdentityV1 {
         &self.artifact
@@ -2159,6 +2244,59 @@ pub fn parse_ibis_quasi_static_artifact_evaluate_request_v1(
     input: &[u8],
 ) -> Result<IbisQuasiStaticArtifactEvaluateRequestV1, ContractError> {
     serde_json::from_slice::<WireIbisQuasiStaticArtifactEvaluateRequestV1>(input)
+        .map_err(|error| ContractError::Json(error.to_string()))?
+        .try_into()
+}
+
+impl TryFrom<WireIbisQuasiStaticArtifactBatchEvaluateRequestV1>
+    for IbisQuasiStaticArtifactBatchEvaluateRequestV1
+{
+    type Error = ContractError;
+
+    fn try_from(
+        value: WireIbisQuasiStaticArtifactBatchEvaluateRequestV1,
+    ) -> Result<Self, Self::Error> {
+        if value.schema != IBIS_QUASI_STATIC_ARTIFACT_BATCH_EVALUATE_REQUEST_SCHEMA {
+            return Err(ContractError::Version);
+        }
+        if !valid_artifact_id(&value.artifact.artifact_id)
+            || !valid_array_compare_binding(&value.artifact.manifest_sha256)
+        {
+            return Err(IbisQuasiStaticEvaluateContractError::InvalidArtifactIdentity.into());
+        }
+        if value.selection.corner != "typical" {
+            return Err(IbisQuasiStaticEvaluateContractError::UnsupportedCorner.into());
+        }
+        if value.selection.ibis_version.is_empty() || value.selection.model_selector.is_empty() {
+            return Err(IbisQuasiStaticEvaluateContractError::InvalidSelection.into());
+        }
+        if value.probes.is_empty() {
+            return Err(IbisQuasiStaticEvaluateContractError::EmptyProbeBatch.into());
+        }
+        if value.probes.len() > Self::MAXIMUM_PROBES {
+            return Err(IbisQuasiStaticEvaluateContractError::ProbeBatchLimitExceeded.into());
+        }
+        let probes = value
+            .probes
+            .into_iter()
+            .map(parse_ibis_quasi_static_probe_v1)
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self {
+            artifact: SealedArtifactIdentityV1 {
+                artifact_id: value.artifact.artifact_id,
+                manifest_sha256: value.artifact.manifest_sha256,
+            },
+            ibis_version: value.selection.ibis_version,
+            model_selector: value.selection.model_selector,
+            probes,
+        })
+    }
+}
+
+pub fn parse_ibis_quasi_static_artifact_batch_evaluate_request_v1(
+    input: &[u8],
+) -> Result<IbisQuasiStaticArtifactBatchEvaluateRequestV1, ContractError> {
+    serde_json::from_slice::<WireIbisQuasiStaticArtifactBatchEvaluateRequestV1>(input)
         .map_err(|error| ContractError::Json(error.to_string()))?
         .try_into()
 }
@@ -3227,6 +3365,13 @@ pub fn ibis_quasi_static_artifact_evaluate_request_schema_json() -> Result<Vec<u
     deterministic_json(&schema_for!(WireIbisQuasiStaticArtifactEvaluateRequestV1))
 }
 
+pub fn ibis_quasi_static_artifact_batch_evaluate_request_schema_json()
+-> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(
+        WireIbisQuasiStaticArtifactBatchEvaluateRequestV1
+    ))
+}
+
 pub fn rx_load_differential_rc_evaluate_request_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(WireRxLoadDifferentialRcEvaluateRequestV1))
 }
@@ -3481,11 +3626,23 @@ mod tests {
     }
 
     #[test]
-    fn tracked_ibis_quasi_static_artifact_evaluate_schema_baseline_is_exactly_the_registered_export() {
+    fn tracked_ibis_quasi_static_artifact_evaluate_schema_baseline_is_exactly_the_registered_export()
+     {
         let baseline = include_bytes!(
             "../schemas/sipi.ibis.input-typ-quasi-static-artifact-evaluate.request.v1.schema.json"
         );
         let exported = ibis_quasi_static_artifact_evaluate_request_schema_json().expect("schema");
+        assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
+    }
+
+    #[test]
+    fn tracked_ibis_quasi_static_artifact_batch_evaluate_schema_baseline_is_exactly_the_registered_export()
+     {
+        let baseline = include_bytes!(
+            "../schemas/sipi.ibis.input-typ-quasi-static-artifact-batch-evaluate.request.v1.schema.json"
+        );
+        let exported =
+            ibis_quasi_static_artifact_batch_evaluate_request_schema_json().expect("schema");
         assert_eq!(baseline.strip_suffix(b"\n").unwrap_or(baseline), exported);
     }
 
@@ -3810,16 +3967,60 @@ mod tests {
         let request = parse_ibis_quasi_static_artifact_evaluate_request_v1(valid.as_bytes())
             .expect("valid sealed request");
         assert_eq!(request.artifact().artifact_id(), "model-1");
-        assert!(parse_ibis_quasi_static_artifact_evaluate_request_v1(
-            valid.replace("\"artifact\":", "\"path\":\"model.ibs\",\"artifact\":")
-                .as_bytes()
+        assert!(
+            parse_ibis_quasi_static_artifact_evaluate_request_v1(
+                valid
+                    .replace("\"artifact\":", "\"path\":\"model.ibs\",\"artifact\":")
+                    .as_bytes()
+            )
+            .is_err()
+        );
+        assert!(
+            parse_ibis_quasi_static_artifact_evaluate_request_v1(
+                valid
+                    .replace("\"manifest_sha256\":\"", "\"manifest_sha256\":\"A")
+                    .as_bytes()
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn ibis_quasi_static_artifact_batch_request_is_bounded_and_strict() {
+        let digest = "a".repeat(64);
+        let valid = format!(
+            "{{\"schema\":\"{IBIS_QUASI_STATIC_ARTIFACT_BATCH_EVALUATE_REQUEST_SCHEMA}\",\"artifact\":{{\"artifact_id\":\"model-1\",\"manifest_sha256\":\"{digest}\"}},\"selection\":{{\"ibis_version\":\"7.1\",\"model_selector\":\"InputModel\",\"corner\":\"typical\"}},\"probes\":[{{\"gnd_clamp_drive_volts\":0.0,\"power_clamp_drive_volts\":0.0,\"sig_to_ref_slope_volts_per_second\":0.0}},{{\"gnd_clamp_drive_volts\":0.5,\"power_clamp_drive_volts\":0.0,\"sig_to_ref_slope_volts_per_second\":1.0}}]}}"
+        );
+        let request = parse_ibis_quasi_static_artifact_batch_evaluate_request_v1(valid.as_bytes())
+            .expect("valid bounded batch");
+        assert_eq!(request.probes().len(), 2);
+        assert_eq!(request.probes()[1].gnd_clamp_drive_volts().get(), 0.5);
+        let empty = format!(
+            "{{\"schema\":\"{IBIS_QUASI_STATIC_ARTIFACT_BATCH_EVALUATE_REQUEST_SCHEMA}\",\"artifact\":{{\"artifact_id\":\"model-1\",\"manifest_sha256\":\"{digest}\"}},\"selection\":{{\"ibis_version\":\"7.1\",\"model_selector\":\"InputModel\",\"corner\":\"typical\"}},\"probes\":[]}}"
+        );
+        assert!(matches!(
+            parse_ibis_quasi_static_artifact_batch_evaluate_request_v1(empty.as_bytes()),
+            Err(ContractError::IbisQuasiStaticEvaluate(
+                IbisQuasiStaticEvaluateContractError::EmptyProbeBatch
+            ))
+        ));
+        let probes = std::iter::repeat(
+            "{\"gnd_clamp_drive_volts\":0.0,\"power_clamp_drive_volts\":0.0,\"sig_to_ref_slope_volts_per_second\":0.0}",
         )
-        .is_err());
-        assert!(parse_ibis_quasi_static_artifact_evaluate_request_v1(
-            valid.replace("\"manifest_sha256\":\"", "\"manifest_sha256\":\"A")
-                .as_bytes()
-        )
-        .is_err());
+        .take(IbisQuasiStaticArtifactBatchEvaluateRequestV1::MAXIMUM_PROBES + 1)
+        .collect::<Vec<_>>()
+        .join(",");
+        let oversized = valid.replacen(
+            "[{\"gnd_clamp_drive_volts\":0.0,\"power_clamp_drive_volts\":0.0,\"sig_to_ref_slope_volts_per_second\":0.0},{\"gnd_clamp_drive_volts\":0.5,\"power_clamp_drive_volts\":0.0,\"sig_to_ref_slope_volts_per_second\":1.0}]",
+            &format!("[{probes}]"),
+            1,
+        );
+        assert!(matches!(
+            parse_ibis_quasi_static_artifact_batch_evaluate_request_v1(oversized.as_bytes()),
+            Err(ContractError::IbisQuasiStaticEvaluate(
+                IbisQuasiStaticEvaluateContractError::ProbeBatchLimitExceeded
+            ))
+        ));
     }
 
     #[test]
