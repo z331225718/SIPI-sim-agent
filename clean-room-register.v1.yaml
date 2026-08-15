@@ -1339,7 +1339,7 @@ materials:
     derived_from: [p3c-ads-passivity-action-surface-observation-spec-v1]
   - id: p3c-ads-pre-final-common-node-spec-v1
     kind: independent_spec
-    content_sha256: fe3eca5f60e03fd6cfa8e1c1748e7abcd2a2af6120c488c9be11d72b0c67045b
+    content_sha256: bdd928da676fdabe47f64e9c8c7e93174b4dac145e6185b60e97f1dd81b1a15c
     provenance:
       source_ref: docs/clean-room/specs/p3c-ads-pre-final-common-node.v1.md
       license_evidence: project-authored-MIT-boundary-pending-promotion
@@ -2517,7 +2517,7 @@ scopes:
       comparator: []
       auditor: [p3c-ads-pre-final-common-node-spec-v1]
   - id: p3c-ads-pre-final-common-node-evidence-v1
-    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-pre-final-common-node-charter.v1.yaml, docs/baselines/p3c-ads-pre-final-common-node-observation-evidence.v1.yaml, docs/clean-room/specs/p3c-ads-pre-final-common-node.v1.md, tools/verify_p3c_ads_pre_final_common_node_observation.py, tools/test_verify_p3c_ads_pre_final_common_node_observation.py]
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/audits/2026-08-15-p3c-ads-pre-final-common-node-observation.md, docs/baselines/p3c-ads-pre-final-common-node-charter.v1.yaml, docs/baselines/p3c-ads-pre-final-common-node-observation-evidence.v1.yaml, docs/clean-room/specs/p3c-ads-pre-final-common-node.v1.md, tools/verify_p3c_ads_pre_final_common_node_observation.py, tools/test_verify_p3c_ads_pre_final_common_node_observation.py]
     state: planned
     role_material_allowlists:
       observer: [p3c-ads-pre-final-common-node-spec-v1]

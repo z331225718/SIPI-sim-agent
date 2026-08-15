@@ -57,7 +57,9 @@ external_observation:
 independent_audit:
   reviewer: Orca_reused_OpenCode_terminal
   terminal: term_2de7cb74-b803-4e20-bb5b-4803777c24f8
-  status: pending
+  status: completed
+  result: no_high_or_critical_findings
+  report: docs/baselines/audits/2026-08-15-p3c-ads-pre-final-common-node-observation.md
 admission:
   pre_final_exact_common_nodes_evaluated: true
   full_matrix_common_node_delta_observed: true

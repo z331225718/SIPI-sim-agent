@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 91cf02f117d9879b98fc83546f9b28265993daa37578e4b3abf83cc8b3e67661
+  tracked_paths_sha256: 9dc7ad71571376bcec3fc08b18a8f251ae3b0ca8f3cf501ae88c07775bfb11b9
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -1830,6 +1830,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-14-p3c-waveform-only-runner-envelope-fix.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-15-p3c-ads-pre-final-common-node-observation.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest

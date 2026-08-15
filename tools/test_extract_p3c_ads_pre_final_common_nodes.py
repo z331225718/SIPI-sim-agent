@@ -115,6 +115,16 @@ class CommonNodeExtractionTests(unittest.TestCase):
         with self.assertRaisesRegex(module.ExtractError, "common_node_missing_or_duplicate"):
             module.extract(Path("external.ds"))
 
+    def test_non_four_to_one_mapping_rejects_without_reindexing(self) -> None:
+        data = fixture()
+        shifted = [-0.25] + [index / 4.0 for index in range(4095)]
+        for row in range(1, 5):
+            for column in range(1, 5):
+                data.blocks[f"TRAN.CHANNEL.CMP1_FFT_IMP({row};{column})"].frame.index.values = list(shifted)
+        module = load_module(data)
+        with self.assertRaisesRegex(module.ExtractError, "common_node_mapping_not_exact_four_to_one"):
+            module.extract(Path("external.ds"))
+
 
 if __name__ == "__main__":
     unittest.main()
