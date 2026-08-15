@@ -55,7 +55,7 @@ prohibitions:
 admission:
   ads_or_product_raw_axis_bound: false
   product_raw_dtft_invoked: false
-  ads_precausality_product_raw_delta_observed: false
+  ads_original_spectrum_product_raw_delta_observed: false
   ads_algorithm_reproduced: false
   causality_or_interpolation_cause_identified: false
   raw_periodic_response_admitted_as_causal_fir: false

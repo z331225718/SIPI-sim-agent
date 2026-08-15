@@ -1,0 +1,86 @@
+"""Verify hash-only ADS CMP1_OR/product raw-periodic DTFT evidence."""
+
+from __future__ import annotations
+
+import hashlib
+import io
+import subprocess
+import tarfile
+import tempfile
+from pathlib import Path
+
+import yaml
+
+
+ROOT = Path(__file__).resolve().parents[1]
+PATH = ROOT / "docs/baselines/p3c-ads-or-product-raw-dtft-observation-evidence.v1.yaml"
+COMMIT = "32626d4b79cfeee17fb6fd3ec131eeccf564d0f8"
+TREE = "984365ec8e7479cb0d6634ca89fe344fbd0e171f"
+INVENTORY = {
+    "tools/run_p3c_external_ads_original_product_raw_dtft.py": "532fba189d297282e307fcdb182be791c72840e426e313f1eb1268f371a549a1",
+    "tools/extract_p3c_ads_pre_final_common_nodes.py": "43106428e2d7a254a21db4293f5688036a3340dc53bf0e8cb2562362a04803b3",
+    "crates/sipi-p3c/tests/p3c_ads_or_product_raw_dtft_runner.rs": "5d40d881b2f46e397b6678042ff169637d684b85410e1ecc9213d411b6dff950",
+    "tools/observe_p3c_ads_or_product_raw_dtft.py": "acc3ae62b6213339a7eed3283ee626e52e6d6ffd98161ca0bfa7149c83e2a07f",
+}
+
+
+class VerificationError(ValueError):
+    pass
+
+
+def fail(condition: bool, reason: str) -> None:
+    if condition:
+        raise VerificationError(reason)
+
+
+def archive_inventory() -> dict[str, str]:
+    result = subprocess.run(["git", "archive", "--format=tar", COMMIT], cwd=ROOT, check=True, capture_output=True)
+    with tempfile.TemporaryDirectory() as directory:
+        with tarfile.open(fileobj=io.BytesIO(result.stdout), mode="r:") as archive:
+            archive.extractall(directory, filter="data")
+        return {path: hashlib.sha256((Path(directory) / path).read_bytes()).hexdigest() for path in INVENTORY}
+
+
+def verify(document: object, current: bool = True) -> dict[str, object]:
+    fail(not isinstance(document, dict), "shape")
+    required = {"schema", "status", "authority", "predecessor", "external_observation", "independent_audit", "admission", "blockers", "non_claims"}
+    fail(set(document) != required, "shape")
+    fail(document["schema"] != "sipi.p3c.ads-or-product-raw-dtft-observation-evidence.v1", "schema")
+    fail(document["status"] != "external_ads_original_spectrum_product_raw_dtft_delta_observed_acceptance_unchanged", "status")
+    fail(document["authority"] != {"actor": "user", "decision_ref": "user-authorized-cmp1-or-payload-2026-08-15", "scope": "one_fixed_ads_cmp1_or_to_product_raw_periodic_dtft_observation_only"}, "authority")
+    fail(document["predecessor"] != {"path": "docs/baselines/p3c-ads-s0-product-bounded-dtft-observation-evidence.v1.yaml", "result": "ads_s0_product_bounded_delta_observed_not_cause_attribution"}, "predecessor")
+    expected = {
+        "schema": "sipi.p3c.ads-or-product-raw-dtft-observation.v1", "custody": "external_only", "report_path_retained": False,
+        "report_byte_length": 2094, "report_content_sha256": "f5cefea8b0ac75275bae32a7c98c31c4db5ad00bf4c8d2f87c5a45724cd2ec0d",
+        "clean_archive_commit": COMMIT, "clean_archive_tree": TREE, "source_byte_length": 1_834_156,
+        "source_sha256": "25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47",
+        "ads_help_byte_length": 150_522, "ads_help_sha256": "45372e9c7c79492bf6023a4e860f05a20caf0ef5e2a083407c119909afc187bf",
+        "tool_inventory": {"ads_runner": INVENTORY["tools/run_p3c_external_ads_original_product_raw_dtft.py"], "extractor": INVENTORY["tools/extract_p3c_ads_pre_final_common_nodes.py"], "product_runner": INVENTORY["crates/sipi-p3c/tests/p3c_ads_or_product_raw_dtft_runner.rs"], "observer": INVENTORY["tools/observe_p3c_ads_or_product_raw_dtft.py"]},
+        "fresh_runs": 2,
+        "ads_netlist": {"netlist_byte_length": 1760, "netlist_sha256": "6f720d8375726b1d7b0c42fbc7579372c1fea0ca5929c21d9823ccae4c2838e8"},
+        "ads_or": {"node_count": 4096, "payload_byte_length": 98345, "payload_sha256": "019e25ddc0b252cda4fa1d3a86b6f279dfada84060a69bb396a79b85465b93fa", "axis_source_sha256": "883c8c2f5c0ac46be12bf6890396647c4109cdca9c3d7f85945da6b21db07cf6", "selected_hdiff_source_sha256": "0e7fea4605ccb2688be26534b814a88af61276b29d78dc4f6d94bbc5792a0559"},
+        "product_raw_dtft": {"record_count": 2002, "raw_sample_count": 51_200, "sample_interval_bits": "3d712e0be826d695", "ads_or_axis_sha256": "cebe23c5491058f7ee78f00eafc3f39c1cd992a22c3fb09e0d60e402108cacb8", "ads_or_hdiff_sha256": "1258e79bfb9e9e5a1a57f97ac3639fc2ee310a2f031a69f6d9cbec6d9a61ed6a", "product_raw_dtft_sha256": "f0e58fbdc2f897df7048831530deb3d2f0a7dee84f46c0d4c5684f166c1ba329", "delta_sha256": "e157ebcdfbaac9c324564fc971ba253ea076c0ce94b7a41a1afc2534ef46fb64", "delta_l2_squared_bits": "3efcf050fb39e363", "delta_max_abs_bits": "3f69f426eca789db", "delta_max_index": 1},
+        "cleanup_status": "complete",
+    }
+    fail(document["external_observation"] != expected, "observation")
+    tree = subprocess.run(["git", "rev-parse", f"{COMMIT}^{{tree}}"], cwd=ROOT, check=False, capture_output=True, text=True)
+    fail(tree.returncode != 0 or tree.stdout.strip() != TREE, "archive")
+    if current:
+        fail(archive_inventory() != INVENTORY, "source_drift")
+    fail(document["independent_audit"] != {"reviewer": "Orca_reused_OpenCode_terminal", "terminal": "term_2de7cb74-b803-4e20-bb5b-4803777c24f8", "status": "blocked_platform_payment_required", "result": "review_not_completed", "report": None}, "audit")
+    true = {"ads_or_product_raw_axis_bound", "product_raw_dtft_invoked", "ads_original_spectrum_product_raw_delta_observed"}
+    false = {"ads_algorithm_reproduced", "causality_or_interpolation_cause_identified", "raw_periodic_response_admitted_as_causal_fir", "candidate_waveform_accepted", "release_ledger_promoted"}
+    admission = document["admission"]
+    fail(not isinstance(admission, dict) or set(admission) != true | false or any(admission[key] is not True for key in true) or any(admission[key] is not False for key in false), "gates")
+    fail(document["blockers"] != ["ads_original_spectrum_product_raw_delta_not_cause_attribution", "cmp1_or_causality_stage_not_disclosed_by_authoritative_help", "ads_passivity_algorithm_not_observed_or_ported", "waveform_mismatch_cause_not_identified"], "blockers")
+    forbidden = ("file://", "http://", "https://", "c:\\", "spectrum: [", "waveform: [", "freqresp")
+    fail(any(token in str(document).lower() for token in forbidden), "leak")
+    return {"valid": True, "ads_or_nodes": 4096, "accepted": False, "audit": "blocked"}
+
+
+if __name__ == "__main__":
+    try:
+        print(verify(yaml.safe_load(PATH.read_text(encoding="utf-8"))))
+    except (OSError, ValueError, yaml.YAMLError, VerificationError) as error:
+        print(f"p3c_ads_or_product_raw_dtft_failed:{error}")
+        raise SystemExit(1)
