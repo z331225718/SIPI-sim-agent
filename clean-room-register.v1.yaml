@@ -2516,4 +2516,13 @@ scopes:
       implementer: []
       comparator: []
       auditor: [p3c-ads-pre-final-common-node-spec-v1]
+  - id: p3c-ads-pre-final-common-node-evidence-v1
+    paths: [PLAN.md, clean-room-register.v1.yaml, product-boundary.v1.yaml, license-manifest.v2.yaml, docs/baselines/p3c-ads-pre-final-common-node-charter.v1.yaml, docs/baselines/p3c-ads-pre-final-common-node-observation-evidence.v1.yaml, docs/clean-room/specs/p3c-ads-pre-final-common-node.v1.md, tools/verify_p3c_ads_pre_final_common_node_observation.py, tools/test_verify_p3c_ads_pre_final_common_node_observation.py]
+    state: planned
+    role_material_allowlists:
+      observer: [p3c-ads-pre-final-common-node-spec-v1]
+      spec_author: [p3c-ads-pre-final-common-node-spec-v1]
+      implementer: []
+      comparator: []
+      auditor: [p3c-ads-pre-final-common-node-spec-v1]
 attestations: []
