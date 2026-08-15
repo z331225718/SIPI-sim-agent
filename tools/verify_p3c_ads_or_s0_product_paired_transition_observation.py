@@ -1,0 +1,88 @@
+"""Fail closed verification for the hash-only OR/S0 paired-transition evidence."""
+
+from __future__ import annotations
+
+import hashlib
+import io
+import subprocess
+import tarfile
+import tempfile
+from pathlib import Path
+
+import yaml
+
+
+ROOT = Path(__file__).resolve().parents[1]
+PATH = ROOT / "docs/baselines/p3c-ads-or-s0-product-paired-transition-observation-evidence.v1.yaml"
+COMMIT = "df96029c91b8a2003fb5acc48d9d21d4883e9476"
+TREE = "2cdae93bbcac928f762c3816354806837a95778f"
+INVENTORY = {
+    "tools/run_p3c_external_ads_or_s0_paired_transition.py": "25ff36f0506d8ace1aeb980bcedf942f872f4d241367fb16eb6f7cf09e881e82",
+    "tools/extract_p3c_ads_pre_final_common_nodes.py": "708ce0190dd0ce645b6ae2a468f010b4dadc27856752f5af08c1e132901319da",
+    "crates/sipi-p3c/tests/p3c_ads_or_s0_product_paired_transition_runner.rs": "1bbdf1eb2ec9a326ade1b965a77ae2c8dbf5c01e9bcc2793658929d6502d6128",
+    "tools/observe_p3c_ads_or_s0_product_paired_transition.py": "50fe5e435f4ca07335f77448cfa6e0a05e669c180bd99b54abd2253af359d80e",
+}
+
+
+class VerificationError(ValueError):
+    pass
+
+
+def fail(condition: bool, reason: str) -> None:
+    if condition:
+        raise VerificationError(reason)
+
+
+def archive_inventory() -> dict[str, str]:
+    result = subprocess.run(["git", "archive", "--format=tar", COMMIT], cwd=ROOT, check=True, capture_output=True)
+    with tempfile.TemporaryDirectory() as directory:
+        with tarfile.open(fileobj=io.BytesIO(result.stdout), mode="r:") as archive:
+            archive.extractall(directory, filter="data")
+        return {path: hashlib.sha256((Path(directory) / path).read_bytes()).hexdigest() for path in INVENTORY}
+
+
+def verify(document: object, current: bool = True) -> dict[str, object]:
+    fail(not isinstance(document, dict), "shape")
+    required = {"schema", "status", "authority", "predecessors", "external_observation", "independent_audit", "admission", "blockers", "non_claims"}
+    fail(set(document) != required, "shape")
+    fail(document["schema"] != "sipi.p3c.ads-or-s0-product-paired-transition-observation-evidence.v1", "schema")
+    fail(document["status"] != "external_ads_or_s0_product_paired_transition_delta_observed_acceptance_unchanged", "status")
+    fail(document["authority"] != {"actor": "user", "decision_ref": "user-delegated-owner-discretion-2026-08-15", "scope": "one_fixed_exact_or_s0_common_axis_paired_transition_observation_only"}, "authority")
+    fail(document["predecessors"] != [{"path": "docs/baselines/p3c-ads-or-product-raw-dtft-observation-evidence.v1.yaml", "result": "ads_original_spectrum_product_raw_delta_observed_not_cause_attribution"}, {"path": "docs/baselines/p3c-ads-s0-product-bounded-dtft-observation-evidence.v1.yaml", "result": "ads_s0_product_bounded_delta_observed_not_cause_attribution"}], "predecessors")
+    observation = document["external_observation"]
+    fail(not isinstance(observation, dict), "observation")
+    expected = {
+        "schema": "sipi.p3c.ads-or-s0-product-paired-transition-observation.v1", "custody": "external_only", "report_path_retained": False,
+        "report_byte_length": 2957, "report_content_sha256": "d0356558914e189db51cc98b3ebe16b4dcc70b1e66ea5c57bc533a10fd91478f",
+        "clean_archive_commit": COMMIT, "clean_archive_tree": TREE, "source_byte_length": 1_834_156,
+        "source_sha256": "25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47",
+        "ads_help_byte_length": 150_522, "ads_help_sha256": "45372e9c7c79492bf6023a4e860f05a20caf0ef5e2a083407c119909afc187bf",
+        "tool_inventory": {"ads_runner": INVENTORY["tools/run_p3c_external_ads_or_s0_paired_transition.py"], "extractor": INVENTORY["tools/extract_p3c_ads_pre_final_common_nodes.py"], "product_runner": INVENTORY["crates/sipi-p3c/tests/p3c_ads_or_s0_product_paired_transition_runner.rs"], "observer": INVENTORY["tools/observe_p3c_ads_or_s0_product_paired_transition.py"]},
+        "fresh_runs": 2, "ads_netlist": {"netlist_byte_length": 1760, "netlist_sha256": "6f720d8375726b1d7b0c42fbc7579372c1fea0ca5929c21d9823ccae4c2838e8"},
+        "ads_or_s0": {"common_node_count": 1024, "mapping": "or_index_equals_4_times_s0_index", "axis_sha256": "9a4c3f1dd879d6e08c4f598406fe62d231819daf9dbac1c3d7c960ae26c827c5", "payload_byte_length": 41004, "payload_sha256": "0bcf332816763fc160f5dd6d6aa30bdea5449e01579483e775e618fb7558eefc", "original_hdiff_source_sha256": "4aa2e3f4b63878ad995337c3727a7664eb6eb68c99c2eb6cb610cf6512a8e07e", "s0_hdiff_source_sha256": "6fced542445500650d5a76b2dc0a112612f38b41ad56845e2469f50cdbb35abe", "documented_surface_transition": {"sha256": "01b398932459b156ec6d780e5589836796d95cccbf9dd134b3e450172bd03796", "l2_squared_bits": "3ef6bcacc6061128", "max_abs_bits": "3f6657403082517c", "max_common_index": 1}},
+        "paired_transition": {"record_count": 2002, "common_node_count": 1024, "raw_sample_count": 51200, "bounded_sample_count": 51200, "sample_interval_bits": "3d712e0be826d695", "causality_iterations": 32, "causality_stop": "successive_error_difference", "axis_sha256": "9a4c3f1dd879d6e08c4f598406fe62d231819daf9dbac1c3d7c960ae26c827c5", "ads_original_sha256": "1a216b767891ab80502d719a95f23520d6d348fd380af9046604f2e9eec0c3be", "ads_s0_sha256": "54cea388ada9724e99eb821a203000aaae62cc432fdeaf329cd87fd007e18598", "product_raw_sha256": "43cb2e01391256d7dae6c8facd5944a3bcc73e50ec62c3a1d9b2c21dabb4306d", "product_bounded_sha256": "1697335b13f6b912870b313b035a0255b9d7ee7d0866f367d4330e48b1edfe27", "ads_transition_sha256": "22c4680559fd67165856b9e60a42ac89728ded1d1b500188cfdb3cb51a3821ec", "product_transition_sha256": "cf23ce134550c7ff25aa27da9873916616fac650724bdaa224dd100a3f09347a", "paired_delta_sha256": "dad92243662f37b37a882c2ddec4961b37da541daf692b4713a8a306f5604709", "paired_delta_l2_squared_bits": "3f739ad5699f0a89", "paired_delta_max_abs_bits": "3f74d2f837696359", "paired_delta_max_index": 106},
+        "cleanup_status": "complete",
+    }
+    fail(observation != expected, "observation")
+    tree = subprocess.run(["git", "rev-parse", f"{COMMIT}^{{tree}}"], cwd=ROOT, check=False, capture_output=True, text=True)
+    fail(tree.returncode != 0 or tree.stdout.strip() != TREE, "archive")
+    if current:
+        fail(archive_inventory() != INVENTORY, "source_drift")
+    audit = {"reviewer": "Orca_reused_OpenCode_terminal", "terminal": "term_2de7cb74-b803-4e20-bb5b-4803777c24f8", "status": "completed", "result": "no_high_or_critical_findings", "report": None}
+    fail(document["independent_audit"] != audit, "audit")
+    true = {"or_s0_exact_common_axis_bound", "ads_documented_surface_transition_observed", "product_raw_bounded_transition_observed", "paired_transition_delta_observed"}
+    false = {"ads_algorithm_reproduced", "causality_or_interpolation_cause_identified", "candidate_waveform_accepted", "release_ledger_promoted"}
+    admission = document["admission"]
+    fail(not isinstance(admission, dict) or set(admission) != true | false or any(admission[key] is not True for key in true) or any(admission[key] is not False for key in false), "gates")
+    fail(document["blockers"] != ["documented_surface_delta_not_algorithm_attribution", "ads_algorithm_not_observed_or_ported", "waveform_mismatch_cause_not_identified"], "blockers")
+    forbidden = ("file://", "http://", "https://", "c:\\", "spectrum: [", "waveform: [", "freqresp")
+    fail(any(token in str(document).lower() for token in forbidden), "leak_or_claim")
+    return {"valid": True, "common_nodes": 1024, "accepted": False, "audit": "completed"}
+
+
+if __name__ == "__main__":
+    try:
+        print(verify(yaml.safe_load(PATH.read_text(encoding="utf-8"))))
+    except (OSError, ValueError, yaml.YAMLError, VerificationError) as error:
+        print(f"p3c_ads_or_s0_product_paired_transition_failed:{error}")
+        raise SystemExit(1)

@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 016d57505b8f0a8bae34b346d6b160c1bd568fca183e5c37525ca4d4a94d04fb
+  tracked_paths_sha256: 315ab7448fb7d7de80a52aacacaaf93ccf241a3962c5d7b892d9b846d4644f4e
   entries:
     .github/workflows/ci.yml:
       rule: github-migration
@@ -2124,6 +2124,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-ads-or-s0-product-paired-transition-charter.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-ads-or-s0-product-paired-transition-observation-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8699,6 +8705,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_ads_or_s0_product_paired_transition_observation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_ads_passivity_action_surface_observation.py:
       rule: migration-tools
       class: migration_only
@@ -9498,6 +9510,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_ads_or_product_raw_dtft_observation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_ads_or_s0_product_paired_transition_observation.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
