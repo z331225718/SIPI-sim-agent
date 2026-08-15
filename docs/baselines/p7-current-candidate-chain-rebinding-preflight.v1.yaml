@@ -1,0 +1,46 @@
+{
+  "schema": "sipi.p7-current-candidate-chain-rebinding-preflight.v1",
+  "kind": "historical_rejected_preflight_not_release",
+  "candidate_source_commit": "b775dde6d242e687eb71a30b9a83a87d8b31ba55",
+  "candidate_tree": "35be864a88573709c2b316e063bfe90eb54678e2",
+  "candidate_cargo_lock_sha256": "d10679ecbb0884cc3325f9b67afaf9a8d61a9f826c262f6fefd437538df34e99",
+  "candidate_toolchain_sha256": "512bedfbbe3c4ef614fbb901b3661f40b4adb701d26c94664e79ca765aa3d109",
+  "twin_build": {
+    "status": "identical",
+    "report_sha256": "c36b01389230e14bece2eecdcfb438be2ad1f3bfbda64616c27f7ced3932be62",
+    "binary_sha256": "a3059d052df54c0f3ebbd727bd2f71760ff33f73af82e1e2f29c0ec35b8c882d",
+    "binary_bytes": 3908608
+  },
+  "static_layout": {
+    "policy_sha256": "a0ac8e7efd9d2c35a69aa6f48f8cb063cb837b779d18be0a21f39e0132e11ce2",
+    "stage_executable_sha256": "a3059d052df54c0f3ebbd727bd2f71760ff33f73af82e1e2f29c0ec35b8c882d",
+    "exit_code": 2,
+    "stdout_sha256": "2e3a5adff366607a2164c598f617cd46aad134c5411c544578d37748cf781b03",
+    "stdout_bytes": 86,
+    "result": "rejected_pe_rejected",
+    "report_retained": false
+  },
+  "downstream": {
+    "composition_invoked": false,
+    "archive_invoked": false,
+    "install_invoked": false,
+    "performance_observation_invoked": false,
+    "candidate_evaluation_invoked": false,
+    "reason": "static_layout_preflight_rejected"
+  },
+  "global_blockers": [
+    "license_notice_pending",
+    "fresh_machine_evidence_missing",
+    "uncertified_domain_profiles",
+    "current_candidate_p7_chain_not_admitted"
+  ],
+  "promotion_status": "blocked",
+  "release_candidate": false,
+  "non_claims": [
+    "not_a_current_p7_01_to_06_admission",
+    "not_a_release_tag_or_candidate",
+    "not_a_static_pe_closure_or_diagnosis",
+    "not_a_license_or_notice_clearance",
+    "not_a_fresh_machine_or_profile_certification"
+  ]
+}
