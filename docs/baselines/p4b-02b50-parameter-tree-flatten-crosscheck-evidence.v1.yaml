@@ -1,0 +1,158 @@
+schema: sipi.p4b-02b50-parameter-tree-flatten-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b50.parameter-tree-flatten-v1.preorder-record-list
+matched_count: 4
+case_count: 4
+entries:
+- label: basic_tree
+  matched: true
+  product:
+    policy: sipi.p4b-02b50.parameter-tree-flatten-v1.preorder-record-list
+    records:
+    - kind: Branch
+      name: root
+      path:
+      - root
+      value_tokens: []
+    - kind: Leaf
+      name: gain
+      path:
+      - root
+      - gain
+      value_tokens:
+      - Float
+      - '0.5'
+    - kind: Leaf
+      name: steps
+      path:
+      - root
+      - steps
+      value_tokens:
+      - Integer
+      - '7'
+    valid: true
+  reference:
+    valid: true
+    records:
+    - path:
+      - root
+      kind: Branch
+      name: root
+      value_tokens: []
+    - path:
+      - root
+      - gain
+      kind: Leaf
+      name: gain
+      value_tokens:
+      - Float
+      - '0.5'
+    - path:
+      - root
+      - steps
+      kind: Leaf
+      name: steps
+      value_tokens:
+      - Integer
+      - '7'
+- label: nested
+  matched: true
+  product:
+    policy: sipi.p4b-02b50.parameter-tree-flatten-v1.preorder-record-list
+    records:
+    - kind: Branch
+      name: root
+      path:
+      - root
+      value_tokens: []
+    - kind: Branch
+      name: sub
+      path:
+      - root
+      - sub
+      value_tokens: []
+    - kind: Leaf
+      name: deep
+      path:
+      - root
+      - sub
+      - deep
+      value_tokens:
+      - Float
+      - '1.0'
+    valid: true
+  reference:
+    valid: true
+    records:
+    - path:
+      - root
+      kind: Branch
+      name: root
+      value_tokens: []
+    - path:
+      - root
+      - sub
+      kind: Branch
+      name: sub
+      value_tokens: []
+    - path:
+      - root
+      - sub
+      - deep
+      kind: Leaf
+      name: deep
+      value_tokens:
+      - Float
+      - '1.0'
+- label: single_leaf
+  matched: true
+  product:
+    policy: sipi.p4b-02b50.parameter-tree-flatten-v1.preorder-record-list
+    records:
+    - kind: Branch
+      name: root
+      path:
+      - root
+      value_tokens: []
+    - kind: Leaf
+      name: a
+      path:
+      - root
+      - a
+      value_tokens:
+      - '1'
+    valid: true
+  reference:
+    valid: true
+    records:
+    - path:
+      - root
+      kind: Branch
+      name: root
+      value_tokens: []
+    - path:
+      - root
+      - a
+      kind: Leaf
+      name: a
+      value_tokens:
+      - '1'
+- label: root_only
+  matched: true
+  product:
+    policy: sipi.p4b-02b50.parameter-tree-flatten-v1.preorder-record-list
+    records:
+    - kind: Leaf
+      name: root
+      path:
+      - root
+      value_tokens: []
+    valid: true
+  reference:
+    valid: true
+    records:
+    - path:
+      - root
+      kind: Leaf
+      name: root
+      value_tokens: []

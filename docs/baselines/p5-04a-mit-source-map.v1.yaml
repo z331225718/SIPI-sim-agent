@@ -1,0 +1,12 @@
+{
+  "schema": "sipi.p5-04a.mit-source-map.v1",
+  "status": "network_ingest_mixed_mode_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/network/mixed_mode.py", "sha256": "pending" },
+  "mapping": [
+    { "python": "com_mixed_mode(network)", "rust": "com_mixed_mode_v1(s)", "notes": "COM_T * s * COM_T^-1; COM_T^-1 = 0.5*COM_T since COM_T^2 = 2I" },
+    { "python": "sdd21(network)", "rust": "sdd21_v1(s)", "notes": "mixed[3][1] per the MATLAB/oracle convention" },
+    { "python": "COM_T constant", "rust": "com_t_v1()", "notes": "fixed 4x4 mixed-mode matrix" }
+  ],
+  "not_ported": ["apply_r480_pn_skew"],
+  "non_claims": ["not_port_order_application", "not_touchstone_reading", "not_com_metric_computation", "not_release_evidence"]
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4a-03al.mit-source-map.v1",
+  "status": "diff_pin_keywords_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis diff_pin_keywords_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Diff Pin] complete block required keywords" },
+  "mapping": [
+    { "concept": "typed [Diff Pin] block header", "rust": "TypedDiffPinBlockV1", "notes": "composite diff_pin_declaration" },
+    { "concept": "diff_pin_declaration access", "rust": "TypedDiffPinBlockV1::diff_pin_declaration", "notes": "embedded TypedDiffPinDeclarationV1" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "differential receiver simulation",
+    "release certification"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4a-03q.mit-source-map.v1",
+  "status": "receiver_thresholds_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis receiver_thresholds_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Receiver Thresholds] structural header and receiver voltage/skew parameters" },
+  "mapping": [
+    { "concept": "typed [Receiver Thresholds] header", "rust": "TypedReceiverThresholdsV1", "notes": "validated FiniteF64 fields" },
+    { "concept": "Vcross thresholds", "rust": "TypedReceiverThresholdsV1::vcross_low_v / vcross_high_v", "notes": "optional finite Volts threshold" },
+    { "concept": "Vdiff AC/DC thresholds", "rust": "TypedReceiverThresholdsV1::vdiff_ac_v / vdiff_dc_v", "notes": "optional finite non-negative Volts threshold" },
+    { "concept": "Tskew timing skew", "rust": "TypedReceiverThresholdsV1::tskew_s", "notes": "optional finite non-negative Seconds skew" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "receiver threshold simulation",
+    "release certification"
+  ]
+}

@@ -1,0 +1,37 @@
+schema: sipi.p4b-02b15-parameter-tree-transformer-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b15.parameter-tree-transformer-v1.tree-structural-transform
+matched_count: 3
+case_count: 3
+entries:
+- label: transform_tx_swing_leaf
+  matched: true
+  product:
+    policy: sipi.p4b-02b15.parameter-tree-transformer-v1.tree-structural-transform
+    transformed_formatted_text: "(Reserved_Parameters\n  (dfe\n    (tap_1 Integer\
+      \ 2))\n  (tx_swing Float 1.0))"
+    valid: true
+  reference:
+    valid: true
+    transformed_formatted_text: "(Reserved_Parameters\n  (dfe\n    (tap_1 Integer\
+      \ 2))\n  (tx_swing Float 1.0))"
+- label: transform_tap_1_leaf
+  matched: true
+  product:
+    policy: sipi.p4b-02b15.parameter-tree-transformer-v1.tree-structural-transform
+    transformed_formatted_text: "(Reserved_Parameters\n  (dfe\n    (tap_1 Integer\
+      \ 4))\n  (tx_swing Float 0.5))"
+    valid: true
+  reference:
+    valid: true
+    transformed_formatted_text: "(Reserved_Parameters\n  (dfe\n    (tap_1 Integer\
+      \ 4))\n  (tx_swing Float 0.5))"
+- label: empty_document
+  matched: true
+  product:
+    build_error: EmptyDocument
+    policy: sipi.p4b-02b15.parameter-tree-transformer-v1.tree-structural-transform
+    valid: false
+  reference:
+    valid: false
+    transformer_error: EmptyDocument

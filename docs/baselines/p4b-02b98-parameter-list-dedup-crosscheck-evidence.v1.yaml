@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b98-parameter-list-dedup-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b98.parameter-list-dedup-v1.list-item-deduplication
+matched_count: 4
+case_count: 4
+entries:
+- label: with_dups
+  matched: true
+  product:
+    deduped: (a, b, c)
+    policy: sipi.p4b-02b98.parameter-list-dedup-v1.list-item-deduplication
+    valid: true
+  reference:
+    valid: true
+    deduped: (a, b, c)
+- label: no_dups
+  matched: true
+  product:
+    deduped: (a, b, c)
+    policy: sipi.p4b-02b98.parameter-list-dedup-v1.list-item-deduplication
+    valid: true
+  reference:
+    valid: true
+    deduped: (a, b, c)
+- label: spacing_dups
+  matched: true
+  product:
+    deduped: (a, b)
+    policy: sipi.p4b-02b98.parameter-list-dedup-v1.list-item-deduplication
+    valid: true
+  reference:
+    valid: true
+    deduped: (a, b)
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b98.parameter-list-dedup-v1.list-item-deduplication
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

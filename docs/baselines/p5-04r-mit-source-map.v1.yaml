@@ -1,0 +1,19 @@
+{
+  "schema": "sipi.p5-04r.mit-source-map.v1",
+  "status": "c2m_eye_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/metrics/c2m.py" },
+  "mapping": [
+    { "python": "calculate_c2m_vertical_eye", "rust": "calculate_c2m_vertical_eye_v1", "notes": "candidate-only vertical-eye window (T_O phases); validation; per-phase PDF reduction" },
+    { "python": "_c2m_residual_and_jitter", "rust": "c2m_residual_and_jitter", "notes": "C2M UI resampling via matlab_colon/interp1-linear; DFE cancellation quantize+clip; column-major reshape+transpose; jitter columns" },
+    { "python": "_jitter_response (c2m)", "rust": "c2m_jitter_response", "notes": "phase-indexed (late-early)*C2M/2 jitter columns with edge cases" },
+    { "python": "_shift_residual_columns", "rust": "shift_residual_columns", "notes": "select phase columns of the centered residual (modulo shift)" },
+    { "python": "_signal_level_pdf_data", "rust": "signal_level_pdf_data", "notes": "shared convolution once; per-symbol MATLAB-rounded origins" },
+    { "python": "ber_contour (metrics/eye.py)", "rust": "ber_contour", "notes": "low/high BER-tail crossings on the min-cdf" },
+    { "python": "_histogram_weights", "rust": "histogram_weights", "notes": "rectangle/gaussian/triangle/dual_rayleigh window weights" },
+    { "python": "_vertical_eye_window_from_shared_levels", "rust": "vertical_eye_window_from_shared_levels", "notes": "integer-axis weighted sum + worst adjacent-level eye" },
+    { "python": "_weighted_sum_shared_integer_axis", "rust": "weighted_sum_shared_integer_axis", "notes": "source-order aligned weighted sum on rounded integer origins" },
+    { "python": "_matlab_round / matlab_colon / matlab_interp1_linear / center_of_ui", "rust": "matlab_round / matlab_colon / interp1_linear / center_of_ui", "notes": "compat + eye primitives inlined" }
+  ],
+  "not_ported": ["calculate_c2m_eye (full-contour public eye)", "_evaluate_candidate", "search_r480_nonmmse_no_xtalk / search loop"],
+  "non_claims": ["not_full_contour_eye", "not_candidate_evaluation", "not_search_loop", "not_release_evidence"]
+}

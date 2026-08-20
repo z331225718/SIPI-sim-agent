@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-08a.mit-source-map.v1",
+  "status": "com_run_admission_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-com com_run_admission_v1.rs (request-side gate for the future com.run route)" },
+  "observation": { "ref": "docs/baselines/owner-decision-checklist.v1.md", "note": "P5-08 authorized to integrate in smaller slices after the conformance-stack revert" },
+  "mapping": [
+    { "concept": "request schema id match", "rust": "COM_RUN_REQUEST_SCHEMA_V1 vs request.schema", "notes": "fail closed on mismatch" },
+    { "concept": "artifact caller bindings", "rust": "non-empty artifact_root / artifact_id", "notes": "no artifact consumption" },
+    { "concept": "non-empty scalar params", "rust": "params object with >=1 scalar", "notes": "rejects non-scalar nested values" },
+    { "concept": "deterministic admission verdict", "rust": "ComRunAdmissionV1 admitted/schema/artifact/count/reason", "notes": "no COM executed" }
+  ],
+  "not_ported": ["COM execution", "conformance admission", "artifact consumption/ingest", "profile selection", "metric derivation"]
+}

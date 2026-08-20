@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b89.mit-source-map.v1",
+  "status": "parameter_tree_leaf_typed_diff_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_leaf_typed_diff_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "typed leaf diff between two AmiParameterTreeV1 trees" },
+  "mapping": [
+    { "concept": "typed leaf diff", "rust": "diff_parameter_tree_leaves_typed_v1", "notes": "matched/added/removed/changed at canonical leaf paths under 02b70 with raw fallback" },
+    { "concept": "leaf change", "rust": "ParameterTreeLeafTypedChangeV1", "notes": "path, both token lists, and typed reason (None for raw fallback)" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

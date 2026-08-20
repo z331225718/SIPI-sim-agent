@@ -1,0 +1,28 @@
+schema: sipi.p3c-03c.metric-compare-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p3c-03c.metric-compare.v1.profile-agnostic
+matched_count: 4
+case_count: 4
+entries:
+- name: er11
+  matched: true
+  product_allowed: 0.9
+  reference_allowed: 0.9
+  product_pass: false
+  reference_pass: false
+- name: fom
+  matched: true
+  product_allowed: 0.01
+  reference_allowed: 0.01
+  product_pass: true
+  reference_pass: true
+- name: veo
+  matched: true
+  product_allowed: 5.0
+  reference_allowed: 5.0
+  product_pass: true
+  reference_pass: true
+- name: overall_passed
+  matched: true
+  product: false
+  reference: false

@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b109.mit-source-map.v1",
+  "status": "parameter_list_slice_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_slice_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "half-open range slicing over validated AMI parameter list values" },
+  "mapping": [
+    { "concept": "range slice", "rust": "slice_parameter_list_items_v1", "notes": "returns canonical token for trimmed items at [start, end), end exclusive" },
+    { "concept": "slice errors", "rust": "ParameterListSliceErrorV1", "notes": "NotAList for non-List types, defensive MalformedList, IndexOutOfRange carrying offending bound" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

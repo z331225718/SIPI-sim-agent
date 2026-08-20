@@ -1,0 +1,45 @@
+schema: sipi.p4a-03ad.model-selector-keywords-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03ad.model-selector-keywords-v1.typed-selector-keywords
+matched_count: 3
+case_count: 3
+entries:
+- label: valid_model_selector
+  matched: true
+  product:
+    model_options:
+    - description: 50 Ohm Driver
+      model_name: MODE_50OHM
+    - description: 40 Ohm Driver
+      model_name: MODE_40OHM
+    option_count: 2
+    policy: sipi.p4a-03ad.model-selector-keywords-v1.typed-selector-keywords
+    selector_name: SEL_DRV_IMP
+    valid: true
+  reference:
+    valid: true
+    selector_name: SEL_DRV_IMP
+    option_count: 2
+    model_options:
+    - model_name: MODE_50OHM
+      description: 50 Ohm Driver
+    - model_name: MODE_40OHM
+      description: 40 Ohm Driver
+- label: empty_model_options
+  matched: true
+  product:
+    lift_error: EmptyModelOptions
+    policy: sipi.p4a-03ad.model-selector-keywords-v1.typed-selector-keywords
+    valid: false
+  reference:
+    valid: false
+    lift_error: EmptyModelOptions
+- label: duplicate_model_option
+  matched: true
+  product:
+    lift_error: DuplicateModelOption("MODE_50OHM")
+    policy: sipi.p4a-03ad.model-selector-keywords-v1.typed-selector-keywords
+    valid: false
+  reference:
+    valid: false
+    lift_error: DuplicateModelOption("MODE_50OHM")

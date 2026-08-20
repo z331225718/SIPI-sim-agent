@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03e.pin-declaration-stage.v1",
+  "status": "pin_declaration_ported",
+  "purpose": "P4A-03e typed IBIS [Pin] declaration core: lifts [Pin] section rows from the structural parser into typed pin declarations (pin name, signal name, driving model), the next typed-IBIS surface after the Model declarations (03d). It does not re-parse text, evaluate electrical/table semantics, or accept a profile. Strict diagnostics reject unknown/malformed pin rows.",
+  "source_map_ref": "docs/baselines/p4a-03e-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p4a-03d-model-declaration-stage.v1.yaml", "docs/baselines/p4a-01-required-profile-inventory.v1.yaml"],
+  "admission": {
+    "pin_row_lifting": true,
+    "pin_model_linkage": true,
+    "malformed_row_rejection": true,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_pin_rlc_evaluation", "not_behavior_profile", "not_acceptance_evidence"]
+}

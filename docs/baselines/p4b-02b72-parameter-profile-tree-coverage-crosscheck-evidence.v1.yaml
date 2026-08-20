@@ -1,0 +1,92 @@
+schema: sipi.p4b-02b72-parameter-profile-tree-coverage-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b72.parameter-profile-tree-coverage-v1.profile-leaf-coverage-report
+matched_count: 4
+case_count: 4
+entries:
+- label: full_coverage
+  matched: true
+  product:
+    ambiguous: []
+    complete: true
+    covered:
+    - gain
+    - steps
+    missing: []
+    policy: sipi.p4b-02b72.parameter-profile-tree-coverage-v1.profile-leaf-coverage-report
+    profile_names: 2
+    unambiguous: true
+    valid: true
+  reference:
+    valid: true
+    profile_names: 2
+    covered:
+    - gain
+    - steps
+    ambiguous: []
+    missing: []
+    complete: true
+    unambiguous: true
+- label: missing_name
+  matched: true
+  product:
+    ambiguous: []
+    complete: false
+    covered:
+    - gain
+    missing:
+    - nope
+    policy: sipi.p4b-02b72.parameter-profile-tree-coverage-v1.profile-leaf-coverage-report
+    profile_names: 2
+    unambiguous: true
+    valid: true
+  reference:
+    valid: true
+    profile_names: 2
+    covered:
+    - gain
+    ambiguous: []
+    missing:
+    - nope
+    complete: false
+    unambiguous: true
+- label: ambiguous_name
+  matched: true
+  product:
+    ambiguous:
+    - gain
+    complete: true
+    covered: []
+    missing: []
+    policy: sipi.p4b-02b72.parameter-profile-tree-coverage-v1.profile-leaf-coverage-report
+    profile_names: 1
+    unambiguous: false
+    valid: true
+  reference:
+    valid: true
+    profile_names: 1
+    covered: []
+    ambiguous:
+    - gain
+    missing: []
+    complete: true
+    unambiguous: false
+- label: empty_profile
+  matched: true
+  product:
+    ambiguous: []
+    complete: true
+    covered: []
+    missing: []
+    policy: sipi.p4b-02b72.parameter-profile-tree-coverage-v1.profile-leaf-coverage-report
+    profile_names: 0
+    unambiguous: true
+    valid: true
+  reference:
+    valid: true
+    profile_names: 0
+    covered: []
+    ambiguous: []
+    missing: []
+    complete: true
+    unambiguous: true

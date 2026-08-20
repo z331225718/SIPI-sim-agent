@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p4b-02b4.mit-source-map.v1",
+  "status": "catalog_default_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text catalog_default_v1.rs (extends P4B-02b3/b1)" },
+  "observation": { "ref": "docs/baselines/p4b-02b3-parameter-catalog-stage.v1.yaml", "note": "catalog compile + candidate validation (02b3) delivered" },
+  "mapping": [
+    { "concept": "per-type default token validity", "rust": "token_valid_for_type_v1", "notes": "Float finite, Integer i64, Boolean True/False, String non-empty, List parenth non-empty" },
+    { "concept": "validate all catalog defaults", "rust": "validate_catalog_defaults_v1", "notes": "entries without a default skipped" },
+    { "concept": "materialize typed default", "rust": "materialize_default_v1", "notes": "constructs AmiParameterValueV1 from a validated default" },
+    { "concept": "reuses P4B-02b1 type rules", "rust": "AmiParameterTypeV1::from_token + value rules", "notes": "consistent with P4B-02b1 core" }
+  ],
+  "not_ported": ["reserved-name catalog", "AMI runtime", "specific AMI profile selection"]
+}

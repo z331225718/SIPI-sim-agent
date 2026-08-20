@@ -1,0 +1,12 @@
+{
+  "schema": "sipi.p3b-05d.mit-source-map.v1",
+  "status": "prbs9_inject_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-link prbs9_inject_v1.rs (extends P3B-05c PRBS9 core)" },
+  "observation": { "ref": "docs/baselines/p3b-05c-prbs9-crosscheck-evidence.v1.yaml", "note": "PRBS9 bit stream crosschecked (P3B-05c)" },
+  "mapping": [
+    { "concept": "PRBS9 bit -> waveform mark", "rust": "prbs9_inject_waveform_v1", "notes": "+amp for bit 1, -amp for bit 0, spu samples each" },
+    { "concept": "reuse P3B-05c generator", "rust": "Prbs9V1::next_bit", "notes": "deterministic seed replay" },
+    { "owner_decision": "TX injection at time model", "rust": "owner_default_inject_waveform_v1", "notes": "seed 0b000000001 from A4" }
+  ],
+  "not_ported": ["full time-warp jitter model", "observables", "tolerance", "receiver-stage semantics"]
+}

@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b179-parameter-list-mode-frequency-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b179.parameter-list-mode-frequency-v1.mode-frequency
+matched_count: 4
+case_count: 4
+entries:
+- label: has_mode
+  matched: true
+  product:
+    mode_frequency: 3
+    policy: sipi.p4b-02b179.parameter-list-mode-frequency-v1.mode-frequency
+    valid: true
+  reference:
+    valid: true
+    mode_frequency: 3
+- label: all_distinct
+  matched: true
+  product:
+    mode_frequency: 1
+    policy: sipi.p4b-02b179.parameter-list-mode-frequency-v1.mode-frequency
+    valid: true
+  reference:
+    valid: true
+    mode_frequency: 1
+- label: all_equal
+  matched: true
+  product:
+    mode_frequency: 3
+    policy: sipi.p4b-02b179.parameter-list-mode-frequency-v1.mode-frequency
+    valid: true
+  reference:
+    valid: true
+    mode_frequency: 3
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b179.parameter-list-mode-frequency-v1.mode-frequency
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

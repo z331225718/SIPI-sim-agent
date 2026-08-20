@@ -1,0 +1,18 @@
+{
+  "schema": "sipi.p4b-02b1.parameter-value-core.v1",
+  "status": "product_owned_parameter_value_core_specified_no_catalog_no_defaults",
+  "purpose": "P4B-02b1 typed .ami parameter value validation core: caller-supplied (name, type token, value token) triples validated against explicit product-owned syntax rules. Syntax only: no reserved-name catalog, no default inference, no document decoding, no IBIS-AMI parameter catalog coverage claim.",
+  "name_rule": "ascii_start_letter_or_underscore_then_alphanumerics_or_underscore",
+  "type_tokens": ["Float", "Integer", "Boolean", "String", "List"],
+  "value_rules": {
+    "Float": "parses_as_finite_f64",
+    "Integer": "parses_as_i64",
+    "Boolean": "exactly_true_or_false",
+    "String": "nonempty",
+    "List": "parenthesized_comma_separated_nonempty_items"
+  },
+  "scope_policy": "sipi.p4b-02b1.parameter-value-v1.syntax-only-no-catalog-no-defaults",
+  "implementation": { "crate": "sipi-ami-text", "module": "parameter_value_v1", "types": ["AmiParameterValueV1", "AmiParameterTypeV1", "AmiParameterValueErrorV1"] },
+  "admission": { "profile_accepted": false, "reserved_names": "not_in_this_slice", "defaults": "not_in_this_slice", "document_decoding": false, "binding_connection": "pending_later_slice", "external_reference_binding": "not_evaluated" },
+  "non_claims": ["not_ibis_ami_catalog", "not_reserved_names", "not_defaults", "not_model_specific_semantics", "not_document_decoding", "not_profile_acceptance"]
+}

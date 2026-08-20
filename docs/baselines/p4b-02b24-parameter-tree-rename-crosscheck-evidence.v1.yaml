@@ -1,0 +1,97 @@
+schema: sipi.p4b-02b24-parameter-tree-rename-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b24.parameter-tree-rename-v1.tree-node-rename
+matched_count: 3
+case_count: 3
+entries:
+- label: rename_leaf_node
+  matched: true
+  product:
+    policy: sipi.p4b-02b24.parameter-tree-rename-v1.tree-node-rename
+    root_name: root
+    tree:
+      children:
+        a_renamed:
+          kind: leaf
+          name: a_renamed
+          value_tokens:
+          - '1'
+        b:
+          kind: leaf
+          name: b
+          value_tokens:
+          - '2'
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+        b:
+          kind: leaf
+          name: b
+          value_tokens:
+          - '2'
+        a_renamed:
+          kind: leaf
+          name: a_renamed
+          value_tokens:
+          - '1'
+- label: rename_branch_node
+  matched: true
+  product:
+    policy: sipi.p4b-02b24.parameter-tree-rename-v1.tree-node-rename
+    root_name: root
+    tree:
+      children:
+        branch_b:
+          kind: leaf
+          name: branch_b
+          value_tokens:
+          - '20'
+        branch_x:
+          children:
+            leaf_1:
+              kind: leaf
+              name: leaf_1
+              value_tokens:
+              - '10'
+          kind: branch
+          name: branch_x
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+        branch_b:
+          kind: leaf
+          name: branch_b
+          value_tokens:
+          - '20'
+        branch_x:
+          kind: branch
+          name: branch_x
+          children:
+            leaf_1:
+              kind: leaf
+              name: leaf_1
+              value_tokens:
+              - '10'
+- label: root_rename_forbidden
+  matched: true
+  product:
+    policy: sipi.p4b-02b24.parameter-tree-rename-v1.tree-node-rename
+    rename_error: RootRenameForbidden
+    valid: false
+  reference:
+    valid: false
+    rename_error: RootRenameForbidden

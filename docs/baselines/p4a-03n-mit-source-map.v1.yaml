@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03n.mit-source-map.v1",
+  "status": "node_declaration_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis node_declaration_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Node Declarations] structural header and node/signal names" },
+  "mapping": [
+    { "concept": "typed [Node Declarations] entry", "rust": "TypedNodeDeclarationV1", "notes": "validated ASCII node_name and optional signal_name" },
+    { "concept": "node name syntax validation", "rust": "NodeDeclarationErrorV1::InvalidNodeName", "notes": "non-empty, ASCII alphanumeric/underscore/hyphen/dot" },
+    { "concept": "optional signal association", "rust": "TypedNodeDeclarationV1::signal_name", "notes": "optional ASCII signal name string" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "internal node electrical connectivity simulation",
+    "release certification"
+  ]
+}

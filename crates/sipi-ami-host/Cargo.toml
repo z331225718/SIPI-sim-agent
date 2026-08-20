@@ -10,3 +10,10 @@ description = "Clean-room Windows x64 IBIS AMI standard ABI host mechanics."
 [dependencies]
 sha2 = "0.10"
 sipi-ami-text = { path = "../sipi-ami-text" }
+
+[dev-dependencies]
+serde_json = "1"
+
+[[test]]
+name = "p4b_authorized_fixture_abi_runner"
+harness = false

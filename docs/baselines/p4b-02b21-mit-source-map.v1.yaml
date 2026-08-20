@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4b-02b21.mit-source-map.v1",
+  "status": "parameter_tree_diff_filter_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_diff_filter_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "closure-based predicate filtering over TreeDiffEntryV1 diff entries" },
+  "mapping": [
+    { "concept": "diff entry filtering", "rust": "filter_parameter_tree_diffs_v1", "notes": "filters diff entry sequence using predicate closure" },
+    { "concept": "empty filtered result check", "rust": "ParameterTreeDiffFilterErrorV1::EmptyFilteredResult", "notes": "filtering out all diff entries fails closed" },
+    { "concept": "empty diff list check", "rust": "ParameterTreeDiffFilterErrorV1::EmptyDiffList", "notes": "empty diff slice fails closed" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

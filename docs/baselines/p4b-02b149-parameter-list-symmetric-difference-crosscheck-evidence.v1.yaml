@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b149-parameter-list-symmetric-difference-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b149.parameter-list-symmetric-difference-v1.symmetric-difference
+matched_count: 4
+case_count: 4
+entries:
+- label: symmetric_difference
+  matched: true
+  product:
+    policy: sipi.p4b-02b149.parameter-list-symmetric-difference-v1.symmetric-difference
+    token: (a, c, d)
+    valid: true
+  reference:
+    valid: true
+    token: (a, c, d)
+- label: duplicates
+  matched: true
+  product:
+    policy: sipi.p4b-02b149.parameter-list-symmetric-difference-v1.symmetric-difference
+    token: (a, a, c, c)
+    valid: true
+  reference:
+    valid: true
+    token: (a, a, c, c)
+- label: equal_values
+  matched: true
+  product:
+    policy: sipi.p4b-02b149.parameter-list-symmetric-difference-v1.symmetric-difference
+    token: ()
+    valid: true
+  reference:
+    valid: true
+    token: ()
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b149.parameter-list-symmetric-difference-v1.symmetric-difference
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

@@ -1,0 +1,20 @@
+{
+  "schema": "sipi.p5-06f.mit-source-map.v1",
+  "status": "fixed_tap_chain_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-com com_chain_v1.rs composing existing stage ports" },
+  "observation": { "ref": "docs/baselines/p5-06-matlab-oracle-first-run-evidence.v1.yaml", "note": "chain targets the oracle metric surface (COM_dB / ICN_mV / ERL + checkpoints); oracle inputs not yet fed" },
+  "mapping": [
+    { "concept": "cursor selection (MM CDR)", "rust": "cursor_sample_index_v1 (P5-04i)", "notes": "caller-supplied peak window; None cursor fails closed" },
+    { "concept": "residual pulse + DFE cancellation + phase sampling", "rust": "residual_channel_pdf_v1 (P5-04g)", "notes": "THRU single phase; caller-supplied DFE taps/bounds" },
+    { "concept": "gaussian/dual-Dirac noise PDF build", "rust": "build_r480_noise_pdf_v1 (P5-04h)", "notes": "caller-supplied sigma_n / amplitude_dd / jitter response" },
+    { "concept": "combined noise PDF + peak interference", "rust": "combine_r480_noise_pdf_v1 (P5-04e)", "notes": "Eq. 93A-45 order; no FEXT/NEXT pdfs in this core" },
+    { "concept": "COM/VEC/VEO scalar metrics", "rust": "calculate_com_metrics_v1 (P5-04c)", "notes": "caller-supplied available signal, spec BER, threshold" }
+  ],
+  "not_ported": [
+    "equalizer search loop composition (P5-04t)",
+    "frequency-domain receiver noise (P5-04o)",
+    "crosstalk composition (P5-04p)",
+    "TX-FFE tap synthesis (P5-04j)",
+    "product-vs-oracle COM compare"
+  ]
+}

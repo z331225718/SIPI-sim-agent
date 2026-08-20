@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b171-parameter-list-longest-run-start-index-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b171.parameter-list-longest-run-start-index-v1.longest-run-start-index
+matched_count: 4
+case_count: 4
+entries:
+- label: longest_run
+  matched: true
+  product:
+    policy: sipi.p4b-02b171.parameter-list-longest-run-start-index-v1.longest-run-start-index
+    start_index: 1
+    valid: true
+  reference:
+    valid: true
+    start_index: 1
+- label: tie_earliest
+  matched: true
+  product:
+    policy: sipi.p4b-02b171.parameter-list-longest-run-start-index-v1.longest-run-start-index
+    start_index: 0
+    valid: true
+  reference:
+    valid: true
+    start_index: 0
+- label: all_distinct
+  matched: true
+  product:
+    policy: sipi.p4b-02b171.parameter-list-longest-run-start-index-v1.longest-run-start-index
+    start_index: 0
+    valid: true
+  reference:
+    valid: true
+    start_index: 0
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b171.parameter-list-longest-run-start-index-v1.longest-run-start-index
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

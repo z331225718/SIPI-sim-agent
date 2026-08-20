@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b91.mit-source-map.v1",
+  "status": "parameter_tree_leaf_value_validity_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_leaf_value_validity_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "declared-type value validity report over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "value validity report", "rust": "check_parameter_tree_leaf_value_validity_v1", "notes": "validates typed-form leaves via 02b1 try_new; reports every invalid leaf with path/type/value/error" },
+    { "concept": "validity issue", "rust": "ParameterTreeLeafValueValidityIssueV1", "notes": "canonical path, declared type token, value token, typed error" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p4a-03d.mit-source-map.v1",
+  "status": "model_declaration_ported_with_source_map",
+  "source": { "repo": "standard", "license": "public standard (IBIS 5.0, section 4 Model and Model_type)", "path": "IBIS 5.0 Model keyword definition" },
+  "observation": { "ref": "docs/baselines/p4a-01-required-profile-inventory.v1.yaml", "note": "authorized as4c512m16md4v-053bin.ibs observed: 67 model blocks (27 Input + 40 I/O)" },
+  "mapping": [
+    { "standard": "IBIS [Model] declaration", "rust": "lift_model_declarations_v1", "notes": "typed model declaration with name, Model_type, optional ranges" },
+    { "standard": "Model_type bounded set (IBIS 5.0 sec 4)", "rust": "ModelTypeV1", "notes": "Input/Output/IO/3-state/Open_*/ECL/Terminator/Series/Series_switch; I/O canonicalized to IO" },
+    { "format": "Model_type bare keyword-value data line", "rust": "Data-record lead-token handling", "notes": "Model_type  Input is a Data record with a Model_type lead token" },
+    { "format": "Model name as keyword payload", "rust": "keyword payload first token", "notes": "matches parse_structural_v1 exactly_one_name convention" }
+  ],
+  "not_ported": ["Voltage/Temperature Range unit-aware semantics (P4A-04 layer)", "electrical evaluation", "profile selection"]
+}

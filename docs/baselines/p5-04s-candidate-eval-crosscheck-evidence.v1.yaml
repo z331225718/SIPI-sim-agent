@@ -1,0 +1,31 @@
+schema: sipi.p5-04s.candidate-eval-crosscheck-evidence.v1
+status: candidate_eval_crosscheck_matched
+oracle:
+  repo: agent-com
+  license: MIT
+  path: src/agent_com/equalization/search.py
+  functions:
+  - _evaluate_candidate
+  - _c2m_candidate_fom
+  numpy_version: 2.4.6
+tolerance: 5.0e-05
+entries:
+- id: plain_cursor
+  input_sha256: 29d34462bae3fd77f61b047ad7919c86dfa459bbed05002e10437a04c07567dd
+  matched: true
+  diffs: []
+- id: strict_improvement_reject
+  input_sha256: e5fcb95c44aa5271558517414d41ece2627489ec4733bcda38e753a132ca634c
+  matched: true
+  diffs: []
+- id: off_center_cursor
+  input_sha256: e54e949be8155bf3a00fb85faafb782e904c593131f9285d16efbf79eb9a8d23
+  matched: true
+  diffs: []
+- id: c2m_branch_open_eye
+  input_sha256: fa73f20b80f883960ad0b7b34300ee4ced334cb63c9e1a212528bb9d3aef28c2
+  matched: true
+  diffs: []
+non_claims:
+- not_search_loop
+- not_release_evidence

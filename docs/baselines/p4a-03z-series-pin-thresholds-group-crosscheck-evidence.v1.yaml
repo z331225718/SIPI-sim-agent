@@ -1,0 +1,45 @@
+schema: sipi.p4a-03z.series-pin-thresholds-group-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03at.series-pin-table-thresholds-group-v1.typed-group-thresholds
+matched_count: 3
+case_count: 3
+entries:
+- label: full_group_thresholds
+  matched: true
+  product:
+    cseries_farad: 2.0e-12
+    lseries_henry: 1.0e-08
+    policy: sipi.p4a-03at.series-pin-table-thresholds-group-v1.typed-group-thresholds
+    rseries_ohm: 25.0
+    valid: true
+    vthreshold_v: 1.5
+  reference:
+    valid: true
+    vthreshold_v: 1.5
+    rseries_ohm: 25.0
+    cseries_farad: 2.0e-12
+    lseries_henry: 1.0e-08
+- label: minimal_group_thresholds
+  matched: true
+  product:
+    cseries_farad: null
+    lseries_henry: null
+    policy: sipi.p4a-03at.series-pin-table-thresholds-group-v1.typed-group-thresholds
+    rseries_ohm: null
+    valid: true
+    vthreshold_v: null
+  reference:
+    valid: true
+    vthreshold_v: null
+    rseries_ohm: null
+    cseries_farad: null
+    lseries_henry: null
+- label: negative_rseries
+  matched: true
+  product:
+    lift_error: NegativeThresholdParameter
+    policy: sipi.p4a-03at.series-pin-table-thresholds-group-v1.typed-group-thresholds
+    valid: false
+  reference:
+    valid: false
+    lift_error: NegativeThresholdParameter

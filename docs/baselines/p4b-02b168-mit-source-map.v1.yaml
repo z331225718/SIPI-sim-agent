@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b168.mit-source-map.v1",
+  "status": "parameter_list_run_count_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_run_count_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "maximal adjacent-run count over the trimmed items of a validated AMI parameter list value" },
+  "mapping": [
+    { "concept": "run count", "rust": "parameter_list_run_count_v1", "notes": "number of maximal runs of equal adjacent items by raw byte equality; at least 1 by non-empty rule" },
+    { "concept": "run-count errors", "rust": "ParameterListRunCountErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

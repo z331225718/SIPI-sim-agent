@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-05d.parameter-surface-stage.v1",
+  "status": "parameter_surface_report_stage_ported",
+  "purpose": "P5-05d parameter surface report stage: every (key, value) pair is extracted from any workbook surface (xlsx/csv/mat) with the r4.80 lookup scan semantics and classified against the canonical consumption key set observed from the authorized MATLAB r4.80 source (214 keys). Unconsumed workbook fields remain in the report; nothing is dropped. Value consumption semantics and behavior profiles are out of scope.",
+  "source_map_ref": "docs/baselines/p5-05d-mit-source-map.v1.yaml",
+  "admission": {
+    "value_consumption": false,
+    "behavior_profile": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_value_consumption", "not_behavior_profile", "not_profile_acceptance", "not_release_evidence"]
+}

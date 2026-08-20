@@ -5,12 +5,15 @@ from __future__ import annotations
 import copy
 import hashlib
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT / "tools") not in sys.path:
+    sys.path.insert(0, str(ROOT / "tools"))
 
 from verify_channel_s2p_matched_preflight import _load, verify_document
 

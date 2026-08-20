@@ -1,0 +1,96 @@
+schema: sipi.p4b-02b38-parameter-tree-apply-defaults-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b38.parameter-tree-apply-defaults-v1.default-fill-missing
+matched_count: 4
+case_count: 4
+entries:
+- label: fill_missing
+  matched: true
+  product:
+    added: 1
+    policy: sipi.p4b-02b38.parameter-tree-apply-defaults-v1.default-fill-missing
+    root_name: root
+    skipped: 0
+    tree:
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - Float
+        - '0.5'
+      - kind: leaf
+        name: steps
+        value_tokens:
+        - Integer
+        - '7'
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    added: 1
+    skipped: 0
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - Float
+        - '0.5'
+      - kind: leaf
+        name: steps
+        value_tokens:
+        - Integer
+        - '7'
+- label: skip_existing
+  matched: true
+  product:
+    added: 0
+    policy: sipi.p4b-02b38.parameter-tree-apply-defaults-v1.default-fill-missing
+    root_name: root
+    skipped: 1
+    tree:
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - Float
+        - '0.5'
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    added: 0
+    skipped: 1
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - Float
+        - '0.5'
+- label: empty_defaults
+  matched: true
+  product:
+    defaults_error: EmptyDefaults
+    policy: sipi.p4b-02b38.parameter-tree-apply-defaults-v1.default-fill-missing
+    valid: false
+  reference:
+    valid: false
+    defaults_error: EmptyDefaults
+- label: empty_default_tokens
+  matched: true
+  product:
+    defaults_error: EmptyDefaultTokens("steps")
+    policy: sipi.p4b-02b38.parameter-tree-apply-defaults-v1.default-fill-missing
+    valid: false
+  reference:
+    valid: false
+    defaults_error: EmptyDefaultTokens("steps")

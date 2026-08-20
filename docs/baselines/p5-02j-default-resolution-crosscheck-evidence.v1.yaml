@@ -1,0 +1,187 @@
+schema: sipi.p5-02j.value-consumption-crosscheck-evidence.v1
+status: matched_hash_bound
+oracle_source: agent_com/config/materialize.py:_resolve_default + literals.py
+source_sha256: b0dbd561a8d5e486f2b0dce2e384c54b62657b2c391d414439605afe150cdb44
+policy: sipi.p5-02j.value-consumption.v1.default-resolution
+scope: scalar-catalog defaults only; multi-element array/matrix defaults deferred
+tolerance: 1.0e-12
+oracle_param_surface_sorted:
+- Min_VEO_Test
+- Qr
+- T_O
+- _bmax_first
+- a_fext
+- a_next
+- a_thru
+- bmax
+- fb
+- max_start_freq
+- ndfe
+- sigma_r
+- trunc
+oracle_option_surface_sorted:
+- pkg_len_select
+array_out_of_scope:
+  snp_port_order:
+    expr: '[1 3 2 4]'
+    oracle_size: 4
+    oracle_array_shape:
+    - 4
+  rdiepad:
+    expr: '[50,50]'
+    oracle_size: 2
+    oracle_array_shape:
+    - 2
+  ts_sample_adj_range:
+    expr: '[0 0]'
+    oracle_size: 2
+    oracle_array_shape:
+    - 2
+  gqual_empty:
+    expr: '[]'
+    oracle_size: 0
+    oracle_array_shape:
+    - 0
+matched_count: 20
+case_count: 20
+cases:
+- id: a_fext_lit
+  expression: '0.5'
+  kind: scalar
+  oracle: 0.5
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: pkg_tau_lit
+  expression: '6.191e-3'
+  kind: scalar
+  oracle: 0.006191
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: board_zc_lit
+  expression: '109.8'
+  kind: scalar
+  oracle: 109.8
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: board_tau_lit
+  expression: '6.191e-3'
+  kind: scalar
+  oracle: 0.006191
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: fb_ref
+  expression: param.fb
+  kind: scalar
+  oracle: 53125000000.0
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: ctle_fp1_derived
+  expression: param.fb/4
+  kind: scalar
+  oracle: 13281250000.0
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: accm_freq_ref
+  expression: param.fb
+  kind: scalar
+  oracle: 53125000000.0
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: f1_derived
+  expression: param.max_start_freq/1e9
+  kind: scalar
+  oracle: 53.125
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: a_fext_ref
+  expression: param.a_fext
+  kind: scalar
+  oracle: 0.5
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: ndfe_ref
+  expression: param.ndfe
+  kind: scalar
+  oracle: 2.0
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: freq_half_e9
+  expression: 0.5*1e9
+  kind: scalar
+  oracle: 500000000.0
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: sigma_r_ref
+  expression: param.sigma_r
+  kind: scalar
+  oracle: 0.02
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: ql_derived
+  expression: param.T_O/param.Qr/1000
+  kind: scalar
+  oracle: 0.0
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: boolean_true
+  expression: 'true'
+  kind: boolean
+  oracle: true
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: boolean_false
+  expression: 'false'
+  kind: boolean
+  oracle: false
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: string_mm
+  expression: '''MM'''
+  kind: string
+  oracle: MM
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: string_a_dd
+  expression: '''A_DD'''
+  kind: string
+  oracle: A_DD
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: empty_brk
+  expression: '[]'
+  kind: empty
+  oracle: null
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: empty_blank_str
+  expression: ''''''
+  kind: string
+  oracle: ''
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []
+- id: dfe_lower_limit
+  expression: -1*param.bmax(2:param.ndfe)
+  kind: scalar
+  oracle: -0.5
+  input_sha256: b54c6c515b27d31c1d2e5a6996300ce84ad13fecee8dc9b353b19ee273c6620e
+  matched: true
+  diffs: []

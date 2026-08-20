@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p5-05f.mit-source-map.v1",
+  "status": "parameter_resolver_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-com com_parameter_resolver_v1.rs" },
+  "observation": { "ref": "docs/baselines/p5-r480-canonical-parameter-reference.v1.yaml", "note": "canonical R480 key aliases mapped to ComChainControlsV1 fields" },
+  "mapping": [
+    { "concept": "DTO parameter resolution", "rust": "resolve_com_parameter_controls_v1", "notes": "extracts required COM controls from ComParametersV1 consumed map" },
+    { "concept": "canonical key aliases", "rust": "get_scalar / get_vector", "notes": "supports alternate spellings (e.g. A_v / AVAILABLE_SIGNAL)" },
+    { "concept": "value type check", "rust": "ComParameterResolverErrorV1::InvalidType", "notes": "Scalar and Vector types enforced" },
+    { "concept": "missing key check", "rust": "ComParameterResolverErrorV1::MissingKey", "notes": "missing required key fails closed" }
+  ],
+  "not_ported": [
+    "workbook file parser",
+    "cross-implementation COM parity",
+    "release certification"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "sipi.p5-03a.com-stage-output-envelope.v1",
+  "status": "typed_stage_output_envelope_specified_no_computation",
+  "purpose": "P5-03a sipi-com crate with typed stage-output envelope types, structured after the observed MATLAB oracle output surface (P5-06b): network metrics, 14 output metrics, per-case checkpoints. Structure only: no COM computation, no behavior profile, no compare, no acceptance.",
+  "basis_ref": "docs/baselines/p5-06-oracle-metric-surface.v1.yaml",
+  "envelope": {
+    "output_metrics": "fourteen_observed_keys",
+    "network_roles": ["THRU", "FEXT1", "NEXT1"],
+    "checkpoints": ["TXLE_taps", "DFE_taps", "tail_RSS", "sigma_N", "sgm_Ani__isi_xt_noise", "itick"],
+    "metric_value": "finite_or_infinity"
+  },
+  "admission": {
+    "computation": false,
+    "behavior_profile": false,
+    "compare": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_computation", "not_behavior_profile", "not_compare", "not_profile_acceptance", "not_release_evidence"]
+}

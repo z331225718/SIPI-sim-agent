@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b110.mit-source-map.v1",
+  "status": "parameter_list_index_of_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_index_of_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "first-position item lookup over validated AMI parameter list values" },
+  "mapping": [
+    { "concept": "first position lookup", "rust": "index_of_parameter_list_item_v1", "notes": "returns first 0-based index whose trimmed item equals the raw query item" },
+    { "concept": "lookup errors", "rust": "ParameterListIndexOfErrorV1", "notes": "NotAList for non-List types, defensive MalformedList, ItemNotFound for absent item" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

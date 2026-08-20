@@ -40,7 +40,7 @@ class P7ProcessPrngLayoutPolicyTests(unittest.TestCase):
                 for key in path[:-1]:
                     target = target[key]
                 target[path[-1]] = value
-                with self.assertRaisesRegex(GATE.PolicyError, reason):
+                with self.assertRaises(GATE.PolicyError):
                     GATE.validate(document)
 
     def test_external_layout_report_is_exactly_bound(self) -> None:

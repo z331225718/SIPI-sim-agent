@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b180-parameter-list-prevalence-ratio-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b180.parameter-list-prevalence-ratio-v1.prevalence-ratio
+matched_count: 4
+case_count: 4
+entries:
+- label: all_equal
+  matched: true
+  product:
+    policy: sipi.p4b-02b180.parameter-list-prevalence-ratio-v1.prevalence-ratio
+    prevalence_ratio: '1.000000000000'
+    valid: true
+  reference:
+    valid: true
+    prevalence_ratio: '1.000000000000'
+- label: all_distinct
+  matched: true
+  product:
+    policy: sipi.p4b-02b180.parameter-list-prevalence-ratio-v1.prevalence-ratio
+    prevalence_ratio: '0.333333333333'
+    valid: true
+  reference:
+    valid: true
+    prevalence_ratio: '0.333333333333'
+- label: unbalanced
+  matched: true
+  product:
+    policy: sipi.p4b-02b180.parameter-list-prevalence-ratio-v1.prevalence-ratio
+    prevalence_ratio: '0.600000000000'
+    valid: true
+  reference:
+    valid: true
+    prevalence_ratio: '0.600000000000'
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b180.parameter-list-prevalence-ratio-v1.prevalence-ratio
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

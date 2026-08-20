@@ -1,0 +1,652 @@
+{
+  "schema": "sipi.p7-08.drift-gate-retirement-strategy.v1",
+  "status": "provisional",
+  "approval_state": "owner_approved",
+  "blocker": "blocked_no_path_scoped_replacement_and_retirement_approval",
+  "purpose": "Same-batch drift-gate removal and retirement approval strategy for legacy migration and historical-evidence gates bound to P7-08 legacy surfaces. This strategy alone does NOT remove any gate, accept any profile, or unblock P7-08.",
+  "batch_rule": "删除与对应 drift gate 同批，但在新路径 acceptance 之后（PLAN 15.2）；product release 禁止依赖 legacy 双路径（PLAN 17 风险表）。",
+  "retirement_procedure": [
+    "owner_reviews_path_scoped_replacement_map",
+    "owner_records_retirement_approval_in_audit",
+    "same_batch_gate_removal_after_acceptance",
+    "verifier_updated_before_any_removal"
+  ],
+  "mandatory_pre_removal_gates": [
+    "per_path_replacement_mapping",
+    "required_profile_accepted",
+    "same_batch_drift_gate_removal",
+    "release_license_fresh_machine_gates",
+    "owner_retirement_approval"
+  ],
+  "entries": [
+    {
+      "id": "gate-m0_capability_inventory",
+      "gate_path": "tools/verify_m0_capability_inventory.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m0_capability_inventory; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m0_platform_support",
+      "gate_path": "tools/verify_m0_platform_support.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m0_platform_support; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m1_artifacts",
+      "gate_path": "tools/verify_m1_artifacts.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m1_artifacts; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m1_backend_execution_envelopes",
+      "gate_path": "tools/verify_m1_backend_execution_envelopes.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m1_backend_execution_envelopes; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m1_capabilities_baseline",
+      "gate_path": "tools/verify_m1_capabilities_baseline.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m1_capabilities_baseline; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m1_conformance",
+      "gate_path": "tools/verify_m1_conformance.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m1_conformance; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m1_rule_ledger",
+      "gate_path": "tools/verify_m1_rule_ledger.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m1_rule_ledger; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m1_run_envelopes",
+      "gate_path": "tools/verify_m1_run_envelopes.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m1_run_envelopes; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m1_runtime_validation",
+      "gate_path": "tools/verify_m1_runtime_validation.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m1_runtime_validation; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m2_capabilities_certified",
+      "gate_path": "tools/verify_m2_capabilities_certified.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m2_capabilities_certified; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m4_conformance",
+      "gate_path": "tools/verify_m4_conformance.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m4_conformance; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m5a_agent_spice_move",
+      "gate_path": "tools/verify_m5a_agent_spice_move.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m5a_agent_spice_move; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m5a_agent_spice_preflight",
+      "gate_path": "tools/verify_m5a_agent_spice_preflight.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m5a_agent_spice_preflight; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m5a_agent_spice_wheel",
+      "gate_path": "tools/verify_m5a_agent_spice_wheel.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m5a_agent_spice_wheel; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m5b_ami_authorized_dll_closure",
+      "gate_path": "tools/verify_m5b_ami_authorized_dll_closure.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m5b_ami_authorized_dll_closure; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m5b_ami_candidate_assurance",
+      "gate_path": "tools/verify_m5b_ami_candidate_assurance.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m5b_ami_candidate_assurance; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m5b_ami_candidate_bundle",
+      "gate_path": "tools/verify_m5b_ami_candidate_bundle.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m5b_ami_candidate_bundle; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m5b_ami_vendor_fixture_preflight",
+      "gate_path": "tools/verify_m5b_ami_vendor_fixture_preflight.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m5b_ami_vendor_fixture_preflight; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m5b_pybert_history_preflight",
+      "gate_path": "tools/verify_m5b_pybert_history_preflight.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m5b_pybert_history_preflight; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-m5b_s2p_link_parity",
+      "gate_path": "tools/verify_m5b_s2p_link_parity.py",
+      "tracked_file_count": 1,
+      "gate_kind": "legacy_migration_gate",
+      "bound_surface": "m0-m5-drift-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "M0-M5 migration drift gate for m5b_s2p_link_parity; retained as migration/oracle evidence until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-p3c_external_ads_selected_highloss_waveform_only_historical_source_drift",
+      "gate_path": "tools/verify_p3c_external_ads_selected_highloss_waveform_only_historical_source_drift.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for p3c_external_ads_selected_highloss_waveform_only_historical_source_drift; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-p3c_selected_s4p_historical_observation_source_drift",
+      "gate_path": "tools/verify_p3c_selected_s4p_historical_observation_source_drift.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for p3c_selected_s4p_historical_observation_source_drift; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-p3c_selected_sensitivity_historical_source_drift",
+      "gate_path": "tools/verify_p3c_selected_sensitivity_historical_source_drift.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for p3c_selected_sensitivity_historical_source_drift; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-tran_rc_pulse_external_compare_evidence",
+      "gate_path": "tools/verify_tran_rc_pulse_external_compare_evidence.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for tran_rc_pulse_external_compare_evidence; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-tran_rc_pulse_current_external_compare_evidence",
+      "gate_path": "tools/verify_tran_rc_pulse_current_external_compare_evidence.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for tran_rc_pulse_current_external_compare_evidence; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-tran_rc_pulse_current_external_compare_evidence_v2",
+      "gate_path": "tools/verify_tran_rc_pulse_current_external_compare_evidence_v2.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for tran_rc_pulse_current_external_compare_evidence_v2; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-tran_rc_pulse_current_external_compare_evidence_v3",
+      "gate_path": "tools/verify_tran_rc_pulse_current_external_compare_evidence_v3.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for tran_rc_pulse_current_external_compare_evidence_v3; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-channel_s2p_matched_external_compare_evidence",
+      "gate_path": "tools/verify_channel_s2p_matched_external_compare_evidence.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for channel_s2p_matched_external_compare_evidence; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-channel_s2p_matched_external_compare_evidence_v2",
+      "gate_path": "tools/verify_channel_s2p_matched_external_compare_evidence_v2.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for channel_s2p_matched_external_compare_evidence_v2; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-channel_s2p_matched_cli_external_compare_evidence",
+      "gate_path": "tools/verify_channel_s2p_matched_cli_external_compare_evidence.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for channel_s2p_matched_cli_external_compare_evidence; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-channel_s2p_matched_cli_current_external_compare_evidence",
+      "gate_path": "tools/verify_channel_s2p_matched_cli_current_external_compare_evidence.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for channel_s2p_matched_cli_current_external_compare_evidence; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-channel_s2p_matched_cli_current_external_compare_evidence_v2",
+      "gate_path": "tools/verify_channel_s2p_matched_cli_current_external_compare_evidence_v2.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for channel_s2p_matched_cli_current_external_compare_evidence_v2; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-channel_s2p_matched_cli_current_external_compare_evidence_v3",
+      "gate_path": "tools/verify_channel_s2p_matched_cli_current_external_compare_evidence_v3.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for channel_s2p_matched_cli_current_external_compare_evidence_v3; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-channel_s2p_matched_cli_current_external_compare_evidence_v4",
+      "gate_path": "tools/verify_channel_s2p_matched_cli_current_external_compare_evidence_v4.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for channel_s2p_matched_cli_current_external_compare_evidence_v4; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-channel_s2p_matched_cli_current_external_compare_evidence_v5",
+      "gate_path": "tools/verify_channel_s2p_matched_cli_current_external_compare_evidence_v5.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for channel_s2p_matched_cli_current_external_compare_evidence_v5; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-channel_s2p_matched_cli_current_external_compare_evidence_v6",
+      "gate_path": "tools/verify_channel_s2p_matched_cli_current_external_compare_evidence_v6.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for channel_s2p_matched_cli_current_external_compare_evidence_v6; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    },
+    {
+      "id": "gate-channel_s2p_matched_cli_current_external_compare_evidence_v7",
+      "gate_path": "tools/verify_channel_s2p_matched_cli_current_external_compare_evidence_v7.py",
+      "tracked_file_count": 1,
+      "gate_kind": "historical_evidence_drift_gate",
+      "bound_surface": "historical-evidence",
+      "disposition": "retain_gate_awaiting_approval",
+      "approval_required": true,
+      "required_gates": [
+        "per_path_replacement_mapping",
+        "required_profile_accepted",
+        "same_batch_drift_gate_removal",
+        "release_license_fresh_machine_gates",
+        "owner_retirement_approval"
+      ],
+      "notes": "Historical external-compare/source-drift gate for channel_s2p_matched_cli_current_external_compare_evidence_v7; retains historical evidence without promotion until owner retirement approval and same-batch removal after new-path acceptance."
+    }
+  ]
+}

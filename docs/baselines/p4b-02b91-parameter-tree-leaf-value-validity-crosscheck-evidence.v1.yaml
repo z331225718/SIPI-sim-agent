@@ -1,0 +1,90 @@
+schema: sipi.p4b-02b91-parameter-tree-leaf-value-validity-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b91.parameter-tree-leaf-value-validity-v1.declared-type-value-validity
+matched_count: 4
+case_count: 4
+entries:
+- label: all_valid
+  matched: true
+  product:
+    invalid: []
+    leaves_total: 3
+    policy: sipi.p4b-02b91.parameter-tree-leaf-value-validity-v1.declared-type-value-validity
+    typed_leaves: 3
+    valid: true
+    valid_leaves: 3
+  reference:
+    valid: true
+    leaves_total: 3
+    typed_leaves: 3
+    valid_leaves: 3
+    invalid: []
+- label: mixed_invalid
+  matched: true
+  product:
+    invalid:
+    - error: InvalidFloat
+      path: root.gain
+      type_token: Float
+      value_token: abc
+    - error: InvalidBoolean
+      path: root.on
+      type_token: Boolean
+      value_token: nope
+    leaves_total: 3
+    policy: sipi.p4b-02b91.parameter-tree-leaf-value-validity-v1.declared-type-value-validity
+    typed_leaves: 3
+    valid: true
+    valid_leaves: 1
+  reference:
+    valid: true
+    leaves_total: 3
+    typed_leaves: 3
+    valid_leaves: 1
+    invalid:
+    - path: root.gain
+      type_token: Float
+      value_token: abc
+      error: InvalidFloat
+    - path: root.on
+      type_token: Boolean
+      value_token: nope
+      error: InvalidBoolean
+- label: nested
+  matched: true
+  product:
+    invalid:
+    - error: InvalidInteger
+      path: root.sub.steps
+      type_token: Integer
+      value_token: abc
+    leaves_total: 2
+    policy: sipi.p4b-02b91.parameter-tree-leaf-value-validity-v1.declared-type-value-validity
+    typed_leaves: 2
+    valid: true
+    valid_leaves: 1
+  reference:
+    valid: true
+    leaves_total: 2
+    typed_leaves: 2
+    valid_leaves: 1
+    invalid:
+    - path: root.sub.steps
+      type_token: Integer
+      value_token: abc
+      error: InvalidInteger
+- label: non_typed_skipped
+  matched: true
+  product:
+    invalid: []
+    leaves_total: 3
+    policy: sipi.p4b-02b91.parameter-tree-leaf-value-validity-v1.declared-type-value-validity
+    typed_leaves: 0
+    valid: true
+    valid_leaves: 0
+  reference:
+    valid: true
+    leaves_total: 3
+    typed_leaves: 0
+    valid_leaves: 0
+    invalid: []

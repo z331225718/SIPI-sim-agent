@@ -1,0 +1,20 @@
+{
+  "schema": "sipi.p5-02n.warning-report-stage.v1",
+  "status": "warning_report_ported",
+  "purpose": "P5-02n deterministic warning-report aggregator: aggregates the per-array deterministic warning flags (P5-02m anti-causal precursor and high-frequency non-decay) into a single stable report: the lexicographically sorted active warning codes, the per-code flagging-slice list (in input order), and the total flagged-slice count. This is the deterministic subset of the R480 warning contract; the owner-gated full contract (MLSE/DER/CDR) remains out of scope. Fail-closed: empty input set and empty slice name are hard errors.",
+  "source_map_ref": "docs/baselines/p5-02n-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p5-02m-warning-detector-stage.v1.yaml", "docs/baselines/p5-02i-warning-observation.v1.yaml"],
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md",
+  "admission": {
+    "sorted_active_code_union": true,
+    "per_code_slice_listing": true,
+    "flagged_total_count": true,
+    "empty_input_fail_closed": true,
+    "empty_slice_name_fail_closed": true,
+    "mlse_der_cdr_contract": false,
+    "oracle_invocation": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_full_warning_contract", "not_mlse_der_cdr", "not_oracle_invocation", "not_acceptance_evidence"]
+}

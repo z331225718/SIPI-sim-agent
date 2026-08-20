@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b101-parameter-list-append-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b101.parameter-list-append-v1.list-item-append
+matched_count: 4
+case_count: 4
+entries:
+- label: append_item
+  matched: true
+  product:
+    appended: (a, b, c)
+    policy: sipi.p4b-02b101.parameter-list-append-v1.list-item-append
+    valid: true
+  reference:
+    valid: true
+    appended: (a, b, c)
+- label: append_single
+  matched: true
+  product:
+    appended: (a, b)
+    policy: sipi.p4b-02b101.parameter-list-append-v1.list-item-append
+    valid: true
+  reference:
+    valid: true
+    appended: (a, b)
+- label: empty_new_item
+  matched: true
+  product:
+    error: EmptyNewItem
+    policy: sipi.p4b-02b101.parameter-list-append-v1.list-item-append
+    valid: false
+  reference:
+    valid: false
+    error: EmptyNewItem
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b101.parameter-list-append-v1.list-item-append
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

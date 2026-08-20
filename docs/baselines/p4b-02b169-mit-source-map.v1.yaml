@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b169.mit-source-map.v1",
+  "status": "parameter_list_sorted_rank_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_sorted_rank_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "zero-based sorted rank of a raw query item over a validated AMI parameter list value" },
+  "mapping": [
+    { "concept": "sorted rank", "rust": "parameter_list_sorted_rank_v1", "notes": "first position of the raw query in ascending byte lexicographic order, duplicates as separate positions" },
+    { "concept": "rank errors", "rust": "ParameterListSortedRankErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise, ItemNotFound for absent query" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

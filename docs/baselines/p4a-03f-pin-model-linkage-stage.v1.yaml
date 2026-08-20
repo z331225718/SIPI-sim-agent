@@ -1,0 +1,21 @@
+{
+  "schema": "sipi.p4a-03f.pin-model-linkage-stage.v1",
+  "status": "pin_model_linkage_ported",
+  "purpose": "P4A-03f typed IBIS pin-to-model linkage core: joins the typed pin declarations (P4A-03e) with the typed model declarations (P4A-03d) and resolves every pin model against the declared model names plus an explicitly allowed no-model marker set. A pin whose model is neither a declared model nor an allowed marker is a hard error (fail closed; no guessing). Profile-agnostic; carries no reserved-name catalog and selects no profile. Does not re-parse text, evaluate electrical/package/table semantics, or imply a profile.",
+  "source_map_ref": "docs/baselines/p4a-03f-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p4a-03e-pin-declaration-stage.v1.yaml", "docs/baselines/p4a-03d-model-declaration-stage.v1.yaml"],
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (A6 required profile)",
+  "admission": {
+    "pin_model_resolution": true,
+    "marker_allowance": true,
+    "unresolved_fail_closed": true,
+    "deterministic_order": true,
+    "profile_agnostic": true,
+    "behavior_profile": false,
+    "reserved_name_catalog": false,
+    "electrical_semantics": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_electrical_semantics", "not_profile_selection", "not_pin_parasitics", "not_acceptance_evidence"]
+}

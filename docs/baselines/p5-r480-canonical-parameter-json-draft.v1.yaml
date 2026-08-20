@@ -1,0 +1,2435 @@
+schema: sipi.p5-02.canonical-parameter-json-draft.v1
+status: canonical_parameter_json_draft_defaults_classified_not_evaluated
+reference_ref: docs/baselines/p5-r480-canonical-parameter-reference.v1.yaml
+source_sha256: 642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad
+key_count: 214
+call_count: 229
+literal_default_calls: 163
+reference_default_calls: 30
+keys:
+  A_DD:
+    occurrences: 1
+    required_observed:
+    - absent
+    default_kinds_observed:
+    - none
+    calls:
+    - required: absent
+      default:
+        kind: none
+        value: null
+  A_fe:
+    occurrences: 2
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    - none
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0.5'
+    - required: 'true'
+      default:
+        kind: none
+        value: null
+  A_ft:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.a_fext
+  A_ne:
+    occurrences: 2
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    - none
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0.5'
+    - required: 'true'
+      default:
+        kind: none
+        value: null
+  A_nt:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.a_next
+  A_v:
+    occurrences: 2
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    - none
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0.5'
+    - required: 'true'
+      default:
+        kind: none
+        value: null
+  AC_CM_RMS:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  ACCM_MAX_Freq:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.fb
+  AUTO_TFX:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  B_float_RSS_MAX:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  BBN Q factor:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '5'
+  Bessel_Thomson:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  beta_x:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  bmaxg:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0.2'
+  board_tl_gamma0_a1_a2:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '[0 4.114e-4 2.547e-4]'
+  board_tl_tau:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '6.191e-3'
+  board_Z_c:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '109.8'
+  BREAD_CRUMBS:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  BREAD_CRUMBS_FIELDS:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - string_literal
+    calls:
+    - required: 'false'
+      default:
+        kind: string_literal
+        expression: ''''''
+  BTorder:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '4'
+  Butterworth:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '1'
+  C_0:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  C_1:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  C_b:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  C_d:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  C_p:
+    occurrences: 2
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    - none
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+    - required: 'true'
+      default:
+        kind: none
+        value: null
+  C_v:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  CDR:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - string_literal
+    calls:
+    - required: 'false'
+      default:
+        kind: string_literal
+        expression: '''MM'''
+  COM Pass threshold:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  COM_CONTRIBUTION:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  COMPUTE_RILN:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  COMPUTE_TDILN:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'false'
+      default:
+        kind: reference
+        expression: OP.COMPUTE_RILN
+  crusor_gain:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  CSV_REPORT:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'true'
+  CTLE_type:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - string_literal
+    calls:
+    - required: 'false'
+      default:
+        kind: string_literal
+        expression: '''CL93'''
+  D_p:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '4'
+  Delta_f:
+    occurrences: 1
+    required_observed:
+    - absent
+    default_kinds_observed:
+    - none
+    calls:
+    - required: absent
+      default:
+        kind: none
+        value: null
+  delta_IL:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '1'
+  DER_0:
+    occurrences: 1
+    required_observed:
+    - absent
+    default_kinds_observed:
+    - none
+    calls:
+    - required: absent
+      default:
+        kind: none
+        value: null
+  DER_CDR:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: 1e-2
+  DIAGNOSTICS:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  Display frequency domain:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'false'
+      default:
+        kind: reference
+        expression: OP.GET_FD
+  DISPLAY_WINDOW:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'true'
+  Do_Colored_Noise:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '1'
+  Do_White_Noise:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  Do_XT_Noise:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '1'
+  Dynamic TXFFE:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '1'
+  EH_max:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - inf_literal
+    calls:
+    - required: 'true'
+      default:
+        kind: inf_literal
+        expression: inf
+  EH_min:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  EH_min_test:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  Enforce Causality:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  Enforce Causality DIFF_TOL:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 1e-3
+  Enforce Causality pulse start tolerance:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0.01'
+  Enforce Causality REL_TOL:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 1e-2
+  ERL:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  ERL Pass threshold:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  ERL_FOM:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '1'
+  ERL_ONLY:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  Error propagation COM margin:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  eta_0:
+    occurrences: 1
+    required_observed:
+    - absent
+    default_kinds_observed:
+    - none
+    calls:
+    - required: absent
+      default:
+        kind: none
+        value: null
+  EW:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  EXE_MODE:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '1'
+  exit if deployed:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  f_1:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.max_start_freq/1e9
+  f_2:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.fb/1e9
+  f_b:
+    occurrences: 1
+    required_observed:
+    - absent
+    default_kinds_observed:
+    - none
+    calls:
+    - required: absent
+      default:
+        kind: none
+        value: null
+  f_f:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '4'
+  f_hp:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  f_HP_P:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '[]'
+  f_HP_PZ:
+    occurrences: 2
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '[]'
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '[]'
+  f_HP_Z:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '[]'
+  f_min:
+    occurrences: 1
+    required_observed:
+    - absent
+    default_kinds_observed:
+    - none
+    calls:
+    - required: absent
+      default:
+        kind: none
+        value: null
+  f_n:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '4'
+  f_p1:
+    occurrences: 2
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.fb/4
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.fb/4
+  f_p2:
+    occurrences: 2
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.fb
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.fb
+  f_r:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '4'
+  f_v:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '4'
+  f_z:
+    occurrences: 2
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.fb/4
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.fb/4
+  ffe_backoff:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  ffe_main_cursor_min:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '1'
+  FFE_OPT_METHOD:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - string_literal
+    calls:
+    - required: 'false'
+      default:
+        kind: string_literal
+        expression: '''MMSE'''
+  ffe_post_tap1_max:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '.7'
+  ffe_post_tap_len:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  ffe_pre_tap1_max:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '.7'
+  ffe_pre_tap_len:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  FFE_SNR:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '1'
+  ffe_tap_step_size:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  ffe_tapn_max:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '.7'
+  fixture delay time:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '-1'
+  flip:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  FloatingDFE_Development:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '1'
+  Force BBN Q factor:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  Force PDF bin size:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  FORCE_TR:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  fraction_of_F_range_start_extrap_from:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0.75'
+  FT_COOP:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  G2_Qual:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '[]'
+  g_DC:
+    occurrences: 2
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - none
+    calls:
+    - required: 'true'
+      default:
+        kind: none
+        value: null
+    - required: 'true'
+      default:
+        kind: none
+        value: null
+  g_DC_HP:
+    occurrences: 2
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '[]'
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '[]'
+  G_Qual:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '[]'
+  GDC_MIN:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  Grr:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'false'
+      default:
+        kind: reference
+        expression: param.Grr_limit
+  Grr_limit:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '1'
+  Gx:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  Histogram_Window_Weight:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - string_literal
+    calls:
+    - required: 'false'
+      default:
+        kind: string_literal
+        expression: '''rectangle'''
+  IDEAL_RX_TERM:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  IDEAL_TX_TERM:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  imb_C_fctr:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '1'
+  imb_Z_fctr:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '1'
+  Impulse response truncatio threshold:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 1e-3
+  Impulse response truncation threshold:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 1e-3
+  INC_PACKAGE:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'true'
+  inc_reflect_board:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  Include PCB:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - none
+    calls:
+    - required: 'false'
+      default:
+        kind: none
+        value: null
+  INCLUDE_CTLE:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '1'
+  INCLUDE_TX_RX_FILTER:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '1'
+  kappa1:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '1'
+  kappa2:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '1'
+  L:
+    occurrences: 1
+    required_observed:
+    - absent
+    default_kinds_observed:
+    - none
+    calls:
+    - required: absent
+      default:
+        kind: none
+        value: null
+  L_s:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  LIMIT_JITTER_CONTRIB_TO_DFE_SPAN:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  Local Search:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  M:
+    occurrences: 1
+    required_observed:
+    - absent
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: absent
+      default:
+        kind: literal
+        expression: '32'
+  Max burst length calculated:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  Min_VEO_Test:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.Min_VEO_Test
+  MLSD:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  MLSE:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'false'
+      default:
+        kind: reference
+        expression: OP.MLSD
+  N:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  N_b:
+    occurrences: 1
+    required_observed:
+    - absent
+    default_kinds_observed:
+    - none
+    calls:
+    - required: absent
+      default:
+        kind: none
+        value: null
+  N_b_step:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  N_bf:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '6'
+  N_bg:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  N_bmax:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.ndfe
+  N_bx:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.ndfe
+  N_f:
+    occurrences: 2
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.ndfe
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.ndfe
+  N_qb:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  N_tail_start:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  N_tc:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.trunc
+  N_v:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.ndfe
+  Noise_Crest_Factor:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  num_ui_RXFF_noise:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '2048'
+  Optimize_loop_speed_up:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  P_qc:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: 2*param.specBER
+  package_tl_gamma0_a1_a2:
+    occurrences: 2
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '[0 1.734e-3 1.455e-4]'
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '[0 1.734e-3 1.455e-4]'
+  package_tl_tau:
+    occurrences: 2
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '6.141e-3'
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '6.141e-3'
+  package_Z_c:
+    occurrences: 2
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    - string_literal
+    calls:
+    - required: 'true'
+      default:
+        kind: string_literal
+        expression: '''[92 92 ; 70 70; 80 80; 100 100]'''
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '78.2'
+  PDF bin size:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 1e-5
+  PHY:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'false'
+      default:
+        kind: reference
+        expression: OP.PMD_type
+  PKG_NAME:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - string_literal
+    calls:
+    - required: 'false'
+      default:
+        kind: string_literal
+        expression: ''''''
+  PKG_Tx_FFE_preset:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  PLOT_CM:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  PMD_type:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - string_literal
+    calls:
+    - required: 'false'
+      default:
+        kind: string_literal
+        expression: '''C2C'''
+  Port Order:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '[1 3 2 4]'
+  Q:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  Q_budget_adj:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  QL:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.T_O/param.Qr/1000
+  Qr:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.sigma_r
+  R_0:
+    occurrences: 1
+    required_observed:
+    - absent
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: absent
+      default:
+        kind: literal
+        expression: '50'
+  R_d:
+    occurrences: 2
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    - none
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '[50,50]'
+    - required: 'true'
+      default:
+        kind: none
+        value: null
+  R_LM:
+    occurrences: 1
+    required_observed:
+    - absent
+    default_kinds_observed:
+    - none
+    calls:
+    - required: absent
+      default:
+        kind: none
+        value: null
+  Raised_Cosine:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  RC_end:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'false'
+      default:
+        kind: reference
+        expression: param.fb*param.f_r
+  RC_Start:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'false'
+      default:
+        kind: reference
+        expression: param.fb/2
+  RESULT_DIR:
+    occurrences: 1
+    required_observed:
+    - absent
+    default_kinds_observed:
+    - none
+    calls:
+    - required: absent
+      default:
+        kind: none
+        value: null
+  rho_x:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '.618'
+  RUNTAG:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - string_literal
+    calls:
+    - required: 'false'
+      default:
+        kind: string_literal
+        expression: ''''''
+  RX_CALIBRATION:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  RXFFE FLOAT CTL:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - string_literal
+    calls:
+    - required: 'false'
+      default:
+        kind: string_literal
+        expression: '''FOM'''
+  RXFFE TAP CONSTRAINT:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - string_literal
+    calls:
+    - required: 'false'
+      default:
+        kind: string_literal
+        expression: '''Unity Cursor'''
+  Rxnskew:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  Rxpskew:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  S-parameter magnitude extrapolation policy:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - string_literal
+    calls:
+    - required: 'false'
+      default:
+        kind: string_literal
+        expression: '''linear_trend_to_DC'''
+  S-parameter phase extrapolation policy:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - string_literal
+    calls:
+    - required: 'false'
+      default:
+        kind: string_literal
+        expression: '''extrap_cubic_to_dc_linear_to_inf'''
+  sample_adjustment:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '[0 0]'
+  samples_for_C2M:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '100'
+  SAVE_CONFIG2MAT:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  SAVE_FIGURE_to_CSV:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  SAVE_FIGURES:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  SAVE_KEYWORD_FILE:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  SAVE_TD:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  SHOW_BRD:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  Sigma BBN step:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 5e-3
+  sigma_r:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '.020'
+  sigma_RJ:
+    occurrences: 1
+    required_observed:
+    - absent
+    default_kinds_observed:
+    - none
+    calls:
+    - required: absent
+      default:
+        kind: none
+        value: null
+  skew_ps:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  SNR_TX:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - none
+    calls:
+    - required: 'true'
+      default:
+        kind: none
+        value: null
+  SNR_TXwC0:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  T_h:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'true'
+      default:
+        kind: reference
+        expression: param.T_O
+  T_k:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '.6'
+  T_O:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  T_r:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: 8e-3
+  T_r_filter_type:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  T_r_meas_point:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  TDECQ:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  TDMODE:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - reference
+    calls:
+    - required: 'false'
+      default:
+        kind: reference
+        expression: OP.TDMODE
+  TDR:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  TDR_Butterworth:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'true'
+  TDR_duration:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '5'
+  TDR_f_BT_3db:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0.4730'
+  TDR_W_TXPKG:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  TIME_AXIS:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - string_literal
+    calls:
+    - required: 'false'
+      default:
+        kind: string_literal
+        expression: '''UI'''
+  TR_TDR:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: 8e-3
+  trunc:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '128'
+  ts_anchor:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  TS_SRCH_MODE:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - string_literal
+    calls:
+    - required: 'false'
+      default:
+        kind: string_literal
+        expression: '''full-sweep'''
+  Tukey_Window:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  Txnskew:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  Txpskew:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '0'
+  Use simple error propagation model:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  USE_ETA0_PSD:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  VEC Pass threshold:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: '0'
+  WC_PORTZ:
+    occurrences: 1
+    required_observed:
+    - 'false'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'false'
+      default:
+        kind: literal
+        expression: 'false'
+  z_p select:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '1'
+  Z_t:
+    occurrences: 1
+    required_observed:
+    - 'true'
+    default_kinds_observed:
+    - literal
+    calls:
+    - required: 'true'
+      default:
+        kind: literal
+        expression: '50'
+non_claims:
+- not_defaults_resolved
+- not_warning_contract
+- not_parameter_design
+- not_compute_parity
+- not_release_evidence

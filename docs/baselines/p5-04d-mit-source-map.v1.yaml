@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p5-04d.mit-source-map.v1",
+  "status": "discrete_pdf_core_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/noise/discrete_pdf.py" },
+  "mapping": [
+    { "python": "DiscretePdf.__post_init__", "rust": "DiscretePdfV1::try_new", "notes": "normalization over positive mass" },
+    { "python": "DiscretePdf.cdf", "rust": "DiscretePdfV1::cdf", "notes": "cumulative sum of normalized probabilities" },
+    { "python": "DiscretePdf.first_quantile", "rust": "DiscretePdfV1::first_quantile", "notes": "first support point with CDF >= p" },
+    { "python": "normal_pdf", "rust": "normal_pdf_v1", "notes": "r4.80 +/- 2Q support rule; exp(-x^2/(2 sigma^2 + eps))" },
+    { "python": "DiscretePdf.convolve / _full_convolution", "rust": "convolve_v1", "notes": "exact full convolution with single-bin shortcuts" },
+    { "python": "_matlab_round_scalar", "rust": "matlab_round", "notes": "half-away-from-zero" }
+  ],
+  "not_ported": ["combine_r480_noise_pdf", "sampled_signal_pdf", "residual_channel_pdf"],
+  "non_claims": ["not_combined_noise_pdf", "not_sampled_signal_pdf", "not_release_evidence"]
+}

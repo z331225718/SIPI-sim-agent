@@ -1,0 +1,14 @@
+{
+  "schema": "sipi.p3c-02i.mit-source-map.v1",
+  "status": "statistical_eye_contour_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-com eye_contour_v1.rs" },
+  "observation": { "ref": "docs/baselines/p3c-02h-bathtub-curve-fit-stage.v1.yaml", "note": "Q-threshold contour of a statistical eye grid (Q per time column and voltage row)" },
+  "mapping": [
+    { "concept": "statistical eye contour", "rust": "statistical_eye_contour_v1", "notes": "per-column lower/upper voltage crossings where Q crosses the target, linear interpolation in Q, edge clamped" },
+    { "concept": "contour result", "rust": "EyeContourV1", "notes": "holds target_q and per-column TimeColumnContourV1 records" }
+  ],
+  "not_ported": [
+    "eye folding/bins",
+    "COM parity or acceptance"
+  ]
+}

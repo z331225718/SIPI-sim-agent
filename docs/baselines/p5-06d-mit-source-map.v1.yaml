@@ -1,0 +1,14 @@
+{
+  "schema": "sipi.p5-06d.mit-source-map.v1",
+  "status": "canonical_input_keys_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-com canonical_input_keys_v1.rs (key-signature preflight for the P5-06 compare surface)" },
+  "observation": { "ref": "docs/baselines/p5-06c-normalized-input-surface.v1.yaml", "note": "82 in_config keys from the authorized R480 120g C2M config sheet, observed hash-bound" },
+  "mapping": [
+    { "concept": "choose in_config keys as input set", "rust": "caller filters canonical (key, value) to in_config", "notes": "core is profile-agnostic; the surface supplies the filter" },
+    { "concept": "sorted canonical key=value signature", "rust": "canonical_input_keys_v1 lines", "notes": "byte-wise lexicographic over ASCII key=value, order-free" },
+    { "concept": "stable digest over the signature", "rust": "SHA-256 of newline-joined lines (runner)", "notes": "deterministic across Rust and Python" },
+    { "concept": "empty/duplicate fail closed", "rust": "CanonicalInputKeysErrorV1", "notes": "no silent ordering or dedup guess" },
+    { "concept": "authoritative in_config extraction", "rust": "runner + crosscheck from surface keys", "notes": "82 keys, digest 9332d697..." }
+  ],
+  "not_ported": ["compare matrix", "metric derivation", "normalization of float formatting", "oracle invocation"]
+}

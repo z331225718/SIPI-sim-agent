@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-04r.c2m-eye-stage.v1",
+  "status": "c2m_eye_stage_ported",
+  "purpose": "P5-04r C2M vertical-eye stage ported from the MIT agent-com source (metrics/c2m.py): the candidate-only calculate_c2m_vertical_eye (resampling onto the C2M UI grid, DFE cancellation and quantized clipping, phase-shifted residual, per-phase sampled-signal/CCI/gaussian+dual-dirac noise PDFs, histogram-weighted vertical-eye reduction with source-order integer-axis alignment). The full-contour public eye (calculate_c2m_eye), the equalizer candidate evaluation body (_evaluate_candidate), and the search loop (search_r480_nonmmse_no_xtalk) remain separate scopes.",
+  "source_map_ref": "docs/baselines/p5-04r-mit-source-map.v1.yaml",
+  "admission": {
+    "candidate_evaluation": false,
+    "search_loop": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_full_contour_eye", "not_candidate_evaluation", "not_search_loop", "not_profile_acceptance", "not_release_evidence"]
+}

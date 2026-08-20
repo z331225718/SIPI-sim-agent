@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p3b-05c.mit-source-map.v1",
+  "status": "prbs9_core_ported_with_source_map",
+  "source": { "repo": "standard", "license": "public standard (ITU-T O.150 / IEEE 802.3 PRBS9)", "path": "PRBS9 x^9+x^5+1 linear-feedback shift register definition" },
+  "observation": { "ref": "docs/baselines/owner-decision-checklist.v1.md", "note": "owner A4 decision: PRBS9 profile, seed 0b000000001, TX injection, time model" },
+  "mapping": [
+    { "standard": "PRBS9 LFSR x^9+x^5+1 (ITU-T O.150 / 802.3)", "rust": "Prbs9V1::next_bit", "notes": "9-stage register, output bit 8, feedback bit8^bit4 into bit 0" },
+    { "owner_decision": "seed 0b000000001 (0x001)", "rust": "PRBS9_OWNER_SEED_BITS / owner_default", "notes": "full 9-bit register value seed" },
+    { "concept": "seed replay / reproducibility", "rust": "state()/restore()/emitted_bits()", "notes": "deterministic regeneration and checkpoint-restore" },
+    { "concept": "LSB-first bit packing", "rust": "next_bytes", "notes": "bit i of byte j is the (j*8+i)-th output" }
+  ],
+  "not_ported": ["TX injection", "time-warp units model", "observables", "tolerance", "P3B-05a wire-request surface (unchanged)"]
+}

@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03ah.mit-source-map.v1",
+  "status": "receiver_thresholds_keywords_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis receiver_thresholds_keywords_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Receiver Thresholds] complete block required keywords and sensitivity" },
+  "mapping": [
+    { "concept": "typed [Receiver Thresholds] block header", "rust": "TypedReceiverThresholdsBlockV1", "notes": "composite thresholds and optional vsensitivity_v" },
+    { "concept": "thresholds access", "rust": "TypedReceiverThresholdsBlockV1::thresholds", "notes": "embedded TypedReceiverThresholdsV1" },
+    { "concept": "vsensitivity_v parameter", "rust": "TypedReceiverThresholdsBlockV1::vsensitivity_v", "notes": "optional finite non-negative Volts sensitivity threshold" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "receiver threshold simulation",
+    "release certification"
+  ]
+}

@@ -1,0 +1,75 @@
+schema: sipi.p4b-02b23-parameter-tree-subtree-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b23.parameter-tree-subtree-v1.tree-subtree-extraction
+matched_count: 3
+case_count: 3
+entries:
+- label: root_subtree
+  matched: true
+  product:
+    policy: sipi.p4b-02b23.parameter-tree-subtree-v1.tree-subtree-extraction
+    subtree:
+      children:
+        a:
+          kind: leaf
+          name: a
+          value_tokens:
+          - '1'
+        b:
+          kind: leaf
+          name: b
+          value_tokens:
+          - '2'
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    subtree:
+      kind: branch
+      name: root
+      children:
+        a:
+          kind: leaf
+          name: a
+          value_tokens:
+          - '1'
+        b:
+          kind: leaf
+          name: b
+          value_tokens:
+          - '2'
+- label: nested_subtree
+  matched: true
+  product:
+    policy: sipi.p4b-02b23.parameter-tree-subtree-v1.tree-subtree-extraction
+    subtree:
+      children:
+        leaf_1:
+          kind: leaf
+          name: leaf_1
+          value_tokens:
+          - '10'
+      kind: branch
+      name: branch_a
+    valid: true
+  reference:
+    valid: true
+    subtree:
+      kind: branch
+      name: branch_a
+      children:
+        leaf_1:
+          kind: leaf
+          name: leaf_1
+          value_tokens:
+          - '10'
+- label: missing_path
+  matched: true
+  product:
+    policy: sipi.p4b-02b23.parameter-tree-subtree-v1.tree-subtree-extraction
+    subtree_error: MissingPath("root.a.nope")
+    valid: false
+  reference:
+    valid: false
+    subtree_error: MissingPath("root.a.nope")

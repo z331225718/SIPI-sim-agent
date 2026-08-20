@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b87.mit-source-map.v1",
+  "status": "parameter_tree_leaf_type_map_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_leaf_type_map_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "declared-type map of tree leaves over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "type map extraction", "rust": "extract_parameter_tree_leaf_type_map_v1", "notes": "records leaf name -> declared type for well-formed typed-form leaves; others skipped" },
+    { "concept": "type map outcome", "rust": "ParameterTreeLeafTypeMapV1", "notes": "type map plus leaves_total/typed_leaves/skipped counts; last canonical occurrence wins" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

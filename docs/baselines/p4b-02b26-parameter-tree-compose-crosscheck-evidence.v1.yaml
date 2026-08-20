@@ -1,0 +1,97 @@
+schema: sipi.p4b-02b26-parameter-tree-compose-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b26.parameter-tree-compose-v1.tree-subtree-compose
+matched_count: 3
+case_count: 3
+entries:
+- label: compose_leaf_under_root
+  matched: true
+  product:
+    policy: sipi.p4b-02b26.parameter-tree-compose-v1.tree-subtree-compose
+    root_name: root
+    tree:
+      children:
+        a:
+          kind: leaf
+          name: a
+          value_tokens:
+          - '1'
+        c:
+          kind: leaf
+          name: c
+          value_tokens:
+          - '3'
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+        a:
+          kind: leaf
+          name: a
+          value_tokens:
+          - '1'
+        c:
+          kind: leaf
+          name: c
+          value_tokens:
+          - '3'
+- label: compose_leaf_under_nested_branch
+  matched: true
+  product:
+    policy: sipi.p4b-02b26.parameter-tree-compose-v1.tree-subtree-compose
+    root_name: root
+    tree:
+      children:
+        branch_a:
+          children:
+            leaf_1:
+              kind: leaf
+              name: leaf_1
+              value_tokens:
+              - '10'
+            leaf_2:
+              kind: leaf
+              name: leaf_2
+              value_tokens:
+              - '20'
+          kind: branch
+          name: branch_a
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+        branch_a:
+          kind: branch
+          name: branch_a
+          children:
+            leaf_1:
+              kind: leaf
+              name: leaf_1
+              value_tokens:
+              - '10'
+            leaf_2:
+              kind: leaf
+              name: leaf_2
+              value_tokens:
+              - '20'
+- label: duplicate_child
+  matched: true
+  product:
+    compose_error: DuplicateChild("leaf_1")
+    policy: sipi.p4b-02b26.parameter-tree-compose-v1.tree-subtree-compose
+    valid: false
+  reference:
+    valid: false
+    compose_error: DuplicateChild("leaf_1")

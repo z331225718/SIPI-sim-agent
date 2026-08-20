@@ -1,0 +1,94 @@
+schema: sipi.p4b-02b35-parameter-tree-leaf-projection-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b35.parameter-tree-leaf-projection-v1.name-set-projection
+matched_count: 4
+case_count: 4
+entries:
+- label: subset_projection
+  matched: true
+  product:
+    policy: sipi.p4b-02b35.parameter-tree-leaf-projection-v1.name-set-projection
+    root_name: root
+    tree:
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - Float
+        - '0.5'
+      - kind: leaf
+        name: mode
+        value_tokens:
+        - String
+        - fast
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - Float
+        - '0.5'
+      - kind: leaf
+        name: mode
+        value_tokens:
+        - String
+        - fast
+- label: nested_projection
+  matched: true
+  product:
+    policy: sipi.p4b-02b35.parameter-tree-leaf-projection-v1.name-set-projection
+    root_name: root
+    tree:
+      children:
+      - children:
+        - kind: leaf
+          name: deep
+          value_tokens:
+          - Float
+          - '1.0'
+        kind: branch
+        name: sub
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: branch
+        name: sub
+        children:
+        - kind: leaf
+          name: deep
+          value_tokens:
+          - Float
+          - '1.0'
+- label: empty_selection
+  matched: true
+  product:
+    policy: sipi.p4b-02b35.parameter-tree-leaf-projection-v1.name-set-projection
+    project_error: EmptySelection
+    valid: false
+  reference:
+    valid: false
+    project_error: EmptySelection
+- label: missing_leaf
+  matched: true
+  product:
+    policy: sipi.p4b-02b35.parameter-tree-leaf-projection-v1.name-set-projection
+    project_error: MissingLeaf("nope")
+    valid: false
+  reference:
+    valid: false
+    project_error: MissingLeaf("nope")

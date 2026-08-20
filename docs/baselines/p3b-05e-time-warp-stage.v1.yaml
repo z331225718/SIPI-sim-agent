@@ -1,0 +1,23 @@
+{
+  "schema": "sipi.p3b-05e.time-warp-stage.v1",
+  "status": "time_warp_shift_ported",
+  "purpose": "P3B-05e deterministic per-sample fractional time-warp shift core: applies a caller-supplied per-sample shift vector (sample units) to a sampled waveform by linear interpolation on the same grid. For output sample n, source position p = n + shift[n]; output is linear interpolation of the two nearest input samples (identity when integral). This is the deterministic time-warp basis on the P3B-05d injection waveform. Fail-closed: empty input, length mismatch, non-finite sample/shift, or interpolation stencil leaving [0, len-1] are hard errors; no zero-padding, wraparound, or extrapolation. The shift vector generator (jitter/time-warp model), units model, observables, and tolerance remain owner-decided and are NOT implemented here.",
+  "source_map_ref": "docs/baselines/p3b-05e-time-warp-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p3b-05d-prbs9-inject-stage.v1.yaml", "docs/baselines/p3b-05c-prbs9-sequence-stage.v1.yaml"],
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (A4)",
+  "admission": {
+    "linear_interpolation_shift": true,
+    "per_sample_shift_vector": true,
+    "same_grid_output": true,
+    "out_of_domain_fail_closed": true,
+    "empty_length_nan_fail_closed": true,
+    "deterministic_no_statistics": true,
+    "jitter_model": false,
+    "noise_model": false,
+    "tolerance_semantics": false,
+    "observables": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_jitter_model", "not_noise_model", "not_time_warp_units_model", "not_observables", "not_tolerance", "not_acceptance_evidence"]
+}

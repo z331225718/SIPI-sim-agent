@@ -1,0 +1,14 @@
+{
+  "schema": "sipi.p5-04k.mit-source-map.v1",
+  "status": "dfe_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/equalization/dfe.py" },
+  "mapping": [
+    { "python": "apply_tail_rss_bounds", "rust": "apply_tail_rss_bounds_v1", "notes": "tail RSS bound rewrite; None tail start = source zero; zero-based" },
+    { "python": "clip_dfe (dfe_clipper)", "rust": "clip_dfe_v1", "notes": "elementwise min/max clamp; flat surface" },
+    { "python": "find_dfe_bank_locations (findbankloc)", "rust": "find_dfe_bank_locations_v1", "notes": "stable descending energy order, overlap rejection, -1 sentinel for zero-based port" },
+    { "python": "apply_dfe_bank (applyDFEbk)", "rust": "apply_dfe_bank_v1", "notes": "floor-magnitude quantizer, coefficient limit, residual/reference rewrite" },
+    { "python": "_sliding_energy / _preceding_overlap / _invalidate_preceding_overlap", "rust": "sliding_energy / preceding_overlap / invalidate_preceding_overlap (private)", "notes": "valid convolution energy, overlap windows" }
+  ],
+  "not_ported": ["RX FFE (rx_ffe.py)", "equalizer search (search.py)"],
+  "non_claims": ["not_rx_ffe", "not_equalizer_search", "not_release_evidence"]
+}

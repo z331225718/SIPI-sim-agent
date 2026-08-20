@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b95.mit-source-map.v1",
+  "status": "parameter_profile_canonical_spelling_check_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_canonical_spelling_check_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "canonical profile spelling check over assembled parameter profile maps" },
+  "mapping": [
+    { "concept": "canonical spelling check", "rust": "check_parameter_profile_spellings_canonical_v1", "notes": "compares raw value to 02b75 canonical spelling per entry; Float/String never flagged" },
+    { "concept": "check issue", "rust": "ParameterProfileCanonicalSpellingIssueV1", "notes": "name, declared type, raw value, canonical value" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

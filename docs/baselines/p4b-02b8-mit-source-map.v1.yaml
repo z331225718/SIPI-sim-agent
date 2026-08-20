@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4b-02b8.mit-source-map.v1",
+  "status": "parameter_tree_query_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_query_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "path-based query over typed AmiParameterTreeV1 hierarchy" },
+  "mapping": [
+    { "concept": "path-based tree query", "rust": "query_parameter_tree_v1", "notes": "navigates tree hierarchy by path segments" },
+    { "concept": "QueryResultV1 classification", "rust": "QueryResultV1::Branch / Leaf", "notes": "returns Branch or Leaf node reference" },
+    { "concept": "root node matching", "rust": "ParameterTreeQueryErrorV1::RootMismatch", "notes": "first segment must match tree root name" },
+    { "concept": "path not found check", "rust": "ParameterTreeQueryErrorV1::PathNotFound", "notes": "missing child or leaf continuation fails closed" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

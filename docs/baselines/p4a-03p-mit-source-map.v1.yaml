@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4a-03p.mit-source-map.v1",
+  "status": "series_switch_mapping_table_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis series_switch_mapping_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Series Switch Groups] standalone table header and group records" },
+  "mapping": [
+    { "concept": "typed [Series Switch Groups] mapping record", "rust": "TypedSeriesSwitchRecordV1", "notes": "validated ASCII on_group_name and off_group_name" },
+    { "concept": "group pair validation", "rust": "SeriesSwitchMappingTableErrorV1::IdenticalGroups", "notes": "identical ON/OFF groups fail closed" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "series switch circuit simulation",
+    "release certification"
+  ]
+}

@@ -1,0 +1,50 @@
+schema: sipi.p4b-02b116-parameter-list-chunk-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b116.parameter-list-chunk-v1.fixed-size-chunking
+matched_count: 4
+case_count: 4
+entries:
+- label: even_chunks
+  matched: true
+  product:
+    policy: sipi.p4b-02b116.parameter-list-chunk-v1.fixed-size-chunking
+    tokens:
+    - (a, b)
+    - (c, d)
+    valid: true
+  reference:
+    valid: true
+    tokens:
+    - (a, b)
+    - (c, d)
+- label: remainder_chunk
+  matched: true
+  product:
+    policy: sipi.p4b-02b116.parameter-list-chunk-v1.fixed-size-chunking
+    tokens:
+    - (a, b)
+    - (c)
+    valid: true
+  reference:
+    valid: true
+    tokens:
+    - (a, b)
+    - (c)
+- label: zero_chunk_size
+  matched: true
+  product:
+    error: InvalidChunkSize
+    policy: sipi.p4b-02b116.parameter-list-chunk-v1.fixed-size-chunking
+    valid: false
+  reference:
+    valid: false
+    error: InvalidChunkSize
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b116.parameter-list-chunk-v1.fixed-size-chunking
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

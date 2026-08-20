@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-04q.candidate-helpers-stage.v1",
+  "status": "candidate_helpers_stage_ported",
+  "purpose": "P5-04q candidate-helper stage ported from the MIT agent-com source (equalization/search.py): the strict PDF bin size selection (_r480_pdf_bin_size), BBN tail-Q override (_r480_bbn_q_factor), strict FOM upper-bound rejection (_cannot_improve_fom), candidate BER Q-factor (_candidate_ber_q), fixed/floating DFE candidate bounds (_dfe_candidate_bounds via find_dfe_bank_locations), the Eq. 93A-28 sampled jitter response with the experimental DFE-span limit (_jitter_response), and the jitter sigma (_jitter_sigma). The candidate evaluation body (_evaluate_candidate) and the C2M eye search loop (search_r480_nonmmse_no_xtalk) remain separate scopes.",
+  "source_map_ref": "docs/baselines/p5-04q-mit-source-map.v1.yaml",
+  "admission": {
+    "candidate_evaluation": false,
+    "search_loop": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_candidate_evaluation", "not_search_loop", "not_profile_acceptance", "not_release_evidence"]
+}

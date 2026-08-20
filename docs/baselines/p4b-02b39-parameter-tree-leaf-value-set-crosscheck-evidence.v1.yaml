@@ -1,0 +1,100 @@
+schema: sipi.p4b-02b39-parameter-tree-leaf-value-set-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b39.parameter-tree-leaf-value-set-v1.typed-value-set
+matched_count: 4
+case_count: 4
+entries:
+- label: set_float_value
+  matched: true
+  product:
+    policy: sipi.p4b-02b39.parameter-tree-leaf-value-set-v1.typed-value-set
+    root_name: root
+    tree:
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - '1.25'
+      - kind: leaf
+        name: steps
+        value_tokens:
+        - Integer
+        - '7'
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - '1.25'
+      - kind: leaf
+        name: steps
+        value_tokens:
+        - Integer
+        - '7'
+- label: set_nested_value
+  matched: true
+  product:
+    policy: sipi.p4b-02b39.parameter-tree-leaf-value-set-v1.typed-value-set
+    root_name: root
+    tree:
+      children:
+      - children:
+        - kind: leaf
+          name: deep
+          value_tokens:
+          - '2.5'
+        - kind: leaf
+          name: other
+          value_tokens:
+          - Integer
+          - '2'
+        kind: branch
+        name: sub
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: branch
+        name: sub
+        children:
+        - kind: leaf
+          name: deep
+          value_tokens:
+          - '2.5'
+        - kind: leaf
+          name: other
+          value_tokens:
+          - Integer
+          - '2'
+- label: missing_type
+  matched: true
+  product:
+    policy: sipi.p4b-02b39.parameter-tree-leaf-value-set-v1.typed-value-set
+    set_error: MissingType("gain")
+    valid: false
+  reference:
+    valid: false
+    set_error: MissingType("gain")
+- label: invalid_value_for_type
+  matched: true
+  product:
+    policy: sipi.p4b-02b39.parameter-tree-leaf-value-set-v1.typed-value-set
+    set_error: 'InvalidValue { leaf: "gain", error: InvalidFloat }'
+    valid: false
+  reference:
+    valid: false
+    set_error: 'InvalidValue { leaf: "gain", error: InvalidFloat }'

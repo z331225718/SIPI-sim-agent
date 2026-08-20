@@ -3,13 +3,17 @@ from __future__ import annotations
 import copy
 from pathlib import Path
 import unittest
+import sys
 
 import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT / "tools") not in sys.path:
+    sys.path.insert(0, str(ROOT / "tools"))
 
 import verify_p3c_selected_oob_zero_extension_sensitivity_observation_evidence as gate
 
 
-ROOT = Path(__file__).resolve().parents[1]
 
 
 class OobSensitivityObservationEvidenceTests(unittest.TestCase):
@@ -44,3 +48,4 @@ class OobSensitivityObservationEvidenceTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

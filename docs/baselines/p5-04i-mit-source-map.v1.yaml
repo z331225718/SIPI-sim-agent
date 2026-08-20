@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-04i.mit-source-map.v1",
+  "status": "equalizer_frontend_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "paths": ["src/agent_com/equalization/cursor.py", "src/agent_com/equalization/ctle.py"] },
+  "mapping": [
+    { "python": "cursor_sample_index", "rust": "cursor_sample_index_v1", "notes": "MM / Mod-MM CDR; zero-based indices; rising-edge zero-crossing; MM sampling span check" },
+    { "python": "CursorSample", "rust": "CursorSampleV1", "notes": "cursor_index, no_zero_crossing, peak_index, zero_crossing_index" },
+    { "python": "fd_ctle (FD_CTLE)", "rust": "fd_ctle_v1", "notes": "explicit two-pole/one-zero transfer; DC gain scaling" },
+    { "python": "td_ctle (TD_CTLE) / scipy.signal.lfilter", "rust": "td_ctle_v1", "notes": "bilinear z-domain coefficients; exact lfilter difference-equation order with zero initial conditions" }
+  ],
+  "not_ported": ["tx_ffe grid (tx_ffe.py)", "DFE bank (dfe.py)", "RX FFE (rx_ffe.py)", "equalizer search (search.py)"],
+  "non_claims": ["not_tx_ffe", "not_dfe_bank", "not_rx_ffe", "not_equalizer_search", "not_release_evidence"]
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "sipi.p5-02k.matlab-literal-stage.v1",
+  "status": "matlab_literal_vector_matrix_ported",
+  "purpose": "P5-02k MATLAB numeric-literal stage: full parse_matlab_literal port covering empty literals, bracket vector/matrix literals (whitespace/comma rows), MATLAB colon ranges, the bounded scaled-ones idiom N*ones(1,M) inside bracket rows, and the single-negative disambiguation ([1 - 2] == -1 vs [1 -2] == [1,-2]). Scalar arithmetic reuses the P5-02j evaluator. The product is a strict superset of the oracle: two-part colon ranges like [1:3] raise in agent-com _vector (a declared oracle limitation) but expand correctly in the product.",
+  "source_map_ref": "docs/baselines/p5-02k-mit-source-map.v1.yaml",
+  "admission": {
+    "vector_literals": true,
+    "matrix_literals": true,
+    "colon_ranges_three_part": true,
+    "scaled_ones_in_row": true,
+    "single_negative_disambiguation": true,
+    "scalar_delegation": true,
+    "two_part_colon_oracle_limitation": true,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_behavior_profile", "not_profile_acceptance", "not_release_evidence"]
+}

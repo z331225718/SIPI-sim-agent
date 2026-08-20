@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b103.mit-source-map.v1",
+  "status": "parameter_list_swap_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_swap_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "positional list item swap over validated AMI parameter values" },
+  "mapping": [
+    { "concept": "list item swap", "rust": "swap_parameter_list_items_v1", "notes": "exchanges the trimmed items at two 0-based indices and rejoins with ", "" },
+    { "concept": "swap errors", "rust": "ParameterListSwapErrorV1", "notes": "NotAList, defensive MalformedList, IndexOutOfRange with offending index and item count" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

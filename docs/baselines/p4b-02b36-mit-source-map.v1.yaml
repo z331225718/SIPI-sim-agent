@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b36.mit-source-map.v1",
+  "status": "parameter_tree_batch_rename_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_batch_rename_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "one-pass leaf batch rename over AmiParameterTreeV1 with two-phase sibling re-keying" },
+  "mapping": [
+    { "concept": "batch leaf rename", "rust": "rename_parameter_tree_leaves_v1", "notes": "renames leaves per old-name -> new-name map; supports sibling swaps via two-phase re-keying" },
+    { "concept": "rename errors", "rust": "ParameterTreeBatchRenameErrorV1", "notes": "EmptyRenameMap, MissingLeaf, InvalidNewName, SiblingNameCollision fail-closed variants" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

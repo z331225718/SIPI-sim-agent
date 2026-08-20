@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b85.mit-source-map.v1",
+  "status": "parameter_list_contains_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_contains_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "list item membership over validated AMI parameter values" },
+  "mapping": [
+    { "concept": "list membership", "rust": "parameter_list_contains_item_v1", "notes": "raw byte equality of the query against trimmed items under the 02b1 list rule" },
+    { "concept": "membership errors", "rust": "ParameterListContainsErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

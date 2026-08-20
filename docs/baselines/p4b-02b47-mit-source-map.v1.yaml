@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b47.mit-source-map.v1",
+  "status": "parameter_profile_diff_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_diff_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "by-name regression diff of assembled parameter maps" },
+  "mapping": [
+    { "concept": "profile diff", "rust": "diff_parameter_profiles_v1", "notes": "reports added/removed/changed entries plus matched count between two parameter maps" },
+    { "concept": "diff outcome", "rust": "ParameterProfileDiffV1", "notes": "holds matched, added, removed, changed; change records carry old and new values" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

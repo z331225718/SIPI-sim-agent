@@ -1,0 +1,12 @@
+{
+  "schema": "sipi.p3c-03e.mit-source-map.v1",
+  "status": "compliance_report_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-com compliance_report_v1.rs (wraps P3C-03d dB tolerance)" },
+  "observation": { "ref": "docs/baselines/p3c-03d-db-tolerance-crosscheck-evidence.v1.yaml", "note": "dB tolerance check crosschecked (P3C-03d, 6/6)" },
+  "mapping": [
+    { "concept": "named compliance profile", "rust": "ComplianceMetricSpecV1", "notes": "name + dB reference + tolerance + unit" },
+    { "concept": "per-metric verdict via dB tolerance", "rust": "MetricComplianceV1", "notes": "reuses db_tolerance_check_v1" },
+    { "concept": "overall compliance report", "rust": "compliance_report_v1", "notes": "all metrics must pass; missing candidate rejected" }
+  ],
+  "not_ported": ["a specific metric profile (C4)", "COM commit compare", "statistical eye contours"]
+}

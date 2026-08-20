@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b43.mit-source-map.v1",
+  "status": "parameter_tree_reserved_name_check_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_reserved_check_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "distinct leaf-name intersection against a caller-supplied reserved-name set" },
+  "mapping": [
+    { "concept": "reserved-name check", "rust": "check_parameter_tree_reserved_names_v1", "notes": "reports sorted deduplicated violations of leaf names against a reserved set; mechanism for the future reserved-name catalog" },
+    { "concept": "check outcome", "rust": "ParameterTreeReservedNameCheckV1", "notes": "holds leaves_checked, violations, clean flag" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

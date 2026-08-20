@@ -1,0 +1,98 @@
+schema: sipi.p4b-02b36-parameter-tree-batch-rename-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b36.parameter-tree-batch-rename-v1.leaf-map-rename
+matched_count: 4
+case_count: 4
+entries:
+- label: simple_rename
+  matched: true
+  product:
+    policy: sipi.p4b-02b36.parameter-tree-batch-rename-v1.leaf-map-rename
+    root_name: root
+    tree:
+      children:
+      - kind: leaf
+        name: amplitude
+        value_tokens:
+        - Float
+        - '0.5'
+      - kind: leaf
+        name: steps
+        value_tokens:
+        - Integer
+        - '7'
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: leaf
+        name: amplitude
+        value_tokens:
+        - Float
+        - '0.5'
+      - kind: leaf
+        name: steps
+        value_tokens:
+        - Integer
+        - '7'
+- label: sibling_collision
+  matched: true
+  product:
+    policy: sipi.p4b-02b36.parameter-tree-batch-rename-v1.leaf-map-rename
+    rename_error: SiblingNameCollision("steps")
+    valid: false
+  reference:
+    valid: false
+    rename_error: SiblingNameCollision("steps")
+- label: missing_leaf
+  matched: true
+  product:
+    policy: sipi.p4b-02b36.parameter-tree-batch-rename-v1.leaf-map-rename
+    rename_error: MissingLeaf("nope")
+    valid: false
+  reference:
+    valid: false
+    rename_error: MissingLeaf("nope")
+- label: swap_siblings
+  matched: true
+  product:
+    policy: sipi.p4b-02b36.parameter-tree-batch-rename-v1.leaf-map-rename
+    root_name: root
+    tree:
+      children:
+      - kind: leaf
+        name: a
+        value_tokens:
+        - Integer
+        - '7'
+      - kind: leaf
+        name: b
+        value_tokens:
+        - Float
+        - '0.5'
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: leaf
+        name: a
+        value_tokens:
+        - Integer
+        - '7'
+      - kind: leaf
+        name: b
+        value_tokens:
+        - Float
+        - '0.5'

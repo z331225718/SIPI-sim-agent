@@ -1,0 +1,45 @@
+schema: sipi.p4a-03h.package-model-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03h.package-model-declaration-v1.typed-package-model
+matched_count: 3
+case_count: 3
+entries:
+- label: full_package_model
+  matched: true
+  product:
+    c_pkg_farad: 1.0e-12
+    l_pkg_henry: 1.0e-09
+    name: FBGA84_PKG
+    policy: sipi.p4a-03h.package-model-declaration-v1.typed-package-model
+    r_pkg_ohm: 0.1
+    valid: true
+  reference:
+    valid: true
+    name: FBGA84_PKG
+    r_pkg_ohm: 0.1
+    l_pkg_henry: 1.0e-09
+    c_pkg_farad: 1.0e-12
+- label: minimal_package_model
+  matched: true
+  product:
+    c_pkg_farad: null
+    l_pkg_henry: null
+    name: PKG_MIN
+    policy: sipi.p4a-03h.package-model-declaration-v1.typed-package-model
+    r_pkg_ohm: null
+    valid: true
+  reference:
+    valid: true
+    name: PKG_MIN
+    r_pkg_ohm: null
+    l_pkg_henry: null
+    c_pkg_farad: null
+- label: negative_r_pkg
+  matched: true
+  product:
+    lift_error: NegativeValue
+    policy: sipi.p4a-03h.package-model-declaration-v1.typed-package-model
+    valid: false
+  reference:
+    valid: false
+    lift_error: NegativeValue

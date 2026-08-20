@@ -1,0 +1,66 @@
+schema: sipi.p3c-03d.db-tolerance-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p3c-03d.db-tolerance.v1.0p1db
+matched_count: 6
+case_count: 6
+entries:
+- id: case0
+  matched: true
+  reference: 53.426
+  candidate: 53.45
+  tolerance: 0.1
+  product:
+    diff: 0.02400000000000091
+    ok: true
+    passed: true
+  reference_pass: true
+- id: case1
+  matched: true
+  reference: 53.426
+  candidate: 53.6
+  tolerance: 0.1
+  product:
+    diff: 0.1739999999999995
+    ok: true
+    passed: false
+  reference_pass: false
+- id: case2
+  matched: true
+  reference: 10.0
+  candidate: 10.05
+  tolerance: 0.1
+  product:
+    diff: 0.05000000000000071
+    ok: true
+    passed: true
+  reference_pass: true
+- id: case3
+  matched: true
+  reference: 1.0
+  candidate: 1.1
+  tolerance: 0.1
+  product:
+    diff: 0.10000000000000009
+    ok: true
+    passed: true
+  reference_pass: true
+- id: case4
+  matched: true
+  reference: 20.0
+  candidate: 20.3
+  tolerance: 0.5
+  product:
+    diff: 0.3000000000000007
+    ok: true
+    passed: true
+  reference_pass: true
+- id: case5
+  matched: true
+  reference: 0.0
+  candidate: 0.0
+  tolerance: 0.1
+  product:
+    diff: 0.0
+    ok: true
+    passed: true
+  reference_pass: true

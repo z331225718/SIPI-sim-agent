@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b107-parameter-list-distinct-count-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b107.parameter-list-distinct-count-v1.distinct-item-count
+matched_count: 4
+case_count: 4
+entries:
+- label: with_dups
+  matched: true
+  product:
+    distinct: 3
+    policy: sipi.p4b-02b107.parameter-list-distinct-count-v1.distinct-item-count
+    valid: true
+  reference:
+    valid: true
+    distinct: 3
+- label: all_distinct
+  matched: true
+  product:
+    distinct: 3
+    policy: sipi.p4b-02b107.parameter-list-distinct-count-v1.distinct-item-count
+    valid: true
+  reference:
+    valid: true
+    distinct: 3
+- label: all_same
+  matched: true
+  product:
+    distinct: 1
+    policy: sipi.p4b-02b107.parameter-list-distinct-count-v1.distinct-item-count
+    valid: true
+  reference:
+    valid: true
+    distinct: 1
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b107.parameter-list-distinct-count-v1.distinct-item-count
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

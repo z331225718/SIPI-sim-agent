@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p5-04f.sampled-signal-pdf-stage.v1",
+  "status": "sampled_signal_pdf_stage_ported",
+  "purpose": "P5-04f sampled-signal discrete PDF stage ported from the MIT agent-com source: d_cpdf value quantization (from_values), per-sample PAM symbol convolution (direct path), and the sparse PAM acceleration used by the exhaustive C2M equalizer-search scope. Supersedes the sampled_signal_pdf admission key of the P5-04e charter; residual_channel_pdf and the search.py channel-selection/equalizer-search scopes remain separate.",
+  "source_map_ref": "docs/baselines/p5-04f-mit-source-map.v1.yaml",
+  "admission": {
+    "residual_channel_pdf": false,
+    "channel_selection": false,
+    "equalizer_search": false,
+    "fast_noise_convolution_backend": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_residual_channel_pdf", "not_channel_selection", "not_equalizer_search", "not_fast_noise_convolution_backend", "not_profile_acceptance", "not_release_evidence"]
+}

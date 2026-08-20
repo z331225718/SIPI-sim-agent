@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-05b.mit-source-map.v1",
+  "status": "csv_reader_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/config/excel.py" },
+  "mapping": [
+    { "python": "ComSettings.from_csv", "rust": "read_com_settings_csv_v1", "notes": "utf-8-sig decode, csv.reader-aligned records, coordinate grid" },
+    { "python": "csv.reader (row/field parsing)", "rust": "parse_csv_record (private)", "notes": "quoted fields, double-quote escapes, blank-line rows, unterminated-quote tolerance" },
+    { "python": "_csv_value", "rust": "csv_value_v1", "notes": "empty -> None; numeric pattern -> float; otherwise string" },
+    { "python": "_CSV_NUMBER", "rust": "is_csv_number (private)", "notes": "signed decimal with optional exponent" }
+  ],
+  "not_ported": ["ComSettings.from_mat / _matlab_cell_value"],
+  "non_claims": ["not_mat_reader", "not_parameter_dto_consumption", "not_release_evidence"]
+}

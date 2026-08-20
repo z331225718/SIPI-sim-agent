@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-05e.mit-source-map.v1",
+  "status": "com_parameter_dto_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-com com_parameters_v1.rs (merges P5-05d surface + P5-02j/k resolved defaults)" },
+  "observation": { "ref": "docs/baselines/p5-05d-surface-crosscheck-evidence.v1.yaml", "note": "05d consumed/unconsumed pair surface (137 pairs, 82 consumed)" },
+  "mapping": [
+    { "concept": "consumed-key merge with workbook priority", "rust": "merge_com_parameters_v1", "notes": "workbook value wins, else resolved default, else error" },
+    { "concept": "unconsumed retention", "rust": "ComParametersV1::unconsumed", "notes": "nothing dropped (P5-05 scope)" },
+    { "concept": "resolved default type reuse", "rust": "ResolvedDefaultV1", "notes": "Scalar/Vector/Matrix/Boolean/String/Empty from P5-02j/k" },
+    { "concept": "typed COM parameter DTO", "rust": "ComParametersV1", "notes": "consumed map + unconsumed list" }
+  ],
+  "not_ported": ["consumption semantics (P5-02)", "warning contract", "ready for COM runtime"]
+}

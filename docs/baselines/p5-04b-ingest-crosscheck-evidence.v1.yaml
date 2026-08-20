@@ -1,0 +1,29 @@
+schema: sipi.p5-04b.ingest-crosscheck-evidence.v1
+status: ingest_sdd21_crosscheck_matched
+target_frequency_hz: 26560000000.0
+oracle_surface_ref: docs/baselines/p5-06-oracle-metric-surface.v1.yaml
+entries:
+- material_id: com-synthetic-thru
+  oracle_sdd21_db: -10.0
+  product_sdd21_db: -9.999999999999996
+  delta_db: 3.552713678800501e-15
+  series_sha256: 55a2a121ee18ca8b31234cd2a100b3184548ce37eea9dfb2be05c0ca791d7b19
+  rows: 8001
+- material_id: com-synthetic-fext
+  oracle_sdd21_db: -40.0
+  product_sdd21_db: -40.0
+  delta_db: 0.0
+  series_sha256: fb93d873547f1ec0127ee6939b394fc73a955417570827ccf0853ed342b42af6
+  rows: 8001
+- material_id: com-synthetic-next
+  oracle_sdd21_db: -40.0
+  product_sdd21_db: -40.0
+  delta_db: 0.0
+  series_sha256: f95b04812d80ac92a883fd31db63a56cd08d2b88d317a1e90e34c0d2f66d29fc
+  rows: 8001
+max_abs_delta_db: 3.552713678800501e-15
+tolerance_db: 1.0
+non_claims:
+- not_full_bandwidth_parity
+- not_stage_chain_parity
+- not_release_evidence

@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-04h.mit-source-map.v1",
+  "status": "build_noise_pdf_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/noise/discrete_pdf.py" },
+  "mapping": [
+    { "python": "build_r480_noise_pdf", "rust": "build_r480_noise_pdf_v1", "notes": "non-MMSE Gaussian/dual-Dirac path; controls validation; overrides" },
+    { "python": "R480NoisePdf", "rust": "R480NoisePdfV1", "notes": "result, sigma_tx_v, sigma_rj_v, sigma_gaussian_v, ber_q, gaussian_pdf, jitter_pdf" },
+    { "python": "np.sqrt(2) * erfcinv(2 * spec_ber) (scipy.special)", "rust": "erfcinv_v1 (erf_v1 module)", "notes": "self-implemented A&S series/continued fraction + Newton; no third-party code" },
+    { "python": "normal_pdf / sampled_signal_pdf / combine_r480_noise_pdf reuse", "rust": "normal_pdf_v1 / sampled_signal_pdf_v1 / combine_r480_noise_pdf_v1 reuse", "notes": "previously ported stages (04d/04e/04f)" }
+  ],
+  "not_ported": ["search_r480_mmse / MMSE path", "search_r480_nonmmse_no_xtalk equalizer search", "conv_fct_TEST fast FFT backend"],
+  "non_claims": ["not_mmse_path", "not_equalizer_search", "not_fast_fft_backend", "not_release_evidence"]
+}

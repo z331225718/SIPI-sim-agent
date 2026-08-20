@@ -1,0 +1,37 @@
+schema: sipi.p4a-03s.golden-wave-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03s.golden-wave-declaration-v1.typed-golden-wave
+matched_count: 3
+case_count: 3
+entries:
+- label: full_golden_wave
+  matched: true
+  product:
+    dut_name: DUT_FBGA84
+    policy: sipi.p4a-03s.golden-wave-declaration-v1.typed-golden-wave
+    valid: true
+    waveform_name: GOLDEN_WAVE_1
+  reference:
+    valid: true
+    waveform_name: GOLDEN_WAVE_1
+    dut_name: DUT_FBGA84
+- label: minimal_golden_wave
+  matched: true
+  product:
+    dut_name: null
+    policy: sipi.p4a-03s.golden-wave-declaration-v1.typed-golden-wave
+    valid: true
+    waveform_name: WAVE_MIN
+  reference:
+    valid: true
+    waveform_name: WAVE_MIN
+    dut_name: null
+- label: invalid_name_characters
+  matched: true
+  product:
+    lift_error: InvalidName
+    policy: sipi.p4a-03s.golden-wave-declaration-v1.typed-golden-wave
+    valid: false
+  reference:
+    valid: false
+    lift_error: InvalidName

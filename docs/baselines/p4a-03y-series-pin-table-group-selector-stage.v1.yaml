@@ -1,0 +1,42 @@
+{
+  "schema": "sipi.p4a-03y.series-pin-table-group-selector-stage.v1",
+  "status": "series_pin_table_group_selector_ported",
+  "purpose": "P4A-03 typed IBIS AST sub-slice: lifts and validates IBIS [Series Pin Mapping] group model selector binding records (group_name, model_selector_name, function_table_group) into typed clean-room structures (sipi-ibis series_pin_mapping_table_group_selector_v1.rs). Fail-closed: empty group or selector names, non-ASCII characters, or invalid name spellings are strictly rejected.",
+  "source_map_ref": "docs/baselines/p4a-03y-mit-source-map.v1.yaml",
+  "based_on": [
+    "docs/baselines/p4a-03d-model-declaration-stage.v1.yaml",
+    "docs/baselines/p4a-03e-pin-declaration-stage.v1.yaml",
+    "docs/baselines/p4a-03f-pin-model-linkage-stage.v1.yaml",
+    "docs/baselines/p4a-03g-component-declaration-stage.v1.yaml",
+    "docs/baselines/p4a-03h-package-model-stage.v1.yaml",
+    "docs/baselines/p4a-03i-model-selector-stage.v1.yaml",
+    "docs/baselines/p4a-03j-diff-pin-stage.v1.yaml",
+    "docs/baselines/p4a-03k-series-switch-stage.v1.yaml",
+    "docs/baselines/p4a-03l-submodel-stage.v1.yaml",
+    "docs/baselines/p4a-03m-circuit-call-stage.v1.yaml",
+    "docs/baselines/p4a-03n-node-declaration-stage.v1.yaml",
+    "docs/baselines/p4a-03o-series-pin-mapping-stage.v1.yaml",
+    "docs/baselines/p4a-03p-series-switch-mapping-stage.v1.yaml",
+    "docs/baselines/p4a-03q-receiver-thresholds-stage.v1.yaml",
+    "docs/baselines/p4a-03r-test-data-stage.v1.yaml",
+    "docs/baselines/p4a-03s-golden-wave-stage.v1.yaml",
+    "docs/baselines/p4a-03t-bus-label-stage.v1.yaml",
+    "docs/baselines/p4a-03u-series-pin-thresholds-stage.v1.yaml",
+    "docs/baselines/p4a-03v-series-pin-group-stage.v1.yaml",
+    "docs/baselines/p4a-03w-series-pin-table-selector-stage.v1.yaml",
+    "docs/baselines/p4a-03x-series-pin-table-group-stage.v1.yaml"
+  ],
+  "admission": {
+    "typed_series_pin_table_group_selector": true,
+    "optional_function_table_group": true,
+    "ascii_identifier_validation": true,
+    "fail_closed_on_invalid_input": true,
+    "full_ibis_parser": false,
+    "release_evidence": false
+  },
+  "non_claims": [
+    "not_full_ibis_parser",
+    "not_electrical_semantics",
+    "not_acceptance_evidence"
+  ]
+}

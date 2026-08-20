@@ -1,0 +1,46 @@
+schema: sipi.p4b-02b84-parameter-list-item-access-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b84.parameter-list-item-access-v1.list-item-access
+matched_count: 4
+case_count: 4
+entries:
+- label: middle_item
+  matched: true
+  product:
+    item: b
+    policy: sipi.p4b-02b84.parameter-list-item-access-v1.list-item-access
+    valid: true
+  reference:
+    valid: true
+    item: b
+- label: spacing
+  matched: true
+  product:
+    item: b
+    policy: sipi.p4b-02b84.parameter-list-item-access-v1.list-item-access
+    valid: true
+  reference:
+    valid: true
+    item: b
+- label: out_of_range
+  matched: true
+  product:
+    error: IndexOutOfRange
+    index: 2
+    item_count: 2
+    policy: sipi.p4b-02b84.parameter-list-item-access-v1.list-item-access
+    valid: false
+  reference:
+    valid: false
+    error: IndexOutOfRange
+    index: 2
+    item_count: 2
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b84.parameter-list-item-access-v1.list-item-access
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

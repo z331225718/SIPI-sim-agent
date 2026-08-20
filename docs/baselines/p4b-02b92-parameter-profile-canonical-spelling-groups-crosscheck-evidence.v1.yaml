@@ -1,0 +1,100 @@
+schema: sipi.p4b-02b92-parameter-profile-canonical-spelling-groups-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b92.parameter-profile-canonical-spelling-groups-v1.canonical-spelling-groups
+matched_count: 4
+case_count: 4
+entries:
+- label: integer_grouping
+  matched: true
+  product:
+    covered_names: 3
+    group_count: 2
+    groups:
+    - names:
+      - a
+      - b
+      spelling: '7'
+    - names:
+      - c
+      spelling: '8'
+    policy: sipi.p4b-02b92.parameter-profile-canonical-spelling-groups-v1.canonical-spelling-groups
+    singleton_count: 1
+    valid: true
+  reference:
+    valid: true
+    group_count: 2
+    singleton_count: 1
+    covered_names: 3
+    groups:
+    - spelling: '7'
+      names:
+      - a
+      - b
+    - spelling: '8'
+      names:
+      - c
+- label: float_separate
+  matched: true
+  product:
+    covered_names: 2
+    group_count: 2
+    groups:
+    - names:
+      - a
+      spelling: '0.5'
+    - names:
+      - b
+      spelling: '0.50'
+    policy: sipi.p4b-02b92.parameter-profile-canonical-spelling-groups-v1.canonical-spelling-groups
+    singleton_count: 2
+    valid: true
+  reference:
+    valid: true
+    group_count: 2
+    singleton_count: 2
+    covered_names: 2
+    groups:
+    - spelling: '0.5'
+      names:
+      - a
+    - spelling: '0.50'
+      names:
+      - b
+- label: list_grouping
+  matched: true
+  product:
+    covered_names: 2
+    group_count: 1
+    groups:
+    - names:
+      - x
+      - y
+      spelling: (a, b, c)
+    policy: sipi.p4b-02b92.parameter-profile-canonical-spelling-groups-v1.canonical-spelling-groups
+    singleton_count: 0
+    valid: true
+  reference:
+    valid: true
+    group_count: 1
+    singleton_count: 0
+    covered_names: 2
+    groups:
+    - spelling: (a, b, c)
+      names:
+      - x
+      - y
+- label: empty_profile
+  matched: true
+  product:
+    covered_names: 0
+    group_count: 0
+    groups: []
+    policy: sipi.p4b-02b92.parameter-profile-canonical-spelling-groups-v1.canonical-spelling-groups
+    singleton_count: 0
+    valid: true
+  reference:
+    valid: true
+    group_count: 0
+    singleton_count: 0
+    covered_names: 0
+    groups: []

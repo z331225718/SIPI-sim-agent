@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b50.mit-source-map.v1",
+  "status": "parameter_tree_flatten_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_flatten_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "canonical preorder record flattening of AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "tree flatten", "rust": "flatten_parameter_tree_v1", "notes": "flattens a tree into canonical preorder records with paths, kinds, names, value tokens" },
+    { "concept": "node record", "rust": "ParameterTreeNodeRecordV1", "notes": "holds path, kind (Branch/Leaf), name, value_tokens" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "sipi.p3c-02i.statistical-eye-contour-stage.v1",
+  "status": "statistical_eye_contour_ported",
+  "purpose": "P3C-02i statistical eye contour core: computes the Q-threshold contour of a statistical eye grid via statistical_eye_contour_v1 in sipi-com eye_contour_v1.rs: for each time column (strictly ascending time offsets in UI) with per-voltage-row Q-factors (strictly ascending voltage levels), locates the lower and upper voltage crossings where Q crosses the target Q (linear interpolation in Q between adjacent voltage rows, clamped at grid edges). Boundary of the statistical eye at the target BER-equivalent Q. Fail-closed: empty grids, column/row count mismatches, non-ascending time or voltage, non-finite or non-positive Q, a non-positive target Q, and any column without a Q >= target span are strictly rejected.",
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (A5 Q-factor)",
+  "source_map_ref": "docs/baselines/p3c-02i-mit-source-map.v1.yaml",
+  "base_slice_ref": "docs/baselines/p3c-02h-bathtub-curve-fit-stage.v1.yaml",
+  "admission": {
+    "q_threshold_contour": true,
+    "linear_q_interpolation": true,
+    "edge_clamping": true,
+    "eye_folding_bins": false,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": [
+    "not_eye_folding_bins",
+    "not_com_parity",
+    "not_acceptance_evidence"
+  ]
+}

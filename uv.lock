@@ -259,11 +259,15 @@ name = "sipi-runtime"
 version = "0.1.0"
 source = { editable = "packages/sipi-runtime" }
 dependencies = [
+    { name = "sipi-adapters" },
     { name = "sipi-contracts" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "sipi-contracts", editable = "packages/sipi-contracts" }]
+requires-dist = [
+    { name = "sipi-adapters", editable = "packages/sipi-adapters" },
+    { name = "sipi-contracts", editable = "packages/sipi-contracts" },
+]
 
 [[package]]
 name = "typing-extensions"

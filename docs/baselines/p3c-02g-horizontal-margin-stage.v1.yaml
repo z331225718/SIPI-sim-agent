@@ -1,0 +1,19 @@
+{
+  "schema": "sipi.p3c-02g.horizontal-margin-stage.v1",
+  "status": "horizontal_margin_estimator_ported",
+  "purpose": "P3C-02g horizontal time-margin core: composes the bathtub opening at a target BER (P3C-02f) with a sampling-point offset to compute receiver horizontal timing margins (left/right distance from the sampling point to each bathtub edge). Builds on the owner-decided Q-factor method and the P3C-02e/02f cores. Eye folding/bins and bathtub curve fitting remain out of scope.",
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (A5)",
+  "source_map_ref": "docs/baselines/p3c-02g-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p3c-02e-qfactor-ber-stage.v1.yaml", "docs/baselines/p3c-02f-bathtub-opening-stage.v1.yaml"],
+  "admission": {
+    "margin_from_eye_width": true,
+    "sample_outside_eye_error": true,
+    "composed_bathtub_margin": true,
+    "eye_folding_bins": false,
+    "bathtub_curve_fit": false,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_eye_folding_bins", "not_bathtub_curve_fit", "not_com_parity", "not_acceptance_evidence"]
+}

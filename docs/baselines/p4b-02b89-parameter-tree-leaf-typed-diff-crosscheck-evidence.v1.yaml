@@ -1,0 +1,86 @@
+schema: sipi.p4b-02b89-parameter-tree-leaf-typed-diff-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b89.parameter-tree-leaf-typed-diff-v1.typed-leaf-diff
+matched_count: 4
+case_count: 4
+entries:
+- label: identical_trees
+  matched: true
+  product:
+    added: []
+    changed: []
+    matched: 2
+    policy: sipi.p4b-02b89.parameter-tree-leaf-typed-diff-v1.typed-leaf-diff
+    removed: []
+    valid: true
+  reference:
+    valid: true
+    matched: 2
+    added: []
+    removed: []
+    changed: []
+- label: spelling_variants
+  matched: true
+  product:
+    added: []
+    changed: []
+    matched: 1
+    policy: sipi.p4b-02b89.parameter-tree-leaf-typed-diff-v1.typed-leaf-diff
+    removed: []
+    valid: true
+  reference:
+    valid: true
+    matched: 1
+    added: []
+    removed: []
+    changed: []
+- label: added_removed
+  matched: true
+  product:
+    added:
+    - root.mode
+    changed: []
+    matched: 1
+    policy: sipi.p4b-02b89.parameter-tree-leaf-typed-diff-v1.typed-leaf-diff
+    removed:
+    - root.steps
+    valid: true
+  reference:
+    valid: true
+    matched: 1
+    added:
+    - root.mode
+    removed:
+    - root.steps
+    changed: []
+- label: typed_changed
+  matched: true
+  product:
+    added: []
+    changed:
+    - new_tokens:
+      - Float
+      - '0.5001'
+      old_tokens:
+      - Float
+      - '0.5'
+      path: root.gain
+      reason: FloatMismatch
+    matched: 0
+    policy: sipi.p4b-02b89.parameter-tree-leaf-typed-diff-v1.typed-leaf-diff
+    removed: []
+    valid: true
+  reference:
+    valid: true
+    matched: 0
+    added: []
+    removed: []
+    changed:
+    - path: root.gain
+      old_tokens:
+      - Float
+      - '0.5'
+      new_tokens:
+      - Float
+      - '0.5001'
+      reason: FloatMismatch

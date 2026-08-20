@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b93.mit-source-map.v1",
+  "status": "parameter_tree_typed_leaf_type_counts_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_typed_leaf_type_counts_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "typed-leaf type counts over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "typed-leaf type counts", "rust": "count_parameter_tree_typed_leaves_by_type_v1", "notes": "counts typed-form leaves per declared type plus skipped; sum invariant" },
+    { "concept": "counts outcome", "rust": "ParameterTreeTypedLeafTypeCountsV1", "notes": "per-type counts with total_typed/skipped and sum_of_type_counts invariant" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

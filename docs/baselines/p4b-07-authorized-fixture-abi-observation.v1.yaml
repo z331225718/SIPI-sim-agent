@@ -1,0 +1,28 @@
+{
+  "schema": "sipi.p4b-07.authorized-fixture-abi-observation.v1",
+  "status": "authorized_fixture_abi_observation_specified",
+  "purpose": "P4B-07a fixed probe surface for the owner-authorized PCIe Gen5 dual-AMI fixtures: hash-pinned TX/RX DLLs loaded through the clean-room ABI host with caller-supplied .ami parameter text, init-only / single / multi GetWave probes at two legal wave lengths, two-fresh-custody byte-exact reproducibility, hash-only raw-output reports. Crash observations on a fixed probe are recorded as reproducible facts, never inferred to DLL internals.",
+  "probe_matrix": [
+    { "mode": "init", "rows": 4, "aggressors": 3 },
+    { "mode": "single", "wave_length": 1024, "clock_capacity": 1024, "rows": 4, "aggressors": 3 },
+    { "mode": "single", "wave_length": 4096, "clock_capacity": 4096, "rows": 4, "aggressors": 3 },
+    { "mode": "multi", "wave_length": 1024, "clock_capacity": 1024, "rows": 4, "aggressors": 3 }
+  ],
+  "probe_inputs": {
+    "sample_interval_s": 1.0e-12,
+    "bit_time_s": 31.25e-12,
+    "matrix": "identity_like_4x4",
+    "waveform": "alternating_plus_minus_one",
+    "clock_sentinel": -1.0
+  },
+  "custody": { "copies": 2, "identity": "byte_exact_reproduced", "cleanup": "verified_before_evidence" },
+  "admission": {
+    "worker_admission": false,
+    "product_runtime_invoked": false,
+    "numerical_parity": false,
+    "ibis_ami_compatibility": false,
+    "tx_rx_composition": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_numerical_parity", "not_ibis_ami_compatibility", "not_tx_rx_composition", "not_worker_admission", "not_product_runtime", "not_rx_init_stability", "not_release_evidence"]
+}

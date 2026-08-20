@@ -1,0 +1,99 @@
+schema: sipi.p5-06d.canonical-input-keys-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p5-06d.canonical-input-keys.v1.sorted-signature
+matched_count: 9
+case_count: 9
+entries:
+- label: three_keys_sorted
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_lines:
+  - alpha=0.5
+  - beta_x=0
+  - zeta=1.0
+  reference_lines:
+  - alpha=0.5
+  - beta_x=0
+  - zeta=1.0
+  product_digest: 7b7a90a1fcd77c22e8606737c0bd373db7f905ce49c84db228609b19c8fece15
+  reference_digest: 7b7a90a1fcd77c22e8606737c0bd373db7f905ce49c84db228609b19c8fece15
+- label: unsorted_input_stable_digest
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_lines:
+  - a=1
+  - b=2
+  - c=3
+  reference_lines:
+  - a=1
+  - b=2
+  - c=3
+  product_digest: 1d826584804818c6b43d74fe3faf1c22016b789a487c56fab64b87c98ef8571a
+  reference_digest: 1d826584804818c6b43d74fe3faf1c22016b789a487c56fab64b87c98ef8571a
+- label: empty_key_fails
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_lines: []
+  reference_lines: []
+  product_digest: null
+  reference_digest: null
+- label: empty_value_fails
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_lines: []
+  reference_lines: []
+  product_digest: null
+  reference_digest: null
+- label: duplicate_key_fails
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_lines: []
+  reference_lines: []
+  product_digest: null
+  reference_digest: null
+- label: empty_input_fails
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_lines: []
+  reference_lines: []
+  product_digest: null
+  reference_digest: null
+- label: value_tokens_with_spaces
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_lines:
+  - a_v=0.415
+  - board_tl_gamma0_a1_a2=[0 3.82e-04  9.59e-05]
+  reference_lines:
+  - a_v=0.415
+  - board_tl_gamma0_a1_a2=[0 3.82e-04  9.59e-05]
+  product_digest: bb962ffbf0b1e6498ff340f4ffa64641db4e84eb4b6769e6fe706824c980eea5
+  reference_digest: bb962ffbf0b1e6498ff340f4ffa64641db4e84eb4b6769e6fe706824c980eea5
+- label: nested_token_list
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_lines:
+  - flag=True
+  - name=tx
+  - weights=[1 2 3]
+  reference_lines:
+  - flag=True
+  - name=tx
+  - weights=[1 2 3]
+  product_digest: a71b79e0048c17c697c098097e47ffe059e8989bff3516699f29adf8c1058d88
+  reference_digest: a71b79e0048c17c697c098097e47ffe059e8989bff3516699f29adf8c1058d88
+- label: authoritative_in_config_surface
+  matched: true
+  product_ok: true
+  reference_ok: true
+  surface_in_config_count: 82
+  product_digest: 9332d69706024cc5a3ca5bad6c69727f6fe9046ac2cd17f58eb454a5b2632973
+  reference_digest: 9332d69706024cc5a3ca5bad6c69727f6fe9046ac2cd17f58eb454a5b2632973

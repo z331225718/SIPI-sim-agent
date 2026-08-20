@@ -1,0 +1,128 @@
+schema: sipi.p4b-02b58-parameter-tree-typed-form-conformance-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b58.parameter-tree-typed-form-conformance-v1.full-report
+matched_count: 4
+case_count: 4
+entries:
+- label: all_conforming
+  matched: true
+  product:
+    conforming_count: 2
+    entries:
+    - conforming: true
+      leaf: gain
+      violation: null
+    - conforming: true
+      leaf: steps
+      violation: null
+    non_conforming_count: 0
+    policy: sipi.p4b-02b58.parameter-tree-typed-form-conformance-v1.full-report
+    valid: true
+  reference:
+    valid: true
+    conforming_count: 2
+    non_conforming_count: 0
+    entries:
+    - leaf: gain
+      conforming: true
+      violation: null
+    - leaf: steps
+      conforming: true
+      violation: null
+- label: mixed_violations
+  matched: true
+  product:
+    conforming_count: 0
+    entries:
+    - conforming: false
+      leaf: a
+      violation:
+        kind: UnknownTypeToken
+        token: Real
+    - conforming: false
+      leaf: b
+      violation:
+        kind: MultiTokenForm
+        token_count: 3
+    - conforming: false
+      leaf: c
+      violation:
+        kind: NotTypedForm
+    - conforming: false
+      leaf: d
+      violation:
+        error: InvalidFloat
+        kind: InvalidValue
+    non_conforming_count: 4
+    policy: sipi.p4b-02b58.parameter-tree-typed-form-conformance-v1.full-report
+    valid: true
+  reference:
+    valid: true
+    conforming_count: 0
+    non_conforming_count: 4
+    entries:
+    - leaf: a
+      conforming: false
+      violation:
+        kind: UnknownTypeToken
+        token: Real
+    - leaf: b
+      conforming: false
+      violation:
+        kind: MultiTokenForm
+        token_count: 3
+    - leaf: c
+      conforming: false
+      violation:
+        kind: NotTypedForm
+    - leaf: d
+      conforming: false
+      violation:
+        kind: InvalidValue
+        error: InvalidFloat
+- label: empty_leaf
+  matched: true
+  product:
+    conforming_count: 0
+    entries:
+    - conforming: false
+      leaf: a
+      violation:
+        kind: EmptyValueTokens
+    non_conforming_count: 1
+    policy: sipi.p4b-02b58.parameter-tree-typed-form-conformance-v1.full-report
+    valid: true
+  reference:
+    valid: true
+    conforming_count: 0
+    non_conforming_count: 1
+    entries:
+    - leaf: a
+      conforming: false
+      violation:
+        kind: EmptyValueTokens
+- label: nested_conforming
+  matched: true
+  product:
+    conforming_count: 2
+    entries:
+    - conforming: true
+      leaf: deep
+      violation: null
+    - conforming: true
+      leaf: gain
+      violation: null
+    non_conforming_count: 0
+    policy: sipi.p4b-02b58.parameter-tree-typed-form-conformance-v1.full-report
+    valid: true
+  reference:
+    valid: true
+    conforming_count: 2
+    non_conforming_count: 0
+    entries:
+    - leaf: deep
+      conforming: true
+      violation: null
+    - leaf: gain
+      conforming: true
+      violation: null

@@ -1,0 +1,74 @@
+schema: sipi.p4b-02b121-parameter-list-frequency-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b121.parameter-list-frequency-v1.item-frequency-map
+matched_count: 4
+case_count: 4
+entries:
+- label: repeated_items
+  matched: true
+  product:
+    frequencies:
+    - - a
+      - 3
+    - - b
+      - 2
+    - - c
+      - 1
+    policy: sipi.p4b-02b121.parameter-list-frequency-v1.item-frequency-map
+    valid: true
+  reference:
+    valid: true
+    frequencies:
+    - - a
+      - 3
+    - - b
+      - 2
+    - - c
+      - 1
+- label: first_occurrence_order
+  matched: true
+  product:
+    frequencies:
+    - - b
+      - 2
+    - - a
+      - 1
+    policy: sipi.p4b-02b121.parameter-list-frequency-v1.item-frequency-map
+    valid: true
+  reference:
+    valid: true
+    frequencies:
+    - - b
+      - 2
+    - - a
+      - 1
+- label: all_distinct
+  matched: true
+  product:
+    frequencies:
+    - - a
+      - 1
+    - - b
+      - 1
+    - - c
+      - 1
+    policy: sipi.p4b-02b121.parameter-list-frequency-v1.item-frequency-map
+    valid: true
+  reference:
+    valid: true
+    frequencies:
+    - - a
+      - 1
+    - - b
+      - 1
+    - - c
+      - 1
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b121.parameter-list-frequency-v1.item-frequency-map
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

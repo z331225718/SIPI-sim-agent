@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b5.mit-source-map.v1",
+  "status": "ami_runtime_params_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text ami_runtime_params_v1.rs (extends P4B-02b4/b3/b1)" },
+  "observation": { "ref": "docs/baselines/p4b-02b4-parameter-catalog-stage.v1.yaml", "note": "catalog-default validity and catalog compile delivered" },
+  "mapping": [
+    { "concept": "Usage=In candidate-overrides-default", "rust": "build_ami_runtime_params_v1 candidate branch", "notes": "candidate value preferred; else validate_candidate_set_v1 caller gate" },
+    { "concept": "Usage=In default fallback without candidate", "rust": "materialize_default_v1 fallback", "notes": "reuses P4B-02b4 typed default" },
+    { "concept": "Usage=In missing both is hard error", "rust": "RuntimeParamsErrorV1::MissingRuntimeValue", "notes": "fail closed: no silent default" },
+    { "concept": "Out/Info omitted without candidate", "rust": "Out|Info continue without candidate", "notes": "model-populated roles not required" },
+    { "concept": "candidate type must match catalog", "rust": "RuntimeParamsErrorV1::TypeMismatch", "notes": "defensive; validate_candidate_set_v1 already gates" },
+    { "concept": "sorted catalog-name order", "rust": "ParameterCatalogV1 sorted map iteration", "notes": "deterministic runtime table" }
+  ],
+  "not_ported": ["reserved-name catalog", "AMI runtime execution", "specific AMI profile selection", "modeled DLL ABI"]
+}

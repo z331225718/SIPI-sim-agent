@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03ae.mit-source-map.v1",
+  "status": "package_model_keywords_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis package_model_keywords_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Package Model] required keywords ([Number Of Pins], [Pin Numbers])" },
+  "mapping": [
+    { "concept": "typed [Package Model] required keywords header", "rust": "TypedPackageModelKeywordsV1", "notes": "validated ASCII package_model_name, number_of_pins, and pin_numbers list" },
+    { "concept": "number of pins validation", "rust": "PackageModelKeywordsErrorV1::InvalidNumberOfPins", "notes": "number_of_pins == 0 fails closed" },
+    { "concept": "duplicate pin number check", "rust": "PackageModelKeywordsErrorV1::DuplicatePinNumber", "notes": "duplicate pin number in package model fails closed" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "package RLC matrix crosstalk simulation",
+    "release certification"
+  ]
+}

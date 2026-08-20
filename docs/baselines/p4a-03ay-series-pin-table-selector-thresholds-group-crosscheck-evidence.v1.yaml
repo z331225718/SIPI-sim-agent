@@ -1,0 +1,61 @@
+schema: sipi.p4a-03ay.series-pin-table-selector-thresholds-group-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03ay.series-pin-table-selector-thresholds-group-v1.typed-selector-thresholds-group
+matched_count: 3
+case_count: 3
+entries:
+- label: full_selector_group_threshold_record
+  matched: true
+  product:
+    cseries_farad: 1.0e-12
+    group_name: GRP1
+    lseries_henry: 5.0e-09
+    model_selector_name: SEL_SERIES_RES
+    pin_first: P1
+    pin_second: P2
+    policy: sipi.p4a-03ay.series-pin-table-selector-thresholds-group-v1.typed-selector-thresholds-group
+    rseries_ohm: 50.0
+    valid: true
+    vthreshold_v: 1.2
+  reference:
+    valid: true
+    pin_first: P1
+    pin_second: P2
+    model_selector_name: SEL_SERIES_RES
+    group_name: GRP1
+    vthreshold_v: 1.2
+    rseries_ohm: 50.0
+    cseries_farad: 1.0e-12
+    lseries_henry: 5.0e-09
+- label: minimal_selector_group_threshold_record
+  matched: true
+  product:
+    cseries_farad: null
+    group_name: null
+    lseries_henry: null
+    model_selector_name: SEL_SERIES_RES
+    pin_first: P1
+    pin_second: P2
+    policy: sipi.p4a-03ay.series-pin-table-selector-thresholds-group-v1.typed-selector-thresholds-group
+    rseries_ohm: null
+    valid: true
+    vthreshold_v: null
+  reference:
+    valid: true
+    pin_first: P1
+    pin_second: P2
+    model_selector_name: SEL_SERIES_RES
+    group_name: null
+    vthreshold_v: null
+    rseries_ohm: null
+    cseries_farad: null
+    lseries_henry: null
+- label: empty_pin_name
+  matched: true
+  product:
+    lift_error: EmptyPinName
+    policy: sipi.p4a-03ay.series-pin-table-selector-thresholds-group-v1.typed-selector-thresholds-group
+    valid: false
+  reference:
+    valid: false
+    lift_error: EmptyPinName

@@ -1,0 +1,64 @@
+schema: sipi.p4b-02b90-parameter-profile-typed-subset-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b90.parameter-profile-typed-subset-v1.typed-subset-check
+matched_count: 4
+case_count: 4
+entries:
+- label: subset_ok
+  matched: true
+  product:
+    is_subset: true
+    mismatched: []
+    missing: []
+    policy: sipi.p4b-02b90.parameter-profile-typed-subset-v1.typed-subset-check
+    valid: true
+  reference:
+    valid: true
+    is_subset: true
+    missing: []
+    mismatched: []
+- label: spelling_variants
+  matched: true
+  product:
+    is_subset: true
+    mismatched: []
+    missing: []
+    policy: sipi.p4b-02b90.parameter-profile-typed-subset-v1.typed-subset-check
+    valid: true
+  reference:
+    valid: true
+    is_subset: true
+    missing: []
+    mismatched: []
+- label: missing_name
+  matched: true
+  product:
+    is_subset: false
+    mismatched: []
+    missing:
+    - nope
+    policy: sipi.p4b-02b90.parameter-profile-typed-subset-v1.typed-subset-check
+    valid: true
+  reference:
+    valid: true
+    is_subset: false
+    missing:
+    - nope
+    mismatched: []
+- label: mismatched_value
+  matched: true
+  product:
+    is_subset: false
+    mismatched:
+    - name: gain
+      reason: FloatMismatch
+    missing: []
+    policy: sipi.p4b-02b90.parameter-profile-typed-subset-v1.typed-subset-check
+    valid: true
+  reference:
+    valid: true
+    is_subset: false
+    missing: []
+    mismatched:
+    - name: gain
+      reason: FloatMismatch

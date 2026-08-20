@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b112.mit-source-map.v1",
+  "status": "parameter_list_remove_all_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_remove_all_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "value-based bulk item removal over validated AMI parameter list values" },
+  "mapping": [
+    { "concept": "bulk removal by value", "rust": "remove_all_parameter_list_items_v1", "notes": "keeps trimmed items not equal to the raw query item, re-joined with ', '" },
+    { "concept": "removal errors", "rust": "ParameterListRemoveAllErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

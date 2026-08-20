@@ -1,0 +1,11 @@
+{
+  "schema": "sipi.p5-04e.mit-source-map.v1",
+  "status": "combined_noise_pdf_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/noise/discrete_pdf.py" },
+  "mapping": [
+    { "python": "combine_r480_noise_pdf", "rust": "combine_r480_noise_pdf_v1", "notes": "ordered Eq. 93A-45 combination; reuses ported convolve/first_quantile" },
+    { "python": "NoisePdfResult", "rust": "CombinedNoisePdfV1", "notes": "combined, cdf, cci, isi_and_crosstalk, gaussian_and_jitter, peak_interference_v" }
+  ],
+  "not_ported": ["sampled_signal_pdf", "residual_channel_pdf"],
+  "non_claims": ["not_sampled_signal_pdf", "not_residual_channel_pdf", "not_release_evidence"]
+}

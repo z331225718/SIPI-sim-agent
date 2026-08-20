@@ -1,0 +1,31 @@
+schema: sipi.p3c-02g.horizontal-margin-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p3c-02g.horizontal-margin.v1.timing
+matched_count: 3
+case_count: 3
+entries:
+- id: sym_center
+  matched: true
+  product:
+    eye_width: 0.8333333333333334
+    left: 0.5
+    ok: true
+    policy: sipi.p3c-02g.horizontal-margin.v1.timing
+    right: 0.33333333333333337
+  reference_width: 0.8333333333333334
+- id: asym_left
+  matched: true
+  product:
+    eye_width: 0.79
+    left: 0.2
+    ok: true
+    policy: sipi.p3c-02g.horizontal-margin.v1.timing
+    right: 0.5900000000000001
+  reference_width: 0.79
+- id: outside
+  matched: true
+  product:
+    error: NonPositiveEyeWidth
+    ok: false
+    policy: sipi.p3c-02g.horizontal-margin.v1.timing
+  reference_width: null

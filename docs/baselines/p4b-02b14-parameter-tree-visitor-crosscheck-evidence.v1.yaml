@@ -1,0 +1,113 @@
+schema: sipi.p4b-02b14-parameter-tree-visitor-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b14.parameter-tree-visitor-v1.tree-structural-traversal
+matched_count: 3
+case_count: 3
+entries:
+- label: standard_tree_traversal
+  matched: true
+  product:
+    event_count: 6
+    events:
+    - kind: enter_branch
+      path: Reserved_Parameters
+    - kind: enter_branch
+      path: Reserved_Parameters.dfe
+    - kind: visit_leaf
+      path: Reserved_Parameters.dfe.tap_1
+      value_tokens:
+      - Integer
+      - '2'
+    - kind: leave_branch
+      path: Reserved_Parameters.dfe
+    - kind: visit_leaf
+      path: Reserved_Parameters.tx_swing
+      value_tokens:
+      - Float
+      - '0.5'
+    - kind: leave_branch
+      path: Reserved_Parameters
+    policy: sipi.p4b-02b14.parameter-tree-visitor-v1.tree-structural-traversal
+    valid: true
+  reference:
+    valid: true
+    event_count: 6
+    events:
+    - kind: enter_branch
+      path: Reserved_Parameters
+    - kind: enter_branch
+      path: Reserved_Parameters.dfe
+    - kind: visit_leaf
+      path: Reserved_Parameters.dfe.tap_1
+      value_tokens:
+      - Integer
+      - '2'
+    - kind: leave_branch
+      path: Reserved_Parameters.dfe
+    - kind: visit_leaf
+      path: Reserved_Parameters.tx_swing
+      value_tokens:
+      - Float
+      - '0.5'
+    - kind: leave_branch
+      path: Reserved_Parameters
+- label: nested_branches_traversal
+  matched: true
+  product:
+    event_count: 8
+    events:
+    - kind: enter_branch
+      path: root
+    - kind: enter_branch
+      path: root.branch_a
+    - kind: visit_leaf
+      path: root.branch_a.leaf_1
+      value_tokens:
+      - '10'
+    - kind: leave_branch
+      path: root.branch_a
+    - kind: enter_branch
+      path: root.branch_b
+    - kind: visit_leaf
+      path: root.branch_b.leaf_2
+      value_tokens:
+      - '20'
+    - kind: leave_branch
+      path: root.branch_b
+    - kind: leave_branch
+      path: root
+    policy: sipi.p4b-02b14.parameter-tree-visitor-v1.tree-structural-traversal
+    valid: true
+  reference:
+    valid: true
+    event_count: 8
+    events:
+    - kind: enter_branch
+      path: root
+    - kind: enter_branch
+      path: root.branch_a
+    - kind: visit_leaf
+      path: root.branch_a.leaf_1
+      value_tokens:
+      - '10'
+    - kind: leave_branch
+      path: root.branch_a
+    - kind: enter_branch
+      path: root.branch_b
+    - kind: visit_leaf
+      path: root.branch_b.leaf_2
+      value_tokens:
+      - '20'
+    - kind: leave_branch
+      path: root.branch_b
+    - kind: leave_branch
+      path: root
+- label: empty_document
+  matched: true
+  product:
+    build_error: EmptyDocument
+    policy: sipi.p4b-02b14.parameter-tree-visitor-v1.tree-structural-traversal
+    valid: false
+  reference:
+    valid: false
+    visitor_error: EmptyDocument

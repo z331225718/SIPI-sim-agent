@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b158-parameter-list-tversky-index-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b158.parameter-list-tversky-index-v1.tversky-index
+matched_count: 4
+case_count: 4
+entries:
+- label: jaccard_parameters
+  matched: true
+  product:
+    index: '0.500000000000'
+    policy: sipi.p4b-02b158.parameter-list-tversky-index-v1.tversky-index
+    valid: true
+  reference:
+    valid: true
+    index: '0.500000000000'
+- label: asymmetric_parameters
+  matched: true
+  product:
+    index: '0.444444444444'
+    policy: sipi.p4b-02b158.parameter-list-tversky-index-v1.tversky-index
+    valid: true
+  reference:
+    valid: true
+    index: '0.444444444444'
+- label: disjoint
+  matched: true
+  product:
+    index: '0.000000000000'
+    policy: sipi.p4b-02b158.parameter-list-tversky-index-v1.tversky-index
+    valid: true
+  reference:
+    valid: true
+    index: '0.000000000000'
+- label: negative_parameter
+  matched: true
+  product:
+    error: InvalidParameters
+    policy: sipi.p4b-02b158.parameter-list-tversky-index-v1.tversky-index
+    valid: false
+  reference:
+    valid: false
+    error: InvalidParameters

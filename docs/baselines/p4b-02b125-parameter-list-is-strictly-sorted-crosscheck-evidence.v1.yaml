@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b125-parameter-list-is-strictly-sorted-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b125.parameter-list-is-strictly-sorted-v1.strict-sortedness-check
+matched_count: 4
+case_count: 4
+entries:
+- label: strictly_ascending
+  matched: true
+  product:
+    policy: sipi.p4b-02b125.parameter-list-is-strictly-sorted-v1.strict-sortedness-check
+    sorted: true
+    valid: true
+  reference:
+    valid: true
+    sorted: true
+- label: strictly_descending
+  matched: true
+  product:
+    policy: sipi.p4b-02b125.parameter-list-is-strictly-sorted-v1.strict-sortedness-check
+    sorted: true
+    valid: true
+  reference:
+    valid: true
+    sorted: true
+- label: equal_breaks_strict
+  matched: true
+  product:
+    policy: sipi.p4b-02b125.parameter-list-is-strictly-sorted-v1.strict-sortedness-check
+    sorted: false
+    valid: true
+  reference:
+    valid: true
+    sorted: false
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b125.parameter-list-is-strictly-sorted-v1.strict-sortedness-check
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

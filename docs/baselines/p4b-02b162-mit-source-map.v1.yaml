@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b162.mit-source-map.v1",
+  "status": "parameter_list_nth_smallest_item_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_nth_smallest_item_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "zero-based order statistic over the trimmed items of a validated AMI parameter list value" },
+  "mapping": [
+    { "concept": "nth-smallest item", "rust": "parameter_list_nth_smallest_item_v1", "notes": "item at zero-based rank in sorted byte lexicographic order, duplicates as separate positions" },
+    { "concept": "nth-smallest errors", "rust": "ParameterListNthSmallestItemErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise, IndexOutOfRange for rank beyond item count" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "sipi.p5-06d.canonical-input-keys-stage.v1",
+  "status": "canonical_input_keys_ported",
+  "purpose": "P5-06d canonical normalized-input key signature core: given the set of normalized COM input keys actually consumed from the authorized config (the P5-06c in_config keys) as (key, canonical value token) pairs, produce a deterministic sorted canonical signature: the byte-wise lexicographically sorted list of key=value lines. This is a profile-agnostic compare-readiness preflight: a stable, order-free key set that a later P5-06 compare matrix can consume without depending on config-file ordering or the MATLAB oracle. The canonical value token is caller-supplied (float formatting is the caller's responsibility so product and reference agree on the exact token). Fail-closed: empty input, empty key/value, duplicate key are hard errors.",
+  "source_map_ref": "docs/baselines/p5-06d-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p5-06c-normalized-input-surface.v1.yaml", "docs/baselines/p5-02c-canonical-parameter-reference.v1.yaml"],
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (B4 COM comparison authorized)",
+  "admission": {
+    "sorted_canonical_signature": true,
+    "deterministic_order_free_digest": true,
+    "in_config_key_extraction": true,
+    "empty_key_value_duplicate_fail_closed": true,
+    "compare_matrix": false,
+    "metric_derivation": false,
+    "oracle_invocation": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_compare_matrix", "not_metric_derivation", "not_oracle_invocation", "not_acceptance_evidence"]
+}

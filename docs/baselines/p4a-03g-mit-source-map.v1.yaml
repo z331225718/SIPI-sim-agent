@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4a-03g.mit-source-map.v1",
+  "status": "component_declaration_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis component_declaration_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Component], [Manufacturer], [Package] structural headers" },
+  "mapping": [
+    { "concept": "typed [Component] header", "rust": "IbisComponentV1", "notes": "validated ASCII component name" },
+    { "concept": "[Manufacturer] string", "rust": "IbisComponentV1::manufacturer", "notes": "optional trimmed string" },
+    { "concept": "[Package] model name", "rust": "IbisComponentV1::package_name", "notes": "optional trimmed string" },
+    { "concept": "component name syntax rule", "rust": "ComponentDeclarationErrorV1", "notes": "non-empty, ASCII alphanumeric/underscore/hyphen/dot" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "electrical semantics",
+    "release certification"
+  ]
+}

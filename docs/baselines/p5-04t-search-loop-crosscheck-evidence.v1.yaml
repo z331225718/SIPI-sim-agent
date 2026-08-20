@@ -1,0 +1,106 @@
+schema: sipi.p5-04t.search-loop-crosscheck-evidence.v1
+status: search_loop_support_crosscheck_matched
+oracle:
+  repo: agent-com
+  license: MIT
+  path: src/agent_com/equalization/search.py + signal/fd_to_td.py
+  functions:
+  - rectangular_pulse_response
+  - _peak_window
+  - _shift_matrix
+  - _r480_sample_offsets
+  - _skip_local_search
+  - _skip_high_pass_local_search
+  - _anchored_cursor
+  - _validate_supported_branch
+  numpy_version: 2.4.6
+tolerance: 1.0e-09
+entries:
+- id: rect_spu1
+  input_sha256: 5454c458485f8c30d71b4f7fb5e4da9809daa3b3db3072c358ac841462f91be0
+  matched: true
+  diffs: []
+- id: rect_spu3
+  input_sha256: aa1f54f636d10a5b1f5a4d24ebfd0e47f39e02d539d8be4f475354a0d673bcbf
+  matched: true
+  diffs: []
+- id: peak_fd
+  input_sha256: e4591fd98c002fadbbb8221c8b61cbe89e496b84673f587ad884d39c9050dcdd
+  matched: true
+  diffs: []
+- id: peak_pulse
+  input_sha256: ec39687e22a31920f65743b7daa7bfb6fa181de24a1605dd6325dbf7a9b4fe4d
+  matched: true
+  diffs: []
+- id: shift_pc1
+  input_sha256: 68230e5c74ccca023e0bffc961c9f8f7e057258b64901814e5d596f46a8159fc
+  matched: true
+  diffs: []
+- id: shift_pc2
+  input_sha256: cf333446c90235ef5c2206b93f5c80b11fd4bd94dc33ff9407dcacc51b822c00
+  matched: true
+  diffs: []
+- id: offsets_fullnsweep_n2_2
+  input_sha256: 16ece29a7db0389832a4f5b34fa3b868db05e19bd632e11fd6dcd1f21bfa3513
+  matched: true
+  diffs: []
+- id: offsets_middle_n2_2
+  input_sha256: abb029f2b16baa3605c8553149a6f156d178fb607835c2ae74c5dae597c947c1
+  matched: true
+  diffs: []
+- id: offsets_fullnsweep_0
+  input_sha256: ea400a5681ef64a60e94568032bec14b70181223eb19300a44c1290ae892700f
+  matched: true
+  diffs: []
+- id: offsets_middle_n1_1
+  input_sha256: 6e5ce7fb8b3b2161418425e608d10a4522e9b1cf4a70da2279141edf91a8e55a
+  matched: true
+  diffs: []
+- id: skip_local_skip_none_best
+  input_sha256: 8fb5c15535c33627727c488905a8cff17c6f566efe2b2fd97f429e12c58f9d50
+  matched: true
+  diffs: []
+- id: skip_local_skip_local_true
+  input_sha256: 93c70c51276750d44d1bbe20c692c62273b2f3da8d94bd0ea552dec724768407
+  matched: true
+  diffs: []
+- id: skip_local_skip_local_false
+  input_sha256: 733231f24997d905b22a2972dfc32e76670a82dffd80af6a2b7d7b5cfaf71ce8
+  matched: true
+  diffs: []
+- id: skip_hp_hp_none
+  input_sha256: 5598597f2db532a8382394e2bc8c41d46da9ee8fceaa9fc42ae0e21235de4285
+  matched: true
+  diffs: []
+- id: skip_hp_hp_far
+  input_sha256: 0eb1c136586bd9f546259c29afde68688ebdf989ada62ac5190a83ecc30f8a66
+  matched: true
+  diffs: []
+- id: skip_hp_hp_close
+  input_sha256: 191e76788e21be222a29ee29b9358299a4959245344d65b8b7cead36e266c0b8
+  matched: true
+  diffs: []
+- id: anchored_0
+  input_sha256: ac36d27ed12436ceaf310acc32269a4ea36590e67524735b34adc457f81b0d00
+  matched: true
+  diffs: []
+- id: anchored_1
+  input_sha256: 3ef3493470e8863efb2df4245f0febc82d256ced4197620b6b0ecc6f3516fb93
+  matched: true
+  diffs: []
+- id: anchored_2
+  input_sha256: a3ce22b15db81350087569ab82e0d13a743986f64f582aadceb75f292d73772f
+  matched: true
+  diffs: []
+- id: validate_validate_ok
+  input_sha256: bd159cb06e8ecfb611d319d9cf3d152293be546e60d951f606fb9e4b7f4c1cca
+  matched: true
+  diffs: []
+- id: validate_validate_badmethod
+  input_sha256: 2ecd9f1877107ae6c160d98cac41149402ef9bbfcd74e4a598f51b53db500e0c
+  matched: true
+  diffs: []
+non_claims:
+- not_composite_loop
+- not_candidate_evaluation
+- not_release_evidence

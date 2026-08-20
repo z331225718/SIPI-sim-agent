@@ -1,0 +1,80 @@
+schema: sipi.p4b-02b48-parameter-profile-merge-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b48.parameter-profile-merge-v1.conflict-free-merge
+matched_count: 4
+case_count: 4
+entries:
+- label: disjoint
+  matched: true
+  product:
+    matched: 0
+    parameters:
+      gain:
+        type: Float
+        value: '0.5'
+      steps:
+        type: Integer
+        value: '7'
+    policy: sipi.p4b-02b48.parameter-profile-merge-v1.conflict-free-merge
+    valid: true
+  reference:
+    valid: true
+    matched: 0
+    parameters:
+      gain:
+        type: Float
+        value: '0.5'
+      steps:
+        type: Integer
+        value: '7'
+- label: overlap_identical
+  matched: true
+  product:
+    matched: 1
+    parameters:
+      gain:
+        type: Float
+        value: '0.5'
+    policy: sipi.p4b-02b48.parameter-profile-merge-v1.conflict-free-merge
+    valid: true
+  reference:
+    valid: true
+    matched: 1
+    parameters:
+      gain:
+        type: Float
+        value: '0.5'
+- label: value_conflict
+  matched: true
+  product:
+    merge_error: 'ConflictingValue { name: "gain", old_type: "Float", old_value: "0.5",
+      new_type: "Float", new_value: "1.25" }'
+    policy: sipi.p4b-02b48.parameter-profile-merge-v1.conflict-free-merge
+    valid: false
+  reference:
+    valid: false
+    merge_error: 'ConflictingValue { name: "gain", old_type: "Float", old_value: "0.5",
+      new_type: "Float", new_value: "1.25" }'
+- label: empty_a
+  matched: true
+  product:
+    matched: 0
+    parameters:
+      gain:
+        type: Float
+        value: '0.5'
+      steps:
+        type: Integer
+        value: '7'
+    policy: sipi.p4b-02b48.parameter-profile-merge-v1.conflict-free-merge
+    valid: true
+  reference:
+    valid: true
+    matched: 0
+    parameters:
+      gain:
+        type: Float
+        value: '0.5'
+      steps:
+        type: Integer
+        value: '7'

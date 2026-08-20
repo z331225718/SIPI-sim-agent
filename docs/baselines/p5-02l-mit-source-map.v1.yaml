@@ -1,0 +1,12 @@
+{
+  "schema": "sipi.p5-02l.mit-source-map.v1",
+  "status": "default_set_resolver_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-com resolve_parameters_v1.rs (wraps P5-02j/k resolver)" },
+  "observation": { "ref": "docs/baselines/p5-02j-default-resolution-crosscheck-evidence.v1.yaml", "note": "scalar per-expression resolution crosschecked (P5-02j, 20/20)" },
+  "mapping": [
+    { "concept": "resolve a set of default expressions", "rust": "resolve_default_set_v1", "notes": "map of consumed keys to expressions -> resolved typed values" },
+    { "concept": "reuse P5-02j/k resolver", "rust": "resolve_default_value_v1", "notes": "per-expression resolution (boolean/string/vector/matrix/scalar)" },
+    { "concept": "set-level first-error fail-closed", "rust": "ResolveParametersErrorV1::Unresolved", "notes": "first unresolvable expression reports name + reason" }
+  ],
+  "not_ported": ["workbook value priority (P5-05e merge)", "warning contract", "COM runtime"]
+}

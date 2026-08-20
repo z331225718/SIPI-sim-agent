@@ -1,0 +1,13 @@
+schema: sipi.p5-04x.search-helpers-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p5-04t.search-loop.v1.nonmmse-no-rxffe
+matched_count: 1
+case_count: 1
+entries:
+- id: helpers_on_pulse
+  window:
+  - 2
+  - 163
+  taps: 3
+  matched: true
+  diffs: []

@@ -1,0 +1,18 @@
+{
+  "schema": "sipi.p4b-07.raw-abi-parity.v1",
+  "status": "tx_raw_abi_parity_specified",
+  "purpose": "P4B-07b raw ABI output parity for the owner-authorized TX fixture: the clean-room Rust host and an independent ctypes observer call the same hash-pinned DLL with identical fixed inputs; per-probe raw output hashes and lengths must match, in two fresh custodies. RX remains the 07a crash observation and is excluded from this parity claim.",
+  "observer": { "kind": "ctypes_external_only", "path": "tools/p4b_07_ctypes_observer.py", "product_code": false },
+  "parity_rule": "per_probe_output_waveform_hash_len_and_clocks_hash_len_equal",
+  "custody": { "copies": 2, "host_reproducibility": "required", "observer_reproducibility": "required", "cross_parity": "required" },
+  "admission": {
+    "rx_parity": false,
+    "numerical_reference_parity": false,
+    "ibis_ami_compatibility": false,
+    "tx_rx_composition": false,
+    "worker_admission": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_rx_parity", "not_numerical_reference_parity", "not_ibis_ami_compatibility", "not_tx_rx_composition", "not_worker_admission", "not_product_runtime", "not_release_evidence"]
+}

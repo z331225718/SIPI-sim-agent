@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4b-02b11.mit-source-map.v1",
+  "status": "parameter_tree_diff_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_diff_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "structural comparison over two AmiParameterTreeV1 hierarchies" },
+  "mapping": [
+    { "concept": "tree structural diff", "rust": "diff_parameter_trees_v1", "notes": "compares two parameter trees and yields diff entries" },
+    { "concept": "missing and extra nodes", "rust": "TreeDiffEntryV1::MissingNode / ExtraNode", "notes": "detects structural node presence mismatches" },
+    { "concept": "kind and value mismatches", "rust": "TreeDiffEntryV1::KindMismatch / ValueMismatch", "notes": "detects Branch/Leaf kind or token value differences" },
+    { "concept": "root mismatch check", "rust": "ParameterTreeDiffErrorV1::RootMismatch", "notes": "trees with different root names fail closed" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

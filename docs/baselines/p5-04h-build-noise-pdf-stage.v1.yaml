@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-04h.build-noise-pdf-stage.v1",
+  "status": "build_noise_pdf_stage_ported",
+  "purpose": "P5-04h r4.80 noise-PDF build stage ported from the MIT agent-com source: the non-MMSE Create_Noise_PDF Gaussian and dual-Dirac path (sigma_tx / sigma_rj / sigma_gaussian derivation, Q-factor sqrt(2)*erfcinv(2*spec_ber), crest-factor and bbn-q overrides, normal_pdf convolution, sampled dual-Dirac, ordered Eq. 93A-45 combination). Includes the self-implemented erf/erfc/erfinv/erfcinv core. The MMSE path and equalizer search remain separate scopes.",
+  "source_map_ref": "docs/baselines/p5-04h-mit-source-map.v1.yaml",
+  "admission": {
+    "mmse_path": false,
+    "equalizer_search": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_mmse_path", "not_equalizer_search", "not_profile_acceptance", "not_release_evidence"]
+}

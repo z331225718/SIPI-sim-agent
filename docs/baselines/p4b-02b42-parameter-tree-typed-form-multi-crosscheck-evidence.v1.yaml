@@ -1,0 +1,62 @@
+schema: sipi.p4b-02b42-parameter-tree-typed-form-multi-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b42.parameter-tree-typed-form-multi-v1.multi-tree-extraction
+matched_count: 4
+case_count: 4
+entries:
+- label: two_trees_merge
+  matched: true
+  product:
+    leaves_consumed: 2
+    parameters:
+      gain:
+        name: gain
+        type: Float
+        value: '0.5'
+      steps:
+        name: steps
+        type: Integer
+        value: '7'
+    policy: sipi.p4b-02b42.parameter-tree-typed-form-multi-v1.multi-tree-extraction
+    valid: true
+  reference:
+    valid: true
+    leaves_consumed: 2
+    parameters:
+      gain:
+        name: gain
+        type: Float
+        value: '0.5'
+      steps:
+        name: steps
+        type: Integer
+        value: '7'
+- label: duplicate_across
+  matched: true
+  product:
+    multi_form_error: DuplicateAcrossTrees("gain")
+    policy: sipi.p4b-02b42.parameter-tree-typed-form-multi-v1.multi-tree-extraction
+    valid: false
+  reference:
+    valid: false
+    multi_form_error: DuplicateAcrossTrees("gain")
+- label: error_in_second
+  matched: true
+  product:
+    multi_form_error: 'TreeError(1, UnknownTypeToken { leaf: "steps", token: "Real"
+      })'
+    policy: sipi.p4b-02b42.parameter-tree-typed-form-multi-v1.multi-tree-extraction
+    valid: false
+  reference:
+    valid: false
+    multi_form_error: 'TreeError(1, UnknownTypeToken { leaf: "steps", token: "Real"
+      })'
+- label: empty_list
+  matched: true
+  product:
+    multi_form_error: EmptyTreeList
+    policy: sipi.p4b-02b42.parameter-tree-typed-form-multi-v1.multi-tree-extraction
+    valid: false
+  reference:
+    valid: false
+    multi_form_error: EmptyTreeList

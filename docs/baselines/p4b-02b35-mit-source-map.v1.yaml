@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b35.mit-source-map.v1",
+  "status": "parameter_tree_leaf_projection_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_project_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "name-set leaf projection over AmiParameterTreeV1 keeping ancestor branches" },
+  "mapping": [
+    { "concept": "leaf projection", "rust": "project_parameter_tree_leaves_v1", "notes": "projects a tree onto a leaf name set; keeps requested leaves with ancestor branches" },
+    { "concept": "projection errors", "rust": "ParameterTreeProjectErrorV1", "notes": "EmptySelection and MissingLeaf fail-closed variants" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

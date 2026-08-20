@@ -1,0 +1,18 @@
+{
+  "schema": "sipi.p5-05e.com-parameters-stage.v1",
+  "status": "com_parameter_dto_merged",
+  "purpose": "P5-05e COM typed parameter DTO merge core: combines the workbook parameter surface report (P5-05d) with resolved default values (P5-02j/k) into a typed COM parameter DTO. For each consumed key the resolved value is the workbook value if present else the resolved default; a consumed key with neither is a hard error. Unconsumed workbook keys are retained (nothing dropped), consistent with the P5-05 scope.",
+  "source_map_ref": "docs/baselines/p5-05e-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p5-05d-mit-source-map.v1.yaml", "docs/baselines/p5-02j-default-resolution-crosscheck-evidence.v1.yaml", "docs/baselines/p5-02k-matlab-literal-crosscheck-evidence.v1.yaml"],
+  "admission": {
+    "workbook_value_priority": true,
+    "default_fallback": true,
+    "unconsumed_retained": true,
+    "missing_value_hard_error": true,
+    "resolved_default_type": true,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_consumption_semantics", "not_behavior_profile", "not_acceptance_evidence"]
+}

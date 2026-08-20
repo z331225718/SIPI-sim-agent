@@ -1,0 +1,12 @@
+{
+  "schema": "sipi.p5-04p.mit-source-map.v1",
+  "status": "crosstalk_noise_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/equalization/search.py" },
+  "mapping": [
+    { "python": "_crosstalk_noise", "rust": "crosstalk_noise_v1", "notes": "FEXT/NEXT power integration; sinc-squared weights; TX phasor filter; searchsorted-right fb band; sigma_X scaling" },
+    { "python": "_td_source_crosstalk_noise", "rust": "td_source_crosstalk_noise_v1", "notes": "TDMODE outer product (response x h_ctf), column-major flatten consumed to first-above-fb count, last-channel amplitude convention" },
+    { "python": "np.searchsorted(frequency, fb, side='right')", "rust": "partition_point(<= fb)", "notes": "index_f2 band bound" }
+  ],
+  "not_ported": ["_evaluate_candidate / search loop"],
+  "non_claims": ["not_candidate_evaluation", "not_search_loop", "not_release_evidence"]
+}

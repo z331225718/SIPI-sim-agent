@@ -1,0 +1,18 @@
+{
+  "schema": "sipi.p3c-04y.c4-oracle-compare-stage.v1",
+  "status": "c4_oracle_compare_ported",
+  "purpose": "P3C-03 end-to-end compare slice: the owner C4 metric profile (COM_dB / ICN_mV / ERL, 1% relative tolerance) bound to the authoritative MATLAB oracle aggregate reference (P5-06e) is compared against the per-case MATLAB oracle metric values from the P5-06a evidence as candidates, using the P3C-03c compare engine. This is the first real P3C-03 profile compare with bound oracle references: case_1 and case_2 each pass in their own per-case reference comparison; each per-case reference set is the same values as that case's candidate under this first oracle-bound check. Fail-closed: product and independent reference must agree on pass and per-metric allowed error.",
+  "source_map_ref": "docs/baselines/p3c-04y-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p3c-04x-c4-profile-stage.v1.yaml", "docs/baselines/p5-06e-com-oracle-metric-reference.v1.yaml"],
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (C4 + B4)",
+  "admission": {
+    "c4_oracle_reference_bound": true,
+    "compare_engine_end_to_end": true,
+    "case_level_compare": true,
+    "fail_closed_on_mismatch": true,
+    "profile_compare_execution": true,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_release_evidence", "not_acceptance_evidence", "not_com_parity_across_implementations", "not_a_profile_recertification"]
+}

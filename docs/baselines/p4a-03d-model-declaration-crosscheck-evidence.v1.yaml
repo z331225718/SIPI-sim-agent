@@ -1,0 +1,18 @@
+schema: sipi.p4a-03d.model-declaration-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03d.model-declaration.v1.typed-declaration-only
+file: as4c512m16md4v-053bin.ibs
+matched_count: 1
+entries:
+- id: as4c512m16md4v-053bin
+  file_sha256: d72cf62b56d67d30f4004f56ea3b79b4cb1241615692b147682f47540e615a0b
+  product_declaration_count: 67
+  observer_model_count: 67
+  product_model_types:
+    IO: 40
+    Input: 27
+  observer_model_types:
+    Input: 27
+    I/O: 40
+  matched: true
+  diffs: []

@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b60.mit-source-map.v1",
+  "status": "parameter_tree_token_frequencies_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_token_frequencies_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "global value-token frequency landscape over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "token frequencies", "rust": "compute_parameter_tree_token_frequencies_v1", "notes": "counts every distinct leaf value token across all leaves plus the total token count" },
+    { "concept": "frequency outcome", "rust": "ParameterTreeTokenFrequenciesV1", "notes": "holds total_tokens and the token -> count map" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p5-05a.mit-source-map.v1",
+  "status": "workbook_importer_xlsx_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/config/excel.py" },
+  "mapping": [
+    { "python": "_validate_xlsx_container", "rust": "validate_xlsx_container_v1", "notes": ".xlsx suffix, zip container, vbaProject.bin and externallinks rejection" },
+    { "python": "_is_strict_ooxml", "rust": "is_strict_ooxml_v1", "notes": "Strict namespace or conformance attribute" },
+    { "python": "ComSettings.from_xlsx / _strict_xlsx_cells", "rust": "read_com_settings_xlsx_v1 + parse_sheet_cells", "notes": "Transitional and Strict paths; COM_Settings location via rels; formula-cache rejection; typed values" },
+    { "python": "_strict_shared_strings", "rust": "read_shared_strings", "notes": "rich-text runs concatenated with whitespace preserved" },
+    { "python": "_strict_cell_value / openpyxl value binding", "rust": "classify_cell_value + flush_cell", "notes": "None/Integer/Number/Bool/String; numeric fallback to string; inlineStr handled on the Transitional path" },
+    { "python": "ComSettings.lookup_optional / lookup", "rust": "ComSettingsV1::lookup_optional_v1 / lookup_v1", "notes": "case-insensitive keyword scan, duplicate and missing rejection" },
+    { "python": "RawCell", "rust": "RawCellV1", "notes": "sheet, coordinate, value, formula" }
+  ],
+  "not_ported": ["ComSettings.from_csv / _csv_value", "ComSettings.from_mat / _matlab_cell_value"],
+  "non_claims": ["not_csv_reader", "not_mat_reader", "not_parameter_dto_consumption", "not_release_evidence"]
+}

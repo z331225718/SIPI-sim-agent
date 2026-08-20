@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b67.mit-source-map.v1",
+  "status": "parameter_tree_lcp_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_longest_common_prefix_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "longest common prefix of two canonical paths" },
+  "mapping": [
+    { "concept": "longest common prefix", "rust": "longest_common_path_prefix_v1", "notes": "returns leading segments shared by two canonical paths" },
+    { "concept": "lcp errors", "rust": "ParameterTreeLcpErrorV1", "notes": "EmptyPath fail-closed variant" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

@@ -1,0 +1,53 @@
+schema: sipi.p4a-03m.circuit-call-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03m.circuit-call-declaration-v1.typed-circuit-call
+matched_count: 3
+case_count: 3
+entries:
+- label: valid_circuit_call
+  matched: true
+  product:
+    circuit_name: SUBCKT_DIFF
+    policy: sipi.p4a-03m.circuit-call-declaration-v1.typed-circuit-call
+    port_mapping_count: 2
+    port_mappings:
+    - node_name: N1
+      port_name: P1
+    - node_name: N2
+      port_name: P2
+    valid: true
+  reference:
+    valid: true
+    circuit_name: SUBCKT_DIFF
+    port_mapping_count: 2
+    port_mappings:
+    - port_name: P1
+      node_name: N1
+    - port_name: P2
+      node_name: N2
+- label: single_port_mapping
+  matched: true
+  product:
+    circuit_name: SUBCKT_1
+    policy: sipi.p4a-03m.circuit-call-declaration-v1.typed-circuit-call
+    port_mapping_count: 1
+    port_mappings:
+    - node_name: N1
+      port_name: P1
+    valid: true
+  reference:
+    valid: true
+    circuit_name: SUBCKT_1
+    port_mapping_count: 1
+    port_mappings:
+    - port_name: P1
+      node_name: N1
+- label: duplicate_port_name
+  matched: true
+  product:
+    lift_error: DuplicatePortName("P1")
+    policy: sipi.p4a-03m.circuit-call-declaration-v1.typed-circuit-call
+    valid: false
+  reference:
+    valid: false
+    lift_error: DuplicatePortName("P1")

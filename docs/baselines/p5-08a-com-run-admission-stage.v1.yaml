@@ -1,0 +1,18 @@
+{
+  "schema": "sipi.p5-08a.com-run-admission-stage.v1",
+  "status": "com_run_admission_ported",
+  "purpose": "P5-08a COM run-request admission preflight core: validates the structural contract of a sipi.com.run-request.v1 request (schema id match, non-empty artifact_root/artifact_id caller bindings, non-empty params object of scalar values) WITHOUT invoking any COM computation, conformance admission, or artifact consumption. This is the request-side admission surface a later 'sipi com run' integration will call, delivered as the minimal P5-08 slice the owner authorized (owner-decision-checklist P5-08: integrate in smaller slices). Fail-closed: invalid JSON, schema mismatch, and non-scalar params are errors; missing params / empty params / unbound artifacts yield a not-admitted verdict with a stable reason.",
+  "source_map_ref": "docs/baselines/p5-08a-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p5-03a-com-stage-output-envelope.v1.yaml", "docs/baselines/p5-05e-com-parameters-stage.v1.yaml"],
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (P5-08 smaller slices)",
+  "admission": {
+    "schema_id_match": true,
+    "artifact_binding_check": true,
+    "non_empty_scalar_params": true,
+    "no_conformance_admission": true,
+    "no_com_execution": true,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_com_execution", "not_conformance_admission", "not_artifact_consumption", "not_profile_selection", "not_acceptance_evidence"]
+}

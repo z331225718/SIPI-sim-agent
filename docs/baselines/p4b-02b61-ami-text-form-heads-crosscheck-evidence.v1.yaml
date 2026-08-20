@@ -1,0 +1,48 @@
+schema: sipi.p4b-02b61-ami-text-form-heads-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b61.ami-text-form-heads-v1.head-counts
+matched_count: 4
+case_count: 4
+entries:
+- label: repeated_heads
+  matched: true
+  product:
+    heads:
+      a: 2
+      b: 1
+    policy: sipi.p4b-02b61.ami-text-form-heads-v1.head-counts
+    valid: true
+  reference:
+    valid: true
+    heads:
+      a: 2
+      b: 1
+- label: single_form
+  matched: true
+  product:
+    heads:
+      root: 1
+    policy: sipi.p4b-02b61.ami-text-form-heads-v1.head-counts
+    valid: true
+  reference:
+    valid: true
+    heads:
+      root: 1
+- label: nested_list_head
+  matched: true
+  product:
+    heads_error: InvalidFormHead
+    policy: sipi.p4b-02b61.ami-text-form-heads-v1.head-counts
+    valid: false
+  reference:
+    valid: false
+    heads_error: InvalidFormHead
+- label: empty_text
+  matched: true
+  product:
+    heads_error: EmptyDocument
+    policy: sipi.p4b-02b61.ami-text-form-heads-v1.head-counts
+    valid: false
+  reference:
+    valid: false
+    parse_error: EmptyDocument

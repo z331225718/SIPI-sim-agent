@@ -1,0 +1,52 @@
+schema: sipi.p4b-02b45-parameter-tree-path-string-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b45.parameter-tree-path-string-v1.dotted-path-parse
+matched_count: 4
+case_count: 4
+entries:
+- label: basic
+  matched: true
+  product:
+    policy: sipi.p4b-02b45.parameter-tree-path-string-v1.dotted-path-parse
+    segments:
+    - root
+    - gain
+    valid: true
+  reference:
+    valid: true
+    segments:
+    - root
+    - gain
+- label: deep
+  matched: true
+  product:
+    policy: sipi.p4b-02b45.parameter-tree-path-string-v1.dotted-path-parse
+    segments:
+    - root
+    - sub
+    - deep
+    valid: true
+  reference:
+    valid: true
+    segments:
+    - root
+    - sub
+    - deep
+- label: empty_path
+  matched: true
+  product:
+    path_error: EmptyPath
+    policy: sipi.p4b-02b45.parameter-tree-path-string-v1.dotted-path-parse
+    valid: false
+  reference:
+    valid: false
+    path_error: EmptyPath
+- label: double_dot
+  matched: true
+  product:
+    path_error: EmptySegment
+    policy: sipi.p4b-02b45.parameter-tree-path-string-v1.dotted-path-parse
+    valid: false
+  reference:
+    valid: false
+    path_error: EmptySegment

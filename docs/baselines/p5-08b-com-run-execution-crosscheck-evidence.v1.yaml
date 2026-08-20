@@ -1,0 +1,52 @@
+schema: sipi.p5-08b.com-run-execution-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p5-08b.com-run-execution-v1.admission-to-result
+matched_count: 3
+case_count: 3
+entries:
+- label: valid_admitted_run
+  matched: true
+  product:
+    admitted: true
+    com_db: -9.993741652368078
+    invalid_reason: null
+    policy: sipi.p5-08b.com-run-execution-v1.admission-to-result
+    result_schema: sipi.com.run-result.v1
+    sigma_n_v: 0.010044899373313801
+    vec_db: 313.07119549054045
+    veo_mv: -2160.0
+  reference:
+    admitted: true
+    invalid_reason: null
+    com_db: -9.993741652368078
+    vec_db: 313.07119549054045
+    veo_mv: -2160.0
+    sigma_n_v: 0.010044899373313801
+- label: invalid_schema
+  matched: true
+  product:
+    admitted: false
+    com_db: null
+    invalid_reason: SchemaMismatch
+    policy: sipi.p5-08b.com-run-execution-v1.admission-to-result
+    result_schema: sipi.com.run-result.v1
+    sigma_n_v: null
+    vec_db: null
+    veo_mv: null
+  reference:
+    admitted: false
+    invalid_reason: SchemaMismatch
+- label: missing_artifact_id
+  matched: true
+  product:
+    admitted: false
+    com_db: null
+    invalid_reason: unbound_artifacts
+    policy: sipi.p5-08b.com-run-execution-v1.admission-to-result
+    result_schema: sipi.com.run-result.v1
+    sigma_n_v: null
+    vec_db: null
+    veo_mv: null
+  reference:
+    admitted: false
+    invalid_reason: unbound_artifacts

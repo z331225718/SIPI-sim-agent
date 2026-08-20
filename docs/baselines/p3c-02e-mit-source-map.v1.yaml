@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p3c-02e.mit-source-map.v1",
+  "status": "qfactor_ber_ported_with_source_map",
+  "source": { "repo": "standard", "license": "public standard (IEEE 802.3 Q-factor / BER relation)", "path": "IEEE Std 802.3-2022 clause 168 (COM) Q/BER" },
+  "observation": { "ref": "docs/baselines/owner-decision-checklist.v1.md", "note": "owner A5 decision: Q-factor estimator, 0.1 dB tolerance" },
+  "mapping": [
+    { "standard": "ber = 0.5*erfc(q/sqrt2)", "rust": "q_factor_to_ber_v1", "notes": "reuses P5-04h erfc core" },
+    { "standard": "q = sqrt2*erfcinv(2*ber)", "rust": "ber_to_q_factor_v1", "notes": "inverse via erfcinv" },
+    { "standard": "Q = amplitude_pp / (2*sigma)", "rust": "estimate_q_factor_v1", "notes": "single-ended amplitude to mid-level threshold" },
+    { "owner_decision": "0.1 dB tolerance policy", "rust": "OWNER_TOLERANCE_POLICY_V1", "notes": "recorded, not an evaluator" }
+  ],
+  "not_ported": ["eye folding / bin semantics (P3C-02c)", "bathtub curve fitting", "statistical eye contour"]
+}

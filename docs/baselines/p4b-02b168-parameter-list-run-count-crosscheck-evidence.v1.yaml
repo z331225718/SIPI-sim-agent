@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b168-parameter-list-run-count-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b168.parameter-list-run-count-v1.run-count
+matched_count: 4
+case_count: 4
+entries:
+- label: single_run
+  matched: true
+  product:
+    policy: sipi.p4b-02b168.parameter-list-run-count-v1.run-count
+    run_count: 1
+    valid: true
+  reference:
+    valid: true
+    run_count: 1
+- label: multiple_runs
+  matched: true
+  product:
+    policy: sipi.p4b-02b168.parameter-list-run-count-v1.run-count
+    run_count: 4
+    valid: true
+  reference:
+    valid: true
+    run_count: 4
+- label: all_distinct
+  matched: true
+  product:
+    policy: sipi.p4b-02b168.parameter-list-run-count-v1.run-count
+    run_count: 3
+    valid: true
+  reference:
+    valid: true
+    run_count: 3
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b168.parameter-list-run-count-v1.run-count
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b39.mit-source-map.v1",
+  "status": "parameter_tree_leaf_value_set_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_set_value_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "path-addressed typed leaf value set over AmiParameterTreeV1 reusing P4B-02b1 value rules" },
+  "mapping": [
+    { "concept": "leaf value set", "rust": "set_parameter_tree_leaf_value_v1", "notes": "sets one leaf's value tokens to a validated single token; path-addressed, returns a new tree" },
+    { "concept": "set errors", "rust": "ParameterTreeValueSetErrorV1", "notes": "EmptyPath, RootMismatch, PathNotFound, TargetNotLeaf, MissingType, InvalidValue, InvalidLeafName fail-closed variants" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

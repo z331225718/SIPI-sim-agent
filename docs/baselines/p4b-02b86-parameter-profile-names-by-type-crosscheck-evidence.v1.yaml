@@ -1,0 +1,52 @@
+schema: sipi.p4b-02b86-parameter-profile-names-by-type-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b86.parameter-profile-names-by-type-v1.names-by-declared-type
+matched_count: 4
+case_count: 4
+entries:
+- label: float_names
+  matched: true
+  product:
+    names:
+    - gain
+    - offset
+    policy: sipi.p4b-02b86.parameter-profile-names-by-type-v1.names-by-declared-type
+    valid: true
+  reference:
+    valid: true
+    names:
+    - gain
+    - offset
+- label: integer_names
+  matched: true
+  product:
+    names:
+    - alpha
+    - beta
+    - zeta
+    policy: sipi.p4b-02b86.parameter-profile-names-by-type-v1.names-by-declared-type
+    valid: true
+  reference:
+    valid: true
+    names:
+    - alpha
+    - beta
+    - zeta
+- label: no_match
+  matched: true
+  product:
+    names: []
+    policy: sipi.p4b-02b86.parameter-profile-names-by-type-v1.names-by-declared-type
+    valid: true
+  reference:
+    valid: true
+    names: []
+- label: unknown_type
+  matched: true
+  product:
+    error: UnknownTypeToken
+    policy: sipi.p4b-02b86.parameter-profile-names-by-type-v1.names-by-declared-type
+    valid: false
+  reference:
+    valid: false
+    error: UnknownTypeToken

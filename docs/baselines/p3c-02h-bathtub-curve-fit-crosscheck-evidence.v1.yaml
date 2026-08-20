@@ -1,0 +1,64 @@
+schema: sipi.p3c-02h-bathtub-curve-fit-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p3c-02h.bathtub-curve-fit.v1.log-ber-poly-fit
+matched_count: 4
+case_count: 4
+entries:
+- label: linear_fit
+  matched: true
+  product:
+    coefficients:
+    - '-2.000000000000'
+    - '-3.000000000000'
+    fit_order: 1
+    max_abs_residual: '0.000000000000'
+    policy: sipi.p3c-02h.bathtub-curve-fit.v1.log-ber-poly-fit
+    sample_count: 4
+    valid: true
+  reference:
+    valid: true
+    fit_order: 1
+    coefficients:
+    - '-2.000000000000'
+    - '-3.000000000000'
+    sample_count: 4
+    max_abs_residual: '0.000000000000'
+- label: quadratic_fit
+  matched: true
+  product:
+    coefficients:
+    - '1.000000000000'
+    - '-4.000000000000'
+    - '1.000000000000'
+    fit_order: 2
+    max_abs_residual: '0.000000000000'
+    policy: sipi.p3c-02h.bathtub-curve-fit.v1.log-ber-poly-fit
+    sample_count: 5
+    valid: true
+  reference:
+    valid: true
+    fit_order: 2
+    coefficients:
+    - '1.000000000000'
+    - '-4.000000000000'
+    - '1.000000000000'
+    sample_count: 5
+    max_abs_residual: '0.000000000000'
+- label: insufficient_samples
+  matched: true
+  product:
+    fit_error: 'InsufficientSamplesForOrder { order: 3, samples: 3 }'
+    policy: sipi.p3c-02h.bathtub-curve-fit.v1.log-ber-poly-fit
+    valid: false
+  reference:
+    valid: false
+    fit_error: 'InsufficientSamplesForOrder { order: 3, samples: 3 }'
+- label: invalid_ber
+  matched: true
+  product:
+    fit_error: InvalidBer
+    policy: sipi.p3c-02h.bathtub-curve-fit.v1.log-ber-poly-fit
+    valid: false
+  reference:
+    valid: false
+    fit_error: InvalidBer

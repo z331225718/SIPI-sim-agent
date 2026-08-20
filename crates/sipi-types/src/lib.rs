@@ -109,6 +109,9 @@ si_unit!(Amps, "amps");
 si_unit!(Ohms, "ohms");
 si_unit!(Siemens, "siemens");
 si_unit!(Meters, "meters");
+si_unit!(Henries, "henries");
+si_unit!(Farads, "farads");
+si_unit!(VoltsPerSecond, "volts-per-second");
 
 /// A finite, non-zero step expressed in the same unit as its axis.
 #[derive(Clone, Copy, Debug, PartialEq)]

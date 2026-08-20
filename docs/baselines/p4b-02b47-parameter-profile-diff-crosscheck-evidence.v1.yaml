@@ -1,0 +1,88 @@
+schema: sipi.p4b-02b47-parameter-profile-diff-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b47.parameter-profile-diff-v1.profile-comparison
+matched_count: 4
+case_count: 4
+entries:
+- label: identical
+  matched: true
+  product:
+    added: []
+    changed: []
+    matched: 2
+    policy: sipi.p4b-02b47.parameter-profile-diff-v1.profile-comparison
+    removed: []
+    valid: true
+  reference:
+    valid: true
+    matched: 2
+    added: []
+    removed: []
+    changed: []
+- label: added_and_removed
+  matched: true
+  product:
+    added:
+    - enabled
+    changed: []
+    matched: 1
+    policy: sipi.p4b-02b47.parameter-profile-diff-v1.profile-comparison
+    removed:
+    - steps
+    valid: true
+  reference:
+    valid: true
+    matched: 1
+    added:
+    - enabled
+    removed:
+    - steps
+    changed: []
+- label: value_change
+  matched: true
+  product:
+    added: []
+    changed:
+    - name: gain
+      new:
+        type: Float
+        value: '1.25'
+      old:
+        type: Float
+        value: '0.5'
+    matched: 0
+    policy: sipi.p4b-02b47.parameter-profile-diff-v1.profile-comparison
+    removed: []
+    valid: true
+  reference:
+    valid: true
+    matched: 0
+    added: []
+    removed: []
+    changed:
+    - name: gain
+      old:
+        type: Float
+        value: '0.5'
+      new:
+        type: Float
+        value: '1.25'
+- label: empty_a
+  matched: true
+  product:
+    added:
+    - gain
+    - steps
+    changed: []
+    matched: 0
+    policy: sipi.p4b-02b47.parameter-profile-diff-v1.profile-comparison
+    removed: []
+    valid: true
+  reference:
+    valid: true
+    matched: 0
+    added:
+    - gain
+    - steps
+    removed: []
+    changed: []

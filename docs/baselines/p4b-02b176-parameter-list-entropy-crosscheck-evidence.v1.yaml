@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b176-parameter-list-entropy-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b176.parameter-list-entropy-v1.entropy
+matched_count: 4
+case_count: 4
+entries:
+- label: all_equal
+  matched: true
+  product:
+    entropy: '0.000000000000'
+    policy: sipi.p4b-02b176.parameter-list-entropy-v1.entropy
+    valid: true
+  reference:
+    valid: true
+    entropy: '0.000000000000'
+- label: all_distinct
+  matched: true
+  product:
+    entropy: '1.584962500721'
+    policy: sipi.p4b-02b176.parameter-list-entropy-v1.entropy
+    valid: true
+  reference:
+    valid: true
+    entropy: '1.584962500721'
+- label: unbalanced
+  matched: true
+  product:
+    entropy: '1.370950594455'
+    policy: sipi.p4b-02b176.parameter-list-entropy-v1.entropy
+    valid: true
+  reference:
+    valid: true
+    entropy: '1.370950594455'
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b176.parameter-list-entropy-v1.entropy
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

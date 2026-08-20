@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b30.mit-source-map.v1",
+  "status": "parameter_tree_leaf_index_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_leaf_index_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "canonical-path leaf index and resolution over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "leaf index build", "rust": "build_parameter_tree_leaf_index_v1", "notes": "collects canonical leaf paths and value tokens" },
+    { "concept": "leaf path resolution", "rust": "ParameterTreeLeafIndexV1::resolve_leaf", "notes": "resolves canonical leaf path to value tokens, distinguishing branch paths from missing paths" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

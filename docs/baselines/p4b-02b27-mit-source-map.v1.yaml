@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4b-02b27.mit-source-map.v1",
+  "status": "parameter_tree_replace_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_replace_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "canonical dot-separated path node replace over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "node replace by canonical path", "rust": "replace_parameter_tree_node_v1", "notes": "replaces target node with a replacement subtree node and returns a new tree" },
+    { "concept": "root replace guard", "rust": "ParameterTreeReplaceErrorV1::RootReplaceForbidden", "notes": "replacing the root node fails closed" },
+    { "concept": "sibling name collision check", "rust": "ParameterTreeReplaceErrorV1::SiblingNameCollision", "notes": "replacement name colliding with a sibling fails closed" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

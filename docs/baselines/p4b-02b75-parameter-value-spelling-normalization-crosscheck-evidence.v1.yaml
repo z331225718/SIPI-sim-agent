@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b75-parameter-value-spelling-normalization-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b75.parameter-value-spelling-normalization-v1.canonical-non-float-spelling
+matched_count: 4
+case_count: 4
+entries:
+- label: integer_normalization
+  matched: true
+  product:
+    canonical: '7'
+    policy: sipi.p4b-02b75.parameter-value-spelling-normalization-v1.canonical-non-float-spelling
+    valid: true
+  reference:
+    valid: true
+    canonical: '7'
+- label: list_normalization
+  matched: true
+  product:
+    canonical: (a, b, c)
+    policy: sipi.p4b-02b75.parameter-value-spelling-normalization-v1.canonical-non-float-spelling
+    valid: true
+  reference:
+    valid: true
+    canonical: (a, b, c)
+- label: float_raw
+  matched: true
+  product:
+    canonical: '0.50'
+    policy: sipi.p4b-02b75.parameter-value-spelling-normalization-v1.canonical-non-float-spelling
+    valid: true
+  reference:
+    valid: true
+    canonical: '0.50'
+- label: string_raw
+  matched: true
+  product:
+    canonical: 'Linear '
+    policy: sipi.p4b-02b75.parameter-value-spelling-normalization-v1.canonical-non-float-spelling
+    valid: true
+  reference:
+    valid: true
+    canonical: 'Linear '

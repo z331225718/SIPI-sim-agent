@@ -1,0 +1,74 @@
+schema: sipi.p4b-02b95-parameter-profile-canonical-spelling-check-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b95.parameter-profile-canonical-spelling-check-v1.canonical-profile-spelling-check
+matched_count: 4
+case_count: 4
+entries:
+- label: canonical_profile
+  matched: true
+  product:
+    canonical: true
+    entries: 3
+    non_canonical: []
+    policy: sipi.p4b-02b95.parameter-profile-canonical-spelling-check-v1.canonical-profile-spelling-check
+    valid: true
+  reference:
+    valid: true
+    entries: 3
+    canonical: true
+    non_canonical: []
+- label: non_canonical_integer
+  matched: true
+  product:
+    canonical: false
+    entries: 2
+    non_canonical:
+    - canonical: '7'
+      name: steps
+      type_token: Integer
+      value_token: '007'
+    policy: sipi.p4b-02b95.parameter-profile-canonical-spelling-check-v1.canonical-profile-spelling-check
+    valid: true
+  reference:
+    valid: true
+    entries: 2
+    canonical: false
+    non_canonical:
+    - name: steps
+      type_token: Integer
+      value_token: '007'
+      canonical: '7'
+- label: non_canonical_list
+  matched: true
+  product:
+    canonical: false
+    entries: 1
+    non_canonical:
+    - canonical: (a, b, c)
+      name: channels
+      type_token: List
+      value_token: (a,b,c)
+    policy: sipi.p4b-02b95.parameter-profile-canonical-spelling-check-v1.canonical-profile-spelling-check
+    valid: true
+  reference:
+    valid: true
+    entries: 1
+    canonical: false
+    non_canonical:
+    - name: channels
+      type_token: List
+      value_token: (a,b,c)
+      canonical: (a, b, c)
+- label: empty_profile
+  matched: true
+  product:
+    canonical: true
+    entries: 0
+    non_canonical: []
+    policy: sipi.p4b-02b95.parameter-profile-canonical-spelling-check-v1.canonical-profile-spelling-check
+    valid: true
+  reference:
+    valid: true
+    entries: 0
+    canonical: true
+    non_canonical: []

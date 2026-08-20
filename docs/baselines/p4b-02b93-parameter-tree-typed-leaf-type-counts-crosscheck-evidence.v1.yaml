@@ -1,0 +1,90 @@
+schema: sipi.p4b-02b93-parameter-tree-typed-leaf-type-counts-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b93.parameter-tree-typed-leaf-type-counts-v1.typed-leaf-type-counts
+matched_count: 4
+case_count: 4
+entries:
+- label: typed_forms
+  matched: true
+  product:
+    boolean_count: 1
+    float_count: 1
+    integer_count: 1
+    list_count: 1
+    policy: sipi.p4b-02b93.parameter-tree-typed-leaf-type-counts-v1.typed-leaf-type-counts
+    skipped: 0
+    string_count: 1
+    total_typed: 5
+    valid: true
+  reference:
+    valid: true
+    total_typed: 5
+    float_count: 1
+    integer_count: 1
+    boolean_count: 1
+    string_count: 1
+    list_count: 1
+    skipped: 0
+- label: mixed_skipped
+  matched: true
+  product:
+    boolean_count: 0
+    float_count: 1
+    integer_count: 0
+    list_count: 0
+    policy: sipi.p4b-02b93.parameter-tree-typed-leaf-type-counts-v1.typed-leaf-type-counts
+    skipped: 2
+    string_count: 0
+    total_typed: 1
+    valid: true
+  reference:
+    valid: true
+    total_typed: 1
+    float_count: 1
+    integer_count: 0
+    boolean_count: 0
+    string_count: 0
+    list_count: 0
+    skipped: 2
+- label: nested
+  matched: true
+  product:
+    boolean_count: 0
+    float_count: 1
+    integer_count: 1
+    list_count: 0
+    policy: sipi.p4b-02b93.parameter-tree-typed-leaf-type-counts-v1.typed-leaf-type-counts
+    skipped: 0
+    string_count: 0
+    total_typed: 2
+    valid: true
+  reference:
+    valid: true
+    total_typed: 2
+    float_count: 1
+    integer_count: 1
+    boolean_count: 0
+    string_count: 0
+    list_count: 0
+    skipped: 0
+- label: no_typed
+  matched: true
+  product:
+    boolean_count: 0
+    float_count: 0
+    integer_count: 0
+    list_count: 0
+    policy: sipi.p4b-02b93.parameter-tree-typed-leaf-type-counts-v1.typed-leaf-type-counts
+    skipped: 2
+    string_count: 0
+    total_typed: 0
+    valid: true
+  reference:
+    valid: true
+    total_typed: 0
+    float_count: 0
+    integer_count: 0
+    boolean_count: 0
+    string_count: 0
+    list_count: 0
+    skipped: 2

@@ -1,0 +1,49 @@
+schema: sipi.p5-04k.dfe-crosscheck-evidence.v1
+status: dfe_crosscheck_matched
+oracle:
+  repo: agent-com
+  license: MIT
+  path: src/agent_com/equalization/dfe.py
+  functions:
+  - apply_tail_rss_bounds
+  - clip_dfe
+  - find_dfe_bank_locations
+  - apply_dfe_bank
+  numpy_version: 2.4.6
+tolerance: 1.0e-12
+entries:
+- id: tail_rss_exceed
+  input_sha256: 3da88e32629498235c65d5182bc5dbd7de7444504df142a3ec51fba0db5b5ad8
+  matched: true
+  diffs: []
+- id: tail_rss_none
+  input_sha256: 9c052ceb5f7ee2373fccb231f255fb9d865c8915edc4c02fbff648ea293c5a33
+  matched: true
+  diffs: []
+- id: tail_rss_below
+  input_sha256: da802f75be708f5ff6417b5977afc4dd49fbc1f820deec61ee15af4fe13bf399
+  matched: true
+  diffs: []
+- id: clip_5
+  input_sha256: d3c2167b2e385720ef1680ed97e58fcb8b85683a51e5366b279ed90b83f2e848
+  matched: true
+  diffs: []
+- id: bank_locations_two
+  input_sha256: 9ebef8d06903e67d4dc2fbc116696de95fd3251a760ece6648e181871a880103
+  matched: true
+  diffs: []
+- id: bank_locations_offset
+  input_sha256: 1201c83866fb7651ae91fbf83d1ba8c0825830846476cefc3557573fd94e932c
+  matched: true
+  diffs: []
+- id: apply_bank_quantized
+  input_sha256: 329d109b273a349d8bfa25b80ef8cdf43a0f2ce3a80a5dd0324b82609c3b016e
+  matched: true
+  diffs: []
+- id: apply_bank_plain
+  input_sha256: 6afe7d8a485d95ad11526c74d155165040fbfd6ce595fadfdb56ffe6ca343f8b
+  matched: true
+  diffs: []
+non_claims:
+- not_search_integration
+- not_release_evidence

@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p3c-04x.mit-source-map.v1",
+  "status": "c4_metric_profile_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-compare c4_metric_profile_v1.rs (owner C4 COM metric profile definition)" },
+  "observation": { "ref": "docs/baselines/owner-decision-checklist.v1.md", "note": "C4 decision recorded 2026-08-16: COM_dB / ICN_mV / ERL, relative tolerance < 1%" },
+  "mapping": [
+    { "concept": "C4 metric set (COM_dB / ICN_mV / ERL)", "rust": "C4_METRICS const", "notes": "name + unit token; profile order" },
+    { "concept": "1% relative tolerance", "rust": "C4_RELATIVE_TOLERANCE_V1", "notes": "owner < 1% decision" },
+    { "concept": "caller-supplied finite reference", "rust": "c4_metric_specs_v1 references map", "notes": "no hard-coded reference; missing/non-finite fail closed" },
+    { "concept": "compare-engine compatibility", "rust": "returns Vec<MetricSpecV1> for P3C-03c compile", "notes": "reference oracle-driven (B4)" }
+  ],
+  "not_ported": ["hard-coded per-metric reference", "COM parity execution", "oracle invocation", "reference values"]
+}

@@ -1,0 +1,78 @@
+schema: sipi.p4b-02b70-parameter-value-equivalence-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b70.parameter-value-equivalence-v1.typed-value-semantics
+matched_count: 4
+case_count: 4
+entries:
+- label: float_spelling
+  matched: true
+  product:
+    equivalent: true
+    left:
+      name: gain
+      type: Float
+      value: '0.5'
+    policy: sipi.p4b-02b70.parameter-value-equivalence-v1.typed-value-semantics
+    reason: null
+    right:
+      name: gain
+      type: Float
+      value: '0.50'
+    valid: true
+  reference:
+    equivalent: true
+    reason: null
+- label: integer_spelling
+  matched: true
+  product:
+    equivalent: true
+    left:
+      name: steps
+      type: Integer
+      value: '007'
+    policy: sipi.p4b-02b70.parameter-value-equivalence-v1.typed-value-semantics
+    reason: null
+    right:
+      name: steps
+      type: Integer
+      value: '7'
+    valid: true
+  reference:
+    equivalent: true
+    reason: null
+- label: list_spacing
+  matched: true
+  product:
+    equivalent: true
+    left:
+      name: channels
+      type: List
+      value: (a, b, c)
+    policy: sipi.p4b-02b70.parameter-value-equivalence-v1.typed-value-semantics
+    reason: null
+    right:
+      name: channels
+      type: List
+      value: (a,b,c)
+    valid: true
+  reference:
+    equivalent: true
+    reason: null
+- label: cross_type
+  matched: true
+  product:
+    equivalent: false
+    left:
+      name: x
+      type: Float
+      value: '1.0'
+    policy: sipi.p4b-02b70.parameter-value-equivalence-v1.typed-value-semantics
+    reason: TypeMismatch
+    right:
+      name: x
+      type: Integer
+      value: '1'
+    valid: true
+  reference:
+    equivalent: false
+    reason: TypeMismatch

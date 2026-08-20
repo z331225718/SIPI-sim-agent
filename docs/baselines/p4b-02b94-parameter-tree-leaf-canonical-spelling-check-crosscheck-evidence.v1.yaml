@@ -1,0 +1,74 @@
+schema: sipi.p4b-02b94-parameter-tree-leaf-canonical-spelling-check-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b94.parameter-tree-leaf-canonical-spelling-check-v1.canonical-leaf-spelling-check
+matched_count: 4
+case_count: 4
+entries:
+- label: canonical_tree
+  matched: true
+  product:
+    canonical: true
+    non_canonical: []
+    policy: sipi.p4b-02b94.parameter-tree-leaf-canonical-spelling-check-v1.canonical-leaf-spelling-check
+    typed_leaves: 3
+    valid: true
+  reference:
+    valid: true
+    typed_leaves: 3
+    canonical: true
+    non_canonical: []
+- label: non_canonical_integer
+  matched: true
+  product:
+    canonical: false
+    non_canonical:
+    - canonical: '7'
+      path: root.steps
+      type_token: Integer
+      value_token: '007'
+    policy: sipi.p4b-02b94.parameter-tree-leaf-canonical-spelling-check-v1.canonical-leaf-spelling-check
+    typed_leaves: 2
+    valid: true
+  reference:
+    valid: true
+    typed_leaves: 2
+    canonical: false
+    non_canonical:
+    - path: root.steps
+      type_token: Integer
+      value_token: '007'
+      canonical: '7'
+- label: nested
+  matched: true
+  product:
+    canonical: false
+    non_canonical:
+    - canonical: '7'
+      path: root.sub.steps
+      type_token: Integer
+      value_token: '007'
+    policy: sipi.p4b-02b94.parameter-tree-leaf-canonical-spelling-check-v1.canonical-leaf-spelling-check
+    typed_leaves: 2
+    valid: true
+  reference:
+    valid: true
+    typed_leaves: 2
+    canonical: false
+    non_canonical:
+    - path: root.sub.steps
+      type_token: Integer
+      value_token: '007'
+      canonical: '7'
+- label: no_typed
+  matched: true
+  product:
+    canonical: true
+    non_canonical: []
+    policy: sipi.p4b-02b94.parameter-tree-leaf-canonical-spelling-check-v1.canonical-leaf-spelling-check
+    typed_leaves: 0
+    valid: true
+  reference:
+    valid: true
+    typed_leaves: 0
+    canonical: true
+    non_canonical: []

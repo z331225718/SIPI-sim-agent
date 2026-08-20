@@ -1,0 +1,74 @@
+schema: sipi.p4b-02b54-parameter-tree-duplicate-consistency-check-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b54.parameter-tree-duplicate-consistency-check-v1.duplicate-name-check
+matched_count: 4
+case_count: 4
+entries:
+- label: consistent
+  matched: true
+  product:
+    consistent:
+    - gain
+    duplicated_names: 1
+    inconsistent: []
+    leaves_checked: 2
+    policy: sipi.p4b-02b54.parameter-tree-duplicate-consistency-check-v1.duplicate-name-check
+    valid: true
+  reference:
+    valid: true
+    leaves_checked: 2
+    duplicated_names: 1
+    consistent:
+    - gain
+    inconsistent: []
+- label: inconsistent
+  matched: true
+  product:
+    consistent: []
+    duplicated_names: 1
+    inconsistent:
+    - gain
+    leaves_checked: 2
+    policy: sipi.p4b-02b54.parameter-tree-duplicate-consistency-check-v1.duplicate-name-check
+    valid: true
+  reference:
+    valid: true
+    leaves_checked: 2
+    duplicated_names: 1
+    consistent: []
+    inconsistent:
+    - gain
+- label: unique
+  matched: true
+  product:
+    consistent: []
+    duplicated_names: 0
+    inconsistent: []
+    leaves_checked: 2
+    policy: sipi.p4b-02b54.parameter-tree-duplicate-consistency-check-v1.duplicate-name-check
+    valid: true
+  reference:
+    valid: true
+    leaves_checked: 2
+    duplicated_names: 0
+    consistent: []
+    inconsistent: []
+- label: mixed
+  matched: true
+  product:
+    consistent:
+    - a
+    duplicated_names: 2
+    inconsistent:
+    - b
+    leaves_checked: 4
+    policy: sipi.p4b-02b54.parameter-tree-duplicate-consistency-check-v1.duplicate-name-check
+    valid: true
+  reference:
+    valid: true
+    leaves_checked: 4
+    duplicated_names: 2
+    consistent:
+    - a
+    inconsistent:
+    - b

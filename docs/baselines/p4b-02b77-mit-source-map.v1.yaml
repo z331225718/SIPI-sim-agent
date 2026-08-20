@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b77.mit-source-map.v1",
+  "status": "parameter_profile_canonicalization_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_canonicalization_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "canonical spelling of every entry of an assembled parameter profile" },
+  "mapping": [
+    { "concept": "profile canonicalization", "rust": "canonicalize_parameter_profile_v1", "notes": "applies 02b75 canonical spelling per entry and rebuilds validated values" },
+    { "concept": "canonicalization outcome", "rust": "ParameterProfileCanonicalizationV1", "notes": "entries and canonicalized counts plus the canonical profile map" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

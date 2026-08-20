@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b41.mit-source-map.v1",
+  "status": "parameter_tree_inferred_decode_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_inferred_decode_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "composition of P4B-02b33 inference and P4B-02b37 decoding into one pass" },
+  "mapping": [
+    { "concept": "inferred decoding", "rust": "decode_parameter_tree_with_inferred_types_v1", "notes": "infers leaf types then decodes leaf values in one fail-closed pass; no caller type map" },
+    { "concept": "composition outcome", "rust": "ParameterTreeInferredDecodingV1", "notes": "holds leaves_decoded, leaf_types, and typed values" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

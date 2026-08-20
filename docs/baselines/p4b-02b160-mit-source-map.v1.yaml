@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b160.mit-source-map.v1",
+  "status": "parameter_list_all_equal_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_all_equal_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "mutual all-equal check over the trimmed items of a validated AMI parameter list value" },
+  "mapping": [
+    { "concept": "all-equal check", "rust": "parameter_list_all_equal_v1", "notes": "all trimmed items mutually equal by raw byte equality; single-item list trivially true" },
+    { "concept": "all-equal errors", "rust": "ParameterListAllEqualErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

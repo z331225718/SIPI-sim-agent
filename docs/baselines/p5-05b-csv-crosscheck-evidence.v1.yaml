@@ -1,0 +1,34 @@
+schema: sipi.p5-05b.csv-crosscheck-evidence.v1
+status: csv_crosscheck_matched
+oracle:
+  repo: agent-com
+  license: MIT
+  path: src/agent_com/config/excel.py
+  function: ComSettings.from_csv
+entries:
+- id: csv_config_fixture
+  csv_sha256: ddab9323d009cceba087a1e016c4d5b805007f53775b226e0b99645969f13ac1
+  rows: 11
+  columns: 2
+  matched: true
+  diffs: []
+negative:
+- id: negative_unterminated_quote
+  oracle_rejected: false
+  product_rejected: false
+  matched: true
+lookups:
+- f_b
+- A_ft
+- Port Order
+- quoted
+- escaped
+- empty
+- num
+- neg
+- exp
+- missing_key
+non_claims:
+- not_mat_reader
+- not_parameter_dto_consumption
+- not_release_evidence

@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-05d.mit-source-map.v1",
+  "status": "parameter_surface_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/config/excel.py" },
+  "observation": { "ref": "docs/baselines/p5-r480-canonical-parameter-reference.v1.yaml", "note": "214 keys / 229 xls_parameter calls observed from authorized MATLAB r4.80 source" },
+  "mapping": [
+    { "python": "ComSettings.lookup_optional scan semantics", "rust": "extract_parameter_pairs_v1", "notes": "non-empty string cell with a non-empty right-hand neighbor is one parameter pair" },
+    { "python": "ComSettings grid surface", "rust": "classify_parameter_surface_v1", "notes": "consumed/unconsumed split against the canonical key set" },
+    { "python": "RawCell coordinate/value surface", "rust": "ParameterPairV1", "notes": "key, left/right coordinates, typed value kind" }
+  ],
+  "not_ported": ["value consumption / default resolution (P5-02 consumption surface)", "behavior profile", "workbook write-back"],
+  "non_claims": ["not_value_consumption", "not_behavior_profile", "not_release_evidence"]
+}

@@ -1,0 +1,37 @@
+schema: sipi.p4b-02b9.parameter-tree-formatter-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b9.parameter-tree-formatter-v1.tree-to-sexpr
+matched_count: 3
+case_count: 3
+entries:
+- label: valid_tree_formatting
+  matched: true
+  product:
+    formatted_text: "(Reserved_Parameters\n  (dfe\n    (tap_1 Integer 2))\n  (tx_swing\
+      \ Float 0.5))"
+    policy: sipi.p4b-02b9.parameter-tree-formatter-v1.tree-to-sexpr
+    valid: true
+  reference:
+    valid: true
+    formatted_text: "(Reserved_Parameters\n  (dfe\n    (tap_1 Integer 2))\n  (tx_swing\
+      \ Float 0.5))"
+- label: nested_branches_formatting
+  matched: true
+  product:
+    formatted_text: "(root\n  (branch_a\n    (leaf_1 10))\n  (branch_b\n    (leaf_2\
+      \ 20)))"
+    policy: sipi.p4b-02b9.parameter-tree-formatter-v1.tree-to-sexpr
+    valid: true
+  reference:
+    valid: true
+    formatted_text: "(root\n  (branch_a\n    (leaf_1 10))\n  (branch_b\n    (leaf_2\
+      \ 20)))"
+- label: empty_document
+  matched: true
+  product:
+    build_error: EmptyDocument
+    policy: sipi.p4b-02b9.parameter-tree-formatter-v1.tree-to-sexpr
+    valid: false
+  reference:
+    valid: false
+    format_error: EmptyDocument

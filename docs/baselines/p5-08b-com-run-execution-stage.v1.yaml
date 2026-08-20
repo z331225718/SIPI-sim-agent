@@ -1,0 +1,25 @@
+{
+  "schema": "sipi.p5-08b.com-run-execution-stage.v1",
+  "status": "com_run_execution_ported",
+  "purpose": "P5-08 COM run-request execution & result envelope sub-slice: connects sipi.com.run-request.v1 admission preflight (P5-08a) with parameter resolution (P5-05f) and fixed-tap COM chain execution (P5-06f) into a typed sipi.com.run-result.v1 response envelope (sipi-com com_run_execution_v1.rs). Fail-closed: unadmitted requests emit structured failure envelopes with invalid_reason; invalid inputs or chain errors fail closed cleanly.",
+  "source_map_ref": "docs/baselines/p5-08b-mit-source-map.v1.yaml",
+  "based_on": [
+    "docs/baselines/p5-08a-com-run-admission-stage.v1.yaml",
+    "docs/baselines/p5-05f-parameter-resolver-stage.v1.yaml",
+    "docs/baselines/p5-06f-com-chain-core.v1.yaml",
+    "docs/baselines/p5-03a-com-stage-output-envelope.v1.yaml"
+  ],
+  "admission": {
+    "com_run_execution_pipeline": true,
+    "result_envelope_formatting": true,
+    "unadmitted_request_handling": true,
+    "fail_closed_on_execution_error": true,
+    "full_conformance_stack": false,
+    "release_evidence": false
+  },
+  "non_claims": [
+    "not_full_conformance_stack",
+    "not_com_parity",
+    "not_acceptance_evidence"
+  ]
+}

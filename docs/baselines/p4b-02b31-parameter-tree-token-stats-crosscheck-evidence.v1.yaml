@@ -1,0 +1,65 @@
+schema: sipi.p4b-02b31-parameter-tree-token-stats-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b31.parameter-tree-token-stats-v1.tree-token-statistics
+matched_count: 3
+case_count: 3
+entries:
+- label: typed_token_stats
+  matched: true
+  product:
+    distinct_tokens:
+    - '0.5'
+    - '1'
+    - Float
+    leaf_count: 2
+    max_tokens_per_leaf: 2
+    policy: sipi.p4b-02b31.parameter-tree-token-stats-v1.tree-token-statistics
+    total_tokens: 3
+    valid: true
+  reference:
+    valid: true
+    leaf_count: 2
+    total_tokens: 3
+    max_tokens_per_leaf: 2
+    distinct_tokens:
+    - '0.5'
+    - '1'
+    - Float
+- label: single_leaf_token_stats
+  matched: true
+  product:
+    distinct_tokens:
+    - '1'
+    leaf_count: 1
+    max_tokens_per_leaf: 1
+    policy: sipi.p4b-02b31.parameter-tree-token-stats-v1.tree-token-statistics
+    total_tokens: 1
+    valid: true
+  reference:
+    valid: true
+    leaf_count: 1
+    total_tokens: 1
+    max_tokens_per_leaf: 1
+    distinct_tokens:
+    - '1'
+- label: repeated_token_stats
+  matched: true
+  product:
+    distinct_tokens:
+    - '1'
+    - '2'
+    - '3'
+    leaf_count: 2
+    max_tokens_per_leaf: 2
+    policy: sipi.p4b-02b31.parameter-tree-token-stats-v1.tree-token-statistics
+    total_tokens: 4
+    valid: true
+  reference:
+    valid: true
+    leaf_count: 2
+    total_tokens: 4
+    max_tokens_per_leaf: 2
+    distinct_tokens:
+    - '1'
+    - '2'
+    - '3'

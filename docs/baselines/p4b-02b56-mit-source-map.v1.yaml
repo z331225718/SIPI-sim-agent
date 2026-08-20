@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b56.mit-source-map.v1",
+  "status": "parameter_tree_path_join_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_path_join_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "dotted path joining of segments; inverse of P4B-02b45 parsing" },
+  "mapping": [
+    { "concept": "path joining", "rust": "join_parameter_tree_path_v1", "notes": "joins segments into a dotted path string; raw bytes preserved" },
+    { "concept": "join errors", "rust": "ParameterTreePathJoinErrorV1", "notes": "EmptyPath fail-closed variant" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

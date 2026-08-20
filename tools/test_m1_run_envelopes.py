@@ -2,9 +2,15 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from pathlib import Path
+import sys
 import unittest
 
 from jsonschema import ValidationError
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT / "tools") not in sys.path:
+    sys.path.insert(0, str(ROOT / "tools"))
 
 from verify_m1_run_envelopes import validate_request, validate_result
 

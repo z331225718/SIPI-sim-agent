@@ -1,0 +1,78 @@
+schema: sipi.p4b-02b46-parameter-tree-expected-check-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b46.parameter-tree-expected-check-v1.golden-value-check
+matched_count: 4
+case_count: 4
+entries:
+- label: full_match
+  matched: true
+  product:
+    expected_count: 2
+    matched: 2
+    mismatched: []
+    missing: []
+    policy: sipi.p4b-02b46.parameter-tree-expected-check-v1.golden-value-check
+    valid: true
+  reference:
+    valid: true
+    expected_count: 2
+    matched: 2
+    missing: []
+    mismatched: []
+- label: missing_and_mismatch
+  matched: true
+  product:
+    expected_count: 3
+    matched: 0
+    mismatched:
+    - actual:
+      - Float
+      - '0.5'
+      expected:
+      - Float
+      - '9.9'
+      name: gain
+    missing:
+    - mode
+    - steps
+    policy: sipi.p4b-02b46.parameter-tree-expected-check-v1.golden-value-check
+    valid: true
+  reference:
+    valid: true
+    expected_count: 3
+    matched: 0
+    missing:
+    - mode
+    - steps
+    mismatched:
+    - name: gain
+      expected:
+      - Float
+      - '9.9'
+      actual:
+      - Float
+      - '0.5'
+- label: extra_leaf_ignored
+  matched: true
+  product:
+    expected_count: 1
+    matched: 1
+    mismatched: []
+    missing: []
+    policy: sipi.p4b-02b46.parameter-tree-expected-check-v1.golden-value-check
+    valid: true
+  reference:
+    valid: true
+    expected_count: 1
+    matched: 1
+    missing: []
+    mismatched: []
+- label: empty_expected
+  matched: true
+  product:
+    expected_error: EmptyExpected
+    policy: sipi.p4b-02b46.parameter-tree-expected-check-v1.golden-value-check
+    valid: false
+  reference:
+    valid: false
+    expected_error: EmptyExpected

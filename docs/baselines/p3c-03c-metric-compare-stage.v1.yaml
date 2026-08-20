@@ -1,0 +1,19 @@
+{
+  "schema": "sipi.p3c-03c.metric-compare-stage.v1",
+  "status": "metric_compare_engine_ported",
+  "purpose": "P3C-03c profile-agnostic named-metric compare engine: compiles a metric-profile definition (reference value, units, absolute/relative tolerance) and strictly compares a candidate metric set, reusing the P3C-03a ToleranceV1 rule. Deliberately profile-agnostic: no specific metric profile is selected or implied (the P3C-03 C4 owner metric-profile choice remains out of scope and unresolved).",
+  "source_map_ref": "docs/baselines/p3c-03c-mit-source-map.v1.yaml",
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (C4, unresolved metric profile)",
+  "admission": {
+    "named_metric_compare": true,
+    "abs_rel_tolerance_rule": true,
+    "profile_agnostic": true,
+    "missing_candidate_rejection": true,
+    "specific_metric_profile": false,
+    "commit_compare_input": false,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_a_specific_metric_profile", "not_commit_compare", "not_com_parity", "not_acceptance_evidence", "not_release_evidence"]
+}

@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b143-parameter-list-edit-distance-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b143.parameter-list-edit-distance-v1.edit-distance
+matched_count: 4
+case_count: 4
+entries:
+- label: substitute
+  matched: true
+  product:
+    distance: 1
+    policy: sipi.p4b-02b143.parameter-list-edit-distance-v1.edit-distance
+    valid: true
+  reference:
+    valid: true
+    distance: 1
+- label: identical
+  matched: true
+  product:
+    distance: 0
+    policy: sipi.p4b-02b143.parameter-list-edit-distance-v1.edit-distance
+    valid: true
+  reference:
+    valid: true
+    distance: 0
+- label: disjoint
+  matched: true
+  product:
+    distance: 3
+    policy: sipi.p4b-02b143.parameter-list-edit-distance-v1.edit-distance
+    valid: true
+  reference:
+    valid: true
+    distance: 3
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b143.parameter-list-edit-distance-v1.edit-distance
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4a-03ab.mit-source-map.v1",
+  "status": "model_keywords_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis model_declaration_keywords_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Model] required sub-keywords according to Model_type rules" },
+  "mapping": [
+    { "concept": "typed [Model] sub-keywords validation", "rust": "validate_model_keywords_v1", "notes": "validates required sub-keywords for Model_type" },
+    { "concept": "missing sub-keyword check", "rust": "ModelDeclarationKeywordsErrorV1::MissingRequiredSubKeyword", "notes": "missing [Pullup] or [Pulldown] for Output/IO fails closed" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "transient driver I-V curve simulation",
+    "release certification"
+  ]
+}

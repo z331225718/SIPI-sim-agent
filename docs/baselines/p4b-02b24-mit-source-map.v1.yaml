@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4b-02b24.mit-source-map.v1",
+  "status": "parameter_tree_rename_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_rename_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "canonical dot-separated path node rename over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "node rename by canonical path", "rust": "rename_parameter_tree_node_v1", "notes": "walks dot-separated path and returns a new tree with renamed node" },
+    { "concept": "root rename guard", "rust": "ParameterTreeRenameErrorV1::RootRenameForbidden", "notes": "renaming the root node fails closed" },
+    { "concept": "invalid new name check", "rust": "ParameterTreeRenameErrorV1::InvalidNewName", "notes": "non-ASCII or invalid identifier new names fail closed" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

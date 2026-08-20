@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b151-parameter-list-relative-complement-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b151.parameter-list-relative-complement-v1.relative-complement
+matched_count: 4
+case_count: 4
+entries:
+- label: relative_complement
+  matched: true
+  product:
+    policy: sipi.p4b-02b151.parameter-list-relative-complement-v1.relative-complement
+    token: (a, c)
+    valid: true
+  reference:
+    valid: true
+    token: (a, c)
+- label: duplicates
+  matched: true
+  product:
+    policy: sipi.p4b-02b151.parameter-list-relative-complement-v1.relative-complement
+    token: (b)
+    valid: true
+  reference:
+    valid: true
+    token: (b)
+- label: equal_values
+  matched: true
+  product:
+    policy: sipi.p4b-02b151.parameter-list-relative-complement-v1.relative-complement
+    token: ()
+    valid: true
+  reference:
+    valid: true
+    token: ()
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b151.parameter-list-relative-complement-v1.relative-complement
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

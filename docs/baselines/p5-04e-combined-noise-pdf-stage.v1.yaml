@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-04e.combined-noise-pdf-stage.v1",
+  "status": "combined_noise_pdf_stage_ported",
+  "purpose": "P5-04e combined R480 noise PDF stage ported from the MIT agent-com source (Eq. 93A-45 ordering) over the ported convolution/quantile core. sampled_signal_pdf and residual_channel_pdf remain separate stages.",
+  "source_map_ref": "docs/baselines/p5-04e-mit-source-map.v1.yaml",
+  "admission": {
+    "sampled_signal_pdf": false,
+    "residual_channel_pdf": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_sampled_signal_pdf", "not_residual_channel_pdf", "not_profile_acceptance", "not_release_evidence"]
+}

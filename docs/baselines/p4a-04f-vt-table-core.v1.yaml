@@ -1,0 +1,12 @@
+{
+  "schema": "sipi.p4a-04f.vt-table-core.v1",
+  "status": "product_owned_vt_table_core_specified_no_profile_acceptance",
+  "purpose": "P4A-04f typed V-T (voltage-versus-time) table core: strictly time-ascending finite knots, linear interpolation within the closed table domain, explicit out-of-domain rejection. Product-owned and caller-supplied data only; no IBIS text decoding, no electrical evaluation, no profile acceptance.",
+  "slice": { "iv": "delivered_by_p4a_04b", "vt": "this_slice", "ramp": "not_in_this_slice", "package": "not_in_this_slice", "decoder": "not_in_this_slice", "cli": "not_in_this_slice" },
+  "evaluation_policy": { "policy": "sipi.p4a-04f.vt-table-v1.linear-within-domain.reject-out-of-domain", "interpolation": "linear_within_table_domain", "extrapolation": "reject_out_of_domain", "domain": "closed_first_last" },
+  "table_rules": { "min_knots": 2, "time_order": "strictly_increasing", "finiteness": "enforced_by_sipi_types" },
+  "units": { "time": "seconds", "voltage": "volts" },
+  "implementation": { "crate": "sipi-ibis", "module": "vt_table_v1", "entrypoint": "evaluate_vt_v1", "types": ["VtKnotV1", "VtTableV1", "VtTableErrorV1", "VtEvaluationErrorV1"] },
+  "admission": { "profile_accepted": false, "ibis_text_decoded": false, "electrical_evaluation": false, "cli_route": false, "external_reference_binding": "not_evaluated" },
+  "non_claims": ["not_ibis_text_decoding", "not_ramp_semantics", "not_package_semantics", "not_profile_acceptance", "not_electrical_evaluation"]
+}

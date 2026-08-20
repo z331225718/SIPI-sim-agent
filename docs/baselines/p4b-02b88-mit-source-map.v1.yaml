@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b88.mit-source-map.v1",
+  "status": "parameter_tree_leaf_type_resolution_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_leaf_type_resolution_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "leaf declared-type resolution by canonical path in AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "leaf type resolution", "rust": "resolve_parameter_tree_leaf_type_v1", "notes": "walks canonical dot-separated path; returns declared type of typed-form leaves" },
+    { "concept": "resolution errors", "rust": "ParameterTreeLeafTypeResolutionErrorV1", "notes": "EmptyPath/MissingPath/PathNotLeaf/LeafNotTypedForm with canonical path" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

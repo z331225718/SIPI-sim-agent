@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b144.mit-source-map.v1",
+  "status": "parameter_list_has_subsequence_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_has_subsequence_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "order-preserving subsequence check over validated AMI parameter list values" },
+  "mapping": [
+    { "concept": "subsequence check", "rust": "parameter_list_has_subsequence_v1", "notes": "reports whether the query sequence matches in order by byte equality, not necessarily contiguous" },
+    { "concept": "sequence errors", "rust": "ParameterListHasSubsequenceErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

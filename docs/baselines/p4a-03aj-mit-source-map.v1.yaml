@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4a-03aj.mit-source-map.v1",
+  "status": "golden_wave_keywords_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis golden_wave_keywords_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Golden Waveforms] complete block required keywords" },
+  "mapping": [
+    { "concept": "typed [Golden Waveforms] block header", "rust": "TypedGoldenWaveBlockV1", "notes": "composite waveform_declaration" },
+    { "concept": "waveform_declaration access", "rust": "TypedGoldenWaveBlockV1::waveform_declaration", "notes": "embedded TypedGoldenWaveDeclarationV1" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "golden waveform comparison simulation",
+    "release certification"
+  ]
+}

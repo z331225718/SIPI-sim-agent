@@ -1,0 +1,33 @@
+schema: sipi.p4b-02b12-parameter-tree-merge-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b12.parameter-tree-merge-v1.tree-structural-merge
+matched_count: 3
+case_count: 3
+entries:
+- label: complementary_and_override
+  matched: true
+  product:
+    merged_formatted_text: "(root\n  (node_a 1)\n  (node_b 2)\n  (val Float 0.9))"
+    policy: sipi.p4b-02b12.parameter-tree-merge-v1.tree-structural-merge
+    valid: true
+  reference:
+    valid: true
+    merged_formatted_text: "(root\n  (node_a 1)\n  (node_b 2)\n  (val Float 0.9))"
+- label: kind_conflict
+  matched: true
+  product:
+    merge_error: 'KindConflict { path: "root.node" }'
+    policy: sipi.p4b-02b12.parameter-tree-merge-v1.tree-structural-merge
+    valid: false
+  reference:
+    valid: false
+    merge_error: 'KindConflict { path: "root.node" }'
+- label: root_mismatch
+  matched: true
+  product:
+    merge_error: 'RootMismatch { expected: "root_a", actual: "root_b" }'
+    policy: sipi.p4b-02b12.parameter-tree-merge-v1.tree-structural-merge
+    valid: false
+  reference:
+    valid: false
+    merge_error: 'RootMismatch { expected: "root_a", actual: "root_b" }'

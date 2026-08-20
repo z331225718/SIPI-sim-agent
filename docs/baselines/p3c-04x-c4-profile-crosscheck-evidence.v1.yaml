@@ -1,0 +1,120 @@
+schema: sipi.p3c-04x.c4-profile-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p3c-03c.c4-profile.v1.com-icn-erl-1pct
+matched_count: 6
+case_count: 6
+entries:
+- label: full_references
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_error: null
+  reference_error: null
+  product_specs:
+  - name: COM_dB
+    reference: 3.5
+    relative_tolerance: 0.01
+  - name: ICN_mV
+    reference: 12.0
+    relative_tolerance: 0.01
+  - name: ERL
+    reference: 8.0
+    relative_tolerance: 0.01
+  reference_specs:
+  - name: COM_dB
+    reference: 3.5
+    relative_tolerance: 0.01
+  - name: ICN_mV
+    reference: 12.0
+    relative_tolerance: 0.01
+  - name: ERL
+    reference: 8.0
+    relative_tolerance: 0.01
+  product_digest: 823541cda189cf411739cb210abb7ef845f6ac72951ebd04be516178ad164133
+  reference_digest: 823541cda189cf411739cb210abb7ef845f6ac72951ebd04be516178ad164133
+- label: realistic_values
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_error: null
+  reference_error: null
+  product_specs:
+  - name: COM_dB
+    reference: 3.8
+    relative_tolerance: 0.01
+  - name: ICN_mV
+    reference: 5.2
+    relative_tolerance: 0.01
+  - name: ERL
+    reference: 6.5
+    relative_tolerance: 0.01
+  reference_specs:
+  - name: COM_dB
+    reference: 3.8
+    relative_tolerance: 0.01
+  - name: ICN_mV
+    reference: 5.2
+    relative_tolerance: 0.01
+  - name: ERL
+    reference: 6.5
+    relative_tolerance: 0.01
+  product_digest: 823541cda189cf411739cb210abb7ef845f6ac72951ebd04be516178ad164133
+  reference_digest: 823541cda189cf411739cb210abb7ef845f6ac72951ebd04be516178ad164133
+- label: missing_erl
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_error: missing_reference:ERL
+  reference_error: missing_reference:ERL
+  product_specs: []
+  reference_specs: []
+  product_digest: null
+  reference_digest: null
+- label: missing_icn
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_error: missing_reference:ICN_mV
+  reference_error: missing_reference:ICN_mV
+  product_specs: []
+  reference_specs: []
+  product_digest: null
+  reference_digest: null
+- label: single_metric_only_erl
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_error: null
+  reference_error: null
+  product_specs:
+  - name: COM_dB
+    reference: 3.5
+    relative_tolerance: 0.01
+  - name: ICN_mV
+    reference: 12.0
+    relative_tolerance: 0.01
+  - name: ERL
+    reference: 9.0
+    relative_tolerance: 0.01
+  reference_specs:
+  - name: COM_dB
+    reference: 3.5
+    relative_tolerance: 0.01
+  - name: ICN_mV
+    reference: 12.0
+    relative_tolerance: 0.01
+  - name: ERL
+    reference: 9.0
+    relative_tolerance: 0.01
+  product_digest: 823541cda189cf411739cb210abb7ef845f6ac72951ebd04be516178ad164133
+  reference_digest: 823541cda189cf411739cb210abb7ef845f6ac72951ebd04be516178ad164133
+- label: empty
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_error: missing_reference:COM_dB
+  reference_error: missing_reference:COM_dB
+  product_specs: []
+  reference_specs: []
+  product_digest: null
+  reference_digest: null

@@ -1,0 +1,86 @@
+schema: sipi.p5-02n.warning-report-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p5-02n.warning-report.v1.aggregate
+matched_count: 8
+case_count: 8
+entries:
+- label: union_sorted
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_active:
+  - anti_causal
+  - high_freq_non_decay
+  reference_active:
+  - anti_causal
+  - high_freq_non_decay
+  product_flagged_total: 3
+  reference_flagged_total: 3
+- label: none_active
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_active: []
+  reference_active: []
+  product_flagged_total: 0
+  reference_flagged_total: 0
+- label: single_code_high_freq
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_active:
+  - high_freq_non_decay
+  reference_active:
+  - high_freq_non_decay
+  product_flagged_total: 2
+  reference_flagged_total: 2
+- label: single_code_anti_causal
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_active:
+  - anti_causal
+  reference_active:
+  - anti_causal
+  product_flagged_total: 3
+  reference_flagged_total: 3
+- label: empty_reports_fails
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_active: []
+  reference_active: []
+  product_flagged_total: 0
+  reference_flagged_total: 0
+- label: empty_slice_name_fails
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_active: []
+  reference_active: []
+  product_flagged_total: 0
+  reference_flagged_total: 0
+- label: mixed_active_and_clean_slices
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_active:
+  - anti_causal
+  - high_freq_non_decay
+  reference_active:
+  - anti_causal
+  - high_freq_non_decay
+  product_flagged_total: 2
+  reference_flagged_total: 2
+- label: all_flags_all_slices
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_active:
+  - anti_causal
+  - high_freq_non_decay
+  reference_active:
+  - anti_causal
+  - high_freq_non_decay
+  product_flagged_total: 2
+  reference_flagged_total: 2

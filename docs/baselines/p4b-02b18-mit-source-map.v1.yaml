@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4b-02b18.mit-source-map.v1",
+  "status": "parameter_tree_filter_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_filter_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "closure-based predicate filtering over AmiParameterTreeV1 hierarchy" },
+  "mapping": [
+    { "concept": "tree predicate filter", "rust": "filter_parameter_trees_v1", "notes": "filters trees by applying predicate closure over paths and nodes" },
+    { "concept": "node predicate filtering", "rust": "filter_node", "notes": "prunes node and sub-tree when predicate evaluates to false" },
+    { "concept": "empty filtered result check", "rust": "ParameterTreeFilterErrorV1::EmptyFilteredResult", "notes": "filtering out all trees/nodes fails closed" },
+    { "concept": "empty tree list check", "rust": "ParameterTreeFilterErrorV1::EmptyTreeList", "notes": "empty tree slice fails closed" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

@@ -1,0 +1,59 @@
+schema: sipi.p4b-02b28-parameter-tree-toposort-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b28.parameter-tree-toposort-v1.tree-path-toposort
+matched_count: 3
+case_count: 3
+entries:
+- label: nested_toposort
+  matched: true
+  product:
+    path_count: 5
+    paths:
+    - root
+    - root.branch_a
+    - root.branch_a.leaf_1
+    - root.branch_b
+    - root.branch_b.leaf_2
+    policy: sipi.p4b-02b28.parameter-tree-toposort-v1.tree-path-toposort
+    valid: true
+  reference:
+    valid: true
+    path_count: 5
+    paths:
+    - root
+    - root.branch_a
+    - root.branch_a.leaf_1
+    - root.branch_b
+    - root.branch_b.leaf_2
+- label: single_node_toposort
+  matched: true
+  product:
+    path_count: 1
+    paths:
+    - root
+    policy: sipi.p4b-02b28.parameter-tree-toposort-v1.tree-path-toposort
+    valid: true
+  reference:
+    valid: true
+    path_count: 1
+    paths:
+    - root
+- label: wide_toposort
+  matched: true
+  product:
+    path_count: 4
+    paths:
+    - root
+    - root.a
+    - root.b
+    - root.c
+    policy: sipi.p4b-02b28.parameter-tree-toposort-v1.tree-path-toposort
+    valid: true
+  reference:
+    valid: true
+    path_count: 4
+    paths:
+    - root
+    - root.a
+    - root.b
+    - root.c

@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03as.mit-source-map.v1",
+  "status": "series_pin_table_group_selector_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis series_pin_mapping_table_group_selector_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Series Pin Mapping] group Model Selector binding header and records" },
+  "mapping": [
+    { "concept": "typed [Series Pin Mapping] group Model Selector binding record", "rust": "TypedSeriesPinGroupSelectorRecordV1", "notes": "validated ASCII group_name, model_selector_name, and optional function_table_group" },
+    { "concept": "empty selector name validation", "rust": "SeriesPinTableGroupSelectorErrorV1::EmptySelectorName", "notes": "empty selector name fails closed" },
+    { "concept": "empty group name validation", "rust": "SeriesPinTableGroupSelectorErrorV1::EmptyGroupName", "notes": "empty group name fails closed" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "series model circuit simulation",
+    "release certification"
+  ]
+}

@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b160-parameter-list-all-equal-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b160.parameter-list-all-equal-v1.all-equal
+matched_count: 4
+case_count: 4
+entries:
+- label: repeated_items
+  matched: true
+  product:
+    all_equal: true
+    policy: sipi.p4b-02b160.parameter-list-all-equal-v1.all-equal
+    valid: true
+  reference:
+    valid: true
+    all_equal: true
+- label: mixed_items
+  matched: true
+  product:
+    all_equal: false
+    policy: sipi.p4b-02b160.parameter-list-all-equal-v1.all-equal
+    valid: true
+  reference:
+    valid: true
+    all_equal: false
+- label: single_item
+  matched: true
+  product:
+    all_equal: true
+    policy: sipi.p4b-02b160.parameter-list-all-equal-v1.all-equal
+    valid: true
+  reference:
+    valid: true
+    all_equal: true
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b160.parameter-list-all-equal-v1.all-equal
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

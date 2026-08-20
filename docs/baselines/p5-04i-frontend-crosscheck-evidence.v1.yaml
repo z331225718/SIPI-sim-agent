@@ -1,0 +1,67 @@
+schema: sipi.p5-04i.frontend-crosscheck-evidence.v1
+status: frontend_crosscheck_matched
+oracle:
+  repo: agent-com
+  license: MIT
+  paths:
+  - src/agent_com/equalization/cursor.py
+  - src/agent_com/equalization/ctle.py
+  functions:
+  - cursor_sample_index
+  - fd_ctle
+  - td_ctle
+  numpy_version: 2.4.6
+  scipy_version: 1.18.0
+tolerance: 1.0e-12
+entries:
+- id: mm_default
+  kind: cursor
+  input_sha256: 7e404b632a823aef9704e8af2ec6f4b4d43a122e14bd609365e56b34dbc58fa1
+  cursor_index: 89
+  peak_index: 86
+  matched: true
+  diffs: []
+- id: modmm_dfefirst
+  kind: cursor
+  input_sha256: ffc979430ee61ac9213cea9874c72a2ee208a50e3b0f5fa63dd0a8079892ffa2
+  cursor_index: 93
+  peak_index: 86
+  matched: true
+  diffs: []
+- id: mm_peakrange
+  kind: cursor
+  input_sha256: 2cdc09998691e9ad5cd574c1e5b47ae6e86b5a40af9ebb8cf7d8521d93808314
+  cursor_index: 108
+  peak_index: 86
+  matched: true
+  diffs: []
+- id: fdctle_a
+  kind: fd_ctle
+  input_sha256: 12b4824add9cf4584e613a93338d991fc8db865630477277bd2a6eb81478e6c4
+  points: 16
+  matched: true
+  diffs: []
+- id: fdctle_b
+  kind: fd_ctle
+  input_sha256: dbe7a8e9e7834c6cbbc6d9bf33cf89ca5a6f6d9a18a6056231e13e41efe95278
+  points: 16
+  matched: true
+  diffs: []
+- id: tdctle_a
+  kind: td_ctle
+  input_sha256: dcfe08c55985a47ad9dd0adc8b0b83cbc27149554bffc54b73d989189d7288cf
+  points: 256
+  matched: true
+  diffs: []
+- id: tdctle_b
+  kind: td_ctle
+  input_sha256: 8b35d8bdc7309d45bbe376b9b2e0ed7c80b9855f84b83f5f463dd006a903b4c9
+  points: 256
+  matched: true
+  diffs: []
+non_claims:
+- not_tx_ffe
+- not_dfe
+- not_rx_ffe
+- not_equalizer_search
+- not_release_evidence

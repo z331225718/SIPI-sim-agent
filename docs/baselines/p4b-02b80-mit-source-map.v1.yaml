@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b80.mit-source-map.v1",
+  "status": "parameter_profile_value_lookup_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_value_lookup_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "typed value reverse lookup over assembled parameter profile maps" },
+  "mapping": [
+    { "concept": "reverse lookup", "rust": "find_parameter_profile_names_by_value_v1", "notes": "finds names whose entries are typed-equivalent to a validated query value (02b70)" },
+    { "concept": "lookup outcome", "rust": "ParameterProfileValueLookupV1", "notes": "sorted matching names with match_count; InvalidQueryValue fail-closed" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

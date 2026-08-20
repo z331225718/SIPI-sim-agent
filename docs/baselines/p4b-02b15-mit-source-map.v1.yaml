@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4b-02b15.mit-source-map.v1",
+  "status": "parameter_tree_transformer_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_transformer_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "closure-based structural transformation over AmiParameterTreeV1 hierarchy" },
+  "mapping": [
+    { "concept": "tree structural transform", "rust": "transform_parameter_trees_v1", "notes": "applies transformation closure to parameter tree nodes" },
+    { "concept": "custom node transformation", "rust": "transform_node", "notes": "replaces node when closure returns Some(node)" },
+    { "concept": "invalid node name check", "rust": "ParameterTreeTransformerErrorV1::InvalidNodeName", "notes": "custom node with invalid name fails closed" },
+    { "concept": "empty tree list check", "rust": "ParameterTreeTransformerErrorV1::EmptyTreeList", "notes": "empty tree slice fails closed" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

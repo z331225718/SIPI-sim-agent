@@ -1,0 +1,20 @@
+schema: sipi.p5-05e.com-parameters-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p5-05e.com-parameters-v1.typed-dto
+matched_count: 1
+case_count: 1
+entries:
+- id: merge_fb_a_fext_ndfe
+  matched: true
+  product_consumed:
+    a_fext: 0.5
+    fb: 53125000000.0
+    ndfe: 2.0
+  reference_consumed:
+    fb: 53125000000.0
+    a_fext: 0.5
+    ndfe: 2.0
+  product_unconsumed:
+  - extraneous
+  reference_unconsumed:
+  - extraneous

@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b56-parameter-tree-path-join-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b56.parameter-tree-path-join-v1.dotted-path-join
+matched_count: 4
+case_count: 4
+entries:
+- label: basic
+  matched: true
+  product:
+    path: root.gain
+    policy: sipi.p4b-02b56.parameter-tree-path-join-v1.dotted-path-join
+    valid: true
+  reference:
+    valid: true
+    path: root.gain
+- label: deep
+  matched: true
+  product:
+    path: root.sub.deep
+    policy: sipi.p4b-02b56.parameter-tree-path-join-v1.dotted-path-join
+    valid: true
+  reference:
+    valid: true
+    path: root.sub.deep
+- label: single
+  matched: true
+  product:
+    path: a
+    policy: sipi.p4b-02b56.parameter-tree-path-join-v1.dotted-path-join
+    valid: true
+  reference:
+    valid: true
+    path: a
+- label: empty
+  matched: true
+  product:
+    join_error: EmptyPath
+    policy: sipi.p4b-02b56.parameter-tree-path-join-v1.dotted-path-join
+    valid: false
+  reference:
+    valid: false
+    join_error: EmptyPath

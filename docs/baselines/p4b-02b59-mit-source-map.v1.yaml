@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b59.mit-source-map.v1",
+  "status": "parameter_tree_leaf_occurrences_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_leaf_occurrences_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "leaf name occurrence counting over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "occurrence counts", "rust": "count_parameter_tree_leaf_occurrences_v1", "notes": "counts leaf name occurrences across depths plus total leaf count" },
+    { "concept": "counts outcome", "rust": "ParameterTreeLeafOccurrencesV1", "notes": "holds total_leaves and the name -> count map" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

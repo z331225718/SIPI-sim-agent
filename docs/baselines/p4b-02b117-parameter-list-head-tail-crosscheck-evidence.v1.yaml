@@ -1,0 +1,48 @@
+schema: sipi.p4b-02b117-parameter-list-head-tail-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b117.parameter-list-head-tail-v1.edge-access
+matched_count: 4
+case_count: 4
+entries:
+- label: head_tail_three
+  matched: true
+  product:
+    head: a
+    policy: sipi.p4b-02b117.parameter-list-head-tail-v1.edge-access
+    tail: c
+    valid: true
+  reference:
+    valid: true
+    head: a
+    tail: c
+- label: single_item
+  matched: true
+  product:
+    head: x
+    policy: sipi.p4b-02b117.parameter-list-head-tail-v1.edge-access
+    tail: x
+    valid: true
+  reference:
+    valid: true
+    head: x
+    tail: x
+- label: spaced_items
+  matched: true
+  product:
+    head: a
+    policy: sipi.p4b-02b117.parameter-list-head-tail-v1.edge-access
+    tail: b
+    valid: true
+  reference:
+    valid: true
+    head: a
+    tail: b
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b117.parameter-list-head-tail-v1.edge-access
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

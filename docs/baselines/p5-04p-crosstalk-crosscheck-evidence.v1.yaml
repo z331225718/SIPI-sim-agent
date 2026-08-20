@@ -1,0 +1,36 @@
+schema: sipi.p5-04p.crosstalk-crosscheck-evidence.v1
+status: crosstalk_crosscheck_matched
+oracle:
+  repo: agent-com
+  license: MIT
+  path: src/agent_com/equalization/search.py
+  functions:
+  - _crosstalk_noise
+  - _td_source_crosstalk_noise
+  numpy_version: 2.4.6
+tolerance: 1.0e-09
+entries:
+- id: fext_next_fd
+  input_sha256: f2444d5c74d8915630ac1737b26ae608f5551c6cc7ecae508f91ce9552f495d6
+  matched: true
+  diffs: []
+- id: fext_next_rxffe
+  input_sha256: 557a65459c1ca62dfb24e13b1900ed5f3ca9a1a852ea2b6339744fc2bf3a9115
+  matched: true
+  diffs: []
+- id: next_only
+  input_sha256: ab962fe69473eca2b2de0466d527db9d2518fa90fa2ba25f35ec34b8de16b562
+  matched: true
+  diffs: []
+- id: td_outer_product
+  input_sha256: ed9b780b058c62a8b1c76dd5bdf80f9e9a44b3f234b7b1950f7cbd5819931cc7
+  matched: true
+  diffs: []
+- id: td_both_roles
+  input_sha256: d486f16c233a524f78cf899779906d562acda25773fb36e0fcb16483ac28ca30
+  matched: true
+  diffs: []
+non_claims:
+- not_candidate_evaluation
+- not_search_loop
+- not_release_evidence

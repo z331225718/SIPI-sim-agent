@@ -1,0 +1,21 @@
+{
+  "schema": "sipi.p5-04t.mit-source-map.v1",
+  "status": "search_loop_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/equalization/search.py + signal/fd_to_td.py" },
+  "mapping": [
+    { "python": "rectangular_pulse_response", "rust": "rectangular_pulse_response_v1", "notes": "zero-state filter(ones(spu),1): sliding window sum" },
+    { "python": "_peak_window", "rust": "peak_window", "notes": "TDMODE pulse vs FD impulse window around argmax" },
+    { "python": "_shift_matrix", "rust": "shift_matrix", "notes": "column-stacked rolled pulse by (k-precursor)*spu" },
+    { "python": "_skip_local_search", "rust": "skip_local_search", "notes": "nested-loop-window guard over the source sweep order" },
+    { "python": "_skip_high_pass_local_search", "rust": "skip_high_pass_local_search", "notes": "CL120d high-pass local-search guard" },
+    { "python": "_sweep_order", "rust": "sweep_order", "notes": "ordered_names cm desc + cp asc, variable by size desc" },
+    { "python": "_r480_sample_offsets", "rust": "r480_sample_offsets", "notes": "inclusive range; TS_SRCH_MODE full-sweep/middle stable-abs order" },
+    { "python": "_tap_numbers", "rust": "tap_number_from_name", "notes": "parse tx_ffe_cm/cp N from field names" },
+    { "python": "_anchored_cursor", "rust": "anchored_cursor", "notes": "ts_anchor 0/1/2 cursor-placement" },
+    { "python": "_validate_supported_branch", "rust": "validate_supported_branch", "notes": "FV-LMS/MMSE label without RxFFE branch guard" },
+    { "python": "_tx_grid_values", "rust": "tx_grid_values", "notes": "dynamic tx_ffe_*_values scan" },
+    { "python": "search_r480_nonmmse_no_xtalk", "rust": "search_r480_nonmmse_no_xtalk_v1", "notes": "composite no-RxFFE optimized loop orchestration (CTLE x high-pass x TX FFE grid x TS offsets), bit-exact vs oracle on causal-step scenario" }
+  ],
+  "not_ported": [],
+  "non_claims": ["not_composite_loop", "not_release_evidence"]
+}

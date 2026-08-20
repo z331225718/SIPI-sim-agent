@@ -1,0 +1,25 @@
+{
+  "schema": "sipi.p4a-03h.package-model-stage.v1",
+  "status": "package_model_declaration_ported",
+  "purpose": "P4A-03 typed IBIS AST sub-slice: lifts and validates IBIS [Package Model] declarations, R_pkg, L_pkg, C_pkg global typical parameters into typed clean-room structures (sipi-ibis package_model_declaration_v1.rs). Fail-closed: empty package names, non-ASCII characters, invalid package name spellings, or negative/non-finite RLC values are strictly rejected.",
+  "source_map_ref": "docs/baselines/p4a-03h-mit-source-map.v1.yaml",
+  "based_on": [
+    "docs/baselines/p4a-03d-model-declaration-stage.v1.yaml",
+    "docs/baselines/p4a-03e-pin-declaration-stage.v1.yaml",
+    "docs/baselines/p4a-03f-pin-model-linkage-stage.v1.yaml",
+    "docs/baselines/p4a-03g-component-declaration-stage.v1.yaml"
+  ],
+  "admission": {
+    "typed_package_model_declaration": true,
+    "ascii_identifier_validation": true,
+    "rlc_bounds_validation": true,
+    "fail_closed_on_invalid_input": true,
+    "full_ibis_parser": false,
+    "release_evidence": false
+  },
+  "non_claims": [
+    "not_full_ibis_parser",
+    "not_electrical_semantics",
+    "not_acceptance_evidence"
+  ]
+}

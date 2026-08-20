@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4b-02b6.mit-source-map.v1",
+  "status": "parameter_extractor_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_extractor_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "structural AST parenthesized triples (name, type_token, value_token)" },
+  "mapping": [
+    { "concept": "AST triple scanning", "rust": "extract_parameter_values_v1", "notes": "scans document forms for 3-item lists matching (name, type, value)" },
+    { "concept": "typed value construction", "rust": "AmiParameterValueV1::try_new", "notes": "validates name ASCII and per-type value syntax" },
+    { "concept": "duplicate parameter check", "rust": "ParameterExtractorErrorV1::DuplicateParameter", "notes": "map insertion failure on existing key fail-closed" },
+    { "concept": "empty document rejection", "rust": "ParameterExtractorErrorV1::EmptyDocument", "notes": "empty forms list rejected" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b111-parameter-list-last-index-of-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b111.parameter-list-last-index-of-v1.last-position-lookup
+matched_count: 4
+case_count: 4
+entries:
+- label: last_occurrence
+  matched: true
+  product:
+    index: 2
+    policy: sipi.p4b-02b111.parameter-list-last-index-of-v1.last-position-lookup
+    valid: true
+  reference:
+    valid: true
+    index: 2
+- label: single_occurrence
+  matched: true
+  product:
+    index: 2
+    policy: sipi.p4b-02b111.parameter-list-last-index-of-v1.last-position-lookup
+    valid: true
+  reference:
+    valid: true
+    index: 2
+- label: absent_item
+  matched: true
+  product:
+    error: ItemNotFound
+    policy: sipi.p4b-02b111.parameter-list-last-index-of-v1.last-position-lookup
+    valid: false
+  reference:
+    valid: false
+    error: ItemNotFound
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b111.parameter-list-last-index-of-v1.last-position-lookup
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

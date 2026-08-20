@@ -1,0 +1,38 @@
+schema: sipi.p5-04m.floating-rxffe-crosscheck-evidence.v1
+status: floating_rxffe_crosscheck_matched
+oracle:
+  repo: agent-com
+  license: MIT
+  path: src/agent_com/equalization/rx_ffe.py
+  function: force_floating_rx_ffe
+  numpy_version: 2.4.6
+tolerance: 1.0e-09
+tolerance_note: LU solve backends are mathematically equivalent but not bit-identical
+entries:
+- id: floating_taps_selector
+  input_sha256: eab6c60fc50b2a09609aba51a62f1b28d5960ffe5e51be4b5dbd60d2f04b3dcc
+  rejected_parity: true
+  locations: null
+  taps_len: null
+  matched: true
+  diffs: []
+- id: floating_isi_selector
+  input_sha256: 83cf9f9ada16e6bfeaa9cc5785bc21779162152321a131ad39c325f66a14bbe6
+  locations:
+  - 2
+  - 3
+  - 4
+  taps_len: 13
+  matched: true
+  diffs: []
+- id: floating_no_filtered
+  input_sha256: dea9572ed7766b5f45424c4c66c40898bd1e3536f73963091668a747fdcc8366
+  locations:
+  - 6
+  - 4
+  taps_len: 8
+  matched: true
+  diffs: []
+non_claims:
+- not_search_integration
+- not_release_evidence

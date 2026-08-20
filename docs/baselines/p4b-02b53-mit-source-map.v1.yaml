@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b53.mit-source-map.v1",
+  "status": "parameter_tree_batch_value_set_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_set_values_batch_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "name-addressed batch value set over AmiParameterTreeV1 reusing P4B-02b1 value rules" },
+  "mapping": [
+    { "concept": "batch value set", "rust": "set_parameter_tree_leaf_values_v1", "notes": "sets leaf value tokens per name with typed validation and ambiguity protection" },
+    { "concept": "batch outcome", "rust": "ParameterTreeValueSetBatchV1", "notes": "holds updated occurrence count and the new tree" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

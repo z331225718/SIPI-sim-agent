@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b138-parameter-list-first-duplicate-index-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b138.parameter-list-first-duplicate-index-v1.first-duplicate-position
+matched_count: 4
+case_count: 4
+entries:
+- label: first_repeat
+  matched: true
+  product:
+    index: 2
+    policy: sipi.p4b-02b138.parameter-list-first-duplicate-index-v1.first-duplicate-position
+    valid: true
+  reference:
+    valid: true
+    index: 2
+- label: adjacent_repeat
+  matched: true
+  product:
+    index: 2
+    policy: sipi.p4b-02b138.parameter-list-first-duplicate-index-v1.first-duplicate-position
+    valid: true
+  reference:
+    valid: true
+    index: 2
+- label: all_distinct
+  matched: true
+  product:
+    error: NoDuplicate
+    policy: sipi.p4b-02b138.parameter-list-first-duplicate-index-v1.first-duplicate-position
+    valid: false
+  reference:
+    valid: false
+    error: NoDuplicate
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b138.parameter-list-first-duplicate-index-v1.first-duplicate-position
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

@@ -1,0 +1,28 @@
+{
+  "schema": "sipi.p4a-03k.series-switch-stage.v1",
+  "status": "series_switch_groups_ported",
+  "purpose": "P4A-03 typed IBIS AST sub-slice: lifts and validates IBIS [Series Switch Groups] declarations (group_name, on_state_models, off_state_models) into typed clean-room structures (sipi-ibis series_switch_groups_v1.rs). Fail-closed: empty group names, non-ASCII characters, invalid name spellings, empty state model lists, or duplicate models within a state list are strictly rejected.",
+  "source_map_ref": "docs/baselines/p4a-03k-mit-source-map.v1.yaml",
+  "based_on": [
+    "docs/baselines/p4a-03d-model-declaration-stage.v1.yaml",
+    "docs/baselines/p4a-03e-pin-declaration-stage.v1.yaml",
+    "docs/baselines/p4a-03f-pin-model-linkage-stage.v1.yaml",
+    "docs/baselines/p4a-03g-component-declaration-stage.v1.yaml",
+    "docs/baselines/p4a-03h-package-model-stage.v1.yaml",
+    "docs/baselines/p4a-03i-model-selector-stage.v1.yaml",
+    "docs/baselines/p4a-03j-diff-pin-stage.v1.yaml"
+  ],
+  "admission": {
+    "typed_series_switch_groups_declaration": true,
+    "state_models_validation": true,
+    "ascii_group_name_validation": true,
+    "fail_closed_on_invalid_input": true,
+    "full_ibis_parser": false,
+    "release_evidence": false
+  },
+  "non_claims": [
+    "not_full_ibis_parser",
+    "not_electrical_semantics",
+    "not_acceptance_evidence"
+  ]
+}

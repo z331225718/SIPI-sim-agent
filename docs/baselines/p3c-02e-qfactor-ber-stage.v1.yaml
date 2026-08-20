@@ -1,0 +1,19 @@
+{
+  "schema": "sipi.p3c-02e.qfactor-ber-stage.v1",
+  "status": "qfactor_ber_estimator_ported",
+  "purpose": "P3C-02e Q-factor / BER estimator core: implements the owner-decided A5 bathtub estimator (Q-factor method, 0.1 dB tolerance). Converts between Q-factor and BER via ber = 0.5*erfc(q/sqrt2), and estimates Q from a peak-to-peak eye amplitude and one-sided noise sigma. Eye folding/bins are owned by P3C-02c; this slice only estimates Q/BER from supplied amplitude and noise.",
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (A5)",
+  "source_map_ref": "docs/baselines/p3c-02e-mit-source-map.v1.yaml",
+  "admission": {
+    "q_bounds_ber_conversion": true,
+    "ber_to_q_inverse": true,
+    "q_from_amplitude_noise": true,
+    "tolerance_0p1db_recorded": true,
+    "eye_folding_bins": false,
+    "bathtub_curve_fit": false,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_eye_folding_bins", "not_bathtub_curve_fit", "not_com_parity", "not_acceptance_evidence", "not_release_evidence"]
+}

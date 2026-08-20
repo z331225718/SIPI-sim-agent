@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p3b-04b.mit-source-map.v1",
+  "status": "cdr_lock_semantics_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-channel cdr_lock_v1.rs" },
+  "observation": { "ref": "docs/baselines/channel-rfm-receiver-delegated-phase-amendment.v1.yaml", "note": "hysteresis CDR lock acquisition/reset/cancel machine over timing error samples" },
+  "mapping": [
+    { "concept": "CDR lock tracking", "rust": "track_cdr_lock_v1", "notes": "batch lock state machine with hysteresis over a timing error sequence" },
+    { "concept": "live tracker", "rust": "CdrLockTrackerV1", "notes": "observe/reset/cancel machine with state and transition counters" }
+  ],
+  "not_ported": [
+    "clock source acquisition",
+    "BER metric or tolerance profile",
+    "COM parity or acceptance"
+  ]
+}

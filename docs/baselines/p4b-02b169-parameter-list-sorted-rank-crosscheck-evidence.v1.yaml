@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b169-parameter-list-sorted-rank-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b169.parameter-list-sorted-rank-v1.sorted-rank
+matched_count: 4
+case_count: 4
+entries:
+- label: middle_rank
+  matched: true
+  product:
+    policy: sipi.p4b-02b169.parameter-list-sorted-rank-v1.sorted-rank
+    rank: 1
+    valid: true
+  reference:
+    valid: true
+    rank: 1
+- label: duplicates_first_rank
+  matched: true
+  product:
+    policy: sipi.p4b-02b169.parameter-list-sorted-rank-v1.sorted-rank
+    rank: 2
+    valid: true
+  reference:
+    valid: true
+    rank: 2
+- label: query_not_found
+  matched: true
+  product:
+    error: ItemNotFound
+    policy: sipi.p4b-02b169.parameter-list-sorted-rank-v1.sorted-rank
+    valid: false
+  reference:
+    valid: false
+    error: ItemNotFound
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b169.parameter-list-sorted-rank-v1.sorted-rank
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

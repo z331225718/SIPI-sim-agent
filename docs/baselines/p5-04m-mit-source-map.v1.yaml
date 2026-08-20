@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-04m.mit-source-map.v1",
+  "status": "floating_rxffe_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/equalization/rx_ffe.py" },
+  "mapping": [
+    { "python": "force_floating_rx_ffe", "rust": "force_floating_rx_ffe_v1", "notes": "floating bank solve; taps/ISI basis selection; retained fixed taps; one-based returned locations" },
+    { "python": "_r480_rxffe_floating_locations", "rust": "rxffe_floating_locations_v1 (private)", "notes": "one-based candidate coordinates, stable descending energy, adjacent-bank heuristic" },
+    { "python": "np.linalg.solve", "rust": "lu_solve (private, reused)", "notes": "partial-pivot LU; mathematically equivalent to LAPACK dgesv" },
+    { "python": "apply_rx_ffe reuse", "rust": "apply_rx_ffe_v1 reuse", "notes": "previously ported (04l)" }
+  ],
+  "not_ported": ["equalizer search (search.py)"],
+  "non_claims": ["not_equalizer_search", "not_release_evidence"]
+}

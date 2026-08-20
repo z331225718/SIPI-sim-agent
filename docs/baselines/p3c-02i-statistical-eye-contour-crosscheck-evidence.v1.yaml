@@ -1,0 +1,70 @@
+schema: sipi.p3c-02i-statistical-eye-contour-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p3c-02i.statistical-eye-contour.v1.q-threshold-contour
+matched_count: 4
+case_count: 4
+entries:
+- label: parabola_grid
+  matched: true
+  product:
+    columns:
+    - lower_voltage: 0.25
+      time_offset_ui: 0.0
+      upper_voltage: 0.75
+    - lower_voltage: 0.25
+      time_offset_ui: 0.5
+      upper_voltage: 0.75
+    - lower_voltage: 0.25
+      time_offset_ui: 1.0
+      upper_voltage: 0.75
+    policy: sipi.p3c-02i.statistical-eye-contour.v1.q-threshold-contour
+    target_q: 5.0
+    valid: true
+  reference:
+    valid: true
+    target_q: 5.0
+    columns:
+    - time_offset_ui: 0.0
+      lower_voltage: 0.25
+      upper_voltage: 0.75
+    - time_offset_ui: 0.5
+      lower_voltage: 0.25
+      upper_voltage: 0.75
+    - time_offset_ui: 1.0
+      lower_voltage: 0.25
+      upper_voltage: 0.75
+- label: clamped_edges
+  matched: true
+  product:
+    columns:
+    - lower_voltage: 0.0
+      time_offset_ui: 0.0
+      upper_voltage: 1.0
+    policy: sipi.p3c-02i.statistical-eye-contour.v1.q-threshold-contour
+    target_q: 5.0
+    valid: true
+  reference:
+    valid: true
+    target_q: 5.0
+    columns:
+    - time_offset_ui: 0.0
+      lower_voltage: 0.0
+      upper_voltage: 1.0
+- label: no_contour_column
+  matched: true
+  product:
+    contour_error: 'NoContourAtColumn { column: 1 }'
+    policy: sipi.p3c-02i.statistical-eye-contour.v1.q-threshold-contour
+    valid: false
+  reference:
+    valid: false
+    contour_error: 'NoContourAtColumn { column: 1 }'
+- label: invalid_q
+  matched: true
+  product:
+    contour_error: InvalidQ
+    policy: sipi.p3c-02i.statistical-eye-contour.v1.q-threshold-contour
+    valid: false
+  reference:
+    valid: false
+    contour_error: InvalidQ

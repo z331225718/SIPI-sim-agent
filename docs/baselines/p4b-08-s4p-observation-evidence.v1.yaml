@@ -1,0 +1,73 @@
+schema: sipi.p4b-08.s4p-observation-evidence.v1
+status: authorized_s4p_structures_observed_hz_axis_hash_bound
+authorization_ref: docs/baselines/authorized-material-registry.v1.yaml
+axis_note: tx_drv 0..100 GHz over 10003 records, rx_fe 0..80 GHz over 8003 records,
+  4-port RI format; differs from the P3C pulse-bench record (40 GHz / 1024 points)
+  - distinct dataset, no assumption of identity
+files:
+- material_id: ads-pcie-gen5-s4p-tx-typ
+  sha256: 3b72c3b235fbf4eff7ecec4c1490a052677b8caac6c355bcb187d41e156791c1
+  byte_length: 7776278
+  option_lines:
+  - "# Hz\tS\tRI\tR\t50.000000"
+  record_count: 10003
+  continuation_line_count: 30009
+  first_record_fields: 9
+  first_frequency_hz: '0.000000000000000e+00'
+  last_frequency_hz: '1.000000000000000e+11'
+- material_id: ads-pcie-gen5-s4p-tx-fast
+  sha256: d6cd4c56b63974e8b3e105bfaaaa3660c238f63f57cef1205efffb72ae56f853
+  byte_length: 7773907
+  option_lines:
+  - "# Hz\tS\tRI\tR\t50.000000"
+  record_count: 10003
+  continuation_line_count: 30009
+  first_record_fields: 9
+  first_frequency_hz: '0.000000000000000e+00'
+  last_frequency_hz: '1.000000000000000e+11'
+- material_id: ads-pcie-gen5-s4p-tx-slow
+  sha256: 03851a04a94b573c91c67c51cfe1fca9b0977e9e199812069e2f793755a910d2
+  byte_length: 7778502
+  option_lines:
+  - "# Hz\tS\tRI\tR\t50.000000"
+  record_count: 10003
+  continuation_line_count: 30009
+  first_record_fields: 9
+  first_frequency_hz: '0.000000000000000e+00'
+  last_frequency_hz: '1.000000000000000e+11'
+- material_id: ads-pcie-gen5-s4p-rx-typ
+  sha256: 0f5f4dfe39012144abf859ec91db647fd1be4d36f41f3befbf24bf62f9775f7f
+  byte_length: 6258154
+  option_lines:
+  - "# Hz\tS\tRI\tR\t50.000000"
+  record_count: 8003
+  continuation_line_count: 24009
+  first_record_fields: 9
+  first_frequency_hz: '0.000000000000000e+00'
+  last_frequency_hz: '8.000000000000000e+10'
+- material_id: ads-pcie-gen5-s4p-rx-fast
+  sha256: a162c1749dc9b8f78531960ce2f133e7edd5ec029156345eaa0b3c4b970aae4a
+  byte_length: 6257274
+  option_lines:
+  - "# Hz\tS\tRI\tR\t50.000000"
+  record_count: 8003
+  continuation_line_count: 24009
+  first_record_fields: 9
+  first_frequency_hz: '0.000000000000000e+00'
+  last_frequency_hz: '8.000000000000000e+10'
+- material_id: ads-pcie-gen5-s4p-rx-slow
+  sha256: 44606808880ad806847a8ea997181f2d2dd20b03dad6dad570bb30cf1b0a2e64
+  byte_length: 6258959
+  option_lines:
+  - "# Hz\tS\tRI\tR\t50.000000"
+  record_count: 8003
+  continuation_line_count: 24009
+  first_record_fields: 9
+  first_frequency_hz: '0.000000000000000e+00'
+  last_frequency_hz: '8.000000000000000e+10'
+non_claims:
+- not_time_domain_model
+- not_interpolation
+- not_channel_resolution
+- not_ami_matrix
+- not_release_evidence

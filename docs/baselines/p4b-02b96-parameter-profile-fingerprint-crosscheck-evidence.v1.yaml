@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b96-parameter-profile-fingerprint-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b96.parameter-profile-fingerprint-v1.fnv1a64-canonical-profile
+matched_count: 4
+case_count: 4
+entries:
+- label: simple_profile
+  matched: true
+  product:
+    hash: 9078355484583098215
+    policy: sipi.p4b-02b96.parameter-profile-fingerprint-v1.fnv1a64-canonical-profile
+    valid: true
+  reference:
+    valid: true
+    hash: 9078355484583098215
+- label: sorted_order
+  matched: true
+  product:
+    hash: 15912271020220666219
+    policy: sipi.p4b-02b96.parameter-profile-fingerprint-v1.fnv1a64-canonical-profile
+    valid: true
+  reference:
+    valid: true
+    hash: 15912271020220666219
+- label: empty_profile
+  matched: true
+  product:
+    hash: 645223143103797797
+    policy: sipi.p4b-02b96.parameter-profile-fingerprint-v1.fnv1a64-canonical-profile
+    valid: true
+  reference:
+    valid: true
+    hash: 645223143103797797
+- label: spelling_differs
+  matched: true
+  product:
+    hash: 9817627671466589268
+    policy: sipi.p4b-02b96.parameter-profile-fingerprint-v1.fnv1a64-canonical-profile
+    valid: true
+  reference:
+    valid: true
+    hash: 9817627671466589268

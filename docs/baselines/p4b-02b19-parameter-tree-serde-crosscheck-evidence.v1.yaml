@@ -1,0 +1,37 @@
+schema: sipi.p4b-02b19-parameter-tree-serde-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b19.parameter-tree-serde-v1.tree-json-serde
+matched_count: 3
+case_count: 3
+entries:
+- label: standard_tree_serde
+  matched: true
+  product:
+    policy: sipi.p4b-02b19.parameter-tree-serde-v1.tree-json-serde
+    roundtrip_formatted_text: "(Reserved_Parameters\n  (dfe\n    (tap_1 Integer 2))\n\
+      \  (tx_swing Float 0.5))"
+    valid: true
+  reference:
+    valid: true
+    roundtrip_formatted_text: "(Reserved_Parameters\n  (dfe\n    (tap_1 Integer 2))\n\
+      \  (tx_swing Float 0.5))"
+- label: nested_branches_serde
+  matched: true
+  product:
+    policy: sipi.p4b-02b19.parameter-tree-serde-v1.tree-json-serde
+    roundtrip_formatted_text: "(root\n  (branch_a\n    (leaf_1 10))\n  (branch_b\n\
+      \    (leaf_2 20)))"
+    valid: true
+  reference:
+    valid: true
+    roundtrip_formatted_text: "(root\n  (branch_a\n    (leaf_1 10))\n  (branch_b\n\
+      \    (leaf_2 20)))"
+- label: empty_document
+  matched: true
+  product:
+    build_error: EmptyDocument
+    policy: sipi.p4b-02b19.parameter-tree-serde-v1.tree-json-serde
+    valid: false
+  reference:
+    valid: false
+    serde_error: EmptyDocument

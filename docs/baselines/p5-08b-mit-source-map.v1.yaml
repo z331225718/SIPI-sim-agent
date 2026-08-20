@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p5-08b.mit-source-map.v1",
+  "status": "com_run_execution_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-com com_run_execution_v1.rs" },
+  "observation": { "ref": "docs/baselines/p5-08a-com-run-admission-stage.v1.yaml", "note": "sipi.com.run-request.v1 admission to sipi.com.run-result.v1 envelope" },
+  "mapping": [
+    { "concept": "request admission preflight", "rust": "com_run_admission_v1", "notes": "validates request JSON schema and artifact bindings" },
+    { "concept": "parameter control resolution", "rust": "resolve_com_parameter_controls_v1", "notes": "converts ComParametersV1 DTO into ComChainControlsV1" },
+    { "concept": "COM chain execution", "rust": "run_com_chain_v1", "notes": "runs fixed-tap COM chain over pulse and controls" },
+    { "concept": "result envelope formatting", "rust": "ComRunResultEnvelopeV1", "notes": "formats sipi.com.run-result.v1 with metrics and checkpoints" }
+  ],
+  "not_ported": [
+    "full sipi com run CLI route",
+    "cross-implementation COM parity",
+    "release certification"
+  ]
+}

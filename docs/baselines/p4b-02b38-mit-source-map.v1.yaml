@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b38.mit-source-map.v1",
+  "status": "parameter_tree_apply_defaults_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_apply_defaults_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "fill-missing defaults application over AmiParameterTreeV1 at root level" },
+  "mapping": [
+    { "concept": "defaults application", "rust": "apply_parameter_tree_defaults_v1", "notes": "adds missing leaves at root with default tokens; skips names existing anywhere" },
+    { "concept": "application outcome", "rust": "ParameterTreeDefaultsAppliedV1", "notes": "holds added/skipped counts and the resulting tree" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

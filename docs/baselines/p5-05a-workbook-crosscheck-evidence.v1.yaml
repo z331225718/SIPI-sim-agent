@@ -1,0 +1,37 @@
+schema: sipi.p5-05a.workbook-crosscheck-evidence.v1
+status: workbook_crosscheck_matched
+oracle:
+  repo: agent-com
+  license: MIT
+  path: src/agent_com/config/excel.py
+  function: ComSettings.from_xlsx
+  numpy_version: 2.4.6
+  openpyxl_version: 3.1.5
+material_id: com-r480-config-120g-c2m
+entries:
+- id: com-r480-config-120g-c2m
+  xlsx_sha256: f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9
+  rows: 64
+  columns: 32
+  cell_count: 2048
+  matched: true
+  diffs: []
+negative:
+- id: negative_macro
+  oracle_rejected: true
+  product_rejected: true
+  matched: true
+- id: negative_externallinks
+  oracle_rejected: true
+  product_rejected: true
+  matched: true
+lookups:
+- f_b
+- A_ft
+- Port Order
+- COM_Settings
+- FOM
+non_claims:
+- not_csv_mat_reader
+- not_parameter_dto_consumption
+- not_release_evidence

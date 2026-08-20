@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b82.mit-source-map.v1",
+  "status": "parameter_profile_deserialization_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_deserialization_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "canonical profile JSON parsing back into assembled parameter profile maps" },
+  "mapping": [
+    { "concept": "profile deserialization", "rust": "deserialize_parameter_profile_v1", "notes": "parses 02b81 canonical JSON, rebuilds every entry via 02b1 try_new" },
+    { "concept": "deserialization errors", "rust": "ParameterProfileDeserializationErrorV1", "notes": "InvalidJson/NotAnObject/EntryNotObject/MissingType/MissingValue/InvalidValue" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

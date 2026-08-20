@@ -14,11 +14,11 @@ use std::{
 use sha2::{Digest, Sha256};
 use sipi_artifacts::ArtifactRoot;
 use sipi_channel::{
-    fit_selected_p3c_real_constrained_fixed_pole_v1, RealConstrainedFixedPoleFitErrorV1,
+    RealConstrainedFixedPoleFitErrorV1, fit_selected_p3c_real_constrained_fixed_pole_v1,
 };
 use sipi_p3c::{
-    admit_selected_p3c_sealed_s4p_v2, SelectedP3cSealedS4pIdentityV2,
     SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1,
+    SelectedP3cSealedS4pIdentityV2, admit_selected_p3c_sealed_s4p_v2,
 };
 
 const SOURCE_ENV: &str = "SIPI_P3C_SEALED_S4P_EXTERNAL_SOURCE";
@@ -219,7 +219,11 @@ fn required_path(name: &str) -> Result<PathBuf, String> {
 
 fn run_json(fact: &RunFact) -> String {
     match &fact.outcome {
-        FitOutcome::Admitted { order, model_sha256, metrics_sha256 } => format!(
+        FitOutcome::Admitted {
+            order,
+            model_sha256,
+            metrics_sha256,
+        } => format!(
             "{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"fit_status\":\"admitted\",\"order\":{},\"model_sha256\":\"{}\",\"metrics_sha256\":\"{}\"}}",
             fact.manifest_sha256, fact.record_count, order, model_sha256, metrics_sha256,
         ),
@@ -248,7 +252,13 @@ fn write_report(
         .unwrap_or_else(|| "null".to_owned());
     let payload = format!(
         "{{\"schema\":\"{}\",\"status\":\"{}\",\"reason\":{},\"source_byte_length\":{},\"source_sha256\":\"{}\",\"source_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n",
-        RUNNER_SCHEMA, status, reason, SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_SHA256_V1, run_json(first), run_json(second),
+        RUNNER_SCHEMA,
+        status,
+        reason,
+        SELECTED_P3C_S4P_BYTE_LENGTH_V1,
+        SELECTED_P3C_S4P_SHA256_V1,
+        run_json(first),
+        run_json(second),
     );
     fs::write(report, payload).map_err(|error| format!("report_write:{error}"))
 }

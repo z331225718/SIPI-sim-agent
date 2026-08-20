@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03t.mit-source-map.v1",
+  "status": "bus_label_declaration_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis bus_label_declaration_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Bus Label] structural header and member pin list" },
+  "mapping": [
+    { "concept": "typed [Bus Label] header", "rust": "TypedBusLabelDeclarationV1", "notes": "validated ASCII bus_label_name and member_pins list" },
+    { "concept": "duplicate member pin check", "rust": "BusLabelDeclarationErrorV1::DuplicateMemberPin", "notes": "duplicate pin in same bus label fails closed" },
+    { "concept": "empty member pins check", "rust": "BusLabelDeclarationErrorV1::EmptyMemberPins", "notes": "bus label with no pins fails closed" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "bus simulation or bus-level timing analysis",
+    "release certification"
+  ]
+}

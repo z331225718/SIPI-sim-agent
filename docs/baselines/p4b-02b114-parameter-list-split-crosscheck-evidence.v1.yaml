@@ -1,0 +1,61 @@
+schema: sipi.p4b-02b114-parameter-list-split-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b114.parameter-list-split-v1.split-at-index
+matched_count: 5
+case_count: 5
+entries:
+- label: split_middle
+  matched: true
+  product:
+    left: (a, b)
+    policy: sipi.p4b-02b114.parameter-list-split-v1.split-at-index
+    right: (c, d)
+    valid: true
+  reference:
+    valid: true
+    left: (a, b)
+    right: (c, d)
+- label: split_zero
+  matched: true
+  product:
+    left: ()
+    policy: sipi.p4b-02b114.parameter-list-split-v1.split-at-index
+    right: (a, b)
+    valid: true
+  reference:
+    valid: true
+    left: ()
+    right: (a, b)
+- label: split_end
+  matched: true
+  product:
+    left: (a, b)
+    policy: sipi.p4b-02b114.parameter-list-split-v1.split-at-index
+    right: ()
+    valid: true
+  reference:
+    valid: true
+    left: (a, b)
+    right: ()
+- label: out_of_range
+  matched: true
+  product:
+    error: IndexOutOfRange
+    index: 3
+    item_count: 2
+    policy: sipi.p4b-02b114.parameter-list-split-v1.split-at-index
+    valid: false
+  reference:
+    valid: false
+    error: IndexOutOfRange
+    index: 3
+    item_count: 2
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b114.parameter-list-split-v1.split-at-index
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

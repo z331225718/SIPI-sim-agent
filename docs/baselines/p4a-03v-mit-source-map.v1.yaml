@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03v.mit-source-map.v1",
+  "status": "series_pin_mapping_group_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis series_pin_mapping_group_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Series Pin Mapping] group structural header and pin_pairs list" },
+  "mapping": [
+    { "concept": "typed [Series Pin Mapping] group header", "rust": "TypedSeriesPinGroupV1", "notes": "validated ASCII group_name and pin_pairs list" },
+    { "concept": "SeriesPinPairV1 pin pair", "rust": "SeriesPinPairV1", "notes": "pin_first and pin_second pair validation" },
+    { "concept": "duplicate pin pair check", "rust": "SeriesPinMappingGroupErrorV1::DuplicatePinPair", "notes": "duplicate pin pair in same group fails closed" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "series model circuit simulation",
+    "release certification"
+  ]
+}

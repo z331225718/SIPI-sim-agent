@@ -1,0 +1,1576 @@
+schema: sipi.p5-02.canonical-parameter-reference.v1
+status: canonical_parameter_keys_observed_hash_bound
+authorization_ref: docs/baselines/authorized-material-registry.v1.yaml
+source: C:\Users\z3312\code\COM\matlab_src\com_ieee8023_480.m
+source_sha256: 642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad
+byte_length: 469713
+key_count: 214
+call_count: 229
+keys:
+  A_DD:
+    occurrences: 1
+    lines:
+    - 8923
+    call_texts:
+    - param.A_DD = xls_parameter(parameter, 'A_DD'); % Normalized peak dual-Dirac
+      noise, this is half of the total bound uncorrelated jitter (BUJ) in UI
+  A_fe:
+    occurrences: 2
+    lines:
+    - 8909
+    - 9611
+    call_texts:
+    - param.a_fext = xls_parameter(parameter, 'A_fe', true,0.5); % FEXT aggressor
+      differential peak source output voltage (half of peak to peak)
+    - param_struct.a_fext = xls_parameter(parameter, 'A_fe', true); % FEXT aggressor
+      differential peak source output voltage (half of peak to peak)
+  A_ft:
+    occurrences: 1
+    lines:
+    - 8911
+    call_texts:
+    - param.a_icn_fext = xls_parameter(parameter, 'A_ft', true, param.a_fext); % FEXT
+      aggressor amplitude for ICN. Defaults to A_fe if not specified
+  A_ne:
+    occurrences: 2
+    lines:
+    - 8910
+    - 9612
+    call_texts:
+    - param.a_next = xls_parameter(parameter, 'A_ne', true,0.5); % NEXT aggressor
+      differential peak source output voltage (half of peak to peak)
+    - param_struct.a_next = xls_parameter(parameter, 'A_ne', true); % NEXT aggressor
+      differential peak source output voltage (half of peak to peak)
+  A_nt:
+    occurrences: 1
+    lines:
+    - 8912
+    call_texts:
+    - param.a_icn_next = xls_parameter(parameter, 'A_nt', true, param.a_next );% NEXT
+      aggressor amplitude for ICN. Defaults to A_ne if not specified
+  A_v:
+    occurrences: 2
+    lines:
+    - 8908
+    - 9610
+    call_texts:
+    - param.a_thru = xls_parameter(parameter, 'A_v', true, 0.5); % Victim differential
+      peak source output voltage (half of peak to peak)
+    - param_struct.a_thru = xls_parameter(parameter, 'A_v', true); % Victim differential
+      peak source output voltage (half of peak to peak)
+  AC_CM_RMS:
+    occurrences: 1
+    lines:
+    - 9077
+    call_texts:
+    - param.AC_CM_RMS = xls_parameter(parameter, 'AC_CM_RMS', true, 0); % AC_CM_RMS
+      is the CM BBN AWGN RMS at COM source point. Default is 0. Adds common mode noise
+      source to the COM signal path for the through channel
+  ACCM_MAX_Freq:
+    occurrences: 1
+    lines:
+    - 9078
+    call_texts:
+    - param.ACCM_MAX_Freq=xls_parameter(parameter, 'ACCM_MAX_Freq', true, param.fb);
+      % F max for integrating ACCM voltage in Hz. Default is fb
+  AUTO_TFX:
+    occurrences: 1
+    lines:
+    - 9197
+    call_texts:
+    - OP.AUTO_TFX=xls_parameter(parameter, 'AUTO_TFX', false,0); % Mostly used for
+      device ERL. If sent to 1 the fixture tfx will be estimated.
+  B_float_RSS_MAX:
+    occurrences: 1
+    lines:
+    - 8848
+    call_texts:
+    - param.B_float_RSS_MAX=xls_parameter(parameter, 'B_float_RSS_MAX', true,0); %
+      floating DFE tap start for RSS floating tap limit
+  BBN Q factor:
+    occurrences: 1
+    lines:
+    - 9163
+    call_texts:
+    - OP.BBN_Q_factor = xls_parameter(parameter, 'BBN Q factor', false, 5);   % Overrides
+      NEXT/FEXT noise Qfactor for  'Force BBN Q factor' used for reporting. does not
+      affect COM.
+  Bessel_Thomson:
+    occurrences: 1
+    lines:
+    - 9192
+    call_texts:
+    - OP.Bessel_Thomson=xls_parameter(parameter, 'Bessel_Thomson', false, false);
+      % enable Bessel Thomsen filter for COM
+  beta_x:
+    occurrences: 1
+    lines:
+    - 9059
+    call_texts:
+    - param.beta_x= xls_parameter(parameter, 'beta_x', false, 0);%  (for ERL) use
+      default
+  bmaxg:
+    occurrences: 1
+    lines:
+    - 8845
+    call_texts:
+    - param.bmaxg=xls_parameter(parameter, 'bmaxg', true,0.2); % max DFE value for
+      floating taps
+  board_tl_gamma0_a1_a2:
+    occurrences: 1
+    lines:
+    - 9039
+    call_texts:
+    - param.brd_gamma0_a1_a2 = xls_parameter(parameter, 'board_tl_gamma0_a1_a2', true,
+      [0 4.114e-4 2.547e-4]); % Fitting parameters for package model per unit length.
+      First element is in 1/mm and affects DC loss of package model . Second element
+      is in ns1/2/mm and affects loss proportional to sqrt(f). Third element is in
+      ns/mm and affects loss proportional to f.
+  board_tl_tau:
+    occurrences: 1
+    lines:
+    - 9040
+    call_texts:
+    - param.brd_tau = xls_parameter(parameter, 'board_tl_tau', true, 6.191e-3);% Board
+      model transmission line delay ns/mm
+  board_Z_c:
+    occurrences: 1
+    lines:
+    - 9041
+    call_texts:
+    - param.brd_Z_c = xls_parameter(parameter, 'board_Z_c', true, 109.8); % Board
+      model transmission line characteristic impedance [ Tx , Rx ]
+  BREAD_CRUMBS:
+    occurrences: 1
+    lines:
+    - 9153
+    call_texts:
+    - OP.BREAD_CRUMBS = xls_parameter(parameter, 'BREAD_CRUMBS',false, false); % if
+      DIAGNOSTICS is set then param, OP, and chdata are include in the output for
+      each run
+  BREAD_CRUMBS_FIELDS:
+    occurrences: 1
+    lines:
+    - 9154
+    call_texts:
+    - OP.BREAD_CRUMBS_FIELDS = xls_parameter(parameter, 'BREAD_CRUMBS_FIELDS',false,
+      ''); % if BREAD_CRUMBs is enabled, this file controls what chdata fields are
+      included
+  BTorder:
+    occurrences: 1
+    lines:
+    - 9056
+    call_texts:
+    - param.BTorder =  xls_parameter(parameter, 'BTorder', false, 4); % Bessel function
+      order
+  Butterworth:
+    occurrences: 1
+    lines:
+    - 9194
+    call_texts:
+    - OP.Butterworth=xls_parameter(parameter, 'Butterworth', false, 1); % Enable Butterworth
+      Rx filter for COM compuatetopm
+  C_0:
+    occurrences: 1
+    lines:
+    - 8993
+    call_texts:
+    - param.C_0 = xls_parameter(parameter, 'C_0', true,0)*1e-9; % If Include PCB is
+      set to 1, near device single ended capacitance C0  in nF is added
+  C_1:
+    occurrences: 1
+    lines:
+    - 8994
+    call_texts:
+    - param.C_1 = xls_parameter(parameter, 'C_1', true,0)*1e-9; % if Include PCB is
+      set to 1, connector side single ended capacitance C1 in nF is added
+  C_b:
+    occurrences: 1
+    lines:
+    - 8969
+    call_texts:
+    - param.C_bump = xls_parameter(parameter, 'C_b', true, 0)*1e-9; % C_b in nF (single
+      sided)
+  C_d:
+    occurrences: 1
+    lines:
+    - 8966
+    call_texts:
+    - param.C_diepad = xls_parameter(parameter, 'C_d', true,0)*1e-9; % C_d in nF (single
+      sided)
+  C_p:
+    occurrences: 2
+    lines:
+    - 8965
+    - 9607
+    call_texts:
+    - param.C_pkg_board = xls_parameter(parameter, 'C_p', true,0)*1e-9; % C_p in nF
+      (single sided)
+    - param_struct.C_pkg_board = xls_parameter(parameter, 'C_p', true)*1e-9; % C_p
+      in nF (single sided)
+  C_v:
+    occurrences: 1
+    lines:
+    - 8972
+    call_texts:
+    - param.C_v = xls_parameter(parameter, 'C_v', true,0)*1e-9; % C_v in nF (via cap)  (single
+      sided)
+  CDR:
+    occurrences: 1
+    lines:
+    - 9222
+    call_texts:
+    - OP.CDR=xls_parameter(parameter, 'CDR', false, 'MM');% 12/21 from Yuchun Lu to
+      accomdate 'Mod-MM', Defautt is 'MM'
+  COM Pass threshold:
+    occurrences: 1
+    lines:
+    - 8918
+    call_texts:
+    - param.pass_threshold = xls_parameter(parameter, 'COM Pass threshold',false,0);
+      % the pass fail threshold for COM in dB
+  COM_CONTRIBUTION:
+    occurrences: 1
+    lines:
+    - 9155
+    call_texts:
+    - OP.COM_CONTRIBUTION_CURVES = xls_parameter(parameter, 'COM_CONTRIBUTION',false,0);   %
+      Default is 0. If set to 1 then a bar graph of COM contributors is produce instead
+      of bathtub curves
+  COMPUTE_RILN:
+    occurrences: 1
+    lines:
+    - 9232
+    call_texts:
+    - OP.COMPUTE_RILN = xls_parameter(parameter, 'COMPUTE_RILN', false, 0); % Computes
+      RILN default is 0.  FOM_RILN reported
+  COMPUTE_TDILN:
+    occurrences: 1
+    lines:
+    - 9233
+    call_texts:
+    - OP.COMPUTE_TDILN = xls_parameter(parameter, 'COMPUTE_TDILN', false, OP.COMPUTE_RILN);
+      %  computes TD ILN from complex freq IL fit. FOM_TDILN reported.
+  crusor_gain:
+    occurrences: 1
+    lines:
+    - 8906
+    call_texts:
+    - param.cursor_gain=xls_parameter(parameter, 'crusor_gain', true,0); % only FFE
+      and not supported
+  CSV_REPORT:
+    occurrences: 1
+    lines:
+    - 9128
+    call_texts:
+    - OP.CSV_REPORT = xls_parameter(parameter, 'CSV_REPORT', false, true); % saves
+      all the output parameters to a CSV file in the results directory, If DIAGNOSTICS
+      is set then a mat file is also created
+  CTLE_type:
+    occurrences: 1
+    lines:
+    - 8881
+    call_texts:
+    - param.CTLE_type= xls_parameter(parameter, 'CTLE_type', false,'CL93'); % Sets
+      the CTLE type default is poles and zeros (i.e. not a list of poles as in 120e)
+  D_p:
+    occurrences: 1
+    lines:
+    - 8836
+    call_texts:
+    - param.D_p = xls_parameter(parameter, 'D_p',true, 4 ); % number of precursor
+      UI's used to compute Vf Default to 10
+  Delta_f:
+    occurrences: 1
+    lines:
+    - 8801
+    call_texts:
+    - param.max_freq_step = xls_parameter(parameter, 'Delta_f')*1e9; % freqency step
+  delta_IL:
+    occurrences: 1
+    lines:
+    - 9049
+    call_texts:
+    - param.delta_IL=xls_parameter(parameter, 'delta_IL', false, 1); % experiemnal
+  DER_0:
+    occurrences: 1
+    lines:
+    - 8914
+    call_texts:
+    - param.specBER = xls_parameter(parameter, 'DER_0'); % Target detector error ratio
+  DER_CDR:
+    occurrences: 1
+    lines:
+    - 8915
+    call_texts:
+    - param.DER_CDR = xls_parameter(parameter, 'DER_CDR',true,1e-2); % min DER required
+      for a CDR
+  DIAGNOSTICS:
+    occurrences: 1
+    lines:
+    - 9126
+    call_texts:
+    - OP.DEBUG = xls_parameter(parameter, 'DIAGNOSTICS', false, false); % supresss
+      some interim compuation value printouts
+  Display frequency domain:
+    occurrences: 1
+    lines:
+    - 9132
+    call_texts:
+    - OP.GET_FD = xls_parameter(parameter, 'Display frequency domain', false, OP.GET_FD);
+      % Not normally set in the config file. It is normally just set to true to get
+      FD plots
+  DISPLAY_WINDOW:
+    occurrences: 1
+    lines:
+    - 9127
+    call_texts:
+    - OP.DISPLAY_WINDOW = xls_parameter(parameter, 'DISPLAY_WINDOW', false, true);
+      % controls if graph plots are displayed. Typically goes along with DIAGNOSTICS
+  Do_Colored_Noise:
+    occurrences: 1
+    lines:
+    - 9256
+    call_texts:
+    - OP.Do_Colored_Noise= xls_parameter(parameter, 'Do_Colored_Noise', false, 1);
+  Do_White_Noise:
+    occurrences: 1
+    lines:
+    - 9257
+    call_texts:
+    - OP.Do_White_Noise=xls_parameter(parameter, 'Do_White_Noise', false, 0);
+  Do_XT_Noise:
+    occurrences: 1
+    lines:
+    - 9254
+    call_texts:
+    - OP.Do_XT_Noise= xls_parameter(parameter, 'Do_XT_Noise', false, 1);
+  Dynamic TXFFE:
+    occurrences: 1
+    lines:
+    - 8794
+    call_texts:
+    - OP.dynamic_txffe = xls_parameter(parameter, 'Dynamic TXFFE', false,1); % Temporary
+      switch for testing new optimize_fom with dynamic txffe
+  EH_max:
+    occurrences: 1
+    lines:
+    - 8877
+    call_texts:
+    - param.Max_VEO= xls_parameter(parameter, 'EH_max', true,inf); % used when PMD_type
+      is C2M and is not really computed per spec
+  EH_min:
+    occurrences: 1
+    lines:
+    - 8876
+    call_texts:
+    - param.Min_VEO= xls_parameter(parameter, 'EH_min', true,0); % used when PMD_type
+      is C2M
+  EH_min_test:
+    occurrences: 1
+    lines:
+    - 8878
+    call_texts:
+    - param.Min_VEO_Test= xls_parameter(parameter, 'EH_min_test', true,0); % Older
+      syntax. Used when PMD_type is C2M. This allow EH to go below EH_min. If set
+      to zero it is ignored (same as Min_VEO_test)
+  Enforce Causality:
+    occurrences: 1
+    lines:
+    - 9156
+    call_texts:
+    - OP.ENFORCE_CAUSALITY = xls_parameter(parameter, 'Enforce Causality', false,
+      0);% default is 0. Not recommended
+  Enforce Causality DIFF_TOL:
+    occurrences: 1
+    lines:
+    - 9158
+    call_texts:
+    - OP.EC_DIFF_TOL = xls_parameter(parameter, 'Enforce Causality DIFF_TOL', false,
+      1e-3); % Difference Tolerance parameter for causality, Hard enforcement, 1e-4,Soft
+      enforcement, 1e-3
+  Enforce Causality pulse start tolerance:
+    occurrences: 1
+    lines:
+    - 9159
+    call_texts:
+    - OP.EC_PULSE_TOL = xls_parameter(parameter, 'Enforce Causality pulse start tolerance',
+      false, 0.01); % Tolerance parameter for causality, Hard enforcement, 0.05, Soft
+      enforcement, .01
+  Enforce Causality REL_TOL:
+    occurrences: 1
+    lines:
+    - 9157
+    call_texts:
+    - OP.EC_REL_TOL = xls_parameter(parameter, 'Enforce Causality REL_TOL', false,
+      1e-2); % Relative Tolerance parameter for causality, Hard enforcement, 1e-3,
+      Soft enforcement,  1e-2
+  ERL:
+    occurrences: 1
+    lines:
+    - 9183
+    call_texts:
+    - OP.ERL=xls_parameter(parameter, 'ERL', false, false); % Enables ERL. Needs TDR
+      to be set as well.
+  ERL Pass threshold:
+    occurrences: 1
+    lines:
+    - 8919
+    call_texts:
+    - param.ERL_pass_threshold = xls_parameter(parameter, 'ERL Pass threshold',false,0);
+      % the pass fail threshold for ERL in dB
+  ERL_FOM:
+    occurrences: 1
+    lines:
+    - 9166
+    call_texts:
+    - OP.RL_norm_test=xls_parameter(parameter, 'ERL_FOM', false, 1); % Defaults to
+      1 indicating variance is used for FOM determination.  Do not change.
+  ERL_ONLY:
+    occurrences: 1
+    lines:
+    - 9182
+    call_texts:
+    - OP.ERL_ONLY = xls_parameter(parameter, 'ERL_ONLY', false,0); % Compute ERL only
+  Error propagation COM margin:
+    occurrences: 1
+    lines:
+    - 9227
+    call_texts:
+    - OP.COM_EP_margin = xls_parameter(parameter, 'Error propagation COM margin',
+      false, 0); % Use to calculate  error propogation (not normally used)
+  eta_0:
+    occurrences: 1
+    lines:
+    - 8924
+    call_texts:
+    - param.eta_0 = xls_parameter(parameter, 'eta_0'); % One-sided noise spectral
+      density (V^2/GHz).Input refered noise at TP5. Input referred noise at TP5
+  EW:
+    occurrences: 1
+    lines:
+    - 9138
+    call_texts:
+    - OP.EW = xls_parameter(parameter, 'EW', false, false); % RIM 3-18-2021 change
+      defaults
+  EXE_MODE:
+    occurrences: 1
+    lines:
+    - 9122
+    call_texts:
+    - OP.EXE_MODE= xls_parameter(parameter, 'EXE_MODE', false, 1);% 12/21 0:legacy
+      1:fast 2:superfast default is 1.
+  exit if deployed:
+    occurrences: 1
+    lines:
+    - 9120
+    call_texts:
+    - OP.exit_if_deployed = xls_parameter(parameter, 'exit if deployed', false,0);
+      % may need set when COM is an exe
+  f_1:
+    occurrences: 1
+    lines:
+    - 8800
+    call_texts:
+    - param.f1 = xls_parameter(parameter, 'f_1', true, param.max_start_freq/1e9)*1e9;
+      % start frequency for ICN and ILD calculations in GHz
+  f_2:
+    occurrences: 1
+    lines:
+    - 8798
+    call_texts:
+    - param.f2 = xls_parameter(parameter, 'f_2', true, param.fb/1e9 )*1e9; % frequency
+      in GHz for intergration compuation of ICN or FOM_Ild in GHz
+  f_b:
+    occurrences: 1
+    lines:
+    - 8797
+    call_texts:
+    - param.fb = xls_parameter(parameter, 'f_b')*1e9; % Baud (Signaling) rate in Gbaud
+  f_f:
+    occurrences: 1
+    lines:
+    - 9052
+    call_texts:
+    - 'param.f_f = xls_parameter(parameter, ''f_f'', true, 4); % For ICN: Fext transiton
+      rate cut off frequency for ICN calc in terms of fb'
+  f_hp:
+    occurrences: 1
+    lines:
+    - 9096
+    call_texts:
+    - param.f_hp=xls_parameter(parameter, 'f_hp', true, 0 );  % for rx testing for
+      eq 162-12 if 0 (default) then rx test using rx bbn
+  f_HP_P:
+    occurrences: 1
+    lines:
+    - 8873
+    call_texts:
+    - param.f_HP_P = 1e9*xls_parameter(parameter, 'f_HP_P', true, []); % CFT pole
+      fp2 is in GHz. Normally a list for 120e. Not normally use elsewise
+  f_HP_PZ:
+    occurrences: 2
+    lines:
+    - 8871
+    - 8899
+    call_texts:
+    - param.f_HP = 1e9*xls_parameter(parameter, 'f_HP_PZ', true, []); % CFT pole pole
+      zero pair in GHz for low frequency CTF
+    - param.f_HP = 1e9*xls_parameter(parameter, 'f_HP_PZ', true, []); % fLF is in
+      GHz
+  f_HP_Z:
+    occurrences: 1
+    lines:
+    - 8872
+    call_texts:
+    - param.f_HP_Z = 1e9*xls_parameter(parameter, 'f_HP_Z', true, []); % CFT zero
+      fz1 is in GHz. Normally a list for 120e. Not normally use elsewise
+  f_min:
+    occurrences: 1
+    lines:
+    - 8799
+    call_texts:
+    - param.max_start_freq = xls_parameter(parameter, 'f_min')*1e9; % minimum required
+      frequency start for s parameters
+  f_n:
+    occurrences: 1
+    lines:
+    - 9053
+    call_texts:
+    - 'param.f_n = xls_parameter(parameter, ''f_n'', true, 4); % For ICN: Next transiton
+      rate cut off frequency for ICN calc in terms of fb'
+  f_p1:
+    occurrences: 2
+    lines:
+    - 8887
+    - 8894
+    call_texts:
+    - param.CTLE_fp1 = 1e9*xls_parameter(parameter, 'f_p1', true, param.fb/4); % fp1
+      is in GHz
+    - param.CTLE_fp1 = 1e9*xls_parameter(parameter, 'f_p1', true, param.fb/4); % fp1
+      is in GHz
+  f_p2:
+    occurrences: 2
+    lines:
+    - 8888
+    - 8895
+    call_texts:
+    - param.CTLE_fp2 = 1e9*xls_parameter(parameter, 'f_p2', true, param.fb); % fp2
+      is in GHz
+    - param.CTLE_fp2 = 1e9*xls_parameter(parameter, 'f_p2', true, param.fb); % fp2
+      is in GHz
+  f_r:
+    occurrences: 1
+    lines:
+    - 9054
+    call_texts:
+    - param.f_r = xls_parameter(parameter, 'f_r', true, 4); % reference receive filter
+      in COM and in ICN/FOM_ILD calcs in terms of fb
+  f_v:
+    occurrences: 1
+    lines:
+    - 9051
+    call_texts:
+    - 'param.f_v = xls_parameter(parameter, ''f_v'', true, 4); % For FOM_ILD: Transiton
+      rate cut off frequency for ICN/ILD calc in terms of fb'
+  f_z:
+    occurrences: 2
+    lines:
+    - 8889
+    - 8896
+    call_texts:
+    - param.CTLE_fz = 1e9*xls_parameter(parameter, 'f_z', true, param.fb/4); % fz
+      is in GHz
+    - param.CTLE_fz = 1e9*xls_parameter(parameter, 'f_z', true, param.fb/4); % fz
+      is in GHz
+  ffe_backoff:
+    occurrences: 1
+    lines:
+    - 8862
+    call_texts:
+    - param.ffe_backoff=xls_parameter(parameter, 'ffe_backoff', true,0); % see if
+      better zero foreced solution is better by backing off the number specified FFE
+      taps one at at time
+  ffe_main_cursor_min:
+    occurrences: 1
+    lines:
+    - 8858
+    call_texts:
+    - param.ffe_main_cursor_min=xls_parameter(parameter, 'ffe_main_cursor_min', true,1);
+      % Rx FFE main cursor miminum
+  FFE_OPT_METHOD:
+    occurrences: 1
+    lines:
+    - 9258
+    call_texts:
+    - OP.FFE_OPT_METHOD=xls_parameter(parameter,'FFE_OPT_METHOD',false,'MMSE'); %
+      'MMSE','FV-LMS'
+  ffe_post_tap1_max:
+    occurrences: 1
+    lines:
+    - 8860
+    call_texts:
+    - param.ffe_post_tap1_max=xls_parameter(parameter, 'ffe_post_tap1_max', true,.7);
+      % Rx FFE post cursor tap1 limit
+  ffe_post_tap_len:
+    occurrences: 1
+    lines:
+    - 8854
+    call_texts:
+    - param.ffe_post_tap_len=xls_parameter(parameter, 'ffe_post_tap_len', true,0);
+      % Rx FFE post cursor tap length
+  ffe_pre_tap1_max:
+    occurrences: 1
+    lines:
+    - 8859
+    call_texts:
+    - param.ffe_pre_tap1_max=xls_parameter(parameter, 'ffe_pre_tap1_max', true,.7);
+      % Rx FFE precursor tap1 limit
+  ffe_pre_tap_len:
+    occurrences: 1
+    lines:
+    - 8852
+    call_texts:
+    - param.ffe_pre_tap_len=xls_parameter(parameter, 'ffe_pre_tap_len', true,0); %
+      RX ffe pre cursor tap length
+  FFE_SNR:
+    occurrences: 1
+    lines:
+    - 9255
+    call_texts:
+    - OP.FFE_SNR= xls_parameter(parameter, 'FFE_SNR', false, 1);
+  ffe_tap_step_size:
+    occurrences: 1
+    lines:
+    - 8856
+    call_texts:
+    - param.ffe_tap_step_size=xls_parameter(parameter, 'ffe_tap_step_size', true,0);
+      % Rx FFE tap step size
+  ffe_tapn_max:
+    occurrences: 1
+    lines:
+    - 8861
+    call_texts:
+    - param.ffe_tapn_max=xls_parameter(parameter, 'ffe_tapn_max', true,.7); % Rx FFE
+      precursor tapn limit
+  fixture delay time:
+    occurrences: 1
+    lines:
+    - 9061
+    call_texts:
+    - param.tfx= xls_parameter(parameter, 'fixture delay time', true, -1);% fixture
+      delay time (for ERL)
+  flip:
+    occurrences: 1
+    lines:
+    - 9095
+    call_texts:
+    - param.flip=xls_parameter(parameter, 'flip', true, 0 );  % exprimental p/n missmatch
+      flip.  Not used.
+  FloatingDFE_Development:
+    occurrences: 1
+    lines:
+    - 8795
+    call_texts:
+    - OP.FloatingDFE_Development = xls_parameter(parameter, 'FloatingDFE_Development',
+      false,1); % Temporary switch for testing new floating dfe routine
+  Force BBN Q factor:
+    occurrences: 1
+    lines:
+    - 9164
+    call_texts:
+    - OP.force_BBN_Q_factor = xls_parameter(parameter, 'Force BBN Q factor', false,
+      false); % Used for reporting and bathtub curves. does not affect COM.
+  Force PDF bin size:
+    occurrences: 1
+    lines:
+    - 9124
+    call_texts:
+    - OP.force_pdf_bin_size = xls_parameter(parameter, 'Force PDF bin size', false,
+      0); % do not use
+  FORCE_TR:
+    occurrences: 1
+    lines:
+    - 9170
+    call_texts:
+    - OP.FORCE_TR = xls_parameter(parameter, 'FORCE_TR', false, false);% Included
+      for earlier version support but should be set to 1 in most later config sheets.
+  fraction_of_F_range_start_extrap_from:
+    occurrences: 1
+    lines:
+    - 9231
+    call_texts:
+    - OP.fraction_of_F_range_start_extrap_from= xls_parameter(parameter, 'fraction_of_F_range_start_extrap_from',
+      true, 0.75); % Frequency (fb) where high frequency extropolation begins for
+      computing IR. Helps control Gibbs phenomena. defualt is 0.75.
+  FT_COOP:
+    occurrences: 1
+    lines:
+    - 9150
+    call_texts:
+    - OP.FT_COOP = xls_parameter(parameter, 'FT_COOP',false, false); % obsolete do
+      not use.
+  G2_Qual:
+    occurrences: 1
+    lines:
+    - 8952
+    call_texts:
+    - param.g2qual=xls_parameter(parameter, 'G2_Qual', true,[]); % G2_Qual limit values
+      of g_DC_HP (g DC2 ) which corresponds to ranges of g_DC g DC specified with
+      G_QUAL
+  g_DC:
+    occurrences: 2
+    lines:
+    - 8886
+    - 8893
+    call_texts:
+    - param.ctle_gdc_values = xls_parameter(parameter, 'g_DC', true); % AC-DC gain
+      list
+    - param.ctle_gdc_values = xls_parameter(parameter, 'g_DC', true); % Continuous
+      time filter DC gain settings (G_DC) or range as specified in Annex 93A
+  g_DC_HP:
+    occurrences: 2
+    lines:
+    - 8870
+    - 8898
+    call_texts:
+    - param.g_DC_HP_values = xls_parameter(parameter, 'g_DC_HP', true,[]); % CTF AC-DC
+      gain list (GDC2)
+    - param.g_DC_HP_values = xls_parameter(parameter, 'g_DC_HP', true,[]); % Continuous
+      time filter DC gain settings (G_DC2)
+  G_Qual:
+    occurrences: 1
+    lines:
+    - 8951
+    call_texts:
+    - param.gqual=xls_parameter(parameter, 'G_Qual', true,[]);% G_Qual are the dB
+      ranges of g_DC g DC )which correspond tog_DC_HP (g DC2)
+  GDC_MIN:
+    occurrences: 1
+    lines:
+    - 8905
+    call_texts:
+    - param.GDC_MIN = xls_parameter(parameter, 'GDC_MIN',true, 0); % max ACDC gain,
+      if 0 ignore
+  Grr:
+    occurrences: 1
+    lines:
+    - 9063
+    call_texts:
+    - param.Grr=xls_parameter(parameter, 'Grr', false, param.Grr_limit);% either do
+      no use or set to 1 (for ERL)
+  Grr_limit:
+    occurrences: 1
+    lines:
+    - 9062
+    call_texts:
+    - param.Grr_limit=xls_parameter(parameter, 'Grr_limit', false, 1); % either do
+      no use or set to 1 (for ERL)
+  Gx:
+    occurrences: 1
+    lines:
+    - 9064
+    call_texts:
+    - param.Gx=xls_parameter(parameter, 'Gx', false, 0); % ERL parameter param.Grr,
+      This is used is the COM code
+  Histogram_Window_Weight:
+    occurrences: 1
+    lines:
+    - 9084
+    call_texts:
+    - OP.Histogram_Window_Weight=xls_parameter(parameter, 'Histogram_Window_Weight',
+      false, 'rectangle' );  %Weighting for VEC and VEO are histogram processing.
+      Type are Gaussian,Dual Rayleigh,Triangle, and Rectangle (default)
+  IDEAL_RX_TERM:
+    occurrences: 1
+    lines:
+    - 9143
+    call_texts:
+    - OP.IDEAL_RX_TERM = xls_parameter(parameter, 'IDEAL_RX_TERM', false, false);
+  IDEAL_TX_TERM:
+    occurrences: 1
+    lines:
+    - 9139
+    call_texts:
+    - OP.IDEAL_TX_TERM = xls_parameter(parameter, 'IDEAL_TX_TERM', false, false);
+  imb_C_fctr:
+    occurrences: 1
+    lines:
+    - 9093
+    call_texts:
+    - param.imb_C_fctr=xls_parameter(parameter, 'imb_C_fctr', true, 1 ); % exprimental
+      p/n capacitance missmatch.  Not used.
+  imb_Z_fctr:
+    occurrences: 1
+    lines:
+    - 9092
+    call_texts:
+    - param.imb_Z_fctr=xls_parameter(parameter, 'imb_Z_fctr', true, 1 ); % exprimental
+      p/n impedance missmatch.  Not used.
+  Impulse response truncatio threshold:
+    occurrences: 1
+    lines:
+    - 9199
+    call_texts:
+    - '%OP.impulse_response_truncation_threshold = xls_parameter(parameter, ''Impulse
+      response truncatio threshold'', false, 1e-3);'
+  Impulse response truncation threshold:
+    occurrences: 1
+    lines:
+    - 9200
+    call_texts:
+    - OP.impulse_response_truncation_threshold = xls_parameter(parameter, 'Impulse
+      response truncation threshold', false, 1e-3); % zero padding threshold in fraction
+      of IR peak for the impulse response. Effectively controls the length of time
+      for the PR. Larger values decrease run time and accuracy. Default is 1e-3.
+  INC_PACKAGE:
+    occurrences: 1
+    lines:
+    - 9133
+    call_texts:
+    - 'OP.INC_PACKAGE = xls_parameter(parameter, ''INC_PACKAGE'', false, true); %
+      warning: INC_PACKAGE=0 not fully supported, instead, set Zp,Cd, and Cp parameters
+      to zero and Zp select to 1'
+  inc_reflect_board:
+    occurrences: 1
+    lines:
+    - 9196
+    call_texts:
+    - OP.inc_reflect_board=xls_parameter(parameter, 'inc_reflect_board', false,0);
+      % Not used if 0. Default is zero.
+  Include PCB:
+    occurrences: 1
+    lines:
+    - 9119
+    call_texts:
+    - OP.include_pcb = xls_parameter(parameter, 'Include PCB', false); % Used to add
+      a PCB one each side of the passed s-parameters.
+  INCLUDE_CTLE:
+    occurrences: 1
+    lines:
+    - 9121
+    call_texts:
+    - OP.INCLUDE_CTLE = xls_parameter(parameter, 'INCLUDE_CTLE', false, 1); % do not
+      use
+  INCLUDE_TX_RX_FILTER:
+    occurrences: 1
+    lines:
+    - 9123
+    call_texts:
+    - OP.INCLUDE_FILTER = xls_parameter(parameter, 'INCLUDE_TX_RX_FILTER', false,
+      1); % do not use
+  kappa1:
+    occurrences: 1
+    lines:
+    - 8788
+    call_texts:
+    - param.kappa1= xls_parameter(parameter, 'kappa1', true,1); % if set 0 reflection
+      at tp0 are omitted from COM
+  kappa2:
+    occurrences: 1
+    lines:
+    - 8789
+    call_texts:
+    - param.kappa2= xls_parameter(parameter, 'kappa2', true,1); % if set 0 reflection
+      at tp5 are omitted from COM
+  L:
+    occurrences: 1
+    lines:
+    - 8913
+    call_texts:
+    - param.levels = xls_parameter(parameter, 'L'); % number of symbols levels (PAM-4
+      is 4, NRZ is 2)
+  L_s:
+    occurrences: 1
+    lines:
+    - 8968
+    call_texts:
+    - param.L_comp = xls_parameter(parameter, 'L_s', true, 0)*1e-9; % L_s in nH (single
+      sided)
+  LIMIT_JITTER_CONTRIB_TO_DFE_SPAN:
+    occurrences: 1
+    lines:
+    - 9198
+    call_texts:
+    - OP.LIMIT_JITTER_CONTRIB_TO_DFE_SPAN = xls_parameter(parameter, 'LIMIT_JITTER_CONTRIB_TO_DFE_SPAN',
+      false, false); % Experimental. Default is 0.
+  Local Search:
+    occurrences: 1
+    lines:
+    - 9072
+    call_texts:
+    - param.LOCAL_SEARCH=xls_parameter(parameter,'Local Search',true,0); % Decreases
+      COM compute time. Aetting to 2 seems ok ,if 0 search is full grid
+  M:
+    occurrences: 1
+    lines:
+    - 8933
+    call_texts:
+    - param.samples_per_ui = xls_parameter(parameter, 'M', 32); % Samples per UI
+  Max burst length calculated:
+    occurrences: 1
+    lines:
+    - 9226
+    call_texts:
+    - OP.nburst = xls_parameter(parameter, 'Max burst length calculated', false, 0);
+      % Use to calculate burst error rate (not normally used)
+  Min_VEO_Test:
+    occurrences: 1
+    lines:
+    - 8879
+    call_texts:
+    - param.Min_VEO_Test= xls_parameter(parameter, 'Min_VEO_Test', true,param.Min_VEO_Test);
+      % used when PMD_type is C2M. This allow EH to go blow EH_min. If set to Zero
+      it is ignored
+  MLSD:
+    occurrences: 1
+    lines:
+    - 9236
+    call_texts:
+    - OP.MLSD = xls_parameter(parameter, 'MLSD', false, 0); % not 0 or missing means
+      use MLSD
+  MLSE:
+    occurrences: 1
+    lines:
+    - 9237
+    call_texts:
+    - OP.MLSE = xls_parameter(parameter, 'MLSE', false, OP.MLSD ); % MSLD Synonym
+      support
+  N:
+    occurrences: 1
+    lines:
+    - 9179
+    call_texts:
+    - OP.N = xls_parameter(parameter, 'N', false, 0); % duration time in UI which
+      is used for ERL (PTDR)
+  N_b:
+    occurrences: 1
+    lines:
+    - 8834
+    call_texts:
+    - param.ndfe = xls_parameter(parameter, 'N_b'); % Decision feedback fixed equalizer
+      (DFE) length
+  N_b_step:
+    occurrences: 1
+    lines:
+    - 8851
+    call_texts:
+    - param.dfe_delta = xls_parameter(parameter, 'N_b_step', true,0); % discreatiztion
+      of DFE, 0 disables and is not normally used
+  N_bf:
+    occurrences: 1
+    lines:
+    - 8840
+    call_texts:
+    - param.N_bf=xls_parameter(parameter, 'N_bf', true,6); % number of taps in group
+  N_bg:
+    occurrences: 1
+    lines:
+    - 8839
+    call_texts:
+    - param.N_bg=xls_parameter(parameter, 'N_bg', true,0); % number of group of floating
+      tap. Used as a switch, 0 means no float
+  N_bmax:
+    occurrences: 1
+    lines:
+    - 8841
+    call_texts:
+    - param.N_bmax=xls_parameter(parameter, 'N_bmax', true, param.ndfe); % UI span
+      for floating taps
+  N_bx:
+    occurrences: 1
+    lines:
+    - 8837
+    call_texts:
+    - param.N_bx = xls_parameter(parameter, 'N_bx', true, param.ndfe ); % Used for
+      ERL to Compensate for a number of Ui assoicated with the DFE
+  N_f:
+    occurrences: 2
+    lines:
+    - 8842
+    - 8843
+    call_texts:
+    - param.N_bmax=xls_parameter(parameter, 'N_f', true, param.ndfe); % UI span for
+      floating taps. replaced by N_bmax
+    - param.N_f=xls_parameter(parameter, 'N_f', true, param.ndfe); % UI span for floating
+      taps for rX FFE
+  N_qb:
+    occurrences: 1
+    lines:
+    - 8916
+    call_texts:
+    - param.N_qb = xls_parameter(parameter, 'N_qb',true,0); % adc number of bits if
+      0 do not apply quantization
+  N_tail_start:
+    occurrences: 1
+    lines:
+    - 8849
+    call_texts:
+    - param.N_tail_start=xls_parameter(parameter, 'N_tail_start', true,0); % start
+      range for max RSS limit for DFE taps
+  N_tc:
+    occurrences: 1
+    lines:
+    - 8927
+    call_texts:
+    - param.trunc = xls_parameter(parameter, 'N_tc', true, param.trunc); % MLSE sequence
+      truncation length
+  N_v:
+    occurrences: 1
+    lines:
+    - 8835
+    call_texts:
+    - param.N_v = xls_parameter(parameter, 'N_v',true,param.ndfe); % number of UI
+      used to compute Vf
+  Noise_Crest_Factor:
+    occurrences: 1
+    lines:
+    - 9076
+    call_texts:
+    - param.Noise_Crest_Factor= xls_parameter(parameter, 'Noise_Crest_Factor', true,
+      0); % Normally not used. If set this is q factor used for quantized Gaussian
+      PDFs
+  num_ui_RXFF_noise:
+    occurrences: 1
+    lines:
+    - 8868
+    call_texts:
+    - param.num_ui_RXFF_noise=xls_parameter(parameter, 'num_ui_RXFF_noise', true,2048);
+      % Rx FFE precursor tapn limit
+  Optimize_loop_speed_up:
+    occurrences: 1
+    lines:
+    - 9223
+    call_texts:
+    - OP.Optimize_loop_speed_up =xls_parameter(parameter, 'Optimize_loop_speed_up',
+      true , 0);% If set to 0 (or default) normal looping, If set to 1 loop speedup
+      by slightly reducing PD Fbin and FIR_threshold for optimize looping only
+  P_qc:
+    occurrences: 1
+    lines:
+    - 8917
+    call_texts:
+    - param.P_qc= xls_parameter(parameter, 'P_qc',true,2*param.specBER); % adc clipping
+      probability
+  package_tl_gamma0_a1_a2:
+    occurrences: 2
+    lines:
+    - 9015
+    - 9644
+    call_texts:
+    - param.pkg_gamma0_a1_a2 = xls_parameter(parameter, 'package_tl_gamma0_a1_a2',
+      true, [0 1.734e-3 1.455e-4]); %Fitting parameters for package model per unit
+      length. First element is in 1/mm and affects DC loss of package model . Second
+      element is in ns1/2/mm and affects loss proportional to sqrt(f). Third element
+      is in ns/mm and affects loss proportional to f.
+    - param_struct.pkg_gamma0_a1_a2 = xls_parameter(parameter, 'package_tl_gamma0_a1_a2',
+      true, [0 1.734e-3 1.455e-4]); %Fitting parameters for package model per unit
+      length. First element is in 1/mm and affects DC loss of package model . Second
+      element is in ns1/2/mm and affects loss proportional to sqrt(f). Third element
+      is in ns/mm and affects loss proportional to f.
+  package_tl_tau:
+    occurrences: 2
+    lines:
+    - 9016
+    - 9645
+    call_texts:
+    - param.pkg_tau = xls_parameter(parameter, 'package_tl_tau', true, 6.141e-3);
+      % Package model transmission line delay ns/mm
+    - param_struct.pkg_tau = xls_parameter(parameter, 'package_tl_tau', true, 6.141e-3);
+      % Package model transmission line delay ns/mm
+  package_Z_c:
+    occurrences: 2
+    lines:
+    - 9017
+    - 9646
+    call_texts:
+    - param.pkg_Z_c = xls_parameter(parameter, 'package_Z_c', true, '[92 92 ; 70 70;
+      80 80; 100 100]').';% Package model transmission line characteristic impedance
+      [ Tx , Rx ]
+    - param_struct.pkg_Z_c = xls_parameter(parameter, 'package_Z_c', true, 78.2).';%
+      Package model transmission line characteristic impedance [ Tx , Rx ]
+  PDF bin size:
+    occurrences: 1
+    lines:
+    - 9125
+    call_texts:
+    - OP.BinSize = xls_parameter(parameter, 'PDF bin size', false, 1e-5); % set lower
+      for faster computation time but less accuracy.
+  PHY:
+    occurrences: 1
+    lines:
+    - 9204
+    call_texts:
+    - OP.PHY= xls_parameter(parameter, 'PHY', false, OP.PMD_type); % The keyword OP.PMD_type
+      is now used
+  PKG_NAME:
+    occurrences: 1
+    lines:
+    - 8763
+    call_texts:
+    - param.PKG_NAME= xls_parameter(parameter, 'PKG_NAME', false,'');
+  PKG_Tx_FFE_preset:
+    occurrences: 1
+    lines:
+    - 9036
+    call_texts:
+    - param.PKG_Tx_FFE_preset =xls_parameter(parameter, 'PKG_Tx_FFE_preset', true,
+      0); % RIM 08-18-2022 for Tx preset capability
+  PLOT_CM:
+    occurrences: 1
+    lines:
+    - 9230
+    call_texts:
+    - OP.PLOT_CM = xls_parameter(parameter, 'PLOT_CM', false, 0); % Display CM plots
+      if set to 1. Default is 0.
+  PMD_type:
+    occurrences: 1
+    lines:
+    - 9203
+    call_texts:
+    - OP.PMD_type= xls_parameter(parameter, 'PMD_type', false,'C2C'); %  Either C2C
+      or C2M. C2M is for computing VEC and VEO
+  Port Order:
+    occurrences: 1
+    lines:
+    - 9048
+    call_texts:
+    - param.snpPortsOrder = xls_parameter(parameter, 'Port Order', true, [1 3 2 4]);
+      % s parameter port order [ tx+ tx- rx+ rx-]
+  Q:
+    occurrences: 1
+    lines:
+    - 9097
+    call_texts:
+    - param.Q=xls_parameter(parameter, 'Q', true, 0 );  % Implementation penalty for
+      MLSE in EQ 178a-36
+  Q_budget_adj:
+    occurrences: 1
+    lines:
+    - 8930
+    call_texts:
+    - param.Q_budget_adj = xls_parameter(parameter, 'Q_budget_adj', true, 0); % MLSE
+      sequence truncation length
+  QL:
+    occurrences: 1
+    lines:
+    - 9087
+    call_texts:
+    - param.QL=xls_parameter(parameter, 'QL', true, param.T_O/param.Qr/1000 ); % superceded
+      with sigma_r but is the internal values that is used
+  Qr:
+    occurrences: 1
+    lines:
+    - 9086
+    call_texts:
+    - param.Qr=xls_parameter(parameter, 'Qr', true, param.sigma_r ); % sigma_r replaces
+      Qr gasussian histogram window. Unit are UI
+  R_0:
+    occurrences: 1
+    lines:
+    - 8978
+    call_texts:
+    - param.Z0 = xls_parameter(parameter, 'R_0', 50); %
+  R_d:
+    occurrences: 2
+    lines:
+    - 8973
+    - 9608
+    call_texts:
+    - param.R_diepad = xls_parameter(parameter, 'R_d', true, [50,50]); % Die source
+      termination resistance  (single sided)
+    - param_struct.R_diepad = xls_parameter(parameter, 'R_d', true); % Die source
+      termination resistance  (single sided)
+  R_LM:
+    occurrences: 1
+    lines:
+    - 8932
+    call_texts:
+    - param.R_LM = xls_parameter(parameter, 'R_LM'); % Ratio of level separation mismatch.
+      Relevant when not PAM-2 (NRZ).
+  Raised_Cosine:
+    occurrences: 1
+    lines:
+    - 9195
+    call_texts:
+    - OP.Raised_Cosine=xls_parameter(parameter, 'Raised_Cosine', false,0); % Not used
+      if 0. Default is zero. Should set BT and BW to false
+  RC_end:
+    occurrences: 1
+    lines:
+    - 9058
+    call_texts:
+    - param.RC_end =  xls_parameter(parameter, 'RC_end', false, param.fb*param.f_r
+      ); % end frequency for raised cosine filter
+  RC_Start:
+    occurrences: 1
+    lines:
+    - 9057
+    call_texts:
+    - param.RC_Start =  xls_parameter(parameter, 'RC_Start', false, param.fb/2); %
+      start frequency for raised cosine filter
+  RESULT_DIR:
+    occurrences: 1
+    lines:
+    - 9151
+    call_texts:
+    - OP.RESULT_DIR = regexprep(xls_parameter(parameter, 'RESULT_DIR'), '\\', filesep);
+      % directory where results like csv, mat, and/or figure files will be written
+  rho_x:
+    occurrences: 1
+    lines:
+    - 9060
+    call_texts:
+    - param.rho_x= xls_parameter(parameter, 'rho_x', false, .618); % (for ERL) use
+      default
+  RUNTAG:
+    occurrences: 1
+    lines:
+    - 9219
+    call_texts:
+    - OP.RUNTAG = xls_parameter(parameter, 'RUNTAG', false, ''); % This string is
+      appended to the begining of results files
+  RX_CALIBRATION:
+    occurrences: 1
+    lines:
+    - 9161
+    call_texts:
+    - OP.RX_CALIBRATION = xls_parameter(parameter, 'RX_CALIBRATION', false, false);
+      % Turn on RX_Calibration loop
+  RXFFE FLOAT CTL:
+    occurrences: 1
+    lines:
+    - 9247
+    call_texts:
+    - OP.RXFFE_FLOAT_CTL =  xls_parameter(parameter, 'RXFFE FLOAT CTL', false, 'FOM');
+      % select taps (taps), pulse response (ISI), or FOM for floating taps determination
+  RXFFE TAP CONSTRAINT:
+    occurrences: 1
+    lines:
+    - 9248
+    call_texts:
+    - OP.RXFFE_TAP_CONSTRAINT =xls_parameter(parameter, 'RXFFE TAP CONSTRAINT', false,
+      'Unity Cursor'); % "Unity sum taps", "Unity Cursor", of unbounded
+  Rxnskew:
+    occurrences: 1
+    lines:
+    - 9116
+    call_texts:
+    - param.Rxnskew=xls_parameter(parameter, 'Rxnskew', true, 0 );  % Rx n skew in
+      ps
+  Rxpskew:
+    occurrences: 1
+    lines:
+    - 9115
+    call_texts:
+    - param.Rxpskew=xls_parameter(parameter, 'Rxpskew', true, 0 );  % Rx p skew in
+      ps
+  S-parameter magnitude extrapolation policy:
+    occurrences: 1
+    lines:
+    - 9201
+    call_texts:
+    - OP.interp_sparam_mag = xls_parameter(parameter, 'S-parameter magnitude extrapolation
+      policy', false, 'linear_trend_to_DC'); % magnitued extrapolation method
+  S-parameter phase extrapolation policy:
+    occurrences: 1
+    lines:
+    - 9202
+    call_texts:
+    - OP.interp_sparam_phase = xls_parameter(parameter, 'S-parameter phase extrapolation
+      policy', false, 'extrap_cubic_to_dc_linear_to_inf'); % phase extrapolation method
+  sample_adjustment:
+    occurrences: 1
+    lines:
+    - 8934
+    call_texts:
+    - param.ts_sample_adj_range = xls_parameter(parameter, 'sample_adjustment', true,
+      [0 0]); %sample point adjustment range
+  samples_for_C2M:
+    occurrences: 1
+    lines:
+    - 9082
+    call_texts:
+    - param.samples_for_C2M =xls_parameter(parameter, 'samples_for_C2M', true, 100
+      ); % Finer sampling in terms of samples per UI for c2m histgram analysis.
+  SAVE_CONFIG2MAT:
+    occurrences: 1
+    lines:
+    - 9229
+    call_texts:
+    - OP.SAVE_CONFIG2MAT = xls_parameter(parameter, 'SAVE_CONFIG2MAT', false, 0);
+      % If set to 1 (default) saves parameters in mat file. Requires DIAGNOSTICS to
+      be set.
+  SAVE_FIGURE_to_CSV:
+    occurrences: 1
+    lines:
+    - 9131
+    call_texts:
+    - OP.SAVE_FIGURE_to_CSV=xls_parameter(parameter, 'SAVE_FIGURE_to_CSV', false,
+      false); % does not work. do not use.
+  SAVE_FIGURES:
+    occurrences: 1
+    lines:
+    - 9130
+    call_texts:
+    - OP.SAVE_FIGURES=xls_parameter(parameter, 'SAVE_FIGURES', false, false); % save
+      displayed figures in the results directory
+  SAVE_KEYWORD_FILE:
+    occurrences: 1
+    lines:
+    - 9234
+    call_texts:
+    - OP.SAVE_KEYWORD_FILE = xls_parameter(parameter, 'SAVE_KEYWORD_FILE', false,
+      0); % Save csv file of COM parameter (OP) and keywords. Not implemented.
+  SAVE_TD:
+    occurrences: 1
+    lines:
+    - 9129
+    call_texts:
+    - OP.SAVE_TD=xls_parameter(parameter, 'SAVE_TD', false, false); % Save the time
+      domian waveforms. FIR, PR etc. in an output structure
+  SHOW_BRD:
+    occurrences: 1
+    lines:
+    - 9189
+    call_texts:
+    - OP.SHOW_BRD= xls_parameter(parameter, 'SHOW_BRD', false,0);% indclude added
+      board (PCB) in TDR and ERL. Default is 0.
+  Sigma BBN step:
+    occurrences: 1
+    lines:
+    - 9162
+    call_texts:
+    - OP.sigma_bn_STEP = xls_parameter(parameter, 'Sigma BBN step', false, 5e-3);
+      % BBN step for Rx Calibration in volts. Defaults is 0.5e-3
+  sigma_r:
+    occurrences: 1
+    lines:
+    - 9085
+    call_texts:
+    - param.sigma_r=xls_parameter(parameter, 'sigma_r', true, .020 ); % sigma_r for
+      0.3ck Gaussian histogram window. Unit are UI. Preferred usage.
+  sigma_RJ:
+    occurrences: 1
+    lines:
+    - 8922
+    call_texts:
+    - param.sigma_RJ = xls_parameter(parameter, 'sigma_RJ'); % rms of of random jitter
+  skew_ps:
+    occurrences: 1
+    lines:
+    - 9091
+    call_texts:
+    - param.skew_ps=xls_parameter(parameter, 'skew_ps', true, 0 );% experiment p/n
+      skew. Not used.
+  SNR_TX:
+    occurrences: 1
+    lines:
+    - 8931
+    call_texts:
+    - param.SNDR = xls_parameter(parameter, 'SNR_TX', true); % Transmitter SNDR noise
+      in dB
+  SNR_TXwC0:
+    occurrences: 1
+    lines:
+    - 9235
+    call_texts:
+    - OP.SNR_TXwC0 = xls_parameter(parameter, 'SNR_TXwC0', false, 0); % Adjust SNR_TX
+      with C0
+  T_h:
+    occurrences: 1
+    lines:
+    - 9080
+    call_texts:
+    - param.T_O = xls_parameter(parameter, 'T_h', true, param.T_O  ); % superceded
+      with T_O but is the internal values that is used. Do not use.
+  T_k:
+    occurrences: 1
+    lines:
+    - 9181
+    call_texts:
+    - OP.T_k= xls_parameter(parameter, 'T_k', false, .6)*1e-9; % Time span (ns) for
+      which the impedance of port is determined using TDR.
+  T_O:
+    occurrences: 1
+    lines:
+    - 9079
+    call_texts:
+    - param.T_O = xls_parameter(parameter, 'T_O', true, 0 ); % Units are mUI. Histogram
+      for VEC and VEO are computed over T_s +/- T_O.
+  T_r:
+    occurrences: 1
+    lines:
+    - 9165
+    call_texts:
+    - OP.transmitter_transition_time = xls_parameter(parameter, 'T_r', true , 8e-3);
+      % 20% to 80% transition time used for the Gaussian shaped source
+  T_r_filter_type:
+    occurrences: 1
+    lines:
+    - 9169
+    call_texts:
+    - OP.T_r_filter_type= xls_parameter(parameter, 'T_r_filter_type', false, 0);%
+      included for earlier version support. Not recommended to use.
+  T_r_meas_point:
+    occurrences: 1
+    lines:
+    - 9168
+    call_texts:
+    - OP.T_r_meas_point = xls_parameter(parameter, 'T_r_meas_point', false, 0); %
+      included for earlier version support. Not recommended to use.
+  TDECQ:
+    occurrences: 1
+    lines:
+    - 9213
+    call_texts:
+    - OP.TDECQ=xls_parameter(parameter, 'TDECQ', false, 0); % Experimental, for only
+      option is none (0) or vma. Default is 0.
+  TDMODE:
+    occurrences: 1
+    lines:
+    - 9148
+    call_texts:
+    - OP.TDMODE = xls_parameter(parameter, 'TDMODE',false, OP.TDMODE);   % Enables
+      the the use of pulse response instead of s-parameters. Assumes no packages or
+      the packages are included in the PR. Default is 0.
+  TDR:
+    occurrences: 1
+    lines:
+    - 9177
+    call_texts:
+    - OP.TDR = xls_parameter(parameter, 'TDR', false, false); % Set to 1 to produce
+      TDR results
+  TDR_Butterworth:
+    occurrences: 1
+    lines:
+    - 9193
+    call_texts:
+    - OP.TDR_Butterworth=xls_parameter(parameter, 'TDR_Butterworth', false, true);
+      % enable Butterworth filter for TDR, PTDR, and ERL
+  TDR_duration:
+    occurrences: 1
+    lines:
+    - 9178
+    call_texts:
+    - OP.TDR_duration= xls_parameter(parameter, 'TDR_duration', false, 5); % only
+      used if N*UI is longer than the TDR duration time.  Default is 5 times the raw
+      s-parameter transit time.
+  TDR_f_BT_3db:
+    occurrences: 1
+    lines:
+    - 9055
+    call_texts:
+    - param.fb_BT_cutoff= xls_parameter(parameter, 'TDR_f_BT_3db', true, 0.4730);
+      % Bessel-Thomson 3 dB cut off freqeuncy in terms of fb
+  TDR_W_TXPKG:
+    occurrences: 1
+    lines:
+    - 9191
+    call_texts:
+    - OP.TDR_W_TXPKG = xls_parameter(parameter, 'TDR_W_TXPKG', false,0);% adds tx
+      package for TDR, PTDR, and ERL. Default is 0.
+  TIME_AXIS:
+    occurrences: 1
+    lines:
+    - 9252
+    call_texts:
+    - OP.TIME_AXIS = xls_parameter(parameter, 'TIME_AXIS', false, 'UI'); % if0 OP.display
+      set pulse response xaxis to seconds or UI
+  TR_TDR:
+    occurrences: 1
+    lines:
+    - 8975
+    call_texts:
+    - param.TR_TDR = xls_parameter(parameter, 'TR_TDR', true , 8e-3); %  Gaussian
+      shaped transition time for TDR source in ns
+  trunc:
+    occurrences: 1
+    lines:
+    - 8926
+    call_texts:
+    - param.trunc = xls_parameter(parameter, 'trunc', true, 128); % MLSE sequence
+      truncation length
+  ts_anchor:
+    occurrences: 1
+    lines:
+    - 8935
+    call_texts:
+    - param.ts_anchor = xls_parameter(parameter, 'ts_anchor', true, 0); %choice of
+      sampling routine.  0=MM, 1=Peak, 2=max DV (max cursor minus precursor)
+  TS_SRCH_MODE:
+    occurrences: 1
+    lines:
+    - 9260
+    call_texts:
+    - OP.TS_SRCH_MODE=xls_parameter(parameter,'TS_SRCH_MODE',false,'full-sweep');
+      % full-sweep, middle
+  Tukey_Window:
+    occurrences: 1
+    lines:
+    - 9075
+    call_texts:
+    - param.Tukey_Window=xls_parameter(parameter,'Tukey_Window',true,0); % required
+      for ERL. Set to 1. Default is 0.
+  Txnskew:
+    occurrences: 1
+    lines:
+    - 9114
+    call_texts:
+    - param.Txnskew=xls_parameter(parameter, 'Txnskew', true, 0 );  % Tx n skew in
+      ps
+  Txpskew:
+    occurrences: 1
+    lines:
+    - 9113
+    call_texts:
+    - param.Txpskew=xls_parameter(parameter, 'Txpskew', true, 0 );  % Tx p skew in
+      ps
+  Use simple error propagation model:
+    occurrences: 1
+    lines:
+    - 9225
+    call_texts:
+    - OP.use_simple_EP_model = xls_parameter(parameter, 'Use simple error propagation
+      model', false, false);% Use to calculate burst error rate (not normally used
+  USE_ETA0_PSD:
+    occurrences: 1
+    lines:
+    - 9228
+    call_texts:
+    - OP.USE_ETA0_PSD = xls_parameter(parameter, 'USE_ETA0_PSD', false, 0); % Used
+      eta_0 PSD equaiton for sigma_n. Default is 0. Do not use.
+  VEC Pass threshold:
+    occurrences: 1
+    lines:
+    - 8920
+    call_texts:
+    - param.VEC_pass_threshold = xls_parameter(parameter, 'VEC Pass threshold',false,0);%
+      the pass fail threshold for VEC in dB only used when PMD_type is C2M
+  WC_PORTZ:
+    occurrences: 1
+    lines:
+    - 9180
+    call_texts:
+    - 'OP.WC_PORTZ = xls_parameter(parameter, ''WC_PORTZ'', false, false); % Do not
+      use: Obsolete.'
+  z_p select:
+    occurrences: 1
+    lines:
+    - 9160
+    call_texts:
+    - OP.pkg_len_select = xls_parameter(parameter, 'z_p select', true, 1);  % List
+      of package length indexes used to run COM
+  Z_t:
+    occurrences: 1
+    lines:
+    - 8974
+    call_texts:
+    - param.Z_t = xls_parameter(parameter, 'Z_t', true,50); %  single sided source
+      termination reference resistance for TDR and ERL
+non_claims:
+- not_a_product_contract
+- not_parameter_defaults_resolved
+- not_warning_contract
+- not_compute_parity
+- not_release_evidence

@@ -1,0 +1,14 @@
+{
+  "schema": "sipi.p5-02j.mit-source-map.v1",
+  "status": "default_resolution_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/config/materialize.py" },
+  "observation": { "ref": "docs/baselines/p5-r480-canonical-parameter-reference.v1.yaml", "note": "204 of 214 canonical keys carry a default expression as the 4th xls_parameter argument" },
+  "mapping": [
+    { "python": "materialize._resolve_default special-case (DFE lower limit -1*param.bmax(2:param.ndfe))", "rust": "resolve_default_value_v1", "notes": "count<=1 -> empty; first+repeated rest -> single negated lower limit in the scalar catalog" },
+    { "python": "materialize._resolve_default boolean / string / empty categories", "rust": "resolve_default_value_v1", "notes": "true/false, single-quoted string literals, [] empty literal" },
+    { "python": "materialize._resolve_default direct param.X / OP.X reference lookup", "rust": "resolve_default_value_v1 -> reference_value", "notes": "word-boundary identifier lookup; unresolved rejects" },
+    { "python": "materialize._resolve_default scalar-reference substitution then literal parse", "rust": "resolve_default_value_v1 substitution + evaluate_scalar", "notes": "scalar param/OP refs substituted, remainder evaluated by the arithmetic evaluator" },
+    { "python": "literals._scalar / _evaluate scalar arithmetic", "rust": "evaluate_scalar / eval_expression / parse_expr/term/factor/unary", "notes": "+ - * / ^ unary +/- parens, Inf/NaN constants" }
+  ],
+  "not_ported": ["vector/matrix default layout (snpPortsOrder, R_diepad, ts_sample_adj_range, string-matrix pkg_Z_c)", "behavior profile", "workbook write-back"]
+}

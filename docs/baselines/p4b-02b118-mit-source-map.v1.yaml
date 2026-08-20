@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b118.mit-source-map.v1",
+  "status": "parameter_list_window_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_window_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "sliding window enumeration over validated AMI parameter list values" },
+  "mapping": [
+    { "concept": "sliding windows", "rust": "window_parameter_list_v1", "notes": "enumerates consecutive runs of exactly window_size trimmed items, in order" },
+    { "concept": "window errors", "rust": "ParameterListWindowErrorV1", "notes": "NotAList for non-List types, defensive MalformedList, InvalidWindowSize for zero size" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

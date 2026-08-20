@@ -1,0 +1,49 @@
+schema: sipi.p4a-03ai.test-data-keywords-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03ai.test-data-keywords-v1.typed-test-keywords
+matched_count: 3
+case_count: 3
+entries:
+- label: full_test_data_block
+  matched: true
+  product:
+    c_fixture_farad: 2.0e-12
+    fixture_name: FIX_DUT_1
+    l_fixture_henry: 1.0e-09
+    policy: sipi.p4a-03ai.test-data-keywords-v1.typed-test-keywords
+    r_fixture_ohm: 50.0
+    v_fixture_volts: 1.5
+    valid: true
+  reference:
+    valid: true
+    fixture_name: FIX_DUT_1
+    r_fixture_ohm: 50.0
+    c_fixture_farad: 2.0e-12
+    l_fixture_henry: 1.0e-09
+    v_fixture_volts: 1.5
+- label: minimal_test_data_block
+  matched: true
+  product:
+    c_fixture_farad: null
+    fixture_name: FIX_MIN
+    l_fixture_henry: null
+    policy: sipi.p4a-03ai.test-data-keywords-v1.typed-test-keywords
+    r_fixture_ohm: null
+    v_fixture_volts: null
+    valid: true
+  reference:
+    valid: true
+    fixture_name: FIX_MIN
+    r_fixture_ohm: null
+    c_fixture_farad: null
+    l_fixture_henry: null
+    v_fixture_volts: null
+- label: negative_r_fixture
+  matched: true
+  product:
+    fixture_error: NegativeFixtureParameter
+    policy: sipi.p4a-03ai.test-data-keywords-v1.typed-test-keywords
+    valid: false
+  reference:
+    valid: false
+    fixture_error: NegativeFixtureParameter

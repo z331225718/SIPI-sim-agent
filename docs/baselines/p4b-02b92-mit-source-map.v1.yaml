@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b92.mit-source-map.v1",
+  "status": "parameter_profile_canonical_spelling_groups_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_canonical_spelling_groups_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "canonical spelling groups over assembled parameter profile maps" },
+  "mapping": [
+    { "concept": "canonical grouping", "rust": "group_parameter_profile_names_by_canonical_spelling_v1", "notes": "groups names whose values normalize to the same canonical spelling (02b75)" },
+    { "concept": "group outcome", "rust": "ParameterProfileCanonicalSpellingGroupsV1", "notes": "sorted groups with spelling and names; group/singleton/covered counts" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

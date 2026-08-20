@@ -1,0 +1,23 @@
+{
+  "schema": "sipi.p5-05f.parameter-resolver-stage.v1",
+  "status": "parameter_resolver_ported",
+  "purpose": "P5-05 COM parameter surface sub-slice: resolves a merged ComParametersV1 DTO (P5-05e) into validated ComChainControlsV1 (P5-06f) controls (sipi-com com_parameter_resolver_v1.rs). Fail-closed: missing consumed keys, unexpected parameter value types, or invalid control scalar bounds are strictly rejected.",
+  "source_map_ref": "docs/baselines/p5-05f-mit-source-map.v1.yaml",
+  "based_on": [
+    "docs/baselines/p5-05d-parameter-surface-report-stage.v1.yaml",
+    "docs/baselines/p5-05e-com-parameters-stage.v1.yaml",
+    "docs/baselines/p5-06f-com-chain-core.v1.yaml"
+  ],
+  "admission": {
+    "dto_to_controls_resolution": true,
+    "alias_key_lookup": true,
+    "value_type_validation": true,
+    "fail_closed_on_missing_key": true,
+    "release_evidence": false
+  },
+  "non_claims": [
+    "not_workbook_parser",
+    "not_com_parity",
+    "not_acceptance_evidence"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "schema": "sipi.p4b-02b3.parameter-catalog-stage.v1",
+  "status": "parameter_catalog_core_ported",
+  "purpose": "P4B-02b3 AMI parameter-catalog typed core: compiles a caller-supplied parameter catalog (name, IBIS-AMI usage In/Out/Info, declared type Float/Integer/Boolean/String/List, optional default) and validates a candidate parameter value set against it (Usage=In required, unknown rejected, type checked). Deliberately profile-agnostic: it carries no reserved-name catalog and selects no AMI profile; the specific catalog is caller-supplied (owner B2 authorized profile later feeds it).",
+  "source_map_ref": "docs/baselines/p4b-02b3-mit-source-map.v1.yaml",
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (B2)",
+  "admission": {
+    "catalog_compile": true,
+    "usage_in_required": true,
+    "unknown_rejection": true,
+    "type_check": true,
+    "profile_agnostic": true,
+    "reserved_name_catalog": false,
+    "ami_runtime": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": [
+    "not_a_reserved_name_catalog",
+    "not_ami_runtime",
+    "not_profile_choice",
+    "not_acceptance_evidence"
+  ]
+}

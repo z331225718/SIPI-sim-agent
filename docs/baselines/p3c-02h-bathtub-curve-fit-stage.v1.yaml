@@ -1,0 +1,24 @@
+{
+  "schema": "sipi.p3c-02h.bathtub-curve-fit-stage.v1",
+  "status": "bathtub_curve_fit_ported",
+  "purpose": "P3C-02h bathtub curve fit core: fits a polynomial curve to a V-shaped BER-vs-time bathtub in the log10(BER) domain via fit_bathtub_curve_v1 in sipi-com bathtub_fit_v1.rs: least-squares polynomial regression of degree 1..=3 over (time_offset_ui, log10(ber)) samples solved by Gaussian elimination with partial pivoting (deterministic). Returns fit coefficients, sample count, and maximum absolute residual at the sample points plus an evaluation method. Builds on the sample model of P3C-02f; the opening-width estimator remains in 02f. Fail-closed: too few samples, non-ascending time, invalid BER, invalid fit order, insufficient samples for the order, and a numerically degenerate system are strictly rejected.",
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (A5 Q-factor)",
+  "source_map_ref": "docs/baselines/p3c-02h-mit-source-map.v1.yaml",
+  "base_slice_ref": "docs/baselines/p3c-02f-bathtub-opening-stage.v1.yaml",
+  "admission": {
+    "log_ber_poly_fit": true,
+    "gaussian_elimination": true,
+    "residual_report": true,
+    "statistical_eye_contour": false,
+    "eye_folding_bins": false,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": [
+    "not_statistical_eye_contour",
+    "not_eye_folding_bins",
+    "not_com_parity",
+    "not_acceptance_evidence"
+  ]
+}

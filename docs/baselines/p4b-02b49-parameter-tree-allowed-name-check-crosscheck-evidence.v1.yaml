@@ -1,0 +1,60 @@
+schema: sipi.p4b-02b49-parameter-tree-allowed-name-check-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b49.parameter-tree-allowed-name-check-v1.allowed-set-check
+matched_count: 4
+case_count: 4
+entries:
+- label: all_allowed
+  matched: true
+  product:
+    clean: true
+    leaves_checked: 2
+    policy: sipi.p4b-02b49.parameter-tree-allowed-name-check-v1.allowed-set-check
+    valid: true
+    violations: []
+  reference:
+    valid: true
+    leaves_checked: 2
+    clean: true
+    violations: []
+- label: unknown_name
+  matched: true
+  product:
+    clean: false
+    leaves_checked: 2
+    policy: sipi.p4b-02b49.parameter-tree-allowed-name-check-v1.allowed-set-check
+    valid: true
+    violations:
+    - steps
+  reference:
+    valid: true
+    leaves_checked: 2
+    clean: false
+    violations:
+    - steps
+- label: multiple_sorted
+  matched: true
+  product:
+    clean: false
+    leaves_checked: 3
+    policy: sipi.p4b-02b49.parameter-tree-allowed-name-check-v1.allowed-set-check
+    valid: true
+    violations:
+    - beta
+    - gain
+  reference:
+    valid: true
+    leaves_checked: 3
+    clean: false
+    violations:
+    - beta
+    - gain
+- label: empty_allowed
+  matched: true
+  product:
+    allowed_error: EmptyAllowedSet
+    policy: sipi.p4b-02b49.parameter-tree-allowed-name-check-v1.allowed-set-check
+    valid: false
+  reference:
+    valid: false
+    allowed_error: EmptyAllowedSet

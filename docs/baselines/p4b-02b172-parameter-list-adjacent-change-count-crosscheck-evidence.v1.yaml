@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b172-parameter-list-adjacent-change-count-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b172.parameter-list-adjacent-change-count-v1.adjacent-change-count
+matched_count: 4
+case_count: 4
+entries:
+- label: counts_changes
+  matched: true
+  product:
+    change_count: 3
+    policy: sipi.p4b-02b172.parameter-list-adjacent-change-count-v1.adjacent-change-count
+    valid: true
+  reference:
+    valid: true
+    change_count: 3
+- label: all_equal
+  matched: true
+  product:
+    change_count: 0
+    policy: sipi.p4b-02b172.parameter-list-adjacent-change-count-v1.adjacent-change-count
+    valid: true
+  reference:
+    valid: true
+    change_count: 0
+- label: all_distinct
+  matched: true
+  product:
+    change_count: 2
+    policy: sipi.p4b-02b172.parameter-list-adjacent-change-count-v1.adjacent-change-count
+    valid: true
+  reference:
+    valid: true
+    change_count: 2
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b172.parameter-list-adjacent-change-count-v1.adjacent-change-count
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

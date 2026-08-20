@@ -1,0 +1,72 @@
+schema: sipi.p4b-02b44-parameter-profile-assembly-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b44.parameter-profile-assembly-v1.strict-profile-assembly
+matched_count: 4
+case_count: 4
+entries:
+- label: assemble_full
+  matched: true
+  product:
+    defaults_applied: 1
+    defaults_skipped: 0
+    leaves_consumed: 2
+    parameters:
+      enabled:
+        name: enabled
+        type: Boolean
+        value: 'True'
+      gain:
+        name: gain
+        type: Float
+        value: '0.5'
+      steps:
+        name: steps
+        type: Integer
+        value: '7'
+    policy: sipi.p4b-02b44.parameter-profile-assembly-v1.strict-profile-assembly
+    valid: true
+  reference:
+    valid: true
+    leaves_consumed: 2
+    defaults_applied: 1
+    defaults_skipped: 0
+    parameters:
+      gain:
+        name: gain
+        type: Float
+        value: '0.5'
+      enabled:
+        name: enabled
+        type: Boolean
+        value: 'True'
+      steps:
+        name: steps
+        type: Integer
+        value: '7'
+- label: reserved_used
+  matched: true
+  product:
+    assembly_error: ReservedNameUsed("Reserved_Parameters")
+    policy: sipi.p4b-02b44.parameter-profile-assembly-v1.strict-profile-assembly
+    valid: false
+  reference:
+    valid: false
+    assembly_error: ReservedNameUsed("Reserved_Parameters")
+- label: malformed_default
+  matched: true
+  product:
+    assembly_error: 'DefaultNotTypedForm { name: "steps", token_count: 1 }'
+    policy: sipi.p4b-02b44.parameter-profile-assembly-v1.strict-profile-assembly
+    valid: false
+  reference:
+    valid: false
+    assembly_error: 'DefaultNotTypedForm { name: "steps", token_count: 1 }'
+- label: empty_reserved
+  matched: true
+  product:
+    assembly_error: EmptyReservedSet
+    policy: sipi.p4b-02b44.parameter-profile-assembly-v1.strict-profile-assembly
+    valid: false
+  reference:
+    valid: false
+    assembly_error: EmptyReservedSet

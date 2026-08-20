@@ -1,0 +1,27 @@
+{
+  "schema": "sipi.p4b-02b5.ami-runtime-params-stage.v1",
+  "status": "ami_runtime_params_ported",
+  "purpose": "P4B-02b5 AMI runtime parameter table: merges a compiled parameter catalog with a validated candidate value set into an ordered, typed runtime table. Per catalog entry: Usage=In resolves to the candidate value when supplied, else the validated catalog default (missing both is a hard error); Usage=Out/Info are carried through only when a candidate is supplied (model-populated roles). Emitted in catalog (sorted-name) order. Complements P4B-02b3 (catalog compile + candidate validation) and P4B-02b4 (default validity). Profile-agnostic: no reserved-name catalog, no AMI profile, no modeled execution.",
+  "source_map_ref": "docs/baselines/p4b-02b5-mit-source-map.v1.yaml",
+  "based_on": [
+    "docs/baselines/p4b-02b4-catalog-default-stage.v1.yaml",
+    "docs/baselines/p4b-02b3-parameter-catalog-stage.v1.yaml",
+    "docs/baselines/p4b-02b1-parameter-value-core.v1.yaml"
+  ],
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (B2)",
+  "admission": {
+    "in_candidate_overrides_default": true,
+    "in_default_fallback_without_candidate": true,
+    "in_missing_both_is_error": true,
+    "out_info_omitted_without_candidate": true,
+    "out_info_carried_with_candidate": true,
+    "sorted_name_order": true,
+    "candidate_type_mismatch_rejected": true,
+    "profile_agnostic": true,
+    "reserved_name_catalog": false,
+    "ami_runtime_execution": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_a_reserved_name_catalog", "not_ami_runtime_execution", "not_profile_choice", "not_acceptance_evidence"]
+}

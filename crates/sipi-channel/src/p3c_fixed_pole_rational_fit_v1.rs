@@ -35,7 +35,10 @@ pub enum FixedPoleRationalFitErrorV1 {
 
 impl fmt::Display for FixedPoleRationalFitErrorV1 {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(formatter, "selected P3C fixed-pole rational fit is invalid: {self:?}")
+        write!(
+            formatter,
+            "selected P3C fixed-pole rational fit is invalid: {self:?}"
+        )
     }
 }
 
@@ -114,23 +117,39 @@ fn finite(value: c64) -> bool {
     value.re.is_finite() && value.im.is_finite()
 }
 
-fn model_value(axis: c64, poles: &[c64], residues: &[c64]) -> Result<c64, FixedPoleRationalFitErrorV1> {
-    let value = poles
-        .iter()
-        .zip(residues)
-        .try_fold(c64::new(0.0, 0.0), |sum, (pole, residue)| {
-            let denominator = axis - *pole;
-            if denominator.re == 0.0 && denominator.im == 0.0 {
-                return Err(FixedPoleRationalFitErrorV1::NonFiniteModel);
-            }
-            let next = sum + *residue / denominator;
-            finite(next).then_some(next).ok_or(FixedPoleRationalFitErrorV1::NonFiniteModel)
-        })?;
-    finite(value).then_some(value).ok_or(FixedPoleRationalFitErrorV1::NonFiniteModel)
+fn model_value(
+    axis: c64,
+    poles: &[c64],
+    residues: &[c64],
+) -> Result<c64, FixedPoleRationalFitErrorV1> {
+    let value =
+        poles
+            .iter()
+            .zip(residues)
+            .try_fold(c64::new(0.0, 0.0), |sum, (pole, residue)| {
+                let denominator = axis - *pole;
+                if denominator.re == 0.0 && denominator.im == 0.0 {
+                    return Err(FixedPoleRationalFitErrorV1::NonFiniteModel);
+                }
+                let next = sum + *residue / denominator;
+                finite(next)
+                    .then_some(next)
+                    .ok_or(FixedPoleRationalFitErrorV1::NonFiniteModel)
+            })?;
+    finite(value)
+        .then_some(value)
+        .ok_or(FixedPoleRationalFitErrorV1::NonFiniteModel)
 }
 
-fn metrics(reference: &[c64], candidate: &[c64]) -> Result<FixedPoleRationalFitMetricsV1, FixedPoleRationalFitErrorV1> {
-    let signal_peak = reference.iter().copied().map(magnitude).fold(0.0_f64, f64::max);
+fn metrics(
+    reference: &[c64],
+    candidate: &[c64],
+) -> Result<FixedPoleRationalFitMetricsV1, FixedPoleRationalFitErrorV1> {
+    let signal_peak = reference
+        .iter()
+        .copied()
+        .map(magnitude)
+        .fold(0.0_f64, f64::max);
     if !signal_peak.is_finite() || signal_peak == 0.0 {
         return Err(FixedPoleRationalFitErrorV1::ZeroSignalNorm);
     }
@@ -163,8 +182,8 @@ fn metrics(reference: &[c64], candidate: &[c64]) -> Result<FixedPoleRationalFitM
     (output.relative_rms_error.is_finite()
         && output.maximum_normalized_absolute_error.is_finite()
         && output.dc_relative_error.is_finite())
-        .then_some(output)
-        .ok_or(FixedPoleRationalFitErrorV1::NonFiniteModel)
+    .then_some(output)
+    .ok_or(FixedPoleRationalFitErrorV1::NonFiniteModel)
 }
 
 fn within_admission(metrics: FixedPoleRationalFitMetricsV1) -> bool {
@@ -188,7 +207,9 @@ fn fit_order(
         .iter()
         .map(|value| c64::new(value.real(), value.imaginary()))
         .collect::<Vec<_>>();
-    if axis.iter().copied().any(|value| !finite(value)) || reference.iter().copied().any(|value| !finite(value)) {
+    if axis.iter().copied().any(|value| !finite(value))
+        || reference.iter().copied().any(|value| !finite(value))
+    {
         return Err(FixedPoleRationalFitErrorV1::NonFiniteInput);
     }
     let mut system = Mat::from_fn(axis.len(), order, |row, column| {
@@ -212,7 +233,10 @@ fn fit_order(
         .map_err(|_| FixedPoleRationalFitErrorV1::SolverFailure)?;
     let largest = singular_values.S()[0].re;
     let smallest = singular_values.S()[order - 1].re;
-    if !largest.is_finite() || !smallest.is_finite() || smallest <= largest * RELATIVE_RANK_TOLERANCE {
+    if !largest.is_finite()
+        || !smallest.is_finite()
+        || smallest <= largest * RELATIVE_RANK_TOLERANCE
+    {
         return Err(FixedPoleRationalFitErrorV1::RankDeficient);
     }
     let residues = system.as_ref().col_piv_qr().solve_lstsq(response.as_ref());
@@ -235,7 +259,10 @@ fn fit_order(
     Ok(SelectedP3cFixedPoleRationalFitV1 {
         order,
         poles_per_second: poles.into_iter().map(convert).collect::<Result<_, _>>()?,
-        residues_per_second: residues.into_iter().map(convert).collect::<Result<_, _>>()?,
+        residues_per_second: residues
+            .into_iter()
+            .map(convert)
+            .collect::<Result<_, _>>()?,
         metrics,
     })
 }
@@ -248,8 +275,14 @@ pub fn fit_selected_p3c_fixed_pole_rational_v1(
     if input.frequencies().len() < 2 * ORDERS.last().copied().unwrap_or_default() {
         return Err(FixedPoleRationalFitErrorV1::TooFewSamples);
     }
-    if input.frequencies().first().is_none_or(|frequency| frequency.get() != 0.0)
-        || input.frequencies().last().is_none_or(|frequency| frequency.get().to_bits() != MAX_FREQUENCY_HZ.to_bits())
+    if input
+        .frequencies()
+        .first()
+        .is_none_or(|frequency| frequency.get() != 0.0)
+        || input
+            .frequencies()
+            .last()
+            .is_none_or(|frequency| frequency.get().to_bits() != MAX_FREQUENCY_HZ.to_bits())
     {
         return Err(FixedPoleRationalFitErrorV1::InvalidFrequencyRange);
     }
@@ -259,9 +292,12 @@ pub fn fit_selected_p3c_fixed_pole_rational_v1(
         if within_admission(candidate.metrics) {
             return Ok(candidate);
         }
-        if best.as_ref().is_none_or(|current: &SelectedP3cFixedPoleRationalFitV1| {
-            candidate.metrics.relative_rms_error < current.metrics.relative_rms_error
-        }) {
+        if best
+            .as_ref()
+            .is_none_or(|current: &SelectedP3cFixedPoleRationalFitV1| {
+                candidate.metrics.relative_rms_error < current.metrics.relative_rms_error
+            })
+        {
             best = Some(candidate);
         }
     }
@@ -272,7 +308,9 @@ pub fn fit_selected_p3c_fixed_pole_rational_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{FourPortS, SelectedP3cFourPortSpectrumV1, reduce_selected_p3c_fixed_four_port_bench_v1};
+    use crate::{
+        FourPortS, SelectedP3cFourPortSpectrumV1, reduce_selected_p3c_fixed_four_port_bench_v1,
+    };
     use sipi_types::{Hertz, Ohms};
 
     fn c(real: f64, imaginary: f64) -> Complex64 {
@@ -288,15 +326,27 @@ mod tests {
         let residues = poles
             .iter()
             .enumerate()
-            .map(|(index, _)| c64::new(0.05 + index as f64 * 0.01, if index % 2 == 0 { 0.02 } else { -0.02 }))
+            .map(|(index, _)| {
+                c64::new(
+                    0.05 + index as f64 * 0.01,
+                    if index % 2 == 0 { 0.02 } else { -0.02 },
+                )
+            })
             .collect::<Vec<_>>();
         let frequencies = (0..=64)
-            .map(|index| Hertz::try_new(start_hz + (end_hz - start_hz) * index as f64 / 64.0).unwrap())
+            .map(|index| {
+                Hertz::try_new(start_hz + (end_hz - start_hz) * index as f64 / 64.0).unwrap()
+            })
             .collect::<Vec<_>>();
         let values = frequencies
             .iter()
             .map(|frequency| {
-                let value = model_value(c64::new(0.0, frequency.get() / MAX_FREQUENCY_HZ), &poles, &residues).unwrap();
+                let value = model_value(
+                    c64::new(0.0, frequency.get() / MAX_FREQUENCY_HZ),
+                    &poles,
+                    &residues,
+                )
+                .unwrap();
                 c(value.re, value.im)
             })
             .collect::<Vec<_>>();
@@ -311,25 +361,37 @@ mod tests {
                 FourPortS::new(matrix)
             })
             .collect();
-        let spectrum = SelectedP3cFourPortSpectrumV1::try_new(Ohms::try_new(50.0).unwrap(), frequencies, samples).unwrap();
+        let spectrum = SelectedP3cFourPortSpectrumV1::try_new(
+            Ohms::try_new(50.0).unwrap(),
+            frequencies,
+            samples,
+        )
+        .unwrap();
         reduce_selected_p3c_fixed_four_port_bench_v1(&spectrum).unwrap()
     }
 
     #[test]
     fn fixed_basis_identifies_a_matching_strictly_proper_model() {
-        let result = fit_selected_p3c_fixed_pole_rational_v1(
-            &transfer_from_poles(8, 0.0, MAX_FREQUENCY_HZ),
-        )
-        .unwrap();
+        let result =
+            fit_selected_p3c_fixed_pole_rational_v1(&transfer_from_poles(8, 0.0, MAX_FREQUENCY_HZ))
+                .unwrap();
         assert_eq!(result.order(), 8);
         assert!(result.metrics().relative_rms_error() < 1.0e-10);
-        assert!(result.poles_per_second().iter().all(|pole| pole.real() < 0.0));
+        assert!(
+            result
+                .poles_per_second()
+                .iter()
+                .all(|pole| pole.real() < 0.0)
+        );
     }
 
     #[test]
     fn rejects_missing_dc_or_wrong_band_before_any_fit() {
         let transfer = transfer_from_poles(8, 1.0, MAX_FREQUENCY_HZ);
-        assert_eq!(fit_selected_p3c_fixed_pole_rational_v1(&transfer).unwrap_err(), FixedPoleRationalFitErrorV1::InvalidFrequencyRange);
+        assert_eq!(
+            fit_selected_p3c_fixed_pole_rational_v1(&transfer).unwrap_err(),
+            FixedPoleRationalFitErrorV1::InvalidFrequencyRange
+        );
     }
 
     #[test]
@@ -341,8 +403,16 @@ mod tests {
             .iter()
             .map(|_| FourPortS::new([[c(0.0, 0.0); 4]; 4]))
             .collect();
-        let spectrum = SelectedP3cFourPortSpectrumV1::try_new(Ohms::try_new(50.0).unwrap(), frequencies, samples).unwrap();
+        let spectrum = SelectedP3cFourPortSpectrumV1::try_new(
+            Ohms::try_new(50.0).unwrap(),
+            frequencies,
+            samples,
+        )
+        .unwrap();
         let transfer = reduce_selected_p3c_fixed_four_port_bench_v1(&spectrum).unwrap();
-        assert_eq!(fit_selected_p3c_fixed_pole_rational_v1(&transfer).unwrap_err(), FixedPoleRationalFitErrorV1::ZeroSignalNorm);
+        assert_eq!(
+            fit_selected_p3c_fixed_pole_rational_v1(&transfer).unwrap_err(),
+            FixedPoleRationalFitErrorV1::ZeroSignalNorm
+        );
     }
 }

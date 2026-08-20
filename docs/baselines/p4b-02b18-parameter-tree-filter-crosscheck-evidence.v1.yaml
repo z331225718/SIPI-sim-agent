@@ -1,0 +1,33 @@
+schema: sipi.p4b-02b18-parameter-tree-filter-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b18.parameter-tree-filter-v1.tree-predicate-filter
+matched_count: 3
+case_count: 3
+entries:
+- label: filter_leaf_node
+  matched: true
+  product:
+    filtered_formatted_text: "(Reserved_Parameters\n  (dfe\n    (tap_1 Integer 2)))"
+    policy: sipi.p4b-02b18.parameter-tree-filter-v1.tree-predicate-filter
+    valid: true
+  reference:
+    valid: true
+    filtered_formatted_text: "(Reserved_Parameters\n  (dfe\n    (tap_1 Integer 2)))"
+- label: filter_branch_node
+  matched: true
+  product:
+    filtered_formatted_text: "(Reserved_Parameters\n  (tx_swing Float 0.5))"
+    policy: sipi.p4b-02b18.parameter-tree-filter-v1.tree-predicate-filter
+    valid: true
+  reference:
+    valid: true
+    filtered_formatted_text: "(Reserved_Parameters\n  (tx_swing Float 0.5))"
+- label: empty_document
+  matched: true
+  product:
+    build_error: EmptyDocument
+    policy: sipi.p4b-02b18.parameter-tree-filter-v1.tree-predicate-filter
+    valid: false
+  reference:
+    valid: false
+    filter_error: EmptyDocument

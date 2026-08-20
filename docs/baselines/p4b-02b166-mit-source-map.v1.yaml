@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b166.mit-source-map.v1",
+  "status": "parameter_list_anti_mode_items_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_anti_mode_items_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "anti-mode items (minimum occurrence count) over the trimmed items of a validated AMI parameter list value" },
+  "mapping": [
+    { "concept": "anti-mode items", "rust": "parameter_list_anti_mode_items_v1", "notes": "distinct items at minimum occurrence count by raw byte equality, ordered by first occurrence" },
+    { "concept": "anti-mode errors", "rust": "ParameterListAntiModeItemsErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

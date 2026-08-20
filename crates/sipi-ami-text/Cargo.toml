@@ -7,5 +7,728 @@ rust-version.workspace = true
 publish = false
 description = "Clean-room bounded structural parser foundation for AMI text."
 
+[dependencies]
+serde_json = "1"
+
+[[test]]
+name = "p4b_02b3_param_catalog_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b4_catalog_default_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b5_ami_runtime_params_runner"
+harness = false
+
 [lints]
 workspace = true
+
+[[test]]
+name = "p4b_02b6_parameter_extractor_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b7_parameter_trees_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b8_parameter_tree_query_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b9_parameter_tree_formatter_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b10_parameter_tree_validator_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b11_parameter_tree_diff_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b12_parameter_tree_merge_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b13_parameter_tree_pruning_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b14_parameter_tree_visitor_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b15_parameter_tree_transformer_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b16_parameter_tree_index_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b17_parameter_tree_diff_patch_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b18_parameter_tree_filter_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b19_parameter_tree_serde_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b20_parameter_tree_diff_stats_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b21_parameter_tree_diff_filter_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b22_parameter_tree_diff_summary_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b23_parameter_tree_subtree_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b24_parameter_tree_rename_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b25_parameter_tree_detect_cycles_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b26_parameter_tree_compose_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b27_parameter_tree_replace_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b28_parameter_tree_toposort_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b29_parameter_tree_depth_stats_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b30_parameter_tree_leaf_index_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b31_parameter_tree_token_stats_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b32_parameter_tree_value_validation_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b33_parameter_tree_value_type_inference_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b34_parameter_tree_typed_form_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b35_parameter_tree_leaf_projection_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b36_parameter_tree_batch_rename_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b37_parameter_tree_leaf_value_decoding_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b38_parameter_tree_apply_defaults_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b39_parameter_tree_leaf_value_set_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b40_parameter_tree_leaf_search_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b41_parameter_tree_inferred_decode_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b42_parameter_tree_typed_form_multi_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b43_parameter_tree_reserved_name_check_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b44_parameter_profile_assembly_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b45_parameter_tree_path_string_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b46_parameter_tree_expected_check_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b47_parameter_profile_diff_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b48_parameter_profile_merge_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b49_parameter_tree_allowed_name_check_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b50_parameter_tree_flatten_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b51_ami_text_document_stats_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b52_parameter_tree_token_remap_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b53_parameter_tree_batch_value_set_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b54_parameter_tree_duplicate_check_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b55_parameter_profile_completeness_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b56_parameter_tree_path_join_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b57_parameter_tree_sections_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b58_parameter_tree_typed_form_report_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b59_parameter_tree_leaf_occurrences_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b60_parameter_tree_token_frequencies_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b61_ami_text_form_heads_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b62_parameter_tree_required_name_check_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b63_parameter_tree_distinct_leaf_names_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b64_parameter_profile_select_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b65_parameter_tree_path_relation_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b66_parameter_tree_relative_path_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b67_parameter_tree_longest_common_prefix_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b68_parameter_tree_path_prefixes_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b69_parameter_tree_profile_apply_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b70_parameter_value_equivalence_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b71_parameter_profile_equivalence_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b72_parameter_profile_tree_coverage_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b73_parameter_profile_type_stats_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b74_parameter_profile_typed_merge_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b75_parameter_value_spelling_normalization_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b76_parameter_profile_override_merge_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b77_parameter_profile_canonicalization_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b78_parameter_tree_leaf_canonicalization_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b79_parameter_profile_typed_diff_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b80_parameter_profile_value_lookup_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b81_parameter_profile_serialization_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b82_parameter_profile_deserialization_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b83_parameter_list_item_count_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b84_parameter_list_item_access_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b85_parameter_list_contains_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b86_parameter_profile_names_by_type_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b87_parameter_tree_leaf_type_map_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b88_parameter_tree_leaf_type_resolution_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b89_parameter_tree_leaf_typed_diff_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b90_parameter_profile_typed_subset_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b91_parameter_tree_leaf_value_validity_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b92_parameter_profile_canonical_spelling_groups_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b93_parameter_tree_typed_leaf_type_counts_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b94_parameter_tree_leaf_canonical_spelling_check_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b95_parameter_profile_canonical_spelling_check_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b96_parameter_profile_fingerprint_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b97_parameter_tree_typed_leaf_fingerprint_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b98_parameter_list_dedup_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b99_parameter_list_replace_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b100_parameter_list_remove_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b101_parameter_list_append_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b102_parameter_list_insert_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b103_parameter_list_swap_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b104_parameter_list_reverse_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b105_parameter_list_sort_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b106_parameter_list_join_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b107_parameter_list_distinct_count_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b108_parameter_list_occurrence_count_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b109_parameter_list_slice_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b110_parameter_list_index_of_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b111_parameter_list_last_index_of_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b112_parameter_list_remove_all_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b113_parameter_list_keep_only_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b114_parameter_list_split_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b115_parameter_list_rotate_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b116_parameter_list_chunk_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b117_parameter_list_head_tail_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b118_parameter_list_window_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b119_parameter_list_run_length_encode_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b120_parameter_list_longest_run_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b121_parameter_list_frequency_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b122_parameter_list_most_frequent_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b123_parameter_list_least_frequent_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b124_parameter_list_is_sorted_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b125_parameter_list_is_strictly_sorted_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b126_parameter_list_is_palindrome_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b127_parameter_list_contains_sublist_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b128_parameter_list_sublist_index_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b129_parameter_list_last_sublist_index_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b130_parameter_list_longest_common_prefix_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b131_parameter_list_longest_common_suffix_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b132_parameter_list_interleave_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b133_parameter_list_inversion_count_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b134_parameter_list_equal_adjacent_count_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b135_parameter_list_distinct_pair_count_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b136_parameter_list_unique_item_count_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b137_parameter_list_duplicate_item_count_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b138_parameter_list_first_duplicate_index_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b139_parameter_list_last_duplicate_index_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b140_parameter_list_multi_remove_all_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b141_parameter_list_multi_keep_only_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b142_parameter_list_longest_common_subsequence_length_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b143_parameter_list_edit_distance_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b144_parameter_list_has_subsequence_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b145_parameter_list_hamming_distance_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b146_parameter_list_starts_with_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b147_parameter_list_ends_with_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b148_parameter_list_intersection_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b149_parameter_list_symmetric_difference_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b150_parameter_list_union_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b151_parameter_list_relative_complement_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b152_parameter_list_multiset_equal_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b153_parameter_list_contains_multiset_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b154_parameter_list_jaccard_index_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b155_parameter_list_dice_index_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b156_parameter_list_overlap_coefficient_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b157_parameter_list_contains_sequence_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b158_parameter_list_tversky_index_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b159_parameter_list_longest_common_subsequence_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b160_parameter_list_all_equal_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b161_parameter_list_min_max_item_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b162_parameter_list_nth_smallest_item_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b163_parameter_list_nth_largest_item_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b164_parameter_list_median_item_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b165_parameter_list_mode_items_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b166_parameter_list_anti_mode_items_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b167_parameter_list_dedup_keep_last_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b168_parameter_list_run_count_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b169_parameter_list_sorted_rank_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b170_parameter_list_longest_run_item_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b171_parameter_list_longest_run_start_index_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b172_parameter_list_adjacent_change_count_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b173_parameter_list_total_equal_pair_count_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b174_parameter_list_majority_item_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b175_parameter_list_is_alternating_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b176_parameter_list_entropy_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b177_parameter_list_gini_impurity_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b178_parameter_list_normalized_entropy_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b179_parameter_list_mode_frequency_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b180_parameter_list_prevalence_ratio_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b181_parameter_list_frequency_normalized_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b182_parameter_list_first_occurrence_indices_runner"
+harness = false

@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p3c-02h.mit-source-map.v1",
+  "status": "bathtub_curve_fit_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-com bathtub_fit_v1.rs" },
+  "observation": { "ref": "docs/baselines/p3c-02f-bathtub-opening-stage.v1.yaml", "note": "least-squares polynomial fit of log10(BER) vs time over P3C-02f sample model" },
+  "mapping": [
+    { "concept": "bathtub curve fit", "rust": "fit_bathtub_curve_v1", "notes": "fits polynomial degree 1..=3 in log10(BER) domain via Gaussian elimination with partial pivoting" },
+    { "concept": "fit result", "rust": "BathtubCurveFitV1", "notes": "holds fit_order, coefficients, sample_count, max_abs_residual; evaluate_log10_ber method" }
+  ],
+  "not_ported": [
+    "statistical eye contour",
+    "eye folding/bins",
+    "COM parity or acceptance"
+  ]
+}

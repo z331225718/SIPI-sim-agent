@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p4a-03f.mit-source-map.v1",
+  "status": "pin_model_linkage_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis pin_model_linkage_v1.rs (extends P4A-03d/03e typed declarations)" },
+  "observation": { "ref": "docs/baselines/p4a-03d-model-declaration-stage.v1.yaml", "note": "typed Model and Pin declarations delivered separately; this slice joins them" },
+  "mapping": [
+    { "concept": "pin model to declared model resolution", "rust": "resolve_pin_model_linkage_v1 resolved partition", "notes": "exact match against declared model name set" },
+    { "concept": "explicit no-model marker allowance", "rust": "allowed_markers BTreeSet", "notes": "caller-supplied; no implicit marker guessing" },
+    { "concept": "unresolved model fail closed", "rust": "PinModelLinkageErrorV1::UnresolvedModel", "notes": "no silent fallback; pin-order deterministic" },
+    { "concept": "deterministic partition order", "rust": "pin input order preserved", "notes": "resolved/marker lists in pin order" }
+  ],
+  "not_ported": ["pin parasitic RLC", "profile selection", "electrical semantics", "reserved-name catalog"]
+}

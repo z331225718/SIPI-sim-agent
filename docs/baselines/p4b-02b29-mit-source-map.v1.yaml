@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b29.mit-source-map.v1",
+  "status": "parameter_tree_depth_stats_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_depth_stats_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "depth statistics computation over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "depth statistics computation", "rust": "compute_parameter_tree_depth_stats_v1", "notes": "returns max/min depth, leaf count, and per-depth histograms" },
+    { "concept": "depth stats result", "rust": "ParameterTreeDepthStatsV1", "notes": "holds max_depth, min_depth, leaf_count, nodes_per_depth, leaves_per_depth" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

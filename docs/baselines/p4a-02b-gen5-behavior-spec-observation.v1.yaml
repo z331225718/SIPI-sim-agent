@@ -1,0 +1,36 @@
+{
+  "schema": "sipi.p4a-02b.gen5-behavior-spec-observation.v1",
+  "status": "authorized_behavior_spec_observed",
+  "authorization_ref": "docs/baselines/authorized-material-registry.v1.yaml",
+  "owner_decision_ref": "docs/baselines/owner-decision-checklist.v1.md (C1)",
+  "profile": {
+    "file": "pcie_gen5.ibs",
+    "path": "C:/Users/z3312/code/ADS/MyWorkspace_wrk/ibis_ami/pcie_gen5.ibs",
+    "byte_length": 5537,
+    "sha256": "9ff15bf9a5ad685d0ad700b26287b5f50e1c6e1ff9c6808e5a0f0ef86896d665",
+    "file_rev": "0.1",
+    "models": [
+      { "model": "pcie_tx", "type": "Output", "executable": "ctspcie_tx_win64.dll", "ami": "ctspcie_tx_gen5.ami" },
+      { "model": "pcie_rx", "type": "Input", "executable": "ctspcie_rx_win64.dll", "ami": "ctspcie_rx_gen5.ami" }
+    ]
+  },
+  "behavior_spec_observation": {
+    "dll_identity_status": "authorized_matched_record",
+    "black_box_runtime_ref": "docs/baselines/p4b-07-authorized-fixture-abi-observation-evidence.v1.yaml",
+    "tx_model": { "probe_status": "success_all", "probe_keys": ["init", "multi-1024", "single-1024", "single-4096"], "identity": "byte_exact_reproduced" },
+    "rx_model": { "probe_status": "probe_crash_all", "note": "RX AMI_Init requires the S4P-derived matrix pipeline (P4B-08); not a numerical acceptance of the DLL" }
+  },
+  "semantic_boundary": {
+    "parser_interpolation_clamp_package_pvt_semantics": "not_defined",
+    "ami_algorithmic_behavior": "observation_only",
+    "implicit_composition": "forbidden",
+    "product_runtime_incurs": false
+  },
+  "non_claims": [
+    "not_a_product_behavior_implementation",
+    "not_ibis_ami_compatibility",
+    "not_tx_rx_composition",
+    "not_numerical_parity",
+    "not_acceptance_evidence"
+  ]
+}

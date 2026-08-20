@@ -1,0 +1,39 @@
+schema: sipi.p4b-02b25-parameter-tree-detect-cycles-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b25.parameter-tree-detect-cycles-v1.tree-cycle-detection
+matched_count: 3
+case_count: 3
+entries:
+- label: nested_acyclic_tree
+  matched: true
+  product:
+    cycle_path: null
+    is_acyclic: true
+    policy: sipi.p4b-02b25.parameter-tree-detect-cycles-v1.tree-cycle-detection
+    valid: true
+  reference:
+    valid: true
+    is_acyclic: true
+    cycle_path: null
+- label: single_node_tree
+  matched: true
+  product:
+    cycle_path: null
+    is_acyclic: true
+    policy: sipi.p4b-02b25.parameter-tree-detect-cycles-v1.tree-cycle-detection
+    valid: true
+  reference:
+    valid: true
+    is_acyclic: true
+    cycle_path: null
+- label: wide_acyclic_tree
+  matched: true
+  product:
+    cycle_path: null
+    is_acyclic: true
+    policy: sipi.p4b-02b25.parameter-tree-detect-cycles-v1.tree-cycle-detection
+    valid: true
+  reference:
+    valid: true
+    is_acyclic: true
+    cycle_path: null

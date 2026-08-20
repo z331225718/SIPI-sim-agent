@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b63.mit-source-map.v1",
+  "status": "parameter_tree_distinct_leaf_names_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_distinct_leaf_names_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "sorted distinct leaf name enumeration over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "distinct leaf names", "rust": "list_parameter_tree_distinct_leaf_names_v1", "notes": "enumerates distinct leaf names sorted byte-wise, deduplicated across depths" },
+    { "concept": "enumeration outcome", "rust": "ParameterTreeDistinctLeafNamesV1", "notes": "holds distinct_count and the sorted names" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

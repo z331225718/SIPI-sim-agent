@@ -1,0 +1,14 @@
+{
+  "schema": "sipi.p5-04j.tx-ffe-stage.v1",
+  "status": "tx_ffe_grid_stage_ported",
+  "purpose": "P5-04j TX FFE grid stage ported from the MIT agent-com source: full grid matrix construction (first column slowest), dynamic tx_ffe_cm*/cp* grid build with cursor = 1 - sum(|taps|) and c0_min filtering, strict first-maximum candidate reduction, and the final FOM tracker coordinate selection with C-order unravel semantics. The DFE bank, RX FFE, and equalizer search remain separate scopes.",
+  "source_map_ref": "docs/baselines/p5-04j-mit-source-map.v1.yaml",
+  "admission": {
+    "dfe_bank": false,
+    "rx_ffe": false,
+    "equalizer_search": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_dfe_bank", "not_rx_ffe", "not_equalizer_search", "not_profile_acceptance", "not_release_evidence"]
+}

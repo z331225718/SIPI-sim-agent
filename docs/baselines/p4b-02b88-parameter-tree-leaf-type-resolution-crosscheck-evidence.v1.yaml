@@ -1,0 +1,46 @@
+schema: sipi.p4b-02b88-parameter-tree-leaf-type-resolution-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b88.parameter-tree-leaf-type-resolution-v1.leaf-type-resolution
+matched_count: 4
+case_count: 4
+entries:
+- label: typed_leaf
+  matched: true
+  product:
+    policy: sipi.p4b-02b88.parameter-tree-leaf-type-resolution-v1.leaf-type-resolution
+    type: Float
+    valid: true
+  reference:
+    valid: true
+    type: Float
+- label: nested
+  matched: true
+  product:
+    policy: sipi.p4b-02b88.parameter-tree-leaf-type-resolution-v1.leaf-type-resolution
+    type: Integer
+    valid: true
+  reference:
+    valid: true
+    type: Integer
+- label: missing_path
+  matched: true
+  product:
+    error: MissingPath
+    path: root.nope
+    policy: sipi.p4b-02b88.parameter-tree-leaf-type-resolution-v1.leaf-type-resolution
+    valid: false
+  reference:
+    valid: false
+    error: MissingPath
+    path: root.nope
+- label: non_typed_leaf
+  matched: true
+  product:
+    error: LeafNotTypedForm
+    path: root.plain
+    policy: sipi.p4b-02b88.parameter-tree-leaf-type-resolution-v1.leaf-type-resolution
+    valid: false
+  reference:
+    valid: false
+    error: LeafNotTypedForm
+    path: root.plain

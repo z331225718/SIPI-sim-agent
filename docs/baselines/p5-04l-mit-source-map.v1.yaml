@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-04l.mit-source-map.v1",
+  "status": "rx_ffe_fixed_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/equalization/rx_ffe.py" },
+  "mapping": [
+    { "python": "apply_rx_ffe (FFE)", "rust": "apply_rx_ffe_v1", "notes": "UI-spaced circular shifts including wraparound; zero coefficients skipped" },
+    { "python": "force_rx_ffe (fixed-tap branch)", "rust": "force_rx_ffe_v1", "notes": "direct-solve matrix, dfe_first_max forcing, unity-cursor normalization, floor-magnitude quantization" },
+    { "python": "np.linalg.solve", "rust": "lu_solve (private)", "notes": "partial-pivot LU; zero pivot = singular; mathematically equivalent to LAPACK dgesv, not bit-identical" },
+    { "python": "ForcedRxFfeResult", "rust": "ForcedRxFfeResultV1", "notes": "taps, filtered, matrix" }
+  ],
+  "not_ported": ["force_floating_rx_ffe (floating RxFFE bank branch)", "Wiener-only branch", "equalizer search (search.py)"],
+  "non_claims": ["not_floating_rxffe", "not_wiener_branch", "not_equalizer_search", "not_release_evidence"]
+}

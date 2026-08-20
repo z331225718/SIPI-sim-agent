@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b83.mit-source-map.v1",
+  "status": "parameter_list_item_count_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_item_count_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "standalone list item counting over validated AMI parameter values" },
+  "mapping": [
+    { "concept": "list item count", "rust": "count_parameter_list_items_v1", "notes": "counts trimmed non-empty comma items under the 02b1 list rule" },
+    { "concept": "count errors", "rust": "ParameterListItemCountErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

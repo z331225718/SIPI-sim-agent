@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4a-03k.mit-source-map.v1",
+  "status": "series_switch_groups_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis series_switch_groups_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Series Switch Groups] structural header and state model lists" },
+  "mapping": [
+    { "concept": "typed [Series Switch Groups] header", "rust": "TypedSeriesSwitchGroupV1", "notes": "validated ASCII group_name" },
+    { "concept": "ON-state model list", "rust": "TypedSeriesSwitchGroupV1::on_state_models", "notes": "validated model names active in ON state" },
+    { "concept": "OFF-state model list", "rust": "TypedSeriesSwitchGroupV1::off_state_models", "notes": "validated model names active in OFF state" },
+    { "concept": "duplicate model check", "rust": "SeriesSwitchGroupsErrorV1::DuplicateModelInGroup", "notes": "duplicate model within a state list fails closed" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "dynamic series switch simulation",
+    "release certification"
+  ]
+}

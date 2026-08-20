@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b85-parameter-list-contains-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b85.parameter-list-contains-v1.list-item-membership
+matched_count: 4
+case_count: 4
+entries:
+- label: contains
+  matched: true
+  product:
+    contains: true
+    policy: sipi.p4b-02b85.parameter-list-contains-v1.list-item-membership
+    valid: true
+  reference:
+    valid: true
+    contains: true
+- label: missing
+  matched: true
+  product:
+    contains: false
+    policy: sipi.p4b-02b85.parameter-list-contains-v1.list-item-membership
+    valid: true
+  reference:
+    valid: true
+    contains: false
+- label: trimming
+  matched: true
+  product:
+    contains: false
+    policy: sipi.p4b-02b85.parameter-list-contains-v1.list-item-membership
+    valid: true
+  reference:
+    valid: true
+    contains: false
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b85.parameter-list-contains-v1.list-item-membership
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

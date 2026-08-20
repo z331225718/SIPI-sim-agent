@@ -2,6 +2,7 @@
 members = [
   "crates/sipi-cli",
   "crates/sipi-channel",
+  "crates/sipi-com",
   "crates/sipi-compare",
   "crates/sipi-ibis",
   "crates/sipi-ieee-com-sparam",

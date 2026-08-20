@@ -6,6 +6,16 @@
 //! files, or know any simulation domain. Callers must establish those facts
 //! before constructing [`AlignedArrayV1`].
 
+pub mod c4_metric_profile_v1;
+pub mod metric_compare_v1;
+pub use c4_metric_profile_v1::{
+    c4_metric_names, c4_metric_specs_v1, C4ProfileErrorV1,
+    C4_PROFILE_POLICY_V1, C4_RELATIVE_TOLERANCE_V1,
+};
+pub use metric_compare_v1::{
+    compare_metric_profile_v1, MetricCompareErrorV1, MetricCompareReportV1, MetricCompareResultV1,
+    MetricProfileV1, MetricSpecV1, METRIC_COMPARE_POLICY_V1,
+};
 pub mod prbs9_waveform_v2;
 pub mod selected_highloss_prbs9_waveform_only_v3;
 

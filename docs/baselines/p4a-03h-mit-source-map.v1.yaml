@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4a-03h.mit-source-map.v1",
+  "status": "package_model_declaration_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis package_model_declaration_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Package Model], R_pkg, L_pkg, C_pkg structural headers" },
+  "mapping": [
+    { "concept": "typed [Package Model] header", "rust": "TypedPackageModelDeclarationV1", "notes": "validated ASCII package model name" },
+    { "concept": "R_pkg global resistance", "rust": "TypedPackageModelDeclarationV1::r_pkg_ohm", "notes": "optional finite non-negative FiniteF64" },
+    { "concept": "L_pkg global inductance", "rust": "TypedPackageModelDeclarationV1::l_pkg_henry", "notes": "optional finite non-negative FiniteF64" },
+    { "concept": "C_pkg global capacitance", "rust": "TypedPackageModelDeclarationV1::c_pkg_farad", "notes": "optional finite non-negative FiniteF64" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "pin-by-pin RLC package matrices",
+    "release certification"
+  ]
+}

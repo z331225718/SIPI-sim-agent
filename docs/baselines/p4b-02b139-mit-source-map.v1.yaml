@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b139.mit-source-map.v1",
+  "status": "parameter_list_last_duplicate_index_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_last_duplicate_index_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "last repeating position over validated AMI parameter list values" },
+  "mapping": [
+    { "concept": "last duplicate index", "rust": "parameter_list_last_duplicate_index_v1", "notes": "returns largest index whose trimmed item equals an earlier one by byte equality" },
+    { "concept": "repeat errors", "rust": "ParameterListLastDuplicateIndexErrorV1", "notes": "NotAList for non-List types, defensive MalformedList, NoDuplicate for absent repeats" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

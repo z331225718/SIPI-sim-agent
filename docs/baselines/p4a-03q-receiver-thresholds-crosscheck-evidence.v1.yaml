@@ -1,0 +1,49 @@
+schema: sipi.p4a-03q.receiver-thresholds-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03q.receiver-thresholds-v1.typed-thresholds
+matched_count: 3
+case_count: 3
+entries:
+- label: full_thresholds
+  matched: true
+  product:
+    policy: sipi.p4a-03q.receiver-thresholds-v1.typed-thresholds
+    tskew_s: 2.0e-11
+    valid: true
+    vcross_high_v: 1.2
+    vcross_low_v: 0.8
+    vdiff_ac_v: 0.15
+    vdiff_dc_v: 0.1
+  reference:
+    valid: true
+    vcross_low_v: 0.8
+    vcross_high_v: 1.2
+    vdiff_ac_v: 0.15
+    vdiff_dc_v: 0.1
+    tskew_s: 2.0e-11
+- label: minimal_thresholds
+  matched: true
+  product:
+    policy: sipi.p4a-03q.receiver-thresholds-v1.typed-thresholds
+    tskew_s: null
+    valid: true
+    vcross_high_v: null
+    vcross_low_v: null
+    vdiff_ac_v: null
+    vdiff_dc_v: null
+  reference:
+    valid: true
+    vcross_low_v: null
+    vcross_high_v: null
+    vdiff_ac_v: null
+    vdiff_dc_v: null
+    tskew_s: null
+- label: negative_vdiff_ac
+  matched: true
+  product:
+    lift_error: NegativeThreshold
+    policy: sipi.p4a-03q.receiver-thresholds-v1.typed-thresholds
+    valid: false
+  reference:
+    valid: false
+    lift_error: NegativeThreshold

@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b175-parameter-list-is-alternating-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b175.parameter-list-is-alternating-v1.is-alternating
+matched_count: 4
+case_count: 4
+entries:
+- label: alternating
+  matched: true
+  product:
+    is_alternating: true
+    policy: sipi.p4b-02b175.parameter-list-is-alternating-v1.is-alternating
+    valid: true
+  reference:
+    valid: true
+    is_alternating: true
+- label: repeated_adjacent
+  matched: true
+  product:
+    is_alternating: false
+    policy: sipi.p4b-02b175.parameter-list-is-alternating-v1.is-alternating
+    valid: true
+  reference:
+    valid: true
+    is_alternating: false
+- label: single_item
+  matched: true
+  product:
+    is_alternating: true
+    policy: sipi.p4b-02b175.parameter-list-is-alternating-v1.is-alternating
+    valid: true
+  reference:
+    valid: true
+    is_alternating: true
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b175.parameter-list-is-alternating-v1.is-alternating
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

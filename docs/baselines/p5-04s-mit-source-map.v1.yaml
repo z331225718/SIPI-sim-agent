@@ -1,0 +1,19 @@
+{
+  "schema": "sipi.p5-04s.mit-source-map.v1",
+  "status": "candidate_eval_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/equalization/search.py" },
+  "mapping": [
+    { "python": "_evaluate_candidate", "rust": "evaluate_candidate_v1", "notes": "sigma-ISI optimistic rejects; DFE bounds + tail RSS; jitter sigma; SNDR/TX noise norm; C2M branch; strict-FOM gate" },
+    { "python": "_c2m_candidate_fom", "rust": "c2m_candidate_fom_v1", "notes": "C2M vertical-eye FOM replacement using calculate_c2m_vertical_eye_v1 (P5-04r)" },
+    { "python": "_cannot_improve_fom", "rust": "cannot_improve_fom_v1", "notes": "reused from candidate_helpers_v1 (P5-04q)" },
+    { "python": "_dfe_candidate_bounds", "rust": "dfe_candidate_bounds_v1", "notes": "reused from candidate_helpers_v1 (P5-04q)" },
+    { "python": "_jitter_sigma / _jitter_response", "rust": "jitter_sigma_v1 / jitter_response_v1", "notes": "reused from candidate_helpers_v1 (P5-04q)" },
+    { "python": "_candidate_ber_q", "rust": "candidate_ber_q_v1", "notes": "reused from candidate_helpers_v1 (P5-04q)" },
+    { "python": "_r480_pdf_bin_size / _r480_bbn_q_factor", "rust": "r480_pdf_bin_size_v1 / r480_bbn_q_factor_v1", "notes": "reused from candidate_helpers_v1 (P5-04q)" },
+    { "python": "_selected_sndr", "rust": "selected_sndr_v1", "notes": "reused from search_support_v1 (P5-04n)" },
+    { "python": "clip_dfe / apply_tail_rss_bounds", "rust": "clip_dfe_v1 / apply_tail_rss_bounds_v1", "notes": "reused from dfe_v1 (P5-04k)" },
+    { "python": "calculate_c2m_vertical_eye", "rust": "calculate_c2m_vertical_eye_v1", "notes": "reused from c2m_eye_v1 (P5-04r)" }
+  ],
+  "not_ported": ["search_r480_nonmmse_no_xtalk / search loop"],
+  "non_claims": ["not_search_loop", "not_release_evidence"]
+}

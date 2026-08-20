@@ -1,0 +1,118 @@
+schema: sipi.p4b-02b5.ami-runtime-params-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b5.ami-runtime-params.v1.typed
+matched_count: 8
+case_count: 8
+entries:
+- label: candidate_overrides_default_in
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_params:
+  - name: swing
+    type: Float
+    usage: In
+    value: '0.9'
+  reference_params:
+  - name: swing
+    usage: In
+    type: Float
+    value: '0.9'
+- label: default_used_when_no_candidate_in
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_params:
+  - name: swing
+    type: Float
+    usage: In
+    value: '0.5'
+  reference_params:
+  - name: swing
+    usage: In
+    type: Float
+    value: '0.5'
+- label: mixed_roles_sorted_order
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_params:
+  - name: alpha
+    type: Float
+    usage: In
+    value: '2.0'
+  - name: out_x
+    type: Float
+    usage: Out
+    value: '3.0'
+  - name: zeta
+    type: Float
+    usage: In
+    value: '1.0'
+  reference_params:
+  - name: alpha
+    usage: In
+    type: Float
+    value: '2.0'
+  - name: out_x
+    usage: Out
+    type: Float
+    value: '3.0'
+  - name: zeta
+    usage: In
+    type: Float
+    value: '1.0'
+- label: out_and_info_omitted_without_candidate
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_params: []
+  reference_params: []
+- label: missing_in_without_default
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_params: []
+  reference_params: []
+- label: candidate_type_mismatch
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_params: []
+  reference_params: []
+- label: integer_and_boolean_types
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_params:
+  - name: flag
+    type: Boolean
+    usage: In
+    value: 'True'
+  - name: pre
+    type: Integer
+    usage: In
+    value: '2'
+  reference_params:
+  - name: flag
+    usage: In
+    type: Boolean
+    value: 'True'
+  - name: pre
+    usage: In
+    type: Integer
+    value: '2'
+- label: unknown_candidate_ignored
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_params:
+  - name: swing
+    type: Float
+    usage: In
+    value: '0.5'
+  reference_params:
+  - name: swing
+    usage: In
+    type: Float
+    value: '0.5'

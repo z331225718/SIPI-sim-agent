@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p5-04n.search-support-stage.v1",
+  "status": "search_support_stage_ported",
+  "purpose": "P5-04n equalizer-search support stage ported from the MIT agent-com source: indexed config values, CL120d high-pass candidates and the G_Qual/G2_Qual admissible gain-pair matrix, SNDR / AC_CM_RMS package selection, the optional eta_0 source-noise sinc-squared shaping, the CTLE frequency response (CL120d / CL120e high-pass variants), and the time-domain CTLE candidate application. The receiver filter chain, crosstalk noise integration, candidate FOM evaluation, and the search loop remain separate scopes.",
+  "source_map_ref": "docs/baselines/p5-04n-mit-source-map.v1.yaml",
+  "admission": {
+    "receiver_noise": false,
+    "crosstalk_noise": false,
+    "candidate_evaluation": false,
+    "search_loop": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_receiver_noise", "not_crosstalk_noise", "not_candidate_evaluation", "not_search_loop", "not_profile_acceptance", "not_release_evidence"]
+}

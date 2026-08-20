@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b79.mit-source-map.v1",
+  "status": "parameter_profile_typed_diff_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_typed_diff_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "typed semantic diff over assembled parameter profile maps" },
+  "mapping": [
+    { "concept": "typed diff", "rust": "diff_parameter_profiles_typed_v1", "notes": "matched/added/removed/changed under 02b70 typed equivalence, reasons carried" },
+    { "concept": "typed change", "rust": "ParameterProfileTypedChangeV1", "notes": "both sides' types and raw tokens plus the typed inequivalence reason" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

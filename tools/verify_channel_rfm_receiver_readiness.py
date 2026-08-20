@@ -22,6 +22,9 @@ MISSING = "missing_owner_selection"
 EVIDENCE_REF = "docs/baselines/audits/2026-08-08-m5.md#m5b-03c-git-object-rfm-same-config-receiver-parity"
 HANDOFF_REPLAY_REF = "docs/baselines/audits/2026-08-10-p3b-rfm-receiver-handoff-replay.md"
 APPROVAL_REF = "docs/baselines/channel-rfm-receiver-semantic-approval.v1.yaml"
+DELEGATED_STATUS = "required_delegated_policy_agreement_not_lock_accepted"
+DELEGATED_AMENDMENT_REF = "docs/baselines/channel-rfm-receiver-delegated-phase-amendment.v1.yaml"
+DELEGATED_AMENDMENT_SCHEMA = "sipi.channel.receiver-delegated-phase-amendment.v1"
 REQUIRED_BY = "user-confirmed-2026-08-10-channel-rfm-receiver"
 
 MISSING_FIELDS = {
@@ -98,16 +101,39 @@ def verify_document(readiness: object, inventory: object) -> dict:
     profile = _candidate_profile(inventory) if isinstance(inventory, dict) else None
     if profile is None:
         blockers.append("required profile is absent from acceptance inventory")
-    elif profile.get("boundary") != "oracle_only" or profile.get("acceptance", {}).get("status") not in {"required_blocked_missing_receiver_semantics", "required_blocked_missing_authorized_reference_bit_source", "required_pending_receiver_compare"} or profile.get("acceptance", {}).get("required_by") != REQUIRED_BY:
+    elif (
+        profile.get("boundary") != "oracle_only"
+        or profile.get("acceptance", {}).get("status")
+        not in {
+            "required_blocked_missing_receiver_semantics",
+            "required_blocked_missing_authorized_reference_bit_source",
+            "required_pending_receiver_compare",
+            DELEGATED_STATUS,
+        }
+        or profile.get("acceptance", {}).get("required_by") != REQUIRED_BY
+    ):
         blockers.append("required profile must remain oracle-only and blocked")
     elif (
         profile.get("environment", {}).get("provenance_ref") != EVIDENCE_REF
-        or profile.get("acceptance", {}).get("tolerance_policy_ref") not in {EVIDENCE_REF, APPROVAL_REF}
+        or profile.get("acceptance", {}).get("tolerance_policy_ref")
+        not in {EVIDENCE_REF, APPROVAL_REF, DELEGATED_AMENDMENT_REF}
         or profile.get("evidence_refs") != [EVIDENCE_REF, HANDOFF_REPLAY_REF]
         or not _evidence_ref_exists(EVIDENCE_REF)
         or not (ROOT / HANDOFF_REPLAY_REF).is_file()
     ):
         blockers.append("required profile receiver evidence anchor is invalid")
+    elif profile.get("acceptance", {}).get("status") == DELEGATED_STATUS:
+        try:
+            amendment = _load(ROOT / DELEGATED_AMENDMENT_REF)
+        except (RuntimeError, OSError):
+            blockers.append("delegated phase amendment missing")
+        else:
+            if (
+                amendment.get("schema") != DELEGATED_AMENDMENT_SCHEMA
+                or amendment.get("status") != "approved_delegated_policy"
+                or amendment.get("profile_id") != PROFILE_ID
+            ):
+                blockers.append("delegated phase amendment binding is invalid")
     identity = readiness["candidate_identity"]
     identity_keys = {"repository", "commit", "path", "git_blob", "content_sha256"}
     if not _exact(identity, identity_keys) or not isinstance(identity.get("repository"), str) or not _hex(identity.get("commit"), SHA1_LENGTH) or not _safe_ref(identity.get("path")) or not _hex(identity.get("git_blob"), SHA1_LENGTH) or not _hex(identity.get("content_sha256"), SHA256_LENGTH):

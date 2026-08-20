@@ -1,0 +1,12 @@
+{
+  "schema": "sipi.p3c-02f.mit-source-map.v1",
+  "status": "bathtub_opening_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-com bathtub_v1.rs (threshold opening from Q-factor/BER)" },
+  "observation": { "ref": "docs/baselines/p3c-02e-qfactor-ber-crosscheck-evidence.v1.yaml", "note": "Q<->BER conversion crosschecked vs scipy (P3C-02e)" },
+  "mapping": [
+    { "concept": "target-BER left/right crossing", "rust": "bathtub_opening_width_v1", "notes": "contiguous span where BER <= target" },
+    { "concept": "log10(BER) linear interpolation", "rust": "interpolate_crossing", "notes": "finds the time offset where BER == target" },
+    { "concept": "sample ordering / error set", "rust": "BathtubSampleV1 / BathtubErrorV1", "notes": "strict ascending time; invalid BER rejected" }
+  ],
+  "not_ported": ["eye folding / bin semantics (P3C-02c)", "bathtub curve fitting", "statistical eye contours"]
+}

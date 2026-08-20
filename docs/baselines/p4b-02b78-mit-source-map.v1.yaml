@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b78.mit-source-map.v1",
+  "status": "parameter_tree_leaf_canonicalization_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_leaf_canonicalization_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "canonical leaf spellings of an AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "tree leaf canonicalization", "rust": "canonicalize_parameter_tree_leaf_spellings_v1", "notes": "rewrites valid typed-form leaves via 02b75 rules; quoted List tokens keep quotes" },
+    { "concept": "canonicalization outcome", "rust": "ParameterTreeLeafCanonicalizationV1", "notes": "leaves and canonicalized counts plus the rebuilt tree" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

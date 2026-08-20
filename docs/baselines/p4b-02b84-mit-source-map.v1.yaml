@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b84.mit-source-map.v1",
+  "status": "parameter_list_item_access_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_item_access_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "indexed list item access over validated AMI parameter values" },
+  "mapping": [
+    { "concept": "list item access", "rust": "get_parameter_list_item_v1", "notes": "returns the trimmed item at a 0-based index under the 02b1 list rule" },
+    { "concept": "access errors", "rust": "ParameterListItemAccessErrorV1", "notes": "NotAList, defensive MalformedList, IndexOutOfRange with index and item count" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

@@ -1,0 +1,46 @@
+schema: sipi.p3c-03e.compliance-report-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p3c-03e.compliance-report.v1.profile
+matched_count: 3
+case_count: 3
+entries:
+- id: fom_pass
+  matched: true
+  product:
+    ok: true
+    passed: true
+    policy: sipi.p3c-03e.compliance-report.v1.profile
+    results:
+    - candidate_db: 53.45
+      difference_db: 0.02400000000000091
+      name: fom
+      passed: true
+  reference_pass_all: true
+- id: fom_fail
+  matched: true
+  product:
+    ok: true
+    passed: false
+    policy: sipi.p3c-03e.compliance-report.v1.profile
+    results:
+    - candidate_db: 54.0
+      difference_db: 0.5739999999999981
+      name: fom
+      passed: false
+  reference_pass_all: false
+- id: multi
+  matched: true
+  product:
+    ok: true
+    passed: true
+    policy: sipi.p3c-03e.compliance-report.v1.profile
+    results:
+    - candidate_db: 53.4265
+      difference_db: 0.000499999999995282
+      name: fom
+      passed: true
+    - candidate_db: 89.9
+      difference_db: 0.09999999999999432
+      name: crossing
+      passed: true
+  reference_pass_all: true

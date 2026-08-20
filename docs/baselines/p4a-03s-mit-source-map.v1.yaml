@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03s.mit-source-map.v1",
+  "status": "golden_wave_declaration_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis golden_wave_declaration_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Golden Waveforms] structural header and DUT association" },
+  "mapping": [
+    { "concept": "typed [Golden Waveforms] header", "rust": "TypedGoldenWaveDeclarationV1", "notes": "validated ASCII waveform_name and optional dut_name" },
+    { "concept": "waveform name syntax validation", "rust": "GoldenWaveDeclarationErrorV1::InvalidName", "notes": "non-empty, ASCII alphanumeric/underscore/hyphen/dot" },
+    { "concept": "optional DUT association", "rust": "TypedGoldenWaveDeclarationV1::dut_name", "notes": "optional ASCII DUT fixture name string" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "golden waveform comparison simulation",
+    "release certification"
+  ]
+}

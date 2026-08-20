@@ -9,6 +9,15 @@ description = "Strict typed finite-array comparison and tolerance reports."
 
 [dependencies]
 sha2 = "0.10"
+serde_json = "1"
+
+[[test]]
+name = "p3c_03c_metric_compare_runner"
+harness = false
 
 [lints]
 workspace = true
+
+[[test]]
+name = "p3c_04x_c4_profile_runner"
+harness = false

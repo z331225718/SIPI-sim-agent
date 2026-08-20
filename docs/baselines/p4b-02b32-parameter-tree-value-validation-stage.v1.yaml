@@ -1,0 +1,51 @@
+{
+  "schema": "sipi.p4b-02b32.parameter-tree-value-validation-stage.v1",
+  "status": "parameter_tree_value_validation_ported",
+  "purpose": "P4B-02 typed AMI parameter sub-slice: walks an AmiParameterTreeV1 hierarchy and validates every leaf's value tokens against a caller-supplied type map (leaf name -> AmiParameterTypeV1) via validate_parameter_tree_values_v1 in sipi-ami-text parameter_tree_validate_values_v1.rs, reusing the exact product-owned value rules of AmiParameterValueV1::try_new (P4B-02b1). Fail-closed: missing type, empty value tokens, or any token violating its declared type rule is strictly rejected.",
+  "source_map_ref": "docs/baselines/p4b-02b32-mit-source-map.v1.yaml",
+  "based_on": [
+  "\"docs/baselines/p4b-02b1-parameter-value-core.v1.yaml\"",
+  "\"docs/baselines/p4b-02b2-parameter-form-binding.v1.yaml\"",
+  "\"docs/baselines/p4b-02b3-parameter-catalog-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b4-catalog-default-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b5-ami-runtime-params-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b6-parameter-extractor-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b7-parameter-trees-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b8-parameter-tree-query-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b9-parameter-tree-formatter-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b10-parameter-tree-validator-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b11-parameter-tree-diff-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b12-parameter-tree-merge-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b13-parameter-tree-pruning-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b14-parameter-tree-visitor-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b15-parameter-tree-transformer-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b16-parameter-tree-index-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b17-parameter-tree-diff-patch-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b18-parameter-tree-filter-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b19-parameter-tree-serde-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b20-parameter-tree-diff-stats-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b21-parameter-tree-diff-filter-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b22-parameter-tree-diff-summary-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b23-parameter-tree-subtree-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b24-parameter-tree-rename-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b25-parameter-tree-detect-cycles-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b26-parameter-tree-compose-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b27-parameter-tree-replace-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b28-parameter-tree-toposort-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b29-parameter-tree-depth-stats-stage.v1.yaml\"",
+  "\"docs/baselines/p4b-02b30-parameter-tree-leaf-index-stage.v1.yaml\"",
+  "docs/baselines/p4b-02b31-parameter-tree-token-stats-stage.v1.yaml"
+],
+  "admission": {
+    "typed_leaf_validation": true,
+    "type_map_driven_checking": true,
+    "fail_closed_missing_type": true,
+    "full_ami_document_parser": false,
+    "release_evidence": false
+  },
+  "non_claims": [
+    "not_full_ami_document_parser",
+    "not_reserved_name_catalog",
+    "not_acceptance_evidence"
+  ]
+}

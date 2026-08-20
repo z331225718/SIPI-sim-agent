@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b65.mit-source-map.v1",
+  "status": "parameter_tree_path_relation_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_path_relation_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "prefix classification of two canonical paths" },
+  "mapping": [
+    { "concept": "path relation", "rust": "classify_parameter_tree_path_relation_v1", "notes": "classifies two canonical paths as Identical/Ancestor/Descendant/Disjoint" },
+    { "concept": "relation enum", "rust": "ParameterTreePathRelationV1", "notes": "four-way relation variants" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

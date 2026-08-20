@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-04g.mit-source-map.v1",
+  "status": "residual_channel_pdf_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/noise/discrete_pdf.py" },
+  "mapping": [
+    { "python": "residual_channel_pdf", "rust": "residual_channel_pdf_v1", "notes": "DFE cancellation for THRU, phase selection, sampled-signal PDF on phase samples" },
+    { "python": "_dfe_bounds", "rust": "dfe_bounds_v1 (private)", "notes": "bound array slice validation; negative count rejected at the API surface" },
+    { "python": "ResidualPdfResult", "rust": "ResidualPdfResultV1", "notes": "pdf, residual_pulse, selected_phase" },
+    { "python": "np.argmax(rms) / sqrt(sum(x**2 * probability))", "rust": "pdf_rms_v1 (private) + first-maximum selection", "notes": "largest PDF RMS phase; first maximum on ties" }
+  ],
+  "not_ported": ["build_r480_noise_pdf", "mmse crosstalk phase provisioning", "channel selection / equalizer search (search.py scope)"],
+  "non_claims": ["not_build_r480_noise_pdf", "not_mmse_crosstalk_phase_path", "not_channel_selection", "not_equalizer_search", "not_release_evidence"]
+}

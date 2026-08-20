@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p4b-02b3.mit-source-map.v1",
+  "status": "parameter_catalog_ported_with_source_map",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_catalog_v1.rs (extends P4B-02b1/b2)" },
+  "observation": { "ref": "docs/baselines/p4b-02b1-parameter-value-core.v1.yaml", "note": "value syntax core (02b1) + form identity binding (02b2) delivered" },
+  "mapping": [
+    { "concept": "catalog entry (name, usage, type, default)", "rust": "CatalogEntryV1", "notes": "reuses AmiUsageV1 and AmiParameterTypeV1" },
+    { "concept": "compiled parameter catalog", "rust": "ParameterCatalogV1::compile", "notes": "BTreeMap of entries; empty/duplicate rejected" },
+    { "concept": "IBIS-AMI Usage role", "rust": "AmiUsageV1", "notes": "In/Out/Info tokens" },
+    { "concept": "candidate set validation", "rust": "validate_candidate_set_v1", "notes": "Usage=In required, unknown rejected, type checked" }
+  ],
+  "not_ported": ["reserved-name catalog", "AMI runtime", "specific AMI profile selection"]
+}

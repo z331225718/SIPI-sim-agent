@@ -1,0 +1,12 @@
+{
+  "schema": "sipi.p5-04c.mit-source-map.v1",
+  "status": "com_metrics_stage_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/metrics/com.py" },
+  "mapping": [
+    { "python": "calculate_com_metrics(available_signal_v, pdf, spec_ber, pass_threshold_db, t_o_s, eye_opening_v)", "rust": "calculate_com_metrics_v1(available_signal_v, pdf_x, pdf_cdf, spec_ber, pass_threshold_db, t_o_s, eye_opening_v)", "notes": "PDF arrays caller-supplied; discrete-PDF construction is a separate stage" },
+    { "python": "ComMetrics dataclass", "rust": "ComMetricsV1", "notes": "available_signal_v, interference_noise_v, threshold_der, com_db, vec_db, veo_mv, eye_opening_v" },
+    { "python": "_db_ratio", "rust": "db_ratio", "notes": "inf for zero denominator, NaN for negative denominator" }
+  ],
+  "not_ported": ["DiscretePdf construction", "cdf computation"],
+  "non_claims": ["not_discrete_pdf", "not_full_metric_surface", "not_release_evidence"]
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b90.mit-source-map.v1",
+  "status": "parameter_profile_typed_subset_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_typed_subset_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "typed subset check over assembled parameter profile maps" },
+  "mapping": [
+    { "concept": "typed subset check", "rust": "check_parameter_profile_typed_subset_v1", "notes": "every subset entry present in superset under same name with typed-equivalent value (02b70)" },
+    { "concept": "subset outcome", "rust": "ParameterProfileTypedSubsetV1", "notes": "is_subset flag with sorted missing names and mismatched name+reason entries" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

@@ -1,0 +1,46 @@
+schema: sipi.p4b-07.raw-abi-parity-evidence.v1
+status: tx_raw_abi_parity_reproduced_hash_only
+authorization_ref: docs/baselines/authorized-material-registry.v1.yaml
+observation_ref: docs/baselines/p4b-07-authorized-fixture-abi-observation-evidence.v1.yaml
+dll_sha256: 05d299826a9c69ae8ac3d236d88adcad5860fc7e229243f1541d1734b8ed28ea
+probe_matrix:
+- mode: init
+  wave_length: null
+  clock_capacity: null
+  rows: 4
+  aggressors: 3
+- mode: single
+  wave_length: 1024
+  clock_capacity: 1024
+  rows: 4
+  aggressors: 3
+- mode: single
+  wave_length: 4096
+  clock_capacity: 4096
+  rows: 4
+  aggressors: 3
+- mode: multi
+  wave_length: 1024
+  clock_capacity: 1024
+  rows: 4
+  aggressors: 3
+custody_0_parity:
+  init: true
+  single-1024: true
+  single-4096: true
+  multi-1024: true
+custody_1_parity:
+  init: true
+  single-1024: true
+  single-4096: true
+  multi-1024: true
+probe_parity: all_probes_host_equals_observer
+rx_surface: not_in_this_parity_claim
+non_claims:
+- not_rx_parity
+- not_numerical_reference_parity
+- not_ibis_ami_compatibility
+- not_tx_rx_composition
+- not_worker_admission
+- not_product_runtime
+- not_release_evidence

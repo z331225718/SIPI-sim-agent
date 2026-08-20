@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b33.mit-source-map.v1",
+  "status": "parameter_tree_value_type_inference_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_infer_types_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "leaf value-token type inference over AmiParameterTreeV1 using P4B-02b1 token rules in reverse" },
+  "mapping": [
+    { "concept": "leaf value type inference", "rust": "infer_parameter_tree_leaf_types_v1", "notes": "infers one AmiParameterTypeV1 per leaf from its value tokens; precedence Integer > Float > Boolean > List > String" },
+    { "concept": "inference outcome", "rust": "ParameterTreeTypeInferenceV1", "notes": "holds leaves_inferred and leaf_types map" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "sipi.p5-06e.com-oracle-metric-reference.v1",
+  "status": "oracle_metric_reference_bound_hash_verified",
+  "purpose": "P5-06e COM oracle metric reference binding: binds the owner C4 metric profile (COM_dB / ICN_mV / ERL) to the authoritative MATLAB oracle reference values produced by the P5-06a first run (summary.json in the machine-verified evidence). The aggregate reference (summary_case_index=1) is the canonical reference set for the C4 profile compare; per-case references are recorded for case-level comparison. Digest-bound to the evidence summary_content.",
+  "evidence_ref": "docs/baselines/p5-06-matlab-oracle-first-run-evidence.v1.yaml",
+  "evidence_status": "matlab_oracle_first_run_succeeded_hash_bound",
+  "summary_json_sha256": "151d8a03bbc4ef399a84dc97c6c4b6a87c22e3d12a1a0a611b07806c835b55ed",
+  "summary_case_index": 1,
+  "aggregate_reference": {
+    "COM_dB": 5.190191599808681,
+    "ICN_mV": 4.601554213273623,
+    "ERL": 16.742740133561476
+  },
+  "aggregate_reference_digest": "f7b30359cecf9958952caf7b7081c2e78e6057dd3336d84ae87e1d8dbda1bae7",
+  "case_references": [
+    { "case_index": 1, "COM_dB": 5.190191599808681, "ICN_mV": 4.601554213273623, "ERL": 16.742740133561476 },
+    { "case_index": 2, "COM_dB": 4.877647775233487, "ICN_mV": 4.601554213273623, "ERL": 16.742740133561476 }
+  ],
+  "c4_profile_ref": "docs/baselines/p3c-04x-c4-profile-stage.v1.yaml",
+  "c4_policy": "sipi.p3c-03c.c4-profile.v1.com-icn-erl-1pct",
+  "non_claims": ["not_a_recompute", "not_release_evidence", "not_acceptance_evidence", "not_product_comparison_yet"]
+}

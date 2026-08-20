@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b126-parameter-list-is-palindrome-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b126.parameter-list-is-palindrome-v1.palindrome-check
+matched_count: 4
+case_count: 4
+entries:
+- label: palindrome
+  matched: true
+  product:
+    palindrome: true
+    policy: sipi.p4b-02b126.parameter-list-is-palindrome-v1.palindrome-check
+    valid: true
+  reference:
+    valid: true
+    palindrome: true
+- label: non_palindrome
+  matched: true
+  product:
+    palindrome: false
+    policy: sipi.p4b-02b126.parameter-list-is-palindrome-v1.palindrome-check
+    valid: true
+  reference:
+    valid: true
+    palindrome: false
+- label: even_palindrome
+  matched: true
+  product:
+    palindrome: true
+    policy: sipi.p4b-02b126.parameter-list-is-palindrome-v1.palindrome-check
+    valid: true
+  reference:
+    valid: true
+    palindrome: true
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b126.parameter-list-is-palindrome-v1.palindrome-check
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

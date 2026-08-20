@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03ag.mit-source-map.v1",
+  "status": "series_switch_keywords_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis series_switch_groups_keywords_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Series Switch Groups] complete block required keywords and thresholds" },
+  "mapping": [
+    { "concept": "typed [Series Switch Groups] block header", "rust": "TypedSeriesSwitchBlockV1", "notes": "composite switch_record and optional thresholds" },
+    { "concept": "switch_record access", "rust": "TypedSeriesSwitchBlockV1::switch_record", "notes": "embedded TypedSeriesSwitchRecordV1" },
+    { "concept": "thresholds access", "rust": "TypedSeriesSwitchBlockV1::thresholds", "notes": "optional embedded TypedSeriesSwitchThresholdsV1" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "series switch circuit simulation",
+    "release certification"
+  ]
+}

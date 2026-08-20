@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b31.mit-source-map.v1",
+  "status": "parameter_tree_token_stats_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_token_stats_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "value-token statistics computation over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "token statistics computation", "rust": "compute_parameter_tree_token_stats_v1", "notes": "returns leaf count, total tokens, max tokens per leaf, and sorted distinct tokens" },
+    { "concept": "token stats result", "rust": "ParameterTreeTokenStatsV1", "notes": "holds leaf_count, total_tokens, max_tokens_per_leaf, distinct_tokens" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

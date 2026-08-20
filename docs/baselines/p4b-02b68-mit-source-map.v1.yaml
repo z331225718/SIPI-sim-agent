@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b68.mit-source-map.v1",
+  "status": "parameter_tree_path_prefixes_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_path_prefixes_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "ancestor-chain prefix enumeration of a canonical path" },
+  "mapping": [
+    { "concept": "path prefix enumeration", "rust": "enumerate_parameter_tree_path_prefixes_v1", "notes": "enumerates [0..1], [0..2], ..., [0..n] prefixes of a canonical path" },
+    { "concept": "prefix errors", "rust": "ParameterTreePathPrefixErrorV1", "notes": "EmptyPath fail-closed variant" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

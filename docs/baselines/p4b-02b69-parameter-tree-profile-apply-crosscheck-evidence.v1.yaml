@@ -1,0 +1,96 @@
+schema: sipi.p4b-02b69-parameter-tree-profile-apply-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b69.parameter-tree-profile-apply-v1.profile-to-tree-apply
+matched_count: 4
+case_count: 4
+entries:
+- label: apply_single
+  matched: true
+  product:
+    applied: 1
+    policy: sipi.p4b-02b69.parameter-tree-profile-apply-v1.profile-to-tree-apply
+    root_name: root
+    tree:
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - '1.25'
+      - kind: leaf
+        name: steps
+        value_tokens:
+        - Integer
+        - '7'
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    applied: 1
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - '1.25'
+      - kind: leaf
+        name: steps
+        value_tokens:
+        - Integer
+        - '7'
+- label: apply_multi
+  matched: true
+  product:
+    applied: 2
+    policy: sipi.p4b-02b69.parameter-tree-profile-apply-v1.profile-to-tree-apply
+    root_name: root
+    tree:
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - '1.25'
+      - kind: leaf
+        name: steps
+        value_tokens:
+        - '8'
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    applied: 2
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - '1.25'
+      - kind: leaf
+        name: steps
+        value_tokens:
+        - '8'
+- label: missing_leaf
+  matched: true
+  product:
+    apply_error: MissingLeaf("nope")
+    policy: sipi.p4b-02b69.parameter-tree-profile-apply-v1.profile-to-tree-apply
+    valid: false
+  reference:
+    valid: false
+    apply_error: MissingLeaf("nope")
+- label: empty_profile
+  matched: true
+  product:
+    apply_error: EmptyProfile
+    policy: sipi.p4b-02b69.parameter-tree-profile-apply-v1.profile-to-tree-apply
+    valid: false
+  reference:
+    valid: false
+    apply_error: EmptyProfile

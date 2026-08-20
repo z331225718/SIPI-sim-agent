@@ -1,0 +1,12 @@
+{
+  "schema": "sipi.p4a-03e.mit-source-map.v1",
+  "status": "pin_declaration_source_mapped",
+  "source": { "repo": "product-owned / standard", "license": "clean-room (IBIS 5.0 [Pin] section)", "path": "sipi-ibis pin_declaration_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-01-required-profile-inventory.v1.yaml", "note": "authorized as4c512m16md4v-053bin.ibs [Pin] section" },
+  "mapping": [
+    { "standard": "IBIS [Pin] pin_name signal_name model_name", "rust": "TypedPinDeclarationV1", "notes": "first three tokens of each row" },
+    { "standard": "[Pin] section lifting", "rust": "lift_pin_declarations_v1", "notes": "collects Data rows under the Pin Keyword until next section" },
+    { "concept": "malformed-row rejection", "rust": "PinDeclarationErrorV1::MalformedPinRow", "notes": "rows with <3 tokens fail closed" }
+  ],
+  "not_ported": ["pin RLC/parasitic evaluation", "serial/signal-path semantics", "profile selection"]
+}

@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b105-parameter-list-sort-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b105.parameter-list-sort-v1.list-item-sort
+matched_count: 4
+case_count: 4
+entries:
+- label: sort_multi
+  matched: true
+  product:
+    policy: sipi.p4b-02b105.parameter-list-sort-v1.list-item-sort
+    sorted: (a, b, c)
+    valid: true
+  reference:
+    valid: true
+    sorted: (a, b, c)
+- label: numeric_lex
+  matched: true
+  product:
+    policy: sipi.p4b-02b105.parameter-list-sort-v1.list-item-sort
+    sorted: (1, 10, 2)
+    valid: true
+  reference:
+    valid: true
+    sorted: (1, 10, 2)
+- label: duplicates
+  matched: true
+  product:
+    policy: sipi.p4b-02b105.parameter-list-sort-v1.list-item-sort
+    sorted: (a, b, b, c)
+    valid: true
+  reference:
+    valid: true
+    sorted: (a, b, b, c)
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b105.parameter-list-sort-v1.list-item-sort
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

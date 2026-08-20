@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-04k.dfe-stage.v1",
+  "status": "dfe_bank_stage_ported",
+  "purpose": "P5-04k DFE bank stage ported from the MIT agent-com source: tail-RSS bound rewriting (apply_tail_rss_bounds), elementwise clipping (clip_dfe), floating bank location search (find_dfe_bank_locations, findbankloc with zero-based indices and stable descending energy ordering), and DFE bank application with the source's floor-magnitude quantizer (apply_dfe_bank). The RX FFE and equalizer search remain separate scopes.",
+  "source_map_ref": "docs/baselines/p5-04k-mit-source-map.v1.yaml",
+  "admission": {
+    "rx_ffe": false,
+    "equalizer_search": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_rx_ffe", "not_equalizer_search", "not_profile_acceptance", "not_release_evidence"]
+}

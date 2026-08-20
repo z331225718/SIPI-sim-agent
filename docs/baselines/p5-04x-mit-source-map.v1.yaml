@@ -1,0 +1,12 @@
+{
+  "schema": "sipi.p5-04x.mit-source-map.v1",
+  "status": "search_loop_helpers_source_mapped",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/equalization/search.py (helper functions)" },
+  "observation": { "ref": "docs/baselines/p5-04t-search-loop-crosscheck-evidence.v1.yaml", "note": "P5-04t composite loop already bit-exact (fom 53.42661625274711)" },
+  "mapping": [
+    { "python": "rectangular_pulse_response (running sum over UI window)", "rust": "rectangular_pulse_response_v1", "notes": "no averaging; zero-state windowed sum" },
+    { "python": "_peak_window (argmax +/- 20 UI, clamped)", "rust": "peak_window", "notes": "first argmax; [peak-20spu, peak+20spu+1) min-bound" },
+    { "python": "_shift_matrix (rolled columns)", "rust": "shift_matrix", "notes": "circular roll by (tap - precursor)*spu per column" }
+  ],
+  "not_ported": ["composite search loop (P5-04t, unchanged)", "candidate evaluation", "DFE/FFE stages"]
+}

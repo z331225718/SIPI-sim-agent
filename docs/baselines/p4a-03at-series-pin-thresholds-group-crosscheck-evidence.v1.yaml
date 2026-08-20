@@ -1,0 +1,49 @@
+schema: sipi.p4a-03at.series-pin-thresholds-group-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03at.series-pin-table-thresholds-group-v1.typed-group-thresholds
+matched_count: 3
+case_count: 3
+entries:
+- label: full_group_thresholds_record
+  matched: true
+  product:
+    cseries_farad: 1.0e-12
+    group_name: SERIES_GRP1
+    lseries_henry: 5.0e-09
+    policy: sipi.p4a-03at.series-pin-table-thresholds-group-v1.typed-group-thresholds
+    rseries_ohm: 50.0
+    valid: true
+    vthreshold_v: 1.2
+  reference:
+    valid: true
+    group_name: SERIES_GRP1
+    vthreshold_v: 1.2
+    rseries_ohm: 50.0
+    cseries_farad: 1.0e-12
+    lseries_henry: 5.0e-09
+- label: minimal_group_thresholds_record
+  matched: true
+  product:
+    cseries_farad: null
+    group_name: SERIES_GRP1
+    lseries_henry: null
+    policy: sipi.p4a-03at.series-pin-table-thresholds-group-v1.typed-group-thresholds
+    rseries_ohm: null
+    valid: true
+    vthreshold_v: null
+  reference:
+    valid: true
+    group_name: SERIES_GRP1
+    vthreshold_v: null
+    rseries_ohm: null
+    cseries_farad: null
+    lseries_henry: null
+- label: empty_group_name
+  matched: true
+  product:
+    lift_error: EmptyGroupName
+    policy: sipi.p4a-03at.series-pin-table-thresholds-group-v1.typed-group-thresholds
+    valid: false
+  reference:
+    valid: false
+    lift_error: EmptyGroupName

@@ -8,17 +8,23 @@ use std::{error::Error, fmt, num::NonZeroUsize};
 use rustfft::{FftPlanner, num_complex::Complex};
 use sipi_types::{Complex64, FiniteF64, Hertz, Ohms, Seconds};
 
+pub mod cdr_lock_v1;
 pub mod p3c_fixed_four_port_bench_v1;
 pub mod p3c_fixed_pole_rational_fit_v1;
 pub mod p3c_real_constrained_fixed_pole_fit_v1;
+pub use cdr_lock_v1::{
+    track_cdr_lock_v1, CdrLockConfigV1, CdrLockErrorV1, CdrLockSampleRecordV1,
+    CdrSampleClassificationV1, CdrLockStateV1, CdrLockTrackerV1, CdrLockTrackingV1,
+    CDR_LOCK_POLICY_V1,
+};
 pub use p3c_fixed_four_port_bench_v1::{
     FixedFourPortBenchError, FourPortS, SELECTED_P3C_PORT_COUNT, SelectedP3cFourPortSpectrumV1,
     SelectedP3cPortMapV1, SelectedP3cStaticDifferentialTransferV1,
     reduce_selected_p3c_fixed_four_port_bench_v1,
 };
 pub use p3c_fixed_pole_rational_fit_v1::{
-    FixedPoleRationalFitErrorV1, FixedPoleRationalFitMetricsV1,
-    SelectedP3cFixedPoleRationalFitV1, fit_selected_p3c_fixed_pole_rational_v1,
+    FixedPoleRationalFitErrorV1, FixedPoleRationalFitMetricsV1, SelectedP3cFixedPoleRationalFitV1,
+    fit_selected_p3c_fixed_pole_rational_v1,
 };
 pub use p3c_real_constrained_fixed_pole_fit_v1::{
     RealConstrainedFixedPoleFitErrorV1, RealConstrainedFixedPoleFitMetricsV1,

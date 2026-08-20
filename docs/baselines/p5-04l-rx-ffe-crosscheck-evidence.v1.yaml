@@ -1,0 +1,35 @@
+schema: sipi.p5-04l.rx-ffe-crosscheck-evidence.v1
+status: rx_ffe_crosscheck_matched
+oracle:
+  repo: agent-com
+  license: MIT
+  path: src/agent_com/equalization/rx_ffe.py
+  functions:
+  - apply_rx_ffe
+  - force_rx_ffe
+  numpy_version: 2.4.6
+tolerance: 1.0e-09
+tolerance_note: LU solve backends (LAPACK dgesv vs partial-pivot LU) are mathematically
+  equivalent but not bit-identical
+entries:
+- id: apply_wraparound
+  input_sha256: c5a98ac3cf3f64d8a77b6e6f598c65d19c5af296836443dcc7ec2aab17c583b4
+  matched: true
+  diffs: []
+- id: force_basic
+  input_sha256: 6f53faf2f25fc80d92cd3b4d6adabebe7ca1547821f6a14f2dc6e2c519251d85
+  matched: true
+  diffs: []
+- id: force_dfe_unity_step
+  input_sha256: a74afd82343112be742d44b3a478e90aaac4403f298629f81c377cd02e989fca
+  matched: true
+  diffs: []
+- id: force_no_filtered
+  input_sha256: ddbbbe8733bbf4fe64aa31a1bb938a70352e13e9c9b5170818f2f0f06a4f2b39
+  matched: true
+  diffs: []
+non_claims:
+- not_floating_rxffe
+- not_wiener_branch
+- not_search_integration
+- not_release_evidence

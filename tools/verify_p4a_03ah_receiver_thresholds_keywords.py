@@ -1,0 +1,87 @@
+# -*- coding: utf-8 -*-
+"""Fail closed on the P4A-03ah typed IBIS receiver thresholds block keywords core.
+
+Charter fixes the receiver thresholds keywords scope; cross-check evidence binds product
+lifting against an independent reference. Verifier binds charter, source map,
+evidence, Rust tokens, PLAN P4A-03ah.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+CHARTER = ROOT / "docs" / "baselines" / "p4a-03ah-receiver-thresholds-keywords-stage.v1.yaml"
+SOURCE_MAP = ROOT / "docs" / "baselines" / "p4a-03ah-mit-source-map.v1.yaml"
+EVIDENCE = ROOT / "docs" / "baselines" / "p4a-03ah-receiver-thresholds-keywords-crosscheck-evidence.v1.yaml"
+SOURCE = ROOT / "crates" / "sipi-ibis" / "src" / "receiver_thresholds_keywords_v1.rs"
+PLAN = ROOT / "PLAN.md"
+SCHEMA = "sipi.p4a-03ah.receiver-thresholds-keywords-stage.v1"
+POLICY = "sipi.p4a-03ah.receiver-thresholds-keywords-v1.typed-receiver-keywords"
+
+
+class ReceiverThresholdsKeywordsError(RuntimeError):
+    pass
+
+
+def load_yaml(path: Path) -> dict[str, Any]:
+    value = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ReceiverThresholdsKeywordsError("document_not_mapping")
+    return value
+
+
+def validate(root: Path = ROOT) -> dict[str, Any]:
+    charter = load_yaml(CHARTER)
+    if charter.get("schema") != SCHEMA or charter.get("status") != "receiver_thresholds_keywords_ported":
+        raise ReceiverThresholdsKeywordsError("charter_schema_or_status_invalid")
+    admission = charter.get("admission", {})
+    claimed = ("typed_receiver_thresholds_block", "sensitivity_threshold_validation",
+               "fail_closed_on_invalid_input")
+    if any(admission.get(k) is not True for k in claimed):
+        raise ReceiverThresholdsKeywordsError("delivered_admission_drift")
+    source_map = load_yaml(SOURCE_MAP)
+    if len(source_map.get("mapping", [])) != 3:
+        raise ReceiverThresholdsKeywordsError("source_map_mapping_drift")
+    source = SOURCE.read_text(encoding="utf-8")
+    required_tokens = (
+        "pub fn lift_receiver_thresholds_block_v1",
+        "pub struct TypedReceiverThresholdsBlockV1",
+        "ReceiverThresholdsKeywordsErrorV1",
+        POLICY,
+    )
+    if any(token not in source for token in required_tokens):
+        raise ReceiverThresholdsKeywordsError("implementation_binding_drift")
+    evidence = load_yaml(EVIDENCE)
+    if evidence.get("schema") != "sipi.p4a-03ah.receiver-thresholds-keywords-crosscheck-evidence.v1":
+        raise ReceiverThresholdsKeywordsError("evidence_schema_invalid")
+    if evidence.get("status") != "matched_hash_bound":
+        raise ReceiverThresholdsKeywordsError("evidence_status_drift")
+    if evidence.get("matched_count") != evidence.get("case_count") or evidence.get("case_count") != 3:
+        raise ReceiverThresholdsKeywordsError("evidence_entry_mismatch")
+    plan_text = PLAN.read_text(encoding="utf-8")
+    if "**P4A-03ah" not in plan_text:
+        raise ReceiverThresholdsKeywordsError("plan_row_missing")
+    return {"valid": True}
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.parse_args()
+    try:
+        result = validate(ROOT)
+        print(json.dumps({"schema": SCHEMA, "valid": True, **result}, sort_keys=True))
+        return 0
+    except ReceiverThresholdsKeywordsError as error:
+        print(json.dumps({"schema": SCHEMA, "valid": False, "reason": str(error)}, sort_keys=True), file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

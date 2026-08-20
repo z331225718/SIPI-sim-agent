@@ -16,8 +16,8 @@ use std::{
 use sha2::{Digest, Sha256};
 use sipi_artifacts::ArtifactRoot;
 use sipi_p3c::{
-    admit_selected_p3c_sealed_s4p_v2, SelectedP3cSealedS4pIdentityV2,
     SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1,
+    SelectedP3cSealedS4pIdentityV2, admit_selected_p3c_sealed_s4p_v2,
 };
 
 const SOURCE_ENV: &str = "SIPI_P3C_SEALED_S4P_EXTERNAL_SOURCE";
@@ -256,9 +256,24 @@ fn write_report(report: &Path, first: &RunFact, second: &RunFact) -> Result<(), 
     )
     .map_err(|error| format!("report_parent_create:{error}"))?;
     let row = |fact: &RunFact| {
-        format!("{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"impulse_sha256\":\"{}\",\"negative_energy_fraction_bits\":\"{:016x}\",\"negative_peak_fraction_bits\":\"{:016x}\",\"signed_peak_index\":{}}}", fact.manifest_sha256, fact.record_count, fact.impulse_sha256, fact.negative_energy_fraction_bits, fact.negative_peak_fraction_bits, fact.signed_peak_index)
+        format!(
+            "{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"impulse_sha256\":\"{}\",\"negative_energy_fraction_bits\":\"{:016x}\",\"negative_peak_fraction_bits\":\"{:016x}\",\"signed_peak_index\":{}}}",
+            fact.manifest_sha256,
+            fact.record_count,
+            fact.impulse_sha256,
+            fact.negative_energy_fraction_bits,
+            fact.negative_peak_fraction_bits,
+            fact.signed_peak_index
+        )
     };
-    let payload = format!("{{\"schema\":\"{}\",\"status\":\"observed\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"source_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n", SCHEMA, SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_SHA256_V1, row(first), row(second));
+    let payload = format!(
+        "{{\"schema\":\"{}\",\"status\":\"observed\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"source_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n",
+        SCHEMA,
+        SELECTED_P3C_S4P_BYTE_LENGTH_V1,
+        SELECTED_P3C_S4P_SHA256_V1,
+        row(first),
+        row(second)
+    );
     fs::write(report, payload).map_err(|error| format!("report_write:{error}"))
 }
 

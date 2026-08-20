@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4b-02b13.mit-source-map.v1",
+  "status": "parameter_tree_pruning_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_pruning_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "structural node/subtree pruning over AmiParameterTreeV1 hierarchy" },
+  "mapping": [
+    { "concept": "tree structural pruning", "rust": "prune_parameter_tree_v1", "notes": "removes node or sub-tree at path from parameter tree" },
+    { "concept": "root pruning check", "rust": "ParameterTreePruningErrorV1::CannotPruneRoot", "notes": "attempting to prune root node fails closed" },
+    { "concept": "root mismatch check", "rust": "ParameterTreePruningErrorV1::RootMismatch", "notes": "path with wrong root name fails closed" },
+    { "concept": "path not found check", "rust": "ParameterTreePruningErrorV1::PathNotFound", "notes": "missing child or leaf continuation fails closed" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

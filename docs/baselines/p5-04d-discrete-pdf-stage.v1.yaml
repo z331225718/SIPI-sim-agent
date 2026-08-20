@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-04d.discrete-pdf-stage.v1",
+  "status": "discrete_pdf_core_stage_ported_no_combination",
+  "purpose": "P5-04d discrete PDF core stage ported from the MIT agent-com source: normalized discrete PDF, normal_pdf generation, CDF/quantile, exact convolution. The combined noise PDF composition is a separate stage.",
+  "source_map_ref": "docs/baselines/p5-04d-mit-source-map.v1.yaml",
+  "admission": {
+    "combined_noise_pdf": false,
+    "sampled_signal_pdf": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_combined_noise_pdf", "not_sampled_signal_pdf", "not_profile_acceptance", "not_release_evidence"]
+}

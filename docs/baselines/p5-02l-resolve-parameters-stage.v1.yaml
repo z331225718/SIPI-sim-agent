@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p5-02l.resolve-parameters-stage.v1",
+  "status": "default_set_resolver_ported",
+  "purpose": "P5-02l COM default-expression set resolver: resolves a set of named default-rule expressions against a consumed parameter surface, reusing resolve_default_value_v1 (P5-02j/k). The result map can be merged into a typed COM parameter DTO via merge_com_parameters_v1 (P5-05e). Profile-agnostic.",
+  "source_map_ref": "docs/baselines/p5-02l-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p5-02j-default-resolution-stage.v1.yaml", "docs/baselines/p5-05e-com-parameters-stage.v1.yaml"],
+  "admission": {
+    "multi_key_resolution": true,
+    "reuse_default_resolver": true,
+    "set_level_error": true,
+    "profile_agnostic": true,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_consumption_semantics", "not_behavior_profile", "not_acceptance_evidence"]
+}

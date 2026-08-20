@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b52.mit-source-map.v1",
+  "status": "parameter_tree_token_remap_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_token_remap_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "value-token substitution over AmiParameterTreeV1 leaves" },
+  "mapping": [
+    { "concept": "token remap", "rust": "remap_parameter_tree_tokens_v1", "notes": "substitutes leaf value tokens per a caller map; names untouched; returns replacement count" },
+    { "concept": "remap outcome", "rust": "ParameterTreeTokenRemapV1", "notes": "holds replacements and the new tree" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

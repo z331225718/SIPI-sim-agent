@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b73.mit-source-map.v1",
+  "status": "parameter_profile_type_stats_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_type_stats_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "declared-type inventory over assembled parameter profile maps" },
+  "mapping": [
+    { "concept": "type stats", "rust": "compute_parameter_profile_type_stats_v1", "notes": "counts entries by declared type plus total, from validated parameter_type()" },
+    { "concept": "stats outcome", "rust": "ParameterProfileTypeStatsV1", "notes": "per-type counts with total() and sum-of-type-counts invariant" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

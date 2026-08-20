@@ -1,0 +1,14 @@
+{
+  "schema": "sipi.p5-04o.receiver-noise-stage.v1",
+  "status": "receiver_noise_stage_ported",
+  "purpose": "P5-04o receiver noise stage ported from the MIT agent-com source: the Bessel-Thomson / Butterworth / raised-cosine (Tukey) frequency filters, the RxFFE frequency response (arange-minus-precursor offsets), and the _receiver_noise integration (eta_0 magnitude-squared sum from the second frequency point plus optional AC_CM_RMS common-mode components with searchsorted-right ACCM band). The crosstalk-noise integration, candidate evaluation, and the search loop remain separate scopes.",
+  "source_map_ref": "docs/baselines/p5-04o-mit-source-map.v1.yaml",
+  "admission": {
+    "crosstalk_noise": false,
+    "candidate_evaluation": false,
+    "search_loop": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_crosstalk_noise", "not_candidate_evaluation", "not_search_loop", "not_profile_acceptance", "not_release_evidence"]
+}

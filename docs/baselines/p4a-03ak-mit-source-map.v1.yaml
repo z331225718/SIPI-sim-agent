@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4a-03ak.mit-source-map.v1",
+  "status": "bus_label_keywords_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis bus_label_keywords_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Bus Label] complete block required keywords" },
+  "mapping": [
+    { "concept": "typed [Bus Label] block header", "rust": "TypedBusLabelBlockV1", "notes": "composite bus_label_declaration" },
+    { "concept": "bus_label_declaration access", "rust": "TypedBusLabelBlockV1::bus_label_declaration", "notes": "embedded TypedBusLabelDeclarationV1" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "bus simulation or bus-level timing analysis",
+    "release certification"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b48.mit-source-map.v1",
+  "status": "parameter_profile_merge_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_merge_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "conflict-free by-name merge of assembled parameter maps" },
+  "mapping": [
+    { "concept": "profile merge", "rust": "merge_parameter_profiles_v1", "notes": "merges two parameter maps; identical overlaps matched, different same-name entries fail closed" },
+    { "concept": "merge outcome", "rust": "ParameterProfileMergeV1", "notes": "holds matched count and the merged parameter map" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

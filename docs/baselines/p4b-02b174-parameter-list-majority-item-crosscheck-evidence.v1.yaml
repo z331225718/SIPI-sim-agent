@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b174-parameter-list-majority-item-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b174.parameter-list-majority-item-v1.majority-item
+matched_count: 4
+case_count: 4
+entries:
+- label: has_majority
+  matched: true
+  product:
+    item: b
+    policy: sipi.p4b-02b174.parameter-list-majority-item-v1.majority-item
+    valid: true
+  reference:
+    valid: true
+    item: b
+- label: tie_no_majority
+  matched: true
+  product:
+    error: NoMajority
+    policy: sipi.p4b-02b174.parameter-list-majority-item-v1.majority-item
+    valid: false
+  reference:
+    valid: false
+    error: NoMajority
+- label: all_distinct
+  matched: true
+  product:
+    error: NoMajority
+    policy: sipi.p4b-02b174.parameter-list-majority-item-v1.majority-item
+    valid: false
+  reference:
+    valid: false
+    error: NoMajority
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b174.parameter-list-majority-item-v1.majority-item
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

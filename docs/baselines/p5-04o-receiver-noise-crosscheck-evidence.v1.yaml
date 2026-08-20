@@ -1,0 +1,58 @@
+schema: sipi.p5-04o.receiver-noise-crosscheck-evidence.v1
+status: receiver_noise_crosscheck_matched
+oracle:
+  repo: agent-com
+  license: MIT
+  paths:
+  - src/agent_com/signal/filters.py
+  - src/agent_com/equalization/search.py
+  functions:
+  - bessel_thomson_filter
+  - butterworth_filter
+  - raised_cosine_filter
+  - _rx_ffe_frequency_response
+  - _receiver_noise
+  numpy_version: 2.4.6
+tolerance: 1.0e-09
+entries:
+- id: bessel_o3_on
+  input_sha256: ed15ad15de2155ae36f876b3dfaee37d3b871dedef7ac23dd703d0a5eb39f7c4
+  matched: true
+  diffs: []
+- id: bessel_o5_on
+  input_sha256: e4a893ed0f000d433e67ff8b3821ba26027b6cd318810b8c37efc982c0cd2099
+  matched: true
+  diffs: []
+- id: bessel_off
+  input_sha256: 5dc571ce31ca9effa5eedaed3f1ae3c64710c15a142e1889711fe3c303d920a0
+  matched: true
+  diffs: []
+- id: butterworth_on
+  input_sha256: b9110702665306f5a6ab98b261078dfcd465325b8dfd36bbf86a93a024a6d581
+  matched: true
+  diffs: []
+- id: raised_cosine_on
+  input_sha256: 5e75578902bd7b0a81232c22f4bdb60a1e1587c64be7e44d5afc0a93f68a3723
+  matched: true
+  diffs: []
+- id: rxffe_fd
+  input_sha256: b38c8b2f682dc75e189cd68a4a07436281b8c7d103d233c79268569870dc0515
+  matched: true
+  diffs: []
+- id: receiver_eta0_only
+  input_sha256: 71fa3c0d6afc0527a7a2f1c05836f99593f80a295982134a32b39f4c0f41c899
+  matched: true
+  diffs: []
+- id: receiver_eta0_rxffe
+  input_sha256: 69c768c4266340d9e46b78bdbbb23a393d0675e6e54fbd79a200bdf13baa81a2
+  matched: true
+  diffs: []
+- id: receiver_accm
+  input_sha256: 8c95fe74f66cab0542f73e487b3321bdef758db233eaa674335682b83bc5d076
+  matched: true
+  diffs: []
+non_claims:
+- not_crosstalk_noise
+- not_candidate_evaluation
+- not_search_loop
+- not_release_evidence

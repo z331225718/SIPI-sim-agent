@@ -1,0 +1,35 @@
+{
+  "schema": "sipi.p7-08.retirement-approval-record.v1",
+  "status": "approved",
+  "approval_state": "owner_approved",
+  "approved_by": "owner",
+  "approved_at_utc": "2026-08-16T07:10:49Z",
+  "purpose": "Owner decision artifact for P7-08 retirement approval. Signed by the owner via interactive session instruction on 2026-08-16: the path-scoped replacement map and same-batch drift-gate retirement strategy are approved as the retirement plan. This approval grants retirement approval ONLY; it is not a release approval, not a license clearance, not a fresh-machine certification, not a profile acceptance, and not a drift-gate removal. No path is deleted and no drift gate is removed by this record; deletion and gate removal remain gated by the mandatory pre-deletion gates.",
+  "evidence_bindings": {
+    "replacement_map": {
+      "path": "docs/baselines/p7-08-path-scoped-replacement-map.v1.yaml",
+      "sha256": "5F31233AE030E0CF87EF57EFD9E5D90C6A85E845CAF941C6786F3E30AD70523B"
+    },
+    "drift_gate_strategy": {
+      "path": "docs/baselines/p7-08-drift-gate-retirement-strategy.v1.yaml",
+      "sha256": "BFC7B3D58ED8867FD51F016BD474D457D9216BA41846462B25A9812AB5711A8A"
+    }
+  },
+  "approval_scope": {
+    "subject": "P7-08 legacy retirement approval",
+    "non_claims": [
+      "not_a_release_approval",
+      "not_a_license_clearance",
+      "not_a_fresh_machine_certification",
+      "not_a_profile_acceptance",
+      "not_a_drift_gate_removal"
+    ]
+  },
+  "effective_gates": {
+    "owner_retirement_approval": "filled_by_this_record",
+    "required_profile_accepted": "still_pending",
+    "same_batch_drift_gate_removal": "still_pending",
+    "release_license_fresh_machine_gates": "still_pending",
+    "per_path_replacement_mapping": "provided_by_bound_evidence"
+  }
+}

@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b153-parameter-list-contains-multiset-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b153.parameter-list-contains-multiset-v1.multiset-containment
+matched_count: 4
+case_count: 4
+entries:
+- label: sub_multiset
+  matched: true
+  product:
+    contains: true
+    policy: sipi.p4b-02b153.parameter-list-contains-multiset-v1.multiset-containment
+    valid: true
+  reference:
+    valid: true
+    contains: true
+- label: count_exceeded
+  matched: true
+  product:
+    contains: false
+    policy: sipi.p4b-02b153.parameter-list-contains-multiset-v1.multiset-containment
+    valid: true
+  reference:
+    valid: true
+    contains: false
+- label: missing_item
+  matched: true
+  product:
+    contains: false
+    policy: sipi.p4b-02b153.parameter-list-contains-multiset-v1.multiset-containment
+    valid: true
+  reference:
+    valid: true
+    contains: false
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b153.parameter-list-contains-multiset-v1.multiset-containment
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

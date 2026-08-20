@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p5-04x.search-helpers-verification.v1",
+  "status": "search_loop_helpers_crosschecked",
+  "purpose": "P5-04x explicit cross-check of the pure-numeric search-loop helpers that feed the composite non-MMSE loop (P5-04t): rectangular_pulse_response_v1 (zero-state running sum over a samples_per_ui window, no averaging), peak_window (argmax +/- 20 UI clamp), and shift_matrix (column-stacked rolled pulse). These were previously verified only implicitly through the composite bit-exact fom check; this slice binds them explicitly against independent references.",
+  "base_slice_ref": "docs/baselines/audits/2026-08-16-p5-04t-search-loop.md (P5-04t)",
+  "source_map_ref": "docs/baselines/p5-04x-mit-source-map.v1.yaml",
+  "admission": {
+    "rectangular_pulse_running_sum": true,
+    "peak_window_clamp": true,
+    "shift_matrix_roll": true,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_composite_search_rerun", "not_behavior_profile", "not_acceptance_evidence"]
+}

@@ -1,0 +1,14 @@
+{
+  "schema": "sipi.p5-04a.network-ingest.v1",
+  "status": "network_ingest_mixed_mode_ported_no_computation",
+  "purpose": "P5-04a network-ingest stage slice: mixed-mode S-parameter transform ported from the MIT agent-com source with explicit source mapping. Transform only: no file reading, no port-order application, no COM metric computation.",
+  "source_map_ref": "docs/baselines/p5-04a-mit-source-map.v1.yaml",
+  "admission": {
+    "file_reading": false,
+    "port_order_application": false,
+    "com_metric_computation": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_port_order_application", "not_touchstone_reading", "not_com_metric_computation", "not_profile_acceptance", "not_release_evidence"]
+}

@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03an.mit-source-map.v1",
+  "status": "series_pin_table_group_switch_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis series_pin_mapping_table_group_switch_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Series Pin Mapping] group switch association header and records" },
+  "mapping": [
+    { "concept": "typed [Series Pin Mapping] group switch record", "rust": "TypedSeriesPinGroupSwitchRecordV1", "notes": "validated ASCII group_name, on_group_name, off_group_name, and optional function_table_group" },
+    { "concept": "identical state groups check", "rust": "SeriesPinTableGroupSwitchErrorV1::IdenticalStateGroups", "notes": "identical ON/OFF state groups fail closed" },
+    { "concept": "empty group name validation", "rust": "SeriesPinTableGroupSwitchErrorV1::EmptyGroupName", "notes": "empty group name fails closed" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "series switch circuit simulation",
+    "release certification"
+  ]
+}

@@ -1,0 +1,43 @@
+schema: sipi.p4a-03l.submodel-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03l.submodel-declaration-v1.typed-submodel
+matched_count: 3
+case_count: 3
+entries:
+- label: submodel_declaration
+  matched: true
+  product:
+    kind: submodel
+    mode: Driving
+    policy: sipi.p4a-03l.submodel-declaration-v1.typed-submodel
+    submodel_name: SUB_CLAMP
+    submodel_type: Dynamic_clamp
+    valid: true
+  reference:
+    valid: true
+    kind: submodel
+    submodel_name: SUB_CLAMP
+    submodel_type: Dynamic_clamp
+    mode: Driving
+- label: add_submodel
+  matched: true
+  product:
+    kind: add_submodel
+    mode: Non-Driving
+    policy: sipi.p4a-03l.submodel-declaration-v1.typed-submodel
+    submodel_name: SUB_HOLD
+    valid: true
+  reference:
+    valid: true
+    kind: add_submodel
+    submodel_name: SUB_HOLD
+    mode: Non-Driving
+- label: unknown_submodel_type
+  matched: true
+  product:
+    lift_error: UnknownSubmodelType("UnknownType")
+    policy: sipi.p4a-03l.submodel-declaration-v1.typed-submodel
+    valid: false
+  reference:
+    valid: false
+    lift_error: UnknownSubmodelType("UnknownType")

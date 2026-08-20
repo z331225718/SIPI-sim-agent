@@ -1,0 +1,49 @@
+schema: sipi.p4a-03k.series-switch-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03k.series-switch-groups-v1.typed-switch-groups
+matched_count: 3
+case_count: 3
+entries:
+- label: full_switch_group
+  matched: true
+  product:
+    group_name: GROUP_1
+    off_state_models:
+    - R_OFF_10K
+    on_state_models:
+    - R_ON_50
+    - C_ON_1P
+    policy: sipi.p4a-03k.series-switch-groups-v1.typed-switch-groups
+    valid: true
+  reference:
+    valid: true
+    group_name: GROUP_1
+    on_state_models:
+    - R_ON_50
+    - C_ON_1P
+    off_state_models:
+    - R_OFF_10K
+- label: on_only_switch_group
+  matched: true
+  product:
+    group_name: GROUP_ON
+    off_state_models: []
+    on_state_models:
+    - SW_ON
+    policy: sipi.p4a-03k.series-switch-groups-v1.typed-switch-groups
+    valid: true
+  reference:
+    valid: true
+    group_name: GROUP_ON
+    on_state_models:
+    - SW_ON
+    off_state_models: []
+- label: empty_state_models
+  matched: true
+  product:
+    lift_error: EmptyStateModels
+    policy: sipi.p4a-03k.series-switch-groups-v1.typed-switch-groups
+    valid: false
+  reference:
+    valid: false
+    lift_error: EmptyStateModels

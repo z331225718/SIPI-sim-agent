@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b22.mit-source-map.v1",
+  "status": "parameter_tree_diff_summary_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_diff_summary_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "structured textual summary report generation over TreeDiffEntryV1 and AmiParameterTreeDiffStatsV1" },
+  "mapping": [
+    { "concept": "diff summary report generation", "rust": "generate_parameter_tree_diff_summary_v1", "notes": "builds AmiParameterTreeDiffSummaryReportV1" },
+    { "concept": "summary report structure", "rust": "AmiParameterTreeDiffSummaryReportV1", "notes": "holds stats and formatted summary_text" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

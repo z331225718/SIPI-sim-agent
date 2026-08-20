@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b99.mit-source-map.v1",
+  "status": "parameter_list_replace_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_replace_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "indexed list item replacement over validated AMI parameter values" },
+  "mapping": [
+    { "concept": "list item replace", "rust": "replace_parameter_list_item_v1", "notes": "replaces the trimmed item at a 0-based index and rejoins with ", "" },
+    { "concept": "replace errors", "rust": "ParameterListReplaceErrorV1", "notes": "NotAList, defensive MalformedList, IndexOutOfRange with index and item count" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

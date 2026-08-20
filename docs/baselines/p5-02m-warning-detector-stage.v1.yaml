@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p5-02m.warning-detector-stage.v1",
+  "status": "deterministic_warning_detector_ported",
+  "purpose": "P5-02m deterministic R480-class warning detector core: product-side, mechanically-detectable warnings that mirror the observed R480 warning classes (P5-02i) WITHOUT the MATLAB oracle - (1) anti-causal response detection from pre-cursor energy fraction, and (2) high-frequency non-decay (extrapolation-risk) detection. Deterministic, profile-agnostic, fail-closed. NOT the full warning contract (which needs the oracle golden); this is the deterministic subset the product asserts independently.",
+  "source_map_ref": "docs/baselines/p5-02m-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p5-r480-warning-observation.v1.yaml"],
+  "admission": {
+    "anti_causal_precursor_fraction": true,
+    "high_freq_non_decay": true,
+    "deterministic_no_oracle": true,
+    "full_warning_contract": false,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_full_warning_contract", "not_oracle_golden", "not_acceptance_evidence"]
+}

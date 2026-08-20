@@ -1,0 +1,35 @@
+schema: sipi.p4a-03p.series-switch-mapping-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03p.series-switch-mapping-v1.typed-table
+matched_count: 3
+case_count: 3
+entries:
+- label: valid_record
+  matched: true
+  product:
+    off_group_name: GROUP_OFF_1
+    on_group_name: GROUP_ON_1
+    policy: sipi.p4a-03p.series-switch-mapping-v1.typed-table
+    valid: true
+  reference:
+    valid: true
+    on_group_name: GROUP_ON_1
+    off_group_name: GROUP_OFF_1
+- label: empty_group_name
+  matched: true
+  product:
+    lift_error: EmptyGroupName
+    policy: sipi.p4a-03p.series-switch-mapping-v1.typed-table
+    valid: false
+  reference:
+    valid: false
+    lift_error: EmptyGroupName
+- label: identical_groups
+  matched: true
+  product:
+    lift_error: IdenticalGroups
+    policy: sipi.p4a-03p.series-switch-mapping-v1.typed-table
+    valid: false
+  reference:
+    valid: false
+    lift_error: IdenticalGroups

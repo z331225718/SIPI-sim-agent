@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b114.mit-source-map.v1",
+  "status": "parameter_list_split_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_split_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "split-at-index partitioning over validated AMI parameter list values" },
+  "mapping": [
+    { "concept": "split at index", "rust": "split_parameter_list_at_index_v1", "notes": "returns canonical token pair for [0, index) and [index, item_count)" },
+    { "concept": "split errors", "rust": "ParameterListSplitErrorV1", "notes": "NotAList for non-List types, defensive MalformedList, IndexOutOfRange carrying requested index" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

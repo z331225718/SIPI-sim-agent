@@ -1,0 +1,19 @@
+{
+  "schema": "sipi.p3c-04x.c4-profile-stage.v1",
+  "status": "c4_metric_profile_ported",
+  "purpose": "P3C-03 C4 owner metric-profile definition core: freezes the owner-decided COM metric profile (owner-decision-checklist C4: COM_dB / ICN_mV / ERL, relative tolerance < 1%) as a named configuration consumable by the P3C-03c compare engine. The per-metric reference values are not hard-coded (the owner supplied the metric set and tolerance, not references); they are caller-supplied at compare time and must be finite. Fail-closed: a missing, unknown, or non-finite reference for any of the three metrics is a hard error; no value is guessed. This unlocks the C4 fail-closed status toward a concrete profile definition while keeping the compare reference oracle-driven (B4).",
+  "source_map_ref": "docs/baselines/p3c-04x-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p3c-03c-metric-compare-stage.v1.yaml", "docs/baselines/p3c-03-profile-compare-decision-preflight.v1.yaml"],
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (C4: COM_dB / ICN_mV / ERL, < 1%)",
+  "admission": {
+    "c4_metric_set": true,
+    "one_percent_relative_tolerance": true,
+    "reference_caller_supplied": true,
+    "missing_nonfinite_reference_fail_closed": true,
+    "compare_engine_compatible": true,
+    "reference_from_oracle": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_a_reference_value_choice", "not_com_parity", "not_oracle_invocation", "not_acceptance_evidence"]
+}

@@ -1,0 +1,1344 @@
+schema: sipi.p5-02.canonical-parameter-json.v1
+status: canonical_parameter_json_v1_literals_and_reference_chains
+draft_ref: docs/baselines/p5-r480-canonical-parameter-json-draft.v1.yaml
+source_sha256: 642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad
+key_count: 214
+resolved_default_calls: 7
+needs_oracle_calls: 23
+keys:
+  A_DD:
+    occurrences: 1
+    defaults:
+    - kind: none
+      required: absent
+  A_fe:
+    occurrences: 2
+    defaults:
+    - kind: literal
+      value: '0.5'
+      required: 'true'
+    - kind: none
+      required: 'true'
+  A_ft:
+    occurrences: 1
+    defaults:
+    - kind: resolved_reference
+      value: '0.5'
+      chain:
+      - A_fe
+      expression: param.a_fext
+      required: 'true'
+  A_ne:
+    occurrences: 2
+    defaults:
+    - kind: literal
+      value: '0.5'
+      required: 'true'
+    - kind: none
+      required: 'true'
+  A_nt:
+    occurrences: 1
+    defaults:
+    - kind: resolved_reference
+      value: '0.5'
+      chain:
+      - A_ne
+      expression: param.a_next
+      required: 'true'
+  A_v:
+    occurrences: 2
+    defaults:
+    - kind: literal
+      value: '0.5'
+      required: 'true'
+    - kind: none
+      required: 'true'
+  AC_CM_RMS:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  ACCM_MAX_Freq:
+    occurrences: 1
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: param.fb
+      required: 'true'
+  AUTO_TFX:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  B_float_RSS_MAX:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  BBN Q factor:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '5'
+      required: 'false'
+  Bessel_Thomson:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  beta_x:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  bmaxg:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0.2'
+      required: 'true'
+  board_tl_gamma0_a1_a2:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '[0 4.114e-4 2.547e-4]'
+      required: 'true'
+  board_tl_tau:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '6.191e-3'
+      required: 'true'
+  board_Z_c:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '109.8'
+      required: 'true'
+  BREAD_CRUMBS:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  BREAD_CRUMBS_FIELDS:
+    occurrences: 1
+    defaults:
+    - kind: string_literal
+      required: 'false'
+      expression: ''''''
+  BTorder:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '4'
+      required: 'false'
+  Butterworth:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'false'
+  C_0:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  C_1:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  C_b:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  C_d:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  C_p:
+    occurrences: 2
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+    - kind: none
+      required: 'true'
+  C_v:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  CDR:
+    occurrences: 1
+    defaults:
+    - kind: string_literal
+      required: 'false'
+      expression: '''MM'''
+  COM Pass threshold:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  COM_CONTRIBUTION:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  COMPUTE_RILN:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  COMPUTE_TDILN:
+    occurrences: 1
+    defaults:
+    - kind: resolved_reference
+      value: '0'
+      chain:
+      - COMPUTE_RILN
+      expression: OP.COMPUTE_RILN
+      required: 'false'
+  crusor_gain:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  CSV_REPORT:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'true'
+      required: 'false'
+  CTLE_type:
+    occurrences: 1
+    defaults:
+    - kind: string_literal
+      required: 'false'
+      expression: '''CL93'''
+  D_p:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '4'
+      required: 'true'
+  Delta_f:
+    occurrences: 1
+    defaults:
+    - kind: none
+      required: absent
+  delta_IL:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'false'
+  DER_0:
+    occurrences: 1
+    defaults:
+    - kind: none
+      required: absent
+  DER_CDR:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 1e-2
+      required: 'true'
+  DIAGNOSTICS:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  Display frequency domain:
+    occurrences: 1
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: OP.GET_FD
+      required: 'false'
+  DISPLAY_WINDOW:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'true'
+      required: 'false'
+  Do_Colored_Noise:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'false'
+  Do_White_Noise:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  Do_XT_Noise:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'false'
+  Dynamic TXFFE:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'false'
+  EH_max:
+    occurrences: 1
+    defaults:
+    - kind: inf_literal
+      required: 'true'
+      expression: inf
+  EH_min:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  EH_min_test:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  Enforce Causality:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  Enforce Causality DIFF_TOL:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 1e-3
+      required: 'false'
+  Enforce Causality pulse start tolerance:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0.01'
+      required: 'false'
+  Enforce Causality REL_TOL:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 1e-2
+      required: 'false'
+  ERL:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  ERL Pass threshold:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  ERL_FOM:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'false'
+  ERL_ONLY:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  Error propagation COM margin:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  eta_0:
+    occurrences: 1
+    defaults:
+    - kind: none
+      required: absent
+  EW:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  EXE_MODE:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'false'
+  exit if deployed:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  f_1:
+    occurrences: 1
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: param.max_start_freq/1e9
+      required: 'true'
+  f_2:
+    occurrences: 1
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: param.fb/1e9
+      required: 'true'
+  f_b:
+    occurrences: 1
+    defaults:
+    - kind: none
+      required: absent
+  f_f:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '4'
+      required: 'true'
+  f_hp:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  f_HP_P:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '[]'
+      required: 'true'
+  f_HP_PZ:
+    occurrences: 2
+    defaults:
+    - kind: literal
+      value: '[]'
+      required: 'true'
+    - kind: literal
+      value: '[]'
+      required: 'true'
+  f_HP_Z:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '[]'
+      required: 'true'
+  f_min:
+    occurrences: 1
+    defaults:
+    - kind: none
+      required: absent
+  f_n:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '4'
+      required: 'true'
+  f_p1:
+    occurrences: 2
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: param.fb/4
+      required: 'true'
+    - kind: needs_matlab_oracle
+      expression: param.fb/4
+      required: 'true'
+  f_p2:
+    occurrences: 2
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: param.fb
+      required: 'true'
+    - kind: needs_matlab_oracle
+      expression: param.fb
+      required: 'true'
+  f_r:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '4'
+      required: 'true'
+  f_v:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '4'
+      required: 'true'
+  f_z:
+    occurrences: 2
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: param.fb/4
+      required: 'true'
+    - kind: needs_matlab_oracle
+      expression: param.fb/4
+      required: 'true'
+  ffe_backoff:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  ffe_main_cursor_min:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'true'
+  FFE_OPT_METHOD:
+    occurrences: 1
+    defaults:
+    - kind: string_literal
+      required: 'false'
+      expression: '''MMSE'''
+  ffe_post_tap1_max:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '.7'
+      required: 'true'
+  ffe_post_tap_len:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  ffe_pre_tap1_max:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '.7'
+      required: 'true'
+  ffe_pre_tap_len:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  FFE_SNR:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'false'
+  ffe_tap_step_size:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  ffe_tapn_max:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '.7'
+      required: 'true'
+  fixture delay time:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '-1'
+      required: 'true'
+  flip:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  FloatingDFE_Development:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'false'
+  Force BBN Q factor:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  Force PDF bin size:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  FORCE_TR:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  fraction_of_F_range_start_extrap_from:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0.75'
+      required: 'true'
+  FT_COOP:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  G2_Qual:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '[]'
+      required: 'true'
+  g_DC:
+    occurrences: 2
+    defaults:
+    - kind: none
+      required: 'true'
+    - kind: none
+      required: 'true'
+  g_DC_HP:
+    occurrences: 2
+    defaults:
+    - kind: literal
+      value: '[]'
+      required: 'true'
+    - kind: literal
+      value: '[]'
+      required: 'true'
+  G_Qual:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '[]'
+      required: 'true'
+  GDC_MIN:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  Grr:
+    occurrences: 1
+    defaults:
+    - kind: resolved_reference
+      value: '1'
+      chain:
+      - Grr_limit
+      expression: param.Grr_limit
+      required: 'false'
+  Grr_limit:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'false'
+  Gx:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  Histogram_Window_Weight:
+    occurrences: 1
+    defaults:
+    - kind: string_literal
+      required: 'false'
+      expression: '''rectangle'''
+  IDEAL_RX_TERM:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  IDEAL_TX_TERM:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  imb_C_fctr:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'true'
+  imb_Z_fctr:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'true'
+  Impulse response truncatio threshold:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 1e-3
+      required: 'false'
+  Impulse response truncation threshold:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 1e-3
+      required: 'false'
+  INC_PACKAGE:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'true'
+      required: 'false'
+  inc_reflect_board:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  Include PCB:
+    occurrences: 1
+    defaults:
+    - kind: none
+      required: 'false'
+  INCLUDE_CTLE:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'false'
+  INCLUDE_TX_RX_FILTER:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'false'
+  kappa1:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'true'
+  kappa2:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'true'
+  L:
+    occurrences: 1
+    defaults:
+    - kind: none
+      required: absent
+  L_s:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  LIMIT_JITTER_CONTRIB_TO_DFE_SPAN:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  Local Search:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  M:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '32'
+      required: absent
+  Max burst length calculated:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  Min_VEO_Test:
+    occurrences: 1
+    defaults:
+    - kind: resolved_reference
+      value: '0'
+      chain:
+      - EH_min_test
+      expression: param.Min_VEO_Test
+      required: 'true'
+  MLSD:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  MLSE:
+    occurrences: 1
+    defaults:
+    - kind: resolved_reference
+      value: '0'
+      chain:
+      - MLSD
+      expression: OP.MLSD
+      required: 'false'
+  N:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  N_b:
+    occurrences: 1
+    defaults:
+    - kind: none
+      required: absent
+  N_b_step:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  N_bf:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '6'
+      required: 'true'
+  N_bg:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  N_bmax:
+    occurrences: 1
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: param.ndfe
+      required: 'true'
+  N_bx:
+    occurrences: 1
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: param.ndfe
+      required: 'true'
+  N_f:
+    occurrences: 2
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: param.ndfe
+      required: 'true'
+    - kind: needs_matlab_oracle
+      expression: param.ndfe
+      required: 'true'
+  N_qb:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  N_tail_start:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  N_tc:
+    occurrences: 1
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: param.trunc
+      required: 'true'
+  N_v:
+    occurrences: 1
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: param.ndfe
+      required: 'true'
+  Noise_Crest_Factor:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  num_ui_RXFF_noise:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '2048'
+      required: 'true'
+  Optimize_loop_speed_up:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  P_qc:
+    occurrences: 1
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: 2*param.specBER
+      required: 'true'
+  package_tl_gamma0_a1_a2:
+    occurrences: 2
+    defaults:
+    - kind: literal
+      value: '[0 1.734e-3 1.455e-4]'
+      required: 'true'
+    - kind: literal
+      value: '[0 1.734e-3 1.455e-4]'
+      required: 'true'
+  package_tl_tau:
+    occurrences: 2
+    defaults:
+    - kind: literal
+      value: '6.141e-3'
+      required: 'true'
+    - kind: literal
+      value: '6.141e-3'
+      required: 'true'
+  package_Z_c:
+    occurrences: 2
+    defaults:
+    - kind: string_literal
+      required: 'true'
+      expression: '''[92 92 ; 70 70; 80 80; 100 100]'''
+    - kind: literal
+      value: '78.2'
+      required: 'true'
+  PDF bin size:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 1e-5
+      required: 'false'
+  PHY:
+    occurrences: 1
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: OP.PMD_type
+      required: 'false'
+  PKG_NAME:
+    occurrences: 1
+    defaults:
+    - kind: string_literal
+      required: 'false'
+      expression: ''''''
+  PKG_Tx_FFE_preset:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  PLOT_CM:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  PMD_type:
+    occurrences: 1
+    defaults:
+    - kind: string_literal
+      required: 'false'
+      expression: '''C2C'''
+  Port Order:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '[1 3 2 4]'
+      required: 'true'
+  Q:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  Q_budget_adj:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  QL:
+    occurrences: 1
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: param.T_O/param.Qr/1000
+      required: 'true'
+  Qr:
+    occurrences: 1
+    defaults:
+    - kind: resolved_reference
+      value: '.020'
+      chain:
+      - sigma_r
+      expression: param.sigma_r
+      required: 'true'
+  R_0:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '50'
+      required: absent
+  R_d:
+    occurrences: 2
+    defaults:
+    - kind: literal
+      value: '[50,50]'
+      required: 'true'
+    - kind: none
+      required: 'true'
+  R_LM:
+    occurrences: 1
+    defaults:
+    - kind: none
+      required: absent
+  Raised_Cosine:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  RC_end:
+    occurrences: 1
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: param.fb*param.f_r
+      required: 'false'
+  RC_Start:
+    occurrences: 1
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: param.fb/2
+      required: 'false'
+  RESULT_DIR:
+    occurrences: 1
+    defaults:
+    - kind: none
+      required: absent
+  rho_x:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '.618'
+      required: 'false'
+  RUNTAG:
+    occurrences: 1
+    defaults:
+    - kind: string_literal
+      required: 'false'
+      expression: ''''''
+  RX_CALIBRATION:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  RXFFE FLOAT CTL:
+    occurrences: 1
+    defaults:
+    - kind: string_literal
+      required: 'false'
+      expression: '''FOM'''
+  RXFFE TAP CONSTRAINT:
+    occurrences: 1
+    defaults:
+    - kind: string_literal
+      required: 'false'
+      expression: '''Unity Cursor'''
+  Rxnskew:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  Rxpskew:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  S-parameter magnitude extrapolation policy:
+    occurrences: 1
+    defaults:
+    - kind: string_literal
+      required: 'false'
+      expression: '''linear_trend_to_DC'''
+  S-parameter phase extrapolation policy:
+    occurrences: 1
+    defaults:
+    - kind: string_literal
+      required: 'false'
+      expression: '''extrap_cubic_to_dc_linear_to_inf'''
+  sample_adjustment:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '[0 0]'
+      required: 'true'
+  samples_for_C2M:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '100'
+      required: 'true'
+  SAVE_CONFIG2MAT:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  SAVE_FIGURE_to_CSV:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  SAVE_FIGURES:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  SAVE_KEYWORD_FILE:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  SAVE_TD:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  SHOW_BRD:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  Sigma BBN step:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 5e-3
+      required: 'false'
+  sigma_r:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '.020'
+      required: 'true'
+  sigma_RJ:
+    occurrences: 1
+    defaults:
+    - kind: none
+      required: absent
+  skew_ps:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  SNR_TX:
+    occurrences: 1
+    defaults:
+    - kind: none
+      required: 'true'
+  SNR_TXwC0:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  T_h:
+    occurrences: 1
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: param.T_O
+      required: 'true'
+  T_k:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '.6'
+      required: 'false'
+  T_O:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  T_r:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 8e-3
+      required: 'true'
+  T_r_filter_type:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  T_r_meas_point:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  TDECQ:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  TDMODE:
+    occurrences: 1
+    defaults:
+    - kind: needs_matlab_oracle
+      expression: OP.TDMODE
+      required: 'false'
+  TDR:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  TDR_Butterworth:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'true'
+      required: 'false'
+  TDR_duration:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '5'
+      required: 'false'
+  TDR_f_BT_3db:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0.4730'
+      required: 'true'
+  TDR_W_TXPKG:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  TIME_AXIS:
+    occurrences: 1
+    defaults:
+    - kind: string_literal
+      required: 'false'
+      expression: '''UI'''
+  TR_TDR:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 8e-3
+      required: 'true'
+  trunc:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '128'
+      required: 'true'
+  ts_anchor:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  TS_SRCH_MODE:
+    occurrences: 1
+    defaults:
+    - kind: string_literal
+      required: 'false'
+      expression: '''full-sweep'''
+  Tukey_Window:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  Txnskew:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  Txpskew:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'true'
+  Use simple error propagation model:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  USE_ETA0_PSD:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  VEC Pass threshold:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '0'
+      required: 'false'
+  WC_PORTZ:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: 'false'
+      required: 'false'
+  z_p select:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '1'
+      required: 'true'
+  Z_t:
+    occurrences: 1
+    defaults:
+    - kind: literal
+      value: '50'
+      required: 'true'
+non_claims:
+- not_arithmetic_evaluation
+- not_warning_contract
+- not_parameter_design
+- not_compute_parity
+- not_release_evidence

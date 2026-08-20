@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b40.mit-source-map.v1",
+  "status": "parameter_tree_leaf_search_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_search_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "exact value-token search over AmiParameterTreeV1 returning canonical leaf paths" },
+  "mapping": [
+    { "concept": "leaf token search", "rust": "find_parameter_tree_leaves_by_token_v1", "notes": "returns canonical paths of leaves whose value tokens contain an exact token, in canonical traversal order" },
+    { "concept": "search errors", "rust": "ParameterTreeSearchErrorV1", "notes": "EmptyToken fail-closed variant" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

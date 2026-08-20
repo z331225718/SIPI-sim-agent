@@ -1,0 +1,40 @@
+schema: sipi.p5-07.negative-fixture-evidence.v1
+status: negative_fixtures_all_rejected
+source_ref: docs/baselines/p5-r480-canonical-parameter-json.v2.yaml
+source_sha256: 642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad
+case_count: 10
+results:
+- case: bad_kind
+  rejected: true
+  failure_count: 1
+- case: literal_nonfinite
+  rejected: true
+  failure_count: 1
+- case: literal_unparsable
+  rejected: true
+  failure_count: 1
+- case: string_literal_unquoted
+  rejected: true
+  failure_count: 1
+- case: inf_literal_invalid
+  rejected: true
+  failure_count: 1
+- case: evaluated_no_value
+  rejected: true
+  failure_count: 1
+- case: oracle_no_expression
+  rejected: true
+  failure_count: 1
+- case: resolved_incomplete
+  rejected: true
+  failure_count: 1
+- case: bad_required
+  rejected: true
+  failure_count: 1
+- case: empty_entry
+  rejected: true
+  failure_count: 1
+non_claims:
+- not_a_compare
+- not_product_validation
+- not_release_evidence

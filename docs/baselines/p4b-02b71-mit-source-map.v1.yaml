@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b71.mit-source-map.v1",
+  "status": "parameter_profile_equivalence_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_equivalence_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "typed semantic equivalence over assembled parameter profile maps" },
+  "mapping": [
+    { "concept": "profile equivalence", "rust": "parameter_profiles_equivalent_v1", "notes": "exact name sets plus typed-value equivalence per shared name, reusing 02b70" },
+    { "concept": "inequivalence report", "rust": "ParameterProfileInequivalenceV1", "notes": "sorted left_only/right_only names plus per-name value mismatches with typed reasons" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

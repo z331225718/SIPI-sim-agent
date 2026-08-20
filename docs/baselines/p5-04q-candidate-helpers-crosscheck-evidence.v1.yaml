@@ -1,0 +1,85 @@
+schema: sipi.p5-04q.candidate-helpers-crosscheck-evidence.v1
+status: candidate_helpers_crosscheck_matched
+oracle:
+  repo: agent-com
+  license: MIT
+  path: src/agent_com/equalization/search.py
+  functions:
+  - _r480_pdf_bin_size
+  - _r480_bbn_q_factor
+  - _cannot_improve_fom
+  - _candidate_ber_q
+  - _dfe_candidate_bounds
+  - _jitter_response
+  - _jitter_sigma
+  numpy_version: 2.4.6
+tolerance: 1.0e-09
+entries:
+- id: pdf_no_force
+  input_sha256: 2746fc2bdfbcdabbc04dc918240701c89120ff62b1936fb76223cce9ebf38d8c
+  matched: true
+  diffs: []
+- id: pdf_force
+  input_sha256: d44ec186bab2dca42bc469773ea3b39504b6dd899aacf49c40f426d25d23084e
+  matched: true
+  diffs: []
+- id: bbn_q_forced
+  input_sha256: 1d25fe93d40cb6da604ca148a637f50dee84cff32542fd242dc39927cb11115c
+  matched: true
+  diffs: []
+- id: bbn_q_off
+  input_sha256: 36a7659268f0d8a9196e753ad81e66a977a547d78a4d8773435f9d7bb576ccca
+  matched: true
+  diffs: []
+- id: cannot_improve_none
+  input_sha256: bd21c36a55ec8b0de0c637dbda1c6cc64deb868772a4d9b73110e08509ab3402
+  matched: true
+  diffs: []
+- id: cannot_improve_sigma0
+  input_sha256: 07a9ecd1f21855387cc412b02e7d0e34975505ec6c0e0212205d25de248c0b5b
+  matched: true
+  diffs: []
+- id: cannot_improve_true
+  input_sha256: bfa4a0f46412e299924f00ac7c2687e357c21d6d80caeb83319184a7c1e629af
+  matched: true
+  diffs: []
+- id: cannot_improve_false
+  input_sha256: 7593a63b69d60b5af4c10a30a518543f24ed87df49a616af98cc4be24b751b92
+  matched: true
+  diffs: []
+- id: ber_q_crest
+  input_sha256: d2d08b55986a67241b87b1a7ada69d819b41aa6359c96a2b998b7d702420a6c0
+  matched: true
+  diffs: []
+- id: ber_q_erfcinv
+  input_sha256: 3542617003e8170a9e3ac400cf3a01d12e12a3c2e42fc3425e3f45deaac9fd07
+  matched: true
+  diffs: []
+- id: dfe_bounds_fixed
+  input_sha256: 7e6138aea69897fdf4fbc1f9ee75c860d89b9ab323cf4841dc2ba85a1e709595
+  matched: true
+  diffs: []
+- id: dfe_bounds_floating
+  input_sha256: 669cc91dfba36e7577a54f51c0f06e134eb5e87ef914be5588f12b8cccc806c6
+  matched: true
+  diffs: []
+- id: jitter_unlimited
+  input_sha256: 0a2c96f485eccd9bbea8514d292fbe4d8981d84ca75e0933d385c456f91a0932
+  matched: true
+  diffs: []
+- id: jitter_limited
+  input_sha256: 2bf594a710df80e5b4054dfbc7f0986ef08fab1274aa72737bf4863db99818dd
+  matched: true
+  diffs: []
+- id: jitter_num_ui_pad
+  input_sha256: c7cf49fea5510cb206b36ef84753b703b070133edf9a1d9e3c273a9c7ab9943a
+  matched: true
+  diffs: []
+- id: jitter_sigma
+  input_sha256: 3d537147591eda8a9f29d74b7e9f81b818635e6a75d4e83dd22ce0ed6272ae24
+  matched: true
+  diffs: []
+non_claims:
+- not_candidate_evaluation
+- not_search_loop
+- not_release_evidence

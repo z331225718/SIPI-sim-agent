@@ -1,0 +1,45 @@
+schema: sipi.p4a-03al.diff-pin-keywords-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03al.diff-pin-keywords-v1.typed-diff-keywords
+matched_count: 3
+case_count: 3
+entries:
+- label: full_diff_pin_block
+  matched: true
+  product:
+    pin_inv: DN1
+    pin_non_inv: DP1
+    policy: sipi.p4a-03al.diff-pin-keywords-v1.typed-diff-keywords
+    tdelay_s: 1.0e-10
+    valid: true
+    vdiff_v: 0.1
+  reference:
+    valid: true
+    pin_non_inv: DP1
+    pin_inv: DN1
+    vdiff_v: 0.1
+    tdelay_s: 1.0e-10
+- label: minimal_diff_pin_block
+  matched: true
+  product:
+    pin_inv: P2
+    pin_non_inv: P1
+    policy: sipi.p4a-03al.diff-pin-keywords-v1.typed-diff-keywords
+    tdelay_s: null
+    valid: true
+    vdiff_v: null
+  reference:
+    valid: true
+    pin_non_inv: P1
+    pin_inv: P2
+    vdiff_v: null
+    tdelay_s: null
+- label: identical_pins
+  matched: true
+  product:
+    diff_error: IdenticalPins
+    policy: sipi.p4a-03al.diff-pin-keywords-v1.typed-diff-keywords
+    valid: false
+  reference:
+    valid: false
+    diff_error: IdenticalPins

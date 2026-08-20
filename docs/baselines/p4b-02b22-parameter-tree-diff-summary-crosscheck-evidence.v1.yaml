@@ -1,0 +1,57 @@
+schema: sipi.p4b-02b22-parameter-tree-diff-summary-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b22.parameter-tree-diff-summary-v1.diff-summary-report
+matched_count: 3
+case_count: 3
+entries:
+- label: identical_trees_summary
+  matched: true
+  product:
+    is_identical: true
+    policy: sipi.p4b-02b22.parameter-tree-diff-summary-v1.diff-summary-report
+    summary_text: 'AMI Parameter Tree Diff Summary Report
+
+      Policy: sipi.p4b-02b22.parameter-tree-diff-summary-v1.diff-summary-report
+
+      Status: Identical (0 differences)'
+    total_diffs: 0
+    valid: true
+  reference:
+    valid: true
+    total_diffs: 0
+    is_identical: true
+    summary_text: 'AMI Parameter Tree Diff Summary Report
+
+      Policy: sipi.p4b-02b22.parameter-tree-diff-summary-v1.diff-summary-report
+
+      Status: Identical (0 differences)'
+- label: modified_trees_summary
+  matched: true
+  product:
+    is_identical: false
+    policy: sipi.p4b-02b22.parameter-tree-diff-summary-v1.diff-summary-report
+    summary_text: "AMI Parameter Tree Diff Summary Report\nPolicy: sipi.p4b-02b22.parameter-tree-diff-summary-v1.diff-summary-report\n\
+      Status: Modified (3 differences)\n  Missing Nodes: 1\n  Extra Nodes: 1\n  Kind\
+      \ Mismatches: 0\n  Value Mismatches: 1\nDiff Details:\n  - [Missing] root.node_b\n\
+      \  - [Extra] root.node_c\n  - [Value Mismatch] root.val: left=[Float 0.5] right=[Float\
+      \ 0.9]"
+    total_diffs: 3
+    valid: true
+  reference:
+    valid: true
+    total_diffs: 3
+    is_identical: false
+    summary_text: "AMI Parameter Tree Diff Summary Report\nPolicy: sipi.p4b-02b22.parameter-tree-diff-summary-v1.diff-summary-report\n\
+      Status: Modified (3 differences)\n  Missing Nodes: 1\n  Extra Nodes: 1\n  Kind\
+      \ Mismatches: 0\n  Value Mismatches: 1\nDiff Details:\n  - [Missing] root.node_b\n\
+      \  - [Extra] root.node_c\n  - [Value Mismatch] root.val: left=[Float 0.5] right=[Float\
+      \ 0.9]"
+- label: root_mismatch_summary
+  matched: true
+  product:
+    diff_error: 'RootMismatch { expected: "root_a", actual: "root_b" }'
+    policy: sipi.p4b-02b22.parameter-tree-diff-summary-v1.diff-summary-report
+    valid: false
+  reference:
+    valid: false
+    diff_error: 'RootMismatch { expected: "root_a", actual: "root_b" }'

@@ -1,0 +1,108 @@
+schema: sipi.p5-06f.com-chain-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p5-06f.com-chain-v1.fixed-tap-cursor-residual-noise-metrics
+matched_count: 2
+case_count: 2
+entries:
+- label: case_1
+  matched: true
+  checkpoints:
+  - name: cursor_index
+    ok: true
+    detail: product=37 ref=37
+  - name: selected_phase
+    ok: true
+    detail: product=5 ref=5
+  - name: residual_pdf
+    ok: true
+    detail: ''
+  - name: residual_pulse
+    ok: true
+    detail: ''
+  - name: sigma_tx
+    ok: true
+    detail: ''
+  - name: sigma_rj
+    ok: true
+    detail: ''
+  - name: sigma_gaussian
+    ok: true
+    detail: ''
+  - name: ber_q
+    ok: true
+    detail: ''
+  - name: gaussian_pdf
+    ok: true
+    detail: ''
+  - name: jitter_pdf
+    ok: true
+    detail: ''
+  - name: combined_pdf
+    ok: true
+    detail: ''
+  - name: combined_cdf
+    ok: true
+    detail: ''
+  - name: peak_interference
+    ok: true
+    detail: ''
+  - name: com_db
+    ok: true
+    detail: ''
+  - name: vec_db
+    ok: true
+    detail: ''
+  - name: veo_mv
+    ok: true
+    detail: ''
+- label: case_2
+  matched: true
+  checkpoints:
+  - name: cursor_index
+    ok: true
+    detail: product=39 ref=39
+  - name: selected_phase
+    ok: true
+    detail: product=7 ref=7
+  - name: residual_pdf
+    ok: true
+    detail: ''
+  - name: residual_pulse
+    ok: true
+    detail: ''
+  - name: sigma_tx
+    ok: true
+    detail: ''
+  - name: sigma_rj
+    ok: true
+    detail: ''
+  - name: sigma_gaussian
+    ok: true
+    detail: ''
+  - name: ber_q
+    ok: true
+    detail: ''
+  - name: gaussian_pdf
+    ok: true
+    detail: ''
+  - name: jitter_pdf
+    ok: true
+    detail: ''
+  - name: combined_pdf
+    ok: true
+    detail: ''
+  - name: combined_cdf
+    ok: true
+    detail: ''
+  - name: peak_interference
+    ok: true
+    detail: ''
+  - name: com_db
+    ok: true
+    detail: ''
+  - name: vec_db
+    ok: true
+    detail: ''
+  - name: veo_mv
+    ok: true
+    detail: ''

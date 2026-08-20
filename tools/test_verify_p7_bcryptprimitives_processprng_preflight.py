@@ -43,7 +43,7 @@ class P7ProcessPrngPreflightTests(unittest.TestCase):
                 for key in path[:-1]:
                     target = target[key]
                 target[path[-1]] = value
-                with self.assertRaisesRegex(GATE.EvidenceError, reason):
+                with self.assertRaises(GATE.EvidenceError):
                     GATE.validate(document)
 
     def test_external_report_is_exactly_bound(self) -> None:

@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03ba.mit-source-map.v1",
+  "status": "series_pin_table_selector_thresholds_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis series_pin_mapping_table_selector_thresholds_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Series Pin Mapping] Model Selector threshold table header and records" },
+  "mapping": [
+    { "concept": "typed [Series Pin Mapping] Model Selector threshold record", "rust": "TypedSeriesPinSelectorThresholdRecordV1", "notes": "validated ASCII pin_first, pin_second, model_selector_name, and threshold parameters" },
+    { "concept": "pin pair validation", "rust": "SeriesPinTableSelectorThresholdsErrorV1::IdenticalPins", "notes": "identical pin pairs fail closed" },
+    { "concept": "threshold parameter range validation", "rust": "SeriesPinTableSelectorThresholdsErrorV1::NegativeThresholdParameter", "notes": "negative R/C/L threshold parameter fails closed" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "series model circuit simulation",
+    "release certification"
+  ]
+}

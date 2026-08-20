@@ -1,0 +1,61 @@
+{
+  "schema": "sipi.p2-06.stage-compare-coverage.v1",
+  "status": "provisional",
+  "scope": "current_product_surface_fixed_tran_rc_pulse",
+  "stages": {
+    "parsed_circuit": {
+      "status": "not_applicable_current_surface",
+      "reason": "current product surface accepts typed bounded one-node RC/PULSE/PWL requests only; no netlist parser exists (P2-03 freeze: arbitrary_netlist rejected)"
+    },
+    "time_grid": {
+      "status": "covered",
+      "evidence": [
+        "p2-fixed-tran-current-evidence-rebinding-v4",
+        "p2-fixed-tran-current-evidence-rebinding-v3"
+      ]
+    },
+    "waveforms": {
+      "status": "covered",
+      "observables": [
+        "time",
+        "v(in)",
+        "v(out)"
+      ],
+      "evidence": [
+        "p2-fixed-tran-current-evidence-rebinding-v4"
+      ]
+    },
+    "measurements": {
+      "status": "not_implemented",
+      "reason": "measurement semantics frozen as not_implemented in P2-03 freeze"
+    }
+  },
+  "current_evidence": {
+    "id": "p2-fixed-tran-current-evidence-rebinding-v4",
+    "archive_commit": "538b5dd08f734e5558b1179083c3d24a95aba02f",
+    "oracle_commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "external_report_sha256": "854e34fd85bc5cef8018fb4387c6ecb8ecbb102dda9f14b872279bc0b05b84ce",
+    "replay_count": 2,
+    "comparison": "indexed time/v(in)/v(out) frozen gates"
+  },
+  "historical_evidence": [
+    {
+      "id": "p2-fixed-tran-current-evidence-rebinding-v3",
+      "status": "source_drift_historical"
+    },
+    {
+      "id": "p2-fixed-tran-current-evidence-rebinding-v2",
+      "status": "source_drift_historical"
+    },
+    {
+      "id": "p2-tran-current-candidate-evidence",
+      "status": "historical"
+    }
+  ],
+  "non_claims": [
+    "not_general_tran_or_netlist_support",
+    "not_parsed_circuit_or_measurement_coverage",
+    "not_op_ac_or_general_mna",
+    "not_release_certification"
+  ]
+}

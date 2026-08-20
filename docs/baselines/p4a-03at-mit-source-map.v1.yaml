@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03at.mit-source-map.v1",
+  "status": "series_pin_thresholds_group_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis series_pin_thresholds_group_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Series Pin Mapping] group threshold parameters header and records" },
+  "mapping": [
+    { "concept": "typed [Series Pin Mapping] group threshold record", "rust": "TypedSeriesPinTableGroupThresholdsV1", "notes": "validated ASCII group_name and threshold parameters" },
+    { "concept": "empty group name validation", "rust": "SeriesPinTableThresholdsGroupErrorV1::EmptyGroupName", "notes": "empty group name fails closed" },
+    { "concept": "threshold parameter range validation", "rust": "SeriesPinTableThresholdsGroupErrorV1::NegativeThresholdParameter", "notes": "negative R/C/L threshold parameter fails closed" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "series model circuit simulation",
+    "release certification"
+  ]
+}

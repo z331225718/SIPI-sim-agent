@@ -1,0 +1,52 @@
+schema: sipi.p4b-07.rx-init-surface-exploration-evidence.v1
+status: rx_init_probe_surface_explored_documented_variants
+authorization_ref: docs/baselines/authorized-material-registry.v1.yaml
+dll_sha256: 88a284f0967ad332f6230a8c5e791f47e9d22a05ae6778426c35707a18a3ab63
+probe:
+  mode: init
+  rows: 4
+  aggressors: 3
+  timebase: 1ps_31.25ps
+variants:
+  identity_like:
+    custody_0:
+      status: probe_crash
+      rc: 3221225477
+    custody_1:
+      status: probe_crash
+      rc: 3221225477
+    reproducible: true
+    init_succeeded: false
+  decay:
+    custody_0:
+      status: probe_crash
+      rc: 3221225477
+    custody_1:
+      status: probe_crash
+      rc: 3221225477
+    reproducible: true
+    init_succeeded: false
+  uniform:
+    custody_0:
+      status: probe_crash
+      rc: 3221225477
+    custody_1:
+      status: probe_crash
+      rc: 3221225477
+    reproducible: true
+    init_succeeded: false
+  decay_coupled:
+    custody_0:
+      status: probe_crash
+      rc: 3221225477
+    custody_1:
+      status: probe_crash
+      rc: 3221225477
+    reproducible: true
+    init_succeeded: false
+non_claims:
+- not_dll_internal_cause
+- not_ibis_ami_compatibility
+- not_numerical_parity
+- not_worker_admission
+- not_release_evidence

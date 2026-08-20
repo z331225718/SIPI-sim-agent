@@ -1,0 +1,14 @@
+{
+  "schema": "sipi.p5-04j.mit-source-map.v1",
+  "status": "tx_ffe_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/equalization/tx_ffe.py" },
+  "mapping": [
+    { "python": "TxFfeGrid", "rust": "TxFfeGridV1", "notes": "shape-validated grid surface" },
+    { "python": "full_grid_matrix (Full_Grid_Matrix)", "rust": "full_grid_matrix_v1", "notes": "first column varies slowest; empty columns rejected" },
+    { "python": "build_txffe_grid", "rust": "build_txffe_grid_v1", "notes": "contiguous tap numbers, dynamic fields, cursor = 1 - sum(|taps|), c0_min filter, taps concat" },
+    { "python": "first_strict_best / select_strict_best", "rust": "first_strict_best_v1 / select_strict_best_v1", "notes": "strict first maximum; tie retains first; non-finite rejected" },
+    { "python": "select_fom_tracker", "rust": "select_fom_tracker_v1", "notes": "C-order flatten/argmax with optional validity mask; unravel C-order" }
+  ],
+  "not_ported": ["DFE bank (dfe.py)", "RX FFE (rx_ffe.py)", "equalizer search (search.py)"],
+  "non_claims": ["not_dfe_bank", "not_rx_ffe", "not_equalizer_search", "not_release_evidence"]
+}

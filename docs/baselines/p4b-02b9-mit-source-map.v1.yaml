@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4b-02b9.mit-source-map.v1",
+  "status": "parameter_tree_formatter_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_formatter_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "formatting typed AmiParameterTreeV1 hierarchy back to parenthesized S-expression string" },
+  "mapping": [
+    { "concept": "tree to S-expression formatting", "rust": "format_parameter_trees_v1", "notes": "formats root AmiParameterTreeV1 list to S-expression text" },
+    { "concept": "Branch vs Leaf node formatting", "rust": "format_node", "notes": "Branch indented with children, Leaf with space-separated tokens" },
+    { "concept": "empty tree list check", "rust": "ParameterTreeFormatterErrorV1::EmptyTreeList", "notes": "empty tree slice fails closed" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

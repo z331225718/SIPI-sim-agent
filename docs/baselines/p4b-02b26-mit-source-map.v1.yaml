@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4b-02b26.mit-source-map.v1",
+  "status": "parameter_tree_compose_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_compose_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "canonical dot-separated parent path subtree compose over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "subtree compose by canonical parent path", "rust": "compose_parameter_tree_subtree_v1", "notes": "attaches a subtree node under the resolved parent branch and returns a new tree" },
+    { "concept": "duplicate child detection", "rust": "ParameterTreeComposeErrorV1::DuplicateChild", "notes": "attaching a child name that already exists fails closed" },
+    { "concept": "missing parent path check", "rust": "ParameterTreeComposeErrorV1::MissingPath", "notes": "missing parent path segments fail closed with canonical path" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

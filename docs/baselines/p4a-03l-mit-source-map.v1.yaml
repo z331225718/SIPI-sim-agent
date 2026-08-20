@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4a-03l.mit-source-map.v1",
+  "status": "submodel_declaration_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis submodel_declaration_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Submodel] and [Add Submodel] structural headers and type/mode tokens" },
+  "mapping": [
+    { "concept": "typed [Submodel] header", "rust": "TypedSubmodelDeclarationV1", "notes": "validated ASCII submodel_name, Submodel_type, and Submodel mode" },
+    { "concept": "Submodel_type token validation", "rust": "SubmodelTypeV1", "notes": "Dynamic_clamp, Bus_hold, Fall_clamp, Rise_clamp" },
+    { "concept": "Submodel Mode token validation", "rust": "SubmodelModeV1", "notes": "Driving, Non-Driving, All" },
+    { "concept": "typed [Add Submodel] entry", "rust": "TypedAddSubmodelV1", "notes": "submodel_name and mode reference" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "dynamic submodel invocation during simulation",
+    "release certification"
+  ]
+}

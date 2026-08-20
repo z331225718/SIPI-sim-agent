@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b105.mit-source-map.v1",
+  "status": "parameter_list_sort_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_sort_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "list item byte-order sort over validated AMI parameter values" },
+  "mapping": [
+    { "concept": "list item sort", "rust": "sort_parameter_list_items_v1", "notes": "sorts trimmed items in byte order with duplicates preserved and rejoins with ", "" },
+    { "concept": "sort errors", "rust": "ParameterListSortErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

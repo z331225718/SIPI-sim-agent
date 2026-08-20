@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b135-parameter-list-distinct-pair-count-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b135.parameter-list-distinct-pair-count-v1.distinct-pairs
+matched_count: 4
+case_count: 4
+entries:
+- label: all_distinct
+  matched: true
+  product:
+    count: 3
+    policy: sipi.p4b-02b135.parameter-list-distinct-pair-count-v1.distinct-pairs
+    valid: true
+  reference:
+    valid: true
+    count: 3
+- label: all_equal
+  matched: true
+  product:
+    count: 0
+    policy: sipi.p4b-02b135.parameter-list-distinct-pair-count-v1.distinct-pairs
+    valid: true
+  reference:
+    valid: true
+    count: 0
+- label: partial_distinct
+  matched: true
+  product:
+    count: 2
+    policy: sipi.p4b-02b135.parameter-list-distinct-pair-count-v1.distinct-pairs
+    valid: true
+  reference:
+    valid: true
+    count: 2
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b135.parameter-list-distinct-pair-count-v1.distinct-pairs
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

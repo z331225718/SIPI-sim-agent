@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b32.mit-source-map.v1",
+  "status": "parameter_tree_value_validation_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_validate_values_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "typed leaf value-token validation over AmiParameterTreeV1 reusing P4B-02b1 value rules" },
+  "mapping": [
+    { "concept": "typed leaf value validation", "rust": "validate_parameter_tree_values_v1", "notes": "validates every leaf value token against a caller-supplied type map; reuses AmiParameterValueV1::try_new rules" },
+    { "concept": "validation outcome", "rust": "ParameterTreeValueValidationV1", "notes": "holds leaves_checked, tokens_checked, leaf_types" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

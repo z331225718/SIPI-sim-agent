@@ -1,0 +1,53 @@
+schema: sipi.p5-04h.noise-pdf-crosscheck-evidence.v1
+status: noise_pdf_crosscheck_matched
+oracle:
+  repo: agent-com
+  license: MIT
+  path: src/agent_com/noise/discrete_pdf.py
+  function: build_r480_noise_pdf
+  numpy_version: 2.4.6
+  scipy_version: 1.18.0
+tolerances:
+  pdf: 1.0e-12
+  ber_q: 1.0e-11
+entries:
+- id: ber1e4_no_xtalk
+  spec_ber: 0.0001
+  input_sha256: 8749d841882dda9f28c45b3375473cfa11907fb414b16b29855aa6587128a56c
+  ber_q_product: 3.719016485455681
+  ber_q_oracle: 3.719016485455681
+  sigma_tx_v: 0.0011384199576606165
+  combined_len: 10039
+  matched: true
+  diffs: []
+- id: ber1e5_with_ne
+  spec_ber: 1.0e-05
+  input_sha256: b702ab919b04509084c483acddf95c80d79475e841741a8fda692758bbc8ad09
+  ber_q_product: 4.264890793922825
+  ber_q_oracle: 4.2648907939228256
+  sigma_tx_v: 0.0010857468287822653
+  combined_len: 9021
+  matched: true
+  diffs: []
+- id: ber1e12_crest_override
+  spec_ber: 1.0e-12
+  input_sha256: 41d5df48f3e5c7d851c7ef77acd3b1eb1feec79af786fa649e60f8289138b157
+  ber_q_product: 3.9
+  ber_q_oracle: 3.9
+  sigma_tx_v: 0.0002930534170094509
+  combined_len: 7599
+  matched: true
+  diffs: []
+- id: ber3e4_overrides
+  spec_ber: 0.0003
+  input_sha256: ade1e0473fd54fd6f10661749b2a6c0c6955cf0d322f013ac267ac5cf71573ab
+  ber_q_product: 3.4316144036232696
+  ber_q_oracle: 3.4316144036232696
+  sigma_tx_v: 0.0015
+  combined_len: 8979
+  matched: true
+  diffs: []
+non_claims:
+- not_mmse_path
+- not_equalizer_search
+- not_release_evidence

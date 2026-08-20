@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b75.mit-source-map.v1",
+  "status": "parameter_value_spelling_normalization_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_value_spelling_normalization_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "canonical non-float spelling of validated AMI parameter values" },
+  "mapping": [
+    { "concept": "canonical spelling", "rust": "canonicalize_parameter_value_spelling_v1", "notes": "Integer via parsed i64 decimal, List via trimmed ", "-joined items, Boolean/Float/String raw" },
+    { "concept": "raw-byte preservation", "rust": "Float/String unchanged branch", "notes": "no normalization per P4B-02b0; float formatting explicitly out of scope" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

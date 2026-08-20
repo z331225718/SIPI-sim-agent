@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b57.mit-source-map.v1",
+  "status": "parameter_tree_sections_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_sections_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "top-level section listing of AmiParameterTreeV1 with kind classification" },
+  "mapping": [
+    { "concept": "sections listing", "rust": "list_parameter_tree_sections_v1", "notes": "lists root children with branch/leaf kind in byte-wise order" },
+    { "concept": "section record", "rust": "ParameterTreeSectionV1", "notes": "holds name and kind (Branch/Leaf)" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

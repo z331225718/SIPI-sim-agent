@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03u.mit-source-map.v1",
+  "status": "series_pin_thresholds_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis series_pin_thresholds_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Series Pin Mapping] threshold parameters (Vthreshold, Rseries, Cseries, Lseries)" },
+  "mapping": [
+    { "concept": "typed [Series Pin Mapping] threshold header", "rust": "TypedSeriesPinThresholdsV1", "notes": "validated FiniteF64 threshold parameters" },
+    { "concept": "Vthreshold parameter", "rust": "TypedSeriesPinThresholdsV1::vthreshold_v", "notes": "optional finite Volts threshold" },
+    { "concept": "R/C/Lseries parameters", "rust": "TypedSeriesPinThresholdsV1::rseries_ohm / cseries_farad / lseries_henry", "notes": "optional finite non-negative FiniteF64 parameters" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "series model circuit simulation",
+    "release certification"
+  ]
+}

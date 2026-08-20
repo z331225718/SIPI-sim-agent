@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p3c-03c.mit-source-map.v1",
+  "status": "metric_compare_ported_with_source_map",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-compare metric_compare_v1.rs (extends P3C-03a aligned-array compare)" },
+  "observation": { "ref": "docs/baselines/p3c-03-profile-compare-decision-preflight.v1.yaml", "note": "profile-compare decision surface frozen (03b); specific metric profile unresolved (C4)" },
+  "mapping": [
+    { "concept": "named metric spec (reference, units, tolerance)", "rust": "MetricSpecV1", "notes": "reuses UnitTagV1 and ToleranceV1" },
+    { "concept": "compiled metric profile", "rust": "MetricProfileV1::compile", "notes": "BTreeMap of specs; duplicate/empty rejected" },
+    { "concept": "absolute-OR-relative tolerance rule", "rust": "compare_metric_profile_v1", "notes": "same rule as P3C-03a; reference 0 falls back to absolute" },
+    { "concept": "strict candidate set", "rust": "compare_metric_profile_v1", "notes": "missing candidate rejected; unknown tolerated (extensible set)" }
+  ],
+  "not_ported": ["a specific metric profile (C4 unresolved)", "COM commit compare", "automated alignment of independent axes"]
+}

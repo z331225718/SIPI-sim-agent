@@ -1,0 +1,83 @@
+schema: sipi.p3c-04y.c4-oracle-compare-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p3c-03c.c4-profile.v1.com-icn-erl-1pct
+oracle_reference_ref: docs/baselines/p5-06e-com-oracle-metric-reference.v1.yaml
+relative_tolerance: 0.01
+matched_count: 2
+case_count: 2
+entries:
+- label: case_1
+  matched: true
+  product_passed: true
+  reference_passed: true
+  product_results:
+  - allowed_error: 0.051901915998086814
+    candidate: 5.190191599808681
+    name: COM_dB
+    passed: true
+  - allowed_error: 0.16742740133561476
+    candidate: 16.742740133561476
+    name: ERL
+    passed: true
+  - allowed_error: 0.04601554213273623
+    candidate: 4.601554213273623
+    name: ICN_mV
+    passed: true
+  reference_results:
+  - name: COM_dB
+    candidate: 5.190191599808681
+    allowed_error: 0.051901915998086814
+    passed: true
+  - name: ICN_mV
+    candidate: 4.601554213273623
+    allowed_error: 0.04601554213273623
+    passed: true
+  - name: ERL
+    candidate: 16.742740133561476
+    allowed_error: 0.16742740133561476
+    passed: true
+  oracle_aggregate: &id002
+    COM_dB: 5.190191599808681
+    ICN_mV: 4.601554213273623
+    ERL: 16.742740133561476
+  oracle_case_reference: &id001
+    COM_dB: 5.190191599808681
+    ICN_mV: 4.601554213273623
+    ERL: 16.742740133561476
+  oracle_case_candidates: *id001
+- label: case_2
+  matched: true
+  product_passed: true
+  reference_passed: true
+  product_results:
+  - allowed_error: 0.04877647775233487
+    candidate: 4.877647775233487
+    name: COM_dB
+    passed: true
+  - allowed_error: 0.16742740133561476
+    candidate: 16.742740133561476
+    name: ERL
+    passed: true
+  - allowed_error: 0.04601554213273623
+    candidate: 4.601554213273623
+    name: ICN_mV
+    passed: true
+  reference_results:
+  - name: COM_dB
+    candidate: 4.877647775233487
+    allowed_error: 0.04877647775233487
+    passed: true
+  - name: ICN_mV
+    candidate: 4.601554213273623
+    allowed_error: 0.04601554213273623
+    passed: true
+  - name: ERL
+    candidate: 16.742740133561476
+    allowed_error: 0.16742740133561476
+    passed: true
+  oracle_aggregate: *id002
+  oracle_case_reference: &id003
+    COM_dB: 4.877647775233487
+    ICN_mV: 4.601554213273623
+    ERL: 16.742740133561476
+  oracle_case_candidates: *id003

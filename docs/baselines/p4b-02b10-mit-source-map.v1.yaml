@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4b-02b10.mit-source-map.v1",
+  "status": "parameter_tree_validator_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_validator_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "structural invariant validation over AmiParameterTreeV1 hierarchy" },
+  "mapping": [
+    { "concept": "tree invariant validation", "rust": "validate_parameter_trees_v1", "notes": "validates depth and leaf token bounds across trees" },
+    { "concept": "max depth limit check", "rust": "ParameterTreeValidatorErrorV1::ExceededMaxDepth", "notes": "exceeding max_depth fails closed" },
+    { "concept": "max leaf tokens limit check", "rust": "ParameterTreeValidatorErrorV1::ExceededMaxLeafTokens", "notes": "leaf with too many tokens fails closed" },
+    { "concept": "invalid node name check", "rust": "ParameterTreeValidatorErrorV1::InvalidNodeName", "notes": "non-ASCII or invalid syntax in node name fails closed" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

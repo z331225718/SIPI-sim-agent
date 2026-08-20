@@ -1,0 +1,41 @@
+schema: sipi.p4a-03ae.package-model-keywords-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03ae.package-model-keywords-v1.typed-package-keywords
+matched_count: 3
+case_count: 3
+entries:
+- label: valid_package_model_keywords
+  matched: true
+  product:
+    number_of_pins: 2
+    package_model_name: PKG_BGA_100
+    pin_numbers:
+    - A1
+    - A2
+    policy: sipi.p4a-03ae.package-model-keywords-v1.typed-package-keywords
+    valid: true
+  reference:
+    valid: true
+    package_model_name: PKG_BGA_100
+    number_of_pins: 2
+    pin_numbers:
+    - A1
+    - A2
+- label: zero_number_of_pins
+  matched: true
+  product:
+    lift_error: InvalidNumberOfPins
+    policy: sipi.p4a-03ae.package-model-keywords-v1.typed-package-keywords
+    valid: false
+  reference:
+    valid: false
+    lift_error: InvalidNumberOfPins
+- label: duplicate_pin_number
+  matched: true
+  product:
+    lift_error: DuplicatePinNumber("A1")
+    policy: sipi.p4a-03ae.package-model-keywords-v1.typed-package-keywords
+    valid: false
+  reference:
+    valid: false
+    lift_error: DuplicatePinNumber("A1")

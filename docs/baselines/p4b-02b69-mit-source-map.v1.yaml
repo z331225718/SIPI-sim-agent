@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b69.mit-source-map.v1",
+  "status": "parameter_tree_profile_apply_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_profile_apply_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "assembled profile value application onto an AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "profile apply", "rust": "apply_parameter_profile_to_tree_v1", "notes": "replaces leaf value tokens from an assembled profile; validated values reused without re-validation" },
+    { "concept": "apply outcome", "rust": "ParameterTreeProfileApplyV1", "notes": "holds applied count and the new tree" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

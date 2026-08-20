@@ -1,0 +1,43 @@
+schema: sipi.p4a-03i.model-selector-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03i.model-selector-declaration-v1.typed-selector-series
+matched_count: 3
+case_count: 3
+entries:
+- label: model_selector
+  matched: true
+  product:
+    branch_count: 2
+    kind: selector
+    policy: sipi.p4a-03i.model-selector-declaration-v1.typed-selector-series
+    selector_name: SPEED_SEL
+    valid: true
+  reference:
+    valid: true
+    kind: selector
+    selector_name: SPEED_SEL
+    branch_count: 2
+- label: series_pin_mapping
+  matched: true
+  product:
+    kind: series_pin_mapping
+    model_name: R_SERIES_50
+    pin_first: A1
+    pin_second: A2
+    policy: sipi.p4a-03i.model-selector-declaration-v1.typed-selector-series
+    valid: true
+  reference:
+    valid: true
+    kind: series_pin_mapping
+    pin_first: A1
+    pin_second: A2
+    model_name: R_SERIES_50
+- label: identical_series_pins
+  matched: true
+  product:
+    lift_error: IdenticalSeriesPins
+    policy: sipi.p4a-03i.model-selector-declaration-v1.typed-selector-series
+    valid: false
+  reference:
+    valid: false
+    lift_error: IdenticalSeriesPins

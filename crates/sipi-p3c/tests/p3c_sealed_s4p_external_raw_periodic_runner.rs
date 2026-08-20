@@ -14,12 +14,12 @@ use std::{
 use sha2::{Digest, Sha256};
 use sipi_artifacts::ArtifactRoot;
 use sipi_ieee_com_sparam::{
-    interpolate_selected_p3c_hdiff_v1, inverse_selected_p3c_uniform_spectrum_v1,
-    InterpSparamErrorV1, RawPeriodicTransformErrorV1,
+    InterpSparamErrorV1, RawPeriodicTransformErrorV1, interpolate_selected_p3c_hdiff_v1,
+    inverse_selected_p3c_uniform_spectrum_v1,
 };
 use sipi_p3c::{
-    admit_selected_p3c_sealed_s4p_v2, SelectedP3cSealedS4pIdentityV2,
     SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1,
+    SelectedP3cSealedS4pIdentityV2, admit_selected_p3c_sealed_s4p_v2,
 };
 
 const SOURCE_ENV: &str = "SIPI_P3C_SEALED_S4P_EXTERNAL_SOURCE";
@@ -132,7 +132,7 @@ fn outcome(admitted: &sipi_p3c::AdmittedSelectedP3cStaticTransferV2) -> Outcome 
             return Outcome::Rejected {
                 stage: "interpolation",
                 error: interpolation_error_name(error),
-            }
+            };
         }
     };
     let raw = match inverse_selected_p3c_uniform_spectrum_v1(&uniform) {
@@ -141,7 +141,7 @@ fn outcome(admitted: &sipi_p3c::AdmittedSelectedP3cStaticTransferV2) -> Outcome 
             return Outcome::Rejected {
                 stage: "raw_periodic_inverse_transform",
                 error: transform_error_name(error),
-            }
+            };
         }
     };
     let uniform_scale = uniform
@@ -256,8 +256,36 @@ fn required_path(name: &str) -> Result<PathBuf, String> {
 
 fn run_json(fact: &RunFact) -> String {
     match &fact.outcome {
-        Outcome::Admitted { uniform_bin_count, raw_sample_count, frequency_step_bits, sample_interval_bits, endpoint_imaginary_residue_bits, inverse_imaginary_residue_bits, endpoint_imaginary_residue_bound_bits, inverse_imaginary_residue_bound_bits, uniform_spectrum_sha256, raw_response_sha256 } => format!("{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"raw_periodic_status\":\"admitted\",\"uniform_bin_count\":{},\"raw_sample_count\":{},\"frequency_step_bits\":\"{}\",\"sample_interval_bits\":\"{}\",\"endpoint_imaginary_residue_bits\":\"{}\",\"inverse_imaginary_residue_bits\":\"{}\",\"endpoint_imaginary_residue_bound_bits\":\"{}\",\"inverse_imaginary_residue_bound_bits\":\"{}\",\"uniform_spectrum_sha256\":\"{}\",\"raw_response_sha256\":\"{}\"}}", fact.manifest_sha256, fact.record_count, uniform_bin_count, raw_sample_count, frequency_step_bits, sample_interval_bits, endpoint_imaginary_residue_bits, inverse_imaginary_residue_bits, endpoint_imaginary_residue_bound_bits, inverse_imaginary_residue_bound_bits, uniform_spectrum_sha256, raw_response_sha256),
-        Outcome::Rejected { stage, error } => format!("{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"raw_periodic_status\":\"rejected\",\"stage\":\"{}\",\"error\":\"{}\"}}", fact.manifest_sha256, fact.record_count, stage, error),
+        Outcome::Admitted {
+            uniform_bin_count,
+            raw_sample_count,
+            frequency_step_bits,
+            sample_interval_bits,
+            endpoint_imaginary_residue_bits,
+            inverse_imaginary_residue_bits,
+            endpoint_imaginary_residue_bound_bits,
+            inverse_imaginary_residue_bound_bits,
+            uniform_spectrum_sha256,
+            raw_response_sha256,
+        } => format!(
+            "{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"raw_periodic_status\":\"admitted\",\"uniform_bin_count\":{},\"raw_sample_count\":{},\"frequency_step_bits\":\"{}\",\"sample_interval_bits\":\"{}\",\"endpoint_imaginary_residue_bits\":\"{}\",\"inverse_imaginary_residue_bits\":\"{}\",\"endpoint_imaginary_residue_bound_bits\":\"{}\",\"inverse_imaginary_residue_bound_bits\":\"{}\",\"uniform_spectrum_sha256\":\"{}\",\"raw_response_sha256\":\"{}\"}}",
+            fact.manifest_sha256,
+            fact.record_count,
+            uniform_bin_count,
+            raw_sample_count,
+            frequency_step_bits,
+            sample_interval_bits,
+            endpoint_imaginary_residue_bits,
+            inverse_imaginary_residue_bits,
+            endpoint_imaginary_residue_bound_bits,
+            inverse_imaginary_residue_bound_bits,
+            uniform_spectrum_sha256,
+            raw_response_sha256
+        ),
+        Outcome::Rejected { stage, error } => format!(
+            "{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"raw_periodic_status\":\"rejected\",\"stage\":\"{}\",\"error\":\"{}\"}}",
+            fact.manifest_sha256, fact.record_count, stage, error
+        ),
     }
 }
 
@@ -282,7 +310,15 @@ fn run() -> Result<(), String> {
         Outcome::Admitted { .. } => "observed",
         Outcome::Rejected { .. } => "rejected",
     };
-    let payload = format!("{{\"schema\":\"{}\",\"status\":\"{}\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"source_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n", SCHEMA, status, SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_SHA256_V1, run_json(&first), run_json(&second));
+    let payload = format!(
+        "{{\"schema\":\"{}\",\"status\":\"{}\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"source_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n",
+        SCHEMA,
+        status,
+        SELECTED_P3C_S4P_BYTE_LENGTH_V1,
+        SELECTED_P3C_S4P_SHA256_V1,
+        run_json(&first),
+        run_json(&second)
+    );
     fs::write(report, payload).map_err(|error| format!("report_write:{error}"))
 }
 

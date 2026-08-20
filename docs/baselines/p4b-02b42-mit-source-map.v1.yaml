@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b42.mit-source-map.v1",
+  "status": "parameter_tree_typed_form_multi_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_typed_form_multi_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "profile-shaped multi-tree typed-form extraction merging P4B-02b34 results by name" },
+  "mapping": [
+    { "concept": "multi-tree typed-form extraction", "rust": "extract_typed_parameter_forms_multi_v1", "notes": "extracts and merges typed parameters from every tree of a tree list; per-tree errors wrapped with tree index" },
+    { "concept": "multi-tree outcome", "rust": "ParameterTreeMultiTypedFormsV1", "notes": "holds leaves_consumed and the merged name -> value map" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

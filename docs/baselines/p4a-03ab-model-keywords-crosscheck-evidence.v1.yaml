@@ -1,0 +1,37 @@
+schema: sipi.p4a-03ab.model-keywords-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03ab.model-keywords-v1.typed-model-keywords
+matched_count: 3
+case_count: 3
+entries:
+- label: valid_output_keywords
+  matched: true
+  product:
+    model_type: Output
+    policy: sipi.p4a-03ab.model-keywords-v1.typed-model-keywords
+    valid: true
+  reference:
+    valid: true
+    model_type: Output
+- label: missing_pullup_output
+  matched: true
+  product:
+    policy: sipi.p4a-03ab.model-keywords-v1.typed-model-keywords
+    valid: false
+    validation_error: 'MissingRequiredSubKeyword { model_type: "Output", missing_keyword:
+      "[Pullup]" }'
+  reference:
+    valid: false
+    validation_error: 'MissingRequiredSubKeyword { model_type: "Output", missing_keyword:
+      "[Pullup]" }'
+- label: missing_pulldown_output
+  matched: true
+  product:
+    policy: sipi.p4a-03ab.model-keywords-v1.typed-model-keywords
+    valid: false
+    validation_error: 'MissingRequiredSubKeyword { model_type: "Output", missing_keyword:
+      "[Pulldown]" }'
+  reference:
+    valid: false
+    validation_error: 'MissingRequiredSubKeyword { model_type: "Output", missing_keyword:
+      "[Pulldown]" }'

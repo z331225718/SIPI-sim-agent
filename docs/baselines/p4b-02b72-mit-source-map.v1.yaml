@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b72.mit-source-map.v1",
+  "status": "parameter_profile_tree_coverage_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_tree_coverage_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "profile-to-tree leaf coverage report over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "coverage report", "rust": "check_parameter_profile_tree_coverage_v1", "notes": "classifies each profile name as covered/ambiguous/missing from leaf occurrence counts" },
+    { "concept": "coverage outcome", "rust": "ParameterProfileTreeCoverageV1", "notes": "sorted covered/ambiguous/missing lists with complete() and unambiguous() predicates" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

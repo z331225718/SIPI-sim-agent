@@ -1,0 +1,80 @@
+schema: sipi.p4b-02b87-parameter-tree-leaf-type-map-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b87.parameter-tree-leaf-type-map-v1.declared-type-map
+matched_count: 4
+case_count: 4
+entries:
+- label: typed_forms
+  matched: true
+  product:
+    leaves_total: 3
+    policy: sipi.p4b-02b87.parameter-tree-leaf-type-map-v1.declared-type-map
+    skipped: 0
+    type_map:
+      gain: Float
+      'on': Boolean
+      steps: Integer
+    typed_leaves: 3
+    valid: true
+  reference:
+    valid: true
+    type_map:
+      gain: Float
+      'on': Boolean
+      steps: Integer
+    leaves_total: 3
+    typed_leaves: 3
+    skipped: 0
+- label: mixed_skipped
+  matched: true
+  product:
+    leaves_total: 4
+    policy: sipi.p4b-02b87.parameter-tree-leaf-type-map-v1.declared-type-map
+    skipped: 3
+    type_map:
+      gain: Float
+    typed_leaves: 1
+    valid: true
+  reference:
+    valid: true
+    type_map:
+      gain: Float
+    leaves_total: 4
+    typed_leaves: 1
+    skipped: 3
+- label: nested
+  matched: true
+  product:
+    leaves_total: 2
+    policy: sipi.p4b-02b87.parameter-tree-leaf-type-map-v1.declared-type-map
+    skipped: 0
+    type_map:
+      gain: Float
+      steps: Integer
+    typed_leaves: 2
+    valid: true
+  reference:
+    valid: true
+    type_map:
+      gain: Float
+      steps: Integer
+    leaves_total: 2
+    typed_leaves: 2
+    skipped: 0
+- label: duplicate
+  matched: true
+  product:
+    leaves_total: 2
+    policy: sipi.p4b-02b87.parameter-tree-leaf-type-map-v1.declared-type-map
+    skipped: 0
+    type_map:
+      gain: Integer
+    typed_leaves: 2
+    valid: true
+  reference:
+    valid: true
+    type_map:
+      gain: Integer
+    leaves_total: 2
+    typed_leaves: 2
+    skipped: 0

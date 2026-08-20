@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4b-02b7.mit-source-map.v1",
+  "status": "parameter_trees_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_trees_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "structural AST parenthesized forms to hierarchy trees" },
+  "mapping": [
+    { "concept": "AST forms to tree hierarchy", "rust": "build_parameter_trees_v1", "notes": "converts top-level forms into AmiParameterTreeV1 roots" },
+    { "concept": "Branch vs Leaf node classification", "rust": "AmiParameterTreeNodeV1", "notes": "nodes with sublists are Branch, pure atom lists are Leaf" },
+    { "concept": "duplicate child name check", "rust": "ParameterTreesErrorV1::DuplicateChild", "notes": "duplicate child branch under same parent fails closed" },
+    { "concept": "invalid node name check", "rust": "ParameterTreesErrorV1::InvalidNodeName", "notes": "non-ASCII or non-alphanumeric node names fail closed" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

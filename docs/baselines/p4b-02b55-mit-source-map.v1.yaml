@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b55.mit-source-map.v1",
+  "status": "parameter_profile_completeness_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_completeness_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "required-name presence check over an assembled parameter map" },
+  "mapping": [
+    { "concept": "completeness check", "rust": "check_parameter_profile_completeness_v1", "notes": "reports missing required names vs an assembled parameter map; extra parameters ignored" },
+    { "concept": "check outcome", "rust": "ParameterProfileCompletenessV1", "notes": "holds expected, present, missing, complete" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

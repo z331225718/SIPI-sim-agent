@@ -1,0 +1,30 @@
+{
+  "schema": "sipi.p4b-02b182.mit-source-map.v1",
+  "status": "parameter_list_first_occurrence_indices_source_mapped",
+  "source": {
+    "repo": "product-owned",
+    "license": "clean-room",
+    "path": "sipi-ami-text parameter_list_first_occurrence_indices_v1.rs"
+  },
+  "observation": {
+    "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml",
+    "note": "first-occurrence index of each distinct trimmed item of a validated AMI parameter list value"
+  },
+  "mapping": [
+    {
+      "concept": "first-occurrence index",
+      "rust": "parameter_list_first_occurrence_indices_v1",
+      "notes": "per distinct item by raw byte equality, 0-based index of the item's first appearance; same first-occurrence ordering as 02b121/02b181"
+    },
+    {
+      "concept": "first-occurrence-indices errors",
+      "rust": "ParameterListFirstOccurrenceIndicesErrorV1",
+      "notes": "NotAList for non-List types, defensive MalformedList otherwise"
+    }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

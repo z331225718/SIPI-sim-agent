@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4a-03ai.mit-source-map.v1",
+  "status": "test_data_keywords_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis test_data_keywords_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Test Data] and [Test Load] complete block required keywords" },
+  "mapping": [
+    { "concept": "typed [Test Data] / [Test Load] block header", "rust": "TypedTestDataBlockV1", "notes": "composite fixture_declaration" },
+    { "concept": "fixture_declaration access", "rust": "TypedTestDataBlockV1::fixture_declaration", "notes": "embedded TypedTestDataDeclarationV1" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "test load circuit simulation",
+    "release certification"
+  ]
+}

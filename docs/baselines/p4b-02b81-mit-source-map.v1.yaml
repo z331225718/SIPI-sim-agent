@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b81.mit-source-map.v1",
+  "status": "parameter_profile_serialization_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_serialization_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "canonical compact JSON serialization of assembled parameter profile maps" },
+  "mapping": [
+    { "concept": "profile serialization", "rust": "serialize_parameter_profile_v1", "notes": "sorted-name compact JSON object with type and raw value token per entry" },
+    { "concept": "determinism", "rust": "BTreeMap-ordered emission", "notes": "sorted names; RFC 8259 escaping; no float formatting (raw tokens)" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

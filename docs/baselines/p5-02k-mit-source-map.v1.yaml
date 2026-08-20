@@ -1,0 +1,14 @@
+{
+  "schema": "sipi.p5-02k.mit-source-map.v1",
+  "status": "matlab_literal_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/config/literals.py" },
+  "observation": { "ref": "docs/baselines/p5-r480-canonical-parameter-reference.v1.yaml", "note": "vector/matrix defaults observed in pkg_Z_c, snpPortsOrder, R_diepad, ts_sample_adj_range and empty g2qual/g_DC_HP/gqual" },
+  "mapping": [
+    { "python": "parse_matlab_literal empty / bracket / colon / scalar dispatch", "rust": "parse_literal_v1", "notes": "[] -> Empty; [..] bracket vector/matrix; bare colon -> vector; else scalar" },
+    { "python": "literals._vector row parsing", "rust": "parse_row", "notes": "colon-space compact, single-negative disambiguation, split on spaces/commas" },
+    { "python": "literals._COLON colon-range expansion", "rust": "colon_range", "notes": "three-part N:M:K ranges; two-part N:M is an oracle limitation" },
+    { "python": "literals._expand_scaled_ones", "rust": "expand_scaled_ones", "notes": "N*ones(1,M) bounded to 1..4096 columns inside a bracket row" },
+    { "python": "literals._scalar/_evaluate scalar arithmetic", "rust": "value_consumption_v1 evaluate_scalar", "notes": "shared scalar evaluator + - * / ^ unary, Inf/NaN" }
+  ],
+  "not_ported": ["behavior profile", "matrix row shape validation beyond equal-length check", "workbook write-back"]
+}

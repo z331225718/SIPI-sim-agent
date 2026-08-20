@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03aa.mit-source-map.v1",
+  "status": "series_switch_thresholds_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis series_switch_thresholds_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Series Switch Groups] standalone threshold parameters (Vthreshold, Rseries, Cseries, Lseries)" },
+  "mapping": [
+    { "concept": "typed [Series Switch Groups] threshold header", "rust": "TypedSeriesSwitchThresholdsV1", "notes": "validated FiniteF64 threshold parameters for series switch groups" },
+    { "concept": "Vthreshold parameter", "rust": "TypedSeriesSwitchThresholdsV1::vthreshold_v", "notes": "optional finite Volts threshold" },
+    { "concept": "R/C/Lseries parameters", "rust": "TypedSeriesSwitchThresholdsV1::rseries_ohm / cseries_farad / lseries_henry", "notes": "optional finite non-negative FiniteF64 parameters" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "series switch circuit simulation",
+    "release certification"
+  ]
+}

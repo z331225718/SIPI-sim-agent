@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b28.mit-source-map.v1",
+  "status": "parameter_tree_toposort_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_toposort_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "deterministic topological ordering of canonical node paths over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "topological path ordering", "rust": "toposort_parameter_tree_paths_v1", "notes": "returns canonical node paths with parents before children" },
+    { "concept": "sorted sibling order", "rust": "collect_paths", "notes": "visits children in sorted BTreeMap key order" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b97-parameter-tree-typed-leaf-fingerprint-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b97.parameter-tree-typed-leaf-fingerprint-v1.fnv1a64-typed-leaf-content
+matched_count: 4
+case_count: 4
+entries:
+- label: typed_leaves
+  matched: true
+  product:
+    hash: 17215133930204650085
+    policy: sipi.p4b-02b97.parameter-tree-typed-leaf-fingerprint-v1.fnv1a64-typed-leaf-content
+    valid: true
+  reference:
+    valid: true
+    hash: 17215133930204650085
+- label: change_value
+  matched: true
+  product:
+    hash: 5032494402502594916
+    policy: sipi.p4b-02b97.parameter-tree-typed-leaf-fingerprint-v1.fnv1a64-typed-leaf-content
+    valid: true
+  reference:
+    valid: true
+    hash: 5032494402502594916
+- label: skipped_ignored
+  matched: true
+  product:
+    hash: 9018248377204247742
+    policy: sipi.p4b-02b97.parameter-tree-typed-leaf-fingerprint-v1.fnv1a64-typed-leaf-content
+    valid: true
+  reference:
+    valid: true
+    hash: 9018248377204247742
+- label: no_typed
+  matched: true
+  product:
+    hash: 645223143103797797
+    policy: sipi.p4b-02b97.parameter-tree-typed-leaf-fingerprint-v1.fnv1a64-typed-leaf-content
+    valid: true
+  reference:
+    valid: true
+    hash: 645223143103797797

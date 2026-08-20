@@ -1,0 +1,62 @@
+schema: sipi.p4b-02b59-parameter-tree-leaf-occurrences-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b59.parameter-tree-leaf-occurrences-v1.name-counts
+matched_count: 4
+case_count: 4
+entries:
+- label: cross_depth_duplicates
+  matched: true
+  product:
+    occurrences:
+      gain: 2
+      steps: 1
+    policy: sipi.p4b-02b59.parameter-tree-leaf-occurrences-v1.name-counts
+    total_leaves: 3
+    valid: true
+  reference:
+    valid: true
+    total_leaves: 3
+    occurrences:
+      gain: 2
+      steps: 1
+- label: unique_names
+  matched: true
+  product:
+    occurrences:
+      gain: 1
+      steps: 1
+    policy: sipi.p4b-02b59.parameter-tree-leaf-occurrences-v1.name-counts
+    total_leaves: 2
+    valid: true
+  reference:
+    valid: true
+    total_leaves: 2
+    occurrences:
+      gain: 1
+      steps: 1
+- label: root_leaf
+  matched: true
+  product:
+    occurrences:
+      root: 1
+    policy: sipi.p4b-02b59.parameter-tree-leaf-occurrences-v1.name-counts
+    total_leaves: 1
+    valid: true
+  reference:
+    valid: true
+    total_leaves: 1
+    occurrences:
+      root: 1
+- label: deep_nesting
+  matched: true
+  product:
+    occurrences:
+      c: 1
+    policy: sipi.p4b-02b59.parameter-tree-leaf-occurrences-v1.name-counts
+    total_leaves: 1
+    valid: true
+  reference:
+    valid: true
+    total_leaves: 1
+    occurrences:
+      c: 1

@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b158.mit-source-map.v1",
+  "status": "parameter_list_tversky_index_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_tversky_index_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "parameterized set-similarity (Tversky index) over validated AMI parameter list values" },
+  "mapping": [
+    { "concept": "tversky index", "rust": "list_tversky_index_v1", "notes": "ratio of distinct intersection to intersection plus alpha times left-only plus beta times right-only by byte equality" },
+    { "concept": "tversky errors", "rust": "ParameterListTverskyIndexErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise, InvalidParameters for negative alpha or beta" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

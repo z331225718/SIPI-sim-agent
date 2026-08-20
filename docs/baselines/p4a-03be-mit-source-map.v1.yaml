@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03be.mit-source-map.v1",
+  "status": "series_pin_table_selector_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis series_pin_mapping_table_selector_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Series Pin Mapping] Model Selector binding header and records" },
+  "mapping": [
+    { "concept": "typed [Series Pin Mapping] Model Selector binding record", "rust": "TypedSeriesPinSelectorRecordV1", "notes": "validated ASCII pin_first, pin_second, model_selector_name, and optional function_table_group" },
+    { "concept": "pin pair validation", "rust": "SeriesPinTableSelectorErrorV1::IdenticalPins", "notes": "identical pin pairs fail closed" },
+    { "concept": "empty pin name validation", "rust": "SeriesPinTableSelectorErrorV1::EmptyPinName", "notes": "empty pin name fails closed" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "series model circuit simulation",
+    "release certification"
+  ]
+}

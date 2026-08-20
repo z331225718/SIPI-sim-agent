@@ -1,0 +1,41 @@
+schema: sipi.p5-05d.surface-crosscheck-evidence.v1
+status: surface_crosscheck_matched
+oracle:
+  repo: agent-com
+  license: MIT
+  path: src/agent_com/config/excel.py
+  surface: ComSettings grid scan (lookup semantics)
+canonical:
+  ref: docs/baselines/p5-r480-canonical-parameter-reference.v1.yaml
+  key_count: 214
+  sha256: a352cef1e04b83b3bbfc1d532c4fb87301f69be616c54d422ed70231e8afb49e
+entries:
+- id: xlsx_authorized_config
+  kind: xlsx
+  settings_sha256: f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9
+  pairs: 137
+  unique_keys: 123
+  consumed: 82
+  unconsumed: 41
+  matched: true
+  diffs: []
+- id: csv_fixture
+  kind: csv
+  settings_sha256: c94b264475f13051b94d339b102cda8800fa9a2256e8471a22754d4f194cab75
+  pairs: 3
+  consumed: 2
+  unconsumed: 1
+  matched: true
+  diffs: []
+- id: mat_fixture
+  kind: mat
+  settings_sha256: 3405db73533d54eb5494f217dbda0174e78b16d34e8b16a2d6b780b56070384a
+  pairs: 1
+  consumed: 1
+  unconsumed: 0
+  matched: true
+  diffs: []
+non_claims:
+- not_value_consumption
+- not_behavior_profile
+- not_release_evidence

@@ -1,0 +1,41 @@
+schema: sipi.p5-05c.mat-crosscheck-evidence.v1
+status: mat_crosscheck_matched
+oracle:
+  repo: agent-com
+  license: MIT
+  path: src/agent_com/config/excel.py
+  function: ComSettings.from_mat
+  numpy_version: 2.4.6
+  scipy_version: 1.18.0
+entries:
+- id: mat_parameter_cell_fixture
+  mat_sha256: 1eaca76e3a079808ee144b48f59ec9bff97aae2709930c692a290c4b05026e47
+  rows: 3
+  columns: 4
+  matched: true
+  diffs: []
+negative:
+- id: negative_not_mat
+  oracle_rejected: true
+  product_rejected: true
+  matched: true
+- id: negative_no_parameter
+  oracle_rejected: true
+  product_rejected: true
+  matched: true
+lookups:
+- f_b
+- A_ft
+- vector
+- matrix
+- empty
+- int_scalar
+- text
+- logical_scalar
+- int_vector
+- missing_key
+non_claims:
+- not_nested_cells
+- not_struct_sparse_complex
+- not_parameter_dto_consumption
+- not_release_evidence

@@ -1,0 +1,45 @@
+schema: sipi.p4a-03o.series-pin-mapping-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03o.series-pin-mapping-v1.typed-table
+matched_count: 3
+case_count: 3
+entries:
+- label: full_record
+  matched: true
+  product:
+    function_table_group: GRP1
+    model_name: R_SERIES_50
+    pin_first: P1
+    pin_second: P2
+    policy: sipi.p4a-03o.series-pin-mapping-v1.typed-table
+    valid: true
+  reference:
+    valid: true
+    pin_first: P1
+    pin_second: P2
+    model_name: R_SERIES_50
+    function_table_group: GRP1
+- label: minimal_record
+  matched: true
+  product:
+    function_table_group: null
+    model_name: R_SERIES_50
+    pin_first: P1
+    pin_second: P2
+    policy: sipi.p4a-03o.series-pin-mapping-v1.typed-table
+    valid: true
+  reference:
+    valid: true
+    pin_first: P1
+    pin_second: P2
+    model_name: R_SERIES_50
+    function_table_group: null
+- label: empty_model_name
+  matched: true
+  product:
+    lift_error: EmptyModelName
+    policy: sipi.p4a-03o.series-pin-mapping-v1.typed-table
+    valid: false
+  reference:
+    valid: false
+    lift_error: EmptyModelName

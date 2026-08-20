@@ -1,0 +1,14 @@
+{
+  "schema": "sipi.p5-04c.com-metrics-stage.v1",
+  "status": "com_metrics_scalar_stage_ported_no_pdf",
+  "purpose": "P5-04c COM/VEC/VEO scalar metrics stage ported from the MIT agent-com source with explicit source mapping. PDF support and CDF arrays are caller-supplied; discrete-PDF construction is a separate stage.",
+  "source_map_ref": "docs/baselines/p5-04c-mit-source-map.v1.yaml",
+  "outputs": ["com_db", "vec_db", "veo_mv"],
+  "admission": {
+    "discrete_pdf_construction": false,
+    "full_metric_surface": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_discrete_pdf", "not_full_metric_surface", "not_profile_acceptance", "not_release_evidence"]
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-04t.search-loop-stage.v1",
+  "status": "search_loop_stage_ported",
+  "purpose": "P5-04t search-loop support stage ported from the MIT agent-com source (equalization/search.py + signal/fd_to_td.py): the R480 non-MMSE no-RxFFE optimize_fom branch support helpers (validate_supported_branch, tx_grid_values, peak_window, shift_matrix, skip_local_search, skip_high_pass_local_search, sweep_order, r480_sample_offsets, tap_numbers, anchored_cursor, rectangular_pulse_response). Candidate evaluation, C2M vertical-eye FOM, and the composite search loop invocation remain separate scopes.",
+  "source_map_ref": "docs/baselines/p5-04t-mit-source-map.v1.yaml",
+  "admission": {
+    "candidate_evaluation": true,
+    "search_loop": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_composite_loop", "not_release_evidence"]
+}

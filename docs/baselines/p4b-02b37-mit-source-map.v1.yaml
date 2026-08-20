@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b37.mit-source-map.v1",
+  "status": "parameter_tree_leaf_value_decoding_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_decode_values_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "typed decode of single-token leaf values over AmiParameterTreeV1 reusing P4B-02b1 value rules" },
+  "mapping": [
+    { "concept": "leaf value decode", "rust": "decode_parameter_tree_leaf_values_v1", "notes": "decodes validated single-token leaf values into DecodedLeafValueV1 (Float/Integer/Boolean/String/List)" },
+    { "concept": "decoded value", "rust": "DecodedLeafValueV1", "notes": "typed Rust value variants Float(f64)/Integer(i64)/Boolean(bool)/String/List" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

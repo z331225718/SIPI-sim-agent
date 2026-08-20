@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b62.mit-source-map.v1",
+  "status": "parameter_tree_required_name_check_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_required_check_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "required-name leaf presence check over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "required-name check", "rust": "check_parameter_tree_required_names_v1", "notes": "reports sorted missing required names vs tree leaves; completes forbidden/allowed/required trio" },
+    { "concept": "check outcome", "rust": "ParameterTreeRequiredNameCheckV1", "notes": "holds required_count, present, missing, complete" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

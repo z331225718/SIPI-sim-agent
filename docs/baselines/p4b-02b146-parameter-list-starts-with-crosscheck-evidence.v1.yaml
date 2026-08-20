@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b146-parameter-list-starts-with-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b146.parameter-list-starts-with-v1.prefix-check
+matched_count: 4
+case_count: 4
+entries:
+- label: prefix_holds
+  matched: true
+  product:
+    policy: sipi.p4b-02b146.parameter-list-starts-with-v1.prefix-check
+    starts: true
+    valid: true
+  reference:
+    valid: true
+    starts: true
+- label: full_prefix
+  matched: true
+  product:
+    policy: sipi.p4b-02b146.parameter-list-starts-with-v1.prefix-check
+    starts: true
+    valid: true
+  reference:
+    valid: true
+    starts: true
+- label: longer_prefix
+  matched: true
+  product:
+    policy: sipi.p4b-02b146.parameter-list-starts-with-v1.prefix-check
+    starts: false
+    valid: true
+  reference:
+    valid: true
+    starts: false
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b146.parameter-list-starts-with-v1.prefix-check
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

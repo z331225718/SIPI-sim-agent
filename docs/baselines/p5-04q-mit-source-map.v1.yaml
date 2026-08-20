@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p5-04q.mit-source-map.v1",
+  "status": "candidate_helpers_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "path": "src/agent_com/equalization/search.py" },
+  "mapping": [
+    { "python": "_r480_pdf_bin_size", "rust": "r480_pdf_bin_size_v1", "notes": "min(available_signal_v/1000, configured BinSize) unless force_pdf_bin_size" },
+    { "python": "_r480_bbn_q_factor", "rust": "r480_bbn_q_factor_v1", "notes": "optional BBN tail-Q override; finite and non-negative validation only when forced" },
+    { "python": "_cannot_improve_fom", "rust": "cannot_improve_fom_v1", "notes": "strict upper-bound rejection: 20*log10(available_signal/sigma) < best_fom_db" },
+    { "python": "_candidate_ber_q", "rust": "candidate_ber_q_v1", "notes": "Noise_Crest_Factor if nonzero else sqrt(2)*erfcinv(2*specBER)" },
+    { "python": "_dfe_candidate_bounds", "rust": "dfe_candidate_bounds_v1", "notes": "fixed/floating DFE bounds; uses find_dfe_bank_locations_v1 (P5-04k)" },
+    { "python": "_jitter_response", "rust": "jitter_response_v1", "notes": "Eq. 93A-28 sampled jitter response; DFE-span limit and sampling-offset boundary behavior; num_ui padding/truncation" },
+    { "python": "_jitter_sigma", "rust": "jitter_sigma_v1", "notes": "L2 norm of (A_DD, sigma_RJ) * sigma_X * L2 norm of jitter response" }
+  ],
+  "not_ported": ["_evaluate_candidate", "search_r480_nonmmse_no_xtalk / search loop"],
+  "non_claims": ["not_candidate_evaluation", "not_search_loop", "not_release_evidence"]
+}

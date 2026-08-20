@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b66.mit-source-map.v1",
+  "status": "parameter_tree_relative_path_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_relative_path_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "relative path suffix derivation w.r.t. an ancestor prefix" },
+  "mapping": [
+    { "concept": "relative path", "rust": "relative_parameter_tree_path_v1", "notes": "derives the suffix of a path after an ancestor prefix" },
+    { "concept": "relative path errors", "rust": "ParameterTreeRelativePathErrorV1", "notes": "EmptyPath/NotAncestor/EmptySuffix fail-closed variants" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

@@ -1,0 +1,40 @@
+# P4B-02b108 Parameter List Item Occurrence Count Core — Audit Record
+
+- Date (UTC): 2026-08-16
+- Scope: P4B-02 sub-slice 02b108 (list item occurrence counting on validated AMI parameter values)
+- Status: delivered and cross-checked against an independent reference;
+  P4B-02 main item stays open (reserved-name catalog and profile rules pending)
+
+## Method
+
+Implement `parameter_list_occurrence_count_v1.rs` in `sipi-ami-text`:
+`count_parameter_list_item_occurrences_v1` counts the occurrences of a query item in a validated
+List-typed `AmiParameterValueV1` under the P4B-02b1 list rule (`(item, item, ...)`, items trimmed,
+non-empty): returns how many trimmed items equal the query item exactly (raw byte equality; the
+query itself is not trimmed). This is the occurrence-count companion of 02b85 membership (boolean)
+and of 02b107 distinct counting. Fail-closed: a non-List value yields `NotAList`; a token that
+does not match the List shape yields `MalformedList` (unreachable for values built via
+`AmiParameterValueV1::try_new`, kept defensive instead of panicking). An independent Python
+reference replicates the occurrence rule over 4 test cases.
+
+## Result
+
+- 6 Rust unit tests green (counts occurrences, zero when absent, raw query vs trimmed items,
+  non-list, single occurrence, all occurrences).
+- Cross-check: 4 test cases (multiple occurrences, absent, single with spacing, non-list) driven
+  through product runner `p4b_02b108_parameter_list_occurrence_count_runner`; independent Python
+  reference matches 100% on occurrence counts and error keys; 4/4 matched_hash_bound.
+
+## Binding
+
+- Verifier `verify_p4b_02b108_parameter_list_occurrence_count.py` + 6 tests; crosscheck evidence
+  `docs/baselines/p4b-02b108-parameter-list-occurrence-count-crosscheck-evidence.v1.yaml`.
+- Charter `p4b-02b108-parameter-list-occurrence-count-stage.v1.yaml`; source map
+  `p4b-02b108-mit-source-map.v1.yaml`.
+- PLAN **P4B-02b108**; ledger note/gate P4B-02; coverage gates 277 -> 278.
+
+## Scope / Non-Claims
+
+- Not a full AMI document parser; no reserved-name catalog, no defaults, no document decoding.
+- Counts list item occurrences on validated values only; non-List inputs fail closed.
+- No release certification, no acceptance evidence.

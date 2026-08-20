@@ -1,0 +1,19 @@
+{
+  "schema": "sipi.p3c-03e.compliance-report-stage.v1",
+  "status": "compliance_report_ported",
+  "purpose": "P3C-03e COM metric-profile compliance report core: combines the P3C-03d dB-tolerance check with a named metric profile into an end-to-end compliance report (per-metric verdict + overall pass). Advances P3C-03 from the raw compare engine to a usable COM metric compliance report. Profile-agnostic: the specific metric profile (C4) is caller-supplied, not selected here.",
+  "source_map_ref": "docs/baselines/p3c-03e-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p3c-03d-db-tolerance-stage.v1.yaml", "docs/baselines/p3c-03c-metric-compare-stage.v1.yaml"],
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (A5)",
+  "admission": {
+    "per_metric_verdict": true,
+    "overall_pass": true,
+    "reuse_db_tolerance": true,
+    "profile_agnostic": true,
+    "specific_metric_profile": false,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_a_specific_metric_profile", "not_commit_compare", "not_com_parity", "not_acceptance_evidence"]
+}

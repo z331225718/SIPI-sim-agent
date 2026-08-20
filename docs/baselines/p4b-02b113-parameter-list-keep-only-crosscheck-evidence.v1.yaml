@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b113-parameter-list-keep-only-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b113.parameter-list-keep-only-v1.retain-by-value
+matched_count: 4
+case_count: 4
+entries:
+- label: keeps_only_matching
+  matched: true
+  product:
+    policy: sipi.p4b-02b113.parameter-list-keep-only-v1.retain-by-value
+    token: (a, a, a)
+    valid: true
+  reference:
+    valid: true
+    token: (a, a, a)
+- label: no_match
+  matched: true
+  product:
+    policy: sipi.p4b-02b113.parameter-list-keep-only-v1.retain-by-value
+    token: ()
+    valid: true
+  reference:
+    valid: true
+    token: ()
+- label: keeps_all
+  matched: true
+  product:
+    policy: sipi.p4b-02b113.parameter-list-keep-only-v1.retain-by-value
+    token: (x, x)
+    valid: true
+  reference:
+    valid: true
+    token: (x, x)
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b113.parameter-list-keep-only-v1.retain-by-value
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

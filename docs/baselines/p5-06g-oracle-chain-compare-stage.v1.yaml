@@ -1,0 +1,25 @@
+{
+  "schema": "sipi.p5-06g.oracle-chain-compare-stage.v1",
+  "status": "oracle_chain_compare_ported",
+  "purpose": "P5-06 compare-matrix integration slice: drives the product COM chain (run_com_chain_v1) with controls constructed from oracle checkpoint parameters (case_1 and case_2 TXLE/DFE taps, sigma_N, spec_ber, etc. from P5-06a evidence summary_content), then drives the product C4 profile compare engine (compare_metric_profile_v1) against the bound P5-06e MATLAB oracle reference. An independent Python reference recomputes the product chain and C4 profile compare. Fail-closed: product and independent reference must agree on all compare verdicts and allowed errors.",
+  "source_map_ref": "docs/baselines/p5-06g-mit-source-map.v1.yaml",
+  "based_on": [
+    "docs/baselines/p5-06f-com-chain-core.v1.yaml",
+    "docs/baselines/p5-06e-com-oracle-metric-reference.v1.yaml",
+    "docs/baselines/p3c-04x-c4-profile-stage.v1.yaml",
+    "docs/baselines/p3c-04y-c4-oracle-compare-stage.v1.yaml"
+  ],
+  "admission": {
+    "product_com_chain_invoked": true,
+    "oracle_checkpoint_parameters_fed": true,
+    "c4_profile_compare_executed": true,
+    "fail_closed_on_mismatch": true,
+    "release_evidence": false
+  },
+  "non_claims": [
+    "not_release_evidence",
+    "not_acceptance_evidence",
+    "not_com_parity_across_implementations",
+    "not_full_compare_matrix_completion"
+  ]
+}

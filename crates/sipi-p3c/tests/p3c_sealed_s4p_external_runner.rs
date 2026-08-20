@@ -17,9 +17,8 @@ use std::{
 use sha2::{Digest, Sha256};
 use sipi_artifacts::ArtifactRoot;
 use sipi_p3c::{
-    SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1,
-    SELECTED_P3C_S4P_SHA256_V1, SelectedP3cSealedS4pIdentityV2,
-    admit_selected_p3c_sealed_s4p_v2,
+    SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1,
+    SelectedP3cSealedS4pIdentityV2, admit_selected_p3c_sealed_s4p_v2,
 };
 
 const SOURCE_ENV: &str = "SIPI_P3C_SEALED_S4P_EXTERNAL_SOURCE";
@@ -41,7 +40,9 @@ fn sha256_reader(mut reader: impl Read) -> io::Result<(u64, String)> {
         if read == 0 {
             break;
         }
-        length = length.checked_add(read as u64).ok_or_else(|| io::Error::other("source_length_overflow"))?;
+        length = length
+            .checked_add(read as u64)
+            .ok_or_else(|| io::Error::other("source_length_overflow"))?;
         digest.update(&buffer[..read]);
     }
     Ok((length, format!("{:x}", digest.finalize())))
@@ -50,7 +51,12 @@ fn sha256_reader(mut reader: impl Read) -> io::Result<(u64, String)> {
 fn source_identity(source: &Path) -> Result<(u64, String), String> {
     let file = File::open(source).map_err(|error| format!("source_open:{error}"))?;
     let identity = sha256_reader(file).map_err(|error| format!("source_hash:{error}"))?;
-    if identity != (SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_SHA256_V1.to_owned()) {
+    if identity
+        != (
+            SELECTED_P3C_S4P_BYTE_LENGTH_V1,
+            SELECTED_P3C_S4P_SHA256_V1.to_owned(),
+        )
+    {
         return Err("source_identity_mismatch".to_owned());
     }
     Ok(identity)
@@ -74,12 +80,19 @@ fn observe_once(source: &Path, index: usize) -> Result<RunFact, String> {
     let before = source_identity(source)?;
     let root = fresh_root(index)?;
     let result = (|| {
-        let store = ArtifactRoot::open_or_create(&root).map_err(|error| format!("artifact_root:{error:?}"))?;
+        let store = ArtifactRoot::open_or_create(&root)
+            .map_err(|error| format!("artifact_root:{error:?}"))?;
         let artifact_id = format!("selected-s4p-{index}");
-        let mut stage = store.begin(&artifact_id).map_err(|error| format!("artifact_begin:{error:?}"))?;
+        let mut stage = store
+            .begin(&artifact_id)
+            .map_err(|error| format!("artifact_begin:{error:?}"))?;
         let source_file = File::open(source).map_err(|error| format!("source_reopen:{error}"))?;
         stage
-            .stage_reader(SELECTED_P3C_S4P_FILE_NAME_V1, source_file, SELECTED_P3C_S4P_BYTE_LENGTH_V1)
+            .stage_reader(
+                SELECTED_P3C_S4P_FILE_NAME_V1,
+                source_file,
+                SELECTED_P3C_S4P_BYTE_LENGTH_V1,
+            )
             .map_err(|error| format!("artifact_stage:{error:?}"))?;
         stage
             .seal()
@@ -94,7 +107,8 @@ fn observe_once(source: &Path, index: usize) -> Result<RunFact, String> {
         let manifest = fs::read(root.join(&artifact_id).join("success.json"))
             .map_err(|error| format!("manifest_read:{error}"))?;
         let manifest_sha256 = sha256_bytes(&manifest);
-        let reader = ArtifactRoot::open_existing(&root).map_err(|error| format!("artifact_reopen:{error:?}"))?;
+        let reader = ArtifactRoot::open_existing(&root)
+            .map_err(|error| format!("artifact_reopen:{error:?}"))?;
         let identity = SelectedP3cSealedS4pIdentityV2::try_new(&artifact_id, &manifest_sha256)
             .map_err(|error| format!("identity:{error}"))?;
         let admitted = admit_selected_p3c_sealed_s4p_v2(&reader, &identity)
@@ -107,7 +121,10 @@ fn observe_once(source: &Path, index: usize) -> Result<RunFact, String> {
         {
             return Err("admission_provenance_mismatch".to_owned());
         }
-        Ok(RunFact { manifest_sha256, record_count: admitted.record_count() })
+        Ok(RunFact {
+            manifest_sha256,
+            record_count: admitted.record_count(),
+        })
     })();
     let cleanup = fs::remove_dir_all(&root).map_err(|error| format!("root_cleanup:{error}"));
     match (result, cleanup) {
@@ -127,7 +144,9 @@ fn required_path(name: &str) -> Result<PathBuf, String> {
 }
 
 fn write_report(report: &Path, first: &RunFact, second: &RunFact) -> Result<(), String> {
-    let parent = report.parent().ok_or_else(|| "report_parent_missing".to_owned())?;
+    let parent = report
+        .parent()
+        .ok_or_else(|| "report_parent_missing".to_owned())?;
     fs::create_dir_all(parent).map_err(|error| format!("report_parent_create:{error}"))?;
     let payload = format!(
         concat!(
@@ -156,7 +175,8 @@ fn run() -> Result<(), String> {
     let report = required_path(REPORT_ENV)?;
     let first = observe_once(&source, 1)?;
     let second = observe_once(&source, 2)?;
-    if first.record_count != second.record_count || first.manifest_sha256 == second.manifest_sha256 {
+    if first.record_count != second.record_count || first.manifest_sha256 == second.manifest_sha256
+    {
         return Err("fresh_runs_not_independent_or_consistent".to_owned());
     }
     write_report(&report, &first, &second)

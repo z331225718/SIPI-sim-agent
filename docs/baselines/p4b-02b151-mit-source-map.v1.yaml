@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b151.mit-source-map.v1",
+  "status": "parameter_list_relative_complement_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_relative_complement_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "relative complement over validated AMI parameter list values" },
+  "mapping": [
+    { "concept": "relative complement", "rust": "list_relative_complement_v1", "notes": "keeps left items equal to no right item by byte equality, left order, duplicates preserved" },
+    { "concept": "difference errors", "rust": "ParameterListRelativeComplementErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

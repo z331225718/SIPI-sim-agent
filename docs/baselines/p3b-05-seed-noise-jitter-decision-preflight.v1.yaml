@@ -1,0 +1,26 @@
+{
+  "schema": "sipi.p3b-05.seed-noise-jitter-decision-preflight.v1",
+  "status": "seed_noise_jitter_semantics_not_frozen_pending_owner_decision",
+  "purpose": "P3B-05b seed/noise/jitter decision-surface freeze: required profile, injection position, units/random-vs-timewarp model, seed replay, observables and tolerance are all unselected pending owner decision. No deterministic seed, noise/jitter profile, or receiver-stage semantic may be implemented before that decision; the P3B-05a causal-FIR request rejection surface stays in force.",
+  "decision_surface": {
+    "required_profile": "unselected_pending_owner_decision",
+    "injection_position": "unselected_pending_owner_decision",
+    "units_model": "unselected_pending_owner_decision",
+    "seed_replay": "unselected_pending_owner_decision",
+    "observables": "unselected_pending_owner_decision",
+    "tolerance": "unselected_pending_owner_decision"
+  },
+  "blocker_linkage": {
+    "plan_row": "P3B-05",
+    "rejection_gate": "tools/verify_p3b_05a_causal_fir_request_rejection.py",
+    "request_schema_id": "sipi.link.causal-fir-request.v1"
+  },
+  "admission": {
+    "deterministic_seed_implementation": "prohibited_without_owner_decision",
+    "noise_jitter_profile_implementation": "prohibited_without_owner_decision",
+    "receiver_stage_semantics": "prohibited_without_owner_decision",
+    "product_runtime_invoked": false,
+    "release_promoted": false
+  },
+  "non_claims": ["not_a_profile_choice", "not_an_injection_choice", "not_a_units_model_choice", "not_a_seed_replay_choice", "not_a_tolerance_choice", "not_acceptance_evidence"]
+}

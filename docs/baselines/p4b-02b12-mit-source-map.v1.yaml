@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4b-02b12.mit-source-map.v1",
+  "status": "parameter_tree_merge_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_merge_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "structural merging over two AmiParameterTreeV1 hierarchies" },
+  "mapping": [
+    { "concept": "tree structural merge", "rust": "merge_parameter_trees_v1", "notes": "merges right tree into left tree with leaf overrides and branch augmentation" },
+    { "concept": "kind conflict check", "rust": "ParameterTreeMergeErrorV1::KindConflict", "notes": "Branch vs Leaf node conflict at same path fails closed" },
+    { "concept": "root mismatch check", "rust": "ParameterTreeMergeErrorV1::RootMismatch", "notes": "trees with different root names fail closed" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

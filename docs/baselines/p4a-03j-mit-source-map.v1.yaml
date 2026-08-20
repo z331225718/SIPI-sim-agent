@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4a-03j.mit-source-map.v1",
+  "status": "diff_pin_declaration_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis diff_pin_declaration_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Diff Pin] structural header and differential parameters" },
+  "mapping": [
+    { "concept": "typed [Diff Pin] header", "rust": "TypedDiffPinDeclarationV1", "notes": "validated ASCII non-inverting and inverting pin pair" },
+    { "concept": "vdiff differential threshold", "rust": "TypedDiffPinDeclarationV1::vdiff_v", "notes": "optional finite non-negative FiniteF64 threshold voltage" },
+    { "concept": "tdelay differential delay", "rust": "TypedDiffPinDeclarationV1::tdelay_s", "notes": "optional finite non-negative FiniteF64 delay time" },
+    { "concept": "pin pair validation", "rust": "DiffPinDeclarationErrorV1::IdenticalPins", "notes": "identical pin pairs fail closed" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "differential receiver simulation",
+    "release certification"
+  ]
+}

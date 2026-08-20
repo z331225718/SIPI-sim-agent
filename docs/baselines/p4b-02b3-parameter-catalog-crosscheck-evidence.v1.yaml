@@ -1,0 +1,30 @@
+schema: sipi.p4b-02b3.parameter-catalog-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b3.parameter-catalog.v1.typed
+matched_count: 4
+case_count: 4
+entries:
+- id: valid
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_error: null
+  reference_error: null
+- id: missing_required
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_error: MissingRequired("swing")
+  reference_error: missing_required:swing
+- id: unknown
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_error: UnknownParameter("bogus")
+  reference_error: unknown_parameter:bogus
+- id: type_mismatch
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_error: 'TypeMismatch { name: "swing", expected: "Float", value: "5" }'
+  reference_error: type_mismatch:swing

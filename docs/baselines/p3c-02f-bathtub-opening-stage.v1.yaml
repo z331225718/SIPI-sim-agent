@@ -1,0 +1,20 @@
+{
+  "schema": "sipi.p3c-02f.bathtub-opening-stage.v1",
+  "status": "bathtub_opening_estimator_ported",
+  "purpose": "P3C-02f bathtub opening-width estimator core: from a V-shaped BER-vs-time bathtub (strictly ascending time offsets, per-offset BER) computes the horizontal opening width at a target BER, locating the left/right target-BER crossings by linear interpolation in log10(BER). Builds on the owner-decided Q-factor method (P3C-02e) for the BER value domain. Eye folding/bins owned by P3C-02c; bathtub curve fitting and statistical contours remain out of scope.",
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (A5 Q-factor)",
+  "source_map_ref": "docs/baselines/p3c-02f-mit-source-map.v1.yaml",
+  "base_slice_ref": "docs/baselines/p3c-02e-qfactor-ber-stage.v1.yaml",
+  "admission": {
+    "target_ber_crossing": true,
+    "log_ber_interpolation": true,
+    "opening_width_metric": true,
+    "strict_ascending_time": true,
+    "eye_folding_bins": false,
+    "bathtub_curve_fit": false,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_eye_folding_bins", "not_bathtub_curve_fit", "not_com_parity", "not_acceptance_evidence"]
+}

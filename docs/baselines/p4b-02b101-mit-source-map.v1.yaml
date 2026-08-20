@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b101.mit-source-map.v1",
+  "status": "parameter_list_append_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_append_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "list item append over validated AMI parameter values" },
+  "mapping": [
+    { "concept": "list item append", "rust": "append_parameter_list_item_v1", "notes": "appends the trimmed new item and rejoins with ", "" },
+    { "concept": "append errors", "rust": "ParameterListAppendErrorV1", "notes": "NotAList, defensive MalformedList, EmptyNewItem after trimming" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

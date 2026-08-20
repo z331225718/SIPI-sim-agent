@@ -1,0 +1,60 @@
+schema: sipi.p4b-02b43-parameter-tree-reserved-name-check-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b43.parameter-tree-reserved-name-check-v1.reserved-set-check
+matched_count: 4
+case_count: 4
+entries:
+- label: clean_tree
+  matched: true
+  product:
+    clean: true
+    leaves_checked: 2
+    policy: sipi.p4b-02b43.parameter-tree-reserved-name-check-v1.reserved-set-check
+    valid: true
+    violations: []
+  reference:
+    valid: true
+    leaves_checked: 2
+    clean: true
+    violations: []
+- label: single_violation
+  matched: true
+  product:
+    clean: false
+    leaves_checked: 2
+    policy: sipi.p4b-02b43.parameter-tree-reserved-name-check-v1.reserved-set-check
+    valid: true
+    violations:
+    - Reserved_Parameters
+  reference:
+    valid: true
+    leaves_checked: 2
+    clean: false
+    violations:
+    - Reserved_Parameters
+- label: multiple_sorted
+  matched: true
+  product:
+    clean: false
+    leaves_checked: 3
+    policy: sipi.p4b-02b43.parameter-tree-reserved-name-check-v1.reserved-set-check
+    valid: true
+    violations:
+    - alpha
+    - beta
+  reference:
+    valid: true
+    leaves_checked: 3
+    clean: false
+    violations:
+    - alpha
+    - beta
+- label: empty_reserved
+  matched: true
+  product:
+    policy: sipi.p4b-02b43.parameter-tree-reserved-name-check-v1.reserved-set-check
+    reserved_error: EmptyReservedSet
+    valid: false
+  reference:
+    valid: false
+    reserved_error: EmptyReservedSet

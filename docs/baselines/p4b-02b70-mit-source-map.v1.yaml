@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b70.mit-source-map.v1",
+  "status": "parameter_value_equivalence_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_value_equivalence_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "typed semantic equality over validated AMI parameter values" },
+  "mapping": [
+    { "concept": "typed value equivalence", "rust": "parameter_values_equivalent_v1", "notes": "compares declared type and parsed typed value; numeric spellings normalize, String stays raw" },
+    { "concept": "inequivalence reasons", "rust": "ParameterValueInequivalenceReasonV1", "notes": "Type/Float/Integer/Boolean/String/ListLength/ListItem/Malformed with stable key()" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

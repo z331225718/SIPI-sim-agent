@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import copy
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 
 import yaml
 
-import verify_p3c_prbs9_impulse_candidate_bridge as gate
-
-
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT / "tools") not in sys.path:
+    sys.path.insert(0, str(ROOT / "tools"))
+
+import verify_p3c_prbs9_impulse_candidate_bridge as gate
 
 
 class BridgeTests(unittest.TestCase):

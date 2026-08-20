@@ -1,0 +1,68 @@
+schema: sipi.p4b-02b53-parameter-tree-batch-value-set-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b53.parameter-tree-batch-value-set-v1.name-addressed-batch-set
+matched_count: 4
+case_count: 4
+entries:
+- label: batch_update
+  matched: true
+  product:
+    policy: sipi.p4b-02b53.parameter-tree-batch-value-set-v1.name-addressed-batch-set
+    root_name: root
+    tree:
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - '1.25'
+      - kind: leaf
+        name: steps
+        value_tokens:
+        - '8'
+      kind: branch
+      name: root
+    updated: 2
+    valid: true
+  reference:
+    valid: true
+    updated: 2
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - '1.25'
+      - kind: leaf
+        name: steps
+        value_tokens:
+        - '8'
+- label: ambiguous_name
+  matched: true
+  product:
+    batch_error: AmbiguousName("gain")
+    policy: sipi.p4b-02b53.parameter-tree-batch-value-set-v1.name-addressed-batch-set
+    valid: false
+  reference:
+    valid: false
+    batch_error: AmbiguousName("gain")
+- label: missing_leaf
+  matched: true
+  product:
+    batch_error: MissingLeaf("nope")
+    policy: sipi.p4b-02b53.parameter-tree-batch-value-set-v1.name-addressed-batch-set
+    valid: false
+  reference:
+    valid: false
+    batch_error: MissingLeaf("nope")
+- label: invalid_value
+  matched: true
+  product:
+    batch_error: 'InvalidValue { leaf: "gain", error: InvalidFloat }'
+    policy: sipi.p4b-02b53.parameter-tree-batch-value-set-v1.name-addressed-batch-set
+    valid: false
+  reference:
+    valid: false
+    batch_error: 'InvalidValue { leaf: "gain", error: InvalidFloat }'

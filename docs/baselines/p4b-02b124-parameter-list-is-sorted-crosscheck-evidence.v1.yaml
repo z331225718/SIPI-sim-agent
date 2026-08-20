@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b124-parameter-list-is-sorted-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b124.parameter-list-is-sorted-v1.sortedness-check
+matched_count: 4
+case_count: 4
+entries:
+- label: ascending
+  matched: true
+  product:
+    policy: sipi.p4b-02b124.parameter-list-is-sorted-v1.sortedness-check
+    sorted: true
+    valid: true
+  reference:
+    valid: true
+    sorted: true
+- label: descending
+  matched: true
+  product:
+    policy: sipi.p4b-02b124.parameter-list-is-sorted-v1.sortedness-check
+    sorted: true
+    valid: true
+  reference:
+    valid: true
+    sorted: true
+- label: not_sorted
+  matched: true
+  product:
+    policy: sipi.p4b-02b124.parameter-list-is-sorted-v1.sortedness-check
+    sorted: false
+    valid: true
+  reference:
+    valid: true
+    sorted: false
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b124.parameter-list-is-sorted-v1.sortedness-check
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

@@ -10,7 +10,12 @@ description = "Clean-room matched two-port channel kernel primitive."
 [dependencies]
 faer = { version = "0.24.4", default-features = false, features = ["std", "linalg"] }
 rustfft = "6.4.1"
+serde_json = "1"
 sipi-types = { path = "../sipi-types" }
 
 [lints]
 workspace = true
+
+[[test]]
+name = "p3b_04b_cdr_lock_runner"
+harness = false

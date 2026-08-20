@@ -1,0 +1,57 @@
+schema: sipi.p4b-02b118-parameter-list-window-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b118.parameter-list-window-v1.sliding-windows
+matched_count: 5
+case_count: 5
+entries:
+- label: windows_of_three
+  matched: true
+  product:
+    policy: sipi.p4b-02b118.parameter-list-window-v1.sliding-windows
+    tokens:
+    - (a, b, c)
+    - (b, c, d)
+    valid: true
+  reference:
+    valid: true
+    tokens:
+    - (a, b, c)
+    - (b, c, d)
+- label: single_window
+  matched: true
+  product:
+    policy: sipi.p4b-02b118.parameter-list-window-v1.sliding-windows
+    tokens:
+    - (a, b, c)
+    valid: true
+  reference:
+    valid: true
+    tokens:
+    - (a, b, c)
+- label: window_larger_than_list
+  matched: true
+  product:
+    policy: sipi.p4b-02b118.parameter-list-window-v1.sliding-windows
+    tokens: []
+    valid: true
+  reference:
+    valid: true
+    tokens: []
+- label: zero_window_size
+  matched: true
+  product:
+    error: InvalidWindowSize
+    policy: sipi.p4b-02b118.parameter-list-window-v1.sliding-windows
+    valid: false
+  reference:
+    valid: false
+    error: InvalidWindowSize
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b118.parameter-list-window-v1.sliding-windows
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

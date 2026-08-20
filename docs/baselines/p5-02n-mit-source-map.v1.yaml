@@ -1,0 +1,14 @@
+{
+  "schema": "sipi.p5-02n.mit-source-map.v1",
+  "status": "warning_report_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-com warning_report_v1.rs (aggregates P5-02m deterministic warning flags)" },
+  "observation": { "ref": "docs/baselines/p5-02m-warning-detector-stage.v1.yaml", "note": "P5-02m delivered per-array anti-causal / high-freq non-decay detection; this slice aggregates them" },
+  "mapping": [
+    { "concept": "named warning slice input", "rust": "WarningSliceReportV1 slice_name + two flags", "notes": "profile-agnostic; caller supplies named slices" },
+    { "concept": "sorted active-code union", "rust": "aggregate_warning_report_v1 active_codes", "notes": "lexicographic over the two deterministic codes" },
+    { "concept": "per-code flagging slices", "rust": "per_code_slices in input order", "notes": "deterministic ordering" },
+    { "concept": "total flagged slices", "rust": "flagged_slices_total", "notes": "slice with either flag counts" },
+    { "concept": "empty/name fail closed", "rust": "WarningReportErrorV1::EmptyReports / EmptySliceName", "notes": "no defaulting on empty input" }
+  ],
+  "not_ported": ["MLSE/DER/CDR warning contract", "oracle invocation", "warning severity/ordering semantics"]
+}

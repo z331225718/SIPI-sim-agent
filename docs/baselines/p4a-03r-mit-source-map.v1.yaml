@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03r.mit-source-map.v1",
+  "status": "test_data_declaration_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis test_data_declaration_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Test Data] and [Test Load] structural headers and R/C/L/V fixture parameters" },
+  "mapping": [
+    { "concept": "typed [Test Data] / [Test Load] header", "rust": "TypedTestDataDeclarationV1", "notes": "validated ASCII fixture_name and test fixture parameters" },
+    { "concept": "R/C/L_fixture parameters", "rust": "TypedTestDataDeclarationV1::r_fixture_ohm / c_fixture_farad / l_fixture_henry", "notes": "optional finite non-negative FiniteF64 parameters" },
+    { "concept": "V_fixture parameter", "rust": "TypedTestDataDeclarationV1::v_fixture_volts", "notes": "optional finite FiniteF64 parameter" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "test load circuit simulation",
+    "release certification"
+  ]
+}

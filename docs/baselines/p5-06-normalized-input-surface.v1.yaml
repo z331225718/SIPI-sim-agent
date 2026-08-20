@@ -1,0 +1,524 @@
+schema: sipi.p5-06.normalized-input-surface.v1
+status: normalized_input_surface_observed_hash_bound
+config_ref: docs/baselines/authorized-material-registry.v1.yaml#com-r480-config-120g-c2m
+config_sha256: f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9
+canonical_ref: docs/baselines/p5-r480-canonical-parameter-json.v2.yaml
+canonical_keys: 214
+keys_in_config: 82
+port_order_observed: '[ 1 3 2 4 ]'
+keys:
+  A_DD:
+    config_value: 0.02
+    in_config: true
+  A_fe:
+    config_value: 0.415
+    in_config: true
+  A_ft:
+    config_value: 0.6
+    in_config: true
+  A_ne:
+    config_value: 0.45
+    in_config: true
+  A_nt:
+    config_value: 0.6
+    in_config: true
+  A_v:
+    config_value: 0.415
+    in_config: true
+  AC_CM_RMS:
+    config_value: 0
+    in_config: true
+  ACCM_MAX_Freq:
+    in_config: false
+  AUTO_TFX:
+    in_config: false
+  B_float_RSS_MAX:
+    in_config: false
+  BBN Q factor:
+    in_config: false
+  Bessel_Thomson:
+    in_config: false
+  beta_x:
+    config_value: 0
+    in_config: true
+  bmaxg:
+    in_config: false
+  board_tl_gamma0_a1_a2:
+    config_value: '[0 3.8206e-04  9.5909e-05]'
+    in_config: true
+  board_tl_tau:
+    config_value: 0.00579
+    in_config: true
+  board_Z_c:
+    config_value: 100
+    in_config: true
+  BREAD_CRUMBS:
+    config_value: 0
+    in_config: true
+  BREAD_CRUMBS_FIELDS:
+    in_config: false
+  BTorder:
+    in_config: false
+  Butterworth:
+    in_config: false
+  C_0:
+    config_value: '[0.29e-4]'
+    in_config: true
+  C_1:
+    config_value: '[0.19e-4]'
+    in_config: true
+  C_b:
+    config_value: '[0.3e-4 0]'
+    in_config: true
+  C_d:
+    config_value: '[1.2e-4 0]'
+    in_config: true
+  C_p:
+    config_value: '[0.87e-4 0]'
+    in_config: true
+  C_v:
+    in_config: false
+  CDR:
+    in_config: false
+  COM Pass threshold:
+    in_config: false
+  COM_CONTRIBUTION:
+    config_value: 0
+    in_config: true
+  COMPUTE_RILN:
+    in_config: false
+  COMPUTE_TDILN:
+    in_config: false
+  crusor_gain:
+    in_config: false
+  CSV_REPORT:
+    config_value: 1
+    in_config: true
+  CTLE_type:
+    in_config: false
+  D_p:
+    in_config: false
+  Delta_f:
+    config_value: 0.01
+    in_config: true
+  delta_IL:
+    in_config: false
+  DER_0:
+    config_value: 1.0e-05
+    in_config: true
+  DER_CDR:
+    in_config: false
+  DIAGNOSTICS:
+    config_value: 1
+    in_config: true
+  Display frequency domain:
+    in_config: false
+  DISPLAY_WINDOW:
+    config_value: 1
+    in_config: true
+  Do_Colored_Noise:
+    in_config: false
+  Do_White_Noise:
+    in_config: false
+  Do_XT_Noise:
+    in_config: false
+  Dynamic TXFFE:
+    in_config: false
+  EH_max:
+    in_config: false
+  EH_min:
+    config_value: 10
+    in_config: true
+  EH_min_test:
+    in_config: false
+  Enforce Causality:
+    in_config: false
+  Enforce Causality DIFF_TOL:
+    in_config: false
+  Enforce Causality pulse start tolerance:
+    in_config: false
+  Enforce Causality REL_TOL:
+    in_config: false
+  ERL:
+    config_value: 1
+    in_config: true
+  ERL Pass threshold:
+    config_value: 7.3
+    in_config: true
+  ERL_FOM:
+    in_config: false
+  ERL_ONLY:
+    config_value: 0
+    in_config: true
+  Error propagation COM margin:
+    in_config: false
+  eta_0:
+    config_value: 4.1e-08
+    in_config: true
+  EW:
+    in_config: false
+  EXE_MODE:
+    in_config: false
+  exit if deployed:
+    in_config: false
+  f_1:
+    in_config: false
+  f_2:
+    config_value: 40
+    in_config: true
+  f_b:
+    config_value: 53.125
+    in_config: true
+  f_f:
+    config_value: 0.5935686274509804
+    in_config: true
+  f_hp:
+    in_config: false
+  f_HP_P:
+    in_config: false
+  f_HP_PZ:
+    config_value: 1.328125
+    in_config: true
+  f_HP_Z:
+    in_config: false
+  f_min:
+    config_value: 0.05
+    in_config: true
+  f_n:
+    config_value: 0.5935686274509804
+    in_config: true
+  f_p1:
+    config_value: 20
+    in_config: true
+  f_p2:
+    config_value: 28
+    in_config: true
+  f_r:
+    config_value: 0.75
+    in_config: true
+  f_v:
+    config_value: 0.5935686274509804
+    in_config: true
+  f_z:
+    config_value: 12.58
+    in_config: true
+  ffe_backoff:
+    in_config: false
+  ffe_main_cursor_min:
+    in_config: false
+  FFE_OPT_METHOD:
+    in_config: false
+  ffe_post_tap1_max:
+    in_config: false
+  ffe_post_tap_len:
+    in_config: false
+  ffe_pre_tap1_max:
+    in_config: false
+  ffe_pre_tap_len:
+    in_config: false
+  FFE_SNR:
+    in_config: false
+  ffe_tap_step_size:
+    in_config: false
+  ffe_tapn_max:
+    in_config: false
+  fixture delay time:
+    config_value: '[ 0  0.2e-9 ]'
+    in_config: true
+  flip:
+    in_config: false
+  FloatingDFE_Development:
+    in_config: false
+  Force BBN Q factor:
+    in_config: false
+  Force PDF bin size:
+    in_config: false
+  FORCE_TR:
+    in_config: false
+  fraction_of_F_range_start_extrap_from:
+    in_config: false
+  FT_COOP:
+    in_config: false
+  G2_Qual:
+    config_value: '[ 0  -1  -2 -3  ]'
+    in_config: true
+  g_DC:
+    config_value: '[-13:1:-0]'
+    in_config: true
+  g_DC_HP:
+    config_value: '[-3:0.5:-0]'
+    in_config: true
+  G_Qual:
+    config_value: '[-2 -9 ;-2 -11; -4 -10;-4 -9]'
+    in_config: true
+  GDC_MIN:
+    in_config: false
+  Grr:
+    in_config: false
+  Grr_limit:
+    in_config: false
+  Gx:
+    in_config: false
+  Histogram_Window_Weight:
+    config_value: Gaussian
+    in_config: true
+  IDEAL_RX_TERM:
+    in_config: false
+  IDEAL_TX_TERM:
+    in_config: false
+  imb_C_fctr:
+    in_config: false
+  imb_Z_fctr:
+    in_config: false
+  Impulse response truncatio threshold:
+    in_config: false
+  Impulse response truncation threshold:
+    in_config: false
+  INC_PACKAGE:
+    in_config: false
+  inc_reflect_board:
+    in_config: false
+  Include PCB:
+    config_value: 0
+    in_config: true
+  INCLUDE_CTLE:
+    in_config: false
+  INCLUDE_TX_RX_FILTER:
+    in_config: false
+  kappa1:
+    in_config: false
+  kappa2:
+    in_config: false
+  L:
+    config_value: 4
+    in_config: true
+  L_s:
+    config_value: '[0.12 0]'
+    in_config: true
+  LIMIT_JITTER_CONTRIB_TO_DFE_SPAN:
+    in_config: false
+  Local Search:
+    config_value: 2
+    in_config: true
+  M:
+    config_value: 32
+    in_config: true
+  Max burst length calculated:
+    in_config: false
+  Min_VEO_Test:
+    config_value: 5
+    in_config: true
+  MLSD:
+    in_config: false
+  MLSE:
+    in_config: false
+  N:
+    config_value: 800
+    in_config: true
+  N_b:
+    config_value: 4
+    in_config: true
+  N_b_step:
+    in_config: false
+  N_bf:
+    in_config: false
+  N_bg:
+    in_config: false
+  N_bmax:
+    in_config: false
+  N_bx:
+    config_value: 0
+    in_config: true
+  N_f:
+    in_config: false
+  N_qb:
+    in_config: false
+  N_tail_start:
+    in_config: false
+  N_tc:
+    in_config: false
+  N_v:
+    in_config: false
+  Noise_Crest_Factor:
+    in_config: false
+  num_ui_RXFF_noise:
+    in_config: false
+  Optimize_loop_speed_up:
+    in_config: false
+  P_qc:
+    in_config: false
+  package_tl_gamma0_a1_a2:
+    config_value: '[0 0.0009909 0.0002772]'
+    in_config: true
+  package_tl_tau:
+    config_value: 0.006141
+    in_config: true
+  package_Z_c:
+    config_value: '[87.5 87.5  ; 92.5 92.5  ]'
+    in_config: true
+  PDF bin size:
+    in_config: false
+  PHY:
+    in_config: false
+  PKG_NAME:
+    in_config: false
+  PKG_Tx_FFE_preset:
+    in_config: false
+  PLOT_CM:
+    config_value: 0
+    in_config: true
+  PMD_type:
+    config_value: C2M
+    in_config: true
+  Port Order:
+    config_value: '[ 1 3 2 4 ]'
+    in_config: true
+  Q:
+    in_config: false
+  Q_budget_adj:
+    in_config: false
+  QL:
+    in_config: false
+  Qr:
+    in_config: false
+  R_0:
+    config_value: 50
+    in_config: true
+  R_d:
+    config_value: '[50 50]'
+    in_config: true
+  R_LM:
+    config_value: 0.95
+    in_config: true
+  Raised_Cosine:
+    in_config: false
+  RC_end:
+    in_config: false
+  RC_Start:
+    in_config: false
+  RESULT_DIR:
+    config_value: .\results\100GEL_C2M_host_{date}\
+    in_config: true
+  rho_x:
+    config_value: 0.618
+    in_config: true
+  RUNTAG:
+    config_value: C2M_eval_
+    in_config: true
+  RX_CALIBRATION:
+    config_value: 0
+    in_config: true
+  RXFFE FLOAT CTL:
+    in_config: false
+  RXFFE TAP CONSTRAINT:
+    in_config: false
+  Rxnskew:
+    in_config: false
+  Rxpskew:
+    in_config: false
+  S-parameter magnitude extrapolation policy:
+    in_config: false
+  S-parameter phase extrapolation policy:
+    in_config: false
+  sample_adjustment:
+    in_config: false
+  samples_for_C2M:
+    config_value: 100
+    in_config: true
+  SAVE_CONFIG2MAT:
+    config_value: 1
+    in_config: true
+  SAVE_FIGURE_to_CSV:
+    in_config: false
+  SAVE_FIGURES:
+    config_value: 0
+    in_config: true
+  SAVE_KEYWORD_FILE:
+    in_config: false
+  SAVE_TD:
+    in_config: false
+  SHOW_BRD:
+    in_config: false
+  Sigma BBN step:
+    config_value: 0.005
+    in_config: true
+  sigma_r:
+    config_value: 0.02
+    in_config: true
+  sigma_RJ:
+    config_value: 0.01
+    in_config: true
+  skew_ps:
+    in_config: false
+  SNR_TX:
+    config_value: 32.5
+    in_config: true
+  SNR_TXwC0:
+    in_config: false
+  T_h:
+    in_config: false
+  T_k:
+    in_config: false
+  T_O:
+    config_value: 50
+    in_config: true
+  T_r:
+    config_value: 0.0075
+    in_config: true
+  T_r_filter_type:
+    in_config: false
+  T_r_meas_point:
+    in_config: false
+  TDECQ:
+    in_config: false
+  TDMODE:
+    in_config: false
+  TDR:
+    config_value: 1
+    in_config: true
+  TDR_Butterworth:
+    in_config: false
+  TDR_duration:
+    in_config: false
+  TDR_f_BT_3db:
+    in_config: false
+  TDR_W_TXPKG:
+    config_value: 1
+    in_config: true
+  TIME_AXIS:
+    in_config: false
+  TR_TDR:
+    config_value: 0.01
+    in_config: true
+  trunc:
+    in_config: false
+  ts_anchor:
+    in_config: false
+  TS_SRCH_MODE:
+    in_config: false
+  Tukey_Window:
+    config_value: 1
+    in_config: true
+  Txnskew:
+    in_config: false
+  Txpskew:
+    in_config: false
+  Use simple error propagation model:
+    in_config: false
+  USE_ETA0_PSD:
+    in_config: false
+  VEC Pass threshold:
+    config_value: 12
+    in_config: true
+  WC_PORTZ:
+    in_config: false
+  z_p select:
+    config_value: '[  1 2 ]'
+    in_config: true
+  Z_t:
+    in_config: false
+non_claims:
+- not_a_compare
+- not_default_resolution
+- not_warnings_contract
+- not_release_evidence

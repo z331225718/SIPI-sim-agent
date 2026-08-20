@@ -1,0 +1,67 @@
+schema: sipi.p4b-02b30-parameter-tree-leaf-index-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b30.parameter-tree-leaf-index-v1.tree-leaf-index
+matched_count: 3
+case_count: 3
+entries:
+- label: leaf_index_resolve
+  matched: true
+  product:
+    leaf_count: 2
+    leaf_paths:
+    - root.branch_a.leaf_1
+    - root.leaf_2
+    policy: sipi.p4b-02b30.parameter-tree-leaf-index-v1.tree-leaf-index
+    resolve:
+      resolved: true
+      value_tokens:
+      - '20'
+    valid: true
+  reference:
+    valid: true
+    leaf_count: 2
+    leaf_paths:
+    - root.branch_a.leaf_1
+    - root.leaf_2
+    resolve:
+      resolved: true
+      value_tokens:
+      - '20'
+- label: branch_path_rejected
+  matched: true
+  product:
+    leaf_count: 1
+    leaf_paths:
+    - root.branch_a.leaf_1
+    policy: sipi.p4b-02b30.parameter-tree-leaf-index-v1.tree-leaf-index
+    resolve:
+      error: LeafPathNotLeaf("root.branch_a")
+      resolved: false
+    valid: true
+  reference:
+    valid: true
+    leaf_count: 1
+    leaf_paths:
+    - root.branch_a.leaf_1
+    resolve:
+      resolved: false
+      error: LeafPathNotLeaf("root.branch_a")
+- label: missing_leaf_path
+  matched: true
+  product:
+    leaf_count: 1
+    leaf_paths:
+    - root.a
+    policy: sipi.p4b-02b30.parameter-tree-leaf-index-v1.tree-leaf-index
+    resolve:
+      error: MissingLeafPath("root.nope")
+      resolved: false
+    valid: true
+  reference:
+    valid: true
+    leaf_count: 1
+    leaf_paths:
+    - root.a
+    resolve:
+      resolved: false
+      error: MissingLeafPath("root.nope")

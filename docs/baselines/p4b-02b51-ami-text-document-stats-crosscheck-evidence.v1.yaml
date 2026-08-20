@@ -1,0 +1,60 @@
+schema: sipi.p4b-02b51-ami-text-document-stats-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b51.ami-text-document-stats-v1.ast-structure-stats
+matched_count: 4
+case_count: 4
+entries:
+- label: mixed
+  matched: true
+  product:
+    atom_count: 4
+    list_count: 2
+    max_depth: 2
+    policy: sipi.p4b-02b51.ami-text-document-stats-v1.ast-structure-stats
+    quoted_count: 1
+    valid: true
+  reference:
+    valid: true
+    list_count: 2
+    atom_count: 4
+    quoted_count: 1
+    max_depth: 2
+- label: two_forms
+  matched: true
+  product:
+    atom_count: 4
+    list_count: 2
+    max_depth: 1
+    policy: sipi.p4b-02b51.ami-text-document-stats-v1.ast-structure-stats
+    quoted_count: 0
+    valid: true
+  reference:
+    valid: true
+    list_count: 2
+    atom_count: 4
+    quoted_count: 0
+    max_depth: 1
+- label: deep_nesting
+  matched: true
+  product:
+    atom_count: 5
+    list_count: 4
+    max_depth: 4
+    policy: sipi.p4b-02b51.ami-text-document-stats-v1.ast-structure-stats
+    quoted_count: 0
+    valid: true
+  reference:
+    valid: true
+    list_count: 4
+    atom_count: 5
+    quoted_count: 0
+    max_depth: 4
+- label: empty_text
+  matched: true
+  product:
+    policy: sipi.p4b-02b51.ami-text-document-stats-v1.ast-structure-stats
+    stats_error: EmptyDocument
+    valid: false
+  reference:
+    valid: false
+    parse_error: EmptyDocument

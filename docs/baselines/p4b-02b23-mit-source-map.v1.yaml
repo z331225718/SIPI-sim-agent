@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4b-02b23.mit-source-map.v1",
+  "status": "parameter_tree_subtree_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_subtree_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "canonical dot-separated path subtree extraction over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "subtree extraction by canonical path", "rust": "extract_parameter_tree_subtree_v1", "notes": "walks dot-separated path and returns owned subtree clone" },
+    { "concept": "root mismatch detection", "rust": "ParameterTreeSubtreeErrorV1::RootMismatch", "notes": "root name mismatch fails closed" },
+    { "concept": "missing path segment check", "rust": "ParameterTreeSubtreeErrorV1::MissingPath", "notes": "missing path segments fail closed with canonical path" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

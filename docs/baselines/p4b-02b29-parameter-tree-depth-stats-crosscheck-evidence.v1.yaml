@@ -1,0 +1,89 @@
+schema: sipi.p4b-02b29-parameter-tree-depth-stats-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b29.parameter-tree-depth-stats-v1.tree-depth-statistics
+matched_count: 3
+case_count: 3
+entries:
+- label: nested_depth_stats
+  matched: true
+  product:
+    leaf_count: 2
+    leaves_per_depth:
+    - 0
+    - 1
+    - 1
+    max_depth: 2
+    min_depth: 0
+    nodes_per_depth:
+    - 1
+    - 2
+    - 1
+    policy: sipi.p4b-02b29.parameter-tree-depth-stats-v1.tree-depth-statistics
+    valid: true
+  reference:
+    valid: true
+    max_depth: 2
+    min_depth: 0
+    leaf_count: 2
+    nodes_per_depth:
+    - 1
+    - 2
+    - 1
+    leaves_per_depth:
+    - 0
+    - 1
+    - 1
+- label: single_node_depth_stats
+  matched: true
+  product:
+    leaf_count: 1
+    leaves_per_depth:
+    - 1
+    max_depth: 0
+    min_depth: 0
+    nodes_per_depth:
+    - 1
+    policy: sipi.p4b-02b29.parameter-tree-depth-stats-v1.tree-depth-statistics
+    valid: true
+  reference:
+    valid: true
+    max_depth: 0
+    min_depth: 0
+    leaf_count: 1
+    nodes_per_depth:
+    - 1
+    leaves_per_depth:
+    - 1
+- label: deep_depth_stats
+  matched: true
+  product:
+    leaf_count: 1
+    leaves_per_depth:
+    - 0
+    - 0
+    - 0
+    - 1
+    max_depth: 3
+    min_depth: 0
+    nodes_per_depth:
+    - 1
+    - 1
+    - 1
+    - 1
+    policy: sipi.p4b-02b29.parameter-tree-depth-stats-v1.tree-depth-statistics
+    valid: true
+  reference:
+    valid: true
+    max_depth: 3
+    min_depth: 0
+    leaf_count: 1
+    nodes_per_depth:
+    - 1
+    - 1
+    - 1
+    - 1
+    leaves_per_depth:
+    - 0
+    - 0
+    - 0
+    - 1

@@ -1,0 +1,80 @@
+schema: sipi.p4b-02b41-parameter-tree-inferred-decode-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b41.parameter-tree-inferred-decode-v1.infer-then-decode
+matched_count: 4
+case_count: 4
+entries:
+- label: infer_and_decode_mixed
+  matched: true
+  product:
+    leaf_types:
+      enabled: Boolean
+      gain: Float
+      mode: String
+      steps: Integer
+    leaves_decoded: 4
+    policy: sipi.p4b-02b41.parameter-tree-inferred-decode-v1.infer-then-decode
+    valid: true
+    values:
+      enabled:
+        kind: Boolean
+        value: true
+      gain:
+        kind: Float
+        value: 0.5
+      mode:
+        kind: String
+        value: fast
+      steps:
+        kind: Integer
+        value: 7
+  reference:
+    valid: true
+    leaves_decoded: 4
+    leaf_types:
+      enabled: Boolean
+      gain: Float
+      mode: String
+      steps: Integer
+    values:
+      enabled:
+        kind: Boolean
+        value: true
+      gain:
+        kind: Float
+        value: 0.5
+      mode:
+        kind: String
+        value: fast
+      steps:
+        kind: Integer
+        value: 7
+- label: multi_token_leaf
+  matched: true
+  product:
+    inferred_decode_error: 'Decoding(MultiTokenValue { leaf: "a", token_count: 2 })'
+    policy: sipi.p4b-02b41.parameter-tree-inferred-decode-v1.infer-then-decode
+    valid: false
+  reference:
+    valid: false
+    inferred_decode_error: 'Decoding(MultiTokenValue { leaf: "a", token_count: 2 })'
+- label: conflicting_tokens
+  matched: true
+  product:
+    inferred_decode_error: 'Inference(ConflictingTokenTypes { leaf: "mix", types:
+      ["Float", "Integer"] })'
+    policy: sipi.p4b-02b41.parameter-tree-inferred-decode-v1.infer-then-decode
+    valid: false
+  reference:
+    valid: false
+    inferred_decode_error: 'Inference(ConflictingTokenTypes { leaf: "mix", types:
+      ["Float", "Integer"] })'
+- label: duplicate_leaf_names
+  matched: true
+  product:
+    inferred_decode_error: Inference(DuplicateLeafName("gain"))
+    policy: sipi.p4b-02b41.parameter-tree-inferred-decode-v1.infer-then-decode
+    valid: false
+  reference:
+    valid: false
+    inferred_decode_error: Inference(DuplicateLeafName("gain"))

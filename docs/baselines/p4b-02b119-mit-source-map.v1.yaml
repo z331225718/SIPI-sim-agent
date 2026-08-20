@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b119.mit-source-map.v1",
+  "status": "parameter_list_run_length_encode_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_run_length_encode_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "consecutive-run compression over validated AMI parameter list values" },
+  "mapping": [
+    { "concept": "run-length encoding", "rust": "run_length_encode_parameter_list_v1", "notes": "returns (item, run_length) pairs of consecutive equal trimmed items, in order" },
+    { "concept": "RLE errors", "rust": "ParameterListRunLengthEncodeErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

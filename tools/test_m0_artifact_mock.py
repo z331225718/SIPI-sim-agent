@@ -5,7 +5,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Thread
+import sys
 import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT / "tools") not in sys.path:
+    sys.path.insert(0, str(ROOT / "tools"))
 
 from m0_artifact_mock import ArtifactIntegrityError, ArtifactPolicyError, ArtifactUnavailableOffline, Descriptor, fetch
 

@@ -1,0 +1,125 @@
+schema: sipi.p4b-02b7.parameter-trees-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b7.parameter-trees-v1.ast-forms-to-tree
+matched_count: 3
+case_count: 3
+entries:
+- label: valid_tree_hierarchy
+  matched: true
+  product:
+    policy: sipi.p4b-02b7.parameter-trees-v1.ast-forms-to-tree
+    tree_count: 1
+    trees:
+    - root_name: Reserved_Parameters
+      root_node:
+        children:
+          dfe:
+            children:
+              tap_1:
+                kind: leaf
+                name: tap_1
+                value_tokens:
+                - Integer
+                - '2'
+            kind: branch
+            name: dfe
+          tx_swing:
+            kind: leaf
+            name: tx_swing
+            value_tokens:
+            - Float
+            - '0.5'
+        kind: branch
+        name: Reserved_Parameters
+    valid: true
+  reference:
+    valid: true
+    tree_count: 1
+    trees:
+    - root_name: Reserved_Parameters
+      root_node:
+        kind: branch
+        name: Reserved_Parameters
+        children:
+          dfe:
+            kind: branch
+            name: dfe
+            children:
+              tap_1:
+                kind: leaf
+                name: tap_1
+                value_tokens:
+                - Integer
+                - '2'
+          tx_swing:
+            kind: leaf
+            name: tx_swing
+            value_tokens:
+            - Float
+            - '0.5'
+- label: nested_branches
+  matched: true
+  product:
+    policy: sipi.p4b-02b7.parameter-trees-v1.ast-forms-to-tree
+    tree_count: 1
+    trees:
+    - root_name: root
+      root_node:
+        children:
+          branch_a:
+            children:
+              leaf_1:
+                kind: leaf
+                name: leaf_1
+                value_tokens:
+                - '10'
+            kind: branch
+            name: branch_a
+          branch_b:
+            children:
+              leaf_2:
+                kind: leaf
+                name: leaf_2
+                value_tokens:
+                - '20'
+            kind: branch
+            name: branch_b
+        kind: branch
+        name: root
+    valid: true
+  reference:
+    valid: true
+    tree_count: 1
+    trees:
+    - root_name: root
+      root_node:
+        kind: branch
+        name: root
+        children:
+          branch_a:
+            kind: branch
+            name: branch_a
+            children:
+              leaf_1:
+                kind: leaf
+                name: leaf_1
+                value_tokens:
+                - '10'
+          branch_b:
+            kind: branch
+            name: branch_b
+            children:
+              leaf_2:
+                kind: leaf
+                name: leaf_2
+                value_tokens:
+                - '20'
+- label: duplicate_child
+  matched: true
+  product:
+    build_error: DuplicateChild("child_a")
+    policy: sipi.p4b-02b7.parameter-trees-v1.ast-forms-to-tree
+    valid: false
+  reference:
+    valid: false
+    build_error: DuplicateChild("child_a")

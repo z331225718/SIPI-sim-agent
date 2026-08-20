@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b140-parameter-list-multi-remove-all-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b140.parameter-list-multi-remove-all-v1.batch-removal
+matched_count: 4
+case_count: 4
+entries:
+- label: removes_query_items
+  matched: true
+  product:
+    policy: sipi.p4b-02b140.parameter-list-multi-remove-all-v1.batch-removal
+    token: (c)
+    valid: true
+  reference:
+    valid: true
+    token: (c)
+- label: empty_query
+  matched: true
+  product:
+    policy: sipi.p4b-02b140.parameter-list-multi-remove-all-v1.batch-removal
+    token: (a, b)
+    valid: true
+  reference:
+    valid: true
+    token: (a, b)
+- label: all_removed
+  matched: true
+  product:
+    policy: sipi.p4b-02b140.parameter-list-multi-remove-all-v1.batch-removal
+    token: ()
+    valid: true
+  reference:
+    valid: true
+    token: ()
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b140.parameter-list-multi-remove-all-v1.batch-removal
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

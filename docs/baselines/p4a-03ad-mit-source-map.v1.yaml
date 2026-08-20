@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03ad.mit-source-map.v1",
+  "status": "model_selector_keywords_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis model_selector_keywords_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Model Selector] structural header and model option entries" },
+  "mapping": [
+    { "concept": "typed [Model Selector] header", "rust": "TypedModelSelectorKeywordsV1", "notes": "validated ASCII selector_name and model_options list" },
+    { "concept": "ModelOptionEntryV1 model option entry", "rust": "ModelOptionEntryV1", "notes": "model_name and optional description string" },
+    { "concept": "duplicate model option check", "rust": "ModelSelectorKeywordsErrorV1::DuplicateModelOption", "notes": "duplicate model_name in same selector fails closed" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "dynamic model selection during simulation",
+    "release certification"
+  ]
+}

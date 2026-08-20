@@ -1,0 +1,60 @@
+schema: sipi.p4b-02b33-parameter-tree-value-type-inference-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b33.parameter-tree-value-type-inference-v1.leaf-type-inference
+matched_count: 4
+case_count: 4
+entries:
+- label: mixed_single_token
+  matched: true
+  product:
+    leaf_types:
+      enabled: Boolean
+      gain: Float
+      mode: String
+      steps: Integer
+    leaves_inferred: 4
+    policy: sipi.p4b-02b33.parameter-tree-value-type-inference-v1.leaf-type-inference
+    valid: true
+  reference:
+    valid: true
+    leaves_inferred: 4
+    leaf_types:
+      enabled: Boolean
+      gain: Float
+      mode: String
+      steps: Integer
+- label: conflicting_multi_token
+  matched: true
+  product:
+    inference_error: 'ConflictingTokenTypes { leaf: "mix", types: ["Float", "Integer"]
+      }'
+    policy: sipi.p4b-02b33.parameter-tree-value-type-inference-v1.leaf-type-inference
+    valid: false
+  reference:
+    valid: false
+    inference_error: 'ConflictingTokenTypes { leaf: "mix", types: ["Float", "Integer"]
+      }'
+- label: string_fallback
+  matched: true
+  product:
+    leaf_types:
+      code: Integer
+      name: String
+    leaves_inferred: 2
+    policy: sipi.p4b-02b33.parameter-tree-value-type-inference-v1.leaf-type-inference
+    valid: true
+  reference:
+    valid: true
+    leaves_inferred: 2
+    leaf_types:
+      code: Integer
+      name: String
+- label: duplicate_leaf_names
+  matched: true
+  product:
+    inference_error: DuplicateLeafName("gain")
+    policy: sipi.p4b-02b33.parameter-tree-value-type-inference-v1.leaf-type-inference
+    valid: false
+  reference:
+    valid: false
+    inference_error: DuplicateLeafName("gain")

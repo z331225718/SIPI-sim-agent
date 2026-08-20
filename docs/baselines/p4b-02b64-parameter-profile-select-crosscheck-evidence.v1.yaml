@@ -1,0 +1,64 @@
+schema: sipi.p4b-02b64-parameter-profile-select-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b64.parameter-profile-select-v1.name-set-selection
+matched_count: 4
+case_count: 4
+entries:
+- label: select_subset
+  matched: true
+  product:
+    policy: sipi.p4b-02b64.parameter-profile-select-v1.name-set-selection
+    selected:
+      gain:
+        type: Float
+        value: '0.5'
+    selected_count: 1
+    valid: true
+  reference:
+    valid: true
+    selected_count: 1
+    selected:
+      gain:
+        type: Float
+        value: '0.5'
+- label: select_all
+  matched: true
+  product:
+    policy: sipi.p4b-02b64.parameter-profile-select-v1.name-set-selection
+    selected:
+      gain:
+        type: Float
+        value: '0.5'
+      steps:
+        type: Integer
+        value: '7'
+    selected_count: 2
+    valid: true
+  reference:
+    valid: true
+    selected_count: 2
+    selected:
+      gain:
+        type: Float
+        value: '0.5'
+      steps:
+        type: Integer
+        value: '7'
+- label: missing_parameter
+  matched: true
+  product:
+    policy: sipi.p4b-02b64.parameter-profile-select-v1.name-set-selection
+    selection_error: MissingParameter("nope")
+    valid: false
+  reference:
+    valid: false
+    selection_error: MissingParameter("nope")
+- label: empty_selection
+  matched: true
+  product:
+    policy: sipi.p4b-02b64.parameter-profile-select-v1.name-set-selection
+    selection_error: EmptySelection
+    valid: false
+  reference:
+    valid: false
+    selection_error: EmptySelection

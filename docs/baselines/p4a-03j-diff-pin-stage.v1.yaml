@@ -1,0 +1,27 @@
+{
+  "schema": "sipi.p4a-03j.diff-pin-stage.v1",
+  "status": "diff_pin_declaration_ported",
+  "purpose": "P4A-03 typed IBIS AST sub-slice: lifts and validates IBIS [Diff Pin] declarations (non-inverting pin, inverting pin, vdiff, tdelay) into typed clean-room structures (sipi-ibis diff_pin_declaration_v1.rs). Fail-closed: empty pin names, non-ASCII characters, identical pin pairs, or negative/non-finite threshold/delay values are strictly rejected.",
+  "source_map_ref": "docs/baselines/p4a-03j-mit-source-map.v1.yaml",
+  "based_on": [
+    "docs/baselines/p4a-03d-model-declaration-stage.v1.yaml",
+    "docs/baselines/p4a-03e-pin-declaration-stage.v1.yaml",
+    "docs/baselines/p4a-03f-pin-model-linkage-stage.v1.yaml",
+    "docs/baselines/p4a-03g-component-declaration-stage.v1.yaml",
+    "docs/baselines/p4a-03h-package-model-stage.v1.yaml",
+    "docs/baselines/p4a-03i-model-selector-stage.v1.yaml"
+  ],
+  "admission": {
+    "typed_diff_pin_declaration": true,
+    "differential_threshold_validation": true,
+    "ascii_pin_name_validation": true,
+    "fail_closed_on_invalid_input": true,
+    "full_ibis_parser": false,
+    "release_evidence": false
+  },
+  "non_claims": [
+    "not_full_ibis_parser",
+    "not_electrical_semantics",
+    "not_acceptance_evidence"
+  ]
+}

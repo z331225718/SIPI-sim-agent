@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b137-parameter-list-duplicate-item-count-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b137.parameter-list-duplicate-item-count-v1.duplicate-items
+matched_count: 4
+case_count: 4
+entries:
+- label: duplicate_items
+  matched: true
+  product:
+    count: 2
+    policy: sipi.p4b-02b137.parameter-list-duplicate-item-count-v1.duplicate-items
+    valid: true
+  reference:
+    valid: true
+    count: 2
+- label: all_distinct
+  matched: true
+  product:
+    count: 0
+    policy: sipi.p4b-02b137.parameter-list-duplicate-item-count-v1.duplicate-items
+    valid: true
+  reference:
+    valid: true
+    count: 0
+- label: single_repeated
+  matched: true
+  product:
+    count: 1
+    policy: sipi.p4b-02b137.parameter-list-duplicate-item-count-v1.duplicate-items
+    valid: true
+  reference:
+    valid: true
+    count: 1
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b137.parameter-list-duplicate-item-count-v1.duplicate-items
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

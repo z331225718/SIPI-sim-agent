@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b104-parameter-list-reverse-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b104.parameter-list-reverse-v1.list-item-reverse
+matched_count: 4
+case_count: 4
+entries:
+- label: reverse_multi
+  matched: true
+  product:
+    policy: sipi.p4b-02b104.parameter-list-reverse-v1.list-item-reverse
+    reversed: (d, c, b, a)
+    valid: true
+  reference:
+    valid: true
+    reversed: (d, c, b, a)
+- label: single
+  matched: true
+  product:
+    policy: sipi.p4b-02b104.parameter-list-reverse-v1.list-item-reverse
+    reversed: (x)
+    valid: true
+  reference:
+    valid: true
+    reversed: (x)
+- label: two_items
+  matched: true
+  product:
+    policy: sipi.p4b-02b104.parameter-list-reverse-v1.list-item-reverse
+    reversed: (b, a)
+    valid: true
+  reference:
+    valid: true
+    reversed: (b, a)
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b104.parameter-list-reverse-v1.list-item-reverse
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

@@ -14,7 +14,7 @@
 
 use std::{error::Error, fmt};
 
-use rustfft::{FftPlanner, num_complex::Complex};
+use rustfft::{num_complex::Complex, FftPlanner};
 use sipi_types::{FiniteF64, Seconds};
 
 use crate::SelectedP3cUniformSpectrumV1;
@@ -182,16 +182,14 @@ fn inverse_uniform_values(
 }
 
 fn within_residual_bound(residue: f64, scale: f64, absolute: f64, relative: f64) -> bool {
-    residue.is_finite()
-        && scale.is_finite()
-        && residue <= absolute + relative * scale
+    residue.is_finite() && scale.is_finite() && residue <= absolute + relative * scale
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use sipi_channel::{
-        FourPortS, SelectedP3cFourPortSpectrumV1, reduce_selected_p3c_fixed_four_port_bench_v1,
+        reduce_selected_p3c_fixed_four_port_bench_v1, FourPortS, SelectedP3cFourPortSpectrumV1,
     };
     use sipi_types::Complex64;
     use sipi_types::{Hertz, Ohms};
@@ -259,17 +257,14 @@ mod tests {
         let length = response.sample_count();
         for (time_index, sample) in response.samples().iter().enumerate() {
             let direct = values[0].real()
-                + values[values.len() - 1].real()
-                    * (-1.0_f64).powi(time_index as i32)
+                + values[values.len() - 1].real() * (-1.0_f64).powi(time_index as i32)
                 + (1..values.len() - 1)
                     .map(|frequency_index| {
-                        let phase = std::f64::consts::TAU
-                            * frequency_index as f64
-                            * time_index as f64
-                            / length as f64;
-                        2.0
-                            * (values[frequency_index].real() * phase.cos()
-                                - values[frequency_index].imaginary() * phase.sin())
+                        let phase =
+                            std::f64::consts::TAU * frequency_index as f64 * time_index as f64
+                                / length as f64;
+                        2.0 * (values[frequency_index].real() * phase.cos()
+                            - values[frequency_index].imaginary() * phase.sin())
                     })
                     .sum::<f64>();
             assert!((sample.get() - direct / length as f64).abs() < 1.0e-12);
@@ -320,8 +315,7 @@ mod tests {
     #[test]
     fn nontrivial_endpoint_residue_and_bad_shape_reject() {
         assert_eq!(
-            inverse_uniform_values(&[complex(1.0, 1.0e-4), complex(1.0, 0.0)], 1.0)
-                .unwrap_err(),
+            inverse_uniform_values(&[complex(1.0, 1.0e-4), complex(1.0, 0.0)], 1.0).unwrap_err(),
             RawPeriodicTransformErrorV1::EndpointImaginaryResidue
         );
         assert_eq!(

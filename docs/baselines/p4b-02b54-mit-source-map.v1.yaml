@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b54.mit-source-map.v1",
+  "status": "parameter_tree_duplicate_check_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_duplicate_check_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "cross-depth duplicate leaf-name value-token consistency classification" },
+  "mapping": [
+    { "concept": "duplicate consistency check", "rust": "check_parameter_tree_duplicate_consistency_v1", "notes": "classifies duplicated names as consistent or inconsistent by token equality" },
+    { "concept": "check outcome", "rust": "ParameterTreeDuplicateCheckV1", "notes": "holds leaves_checked, duplicated_names, consistent, inconsistent" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

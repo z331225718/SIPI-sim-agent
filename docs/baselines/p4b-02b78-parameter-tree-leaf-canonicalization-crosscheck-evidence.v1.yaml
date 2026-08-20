@@ -1,0 +1,164 @@
+schema: sipi.p4b-02b78-parameter-tree-leaf-canonicalization-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b78.parameter-tree-leaf-canonicalization-v1.canonical-leaf-spellings
+matched_count: 4
+case_count: 4
+entries:
+- label: integer_and_list
+  matched: true
+  product:
+    build_error: InvalidNodeName
+    policy: sipi.p4b-02b78.parameter-tree-leaf-canonicalization-v1.canonical-leaf-spellings
+    valid: false
+  reference:
+    valid: false
+    build_error: InvalidNodeName
+- label: raw_types
+  matched: true
+  product:
+    canonicalized: 0
+    leaves: 3
+    policy: sipi.p4b-02b78.parameter-tree-leaf-canonicalization-v1.canonical-leaf-spellings
+    root_name: root
+    tree:
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - Float
+        - '0.50'
+      - kind: leaf
+        name: mode
+        value_tokens:
+        - String
+        - Linear
+      - kind: leaf
+        name: 'on'
+        value_tokens:
+        - Boolean
+        - 'True'
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    leaves: 3
+    canonicalized: 0
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - Float
+        - '0.50'
+      - kind: leaf
+        name: mode
+        value_tokens:
+        - String
+        - Linear
+      - kind: leaf
+        name: 'on'
+        value_tokens:
+        - Boolean
+        - 'True'
+- label: mixed_nested
+  matched: true
+  product:
+    canonicalized: 1
+    leaves: 2
+    policy: sipi.p4b-02b78.parameter-tree-leaf-canonicalization-v1.canonical-leaf-spellings
+    root_name: root
+    tree:
+      children:
+      - kind: leaf
+        name: plain
+        value_tokens:
+        - '5'
+      - children:
+        - kind: leaf
+          name: steps
+          value_tokens:
+          - Integer
+          - '7'
+        kind: branch
+        name: sub
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    leaves: 2
+    canonicalized: 1
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: leaf
+        name: plain
+        value_tokens:
+        - '5'
+      - kind: branch
+        name: sub
+        children:
+        - kind: leaf
+          name: steps
+          value_tokens:
+          - Integer
+          - '7'
+- label: invalid_untouched
+  matched: true
+  product:
+    canonicalized: 0
+    leaves: 3
+    policy: sipi.p4b-02b78.parameter-tree-leaf-canonicalization-v1.canonical-leaf-spellings
+    root_name: root
+    tree:
+      children:
+      - kind: leaf
+        name: bad
+        value_tokens:
+        - Integer
+        - abc
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - Float
+        - '0.5'
+      - kind: leaf
+        name: raw
+        value_tokens:
+        - x
+        - y
+        - z
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    leaves: 3
+    canonicalized: 0
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: leaf
+        name: bad
+        value_tokens:
+        - Integer
+        - abc
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - Float
+        - '0.5'
+      - kind: leaf
+        name: raw
+        value_tokens:
+        - x
+        - y
+        - z

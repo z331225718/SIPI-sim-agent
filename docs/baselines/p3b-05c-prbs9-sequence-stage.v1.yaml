@@ -1,0 +1,18 @@
+{
+  "schema": "sipi.p3b-05c.prbs9-sequence-stage.v1",
+  "status": "prbs9_deterministic_core_ported",
+  "purpose": "P3B-05c deterministic PRBS9 sequence core: owner A4 decision (PRBS9 profile, seed 0b000000001, reproducible) is implemented as a product-owned x^9+x^5+1 LFSR with seed replay/checkpoint primitives. Injection position (TX), time-warp units model, observables and tolerance are NOT selected and stay out of scope (fail-closed). The P3B-05a wire-request rejection surface stays in force.",
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (A4)",
+  "admission": {
+    "prbs9_sequence_generation": true,
+    "seed_replay": true,
+    "checkpoint_restore": true,
+    "injection_position": false,
+    "time_warp_units_model": false,
+    "observables": false,
+    "tolerance": false,
+    "product_runtime_invoked": false,
+    "release_promoted": false
+  },
+  "non_claims": ["not_tx_injection", "not_time_warp_units", "not_observables", "not_tolerance", "not_acceptance_evidence"]
+}

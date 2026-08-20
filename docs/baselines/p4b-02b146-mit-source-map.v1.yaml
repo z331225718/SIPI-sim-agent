@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b146.mit-source-map.v1",
+  "status": "parameter_list_starts_with_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_starts_with_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "list-value prefix relation over validated AMI parameter list values" },
+  "mapping": [
+    { "concept": "prefix relation", "rust": "list_starts_with_v1", "notes": "reports whether the prefix items equal the value's first items element-wise by byte equality" },
+    { "concept": "prefix errors", "rust": "ParameterListStartsWithErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

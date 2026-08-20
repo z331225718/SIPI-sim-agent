@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03m.mit-source-map.v1",
+  "status": "circuit_call_declaration_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis circuit_call_declaration_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Circuit Call] structural header and Port-Node mapping" },
+  "mapping": [
+    { "concept": "typed [Circuit Call] header", "rust": "TypedCircuitCallDeclarationV1", "notes": "validated ASCII circuit_name and port_mappings list" },
+    { "concept": "Port-Node mapping pair", "rust": "PortMapV1", "notes": "port_name and node_name string pair" },
+    { "concept": "duplicate port name check", "rust": "CircuitCallDeclarationErrorV1::DuplicatePortName", "notes": "duplicate port within a call fails closed" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "subcircuit netlist simulation",
+    "release certification"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-04p.crosstalk-noise-stage.v1",
+  "status": "crosstalk_noise_stage_ported",
+  "purpose": "P5-04p crosstalk noise stage ported from the MIT agent-com source: the frequency-domain FEXT/NEXT power integration (_crosstalk_noise with sinc-squared weights, TX-FFE phasor filter, RxFFE response, searchsorted-right fb band) and the TDMODE implicit-expansion outer-product path (_td_source_crosstalk_noise with column-major linear consumption and the source's last-channel amplitude convention). The candidate evaluation and search loop remain separate scopes.",
+  "source_map_ref": "docs/baselines/p5-04p-mit-source-map.v1.yaml",
+  "admission": {
+    "candidate_evaluation": false,
+    "search_loop": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_candidate_evaluation", "not_search_loop", "not_profile_acceptance", "not_release_evidence"]
+}

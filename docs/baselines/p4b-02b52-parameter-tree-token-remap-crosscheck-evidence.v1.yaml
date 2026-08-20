@@ -1,0 +1,102 @@
+schema: sipi.p4b-02b52-parameter-tree-token-remap-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b52.parameter-tree-token-remap-v1.value-token-substitution
+matched_count: 4
+case_count: 4
+entries:
+- label: simple_remap
+  matched: true
+  product:
+    policy: sipi.p4b-02b52.parameter-tree-token-remap-v1.value-token-substitution
+    replacements: 1
+    root_name: root
+    tree:
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - Float
+        - '0.55'
+      - kind: leaf
+        name: steps
+        value_tokens:
+        - Integer
+        - '7'
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    replacements: 1
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: leaf
+        name: gain
+        value_tokens:
+        - Float
+        - '0.55'
+      - kind: leaf
+        name: steps
+        value_tokens:
+        - Integer
+        - '7'
+- label: multi_occurrence
+  matched: true
+  product:
+    policy: sipi.p4b-02b52.parameter-tree-token-remap-v1.value-token-substitution
+    replacements: 2
+    root_name: root
+    tree:
+      children:
+      - kind: leaf
+        name: x
+        value_tokens:
+        - '1'
+        - '9'
+      - kind: leaf
+        name: y
+        value_tokens:
+        - '9'
+        - '3'
+      kind: branch
+      name: root
+    valid: true
+  reference:
+    valid: true
+    replacements: 2
+    root_name: root
+    tree:
+      kind: branch
+      name: root
+      children:
+      - kind: leaf
+        name: x
+        value_tokens:
+        - '1'
+        - '9'
+      - kind: leaf
+        name: y
+        value_tokens:
+        - '9'
+        - '3'
+- label: missing_token
+  matched: true
+  product:
+    policy: sipi.p4b-02b52.parameter-tree-token-remap-v1.value-token-substitution
+    remap_error: MissingToken("zzz")
+    valid: false
+  reference:
+    valid: false
+    remap_error: MissingToken("zzz")
+- label: empty_remap
+  matched: true
+  product:
+    policy: sipi.p4b-02b52.parameter-tree-token-remap-v1.value-token-substitution
+    remap_error: EmptyRemap
+    valid: false
+  reference:
+    valid: false
+    remap_error: EmptyRemap

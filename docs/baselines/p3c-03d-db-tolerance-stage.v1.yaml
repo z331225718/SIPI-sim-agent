@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p3c-03d.db-tolerance-stage.v1",
+  "status": "db_tolerance_check_ported",
+  "purpose": "P3C-03d dB-domain tolerance pass/fail core: a dedicated absolute-difference tolerance check in the dB domain (|candidate - reference| <= tolerance), binding the owner-decided 0.1 dB tolerance (A5). Complements the general P3C-03c metric-compare engine with a dB-specific rule and records the owner tolerance decision as a product constant. A small relative epsilon keeps the boundary inclusive against floating-point representation error.",
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (A5: 0.1 dB)",
+  "source_map_ref": "docs/baselines/p3c-03d-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p3c-02e-qfactor-ber-stage.v1.yaml", "docs/baselines/p3c-03c-metric-compare-stage.v1.yaml"],
+  "admission": {
+    "db_absolute_difference": true,
+    "owner_0p1db_constant": true,
+    "boundary_inclusive_epsilon": true,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_a_metric_profile", "not_commit_compare", "not_com_parity", "not_acceptance_evidence"]
+}

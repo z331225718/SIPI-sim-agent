@@ -1,0 +1,90 @@
+schema: sipi.p4a-03f.pin-model-linkage-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03f.pin-model-linkage.v1.typed
+matched_count: 8
+case_count: 8
+entries:
+- label: all_resolved_to_declared_models
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_resolved:
+  - DQ_PIN
+  - DQ_PIN
+  - CK_PIN
+  reference_resolved:
+  - DQ_PIN
+  - DQ_PIN
+  - CK_PIN
+  product_marker: []
+  reference_marker: []
+- label: nc_marker_allowed
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_resolved:
+  - DQ_PIN
+  reference_resolved:
+  - DQ_PIN
+  product_marker:
+  - NC
+  reference_marker:
+  - NC
+- label: nc_unresolved_without_allowance
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_resolved: []
+  reference_resolved: []
+  product_marker: []
+  reference_marker: []
+- label: unknown_model_rejected_pin_order
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_resolved: []
+  reference_resolved: []
+  product_marker: []
+  reference_marker: []
+- label: empty_pins_rejected
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_resolved: []
+  reference_resolved: []
+  product_marker: []
+  reference_marker: []
+- label: empty_models_rejected
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_resolved: []
+  reference_resolved: []
+  product_marker: []
+  reference_marker: []
+- label: mixed_markers_and_resolved_order
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_resolved:
+  - DQ_PIN
+  reference_resolved:
+  - DQ_PIN
+  product_marker:
+  - NC
+  - NC
+  reference_marker:
+  - NC
+  - NC
+- label: markers_dont_conceal_unknown
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_resolved:
+  - DQ_PIN
+  reference_resolved:
+  - DQ_PIN
+  product_marker:
+  - BOGUS
+  reference_marker:
+  - BOGUS

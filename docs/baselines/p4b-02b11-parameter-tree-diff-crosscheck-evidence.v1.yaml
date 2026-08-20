@@ -1,0 +1,45 @@
+schema: sipi.p4b-02b11-parameter-tree-diff-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b11.parameter-tree-diff-v1.tree-structural-diff
+matched_count: 3
+case_count: 3
+entries:
+- label: identical_trees
+  matched: true
+  product:
+    diff_count: 0
+    diffs: []
+    policy: sipi.p4b-02b11.parameter-tree-diff-v1.tree-structural-diff
+    valid: true
+  reference:
+    valid: true
+    diff_count: 0
+    diffs: []
+- label: missing_and_extra_nodes
+  matched: true
+  product:
+    diff_count: 2
+    diffs:
+    - kind: missing_node
+      path: root.node_b
+    - kind: extra_node
+      path: root.node_c
+    policy: sipi.p4b-02b11.parameter-tree-diff-v1.tree-structural-diff
+    valid: true
+  reference:
+    valid: true
+    diff_count: 2
+    diffs:
+    - kind: missing_node
+      path: root.node_b
+    - kind: extra_node
+      path: root.node_c
+- label: root_mismatch
+  matched: true
+  product:
+    diff_error: 'RootMismatch { expected: "root_a", actual: "root_b" }'
+    policy: sipi.p4b-02b11.parameter-tree-diff-v1.tree-structural-diff
+    valid: false
+  reference:
+    valid: false
+    diff_error: 'RootMismatch { expected: "root_a", actual: "root_b" }'

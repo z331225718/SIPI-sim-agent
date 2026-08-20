@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b74.mit-source-map.v1",
+  "status": "parameter_profile_typed_merge_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_typed_merge_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "typed-value merge over assembled parameter profile maps" },
+  "mapping": [
+    { "concept": "typed merge", "rust": "merge_parameter_profiles_typed_v1", "notes": "merges shared names by 02b70 typed equivalence, disjoint names carry over, conflicts fail closed" },
+    { "concept": "merge outcome", "rust": "ParameterProfileTypedMergeV1", "notes": "matched count and merged map; ConflictingValue carries both sides' types and raw tokens" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schema": "sipi.p5-05c.mat-reader-stage.v1",
+  "status": "mat_reader_stage_ported",
+  "purpose": "P5-05c MATLAB v5 configuration reader stage ported from the MIT agent-com source: MAT v5 element stream (full and small data element tags, zlib compressed elements), matrix header decoding (flags/class/dims/name), parameter cell-array iteration, and the _matlab_cell_value classification (empty/None, scalar Integer/Number, char String, logical Integer, multi-element Array with C-order flattening). Nested cells, struct/sparse/object matrices, and unsupported payload types are rejected fail-closed. Parameter-DTO consumption remains a separate sub-slice.",
+  "source_map_ref": "docs/baselines/p5-05c-mit-source-map.v1.yaml",
+  "admission": {
+    "nested_cells": false,
+    "struct_sparse_object_matrices": false,
+    "parameter_dto_consumption": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_nested_cells", "not_struct_sparse_object", "not_parameter_dto_consumption", "not_profile_acceptance", "not_release_evidence"]
+}

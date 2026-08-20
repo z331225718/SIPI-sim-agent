@@ -1,0 +1,30 @@
+{
+  "schema": "sipi.p4b-02b181.mit-source-map.v1",
+  "status": "parameter_list_frequency_normalized_source_mapped",
+  "source": {
+    "repo": "product-owned",
+    "license": "clean-room",
+    "path": "sipi-ami-text parameter_list_frequency_normalized_v1.rs"
+  },
+  "observation": {
+    "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml",
+    "note": "normalized per-item frequency (count / total) of the distinct trimmed items of a validated AMI parameter list value"
+  },
+  "mapping": [
+    {
+      "concept": "normalized frequency",
+      "rust": "parameter_list_frequency_normalized_v1",
+      "notes": "per distinct item by raw byte equality, count divided by list length; proportions in (0, 1] summing to 1.0"
+    },
+    {
+      "concept": "frequency-normalized errors",
+      "rust": "ParameterListFrequencyNormalizedErrorV1",
+      "notes": "NotAList for non-List types, defensive MalformedList otherwise"
+    }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

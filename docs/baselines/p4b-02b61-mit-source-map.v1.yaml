@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b61.mit-source-map.v1",
+  "status": "ami_text_form_heads_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text ami_text_form_heads_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "top-level form head spelling counts over the parsed AST" },
+  "mapping": [
+    { "concept": "form heads counting", "rust": "count_ami_text_form_heads_v1", "notes": "counts head spellings of top-level forms; raw spelling preserved" },
+    { "concept": "heads errors", "rust": "AmiTextFormHeadsErrorV1", "notes": "EmptyDocument and InvalidFormHead fail-closed variants" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

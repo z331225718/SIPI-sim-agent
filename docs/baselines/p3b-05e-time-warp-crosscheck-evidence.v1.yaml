@@ -1,0 +1,136 @@
+schema: sipi.p3b-05e.time-warp-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p3b-05e.time-warp-shift.v1.linear-per-sample
+matched_count: 10
+case_count: 10
+entries:
+- label: zero_shift_identity
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_error: null
+  reference_error: null
+  product_samples:
+  - 1.0
+  - -1.0
+  - 1.0
+  - -1.0
+  reference_samples:
+  - 1.0
+  - -1.0
+  - 1.0
+  - -1.0
+- label: half_shift_midpoint
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_error: null
+  reference_error: null
+  product_samples:
+  - 1.0
+  - 3.0
+  - 4.0
+  reference_samples:
+  - 1.0
+  - 3.0
+  - 4.0
+- label: quarter_shift_ramp
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_error: null
+  reference_error: null
+  product_samples:
+  - 0.5
+  - 2.5
+  - 5.0
+  - 8.0
+  reference_samples:
+  - 0.5
+  - 2.5
+  - 5.0
+  - 8.0
+- label: prbs9_waveform_small_shifts
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_error: null
+  reference_error: null
+  product_samples:
+  - 1.0
+  - 1.0
+  - 0.5999999999999996
+  - -0.5999999999999996
+  - -1.0
+  - -1.0
+  - -0.8000000000000007
+  - 0.8000000000000007
+  - 0.6000000000000014
+  - -1.0
+  reference_samples:
+  - 1.0
+  - 1.0
+  - 0.5999999999999996
+  - -0.5999999999999996
+  - -1.0
+  - -1.0
+  - -0.8000000000000007
+  - 0.8000000000000007
+  - 0.6000000000000014
+  - -1.0
+- label: backward_shift_p05
+  matched: true
+  product_ok: true
+  reference_ok: true
+  product_error: null
+  reference_error: null
+  product_samples:
+  - 1.0
+  - 1.5
+  - 2.5
+  - 3.5
+  reference_samples:
+  - 1.0
+  - 1.5
+  - 2.5
+  - 3.5
+- label: out_of_domain_forward
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_error: out_of_domain:2
+  reference_error: out_of_domain:2
+  product_samples: []
+  reference_samples: []
+- label: out_of_domain_backward
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_error: out_of_domain:0
+  reference_error: out_of_domain:0
+  product_samples: []
+  reference_samples: []
+- label: length_mismatch
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_error: length_mismatch
+  reference_error: length_mismatch
+  product_samples: []
+  reference_samples: []
+- label: non_finite_shift
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_error: out_of_domain:1
+  reference_error: out_of_domain:1
+  product_samples: []
+  reference_samples: []
+- label: empty_waveform
+  matched: true
+  product_ok: false
+  reference_ok: false
+  product_error: empty_waveform
+  reference_error: empty_waveform
+  product_samples: []
+  reference_samples: []

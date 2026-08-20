@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p3b-05e.mit-source-map.v1",
+  "status": "time_warp_shift_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-link time_warp_v1.rs (extends P3B-05d/05c injection basis)" },
+  "observation": { "ref": "docs/baselines/owner-decision-checklist.v1.md", "note": "A4: PRBS9, TX injection point, time model - deterministic time-warp basis; jitter/units model remains owner-decided" },
+  "mapping": [
+    { "concept": "per-sample fractional shift vector", "rust": "time_warp_shift_v1 shift_samples argument", "notes": "caller supplies shift[0..n); no generator/model here" },
+    { "concept": "linear interpolation on same grid", "rust": "lo/hi stencil + frac blend", "notes": "output[n] at p=n+shift[n]" },
+    { "concept": "out-of-domain fail closed", "rust": "TimeWarpErrorV1::OutOfDomain", "notes": "stencil must stay in [0, len-1]" },
+    { "concept": "degenerate input fail closed", "rust": "EmptyWaveform/LengthMismatch/NonFinite*", "notes": "no padding/wraparound/extrapolation" }
+  ],
+  "not_ported": ["jitter model", "noise model", "time-warp units model", "observables", "tolerance"]
+}

@@ -1,0 +1,33 @@
+schema: sipi.p4b-02b10-parameter-tree-validator-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b10.parameter-tree-validator-v1.tree-invariants-validation
+matched_count: 3
+case_count: 3
+entries:
+- label: valid_normal_tree
+  matched: true
+  product:
+    policy: sipi.p4b-02b10.parameter-tree-validator-v1.tree-invariants-validation
+    valid: true
+    validated_tree_count: 1
+  reference:
+    valid: true
+    validated_tree_count: 1
+- label: exceeded_max_depth
+  matched: true
+  product:
+    policy: sipi.p4b-02b10.parameter-tree-validator-v1.tree-invariants-validation
+    valid: false
+    validator_error: 'ExceededMaxDepth { max_allowed: 2, actual: 3 }'
+  reference:
+    valid: false
+    validator_error: 'ExceededMaxDepth { max_allowed: 2, actual: 3 }'
+- label: exceeded_max_leaf_tokens
+  matched: true
+  product:
+    policy: sipi.p4b-02b10.parameter-tree-validator-v1.tree-invariants-validation
+    valid: false
+    validator_error: 'ExceededMaxLeafTokens { max_allowed: 2, actual: 5 }'
+  reference:
+    valid: false
+    validator_error: 'ExceededMaxLeafTokens { max_allowed: 2, actual: 5 }'

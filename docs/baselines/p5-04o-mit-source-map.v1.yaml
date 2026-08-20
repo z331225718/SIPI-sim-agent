@@ -1,0 +1,14 @@
+{
+  "schema": "sipi.p5-04o.mit-source-map.v1",
+  "status": "receiver_noise_ported_with_source_map",
+  "source": { "repo": "agent-com", "license": "MIT", "paths": ["src/agent_com/signal/filters.py", "src/agent_com/equalization/search.py"] },
+  "mapping": [
+    { "python": "bessel_thomson_filter", "rust": "bessel_thomson_filter_v1", "notes": "r4.80 lines 907-914 coefficient formula; complex polyval" },
+    { "python": "butterworth_filter", "rust": "butterworth_filter_v1", "notes": "fourth-order fixed coefficients" },
+    { "python": "tukey_window / raised_cosine_filter", "rust": "tukey_window_v1 / raised_cosine_filter_v1", "notes": "raised-cosine transition window" },
+    { "python": "_rx_ffe_frequency_response", "rust": "rx_ffe_frequency_response_v1", "notes": "offsets = arange(size) - precursor_count (global phase form)" },
+    { "python": "_receiver_noise", "rust": "receiver_noise_v1", "notes": "eta_0 sum from index 1; ACCM components with searchsorted-right band; norm combination" }
+  ],
+  "not_ported": ["_crosstalk_noise / _td_source_crosstalk_noise", "_evaluate_candidate / search loop"],
+  "non_claims": ["not_crosstalk_noise", "not_candidate_evaluation", "not_search_loop", "not_release_evidence"]
+}

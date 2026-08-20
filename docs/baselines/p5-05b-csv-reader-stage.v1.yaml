@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p5-05b.csv-reader-stage.v1",
+  "status": "csv_reader_stage_ported",
+  "purpose": "P5-05b CSV configuration reader stage ported from the MIT agent-com source: RFC 4180 row/field parsing aligned with Python csv.reader (quoted fields, double-quote escapes, blank-line rows, trailing-newline handling, unterminated-quote tolerance), utf-8-sig decoding, and the r4.80 numeric classification. The MATLAB .mat reader path (from_mat) and parameter-DTO consumption remain separate sub-slices.",
+  "source_map_ref": "docs/baselines/p5-05b-mit-source-map.v1.yaml",
+  "admission": {
+    "mat_reader": false,
+    "parameter_dto_consumption": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_mat_reader", "not_parameter_dto_consumption", "not_profile_acceptance", "not_release_evidence"]
+}

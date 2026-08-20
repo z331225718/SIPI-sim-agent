@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4a-04g.ramp-package-spec-core.v1",
+  "status": "product_owned_ramp_package_declaration_core_specified_no_profile_acceptance",
+  "purpose": "P4A-04g typed Ramp ([Ramp] dV/dt_r, dV/dt_f, R_load) and Package ([Package] R_pin, L_pin, C_pin) declaration cores: finite strictly positive typed fields with explicit product-owned validation rules. Declaration validation only: no waveform construction, no initial-slope model, no terminal network solve, no IBIS text decoding, no profile acceptance.",
+  "slice": { "vt": "delivered_by_p4a_04f", "ramp": "this_slice", "package": "this_slice", "decoder": "not_in_this_slice", "network_solve": "not_in_this_slice", "cli": "not_in_this_slice" },
+  "validation_rules": {
+    "ramp": { "d_v_dt_r": "finite_strictly_positive", "d_v_dt_f": "finite_strictly_positive", "r_load": "finite_strictly_positive" },
+    "package": { "r_pin": "finite_strictly_positive", "l_pin": "finite_strictly_positive", "c_pin": "finite_strictly_positive" }
+  },
+  "units": { "d_v_dt": "volts_per_second", "r": "ohms", "l": "henries", "c": "farads" },
+  "scope_policy": "sipi.p4a-04g.ramp-package-spec-v1.declaration-only",
+  "implementation": { "crate": "sipi-ibis", "module": "ramp_package_spec_v1", "types": ["RampSpecV1", "RampSpecErrorV1", "PackageSpecV1", "PackageSpecErrorV1"] },
+  "admission": { "profile_accepted": false, "ibis_text_decoded": false, "electrical_evaluation": false, "network_solve": false, "cli_route": false, "external_reference_binding": "not_evaluated" },
+  "non_claims": ["not_waveform_construction", "not_initial_slope_model", "not_terminal_network_solve", "not_ibis_text_decoding", "not_profile_acceptance"]
+}

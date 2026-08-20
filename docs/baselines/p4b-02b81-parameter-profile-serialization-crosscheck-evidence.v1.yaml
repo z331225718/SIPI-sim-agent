@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b81-parameter-profile-serialization-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b81.parameter-profile-serialization-v1.canonical-profile-json
+matched_count: 4
+case_count: 4
+entries:
+- label: simple_profile
+  matched: true
+  product:
+    policy: sipi.p4b-02b81.parameter-profile-serialization-v1.canonical-profile-json
+    serialized: '{"gain":{"type":"Float","value":"0.5"}}'
+    valid: true
+  reference:
+    valid: true
+    serialized: '{"gain":{"type":"Float","value":"0.5"}}'
+- label: sorted_order
+  matched: true
+  product:
+    policy: sipi.p4b-02b81.parameter-profile-serialization-v1.canonical-profile-json
+    serialized: '{"alpha":{"type":"Integer","value":"7"},"zeta":{"type":"Float","value":"1.0"}}'
+    valid: true
+  reference:
+    valid: true
+    serialized: '{"alpha":{"type":"Integer","value":"7"},"zeta":{"type":"Float","value":"1.0"}}'
+- label: mixed_types
+  matched: true
+  product:
+    policy: sipi.p4b-02b81.parameter-profile-serialization-v1.canonical-profile-json
+    serialized: '{"channels":{"type":"List","value":"(a, b)"},"mode":{"type":"String","value":"Linear"},"on":{"type":"Boolean","value":"True"}}'
+    valid: true
+  reference:
+    valid: true
+    serialized: '{"channels":{"type":"List","value":"(a, b)"},"mode":{"type":"String","value":"Linear"},"on":{"type":"Boolean","value":"True"}}'
+- label: empty_profile
+  matched: true
+  product:
+    policy: sipi.p4b-02b81.parameter-profile-serialization-v1.canonical-profile-json
+    serialized: '{}'
+    valid: true
+  reference:
+    valid: true
+    serialized: '{}'

@@ -1,5 +1,11 @@
 from copy import deepcopy
+from pathlib import Path
+import sys
 import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT / "tools") not in sys.path:
+    sys.path.insert(0, str(ROOT / "tools"))
 
 from verify_m1_runtime_validation import validate_capabilities, validate_event, validate_platform_error, validate_resource_slice, validate_validation_report
 

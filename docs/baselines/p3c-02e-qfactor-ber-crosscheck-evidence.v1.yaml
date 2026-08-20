@@ -1,0 +1,57 @@
+schema: sipi.p3c-02e.qfactor-ber-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p3c-02e.qfactor-ber.v1.estimator
+matched_count: 10
+case_count: 10
+reference: scipy.special erfc/erfcinv, IEEE 802.3 relation
+entries:
+- case:
+    ber: '2.32629079035525071e-4'
+    q: 3.5
+  matched: true
+  diffs: []
+- case:
+    ber: '3.39767312473006110e-6'
+    q: 4.5
+  matched: true
+  diffs: []
+- case:
+    ber: '9.86587645037701813e-10'
+    q: 6.0
+  matched: true
+  diffs: []
+- case:
+    ber: '1.27981254388583537e-12'
+    q: 7.0
+  matched: true
+  diffs: []
+- case:
+    ber: '3.19089167291091907e-14'
+    q: 7.5
+  matched: true
+  diffs: []
+- case:
+    ber: 0.001
+    q_inv: 3.090232306167815e0
+  matched: true
+  diffs: []
+- case:
+    ber: 1.0e-06
+    q_inv: 4.753424308822899e0
+  matched: true
+  diffs: []
+- case:
+    ber: 1.0e-10
+    q_inv: 6.361340902404057e0
+  matched: true
+  diffs: []
+- case:
+    ber: 1.0e-12
+    q_inv: 7.034483825301133e0
+  matched: true
+  diffs: []
+- case:
+    ber: 1.0e-15
+    q_inv: 7.941345326170997e0
+  matched: true
+  diffs: []

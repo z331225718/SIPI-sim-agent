@@ -1,0 +1,82 @@
+{
+  "schema": "sipi.p2-03.tran-semantic-freeze.v1",
+  "status": "provisional",
+  "owner": "project",
+  "scope": "current_product_surface_only",
+  "non_claims": [
+    "not_general_netlist_or_circuit_support",
+    "not_op_ac_or_general_mna",
+    "not_transient_generalization",
+    "not_release_certification"
+  ],
+  "request_schemas": {
+    "one_node_rc_pulse": "sipi.tran.one-node-rc-pulse-request.v1",
+    "one_node_rc_pwl": "sipi.tran.one-node-rc-pwl-request.v1",
+    "fixed_profile": "sipi.tran.rc-pulse-request.v1"
+  },
+  "topology": {
+    "one_node_rc_pulse": "ideal_pulse_series_r_capacitor_to_explicit_ref",
+    "one_node_rc_pwl": "piecewise_linear_voltage_source_series_r_capacitor_to_explicit_ref",
+    "fixed_profile": "tran-rc-pulse-v1"
+  },
+  "device_support_matrix": {
+    "ideal_voltage_source_pulse": "supported",
+    "ideal_voltage_source_pwl": "supported",
+    "resistor_series": "supported",
+    "capacitor_to_explicit_reference": "supported",
+    "inductor": "unsupported",
+    "diode": "unsupported",
+    "transistor": "unsupported",
+    "transmission_line": "unsupported",
+    "arbitrary_netlist": "rejected",
+    "implicit_ground": "rejected",
+    "model_selection": "rejected",
+    "topology_description": "rejected"
+  },
+  "solver_policy": {
+    "integrator": "backward_euler_f64",
+    "stepping": "fixed_breakpoint_union",
+    "adaptive_stepping": "not_implemented",
+    "convergence_iteration": "not_applicable_closed_form",
+    "output_sampling": "reported_at_requested_axis_only",
+    "measurement_semantics": "not_implemented",
+    "tolerance_policy": "blocked_missing_tolerance_owner_decision",
+    "interpolation": "not_implemented",
+    "resampling": "not_implemented",
+    "initial_condition": "explicit_only",
+    "implicit_ic_calculation": "not_implemented",
+    "resource_limits": {
+      "max_output_samples": 4096,
+      "max_integration_breakpoints": 16384,
+      "cooperative_checkpoints": true
+    }
+  },
+  "error_taxonomy": [
+    "Invariant",
+    "Runtime",
+    "InvalidOutputAxisStart",
+    "NonIncreasingOutputAxis",
+    "InvalidResistance",
+    "InvalidCapacitance",
+    "InvalidPulseDelay",
+    "InvalidPulseDuration",
+    "InvalidPulseWidth",
+    "InvalidPulseCornerOrder",
+    "PwlKnotValueCountMismatch",
+    "PwlKnotAxisTooShort",
+    "InvalidPwlKnotAxisStart",
+    "NonIncreasingPwlKnotAxis",
+    "PwlCoverageMismatch",
+    "PwlOutsideCoverage",
+    "OutputLimitExceeded",
+    "BreakpointLimitExceeded",
+    "BreakpointCountOverflow",
+    "NonFiniteComputation"
+  ],
+  "contract_refs": [
+    "docs/clean-room/specs/p2-tran-rc-pulse-acceptance-contract.v1.md",
+    "docs/clean-room/specs/p2-tran-rc-pulse-semantic-contract.v1.md",
+    "docs/clean-room/specs/p2-tran-one-node-rc-pulse.v1.md",
+    "docs/clean-room/specs/p2-tran-one-node-rc-pwl.v1.md"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4b-02b14.mit-source-map.v1",
+  "status": "parameter_tree_visitor_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_visitor_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "depth-first visitor traversal over AmiParameterTreeV1 hierarchy" },
+  "mapping": [
+    { "concept": "tree structural traversal", "rust": "traverse_parameter_trees_v1", "notes": "traverses trees in depth-first order and emits events" },
+    { "concept": "Enter / Leave Branch events", "rust": "VisitorEventV1::EnterBranch / LeaveBranch", "notes": "pre-order enter and post-order leave events for Branch nodes" },
+    { "concept": "Visit Leaf event", "rust": "VisitorEventV1::VisitLeaf", "notes": "leaf node traversal event containing value tokens" },
+    { "concept": "empty tree list check", "rust": "ParameterTreeVisitorErrorV1::EmptyTreeList", "notes": "empty tree slice fails closed" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

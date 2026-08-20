@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4b-02b17.mit-source-map.v1",
+  "status": "parameter_tree_diff_patch_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_diff_patch_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "applying TreeDiffEntryV1 diff entries to AmiParameterTreeV1 hierarchy" },
+  "mapping": [
+    { "concept": "diff patch application", "rust": "apply_parameter_tree_diff_patch_v1 / with_context_v1", "notes": "applies sequence of diff entries to parameter tree" },
+    { "concept": "MissingNode patch", "rust": "prune_parameter_tree_v1", "notes": "prunes target path from tree" },
+    { "concept": "ExtraNode patch", "rust": "merge_parameter_trees_v1", "notes": "synthesizes branch path and merges right node into tree" },
+    { "concept": "ValueMismatch patch", "rust": "transform_parameter_trees_v1", "notes": "replaces leaf value tokens at target path" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

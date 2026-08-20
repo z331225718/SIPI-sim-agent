@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b37-parameter-tree-leaf-value-decoding-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b37.parameter-tree-leaf-value-decoding-v1.typed-value-decode
+matched_count: 4
+case_count: 4
+entries:
+- label: mixed_decode
+  matched: true
+  product:
+    decode_error: 'MultiTokenValue { leaf: "enabled", token_count: 2 }'
+    policy: sipi.p4b-02b37.parameter-tree-leaf-value-decoding-v1.typed-value-decode
+    valid: false
+  reference:
+    valid: false
+    decode_error: 'MultiTokenValue { leaf: "enabled", token_count: 2 }'
+- label: multi_token_value
+  matched: true
+  product:
+    decode_error: 'MultiTokenValue { leaf: "steps", token_count: 3 }'
+    policy: sipi.p4b-02b37.parameter-tree-leaf-value-decoding-v1.typed-value-decode
+    valid: false
+  reference:
+    valid: false
+    decode_error: 'MultiTokenValue { leaf: "steps", token_count: 3 }'
+- label: missing_type
+  matched: true
+  product:
+    decode_error: 'MultiTokenValue { leaf: "gain", token_count: 2 }'
+    policy: sipi.p4b-02b37.parameter-tree-leaf-value-decoding-v1.typed-value-decode
+    valid: false
+  reference:
+    valid: false
+    decode_error: 'MultiTokenValue { leaf: "gain", token_count: 2 }'
+- label: invalid_value_for_type
+  matched: true
+  product:
+    decode_error: 'MultiTokenValue { leaf: "gain", token_count: 2 }'
+    policy: sipi.p4b-02b37.parameter-tree-leaf-value-decoding-v1.typed-value-decode
+    valid: false
+  reference:
+    valid: false
+    decode_error: 'MultiTokenValue { leaf: "gain", token_count: 2 }'

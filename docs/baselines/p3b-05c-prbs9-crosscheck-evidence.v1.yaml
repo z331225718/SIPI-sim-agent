@@ -1,0 +1,51 @@
+schema: sipi.p3b-05c.prbs9-crosscheck-evidence.v1
+status: matched_hash_bound
+reference: ITU-T O.150 PRBS9 x^9+x^5+1, independent LFSR implementation
+policy: sipi.p3b-05c.prbs9-sequence.v1.deterministic-core
+seed: 1
+bits: 1000
+matched_count: 1
+entries:
+- id: prbs9_seed001_1000bits
+  seed: 1
+  bits: 1000
+  policy: sipi.p3b-05c.prbs9-sequence.v1.deterministic-core
+  input_sha256: c64bb0edfe32bd94f657d7305688d6af86812d30d31d1fffb7a4baa91cc9cb2a
+  reference_first16:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 1
+  - 0
+  - 0
+  - 0
+  - 0
+  - 1
+  - 0
+  - 0
+  product_first16:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 1
+  - 0
+  - 0
+  - 0
+  - 0
+  - 1
+  - 0
+  - 0
+  reference_sha256: dc956adf87f3bde6bb6495bef8637e1c69e9da3b44013b24504f3ff6f34591df
+  product_sha256: dc956adf87f3bde6bb6495bef8637e1c69e9da3b44013b24504f3ff6f34591df
+  matched: true
+  diffs: []

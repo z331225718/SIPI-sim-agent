@@ -1,0 +1,52 @@
+schema: sipi.p4b-02b67-parameter-tree-longest-common-prefix-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b67.parameter-tree-longest-common-prefix-v1.path-lcp
+matched_count: 4
+case_count: 4
+entries:
+- label: shared_prefix
+  matched: true
+  product:
+    policy: sipi.p4b-02b67.parameter-tree-longest-common-prefix-v1.path-lcp
+    prefix:
+    - root
+    - sub
+    valid: true
+  reference:
+    valid: true
+    prefix:
+    - root
+    - sub
+- label: identical
+  matched: true
+  product:
+    policy: sipi.p4b-02b67.parameter-tree-longest-common-prefix-v1.path-lcp
+    prefix:
+    - root
+    - sub
+    - deep
+    valid: true
+  reference:
+    valid: true
+    prefix:
+    - root
+    - sub
+    - deep
+- label: disjoint
+  matched: true
+  product:
+    policy: sipi.p4b-02b67.parameter-tree-longest-common-prefix-v1.path-lcp
+    prefix: []
+    valid: true
+  reference:
+    valid: true
+    prefix: []
+- label: empty
+  matched: true
+  product:
+    lcp_error: EmptyPath
+    policy: sipi.p4b-02b67.parameter-tree-longest-common-prefix-v1.path-lcp
+    valid: false
+  reference:
+    valid: false
+    lcp_error: EmptyPath

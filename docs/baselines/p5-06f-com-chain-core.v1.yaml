@@ -1,0 +1,30 @@
+{
+  "schema": "sipi.p5-06f.com-chain-core.v1",
+  "status": "fixed_tap_chain_composition_ported",
+  "purpose": "P5-06 compare-matrix enabler slice: composes the already-ported R480 stage cores (cursor P5-04i, residual-channel PDF with DFE cancellation P5-04g, noise-PDF build P5-04h, combined noise PDF P5-04e, COM/VEC/VEO metrics P5-04c) into a product fixed-tap chain (sipi-com com_chain_v1.rs) with typed controls and per-stage checkpoints. Equalizer search (P5-04t), frequency-domain receiver noise (P5-04o), crosstalk (P5-04p) and TX-FFE synthesis (P5-04j) remain caller-supplied inputs in this core; they are never composed, defaulted or guessed. Fail-closed: any stage rejection or non-finite control is a hard error. This is NOT yet a product-vs-oracle COM compare: real S4P/config assets remain external and the chain has not been run on oracle inputs.",
+  "source_map_ref": "docs/baselines/p5-06f-mit-source-map.v1.yaml",
+  "based_on": [
+    "docs/baselines/p5-04c-com-metrics-stage.v1.yaml",
+    "docs/baselines/p5-04e-combined-noise-pdf-stage.v1.yaml",
+    "docs/baselines/p5-04g-residual-channel-pdf-stage.v1.yaml",
+    "docs/baselines/p5-04h-build-noise-pdf-stage.v1.yaml",
+    "docs/baselines/p5-04i-equalizer-frontend-stage.v1.yaml"
+  ],
+  "admission": {
+    "stages_composed": true,
+    "fixed_taps_caller_supplied": true,
+    "per_stage_checkpoints_reported": true,
+    "fail_closed_on_stage_rejection": true,
+    "product_vs_oracle_compare": false,
+    "external_assets_materialized": false,
+    "release_evidence": false
+  },
+  "non_claims": [
+    "not_product_vs_oracle_compare",
+    "not_equalizer_search_composition",
+    "not_frequency_domain_receiver_noise",
+    "not_crosstalk_composition",
+    "not_com_parity",
+    "not_acceptance_evidence"
+  ]
+}

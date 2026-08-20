@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b156.mit-source-map.v1",
+  "status": "parameter_list_overlap_coefficient_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_overlap_coefficient_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "set-based overlap coefficient over validated AMI parameter list values" },
+  "mapping": [
+    { "concept": "overlap coefficient", "rust": "list_overlap_coefficient_v1", "notes": "returns distinct intersection size over min(size_a, size_b) by byte equality as f64 in [0, 1]" },
+    { "concept": "similarity errors", "rust": "ParameterListOverlapCoefficientErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

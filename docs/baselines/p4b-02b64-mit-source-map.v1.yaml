@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b64.mit-source-map.v1",
+  "status": "parameter_profile_select_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_select_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "name-set sub-profile selection over an assembled parameter map" },
+  "mapping": [
+    { "concept": "profile selection", "rust": "select_parameter_profile_v1", "notes": "selects parameters by name set from an assembled map; missing or empty fail closed" },
+    { "concept": "selection outcome", "rust": "ParameterProfileSelectionV1", "notes": "holds the selected sub-profile map" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

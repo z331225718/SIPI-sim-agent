@@ -1,0 +1,19 @@
+{
+  "schema": "sipi.p4b-02b4.catalog-default-stage.v1",
+  "status": "catalog_default_validity_ported",
+  "purpose": "P4B-02b4 AMI catalog-default validity core: validates that each compiled parameter-catalog entry default token is well-formed for its declared type (reusing P4B-02b1 per-type rules), and materializes a typed default as an AmiParameterValueV1. Complements P4B-02b3 (catalog compile + candidate validation). Profile-agnostic: no reserved-name catalog, no AMI profile, no runtime.",
+  "source_map_ref": "docs/baselines/p4b-02b4-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p4b-02b3-parameter-catalog-stage.v1.yaml", "docs/baselines/p4b-02b1-parameter-value-core.v1.yaml"],
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (B2)",
+  "admission": {
+    "default_token_validity": true,
+    "materialize_typed_default": true,
+    "per_type_token_rules": true,
+    "profile_agnostic": true,
+    "reserved_name_catalog": false,
+    "ami_runtime": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_a_reserved_name_catalog", "not_ami_runtime", "not_profile_choice", "not_acceptance_evidence"]
+}

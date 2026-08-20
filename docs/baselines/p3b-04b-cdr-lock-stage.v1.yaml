@@ -1,0 +1,22 @@
+{
+  "schema": "sipi.p3b-04b.cdr-lock-stage.v1",
+  "status": "cdr_lock_semantics_ported",
+  "purpose": "P3B-04b CDR lock semantics core: deterministic clock/data recovery lock state machine with hysteresis over a timing error sequence via track_cdr_lock_v1 in sipi-channel cdr_lock_v1.rs: error magnitude at or below the lock threshold is good, at or above the unlock threshold is bad, strictly between is neutral; lock after lock_count consecutive good samples, unlock after unlock_count consecutive bad samples; neutral resets both counters. CdrLockTrackerV1 exposes observe/reset/cancel (cancel freezes until reset). Addresses the P3B-04 missing semantic cdr_clock_source_acquisition_lock_reset_and_cancel as a clean-room mechanism (no clock source, no BER, no tolerance profile). Fail-closed: non-positive thresholds, lock threshold above unlock threshold, zero counts, empty sequence, and non-finite errors are strictly rejected.",
+  "source_map_ref": "docs/baselines/p3b-04b-mit-source-map.v1.yaml",
+  "admission": {
+    "hysteresis_lock_machine": true,
+    "reset_cancel_semantics": true,
+    "per_sample_records": true,
+    "clock_source": false,
+    "ber_metric": false,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": [
+    "not_clock_source",
+    "not_ber_metric",
+    "not_com_parity",
+    "not_acceptance_evidence"
+  ]
+}

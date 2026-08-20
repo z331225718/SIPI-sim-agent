@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b122.mit-source-map.v1",
+  "status": "parameter_list_most_frequent_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_most_frequent_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "most frequent item analysis over validated AMI parameter list values" },
+  "mapping": [
+    { "concept": "most frequent item", "rust": "most_frequent_parameter_list_item_v1", "notes": "returns (item, count) of the largest total occurrence count, earliest first-occurrence tie" },
+    { "concept": "analysis errors", "rust": "ParameterListMostFrequentErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

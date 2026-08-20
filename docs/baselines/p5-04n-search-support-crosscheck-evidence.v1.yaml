@@ -1,0 +1,99 @@
+schema: sipi.p5-04n.search-support-crosscheck-evidence.v1
+status: search_support_crosscheck_matched
+oracle:
+  repo: agent-com
+  license: MIT
+  path: src/agent_com/equalization/search.py
+  functions:
+  - _indexed_config_value
+  - _high_pass_candidates
+  - _qualified_ctle_pair
+  - _selected_sndr
+  - _selected_accm_rms
+  - _r480_system_noise_response
+  - _ctle_frequency_response
+  - _apply_ctle_candidate
+  numpy_version: 2.4.6
+tolerance: 1.0e-09
+entries:
+- id: indexed_indexed_scalar
+  input_sha256: 1bbf52a9d3cccaf942fba41de03b528a59286a833ef122ffbe235bda2d3a9ce3
+  matched: true
+  diffs: []
+- id: indexed_indexed_index
+  input_sha256: c57918bdf61981cfcce0036fd6d18d16bfc4862ba966d193d12437e2edd20f74
+  matched: true
+  diffs: []
+- id: high_pass_CL120d_3
+  input_sha256: 395407a149eb9138bee4b19a79a9e8ca3d9ba6a945e8a606fe6b368a112cec59
+  matched: true
+  diffs: []
+- id: high_pass_CL120e_0
+  input_sha256: 906579eb493b79b3c25e6214ad9580181825cfcfb5ea55daf4e8e14ee86bfef8
+  matched: true
+  diffs: []
+- id: high_pass_CL120d_1
+  input_sha256: 3a5f782aba8d22e89b23a466a57807a3da0687e4197b54f5e4d3054c47f7e742
+  matched: true
+  diffs: []
+- id: qualified_table_ok
+  input_sha256: ed6261a2e87cb4964ed4c7daa2021b4b322cf9a1141b7d7478d8a369ae095635
+  matched: true
+  diffs: []
+- id: qualified_table_outside
+  input_sha256: fcde943dd338844178e20fd9fcccc8d9eb11a2ac37adf2e1779a8e3dc40b59d6
+  matched: true
+  diffs: []
+- id: qualified_ceiling_over
+  input_sha256: 8fdb0c1943860d4264c388f1c5a780a8854b2049fbf361ecf985ef358c7e394f
+  matched: true
+  diffs: []
+- id: qualified_no_table
+  input_sha256: cfc58935857124b6c14925ce8fa71e4e5823c8435edc88589132ba1855b5cd1c
+  matched: true
+  diffs: []
+- id: qualified_non_cl120d
+  input_sha256: 09984689e58848ec9bb21718f41b2be0ee8bdeb5a463ff529af5a4fce83b046c
+  matched: true
+  diffs: []
+- id: sndr_pkg
+  input_sha256: a9d3f902c2c212df78fbe43744f0bff329e08bd7a9e3a7fd29ed0682b58cc3e5
+  matched: true
+  diffs: []
+- id: sndr_wc
+  input_sha256: 9a8ac552b24ce0848414bb10dad33c63445a4d5476e33dcbb14016f34a43884e
+  matched: true
+  diffs: []
+- id: accm_pkg
+  input_sha256: f6e9c6cea7baf97fb721a4f488eb7722e43652c72c4f721776e2d413232fd159
+  matched: true
+  diffs: []
+- id: eta0_off
+  input_sha256: 6783f838ac4940ccade029720a26d5e07c1fd0566c2ea1d80606c85b76e2b052
+  matched: true
+  diffs: []
+- id: eta0_on
+  input_sha256: 5a9abc7ebdc6b2aceba550ac907c5c29c773e7048306acde3ea39aee3e9b4bc5
+  matched: true
+  diffs: []
+- id: ctle_fd_CL120e
+  input_sha256: e39dd8ff8122fbf9f9c81e2bfe17b39136ac0d6f3d2f10ed2d583ab2471cae1a
+  matched: true
+  diffs: []
+- id: ctle_fd_CL120d
+  input_sha256: 7b7f7712b4ed703d67c87da67cf1e2d0843c4daa10e6edfa68865de8269f2b74
+  matched: true
+  diffs: []
+- id: ctle_td_CL120e
+  input_sha256: d5fe4c967476529167219e23bdf6016e8fdeacb18b3a2bc64b6e11f7911d9535
+  matched: true
+  diffs: []
+- id: ctle_td_CL120d
+  input_sha256: 85a6e71ed2d6a7ed8843445da567fb54662b707517417fc322f62e6dc6ab8e4a
+  matched: true
+  diffs: []
+non_claims:
+- not_receiver_noise
+- not_crosstalk_noise
+- not_search_loop
+- not_release_evidence

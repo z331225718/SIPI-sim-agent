@@ -1,0 +1,109 @@
+schema: sipi.p5-07.synthetic-fixture-inventory.v1
+status: synthetic_fixture_set_inventoried_hash_bound
+authorization_ref: docs/baselines/authorized-material-registry.v1.yaml
+oracle_ref: docs/baselines/p5-06-matlab-oracle-first-run-evidence.v1.yaml
+fixture_count: 14
+fixtures:
+- material_id: com-synthetic-thru
+  logical_name: thru_10db_at_26p56ghz.s4p
+  kind: com_fixture
+  sha256: b14a92e7f844608aaee5b4cbd3dfda08d7af48bfedb4526043a0733b8823e584
+  byte_length: 6425196
+- material_id: com-synthetic-fext
+  logical_name: fext_m40db_at_26p56ghz.s4p
+  kind: com_fixture
+  sha256: f6a5bf0ec04ec474fe3685cbdb868ac97eb707b5233a4f4ccca5caf3152438cc
+  byte_length: 6425159
+- material_id: com-synthetic-next
+  logical_name: next_m40db_at_26p56ghz.s4p
+  kind: com_fixture
+  sha256: a2ae19041148a381533862130c02953a029bb9eb06c11a7b47f1b4d93506033a
+  byte_length: 6424879
+- material_id: com-synthetic-erl-reflective-s4p
+  logical_name: erl_reflective_10db_at_26p56ghz.s4p
+  kind: com_fixture
+  sha256: f1eec7bb04172a436755e1b52dc98ef3daa96c8cfc9f08c7b10c113303d919a8
+  byte_length: 6489078
+- material_id: com-synthetic-erl-reflective-json
+  logical_name: erl_reflective_10db_at_26p56ghz.json
+  kind: com_fixture_meta
+  sha256: 4c04c61ce9d53c99bc0911c985cdc33aded1df83a7ea5074ddba67a2034fc673
+  byte_length: 342
+- material_id: com-synthetic-erl-s2p
+  logical_name: erl_s2p_10db_at_26p56ghz.s2p
+  kind: com_fixture
+  sha256: 7a59b41a385a95752d2d1159aab7772a10f7bd2c07e5122d770493151853c7a3
+  byte_length: 830969
+- material_id: com-synthetic-erl-s2p-json
+  logical_name: erl_s2p_10db_at_26p56ghz.json
+  kind: com_fixture_meta
+  sha256: d416cd48700e1822885462c6ac1c8d073c2421cf5770ab412a4a69aa6c73c723
+  byte_length: 282
+- material_id: com-synthetic-kappa-asym-s4p
+  logical_name: kappa_asymmetric_reflective_10db_at_26p56ghz.s4p
+  kind: com_fixture
+  sha256: 5f9ca7d848d84902883097e9cbe2223e8c5aeff609ad27d486b12d4f1e84b7e3
+  byte_length: 6489078
+- material_id: com-synthetic-kappa-asym-json
+  logical_name: kappa_asymmetric_reflective_10db_at_26p56ghz.json
+  kind: com_fixture_meta
+  sha256: 4c67f0a7e60e911e59dcfa95b3e88e0e7ebb28c7a71cc9b334bb58a91075e1f5
+  byte_length: 356
+- material_id: com-synthetic-td-thru
+  logical_name: td_thru_pulse.csv
+  kind: com_fixture_td
+  sha256: 186901f7c26bd990b52f71c607764b4132fb2c8f8aaffa6769465d782e6ed5de
+  byte_length: 351232
+- material_id: com-synthetic-td-fext
+  logical_name: td_fext_pulse.csv
+  kind: com_fixture_td
+  sha256: eedb81c5b710a7b664146d7639418b22ac5b1c60e3ce4bcf007b7e655e65571a
+  byte_length: 351232
+- material_id: com-synthetic-td-next
+  logical_name: td_next_pulse.csv
+  kind: com_fixture_td
+  sha256: 6625c7eb5093f0f9239649216a90d3fdbe030a66279c419a12239f74db8cfc1f
+  byte_length: 351232
+- material_id: com-synthetic-td-manifest
+  logical_name: td_manifest.json
+  kind: com_fixture_meta
+  sha256: 481030105d4a8b8bb6eaac32b94910a4d3211c122a832c8d4c579675ca2d75fd
+  byte_length: 459
+- material_id: com-synthetic-manifest
+  logical_name: manifest.json
+  kind: com_fixture_manifest
+  sha256: cf9a9e5b9cc7d690be0e507414deee867743297a47279e4df18f5bed3724bce7
+  byte_length: 2374
+manifest_facts:
+  generator: tools/generate_synthetic_s4p.py
+  target_frequency_hz: 26560000000.0
+  frequency_start_hz: 0.0
+  frequency_stop_hz: 80000000000.0
+  frequency_step_hz: 10000000.0
+  file_port_order:
+  - TX+
+  - RX+
+  - TX-
+  - RX-
+  com_internal_port_order:
+  - TX+
+  - TX-
+  - RX+
+  - RX-
+  models:
+  - causal_first_order_high_pass
+  - causal_one_pole_low_pass
+manifest_hash_diffs:
+- file: thru_10db_at_26p56ghz.s4p
+  manifest_sha256: 8746c20685b1283cd0c294bdec85653ffb9a79731bb7131293d58c69c4c0b650
+  current_sha256: b14a92e7f844608aaee5b4cbd3dfda08d7af48bfedb4526043a0733b8823e584
+- file: fext_m40db_at_26p56ghz.s4p
+  manifest_sha256: 2d54cc5bf9d16cd8aac8c5a4e36dd53729e36dfe18f0f261c3422b6283b76f8c
+  current_sha256: f6a5bf0ec04ec474fe3685cbdb868ac97eb707b5233a4f4ccca5caf3152438cc
+- file: next_m40db_at_26p56ghz.s4p
+  manifest_sha256: 95aa32c6e3b74b2f196be3c135ad0fe233af07068b59d7acdba9c566b4efa66f
+  current_sha256: a2ae19041148a381533862130c02953a029bb9eb06c11a7b47f1b4d93506033a
+non_claims:
+- not_a_compare
+- not_product_fixture_admission
+- not_release_evidence

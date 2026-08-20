@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p3c-04y.mit-source-map.v1",
+  "status": "c4_oracle_compare_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-compare c4_metric_profile_v1.rs + p3c_03c_metric_compare (compare engine)" },
+  "observation": { "ref": "docs/baselines/p5-06e-com-oracle-metric-reference.v1.yaml", "note": "MATLAB oracle aggregate references bound to C4 profile" },
+  "mapping": [
+    { "concept": "C4 profile bound to oracle reference", "rust": "c4_metric_specs_v1 with aggregate reference (summary anchor)", "notes": "COM_dB 5.1902 / ICN_mV 4.6016 / ERL 16.7427" },
+    { "concept": "per-case candidate compare", "rust": "compare_metric_profile_v1 vs per-case candidates and references", "notes": "each case is validated against its own oracle reference values" },
+    { "concept": "1% relative allowed error", "rust": "ToleranceV1 abs=0 rel=0.01", "notes": "allowed = 0.01*|ref|" },
+    { "concept": "order-insensitive pass/error agreement", "rust": "BTreeMap result ordering vs C4 order", "notes": "cross-check compares per-metric maps" }
+  ],
+  "not_ported": ["cross-implementation COM parity", "release certification", "fresh-machine acceptance"]
+}

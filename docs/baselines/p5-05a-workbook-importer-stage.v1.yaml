@@ -1,0 +1,14 @@
+{
+  "schema": "sipi.p5-05a.workbook-importer-stage.v1",
+  "status": "workbook_importer_xlsx_stage_ported",
+  "purpose": "P5-05a workbook importer xlsx stage ported from the MIT agent-com source: strict container validation, Strict/Transitional OOXML cell reading with formula-cache rejection, typed cell values, raw-cell grid, and the r4.80 keyword lookup semantics. The CSV/MAT reader paths and parameter-DTO consumption are separate sub-slices.",
+  "source_map_ref": "docs/baselines/p5-05a-mit-source-map.v1.yaml",
+  "admission": {
+    "csv_reader": false,
+    "mat_reader": false,
+    "parameter_dto_consumption": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_csv_reader", "not_mat_reader", "not_parameter_dto_consumption", "not_profile_acceptance", "not_release_evidence"]
+}

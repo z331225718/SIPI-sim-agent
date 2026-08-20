@@ -1,0 +1,31 @@
+{
+  "schema": "sipi.p4a-03n.node-declaration-stage.v1",
+  "status": "node_declaration_ported",
+  "purpose": "P4A-03 typed IBIS AST sub-slice: lifts and validates IBIS [Node Declarations] entries (internal node_name and optional signal_name) into typed clean-room structures (sipi-ibis node_declaration_v1.rs). Fail-closed: empty node names, non-ASCII characters, or invalid node name spellings are strictly rejected.",
+  "source_map_ref": "docs/baselines/p4a-03n-mit-source-map.v1.yaml",
+  "based_on": [
+    "docs/baselines/p4a-03d-model-declaration-stage.v1.yaml",
+    "docs/baselines/p4a-03e-pin-declaration-stage.v1.yaml",
+    "docs/baselines/p4a-03f-pin-model-linkage-stage.v1.yaml",
+    "docs/baselines/p4a-03g-component-declaration-stage.v1.yaml",
+    "docs/baselines/p4a-03h-package-model-stage.v1.yaml",
+    "docs/baselines/p4a-03i-model-selector-stage.v1.yaml",
+    "docs/baselines/p4a-03j-diff-pin-stage.v1.yaml",
+    "docs/baselines/p4a-03k-series-switch-stage.v1.yaml",
+    "docs/baselines/p4a-03l-submodel-stage.v1.yaml",
+    "docs/baselines/p4a-03m-circuit-call-stage.v1.yaml"
+  ],
+  "admission": {
+    "typed_node_declaration": true,
+    "optional_signal_name_association": true,
+    "ascii_node_name_validation": true,
+    "fail_closed_on_invalid_input": true,
+    "full_ibis_parser": false,
+    "release_evidence": false
+  },
+  "non_claims": [
+    "not_full_ibis_parser",
+    "not_electrical_semantics",
+    "not_acceptance_evidence"
+  ]
+}

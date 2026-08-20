@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03z.mit-source-map.v1",
+  "status": "series_pin_thresholds_group_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis series_pin_thresholds_group_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Series Pin Mapping] series group threshold parameters (Vthreshold, Rseries, Cseries, Lseries)" },
+  "mapping": [
+    { "concept": "typed [Series Pin Mapping] series group threshold header", "rust": "TypedSeriesPinGroupThresholdsV1", "notes": "validated FiniteF64 threshold parameters for series group" },
+    { "concept": "Vthreshold parameter", "rust": "TypedSeriesPinGroupThresholdsV1::vthreshold_v", "notes": "optional finite Volts threshold" },
+    { "concept": "R/C/Lseries parameters", "rust": "TypedSeriesPinGroupThresholdsV1::rseries_ohm / cseries_farad / lseries_henry", "notes": "optional finite non-negative FiniteF64 parameters" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "series model circuit simulation",
+    "release certification"
+  ]
+}

@@ -1,0 +1,65 @@
+schema: sipi.p4a-01.required-profile-inventory.v1
+status: observed_hash_bound
+profile_decision_ref: docs/baselines/owner-decision-checklist.v1.md (A6)
+owner_selected: "IBIS 5.0; file fixtures/ibis/as4c512m16md4v-053bin.ibs"
+file:
+  name: as4c512m16md4v-053bin.ibs
+  path: fixtures/ibis/as4c512m16md4v-053bin.ibs
+  byte_length: 4215925
+  sha256: d72cf62b56d67d30f4004f56ea3b79b4cb1241615692b147682f47540e615a0b
+  identity_status: matched_record
+facts:
+  ibis_version: "5.0"
+  component: AS4C512M16MD4V-053BIN
+  manufacturer: Alliance Memory Inc.
+  file_rev: "1.0"
+  date: "2023-05-02"
+  unique_keyword_count: 26
+  model_block_count: 67
+  table_family_count: 4
+  unique_keywords:
+    - "IBIS Ver"
+    - "File Name"
+    - "File Rev"
+    - "Date"
+    - "Source"
+    - "Notes"
+    - "Disclaimer"
+    - "Copyright"
+    - "Component"
+    - "Manufacturer"
+    - "Package"
+    - "Pin"
+    - "Model Selector"
+    - "Model"
+    - "Voltage Range"
+    - "Temperature Range"
+    - "GND Clamp"
+    - "POWER Clamp"
+    - "Pulldown"
+    - "Pullup"
+    - "ISSO_PD"
+    - "ISSO_PU"
+    - "Ramp"
+    - "Rising Waveform"
+    - "Composite Current"
+    - "Falling Waveform"
+  table_families:
+    - Falling Waveform
+    - GND Clamp
+    - Ramp
+    - Rising Waveform
+  model_blocks_sample:
+    - CA_ODT_120OHM
+    - CK_ODT_60OHM
+    - CS_UNTERM
+    - DQ_40OHM_40OHM_06VDDQ
+    - DQ_80OHM_80OHM
+observation_method: "observer-only line scan of ASCII text; keyword/component/version/model-block/table-family extraction; NOT a product IBIS parser; corner enumeration bounded to leading typ/min/max keyword rows (this file reports 0 for that convention and is recorded, not asserted)"
+non_claims:
+  - not_a_product_ibis_parser
+  - not_behavior_profile
+  - not_acceptance
+  - not_release_evidence
+  - corner_row_counts_not_exhaustive
+  - model_blocks_list_not_exhaustive

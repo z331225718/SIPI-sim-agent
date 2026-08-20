@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b167.mit-source-map.v1",
+  "status": "parameter_list_dedup_keep_last_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_dedup_keep_last_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "keep-last dedup over the trimmed items of a validated AMI parameter list value" },
+  "mapping": [
+    { "concept": "dedup keep-last", "rust": "parameter_list_dedup_keep_last_v1", "notes": "each distinct item's last occurrence by raw byte equality, in last-occurrence order" },
+    { "concept": "keep-last errors", "rust": "ParameterListDedupKeepLastErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

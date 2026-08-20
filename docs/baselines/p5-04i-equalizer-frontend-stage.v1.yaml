@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p5-04i.equalizer-frontend-stage.v1",
+  "status": "equalizer_frontend_stage_ported",
+  "purpose": "P5-04i equalizer front-end stage ported from the MIT agent-com source: deterministic cursor sampling (MM / Mod-MM CDR, zero-based indices) and the frequency/time-domain CTLE (FD_CTLE transfer, TD_CTLE bilinear z-domain coefficients with the exact scipy lfilter difference-equation order). The TX FFE grid, DFE bank, RX FFE, and the equalizer search remain separate scopes.",
+  "source_map_ref": "docs/baselines/p5-04i-mit-source-map.v1.yaml",
+  "admission": {
+    "tx_ffe_grid": false,
+    "dfe_bank": false,
+    "rx_ffe": false,
+    "equalizer_search": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_tx_ffe", "not_dfe_bank", "not_rx_ffe", "not_equalizer_search", "not_profile_acceptance", "not_release_evidence"]
+}

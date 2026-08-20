@@ -1,0 +1,213 @@
+schema: sipi.p5-06.matlab-oracle-first-run-evidence.v1
+status: matlab_oracle_first_run_succeeded_hash_bound
+authorization_ref: docs/baselines/authorized-material-registry.v1.yaml
+target_frequency_ghz: 26.56
+output_file_hashes:
+  matlab_oracle.mat: dd47cb3dbe3f72e63b19c6331f4cbc504027f3b72b4a12bdc8503e9c993edbca
+  summary.json: 151d8a03bbc4ef399a84dc97c6c4b6a87c22e3d12a1a0a611b07806c835b55ed
+summary_content: "{\n  \"schema_version\": 1,\n  \"started_at_utc\": \"2026-08-16T09:10:12Z\"\
+  ,\n  \"duration_seconds\": 621.5812118,\n  \"matlab_release\": \"2024b\",\n  \"\
+  matlab_version\": \"24.2.0.2712019 (R2024b)\",\n  \"matlab_blas\": \"Intel(R) oneAPI\
+  \ Math Kernel Library Version 2024.1-Product Build 20240215 for Intel(R) 64 architecture\
+  \ applications (CNR branch auto)\",\n  \"matlab_products\": [\n    {\n      \"name\"\
+  : \"5G Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"\
+  AUTOSAR Blockset\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\"\
+  : \"Aerospace Blockset\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"\
+  name\": \"Aerospace Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n   \
+  \   \"name\": \"Antenna Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n\
+  \      \"name\": \"Audio Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n\
+  \      \"name\": \"Automated Driving Toolbox\",\n      \"version\": \"24.2\"\n \
+  \   },\n    {\n      \"name\": \"Bioinformatics Toolbox\",\n      \"version\": \"\
+  24.2\"\n    },\n    {\n      \"name\": \"Bluetooth Toolbox\",\n      \"version\"\
+  : \"24.2\"\n    },\n    {\n      \"name\": \"C2000 Microcontroller Blockset\",\n\
+  \      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Communications Toolbox\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Computer Vision\
+  \ Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Control\
+  \ System Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\"\
+  : \"Curve Fitting Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n     \
+  \ \"name\": \"DDS Blockset\",\n      \"version\": \"24.2\"\n    },\n    {\n    \
+  \  \"name\": \"DSP HDL Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n\
+  \      \"name\": \"DSP System Toolbox\",\n      \"version\": \"24.2\"\n    },\n\
+  \    {\n      \"name\": \"Data Acquisition Toolbox\",\n      \"version\": \"24.2\"\
+  \n    },\n    {\n      \"name\": \"Database Toolbox\",\n      \"version\": \"24.2\"\
+  \n    },\n    {\n      \"name\": \"Datafeed Toolbox\",\n      \"version\": \"24.2\"\
+  \n    },\n    {\n      \"name\": \"Deep Learning HDL Toolbox\",\n      \"version\"\
+  : \"24.2\"\n    },\n    {\n      \"name\": \"Deep Learning Toolbox\",\n      \"\
+  version\": \"24.2\"\n    },\n    {\n      \"name\": \"Econometrics Toolbox\",\n\
+  \      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Embedded Coder\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Filter Design HDL\
+  \ Coder\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Financial\
+  \ Instruments Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\"\
+  : \"Financial Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\"\
+  : \"Fixed-Point Designer\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"\
+  name\": \"Fuzzy Logic Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n \
+  \     \"name\": \"GPU Coder\",\n      \"version\": \"24.2\"\n    },\n    {\n   \
+  \   \"name\": \"Global Optimization Toolbox\",\n      \"version\": \"24.2\"\n  \
+  \  },\n    {\n      \"name\": \"HDL Coder\",\n      \"version\": \"24.2\"\n    },\n\
+  \    {\n      \"name\": \"HDL Verifier\",\n      \"version\": \"24.2\"\n    },\n\
+  \    {\n      \"name\": \"Image Acquisition Toolbox\",\n      \"version\": \"24.2\"\
+  \n    },\n    {\n      \"name\": \"Image Processing Toolbox\",\n      \"version\"\
+  : \"24.2\"\n    },\n    {\n      \"name\": \"Industrial Communication Toolbox\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Instrument Control\
+  \ Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"LTE\
+  \ Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Lidar\
+  \ Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"MATLAB\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"MATLAB Coder\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"MATLAB Compiler\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"MATLAB Compiler\
+  \ SDK\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"MATLAB Report\
+  \ Generator\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"MATLAB\
+  \ Test\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Mapping\
+  \ Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Medical\
+  \ Imaging Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\"\
+  : \"Mixed-Signal Blockset\",\n      \"version\": \"24.2\"\n    },\n    {\n     \
+  \ \"name\": \"Model Predictive Control Toolbox\",\n      \"version\": \"24.2\"\n\
+  \    },\n    {\n      \"name\": \"Model-Based Calibration Toolbox\",\n      \"version\"\
+  : \"24.2\"\n    },\n    {\n      \"name\": \"Motor Control Blockset\",\n      \"\
+  version\": \"24.2\"\n    },\n    {\n      \"name\": \"Navigation Toolbox\",\n  \
+  \    \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Optimization Toolbox\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Parallel Computing\
+  \ Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Partial\
+  \ Differential Equation Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n\
+  \      \"name\": \"Phased Array System Toolbox\",\n      \"version\": \"24.2\"\n\
+  \    },\n    {\n      \"name\": \"Powertrain Blockset\",\n      \"version\": \"\
+  24.2\"\n    },\n    {\n      \"name\": \"Predictive Maintenance Toolbox\",\n   \
+  \   \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"RF Blockset\",\n   \
+  \   \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"RF PCB Toolbox\",\n\
+  \      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"RF Toolbox\",\n \
+  \     \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"ROS Toolbox\",\n \
+  \     \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Radar Toolbox\",\n\
+  \      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Reinforcement Learning\
+  \ Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Requirements\
+  \ Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Risk\
+  \ Management Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\"\
+  : \"Robotics System Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n   \
+  \   \"name\": \"Robust Control Toolbox\",\n      \"version\": \"24.2\"\n    },\n\
+  \    {\n      \"name\": \"Satellite Communications Toolbox\",\n      \"version\"\
+  : \"24.2\"\n    },\n    {\n      \"name\": \"Sensor Fusion and Tracking Toolbox\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"SerDes Toolbox\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Signal Integrity\
+  \ Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Signal\
+  \ Processing Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\"\
+  : \"SimBiology\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"\
+  SimEvents\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simscape\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simscape Battery\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simscape Driveline\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simscape Electrical\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simscape Fluids\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simscape Multibody\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simulink\",\n \
+  \     \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simulink 3D Animation\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simulink Check\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simulink Code Inspector\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simulink Coder\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simulink Compiler\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simulink Control\
+  \ Design\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simulink\
+  \ Coverage\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simulink\
+  \ Design Optimization\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\"\
+  : \"Simulink Design Verifier\",\n      \"version\": \"24.2\"\n    },\n    {\n  \
+  \    \"name\": \"Simulink Desktop Real-Time\",\n      \"version\": \"24.2\"\n  \
+  \  },\n    {\n      \"name\": \"Simulink Fault Analyzer\",\n      \"version\": \"\
+  24.2\"\n    },\n    {\n      \"name\": \"Simulink PLC Coder\",\n      \"version\"\
+  : \"24.2\"\n    },\n    {\n      \"name\": \"Simulink Real-Time\",\n      \"version\"\
+  : \"24.2\"\n    },\n    {\n      \"name\": \"Simulink Report Generator\",\n    \
+  \  \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Simulink Test\",\n  \
+  \    \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"SoC Blockset\",\n \
+  \     \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Spreadsheet Link\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Stateflow\",\n\
+  \      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Statistics and Machine\
+  \ Learning Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\"\
+  : \"Symbolic Math Toolbox\",\n      \"version\": \"24.2\"\n    },\n    {\n     \
+  \ \"name\": \"System Composer\",\n      \"version\": \"24.2\"\n    },\n    {\n \
+  \     \"name\": \"System Identification Toolbox\",\n      \"version\": \"24.2\"\n\
+  \    },\n    {\n      \"name\": \"Text Analytics Toolbox\",\n      \"version\":\
+  \ \"24.2\"\n    },\n    {\n      \"name\": \"UAV Toolbox\",\n      \"version\":\
+  \ \"24.2\"\n    },\n    {\n      \"name\": \"Vehicle Dynamics Blockset\",\n    \
+  \  \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Vehicle Network Toolbox\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Vision HDL Toolbox\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"WLAN Toolbox\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Wavelet Toolbox\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Wireless HDL Toolbox\"\
+  ,\n      \"version\": \"24.2\"\n    },\n    {\n      \"name\": \"Wireless Testbench\"\
+  ,\n      \"version\": \"24.2\"\n    }\n  ],\n  \"computer\": \"PCWIN64\",\n  \"\
+  case_count\": 2,\n  \"network_metrics\": [\n    {\n      \"role\": \"THRU\",\n \
+  \     \"input_kind\": \"touchstone\",\n      \"frequency_hz\": 2.656E+10,\n    \
+  \  \"sdd21_db\": -9.9999999999999964,\n      \"sdc21_abs\": 0\n    },\n    {\n \
+  \     \"role\": \"FEXT1\",\n      \"input_kind\": \"touchstone\",\n      \"frequency_hz\"\
+  : 2.656E+10,\n      \"sdd21_db\": -40,\n      \"sdc21_abs\": 0\n    },\n    {\n\
+  \      \"role\": \"NEXT1\",\n      \"input_kind\": \"touchstone\",\n      \"frequency_hz\"\
+  : 2.656E+10,\n      \"sdd21_db\": -40,\n      \"sdc21_abs\": 0\n    }\n  ],\n  \"\
+  summary_case_index\": 1,\n  \"output_metrics\": {\n    \"FOM\": {\n      \"kind\"\
+  : \"finite\",\n      \"value\": 6.0299232448504352\n    },\n    \"COM_dB\": {\n\
+  \      \"kind\": \"finite\",\n      \"value\": 5.1901915998086814\n    },\n    \"\
+  VEC_dB\": {\n      \"kind\": \"finite\",\n      \"value\": 6.9388730466582071\n\
+  \    },\n    \"VEO_mV\": {\n      \"kind\": \"finite\",\n      \"value\": 46.760000000000012\n\
+  \    },\n    \"ERL\": {\n      \"kind\": \"finite\",\n      \"value\": 16.742740133561476\n\
+  \    },\n    \"ERL11\": {\n      \"kind\": \"inf\"\n    },\n    \"ERL22\": {\n \
+  \     \"kind\": \"finite\",\n      \"value\": 16.742740133561476\n    },\n    \"\
+  IL_dB_channel_only_at_Fnq\": {\n      \"kind\": \"finite\",\n      \"value\": 10.000735704402235\n\
+  \    },\n    \"fitted_IL_dB_at_Fnq\": {\n      \"kind\": \"finite\",\n      \"value\"\
+  : 9.8349128449511856\n    },\n    \"ICN_mV\": {\n      \"kind\": \"finite\",\n \
+  \     \"value\": 4.6015542132736229\n    },\n    \"Peak_ISI_XTK_and_Noise_interference_at_BER_mV\"\
+  : {\n      \"kind\": \"finite\",\n      \"value\": 57.188482784992388\n    },\n\
+  \    \"CTLE_DC_gain_dB\": {\n      \"kind\": \"finite\",\n      \"value\": -3\n\
+  \    },\n    \"g_DC_HP\": {\n      \"kind\": \"finite\",\n      \"value\": -0.5\n\
+  \    },\n    \"itick\": {\n      \"kind\": \"finite\",\n      \"value\": 0\n   \
+  \ }\n  },\n  \"case_metrics\": [\n    {\n      \"case_index\": 1,\n      \"output_metrics\"\
+  : {\n        \"FOM\": {\n          \"kind\": \"finite\",\n          \"value\": 6.0299232448504352\n\
+  \        },\n        \"COM_dB\": {\n          \"kind\": \"finite\",\n          \"\
+  value\": 5.1901915998086814\n        },\n        \"VEC_dB\": {\n          \"kind\"\
+  : \"finite\",\n          \"value\": 6.9388730466582071\n        },\n        \"VEO_mV\"\
+  : {\n          \"kind\": \"finite\",\n          \"value\": 46.760000000000012\n\
+  \        },\n        \"ERL\": {\n          \"kind\": \"finite\",\n          \"value\"\
+  : 16.742740133561476\n        },\n        \"ERL11\": {\n          \"kind\": \"inf\"\
+  \n        },\n        \"ERL22\": {\n          \"kind\": \"finite\",\n          \"\
+  value\": 16.742740133561476\n        },\n        \"IL_dB_channel_only_at_Fnq\":\
+  \ {\n          \"kind\": \"finite\",\n          \"value\": 10.000735704402235\n\
+  \        },\n        \"fitted_IL_dB_at_Fnq\": {\n          \"kind\": \"finite\"\
+  ,\n          \"value\": 9.8349128449511856\n        },\n        \"ICN_mV\": {\n\
+  \          \"kind\": \"finite\",\n          \"value\": 4.6015542132736229\n    \
+  \    },\n        \"Peak_ISI_XTK_and_Noise_interference_at_BER_mV\": {\n        \
+  \  \"kind\": \"finite\",\n          \"value\": 57.188482784992388\n        },\n\
+  \        \"CTLE_DC_gain_dB\": {\n          \"kind\": \"finite\",\n          \"value\"\
+  : -3\n        },\n        \"g_DC_HP\": {\n          \"kind\": \"finite\",\n    \
+  \      \"value\": -0.5\n        },\n        \"itick\": {\n          \"kind\": \"\
+  finite\",\n          \"value\": 0\n        }\n      },\n      \"internal_checkpoints\"\
+  : {\n        \"TXLE_taps\": [\n          0,\n          0,\n          -0.08,\n  \
+  \        0.92,\n          0\n        ],\n        \"DFE_taps\": [\n          0.3568406617319051,\n\
+  \          0.059918169361420609,\n          0.0086976411241748482,\n          0.00056912714941462141\n\
+  \        ],\n        \"tail_RSS\": 0,\n        \"sigma_N\": 0.0011600846233942998,\n\
+  \        \"itick\": 0,\n        \"sgm_Ani__isi_xt_noise\": 0.0061944440067733\n\
+  \      }\n    },\n    {\n      \"case_index\": 2,\n      \"output_metrics\": {\n\
+  \        \"FOM\": {\n          \"kind\": \"finite\",\n          \"value\": 5.8583745004652741\n\
+  \        },\n        \"COM_dB\": {\n          \"kind\": \"finite\",\n          \"\
+  value\": 4.8776477752334868\n        },\n        \"VEC_dB\": {\n          \"kind\"\
+  : \"finite\",\n          \"value\": 7.3370709195299018\n        },\n        \"VEO_mV\"\
+  : {\n          \"kind\": \"finite\",\n          \"value\": 37.539999999999992\n\
+  \        },\n        \"ERL\": {\n          \"kind\": \"finite\",\n          \"value\"\
+  : 16.742740133561476\n        },\n        \"ERL11\": {\n          \"kind\": \"inf\"\
+  \n        },\n        \"ERL22\": {\n          \"kind\": \"finite\",\n          \"\
+  value\": 16.742740133561476\n        },\n        \"IL_dB_channel_only_at_Fnq\":\
+  \ {\n          \"kind\": \"finite\",\n          \"value\": 10.000735704402235\n\
+  \        },\n        \"fitted_IL_dB_at_Fnq\": {\n          \"kind\": \"finite\"\
+  ,\n          \"value\": 9.8349128449511856\n        },\n        \"ICN_mV\": {\n\
+  \          \"kind\": \"finite\",\n          \"value\": 4.6015542132736229\n    \
+  \    },\n        \"Peak_ISI_XTK_and_Noise_interference_at_BER_mV\": {\n        \
+  \  \"kind\": \"finite\",\n          \"value\": 49.827078669145237\n        },\n\
+  \        \"CTLE_DC_gain_dB\": {\n          \"kind\": \"finite\",\n          \"value\"\
+  : -3\n        },\n        \"g_DC_HP\": {\n          \"kind\": \"finite\",\n    \
+  \      \"value\": -0.5\n        },\n        \"itick\": {\n          \"kind\": \"\
+  finite\",\n          \"value\": 0\n        }\n      },\n      \"internal_checkpoints\"\
+  : {\n        \"TXLE_taps\": [\n          0,\n          0.02,\n          -0.12,\n\
+  \          0.86,\n          0\n        ],\n        \"DFE_taps\": [\n          0.37272973005823817,\n\
+  \          0.081474622882705613,\n          0.020948323566630962,\n          0.0074408963707779281\n\
+  \        ],\n        \"tail_RSS\": 0,\n        \"sigma_N\": 0.0011600846233942998,\n\
+  \        \"itick\": 0,\n        \"sgm_Ani__isi_xt_noise\": 0.005511480767520568\n\
+  \      }\n    }\n  ]\n}\n"
+stdout_tail_hash: d37597ec49c670a12060b78a68cf9cd5263a1df6d9268a351dbdb8b6e6c8be1b
+custody: fresh_materialization_cleaned
+non_claims:
+- not_a_product_runtime
+- not_compute_parity
+- not_release_evidence

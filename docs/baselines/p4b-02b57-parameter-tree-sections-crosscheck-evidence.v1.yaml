@@ -1,0 +1,66 @@
+schema: sipi.p4b-02b57-parameter-tree-sections-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b57.parameter-tree-sections-v1.top-level-structure
+matched_count: 4
+case_count: 4
+entries:
+- label: mixed_sections
+  matched: true
+  product:
+    policy: sipi.p4b-02b57.parameter-tree-sections-v1.top-level-structure
+    sections:
+    - kind: Leaf
+      name: gain
+    - kind: Branch
+      name: sub
+    valid: true
+  reference:
+    valid: true
+    sections:
+    - name: gain
+      kind: Leaf
+    - name: sub
+      kind: Branch
+- label: leaf_only_sections
+  matched: true
+  product:
+    policy: sipi.p4b-02b57.parameter-tree-sections-v1.top-level-structure
+    sections:
+    - kind: Leaf
+      name: gain
+    - kind: Leaf
+      name: steps
+    valid: true
+  reference:
+    valid: true
+    sections:
+    - name: gain
+      kind: Leaf
+    - name: steps
+      kind: Leaf
+- label: root_leaf
+  matched: true
+  product:
+    policy: sipi.p4b-02b57.parameter-tree-sections-v1.top-level-structure
+    sections_error: RootNotBranch
+    valid: false
+  reference:
+    valid: false
+    sections_error: RootNotBranch
+- label: nested_branches
+  matched: true
+  product:
+    policy: sipi.p4b-02b57.parameter-tree-sections-v1.top-level-structure
+    sections:
+    - kind: Branch
+      name: a
+    - kind: Branch
+      name: c
+    valid: true
+  reference:
+    valid: true
+    sections:
+    - name: a
+      kind: Branch
+    - name: c
+      kind: Branch

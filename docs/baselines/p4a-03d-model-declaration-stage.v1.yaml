@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4a-03d.model-declaration-stage.v1",
+  "status": "typed_model_declaration_ported",
+  "purpose": "P4A-03d typed IBIS Model-declaration core: lifts [Model] declarations from the structural parser into typed model declarations with a bounded IBIS Model_type set (Input/Output/I_O/3-state/Open_*/ECL/Terminator/Series/Series_switch). Model_type in IBIS files is a bare keyword-value line (Data record with a Model_type lead token); this slice handles it and reports the canonical typed variant (I/O -> IO). It does not at parse text, evaluate electrical/table semantics, or accept/profile.",
+  "source_map_ref": "docs/baselines/p4a-03d-mit-source-map.v1.yaml",
+  "admission": {
+    "typed_model_type_set": true,
+    "model_name_extraction": true,
+    "model_type_data_line": true,
+    "model_type_canonicalization": true,
+    "style_range_units": false,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_voltage_range_units", "not_temperature_range_units", "not_behavior_profile", "not_acceptance", "not_release_evidence"]
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p5-04g.residual-channel-pdf-stage.v1",
+  "status": "residual_channel_pdf_stage_ported",
+  "purpose": "P5-04g residual-channel discrete PDF stage ported from the MIT agent-com source: DFE cancellation (THRU), whole-UI phase sampling, THRU single-phase selection from the cursor and FEXT/NEXT largest-PDF-RMS phase selection, forced MMSE phase support. Supersedes the residual_channel_pdf admission key of the P5-04e and P5-04f charters; build_r480_noise_pdf and the search.py channel-selection/equalizer-search scopes remain separate.",
+  "source_map_ref": "docs/baselines/p5-04g-mit-source-map.v1.yaml",
+  "admission": {
+    "build_r480_noise_pdf": false,
+    "channel_selection": false,
+    "equalizer_search": false,
+    "mmse_crosstalk_phase_path": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_build_r480_noise_pdf", "not_channel_selection", "not_equalizer_search", "not_mmse_crosstalk_phase_path", "not_profile_acceptance", "not_release_evidence"]
+}

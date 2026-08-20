@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b86.mit-source-map.v1",
+  "status": "parameter_profile_names_by_type_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_names_by_type_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "name listing by declared type over assembled parameter profile maps" },
+  "mapping": [
+    { "concept": "names by type", "rust": "list_parameter_profile_names_by_type_v1", "notes": "sorted names of entries carrying a requested declared type token" },
+    { "concept": "listing errors", "rust": "ParameterProfileNamesByTypeErrorV1", "notes": "UnknownTypeToken for tokens outside the five product variants" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

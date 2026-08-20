@@ -1,0 +1,20 @@
+{
+  "schema": "sipi.p3b-05d.prbs9-inject-stage.v1",
+  "status": "prbs9_inject_waveform_ported",
+  "purpose": "P3B-05d deterministic PRBS9 TX-injection waveform core: maps PRBS9 bits (P3B-05c) to a DC-balanced time-domain injection waveform (+amplitude for bit 1, -amplitude for bit 0, samples_per_ui per bit) at the owner-decided TX injection point (A4: PRBS9, TX, time model). The deterministic injection basis; the full time-warp jitter model, observables, and tolerance remain out of scope.",
+  "decision_ref": "docs/baselines/owner-decision-checklist.v1.md (A4)",
+  "source_map_ref": "docs/baselines/p3b-05d-mit-source-map.v1.yaml",
+  "based_on": ["docs/baselines/p3b-05c-prbs9-sequence-stage.v1.yaml"],
+  "admission": {
+    "bit_to_waveform_mapping": true,
+    "dc_balanced_marks": true,
+    "tx_injection_basis": true,
+    "time_warp_jitter_model": false,
+    "observables": false,
+    "tolerance": false,
+    "behavior_profile": false,
+    "release_evidence": false,
+    "product_runtime_invoked": false
+  },
+  "non_claims": ["not_time_warp_jitter", "not_observables", "not_tolerance", "not_acceptance_evidence"]
+}

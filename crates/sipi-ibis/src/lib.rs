@@ -11,6 +11,269 @@ use std::{error::Error, fmt, num::NonZeroUsize};
 use sha2::{Digest, Sha256};
 use sipi_types::{Amps, FiniteF64, Volts};
 
+mod component_declaration_v1;
+mod package_model_declaration_v1;
+mod model_selector_declaration_v1;
+mod diff_pin_declaration_v1;
+mod series_switch_groups_v1;
+mod submodel_declaration_v1;
+mod circuit_call_declaration_v1;
+mod node_declaration_v1;
+mod series_pin_mapping_v1;
+mod series_switch_mapping_v1;
+mod receiver_thresholds_v1;
+mod test_data_declaration_v1;
+mod golden_wave_declaration_v1;
+mod bus_label_declaration_v1;
+mod series_pin_thresholds_v1;
+mod series_pin_mapping_group_v1;
+mod series_pin_mapping_table_group_v1;
+mod series_pin_mapping_table_group_selector_v1;
+mod series_pin_thresholds_group_v1;
+mod series_switch_thresholds_v1;
+mod model_declaration_keywords_v1;
+mod series_pin_mapping_table_group_thresholds_v1;
+mod series_pin_mapping_table_group_model_thresholds_v1;
+mod model_selector_keywords_v1;
+mod package_model_keywords_v1;
+mod series_pin_mapping_keywords_v1;
+mod series_switch_groups_keywords_v1;
+mod receiver_thresholds_keywords_v1;
+mod test_data_keywords_v1;
+mod golden_wave_keywords_v1;
+mod bus_label_keywords_v1;
+mod diff_pin_keywords_v1;
+mod series_pin_mapping_table_selector_thresholds_v1;
+mod series_pin_mapping_table_selector_thresholds_binding_v1;
+mod series_pin_mapping_table_group_switch_v1;
+mod series_pin_mapping_table_group_switch_thresholds_v1;
+mod series_pin_mapping_table_selector_group_thresholds_v1;
+mod series_pin_mapping_table_selector_thresholds_group_v1;
+mod series_pin_mapping_table_selector_v1;
+mod series_pin_mapping_table_selector_thresholds_group_binding_v1;
+mod series_pin_mapping_table_selector_binding_entry_v1;
+mod series_pin_mapping_table_selector_binding_table_v1;
+mod series_pin_mapping_table_selector_binding_record_v1;
+mod series_pin_mapping_table_selector_binding_v1;
+mod model_declaration_v1;
+mod pin_declaration_v1;
+mod pin_model_linkage_v1;
+mod ramp_package_spec_v1;
+mod vt_table_v1;
+
+pub use pin_model_linkage_v1::{
+    resolve_pin_model_linkage_v1, PinModelLinkageErrorV1, PinModelLinkageV1,
+    PIN_MODEL_LINKAGE_POLICY_V1,
+};
+pub use series_pin_mapping_table_group_selector_v1::{
+    lift_series_pin_group_selector_record_v1, SeriesPinTableGroupSelectorErrorV1,
+    TypedSeriesPinGroupSelectorRecordV1, SERIES_PIN_TABLE_GROUP_SELECTOR_POLICY_V1,
+};
+pub use series_pin_mapping_table_group_v1::{
+    lift_series_pin_group_model_record_v1,
+    SeriesPinTableGroupModelErrorV1,
+    TypedSeriesPinGroupModelRecordV1,
+    SERIES_PIN_TABLE_GROUP_POLICY_V1,
+};
+pub use series_pin_mapping_table_selector_v1::{
+    lift_series_pin_selector_record_v1, SeriesPinTableSelectorErrorV1,
+    TypedSeriesPinSelectorRecordV1, SERIES_PIN_TABLE_SELECTOR_POLICY_V1,
+};
+pub use series_pin_mapping_table_selector_binding_v1::{
+    lift_series_pin_selector_record_v1 as lift_series_pin_selector_binding_record_v1,
+    SeriesPinTableSelectorErrorV1 as SeriesPinTableSelectorBindingErrorV1,
+    TypedSeriesPinSelectorRecordV1 as TypedSeriesPinSelectorBindingRecordV1,
+    SERIES_PIN_TABLE_SELECTOR_POLICY_V1 as SERIES_PIN_TABLE_SELECTOR_BINDING_POLICY_V1,
+};
+pub use series_pin_mapping_table_selector_binding_record_v1::{
+    lift_series_pin_selector_record_v1 as lift_series_pin_selector_binding_record_ax_v1,
+    SeriesPinTableSelectorErrorV1 as SeriesPinTableSelectorBindingAxErrorV1,
+    TypedSeriesPinSelectorRecordV1 as TypedSeriesPinSelectorBindingAxRecordV1,
+    SERIES_PIN_TABLE_SELECTOR_POLICY_V1 as SERIES_PIN_TABLE_SELECTOR_BINDING_AX_POLICY_V1,
+};
+pub use series_pin_mapping_table_selector_binding_table_v1::{
+    lift_series_pin_selector_record_v1 as lift_series_pin_selector_binding_record_az_v1,
+    SeriesPinTableSelectorErrorV1 as SeriesPinTableSelectorBindingAzErrorV1,
+    TypedSeriesPinSelectorRecordV1 as TypedSeriesPinSelectorBindingAzRecordV1,
+    SERIES_PIN_TABLE_SELECTOR_POLICY_V1 as SERIES_PIN_TABLE_SELECTOR_BINDING_AZ_POLICY_V1,
+};
+pub use series_pin_mapping_table_selector_binding_entry_v1::{
+    lift_series_pin_selector_record_v1 as lift_series_pin_selector_binding_record_be_v1,
+    SeriesPinTableSelectorErrorV1 as SeriesPinTableSelectorBindingBeErrorV1,
+    TypedSeriesPinSelectorRecordV1 as TypedSeriesPinSelectorBindingBeRecordV1,
+    SERIES_PIN_TABLE_SELECTOR_POLICY_V1 as SERIES_PIN_TABLE_SELECTOR_BINDING_BE_POLICY_V1,
+};
+pub use series_pin_mapping_table_selector_thresholds_group_v1::{
+    lift_series_pin_selector_group_threshold_record_v1, SeriesPinTableSelectorThresholdsGroupErrorV1,
+    TypedSeriesPinSelectorGroupThresholdRecordV1, SERIES_PIN_TABLE_SELECTOR_THRESHOLDS_GROUP_POLICY_V1,
+};
+pub use series_pin_mapping_table_selector_thresholds_group_binding_v1::{
+    lift_series_pin_selector_group_threshold_record_v1 as lift_series_pin_group_selector_threshold_binding_record_v1,
+    SeriesPinTableSelectorThresholdsGroupErrorV1 as SeriesPinTableSelectorThresholdsGroupBindingErrorV1,
+    TypedSeriesPinSelectorGroupThresholdRecordV1 as TypedSeriesPinGroupSelectorThresholdBindingRecordV1,
+    SERIES_PIN_TABLE_SELECTOR_THRESHOLDS_GROUP_POLICY_V1 as SERIES_PIN_TABLE_SELECTOR_THRESHOLDS_GROUP_BINDING_POLICY_V1,
+};
+pub use series_pin_mapping_table_selector_group_thresholds_v1::{
+    lift_series_pin_group_selector_threshold_record_v1, SeriesPinTableSelectorGroupThresholdsErrorV1,
+    TypedSeriesPinGroupSelectorThresholdRecordV1, SERIES_PIN_TABLE_SELECTOR_GROUP_THRESHOLDS_POLICY_V1,
+};
+pub use series_pin_mapping_table_group_switch_thresholds_v1::{
+    lift_series_pin_group_switch_threshold_record_v1, SeriesPinTableGroupSwitchThresholdsErrorV1,
+    TypedSeriesPinGroupSwitchThresholdRecordV1, SERIES_PIN_TABLE_GROUP_SWITCH_THRESHOLDS_POLICY_V1,
+};
+pub use series_pin_mapping_table_group_switch_v1::{
+    lift_series_pin_group_switch_record_v1, SeriesPinTableGroupSwitchErrorV1,
+    TypedSeriesPinGroupSwitchRecordV1, SERIES_PIN_TABLE_GROUP_SWITCH_POLICY_V1,
+};
+pub use series_pin_mapping_table_selector_thresholds_v1::{
+    lift_series_pin_selector_threshold_record_v1, SeriesPinTableSelectorThresholdsErrorV1,
+    TypedSeriesPinSelectorThresholdRecordV1, SERIES_PIN_TABLE_SELECTOR_THRESHOLDS_POLICY_V1,
+};
+pub use series_pin_mapping_table_selector_thresholds_binding_v1::{
+    lift_series_pin_selector_threshold_record_v1 as lift_series_pin_selector_threshold_binding_record_v1,
+    SeriesPinTableSelectorThresholdsErrorV1 as SeriesPinTableSelectorThresholdsBindingErrorV1,
+    TypedSeriesPinSelectorThresholdRecordV1 as TypedSeriesPinSelectorThresholdBindingRecordV1,
+    SERIES_PIN_TABLE_SELECTOR_THRESHOLDS_POLICY_V1 as SERIES_PIN_TABLE_SELECTOR_THRESHOLDS_BINDING_POLICY_V1,
+};
+pub use diff_pin_keywords_v1::{
+    lift_diff_pin_block_v1, DiffPinKeywordsErrorV1,
+    TypedDiffPinBlockV1, DIFF_PIN_KEYWORDS_POLICY_V1,
+};
+pub use bus_label_keywords_v1::{
+    lift_bus_label_block_v1, BusLabelKeywordsErrorV1,
+    TypedBusLabelBlockV1, BUS_LABEL_KEYWORDS_POLICY_V1,
+};
+pub use golden_wave_keywords_v1::{
+    lift_golden_wave_block_v1, GoldenWaveKeywordsErrorV1,
+    TypedGoldenWaveBlockV1, GOLDEN_WAVE_KEYWORDS_POLICY_V1,
+};
+pub use test_data_keywords_v1::{
+    lift_test_data_block_v1, TestDataKeywordsErrorV1,
+    TypedTestDataBlockV1, TEST_DATA_KEYWORDS_POLICY_V1,
+};
+pub use receiver_thresholds_keywords_v1::{
+    lift_receiver_thresholds_block_v1, ReceiverThresholdsKeywordsErrorV1,
+    TypedReceiverThresholdsBlockV1, RECEIVER_THRESHOLDS_KEYWORDS_POLICY_V1,
+};
+pub use series_switch_groups_keywords_v1::{
+    lift_series_switch_block_v1, SeriesSwitchKeywordsErrorV1,
+    TypedSeriesSwitchBlockV1, SERIES_SWITCH_KEYWORDS_POLICY_V1,
+};
+pub use series_pin_mapping_keywords_v1::{
+    lift_series_pin_mapping_block_v1, SeriesPinMappingKeywordsErrorV1,
+    TypedSeriesPinMappingBlockV1, SERIES_PIN_MAPPING_KEYWORDS_POLICY_V1,
+};
+pub use package_model_keywords_v1::{
+    lift_package_model_keywords_v1, PackageModelKeywordsErrorV1,
+    TypedPackageModelKeywordsV1, PACKAGE_MODEL_KEYWORDS_POLICY_V1,
+};
+pub use model_selector_keywords_v1::{
+    lift_model_selector_keywords_v1, ModelOptionEntryV1,
+    ModelSelectorKeywordsErrorV1, TypedModelSelectorKeywordsV1,
+    MODEL_SELECTOR_KEYWORDS_POLICY_V1,
+};
+pub use series_pin_mapping_table_group_thresholds_v1::{
+    lift_series_pin_group_threshold_record_v1, SeriesPinTableGroupThresholdsErrorV1,
+    TypedSeriesPinGroupThresholdRecordV1, SERIES_PIN_TABLE_GROUP_THRESHOLDS_POLICY_V1,
+};
+pub use series_pin_mapping_table_group_model_thresholds_v1::{
+    lift_series_pin_group_model_threshold_record_v1, SeriesPinTableGroupModelThresholdsErrorV1,
+    TypedSeriesPinGroupModelThresholdRecordV1, SERIES_PIN_TABLE_GROUP_MODEL_THRESHOLDS_POLICY_V1,
+};
+pub use model_declaration_keywords_v1::{
+    validate_model_keywords_v1, ModelDeclarationKeywordsErrorV1,
+    ModelSubKeywordsV1, MODEL_DECLARATION_KEYWORDS_POLICY_V1,
+};
+pub use series_switch_thresholds_v1::{
+    lift_series_switch_thresholds_v1, SeriesSwitchThresholdsErrorV1,
+    TypedSeriesSwitchThresholdsV1, SERIES_SWITCH_THRESHOLDS_POLICY_V1,
+};
+pub use series_pin_thresholds_group_v1::{
+    lift_series_pin_table_group_thresholds_v1, SeriesPinTableThresholdsGroupErrorV1,
+    TypedSeriesPinTableGroupThresholdsV1, SERIES_PIN_TABLE_THRESHOLDS_GROUP_POLICY_V1,
+};
+pub use series_pin_mapping_group_v1::{
+    lift_series_pin_group_v1, SeriesPinMappingGroupErrorV1,
+    SeriesPinPairV1, TypedSeriesPinGroupV1, SERIES_PIN_MAPPING_GROUP_POLICY_V1,
+};
+pub use series_pin_thresholds_v1::{
+    lift_series_pin_thresholds_v1, SeriesPinThresholdsErrorV1,
+    TypedSeriesPinThresholdsV1, SERIES_PIN_THRESHOLDS_POLICY_V1,
+};
+pub use bus_label_declaration_v1::{
+    lift_bus_label_declaration_v1, BusLabelDeclarationErrorV1,
+    TypedBusLabelDeclarationV1, BUS_LABEL_DECLARATION_POLICY_V1,
+};
+pub use golden_wave_declaration_v1::{
+    lift_golden_wave_declaration_v1, GoldenWaveDeclarationErrorV1,
+    TypedGoldenWaveDeclarationV1, GOLDEN_WAVE_DECLARATION_POLICY_V1,
+};
+pub use test_data_declaration_v1::{
+    lift_test_data_declaration_v1, TestDataDeclarationErrorV1,
+    TypedTestDataDeclarationV1, TEST_DATA_DECLARATION_POLICY_V1,
+};
+pub use receiver_thresholds_v1::{
+    lift_receiver_thresholds_v1, ReceiverThresholdsErrorV1,
+    TypedReceiverThresholdsV1, RECEIVER_THRESHOLDS_POLICY_V1,
+};
+pub use series_switch_mapping_v1::{
+    lift_series_switch_record_v1, SeriesSwitchMappingTableErrorV1,
+    TypedSeriesSwitchRecordV1, SERIES_SWITCH_MAPPING_TABLE_POLICY_V1,
+};
+pub use series_pin_mapping_v1::{
+    lift_series_pin_record_v1, SeriesPinMappingTableErrorV1,
+    TypedSeriesPinRecordV1, SERIES_PIN_MAPPING_TABLE_POLICY_V1,
+};
+pub use node_declaration_v1::{
+    lift_node_declaration_v1, NodeDeclarationErrorV1,
+    TypedNodeDeclarationV1, NODE_DECLARATION_POLICY_V1,
+};
+pub use circuit_call_declaration_v1::{
+    lift_circuit_call_declaration_v1, CircuitCallDeclarationErrorV1,
+    PortMapV1, TypedCircuitCallDeclarationV1, CIRCUIT_CALL_DECLARATION_POLICY_V1,
+};
+pub use submodel_declaration_v1::{
+    lift_add_submodel_v1, lift_submodel_declaration_v1,
+    SubmodelDeclarationErrorV1, SubmodelModeV1, SubmodelTypeV1,
+    TypedAddSubmodelV1, TypedSubmodelDeclarationV1, SUBMODEL_DECLARATION_POLICY_V1,
+};
+pub use series_switch_groups_v1::{
+    lift_series_switch_group_v1, SeriesSwitchGroupsErrorV1,
+    TypedSeriesSwitchGroupV1, SERIES_SWITCH_GROUPS_POLICY_V1,
+};
+pub use diff_pin_declaration_v1::{
+    lift_diff_pin_declaration_v1, DiffPinDeclarationErrorV1,
+    TypedDiffPinDeclarationV1, DIFF_PIN_DECLARATION_POLICY_V1,
+};
+pub use model_selector_declaration_v1::{
+    lift_model_selector_declaration_v1, lift_series_pin_mapping_v1,
+    ModelBranchV1, ModelSelectorDeclarationErrorV1, TypedModelSelectorDeclarationV1,
+    TypedSeriesPinMappingV1, MODEL_SELECTOR_DECLARATION_POLICY_V1,
+};
+pub use package_model_declaration_v1::{
+    lift_package_model_declaration_v1, PackageModelDeclarationErrorV1,
+    TypedPackageModelDeclarationV1, PACKAGE_MODEL_DECLARATION_POLICY_V1,
+};
+pub use component_declaration_v1::{
+    lift_component_declaration_v1, ComponentDeclarationErrorV1, IbisComponentV1,
+    COMPONENT_DECLARATION_POLICY_V1,
+};
+pub use model_declaration_v1::{
+    lift_model_declarations_v1, ModelDeclarationErrorV1, ModelTypeV1,
+    TypedModelDeclarationV1, MODEL_DECLARATION_POLICY_V1,
+};
+pub use pin_declaration_v1::{
+    lift_pin_declarations_v1, PinDeclarationErrorV1, TypedPinDeclarationV1,
+    PIN_DECLARATION_POLICY_V1,
+};
+pub use ramp_package_spec_v1::{
+    PackageSpecErrorV1, PackageSpecV1, RampSpecErrorV1, RampSpecV1,
+    RAMP_PACKAGE_SCOPE_POLICY_V1,
+};
+pub use vt_table_v1::{
+    evaluate_vt_v1, VtEvaluationErrorV1, VtKnotV1, VtTableErrorV1, VtTableV1,
+    VT_EVALUATION_POLICY_V1,
+};
 /// A byte and physical-line location in one UTF-8-free ASCII source stream.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SourceSpanV1 {
@@ -21,7 +284,7 @@ pub struct SourceSpanV1 {
 }
 
 impl SourceSpanV1 {
-    const fn new(byte_start: usize, byte_end: usize, line: usize, column_start: usize) -> Self {
+    pub(crate) const fn new(byte_start: usize, byte_end: usize, line: usize, column_start: usize) -> Self {
         Self {
             byte_start,
             byte_end,
@@ -81,6 +344,11 @@ pub struct StructuralTokenV1 {
 }
 
 impl StructuralTokenV1 {
+    #[allow(dead_code)]
+    pub(crate) fn new(spelling: String) -> Self {
+        Self { spelling, span: SourceSpanV1::new(0, 1, 0, 0) }
+    }
+
     pub fn spelling(&self) -> &str {
         &self.spelling
     }

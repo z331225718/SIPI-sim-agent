@@ -1,0 +1,36 @@
+schema: sipi.p5-02m.warning-detector-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p5-02m.warning-detector.v1.deterministic
+matched_count: 3
+case_count: 3
+entries:
+- id: causal
+  matched: true
+  product:
+    anti_causal: false
+    fraction: 0.0
+    non_decay: false
+    policy: sipi.p5-02m.warning-detector.v1.deterministic
+  reference_fraction: 0.0
+  reference_anti: false
+  reference_decay: false
+- id: anti_causal
+  matched: true
+  product:
+    anti_causal: true
+    fraction: 0.13675213675213677
+    non_decay: false
+    policy: sipi.p5-02m.warning-detector.v1.deterministic
+  reference_fraction: 0.1367521367521368
+  reference_anti: true
+  reference_decay: false
+- id: non_decay
+  matched: true
+  product:
+    anti_causal: false
+    fraction: 0.0
+    non_decay: true
+    policy: sipi.p5-02m.warning-detector.v1.deterministic
+  reference_fraction: 0.0
+  reference_anti: false
+  reference_decay: true

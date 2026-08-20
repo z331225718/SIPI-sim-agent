@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b51.mit-source-map.v1",
+  "status": "ami_text_document_stats_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text ami_text_document_stats_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "structural statistics over the parsed AmiTextDocumentV1 AST" },
+  "mapping": [
+    { "concept": "document statistics", "rust": "compute_ami_text_document_stats_v1", "notes": "counts lists, atoms, quoted tokens and max nesting depth over the AST" },
+    { "concept": "statistics result", "rust": "AmiTextDocumentStatsV1", "notes": "holds list_count, atom_count, quoted_count, max_depth" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

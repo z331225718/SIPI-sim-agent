@@ -1,0 +1,17 @@
+{
+  "schema": "sipi.p4a-03i.mit-source-map.v1",
+  "status": "model_selector_declaration_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis model_selector_declaration_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Model Selector] and [Series Pin Mapping] structural headers" },
+  "mapping": [
+    { "concept": "typed [Model Selector] header", "rust": "TypedModelSelectorDeclarationV1", "notes": "validated ASCII selector name and non-empty branch list" },
+    { "concept": "[Model Selector] branch entry", "rust": "ModelBranchV1", "notes": "model_name and optional description" },
+    { "concept": "typed [Series Pin Mapping] entry", "rust": "TypedSeriesPinMappingV1", "notes": "pin_first, pin_second, model_name mapping" },
+    { "concept": "series pin pair validation", "rust": "ModelSelectorDeclarationErrorV1::IdenticalSeriesPins", "notes": "identical pin pairs fail closed" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "dynamic model selector resolution",
+    "release certification"
+  ]
+}

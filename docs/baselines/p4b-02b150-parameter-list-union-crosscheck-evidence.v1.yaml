@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b150-parameter-list-union-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b150.parameter-list-union-v1.value-union
+matched_count: 4
+case_count: 4
+entries:
+- label: union
+  matched: true
+  product:
+    policy: sipi.p4b-02b150.parameter-list-union-v1.value-union
+    token: (a, b, c, d)
+    valid: true
+  reference:
+    valid: true
+    token: (a, b, c, d)
+- label: left_duplicates
+  matched: true
+  product:
+    policy: sipi.p4b-02b150.parameter-list-union-v1.value-union
+    token: (a, a, b)
+    valid: true
+  reference:
+    valid: true
+    token: (a, a, b)
+- label: equal_values
+  matched: true
+  product:
+    policy: sipi.p4b-02b150.parameter-list-union-v1.value-union
+    token: (a, b)
+    valid: true
+  reference:
+    valid: true
+    token: (a, b)
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b150.parameter-list-union-v1.value-union
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

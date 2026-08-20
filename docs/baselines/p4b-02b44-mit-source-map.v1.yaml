@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b44.mit-source-map.v1",
+  "status": "parameter_profile_assembly_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_assembly_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "strict profile assembly composing P4B-02b42 extraction, typed defaults fill, and reserved rejection" },
+  "mapping": [
+    { "concept": "profile assembly", "rust": "assemble_parameter_profile_v1", "notes": "multi-tree typed-form extraction + typed defaults fill + strict reserved-name rejection in one pass" },
+    { "concept": "assembly outcome", "rust": "ParameterProfileAssemblyV1", "notes": "holds leaves_consumed, defaults_applied/skipped, and the assembled parameter map" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

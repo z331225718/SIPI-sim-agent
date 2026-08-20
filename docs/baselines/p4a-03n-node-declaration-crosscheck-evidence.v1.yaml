@@ -1,0 +1,37 @@
+schema: sipi.p4a-03n.node-declaration-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03n.node-declaration-v1.typed-node
+matched_count: 3
+case_count: 3
+entries:
+- label: full_node_declaration
+  matched: true
+  product:
+    node_name: INT_NODE_1
+    policy: sipi.p4a-03n.node-declaration-v1.typed-node
+    signal_name: SIG_CLK
+    valid: true
+  reference:
+    valid: true
+    node_name: INT_NODE_1
+    signal_name: SIG_CLK
+- label: minimal_node_declaration
+  matched: true
+  product:
+    node_name: NODE_A
+    policy: sipi.p4a-03n.node-declaration-v1.typed-node
+    signal_name: null
+    valid: true
+  reference:
+    valid: true
+    node_name: NODE_A
+    signal_name: null
+- label: empty_node_name
+  matched: true
+  product:
+    lift_error: EmptyNodeName
+    policy: sipi.p4a-03n.node-declaration-v1.typed-node
+    valid: false
+  reference:
+    valid: false
+    lift_error: EmptyNodeName

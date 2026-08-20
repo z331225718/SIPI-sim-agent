@@ -1,0 +1,40 @@
+{
+  "schema": "sipi.p4b-02b21.parameter-tree-diff-filter-stage.v1",
+  "status": "parameter_tree_diff_filter_ported",
+  "purpose": "P4B-02 typed AMI parameter sub-slice: filters sequences of atomic structural diff entries (TreeDiffEntryV1, P4B-02b11) by applying predicate closures over diff entry properties and node paths (sipi-ami-text parameter_tree_diff_filter_v1.rs). Fail-closed: empty diff lists or empty filtered diff result are strictly rejected.",
+  "source_map_ref": "docs/baselines/p4b-02b21-mit-source-map.v1.yaml",
+  "based_on": [
+    "docs/baselines/p4b-02b1-parameter-value-core.v1.yaml",
+    "docs/baselines/p4b-02b2-parameter-form-binding.v1.yaml",
+    "docs/baselines/p4b-02b3-parameter-catalog-stage.v1.yaml",
+    "docs/baselines/p4b-02b4-catalog-default-stage.v1.yaml",
+    "docs/baselines/p4b-02b5-ami-runtime-params-stage.v1.yaml",
+    "docs/baselines/p4b-02b6-parameter-extractor-stage.v1.yaml",
+    "docs/baselines/p4b-02b7-parameter-trees-stage.v1.yaml",
+    "docs/baselines/p4b-02b8-parameter-tree-query-stage.v1.yaml",
+    "docs/baselines/p4b-02b9-parameter-tree-formatter-stage.v1.yaml",
+    "docs/baselines/p4b-02b10-parameter-tree-validator-stage.v1.yaml",
+    "docs/baselines/p4b-02b11-parameter-tree-diff-stage.v1.yaml",
+    "docs/baselines/p4b-02b12-parameter-tree-merge-stage.v1.yaml",
+    "docs/baselines/p4b-02b13-parameter-tree-pruning-stage.v1.yaml",
+    "docs/baselines/p4b-02b14-parameter-tree-visitor-stage.v1.yaml",
+    "docs/baselines/p4b-02b15-parameter-tree-transformer-stage.v1.yaml",
+    "docs/baselines/p4b-02b16-parameter-tree-index-stage.v1.yaml",
+    "docs/baselines/p4b-02b17-parameter-tree-diff-patch-stage.v1.yaml",
+    "docs/baselines/p4b-02b18-parameter-tree-filter-stage.v1.yaml",
+    "docs/baselines/p4b-02b19-parameter-tree-serde-stage.v1.yaml",
+    "docs/baselines/p4b-02b20-parameter-tree-diff-stats-stage.v1.yaml"
+  ],
+  "admission": {
+    "diff_entry_filtering": true,
+    "closure_predicate_diff_pruning": true,
+    "fail_closed_on_empty_filtered_result": true,
+    "full_ami_document_parser": false,
+    "release_evidence": false
+  },
+  "non_claims": [
+    "not_full_ami_document_parser",
+    "not_reserved_name_catalog",
+    "not_acceptance_evidence"
+  ]
+}

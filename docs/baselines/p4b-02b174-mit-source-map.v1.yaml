@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b174.mit-source-map.v1",
+  "status": "parameter_list_majority_item_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_list_majority_item_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "strict-majority item over the trimmed items of a validated AMI parameter list value" },
+  "mapping": [
+    { "concept": "majority item", "rust": "parameter_list_majority_item_v1", "notes": "distinct item with count strictly greater than half the item count by raw byte equality" },
+    { "concept": "majority errors", "rust": "ParameterListMajorityItemErrorV1", "notes": "NotAList for non-List types, defensive MalformedList otherwise, NoMajority when no item exceeds half" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

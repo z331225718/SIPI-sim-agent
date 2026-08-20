@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b129-parameter-list-last-sublist-index-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b129.parameter-list-last-sublist-index-v1.last-sublist-position
+matched_count: 4
+case_count: 4
+entries:
+- label: last_start_index
+  matched: true
+  product:
+    index: 3
+    policy: sipi.p4b-02b129.parameter-list-last-sublist-index-v1.last-sublist-position
+    valid: true
+  reference:
+    valid: true
+    index: 3
+- label: single_match
+  matched: true
+  product:
+    index: 2
+    policy: sipi.p4b-02b129.parameter-list-last-sublist-index-v1.last-sublist-position
+    valid: true
+  reference:
+    valid: true
+    index: 2
+- label: absent_sublist
+  matched: true
+  product:
+    error: SublistNotFound
+    policy: sipi.p4b-02b129.parameter-list-last-sublist-index-v1.last-sublist-position
+    valid: false
+  reference:
+    valid: false
+    error: SublistNotFound
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b129.parameter-list-last-sublist-index-v1.last-sublist-position
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

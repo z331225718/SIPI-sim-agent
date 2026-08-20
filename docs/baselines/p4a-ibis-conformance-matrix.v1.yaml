@@ -45,6 +45,18 @@ entries:
     entry_points: [evaluate_quasi_static_clamps_v1]
     evidence_refs: [docs/clean-room/specs/p4a-ibis-quasi-static-clamp-ccomp.v1.md, crates/sipi-ibis/src/lib.rs::tests::quasi_static_boundary_rejects_invalid_inputs_and_dc_domain_first]
     non_claim: This is not transient integration or external transient parity.
+  - id: vt-table-core
+    scope: finite strictly time-ascending typed V-T tables with linear in-domain interpolation and explicit out-of-domain rejection
+    status: implemented_self_tested
+    entry_points: [evaluate_vt_v1]
+    evidence_refs: [docs/baselines/p4a-04f-vt-table-core.v1.yaml, crates/sipi-ibis/src/vt_table_v1.rs::tests::rejects_out_of_domain]
+    non_claim: This typed table core does not decode IBIS text, solve a network, or accept any profile.
+  - id: ramp-package-spec-core
+    scope: finite strictly positive typed Ramp and Package section declarations with explicit product-owned validation rules
+    status: implemented_self_tested
+    entry_points: [RampSpecV1, PackageSpecV1]
+    evidence_refs: [docs/baselines/p4a-04g-ramp-package-spec-core.v1.yaml, crates/sipi-ibis/src/ramp_package_spec_v1.rs::tests::ramp_rejects_zero_or_negative_fields]
+    non_claim: Declaration validation only; no waveform construction, initial-slope model, terminal network solve, decoder, or profile acceptance.
   - id: selected-differential-rc-load
     scope: fixed continuous P/N/REF 100 ohm plus per-leg 1 pF constitutive relation
     status: implemented_self_tested

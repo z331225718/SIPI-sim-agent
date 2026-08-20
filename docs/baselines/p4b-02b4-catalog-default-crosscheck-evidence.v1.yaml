@@ -1,0 +1,54 @@
+schema: sipi.p4b-02b4.catalog-default-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b4.catalog-default.v1.validity
+matched_count: 8
+case_count: 8
+entries:
+- name: swing
+  type: Float
+  default: '0.5'
+  matched: true
+  product_valid: true
+  reference_valid: true
+- name: pre
+  type: Integer
+  default: '2'
+  matched: true
+  product_valid: true
+  reference_valid: true
+- name: flag
+  type: Boolean
+  default: 'True'
+  matched: true
+  product_valid: true
+  reference_valid: true
+- name: bad_float
+  type: Float
+  default: not-a-float
+  matched: true
+  product_valid: false
+  reference_valid: false
+- name: bad_bool
+  type: Boolean
+  default: 'true'
+  matched: true
+  product_valid: false
+  reference_valid: false
+- name: no_default
+  type: Float
+  default: null
+  matched: true
+  product_valid: true
+  reference_valid: true
+- name: list_ok
+  type: List
+  default: (1, 2, 3)
+  matched: true
+  product_valid: true
+  reference_valid: true
+- name: bad_list
+  type: List
+  default: ()
+  matched: true
+  product_valid: false
+  reference_valid: false

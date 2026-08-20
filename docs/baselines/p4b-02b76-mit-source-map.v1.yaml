@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b76.mit-source-map.v1",
+  "status": "parameter_profile_override_merge_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_profile_override_merge_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "typed override merge over assembled parameter profile maps" },
+  "mapping": [
+    { "concept": "override merge", "rust": "merge_parameter_profiles_with_override_v1", "notes": "typed-equivalent shared names keep base (matched), typed-inequivalent names take override (overridden), disjoint carry over" },
+    { "concept": "merge outcome", "rust": "ParameterProfileOverrideMergeV1", "notes": "matched and overridden counts plus deterministic merged map" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

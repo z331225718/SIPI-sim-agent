@@ -1,0 +1,24 @@
+{
+  "schema": "sipi.p3c-02.bathtub-decision-preflight.v1",
+  "status": "bathtub_estimator_and_tolerance_not_frozen_pending_owner_decision",
+  "purpose": "P3C-02d bathtub/BER decision-surface freeze: estimator, tolerance, reference binding and eye folding/bins are all unselected pending the owner decision recorded under P3C-01. No bathtub implementation may be admitted before that decision; this preflight selects nothing, implements nothing, and promotes nothing.",
+  "decision_surface": {
+    "estimator": "unselected_pending_owner_decision",
+    "tolerance": "unselected_pending_owner_decision",
+    "reference_binding": "unselected_pending_owner_decision",
+    "eye_folding_bins": "unselected_pending_owner_decision"
+  },
+  "blocker_linkage": {
+    "plan_row": "P3C-01",
+    "blocker": "blocked_missing_metric_profile_semantics_and_accepted_receiver_stage",
+    "core_charter_blocker": "statistical_eye_contour_semantics_missing",
+    "publication_blocker": "metric_profile_semantics_not_implemented"
+  },
+  "admission": {
+    "bathtub_implementation": "prohibited_without_owner_decision",
+    "estimator_introduced": false,
+    "product_runtime_invoked": false,
+    "release_promoted": false
+  },
+  "non_claims": ["not_an_estimator_choice", "not_a_tolerance_choice", "not_com_parity", "not_acceptance_evidence"]
+}

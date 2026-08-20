@@ -1,0 +1,49 @@
+schema: sipi.p4b-02b21-parameter-tree-diff-filter-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b21.parameter-tree-diff-filter-v1.diff-entry-filtering
+matched_count: 3
+case_count: 3
+entries:
+- label: filter_diff_entry
+  matched: true
+  product:
+    filtered_diff_count: 1
+    filtered_diffs:
+    - kind: extra_node
+      path: root.node_c
+    policy: sipi.p4b-02b21.parameter-tree-diff-filter-v1.diff-entry-filtering
+    valid: true
+  reference:
+    valid: true
+    filtered_diff_count: 1
+    filtered_diffs:
+    - kind: extra_node
+      path: root.node_c
+- label: empty_filtered_result
+  matched: true
+  product:
+    filtered_diff_count: 2
+    filtered_diffs:
+    - kind: missing_node
+      path: root.node_b
+    - kind: extra_node
+      path: root.node_c
+    policy: sipi.p4b-02b21.parameter-tree-diff-filter-v1.diff-entry-filtering
+    valid: true
+  reference:
+    valid: true
+    filtered_diff_count: 2
+    filtered_diffs:
+    - kind: missing_node
+      path: root.node_b
+    - kind: extra_node
+      path: root.node_c
+- label: identical_trees
+  matched: true
+  product:
+    filter_error: EmptyDiffList
+    policy: sipi.p4b-02b21.parameter-tree-diff-filter-v1.diff-entry-filtering
+    valid: false
+  reference:
+    valid: false
+    filter_error: EmptyDiffList

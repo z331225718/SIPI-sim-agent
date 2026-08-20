@@ -1,0 +1,13 @@
+{
+  "schema": "sipi.p3c-03d.mit-source-map.v1",
+  "status": "db_tolerance_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-com db_tolerance_v1.rs" },
+  "observation": { "ref": "docs/baselines/owner-decision-checklist.v1.md", "note": "owner A5 decision: 0.1 dB tolerance" },
+  "mapping": [
+    { "owner_decision": "0.1 dB tolerance constant", "rust": "OWNER_DB_TOLERANCE_V1", "notes": "product constant binding the A5 decision" },
+    { "concept": "dB absolute-difference tolerance check", "rust": "db_tolerance_check_v1", "notes": "|candidate - reference| <= tolerance in dB domain" },
+    { "concept": "boundary-inclusive epsilon", "rust": "db_tolerance_check_v1", "notes": "relative epsilon keeps exact-boundary inclusive" },
+    { "concept": "owner convenience check", "rust": "owner_db_tolerance_check_v1", "notes": "applies the 0.1 dB constant" }
+  ],
+  "not_ported": ["a specific metric profile (C4)", "COM commit compare", "statistical eye contours"]
+}

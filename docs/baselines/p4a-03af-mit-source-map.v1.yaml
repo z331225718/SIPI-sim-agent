@@ -1,0 +1,16 @@
+{
+  "schema": "sipi.p4a-03af.mit-source-map.v1",
+  "status": "series_pin_mapping_keywords_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ibis series_pin_mapping_keywords_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml", "note": "[Series Pin Mapping] complete block required keywords and thresholds" },
+  "mapping": [
+    { "concept": "typed [Series Pin Mapping] block header", "rust": "TypedSeriesPinMappingBlockV1", "notes": "composite pin_record and optional thresholds" },
+    { "concept": "pin_record access", "rust": "TypedSeriesPinMappingBlockV1::pin_record", "notes": "embedded TypedSeriesPinRecordV1" },
+    { "concept": "thresholds access", "rust": "TypedSeriesPinMappingBlockV1::thresholds", "notes": "optional embedded TypedSeriesPinThresholdsV1" }
+  ],
+  "not_ported": [
+    "full IBIS file parser",
+    "series model circuit simulation",
+    "release certification"
+  ]
+}

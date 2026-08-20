@@ -1,0 +1,42 @@
+schema: sipi.p4b-02b65-parameter-tree-path-relation-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b65.parameter-tree-path-relation-v1.path-classification
+matched_count: 4
+case_count: 4
+entries:
+- label: identical
+  matched: true
+  product:
+    policy: sipi.p4b-02b65.parameter-tree-path-relation-v1.path-classification
+    relation: Identical
+    valid: true
+  reference:
+    valid: true
+    relation: Identical
+- label: ancestor
+  matched: true
+  product:
+    policy: sipi.p4b-02b65.parameter-tree-path-relation-v1.path-classification
+    relation: Ancestor
+    valid: true
+  reference:
+    valid: true
+    relation: Ancestor
+- label: descendant
+  matched: true
+  product:
+    policy: sipi.p4b-02b65.parameter-tree-path-relation-v1.path-classification
+    relation: Descendant
+    valid: true
+  reference:
+    valid: true
+    relation: Descendant
+- label: disjoint
+  matched: true
+  product:
+    policy: sipi.p4b-02b65.parameter-tree-path-relation-v1.path-classification
+    relation: Disjoint
+    valid: true
+  reference:
+    valid: true
+    relation: Disjoint

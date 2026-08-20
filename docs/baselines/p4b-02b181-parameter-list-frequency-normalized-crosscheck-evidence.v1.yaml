@@ -1,0 +1,70 @@
+schema: sipi.p4b-02b181-parameter-list-frequency-normalized-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b181.parameter-list-frequency-normalized-v1.item-frequency-normalized
+matched_count: 4
+case_count: 4
+entries:
+- label: mixed
+  matched: true
+  product:
+    normalized:
+    - - a
+      - '0.500000000000'
+    - - b
+      - '0.333333333333'
+    - - c
+      - '0.166666666667'
+    policy: sipi.p4b-02b181.parameter-list-frequency-normalized-v1.item-frequency-normalized
+    valid: true
+  reference:
+    valid: true
+    normalized:
+    - - a
+      - '0.500000000000'
+    - - b
+      - '0.333333333333'
+    - - c
+      - '0.166666666667'
+- label: all_equal
+  matched: true
+  product:
+    normalized:
+    - - x
+      - '1.000000000000'
+    policy: sipi.p4b-02b181.parameter-list-frequency-normalized-v1.item-frequency-normalized
+    valid: true
+  reference:
+    valid: true
+    normalized:
+    - - x
+      - '1.000000000000'
+- label: all_distinct
+  matched: true
+  product:
+    normalized:
+    - - p
+      - '0.333333333333'
+    - - q
+      - '0.333333333333'
+    - - r
+      - '0.333333333333'
+    policy: sipi.p4b-02b181.parameter-list-frequency-normalized-v1.item-frequency-normalized
+    valid: true
+  reference:
+    valid: true
+    normalized:
+    - - p
+      - '0.333333333333'
+    - - q
+      - '0.333333333333'
+    - - r
+      - '0.333333333333'
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b181.parameter-list-frequency-normalized-v1.item-frequency-normalized
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

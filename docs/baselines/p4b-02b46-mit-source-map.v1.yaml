@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b46.mit-source-map.v1",
+  "status": "parameter_tree_expected_check_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_expected_check_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "golden/regression check of tree leaf tokens against an expected map" },
+  "mapping": [
+    { "concept": "expected-value check", "rust": "check_parameter_tree_against_expected_v1", "notes": "reports missing names and token mismatches vs an expected map; extra leaves ignored" },
+    { "concept": "check outcome", "rust": "ParameterTreeExpectedCheckV1", "notes": "holds expected_count, matched, missing, mismatched; mismatch records name/expected/actual" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

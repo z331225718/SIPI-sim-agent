@@ -1,0 +1,12 @@
+{
+  "schema": "sipi.p5-04m.floating-rxffe-stage.v1",
+  "status": "floating_rxffe_stage_ported",
+  "purpose": "P5-04m floating RxFFE stage ported from the MIT agent-com source: the floating bank force solve (force_floating_rx_ffe) with taps/ISI basis selection, the RxFFE-specific findbankloc (one-based candidate coordinates, stable sort, adjacent-bank heuristic), retained fixed taps with floating bank placement, and the source's unguarded energy-write bounds behavior reproduced as a fail-closed rejection. The equalizer search remains a separate scope.",
+  "source_map_ref": "docs/baselines/p5-04m-mit-source-map.v1.yaml",
+  "admission": {
+    "equalizer_search": false,
+    "product_runtime_invoked": false,
+    "release_evidence": false
+  },
+  "non_claims": ["not_equalizer_search", "not_profile_acceptance", "not_release_evidence"]
+}

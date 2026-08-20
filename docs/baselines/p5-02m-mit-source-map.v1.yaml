@@ -1,0 +1,12 @@
+{
+  "schema": "sipi.p5-02m.mit-source-map.v1",
+  "status": "warning_detector_source_mapped",
+  "source": { "repo": "agent-com / product-owned", "license": "MIT observation / clean-room", "path": "R480 warning classes observed (P5-02i); detector implemented product-side" },
+  "observation": { "ref": "docs/baselines/p5-r480-warning-observation.v1.yaml", "note": "25 warning calls observed incl anti-causal (line 6337) and extrapolation (line 6327)" },
+  "mapping": [
+    { "warning": "Anti-causal response found (R480 line 6337)", "rust": "detect_anti_causal_v1", "notes": "pre-cursor energy fraction above threshold" },
+    { "warning": "Channel high frequencies extrapolation (line 6327)", "rust": "detect_high_freq_non_decay_v1", "notes": "avg tail magnitude not below prior bin" },
+    { "concept": "pre-cursor energy fraction", "rust": "anti_causal_precursor_fraction_v1", "notes": "energy in peak_exclusion samples before peak / total" }
+  ],
+  "not_ported": ["full warning contract with oracle golden", "MLSE/DER/CDR warnings (need runtime state)"]
+}

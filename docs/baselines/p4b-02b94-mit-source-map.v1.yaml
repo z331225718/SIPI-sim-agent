@@ -1,0 +1,15 @@
+{
+  "schema": "sipi.p4b-02b94.mit-source-map.v1",
+  "status": "parameter_tree_leaf_canonical_spelling_check_source_mapped",
+  "source": { "repo": "product-owned", "license": "clean-room", "path": "sipi-ami-text parameter_tree_leaf_canonical_spelling_check_v1.rs" },
+  "observation": { "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml", "note": "canonical leaf spelling check over AmiParameterTreeV1" },
+  "mapping": [
+    { "concept": "canonical spelling check", "rust": "check_parameter_tree_leaf_spellings_canonical_v1", "notes": "compares raw value to 02b75 canonical spelling for try_new-valid typed-form leaves" },
+    { "concept": "check issue", "rust": "ParameterTreeLeafCanonicalSpellingIssueV1", "notes": "path, declared type, raw value, canonical value" }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

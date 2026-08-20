@@ -1,0 +1,41 @@
+schema: sipi.p4a-03t.bus-label-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03t.bus-label-declaration-v1.typed-bus-label
+matched_count: 3
+case_count: 3
+entries:
+- label: valid_bus_label
+  matched: true
+  product:
+    bus_label_name: DQ_BUS
+    member_pins:
+    - DQ0
+    - DQ1
+    - DQ2
+    policy: sipi.p4a-03t.bus-label-declaration-v1.typed-bus-label
+    valid: true
+  reference:
+    valid: true
+    bus_label_name: DQ_BUS
+    member_pins:
+    - DQ0
+    - DQ1
+    - DQ2
+- label: empty_member_pins
+  matched: true
+  product:
+    lift_error: EmptyMemberPins
+    policy: sipi.p4a-03t.bus-label-declaration-v1.typed-bus-label
+    valid: false
+  reference:
+    valid: false
+    lift_error: EmptyMemberPins
+- label: duplicate_member_pin
+  matched: true
+  product:
+    lift_error: DuplicateMemberPin("DQ0")
+    policy: sipi.p4a-03t.bus-label-declaration-v1.typed-bus-label
+    valid: false
+  reference:
+    valid: false
+    lift_error: DuplicateMemberPin("DQ0")

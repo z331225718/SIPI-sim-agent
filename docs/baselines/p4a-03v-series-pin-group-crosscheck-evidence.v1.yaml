@@ -1,0 +1,45 @@
+schema: sipi.p4a-03v.series-pin-group-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4a-03v.series-pin-mapping-group-v1.typed-group
+matched_count: 3
+case_count: 3
+entries:
+- label: valid_group_declaration
+  matched: true
+  product:
+    group_name: SERIES_GRP1
+    pin_pair_count: 2
+    pin_pairs:
+    - pin_first: P1
+      pin_second: P2
+    - pin_first: P3
+      pin_second: P4
+    policy: sipi.p4a-03v.series-pin-mapping-group-v1.typed-group
+    valid: true
+  reference:
+    valid: true
+    group_name: SERIES_GRP1
+    pin_pair_count: 2
+    pin_pairs:
+    - pin_first: P1
+      pin_second: P2
+    - pin_first: P3
+      pin_second: P4
+- label: empty_pin_pairs
+  matched: true
+  product:
+    lift_error: EmptyPinPairs
+    policy: sipi.p4a-03v.series-pin-mapping-group-v1.typed-group
+    valid: false
+  reference:
+    valid: false
+    lift_error: EmptyPinPairs
+- label: duplicate_pin_pair
+  matched: true
+  product:
+    lift_error: DuplicatePinPair("P1", "P2")
+    policy: sipi.p4a-03v.series-pin-mapping-group-v1.typed-group
+    valid: false
+  reference:
+    valid: false
+    lift_error: DuplicatePinPair("P1", "P2")

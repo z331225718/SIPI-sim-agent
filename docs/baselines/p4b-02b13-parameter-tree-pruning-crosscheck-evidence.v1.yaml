@@ -1,0 +1,33 @@
+schema: sipi.p4b-02b13-parameter-tree-pruning-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b13.parameter-tree-pruning-v1.tree-structural-pruning
+matched_count: 3
+case_count: 3
+entries:
+- label: prune_leaf_node
+  matched: true
+  product:
+    policy: sipi.p4b-02b13.parameter-tree-pruning-v1.tree-structural-pruning
+    pruned_formatted_text: "(Reserved_Parameters\n  (dfe\n    (tap_1 Integer 2)))"
+    valid: true
+  reference:
+    valid: true
+    pruned_formatted_text: "(Reserved_Parameters\n  (dfe\n    (tap_1 Integer 2)))"
+- label: cannot_prune_root
+  matched: true
+  product:
+    policy: sipi.p4b-02b13.parameter-tree-pruning-v1.tree-structural-pruning
+    prune_error: CannotPruneRoot
+    valid: false
+  reference:
+    valid: false
+    prune_error: CannotPruneRoot
+- label: path_not_found
+  matched: true
+  product:
+    policy: sipi.p4b-02b13.parameter-tree-pruning-v1.tree-structural-pruning
+    prune_error: PathNotFound("nonexistent")
+    valid: false
+  reference:
+    valid: false
+    prune_error: PathNotFound("nonexistent")
