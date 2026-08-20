@@ -183,6 +183,8 @@ mod parameter_list_mode_frequency_v1;
 mod parameter_list_prevalence_ratio_v1;
 mod parameter_list_frequency_normalized_v1;
 mod parameter_list_first_occurrence_indices_v1;
+mod parameter_list_run_boundaries_v1;
+mod parameter_list_pairwise_distinct_adjacent_v1;
 mod catalog_default_v1;
 mod parameter_catalog_v1;
 mod parameter_form_binding_v1;
@@ -676,6 +678,14 @@ pub use parameter_list_frequency_normalized_v1::{
 pub use parameter_list_first_occurrence_indices_v1::{
     parameter_list_first_occurrence_indices_v1, ParameterListFirstOccurrenceIndicesErrorV1,
     PARAMETER_LIST_FIRST_OCCURRENCE_INDICES_POLICY_V1,
+};
+pub use parameter_list_run_boundaries_v1::{
+    parameter_list_run_boundaries_v1, ParameterListRunBoundariesErrorV1,
+    PARAMETER_LIST_RUN_BOUNDARIES_POLICY_V1,
+};
+pub use parameter_list_pairwise_distinct_adjacent_v1::{
+    parameter_list_pairwise_distinct_adjacent_v1, ParameterListPairwiseDistinctAdjacentErrorV1,
+    PARAMETER_LIST_PAIRWISE_DISTINCT_ADJACENT_POLICY_V1,
 };
 pub use parameter_list_distinct_count_v1::{
     count_distinct_parameter_list_items_v1, ParameterListDistinctCountErrorV1,

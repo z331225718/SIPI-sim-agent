@@ -732,3 +732,12 @@ harness = false
 [[test]]
 name = "p4b_02b182_parameter_list_first_occurrence_indices_runner"
 harness = false
+
+[[test]]
+name = "p4b_02b183_parameter_list_run_boundaries_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b184_parameter_list_pairwise_distinct_adjacent_runner"
+harness = false
+

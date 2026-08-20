@@ -1,0 +1,30 @@
+{
+  "schema": "sipi.p4b-02b184.mit-source-map.v1",
+  "status": "parameter_list_pairwise_distinct_adjacent_source_mapped",
+  "source": {
+    "repo": "product-owned",
+    "license": "clean-room",
+    "path": "sipi-ami-text parameter_list_pairwise_distinct_adjacent_v1.rs"
+  },
+  "observation": {
+    "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml",
+    "note": "adjacent pairs (item[i], item[i + 1]) whose two trimmed items differ, in list order keeping duplicates"
+  },
+  "mapping": [
+    {
+      "concept": "pairwise-distinct adjacent pairs",
+      "rust": "parameter_list_pairwise_distinct_adjacent_v1",
+      "notes": "per adjacent index i with item[i] != item[i + 1] by raw byte equality, ordered pair list keeping duplicates; pair count equals 02b172 adjacent-change count"
+    },
+    {
+      "concept": "pairwise-distinct-adjacent errors",
+      "rust": "ParameterListPairwiseDistinctAdjacentErrorV1",
+      "notes": "NotAList for non-List types, defensive MalformedList otherwise"
+    }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}

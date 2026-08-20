@@ -342,7 +342,9 @@ OPEN_ITEM_GATES = {
     "tools/verify_p4b_02b179_parameter_list_mode_frequency.py",
     "tools/verify_p4b_02b180_parameter_list_prevalence_ratio.py",
     "tools/verify_p4b_02b181_parameter_list_frequency_normalized.py",
-    "tools/verify_p4b_02b182_parameter_list_first_occurrence_indices.py"
+    "tools/verify_p4b_02b182_parameter_list_first_occurrence_indices.py",
+    "tools/verify_p4b_02b183_parameter_list_run_boundaries.py",
+    "tools/verify_p4b_02b184_parameter_list_pairwise_distinct_adjacent.py"
   ],
   "P4B-03": [
     "tools/verify_p4b_dual_ami_pe_loader_declarations.py",

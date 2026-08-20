@@ -1,0 +1,74 @@
+schema: sipi.p4b-02b183-parameter-list-run-boundaries-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b183.parameter-list-run-boundaries-v1.run-boundaries
+matched_count: 4
+case_count: 4
+entries:
+- label: mixed
+  matched: true
+  product:
+    policy: sipi.p4b-02b183.parameter-list-run-boundaries-v1.run-boundaries
+    run_boundaries:
+    - - '0'
+      - '1'
+    - - '2'
+      - '2'
+    - - '3'
+      - '5'
+    - - '6'
+      - '6'
+    valid: true
+  reference:
+    valid: true
+    run_boundaries:
+    - - '0'
+      - '1'
+    - - '2'
+      - '2'
+    - - '3'
+      - '5'
+    - - '6'
+      - '6'
+- label: all_equal
+  matched: true
+  product:
+    policy: sipi.p4b-02b183.parameter-list-run-boundaries-v1.run-boundaries
+    run_boundaries:
+    - - '0'
+      - '2'
+    valid: true
+  reference:
+    valid: true
+    run_boundaries:
+    - - '0'
+      - '2'
+- label: all_distinct
+  matched: true
+  product:
+    policy: sipi.p4b-02b183.parameter-list-run-boundaries-v1.run-boundaries
+    run_boundaries:
+    - - '0'
+      - '0'
+    - - '1'
+      - '1'
+    - - '2'
+      - '2'
+    valid: true
+  reference:
+    valid: true
+    run_boundaries:
+    - - '0'
+      - '0'
+    - - '1'
+      - '1'
+    - - '2'
+      - '2'
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b183.parameter-list-run-boundaries-v1.run-boundaries
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

@@ -1,0 +1,66 @@
+schema: sipi.p4b-02b184-parameter-list-pairwise-distinct-adjacent-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b184.parameter-list-pairwise-distinct-adjacent-v1.pairwise-distinct-adjacent
+matched_count: 4
+case_count: 4
+entries:
+- label: mixed
+  matched: true
+  product:
+    pairwise_distinct_adjacent:
+    - - a
+      - b
+    - - b
+      - c
+    - - c
+      - a
+    policy: sipi.p4b-02b184.parameter-list-pairwise-distinct-adjacent-v1.pairwise-distinct-adjacent
+    valid: true
+  reference:
+    valid: true
+    pairwise_distinct_adjacent:
+    - - a
+      - b
+    - - b
+      - c
+    - - c
+      - a
+- label: duplicate_pairs
+  matched: true
+  product:
+    pairwise_distinct_adjacent:
+    - - a
+      - b
+    - - b
+      - a
+    - - a
+      - b
+    policy: sipi.p4b-02b184.parameter-list-pairwise-distinct-adjacent-v1.pairwise-distinct-adjacent
+    valid: true
+  reference:
+    valid: true
+    pairwise_distinct_adjacent:
+    - - a
+      - b
+    - - b
+      - a
+    - - a
+      - b
+- label: all_equal_empty
+  matched: true
+  product:
+    pairwise_distinct_adjacent: []
+    policy: sipi.p4b-02b184.parameter-list-pairwise-distinct-adjacent-v1.pairwise-distinct-adjacent
+    valid: true
+  reference:
+    valid: true
+    pairwise_distinct_adjacent: []
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b184.parameter-list-pairwise-distinct-adjacent-v1.pairwise-distinct-adjacent
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

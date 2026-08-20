@@ -1,0 +1,30 @@
+{
+  "schema": "sipi.p4b-02b183.mit-source-map.v1",
+  "status": "parameter_list_run_boundaries_source_mapped",
+  "source": {
+    "repo": "product-owned",
+    "license": "clean-room",
+    "path": "sipi-ami-text parameter_list_run_boundaries_v1.rs"
+  },
+  "observation": {
+    "ref": "docs/baselines/p4b-raw-text-binding-foundation.v1.yaml",
+    "note": "inclusive zero-based boundary pairs of each maximal run of equal adjacent trimmed items of a validated AMI parameter list value"
+  },
+  "mapping": [
+    {
+      "concept": "run boundaries",
+      "rust": "parameter_list_run_boundaries_v1",
+      "notes": "per maximal run of adjacent equal trimmed items by raw byte equality, 0-based inclusive (start, end) pairs in order; first run starts at 0, pair count equals 02b168 run count"
+    },
+    {
+      "concept": "run-boundaries errors",
+      "rust": "ParameterListRunBoundariesErrorV1",
+      "notes": "NotAList for non-List types, defensive MalformedList otherwise"
+    }
+  ],
+  "not_ported": [
+    "full reserved-name AMI parameter catalog",
+    "model-populated Out/Info runtime execution",
+    "release certification"
+  ]
+}
