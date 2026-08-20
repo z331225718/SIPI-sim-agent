@@ -107,6 +107,11 @@ mod parameter_list_swap_v1;
 mod parameter_list_reverse_v1;
 mod parameter_list_sort_v1;
 mod parameter_list_join_v1;
+mod parameter_list_first_occurrence_map_v1;
+mod parameter_list_last_occurrence_map_v1;
+mod parameter_list_occurrence_indices_map_v1;
+mod parameter_list_last_occurrence_indices_v1;
+mod parameter_list_is_balanced_v1;
 mod parameter_list_distinct_count_v1;
 mod parameter_list_occurrence_count_v1;
 mod parameter_list_slice_v1;
@@ -686,6 +691,26 @@ pub use parameter_list_run_boundaries_v1::{
 pub use parameter_list_pairwise_distinct_adjacent_v1::{
     parameter_list_pairwise_distinct_adjacent_v1, ParameterListPairwiseDistinctAdjacentErrorV1,
     PARAMETER_LIST_PAIRWISE_DISTINCT_ADJACENT_POLICY_V1,
+};
+pub use parameter_list_first_occurrence_map_v1::{
+    parameter_list_first_occurrence_map_v1, ParameterListFirstOccurrenceMapErrorV1,
+    PARAMETER_LIST_FIRST_OCCURRENCE_MAP_POLICY_V1,
+};
+pub use parameter_list_last_occurrence_map_v1::{
+    parameter_list_last_occurrence_map_v1, ParameterListLastOccurrenceMapErrorV1,
+    PARAMETER_LIST_LAST_OCCURRENCE_MAP_POLICY_V1,
+};
+pub use parameter_list_occurrence_indices_map_v1::{
+    parameter_list_occurrence_indices_map_v1, ParameterListOccurrenceIndicesMapErrorV1,
+    PARAMETER_LIST_OCCURRENCE_INDICES_MAP_POLICY_V1,
+};
+pub use parameter_list_last_occurrence_indices_v1::{
+    parameter_list_last_occurrence_indices_v1, ParameterListLastOccurrenceIndicesErrorV1,
+    PARAMETER_LIST_LAST_OCCURRENCE_INDICES_POLICY_V1,
+};
+pub use parameter_list_is_balanced_v1::{
+    parameter_list_is_balanced_v1, ParameterListIsBalancedErrorV1,
+    PARAMETER_LIST_IS_BALANCED_POLICY_V1,
 };
 pub use parameter_list_distinct_count_v1::{
     count_distinct_parameter_list_items_v1, ParameterListDistinctCountErrorV1,

@@ -1,0 +1,9 @@
+schema: sipi.p4b-02b185-parameter-list-is-balanced-stage.v1
+status: parameter_list_is_balanced_ported
+based_on:
+  - p4b-02b184-parameter-list-pairwise-distinct-adjacent-stage.v1.yaml
+  - p4b-02b184-mit-source-map.v1.yaml
+admission:
+  is_balanced: true
+  all_runs_equal_length: true
+  non_list_fail_closed: true

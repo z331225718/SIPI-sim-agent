@@ -1,0 +1,9 @@
+schema: sipi.p4b-02b189-parameter-list-last-occurrence-indices-stage.v1
+status: parameter_list_last_occurrence_indices_ported
+based_on:
+  - p4b-02b188-parameter-list-occurrence-indices-map-stage.v1.yaml
+  - p4b-02b188-mit-source-map.v1.yaml
+admission:
+  last_occurrence_indices: true
+  first_occurrence_order_pairs: true
+  non_list_fail_closed: true

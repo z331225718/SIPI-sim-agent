@@ -1,0 +1,70 @@
+schema: sipi.p4b-02b189-parameter-list-last-occurrence-indices-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b189.parameter-list-last-occurrence-indices-v1.last-occurrence-index
+matched_count: 4
+case_count: 4
+entries:
+- label: mixed
+  matched: true
+  product:
+    last_occurrence_indices:
+    - - a
+      - 4
+    - - b
+      - 5
+    - - c
+      - 3
+    policy: sipi.p4b-02b189.parameter-list-last-occurrence-indices-v1.last-occurrence-index
+    valid: true
+  reference:
+    valid: true
+    last_occurrence_indices:
+    - - a
+      - 4
+    - - b
+      - 5
+    - - c
+      - 3
+- label: all_equal
+  matched: true
+  product:
+    last_occurrence_indices:
+    - - x
+      - 2
+    policy: sipi.p4b-02b189.parameter-list-last-occurrence-indices-v1.last-occurrence-index
+    valid: true
+  reference:
+    valid: true
+    last_occurrence_indices:
+    - - x
+      - 2
+- label: all_distinct
+  matched: true
+  product:
+    last_occurrence_indices:
+    - - p
+      - 0
+    - - q
+      - 1
+    - - r
+      - 2
+    policy: sipi.p4b-02b189.parameter-list-last-occurrence-indices-v1.last-occurrence-index
+    valid: true
+  reference:
+    valid: true
+    last_occurrence_indices:
+    - - p
+      - 0
+    - - q
+      - 1
+    - - r
+      - 2
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b189.parameter-list-last-occurrence-indices-v1.last-occurrence-index
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

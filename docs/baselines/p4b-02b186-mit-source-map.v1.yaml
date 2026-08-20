@@ -1,0 +1,20 @@
+schema: sipi.p4b-02b186.mit-source-map.v1
+status: parameter_list_first_occurrence_map_source_mapped
+source:
+  repo: product-owned
+  license: clean-room
+  path: sipi-ami-text parameter_list_first_occurrence_map_v1.rs
+observation:
+  ref: docs/baselines/p4b-raw-text-binding-foundation.v1.yaml
+  note: BTreeMap mapping each distinct trimmed item to its first 0-based occurrence index
+mapping:
+  - concept: first-occurrence map
+    rust: parameter_list_first_occurrence_map_v1
+    notes: returns BTreeMap<String, usize> mapping each distinct trimmed item to its first 0-based occurrence index
+  - concept: first-occurrence map errors
+    rust: ParameterListFirstOccurrenceMapErrorV1
+    notes: NotAList for non-List types, defensive MalformedList otherwise
+not_ported:
+  - full reserved-name AMI parameter catalog
+  - model-populated Out/Info runtime execution
+  - release certification

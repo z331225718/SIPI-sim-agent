@@ -741,3 +741,23 @@ harness = false
 name = "p4b_02b184_parameter_list_pairwise_distinct_adjacent_runner"
 harness = false
 
+[[test]]
+name = "p4b_02b185_parameter_list_is_balanced_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b186_parameter_list_first_occurrence_map_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b187_parameter_list_last_occurrence_map_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b188_parameter_list_occurrence_indices_map_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b189_parameter_list_last_occurrence_indices_runner"
+harness = false
+

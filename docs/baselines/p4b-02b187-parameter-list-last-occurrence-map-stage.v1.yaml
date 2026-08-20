@@ -1,0 +1,9 @@
+schema: sipi.p4b-02b187-parameter-list-last-occurrence-map-stage.v1
+status: parameter_list_last_occurrence_map_ported
+based_on:
+  - p4b-02b186-parameter-list-first-occurrence-map-stage.v1.yaml
+  - p4b-02b186-mit-source-map.v1.yaml
+admission:
+  last_occurrence_map: true
+  btreemap_item_to_index: true
+  non_list_fail_closed: true

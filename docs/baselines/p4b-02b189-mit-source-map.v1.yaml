@@ -1,0 +1,20 @@
+schema: sipi.p4b-02b189.mit-source-map.v1
+status: parameter_list_last_occurrence_indices_source_mapped
+source:
+  repo: product-owned
+  license: clean-room
+  path: sipi-ami-text parameter_list_last_occurrence_indices_v1.rs
+observation:
+  ref: docs/baselines/p4b-raw-text-binding-foundation.v1.yaml
+  note: (item, last 0-based occurrence index) pairs in first-occurrence order
+mapping:
+  - concept: last-occurrence indices
+    rust: parameter_list_last_occurrence_indices_v1
+    notes: returns Vec<(String, usize)> of (item, last 0-based occurrence index) pairs in first-occurrence order
+  - concept: last-occurrence indices errors
+    rust: ParameterListLastOccurrenceIndicesErrorV1
+    notes: NotAList for non-List types, defensive MalformedList otherwise
+not_ported:
+  - full reserved-name AMI parameter catalog
+  - model-populated Out/Info runtime execution
+  - release certification
