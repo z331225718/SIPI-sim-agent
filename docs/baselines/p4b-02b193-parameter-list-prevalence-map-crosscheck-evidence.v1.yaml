@@ -1,0 +1,54 @@
+schema: sipi.p4b-02b193-parameter-list-prevalence-map-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b193.parameter-list-prevalence-map-v1.prevalence-map
+matched_count: 4
+case_count: 4
+entries:
+- label: mode_only
+  matched: true
+  product:
+    policy: sipi.p4b-02b193.parameter-list-prevalence-map-v1.prevalence-map
+    prevalence_map:
+      a: '0.600000000000'
+    valid: true
+  reference:
+    valid: true
+    prevalence_map:
+      a: '0.600000000000'
+- label: tied_mode
+  matched: true
+  product:
+    policy: sipi.p4b-02b193.parameter-list-prevalence-map-v1.prevalence-map
+    prevalence_map:
+      x: '0.400000000000'
+      y: '0.400000000000'
+    valid: true
+  reference:
+    valid: true
+    prevalence_map:
+      x: '0.400000000000'
+      y: '0.400000000000'
+- label: all_distinct
+  matched: true
+  product:
+    policy: sipi.p4b-02b193.parameter-list-prevalence-map-v1.prevalence-map
+    prevalence_map:
+      p: '0.333333333333'
+      q: '0.333333333333'
+      r: '0.333333333333'
+    valid: true
+  reference:
+    valid: true
+    prevalence_map:
+      p: '0.333333333333'
+      q: '0.333333333333'
+      r: '0.333333333333'
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b193.parameter-list-prevalence-map-v1.prevalence-map
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

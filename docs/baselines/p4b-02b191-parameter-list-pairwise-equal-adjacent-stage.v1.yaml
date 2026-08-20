@@ -1,0 +1,9 @@
+schema: sipi.p4b-02b191-parameter-list-pairwise-equal-adjacent-stage.v1
+status: parameter_list_pairwise_equal_adjacent_ported
+based_on:
+  - p4b-02b190-parameter-list-frequency-map-stage.v1.yaml
+  - p4b-02b190-mit-source-map.v1.yaml
+admission:
+  pairwise_equal_adjacent: true
+  ordered_duplicate_kept_pairs: true
+  non_list_fail_closed: true

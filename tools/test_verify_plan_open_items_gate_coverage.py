@@ -18,7 +18,7 @@ class CoverageTests(unittest.TestCase):
         result = GATE.validate(ROOT)
         self.assertTrue(result["valid"])
         self.assertEqual(result["items"], 46)
-        self.assertEqual(result["gates"], 359)
+        self.assertEqual(result["gates"], 363)
 
     def test_every_open_item_mapped(self) -> None:
         expected = set(GATE.OPEN_ITEM_GATES)

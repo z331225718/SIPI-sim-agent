@@ -349,7 +349,11 @@ OPEN_ITEM_GATES = {
     "tools/verify_p4b_02b186_parameter_list_first_occurrence_map.py",
     "tools/verify_p4b_02b187_parameter_list_last_occurrence_map.py",
     "tools/verify_p4b_02b188_parameter_list_occurrence_indices_map.py",
-    "tools/verify_p4b_02b189_parameter_list_last_occurrence_indices.py"
+    "tools/verify_p4b_02b189_parameter_list_last_occurrence_indices.py",
+    "tools/verify_p4b_02b190_parameter_list_frequency_map.py",
+    "tools/verify_p4b_02b191_parameter_list_pairwise_equal_adjacent.py",
+    "tools/verify_p4b_02b192_parameter_list_relative_frequency_map.py",
+    "tools/verify_p4b_02b193_parameter_list_prevalence_map.py"
   ],
   "P4B-03": [
     "tools/verify_p4b_dual_ami_pe_loader_declarations.py",

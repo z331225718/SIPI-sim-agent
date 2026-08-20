@@ -111,6 +111,10 @@ mod parameter_list_first_occurrence_map_v1;
 mod parameter_list_last_occurrence_map_v1;
 mod parameter_list_occurrence_indices_map_v1;
 mod parameter_list_last_occurrence_indices_v1;
+mod parameter_list_frequency_map_v1;
+mod parameter_list_pairwise_equal_adjacent_v1;
+mod parameter_list_relative_frequency_map_v1;
+mod parameter_list_prevalence_map_v1;
 mod parameter_list_is_balanced_v1;
 mod parameter_list_distinct_count_v1;
 mod parameter_list_occurrence_count_v1;
@@ -707,6 +711,22 @@ pub use parameter_list_occurrence_indices_map_v1::{
 pub use parameter_list_last_occurrence_indices_v1::{
     parameter_list_last_occurrence_indices_v1, ParameterListLastOccurrenceIndicesErrorV1,
     PARAMETER_LIST_LAST_OCCURRENCE_INDICES_POLICY_V1,
+};
+pub use parameter_list_frequency_map_v1::{
+    parameter_list_frequency_map_v1, ParameterListFrequencyMapErrorV1,
+    PARAMETER_LIST_FREQUENCY_MAP_POLICY_V1,
+};
+pub use parameter_list_pairwise_equal_adjacent_v1::{
+    parameter_list_pairwise_equal_adjacent_v1, ParameterListPairwiseEqualAdjacentErrorV1,
+    PARAMETER_LIST_PAIRWISE_EQUAL_ADJACENT_POLICY_V1,
+};
+pub use parameter_list_relative_frequency_map_v1::{
+    parameter_list_relative_frequency_map_v1, ParameterListRelativeFrequencyMapErrorV1,
+    PARAMETER_LIST_RELATIVE_FREQUENCY_MAP_POLICY_V1,
+};
+pub use parameter_list_prevalence_map_v1::{
+    parameter_list_prevalence_map_v1, ParameterListPrevalenceMapErrorV1,
+    PARAMETER_LIST_PREVALENCE_MAP_POLICY_V1,
 };
 pub use parameter_list_is_balanced_v1::{
     parameter_list_is_balanced_v1, ParameterListIsBalancedErrorV1,

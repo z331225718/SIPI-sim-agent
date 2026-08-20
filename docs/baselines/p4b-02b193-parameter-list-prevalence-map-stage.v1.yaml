@@ -1,0 +1,9 @@
+schema: sipi.p4b-02b193-parameter-list-prevalence-map-stage.v1
+status: parameter_list_prevalence_map_ported
+based_on:
+  - p4b-02b192-parameter-list-relative-frequency-map-stage.v1.yaml
+  - p4b-02b192-mit-source-map.v1.yaml
+admission:
+  prevalence_map: true
+  mode_subset_shared_ratio: true
+  non_list_fail_closed: true

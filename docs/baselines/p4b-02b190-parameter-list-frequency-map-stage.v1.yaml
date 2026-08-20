@@ -1,0 +1,9 @@
+schema: sipi.p4b-02b190-parameter-list-frequency-map-stage.v1
+status: parameter_list_frequency_map_ported
+based_on:
+  - p4b-02b189-parameter-list-last-occurrence-indices-stage.v1.yaml
+  - p4b-02b189-mit-source-map.v1.yaml
+admission:
+  frequency_map: true
+  btreemap_item_to_count: true
+  non_list_fail_closed: true

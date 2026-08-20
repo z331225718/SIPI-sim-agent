@@ -1,0 +1,66 @@
+schema: sipi.p4b-02b191-parameter-list-pairwise-equal-adjacent-crosscheck-evidence.v1
+status: matched_hash_bound
+policy: sipi.p4b-02b191.parameter-list-pairwise-equal-adjacent-v1.pairwise-equal-adjacent
+matched_count: 4
+case_count: 4
+entries:
+- label: mixed
+  matched: true
+  product:
+    pairwise_equal_adjacent:
+    - - b
+      - b
+    policy: sipi.p4b-02b191.parameter-list-pairwise-equal-adjacent-v1.pairwise-equal-adjacent
+    valid: true
+  reference:
+    valid: true
+    pairwise_equal_adjacent:
+    - - b
+      - b
+- label: runs
+  matched: true
+  product:
+    pairwise_equal_adjacent:
+    - - a
+      - a
+    - - b
+      - b
+    - - b
+      - b
+    policy: sipi.p4b-02b191.parameter-list-pairwise-equal-adjacent-v1.pairwise-equal-adjacent
+    valid: true
+  reference:
+    valid: true
+    pairwise_equal_adjacent:
+    - - a
+      - a
+    - - b
+      - b
+    - - b
+      - b
+- label: all_equal
+  matched: true
+  product:
+    pairwise_equal_adjacent:
+    - - x
+      - x
+    - - x
+      - x
+    policy: sipi.p4b-02b191.parameter-list-pairwise-equal-adjacent-v1.pairwise-equal-adjacent
+    valid: true
+  reference:
+    valid: true
+    pairwise_equal_adjacent:
+    - - x
+      - x
+    - - x
+      - x
+- label: non_list
+  matched: true
+  product:
+    error: NotAList
+    policy: sipi.p4b-02b191.parameter-list-pairwise-equal-adjacent-v1.pairwise-equal-adjacent
+    valid: false
+  reference:
+    valid: false
+    error: NotAList

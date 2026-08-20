@@ -1,0 +1,20 @@
+schema: sipi.p4b-02b192.mit-source-map.v1
+status: parameter_list_relative_frequency_map_source_mapped
+source:
+  repo: product-owned
+  license: clean-room
+  path: sipi-ami-text parameter_list_relative_frequency_map_v1.rs
+observation:
+  ref: docs/baselines/p4b-raw-text-binding-foundation.v1.yaml
+  note: BTreeMap mapping each distinct trimmed item to its proportion count / total
+mapping:
+  - concept: relative-frequency map
+    rust: parameter_list_relative_frequency_map_v1
+    notes: returns BTreeMap<String, f64> mapping each distinct trimmed item to its proportion count / total in (0, 1], summing to 1.0
+  - concept: relative-frequency map errors
+    rust: ParameterListRelativeFrequencyMapErrorV1
+    notes: NotAList for non-List types, defensive MalformedList otherwise
+not_ported:
+  - full reserved-name AMI parameter catalog
+  - model-populated Out/Info runtime execution
+  - release certification

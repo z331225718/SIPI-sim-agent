@@ -1,0 +1,20 @@
+schema: sipi.p4b-02b193.mit-source-map.v1
+status: parameter_list_prevalence_map_source_mapped
+source:
+  repo: product-owned
+  license: clean-room
+  path: sipi-ami-text parameter_list_prevalence_map_v1.rs
+observation:
+  ref: docs/baselines/p4b-raw-text-binding-foundation.v1.yaml
+  note: BTreeMap mapping every mode item (count == max) to the shared prevalence proportion max_count / total
+mapping:
+  - concept: prevalence map
+    rust: parameter_list_prevalence_map_v1
+    notes: returns BTreeMap<String, f64> mapping every mode item to the shared proportion max_count / total, equal to the 02b180 prevalence ratio
+  - concept: prevalence map errors
+    rust: ParameterListPrevalenceMapErrorV1
+    notes: NotAList for non-List types, defensive MalformedList otherwise
+not_ported:
+  - full reserved-name AMI parameter catalog
+  - model-populated Out/Info runtime execution
+  - release certification

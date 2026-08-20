@@ -1,0 +1,20 @@
+schema: sipi.p4b-02b191.mit-source-map.v1
+status: parameter_list_pairwise_equal_adjacent_source_mapped
+source:
+  repo: product-owned
+  license: clean-room
+  path: sipi-ami-text parameter_list_pairwise_equal_adjacent_v1.rs
+observation:
+  ref: docs/baselines/p4b-raw-text-binding-foundation.v1.yaml
+  note: (item[i], item[i+1]) pairs for every adjacent index with equal trimmed items, in list order, duplicates kept
+mapping:
+  - concept: pairwise-equal adjacent pairs
+    rust: parameter_list_pairwise_equal_adjacent_v1
+    notes: returns Vec<(String, String)> of equal adjacent pairs in list order, keeping duplicates at distinct positions
+  - concept: pairwise-equal adjacent pairs errors
+    rust: ParameterListPairwiseEqualAdjacentErrorV1
+    notes: NotAList for non-List types, defensive MalformedList otherwise
+not_ported:
+  - full reserved-name AMI parameter catalog
+  - model-populated Out/Info runtime execution
+  - release certification

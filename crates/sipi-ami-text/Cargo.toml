@@ -761,3 +761,19 @@ harness = false
 name = "p4b_02b189_parameter_list_last_occurrence_indices_runner"
 harness = false
 
+[[test]]
+name = "p4b_02b190_parameter_list_frequency_map_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b191_parameter_list_pairwise_equal_adjacent_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b192_parameter_list_relative_frequency_map_runner"
+harness = false
+
+[[test]]
+name = "p4b_02b193_parameter_list_prevalence_map_runner"
+harness = false
+
