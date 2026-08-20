@@ -11,7 +11,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1, AmiParameterTypeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterTypeV1};
 
 /// Scope policy for the parameter tree value type inference core.
 pub const PARAMETER_TREE_VALUE_TYPE_INFERENCE_POLICY_V1: &str =
@@ -23,10 +23,7 @@ pub enum ParameterTreeTypeInferenceErrorV1 {
     /// A leaf carries no value tokens, so no type can be inferred.
     EmptyValueTokens(String),
     /// A multi-token leaf has tokens that infer to different types.
-    ConflictingTokenTypes {
-        leaf: String,
-        types: Vec<String>,
-    },
+    ConflictingTokenTypes { leaf: String, types: Vec<String> },
     /// Two leaves at different depths share the same name (map key collision).
     DuplicateLeafName(String),
 }
@@ -53,10 +50,10 @@ fn infer_token_type(token: &str) -> AmiParameterTypeV1 {
     if token.parse::<i64>().is_ok() {
         return AmiParameterTypeV1::Integer;
     }
-    if let Ok(value) = token.parse::<f64>() {
-        if value.is_finite() {
-            return AmiParameterTypeV1::Float;
-        }
+    if let Ok(value) = token.parse::<f64>()
+        && value.is_finite()
+    {
+        return AmiParameterTypeV1::Float;
     }
     if token == "True" || token == "False" {
         return AmiParameterTypeV1::Boolean;
@@ -81,10 +78,7 @@ fn infer_node(
             }
             Ok(())
         }
-        AmiParameterTreeNodeV1::Leaf {
-            name,
-            value_tokens,
-        } => {
+        AmiParameterTreeNodeV1::Leaf { name, value_tokens } => {
             if value_tokens.is_empty() {
                 return Err(ParameterTreeTypeInferenceErrorV1::EmptyValueTokens(
                     name.clone(),
@@ -239,7 +233,10 @@ mod tests {
     fn duplicate_leaf_names_fail_closed() {
         let t = tree(branch(
             "root",
-            vec![branch("sub", vec![leaf("gain", &["1"])]), leaf("gain", &["2"])],
+            vec![
+                branch("sub", vec![leaf("gain", &["1"])]),
+                leaf("gain", &["2"]),
+            ],
         ));
         let error = infer_parameter_tree_leaf_types_v1(&t).unwrap_err();
         assert_eq!(

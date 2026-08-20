@@ -27,7 +27,7 @@ removal rule over 4 test cases.
   non-list, spacing canonicalized).
 - Cross-check: 4 test cases (removes query items, empty query, all removed, non-list) driven
   through product runner `p4b_02b140_parameter_list_multi_remove_all_runner`; independent
-  Python reference matches 100% on tokens and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on tokens and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -11,7 +11,7 @@
 
 use std::collections::BTreeSet;
 
-use crate::workbook_v1::{CellValueV1, ComSettingsV1, RawCellV1, WorkbookErrorV1};
+use crate::workbook_v1::{CellValueV1, ComSettingsV1, WorkbookErrorV1};
 
 /// Explicit scope policy of the parameter surface stage.
 pub const PARAMETER_SURFACE_POLICY_V1: &str =
@@ -132,15 +132,10 @@ pub fn classify_parameter_surface_v1(
     })
 }
 
-/// Raw cell accessor used by the extractor (coordinate/value).
-pub fn pair_value_kind(cell: &RawCellV1) -> &'static str {
-    value_kind_name(cell.value())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::workbook_v1::{column_letter, CellValueV1, RawCellV1};
+    use crate::workbook_v1::{CellValueV1, RawCellV1, column_letter};
 
     fn cell(row: usize, column: usize, value: CellValueV1) -> RawCellV1 {
         RawCellV1::new(

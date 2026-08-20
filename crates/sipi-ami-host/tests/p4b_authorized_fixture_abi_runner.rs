@@ -8,11 +8,11 @@
 //! default and asserts nothing about AMI semantics, compatibility, or
 //! numerical parity.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
 use sipi_ami_host::{AmiGetWaveRequestV1, AmiHostV1, AmiInitRequestV1, DllSha256V1};
-use sipi_ami_text::{parse_and_bind_v1, ParseLimitsV1};
+use sipi_ami_text::{ParseLimitsV1, parse_and_bind_v1};
 
 fn sha256_hex(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
@@ -66,11 +66,7 @@ fn fixed_matrix(variant: &str, rows: usize, aggressors: usize) -> Vec<f64> {
                 "uniform" => 1.0,
                 "decay_coupled" => {
                     let victim = 2.0_f64.powi(-(row as i32));
-                    if column == 0 {
-                        victim
-                    } else {
-                        0.1 * victim
-                    }
+                    if column == 0 { victim } else { 0.1 * victim }
                 }
                 _ => panic!("unknown matrix variant: {variant}"),
             }
@@ -78,8 +74,19 @@ fn fixed_matrix(variant: &str, rows: usize, aggressors: usize) -> Vec<f64> {
         .collect()
 }
 
-fn run_probe(dll: &PathBuf, ami: &PathBuf, expected: DllSha256V1, mode: &str, matrix_variant: &str, wave_length: usize, clock_capacity: usize, rows: usize, aggressors: usize) -> serde_json::Value {
-    let mut host = match AmiHostV1::open(dll, expected) {
+#[allow(clippy::too_many_arguments)]
+fn run_probe(
+    dll: &Path,
+    ami: &Path,
+    expected: DllSha256V1,
+    mode: &str,
+    matrix_variant: &str,
+    wave_length: usize,
+    clock_capacity: usize,
+    rows: usize,
+    aggressors: usize,
+) -> serde_json::Value {
+    let host = match AmiHostV1::open(dll, expected) {
         Ok(host) => host,
         Err(error) => return serde_json::json!({ "phase": "open", "error": format!("{error}") }),
     };
@@ -88,15 +95,21 @@ fn run_probe(dll: &PathBuf, ami: &PathBuf, expected: DllSha256V1, mode: &str, ma
         .expect("init request");
     let limits = match ParseLimitsV1::try_new(65536, 16, 1024, 4096) {
         Ok(limits) => limits,
-        Err(error) => return serde_json::json!({ "phase": "limits", "error": format!("{error:?}") }),
+        Err(error) => {
+            return serde_json::json!({ "phase": "limits", "error": format!("{error:?}") });
+        }
     };
     let ami_bytes = match std::fs::read(ami) {
         Ok(bytes) => bytes,
-        Err(error) => return serde_json::json!({ "phase": "ami_read", "error": format!("{error}") }),
+        Err(error) => {
+            return serde_json::json!({ "phase": "ami_read", "error": format!("{error}") });
+        }
     };
     let binding = match parse_and_bind_v1(&ami_bytes, limits) {
         Ok(binding) => binding,
-        Err(error) => return serde_json::json!({ "phase": "ami_binding", "error": format!("{error:?}") }),
+        Err(error) => {
+            return serde_json::json!({ "phase": "ami_binding", "error": format!("{error:?}") });
+        }
     };
     let mut instance = match host.initialize(request, &binding, limits) {
         Ok(instance) => instance,
@@ -105,7 +118,10 @@ fn run_probe(dll: &PathBuf, ami: &PathBuf, expected: DllSha256V1, mode: &str, ma
         }
     };
     if mode == "init" {
-        let close_status = instance.close().map(|_| "ok".to_string()).unwrap_or_else(|e| format!("{e}"));
+        let close_status = instance
+            .close()
+            .map(|_| "ok".to_string())
+            .unwrap_or_else(|e| format!("{e}"));
         return serde_json::json!({
             "phase": "init_only",
             "init": "ok",
@@ -115,8 +131,11 @@ fn run_probe(dll: &PathBuf, ami: &PathBuf, expected: DllSha256V1, mode: &str, ma
     let mut probes = Vec::new();
     let count = if mode == "multi" { 3 } else { 1 };
     for _ in 0..count {
-        let waveform: Vec<f64> = (0..wave_length).map(|index| if index % 2 == 0 { 1.0 } else { -1.0 }).collect();
-        let get_wave_request = AmiGetWaveRequestV1::try_new(waveform.clone(), clock_capacity).expect("get wave request");
+        let waveform: Vec<f64> = (0..wave_length)
+            .map(|index| if index % 2 == 0 { 1.0 } else { -1.0 })
+            .collect();
+        let get_wave_request = AmiGetWaveRequestV1::try_new(waveform.clone(), clock_capacity)
+            .expect("get wave request");
         let probe = match instance.get_wave(get_wave_request) {
             Ok(result) => serde_json::json!({
                 "input_waveform_hash": sha256_f64(&waveform),
@@ -130,7 +149,10 @@ fn run_probe(dll: &PathBuf, ami: &PathBuf, expected: DllSha256V1, mode: &str, ma
         };
         probes.push(probe);
     }
-    let close_status = instance.close().map(|_| "ok".to_string()).unwrap_or_else(|e| format!("{e}"));
+    let close_status = instance
+        .close()
+        .map(|_| "ok".to_string())
+        .unwrap_or_else(|e| format!("{e}"));
     serde_json::json!({
         "phase": "get_wave",
         "probe_count": count,
@@ -194,8 +216,15 @@ fn main() {
         "probe": result,
     });
     if let Some(path) = report {
-        std::fs::write(path, serde_json::to_string_pretty(&report_json).expect("json")).expect("write");
+        std::fs::write(
+            path,
+            serde_json::to_string_pretty(&report_json).expect("json"),
+        )
+        .expect("write");
     } else {
-        println!("{}", serde_json::to_string_pretty(&report_json).expect("json"));
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&report_json).expect("json")
+        );
     }
 }

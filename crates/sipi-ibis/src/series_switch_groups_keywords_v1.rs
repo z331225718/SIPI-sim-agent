@@ -74,6 +74,9 @@ mod tests {
 
         assert_eq!(block.switch_record().on_group_name(), "GROUP_ON_1");
         assert_eq!(block.switch_record().off_group_name(), "GROUP_OFF_1");
-        assert_eq!(block.thresholds().unwrap().vthreshold_v().unwrap().get(), 1.8);
+        assert_eq!(
+            block.thresholds().unwrap().vthreshold_v().unwrap().get(),
+            1.8
+        );
     }
 }

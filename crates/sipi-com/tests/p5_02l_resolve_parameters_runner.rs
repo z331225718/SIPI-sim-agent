@@ -7,13 +7,20 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_com::{resolve_default_set_v1, ResolvedDefaultV1, RESOLVE_PARAMETERS_POLICY_V1};
+use sipi_com::{RESOLVE_PARAMETERS_POLICY_V1, ResolvedDefaultV1, resolve_default_set_v1};
 
 fn value_map(obj: &Value) -> HashMap<String, ResolvedDefaultV1> {
     let mut map = HashMap::new();
     if let Some(fields) = obj.as_object() {
         for (key, value) in fields {
-            map.insert(key.clone(), if let Some(n) = value.as_f64() { ResolvedDefaultV1::Scalar(n) } else { ResolvedDefaultV1::Scalar(0.0) });
+            map.insert(
+                key.clone(),
+                if let Some(n) = value.as_f64() {
+                    ResolvedDefaultV1::Scalar(n)
+                } else {
+                    ResolvedDefaultV1::Scalar(0.0)
+                },
+            );
         }
     }
     map
@@ -53,7 +60,9 @@ fn main() {
     let options = value_map(&value["options"]);
     let mut expressions = HashMap::new();
     if let Some(map) = value.get("expressions").and_then(|v| v.as_object()) {
-        for (k, v) in map { expressions.insert(k.clone(), v.as_str().unwrap_or("").to_string()); }
+        for (k, v) in map {
+            expressions.insert(k.clone(), v.as_str().unwrap_or("").to_string());
+        }
     }
 
     let output = match resolve_default_set_v1(&expressions, &parameters, &options) {
@@ -61,10 +70,14 @@ fn main() {
             let mut sorted: Vec<_> = resolved.iter().collect();
             sorted.sort_by(|a, b| a.0.cmp(b.0));
             let mut object = serde_json::Map::new();
-            for (k, v) in sorted { object.insert(k.clone(), normalized(v)); }
+            for (k, v) in sorted {
+                object.insert(k.clone(), normalized(v));
+            }
             serde_json::json!({ "policy": RESOLVE_PARAMETERS_POLICY_V1, "ok": true, "values": Value::Object(object) })
         }
-        Err(e) => serde_json::json!({ "policy": RESOLVE_PARAMETERS_POLICY_V1, "ok": false, "error": format!("{e:?}") }),
+        Err(e) => {
+            serde_json::json!({ "policy": RESOLVE_PARAMETERS_POLICY_V1, "ok": false, "error": format!("{e:?}") })
+        }
     };
     if let Some(path) = report {
         std::fs::write(path, serde_json::to_string(&output).expect("json")).expect("write");

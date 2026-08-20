@@ -61,9 +61,15 @@ impl TypedSeriesPinSelectorGroupThresholdRecordV1 {
         if !pf.is_ascii() || !ps.is_ascii() || !ms.is_ascii() {
             return Err(SeriesPinTableSelectorThresholdsGroupErrorV1::NonAsciiName);
         }
-        if !pf.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !ps.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !ms.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+        if !pf
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !ps
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !ms
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
         {
             return Err(SeriesPinTableSelectorThresholdsGroupErrorV1::InvalidName);
         }
@@ -73,23 +79,27 @@ impl TypedSeriesPinSelectorGroupThresholdRecordV1 {
 
         let gn = group_name.and_then(|g| {
             let t = g.into().trim().to_string();
-            if t.is_empty() {
-                None
-            } else {
-                Some(t)
-            }
+            if t.is_empty() { None } else { Some(t) }
         });
 
         if let Some(ref g) = gn {
             if !g.is_ascii() {
                 return Err(SeriesPinTableSelectorThresholdsGroupErrorV1::NonAsciiName);
             }
-            if !g.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.') {
+            if !g
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            {
                 return Err(SeriesPinTableSelectorThresholdsGroupErrorV1::InvalidName);
             }
         }
 
-        let validate_non_negative = |val: Option<f64>, kind: &'static str| -> Result<Option<FiniteF64>, SeriesPinTableSelectorThresholdsGroupErrorV1> {
+        let validate_non_negative = |val: Option<f64>,
+                                     kind: &'static str|
+         -> Result<
+            Option<FiniteF64>,
+            SeriesPinTableSelectorThresholdsGroupErrorV1,
+        > {
             match val {
                 None => Ok(None),
                 Some(v) => {
@@ -99,22 +109,29 @@ impl TypedSeriesPinSelectorGroupThresholdRecordV1 {
                     if v < 0.0 {
                         return Err(SeriesPinTableSelectorThresholdsGroupErrorV1::NegativeThresholdParameter);
                     }
-                    let finite = FiniteF64::try_new(v, kind)
-                        .map_err(|_| SeriesPinTableSelectorThresholdsGroupErrorV1::NonFiniteValue)?;
+                    let finite = FiniteF64::try_new(v, kind).map_err(|_| {
+                        SeriesPinTableSelectorThresholdsGroupErrorV1::NonFiniteValue
+                    })?;
                     Ok(Some(finite))
                 }
             }
         };
 
-        let validate_finite = |val: Option<f64>, kind: &'static str| -> Result<Option<FiniteF64>, SeriesPinTableSelectorThresholdsGroupErrorV1> {
+        let validate_finite = |val: Option<f64>,
+                               kind: &'static str|
+         -> Result<
+            Option<FiniteF64>,
+            SeriesPinTableSelectorThresholdsGroupErrorV1,
+        > {
             match val {
                 None => Ok(None),
                 Some(v) => {
                     if !v.is_finite() {
                         return Err(SeriesPinTableSelectorThresholdsGroupErrorV1::NonFiniteValue);
                     }
-                    let finite = FiniteF64::try_new(v, kind)
-                        .map_err(|_| SeriesPinTableSelectorThresholdsGroupErrorV1::NonFiniteValue)?;
+                    let finite = FiniteF64::try_new(v, kind).map_err(|_| {
+                        SeriesPinTableSelectorThresholdsGroupErrorV1::NonFiniteValue
+                    })?;
                     Ok(Some(finite))
                 }
             }
@@ -180,7 +197,10 @@ pub fn lift_series_pin_selector_group_threshold_record_v1(
     rseries_ohm: Option<f64>,
     cseries_farad: Option<f64>,
     lseries_henry: Option<f64>,
-) -> Result<TypedSeriesPinSelectorGroupThresholdRecordV1, SeriesPinTableSelectorThresholdsGroupErrorV1> {
+) -> Result<
+    TypedSeriesPinSelectorGroupThresholdRecordV1,
+    SeriesPinTableSelectorThresholdsGroupErrorV1,
+> {
     TypedSeriesPinSelectorGroupThresholdRecordV1::try_new(
         pin_first,
         pin_second,
@@ -249,7 +269,9 @@ mod tests {
     #[test]
     fn rejects_empty_pin_name() {
         assert_eq!(
-            lift_series_pin_selector_group_threshold_record_v1("", "P2", "SEL1", None, None, None, None, None),
+            lift_series_pin_selector_group_threshold_record_v1(
+                "", "P2", "SEL1", None, None, None, None, None
+            ),
             Err(SeriesPinTableSelectorThresholdsGroupErrorV1::EmptyPinName)
         );
     }
@@ -257,7 +279,16 @@ mod tests {
     #[test]
     fn rejects_negative_rseries() {
         assert_eq!(
-            lift_series_pin_selector_group_threshold_record_v1("P1", "P2", "SEL1", None, None, Some(-50.0), None, None),
+            lift_series_pin_selector_group_threshold_record_v1(
+                "P1",
+                "P2",
+                "SEL1",
+                None,
+                None,
+                Some(-50.0),
+                None,
+                None
+            ),
             Err(SeriesPinTableSelectorThresholdsGroupErrorV1::NegativeThresholdParameter)
         );
     }

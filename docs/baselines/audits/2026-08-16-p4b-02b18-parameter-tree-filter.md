@@ -19,7 +19,7 @@ are strictly rejected. An independent Python reference recomputes tree predicate
   rejects empty filtered result).
 - Cross-check: 3 test cases (filter leaf node, filter branch node, empty document)
   driven through product runner `p4b_02b18_parameter_tree_filter_runner`; independent Python reference
-  matches 100% on valid flags, filtered S-expression formatted text, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, filtered S-expression formatted text, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

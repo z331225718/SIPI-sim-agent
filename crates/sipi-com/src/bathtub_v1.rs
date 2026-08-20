@@ -30,7 +30,10 @@ pub struct BathtubSampleV1 {
 
 impl BathtubSampleV1 {
     pub const fn new(time_offset_ui: f64, ber: f64) -> Self {
-        Self { time_offset_ui, ber }
+        Self {
+            time_offset_ui,
+            ber,
+        }
     }
 
     pub const fn time_offset_ui(self) -> f64 {
@@ -88,21 +91,13 @@ pub fn bathtub_opening_width_v1(
     let left = if first_in == 0 {
         samples[0].time_offset_ui()
     } else {
-        interpolate_crossing(
-            samples[first_in - 1],
-            samples[first_in],
-            target_ber,
-        )?
+        interpolate_crossing(samples[first_in - 1], samples[first_in], target_ber)?
     };
     // Right crossing: between last_in and (last_in+1) if last_in < len-1;
     let right = if last_in == samples.len() - 1 {
         samples[last_in].time_offset_ui()
     } else {
-        interpolate_crossing(
-            samples[last_in],
-            samples[last_in + 1],
-            target_ber,
-        )?
+        interpolate_crossing(samples[last_in], samples[last_in + 1], target_ber)?
     };
 
     let width = right - left;
@@ -119,7 +114,7 @@ fn interpolate_crossing(
     right: BathtubSampleV1,
     target_ber: f64,
 ) -> Result<f64, BathtubErrorV1> {
-    let t = target_ber.max(1e-300).min(1.0 - 1e-12);
+    let t = target_ber.clamp(1e-300, 1.0 - 1e-12);
     let lt = left.ber().max(1e-300).log10();
     let rt = right.ber().max(1e-300).log10();
     let tt = t.log10();
@@ -127,7 +122,8 @@ fn interpolate_crossing(
         return Err(BathtubErrorV1::NoOpening);
     }
     let fraction = (tt - lt) / (rt - lt);
-    let crossing = left.time_offset_ui() + fraction * (right.time_offset_ui() - left.time_offset_ui());
+    let crossing =
+        left.time_offset_ui() + fraction * (right.time_offset_ui() - left.time_offset_ui());
     Ok(crossing)
 }
 
@@ -141,7 +137,10 @@ mod tests {
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(BATHTUB_POLICY_V1, "sipi.p3c-02f.bathtub-opening.v1.threshold");
+        assert_eq!(
+            BATHTUB_POLICY_V1,
+            "sipi.p3c-02f.bathtub-opening.v1.threshold"
+        );
     }
 
     #[test]
@@ -155,32 +154,44 @@ mod tests {
     #[test]
     fn no_opening_when_all_above_target() {
         let samples = vec![s(-0.5, 1e-3), s(0.0, 1e-3), s(0.5, 1e-3)];
-        let err = bathtub_opening_width_v1(&samples, 1e-6).err().expect("err");
+        let err = bathtub_opening_width_v1(&samples, 1e-6).expect_err("err");
         assert_eq!(err, BathtubErrorV1::NoOpening);
     }
 
     #[test]
     fn rejects_too_few_samples() {
-        let err = bathtub_opening_width_v1(&[s(0.0, 1e-3), s(1.0, 1e-3)], 1e-4).err().expect("err");
+        let err = bathtub_opening_width_v1(&[s(0.0, 1e-3), s(1.0, 1e-3)], 1e-4).expect_err("err");
         assert_eq!(err, BathtubErrorV1::TooFewSamples);
     }
 
     #[test]
     fn rejects_bad_target() {
         let samples = vec![s(-0.5, 1e-3), s(0.0, 1e-3), s(0.5, 1e-3)];
-        assert_eq!(bathtub_opening_width_v1(&samples, 0.0).err(), Some(BathtubErrorV1::TargetBerOutOfRange));
-        assert_eq!(bathtub_opening_width_v1(&samples, 1.0).err(), Some(BathtubErrorV1::TargetBerOutOfRange));
+        assert_eq!(
+            bathtub_opening_width_v1(&samples, 0.0).err(),
+            Some(BathtubErrorV1::TargetBerOutOfRange)
+        );
+        assert_eq!(
+            bathtub_opening_width_v1(&samples, 1.0).err(),
+            Some(BathtubErrorV1::TargetBerOutOfRange)
+        );
     }
 
     #[test]
     fn rejects_non_ascending_time() {
         let samples = vec![s(1.0, 1e-3), s(0.0, 1e-3), s(0.5, 1e-3)];
-        assert_eq!(bathtub_opening_width_v1(&samples, 1e-4).err(), Some(BathtubErrorV1::TimeNotAscending));
+        assert_eq!(
+            bathtub_opening_width_v1(&samples, 1e-4).err(),
+            Some(BathtubErrorV1::TimeNotAscending)
+        );
     }
 
     #[test]
     fn rejects_invalid_ber() {
         let samples = vec![s(-0.5, 0.0), s(0.0, 1e-3), s(0.5, 1e-3)];
-        assert_eq!(bathtub_opening_width_v1(&samples, 1e-4).err(), Some(BathtubErrorV1::InvalidBer));
+        assert_eq!(
+            bathtub_opening_width_v1(&samples, 1e-4).err(),
+            Some(BathtubErrorV1::InvalidBer)
+        );
     }
 }

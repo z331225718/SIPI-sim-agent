@@ -21,7 +21,9 @@ pub enum ParameterTreePathJoinErrorV1 {
 /// Fails closed on an empty segment list. Raw bytes are preserved (no
 /// trimming, no identifier validation) — the exact inverse of
 /// `parse_parameter_tree_path_string_v1`.
-pub fn join_parameter_tree_path_v1(segments: &[&str]) -> Result<String, ParameterTreePathJoinErrorV1> {
+pub fn join_parameter_tree_path_v1(
+    segments: &[&str],
+) -> Result<String, ParameterTreePathJoinErrorV1> {
     if segments.is_empty() {
         return Err(ParameterTreePathJoinErrorV1::EmptyPath);
     }

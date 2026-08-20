@@ -60,8 +60,8 @@ pub fn insert_parameter_list_item_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListInsertErrorV1::NotAList);
     }
-    let mut items = list_items(value.value_token())
-        .ok_or(ParameterListInsertErrorV1::MalformedList)?;
+    let mut items =
+        list_items(value.value_token()).ok_or(ParameterListInsertErrorV1::MalformedList)?;
     let trimmed = new_item.trim();
     if trimmed.is_empty() {
         return Err(ParameterListInsertErrorV1::EmptyNewItem);

@@ -9,11 +9,11 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    split_parameter_list_at_index_v1, AmiParameterValueV1, ParameterListSplitErrorV1,
-    PARAMETER_LIST_SPLIT_POLICY_V1,
+    AmiParameterValueV1, PARAMETER_LIST_SPLIT_POLICY_V1, ParameterListSplitErrorV1,
+    split_parameter_list_at_index_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -45,7 +45,8 @@ fn main() {
                 "input_error": "invalid_value",
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -70,13 +71,15 @@ fn main() {
             "valid": false,
             "error": "MalformedList",
         }),
-        Err(ParameterListSplitErrorV1::IndexOutOfRange { index, item_count }) => serde_json::json!({
-            "policy": PARAMETER_LIST_SPLIT_POLICY_V1,
-            "valid": false,
-            "error": "IndexOutOfRange",
-            "index": index,
-            "item_count": item_count,
-        }),
+        Err(ParameterListSplitErrorV1::IndexOutOfRange { index, item_count }) => {
+            serde_json::json!({
+                "policy": PARAMETER_LIST_SPLIT_POLICY_V1,
+                "valid": false,
+                "error": "IndexOutOfRange",
+                "index": index,
+                "item_count": item_count,
+            })
+        }
     };
     if let Some(path) = report {
         std::fs::write(path, serde_json::to_string_pretty(&output).expect("json")).expect("write");

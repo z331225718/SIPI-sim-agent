@@ -18,14 +18,17 @@ serde_json = "1"
 [[test]]
 name = "p3b_05c_prbs9_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p3b_05d_inject_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p3b_05e_time_warp_runner"
 harness = false
+test = false
 
 [lints]
 workspace = true

@@ -29,7 +29,7 @@ replicates the tree build and validation over 4 test cases.
 - Cross-check: 4 test cases (all valid, mixed invalid, nested, non-typed skipped) driven through
   product runner `p4b_02b91_parameter_tree_leaf_value_validity_runner`; independent Python
   reference matches 100% on counts and invalid issue lists (path/type/value/error); 4/4
-  matched_hash_bound.
+  product_owned_self_crosscheck_unbound.
 
 ## Binding
 

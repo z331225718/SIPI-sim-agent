@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_package_model_keywords_v1, PACKAGE_MODEL_KEYWORDS_POLICY_V1,
-};
+use sipi_ibis::{PACKAGE_MODEL_KEYWORDS_POLICY_V1, lift_package_model_keywords_v1};
 
 fn str_list(value: Option<&Value>) -> Vec<String> {
     value
@@ -40,8 +38,14 @@ fn main() {
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
-    let pname = value.get("package_model_name").and_then(|v| v.as_str()).unwrap_or("");
-    let npins = value.get("number_of_pins").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+    let pname = value
+        .get("package_model_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let npins = value
+        .get("number_of_pins")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as usize;
     let pins = str_list(value.get("pin_numbers"));
 
     let output = match lift_package_model_keywords_v1(pname, npins, pins) {

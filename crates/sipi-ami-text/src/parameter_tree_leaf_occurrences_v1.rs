@@ -8,7 +8,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
 
 /// Scope policy for the leaf occurrence counts core.
 pub const PARAMETER_TREE_LEAF_OCCURRENCES_POLICY_V1: &str =

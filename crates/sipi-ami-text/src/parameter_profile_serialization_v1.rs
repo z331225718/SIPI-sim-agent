@@ -23,9 +23,7 @@ pub const PARAMETER_PROFILE_SERIALIZATION_POLICY_V1: &str =
     "sipi.p4b-02b81.parameter-profile-serialization-v1.canonical-profile-json";
 
 /// Serialize an assembled parameter profile to canonical compact JSON.
-pub fn serialize_parameter_profile_v1(
-    profile: &BTreeMap<String, AmiParameterValueV1>,
-) -> String {
+pub fn serialize_parameter_profile_v1(profile: &BTreeMap<String, AmiParameterValueV1>) -> String {
     let mut object = Map::new();
     for (name, parameter) in profile {
         let mut entry = Map::new();
@@ -68,10 +66,7 @@ mod tests {
 
     #[test]
     fn names_serialize_in_sorted_order() {
-        let p = profile(&[
-            ("zeta", "Float", "1.0"),
-            ("alpha", "Integer", "7"),
-        ]);
+        let p = profile(&[("zeta", "Float", "1.0"), ("alpha", "Integer", "7")]);
         let json = serialize_parameter_profile_v1(&p);
         assert_eq!(
             json,
@@ -111,10 +106,7 @@ mod tests {
 
     #[test]
     fn serialized_output_parses_back() {
-        let p = profile(&[
-            ("gain", "Float", "0.5"),
-            ("mode", "String", "Linear"),
-        ]);
+        let p = profile(&[("gain", "Float", "0.5"), ("mode", "String", "Linear")]);
         let json = serialize_parameter_profile_v1(&p);
         let parsed: Value = serde_json::from_str(&json).expect("parse back");
         assert_eq!(parsed["gain"]["type"], "Float");

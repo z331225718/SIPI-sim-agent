@@ -45,11 +45,7 @@ impl AmiTextDocumentStatsV1 {
     }
 }
 
-fn walk_list(
-    list: &AmiTextListV1,
-    depth: usize,
-    stats: &mut AmiTextDocumentStatsV1,
-) {
+fn walk_list(list: &AmiTextListV1, depth: usize, stats: &mut AmiTextDocumentStatsV1) {
     stats.list_count += 1;
     if depth > stats.max_depth {
         stats.max_depth = depth;
@@ -87,8 +83,8 @@ pub fn compute_ami_text_document_stats_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parse_ami_text_v1;
     use crate::ParseLimitsV1;
+    use crate::parse_ami_text_v1;
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(8 * 1024 * 1024, 64, 4096, 4096).expect("limits")

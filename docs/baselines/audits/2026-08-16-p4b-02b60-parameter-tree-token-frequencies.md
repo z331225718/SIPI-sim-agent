@@ -22,7 +22,7 @@ analyzed. An independent Python reference replicates the tokenize/build/count pi
 - Cross-check: 4 test cases (shared tokens, repeated in leaf, unique tokens, root leaf empty)
   driven through product runner `p4b_02b60_parameter_tree_token_frequencies_runner`; independent
   Python reference matches 100% on valid flags, total counts, and frequency maps;
-  4/4 matched_hash_bound.
+  4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

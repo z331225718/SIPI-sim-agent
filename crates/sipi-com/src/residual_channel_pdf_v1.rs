@@ -8,7 +8,7 @@
 //! zero-based; `phase_index` is only used for an MMSE-provided
 //! crosstalk phase.
 
-use crate::discrete_pdf_v1::{matlab_round, DiscretePdfV1, PdfErrorV1};
+use crate::discrete_pdf_v1::{DiscretePdfV1, PdfErrorV1, matlab_round};
 use crate::sampled_signal_pdf_v1::sampled_signal_pdf_v1;
 
 /// Explicit scope policy of the residual-channel PDF stage.
@@ -157,8 +157,7 @@ pub fn residual_channel_pdf_v1(
         }
     }
     let nui = matlab_round(residual.len() as f64 / samples_per_ui as f64);
-    if nui < 3
-        || (nui - 2) * samples_per_ui as i64 + samples_per_ui as i64 > residual.len() as i64
+    if nui < 3 || (nui - 2) * samples_per_ui as i64 + samples_per_ui as i64 > residual.len() as i64
     {
         return Err(PdfErrorV1::PulseTooShort);
     }
@@ -207,7 +206,10 @@ pub fn residual_channel_pdf_v1(
             }
         }
         selected_phase = phases[selected];
-        pdf = candidates.into_iter().nth(selected).expect("selected phase");
+        pdf = candidates
+            .into_iter()
+            .nth(selected)
+            .expect("selected phase");
     }
     Ok(ResidualPdfResultV1 {
         pdf,
@@ -232,9 +234,10 @@ mod tests {
     #[test]
     fn thru_no_dfe_selects_cursor_phase_and_cancels() {
         let pulse = pulse64();
-        let result =
-            residual_channel_pdf_v1(&pulse, "THRU", 30, 8, 4, 0.01, 0, None, None, 0.0, false, None, None)
-                .expect("result");
+        let result = residual_channel_pdf_v1(
+            &pulse, "THRU", 30, 8, 4, 0.01, 0, None, None, 0.0, false, None, None,
+        )
+        .expect("result");
         // Phase = ((30+1) % 8 or 8) - 1 = 7 - 1 = 6.
         assert_eq!(result.selected_phase(), 6);
         // Window [26, 34) has the cursor value subtracted once per sample.
@@ -251,8 +254,19 @@ mod tests {
     fn thru_dfe_quantize_and_clamp() {
         let pulse = pulse64();
         let result = residual_channel_pdf_v1(
-            &pulse, "THRU", 30, 8, 4, 0.01, 2, Some(&[0.4, 0.3]), Some(&[-0.2, -0.1]),
-            0.01, false, None, None,
+            &pulse,
+            "THRU",
+            30,
+            8,
+            4,
+            0.01,
+            2,
+            Some(&[0.4, 0.3]),
+            Some(&[-0.2, -0.1]),
+            0.01,
+            false,
+            None,
+            None,
         )
         .expect("result");
         assert_eq!(result.selected_phase(), 6);
@@ -279,7 +293,19 @@ mod tests {
     fn forced_phase_index_is_honored() {
         let pulse = pulse64();
         let result = residual_channel_pdf_v1(
-            &pulse, "FEXT", 0, 8, 4, 0.01, 0, None, None, 0.0, false, None, Some(3),
+            &pulse,
+            "FEXT",
+            0,
+            8,
+            4,
+            0.01,
+            0,
+            None,
+            None,
+            0.0,
+            false,
+            None,
+            Some(3),
         )
         .expect("result");
         assert_eq!(result.selected_phase(), 3);
@@ -289,8 +315,19 @@ mod tests {
     fn floating_dfe_uses_max_count() {
         let pulse = pulse64();
         let result = residual_channel_pdf_v1(
-            &pulse, "THRU", 30, 8, 4, 0.01, 5, Some(&[0.4]), Some(&[-0.2]),
-            0.0, true, Some(1), None,
+            &pulse,
+            "THRU",
+            30,
+            8,
+            4,
+            0.01,
+            5,
+            Some(&[0.4]),
+            Some(&[-0.2]),
+            0.0,
+            true,
+            Some(1),
+            None,
         )
         .expect("result");
         assert_eq!(result.selected_phase(), 6);
@@ -300,61 +337,137 @@ mod tests {
     fn controls_and_errors_fail_closed() {
         let pulse = pulse64();
         assert_eq!(
-            residual_channel_pdf_v1(&pulse, "XTLK", 30, 8, 4, 0.01, 0, None, None, 0.0, false, None, None).unwrap_err(),
+            residual_channel_pdf_v1(
+                &pulse, "XTLK", 30, 8, 4, 0.01, 0, None, None, 0.0, false, None, None
+            )
+            .unwrap_err(),
             PdfErrorV1::InvalidResidualControls,
         );
         assert_eq!(
-            residual_channel_pdf_v1(&pulse, "THRU", 30, 0, 4, 0.01, 0, None, None, 0.0, false, None, None).unwrap_err(),
+            residual_channel_pdf_v1(
+                &pulse, "THRU", 30, 0, 4, 0.01, 0, None, None, 0.0, false, None, None
+            )
+            .unwrap_err(),
             PdfErrorV1::InvalidResidualControls,
         );
         assert_eq!(
-            residual_channel_pdf_v1(&pulse, "THRU", 30, 8, 1, 0.01, 0, None, None, 0.0, false, None, None).unwrap_err(),
+            residual_channel_pdf_v1(
+                &pulse, "THRU", 30, 8, 1, 0.01, 0, None, None, 0.0, false, None, None
+            )
+            .unwrap_err(),
             PdfErrorV1::InvalidResidualControls,
         );
         assert_eq!(
-            residual_channel_pdf_v1(&pulse, "THRU", 30, 8, 4, 0.0, 0, None, None, 0.0, false, None, None).unwrap_err(),
+            residual_channel_pdf_v1(
+                &pulse, "THRU", 30, 8, 4, 0.0, 0, None, None, 0.0, false, None, None
+            )
+            .unwrap_err(),
             PdfErrorV1::InvalidResidualControls,
         );
         assert_eq!(
-            residual_channel_pdf_v1(&pulse, "THRU", 30, 8, 4, 0.01, 0, None, None, -0.1, false, None, None).unwrap_err(),
+            residual_channel_pdf_v1(
+                &pulse, "THRU", 30, 8, 4, 0.01, 0, None, None, -0.1, false, None, None
+            )
+            .unwrap_err(),
             PdfErrorV1::InvalidResidualControls,
         );
         assert_eq!(
-            residual_channel_pdf_v1(&pulse, "THRU", 64, 8, 4, 0.01, 0, None, None, 0.0, false, None, None).unwrap_err(),
+            residual_channel_pdf_v1(
+                &pulse, "THRU", 64, 8, 4, 0.01, 0, None, None, 0.0, false, None, None
+            )
+            .unwrap_err(),
             PdfErrorV1::InvalidResidualControls,
         );
         assert_eq!(
-            residual_channel_pdf_v1(&pulse, "THRU", 30, 8, 4, 0.01, -1, None, None, 0.0, false, None, None).unwrap_err(),
+            residual_channel_pdf_v1(
+                &pulse, "THRU", 30, 8, 4, 0.01, -1, None, None, 0.0, false, None, None
+            )
+            .unwrap_err(),
             PdfErrorV1::InvalidDfeCancellationCount,
         );
         assert_eq!(
-            residual_channel_pdf_v1(&pulse, "THRU", 30, 8, 4, 0.01, 0, None, None, 0.0, false, None, None).ok().map(|_| ()),
+            residual_channel_pdf_v1(
+                &pulse, "THRU", 30, 8, 4, 0.01, 0, None, None, 0.0, false, None, None
+            )
+            .ok()
+            .map(|_| ()),
             Some(()),
         );
         // DFE bounds required when count > 0.
         assert_eq!(
-            residual_channel_pdf_v1(&pulse, "THRU", 30, 8, 4, 0.01, 2, None, None, 0.0, false, None, None).unwrap_err(),
+            residual_channel_pdf_v1(
+                &pulse, "THRU", 30, 8, 4, 0.01, 2, None, None, 0.0, false, None, None
+            )
+            .unwrap_err(),
             PdfErrorV1::InvalidDfeBounds,
         );
         // Span exceeds pulse.
         assert_eq!(
-            residual_channel_pdf_v1(&pulse, "THRU", 30, 8, 4, 0.01, 10, Some(&[0.1; 10]), Some(&[-0.1; 10]), 0.0, false, None, None).unwrap_err(),
+            residual_channel_pdf_v1(
+                &pulse,
+                "THRU",
+                30,
+                8,
+                4,
+                0.01,
+                10,
+                Some(&[0.1; 10]),
+                Some(&[-0.1; 10]),
+                0.0,
+                false,
+                None,
+                None
+            )
+            .unwrap_err(),
             PdfErrorV1::DfeSpanExceedsPulse,
         );
         // Cursor window exceeds pulse at the left edge.
         assert_eq!(
-            residual_channel_pdf_v1(&pulse, "THRU", 1, 8, 4, 0.01, 2, Some(&[0.1, 0.1]), Some(&[-0.1, -0.1]), 0.0, false, None, None).unwrap_err(),
+            residual_channel_pdf_v1(
+                &pulse,
+                "THRU",
+                1,
+                8,
+                4,
+                0.01,
+                2,
+                Some(&[0.1, 0.1]),
+                Some(&[-0.1, -0.1]),
+                0.0,
+                false,
+                None,
+                None
+            )
+            .unwrap_err(),
             PdfErrorV1::DfeWindowExceedsPulse,
         );
         // Pulse too short for whole-UI support (window passes, nui = 1 < 3).
         let short = vec![0.1; 9];
         assert_eq!(
-            residual_channel_pdf_v1(&short, "THRU", 5, 8, 4, 0.01, 0, None, None, 0.0, false, None, None).unwrap_err(),
+            residual_channel_pdf_v1(
+                &short, "THRU", 5, 8, 4, 0.01, 0, None, None, 0.0, false, None, None
+            )
+            .unwrap_err(),
             PdfErrorV1::PulseTooShort,
         );
         // Phase outside candidates.
         assert_eq!(
-            residual_channel_pdf_v1(&pulse, "FEXT", 0, 8, 4, 0.01, 0, None, None, 0.0, false, None, Some(8)).unwrap_err(),
+            residual_channel_pdf_v1(
+                &pulse,
+                "FEXT",
+                0,
+                8,
+                4,
+                0.01,
+                0,
+                None,
+                None,
+                0.0,
+                false,
+                None,
+                Some(8)
+            )
+            .unwrap_err(),
             PdfErrorV1::PhaseOutsideCandidates,
         );
     }

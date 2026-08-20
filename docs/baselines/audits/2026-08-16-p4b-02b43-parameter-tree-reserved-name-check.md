@@ -23,7 +23,7 @@ Python reference replicates the tokenize/build/intersect pipeline over 4 test ca
 - Cross-check: 4 test cases (clean tree, single violation, multiple sorted violations, empty
   reserved set) driven through product runner `p4b_02b43_parameter_tree_reserved_name_check_runner`;
   independent Python reference matches 100% on valid flags, checked counts, clean flags, violation
-  lists, and error contexts; 4/4 matched_hash_bound.
+  lists, and error contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -25,7 +25,7 @@ reference replicates the sequence rule over 4 test cases.
   non-list, raw query vs trimmed items).
 - Cross-check: 4 test cases (contains sublist, missing sublist, full sublist, non-list) driven
   through product runner `p4b_02b127_parameter_list_contains_sublist_runner`; independent
-  Python reference matches 100% on booleans and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on booleans and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

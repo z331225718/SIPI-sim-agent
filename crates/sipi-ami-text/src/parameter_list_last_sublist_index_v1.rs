@@ -92,20 +92,14 @@ mod tests {
     fn finds_last_sublist_start_index() {
         let v = value("channels", "List", "(x, b, c, b, c)");
         let sublist = ["b", "c"];
-        assert_eq!(
-            last_sublist_index_parameter_list_v1(&v, &sublist),
-            Ok(3)
-        );
+        assert_eq!(last_sublist_index_parameter_list_v1(&v, &sublist), Ok(3));
     }
 
     #[test]
     fn single_match_is_first_and_last() {
         let v = value("channels", "List", "(a, b, c, d)");
         let sublist = ["c", "d"];
-        assert_eq!(
-            last_sublist_index_parameter_list_v1(&v, &sublist),
-            Ok(2)
-        );
+        assert_eq!(last_sublist_index_parameter_list_v1(&v, &sublist), Ok(2));
     }
 
     #[test]
@@ -122,10 +116,7 @@ mod tests {
     fn empty_sublist_is_at_zero() {
         let v = value("channels", "List", "(a, b)");
         let sublist: [&str; 0] = [];
-        assert_eq!(
-            last_sublist_index_parameter_list_v1(&v, &sublist),
-            Ok(0)
-        );
+        assert_eq!(last_sublist_index_parameter_list_v1(&v, &sublist), Ok(0));
     }
 
     #[test]
@@ -142,10 +133,7 @@ mod tests {
     fn items_are_trimmed_but_query_is_raw() {
         let v = value("channels", "List", "( a , b , c , b , c )");
         let sublist = ["b", "c"];
-        assert_eq!(
-            last_sublist_index_parameter_list_v1(&v, &sublist),
-            Ok(3)
-        );
+        assert_eq!(last_sublist_index_parameter_list_v1(&v, &sublist), Ok(3));
         let spaced = [" b ", "c"];
         assert_eq!(
             last_sublist_index_parameter_list_v1(&v, &spaced),

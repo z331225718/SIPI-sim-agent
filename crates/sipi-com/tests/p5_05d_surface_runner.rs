@@ -10,8 +10,8 @@ use std::path::PathBuf;
 
 use sha2::{Digest, Sha256};
 use sipi_com::{
-    classify_parameter_surface_v1, read_com_settings_csv_v1, read_com_settings_mat_v1,
-    read_com_settings_xlsx_v1, ParameterSurfaceReportV1, PARAMETER_SURFACE_POLICY_V1,
+    PARAMETER_SURFACE_POLICY_V1, ParameterSurfaceReportV1, classify_parameter_surface_v1,
+    read_com_settings_csv_v1, read_com_settings_mat_v1, read_com_settings_xlsx_v1,
 };
 
 fn report_json(report: &ParameterSurfaceReportV1) -> serde_json::Value {
@@ -45,7 +45,9 @@ fn main() {
         }
     }
     let (Some(settings_path), Some(canonical)) = (settings_path, canonical) else {
-        println!("usage: p5_05d_surface_runner --settings <path> --kind <xlsx|csv|mat> --canonical <json> [--report <path>]");
+        println!(
+            "usage: p5_05d_surface_runner --settings <path> --kind <xlsx|csv|mat> --canonical <json> [--report <path>]"
+        );
         return;
     };
     let settings_bytes = std::fs::read(&settings_path).expect("read settings");

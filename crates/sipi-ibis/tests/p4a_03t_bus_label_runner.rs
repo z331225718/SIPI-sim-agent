@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_bus_label_declaration_v1, BUS_LABEL_DECLARATION_POLICY_V1,
-};
+use sipi_ibis::{BUS_LABEL_DECLARATION_POLICY_V1, lift_bus_label_declaration_v1};
 
 fn str_list(value: Option<&Value>) -> Vec<String> {
     value
@@ -40,7 +38,10 @@ fn main() {
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
-    let bname = value.get("bus_label_name").and_then(|v| v.as_str()).unwrap_or("");
+    let bname = value
+        .get("bus_label_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let pins = str_list(value.get("member_pins"));
 
     let output = match lift_bus_label_declaration_v1(bname, pins) {

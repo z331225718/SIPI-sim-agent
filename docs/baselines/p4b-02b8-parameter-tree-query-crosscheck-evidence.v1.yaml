@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b8.parameter-tree-query-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b8.parameter-tree-query-v1.path-query-tree
 matched_count: 3
 case_count: 3

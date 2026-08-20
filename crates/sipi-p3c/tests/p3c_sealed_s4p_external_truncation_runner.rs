@@ -14,13 +14,13 @@ use std::{
 use sha2::{Digest, Sha256};
 use sipi_artifacts::ArtifactRoot;
 use sipi_ieee_com_sparam::{
-    enforce_selected_p3c_causality_v1, interpolate_selected_p3c_hdiff_v1,
-    truncate_selected_p3c_response_v1, CausalityEnforcementErrorV1, InterpSparamErrorV1,
-    SelectedP3cTruncationTailV1, TruncationErrorV1,
+    CausalityEnforcementErrorV1, InterpSparamErrorV1, SelectedP3cTruncationTailV1,
+    TruncationErrorV1, enforce_selected_p3c_causality_v1, interpolate_selected_p3c_hdiff_v1,
+    truncate_selected_p3c_response_v1,
 };
 use sipi_p3c::{
-    admit_selected_p3c_sealed_s4p_v2, SelectedP3cSealedS4pIdentityV2,
     SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1,
+    SelectedP3cSealedS4pIdentityV2, admit_selected_p3c_sealed_s4p_v2,
 };
 
 const SOURCE_ENV: &str = "SIPI_P3C_SEALED_S4P_EXTERNAL_SOURCE";
@@ -145,7 +145,7 @@ fn outcome(admitted: &sipi_p3c::AdmittedSelectedP3cStaticTransferV2) -> Outcome 
             return Outcome::Rejected {
                 stage: "interpolation",
                 error: interpolation_error_name(error),
-            }
+            };
         }
     };
     let causal = match enforce_selected_p3c_causality_v1(&uniform) {
@@ -154,7 +154,7 @@ fn outcome(admitted: &sipi_p3c::AdmittedSelectedP3cStaticTransferV2) -> Outcome 
             return Outcome::Rejected {
                 stage: "causality_enforcement",
                 error: causality_error_name(error),
-            }
+            };
         }
     };
     let truncated = match truncate_selected_p3c_response_v1(&causal) {
@@ -163,7 +163,7 @@ fn outcome(admitted: &sipi_p3c::AdmittedSelectedP3cStaticTransferV2) -> Outcome 
             return Outcome::Rejected {
                 stage: "truncation",
                 error: truncation_error_name(error),
-            }
+            };
         }
     };
     let mut digest = Sha256::new();
@@ -257,8 +257,32 @@ fn required_path(name: &str) -> Result<PathBuf, String> {
 
 fn run_json(fact: &RunFact) -> String {
     match &fact.outcome {
-        Outcome::Admitted { uniform_bin_count, causal_sample_count, iteration_count, retained_sample_count, sample_interval_bits, dropped_l2_over_total_l2_bits, tail, truncated_response_sha256 } => format!("{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"truncation_status\":\"admitted\",\"uniform_bin_count\":{},\"causal_sample_count\":{},\"iteration_count\":{},\"retained_sample_count\":{},\"sample_interval_bits\":\"{}\",\"dropped_l2_over_total_l2_bits\":\"{}\",\"tail\":\"{}\",\"truncated_response_sha256\":\"{}\"}}", fact.manifest_sha256, fact.record_count, uniform_bin_count, causal_sample_count, iteration_count, retained_sample_count, sample_interval_bits, dropped_l2_over_total_l2_bits, tail, truncated_response_sha256),
-        Outcome::Rejected { stage, error } => format!("{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"truncation_status\":\"rejected\",\"stage\":\"{}\",\"error\":\"{}\"}}", fact.manifest_sha256, fact.record_count, stage, error),
+        Outcome::Admitted {
+            uniform_bin_count,
+            causal_sample_count,
+            iteration_count,
+            retained_sample_count,
+            sample_interval_bits,
+            dropped_l2_over_total_l2_bits,
+            tail,
+            truncated_response_sha256,
+        } => format!(
+            "{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"truncation_status\":\"admitted\",\"uniform_bin_count\":{},\"causal_sample_count\":{},\"iteration_count\":{},\"retained_sample_count\":{},\"sample_interval_bits\":\"{}\",\"dropped_l2_over_total_l2_bits\":\"{}\",\"tail\":\"{}\",\"truncated_response_sha256\":\"{}\"}}",
+            fact.manifest_sha256,
+            fact.record_count,
+            uniform_bin_count,
+            causal_sample_count,
+            iteration_count,
+            retained_sample_count,
+            sample_interval_bits,
+            dropped_l2_over_total_l2_bits,
+            tail,
+            truncated_response_sha256
+        ),
+        Outcome::Rejected { stage, error } => format!(
+            "{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"truncation_status\":\"rejected\",\"stage\":\"{}\",\"error\":\"{}\"}}",
+            fact.manifest_sha256, fact.record_count, stage, error
+        ),
     }
 }
 
@@ -283,7 +307,15 @@ fn run() -> Result<(), String> {
         Outcome::Admitted { .. } => "observed",
         Outcome::Rejected { .. } => "rejected",
     };
-    let payload = format!("{{\"schema\":\"{}\",\"status\":\"{}\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"source_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n", SCHEMA, status, SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_SHA256_V1, run_json(&first), run_json(&second));
+    let payload = format!(
+        "{{\"schema\":\"{}\",\"status\":\"{}\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"source_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n",
+        SCHEMA,
+        status,
+        SELECTED_P3C_S4P_BYTE_LENGTH_V1,
+        SELECTED_P3C_S4P_SHA256_V1,
+        run_json(&first),
+        run_json(&second)
+    );
     fs::write(report, payload).map_err(|error| format!("report_write:{error}"))
 }
 

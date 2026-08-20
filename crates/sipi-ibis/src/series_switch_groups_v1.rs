@@ -55,24 +55,25 @@ impl TypedSeriesSwitchGroupV1 {
             return Err(SeriesSwitchGroupsErrorV1::EmptyStateModels);
         }
 
-        let validate_models = |models: &[String]| -> Result<Vec<String>, SeriesSwitchGroupsErrorV1> {
-            let mut seen = BTreeSet::new();
-            let mut result = Vec::with_capacity(models.len());
-            for m in models {
-                let mt = m.trim().to_string();
-                if mt.is_empty() {
-                    return Err(SeriesSwitchGroupsErrorV1::EmptyGroupName);
+        let validate_models =
+            |models: &[String]| -> Result<Vec<String>, SeriesSwitchGroupsErrorV1> {
+                let mut seen = BTreeSet::new();
+                let mut result = Vec::with_capacity(models.len());
+                for m in models {
+                    let mt = m.trim().to_string();
+                    if mt.is_empty() {
+                        return Err(SeriesSwitchGroupsErrorV1::EmptyGroupName);
+                    }
+                    if !mt.is_ascii() {
+                        return Err(SeriesSwitchGroupsErrorV1::NonAsciiGroupName);
+                    }
+                    if !seen.insert(mt.clone()) {
+                        return Err(SeriesSwitchGroupsErrorV1::DuplicateModelInGroup(mt));
+                    }
+                    result.push(mt);
                 }
-                if !mt.is_ascii() {
-                    return Err(SeriesSwitchGroupsErrorV1::NonAsciiGroupName);
-                }
-                if !seen.insert(mt.clone()) {
-                    return Err(SeriesSwitchGroupsErrorV1::DuplicateModelInGroup(mt));
-                }
-                result.push(mt);
-            }
-            Ok(result)
-        };
+                Ok(result)
+            };
 
         let on_clean = validate_models(&on_state_models)?;
         let off_clean = validate_models(&off_state_models)?;

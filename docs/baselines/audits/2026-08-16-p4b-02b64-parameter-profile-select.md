@@ -20,7 +20,7 @@ replicates the name-set selection over 4 test cases.
   missing parameter).
 - Cross-check: 4 test cases (select subset, select all, missing parameter, empty selection) driven
   through product runner `p4b_02b64_parameter_profile_select_runner`; independent Python reference
-  matches 100% on valid flags, counts, selected maps, and error contexts; 4/4 matched_hash_bound.
+  matches 100% on valid flags, counts, selected maps, and error contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -25,7 +25,7 @@ tokenize/build/count/validate/apply pipeline over 4 test cases.
 - Cross-check: 4 test cases (batch update, ambiguous name, missing leaf, invalid value) driven
   through product runner `p4b_02b53_parameter_tree_batch_value_set_runner`; independent Python
   reference matches 100% on valid flags, updated counts, resulting tree structures, and error
-  contexts; 4/4 matched_hash_bound.
+  contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

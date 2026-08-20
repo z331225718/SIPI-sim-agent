@@ -6,14 +6,13 @@
 //! sampled_signal_pdf / combine_r480_noise_pdf stages with the r4.80
 //! Q-factor `sqrt(2) * erfcinv(2 * spec_ber)`.
 
-use crate::combined_noise_pdf_v1::{combine_r480_noise_pdf_v1, CombinedNoisePdfV1};
-use crate::discrete_pdf_v1::{normal_pdf_v1, DiscretePdfV1, PdfErrorV1};
+use crate::combined_noise_pdf_v1::{CombinedNoisePdfV1, combine_r480_noise_pdf_v1};
+use crate::discrete_pdf_v1::{DiscretePdfV1, PdfErrorV1, normal_pdf_v1};
 use crate::erf_v1::erfcinv_v1;
 use crate::sampled_signal_pdf_v1::sampled_signal_pdf_v1;
 
 /// Explicit scope policy of the noise-PDF build stage.
-pub const BUILD_NOISE_PDF_POLICY_V1: &str =
-    "sipi.p5-04h.build-noise-pdf-v1.gaussian-dual-dirac";
+pub const BUILD_NOISE_PDF_POLICY_V1: &str = "sipi.p5-04h.build-noise-pdf-v1.gaussian-dual-dirac";
 
 /// The r4.80 noise PDF result surface (port of `R480NoisePdf`).
 #[derive(Clone, Debug, PartialEq)]
@@ -159,8 +158,24 @@ mod tests {
         let next = normal_pdf_v1(0.0015, 3.0, 1e-4).expect("pdf");
         let h_j = vec![0.3, 0.5, 0.2];
         let built = build_r480_noise_pdf_v1(
-            &sci, &[fext], &[next], 4, 0.6, 50.0, 30.0, 0.03, 1e-4, &h_j, 0.01, 0.4,
-            1e-4, 0.0, 0.0, None, None, None,
+            &sci,
+            &[fext],
+            &[next],
+            4,
+            0.6,
+            50.0,
+            30.0,
+            0.03,
+            1e-4,
+            &h_j,
+            0.01,
+            0.4,
+            1e-4,
+            0.0,
+            0.0,
+            None,
+            None,
+            None,
         )
         .expect("built");
         assert!(built.sigma_tx_v() > 0.0);
@@ -177,15 +192,47 @@ mod tests {
         let h_j = vec![0.5];
         for (levels, available) in [(1u32, 0.6), (4, 0.0)] {
             let result = build_r480_noise_pdf_v1(
-                &sci, &[], &[], levels, available, 50.0, 30.0, 0.03, 1e-4, &h_j,
-                0.01, 0.4, 1e-4, 0.0, 0.0, None, None, None,
+                &sci,
+                &[],
+                &[],
+                levels,
+                available,
+                50.0,
+                30.0,
+                0.03,
+                1e-4,
+                &h_j,
+                0.01,
+                0.4,
+                1e-4,
+                0.0,
+                0.0,
+                None,
+                None,
+                None,
             );
             assert_eq!(result.unwrap_err(), PdfErrorV1::InvalidNoisePdfControls);
         }
         assert_eq!(
             build_r480_noise_pdf_v1(
-                &sci, &[], &[], 4, 0.6, 50.0, 30.0, 0.03, 1e-4, &[], 0.01, 0.4,
-                1e-4, 0.0, 0.0, None, None, None,
+                &sci,
+                &[],
+                &[],
+                4,
+                0.6,
+                50.0,
+                30.0,
+                0.03,
+                1e-4,
+                &[],
+                0.01,
+                0.4,
+                1e-4,
+                0.0,
+                0.0,
+                None,
+                None,
+                None,
             )
             .unwrap_err(),
             PdfErrorV1::InvalidNoisePdfControls,
@@ -197,8 +244,24 @@ mod tests {
         let sci = base_pdf();
         let h_j = vec![0.3, 0.5, 0.2];
         let built = build_r480_noise_pdf_v1(
-            &sci, &[], &[], 4, 0.6, 50.0, 30.0, 0.03, 1e-4, &h_j, 0.01, 0.4,
-            1e-4, 3.8, 0.0, Some(2.5), Some(0.002), Some(0.001),
+            &sci,
+            &[],
+            &[],
+            4,
+            0.6,
+            50.0,
+            30.0,
+            0.03,
+            1e-4,
+            &h_j,
+            0.01,
+            0.4,
+            1e-4,
+            3.8,
+            0.0,
+            Some(2.5),
+            Some(0.002),
+            Some(0.001),
         )
         .expect("built");
         assert!((built.ber_q() - 3.8).abs() < 1e-15);

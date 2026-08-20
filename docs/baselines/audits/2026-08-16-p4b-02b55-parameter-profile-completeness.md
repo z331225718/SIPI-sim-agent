@@ -25,7 +25,7 @@ Python reference replicates the name-presence check over 4 test cases.
 - Cross-check: 4 test cases (complete, missing sorted, extra ignored, empty required) driven
   through product runner `p4b_02b55_parameter_profile_completeness_runner`; independent Python
   reference matches 100% on valid flags, counts, missing lists, and error contexts;
-  4/4 matched_hash_bound.
+  4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

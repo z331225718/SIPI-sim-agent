@@ -28,7 +28,7 @@ def verify_document(document: object, source: str) -> dict[str, object]:
     admission = document.get("admission")
     if not isinstance(admission, dict) or set(admission) != required_true | required_false or any(admission[key] is not True for key in required_true) or any(admission[key] is not False for key in required_false):
         raise VerificationError("admission")
-    for token in ("P3C_FULL_CAUSAL_RESPONSE_SAMPLES_V1: usize = 51_200", "P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_START_V1: usize = 32_704", "P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_SAMPLES_V1: usize = 16_352", "P3C_TRUNCATION_SENSITIVITY_MACS_V1: usize = 668_477_936", "for kernel_index in 0..=last_kernel"):
+    for token in ("P3C_FULL_CAUSAL_RESPONSE_SAMPLES_V1: usize = 51_200", "P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_START_V1: usize = 32_704", "P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_SAMPLES_V1: usize = 16_352", "P3C_TRUNCATION_SENSITIVITY_MACS_V1: usize = 668_477_936", "kernel.iter().take(last_kernel + 1).enumerate()"):
         if token not in source:
             raise VerificationError("implementation_binding")
     if any(token in source for token in ("Fft", "CausalFirChannel", "convolve_causal_fir")):

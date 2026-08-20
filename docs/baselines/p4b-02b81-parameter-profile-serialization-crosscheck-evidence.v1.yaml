@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b81-parameter-profile-serialization-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b81.parameter-profile-serialization-v1.canonical-profile-json
 matched_count: 4
 case_count: 4

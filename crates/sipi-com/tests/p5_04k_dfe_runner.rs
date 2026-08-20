@@ -8,8 +8,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_com::{
-    apply_dfe_bank_v1, apply_tail_rss_bounds_v1, clip_dfe_v1, find_dfe_bank_locations_v1,
-    DFE_POLICY_V1,
+    DFE_POLICY_V1, apply_dfe_bank_v1, apply_tail_rss_bounds_v1, clip_dfe_v1,
+    find_dfe_bank_locations_v1,
 };
 
 fn f64s(value: &Value) -> Vec<f64> {

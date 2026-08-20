@@ -32,7 +32,9 @@ fn prune_node(
     match node {
         AmiParameterTreeNodeV1::Branch { name, children } => {
             if !children.contains_key(target) {
-                return Err(ParameterTreePruningErrorV1::PathNotFound(target.to_string()));
+                return Err(ParameterTreePruningErrorV1::PathNotFound(
+                    target.to_string(),
+                ));
             }
 
             if segments.len() == 1 {
@@ -84,7 +86,7 @@ pub fn prune_parameter_tree_v1(
 mod tests {
     use super::*;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
-    use crate::{parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, parse_ami_text_v1};
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
@@ -108,7 +110,8 @@ mod tests {
         let trees = build_parameter_trees_v1(&doc).expect("build");
 
         // Prune leaf node tx_swing
-        let pruned_leaf = prune_parameter_tree_v1(&trees[0], &["Reserved_Parameters", "tx_swing"]).expect("prune leaf");
+        let pruned_leaf = prune_parameter_tree_v1(&trees[0], &["Reserved_Parameters", "tx_swing"])
+            .expect("prune leaf");
         if let AmiParameterTreeNodeV1::Branch { children, .. } = pruned_leaf.root_node() {
             assert_eq!(children.len(), 1);
             assert!(!children.contains_key("tx_swing"));
@@ -118,7 +121,8 @@ mod tests {
         }
 
         // Prune branch node dfe
-        let pruned_branch = prune_parameter_tree_v1(&trees[0], &["Reserved_Parameters", "dfe"]).expect("prune branch");
+        let pruned_branch = prune_parameter_tree_v1(&trees[0], &["Reserved_Parameters", "dfe"])
+            .expect("prune branch");
         if let AmiParameterTreeNodeV1::Branch { children, .. } = pruned_branch.root_node() {
             assert_eq!(children.len(), 1);
             assert!(children.contains_key("tx_swing"));
@@ -154,7 +158,9 @@ mod tests {
         let trees = build_parameter_trees_v1(&doc).expect("build");
         assert_eq!(
             prune_parameter_tree_v1(&trees[0], &["root", "nonexistent"]),
-            Err(ParameterTreePruningErrorV1::PathNotFound("nonexistent".to_string()))
+            Err(ParameterTreePruningErrorV1::PathNotFound(
+                "nonexistent".to_string()
+            ))
         );
     }
 }

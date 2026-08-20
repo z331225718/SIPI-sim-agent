@@ -8,9 +8,9 @@
 //! before those slices fail. The check reports in the result; an inconsistent
 //! tree is not itself an error. Result-based: any tree can be checked.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
 
 /// Scope policy for the duplicate-name consistency check core.
 pub const PARAMETER_TREE_DUPLICATE_CHECK_POLICY_V1: &str =
@@ -58,10 +58,7 @@ fn collect_occurrences(
                 collect_occurrences(child, out, leaves);
             }
         }
-        AmiParameterTreeNodeV1::Leaf {
-            name,
-            value_tokens,
-        } => {
+        AmiParameterTreeNodeV1::Leaf { name, value_tokens } => {
             *leaves += 1;
             out.entry(name.clone())
                 .or_default()
@@ -167,7 +164,10 @@ mod tests {
     fn unique_names_have_no_duplicates() {
         let t = tree(branch(
             "root",
-            vec![leaf("gain", &["Float", "1.0"]), leaf("steps", &["Integer", "7"])],
+            vec![
+                leaf("gain", &["Float", "1.0"]),
+                leaf("steps", &["Integer", "7"]),
+            ],
         ));
         let result = check_parameter_tree_duplicate_consistency_v1(&t);
         assert_eq!(result.leaves_checked(), 2);

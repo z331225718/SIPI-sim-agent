@@ -28,7 +28,7 @@ reference replicates the rule over 4 test cases.
 - Cross-check: 4 test cases (longest run, tie earliest, all distinct, non-list) driven
   through product runner `p4b_02b171_parameter_list_longest_run_start_index_runner`;
   independent Python reference matches 100% on start indices and error keys; 4/4
-  matched_hash_bound.
+  product_owned_self_crosscheck_unbound.
 
 ## Binding
 

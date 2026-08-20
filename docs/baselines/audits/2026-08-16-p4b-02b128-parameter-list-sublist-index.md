@@ -26,7 +26,7 @@ replicates the position rule over 4 test cases.
   non-list, raw query vs trimmed items).
 - Cross-check: 4 test cases (start index, earliest match, absent sublist, non-list) driven
   through product runner `p4b_02b128_parameter_list_sublist_index_runner`; independent Python
-  reference matches 100% on indices and error keys; 4/4 matched_hash_bound.
+  reference matches 100% on indices and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -25,7 +25,7 @@ independent Python reference replicates the all-equal rule over 4 test cases.
   non-list, raw byte equality).
 - Cross-check: 4 test cases (repeated items, mixed items, single item, non-list) driven
   through product runner `p4b_02b160_parameter_list_all_equal_runner`; independent Python
-  reference matches 100% on booleans and error keys; 4/4 matched_hash_bound.
+  reference matches 100% on booleans and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

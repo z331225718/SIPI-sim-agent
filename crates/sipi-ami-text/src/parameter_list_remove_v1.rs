@@ -57,8 +57,8 @@ pub fn remove_parameter_list_item_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListRemoveErrorV1::NotAList);
     }
-    let mut items = list_items(value.value_token())
-        .ok_or(ParameterListRemoveErrorV1::MalformedList)?;
+    let mut items =
+        list_items(value.value_token()).ok_or(ParameterListRemoveErrorV1::MalformedList)?;
     if index >= items.len() {
         return Err(ParameterListRemoveErrorV1::IndexOutOfRange {
             index,

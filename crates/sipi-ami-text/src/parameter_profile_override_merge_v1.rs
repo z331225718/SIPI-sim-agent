@@ -16,7 +16,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{parameter_values_equivalent_v1, AmiParameterValueV1, ParameterValueEquivalenceV1};
+use crate::{AmiParameterValueV1, ParameterValueEquivalenceV1, parameter_values_equivalent_v1};
 
 /// Explicit scope policy of this slice: typed override merge of profiles.
 pub const PARAMETER_PROFILE_OVERRIDE_MERGE_POLICY_V1: &str =

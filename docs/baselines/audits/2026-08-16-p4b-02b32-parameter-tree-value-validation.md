@@ -23,7 +23,7 @@ leaf+token context. An independent Python reference replicates the tree build an
 - Cross-check: 4 test cases (mixed valid types, missing type fails closed, invalid float token,
   invalid boolean token) driven through product runner `p4b_02b32_parameter_tree_value_validation_runner`;
   independent Python reference matches 100% on valid flags, counts, echoed type maps, and error contexts;
-  4/4 matched_hash_bound.
+  4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

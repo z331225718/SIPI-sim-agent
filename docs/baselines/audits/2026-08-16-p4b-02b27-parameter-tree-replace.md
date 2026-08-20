@@ -22,7 +22,7 @@ An independent Python reference recomputes node replace over 3 test cases.
   rejects root replace; rejects sibling name collision; rejects missing path).
 - Cross-check: 3 test cases (replace leaf node, replace branch node, sibling name collision)
   driven through product runner `p4b_02b27_parameter_tree_replace_runner`; independent Python reference
-  matches 100% on valid flags, replaced tree canonical JSON, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, replaced tree canonical JSON, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

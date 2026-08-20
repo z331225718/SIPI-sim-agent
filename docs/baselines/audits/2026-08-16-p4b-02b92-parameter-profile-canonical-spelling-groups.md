@@ -26,7 +26,7 @@ cases.
   count, empty profile, mixed types).
 - Cross-check: 4 test cases (integer grouping, float separate, list grouping, empty profile) driven
   through product runner `p4b_02b92_parameter_profile_canonical_spelling_groups_runner`;
-  independent Python reference matches 100% on counts and group lists; 4/4 matched_hash_bound.
+  independent Python reference matches 100% on counts and group lists; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

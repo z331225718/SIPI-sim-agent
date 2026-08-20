@@ -24,7 +24,7 @@ An independent Python reference replicates the tokenize/build/presence pipeline 
 - Cross-check: 4 test cases (complete, missing sorted, nested satisfies, empty required) driven
   through product runner `p4b_02b62_parameter_tree_required_name_check_runner`; independent Python
   reference matches 100% on valid flags, counts, missing lists, and error contexts;
-  4/4 matched_hash_bound.
+  4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

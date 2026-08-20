@@ -13,9 +13,8 @@ pub mod p3c_fixed_four_port_bench_v1;
 pub mod p3c_fixed_pole_rational_fit_v1;
 pub mod p3c_real_constrained_fixed_pole_fit_v1;
 pub use cdr_lock_v1::{
-    track_cdr_lock_v1, CdrLockConfigV1, CdrLockErrorV1, CdrLockSampleRecordV1,
-    CdrSampleClassificationV1, CdrLockStateV1, CdrLockTrackerV1, CdrLockTrackingV1,
-    CDR_LOCK_POLICY_V1,
+    CDR_LOCK_POLICY_V1, CdrLockConfigV1, CdrLockErrorV1, CdrLockSampleRecordV1, CdrLockStateV1,
+    CdrLockTrackerV1, CdrLockTrackingV1, CdrSampleClassificationV1, track_cdr_lock_v1,
 };
 pub use p3c_fixed_four_port_bench_v1::{
     FixedFourPortBenchError, FourPortS, SELECTED_P3C_PORT_COUNT, SelectedP3cFourPortSpectrumV1,

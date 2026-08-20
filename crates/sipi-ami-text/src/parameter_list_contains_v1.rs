@@ -51,8 +51,8 @@ pub fn parameter_list_contains_item_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListContainsErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListContainsErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListContainsErrorV1::MalformedList)?;
     Ok(items.iter().any(|candidate| candidate == item))
 }
 

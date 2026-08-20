@@ -22,7 +22,7 @@ reference replicates the by-name merge over 4 test cases.
   conflict; empty a; mixed merge counts).
 - Cross-check: 4 test cases (disjoint, overlap identical, value conflict, empty a) driven through
   product runner `p4b_02b48_parameter_profile_merge_runner`; independent Python reference matches
-  100% on valid flags, matched counts, merged maps, and error contexts; 4/4 matched_hash_bound.
+  100% on valid flags, matched counts, merged maps, and error contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

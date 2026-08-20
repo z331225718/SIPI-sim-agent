@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b44-parameter-profile-assembly-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b44.parameter-profile-assembly-v1.strict-profile-assembly
 matched_count: 4
 case_count: 4

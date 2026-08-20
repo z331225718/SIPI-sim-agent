@@ -9,8 +9,8 @@
 use std::path::PathBuf;
 
 use sipi_ibis::{
-    lift_model_declarations_v1, lift_pin_declarations_v1, parse_structural_v1,
-    resolve_pin_model_linkage_v1, ParseLimitsV1, PIN_MODEL_LINKAGE_POLICY_V1,
+    PIN_MODEL_LINKAGE_POLICY_V1, ParseLimitsV1, lift_model_declarations_v1,
+    lift_pin_declarations_v1, parse_structural_v1, resolve_pin_model_linkage_v1,
 };
 
 fn main() {
@@ -28,11 +28,19 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4a_03f_pin_model_linkage_runner --input <ibs-text> [--report <path>] [--markers <json>]");
+        println!(
+            "usage: p4a_03f_pin_model_linkage_runner --input <ibs-text> [--report <path>] [--markers <json>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
-    let limits = ParseLimitsV1::try_new(8 * 1024 * 1024, 4 * 1024 * 1024, 2 * 1024 * 1024, 4 * 1024 * 1024).expect("limits");
+    let limits = ParseLimitsV1::try_new(
+        8 * 1024 * 1024,
+        4 * 1024 * 1024,
+        2 * 1024 * 1024,
+        4 * 1024 * 1024,
+    )
+    .expect("limits");
     let document = match parse_structural_v1(&bytes, limits) {
         Ok(doc) => doc,
         Err(e) => {
@@ -61,8 +69,13 @@ fn main() {
         Some(path) => {
             let bytes = std::fs::read(path).expect("read markers");
             let value: serde_json::Value = serde_json::from_slice(&bytes).expect("markers json");
-            value.as_array()
-                .map(|arr| arr.iter().map(|e| e.as_str().unwrap().to_string()).collect())
+            value
+                .as_array()
+                .map(|arr| {
+                    arr.iter()
+                        .map(|e| e.as_str().unwrap().to_string())
+                        .collect()
+                })
                 .unwrap_or_default()
         }
         None => std::collections::BTreeSet::new(),

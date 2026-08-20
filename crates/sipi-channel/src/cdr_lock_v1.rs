@@ -62,10 +62,10 @@ impl CdrLockConfigV1 {
         lock_count: usize,
         unlock_count: usize,
     ) -> Result<Self, CdrLockErrorV1> {
-        if !(lock_threshold > 0.0) {
+        if !lock_threshold.is_finite() || lock_threshold <= 0.0 {
             return Err(CdrLockErrorV1::InvalidLockThreshold);
         }
-        if !(unlock_threshold >= lock_threshold) {
+        if !unlock_threshold.is_finite() || unlock_threshold < lock_threshold {
             return Err(CdrLockErrorV1::InvalidUnlockThreshold);
         }
         if lock_count == 0 || unlock_count == 0 {
@@ -245,7 +245,8 @@ impl CdrLockTrackerV1 {
             CdrSampleClassificationV1::Good => {
                 self.bad_run = 0;
                 self.good_run += 1;
-                if self.state == CdrLockStateV1::Unlocked && self.good_run >= self.config.lock_count()
+                if self.state == CdrLockStateV1::Unlocked
+                    && self.good_run >= self.config.lock_count()
                 {
                     self.state = CdrLockStateV1::Locked;
                     self.lock_transitions += 1;
@@ -270,7 +271,12 @@ impl CdrLockTrackerV1 {
                 self.bad_run = 0;
             }
         }
-        Ok(CdrLockSampleRecordV1::new(0, error, classification, self.state))
+        Ok(CdrLockSampleRecordV1::new(
+            0,
+            error,
+            classification,
+            self.state,
+        ))
     }
 }
 
@@ -317,14 +323,8 @@ mod tests {
         assert_eq!(result.unlock_transitions(), 0);
         assert_eq!(result.samples().len(), 5);
         // lock acquired at sample 3
-        assert_eq!(
-            result.samples()[2].state_after(),
-            CdrLockStateV1::Locked
-        );
-        assert_eq!(
-            result.samples()[0].state_after(),
-            CdrLockStateV1::Unlocked
-        );
+        assert_eq!(result.samples()[2].state_after(), CdrLockStateV1::Locked);
+        assert_eq!(result.samples()[0].state_after(), CdrLockStateV1::Unlocked);
     }
 
     #[test]

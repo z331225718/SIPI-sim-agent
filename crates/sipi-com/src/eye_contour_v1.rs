@@ -23,7 +23,11 @@ pub enum EyeContourErrorV1 {
     /// The Q grid column count does not match the time offsets.
     ColumnCountMismatch { columns: usize, time: usize },
     /// A Q grid row length does not match the voltage levels.
-    RowCountMismatch { column: usize, rows: usize, voltage: usize },
+    RowCountMismatch {
+        column: usize,
+        rows: usize,
+        voltage: usize,
+    },
     /// Time offsets are not strictly ascending.
     TimeNotAscending,
     /// Voltage levels are not strictly ascending.
@@ -45,11 +49,7 @@ pub struct EyeGridV1 {
 }
 
 impl EyeGridV1 {
-    pub fn new(
-        time_offsets_ui: Vec<f64>,
-        voltage_levels: Vec<f64>,
-        q_grid: Vec<Vec<f64>>,
-    ) -> Self {
+    pub fn new(time_offsets_ui: Vec<f64>, voltage_levels: Vec<f64>, q_grid: Vec<Vec<f64>>) -> Self {
         Self {
             time_offsets_ui,
             voltage_levels,
@@ -209,13 +209,7 @@ pub fn statistical_eye_contour_v1(
 
 /// Linear interpolation in Q between (v_low, q_low) and (v_high, q_high) to
 /// find the voltage where Q equals the target.
-fn interpolate_crossing(
-    v_low: f64,
-    q_low: f64,
-    v_high: f64,
-    q_high: f64,
-    target_q: f64,
-) -> f64 {
+fn interpolate_crossing(v_low: f64, q_low: f64, v_high: f64, q_high: f64, target_q: f64) -> f64 {
     v_low + (target_q - q_low) * (v_high - v_low) / (q_high - q_low)
 }
 
@@ -248,11 +242,7 @@ mod tests {
 
     #[test]
     fn edge_clamping_when_target_below_first_row() {
-        let g = EyeGridV1::new(
-            vec![0.0],
-            vec![0.0, 0.5, 1.0],
-            vec![vec![8.0, 10.0, 8.0]],
-        );
+        let g = EyeGridV1::new(vec![0.0], vec![0.0, 0.5, 1.0], vec![vec![8.0, 10.0, 8.0]]);
         let result = statistical_eye_contour_v1(&g, 5.0).expect("contour");
         assert_eq!(result.columns()[0].lower_voltage(), 0.0);
         assert_eq!(result.columns()[0].upper_voltage(), 1.0);
@@ -266,10 +256,7 @@ mod tests {
             vec![vec![8.0, 10.0, 8.0], vec![1.0, 2.0, 1.0]],
         );
         let error = statistical_eye_contour_v1(&g, 5.0).unwrap_err();
-        assert_eq!(
-            error,
-            EyeContourErrorV1::NoContourAtColumn { column: 1 }
-        );
+        assert_eq!(error, EyeContourErrorV1::NoContourAtColumn { column: 1 });
     }
 
     #[test]
@@ -281,11 +268,7 @@ mod tests {
 
     #[test]
     fn column_count_mismatch_fails_closed() {
-        let g = EyeGridV1::new(
-            vec![0.0, 1.0],
-            vec![0.0, 1.0],
-            vec![vec![8.0, 10.0]],
-        );
+        let g = EyeGridV1::new(vec![0.0, 1.0], vec![0.0, 1.0], vec![vec![8.0, 10.0]]);
         let error = statistical_eye_contour_v1(&g, 5.0).unwrap_err();
         assert_eq!(
             error,
@@ -298,11 +281,7 @@ mod tests {
 
     #[test]
     fn row_count_mismatch_fails_closed() {
-        let g = EyeGridV1::new(
-            vec![0.0],
-            vec![0.0, 1.0, 2.0],
-            vec![vec![8.0, 10.0]],
-        );
+        let g = EyeGridV1::new(vec![0.0], vec![0.0, 1.0, 2.0], vec![vec![8.0, 10.0]]);
         let error = statistical_eye_contour_v1(&g, 5.0).unwrap_err();
         assert_eq!(
             error,
@@ -327,22 +306,14 @@ mod tests {
 
     #[test]
     fn voltage_not_ascending_fails_closed() {
-        let g = EyeGridV1::new(
-            vec![0.0],
-            vec![0.0, -1.0],
-            vec![vec![8.0, 10.0]],
-        );
+        let g = EyeGridV1::new(vec![0.0], vec![0.0, -1.0], vec![vec![8.0, 10.0]]);
         let error = statistical_eye_contour_v1(&g, 5.0).unwrap_err();
         assert_eq!(error, EyeContourErrorV1::VoltageNotAscending);
     }
 
     #[test]
     fn invalid_q_fails_closed() {
-        let g = EyeGridV1::new(
-            vec![0.0],
-            vec![0.0, 1.0],
-            vec![vec![0.0, 10.0]],
-        );
+        let g = EyeGridV1::new(vec![0.0], vec![0.0, 1.0], vec![vec![0.0, 10.0]]);
         let error = statistical_eye_contour_v1(&g, 5.0).unwrap_err();
         assert_eq!(error, EyeContourErrorV1::InvalidQ);
     }

@@ -11,11 +11,10 @@
 use sipi_types::Complex64;
 
 use crate::equalizer_frontend_v1::{complex_div, complex_mul};
-use crate::search_support_v1::{ctle_frequency_response_v1, CtleParamsV1, SearchErrorV1};
+use crate::search_support_v1::{CtleParamsV1, SearchErrorV1, ctle_frequency_response_v1};
 
 /// Explicit scope policy of the receiver noise stage.
-pub const RECEIVER_NOISE_POLICY_V1: &str =
-    "sipi.p5-04o.receiver-noise-v1.filters-eta0-accm";
+pub const RECEIVER_NOISE_POLICY_V1: &str = "sipi.p5-04o.receiver-noise-v1.filters-eta0-accm";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum NoiseErrorV1 {
@@ -41,7 +40,10 @@ pub(crate) fn complex_add(a: Complex64, b: Complex64) -> Complex64 {
 fn polyval_complex(coefficients: &[f64], z: Complex64) -> Complex64 {
     let mut result = Complex64::try_new(0.0, 0.0).expect("complex");
     for coefficient in coefficients {
-        result = complex_add(complex_mul(result, z), Complex64::try_new(*coefficient, 0.0).expect("complex"));
+        result = complex_add(
+            complex_mul(result, z),
+            Complex64::try_new(*coefficient, 0.0).expect("complex"),
+        );
     }
     result
 }
@@ -68,7 +70,10 @@ pub fn bessel_thomson_filter_v1(
 ) -> Result<Vec<Complex64>, NoiseErrorV1> {
     let frequency = frequency_axis(frequency_hz)?;
     if !enabled {
-        return Ok(vec![Complex64::try_new(1.0, 0.0).expect("complex"); frequency.len()]);
+        return Ok(vec![
+            Complex64::try_new(1.0, 0.0).expect("complex");
+            frequency.len()
+        ]);
     }
     if cutoff_multiplier <= 0.0 || baud_hz <= 0.0 {
         return Err(NoiseErrorV1::InvalidFilterControls);
@@ -76,16 +81,16 @@ pub fn bessel_thomson_filter_v1(
     let mut coefficients = Vec::with_capacity(order + 1);
     for index in 0..=order {
         let numerator = factorial(2 * order - index);
-        let denominator = 2.0_f64.powi((order - index) as i32)
-            * factorial(index)
-            * factorial(order - index);
+        let denominator =
+            2.0_f64.powi((order - index) as i32) * factorial(index) * factorial(order - index);
         coefficients.push(numerator / denominator);
     }
     let reversed: Vec<f64> = coefficients.iter().rev().copied().collect();
     Ok(frequency
         .iter()
         .map(|value| {
-            let z = Complex64::try_new(0.0, *value / (cutoff_multiplier * baud_hz)).expect("complex");
+            let z =
+                Complex64::try_new(0.0, *value / (cutoff_multiplier * baud_hz)).expect("complex");
             let denominator = polyval_complex(&reversed, z);
             complex_div(
                 Complex64::try_new(coefficients[0], 0.0).expect("complex"),
@@ -104,7 +109,10 @@ pub fn butterworth_filter_v1(
 ) -> Result<Vec<Complex64>, NoiseErrorV1> {
     let frequency = frequency_axis(frequency_hz)?;
     if !enabled {
-        return Ok(vec![Complex64::try_new(1.0, 0.0).expect("complex"); frequency.len()]);
+        return Ok(vec![
+            Complex64::try_new(1.0, 0.0).expect("complex");
+            frequency.len()
+        ]);
     }
     if cutoff_multiplier <= 0.0 || baud_hz <= 0.0 {
         return Err(NoiseErrorV1::InvalidFilterControls);
@@ -113,7 +121,8 @@ pub fn butterworth_filter_v1(
     Ok(frequency
         .iter()
         .map(|value| {
-            let z = Complex64::try_new(0.0, *value / (cutoff_multiplier * baud_hz)).expect("complex");
+            let z =
+                Complex64::try_new(0.0, *value / (cutoff_multiplier * baud_hz)).expect("complex");
             let denominator = polyval_complex(&coefficients, z);
             complex_div(Complex64::try_new(1.0, 0.0).expect("complex"), denominator)
         })
@@ -137,7 +146,10 @@ pub fn tukey_window_v1(
             if *value < start_hz {
                 1.0
             } else if *value <= end_hz {
-                0.5 * (2.0 * std::f64::consts::PI * (*value - end_hz) / period - std::f64::consts::PI).cos() + 0.5
+                0.5 * (2.0 * std::f64::consts::PI * (*value - end_hz) / period
+                    - std::f64::consts::PI)
+                    .cos()
+                    + 0.5
             } else {
                 0.0
             }
@@ -186,7 +198,8 @@ pub fn rx_ffe_frequency_response_v1(
             let term = Complex64::try_new(angle.cos(), angle.sin()).expect("complex");
             result[point] = complex_add(
                 result[point],
-                Complex64::try_new(*coefficient * term.real(), *coefficient * term.imaginary()).expect("complex"),
+                Complex64::try_new(*coefficient * term.real(), *coefficient * term.imaginary())
+                    .expect("complex"),
             );
         }
     }
@@ -243,11 +256,10 @@ pub fn receiver_noise_v1(
         .iter()
         .enumerate()
         .map(|(index, _)| {
-            let value = complex_mul(
+            complex_mul(
                 complex_mul(h_r_bt[index], h_r_bw[index]),
                 Complex64::try_new(h_r_rc[index], 0.0).expect("complex"),
-            );
-            value
+            )
         })
         .collect();
     let ctle_params = CtleParamsV1 {
@@ -281,10 +293,14 @@ pub fn receiver_noise_v1(
         )?,
         None => vec![Complex64::try_new(1.0, 0.0).expect("complex"); frequency.len()],
     };
-    let h_system_noise = crate::search_support_v1::system_noise_response_v1(&frequency, options.use_eta0_psd);
+    let h_system_noise =
+        crate::search_support_v1::system_noise_response_v1(&frequency, options.use_eta0_psd);
     let mut sum = 0.0_f64;
     for index in 1..frequency.len() {
-        let magnitude = h_system_noise[index] * magnitude(h_r[index]) * magnitude(h_ctf[index]) * magnitude(h_rx_ffe[index]);
+        let magnitude = h_system_noise[index]
+            * magnitude(h_r[index])
+            * magnitude(h_ctf[index])
+            * magnitude(h_rx_ffe[index]);
         sum += magnitude * magnitude * (frequency[index] - frequency[index - 1]) / 1e9;
     }
     let eta0 = (parameters.eta_0 * sum).sqrt();
@@ -312,9 +328,16 @@ pub fn receiver_noise_v1(
         }
         let mut accm_sum = 0.0_f64;
         for index in 1..end {
-            let factor = h_system_noise[index] * magnitude(h_r[index]) * magnitude(h_ctf[index]) * magnitude(h_rx_ffe[index]);
+            let factor = h_system_noise[index]
+                * magnitude(h_r[index])
+                * magnitude(h_ctf[index])
+                * magnitude(h_rx_ffe[index]);
             let dc = magnitude(transfer[index]);
-            accm_sum += factor * dc * factor * dc * (integration_frequency[index] - integration_frequency[index - 1]);
+            accm_sum += factor
+                * dc
+                * factor
+                * dc
+                * (integration_frequency[index] - integration_frequency[index - 1]);
         }
         let value = 2.0 * ac_rms * ac_rms * accm_sum;
         components.push((value / integration_frequency[end - 1]).sqrt());
@@ -362,7 +385,11 @@ mod tests {
         assert!(response[0].imaginary().abs() < 1e-12);
         assert!(magnitude(response[2]) < magnitude(response[0]));
         let disabled = bessel_thomson_filter_v1(&frequency, 3, 0.75, 53.125e9, false).expect("off");
-        assert!(disabled.iter().all(|value| (value.real() - 1.0).abs() < 1e-12));
+        assert!(
+            disabled
+                .iter()
+                .all(|value| (value.real() - 1.0).abs() < 1e-12)
+        );
     }
 
     #[test]
@@ -381,7 +408,8 @@ mod tests {
     #[test]
     fn rx_ffe_response_phasors() {
         let frequency = vec![0.0, 1e9];
-        let response = rx_ffe_frequency_response_v1(&frequency, &[0.5, 1.0, -0.25], 1, 53.125e9).expect("rxffe");
+        let response = rx_ffe_frequency_response_v1(&frequency, &[0.5, 1.0, -0.25], 1, 53.125e9)
+            .expect("rxffe");
         assert_eq!(response.len(), 2);
         // DC: sum of taps = 1.25 (offsets cancel at f = 0)
         assert!((response[0].real() - 1.25).abs() < 1e-12);
@@ -419,7 +447,17 @@ mod tests {
             pkg_len_select: vec![1],
         };
         let noise = receiver_noise_v1(
-            &frequency, 0, 0, 0.0, &parameters, &options, &[], 0, None, None, false,
+            &frequency,
+            0,
+            0,
+            0.0,
+            &parameters,
+            &options,
+            &[],
+            0,
+            None,
+            None,
+            false,
         )
         .expect("noise");
         assert!(noise.is_finite() && noise > 0.0);

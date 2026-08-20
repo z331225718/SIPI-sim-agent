@@ -24,7 +24,7 @@ reference replicates the tokenize/build/compare pipeline over 4 test cases.
 - Cross-check: 4 test cases (full match, missing and mismatch, extra leaf ignored, empty expected)
   driven through product runner `p4b_02b46_parameter_tree_expected_check_runner`; independent
   Python reference matches 100% on valid flags, counts, missing lists, mismatch records, and error
-  contexts; 4/4 matched_hash_bound.
+  contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

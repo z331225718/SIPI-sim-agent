@@ -9,8 +9,8 @@ use std::path::PathBuf;
 
 use sha2::{Digest, Sha256};
 use sipi_com::{
-    is_strict_ooxml_v1, read_com_settings_xlsx_v1, CellValueV1, RawCellV1,
-    WORKBOOK_IMPORT_POLICY_V1,
+    CellValueV1, RawCellV1, WORKBOOK_IMPORT_POLICY_V1, is_strict_ooxml_v1,
+    read_com_settings_xlsx_v1,
 };
 
 fn cell_json(cell: &RawCellV1) -> serde_json::Value {
@@ -20,7 +20,9 @@ fn cell_json(cell: &RawCellV1) -> serde_json::Value {
         CellValueV1::Number(value) => serde_json::json!({"kind": "Number", "value": value}),
         CellValueV1::Bool(value) => serde_json::json!({"kind": "Bool", "value": value}),
         CellValueV1::String(value) => serde_json::json!({"kind": "String", "value": value}),
-        CellValueV1::Array { dims, data } => serde_json::json!({"kind": "Array", "dims": dims, "data": data}),
+        CellValueV1::Array { dims, data } => {
+            serde_json::json!({"kind": "Array", "dims": dims, "data": data})
+        }
     };
     serde_json::json!({
         "coordinate": cell.coordinate(),
@@ -88,8 +90,7 @@ fn main() {
         "policy": WORKBOOK_IMPORT_POLICY_V1,
     });
     if let Some(path) = report {
-        std::fs::write(path, serde_json::to_string(&report_json).expect("json"))
-            .expect("write");
+        std::fs::write(path, serde_json::to_string(&report_json).expect("json")).expect("write");
     } else {
         println!("{}", serde_json::to_string(&report_json).expect("json"));
     }

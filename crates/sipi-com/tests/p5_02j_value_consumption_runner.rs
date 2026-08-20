@@ -10,9 +10,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_com::{
-    resolve_default_value_v1, ResolvedDefaultV1, VALUE_CONSUMPTION_POLICY_V1,
-};
+use sipi_com::{ResolvedDefaultV1, VALUE_CONSUMPTION_POLICY_V1, resolve_default_value_v1};
 
 fn value_map(obj: &Value) -> HashMap<String, ResolvedDefaultV1> {
     let mut map = HashMap::new();

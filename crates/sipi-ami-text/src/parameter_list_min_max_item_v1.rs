@@ -57,8 +57,8 @@ pub fn parameter_list_min_item_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListMinMaxItemErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListMinMaxItemErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListMinMaxItemErrorV1::MalformedList)?;
     let mut min_item = &items[0];
     for item in &items[1..] {
         if item < min_item {
@@ -76,8 +76,8 @@ pub fn parameter_list_max_item_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListMinMaxItemErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListMinMaxItemErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListMinMaxItemErrorV1::MalformedList)?;
     let mut max_item = &items[0];
     for item in &items[1..] {
         if item > max_item {

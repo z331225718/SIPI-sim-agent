@@ -25,7 +25,7 @@ independent Python reference replicates the prefix rule over 4 test cases.
   non-list, spacing canonicalized).
 - Cross-check: 4 test cases (prefix holds, full prefix, longer prefix, non-list) driven through
   product runner `p4b_02b146_parameter_list_starts_with_runner`; independent Python reference
-  matches 100% on booleans and error keys; 4/4 matched_hash_bound.
+  matches 100% on booleans and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

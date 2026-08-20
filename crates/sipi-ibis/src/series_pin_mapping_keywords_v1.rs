@@ -74,6 +74,9 @@ mod tests {
 
         assert_eq!(block.pin_record().pin_first(), "P1");
         assert_eq!(block.pin_record().pin_second(), "P2");
-        assert_eq!(block.thresholds().unwrap().vthreshold_v().unwrap().get(), 1.2);
+        assert_eq!(
+            block.thresholds().unwrap().vthreshold_v().unwrap().get(),
+            1.2
+        );
     }
 }

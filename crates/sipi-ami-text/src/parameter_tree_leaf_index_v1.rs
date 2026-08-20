@@ -31,7 +31,11 @@ pub struct ParameterTreeLeafIndexV1 {
     leaf_values: BTreeMap<String, Vec<String>>,
 }
 
-fn collect_leaves(node: &AmiParameterTreeNodeV1, prefix: &str, out: &mut Vec<(String, Vec<String>)>) {
+fn collect_leaves(
+    node: &AmiParameterTreeNodeV1,
+    prefix: &str,
+    out: &mut Vec<(String, Vec<String>)>,
+) {
     let current = if prefix.is_empty() {
         node.name().to_string()
     } else {
@@ -39,7 +43,7 @@ fn collect_leaves(node: &AmiParameterTreeNodeV1, prefix: &str, out: &mut Vec<(St
     };
     match node {
         AmiParameterTreeNodeV1::Branch { children, .. } => {
-            for (_, child) in children {
+            for child in children.values() {
                 collect_leaves(child, &current, out);
             }
         }
@@ -85,7 +89,11 @@ impl ParameterTreeLeafIndexV1 {
             Some(tokens) => Ok(tokens.as_slice()),
             None => {
                 // Distinguish "exists but not a leaf" from "missing".
-                if self.leaf_paths.iter().any(|p| p.starts_with(&format!("{canonical}."))) {
+                if self
+                    .leaf_paths
+                    .iter()
+                    .any(|p| p.starts_with(&format!("{canonical}.")))
+                {
                     Err(ParameterTreeLeafIndexErrorV1::LeafPathNotLeaf(canonical))
                 } else {
                     Err(ParameterTreeLeafIndexErrorV1::MissingLeafPath(canonical))
@@ -98,9 +106,9 @@ impl ParameterTreeLeafIndexV1 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ParseLimitsV1;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
     use crate::parse_ami_text_v1;
-    use crate::ParseLimitsV1;
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
@@ -123,7 +131,10 @@ mod tests {
     fn builds_leaf_index_and_resolves() {
         let tree = tree_of("(root (branch_a (leaf_1 10)) (leaf_2 20))");
         let index = build_parameter_tree_leaf_index_v1(&tree).expect("index");
-        assert_eq!(index.leaf_paths, vec!["root.branch_a.leaf_1", "root.leaf_2"]);
+        assert_eq!(
+            index.leaf_paths,
+            vec!["root.branch_a.leaf_1", "root.leaf_2"]
+        );
         assert_eq!(index.resolve_leaf("root.leaf_2").expect("resolve"), &["20"]);
     }
 
@@ -133,7 +144,9 @@ mod tests {
         let index = build_parameter_tree_leaf_index_v1(&tree).expect("index");
         assert_eq!(
             index.resolve_leaf("root.branch_a"),
-            Err(ParameterTreeLeafIndexErrorV1::LeafPathNotLeaf("root.branch_a".to_string()))
+            Err(ParameterTreeLeafIndexErrorV1::LeafPathNotLeaf(
+                "root.branch_a".to_string()
+            ))
         );
     }
 
@@ -143,7 +156,9 @@ mod tests {
         let index = build_parameter_tree_leaf_index_v1(&tree).expect("index");
         assert_eq!(
             index.resolve_leaf("root.nope"),
-            Err(ParameterTreeLeafIndexErrorV1::MissingLeafPath("root.nope".to_string()))
+            Err(ParameterTreeLeafIndexErrorV1::MissingLeafPath(
+                "root.nope".to_string()
+            ))
         );
     }
 }

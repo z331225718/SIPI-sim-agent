@@ -13,12 +13,12 @@
 
 use std::{error::Error, fmt};
 
-use rustfft::{num_complex::Complex, FftPlanner};
+use rustfft::{FftPlanner, num_complex::Complex};
 use sipi_types::{FiniteF64, Seconds};
 
 use crate::{
-    inverse_selected_p3c_uniform_spectrum_v1, RawPeriodicTransformErrorV1,
-    SelectedP3cUniformSpectrumV1,
+    RawPeriodicTransformErrorV1, SelectedP3cUniformSpectrumV1,
+    inverse_selected_p3c_uniform_spectrum_v1,
 };
 
 pub const SELECTED_CAUSALITY_PULSE_TOLERANCE_V1: f64 = 0.05;

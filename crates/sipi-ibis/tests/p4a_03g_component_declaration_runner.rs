@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_component_declaration_v1, COMPONENT_DECLARATION_POLICY_V1,
-};
+use sipi_ibis::{COMPONENT_DECLARATION_POLICY_V1, lift_component_declaration_v1};
 
 fn main() {
     let mut input = None;

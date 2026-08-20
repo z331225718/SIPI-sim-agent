@@ -24,7 +24,7 @@ replicates the append rule over 4 test cases.
   non-list, spacing canonicalized).
 - Cross-check: 4 test cases (append item, append single, empty new item, non-list) driven through
   product runner `p4b_02b101_parameter_list_append_runner`; independent Python reference matches
-  100% on appended tokens and error keys; 4/4 matched_hash_bound.
+  100% on appended tokens and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

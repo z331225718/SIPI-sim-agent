@@ -27,7 +27,7 @@ reference replicates the retain rule over 4 test cases.
   non-list, kept-count consistency with occurrence counting).
 - Cross-check: 4 test cases (keeps only matching, no match, keeps all, non-list) driven through
   product runner `p4b_02b113_parameter_list_keep_only_runner`; independent Python reference
-  matches 100% on tokens and error keys; 4/4 matched_hash_bound.
+  matches 100% on tokens and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

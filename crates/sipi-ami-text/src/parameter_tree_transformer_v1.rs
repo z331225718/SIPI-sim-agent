@@ -92,7 +92,7 @@ where
 mod tests {
     use super::*;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
-    use crate::{parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, parse_ami_text_v1};
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
@@ -116,7 +116,7 @@ mod tests {
         let trees = build_parameter_trees_v1(&doc).expect("build");
 
         // Transform tx_swing leaf value from 0.5 to 1.0
-        let transformed = transform_parameter_trees_v1(&trees, |path, node| {
+        let transformed = transform_parameter_trees_v1(&trees, |path, _node| {
             if path == "Reserved_Parameters.tx_swing" {
                 Some(AmiParameterTreeNodeV1::Leaf {
                     name: "tx_swing".to_string(),

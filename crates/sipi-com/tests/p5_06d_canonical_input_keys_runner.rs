@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use sha2::{Digest, Sha256};
 
 use sipi_com::{
-    canonical_input_keys_v1, CanonicalInputKeysErrorV1, CANONICAL_INPUT_KEYS_POLICY_V1,
+    CANONICAL_INPUT_KEYS_POLICY_V1, CanonicalInputKeysErrorV1, canonical_input_keys_v1,
 };
 
 fn main() {

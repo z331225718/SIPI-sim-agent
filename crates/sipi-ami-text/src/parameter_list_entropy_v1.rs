@@ -56,8 +56,8 @@ pub fn parameter_list_entropy_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListEntropyErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListEntropyErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListEntropyErrorV1::MalformedList)?;
     let item_count = items.len() as f64;
     let mut counts: Vec<(String, usize)> = Vec::new();
     for item in &items {

@@ -14,9 +14,7 @@ use std::path::Path;
 
 use flate2::read::ZlibDecoder;
 
-use crate::workbook_v1::{
-    column_letter, CellValueV1, ComSettingsV1, RawCellV1, WorkbookErrorV1,
-};
+use crate::workbook_v1::{CellValueV1, ComSettingsV1, RawCellV1, WorkbookErrorV1, column_letter};
 
 /// Explicit scope policy of the MATLAB reader stage.
 pub const MAT_READER_POLICY_V1: &str = "sipi.p5-05c.mat-reader-v1.matv5-cell-parameter";
@@ -38,7 +36,6 @@ const MI_COMPRESSED: u32 = 15;
 // miUTF8 (ASCII) payloads.
 const MI_UTF8: u32 = 16;
 const MI_UTF16: u32 = 17;
-const MI_UTF32: u32 = 18;
 
 const MX_CELL_CLASS: u32 = 1;
 const MX_CHAR_CLASS: u32 = 4;
@@ -52,15 +49,8 @@ const MX_INT32_CLASS: u32 = 12;
 const MX_UINT32_CLASS: u32 = 13;
 const MX_INT64_CLASS: u32 = 14;
 const MX_UINT64_CLASS: u32 = 15;
-const MX_STRUCT_CLASS: u32 = 2;
-const MX_OBJECT_CLASS: u32 = 3;
-const MX_SPARSE_CLASS: u32 = 5;
 
 const FLAGS_LOGICAL: u32 = 0x0200;
-
-fn le_u16(bytes: &[u8], offset: usize) -> u16 {
-    u16::from_le_bytes([bytes[offset], bytes[offset + 1]])
-}
 
 fn le_u32(bytes: &[u8], offset: usize) -> u32 {
     u32::from_le_bytes([
@@ -167,9 +157,7 @@ fn matrix_name(element: &MatElement) -> Result<MatMatrix, WorkbookErrorV1> {
     let class = le_u32(&flags.data, 0);
     let flag_bits = le_u32(&flags.data, 4);
     // dims
-    let dims_element = sub
-        .get(1)
-        .ok_or(WorkbookErrorV1::InvalidMatConfiguration)?;
+    let dims_element = sub.get(1).ok_or(WorkbookErrorV1::InvalidMatConfiguration)?;
     if dims_element.kind != MI_INT32 {
         return Err(WorkbookErrorV1::InvalidMatConfiguration);
     }
@@ -182,9 +170,7 @@ fn matrix_name(element: &MatElement) -> Result<MatMatrix, WorkbookErrorV1> {
         dims.push(dim as u32);
     }
     // name
-    let name_element = sub
-        .get(2)
-        .ok_or(WorkbookErrorV1::InvalidMatConfiguration)?;
+    let name_element = sub.get(2).ok_or(WorkbookErrorV1::InvalidMatConfiguration)?;
     let name = String::from_utf8_lossy(&name_element.data).to_string();
     // remaining elements are the data section
     let data = sub.split_off(3);
@@ -223,7 +209,7 @@ fn utf16_string(bytes: &[u8]) -> Result<String, WorkbookErrorV1> {
         .chunks_exact(2)
         .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
         .collect();
-    char::decode_utf16(code_units.into_iter())
+    char::decode_utf16(code_units)
         .collect::<Result<String, _>>()
         .map_err(|_| WorkbookErrorV1::InvalidMatConfiguration)
 }
@@ -240,12 +226,14 @@ fn numeric_values(data: &[MatElement]) -> Result<Vec<f64>, WorkbookErrorV1> {
             .collect(),
         MI_SINGLE => (0..payload.len())
             .step_by(4)
-            .map(|offset| f32::from_le_bytes([
-                payload[offset],
-                payload[offset + 1],
-                payload[offset + 2],
-                payload[offset + 3],
-            ]) as f64)
+            .map(|offset| {
+                f32::from_le_bytes([
+                    payload[offset],
+                    payload[offset + 1],
+                    payload[offset + 2],
+                    payload[offset + 3],
+                ]) as f64
+            })
             .collect(),
         MI_INT8 => payload.iter().map(|byte| *byte as i8 as f64).collect(),
         MI_UINT8 => payload.iter().map(|byte| *byte as f64).collect(),
@@ -267,29 +255,33 @@ fn numeric_values(data: &[MatElement]) -> Result<Vec<f64>, WorkbookErrorV1> {
             .collect(),
         MI_INT64 => (0..payload.len())
             .step_by(8)
-            .map(|offset| i64::from_le_bytes([
-                payload[offset],
-                payload[offset + 1],
-                payload[offset + 2],
-                payload[offset + 3],
-                payload[offset + 4],
-                payload[offset + 5],
-                payload[offset + 6],
-                payload[offset + 7],
-            ]) as f64)
+            .map(|offset| {
+                i64::from_le_bytes([
+                    payload[offset],
+                    payload[offset + 1],
+                    payload[offset + 2],
+                    payload[offset + 3],
+                    payload[offset + 4],
+                    payload[offset + 5],
+                    payload[offset + 6],
+                    payload[offset + 7],
+                ]) as f64
+            })
             .collect(),
         MI_UINT64 => (0..payload.len())
             .step_by(8)
-            .map(|offset| u64::from_le_bytes([
-                payload[offset],
-                payload[offset + 1],
-                payload[offset + 2],
-                payload[offset + 3],
-                payload[offset + 4],
-                payload[offset + 5],
-                payload[offset + 6],
-                payload[offset + 7],
-            ]) as f64)
+            .map(|offset| {
+                u64::from_le_bytes([
+                    payload[offset],
+                    payload[offset + 1],
+                    payload[offset + 2],
+                    payload[offset + 3],
+                    payload[offset + 4],
+                    payload[offset + 5],
+                    payload[offset + 6],
+                    payload[offset + 7],
+                ]) as f64
+            })
             .collect(),
         _ => return Err(WorkbookErrorV1::UnsupportedMatClass),
     };
@@ -325,9 +317,8 @@ fn mat_cell_value(matrix: &MatMatrix) -> Result<CellValueV1, WorkbookErrorV1> {
                 Ok(CellValueV1::String(text))
             }
         }
-        MX_DOUBLE_CLASS | MX_SINGLE_CLASS | MX_INT8_CLASS | MX_UINT8_CLASS
-        | MX_INT16_CLASS | MX_UINT16_CLASS | MX_INT32_CLASS | MX_UINT32_CLASS
-        | MX_INT64_CLASS | MX_UINT64_CLASS => {
+        MX_DOUBLE_CLASS | MX_SINGLE_CLASS | MX_INT8_CLASS | MX_UINT8_CLASS | MX_INT16_CLASS
+        | MX_UINT16_CLASS | MX_INT32_CLASS | MX_UINT32_CLASS | MX_INT64_CLASS | MX_UINT64_CLASS => {
             let values = numeric_values(&matrix.data)?;
             let size = size_of(&matrix.dims);
             if size == 0 {
@@ -443,6 +434,9 @@ mod tests {
 
     #[test]
     fn policy_string_is_fixed() {
-        assert_eq!(MAT_READER_POLICY_V1, "sipi.p5-05c.mat-reader-v1.matv5-cell-parameter");
+        assert_eq!(
+            MAT_READER_POLICY_V1,
+            "sipi.p5-05c.mat-reader-v1.matv5-cell-parameter"
+        );
     }
 }

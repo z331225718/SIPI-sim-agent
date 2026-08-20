@@ -21,7 +21,7 @@ strictly rejected. An independent Python reference replicates the split rules ov
   double dot; dots only; raw segments preserved).
 - Cross-check: 4 test cases (basic, deep, empty path, double dot) driven through product runner
   `p4b_02b45_parameter_tree_path_string_runner`; independent Python reference matches 100% on
-  valid flags, segment lists, and error contexts; 4/4 matched_hash_bound.
+  valid flags, segment lists, and error contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

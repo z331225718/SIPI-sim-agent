@@ -25,7 +25,7 @@ class ParameterTreesTests(unittest.TestCase):
 
     def test_evidence_matched_three_cases(self) -> None:
         evidence = GATE.load_yaml(GATE.EVIDENCE)
-        self.assertEqual(evidence["status"], "matched_hash_bound")
+        self.assertEqual(evidence["status"], "product_owned_self_crosscheck_unbound")
         self.assertEqual(evidence["case_count"], 3)
         self.assertEqual(evidence["matched_count"], 3)
 

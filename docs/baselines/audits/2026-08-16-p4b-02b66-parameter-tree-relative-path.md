@@ -20,7 +20,7 @@ rejected. An independent Python reference replicates the suffix derivation over 
   path; longer ancestor).
 - Cross-check: 4 test cases (simple suffix, multi suffix, equal paths, non-ancestor) driven through
   product runner `p4b_02b66_parameter_tree_relative_path_runner`; independent Python reference
-  matches 100% on valid flags, relative segments, and error contexts; 4/4 matched_hash_bound.
+  matches 100% on valid flags, relative segments, and error contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

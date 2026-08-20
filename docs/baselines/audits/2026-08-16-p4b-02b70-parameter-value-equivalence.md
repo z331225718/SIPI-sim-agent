@@ -25,7 +25,7 @@ panicking). An independent Python reference replicates the typed comparison over
   equivalence, typed-value mismatch reasons, cross-type rejection).
 - Cross-check: 4 test cases (float spelling, integer spelling, list spacing, cross type) driven
   through product runner `p4b_02b70_parameter_value_equivalence_runner`; independent Python
-  reference matches 100% on equivalent flags and reason keys; 4/4 matched_hash_bound.
+  reference matches 100% on equivalent flags and reason keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -7,7 +7,7 @@
 
 use std::collections::BTreeSet;
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
 
 /// Scope policy for the distinct leaf names core.
 pub const PARAMETER_TREE_DISTINCT_LEAF_NAMES_POLICY_V1: &str =
@@ -98,10 +98,7 @@ mod tests {
         ));
         let result = list_parameter_tree_distinct_leaf_names_v1(&t);
         assert_eq!(result.distinct_count(), 2);
-        assert_eq!(
-            result.names(),
-            &["gain".to_string(), "steps".to_string()]
-        );
+        assert_eq!(result.names(), &["gain".to_string(), "steps".to_string()]);
     }
 
     #[test]
@@ -111,10 +108,7 @@ mod tests {
             vec![leaf("beta", &["1"]), leaf("alpha", &["2"])],
         ));
         let result = list_parameter_tree_distinct_leaf_names_v1(&t);
-        assert_eq!(
-            result.names(),
-            &["alpha".to_string(), "beta".to_string()]
-        );
+        assert_eq!(result.names(), &["alpha".to_string(), "beta".to_string()]);
     }
 
     #[test]

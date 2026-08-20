@@ -86,10 +86,12 @@ pub fn deserialize_parameter_profile_v1(
             Some(Value::String(value_token)) => value_token.clone(),
             _ => return Err(ParameterProfileDeserializationErrorV1::MissingValue(name)),
         };
-        let parameter = AmiParameterValueV1::try_new(&name, &type_token, &value_token)
-            .map_err(|error| ParameterProfileDeserializationErrorV1::InvalidValue {
-                name: name.clone(),
-                error,
+        let parameter =
+            AmiParameterValueV1::try_new(&name, &type_token, &value_token).map_err(|error| {
+                ParameterProfileDeserializationErrorV1::InvalidValue {
+                    name: name.clone(),
+                    error,
+                }
             })?;
         profile.insert(name, parameter);
     }
@@ -115,7 +117,8 @@ mod tests {
 
     #[test]
     fn deserializes_valid_profile() {
-        let json = r#"{"gain":{"type":"Float","value":"0.5"},"steps":{"type":"Integer","value":"7"}}"#;
+        let json =
+            r#"{"gain":{"type":"Float","value":"0.5"},"steps":{"type":"Integer","value":"7"}}"#;
         let result = deserialize_parameter_profile_v1(json).expect("deserialize");
         assert_eq!(result.entry_count(), 2);
         assert_eq!(result.profile()["gain"].value_token(), "0.5");
@@ -124,10 +127,7 @@ mod tests {
 
     #[test]
     fn round_trip_serialize_deserialize() {
-        let p = profile(&[
-            ("gain", "Float", "0.5"),
-            ("mode", "String", "Linear"),
-        ]);
+        let p = profile(&[("gain", "Float", "0.5"), ("mode", "String", "Linear")]);
         let json = crate::serialize_parameter_profile_v1(&p);
         let back = deserialize_parameter_profile_v1(&json).expect("round trip");
         assert_eq!(back.profile(), &p);

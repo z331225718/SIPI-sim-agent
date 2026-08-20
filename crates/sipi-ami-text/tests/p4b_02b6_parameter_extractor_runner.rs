@@ -8,11 +8,10 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use sipi_ami_text::{
-    extract_parameter_values_v1, parse_ami_text_v1, ParseLimitsV1,
-    PARAMETER_EXTRACTOR_POLICY_V1,
+    PARAMETER_EXTRACTOR_POLICY_V1, ParseLimitsV1, extract_parameter_values_v1, parse_ami_text_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -39,7 +38,8 @@ fn main() {
                 "parse_error": format!("{e:?}"),
             });
             if let Some(path) = report {
-                std::fs::write(path, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(path, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -51,10 +51,13 @@ fn main() {
         Ok(map) => {
             let mut params = BTreeMap::new();
             for (name, val) in &map {
-                params.insert(name.clone(), serde_json::json!({
-                    "type": val.parameter_type().token(),
-                    "value_token": val.value_token(),
-                }));
+                params.insert(
+                    name.clone(),
+                    serde_json::json!({
+                        "type": val.parameter_type().token(),
+                        "value_token": val.value_token(),
+                    }),
+                );
             }
             serde_json::json!({
                 "policy": PARAMETER_EXTRACTOR_POLICY_V1,

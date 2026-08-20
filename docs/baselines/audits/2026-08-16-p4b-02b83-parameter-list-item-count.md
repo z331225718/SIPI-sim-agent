@@ -23,7 +23,7 @@ reference replicates the counting rule over 4 test cases.
   raw string items, count matches typed equivalence length).
 - Cross-check: 4 test cases (three item list, single item, spacing variants, non-list) driven
   through product runner `p4b_02b83_parameter_list_item_count_runner`; independent Python
-  reference matches 100% on counts and error keys; 4/4 matched_hash_bound.
+  reference matches 100% on counts and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

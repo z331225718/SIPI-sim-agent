@@ -26,7 +26,7 @@ the tree builds and leaf diff over 4 test cases.
 - Cross-check: 4 test cases (identical, spelling variants, added/removed, typed changed) driven
   through product runner `p4b_02b89_parameter_tree_leaf_typed_diff_runner`; independent Python
   reference matches 100% on matched counts, sorted path lists, and changed entries with reasons;
-  4/4 matched_hash_bound.
+  4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

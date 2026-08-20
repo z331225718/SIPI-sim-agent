@@ -22,7 +22,7 @@ reference replicates the tokenize and head counting over 4 test cases.
   form).
 - Cross-check: 4 test cases (repeated heads, single form, nested list head, empty text) driven
   through product runner `p4b_02b61_ami_text_form_heads_runner`; independent Python reference
-  matches 100% on valid flags, head maps, and error contexts; 4/4 matched_hash_bound.
+  matches 100% on valid flags, head maps, and error contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

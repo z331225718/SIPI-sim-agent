@@ -12,7 +12,7 @@
 ## 工件清单
 - 实现：`crates/sipi-ami-text/src/parameter_list_pairwise_equal_adjacent_v1.rs`（6 Rust 单测）
 - runner：`tests/p4b_02b191_parameter_list_pairwise_equal_adjacent_runner.rs`（harness=false，单值 JSON 输入）
-- crosscheck：`tools/run_p4b_02b191_parameter_list_pairwise_equal_adjacent_crosscheck.py`（4/4 matched_hash_bound）
+- crosscheck：`tools/run_p4b_02b191_parameter_list_pairwise_equal_adjacent_crosscheck.py`（4/4 product_owned_self_crosscheck_unbound）
 - verifier/unittest：`tools/verify_p4b_02b191_...py` + `test_verify_...py`（6 tests，含篡改拒绝）
 - charter（based_on=190 条）+ source map（mapping×2）+ evidence（CRLF）
 

@@ -20,7 +20,7 @@ path non-matches (`PathNotFound`) are strictly rejected. An independent Python r
 - Cross-check: 3 test cases (query existing leaf, query existing branch, path not found)
   driven through product runner `p4b_02b8_parameter_tree_query_runner`; independent Python reference
   matches 100% on valid flags, result kinds (branch/leaf), target node names, and error strings;
-  3/3 matched_hash_bound.
+  3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

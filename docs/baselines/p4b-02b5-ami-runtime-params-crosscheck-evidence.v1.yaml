@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b5.ami-runtime-params-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b5.ami-runtime-params.v1.typed
 matched_count: 8
 case_count: 8

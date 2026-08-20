@@ -7,9 +7,9 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ami_text::{join_parameter_tree_path_v1, PARAMETER_TREE_PATH_JOIN_POLICY_V1};
+use sipi_ami_text::{PARAMETER_TREE_PATH_JOIN_POLICY_V1, join_parameter_tree_path_v1};
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -22,7 +22,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b56_parameter_tree_path_join_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b56_parameter_tree_path_join_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");

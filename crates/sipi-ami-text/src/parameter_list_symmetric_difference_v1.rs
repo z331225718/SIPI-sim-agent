@@ -113,10 +113,7 @@ mod tests {
     fn equal_values_empty_difference() {
         let a = value("left", "List", "(a, b)");
         let b = value("right", "List", "(a, b)");
-        assert_eq!(
-            list_symmetric_difference_v1(&a, &b),
-            Ok("()".to_string())
-        );
+        assert_eq!(list_symmetric_difference_v1(&a, &b), Ok("()".to_string()));
     }
 
     #[test]

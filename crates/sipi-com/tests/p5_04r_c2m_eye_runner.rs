@@ -7,9 +7,16 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_com::{calculate_c2m_vertical_eye_v1, DiscretePdfV1, C2M_EYE_POLICY_V1};
+use sipi_com::{C2M_EYE_POLICY_V1, DiscretePdfV1, calculate_c2m_vertical_eye_v1};
 
-fn f64s(value: &Value) -> Vec<f64> { value.as_array().expect("array").iter().map(|item| item.as_f64().expect("f64")).collect() }
+fn f64s(value: &Value) -> Vec<f64> {
+    value
+        .as_array()
+        .expect("array")
+        .iter()
+        .map(|item| item.as_f64().expect("f64"))
+        .collect()
+}
 
 fn pdf(value: &Value) -> DiscretePdfV1 {
     let bin_size = value["bin_size"].as_f64().expect("bin_size");
@@ -30,7 +37,10 @@ fn main() {
             other => panic!("unknown argument: {other}"),
         }
     }
-    let Some(input) = input else { println!("usage: p5_04r_c2m_eye_runner --input <json> [--report <path>]"); return; };
+    let Some(input) = input else {
+        println!("usage: p5_04r_c2m_eye_runner --input <json> [--report <path>]");
+        return;
+    };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
     let c = &value["c2m"];
@@ -54,7 +64,8 @@ fn main() {
         c["sigma_n_v"].as_f64().expect("sn"),
         c["sigma_tx_v"].as_f64().expect("stx"),
         c["ber_q"].as_f64().expect("bq"),
-        &ne, &cci,
+        &ne,
+        &cci,
         c["amplitude_dd_v"].as_f64().expect("add"),
         c["spec_ber"].as_f64().expect("sb"),
         c["t_o_mui"].as_f64().expect("to"),
@@ -74,6 +85,9 @@ fn main() {
             "error": format!("{err:?}"),
         }),
     };
-    if let Some(path) = report { std::fs::write(path, serde_json::to_string(&output).expect("json")).expect("write"); }
-    else { println!("{}", serde_json::to_string(&output).expect("json")); }
+    if let Some(path) = report {
+        std::fs::write(path, serde_json::to_string(&output).expect("json")).expect("write");
+    } else {
+        println!("{}", serde_json::to_string(&output).expect("json"));
+    }
 }

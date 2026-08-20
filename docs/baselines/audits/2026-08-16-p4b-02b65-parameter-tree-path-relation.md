@@ -20,7 +20,7 @@ classification over 4 test cases.
 - 6 Rust unit tests green (identical; ancestor; descendant; disjoint; deep disjoint; empty path).
 - Cross-check: 4 test cases (identical, ancestor, descendant, disjoint) driven through product
   runner `p4b_02b65_parameter_tree_path_relation_runner`; independent Python reference matches
-  100% on valid flags, relations, and error contexts; 4/4 matched_hash_bound.
+  100% on valid flags, relations, and error contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

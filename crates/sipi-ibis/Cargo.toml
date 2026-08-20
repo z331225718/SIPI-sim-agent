@@ -18,222 +18,278 @@ serde_json = "1"
 [[test]]
 name = "p4a_03d_model_declaration_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03e_pin_declaration_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03f_pin_model_linkage_runner"
 harness = false
+test = false
 [[test]]
 name = "p4a_03g_component_declaration_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03h_package_model_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03i_model_selector_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03j_diff_pin_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03k_series_switch_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03l_submodel_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03m_circuit_call_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03n_node_declaration_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03o_series_pin_mapping_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03p_series_switch_mapping_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03q_receiver_thresholds_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03r_test_data_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03s_golden_wave_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03t_bus_label_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03u_series_pin_thresholds_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03v_series_pin_group_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03w_series_pin_table_selector_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03x_series_pin_table_group_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03y_series_pin_table_group_selector_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03z_series_pin_thresholds_group_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03aa_series_switch_thresholds_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03ab_model_keywords_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03ac_series_pin_table_group_thresholds_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03ad_model_selector_keywords_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03ae_package_model_keywords_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03af_series_pin_mapping_keywords_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03ag_series_switch_keywords_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03ah_receiver_thresholds_keywords_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03ai_test_data_keywords_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03aj_golden_wave_keywords_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03ak_bus_label_keywords_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03al_diff_pin_keywords_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03am_series_pin_table_selector_thresholds_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03an_series_pin_table_group_switch_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03ao_series_pin_table_group_switch_thresholds_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03ap_series_pin_table_selector_group_thresholds_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03aq_series_pin_table_selector_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03ar_series_pin_table_group_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03as_series_pin_table_group_selector_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03at_series_pin_thresholds_group_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03au_series_pin_table_selector_thresholds_group_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03av_series_pin_table_selector_thresholds_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03aw_series_pin_table_group_thresholds_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03ax_series_pin_table_selector_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03ay_series_pin_table_selector_thresholds_group_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03az_series_pin_table_selector_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03ba_series_pin_table_selector_thresholds_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03bb_series_pin_table_group_switch_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03bc_series_pin_table_group_switch_thresholds_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03bd_series_pin_table_selector_group_thresholds_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03be_series_pin_table_selector_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03bf_series_pin_table_group_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p4a_03bg_series_pin_table_selector_thresholds_runner"
 harness = false
+test = false

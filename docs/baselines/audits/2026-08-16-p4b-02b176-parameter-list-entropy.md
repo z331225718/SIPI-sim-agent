@@ -27,7 +27,7 @@ independent Python reference replicates the entropy rule over 4 test cases, comp
   single item zero, spacing canonicalized, non-list).
 - Cross-check: 4 test cases (all equal, all distinct, unbalanced, non-list) driven through
   product runner `p4b_02b176_parameter_list_entropy_runner`; independent Python reference
-  matches 100% on 12-decimal entropy strings and error keys; 4/4 matched_hash_bound.
+  matches 100% on 12-decimal entropy strings and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -23,7 +23,7 @@ independent Python reference replicates the tokenize/build/apply pipeline over 4
 - Cross-check: 4 test cases (apply single, apply multi, missing leaf, empty profile) driven through
   product runner `p4b_02b69_parameter_tree_profile_apply_runner`; independent Python reference
   matches 100% on valid flags, applied counts, resulting tree structures, and error contexts;
-  4/4 matched_hash_bound.
+  4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

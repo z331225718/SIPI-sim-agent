@@ -114,16 +114,29 @@ mod tests {
     }
 
     #[test]
-    #[test]
     fn boundary_with_epsilon_passes() {
         // 1.1 - 1.0 = 0.10000000000000009 in f64; the epsilon keeps it inclusive.
         let r = db_tolerance_check_v1(1.0, 1.1, 0.1).expect("r");
-        assert!(r.passed(), "boundary with float error should pass, got diff={}", r.difference_db());
+        assert!(
+            r.passed(),
+            "boundary with float error should pass, got diff={}",
+            r.difference_db()
+        );
     }
 
+    #[test]
     fn rejects_nonfinite() {
-        assert_eq!(db_tolerance_check_v1(f64::NAN, 1.0, 0.1).err(), Some(DbToleranceErrorV1::NonFiniteReference));
-        assert_eq!(db_tolerance_check_v1(1.0, f64::INFINITY, 0.1).err(), Some(DbToleranceErrorV1::NonFiniteCandidate));
-        assert_eq!(db_tolerance_check_v1(1.0, 1.0, -0.1).err(), Some(DbToleranceErrorV1::InvalidTolerance));
+        assert_eq!(
+            db_tolerance_check_v1(f64::NAN, 1.0, 0.1).err(),
+            Some(DbToleranceErrorV1::NonFiniteReference)
+        );
+        assert_eq!(
+            db_tolerance_check_v1(1.0, f64::INFINITY, 0.1).err(),
+            Some(DbToleranceErrorV1::NonFiniteCandidate)
+        );
+        assert_eq!(
+            db_tolerance_check_v1(1.0, 1.0, -0.1).err(),
+            Some(DbToleranceErrorV1::InvalidTolerance)
+        );
     }
 }

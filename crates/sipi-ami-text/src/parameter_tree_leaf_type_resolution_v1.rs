@@ -15,7 +15,7 @@
 //! form yields `LeafNotTypedForm`. Paths are trimmed and empty segments
 //! filtered, mirroring 02b30.
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1, AmiParameterTypeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterTypeV1};
 
 /// Explicit scope policy of this slice: leaf type resolution by path.
 pub const PARAMETER_TREE_LEAF_TYPE_RESOLUTION_POLICY_V1: &str =
@@ -40,10 +40,7 @@ pub fn resolve_parameter_tree_leaf_type_v1(
     path: &str,
 ) -> Result<AmiParameterTypeV1, ParameterTreeLeafTypeResolutionErrorV1> {
     let trimmed = path.trim();
-    let segments: Vec<&str> = trimmed
-        .split('.')
-        .filter(|s| !s.is_empty())
-        .collect();
+    let segments: Vec<&str> = trimmed.split('.').filter(|s| !s.is_empty()).collect();
     if segments.is_empty() {
         return Err(ParameterTreeLeafTypeResolutionErrorV1::EmptyPath);
     }
@@ -55,7 +52,9 @@ pub fn resolve_parameter_tree_leaf_type_v1(
                 if index == 0 {
                     // First segment is the root name itself; root is current.
                     if *segment != tree.root_name() {
-                        return Err(ParameterTreeLeafTypeResolutionErrorV1::MissingPath(canonical));
+                        return Err(ParameterTreeLeafTypeResolutionErrorV1::MissingPath(
+                            canonical,
+                        ));
                     }
                     continue;
                 }
@@ -64,26 +63,30 @@ pub fn resolve_parameter_tree_leaf_type_v1(
                     None => {
                         return Err(ParameterTreeLeafTypeResolutionErrorV1::MissingPath(
                             canonical,
-                        ))
+                        ));
                     }
                 }
             }
             AmiParameterTreeNodeV1::Leaf { .. } => {
-                return Err(ParameterTreeLeafTypeResolutionErrorV1::PathNotLeaf(canonical));
+                return Err(ParameterTreeLeafTypeResolutionErrorV1::PathNotLeaf(
+                    canonical,
+                ));
             }
         }
     }
     match current {
-        AmiParameterTreeNodeV1::Branch { .. } => {
-            Err(ParameterTreeLeafTypeResolutionErrorV1::PathNotLeaf(canonical))
-        }
+        AmiParameterTreeNodeV1::Branch { .. } => Err(
+            ParameterTreeLeafTypeResolutionErrorV1::PathNotLeaf(canonical),
+        ),
         AmiParameterTreeNodeV1::Leaf { value_tokens, .. } => {
-            if value_tokens.len() == 2 {
-                if let Some(parameter_type) = AmiParameterTypeV1::from_token(&value_tokens[0]) {
-                    return Ok(parameter_type);
-                }
+            if value_tokens.len() == 2
+                && let Some(parameter_type) = AmiParameterTypeV1::from_token(&value_tokens[0])
+            {
+                return Ok(parameter_type);
             }
-            Err(ParameterTreeLeafTypeResolutionErrorV1::LeafNotTypedForm(canonical))
+            Err(ParameterTreeLeafTypeResolutionErrorV1::LeafNotTypedForm(
+                canonical,
+            ))
         }
     }
 }
@@ -91,7 +94,7 @@ pub fn resolve_parameter_tree_leaf_type_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{build_parameter_trees_v1, parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, build_parameter_trees_v1, parse_ami_text_v1};
 
     fn tree(text: &str) -> AmiParameterTreeV1 {
         let limits = ParseLimitsV1::try_new(8 * 1024 * 1024, 64, 4096, 4096).expect("limits");

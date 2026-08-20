@@ -22,9 +22,9 @@ An independent Python reference recomputes subtree compose over 3 test cases.
   nested branch; rejects leaf parent path; rejects duplicate child; rejects missing parent path).
 - Cross-check: 3 test cases (compose leaf under root, compose leaf under nested branch, duplicate child)
   driven through product runner `p4b_02b26_parameter_tree_compose_runner`; independent Python reference
-  matches 100% on valid flags, composed tree canonical JSON, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, composed tree canonical JSON, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 - Fix in P4B-02b23 `extract_node` recursion (child descent kept the child name segment) validated by
-  re-running the 02b23 crosscheck (still 3/3 matched_hash_bound).
+  re-running the 02b23 crosscheck (still 3/3 product_owned_self_crosscheck_unbound).
 
 ## Binding
 

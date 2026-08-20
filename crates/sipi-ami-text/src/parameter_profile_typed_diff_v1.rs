@@ -17,8 +17,8 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    parameter_values_equivalent_v1, AmiParameterValueV1, ParameterValueEquivalenceV1,
-    ParameterValueInequivalenceReasonV1,
+    AmiParameterValueV1, ParameterValueEquivalenceV1, ParameterValueInequivalenceReasonV1,
+    parameter_values_equivalent_v1,
 };
 
 /// Explicit scope policy of this slice: typed diff of parameter profiles.

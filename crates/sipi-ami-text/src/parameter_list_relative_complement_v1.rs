@@ -93,20 +93,14 @@ mod tests {
     fn duplicates_preserved() {
         let a = value("left", "List", "(a, a, b)");
         let b = value("right", "List", "(a)");
-        assert_eq!(
-            list_relative_complement_v1(&a, &b),
-            Ok("(b)".to_string())
-        );
+        assert_eq!(list_relative_complement_v1(&a, &b), Ok("(b)".to_string()));
     }
 
     #[test]
     fn equal_values_empty_complement() {
         let a = value("left", "List", "(a, b)");
         let b = value("right", "List", "(a, b)");
-        assert_eq!(
-            list_relative_complement_v1(&a, &b),
-            Ok("()".to_string())
-        );
+        assert_eq!(list_relative_complement_v1(&a, &b), Ok("()".to_string()));
     }
 
     #[test]

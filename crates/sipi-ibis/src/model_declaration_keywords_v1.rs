@@ -51,16 +51,19 @@ pub fn validate_model_keywords_v1(
                 });
             }
         }
-        ModelTypeV1::Input => {
+        ModelTypeV1::Input
             // Inputs require GND Clamp or POWER Clamp or Pullup/Pulldown in full spec,
             // for clean-room sub-keyword validation core, check GND Clamp
-            if !sub_keywords.has_gnd_clamp && !sub_keywords.has_power_clamp && !sub_keywords.has_pullup && !sub_keywords.has_pulldown {
+            if !sub_keywords.has_gnd_clamp
+                && !sub_keywords.has_power_clamp
+                && !sub_keywords.has_pullup
+                && !sub_keywords.has_pulldown
+            => {
                 return Err(ModelDeclarationKeywordsErrorV1::MissingRequiredSubKeyword {
                     model_type: type_str.to_string(),
                     missing_keyword: "[GND Clamp] or [POWER Clamp]".to_string(),
                 });
             }
-        }
         _ => {}
     }
     Ok(())

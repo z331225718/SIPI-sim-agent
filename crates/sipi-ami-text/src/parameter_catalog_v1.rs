@@ -48,7 +48,11 @@ pub enum CatalogErrorV1 {
     InvalidDefault,
     UnknownParameter(String),
     MissingRequired(String),
-    TypeMismatch { name: String, expected: &'static str, value: String },
+    TypeMismatch {
+        name: String,
+        expected: &'static str,
+        value: String,
+    },
 }
 
 /// One catalog entry: name, usage, declared type, and an optional default token.
@@ -67,13 +71,28 @@ impl CatalogEntryV1 {
         parameter_type: AmiParameterTypeV1,
         default_token: Option<String>,
     ) -> Self {
-        Self { name: name.into(), usage, parameter_type, default_token }
+        Self {
+            name: name.into(),
+            usage,
+            parameter_type,
+            default_token,
+        }
     }
-    pub fn name(&self) -> &str { &self.name }
-    pub const fn usage(&self) -> AmiUsageV1 { self.usage }
-    pub const fn parameter_type(&self) -> AmiParameterTypeV1 { self.parameter_type }
-    pub fn default_token(&self) -> Option<&str> { self.default_token.as_deref() }
-    pub fn has_default(&self) -> bool { self.default_token.is_some() }
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub const fn usage(&self) -> AmiUsageV1 {
+        self.usage
+    }
+    pub const fn parameter_type(&self) -> AmiParameterTypeV1 {
+        self.parameter_type
+    }
+    pub fn default_token(&self) -> Option<&str> {
+        self.default_token.as_deref()
+    }
+    pub fn has_default(&self) -> bool {
+        self.default_token.is_some()
+    }
 }
 
 /// A compiled parameter catalog (a set of named entries).
@@ -147,49 +166,80 @@ mod tests {
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(PARAMETER_CATALOG_POLICY_V1, "sipi.p4b-02b3.parameter-catalog.v1.typed");
+        assert_eq!(
+            PARAMETER_CATALOG_POLICY_V1,
+            "sipi.p4b-02b3.parameter-catalog.v1.typed"
+        );
     }
 
     #[test]
     fn missing_required_rejected() {
-        let catalog = ParameterCatalogV1::compile(vec![
-            CatalogEntryV1::new("swing", AmiUsageV1::In, AmiParameterTypeV1::Float, None),
-        ]).expect("catalog");
+        let catalog = ParameterCatalogV1::compile(vec![CatalogEntryV1::new(
+            "swing",
+            AmiUsageV1::In,
+            AmiParameterTypeV1::Float,
+            None,
+        )])
+        .expect("catalog");
         let vals = std::collections::BTreeMap::new();
-        let err = validate_candidate_set_v1(&catalog, &vals).err().expect("err");
+        let err = validate_candidate_set_v1(&catalog, &vals).expect_err("err");
         assert_eq!(err, CatalogErrorV1::MissingRequired("swing".to_string()));
     }
 
     #[test]
     fn valid_in_set_passes() {
-        let catalog = ParameterCatalogV1::compile(vec![
-            CatalogEntryV1::new("swing", AmiUsageV1::In, AmiParameterTypeV1::Float, None),
-        ]).expect("catalog");
+        let catalog = ParameterCatalogV1::compile(vec![CatalogEntryV1::new(
+            "swing",
+            AmiUsageV1::In,
+            AmiParameterTypeV1::Float,
+            None,
+        )])
+        .expect("catalog");
         let mut vals = std::collections::BTreeMap::new();
-        vals.insert("swing".to_string(), value("swing", AmiParameterTypeV1::Float, "0.5"));
+        vals.insert(
+            "swing".to_string(),
+            value("swing", AmiParameterTypeV1::Float, "0.5"),
+        );
         validate_candidate_set_v1(&catalog, &vals).expect("ok");
     }
 
     #[test]
     fn unknown_parameter_rejected() {
-        let catalog = ParameterCatalogV1::compile(vec![
-            CatalogEntryV1::new("swing", AmiUsageV1::In, AmiParameterTypeV1::Float, None),
-        ]).expect("catalog");
+        let catalog = ParameterCatalogV1::compile(vec![CatalogEntryV1::new(
+            "swing",
+            AmiUsageV1::In,
+            AmiParameterTypeV1::Float,
+            None,
+        )])
+        .expect("catalog");
         let mut vals = std::collections::BTreeMap::new();
-        vals.insert("swing".to_string(), value("swing", AmiParameterTypeV1::Float, "0.5"));
-        vals.insert("bogus".to_string(), value("bogus", AmiParameterTypeV1::Float, "1.0"));
-        let err = validate_candidate_set_v1(&catalog, &vals).err().expect("err");
+        vals.insert(
+            "swing".to_string(),
+            value("swing", AmiParameterTypeV1::Float, "0.5"),
+        );
+        vals.insert(
+            "bogus".to_string(),
+            value("bogus", AmiParameterTypeV1::Float, "1.0"),
+        );
+        let err = validate_candidate_set_v1(&catalog, &vals).expect_err("err");
         assert!(matches!(err, CatalogErrorV1::UnknownParameter(_)));
     }
 
     #[test]
     fn type_mismatch_rejected() {
-        let catalog = ParameterCatalogV1::compile(vec![
-            CatalogEntryV1::new("swing", AmiUsageV1::In, AmiParameterTypeV1::Float, None),
-        ]).expect("catalog");
+        let catalog = ParameterCatalogV1::compile(vec![CatalogEntryV1::new(
+            "swing",
+            AmiUsageV1::In,
+            AmiParameterTypeV1::Float,
+            None,
+        )])
+        .expect("catalog");
         let mut vals = std::collections::BTreeMap::new();
-        vals.insert("swing".to_string(), value("swing", AmiParameterTypeV1::Integer, "5"));
-        let err = validate_candidate_set_v1(&catalog, &vals).err().expect("err");
+        vals.insert(
+            "swing".to_string(),
+            value("swing", AmiParameterTypeV1::Integer, "5"),
+        );
+        let err = validate_candidate_set_v1(&catalog, &vals).expect_err("err");
         assert!(matches!(err, CatalogErrorV1::TypeMismatch { .. }));
     }
 
@@ -197,16 +247,25 @@ mod tests {
     fn optional_info_param_not_required() {
         let catalog = ParameterCatalogV1::compile(vec![
             CatalogEntryV1::new("swing", AmiUsageV1::In, AmiParameterTypeV1::Float, None),
-            CatalogEntryV1::new("comment", AmiUsageV1::Info, AmiParameterTypeV1::String_, None),
-        ]).expect("catalog");
+            CatalogEntryV1::new(
+                "comment",
+                AmiUsageV1::Info,
+                AmiParameterTypeV1::String_,
+                None,
+            ),
+        ])
+        .expect("catalog");
         let mut vals = std::collections::BTreeMap::new();
-        vals.insert("swing".to_string(), value("swing", AmiParameterTypeV1::Float, "0.5"));
+        vals.insert(
+            "swing".to_string(),
+            value("swing", AmiParameterTypeV1::Float, "0.5"),
+        );
         validate_candidate_set_v1(&catalog, &vals).expect("ok");
     }
 
     #[test]
     fn empty_catalog_rejected() {
-        let err = ParameterCatalogV1::compile(vec![]).err().expect("err");
+        let err = ParameterCatalogV1::compile(vec![]).expect_err("err");
         assert_eq!(err, CatalogErrorV1::EmptyCatalog);
     }
 
@@ -215,7 +274,8 @@ mod tests {
         let err = ParameterCatalogV1::compile(vec![
             CatalogEntryV1::new("swing", AmiUsageV1::In, AmiParameterTypeV1::Float, None),
             CatalogEntryV1::new("swing", AmiUsageV1::In, AmiParameterTypeV1::Float, None),
-        ]).err().expect("err");
+        ])
+        .expect_err("err");
         assert!(matches!(err, CatalogErrorV1::DuplicateEntry(_)));
     }
 }

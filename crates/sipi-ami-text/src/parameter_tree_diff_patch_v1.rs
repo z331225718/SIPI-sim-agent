@@ -25,9 +25,8 @@ fn apply_single_diff(
     match diff {
         TreeDiffEntryV1::MissingNode { path } => {
             let segments: Vec<&str> = path.split('.').collect();
-            prune_parameter_tree_v1(tree, &segments).map_err(|_| {
-                ParameterTreeDiffPatchErrorV1::InvalidPath(path.clone())
-            })
+            prune_parameter_tree_v1(tree, &segments)
+                .map_err(|_| ParameterTreeDiffPatchErrorV1::InvalidPath(path.clone()))
         }
         TreeDiffEntryV1::ExtraNode { path } => {
             if let Some(r_tree) = right_tree {
@@ -38,9 +37,8 @@ fn apply_single_diff(
                         crate::QueryResultV1::Leaf(n) => n.clone(),
                     };
                     let synth_tree = path_to_tree(&segments, node_to_insert);
-                    merge_parameter_trees_v1(tree, &synth_tree).map_err(|e| {
-                        ParameterTreeDiffPatchErrorV1::InvalidPath(format!("{e:?}"))
-                    })
+                    merge_parameter_trees_v1(tree, &synth_tree)
+                        .map_err(|e| ParameterTreeDiffPatchErrorV1::InvalidPath(format!("{e:?}")))
                 } else {
                     Err(ParameterTreeDiffPatchErrorV1::InvalidPath(path.clone()))
                 }
@@ -51,7 +49,7 @@ fn apply_single_diff(
         TreeDiffEntryV1::ValueMismatch { path, right, .. } => {
             let target_path = path.clone();
             let new_tokens = right.clone();
-            crate::transform_parameter_trees_v1(&[tree.clone()], |p, node| {
+            crate::transform_parameter_trees_v1(std::slice::from_ref(tree), |p, node| {
                 if p == target_path {
                     Some(AmiParameterTreeNodeV1::Leaf {
                         name: node.name().to_string(),
@@ -64,9 +62,9 @@ fn apply_single_diff(
             .map(|mut v| v.remove(0))
             .map_err(|_| ParameterTreeDiffPatchErrorV1::InvalidPath(path.clone()))
         }
-        TreeDiffEntryV1::KindMismatch { path } => {
-            Err(ParameterTreeDiffPatchErrorV1::NodeKindMismatch(path.clone()))
-        }
+        TreeDiffEntryV1::KindMismatch { path } => Err(
+            ParameterTreeDiffPatchErrorV1::NodeKindMismatch(path.clone()),
+        ),
     }
 }
 fn path_to_tree(segments: &[&str], node: AmiParameterTreeNodeV1) -> AmiParameterTreeV1 {
@@ -75,7 +73,7 @@ fn path_to_tree(segments: &[&str], node: AmiParameterTreeNodeV1) -> AmiParameter
         return AmiParameterTreeV1::new(nname, node);
     }
     let mut current = node;
-    for &seg in segments[1..segments.len()-1].iter().rev() {
+    for &seg in segments[1..segments.len() - 1].iter().rev() {
         let mut children = std::collections::BTreeMap::new();
         children.insert(current.name().to_string(), current);
         current = AmiParameterTreeNodeV1::Branch {
@@ -85,10 +83,13 @@ fn path_to_tree(segments: &[&str], node: AmiParameterTreeNodeV1) -> AmiParameter
     }
     let mut root_children = std::collections::BTreeMap::new();
     root_children.insert(current.name().to_string(), current);
-    AmiParameterTreeV1::new(segments[0], AmiParameterTreeNodeV1::Branch {
-        name: segments[0].to_string(),
-        children: root_children,
-    })
+    AmiParameterTreeV1::new(
+        segments[0],
+        AmiParameterTreeNodeV1::Branch {
+            name: segments[0].to_string(),
+            children: root_children,
+        },
+    )
 }
 /// Apply a sequence of diff entries to a parameter tree.
 pub fn apply_parameter_tree_diff_patch_v1(
@@ -124,7 +125,7 @@ mod tests {
     use super::*;
     use crate::parameter_tree_diff_v1::diff_parameter_trees_v1;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
-    use crate::{parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, parse_ami_text_v1};
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
     }

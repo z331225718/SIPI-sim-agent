@@ -28,7 +28,12 @@ impl TypedPinDeclarationV1 {
         model_name: String,
         span: SourceSpanV1,
     ) -> Self {
-        Self { pin_name, signal_name, model_name, span }
+        Self {
+            pin_name,
+            signal_name,
+            model_name,
+            span,
+        }
     }
 
     pub fn pin_name(&self) -> &str {
@@ -66,7 +71,10 @@ pub fn lift_pin_declarations_v1(
     while i < records.len() {
         let section = match &records[i] {
             StructuralRecordV1::Keyword { keyword, .. } => keyword,
-            _ => { i += 1; continue; }
+            _ => {
+                i += 1;
+                continue;
+            }
         };
         if section.spelling() == "Pin" {
             // Collect following Data rows until the next Keyword.
@@ -107,20 +115,37 @@ mod tests {
     use super::*;
     use crate::StructuralTokenV1;
 
-    fn span(start: usize, line: usize) -> SourceSpanV1 { SourceSpanV1::new(start, start + 1, line, 0) }
-    fn tok(s: &str) -> StructuralTokenV1 { StructuralTokenV1::new(s.to_string()) }
+    fn span(start: usize, line: usize) -> SourceSpanV1 {
+        SourceSpanV1::new(start, start + 1, line, 0)
+    }
+    fn tok(s: &str) -> StructuralTokenV1 {
+        StructuralTokenV1::new(s.to_string())
+    }
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(PIN_DECLARATION_POLICY_V1, "sipi.p4a-03e.pin-declaration.v1.typed");
+        assert_eq!(
+            PIN_DECLARATION_POLICY_V1,
+            "sipi.p4a-03e.pin-declaration.v1.typed"
+        );
     }
 
     #[test]
     fn lifts_pin_rows() {
         let records = vec![
-            StructuralRecordV1::Keyword { keyword: tok("Pin"), payload: vec![], span: span(0, 1) },
-            StructuralRecordV1::Data { tokens: vec![tok("A1"), tok("DNU"), tok("NC")], span: span(5, 2) },
-            StructuralRecordV1::Data { tokens: vec![tok("B2"), tok("DQ0_a"), tok("DQ_PIN")], span: span(10, 3) },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Pin"),
+                payload: vec![],
+                span: span(0, 1),
+            },
+            StructuralRecordV1::Data {
+                tokens: vec![tok("A1"), tok("DNU"), tok("NC")],
+                span: span(5, 2),
+            },
+            StructuralRecordV1::Data {
+                tokens: vec![tok("B2"), tok("DQ0_a"), tok("DQ_PIN")],
+                span: span(10, 3),
+            },
         ];
         let pins = lift_pin_declarations_v1(&records).expect("pins");
         assert_eq!(pins.len(), 2);
@@ -132,26 +157,49 @@ mod tests {
     #[test]
     fn malformed_row_rejected() {
         let records = vec![
-            StructuralRecordV1::Keyword { keyword: tok("Pin"), payload: vec![], span: span(0, 1) },
-            StructuralRecordV1::Data { tokens: vec![tok("A1")], span: span(5, 2) },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Pin"),
+                payload: vec![],
+                span: span(0, 1),
+            },
+            StructuralRecordV1::Data {
+                tokens: vec![tok("A1")],
+                span: span(5, 2),
+            },
         ];
         assert!(lift_pin_declarations_v1(&records).is_err());
     }
 
     #[test]
     fn missing_pin_section_rejected() {
-        let records = vec![
-            StructuralRecordV1::Keyword { keyword: tok("Component"), payload: vec![], span: span(0, 1) },
-        ];
-        assert_eq!(lift_pin_declarations_v1(&records).err(), Some(PinDeclarationErrorV1::MissingPinSection));
+        let records = vec![StructuralRecordV1::Keyword {
+            keyword: tok("Component"),
+            payload: vec![],
+            span: span(0, 1),
+        }];
+        assert_eq!(
+            lift_pin_declarations_v1(&records).err(),
+            Some(PinDeclarationErrorV1::MissingPinSection)
+        );
     }
 
     #[test]
     fn stops_at_next_section() {
         let records = vec![
-            StructuralRecordV1::Keyword { keyword: tok("Pin"), payload: vec![], span: span(0, 1) },
-            StructuralRecordV1::Data { tokens: vec![tok("A1"), tok("SIG"), tok("M")], span: span(5, 2) },
-            StructuralRecordV1::Keyword { keyword: tok("Package"), payload: vec![], span: span(10, 3) },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Pin"),
+                payload: vec![],
+                span: span(0, 1),
+            },
+            StructuralRecordV1::Data {
+                tokens: vec![tok("A1"), tok("SIG"), tok("M")],
+                span: span(5, 2),
+            },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Package"),
+                payload: vec![],
+                span: span(10, 3),
+            },
         ];
         let pins = lift_pin_declarations_v1(&records).expect("pins");
         assert_eq!(pins.len(), 1);

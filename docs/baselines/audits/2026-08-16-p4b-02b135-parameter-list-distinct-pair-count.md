@@ -26,7 +26,7 @@ test cases.
   pairs, non-list, single item).
 - Cross-check: 4 test cases (all distinct, all equal, partial distinct, non-list) driven through
   product runner `p4b_02b135_parameter_list_distinct_pair_count_runner`; independent Python
-  reference matches 100% on counts and error keys; 4/4 matched_hash_bound.
+  reference matches 100% on counts and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

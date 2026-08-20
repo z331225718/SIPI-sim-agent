@@ -20,7 +20,7 @@ use std::collections::BTreeMap;
 
 use serde_json::{Map, Value};
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1, AmiParameterTypeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterTypeV1};
 
 /// Explicit scope policy of this slice: typed-leaf content fingerprint.
 pub const PARAMETER_TREE_TYPED_LEAF_FINGERPRINT_POLICY_V1: &str =
@@ -57,13 +57,9 @@ fn collect_typed_leaves(
             }
         }
         AmiParameterTreeNodeV1::Leaf { value_tokens, .. } => {
-            if value_tokens.len() == 2 {
-                if AmiParameterTypeV1::from_token(&value_tokens[0]).is_some() {
-                    out.insert(
-                        current,
-                        (value_tokens[0].clone(), value_tokens[1].clone()),
-                    );
-                }
+            if value_tokens.len() == 2 && AmiParameterTypeV1::from_token(&value_tokens[0]).is_some()
+            {
+                out.insert(current, (value_tokens[0].clone(), value_tokens[1].clone()));
             }
         }
     }
@@ -88,7 +84,7 @@ pub fn fingerprint_parameter_tree_typed_leaves_v1(tree: &AmiParameterTreeV1) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{build_parameter_trees_v1, parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, build_parameter_trees_v1, parse_ami_text_v1};
 
     fn tree(text: &str) -> AmiParameterTreeV1 {
         let limits = ParseLimitsV1::try_new(8 * 1024 * 1024, 64, 4096, 4096).expect("limits");
@@ -149,6 +145,9 @@ mod tests {
     #[test]
     fn no_typed_leaves_hashes_empty_object() {
         let t = tree("(root (plain 5) (raw x y z))");
-        assert_eq!(fingerprint_parameter_tree_typed_leaves_v1(&t), fnv1a64(b"{}"));
+        assert_eq!(
+            fingerprint_parameter_tree_typed_leaves_v1(&t),
+            fnv1a64(b"{}")
+        );
     }
 }

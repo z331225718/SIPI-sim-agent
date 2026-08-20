@@ -10,8 +10,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    find_parameter_profile_names_by_value_v1, AmiParameterValueV1,
-    ParameterProfileValueLookupErrorV1, PARAMETER_PROFILE_VALUE_LOOKUP_POLICY_V1,
+    AmiParameterValueV1, PARAMETER_PROFILE_VALUE_LOOKUP_POLICY_V1,
+    ParameterProfileValueLookupErrorV1, find_parameter_profile_names_by_value_v1,
 };
 
 fn build_profile(entry: &Value) -> Option<BTreeMap<String, AmiParameterValueV1>> {
@@ -26,7 +26,7 @@ fn build_profile(entry: &Value) -> Option<BTreeMap<String, AmiParameterValueV1>>
     Some(profile)
 }
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -39,7 +39,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b80_parameter_profile_value_lookup_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b80_parameter_profile_value_lookup_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -54,7 +56,8 @@ fn main() {
                 "input_error": "invalid_profile",
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -77,7 +80,7 @@ fn main() {
             "valid": true,
             "matches": result.matches(),
         }),
-        Err(ParameterProfileValueLookupErrorV1::InvalidQueryValue(error)) => {
+        Err(ParameterProfileValueLookupErrorV1::InvalidQueryValue(_error)) => {
             serde_json::json!({
                 "policy": PARAMETER_PROFILE_VALUE_LOOKUP_POLICY_V1,
                 "valid": false,

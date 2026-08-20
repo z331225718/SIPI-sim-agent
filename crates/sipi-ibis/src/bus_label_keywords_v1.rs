@@ -58,7 +58,9 @@ mod tests {
 
     #[test]
     fn valid_bus_label_block() {
-        let bus = lift_bus_label_declaration_v1("DQ_BUS", vec!["DQ0".to_string(), "DQ1".to_string()]).unwrap();
+        let bus =
+            lift_bus_label_declaration_v1("DQ_BUS", vec!["DQ0".to_string(), "DQ1".to_string()])
+                .unwrap();
         let block = lift_bus_label_block_v1(bus).expect("lift");
 
         assert_eq!(block.bus_label_declaration().bus_label_name(), "DQ_BUS");

@@ -21,12 +21,19 @@ use sipi_touchstone::{
     },
 };
 
+mod p3c_truncation_waveform_sensitivity_v1;
 mod prbs9_impulse_candidate_v1;
 mod prbs9_impulse_candidate_v2;
-mod p3c_truncation_waveform_sensitivity_v1;
 
+pub use p3c_truncation_waveform_sensitivity_v1::{
+    P3C_FULL_CAUSAL_RESPONSE_SAMPLES_V1, P3C_TRUNCATION_SENSITIVITY_MACS_V1,
+    P3C_TRUNCATION_SENSITIVITY_SAMPLE_INTERVAL_BITS_V1,
+    P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_SAMPLES_V1,
+    P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_START_V1, SelectedP3cFullCausalThirdPeriodDiagnosticV1,
+    TruncationWaveformSensitivityErrorV1, diagnose_selected_p3c_full_causal_third_period_v1,
+};
 pub use prbs9_impulse_candidate_v1::{
-    P3C_PRBS9_OSR_V1, P3C_PRBS9_PERIOD_SHA256_V1, P3C_PRBS9_PERIODS_V1, P3C_PRBS9_PERIOD_UI_V1,
+    P3C_PRBS9_OSR_V1, P3C_PRBS9_PERIOD_SHA256_V1, P3C_PRBS9_PERIOD_UI_V1, P3C_PRBS9_PERIODS_V1,
     P3C_PRBS9_SAMPLE_INTERVAL_BITS_V1, P3C_PRBS9_THIRD_PERIOD_START_V1, P3C_PRBS9_TOTAL_SAMPLES_V1,
     P3C_SELECTED_FULL_LINEAR_MACS_V1, P3C_SELECTED_FULL_LINEAR_SAMPLES_V1,
     P3C_SELECTED_TRUNCATED_RESPONSE_SAMPLES_V1, Prbs9ImpulseCandidateErrorV1,
@@ -35,14 +42,6 @@ pub use prbs9_impulse_candidate_v1::{
 pub use prbs9_impulse_candidate_v2::{
     Prbs9ImpulseCandidateErrorV2, SelectedP3cPrbs9ImpulseCandidateV2,
     generate_selected_p3c_prbs9_impulse_candidate_v2,
-};
-pub use p3c_truncation_waveform_sensitivity_v1::{
-    diagnose_selected_p3c_full_causal_third_period_v1,
-    P3C_FULL_CAUSAL_RESPONSE_SAMPLES_V1, P3C_TRUNCATION_SENSITIVITY_MACS_V1,
-    P3C_TRUNCATION_SENSITIVITY_SAMPLE_INTERVAL_BITS_V1,
-    P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_SAMPLES_V1,
-    P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_START_V1,
-    SelectedP3cFullCausalThirdPeriodDiagnosticV1, TruncationWaveformSensitivityErrorV1,
 };
 
 pub const SELECTED_P3C_S4P_FILE_NAME_V1: &str = "channel.s4p";

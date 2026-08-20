@@ -10,8 +10,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    join_parameter_list_values_v1, AmiParameterValueV1, ParameterListJoinErrorV1,
-    PARAMETER_LIST_JOIN_POLICY_V1,
+    AmiParameterValueV1, PARAMETER_LIST_JOIN_POLICY_V1, ParameterListJoinErrorV1,
+    join_parameter_list_values_v1,
 };
 
 fn build_value(entry: &Value) -> Option<AmiParameterValueV1> {
@@ -21,7 +21,7 @@ fn build_value(entry: &Value) -> Option<AmiParameterValueV1> {
     AmiParameterValueV1::try_new(name, type_token, value_token).ok()
 }
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -49,7 +49,8 @@ fn main() {
                 "input_error": "invalid_left_value",
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -65,7 +66,8 @@ fn main() {
                 "input_error": "invalid_right_value",
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

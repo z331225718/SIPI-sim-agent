@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_series_pin_group_v1, SeriesPinPairV1, SERIES_PIN_MAPPING_GROUP_POLICY_V1,
-};
+use sipi_ibis::{SERIES_PIN_MAPPING_GROUP_POLICY_V1, SeriesPinPairV1, lift_series_pin_group_v1};
 
 fn main() {
     let mut input = None;
@@ -29,16 +27,23 @@ fn main() {
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
-    let gname = value.get("group_name").and_then(|v| v.as_str()).unwrap_or("");
-    let pin_pairs = value.get("pin_pairs").and_then(|v| v.as_array()).map(|arr| {
-        arr.iter()
-            .filter_map(|item| {
-                let p1 = item.get("pin_first").and_then(|v| v.as_str())?;
-                let p2 = item.get("pin_second").and_then(|v| v.as_str())?;
-                SeriesPinPairV1::try_new(p1, p2).ok()
-            })
-            .collect()
-    }).unwrap_or_default();
+    let gname = value
+        .get("group_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let pin_pairs = value
+        .get("pin_pairs")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|item| {
+                    let p1 = item.get("pin_first").and_then(|v| v.as_str())?;
+                    let p2 = item.get("pin_second").and_then(|v| v.as_str())?;
+                    SeriesPinPairV1::try_new(p1, p2).ok()
+                })
+                .collect()
+        })
+        .unwrap_or_default();
 
     let output = match lift_series_pin_group_v1(gname, pin_pairs) {
         Ok(group) => {

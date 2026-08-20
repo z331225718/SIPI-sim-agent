@@ -23,7 +23,7 @@ reference replicates the distinct count rule over 4 test cases.
   single item).
 - Cross-check: 4 test cases (with dups, all distinct, all same, non-list) driven through product
   runner `p4b_02b107_parameter_list_distinct_count_runner`; independent Python reference matches
-  100% on distinct counts and error keys; 4/4 matched_hash_bound.
+  100% on distinct counts and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

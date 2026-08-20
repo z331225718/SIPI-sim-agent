@@ -120,7 +120,7 @@ pub fn validate_parameter_trees_v1(
 mod tests {
     use super::*;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
-    use crate::{parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, parse_ami_text_v1};
 
     fn parse_limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
@@ -155,11 +155,8 @@ mod tests {
 
     #[test]
     fn rejects_exceeded_max_depth() {
-        let doc = parse_ami_text_v1(
-            b"(root (b1 (b2 (b3 (leaf 1)))))",
-            parse_limits(),
-        )
-        .expect("parse");
+        let doc =
+            parse_ami_text_v1(b"(root (b1 (b2 (b3 (leaf 1)))))", parse_limits()).expect("parse");
         let trees = build_parameter_trees_v1(&doc).expect("build");
         let strict_limits = TreeValidationLimitsV1::try_new(2, 1024).unwrap();
         assert!(matches!(
@@ -170,11 +167,7 @@ mod tests {
 
     #[test]
     fn rejects_exceeded_max_leaf_tokens() {
-        let doc = parse_ami_text_v1(
-            b"(root (leaf 1 2 3 4 5))",
-            parse_limits(),
-        )
-        .expect("parse");
+        let doc = parse_ami_text_v1(b"(root (leaf 1 2 3 4 5))", parse_limits()).expect("parse");
         let trees = build_parameter_trees_v1(&doc).expect("build");
         let strict_limits = TreeValidationLimitsV1::try_new(10, 2).unwrap();
         assert!(matches!(

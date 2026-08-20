@@ -8,8 +8,8 @@
 use std::path::PathBuf;
 
 use sipi_com::{
-    aggregate_warning_report_v1, WarningCodeV1, WarningReportErrorV1, WarningSliceReportV1,
-    WARNING_REPORT_POLICY_V1,
+    WARNING_REPORT_POLICY_V1, WarningReportErrorV1, WarningSliceReportV1,
+    aggregate_warning_report_v1,
 };
 
 fn main() {
@@ -57,9 +57,7 @@ fn main() {
             let per_code: Vec<serde_json::Value> = report
                 .per_code_slices()
                 .iter()
-                .map(|(code, names)| {
-                    serde_json::json!({ "code": code.token(), "slices": names })
-                })
+                .map(|(code, names)| serde_json::json!({ "code": code.token(), "slices": names }))
                 .collect();
             serde_json::json!({
                 "policy": WARNING_REPORT_POLICY_V1,

@@ -86,7 +86,9 @@ impl TypedCircuitCallDeclarationV1 {
                 return Err(CircuitCallDeclarationErrorV1::NonAsciiName);
             }
             if !seen.insert(p.to_string()) {
-                return Err(CircuitCallDeclarationErrorV1::DuplicatePortName(p.to_string()));
+                return Err(CircuitCallDeclarationErrorV1::DuplicatePortName(
+                    p.to_string(),
+                ));
             }
         }
 
@@ -168,7 +170,9 @@ mod tests {
         let pm2 = PortMapV1::new("P1", "N2");
         assert_eq!(
             lift_circuit_call_declaration_v1("SUBCKT_DUP", vec![pm1, pm2]),
-            Err(CircuitCallDeclarationErrorV1::DuplicatePortName("P1".to_string()))
+            Err(CircuitCallDeclarationErrorV1::DuplicatePortName(
+                "P1".to_string()
+            ))
         );
     }
 }

@@ -24,7 +24,7 @@ independent Python reference replicates the join rule over 4 test cases.
   spacing canonicalized, duplicates preserved).
 - Cross-check: 4 test cases (join multi, join single, right non-list, left non-list) driven through
   product runner `p4b_02b106_parameter_list_join_runner`; independent Python reference matches
-  100% on joined tokens and error keys; 4/4 matched_hash_bound.
+  100% on joined tokens and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

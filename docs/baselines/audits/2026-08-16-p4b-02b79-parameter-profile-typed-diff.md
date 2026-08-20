@@ -26,7 +26,7 @@ independent Python reference replicates the typed diff over 4 test cases.
 - Cross-check: 4 test cases (identical, spelling variants, added/removed, typed changed) driven
   through product runner `p4b_02b79_parameter_profile_typed_diff_runner`; independent Python
   reference matches 100% on matched/added/removed lists and changed entries with reasons;
-  4/4 matched_hash_bound.
+  4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

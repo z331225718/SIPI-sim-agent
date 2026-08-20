@@ -19,7 +19,7 @@ are strictly rejected. An independent Python reference recomputes tree transform
   rejects empty tree list).
 - Cross-check: 3 test cases (transform tx_swing leaf, transform tap_1 leaf, empty document)
   driven through product runner `p4b_02b15_parameter_tree_transformer_runner`; independent Python reference
-  matches 100% on valid flags, transformed S-expression formatted text, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, transformed S-expression formatted text, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

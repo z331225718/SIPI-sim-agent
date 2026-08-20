@@ -7,9 +7,7 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use sipi_com::{
-    merge_com_parameters_v1, ResolvedDefaultV1, COM_PARAMETERS_POLICY_V1,
-};
+use sipi_com::{COM_PARAMETERS_POLICY_V1, ResolvedDefaultV1, merge_com_parameters_v1};
 
 fn read_resolved(value: &serde_json::Value) -> ResolvedDefaultV1 {
     match value["kind"].as_str().unwrap_or("scalar") {
@@ -37,23 +35,46 @@ fn main() {
     let bytes = std::fs::read(&input).expect("read input");
     let value: serde_json::Value = serde_json::from_slice(&bytes).expect("input json");
 
-    let consumed_keys: Vec<String> = value["consumed_keys"].as_array().unwrap().iter().map(|v| v.as_str().unwrap().to_string()).collect();
+    let consumed_keys: Vec<String> = value["consumed_keys"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap().to_string())
+        .collect();
     let mut workbook = BTreeMap::new();
     if let Some(o) = value.get("workbook").and_then(|v| v.as_object()) {
-        for (k, v) in o { workbook.insert(k.clone(), read_resolved(v)); }
+        for (k, v) in o {
+            workbook.insert(k.clone(), read_resolved(v));
+        }
     }
     let mut defaults = BTreeMap::new();
     if let Some(o) = value.get("defaults").and_then(|v| v.as_object()) {
-        for (k, v) in o { defaults.insert(k.clone(), read_resolved(v)); }
+        for (k, v) in o {
+            defaults.insert(k.clone(), read_resolved(v));
+        }
     }
-    let unconsumed: Vec<String> = value["unconsumed"].as_array().map(|a| a.iter().map(|v| v.as_str().unwrap_or("").to_string()).collect()).unwrap_or_default();
+    let unconsumed: Vec<String> = value["unconsumed"]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .map(|v| v.as_str().unwrap_or("").to_string())
+                .collect()
+        })
+        .unwrap_or_default();
 
     let output = match merge_com_parameters_v1(&consumed_keys, &workbook, &defaults, &unconsumed) {
         Ok(dto) => {
-            let consumed_out: BTreeMap<String, f64> = dto.consumed().iter().map(|(k, v)| {
-                let scalar = match v { ResolvedDefaultV1::Scalar(s) => *s, _ => 0.0 };
-                (k.clone(), scalar)
-            }).collect();
+            let consumed_out: BTreeMap<String, f64> = dto
+                .consumed()
+                .iter()
+                .map(|(k, v)| {
+                    let scalar = match v {
+                        ResolvedDefaultV1::Scalar(s) => *s,
+                        _ => 0.0,
+                    };
+                    (k.clone(), scalar)
+                })
+                .collect();
             serde_json::json!({
                 "policy": COM_PARAMETERS_POLICY_V1,
                 "ok": true,
@@ -62,7 +83,9 @@ fn main() {
                 "unconsumed": dto.unconsumed(),
             })
         }
-        Err(e) => serde_json::json!({ "policy": COM_PARAMETERS_POLICY_V1, "ok": false, "error": format!("{e:?}") }),
+        Err(e) => {
+            serde_json::json!({ "policy": COM_PARAMETERS_POLICY_V1, "ok": false, "error": format!("{e:?}") })
+        }
     };
     if let Some(path) = report {
         std::fs::write(path, serde_json::to_string(&output).expect("json")).expect("write");

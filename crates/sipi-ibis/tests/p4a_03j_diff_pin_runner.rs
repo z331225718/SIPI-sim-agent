@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_diff_pin_declaration_v1, DIFF_PIN_DECLARATION_POLICY_V1,
-};
+use sipi_ibis::{DIFF_PIN_DECLARATION_POLICY_V1, lift_diff_pin_declaration_v1};
 
 fn main() {
     let mut input = None;
@@ -29,7 +27,10 @@ fn main() {
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
-    let pin_non_inv = value.get("pin_non_inv").and_then(|v| v.as_str()).unwrap_or("");
+    let pin_non_inv = value
+        .get("pin_non_inv")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let pin_inv = value.get("pin_inv").and_then(|v| v.as_str()).unwrap_or("");
     let vdiff_v = value.get("vdiff_v").and_then(|v| v.as_f64());
     let tdelay_s = value.get("tdelay_s").and_then(|v| v.as_f64());

@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b138-parameter-list-first-duplicate-index-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b138.parameter-list-first-duplicate-index-v1.first-duplicate-position
 matched_count: 4
 case_count: 4

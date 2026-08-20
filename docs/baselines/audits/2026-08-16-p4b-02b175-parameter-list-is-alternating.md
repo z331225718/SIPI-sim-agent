@@ -26,7 +26,7 @@ reference replicates the rule over 4 test cases.
   all equal long false, spacing canonicalized, non-list).
 - Cross-check: 4 test cases (alternating, repeated adjacent, single item, non-list) driven
   through product runner `p4b_02b175_parameter_list_is_alternating_runner`; independent
-  Python reference matches 100% on booleans and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on booleans and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -4004,10 +4004,7 @@ mod tests {
                 IbisQuasiStaticEvaluateContractError::EmptyProbeBatch
             ))
         ));
-        let probes = std::iter::repeat(
-            "{\"gnd_clamp_drive_volts\":0.0,\"power_clamp_drive_volts\":0.0,\"sig_to_ref_slope_volts_per_second\":0.0}",
-        )
-        .take(IbisQuasiStaticArtifactBatchEvaluateRequestV1::MAXIMUM_PROBES + 1)
+        let probes = std::iter::repeat_n("{\"gnd_clamp_drive_volts\":0.0,\"power_clamp_drive_volts\":0.0,\"sig_to_ref_slope_volts_per_second\":0.0}", IbisQuasiStaticArtifactBatchEvaluateRequestV1::MAXIMUM_PROBES + 1)
         .collect::<Vec<_>>()
         .join(",");
         let oversized = valid.replacen(

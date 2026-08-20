@@ -57,8 +57,8 @@ pub fn parameter_list_dedup_keep_last_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListDedupKeepLastErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListDedupKeepLastErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListDedupKeepLastErrorV1::MalformedList)?;
     let mut last_order: Vec<String> = Vec::new();
     for item in items.iter().rev() {
         if !last_order.contains(item) {
@@ -80,13 +80,19 @@ mod tests {
     #[test]
     fn keeps_last_occurrence_in_last_occurrence_order() {
         let v = value("param", "List", "(a, b, a, c, b)");
-        assert_eq!(parameter_list_dedup_keep_last_v1(&v), Ok("(a, c, b)".to_string()));
+        assert_eq!(
+            parameter_list_dedup_keep_last_v1(&v),
+            Ok("(a, c, b)".to_string())
+        );
     }
 
     #[test]
     fn all_distinct_unchanged() {
         let v = value("param", "List", "(c, a, b)");
-        assert_eq!(parameter_list_dedup_keep_last_v1(&v), Ok("(c, a, b)".to_string()));
+        assert_eq!(
+            parameter_list_dedup_keep_last_v1(&v),
+            Ok("(c, a, b)".to_string())
+        );
     }
 
     #[test]
@@ -98,13 +104,19 @@ mod tests {
     #[test]
     fn adjacent_duplicates_keep_last() {
         let v = value("param", "List", "(a, a, b, b, b)");
-        assert_eq!(parameter_list_dedup_keep_last_v1(&v), Ok("(a, b)".to_string()));
+        assert_eq!(
+            parameter_list_dedup_keep_last_v1(&v),
+            Ok("(a, b)".to_string())
+        );
     }
 
     #[test]
     fn spacing_is_canonicalized() {
         let v = value("param", "List", "( a , b , a )");
-        assert_eq!(parameter_list_dedup_keep_last_v1(&v), Ok("(b, a)".to_string()));
+        assert_eq!(
+            parameter_list_dedup_keep_last_v1(&v),
+            Ok("(b, a)".to_string())
+        );
     }
 
     #[test]

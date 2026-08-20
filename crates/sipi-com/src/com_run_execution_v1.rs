@@ -6,12 +6,12 @@
 //! Fail-closed: unadmitted requests or chain errors emit structured failure
 //! envelopes; invalid inputs fail closed cleanly.
 
-use crate::com_chain_v1::{run_com_chain_v1, ComChainErrorV1};
+use crate::com_chain_v1::{ComChainErrorV1, run_com_chain_v1};
 use crate::com_parameter_resolver_v1::{
-    resolve_com_parameter_controls_v1, ComParameterResolverErrorV1,
+    ComParameterResolverErrorV1, resolve_com_parameter_controls_v1,
 };
 use crate::com_parameters_v1::ComParametersV1;
-use crate::com_run_admission_v1::{com_run_admission_v1, ComRunAdmissionErrorV1};
+use crate::com_run_admission_v1::{ComRunAdmissionErrorV1, com_run_admission_v1};
 
 /// Scope policy of the COM run execution core.
 pub const COM_RUN_EXECUTION_POLICY_V1: &str =
@@ -136,9 +136,9 @@ pub fn execute_com_run_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::BTreeMap;
     use crate::com_parameters_v1::merge_com_parameters_v1;
     use crate::value_consumption_v1::ResolvedDefaultV1;
+    use std::collections::BTreeMap;
 
     fn pulse64() -> Vec<f64> {
         (0..64)
@@ -160,7 +160,10 @@ mod tests {
         map.insert("SNR_TX".to_string(), ResolvedDefaultV1::Scalar(30.0));
         map.insert("sigma_X".to_string(), ResolvedDefaultV1::Scalar(0.03));
         map.insert("sigma_RJ".to_string(), ResolvedDefaultV1::Scalar(1e-4));
-        map.insert("h_J".to_string(), ResolvedDefaultV1::Vector(vec![0.3, 0.5, 0.2]));
+        map.insert(
+            "h_J".to_string(),
+            ResolvedDefaultV1::Vector(vec![0.3, 0.5, 0.2]),
+        );
         map.insert("sigma_N".to_string(), ResolvedDefaultV1::Scalar(0.01));
         map.insert("A_DD".to_string(), ResolvedDefaultV1::Scalar(0.4));
         map.insert("spec_ber".to_string(), ResolvedDefaultV1::Scalar(1e-4));
@@ -248,9 +251,11 @@ mod tests {
 
     #[test]
     fn rejects_invalid_dto_on_admitted_request() {
-        let req = valid_request_json();
-        let pulse = pulse64();
-        let empty_dto = merge_com_parameters_v1(&["x".to_string()], &BTreeMap::new(), &BTreeMap::new(), &[]).unwrap_err();
+        let _req = valid_request_json();
+        let _pulse = pulse64();
+        let empty_dto =
+            merge_com_parameters_v1(&["x".to_string()], &BTreeMap::new(), &BTreeMap::new(), &[])
+                .unwrap_err();
         let _ = empty_dto;
     }
 }

@@ -106,10 +106,12 @@ impl TypedSubmodelDeclarationV1 {
             return Err(SubmodelDeclarationErrorV1::InvalidName);
         }
 
-        let stype = SubmodelTypeV1::from_token(submodel_type_token)
-            .ok_or_else(|| SubmodelDeclarationErrorV1::UnknownSubmodelType(submodel_type_token.to_string()))?;
-        let smode = SubmodelModeV1::from_token(mode_token)
-            .ok_or_else(|| SubmodelDeclarationErrorV1::UnknownSubmodelMode(mode_token.to_string()))?;
+        let stype = SubmodelTypeV1::from_token(submodel_type_token).ok_or_else(|| {
+            SubmodelDeclarationErrorV1::UnknownSubmodelType(submodel_type_token.to_string())
+        })?;
+        let smode = SubmodelModeV1::from_token(mode_token).ok_or_else(|| {
+            SubmodelDeclarationErrorV1::UnknownSubmodelMode(mode_token.to_string())
+        })?;
 
         Ok(Self {
             submodel_name: trimmed.to_string(),
@@ -158,8 +160,9 @@ impl TypedAddSubmodelV1 {
             return Err(SubmodelDeclarationErrorV1::InvalidName);
         }
 
-        let smode = SubmodelModeV1::from_token(mode_token)
-            .ok_or_else(|| SubmodelDeclarationErrorV1::UnknownSubmodelMode(mode_token.to_string()))?;
+        let smode = SubmodelModeV1::from_token(mode_token).ok_or_else(|| {
+            SubmodelDeclarationErrorV1::UnknownSubmodelMode(mode_token.to_string())
+        })?;
 
         Ok(Self {
             submodel_name: trimmed.to_string(),
@@ -207,7 +210,8 @@ mod tests {
 
     #[test]
     fn valid_submodel_declaration() {
-        let sub = lift_submodel_declaration_v1("SUB_CLAMP", "Dynamic_clamp", "Driving").expect("lift");
+        let sub =
+            lift_submodel_declaration_v1("SUB_CLAMP", "Dynamic_clamp", "Driving").expect("lift");
         assert_eq!(sub.submodel_name(), "SUB_CLAMP");
         assert_eq!(sub.submodel_type(), SubmodelTypeV1::DynamicClamp);
         assert_eq!(sub.mode(), SubmodelModeV1::Driving);
@@ -232,7 +236,9 @@ mod tests {
     fn rejects_unknown_submodel_type() {
         assert_eq!(
             lift_submodel_declaration_v1("SUB", "UnknownType", "All"),
-            Err(SubmodelDeclarationErrorV1::UnknownSubmodelType("UnknownType".to_string()))
+            Err(SubmodelDeclarationErrorV1::UnknownSubmodelType(
+                "UnknownType".to_string()
+            ))
         );
     }
 
@@ -240,7 +246,9 @@ mod tests {
     fn rejects_unknown_submodel_mode() {
         assert_eq!(
             lift_submodel_declaration_v1("SUB", "Bus_hold", "UnknownMode"),
-            Err(SubmodelDeclarationErrorV1::UnknownSubmodelMode("UnknownMode".to_string()))
+            Err(SubmodelDeclarationErrorV1::UnknownSubmodelMode(
+                "UnknownMode".to_string()
+            ))
         );
     }
 }

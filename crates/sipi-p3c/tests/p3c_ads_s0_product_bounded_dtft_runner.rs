@@ -17,9 +17,8 @@ use sipi_ieee_com_sparam::{
     interpolate_selected_p3c_hdiff_v1,
 };
 use sipi_p3c::{
-    SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1,
-    SELECTED_P3C_S4P_SHA256_V1, SelectedP3cSealedS4pIdentityV2,
-    admit_selected_p3c_sealed_s4p_v2,
+    SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1,
+    SelectedP3cSealedS4pIdentityV2, admit_selected_p3c_sealed_s4p_v2,
 };
 
 const SOURCE_ENV: &str = "SIPI_P3C_SOURCE";
@@ -72,7 +71,10 @@ impl Complex {
 
     fn norm_sqr(self) -> Result<f64, String> {
         let value = self.re.mul_add(self.re, self.im * self.im);
-        value.is_finite().then_some(value).ok_or_else(|| "numeric".to_owned())
+        value
+            .is_finite()
+            .then_some(value)
+            .ok_or_else(|| "numeric".to_owned())
     }
 }
 
@@ -105,12 +107,19 @@ struct Fact {
 
 fn required_path(name: &str) -> Result<PathBuf, String> {
     let path = PathBuf::from(env::var_os(name).ok_or_else(|| format!("{name}_missing"))?);
-    path.is_absolute().then_some(path).ok_or_else(|| format!("{name}_not_absolute"))
+    path.is_absolute()
+        .then_some(path)
+        .ok_or_else(|| format!("{name}_not_absolute"))
 }
 
 fn required_run_id() -> Result<String, String> {
     let value = env::var(RUN_ID_ENV).map_err(|_| "run_id_missing".to_owned())?;
-    if value.is_empty() || value.len() > 64 || !value.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'-') {
+    if value.is_empty()
+        || value.len() > 64
+        || !value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+    {
         return Err("run_id_invalid".to_owned());
     }
     Ok(value)
@@ -126,11 +135,15 @@ fn read_sha256(path: &Path) -> Result<(u64, String), String> {
     let mut length = 0_u64;
     let mut buffer = [0_u8; 64 * 1024];
     loop {
-        let read = stream.read(&mut buffer).map_err(|_| "source_read".to_owned())?;
+        let read = stream
+            .read(&mut buffer)
+            .map_err(|_| "source_read".to_owned())?;
         if read == 0 {
             break;
         }
-        length = length.checked_add(read as u64).ok_or_else(|| "source_length".to_owned())?;
+        length = length
+            .checked_add(read as u64)
+            .ok_or_else(|| "source_length".to_owned())?;
         hash.update(&buffer[..read]);
     }
     Ok((length, format!("{:x}", hash.finalize())))
@@ -138,17 +151,30 @@ fn read_sha256(path: &Path) -> Result<(u64, String), String> {
 
 fn source_identity(path: &Path) -> Result<(u64, String), String> {
     let identity = read_sha256(path)?;
-    (identity == (SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_SHA256_V1.to_owned()))
+    (identity
+        == (
+            SELECTED_P3C_S4P_BYTE_LENGTH_V1,
+            SELECTED_P3C_S4P_SHA256_V1.to_owned(),
+        ))
         .then_some(identity)
         .ok_or_else(|| "source_identity".to_owned())
 }
 
 fn read_f64(bytes: &[u8], offset: &mut usize) -> Result<f64, String> {
-    let end = offset.checked_add(8).ok_or_else(|| "payload_length".to_owned())?;
-    let raw: [u8; 8] = bytes.get(*offset..end).ok_or_else(|| "payload_length".to_owned())?.try_into().map_err(|_| "payload_length".to_owned())?;
+    let end = offset
+        .checked_add(8)
+        .ok_or_else(|| "payload_length".to_owned())?;
+    let raw: [u8; 8] = bytes
+        .get(*offset..end)
+        .ok_or_else(|| "payload_length".to_owned())?
+        .try_into()
+        .map_err(|_| "payload_length".to_owned())?;
     *offset = end;
     let value = f64::from_bits(u64::from_be_bytes(raw));
-    value.is_finite().then_some(value).ok_or_else(|| "payload_nonfinite".to_owned())
+    value
+        .is_finite()
+        .then_some(value)
+        .ok_or_else(|| "payload_nonfinite".to_owned())
 }
 
 fn read_ads_s0_payload(path: &Path) -> Result<AdsS0Payload, String> {
@@ -158,7 +184,11 @@ fn read_ads_s0_payload(path: &Path) -> Result<AdsS0Payload, String> {
         return Err("payload_shape".to_owned());
     }
     let mut offset = PAYLOAD_MAGIC.len();
-    let count = u64::from_be_bytes(bytes[offset..offset + 8].try_into().map_err(|_| "payload_count".to_owned())?);
+    let count = u64::from_be_bytes(
+        bytes[offset..offset + 8]
+            .try_into()
+            .map_err(|_| "payload_count".to_owned())?,
+    );
     offset += 8;
     if count != ADS_S0_POINTS as u64 {
         return Err("payload_count".to_owned());
@@ -186,7 +216,12 @@ fn read_ads_s0_payload(path: &Path) -> Result<AdsS0Payload, String> {
 }
 
 fn finite_dtft(samples: &[f64], frequency: f64, dt: f64) -> Result<Complex, String> {
-    if samples.is_empty() || !frequency.is_finite() || !dt.is_finite() || dt <= 0.0 || samples.iter().any(|value| !value.is_finite()) {
+    if samples.is_empty()
+        || !frequency.is_finite()
+        || !dt.is_finite()
+        || dt <= 0.0
+        || samples.iter().any(|value| !value.is_finite())
+    {
         return Err("dtft_input".to_owned());
     }
     let angle = -std::f64::consts::TAU * frequency * dt;
@@ -208,7 +243,10 @@ fn finite_dtft(samples: &[f64], frequency: f64, dt: f64) -> Result<Complex, Stri
 }
 
 fn sequence_digest(domain: &[u8], axis: &[f64], values: &[Complex]) -> Result<String, String> {
-    if axis.len() != ADS_S0_POINTS || values.len() != ADS_S0_POINTS || axis.windows(2).any(|pair| pair[1] <= pair[0]) {
+    if axis.len() != ADS_S0_POINTS
+        || values.len() != ADS_S0_POINTS
+        || axis.windows(2).any(|pair| pair[1] <= pair[0])
+    {
         return Err("digest_shape".to_owned());
     }
     let mut hash = Sha256::new();
@@ -227,7 +265,11 @@ fn sequence_digest(domain: &[u8], axis: &[f64], values: &[Complex]) -> Result<St
 }
 
 fn axis_digest(axis: &[f64]) -> Result<String, String> {
-    if axis.len() != ADS_S0_POINTS || axis.windows(2).any(|pair| !pair[0].is_finite() || pair[1] <= pair[0]) {
+    if axis.len() != ADS_S0_POINTS
+        || axis
+            .windows(2)
+            .any(|pair| !pair[0].is_finite() || pair[1] <= pair[0])
+    {
         return Err("axis".to_owned());
     }
     let mut hash = Sha256::new();
@@ -265,7 +307,10 @@ fn l2_and_max(values: &[Complex]) -> Result<(f64, f64, usize), String> {
 }
 
 fn fresh_root() -> Result<PathBuf, String> {
-    let nonce = SystemTime::now().duration_since(UNIX_EPOCH).map_err(|_| "clock".to_owned())?.as_nanos();
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| "clock".to_owned())?
+        .as_nanos();
     let root = env::temp_dir().join(format!("sipi-p3c-ads-s0-dtft-{nonce}"));
     fs::create_dir(&root).map_err(|_| "root_create".to_owned())?;
     Ok(root)
@@ -278,24 +323,60 @@ fn evaluate(source: &Path, payload_path: &Path, run_id: &str) -> Result<Fact, St
     let result = (|| {
         let store = ArtifactRoot::open_or_create(&root).map_err(|_| "artifact_root".to_owned())?;
         let artifact_id = format!("ads-s0-product-bounded-dtft-{run_id}");
-        let mut stage = store.begin(&artifact_id).map_err(|_| "artifact_begin".to_owned())?;
-        stage.stage_reader(SELECTED_P3C_S4P_FILE_NAME_V1, File::open(source).map_err(|_| "source_reopen".to_owned())?, SELECTED_P3C_S4P_BYTE_LENGTH_V1).map_err(|_| "artifact_stage".to_owned())?;
-        stage.seal().map_err(|_| "artifact_seal".to_owned())?.publish_new().map_err(|_| "artifact_publish".to_owned())?;
+        let mut stage = store
+            .begin(&artifact_id)
+            .map_err(|_| "artifact_begin".to_owned())?;
+        stage
+            .stage_reader(
+                SELECTED_P3C_S4P_FILE_NAME_V1,
+                File::open(source).map_err(|_| "source_reopen".to_owned())?,
+                SELECTED_P3C_S4P_BYTE_LENGTH_V1,
+            )
+            .map_err(|_| "artifact_stage".to_owned())?;
+        stage
+            .seal()
+            .map_err(|_| "artifact_seal".to_owned())?
+            .publish_new()
+            .map_err(|_| "artifact_publish".to_owned())?;
         if source_identity(source)? != before {
             return Err("source_drift".to_owned());
         }
-        let manifest = sha256(&fs::read(root.join(&artifact_id).join("success.json")).map_err(|_| "manifest".to_owned())?);
-        let reader = ArtifactRoot::open_existing(&root).map_err(|_| "artifact_reopen".to_owned())?;
-        let identity = SelectedP3cSealedS4pIdentityV2::try_new(&artifact_id, &manifest).map_err(|_| "identity".to_owned())?;
-        let admitted = admit_selected_p3c_sealed_s4p_v2(&reader, &identity).map_err(|_| "admission".to_owned())?;
-        let uniform = interpolate_selected_p3c_hdiff_v1(admitted.transfer()).map_err(|_| "interpolation".to_owned())?;
-        let bounded = enforce_selected_p3c_causality_v1(&uniform).map_err(|_| "causality".to_owned())?;
-        if bounded.sample_count() != PRODUCT_SAMPLES || bounded.sample_interval().get().to_bits() != DT_BITS {
+        let manifest = sha256(
+            &fs::read(root.join(&artifact_id).join("success.json"))
+                .map_err(|_| "manifest".to_owned())?,
+        );
+        let reader =
+            ArtifactRoot::open_existing(&root).map_err(|_| "artifact_reopen".to_owned())?;
+        let identity = SelectedP3cSealedS4pIdentityV2::try_new(&artifact_id, &manifest)
+            .map_err(|_| "identity".to_owned())?;
+        let admitted = admit_selected_p3c_sealed_s4p_v2(&reader, &identity)
+            .map_err(|_| "admission".to_owned())?;
+        let uniform = interpolate_selected_p3c_hdiff_v1(admitted.transfer())
+            .map_err(|_| "interpolation".to_owned())?;
+        let bounded =
+            enforce_selected_p3c_causality_v1(&uniform).map_err(|_| "causality".to_owned())?;
+        if bounded.sample_count() != PRODUCT_SAMPLES
+            || bounded.sample_interval().get().to_bits() != DT_BITS
+        {
             return Err("bounded_grid".to_owned());
         }
-        let samples = bounded.samples().iter().map(|value| value.get()).collect::<Vec<_>>();
-        let product = payload.frequencies.iter().copied().map(|frequency| finite_dtft(&samples, frequency, bounded.sample_interval().get())).collect::<Result<Vec<_>, _>>()?;
-        let delta = product.iter().copied().zip(payload.hdiff.iter().copied()).map(|(product, ads)| product.sub(ads)).collect::<Vec<_>>();
+        let samples = bounded
+            .samples()
+            .iter()
+            .map(|value| value.get())
+            .collect::<Vec<_>>();
+        let product = payload
+            .frequencies
+            .iter()
+            .copied()
+            .map(|frequency| finite_dtft(&samples, frequency, bounded.sample_interval().get()))
+            .collect::<Result<Vec<_>, _>>()?;
+        let delta = product
+            .iter()
+            .copied()
+            .zip(payload.hdiff.iter().copied())
+            .map(|(product, ads)| product.sub(ads))
+            .collect::<Vec<_>>();
         let (l2_squared, max_abs, max_index) = l2_and_max(&delta)?;
         let stop = match bounded.stop() {
             SelectedP3cCausalityStopV1::RelativeError => "relative_error",
@@ -311,9 +392,21 @@ fn evaluate(source: &Path, payload_path: &Path, run_id: &str) -> Result<Fact, St
             ads_s0_payload_byte_length: payload.byte_length,
             ads_s0_payload_sha256: payload.sha256,
             ads_s0_axis_sha256: axis_digest(&payload.frequencies)?,
-            ads_s0_hdiff_sha256: sequence_digest(b"sipi.p3c.ads-s0-product-bounded.ads-hdiff.v1\0", &payload.frequencies, &payload.hdiff)?,
-            product_dtft_sha256: sequence_digest(b"sipi.p3c.ads-s0-product-bounded.product-dtft.v1\0", &payload.frequencies, &product)?,
-            delta_sha256: sequence_digest(b"sipi.p3c.ads-s0-product-bounded.delta.v1\0", &payload.frequencies, &delta)?,
+            ads_s0_hdiff_sha256: sequence_digest(
+                b"sipi.p3c.ads-s0-product-bounded.ads-hdiff.v1\0",
+                &payload.frequencies,
+                &payload.hdiff,
+            )?,
+            product_dtft_sha256: sequence_digest(
+                b"sipi.p3c.ads-s0-product-bounded.product-dtft.v1\0",
+                &payload.frequencies,
+                &product,
+            )?,
+            delta_sha256: sequence_digest(
+                b"sipi.p3c.ads-s0-product-bounded.delta.v1\0",
+                &payload.frequencies,
+                &delta,
+            )?,
             delta_l2_squared_bits: format!("{:016x}", l2_squared.to_bits()),
             delta_max_abs_bits: format!("{:016x}", max_abs.to_bits()),
             delta_max_index: max_index,
@@ -327,13 +420,33 @@ fn evaluate(source: &Path, payload_path: &Path, run_id: &str) -> Result<Fact, St
 }
 
 fn json(fact: &Fact) -> String {
-    format!("{{\"schema\":\"{REPORT_SCHEMA}\",\"status\":\"observed\",\"manifest_sha256\":\"{}\",\"record_count\":{},\"bounded_sample_count\":{},\"sample_interval_bits\":\"{}\",\"causality_iterations\":{},\"causality_stop\":\"{}\",\"ads_s0_payload_byte_length\":{},\"ads_s0_payload_sha256\":\"{}\",\"ads_s0_axis_sha256\":\"{}\",\"ads_s0_hdiff_sha256\":\"{}\",\"product_dtft_sha256\":\"{}\",\"delta_sha256\":\"{}\",\"delta_l2_squared_bits\":\"{}\",\"delta_max_abs_bits\":\"{}\",\"delta_max_index\":{},\"cleanup_status\":\"complete\"}}\n", fact.manifest_sha256, fact.record_count, fact.bounded_sample_count, fact.sample_interval_bits, fact.causality_iterations, fact.causality_stop, fact.ads_s0_payload_byte_length, fact.ads_s0_payload_sha256, fact.ads_s0_axis_sha256, fact.ads_s0_hdiff_sha256, fact.product_dtft_sha256, fact.delta_sha256, fact.delta_l2_squared_bits, fact.delta_max_abs_bits, fact.delta_max_index)
+    format!(
+        "{{\"schema\":\"{REPORT_SCHEMA}\",\"status\":\"observed\",\"manifest_sha256\":\"{}\",\"record_count\":{},\"bounded_sample_count\":{},\"sample_interval_bits\":\"{}\",\"causality_iterations\":{},\"causality_stop\":\"{}\",\"ads_s0_payload_byte_length\":{},\"ads_s0_payload_sha256\":\"{}\",\"ads_s0_axis_sha256\":\"{}\",\"ads_s0_hdiff_sha256\":\"{}\",\"product_dtft_sha256\":\"{}\",\"delta_sha256\":\"{}\",\"delta_l2_squared_bits\":\"{}\",\"delta_max_abs_bits\":\"{}\",\"delta_max_index\":{},\"cleanup_status\":\"complete\"}}\n",
+        fact.manifest_sha256,
+        fact.record_count,
+        fact.bounded_sample_count,
+        fact.sample_interval_bits,
+        fact.causality_iterations,
+        fact.causality_stop,
+        fact.ads_s0_payload_byte_length,
+        fact.ads_s0_payload_sha256,
+        fact.ads_s0_axis_sha256,
+        fact.ads_s0_hdiff_sha256,
+        fact.product_dtft_sha256,
+        fact.delta_sha256,
+        fact.delta_l2_squared_bits,
+        fact.delta_max_abs_bits,
+        fact.delta_max_index
+    )
 }
 
 #[test]
 fn unit_impulse_has_unity_dtft_at_every_frequency() {
     for frequency in [0.0, 1.0, 12.5] {
-        assert_eq!(finite_dtft(&[1.0, 0.0, 0.0], frequency, 0.25).unwrap(), Complex::ONE);
+        assert_eq!(
+            finite_dtft(&[1.0, 0.0, 0.0], frequency, 0.25).unwrap(),
+            Complex::ONE
+        );
     }
 }
 
@@ -354,7 +467,10 @@ fn alternating_sequence_has_zero_dc_and_real_nyquist_sum() {
 
 #[test]
 fn dtft_rejects_nonfinite_input() {
-    assert_eq!(finite_dtft(&[f64::NAN], 0.0, 1.0).unwrap_err(), "dtft_input");
+    assert_eq!(
+        finite_dtft(&[f64::NAN], 0.0, 1.0).unwrap_err(),
+        "dtft_input"
+    );
 }
 
 #[test]

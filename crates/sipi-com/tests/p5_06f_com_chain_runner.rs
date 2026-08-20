@@ -10,9 +10,7 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use sipi_com::{
-    run_com_chain_v1, ComChainControlsV1, ComChainErrorV1, COM_CHAIN_POLICY_V1,
-};
+use sipi_com::{COM_CHAIN_POLICY_V1, ComChainControlsV1, ComChainErrorV1, run_com_chain_v1};
 
 fn f64s(value: &Value) -> Vec<f64> {
     value
@@ -32,7 +30,9 @@ fn build_controls(c: &Value) -> Result<ComChainControlsV1, ComChainErrorV1> {
         c["dfe_first_max"].as_f64().expect("dfm"),
         c["cdr"].as_str().expect("cdr").to_string(),
         c["peak_start"].as_u64().expect("ps") as usize,
-        c.get("peak_stop").and_then(|v| v.as_u64()).map(|v| v as usize),
+        c.get("peak_stop")
+            .and_then(|v| v.as_u64())
+            .map(|v| v as usize),
         c["dfe_tap_count"].as_i64().expect("dfc"),
         f64s(&c["dfe_max"]),
         f64s(&c["dfe_min"]),
@@ -121,9 +121,15 @@ fn main() {
         },
     });
     if let Some(path) = report {
-        std::fs::write(path, serde_json::to_string_pretty(&report_json).expect("json"))
-            .expect("write");
+        std::fs::write(
+            path,
+            serde_json::to_string_pretty(&report_json).expect("json"),
+        )
+        .expect("write");
     } else {
-        println!("{}", serde_json::to_string_pretty(&report_json).expect("json"));
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&report_json).expect("json")
+        );
     }
 }

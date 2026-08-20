@@ -28,7 +28,7 @@ rule over 4 test cases.
 - Cross-check: 4 test cases (single anti-mode, multiple anti-modes, all distinct, non-list)
   driven through product runner `p4b_02b166_parameter_list_anti_mode_items_runner`;
   independent Python reference matches 100% on canonical tokens and error keys; 4/4
-  matched_hash_bound.
+  product_owned_self_crosscheck_unbound.
 
 ## Binding
 

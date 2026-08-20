@@ -25,7 +25,7 @@ rule over 4 test cases.
   single item).
 - Cross-check: 4 test cases (sorted zero, reversed max, partial inversions, non-list) driven
   through product runner `p4b_02b133_parameter_list_inversion_count_runner`; independent
-  Python reference matches 100% on counts and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on counts and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

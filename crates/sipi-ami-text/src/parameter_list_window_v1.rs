@@ -61,8 +61,7 @@ pub fn window_parameter_list_v1(
     if window_size == 0 {
         return Err(ParameterListWindowErrorV1::InvalidWindowSize);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListWindowErrorV1::MalformedList)?;
+    let items = list_items(value.value_token()).ok_or(ParameterListWindowErrorV1::MalformedList)?;
     Ok(items
         .windows(window_size)
         .map(|window| format!("({})", window.join(", ")))

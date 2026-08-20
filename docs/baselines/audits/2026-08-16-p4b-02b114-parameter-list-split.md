@@ -27,7 +27,7 @@ sole-item removal). An independent Python reference replicates the split rule ov
   non-list, spacing canonicalized).
 - Cross-check: 5 test cases (middle split, split at zero, split at end, out-of-range, non-list)
   driven through product runner `p4b_02b114_parameter_list_split_runner`; independent Python
-  reference matches 100% on token pairs and error keys; 5/5 matched_hash_bound.
+  reference matches 100% on token pairs and error keys; 5/5 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

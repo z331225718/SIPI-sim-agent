@@ -8,7 +8,7 @@
 //! per the P4B-02b0 raw-byte binding). This is the map形态 companion of
 //! 02b121 frequency (which returns the same data as an ordered
 //! `Vec<(String, usize)>` in first-occurrence order): the two slices carry
-//! identical information but differ in access structure — O(1) lookup by item
+//! identical information but differ in access structure — O(log n) lookup by item
 //! key (this slice) vs positional iteration (02b121). Per item the count
 //! equals `indices.len()` of the 02b188 occurrence-indices map, and the sum
 //! of all counts equals the 02b083 item count.
@@ -60,8 +60,8 @@ pub fn parameter_list_frequency_map_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListFrequencyMapErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListFrequencyMapErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListFrequencyMapErrorV1::MalformedList)?;
 
     let mut map: BTreeMap<String, usize> = BTreeMap::new();
     for item in items {

@@ -133,15 +133,21 @@ mod tests {
             ("channels", "List", "(a, b)"),
         ]);
         assert_eq!(
-            list_parameter_profile_names_by_type_v1(&p, "Boolean").expect("bool").names(),
+            list_parameter_profile_names_by_type_v1(&p, "Boolean")
+                .expect("bool")
+                .names(),
             &["on".to_string()]
         );
         assert_eq!(
-            list_parameter_profile_names_by_type_v1(&p, "String").expect("str").names(),
+            list_parameter_profile_names_by_type_v1(&p, "String")
+                .expect("str")
+                .names(),
             &["mode".to_string()]
         );
         assert_eq!(
-            list_parameter_profile_names_by_type_v1(&p, "List").expect("list").names(),
+            list_parameter_profile_names_by_type_v1(&p, "List")
+                .expect("list")
+                .names(),
             &["channels".to_string()]
         );
     }

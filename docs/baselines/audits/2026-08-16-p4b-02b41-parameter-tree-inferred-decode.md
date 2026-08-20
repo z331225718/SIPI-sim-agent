@@ -27,7 +27,7 @@ tokenize/build/infer/decode pipeline over 4 test cases.
 - Cross-check: 4 test cases (infer and decode mixed, multi-token leaf, conflicting tokens,
   duplicate leaf names) driven through product runner `p4b_02b41_parameter_tree_inferred_decode_runner`;
   independent Python reference matches 100% on valid flags, decoded counts, type maps, value maps,
-  and error contexts; 4/4 matched_hash_bound.
+  and error contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

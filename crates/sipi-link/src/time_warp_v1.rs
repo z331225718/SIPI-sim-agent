@@ -73,7 +73,10 @@ mod tests {
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(TIME_WARP_POLICY_V1, "sipi.p3b-05e.time-warp-shift.v1.linear-per-sample");
+        assert_eq!(
+            TIME_WARP_POLICY_V1,
+            "sipi.p3b-05e.time-warp-shift.v1.linear-per-sample"
+        );
     }
 
     #[test]
@@ -87,7 +90,10 @@ mod tests {
     fn half_sample_shift_interpolates_midpoint() {
         let samples = vec![0.0, 2.0, 4.0];
         let shifts = vec![0.5, 0.5, 0.0];
-        assert_eq!(time_warp_shift_v1(&samples, &shifts).unwrap(), vec![1.0, 3.0, 4.0]);
+        assert_eq!(
+            time_warp_shift_v1(&samples, &shifts).unwrap(),
+            vec![1.0, 3.0, 4.0]
+        );
     }
 
     #[test]
@@ -96,7 +102,10 @@ mod tests {
         let shifts = vec![0.25, 0.25, 0.25, 0.0];
         // n=0 p=0.25 -> 0*0.75+2*0.25=0.5; n=1 p=1.25 -> 2*.75+4*.25=2.5;
         // n=2 p=2.25 -> 4*.75+8*.25=5.0; n=3 p=3.0 -> 8.0
-        assert_eq!(time_warp_shift_v1(&samples, &shifts).unwrap(), vec![0.5, 2.5, 5.0, 8.0]);
+        assert_eq!(
+            time_warp_shift_v1(&samples, &shifts).unwrap(),
+            vec![0.5, 2.5, 5.0, 8.0]
+        );
     }
 
     #[test]
@@ -114,7 +123,10 @@ mod tests {
 
     #[test]
     fn rejects_empty_and_length_mismatch() {
-        assert_eq!(time_warp_shift_v1(&[], &[]).err(), Some(TimeWarpErrorV1::EmptyWaveform));
+        assert_eq!(
+            time_warp_shift_v1(&[], &[]).err(),
+            Some(TimeWarpErrorV1::EmptyWaveform)
+        );
         assert_eq!(
             time_warp_shift_v1(&[1.0], &[0.0, 0.0]).err(),
             Some(TimeWarpErrorV1::LengthMismatch)

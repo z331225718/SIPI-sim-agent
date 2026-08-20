@@ -10,11 +10,11 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    parameter_list_sorted_rank_v1, AmiParameterValueV1, ParameterListSortedRankErrorV1,
-    PARAMETER_LIST_SORTED_RANK_POLICY_V1,
+    AmiParameterValueV1, PARAMETER_LIST_SORTED_RANK_POLICY_V1, ParameterListSortedRankErrorV1,
+    parameter_list_sorted_rank_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -27,7 +27,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b169_parameter_list_sorted_rank_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b169_parameter_list_sorted_rank_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -46,7 +48,8 @@ fn main() {
                 "input_error": "invalid_value",
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

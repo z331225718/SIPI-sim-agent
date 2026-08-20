@@ -23,7 +23,7 @@ Python reference replicates the tokenize/build/apply pipeline over 4 test cases.
 - Cross-check: 4 test cases (fill missing, skip existing, empty defaults, empty default tokens)
   driven through product runner `p4b_02b38_parameter_tree_apply_defaults_runner`; independent Python
   reference matches 100% on valid flags, added/skipped counts, root names, resulting tree
-  structures, and error contexts; 4/4 matched_hash_bound.
+  structures, and error contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

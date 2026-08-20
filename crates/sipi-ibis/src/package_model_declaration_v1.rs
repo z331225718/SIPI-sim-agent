@@ -53,7 +53,9 @@ impl TypedPackageModelDeclarationV1 {
             return Err(PackageModelDeclarationErrorV1::InvalidName);
         }
 
-        let validate_rlc = |val: Option<f64>, kind: &'static str| -> Result<Option<FiniteF64>, PackageModelDeclarationErrorV1> {
+        let validate_rlc = |val: Option<f64>,
+                            kind: &'static str|
+         -> Result<Option<FiniteF64>, PackageModelDeclarationErrorV1> {
             match val {
                 None => Ok(None),
                 Some(v) => {
@@ -123,13 +125,9 @@ mod tests {
 
     #[test]
     fn valid_full_package_model() {
-        let pkg = lift_package_model_declaration_v1(
-            "FBGA84_PKG",
-            Some(0.1),
-            Some(1e-9),
-            Some(1e-12),
-        )
-        .expect("lift");
+        let pkg =
+            lift_package_model_declaration_v1("FBGA84_PKG", Some(0.1), Some(1e-9), Some(1e-12))
+                .expect("lift");
         assert_eq!(pkg.name(), "FBGA84_PKG");
         assert_eq!(pkg.r_pkg_ohm().unwrap().get(), 0.1);
         assert_eq!(pkg.l_pkg_henry().unwrap().get(), 1e-9);

@@ -56,8 +56,8 @@ pub fn keep_only_parameter_list_items_multi_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListMultiKeepOnlyErrorV1::NotAList);
     }
-    let list = list_items(value.value_token())
-        .ok_or(ParameterListMultiKeepOnlyErrorV1::MalformedList)?;
+    let list =
+        list_items(value.value_token()).ok_or(ParameterListMultiKeepOnlyErrorV1::MalformedList)?;
     let kept: Vec<String> = list
         .into_iter()
         .filter(|candidate| items.contains(&candidate.as_str()))

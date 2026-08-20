@@ -9,8 +9,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_channel::{
-    track_cdr_lock_v1, CdrLockConfigV1, CdrLockStateV1, CdrSampleClassificationV1,
-    CDR_LOCK_POLICY_V1,
+    CDR_LOCK_POLICY_V1, CdrLockConfigV1, CdrLockStateV1, CdrSampleClassificationV1,
+    track_cdr_lock_v1,
 };
 
 fn main() {
@@ -32,16 +32,33 @@ fn main() {
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
 
-    let lock_threshold = value.get("lock_threshold").and_then(|v| v.as_f64()).unwrap_or(f64::NAN);
-    let unlock_threshold = value.get("unlock_threshold").and_then(|v| v.as_f64()).unwrap_or(f64::NAN);
-    let lock_count = value.get("lock_count").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
-    let unlock_count = value.get("unlock_count").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+    let lock_threshold = value
+        .get("lock_threshold")
+        .and_then(|v| v.as_f64())
+        .unwrap_or(f64::NAN);
+    let unlock_threshold = value
+        .get("unlock_threshold")
+        .and_then(|v| v.as_f64())
+        .unwrap_or(f64::NAN);
+    let lock_count = value
+        .get("lock_count")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as usize;
+    let unlock_count = value
+        .get("unlock_count")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as usize;
     let mut errors = Vec::new();
     if let Some(arr) = value.get("errors").and_then(|v| v.as_array()) {
         errors.extend(arr.iter().filter_map(|v| v.as_f64()));
     }
 
-    let config = match CdrLockConfigV1::try_new(lock_threshold, unlock_threshold, lock_count, unlock_count) {
+    let config = match CdrLockConfigV1::try_new(
+        lock_threshold,
+        unlock_threshold,
+        lock_count,
+        unlock_count,
+    ) {
         Ok(c) => c,
         Err(e) => {
             let output = serde_json::json!({
@@ -50,7 +67,8 @@ fn main() {
                 "cdr_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

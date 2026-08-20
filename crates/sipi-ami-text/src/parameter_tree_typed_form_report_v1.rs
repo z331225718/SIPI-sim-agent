@@ -12,8 +12,8 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    AmiParameterTreeV1, AmiParameterTreeNodeV1, AmiParameterTypeV1,
-    AmiParameterValueErrorV1, AmiParameterValueV1,
+    AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterTypeV1, AmiParameterValueErrorV1,
+    AmiParameterValueV1,
 };
 
 /// Scope policy for the typed-form conformance report core.
@@ -81,10 +81,7 @@ impl ParameterTreeTypedFormReportV1 {
     }
 }
 
-fn classify_leaf(
-    name: &str,
-    value_tokens: &[String],
-) -> (bool, Option<TypedFormViolationV1>) {
+fn classify_leaf(name: &str, value_tokens: &[String]) -> (bool, Option<TypedFormViolationV1>) {
     if value_tokens.is_empty() {
         return (false, Some(TypedFormViolationV1::EmptyValueTokens));
     }
@@ -119,9 +116,7 @@ fn classify_leaf(
                         "structurally impossible: tree names are non-empty and the                          type token was just parsed"
                     )
                 }
-                AmiParameterValueErrorV1::InvalidName => {
-                    TypedFormViolationV1::InvalidParameterName
-                }
+                AmiParameterValueErrorV1::InvalidName => TypedFormViolationV1::InvalidParameterName,
                 other => TypedFormViolationV1::InvalidValue { error: other },
             };
             (false, Some(violation))
@@ -139,10 +134,7 @@ fn walk(
                 walk(child, entries);
             }
         }
-        AmiParameterTreeNodeV1::Leaf {
-            name,
-            value_tokens,
-        } => {
+        AmiParameterTreeNodeV1::Leaf { name, value_tokens } => {
             let (conforming, violation) = classify_leaf(name, value_tokens);
             entries.insert(
                 name.clone(),
@@ -207,7 +199,10 @@ mod tests {
     fn all_conforming_leaves_are_reported() {
         let t = tree(branch(
             "root",
-            vec![leaf("gain", &["Float", "0.5"]), leaf("steps", &["Integer", "7"])],
+            vec![
+                leaf("gain", &["Float", "0.5"]),
+                leaf("steps", &["Integer", "7"]),
+            ],
         ));
         let report = check_parameter_tree_typed_form_conformance_v1(&t);
         assert_eq!(report.conforming_count(), 2);

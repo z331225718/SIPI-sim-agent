@@ -22,7 +22,7 @@ over 4 test cases.
 - Cross-check: 4 test cases (subset projection, nested projection, empty selection, missing leaf)
   driven through product runner `p4b_02b35_parameter_tree_leaf_projection_runner`; independent
   Python reference matches 100% on valid flags, root names, projected tree structures, and error
-  contexts; 4/4 matched_hash_bound.
+  contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

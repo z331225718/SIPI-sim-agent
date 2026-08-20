@@ -18,7 +18,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1, AmiParameterTypeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterTypeV1};
 
 /// Explicit scope policy of this slice: declared-type map of tree leaves.
 pub const PARAMETER_TREE_LEAF_TYPE_MAP_POLICY_V1: &str =
@@ -64,12 +64,12 @@ fn collect(node: &AmiParameterTreeNodeV1, state: &mut ParameterTreeLeafTypeMapV1
         }
         AmiParameterTreeNodeV1::Leaf { name, value_tokens } => {
             state.leaves_total += 1;
-            if value_tokens.len() == 2 {
-                if let Some(parameter_type) = AmiParameterTypeV1::from_token(&value_tokens[0]) {
-                    state.type_map.insert(name.clone(), parameter_type);
-                    state.typed_leaves += 1;
-                    return;
-                }
+            if value_tokens.len() == 2
+                && let Some(parameter_type) = AmiParameterTypeV1::from_token(&value_tokens[0])
+            {
+                state.type_map.insert(name.clone(), parameter_type);
+                state.typed_leaves += 1;
+                return;
             }
             state.skipped += 1;
         }
@@ -93,7 +93,7 @@ pub fn extract_parameter_tree_leaf_type_map_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{build_parameter_trees_v1, parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, build_parameter_trees_v1, parse_ami_text_v1};
 
     fn tree(text: &str) -> AmiParameterTreeV1 {
         let limits = ParseLimitsV1::try_new(8 * 1024 * 1024, 64, 4096, 4096).expect("limits");

@@ -28,7 +28,7 @@ exclusive rule over 4 test cases.
   disjoint full join, non-list, spacing canonicalized).
 - Cross-check: 4 test cases (symmetric difference, duplicates, equal values, non-list) driven
   through product runner `p4b_02b149_parameter_list_symmetric_difference_runner`; independent
-  Python reference matches 100% on tokens and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on tokens and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

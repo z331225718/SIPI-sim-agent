@@ -6,8 +6,10 @@
 //! missing parent path segments, or duplicate child names at the attachment point
 //! are strictly rejected.
 
+use crate::parameter_tree_subtree_v1::{
+    ParameterTreeSubtreeErrorV1, extract_parameter_tree_subtree_v1,
+};
 use crate::parameter_trees_v1::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
-use crate::parameter_tree_subtree_v1::{extract_parameter_tree_subtree_v1, ParameterTreeSubtreeErrorV1};
 
 /// Scope policy for the parameter tree compose core.
 pub const PARAMETER_TREE_COMPOSE_POLICY_V1: &str =
@@ -29,7 +31,9 @@ fn is_valid_identifier(name: &str) -> bool {
     let trimmed = name.trim();
     !trimmed.is_empty()
         && trimmed.is_ascii()
-        && trimmed.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+        && trimmed
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
 }
 
 fn compose_node(
@@ -44,7 +48,9 @@ fn compose_node(
             if segments.is_empty() {
                 let child_name = subtree.name();
                 if new_children.contains_key(child_name) {
-                    return Err(ParameterTreeComposeErrorV1::DuplicateChild(child_name.to_string()));
+                    return Err(ParameterTreeComposeErrorV1::DuplicateChild(
+                        child_name.to_string(),
+                    ));
                 }
                 new_children.insert(child_name.to_string(), subtree.clone());
             } else {
@@ -60,9 +66,9 @@ fn compose_node(
                 children: new_children,
             })
         }
-        AmiParameterTreeNodeV1::Leaf { .. } => {
-            Err(ParameterTreeComposeErrorV1::MissingPath(full_path.to_string()))
-        }
+        AmiParameterTreeNodeV1::Leaf { .. } => Err(ParameterTreeComposeErrorV1::MissingPath(
+            full_path.to_string(),
+        )),
     }
 }
 
@@ -107,7 +113,9 @@ pub fn compose_parameter_tree_subtree_v1(
             ParameterTreeSubtreeErrorV1::RootMismatch { expected, actual } => {
                 ParameterTreeComposeErrorV1::RootMismatch { expected, actual }
             }
-            ParameterTreeSubtreeErrorV1::MissingPath(p) => ParameterTreeComposeErrorV1::MissingPath(p),
+            ParameterTreeSubtreeErrorV1::MissingPath(p) => {
+                ParameterTreeComposeErrorV1::MissingPath(p)
+            }
         });
     }
 
@@ -119,9 +127,9 @@ pub fn compose_parameter_tree_subtree_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ParseLimitsV1;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
     use crate::parse_ami_text_v1;
-    use crate::ParseLimitsV1;
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
@@ -134,7 +142,11 @@ mod tests {
 
     fn node_of(text: &str) -> AmiParameterTreeNodeV1 {
         let doc = parse_ami_text_v1(text.as_bytes(), limits()).expect("parse");
-        build_parameter_trees_v1(&doc).expect("build").remove(0).root_node().clone()
+        build_parameter_trees_v1(&doc)
+            .expect("build")
+            .remove(0)
+            .root_node()
+            .clone()
     }
 
     #[test]
@@ -158,8 +170,10 @@ mod tests {
     fn composes_subtree_under_nested_branch() {
         let tree = tree_of("(root (branch_a (leaf_1 10)))");
         let sub = node_of("(leaf_2 20)");
-        let composed = compose_parameter_tree_subtree_v1(&tree, "root.branch_a", &sub).expect("compose");
-        let out = extract_parameter_tree_subtree_v1(&composed, "root.branch_a.leaf_2").expect("extract");
+        let composed =
+            compose_parameter_tree_subtree_v1(&tree, "root.branch_a", &sub).expect("compose");
+        let out =
+            extract_parameter_tree_subtree_v1(&composed, "root.branch_a.leaf_2").expect("extract");
         assert_eq!(out.name(), "leaf_2");
     }
 
@@ -169,7 +183,9 @@ mod tests {
         let sub = node_of("(c 3)");
         assert_eq!(
             compose_parameter_tree_subtree_v1(&tree, "root.a", &sub),
-            Err(ParameterTreeComposeErrorV1::MissingPath("root.a".to_string()))
+            Err(ParameterTreeComposeErrorV1::MissingPath(
+                "root.a".to_string()
+            ))
         );
     }
 
@@ -179,7 +195,9 @@ mod tests {
         let sub = node_of("(leaf_1 99)");
         assert_eq!(
             compose_parameter_tree_subtree_v1(&tree, "root.branch_a", &sub),
-            Err(ParameterTreeComposeErrorV1::DuplicateChild("leaf_1".to_string()))
+            Err(ParameterTreeComposeErrorV1::DuplicateChild(
+                "leaf_1".to_string()
+            ))
         );
     }
 
@@ -189,7 +207,9 @@ mod tests {
         let sub = node_of("(c 3)");
         assert_eq!(
             compose_parameter_tree_subtree_v1(&tree, "root.nope", &sub),
-            Err(ParameterTreeComposeErrorV1::MissingPath("root.nope".to_string()))
+            Err(ParameterTreeComposeErrorV1::MissingPath(
+                "root.nope".to_string()
+            ))
         );
     }
 }

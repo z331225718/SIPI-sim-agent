@@ -24,7 +24,7 @@ cases.
   spacing canonicalized).
 - Cross-check: 4 test cases (reverse multi, single, two items, non-list) driven through product
   runner `p4b_02b104_parameter_list_reverse_runner`; independent Python reference matches 100% on
-  reversed tokens and error keys; 4/4 matched_hash_bound.
+  reversed tokens and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

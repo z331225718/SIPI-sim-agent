@@ -3,11 +3,11 @@
 use std::path::PathBuf;
 
 use sipi_ami_text::{
-    token_valid_for_type_v1, AmiParameterTypeV1, CatalogEntryV1, AmiUsageV1,
-    ParameterCatalogV1, validate_catalog_defaults_v1, CATALOG_DEFAULT_POLICY_V1,
+    AmiParameterTypeV1, AmiUsageV1, CATALOG_DEFAULT_POLICY_V1, CatalogEntryV1, ParameterCatalogV1,
+    token_valid_for_type_v1, validate_catalog_defaults_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -33,7 +33,10 @@ fn main() {
             let name = e["name"].as_str().unwrap().to_string();
             let type_token = e["type"].as_str().unwrap().to_string();
             let ty = AmiParameterTypeV1::from_token(&type_token).expect("type");
-            let default = e.get("default").and_then(|d| d.as_str()).map(|s| s.to_string());
+            let default = e
+                .get("default")
+                .and_then(|d| d.as_str())
+                .map(|s| s.to_string());
             let valid = match &default {
                 None => true,
                 Some(s) => token_valid_for_type_v1(&type_token, s),
@@ -45,7 +48,10 @@ fn main() {
     let catalog = ParameterCatalogV1::compile(entries).expect("catalog");
     let overall = validate_catalog_defaults_v1(&catalog).is_ok();
 
-    let per_case_json: Vec<serde_json::Value> = per_case.iter().map(|(n, v)| serde_json::json!({ "name": n, "valid": v })).collect();
+    let per_case_json: Vec<serde_json::Value> = per_case
+        .iter()
+        .map(|(n, v)| serde_json::json!({ "name": n, "valid": v }))
+        .collect();
     let output = serde_json::json!({
         "policy": CATALOG_DEFAULT_POLICY_V1,
         "valid": overall,

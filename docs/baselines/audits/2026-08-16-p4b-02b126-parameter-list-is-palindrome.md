@@ -24,7 +24,7 @@ panicking). An independent Python reference replicates the symmetry rule over 4 
   non-list, spacing canonicalized).
 - Cross-check: 4 test cases (palindrome, non-palindrome, even-length palindrome, non-list)
   driven through product runner `p4b_02b126_parameter_list_is_palindrome_runner`; independent
-  Python reference matches 100% on booleans and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on booleans and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

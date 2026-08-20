@@ -11,8 +11,8 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    extract_typed_parameter_forms_v1, AmiParameterTreeV1, AmiParameterValueV1,
-    ParameterTreeTypedFormErrorV1,
+    AmiParameterTreeV1, AmiParameterValueV1, ParameterTreeTypedFormErrorV1,
+    extract_typed_parameter_forms_v1,
 };
 
 /// Outcome of a successful multi-tree typed-form extraction pass.
@@ -112,7 +112,10 @@ mod tests {
         let t1 = tree(branch("root", vec![leaf("gain", &["Float", "0.5"])]));
         let t2 = tree(branch(
             "root",
-            vec![leaf("steps", &["Integer", "7"]), leaf("enabled", &["Boolean", "True"])],
+            vec![
+                leaf("steps", &["Integer", "7"]),
+                leaf("enabled", &["Boolean", "True"]),
+            ],
         ));
         let result = extract_typed_parameter_forms_multi_v1(&[t1, t2]).expect("extracted");
         assert_eq!(result.leaves_consumed(), 3);

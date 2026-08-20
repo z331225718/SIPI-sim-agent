@@ -9,11 +9,11 @@
 use std::path::PathBuf;
 
 use sipi_ami_text::{
-    build_ami_runtime_params_v1, AmiParameterTypeV1, AmiUsageV1, CatalogEntryV1,
-    ParameterCatalogV1, AMI_RUNTIME_PARAMS_POLICY_V1, RuntimeParamsErrorV1,
+    AMI_RUNTIME_PARAMS_POLICY_V1, AmiParameterTypeV1, AmiUsageV1, CatalogEntryV1,
+    ParameterCatalogV1, RuntimeParamsErrorV1, build_ami_runtime_params_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -38,7 +38,10 @@ fn main() {
             let name = e["name"].as_str().unwrap().to_string();
             let usage = AmiUsageV1::from_token(e["usage"].as_str().unwrap()).expect("usage");
             let ty = AmiParameterTypeV1::from_token(e["type"].as_str().unwrap()).expect("type");
-            let default = e.get("default").and_then(|d| d.as_str()).map(|s| s.to_string());
+            let default = e
+                .get("default")
+                .and_then(|d| d.as_str())
+                .map(|s| s.to_string());
             entries.push(CatalogEntryV1::new(name, usage, ty, default));
         }
     }

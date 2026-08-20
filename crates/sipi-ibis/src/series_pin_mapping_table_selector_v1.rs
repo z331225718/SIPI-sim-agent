@@ -48,9 +48,15 @@ impl TypedSeriesPinSelectorRecordV1 {
         if !pf.is_ascii() || !ps.is_ascii() || !ms.is_ascii() {
             return Err(SeriesPinTableSelectorErrorV1::NonAsciiName);
         }
-        if !pf.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !ps.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !ms.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+        if !pf
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !ps
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !ms
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
         {
             return Err(SeriesPinTableSelectorErrorV1::InvalidName);
         }
@@ -60,17 +66,13 @@ impl TypedSeriesPinSelectorRecordV1 {
 
         let ftg = function_table_group.and_then(|g| {
             let t = g.into().trim().to_string();
-            if t.is_empty() {
-                None
-            } else {
-                Some(t)
-            }
+            if t.is_empty() { None } else { Some(t) }
         });
 
-        if let Some(ref g) = ftg {
-            if !g.is_ascii() {
-                return Err(SeriesPinTableSelectorErrorV1::NonAsciiName);
-            }
+        if let Some(ref g) = ftg
+            && !g.is_ascii()
+        {
+            return Err(SeriesPinTableSelectorErrorV1::NonAsciiName);
         }
 
         Ok(Self {
@@ -127,13 +129,8 @@ mod tests {
 
     #[test]
     fn valid_full_selector_record() {
-        let rec = lift_series_pin_selector_record_v1(
-            "P1",
-            "P2",
-            "SEL_SERIES_RES",
-            Some("GRP1"),
-        )
-        .expect("lift");
+        let rec = lift_series_pin_selector_record_v1("P1", "P2", "SEL_SERIES_RES", Some("GRP1"))
+            .expect("lift");
         assert_eq!(rec.pin_first(), "P1");
         assert_eq!(rec.pin_second(), "P2");
         assert_eq!(rec.model_selector_name(), "SEL_SERIES_RES");
@@ -142,13 +139,8 @@ mod tests {
 
     #[test]
     fn valid_minimal_selector_record() {
-        let rec = lift_series_pin_selector_record_v1(
-            "P1",
-            "P2",
-            "SEL_SERIES_RES",
-            None,
-        )
-        .expect("lift");
+        let rec =
+            lift_series_pin_selector_record_v1("P1", "P2", "SEL_SERIES_RES", None).expect("lift");
         assert_eq!(rec.pin_first(), "P1");
         assert_eq!(rec.pin_second(), "P2");
         assert_eq!(rec.model_selector_name(), "SEL_SERIES_RES");

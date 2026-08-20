@@ -26,7 +26,7 @@ reference replicates the union rule over 4 test cases.
   values, disjoint full join, non-list, spacing canonicalized).
 - Cross-check: 4 test cases (union, left duplicates, equal values, non-list) driven through
   product runner `p4b_02b150_parameter_list_union_runner`; independent Python reference
-  matches 100% on tokens and error keys; 4/4 matched_hash_bound.
+  matches 100% on tokens and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

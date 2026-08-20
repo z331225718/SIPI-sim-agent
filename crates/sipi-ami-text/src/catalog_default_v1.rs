@@ -23,15 +23,16 @@ pub enum CatalogDefaultErrorV1 {
 
 /// Checks whether a raw value token is valid for an AMI parameter type.
 /// Reuses the exact rules from parameter_value_v1::AmiParameterValueV1.
-pub fn token_valid_for_type_v1(
-    type_token: &str,
-    value_token: &str,
-) -> bool {
+pub fn token_valid_for_type_v1(type_token: &str, value_token: &str) -> bool {
     let Some(parameter_type) = AmiParameterTypeV1::from_token(type_token) else {
         return false;
     };
-    let rule_ok = match parameter_type {
-        AmiParameterTypeV1::Float => value_token.parse::<f64>().map(|v| v.is_finite()).unwrap_or(false),
+
+    match parameter_type {
+        AmiParameterTypeV1::Float => value_token
+            .parse::<f64>()
+            .map(|v| v.is_finite())
+            .unwrap_or(false),
         AmiParameterTypeV1::Integer => value_token.parse::<i64>().is_ok(),
         AmiParameterTypeV1::Boolean => value_token == "True" || value_token == "False",
         AmiParameterTypeV1::String_ => !value_token.is_empty(),
@@ -40,8 +41,7 @@ pub fn token_valid_for_type_v1(
                 && value_token.ends_with(')')
                 && !value_token[1..value_token.len() - 1].trim().is_empty()
         }
-    };
-    rule_ok
+    }
 }
 
 /// Validates the default token of every catalog entry that declares one.
@@ -51,14 +51,16 @@ pub fn validate_catalog_defaults_v1(
     catalog: &ParameterCatalogV1,
 ) -> Result<(), CatalogDefaultErrorV1> {
     for name in catalog.parameter_names() {
-        let entry = catalog.entry(&name).ok_or_else(|| CatalogDefaultErrorV1::MissingDefault(name.clone()))?;
-        if let Some(default) = entry.default_token() {
-            if !token_valid_for_type_v1(entry.parameter_type().token(), default) {
-                return Err(CatalogDefaultErrorV1::InvalidDefault {
-                    name,
-                    kind: entry.parameter_type().token().to_string(),
-                });
-            }
+        let entry = catalog
+            .entry(&name)
+            .ok_or_else(|| CatalogDefaultErrorV1::MissingDefault(name.clone()))?;
+        if let Some(default) = entry.default_token()
+            && !token_valid_for_type_v1(entry.parameter_type().token(), default)
+        {
+            return Err(CatalogDefaultErrorV1::InvalidDefault {
+                name,
+                kind: entry.parameter_type().token().to_string(),
+            });
         }
     }
     Ok(())
@@ -96,12 +98,20 @@ mod tests {
     }
 
     fn entry(name: &str, ty: AmiParameterTypeV1, default: Option<&str>) -> CatalogEntryV1 {
-        CatalogEntryV1::new(name.to_string(), AmiUsageV1::In, ty, default.map(|s| s.to_string()))
+        CatalogEntryV1::new(
+            name.to_string(),
+            AmiUsageV1::In,
+            ty,
+            default.map(|s| s.to_string()),
+        )
     }
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(CATALOG_DEFAULT_POLICY_V1, "sipi.p4b-02b4.catalog-default.v1.validity");
+        assert_eq!(
+            CATALOG_DEFAULT_POLICY_V1,
+            "sipi.p4b-02b4.catalog-default.v1.validity"
+        );
     }
 
     #[test]
@@ -116,7 +126,11 @@ mod tests {
 
     #[test]
     fn float_bad_default_rejected() {
-        let c = catalog(vec![entry("swing", AmiParameterTypeV1::Float, Some("not-a-float"))]);
+        let c = catalog(vec![entry(
+            "swing",
+            AmiParameterTypeV1::Float,
+            Some("not-a-float"),
+        )]);
         assert!(validate_catalog_defaults_v1(&c).is_err());
     }
 
@@ -128,7 +142,11 @@ mod tests {
 
     #[test]
     fn boolean_typo_rejected() {
-        let c = catalog(vec![entry("flag", AmiParameterTypeV1::Boolean, Some("true"))]);
+        let c = catalog(vec![entry(
+            "flag",
+            AmiParameterTypeV1::Boolean,
+            Some("true"),
+        )]);
         assert!(validate_catalog_defaults_v1(&c).is_err());
     }
 

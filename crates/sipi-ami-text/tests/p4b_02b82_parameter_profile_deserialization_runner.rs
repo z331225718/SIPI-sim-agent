@@ -9,11 +9,11 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    deserialize_parameter_profile_v1, ParameterProfileDeserializationErrorV1,
-    PARAMETER_PROFILE_DESERIALIZATION_POLICY_V1,
+    PARAMETER_PROFILE_DESERIALIZATION_POLICY_V1, ParameterProfileDeserializationErrorV1,
+    deserialize_parameter_profile_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -26,7 +26,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b82_parameter_profile_deserialization_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b82_parameter_profile_deserialization_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");

@@ -44,25 +44,25 @@ impl TypedSeriesPinGroupSelectorRecordV1 {
         if !gn.is_ascii() || !ms.is_ascii() {
             return Err(SeriesPinTableGroupSelectorErrorV1::NonAsciiName);
         }
-        if !gn.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !ms.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+        if !gn
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !ms
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
         {
             return Err(SeriesPinTableGroupSelectorErrorV1::InvalidName);
         }
 
         let ftg = function_table_group.and_then(|g| {
             let t = g.into().trim().to_string();
-            if t.is_empty() {
-                None
-            } else {
-                Some(t)
-            }
+            if t.is_empty() { None } else { Some(t) }
         });
 
-        if let Some(ref g) = ftg {
-            if !g.is_ascii() {
-                return Err(SeriesPinTableGroupSelectorErrorV1::NonAsciiName);
-            }
+        if let Some(ref g) = ftg
+            && !g.is_ascii()
+        {
+            return Err(SeriesPinTableGroupSelectorErrorV1::NonAsciiName);
         }
 
         Ok(Self {
@@ -112,12 +112,9 @@ mod tests {
 
     #[test]
     fn valid_full_group_selector_record() {
-        let rec = lift_series_pin_group_selector_record_v1(
-            "SERIES_GRP1",
-            "SEL_SERIES_RES",
-            Some("GRP1"),
-        )
-        .expect("lift");
+        let rec =
+            lift_series_pin_group_selector_record_v1("SERIES_GRP1", "SEL_SERIES_RES", Some("GRP1"))
+                .expect("lift");
         assert_eq!(rec.group_name(), "SERIES_GRP1");
         assert_eq!(rec.model_selector_name(), "SEL_SERIES_RES");
         assert_eq!(rec.function_table_group(), Some("GRP1"));
@@ -125,12 +122,8 @@ mod tests {
 
     #[test]
     fn valid_minimal_group_selector_record() {
-        let rec = lift_series_pin_group_selector_record_v1(
-            "SERIES_GRP1",
-            "SEL_SERIES_RES",
-            None,
-        )
-        .expect("lift");
+        let rec = lift_series_pin_group_selector_record_v1("SERIES_GRP1", "SEL_SERIES_RES", None)
+            .expect("lift");
         assert_eq!(rec.group_name(), "SERIES_GRP1");
         assert_eq!(rec.model_selector_name(), "SEL_SERIES_RES");
         assert_eq!(rec.function_table_group(), None);

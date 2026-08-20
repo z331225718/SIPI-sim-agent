@@ -24,7 +24,7 @@ per-type counting over 4 test cases.
   quoted List counted as List, tree without typed leaves).
 - Cross-check: 4 test cases (typed forms, mixed skipped, nested, no typed) driven through product
   runner `p4b_02b93_parameter_tree_typed_leaf_type_counts_runner`; independent Python reference
-  matches 100% on all per-type counts and skipped; 4/4 matched_hash_bound.
+  matches 100% on all per-type counts and skipped; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

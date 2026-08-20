@@ -23,7 +23,7 @@ reference replicates the occurrence rule over 4 test cases.
   non-list, single occurrence, all occurrences).
 - Cross-check: 4 test cases (multiple occurrences, absent, single with spacing, non-list) driven
   through product runner `p4b_02b108_parameter_list_occurrence_count_runner`; independent Python
-  reference matches 100% on occurrence counts and error keys; 4/4 matched_hash_bound.
+  reference matches 100% on occurrence counts and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

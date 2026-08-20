@@ -55,10 +55,7 @@ pub fn parameter_list_equal_adjacent_count_v1(
     }
     let items = list_items(value.value_token())
         .ok_or(ParameterListEqualAdjacentCountErrorV1::MalformedList)?;
-    Ok(items
-        .windows(2)
-        .filter(|pair| pair[0] == pair[1])
-        .count())
+    Ok(items.windows(2).filter(|pair| pair[0] == pair[1]).count())
 }
 
 #[cfg(test)]

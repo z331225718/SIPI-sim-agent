@@ -66,8 +66,14 @@ pub fn list_contains_multiset_v1(
         return Ok(false);
     }
     for item in &query_items {
-        let query_count = query_items.iter().filter(|candidate| *candidate == item).count();
-        let host_count = host_items.iter().filter(|candidate| *candidate == item).count();
+        let query_count = query_items
+            .iter()
+            .filter(|candidate| *candidate == item)
+            .count();
+        let host_count = host_items
+            .iter()
+            .filter(|candidate| *candidate == item)
+            .count();
         if query_count > host_count {
             return Ok(false);
         }

@@ -7,7 +7,7 @@
 
 use std::path::PathBuf;
 
-use sipi_link::{time_warp_shift_v1, TimeWarpErrorV1, TIME_WARP_POLICY_V1};
+use sipi_link::{TIME_WARP_POLICY_V1, TimeWarpErrorV1, time_warp_shift_v1};
 
 fn main() {
     let mut input = None;

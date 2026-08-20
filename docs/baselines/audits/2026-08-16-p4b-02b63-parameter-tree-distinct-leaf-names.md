@@ -20,7 +20,7 @@ tokenize/build/enumerate pipeline over 4 test cases.
 - 4 Rust unit tests green (cross-depth dedup; byte-wise sort; root-leaf tree; branch-only tree).
 - Cross-check: 4 test cases (cross-depth dedup, sorted names, root leaf, branch only) driven
   through product runner `p4b_02b63_parameter_tree_distinct_leaf_names_runner`; independent Python
-  reference matches 100% on valid flags, distinct counts, and name lists; 4/4 matched_hash_bound.
+  reference matches 100% on valid flags, distinct counts, and name lists; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

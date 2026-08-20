@@ -19,7 +19,7 @@ enumeration over 4 test cases.
 - 4 Rust unit tests green (deep path chain; medium path; single segment; empty path fails closed).
 - Cross-check: 4 test cases (deep, medium, single, empty) driven through product runner
   `p4b_02b68_parameter_tree_path_prefixes_runner`; independent Python reference matches 100% on
-  valid flags, prefix lists, and error contexts; 4/4 matched_hash_bound.
+  valid flags, prefix lists, and error contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

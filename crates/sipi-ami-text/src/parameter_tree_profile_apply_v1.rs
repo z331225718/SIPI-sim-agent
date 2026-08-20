@@ -10,7 +10,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1, AmiParameterValueV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterValueV1};
 
 /// Scope policy for the profile apply core.
 pub const PARAMETER_TREE_PROFILE_APPLY_POLICY_V1: &str =
@@ -44,10 +44,7 @@ impl ParameterTreeProfileApplyV1 {
     }
 }
 
-fn count_leaf_occurrences(
-    node: &AmiParameterTreeNodeV1,
-    counts: &mut BTreeMap<String, usize>,
-) {
+fn count_leaf_occurrences(node: &AmiParameterTreeNodeV1, counts: &mut BTreeMap<String, usize>) {
     match node {
         AmiParameterTreeNodeV1::Branch { children, .. } => {
             for child in children.values() {
@@ -69,9 +66,7 @@ fn apply_profile(
         AmiParameterTreeNodeV1::Branch { name, children } => {
             let new_children = children
                 .iter()
-                .map(|(key, child)| {
-                    (key.clone(), apply_profile(child, profile, applied))
-                })
+                .map(|(key, child)| (key.clone(), apply_profile(child, profile, applied)))
                 .collect();
             AmiParameterTreeNodeV1::Branch {
                 name: name.clone(),
@@ -112,9 +107,7 @@ pub fn apply_parameter_profile_to_tree_v1(
     for name in profile.keys() {
         match counts.get(name) {
             None => {
-                return Err(ParameterTreeProfileApplyErrorV1::MissingLeaf(
-                    name.clone(),
-                ));
+                return Err(ParameterTreeProfileApplyErrorV1::MissingLeaf(name.clone()));
             }
             Some(&count) if count > 1 => {
                 return Err(ParameterTreeProfileApplyErrorV1::AmbiguousName(
@@ -165,12 +158,7 @@ mod tests {
     fn profile_of(pairs: &[(&str, &str, &str)]) -> BTreeMap<String, AmiParameterValueV1> {
         pairs
             .iter()
-            .map(|(name, type_token, value)| {
-                (
-                    name.to_string(),
-                    parameter(name, type_token, value),
-                )
-            })
+            .map(|(name, type_token, value)| (name.to_string(), parameter(name, type_token, value)))
             .collect()
     }
 
@@ -191,7 +179,10 @@ mod tests {
     fn applies_profile_values_to_leaves() {
         let t = tree(branch(
             "root",
-            vec![leaf("gain", &["Float", "0.5"]), leaf("steps", &["Integer", "7"])],
+            vec![
+                leaf("gain", &["Float", "0.5"]),
+                leaf("steps", &["Integer", "7"]),
+            ],
         ));
         let profile = profile_of(&[("gain", "Float", "1.25"), ("steps", "Integer", "8")]);
         let result = apply_parameter_profile_to_tree_v1(&t, &profile).expect("applied");
@@ -214,7 +205,10 @@ mod tests {
     fn unlisted_leaves_are_unchanged() {
         let t = tree(branch(
             "root",
-            vec![leaf("gain", &["Float", "0.5"]), leaf("steps", &["Integer", "7"])],
+            vec![
+                leaf("gain", &["Float", "0.5"]),
+                leaf("steps", &["Integer", "7"]),
+            ],
         ));
         let profile = profile_of(&[("gain", "Float", "1.25")]);
         let result = apply_parameter_profile_to_tree_v1(&t, &profile).expect("applied");

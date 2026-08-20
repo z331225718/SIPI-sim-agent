@@ -26,7 +26,7 @@ reference replicates the rule over 4 test cases.
   canonicalized, non-list).
 - Cross-check: 4 test cases (longest run, tie earliest, all distinct, non-list) driven
   through product runner `p4b_02b170_parameter_list_longest_run_item_runner`; independent
-  Python reference matches 100% on items and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on items and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

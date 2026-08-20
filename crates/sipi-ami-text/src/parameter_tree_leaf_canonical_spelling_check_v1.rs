@@ -18,11 +18,9 @@
 //! back in deterministic sorted (path) order; `canonical()` is true exactly
 //! when no non-canonical leaf was found.
 
-use std::collections::BTreeMap;
-
 use crate::{
-    canonicalize_parameter_value_spelling_v1, AmiParameterTreeV1, AmiParameterTreeNodeV1,
-    AmiParameterTypeV1, AmiParameterValueV1,
+    AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterTypeV1, AmiParameterValueV1,
+    canonicalize_parameter_value_spelling_v1,
 };
 
 /// Explicit scope policy of this slice: canonical leaf spelling check.
@@ -97,25 +95,22 @@ fn collect(
             }
         }
         AmiParameterTreeNodeV1::Leaf { name, value_tokens } => {
-            if value_tokens.len() == 2 {
-                if AmiParameterTypeV1::from_token(&value_tokens[0]).is_some() {
-                    if let Ok(parameter) =
-                        AmiParameterValueV1::try_new(name, &value_tokens[0], &value_tokens[1])
-                    {
-                        report.typed_leaves += 1;
-                        let canonical =
-                            canonicalize_parameter_value_spelling_v1(&parameter);
-                        if canonical != value_tokens[1] {
-                            report.non_canonical.push(
-                                ParameterTreeLeafCanonicalSpellingIssueV1 {
-                                    path: current,
-                                    type_token: value_tokens[0].clone(),
-                                    value_token: value_tokens[1].clone(),
-                                    canonical,
-                                },
-                            );
-                        }
-                    }
+            if value_tokens.len() == 2
+                && AmiParameterTypeV1::from_token(&value_tokens[0]).is_some()
+                && let Ok(parameter) =
+                    AmiParameterValueV1::try_new(name, &value_tokens[0], &value_tokens[1])
+            {
+                report.typed_leaves += 1;
+                let canonical = canonicalize_parameter_value_spelling_v1(&parameter);
+                if canonical != value_tokens[1] {
+                    report
+                        .non_canonical
+                        .push(ParameterTreeLeafCanonicalSpellingIssueV1 {
+                            path: current,
+                            type_token: value_tokens[0].clone(),
+                            value_token: value_tokens[1].clone(),
+                            canonical,
+                        });
                 }
             }
         }
@@ -137,7 +132,7 @@ pub fn check_parameter_tree_leaf_spellings_canonical_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{build_parameter_trees_v1, parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, build_parameter_trees_v1, parse_ami_text_v1};
 
     fn tree(text: &str) -> AmiParameterTreeV1 {
         let limits = ParseLimitsV1::try_new(8 * 1024 * 1024, 64, 4096, 4096).expect("limits");

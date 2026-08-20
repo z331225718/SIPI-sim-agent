@@ -37,21 +37,23 @@ fn extract_node<'a>(
 
     let (head, rest) = (&segments[0], &segments[1..]);
     if *head != node.name() {
-        return Err(ParameterTreeSubtreeErrorV1::MissingPath(full_path.to_string()));
+        return Err(ParameterTreeSubtreeErrorV1::MissingPath(
+            full_path.to_string(),
+        ));
     }
     if rest.is_empty() {
         return Ok(node);
     }
     match node {
         AmiParameterTreeNodeV1::Branch { children, .. } => {
-            let next = children.get(rest[0]).ok_or_else(|| {
-                ParameterTreeSubtreeErrorV1::MissingPath(full_path.to_string())
-            })?;
+            let next = children
+                .get(rest[0])
+                .ok_or_else(|| ParameterTreeSubtreeErrorV1::MissingPath(full_path.to_string()))?;
             extract_node(next, rest, &current, full_path)
         }
-        AmiParameterTreeNodeV1::Leaf { .. } => {
-            Err(ParameterTreeSubtreeErrorV1::MissingPath(full_path.to_string()))
-        }
+        AmiParameterTreeNodeV1::Leaf { .. } => Err(ParameterTreeSubtreeErrorV1::MissingPath(
+            full_path.to_string(),
+        )),
     }
 }
 
@@ -86,9 +88,9 @@ pub fn extract_parameter_tree_subtree_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ParseLimitsV1;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
     use crate::parse_ami_text_v1;
-    use crate::ParseLimitsV1;
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
@@ -147,7 +149,9 @@ mod tests {
         let tree = tree_of("(root (a 1))");
         assert_eq!(
             extract_parameter_tree_subtree_v1(&tree, "root.a.nope"),
-            Err(ParameterTreeSubtreeErrorV1::MissingPath("root.a.nope".to_string()))
+            Err(ParameterTreeSubtreeErrorV1::MissingPath(
+                "root.a.nope".to_string()
+            ))
         );
     }
 }

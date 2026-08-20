@@ -52,8 +52,8 @@ pub fn parameter_list_is_palindrome_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListIsPalindromeErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListIsPalindromeErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListIsPalindromeErrorV1::MalformedList)?;
     let reversed: Vec<String> = items.iter().rev().cloned().collect();
     Ok(items == reversed)
 }

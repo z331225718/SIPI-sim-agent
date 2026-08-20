@@ -52,8 +52,8 @@ pub fn parameter_list_head_tail_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListHeadTailErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListHeadTailErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListHeadTailErrorV1::MalformedList)?;
     let head = items.first().expect("non-empty by 02b1 rule").clone();
     let tail = items.last().expect("non-empty by 02b1 rule").clone();
     Ok((head, tail))

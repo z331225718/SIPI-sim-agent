@@ -27,7 +27,7 @@ test cases, comparing 12-decimal formatted strings bit-for-bit per distinct item
 - Cross-check: 4 test cases (mixed, all equal, all distinct, non-list) driven through product
   runner `p4b_02b181_parameter_list_frequency_normalized_runner`; independent Python
   reference matches 100% on 12-decimal normalized-frequency arrays and error keys; 4/4
-  matched_hash_bound.
+  product_owned_self_crosscheck_unbound.
 
 ## Binding
 

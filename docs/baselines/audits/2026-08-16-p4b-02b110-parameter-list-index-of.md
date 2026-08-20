@@ -24,7 +24,7 @@ the valid index 0). An independent Python reference replicates the lookup rule o
   items, non-list, single item).
 - Cross-check: 4 test cases (first occurrence, later position, absent item, non-list) driven
   through product runner `p4b_02b110_parameter_list_index_of_runner`; independent Python
-  reference matches 100% on indices and error keys; 4/4 matched_hash_bound.
+  reference matches 100% on indices and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

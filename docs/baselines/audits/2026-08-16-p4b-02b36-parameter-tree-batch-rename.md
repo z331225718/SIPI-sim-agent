@@ -25,7 +25,7 @@ Python reference replicates the tokenize/build/rename pipeline over 4 test cases
 - Cross-check: 4 test cases (simple rename, sibling collision, missing leaf, sibling swap) driven
   through product runner `p4b_02b36_parameter_tree_batch_rename_runner`; independent Python reference
   matches 100% on valid flags, root names, renamed tree structures, and error contexts;
-  4/4 matched_hash_bound.
+  4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

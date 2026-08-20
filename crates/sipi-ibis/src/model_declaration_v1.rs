@@ -123,11 +123,7 @@ fn leading_finite(payload: &[crate::StructuralTokenV1]) -> Option<f64> {
         .or_else(|| spelling.strip_suffix('v'))
         .unwrap_or(spelling);
     let value: f64 = numeric.trim().parse().ok()?;
-    if value.is_finite() {
-        Some(value)
-    } else {
-        None
-    }
+    if value.is_finite() { Some(value) } else { None }
 }
 
 /// Lift [Model] declaration blocks out of structural records.
@@ -143,80 +139,91 @@ pub fn lift_model_declarations_v1(
     let mut i = 0;
     let mut seen = std::collections::HashMap::new();
     while i < records.len() {
-        if let StructuralRecordV1::Keyword { keyword, payload: _payload, span } = &records[i] {
-            if keyword.spelling() == "Model" {
-                // Model name is the first payload token.
-                let name = match _payload.first() {
-                    Some(tok) => tok.spelling().to_string(),
-                    None => return Err(ModelDeclarationErrorV1::MissingModelName),
-                };
-                if seen.contains_key(&name) {
-                    return Err(ModelDeclarationErrorV1::DuplicateModel(name));
-                }
-                seen.insert(name.clone(), ());
+        if let StructuralRecordV1::Keyword {
+            keyword,
+            payload: _payload,
+            span,
+        } = &records[i]
+            && keyword.spelling() == "Model"
+        {
+            // Model name is the first payload token.
+            let name = match _payload.first() {
+                Some(tok) => tok.spelling().to_string(),
+                None => return Err(ModelDeclarationErrorV1::MissingModelName),
+            };
+            if seen.contains_key(&name) {
+                return Err(ModelDeclarationErrorV1::DuplicateModel(name));
+            }
+            seen.insert(name.clone(), ());
 
-                // Collect typed fields until the next top-level [Keyword].
-                let mut model_type = None;
-                let mut voltage_range_v = None;
-                let mut temperature_range_c = None;
-                let mut j = i + 1;
-                while j < records.len() {
-                    match &records[j] {
-                        StructuralRecordV1::Keyword { keyword: k, payload: p, .. } => {
-                            let spelling = k.spelling();
-                            if spelling == "Model" {
-                                break; // next model block
-                            }
-                            match spelling {
-                                "Model_type" | "Model Type" => {
-                                    let value = p.first().map(|t| t.spelling().to_string())
-                                        .ok_or(ModelDeclarationErrorV1::MissingModelType)?;
-                                    let mt = ModelTypeV1::parse(&value)
-                                        .ok_or_else(|| ModelDeclarationErrorV1::UnknownModelType(value.clone()))?;
-                                    model_type = Some(mt);
-                                }
-                                "Voltage Range" => {
-                                    voltage_range_v = leading_finite(p);
-                                }
-                                "Temperature Range" => {
-                                    temperature_range_c = leading_finite(p);
-                                }
-                                _ => {} // other keyword: left structural
-                            }
+            // Collect typed fields until the next top-level [Keyword].
+            let mut model_type = None;
+            let mut voltage_range_v = None;
+            let mut temperature_range_c = None;
+            let mut j = i + 1;
+            while j < records.len() {
+                match &records[j] {
+                    StructuralRecordV1::Keyword {
+                        keyword: k,
+                        payload: p,
+                        ..
+                    } => {
+                        let spelling = k.spelling();
+                        if spelling == "Model" {
+                            break; // next model block
                         }
-                        StructuralRecordV1::Data { tokens, .. } => {
-                            // In IBIS files Model_type is a bare keyword-value
-                            // line (e.g. "Model_type  Input"), which the
-                            // structural parser emits as a Data record.
-                            if let Some(first) = tokens.first() {
-                                if first.spelling() == "Model_type"
-                                    || first.spelling() == "Model Type"
-                                {
-                                    let typ = tokens
-                                        .get(1)
-                                        .map(|t| t.spelling().to_string())
-                                        .ok_or(ModelDeclarationErrorV1::MissingModelType)?;
-                                    let mt = ModelTypeV1::parse(&typ)
-                                        .ok_or_else(|| ModelDeclarationErrorV1::UnknownModelType(typ.clone()))?;
-                                    model_type = Some(mt);
-                                }
+                        match spelling {
+                            "Model_type" | "Model Type" => {
+                                let value = p
+                                    .first()
+                                    .map(|t| t.spelling().to_string())
+                                    .ok_or(ModelDeclarationErrorV1::MissingModelType)?;
+                                let mt = ModelTypeV1::parse(&value).ok_or_else(|| {
+                                    ModelDeclarationErrorV1::UnknownModelType(value.clone())
+                                })?;
+                                model_type = Some(mt);
                             }
+                            "Voltage Range" => {
+                                voltage_range_v = leading_finite(p);
+                            }
+                            "Temperature Range" => {
+                                temperature_range_c = leading_finite(p);
+                            }
+                            _ => {} // other keyword: left structural
                         }
                     }
-                    j += 1;
+                    StructuralRecordV1::Data { tokens, .. } => {
+                        // In IBIS files Model_type is a bare keyword-value
+                        // line (e.g. "Model_type  Input"), which the
+                        // structural parser emits as a Data record.
+                        if let Some(first) = tokens.first()
+                            && (first.spelling() == "Model_type"
+                                || first.spelling() == "Model Type")
+                        {
+                            let typ = tokens
+                                .get(1)
+                                .map(|t| t.spelling().to_string())
+                                .ok_or(ModelDeclarationErrorV1::MissingModelType)?;
+                            let mt = ModelTypeV1::parse(&typ).ok_or_else(|| {
+                                ModelDeclarationErrorV1::UnknownModelType(typ.clone())
+                            })?;
+                            model_type = Some(mt);
+                        }
+                    }
                 }
-
-                let mt = model_type.ok_or(ModelDeclarationErrorV1::MissingModelType)?;
-                declarations.push(TypedModelDeclarationV1 {
-                    model_name: name,
-                    model_type: mt,
-                    voltage_range_v,
-                    temperature_range_c,
-                    span: *span,
-                });
-                i = j;
-                continue;
+                j += 1;
             }
+
+            let mt = model_type.ok_or(ModelDeclarationErrorV1::MissingModelType)?;
+            declarations.push(TypedModelDeclarationV1 {
+                model_name: name,
+                model_type: mt,
+                voltage_range_v,
+                temperature_range_c,
+                span: *span,
+            });
+            i = j;
+            continue;
         }
         i += 1;
     }
@@ -230,7 +237,7 @@ pub const MODEL_DECLARATION_POLICY_V1: &str =
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{SourceSpanV1, StructuralTokenV1, StructuralRecordV1};
+    use crate::{SourceSpanV1, StructuralRecordV1, StructuralTokenV1};
 
     fn span(start: usize, line: usize) -> SourceSpanV1 {
         SourceSpanV1::new(start, start + 1, line, 0)
@@ -242,14 +249,25 @@ mod tests {
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(MODEL_DECLARATION_POLICY_V1, "sipi.p4a-03d.model-declaration.v1.typed-declaration-only");
+        assert_eq!(
+            MODEL_DECLARATION_POLICY_V1,
+            "sipi.p4a-03d.model-declaration.v1.typed-declaration-only"
+        );
     }
 
     #[test]
     fn lifts_output_model_typed() {
         let records = vec![
-            StructuralRecordV1::Keyword { keyword: tok("Model"), payload: vec![tok("pcie_tx")], span: span(0, 1) },
-            StructuralRecordV1::Keyword { keyword: tok("Model_type"), payload: vec![tok("Output")], span: span(5, 2) },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Model"),
+                payload: vec![tok("pcie_tx")],
+                span: span(0, 1),
+            },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Model_type"),
+                payload: vec![tok("Output")],
+                span: span(5, 2),
+            },
         ];
         let decls = lift_model_declarations_v1(&records).expect("lift");
         assert_eq!(decls.len(), 1);
@@ -267,10 +285,26 @@ mod tests {
     #[test]
     fn captures_voltage_temperature_ranges() {
         let records = vec![
-            StructuralRecordV1::Keyword { keyword: tok("Model"), payload: vec![tok("m1")], span: span(0, 1) },
-            StructuralRecordV1::Keyword { keyword: tok("Model_type"), payload: vec![tok("Input")], span: span(5, 2) },
-            StructuralRecordV1::Keyword { keyword: tok("Voltage Range"), payload: vec![tok("1.1")], span: span(10, 3) },
-            StructuralRecordV1::Keyword { keyword: tok("Temperature Range"), payload: vec![tok("85")], span: span(16, 4) },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Model"),
+                payload: vec![tok("m1")],
+                span: span(0, 1),
+            },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Model_type"),
+                payload: vec![tok("Input")],
+                span: span(5, 2),
+            },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Voltage Range"),
+                payload: vec![tok("1.1")],
+                span: span(10, 3),
+            },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Temperature Range"),
+                payload: vec![tok("85")],
+                span: span(16, 4),
+            },
         ];
         let decls = lift_model_declarations_v1(&records).expect("lift");
         assert_eq!(decls[0].voltage_range_v(), Some(1.1));
@@ -280,40 +314,77 @@ mod tests {
     #[test]
     fn rejects_unknown_model_type() {
         let records = vec![
-            StructuralRecordV1::Keyword { keyword: tok("Model"), payload: vec![tok("m1")], span: span(0, 1) },
-            StructuralRecordV1::Keyword { keyword: tok("Model_type"), payload: vec![tok("Bogus")], span: span(5, 2) },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Model"),
+                payload: vec![tok("m1")],
+                span: span(0, 1),
+            },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Model_type"),
+                payload: vec![tok("Bogus")],
+                span: span(5, 2),
+            },
         ];
-        let err = lift_model_declarations_v1(&records).err().expect("err");
+        let err = lift_model_declarations_v1(&records).expect_err("err");
         assert!(matches!(err, ModelDeclarationErrorV1::UnknownModelType(_)));
     }
 
     #[test]
     fn rejects_duplicate_model_name() {
         let records = vec![
-            StructuralRecordV1::Keyword { keyword: tok("Model"), payload: vec![tok("m1")], span: span(0, 1) },
-            StructuralRecordV1::Keyword { keyword: tok("Model_type"), payload: vec![tok("Output")], span: span(5, 2) },
-            StructuralRecordV1::Keyword { keyword: tok("Model"), payload: vec![tok("m1")], span: span(10, 3) },
-            StructuralRecordV1::Keyword { keyword: tok("Model_type"), payload: vec![tok("Input")], span: span(15, 4) },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Model"),
+                payload: vec![tok("m1")],
+                span: span(0, 1),
+            },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Model_type"),
+                payload: vec![tok("Output")],
+                span: span(5, 2),
+            },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Model"),
+                payload: vec![tok("m1")],
+                span: span(10, 3),
+            },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Model_type"),
+                payload: vec![tok("Input")],
+                span: span(15, 4),
+            },
         ];
-        let err = lift_model_declarations_v1(&records).err().expect("err");
+        let err = lift_model_declarations_v1(&records).expect_err("err");
         assert!(matches!(err, ModelDeclarationErrorV1::DuplicateModel(_)));
     }
 
     #[test]
     fn rejects_missing_model_type() {
-        let records = vec![
-            StructuralRecordV1::Keyword { keyword: tok("Model"), payload: vec![tok("m1")], span: span(0, 1) },
-        ];
-        let err = lift_model_declarations_v1(&records).err().expect("err");
+        let records = vec![StructuralRecordV1::Keyword {
+            keyword: tok("Model"),
+            payload: vec![tok("m1")],
+            span: span(0, 1),
+        }];
+        let err = lift_model_declarations_v1(&records).expect_err("err");
         assert!(matches!(err, ModelDeclarationErrorV1::MissingModelType));
     }
 
     #[test]
     fn skips_opaque_data_within_block() {
         let records = vec![
-            StructuralRecordV1::Keyword { keyword: tok("Model"), payload: vec![tok("m1")], span: span(0, 1) },
-            StructuralRecordV1::Data { tokens: vec![tok("0.0"), tok("0.0")], span: span(5, 2) },
-            StructuralRecordV1::Keyword { keyword: tok("Model_type"), payload: vec![tok("Output")], span: span(10, 3) },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Model"),
+                payload: vec![tok("m1")],
+                span: span(0, 1),
+            },
+            StructuralRecordV1::Data {
+                tokens: vec![tok("0.0"), tok("0.0")],
+                span: span(5, 2),
+            },
+            StructuralRecordV1::Keyword {
+                keyword: tok("Model_type"),
+                payload: vec![tok("Output")],
+                span: span(10, 3),
+            },
         ];
         let decls = lift_model_declarations_v1(&records).expect("lift");
         assert_eq!(decls.len(), 1);

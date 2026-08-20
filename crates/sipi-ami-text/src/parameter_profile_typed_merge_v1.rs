@@ -16,9 +16,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{
-    parameter_values_equivalent_v1, AmiParameterValueV1, ParameterValueEquivalenceV1,
-};
+use crate::{AmiParameterValueV1, ParameterValueEquivalenceV1, parameter_values_equivalent_v1};
 
 /// Explicit scope policy of this slice: typed-value profile merge.
 pub const PARAMETER_PROFILE_TYPED_MERGE_POLICY_V1: &str =
@@ -68,23 +66,21 @@ pub fn merge_parameter_profiles_typed_v1(
             None => {
                 parameters.insert(name.clone(), old_value.clone());
             }
-            Some(new_value) => {
-                match parameter_values_equivalent_v1(old_value, new_value) {
-                    ParameterValueEquivalenceV1::Equivalent => {
-                        parameters.insert(name.clone(), old_value.clone());
-                        matched += 1;
-                    }
-                    ParameterValueEquivalenceV1::NotEquivalent(_) => {
-                        return Err(ParameterProfileTypedMergeErrorV1::ConflictingValue {
-                            name: name.clone(),
-                            old_type: old_value.parameter_type().token().to_string(),
-                            old_value: old_value.value_token().to_string(),
-                            new_type: new_value.parameter_type().token().to_string(),
-                            new_value: new_value.value_token().to_string(),
-                        });
-                    }
+            Some(new_value) => match parameter_values_equivalent_v1(old_value, new_value) {
+                ParameterValueEquivalenceV1::Equivalent => {
+                    parameters.insert(name.clone(), old_value.clone());
+                    matched += 1;
                 }
-            }
+                ParameterValueEquivalenceV1::NotEquivalent(_) => {
+                    return Err(ParameterProfileTypedMergeErrorV1::ConflictingValue {
+                        name: name.clone(),
+                        old_type: old_value.parameter_type().token().to_string(),
+                        old_value: old_value.value_token().to_string(),
+                        new_type: new_value.parameter_type().token().to_string(),
+                        new_value: new_value.value_token().to_string(),
+                    });
+                }
+            },
         }
     }
     for (name, new_value) in right {

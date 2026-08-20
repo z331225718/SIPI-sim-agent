@@ -18,7 +18,7 @@ Fail-closed: empty tree lists (`EmptyTreeList`) are strictly rejected. An indepe
   rejects empty tree list).
 - Cross-check: 3 test cases (standard tree traversal, nested branches traversal, empty document)
   driven through product runner `p4b_02b14_parameter_tree_visitor_runner`; independent Python reference
-  matches 100% on valid flags, event counts, visitor event lists, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, event counts, visitor event lists, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

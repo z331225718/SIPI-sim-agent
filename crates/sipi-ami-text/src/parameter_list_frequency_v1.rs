@@ -55,8 +55,8 @@ pub fn parameter_list_item_frequencies_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListFrequencyErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListFrequencyErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListFrequencyErrorV1::MalformedList)?;
     let mut frequencies: Vec<(String, usize)> = Vec::new();
     for item in items {
         match frequencies.iter_mut().find(|(key, _)| *key == item) {
@@ -93,10 +93,7 @@ mod tests {
         let v = value("channels", "List", "(b, a, b)");
         assert_eq!(
             parameter_list_item_frequencies_v1(&v),
-            Ok(vec![
-                ("b".to_string(), 2),
-                ("a".to_string(), 1),
-            ])
+            Ok(vec![("b".to_string(), 2), ("a".to_string(), 1),])
         );
     }
 
@@ -136,10 +133,7 @@ mod tests {
         let v = value("channels", "List", "( a , b , a )");
         assert_eq!(
             parameter_list_item_frequencies_v1(&v),
-            Ok(vec![
-                ("a".to_string(), 2),
-                ("b".to_string(), 1),
-            ])
+            Ok(vec![("a".to_string(), 2), ("b".to_string(), 1),])
         );
     }
 }

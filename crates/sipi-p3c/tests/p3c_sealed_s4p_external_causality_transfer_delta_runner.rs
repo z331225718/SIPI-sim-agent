@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+#![allow(clippy::needless_range_loop)]
 
 //! External-only observation of the selected bounded-causality transfer delta.
 //! It does not generate a candidate waveform or alter any product policy.
@@ -15,12 +16,12 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use sipi_artifacts::ArtifactRoot;
 use sipi_ieee_com_sparam::{
-    enforce_selected_p3c_causality_v1, interpolate_selected_p3c_hdiff_v1,
-    inverse_selected_p3c_uniform_spectrum_v1, SelectedP3cCausalityStopV1,
+    SelectedP3cCausalityStopV1, enforce_selected_p3c_causality_v1,
+    interpolate_selected_p3c_hdiff_v1, inverse_selected_p3c_uniform_spectrum_v1,
 };
 use sipi_p3c::{
-    admit_selected_p3c_sealed_s4p_v2, SelectedP3cSealedS4pIdentityV2,
     SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1,
+    SelectedP3cSealedS4pIdentityV2, admit_selected_p3c_sealed_s4p_v2,
 };
 
 const SOURCE_ENV: &str = "SIPI_P3C_SEALED_S4P_EXTERNAL_SOURCE";
@@ -180,7 +181,7 @@ fn factorized_dft(values: &[Complex], factors: &[usize]) -> Result<Vec<Complex>,
             .ok_or_else(|| "dft_factorization".to_owned());
     }
     let radix = factors[0];
-    if radix < 2 || values.len() % radix != 0 {
+    if radix < 2 || !values.len().is_multiple_of(radix) {
         return Err("dft_factorization".to_owned());
     }
     let inner = values.len() / radix;
@@ -421,13 +422,48 @@ fn run_once(source: &Path, index: usize) -> Result<RunFact, String> {
 }
 
 fn bin_json(fact: &BinFact) -> String {
-    format!("{{\"index\":{},\"raw_re_bits\":\"{}\",\"raw_im_bits\":\"{}\",\"bounded_re_bits\":\"{}\",\"bounded_im_bits\":\"{}\",\"delta_re_bits\":\"{}\",\"delta_im_bits\":\"{}\"}}", fact.index, fact.raw_re_bits, fact.raw_im_bits, fact.bounded_re_bits, fact.bounded_im_bits, fact.delta_re_bits, fact.delta_im_bits)
+    format!(
+        "{{\"index\":{},\"raw_re_bits\":\"{}\",\"raw_im_bits\":\"{}\",\"bounded_re_bits\":\"{}\",\"bounded_im_bits\":\"{}\",\"delta_re_bits\":\"{}\",\"delta_im_bits\":\"{}\"}}",
+        fact.index,
+        fact.raw_re_bits,
+        fact.raw_im_bits,
+        fact.bounded_re_bits,
+        fact.bounded_im_bits,
+        fact.delta_re_bits,
+        fact.delta_im_bits
+    )
 }
 fn band_json(fact: &BandFact) -> String {
-    format!("{{\"raw_energy_bits\":\"{}\",\"bounded_energy_bits\":\"{}\",\"delta_energy_bits\":\"{}\"}}", fact.raw_energy_bits, fact.bounded_energy_bits, fact.delta_energy_bits)
+    format!(
+        "{{\"raw_energy_bits\":\"{}\",\"bounded_energy_bits\":\"{}\",\"delta_energy_bits\":\"{}\"}}",
+        fact.raw_energy_bits, fact.bounded_energy_bits, fact.delta_energy_bits
+    )
 }
 fn run_json(fact: &RunFact) -> String {
-    format!("{{\"source_manifest_sha256\":\"{}\",\"record_count\":{},\"uniform_bin_count\":{},\"raw_sample_count\":{},\"bounded_sample_count\":{},\"sample_interval_bits\":\"{}\",\"frequency_step_bits\":\"{}\",\"iteration_count\":{},\"final_error_bits\":\"{}\",\"stop\":\"{}\",\"raw_response_sha256\":\"{}\",\"bounded_response_sha256\":\"{}\",\"raw_spectrum_sha256\":\"{}\",\"bounded_spectrum_sha256\":\"{}\",\"delta_spectrum_sha256\":\"{}\",\"residual_peak_frequency_bracket\":[{},{}],\"bands\":[{},{},{},{}]}}", fact.source_manifest_sha256, fact.record_count, fact.uniform_bin_count, fact.raw_sample_count, fact.bounded_sample_count, fact.sample_interval_bits, fact.frequency_step_bits, fact.iteration_count, fact.final_error_bits, fact.stop, fact.raw_response_sha256, fact.bounded_response_sha256, fact.raw_spectrum_sha256, fact.bounded_spectrum_sha256, fact.delta_spectrum_sha256, bin_json(&fact.residual_peak_frequency_bracket[0]), bin_json(&fact.residual_peak_frequency_bracket[1]), band_json(&fact.bands[0]), band_json(&fact.bands[1]), band_json(&fact.bands[2]), band_json(&fact.bands[3]))
+    format!(
+        "{{\"source_manifest_sha256\":\"{}\",\"record_count\":{},\"uniform_bin_count\":{},\"raw_sample_count\":{},\"bounded_sample_count\":{},\"sample_interval_bits\":\"{}\",\"frequency_step_bits\":\"{}\",\"iteration_count\":{},\"final_error_bits\":\"{}\",\"stop\":\"{}\",\"raw_response_sha256\":\"{}\",\"bounded_response_sha256\":\"{}\",\"raw_spectrum_sha256\":\"{}\",\"bounded_spectrum_sha256\":\"{}\",\"delta_spectrum_sha256\":\"{}\",\"residual_peak_frequency_bracket\":[{},{}],\"bands\":[{},{},{},{}]}}",
+        fact.source_manifest_sha256,
+        fact.record_count,
+        fact.uniform_bin_count,
+        fact.raw_sample_count,
+        fact.bounded_sample_count,
+        fact.sample_interval_bits,
+        fact.frequency_step_bits,
+        fact.iteration_count,
+        fact.final_error_bits,
+        fact.stop,
+        fact.raw_response_sha256,
+        fact.bounded_response_sha256,
+        fact.raw_spectrum_sha256,
+        fact.bounded_spectrum_sha256,
+        fact.delta_spectrum_sha256,
+        bin_json(&fact.residual_peak_frequency_bracket[0]),
+        bin_json(&fact.residual_peak_frequency_bracket[1]),
+        band_json(&fact.bands[0]),
+        band_json(&fact.bands[1]),
+        band_json(&fact.bands[2]),
+        band_json(&fact.bands[3])
+    )
 }
 
 fn same_observation(left: &RunFact, right: &RunFact) -> bool {
@@ -495,7 +531,11 @@ fn p3c_sealed_s4p_external_causality_transfer_delta_runner_v1() {
         same_observation(&first, &second),
         "fresh observations differ"
     );
-    let payload = format!("{{\"schema\":\"{REPORT_SCHEMA}\",\"status\":\"observed\",\"source_byte_length\":{SELECTED_P3C_S4P_BYTE_LENGTH_V1},\"source_sha256\":\"{SELECTED_P3C_S4P_SHA256_V1}\",\"source_identity_checks\":\"before_stage_after_equal\",\"fixed_dft\":{{\"samples\":{SAMPLE_COUNT},\"one_sided_bins\":{ONE_SIDED_BINS},\"sample_interval_bits\":\"{DT_BITS:016x}\",\"frequency_step_bits\":\"{DF_BITS:016x}\",\"window\":\"rectangular\",\"forward_sign\":\"negative\",\"normalization\":\"none\",\"factorization\":[32,32,2,25],\"bands\":[[0,1],[1,801],[801,2001],[2001,{ONE_SIDED_BINS}]]}},\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n", run_json(&first), run_json(&second));
+    let payload = format!(
+        "{{\"schema\":\"{REPORT_SCHEMA}\",\"status\":\"observed\",\"source_byte_length\":{SELECTED_P3C_S4P_BYTE_LENGTH_V1},\"source_sha256\":\"{SELECTED_P3C_S4P_SHA256_V1}\",\"source_identity_checks\":\"before_stage_after_equal\",\"fixed_dft\":{{\"samples\":{SAMPLE_COUNT},\"one_sided_bins\":{ONE_SIDED_BINS},\"sample_interval_bits\":\"{DT_BITS:016x}\",\"frequency_step_bits\":\"{DF_BITS:016x}\",\"window\":\"rectangular\",\"forward_sign\":\"negative\",\"normalization\":\"none\",\"factorization\":[32,32,2,25],\"bands\":[[0,1],[1,801],[801,2001],[2001,{ONE_SIDED_BINS}]]}},\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n",
+        run_json(&first),
+        run_json(&second)
+    );
     serde_json::from_str::<Value>(&payload).unwrap();
     assert!(!report.exists());
     fs::create_dir_all(report.parent().unwrap()).unwrap();

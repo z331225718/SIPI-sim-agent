@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ibis::{
-    lift_test_data_block_v1, lift_test_data_declaration_v1, TEST_DATA_KEYWORDS_POLICY_V1,
+    TEST_DATA_KEYWORDS_POLICY_V1, lift_test_data_block_v1, lift_test_data_declaration_v1,
 };
 
 fn main() {
@@ -30,7 +30,10 @@ fn main() {
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
 
-    let fname = value.get("fixture_name").and_then(|v| v.as_str()).unwrap_or("");
+    let fname = value
+        .get("fixture_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let r_fix = value.get("r_fixture_ohm").and_then(|v| v.as_f64());
     let c_fix = value.get("c_fixture_farad").and_then(|v| v.as_f64());
     let l_fix = value.get("l_fixture_henry").and_then(|v| v.as_f64());
@@ -45,7 +48,8 @@ fn main() {
                 "fixture_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

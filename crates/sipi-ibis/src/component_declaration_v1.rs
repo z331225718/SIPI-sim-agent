@@ -47,19 +47,11 @@ impl IbisComponentV1 {
         }
         let manufacturer = manufacturer.and_then(|m| {
             let t = m.trim().to_string();
-            if t.is_empty() {
-                None
-            } else {
-                Some(t)
-            }
+            if t.is_empty() { None } else { Some(t) }
         });
         let package_name = package_name.and_then(|p| {
             let t = p.trim().to_string();
-            if t.is_empty() {
-                None
-            } else {
-                Some(t)
-            }
+            if t.is_empty() { None } else { Some(t) }
         });
         Ok(Self {
             name: trimmed.to_string(),
@@ -108,12 +100,9 @@ mod tests {
 
     #[test]
     fn valid_full_component() {
-        let comp = lift_component_declaration_v1(
-            "AS4C512M8S1",
-            Some("Alliance Memory"),
-            Some("FBGA84"),
-        )
-        .expect("lift");
+        let comp =
+            lift_component_declaration_v1("AS4C512M8S1", Some("Alliance Memory"), Some("FBGA84"))
+                .expect("lift");
         assert_eq!(comp.name(), "AS4C512M8S1");
         assert_eq!(comp.manufacturer(), Some("Alliance Memory"));
         assert_eq!(comp.package_name(), Some("FBGA84"));

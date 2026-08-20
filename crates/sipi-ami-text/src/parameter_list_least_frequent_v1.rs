@@ -53,8 +53,8 @@ pub fn least_frequent_parameter_list_item_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListLeastFrequentErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListLeastFrequentErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListLeastFrequentErrorV1::MalformedList)?;
     let mut best: (String, usize) = (items[0].clone(), usize::MAX);
     for item in &items {
         let count = items.iter().filter(|candidate| *candidate == item).count();

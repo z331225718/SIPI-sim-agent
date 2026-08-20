@@ -16,8 +16,8 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    parameter_values_equivalent_v1, AmiParameterValueErrorV1, AmiParameterValueV1,
-    ParameterValueEquivalenceV1,
+    AmiParameterValueErrorV1, AmiParameterValueV1, ParameterValueEquivalenceV1,
+    parameter_values_equivalent_v1,
 };
 
 /// Explicit scope policy of this slice: typed reverse lookup in profiles.
@@ -60,8 +60,7 @@ pub fn find_parameter_profile_names_by_value_v1(
         .map_err(ParameterProfileValueLookupErrorV1::InvalidQueryValue)?;
     let mut matches = Vec::new();
     for (entry_name, entry) in profile {
-        if parameter_values_equivalent_v1(&query, entry)
-            == ParameterValueEquivalenceV1::Equivalent
+        if parameter_values_equivalent_v1(&query, entry) == ParameterValueEquivalenceV1::Equivalent
         {
             matches.push(entry_name.clone());
         }
@@ -89,8 +88,8 @@ mod tests {
     #[test]
     fn finds_matching_float_spelling() {
         let p = profile(&[("gain", "Float", "0.50"), ("steps", "Integer", "7")]);
-        let result = find_parameter_profile_names_by_value_v1(&p, "q", "Float", "0.5")
-            .expect("lookup");
+        let result =
+            find_parameter_profile_names_by_value_v1(&p, "q", "Float", "0.5").expect("lookup");
         assert_eq!(result.matches(), &["gain".to_string()]);
         assert_eq!(result.match_count(), 1);
     }
@@ -111,16 +110,16 @@ mod tests {
             ("a", "Integer", "7"),
             ("c", "Integer", "8"),
         ]);
-        let result = find_parameter_profile_names_by_value_v1(&p, "q", "Integer", "7")
-            .expect("lookup");
+        let result =
+            find_parameter_profile_names_by_value_v1(&p, "q", "Integer", "7").expect("lookup");
         assert_eq!(result.matches(), &["a".to_string(), "b".to_string()]);
     }
 
     #[test]
     fn cross_type_never_matches() {
         let p = profile(&[("x", "Float", "1.0")]);
-        let result = find_parameter_profile_names_by_value_v1(&p, "q", "Integer", "1")
-            .expect("lookup");
+        let result =
+            find_parameter_profile_names_by_value_v1(&p, "q", "Integer", "1").expect("lookup");
         assert!(result.matches().is_empty());
     }
 
@@ -138,8 +137,8 @@ mod tests {
     #[test]
     fn empty_profile_never_matches() {
         let p = BTreeMap::new();
-        let result = find_parameter_profile_names_by_value_v1(&p, "q", "Float", "0.5")
-            .expect("lookup");
+        let result =
+            find_parameter_profile_names_by_value_v1(&p, "q", "Float", "0.5").expect("lookup");
         assert!(result.matches().is_empty());
     }
 }

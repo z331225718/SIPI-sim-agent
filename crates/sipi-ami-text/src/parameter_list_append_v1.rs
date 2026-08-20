@@ -55,8 +55,8 @@ pub fn append_parameter_list_item_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListAppendErrorV1::NotAList);
     }
-    let mut items = list_items(value.value_token())
-        .ok_or(ParameterListAppendErrorV1::MalformedList)?;
+    let mut items =
+        list_items(value.value_token()).ok_or(ParameterListAppendErrorV1::MalformedList)?;
     let trimmed = new_item.trim();
     if trimmed.is_empty() {
         return Err(ParameterListAppendErrorV1::EmptyNewItem);

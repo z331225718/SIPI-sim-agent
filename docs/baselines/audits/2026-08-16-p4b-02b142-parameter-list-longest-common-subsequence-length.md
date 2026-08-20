@@ -26,7 +26,7 @@ reference replicates the LCS rule over 4 test cases.
   non-list, spacing canonicalized).
 - Cross-check: 4 test cases (LCS length, subsequence, disjoint, non-list) driven through product
   runner `p4b_02b142_parameter_list_longest_common_subsequence_length_runner`; independent
-  Python reference matches 100% on lengths and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on lengths and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

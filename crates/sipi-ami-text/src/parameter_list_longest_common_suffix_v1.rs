@@ -109,10 +109,7 @@ mod tests {
     fn empty_suffix_yields_empty_token() {
         let a = value("left", "List", "(a, b)");
         let b = value("right", "List", "(b, a)");
-        assert_eq!(
-            list_longest_common_suffix_v1(&a, &b),
-            Ok("()".to_string())
-        );
+        assert_eq!(list_longest_common_suffix_v1(&a, &b), Ok("()".to_string()));
     }
 
     #[test]

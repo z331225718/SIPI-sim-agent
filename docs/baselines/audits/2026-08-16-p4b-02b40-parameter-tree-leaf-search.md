@@ -21,7 +21,7 @@ tokenize/build/search pipeline over 4 test cases.
   no match returns empty; empty token fails closed).
 - Cross-check: 4 test cases (find single, find multiple, find nested, no match) driven through
   product runner `p4b_02b40_parameter_tree_leaf_search_runner`; independent Python reference
-  matches 100% on valid flags and path lists; 4/4 matched_hash_bound.
+  matches 100% on valid flags and path lists; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

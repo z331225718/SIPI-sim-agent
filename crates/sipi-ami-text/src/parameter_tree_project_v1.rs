@@ -7,7 +7,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
 
 /// Scope policy for the parameter tree leaf projection core.
 pub const PARAMETER_TREE_LEAF_PROJECTION_POLICY_V1: &str =
@@ -163,7 +163,10 @@ mod tests {
             vec![
                 branch(
                     "sub",
-                    vec![leaf("deep", &["Float", "1.0"]), leaf("other", &["Integer", "2"])],
+                    vec![
+                        leaf("deep", &["Float", "1.0"]),
+                        leaf("other", &["Integer", "2"]),
+                    ],
                 ),
                 leaf("top", &["Boolean", "True"]),
             ],
@@ -220,7 +223,10 @@ mod tests {
     fn branch_name_is_not_a_leaf() {
         let t = tree(branch(
             "root",
-            vec![branch("sub", vec![leaf("gain", &["1.0"])]), leaf("other", &["2"])],
+            vec![
+                branch("sub", vec![leaf("gain", &["1.0"])]),
+                leaf("other", &["2"]),
+            ],
         ));
         let error = project_parameter_tree_leaves_v1(&t, &keep_of(&["sub"])).unwrap_err();
         assert_eq!(

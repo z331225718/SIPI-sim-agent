@@ -9,8 +9,8 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    AmiParameterTreeV1, AmiParameterTreeNodeV1, AmiParameterTypeV1,
-    AmiParameterValueErrorV1, AmiParameterValueV1,
+    AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterTypeV1, AmiParameterValueErrorV1,
+    AmiParameterValueV1,
 };
 
 /// Scope policy for the parameter tree value validation core.
@@ -34,6 +34,8 @@ pub enum ParameterTreeValueValidationErrorV1 {
     EmptyStringValue { leaf: String },
     /// A List leaf has a token that is not a non-empty `(item, item, ...)` list.
     InvalidList { leaf: String, token: String },
+    /// A leaf name, value token, or List item count exceeds the fixed v1 capacity.
+    CapacityExceeded { leaf: String },
     /// A leaf carries no value tokens at all.
     EmptyValueTokens(String),
 }
@@ -72,10 +74,7 @@ fn validate_node(
             }
             Ok(())
         }
-        AmiParameterTreeNodeV1::Leaf {
-            name,
-            value_tokens,
-        } => {
+        AmiParameterTreeNodeV1::Leaf { name, value_tokens } => {
             let parameter_type = type_map
                 .get(name)
                 .copied()
@@ -94,7 +93,8 @@ fn validate_node(
                                 "structurally impossible: tree names are non-empty and the                                  type comes from AmiParameterTypeV1"
                             )
                         }
-                        AmiParameterValueErrorV1::InvalidName => {
+                        AmiParameterValueErrorV1::InvalidName
+                        | AmiParameterValueErrorV1::NameTooLong => {
                             ParameterTreeValueValidationErrorV1::InvalidLeafName(
                                 name.clone(),
                             )
@@ -126,6 +126,12 @@ fn validate_node(
                             ParameterTreeValueValidationErrorV1::InvalidList {
                                 leaf: name.clone(),
                                 token: token.clone(),
+                            }
+                        }
+                        AmiParameterValueErrorV1::ValueTokenTooLong
+                        | AmiParameterValueErrorV1::ListTooLong => {
+                            ParameterTreeValueValidationErrorV1::CapacityExceeded {
+                                leaf: name.clone(),
                             }
                         }
                     },

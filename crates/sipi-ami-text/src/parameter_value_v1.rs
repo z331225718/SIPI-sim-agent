@@ -17,6 +17,16 @@ pub enum AmiParameterTypeV1 {
     List,
 }
 
+/// Maximum UTF-8 byte length of one caller-supplied parameter name.
+pub const MAX_PARAMETER_NAME_BYTES_V1: usize = 256;
+/// Maximum UTF-8 byte length of one caller-supplied value token.
+pub const MAX_PARAMETER_VALUE_TOKEN_BYTES_V1: usize = 65_536;
+/// Maximum number of comma-separated items in one validated List value.
+pub const MAX_PARAMETER_LIST_ITEMS_V1: usize = 512;
+/// Maximum item-pair cells reachable by operations over two validated Lists.
+pub const MAX_PARAMETER_LIST_PAIR_CELLS_V1: usize =
+    MAX_PARAMETER_LIST_ITEMS_V1 * MAX_PARAMETER_LIST_ITEMS_V1;
+
 impl AmiParameterTypeV1 {
     pub const fn token(self) -> &'static str {
         match self {
@@ -52,12 +62,15 @@ pub struct AmiParameterValueV1 {
 pub enum AmiParameterValueErrorV1 {
     EmptyName,
     InvalidName,
+    NameTooLong,
     UnknownTypeToken,
+    ValueTokenTooLong,
     InvalidFloat,
     InvalidInteger,
     InvalidBoolean,
     EmptyStringValue,
     InvalidList,
+    ListTooLong,
 }
 
 impl AmiParameterValueV1 {
@@ -77,6 +90,9 @@ impl AmiParameterValueV1 {
         if name.is_empty() {
             return Err(AmiParameterValueErrorV1::EmptyName);
         }
+        if name.len() > MAX_PARAMETER_NAME_BYTES_V1 {
+            return Err(AmiParameterValueErrorV1::NameTooLong);
+        }
         let mut characters = name.chars();
         let first = characters.next().expect("non-empty name");
         let valid_name = (first.is_ascii_alphabetic() || first == '_')
@@ -86,13 +102,14 @@ impl AmiParameterValueV1 {
         }
         let parameter_type = AmiParameterTypeV1::from_token(type_token)
             .ok_or(AmiParameterValueErrorV1::UnknownTypeToken)?;
+        if value_token.len() > MAX_PARAMETER_VALUE_TOKEN_BYTES_V1 {
+            return Err(AmiParameterValueErrorV1::ValueTokenTooLong);
+        }
         match parameter_type {
-            AmiParameterTypeV1::Float => {
-                match value_token.parse::<f64>() {
-                    Ok(value) if value.is_finite() => {}
-                    _ => return Err(AmiParameterValueErrorV1::InvalidFloat),
-                }
-            }
+            AmiParameterTypeV1::Float => match value_token.parse::<f64>() {
+                Ok(value) if value.is_finite() => {}
+                _ => return Err(AmiParameterValueErrorV1::InvalidFloat),
+            },
             AmiParameterTypeV1::Integer => {
                 if value_token.parse::<i64>().is_err() {
                     return Err(AmiParameterValueErrorV1::InvalidInteger);
@@ -113,10 +130,16 @@ impl AmiParameterValueV1 {
                     return Err(AmiParameterValueErrorV1::InvalidList);
                 }
                 let inner = &value_token[1..value_token.len() - 1];
-                if inner.is_empty()
-                    || inner.split(',').any(|item| item.trim().is_empty())
-                {
+                if inner.is_empty() || inner.split(',').any(|item| item.trim().is_empty()) {
                     return Err(AmiParameterValueErrorV1::InvalidList);
+                }
+                if inner
+                    .split(',')
+                    .take(MAX_PARAMETER_LIST_ITEMS_V1 + 1)
+                    .count()
+                    > MAX_PARAMETER_LIST_ITEMS_V1
+                {
+                    return Err(AmiParameterValueErrorV1::ListTooLong);
                 }
             }
         }
@@ -214,6 +237,34 @@ mod tests {
             AmiParameterValueV1::try_new("Taps", "List", "(1, , 3)"),
             Err(AmiParameterValueErrorV1::InvalidList)
         );
+    }
+
+    #[test]
+    fn rejects_inputs_above_fixed_capacity_limits() {
+        let long_name = "n".repeat(MAX_PARAMETER_NAME_BYTES_V1 + 1);
+        assert_eq!(
+            AmiParameterValueV1::try_new(&long_name, "Float", "1.0"),
+            Err(AmiParameterValueErrorV1::NameTooLong)
+        );
+
+        let long_string = "x".repeat(MAX_PARAMETER_VALUE_TOKEN_BYTES_V1 + 1);
+        assert_eq!(
+            AmiParameterValueV1::try_new("Mode", "String", &long_string),
+            Err(AmiParameterValueErrorV1::ValueTokenTooLong)
+        );
+
+        let too_many_items = format!("({})", vec!["x"; MAX_PARAMETER_LIST_ITEMS_V1 + 1].join(","));
+        assert_eq!(
+            AmiParameterValueV1::try_new("Taps", "List", &too_many_items),
+            Err(AmiParameterValueErrorV1::ListTooLong)
+        );
+    }
+
+    #[test]
+    fn accepts_list_at_fixed_item_limit() {
+        let at_limit = format!("({})", vec!["x"; MAX_PARAMETER_LIST_ITEMS_V1].join(","));
+        assert!(AmiParameterValueV1::try_new("Taps", "List", &at_limit).is_ok());
+        assert_eq!(MAX_PARAMETER_LIST_PAIR_CELLS_V1, 262_144);
     }
 
     #[test]

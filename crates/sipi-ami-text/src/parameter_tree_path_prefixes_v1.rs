@@ -60,10 +60,7 @@ mod tests {
     fn enumerates_medium_path() {
         let p = path(&["root", "sub"]);
         let prefixes = enumerate_parameter_tree_path_prefixes_v1(&p).expect("prefixes");
-        assert_eq!(
-            prefixes,
-            vec![path(&["root"]), path(&["root", "sub"])]
-        );
+        assert_eq!(prefixes, vec![path(&["root"]), path(&["root", "sub"])]);
     }
 
     #[test]

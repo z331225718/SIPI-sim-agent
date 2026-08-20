@@ -17,9 +17,9 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    parameter_values_equivalent_v1, AmiParameterTreeV1, AmiParameterTreeNodeV1,
-    AmiParameterTypeV1, AmiParameterValueV1, ParameterValueEquivalenceV1,
-    ParameterValueInequivalenceReasonV1,
+    AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterTypeV1, AmiParameterValueV1,
+    ParameterValueEquivalenceV1, ParameterValueInequivalenceReasonV1,
+    parameter_values_equivalent_v1,
 };
 
 /// Explicit scope policy of this slice: typed leaf diff of two trees.
@@ -86,7 +86,11 @@ impl ParameterTreeLeafTypedDiffV1 {
 }
 
 /// Collect canonical leaf paths -> value tokens for a tree.
-fn collect_leaves(node: &AmiParameterTreeNodeV1, prefix: &str, out: &mut BTreeMap<String, Vec<String>>) {
+fn collect_leaves(
+    node: &AmiParameterTreeNodeV1,
+    prefix: &str,
+    out: &mut BTreeMap<String, Vec<String>>,
+) {
     let current = if prefix.is_empty() {
         node.name().to_string()
     } else {
@@ -106,12 +110,11 @@ fn collect_leaves(node: &AmiParameterTreeNodeV1, prefix: &str, out: &mut BTreeMa
 
 /// Build a typed value from a leaf's tokens when it is a typed form.
 fn typed_value(name: &str, tokens: &[String]) -> Option<AmiParameterValueV1> {
-    if tokens.len() == 2 {
-        if AmiParameterTypeV1::from_token(&tokens[0]).is_some() {
-            if let Ok(parameter) = AmiParameterValueV1::try_new(name, &tokens[0], &tokens[1]) {
-                return Some(parameter);
-            }
-        }
+    if tokens.len() == 2
+        && AmiParameterTypeV1::from_token(&tokens[0]).is_some()
+        && let Ok(parameter) = AmiParameterValueV1::try_new(name, &tokens[0], &tokens[1])
+    {
+        return Some(parameter);
     }
     None
 }
@@ -143,11 +146,7 @@ pub fn diff_parameter_tree_leaves_typed_v1(
     }
     for (path, left_tokens) in &left_leaves {
         if let Some(right_tokens) = right_leaves.get(path) {
-            let leaf_name = path
-                .rsplit('.')
-                .next()
-                .unwrap_or(path)
-                .to_string();
+            let leaf_name = path.rsplit('.').next().unwrap_or(path).to_string();
             let equivalence = match (
                 typed_value(&leaf_name, left_tokens),
                 typed_value(&leaf_name, right_tokens),
@@ -158,9 +157,7 @@ pub fn diff_parameter_tree_leaves_typed_v1(
                             matched += 1;
                             continue;
                         }
-                        ParameterValueEquivalenceV1::NotEquivalent(reason) => {
-                            Some(reason)
-                        }
+                        ParameterValueEquivalenceV1::NotEquivalent(reason) => Some(reason),
                     }
                 }
                 _ => {
@@ -190,7 +187,7 @@ pub fn diff_parameter_tree_leaves_typed_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{build_parameter_trees_v1, parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, build_parameter_trees_v1, parse_ami_text_v1};
 
     fn tree(text: &str) -> AmiParameterTreeV1 {
         let limits = ParseLimitsV1::try_new(8 * 1024 * 1024, 64, 4096, 4096).expect("limits");

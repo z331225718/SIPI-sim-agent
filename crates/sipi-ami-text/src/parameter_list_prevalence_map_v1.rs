@@ -62,8 +62,8 @@ pub fn parameter_list_prevalence_map_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListPrevalenceMapErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListPrevalenceMapErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListPrevalenceMapErrorV1::MalformedList)?;
     let item_count = items.len();
 
     let mut counts: BTreeMap<String, usize> = BTreeMap::new();

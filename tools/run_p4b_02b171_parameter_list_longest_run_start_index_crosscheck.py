@@ -11,6 +11,7 @@ left-to-right scan) is reported; non-List values fail closed. Fail closed on any
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -56,11 +57,12 @@ def ref_longest_run_start_index(type_token: str, value_token: str) -> dict[str, 
 
 
 def main() -> int:
-    built = subprocess.run([str(CARGO), "build", "-p", "sipi-ami-text", "--test", "p4b_02b171_parameter_list_longest_run_start_index_runner"],
+    built = subprocess.run([str(CARGO), "build", "-p", "sipi-ami-text", "--bin", "p4b_02b_crosscheck_runner", "--features", "p4b-self-crosscheck"],
                            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=ROOT)
     if built.returncode != 0:
         raise SystemExit("runner build failed: " + built.stdout + built.stderr)
-    runner = sorted((ROOT / "target" / "debug" / "deps").glob("p4b_02b171_parameter_list_longest_run_start_index_runner-*.exe"))[-1]
+    runner = ROOT / "target" / "debug" / ("p4b_02b_crosscheck_runner.exe" if os.name == "nt" else "p4b_02b_crosscheck_runner")
+    os.environ["SIPI_P4B_RUNNER"] = "p4b_02b171_parameter_list_longest_run_start_index_runner"
 
     cases = [
         {"label": "longest_run", "name": "param", "type": "List", "value": "(a, b, b, b, c)"},
@@ -99,7 +101,7 @@ def main() -> int:
 
     evidence = {
         "schema": EVIDENCE_SCHEMA,
-        "status": "matched_hash_bound" if ok_all else "mis_match",
+        "status": "product_owned_self_crosscheck_unbound" if ok_all else "mis_match",
         "policy": POLICY,
         "matched_count": sum(1 for e in entries if e["matched"]),
         "case_count": len(entries),

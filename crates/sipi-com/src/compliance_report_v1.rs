@@ -32,8 +32,18 @@ pub struct ComplianceMetricSpecV1 {
 }
 
 impl ComplianceMetricSpecV1 {
-    pub fn new(name: impl Into<String>, reference_db: f64, tolerance_db: f64, unit: impl Into<String>) -> Self {
-        Self { name: name.into(), reference_db, tolerance_db, unit: unit.into() }
+    pub fn new(
+        name: impl Into<String>,
+        reference_db: f64,
+        tolerance_db: f64,
+        unit: impl Into<String>,
+    ) -> Self {
+        Self {
+            name: name.into(),
+            reference_db,
+            tolerance_db,
+            unit: unit.into(),
+        }
     }
 }
 
@@ -50,10 +60,18 @@ pub struct MetricComplianceV1 {
 }
 
 impl MetricComplianceV1 {
-    pub fn name(&self) -> &str { &self.name }
-    pub fn passed(&self) -> bool { self.passed }
-    pub fn difference_db(&self) -> f64 { self.difference_db }
-    pub fn candidate_db(&self) -> f64 { self.candidate_db }
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn passed(&self) -> bool {
+        self.passed
+    }
+    pub fn difference_db(&self) -> f64 {
+        self.difference_db
+    }
+    pub fn candidate_db(&self) -> f64 {
+        self.candidate_db
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -64,9 +82,15 @@ pub struct ComplianceReportV1 {
 }
 
 impl ComplianceReportV1 {
-    pub fn passed(&self) -> bool { self.passed }
-    pub fn metric_count(&self) -> usize { self.metric_count }
-    pub fn results(&self) -> &[MetricComplianceV1] { &self.results }
+    pub fn passed(&self) -> bool {
+        self.passed
+    }
+    pub fn metric_count(&self) -> usize {
+        self.metric_count
+    }
+    pub fn results(&self) -> &[MetricComplianceV1] {
+        &self.results
+    }
 }
 
 /// Builds an end-to-end compliance report for a named metric profile.
@@ -102,7 +126,11 @@ pub fn compliance_report_v1(
             passed: verdict.passed(),
         });
     }
-    Ok(ComplianceReportV1 { passed, metric_count: results.len(), results })
+    Ok(ComplianceReportV1 {
+        passed,
+        metric_count: results.len(),
+        results,
+    })
 }
 
 #[cfg(test)]
@@ -111,7 +139,10 @@ mod tests {
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(COMPLIANCE_REPORT_POLICY_V1, "sipi.p3c-03e.compliance-report.v1.profile");
+        assert_eq!(
+            COMPLIANCE_REPORT_POLICY_V1,
+            "sipi.p3c-03e.compliance-report.v1.profile"
+        );
     }
 
     #[test]
@@ -141,12 +172,15 @@ mod tests {
     #[test]
     fn missing_candidate_rejected() {
         let profile = vec![ComplianceMetricSpecV1::new("fom", 53.426, 0.1, "db")];
-        let err = compliance_report_v1(&profile, &BTreeMap::new()).err().expect("err");
+        let err = compliance_report_v1(&profile, &BTreeMap::new()).expect_err("err");
         assert_eq!(err, ComplianceErrorV1::MissingCandidate("fom".to_string()));
     }
 
     #[test]
     fn empty_profile_rejected() {
-        assert_eq!(compliance_report_v1(&[], &BTreeMap::new()).err(), Some(ComplianceErrorV1::EmptyProfile));
+        assert_eq!(
+            compliance_report_v1(&[], &BTreeMap::new()).err(),
+            Some(ComplianceErrorV1::EmptyProfile)
+        );
     }
 }

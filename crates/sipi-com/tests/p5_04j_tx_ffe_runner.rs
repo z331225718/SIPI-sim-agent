@@ -9,8 +9,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_com::{
-    build_txffe_grid_v1, first_strict_best_v1, full_grid_matrix_v1, select_fom_tracker_v1,
-    TX_FFE_POLICY_V1,
+    TX_FFE_POLICY_V1, build_txffe_grid_v1, first_strict_best_v1, full_grid_matrix_v1,
+    select_fom_tracker_v1,
 };
 
 fn f64s(value: &Value) -> Vec<f64> {

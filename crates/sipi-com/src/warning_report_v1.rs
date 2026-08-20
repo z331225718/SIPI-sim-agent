@@ -110,10 +110,7 @@ pub fn aggregate_warning_report_v1(
     if slices.iter().any(|s| s.slice_name().is_empty()) {
         return Err(WarningReportErrorV1::EmptySliceName);
     }
-    let all_codes = [
-        WarningCodeV1::AntiCausal,
-        WarningCodeV1::HighFreqNonDecay,
-    ];
+    let all_codes = [WarningCodeV1::AntiCausal, WarningCodeV1::HighFreqNonDecay];
     let mut active = Vec::new();
     let mut per_code = Vec::new();
     for code in all_codes {
@@ -130,7 +127,10 @@ pub fn aggregate_warning_report_v1(
             per_code.push((code, flagging));
         }
     }
-    let flagged_total = slices.iter().filter(|s| s.anti_causal_flagged() || s.high_freq_non_decay_flagged()).count();
+    let flagged_total = slices
+        .iter()
+        .filter(|s| s.anti_causal_flagged() || s.high_freq_non_decay_flagged())
+        .count();
     Ok(WarningReportV1 {
         active_codes: active,
         flagged_slices_total: flagged_total,
@@ -144,7 +144,10 @@ mod tests {
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(WARNING_REPORT_POLICY_V1, "sipi.p5-02n.warning-report.v1.aggregate");
+        assert_eq!(
+            WARNING_REPORT_POLICY_V1,
+            "sipi.p5-02n.warning-report.v1.aggregate"
+        );
     }
 
     #[test]
@@ -155,7 +158,10 @@ mod tests {
             WarningSliceReportV1::new("pk", true, true),
         ];
         let report = aggregate_warning_report_v1(&slices).expect("ok");
-        assert_eq!(report.active_codes(), &[WarningCodeV1::AntiCausal, WarningCodeV1::HighFreqNonDecay]);
+        assert_eq!(
+            report.active_codes(),
+            &[WarningCodeV1::AntiCausal, WarningCodeV1::HighFreqNonDecay]
+        );
         assert_eq!(report.flagged_slices_total(), 3);
         assert_eq!(report.per_code_slices()[0].1, vec!["pad", "pk"]);
         assert_eq!(report.per_code_slices()[1].1, vec!["die", "pk"]);
@@ -174,13 +180,19 @@ mod tests {
 
     #[test]
     fn rejects_empty_reports() {
-        assert_eq!(aggregate_warning_report_v1(&[]).err(), Some(WarningReportErrorV1::EmptyReports));
+        assert_eq!(
+            aggregate_warning_report_v1(&[]).err(),
+            Some(WarningReportErrorV1::EmptyReports)
+        );
     }
 
     #[test]
     fn rejects_empty_slice_name() {
         let slices = vec![WarningSliceReportV1::new("", true, false)];
-        assert_eq!(aggregate_warning_report_v1(&slices).err(), Some(WarningReportErrorV1::EmptySliceName));
+        assert_eq!(
+            aggregate_warning_report_v1(&slices).err(),
+            Some(WarningReportErrorV1::EmptySliceName)
+        );
     }
 
     #[test]
@@ -207,4 +219,3 @@ mod tests {
         assert_eq!(report.per_code_slices()[0].1, vec!["x", "y", "z"]);
     }
 }
-

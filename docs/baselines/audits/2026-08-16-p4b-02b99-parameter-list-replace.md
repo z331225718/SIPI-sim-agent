@@ -24,7 +24,7 @@ An independent Python reference replicates the replace rule over 4 test cases.
   counts, non-list, single item).
 - Cross-check: 4 test cases (replace middle, replace last, out of range, non-list) driven through
   product runner `p4b_02b99_parameter_list_replace_runner`; independent Python reference matches
-  100% on replaced tokens and error keys with index/count; 4/4 matched_hash_bound.
+  100% on replaced tokens and error keys with index/count; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

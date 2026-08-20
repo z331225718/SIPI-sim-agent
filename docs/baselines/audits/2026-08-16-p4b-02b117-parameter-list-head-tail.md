@@ -24,7 +24,7 @@ undefined). An independent Python reference replicates the edge rule over 4 test
   first/last occurrence consistency).
 - Cross-check: 4 test cases (three items, single item, spaced items, non-list) driven through
   product runner `p4b_02b117_parameter_list_head_tail_runner`; independent Python reference
-  matches 100% on head/tail pairs and error keys; 4/4 matched_hash_bound.
+  matches 100% on head/tail pairs and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

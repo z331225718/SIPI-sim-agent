@@ -53,8 +53,7 @@ pub fn rotate_parameter_list_left_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListRotateErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListRotateErrorV1::MalformedList)?;
+    let items = list_items(value.value_token()).ok_or(ParameterListRotateErrorV1::MalformedList)?;
     let item_count = items.len();
     let effective = shift % item_count;
     let mut rotated = items;
@@ -122,9 +121,6 @@ mod tests {
     #[test]
     fn single_item_rotation_is_identity() {
         let v = value("channels", "List", "(x)");
-        assert_eq!(
-            rotate_parameter_list_left_v1(&v, 5),
-            Ok("(x)".to_string())
-        );
+        assert_eq!(rotate_parameter_list_left_v1(&v, 5), Ok("(x)".to_string()));
     }
 }

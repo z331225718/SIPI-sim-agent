@@ -57,8 +57,8 @@ pub fn parameter_list_has_subsequence_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListHasSubsequenceErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListHasSubsequenceErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListHasSubsequenceErrorV1::MalformedList)?;
     let mut cursor = 0usize;
     for item in &items {
         if cursor < query.len() && item.as_str() == query[cursor] {
@@ -80,40 +80,28 @@ mod tests {
     fn non_contiguous_subsequence_is_found() {
         let v = value("channels", "List", "(a, x, b, y, c)");
         let query = ["a", "b", "c"];
-        assert_eq!(
-            parameter_list_has_subsequence_v1(&v, &query),
-            Ok(true)
-        );
+        assert_eq!(parameter_list_has_subsequence_v1(&v, &query), Ok(true));
     }
 
     #[test]
     fn out_of_order_query_is_false() {
         let v = value("channels", "List", "(a, b, c)");
         let query = ["c", "a"];
-        assert_eq!(
-            parameter_list_has_subsequence_v1(&v, &query),
-            Ok(false)
-        );
+        assert_eq!(parameter_list_has_subsequence_v1(&v, &query), Ok(false));
     }
 
     #[test]
     fn missing_item_is_false() {
         let v = value("channels", "List", "(a, b)");
         let query = ["a", "z"];
-        assert_eq!(
-            parameter_list_has_subsequence_v1(&v, &query),
-            Ok(false)
-        );
+        assert_eq!(parameter_list_has_subsequence_v1(&v, &query), Ok(false));
     }
 
     #[test]
     fn empty_query_is_vacuous() {
         let v = value("channels", "List", "(a, b)");
         let query: [&str; 0] = [];
-        assert_eq!(
-            parameter_list_has_subsequence_v1(&v, &query),
-            Ok(true)
-        );
+        assert_eq!(parameter_list_has_subsequence_v1(&v, &query), Ok(true));
     }
 
     #[test]
@@ -130,14 +118,8 @@ mod tests {
     fn items_are_trimmed_but_query_is_raw() {
         let v = value("channels", "List", "( a , b , c )");
         let query = ["a", "c"];
-        assert_eq!(
-            parameter_list_has_subsequence_v1(&v, &query),
-            Ok(true)
-        );
+        assert_eq!(parameter_list_has_subsequence_v1(&v, &query), Ok(true));
         let spaced = [" a ", "c"];
-        assert_eq!(
-            parameter_list_has_subsequence_v1(&v, &spaced),
-            Ok(false)
-        );
+        assert_eq!(parameter_list_has_subsequence_v1(&v, &spaced), Ok(false));
     }
 }

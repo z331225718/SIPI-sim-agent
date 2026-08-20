@@ -6,7 +6,7 @@
 
 use std::path::PathBuf;
 
-use sipi_com::{peak_window, rectangular_pulse_response_v1, shift_matrix, SEARCH_LOOP_POLICY_V1};
+use sipi_com::{SEARCH_LOOP_POLICY_V1, peak_window, rectangular_pulse_response_v1, shift_matrix};
 
 fn main() {
     let mut input = None;
@@ -27,7 +27,12 @@ fn main() {
     let bytes = std::fs::read(&input).expect("read input");
     let value: serde_json::Value = serde_json::from_slice(&bytes).expect("input json");
 
-    let impulse: Vec<f64> = value["impulse"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect();
+    let impulse: Vec<f64> = value["impulse"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_f64().unwrap())
+        .collect();
     let spu = value["samples_per_ui"].as_u64().expect("spu") as usize;
 
     let pulse = rectangular_pulse_response_v1(&impulse, spu).expect("pulse");

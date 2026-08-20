@@ -9,9 +9,9 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_com::{
-    cannot_improve_fom_v1, candidate_ber_q_v1, dfe_candidate_bounds_v1, jitter_response_v1,
-    jitter_sigma_v1, r480_bbn_q_factor_v1, r480_pdf_bin_size_v1, DfeCandidateParamsV1,
-    CANDIDATE_HELPERS_POLICY_V1,
+    CANDIDATE_HELPERS_POLICY_V1, DfeCandidateParamsV1, candidate_ber_q_v1, cannot_improve_fom_v1,
+    dfe_candidate_bounds_v1, jitter_response_v1, jitter_sigma_v1, r480_bbn_q_factor_v1,
+    r480_pdf_bin_size_v1,
 };
 
 fn f64s(value: &Value) -> Vec<f64> {
@@ -97,8 +97,10 @@ fn main() {
                     "ok": true,
                 });
             }
-            Err(_) => output["dfe_bounds"] =
-                serde_json::json!({ "ok": false, "error": "dfe-bounds-invalid" }),
+            Err(_) => {
+                output["dfe_bounds"] =
+                    serde_json::json!({ "ok": false, "error": "dfe-bounds-invalid" })
+            }
         }
     }
     if let Some(case) = value.get("jitter") {
@@ -113,8 +115,9 @@ fn main() {
             num_ui,
         ) {
             Ok(values) => output["jitter"] = serde_json::json!({ "ok": true, "values": values }),
-            Err(_) => output["jitter"] =
-                serde_json::json!({ "ok": false, "error": "jitter-invalid" }),
+            Err(_) => {
+                output["jitter"] = serde_json::json!({ "ok": false, "error": "jitter-invalid" })
+            }
         }
     }
     if let Some(case) = value.get("jitter_sigma") {
@@ -129,8 +132,10 @@ fn main() {
             case["limit_to_dfe_span"].as_bool().expect("limited"),
         ) {
             Ok(sigma) => output["jitter_sigma"] = serde_json::json!({ "ok": true, "sigma": sigma }),
-            Err(_) => output["jitter_sigma"] =
-                serde_json::json!({ "ok": false, "error": "jitter-invalid" }),
+            Err(_) => {
+                output["jitter_sigma"] =
+                    serde_json::json!({ "ok": false, "error": "jitter-invalid" })
+            }
         }
     }
     if let Some(path) = report {

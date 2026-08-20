@@ -8,7 +8,7 @@
 //! equality, per the P4B-02b0 raw-byte binding). This is the map形态 companion
 //! of 02b182 first-occurrence-indices (which returns the same data as an
 //! ordered `Vec<(String, usize)>` in first-occurrence order): the two slices
-//! carry identical information but differ in access structure — O(1) lookup
+//! carry identical information but differ in access structure — O(log n) lookup
 //! by item key (this slice) vs positional iteration (02b182).
 //!
 //! Fail-closed: the value not declared List yields `NotAList`; the token not

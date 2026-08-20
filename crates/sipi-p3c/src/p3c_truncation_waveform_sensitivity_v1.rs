@@ -63,14 +63,21 @@ impl Error for TruncationWaveformSensitivityErrorV1 {}
 pub fn diagnose_selected_p3c_full_causal_third_period_v1(
     kernel: &SelectedP3cCausalResponseV1,
 ) -> Result<SelectedP3cFullCausalThirdPeriodDiagnosticV1, TruncationWaveformSensitivityErrorV1> {
-    if kernel.sample_interval().get().to_bits() != P3C_TRUNCATION_SENSITIVITY_SAMPLE_INTERVAL_BITS_V1 {
+    if kernel.sample_interval().get().to_bits()
+        != P3C_TRUNCATION_SENSITIVITY_SAMPLE_INTERVAL_BITS_V1
+    {
         return Err(TruncationWaveformSensitivityErrorV1::KernelSampleIntervalMismatch);
     }
     if kernel.sample_count() != P3C_FULL_CAUSAL_RESPONSE_SAMPLES_V1 {
         return Err(TruncationWaveformSensitivityErrorV1::KernelSampleCountMismatch);
     }
     let source = projected_prbs9_source();
-    let samples = convolve_fixed_range(&source, kernel.samples(), P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_START_V1, P3C_TRUNCATION_SENSITIVITY_TOTAL_PRBS9_SAMPLES_V1)?;
+    let samples = convolve_fixed_range(
+        &source,
+        kernel.samples(),
+        P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_START_V1,
+        P3C_TRUNCATION_SENSITIVITY_TOTAL_PRBS9_SAMPLES_V1,
+    )?;
     let endpoint_sum = (P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_START_V1 + 1)
         .checked_add(P3C_TRUNCATION_SENSITIVITY_TOTAL_PRBS9_SAMPLES_V1)
         .ok_or(TruncationWaveformSensitivityErrorV1::FixedWorkMismatch)?;
@@ -97,10 +104,10 @@ fn convolve_fixed_range(
     for output_index in first_output..end_output {
         let last_kernel = output_index.min(kernel.len() - 1);
         let mut sum = 0.0;
-        for kernel_index in 0..=last_kernel {
+        for (kernel_index, coefficient) in kernel.iter().take(last_kernel + 1).enumerate() {
             let source_index = output_index - kernel_index;
             let source_value = source.get(source_index).map_or(0.0, |value| value.get());
-            let product = source_value * kernel[kernel_index].get();
+            let product = source_value * coefficient.get();
             if !product.is_finite() {
                 return Err(TruncationWaveformSensitivityErrorV1::NonFiniteOutput { output_index });
             }
@@ -136,7 +143,12 @@ mod tests {
     use super::*;
 
     fn source(values: &[f64]) -> Vec<Volts> {
-        values.iter().copied().map(Volts::try_new).collect::<Result<_, _>>().unwrap()
+        values
+            .iter()
+            .copied()
+            .map(Volts::try_new)
+            .collect::<Result<_, _>>()
+            .unwrap()
     }
 
     fn kernel(values: &[f64]) -> Vec<FiniteF64> {
@@ -170,16 +182,22 @@ mod tests {
     #[test]
     fn fixed_prbs_projection_is_right_continuous() {
         let source = projected_prbs9_source();
-        assert_eq!(source.len(), P3C_TRUNCATION_SENSITIVITY_TOTAL_PRBS9_SAMPLES_V1);
+        assert_eq!(
+            source.len(),
+            P3C_TRUNCATION_SENSITIVITY_TOTAL_PRBS9_SAMPLES_V1
+        );
         assert_eq!(source[0], source[31]);
-        assert!(source
-            .chunks_exact(32)
-            .any(|ui| ui.first().is_some_and(|first| ui.iter().all(|value| value == first))));
-        assert!(source
-            .chunks_exact(32)
-            .collect::<Vec<_>>()
-            .windows(2)
-            .any(|pair| pair[0][0] != pair[1][0]));
+        assert!(source.chunks_exact(32).any(|ui| {
+            ui.first()
+                .is_some_and(|first| ui.iter().all(|value| value == first))
+        }));
+        assert!(
+            source
+                .chunks_exact(32)
+                .collect::<Vec<_>>()
+                .windows(2)
+                .any(|pair| pair[0][0] != pair[1][0])
+        );
     }
 
     #[test]

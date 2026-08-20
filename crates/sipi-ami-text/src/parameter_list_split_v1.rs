@@ -61,14 +61,10 @@ pub fn split_parameter_list_at_index_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListSplitErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListSplitErrorV1::MalformedList)?;
+    let items = list_items(value.value_token()).ok_or(ParameterListSplitErrorV1::MalformedList)?;
     let item_count = items.len();
     if index > item_count {
-        return Err(ParameterListSplitErrorV1::IndexOutOfRange {
-            index,
-            item_count,
-        });
+        return Err(ParameterListSplitErrorV1::IndexOutOfRange { index, item_count });
     }
     let left = format!("({})", items[..index].join(", "));
     let right = format!("({})", items[index..].join(", "));

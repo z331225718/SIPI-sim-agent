@@ -63,12 +63,12 @@ impl Prbs9V1 {
     /// Emit `count` bits as bytes (LSB-first packing; bit i of byte j is
     /// the (j*8+i)-th output).
     pub fn next_bytes(&mut self, count: usize) -> Vec<u8> {
-        let mut out = Vec::with_capacity((count + 7) / 8);
+        let mut out = Vec::with_capacity(count.div_ceil(8));
         let mut acc = 0u8;
         let mut acc_bits = 0usize;
         for _ in 0..count {
             let bit = self.next_bit();
-            acc |= (bit << acc_bits) as u8;
+            acc |= bit << acc_bits;
             acc_bits += 1;
             if acc_bits == 8 {
                 out.push(acc);
@@ -105,7 +105,10 @@ mod tests {
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(PRBS9_POLICY_V1, "sipi.p3b-05c.prbs9-sequence.v1.deterministic-core");
+        assert_eq!(
+            PRBS9_POLICY_V1,
+            "sipi.p3b-05c.prbs9-sequence.v1.deterministic-core"
+        );
     }
 
     #[test]
@@ -166,7 +169,7 @@ mod tests {
         let bits: Vec<u8> = (0..8).map(|_| g2.next_bit()).collect();
         let mut expected = 0u8;
         for (i, b) in bits.iter().enumerate() {
-            expected |= (b << i) as u8;
+            expected |= b << i;
         }
         let mut g3 = Prbs9V1::new(0x001);
         let _ = g3.next_bytes(8);

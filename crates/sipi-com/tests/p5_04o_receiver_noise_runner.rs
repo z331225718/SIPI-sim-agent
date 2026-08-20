@@ -7,12 +7,12 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_types::Complex64;
 use sipi_com::{
-    bessel_thomson_filter_v1, butterworth_filter_v1, raised_cosine_filter_v1,
-    receiver_noise_v1, rx_ffe_frequency_response_v1, NoiseErrorV1,
-    ReceiverNoiseOptionsV1, ReceiverNoiseParamsV1, RECEIVER_NOISE_POLICY_V1,
+    RECEIVER_NOISE_POLICY_V1, ReceiverNoiseOptionsV1, ReceiverNoiseParamsV1,
+    bessel_thomson_filter_v1, butterworth_filter_v1, raised_cosine_filter_v1, receiver_noise_v1,
+    rx_ffe_frequency_response_v1,
 };
+use sipi_types::Complex64;
 
 fn f64s(value: &Value) -> Vec<f64> {
     value
@@ -148,7 +148,10 @@ fn main() {
             })
             .unwrap_or_default();
         let taps = case["rx_ffe_taps"].as_array().map(|items| {
-            items.iter().map(|item| item.as_f64().expect("tap")).collect::<Vec<f64>>()
+            items
+                .iter()
+                .map(|item| item.as_f64().expect("tap"))
+                .collect::<Vec<f64>>()
         });
         let pc = case["rx_ffe_precursor_count"].as_u64().map(|v| v as usize);
         let result = receiver_noise_v1(

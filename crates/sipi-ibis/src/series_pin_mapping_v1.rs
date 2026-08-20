@@ -48,9 +48,15 @@ impl TypedSeriesPinRecordV1 {
         if !pf.is_ascii() || !ps.is_ascii() || !mn.is_ascii() {
             return Err(SeriesPinMappingTableErrorV1::NonAsciiName);
         }
-        if !pf.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !ps.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !mn.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+        if !pf
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !ps
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !mn
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
         {
             return Err(SeriesPinMappingTableErrorV1::InvalidName);
         }
@@ -60,17 +66,13 @@ impl TypedSeriesPinRecordV1 {
 
         let ftg = function_table_group.and_then(|g| {
             let t = g.into().trim().to_string();
-            if t.is_empty() {
-                None
-            } else {
-                Some(t)
-            }
+            if t.is_empty() { None } else { Some(t) }
         });
 
-        if let Some(ref g) = ftg {
-            if !g.is_ascii() {
-                return Err(SeriesPinMappingTableErrorV1::NonAsciiName);
-            }
+        if let Some(ref g) = ftg
+            && !g.is_ascii()
+        {
+            return Err(SeriesPinMappingTableErrorV1::NonAsciiName);
         }
 
         Ok(Self {

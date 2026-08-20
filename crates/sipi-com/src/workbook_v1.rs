@@ -16,8 +16,7 @@ use quick_xml::events::Event;
 use zip::ZipArchive;
 
 /// Explicit scope policy of the workbook importer stage.
-pub const WORKBOOK_IMPORT_POLICY_V1: &str =
-    "sipi.p5-05a.workbook-v1.xlsx-reader-lookup";
+pub const WORKBOOK_IMPORT_POLICY_V1: &str = "sipi.p5-05a.workbook-v1.xlsx-reader-lookup";
 
 /// A typed cell value (port of the Python reader's object values).
 #[derive(Clone, Debug, PartialEq)]
@@ -30,7 +29,10 @@ pub enum CellValueV1 {
     /// Multi-element numeric cell values (C-order flattening with the
     /// source's reshape(-1) semantics; MATLAB column-major payload is
     /// reordered).
-    Array { dims: Vec<u32>, data: Vec<f64> },
+    Array {
+        dims: Vec<u32>,
+        data: Vec<f64>,
+    },
 }
 
 /// One raw workbook cell (port of `RawCell`).
@@ -49,7 +51,12 @@ impl RawCellV1 {
         value: CellValueV1,
         formula: Option<String>,
     ) -> Self {
-        Self { sheet, coordinate, value, formula }
+        Self {
+            sheet,
+            coordinate,
+            value,
+            formula,
+        }
     }
 
     pub fn sheet(&self) -> &str {
@@ -147,12 +154,19 @@ fn attribute_value<'a>(
 ) -> Option<String> {
     for attribute in attributes {
         if local_name(attribute.key) == key {
-            return Some(attribute.value.as_ref().to_vec().into_iter().map(|b| b as char).collect());
+            return Some(
+                attribute
+                    .value
+                    .as_ref()
+                    .to_vec()
+                    .into_iter()
+                    .map(|b| b as char)
+                    .collect(),
+            );
         }
     }
     None
 }
-
 
 fn classify_cell_value(
     kind: Option<&str>,
@@ -302,8 +316,7 @@ fn locate_com_settings(archive: &mut ZipArchive<File>) -> Result<SheetLocation, 
                         .collect::<Result<_, _>>()
                         .map_err(|_| WorkbookErrorV1::InvalidWorkbookXml)?;
                     calc_mode = attribute_value(&attributes, b"calcMode");
-                    full_calc_on_load =
-                        attribute_value(&attributes, b"fullCalcOnLoad");
+                    full_calc_on_load = attribute_value(&attributes, b"fullCalcOnLoad");
                 }
                 _ => {}
             },
@@ -311,10 +324,10 @@ fn locate_com_settings(archive: &mut ZipArchive<File>) -> Result<SheetLocation, 
             _ => {}
         }
     }
-    if let Some(mode) = calc_mode {
-        if mode == "manual" {
-            return Err(WorkbookErrorV1::CalculationPolicyRequiresRecalc);
-        }
+    if let Some(mode) = calc_mode
+        && mode == "manual"
+    {
+        return Err(WorkbookErrorV1::CalculationPolicyRequiresRecalc);
     }
     if full_calc_on_load.as_deref() == Some("1") {
         return Err(WorkbookErrorV1::CalculationPolicyRequiresRecalc);
@@ -457,10 +470,8 @@ fn parse_sheet_cells(
                     if let Some(formula) = current_formula.as_mut() {
                         formula.push_str(&value);
                     }
-                } else if in_value {
-                    if let Some(raw) = current_raw.as_mut() {
-                        raw.push_str(&value);
-                    }
+                } else if in_value && let Some(raw) = current_raw.as_mut() {
+                    raw.push_str(&value);
                 }
             }
             Event::End(event) => match local_name(event.name()) {
@@ -527,7 +538,7 @@ fn flush_cell(
     kind: &Option<String>,
     formula: &Option<String>,
     raw: &Option<String>,
-    inline: &String,
+    inline: &str,
     in_inline_str: bool,
     strict: bool,
     strings: &[String],
@@ -535,12 +546,11 @@ fn flush_cell(
     let Some(coordinate) = coordinate else {
         return Ok(());
     };
-    let (row, column) =
-        split_coordinate(coordinate).ok_or(WorkbookErrorV1::InvalidCoordinate)?;
+    let (row, column) = split_coordinate(coordinate).ok_or(WorkbookErrorV1::InvalidCoordinate)?;
     let kind_value = kind.as_deref();
     let raw_value = raw.as_deref();
     let value = if kind_value == Some("inlineStr") && in_inline_str && !strict {
-        CellValueV1::String(inline.clone())
+        CellValueV1::String(inline.to_owned())
     } else {
         classify_cell_value(kind_value, raw_value, strings, strict)?
     };
@@ -571,15 +581,16 @@ fn flush_cell(
 /// Port of `_validate_xlsx_container`: .xlsx suffix, zip container,
 /// no macro content, no external links.
 pub fn validate_xlsx_container_v1(path: &Path) -> Result<(), WorkbookErrorV1> {
-    if path.extension().map(|ext| ext.to_string_lossy().to_lowercase()) != Some("xlsx".to_string()) {
+    if path
+        .extension()
+        .map(|ext| ext.to_string_lossy().to_lowercase())
+        != Some("xlsx".to_string())
+    {
         return Err(WorkbookErrorV1::NotXlsx);
     }
     let file = File::open(path).map_err(|_| WorkbookErrorV1::InvalidContainer)?;
     let archive = ZipArchive::new(file).map_err(|_| WorkbookErrorV1::InvalidContainer)?;
-    let names: Vec<String> = archive
-        .file_names()
-        .map(|name| name.to_string())
-        .collect();
+    let names: Vec<String> = archive.file_names().map(|name| name.to_string()).collect();
     if names
         .iter()
         .any(|name| name.eq_ignore_ascii_case("xl/vbaproject.bin"))
@@ -607,8 +618,7 @@ pub fn is_strict_ooxml_v1(path: &Path) -> Result<bool, WorkbookErrorV1> {
         .read_to_end(&mut buffer)
         .map_err(|_| WorkbookErrorV1::InvalidWorkbookXml)?;
     let text = String::from_utf8_lossy(&buffer);
-    Ok(text.contains("{http://purl.oclc.org/ooxml/")
-        || text.contains("conformance='strict'"))
+    Ok(text.contains("{http://purl.oclc.org/ooxml/") || text.contains("conformance='strict'"))
 }
 
 /// Read the COM_Settings worksheet into the raw cell grid (port of
@@ -660,10 +670,10 @@ impl ComSettingsV1 {
         let mut matches = Vec::new();
         for (row_index, row) in self.cells.iter().enumerate() {
             for (column_index, cell) in row.iter().enumerate() {
-                if let CellValueV1::String(value) = &cell.value {
-                    if value.to_lowercase() == folded {
-                        matches.push((row_index, column_index));
-                    }
+                if let CellValueV1::String(value) = &cell.value
+                    && value.to_lowercase() == folded
+                {
+                    matches.push((row_index, column_index));
                 }
             }
         }
@@ -722,14 +732,44 @@ mod tests {
 
     #[test]
     fn cell_value_classification() {
-        assert_eq!(classify_cell_value(None, Some("3"), &[], false).unwrap(), CellValueV1::Integer(3));
-        assert_eq!(classify_cell_value(None, Some("3.5"), &[], false).unwrap(), CellValueV1::Number(3.5));
-        assert_eq!(classify_cell_value(None, Some("1e2"), &[], false).unwrap(), CellValueV1::Integer(100));
-        assert_eq!(classify_cell_value(Some("b"), Some("0"), &[], false).unwrap(), CellValueV1::Bool(false));
-        assert_eq!(classify_cell_value(Some("s"), Some("1"), &["a".to_string(), "b".to_string()], false).unwrap(), CellValueV1::String("b".to_string()));
-        assert_eq!(classify_cell_value(Some("str"), Some("x"), &[], false).unwrap(), CellValueV1::String("x".to_string()));
-        assert_eq!(classify_cell_value(Some("e"), Some("#DIV/0!"), &[], false).unwrap(), CellValueV1::String("#DIV/0!".to_string()));
-        assert_eq!(classify_cell_value(None, Some("notnum"), &[], false).unwrap(), CellValueV1::String("notnum".to_string()));
+        assert_eq!(
+            classify_cell_value(None, Some("3"), &[], false).unwrap(),
+            CellValueV1::Integer(3)
+        );
+        assert_eq!(
+            classify_cell_value(None, Some("3.5"), &[], false).unwrap(),
+            CellValueV1::Number(3.5)
+        );
+        assert_eq!(
+            classify_cell_value(None, Some("1e2"), &[], false).unwrap(),
+            CellValueV1::Integer(100)
+        );
+        assert_eq!(
+            classify_cell_value(Some("b"), Some("0"), &[], false).unwrap(),
+            CellValueV1::Bool(false)
+        );
+        assert_eq!(
+            classify_cell_value(
+                Some("s"),
+                Some("1"),
+                &["a".to_string(), "b".to_string()],
+                false
+            )
+            .unwrap(),
+            CellValueV1::String("b".to_string())
+        );
+        assert_eq!(
+            classify_cell_value(Some("str"), Some("x"), &[], false).unwrap(),
+            CellValueV1::String("x".to_string())
+        );
+        assert_eq!(
+            classify_cell_value(Some("e"), Some("#DIV/0!"), &[], false).unwrap(),
+            CellValueV1::String("#DIV/0!".to_string())
+        );
+        assert_eq!(
+            classify_cell_value(None, Some("notnum"), &[], false).unwrap(),
+            CellValueV1::String("notnum".to_string())
+        );
         assert!(classify_cell_value(Some("s"), Some("9"), &["a".to_string()], false).is_err());
     }
 

@@ -9,11 +9,11 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    build_parameter_trees_v1, detect_parameter_tree_cycles_v1, parse_ami_text_v1,
-    ParseLimitsV1, PARAMETER_TREE_DETECT_CYCLES_POLICY_V1,
+    PARAMETER_TREE_DETECT_CYCLES_POLICY_V1, ParseLimitsV1, build_parameter_trees_v1,
+    detect_parameter_tree_cycles_v1, parse_ami_text_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -26,7 +26,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b25_parameter_tree_detect_cycles_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b25_parameter_tree_detect_cycles_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -44,7 +46,8 @@ fn main() {
                 "parse_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -61,7 +64,8 @@ fn main() {
                 "build_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

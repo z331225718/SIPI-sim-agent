@@ -36,8 +36,10 @@ impl AmiParameterTreeDiffStatsV1 {
 pub fn compute_parameter_tree_diff_stats_v1(
     diffs: &[TreeDiffEntryV1],
 ) -> Result<AmiParameterTreeDiffStatsV1, ParameterTreeDiffStatsErrorV1> {
-    let mut stats = AmiParameterTreeDiffStatsV1::default();
-    stats.total_diffs = diffs.len();
+    let mut stats = AmiParameterTreeDiffStatsV1 {
+        total_diffs: diffs.len(),
+        ..AmiParameterTreeDiffStatsV1::default()
+    };
 
     for diff in diffs {
         match diff {
@@ -66,9 +68,15 @@ mod tests {
     #[test]
     fn computes_stats_correctly() {
         let diffs = vec![
-            TreeDiffEntryV1::MissingNode { path: "root.a".to_string() },
-            TreeDiffEntryV1::ExtraNode { path: "root.b".to_string() },
-            TreeDiffEntryV1::KindMismatch { path: "root.c".to_string() },
+            TreeDiffEntryV1::MissingNode {
+                path: "root.a".to_string(),
+            },
+            TreeDiffEntryV1::ExtraNode {
+                path: "root.b".to_string(),
+            },
+            TreeDiffEntryV1::KindMismatch {
+                path: "root.c".to_string(),
+            },
             TreeDiffEntryV1::ValueMismatch {
                 path: "root.d".to_string(),
                 left: vec!["0.5".to_string()],

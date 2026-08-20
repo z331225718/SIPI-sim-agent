@@ -6,19 +6,18 @@
 //! branch, strict-FOM improvement gate) and _c2m_candidate_fom. The
 //! search loop (search_r480_nonmmse_no_xtalk) remains a separate scope.
 
-use crate::c2m_eye_v1::{calculate_c2m_vertical_eye_v1, C2mEyeErrorV1};
+use crate::c2m_eye_v1::{C2mEyeErrorV1, calculate_c2m_vertical_eye_v1};
 use crate::candidate_helpers_v1::{
-    cannot_improve_fom_v1, candidate_ber_q_v1, dfe_candidate_bounds_v1, jitter_response_v1,
-    jitter_sigma_v1, r480_bbn_q_factor_v1, r480_pdf_bin_size_v1, CandidateErrorV1,
-    DfeCandidateParamsV1,
+    CandidateErrorV1, DfeCandidateParamsV1, candidate_ber_q_v1, cannot_improve_fom_v1,
+    dfe_candidate_bounds_v1, jitter_response_v1, jitter_sigma_v1, r480_bbn_q_factor_v1,
+    r480_pdf_bin_size_v1,
 };
-use crate::dfe_v1::{apply_tail_rss_bounds_v1, clip_dfe_v1, DfeErrorV1};
+use crate::dfe_v1::{DfeErrorV1, apply_tail_rss_bounds_v1, clip_dfe_v1};
 use crate::discrete_pdf_v1::{DiscretePdfV1, PdfErrorV1};
-use crate::search_support_v1::{selected_sndr_v1, SearchErrorV1};
+use crate::search_support_v1::{SearchErrorV1, selected_sndr_v1};
 
 /// Explicit scope policy of the candidate evaluation stage.
-pub const CANDIDATE_EVAL_POLICY_V1: &str =
-    "sipi.p5-04s.candidate-eval.v1.fom-c2m-rejection";
+pub const CANDIDATE_EVAL_POLICY_V1: &str = "sipi.p5-04s.candidate-eval.v1.fom-c2m-rejection";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CandidateEvalErrorV1 {
@@ -30,11 +29,31 @@ pub enum CandidateEvalErrorV1 {
     Pdf,
 }
 
-impl From<DfeErrorV1> for CandidateEvalErrorV1 { fn from(_: DfeErrorV1) -> Self { CandidateEvalErrorV1::Dfe } }
-impl From<CandidateErrorV1> for CandidateEvalErrorV1 { fn from(_: CandidateErrorV1) -> Self { CandidateEvalErrorV1::Candidate } }
-impl From<SearchErrorV1> for CandidateEvalErrorV1 { fn from(_: SearchErrorV1) -> Self { CandidateEvalErrorV1::Search } }
-impl From<C2mEyeErrorV1> for CandidateEvalErrorV1 { fn from(_: C2mEyeErrorV1) -> Self { CandidateEvalErrorV1::C2mEye } }
-impl From<PdfErrorV1> for CandidateEvalErrorV1 { fn from(_: PdfErrorV1) -> Self { CandidateEvalErrorV1::Pdf } }
+impl From<DfeErrorV1> for CandidateEvalErrorV1 {
+    fn from(_: DfeErrorV1) -> Self {
+        CandidateEvalErrorV1::Dfe
+    }
+}
+impl From<CandidateErrorV1> for CandidateEvalErrorV1 {
+    fn from(_: CandidateErrorV1) -> Self {
+        CandidateEvalErrorV1::Candidate
+    }
+}
+impl From<SearchErrorV1> for CandidateEvalErrorV1 {
+    fn from(_: SearchErrorV1) -> Self {
+        CandidateEvalErrorV1::Search
+    }
+}
+impl From<C2mEyeErrorV1> for CandidateEvalErrorV1 {
+    fn from(_: C2mEyeErrorV1) -> Self {
+        CandidateEvalErrorV1::C2mEye
+    }
+}
+impl From<PdfErrorV1> for CandidateEvalErrorV1 {
+    fn from(_: PdfErrorV1) -> Self {
+        CandidateEvalErrorV1::Pdf
+    }
+}
 
 /// The R480 equalizer-search parameter surface used by one candidate.
 #[derive(Clone, Debug, PartialEq)]
@@ -106,7 +125,9 @@ pub struct NonMmseSearchResultV1 {
     pub sigma_tx_v: f64,
 }
 
-fn l2_norm(values: &[f64]) -> f64 { values.iter().map(|v| v * v).sum::<f64>().sqrt() }
+fn l2_norm(values: &[f64]) -> f64 {
+    values.iter().map(|v| v * v).sum::<f64>().sqrt()
+}
 
 /// Port of _c2m_candidate_fom (C2M vertical-eye FOM replacement).
 #[allow(clippy::too_many_arguments)]
@@ -123,8 +144,12 @@ pub fn c2m_candidate_fom_v1(
     options: &CandidateEvalOptionsV1,
 ) -> Result<Option<f64>, CandidateEvalErrorV1> {
     let ber_q = candidate_ber_q_v1(parameters.noise_crest_factor, parameters.spec_ber);
-    let bin_size = r480_pdf_bin_size_v1(available_signal, options.bin_size, options.force_pdf_bin_size);
-    let nsigma = match r480_bbn_q_factor_v1(options.force_bbn_q_factor, options.bbn_q_factor)? {
+    let bin_size = r480_pdf_bin_size_v1(
+        available_signal,
+        options.bin_size,
+        options.force_pdf_bin_size,
+    );
+    let _nsigma = match r480_bbn_q_factor_v1(options.force_bbn_q_factor, options.bbn_q_factor)? {
         Some(value) => value,
         None => ber_q,
     };
@@ -132,17 +157,41 @@ pub fn c2m_candidate_fom_v1(
     let ne = DiscretePdfV1::try_new(bin_size, 0, vec![1.0])?;
     let cci = DiscretePdfV1::try_new(bin_size, 0, vec![1.0])?;
     let (veo_top, veo_bottom) = calculate_c2m_vertical_eye_v1(
-        sbr, cursor_index, parameters.samples_per_ui, parameters.samples_for_c2m,
-        parameters.levels, bin_size, parameters.r_lm, dfe_tap_count, dfe_max, dfe_min,
-        parameters.dfe_delta, parameters.sigma_rj, parameters.sigma_x,
-        sigma_n_v, sigma_tx_v, ber_q, &ne, &cci, parameters.a_dd, parameters.spec_ber,
-        parameters.t_o, &options.histogram_window_weight, parameters.ql,
+        sbr,
+        cursor_index,
+        parameters.samples_per_ui,
+        parameters.samples_for_c2m,
+        parameters.levels,
+        bin_size,
+        parameters.r_lm,
+        dfe_tap_count,
+        dfe_max,
+        dfe_min,
+        parameters.dfe_delta,
+        parameters.sigma_rj,
+        parameters.sigma_x,
+        sigma_n_v,
+        sigma_tx_v,
+        ber_q,
+        &ne,
+        &cci,
+        parameters.a_dd,
+        parameters.spec_ber,
+        parameters.t_o,
+        &options.histogram_window_weight,
+        parameters.ql,
     )?;
-    let (Some(top), Some(bottom)) = (veo_top, veo_bottom) else { return Ok(None); };
+    let (Some(top), Some(bottom)) = (veo_top, veo_bottom) else {
+        return Ok(None);
+    };
     let eye_height = top - bottom;
-    if eye_height <= parameters.min_veo_test / 1000.0 { return Ok(None); }
+    if eye_height <= parameters.min_veo_test / 1000.0 {
+        return Ok(None);
+    }
     let interference = (2.0 * available_signal - eye_height) / 2.0;
-    if interference <= 0.0 { return Ok(None); }
+    if interference <= 0.0 {
+        return Ok(None);
+    }
     Ok(Some(20.0 * (available_signal / interference).log10()))
 }
 
@@ -174,13 +223,20 @@ pub fn evaluate_candidate_v1(
         return Ok(None);
     }
     let mut padded: Vec<f64> = sbr.to_vec();
-    let unbounded_ndfe: i64 =
-        if parameters.floating_dfe { parameters.n_bmax } else { parameters.ndfe };
+    let unbounded_ndfe: i64 = if parameters.floating_dfe {
+        parameters.n_bmax
+    } else {
+        parameters.ndfe
+    };
     let required = cursor_index + samples_per_ui * (unbounded_ndfe as usize + 1) + 1;
-    if padded.len() < required { padded.resize(required, 0.0); }
+    if padded.len() < required {
+        padded.resize(required, 0.0);
+    }
     let cursor = padded[cursor_index];
     let available_signal = parameters.r_lm * cursor / (parameters.levels as f64 - 1.0);
-    if available_signal <= 0.0 { return Ok(None); }
+    if available_signal <= 0.0 {
+        return Ok(None);
+    }
     let mut precursors: Vec<f64> = Vec::new();
     let mut i = cursor_index;
     while i >= samples_per_ui {
@@ -189,11 +245,18 @@ pub fn evaluate_candidate_v1(
     }
     precursors.reverse();
     let far_start = cursor_index + samples_per_ui * (unbounded_ndfe as usize + 1);
-    let far: Vec<f64> = padded.iter().skip(far_start).step_by(samples_per_ui).copied().collect();
+    let far: Vec<f64> = padded
+        .iter()
+        .skip(far_start)
+        .step_by(samples_per_ui)
+        .copied()
+        .collect();
     let mut concat_0: Vec<f64> = precursors.clone();
     concat_0.extend_from_slice(&far);
     let sigma_ignore_dfe = parameters.sigma_x * l2_norm(&concat_0);
-    if cannot_improve_fom_v1(available_signal, sigma_ignore_dfe, best_fom_db) { return Ok(None); }
+    if cannot_improve_fom_v1(available_signal, sigma_ignore_dfe, best_fom_db) {
+        return Ok(None);
+    }
 
     let dfe_params = DfeCandidateParamsV1 {
         ndfe: parameters.ndfe,
@@ -210,7 +273,10 @@ pub fn evaluate_candidate_v1(
 
     let dfe_values: Vec<f64> = padded
         [cursor_index + samples_per_ui..cursor_index + samples_per_ui * (ndfe as usize + 1)]
-        .iter().step_by(samples_per_ui).copied().collect();
+        .iter()
+        .step_by(samples_per_ui)
+        .copied()
+        .collect();
     let mut dfe_values_q = dfe_values.clone();
     if parameters.dfe_delta != 0.0 {
         let step = parameters.dfe_delta;
@@ -225,7 +291,11 @@ pub fn evaluate_candidate_v1(
     if tail_start > 0 && (tail_start as usize) <= cancelled.len() {
         let taps_n = cancelled.iter().map(|v| v / cursor).collect::<Vec<f64>>();
         let tail_bounds = apply_tail_rss_bounds_v1(
-            &taps_n, &dfe_max, &dfe_min, Some((tail_start - 1) as usize), parameters.b_float_rss_max,
+            &taps_n,
+            &dfe_max,
+            &dfe_min,
+            Some((tail_start - 1) as usize),
+            parameters.b_float_rss_max,
         )?;
         dfe_max = tail_bounds.maximum().to_vec();
         dfe_min = tail_bounds.minimum().to_vec();
@@ -233,38 +303,70 @@ pub fn evaluate_candidate_v1(
         let minimum2: Vec<f64> = dfe_min.iter().map(|v| cursor * v).collect();
         cancelled = clip_dfe_v1(&dfe_values_q, &maximum2, &minimum2)?;
     }
-    let excess: Vec<f64> = dfe_values.iter().zip(cancelled.iter()).map(|(a, b)| a - b).collect();
+    let excess: Vec<f64> = dfe_values
+        .iter()
+        .zip(cancelled.iter())
+        .map(|(a, b)| a - b)
+        .collect();
     let mut concat_1: Vec<f64> = precursors.clone();
     concat_1.extend_from_slice(&excess);
     concat_1.extend_from_slice(&far);
     let sigma_isi = parameters.sigma_x * l2_norm(&concat_1);
-    if cannot_improve_fom_v1(available_signal, sigma_isi, best_fom_db) { return Ok(None); }
+    if cannot_improve_fom_v1(available_signal, sigma_isi, best_fom_db) {
+        return Ok(None);
+    }
 
     let sigma_j = jitter_sigma_v1(
-        &padded, cursor_index, samples_per_ui, parameters.a_dd, parameters.sigma_rj, parameters.sigma_x,
-        ndfe, options.limit_jitter_contrib_to_dfe_span,
+        &padded,
+        cursor_index,
+        samples_per_ui,
+        parameters.a_dd,
+        parameters.sigma_rj,
+        parameters.sigma_x,
+        ndfe,
+        options.limit_jitter_contrib_to_dfe_span,
     )?;
     let sndr = selected_sndr_v1(
-        &options.sndr, options.wc_portz, options.tx_rd_sel, &options.pkg_len_select, package_case_index,
+        &options.sndr,
+        options.wc_portz,
+        options.tx_rd_sel,
+        &options.pkg_len_select,
+        package_case_index,
     )?;
     let sigma_tx = if options.snr_txw_c0 {
         let main_tap = tx_taps[precursor_count];
-        if main_tap == 0.0 { return Ok(None); }
+        if main_tap == 0.0 {
+            return Ok(None);
+        }
         cursor / main_tap * 10f64.powf(-sndr / 20.0)
     } else {
         cursor * 10f64.powf(-sndr / 20.0)
     };
-    let total = l2_norm(&[sigma_isi, sigma_j, sigma_xt_v, sigma_n_v, sigma_tx, sigma_ne_v]);
-    if total == 0.0 { return Ok(None); }
+    let total = l2_norm(&[
+        sigma_isi, sigma_j, sigma_xt_v, sigma_n_v, sigma_tx, sigma_ne_v,
+    ]);
+    if total == 0.0 {
+        return Ok(None);
+    }
     let mut fom = 20.0 * (available_signal / total).log10();
 
     if parameters.t_o != 0.0 && parameters.min_veo_test != 0.0 {
         let ber_q = candidate_ber_q_v1(parameters.noise_crest_factor, parameters.spec_ber);
         let first_eye_height = 2.0 * (available_signal - ber_q * total);
-        if first_eye_height <= parameters.min_veo_test / 1000.0 - 0.001 { return Ok(None); }
+        if first_eye_height <= parameters.min_veo_test / 1000.0 - 0.001 {
+            return Ok(None);
+        }
         match c2m_candidate_fom_v1(
-            &padded, cursor_index, available_signal, sigma_n_v, sigma_tx, ndfe,
-            &dfe_max, &dfe_min, parameters, options,
+            &padded,
+            cursor_index,
+            available_signal,
+            sigma_n_v,
+            sigma_tx,
+            ndfe,
+            &dfe_max,
+            &dfe_min,
+            parameters,
+            options,
         )? {
             Some(value) => fom = value,
             None => return Ok(None),
@@ -274,7 +376,12 @@ pub fn evaluate_candidate_v1(
         return Ok(None);
     }
     let h_j = jitter_response_v1(
-        &padded, cursor_index, samples_per_ui, ndfe, options.limit_jitter_contrib_to_dfe_span, None,
+        &padded,
+        cursor_index,
+        samples_per_ui,
+        ndfe,
+        options.limit_jitter_contrib_to_dfe_span,
+        None,
     )?;
     Ok(Some(NonMmseSearchResultV1 {
         fom_db: fom,
@@ -307,36 +414,90 @@ mod tests {
 
     fn params_fn() -> CandidateEvalParamsV1 {
         CandidateEvalParamsV1 {
-            samples_per_ui: 10, r_lm: 50.0, levels: 4, sigma_x: 0.03, dfe_delta: 1e-3,
-            n_tail_start: 0, b_float_rss_max: 0.0, a_dd: 0.1, sigma_rj: 1e-4,
-            t_o: 0.0, min_veo_test: 0.0, noise_crest_factor: 0.0, spec_ber: 1e-4,
-            samples_for_c2m: 8, ql: 1.0, floating_dfe: false, ndfe: 2, n_bmax: 2,
-            n_bf: 1, n_bg: 1, bmaxg: 0.3, bmax: vec![0.5, 0.5], bmin: vec![-0.5, -0.5],
+            samples_per_ui: 10,
+            r_lm: 50.0,
+            levels: 4,
+            sigma_x: 0.03,
+            dfe_delta: 1e-3,
+            n_tail_start: 0,
+            b_float_rss_max: 0.0,
+            a_dd: 0.1,
+            sigma_rj: 1e-4,
+            t_o: 0.0,
+            min_veo_test: 0.0,
+            noise_crest_factor: 0.0,
+            spec_ber: 1e-4,
+            samples_for_c2m: 8,
+            ql: 1.0,
+            floating_dfe: false,
+            ndfe: 2,
+            n_bmax: 2,
+            n_bf: 1,
+            n_bg: 1,
+            bmaxg: 0.3,
+            bmax: vec![0.5, 0.5],
+            bmin: vec![-0.5, -0.5],
         }
     }
 
     fn options_fn() -> CandidateEvalOptionsV1 {
         CandidateEvalOptionsV1 {
-            snr_txw_c0: false, wc_portz: false, tx_rd_sel: 0, pkg_len_select: vec![1],
-            sndr: vec![30.0, 30.0, 30.0, 30.0], limit_jitter_contrib_to_dfe_span: false,
-            force_pdf_bin_size: false, bin_size: 1e-3, force_bbn_q_factor: false, bbn_q_factor: 0.0,
+            snr_txw_c0: false,
+            wc_portz: false,
+            tx_rd_sel: 0,
+            pkg_len_select: vec![1],
+            sndr: vec![30.0, 30.0, 30.0, 30.0],
+            limit_jitter_contrib_to_dfe_span: false,
+            force_pdf_bin_size: false,
+            bin_size: 1e-3,
+            force_bbn_q_factor: false,
+            bbn_q_factor: 0.0,
             histogram_window_weight: "rectangle".to_string(),
         }
     }
 
     fn pulse() -> Vec<f64> {
-        (0..260).map(|i| { let t = i as f64; (0.5 * (-((t - 104.0) * (t - 104.0) / 400.0)).exp() + 0.05).max(0.02) }).collect()
+        (0..260)
+            .map(|i| {
+                let t = i as f64;
+                (0.5 * (-((t - 104.0) * (t - 104.0) / 400.0)).exp() + 0.05).max(0.02)
+            })
+            .collect()
     }
 
     #[test]
     fn policy_string_is_fixed() {
-        assert_eq!(CANDIDATE_EVAL_POLICY_V1, "sipi.p5-04s.candidate-eval.v1.fom-c2m-rejection");
+        assert_eq!(
+            CANDIDATE_EVAL_POLICY_V1,
+            "sipi.p5-04s.candidate-eval.v1.fom-c2m-rejection"
+        );
     }
 
     #[test]
     fn invalid_cursor_returns_none() {
         let p = pulse();
-        let result = evaluate_candidate_v1(&p, None, 0, 0, 0.0, 0, 0.0, &[], 0, 0, &[], 1e-4, 1e-4, 1e-4, &params_fn(), &options_fn(), 0, 0, false).expect("eval");
+        let result = evaluate_candidate_v1(
+            &p,
+            None,
+            0,
+            0,
+            0.0,
+            0,
+            0.0,
+            &[],
+            0,
+            0,
+            &[],
+            1e-4,
+            1e-4,
+            1e-4,
+            &params_fn(),
+            &options_fn(),
+            0,
+            0,
+            false,
+        )
+        .expect("eval");
         assert!(result.is_none());
     }
 
@@ -346,7 +507,19 @@ mod tests {
         let mut params = params_fn();
         params.t_o = 0.5;
         params.min_veo_test = 20000.0; // threshold 20 V > any feasible eye -> None
-        let result = c2m_candidate_fom_v1(&p, 100, 8.0, 1e-4, 1e-3, 2, &[0.5, 0.5], &[-0.5, -0.5], &params, &options_fn()).expect("fom");
+        let result = c2m_candidate_fom_v1(
+            &p,
+            100,
+            8.0,
+            1e-4,
+            1e-3,
+            2,
+            &[0.5, 0.5],
+            &[-0.5, -0.5],
+            &params,
+            &options_fn(),
+        )
+        .expect("fom");
         assert!(result.is_none());
     }
 
@@ -356,14 +529,47 @@ mod tests {
         let mut params = params_fn();
         params.t_o = 0.5;
         params.min_veo_test = 1.0;
-        let result = c2m_candidate_fom_v1(&p, 100, 8.0, 1e-4, 1e-3, 2, &[0.5, 0.5], &[-0.5, -0.5], &params, &options_fn()).expect("fom");
+        let result = c2m_candidate_fom_v1(
+            &p,
+            100,
+            8.0,
+            1e-4,
+            1e-3,
+            2,
+            &[0.5, 0.5],
+            &[-0.5, -0.5],
+            &params,
+            &options_fn(),
+        )
+        .expect("fom");
         assert!(result.is_some());
     }
 
     #[test]
     fn happy_path_produces_result() {
         let p = pulse();
-        let result = evaluate_candidate_v1(&p, None, 104, 1, 2.0, 0, 0.0, &[0.5, 1.0, -0.25], 1, 0, &[], 1e-4, 1e-4, 1e-4, &params_fn(), &options_fn(), 0, 0, false).expect("eval");
+        let result = evaluate_candidate_v1(
+            &p,
+            None,
+            104,
+            1,
+            2.0,
+            0,
+            0.0,
+            &[0.5, 1.0, -0.25],
+            1,
+            0,
+            &[],
+            1e-4,
+            1e-4,
+            1e-4,
+            &params_fn(),
+            &options_fn(),
+            0,
+            0,
+            false,
+        )
+        .expect("eval");
         let result = result.expect("result");
         assert!(result.fom_db.is_finite());
         assert!(result.fom_db >= 0.0);
@@ -374,18 +580,103 @@ mod tests {
     #[test]
     fn strict_improvement_rejects_without_retain() {
         let p = pulse();
-        let result = evaluate_candidate_v1(&p, Some(100.0), 104, 1, 2.0, 0, 0.0, &[0.5, 1.0, -0.25], 1, 0, &[], 1e-4, 1e-4, 1e-4, &params_fn(), &options_fn(), 0, 0, false).expect("eval");
+        let result = evaluate_candidate_v1(
+            &p,
+            Some(100.0),
+            104,
+            1,
+            2.0,
+            0,
+            0.0,
+            &[0.5, 1.0, -0.25],
+            1,
+            0,
+            &[],
+            1e-4,
+            1e-4,
+            1e-4,
+            &params_fn(),
+            &options_fn(),
+            0,
+            0,
+            false,
+        )
+        .expect("eval");
         assert!(result.is_none());
     }
 
     #[test]
     fn retain_non_improving_keeps_result() {
         let p = pulse();
-        let base = evaluate_candidate_v1(&p, None, 104, 1, 2.0, 0, 0.0, &[0.5, 1.0, -0.25], 1, 0, &[], 1e-4, 1e-4, 1e-4, &params_fn(), &options_fn(), 0, 0, false).expect("eval").expect("base");
+        let base = evaluate_candidate_v1(
+            &p,
+            None,
+            104,
+            1,
+            2.0,
+            0,
+            0.0,
+            &[0.5, 1.0, -0.25],
+            1,
+            0,
+            &[],
+            1e-4,
+            1e-4,
+            1e-4,
+            &params_fn(),
+            &options_fn(),
+            0,
+            0,
+            false,
+        )
+        .expect("eval")
+        .expect("base");
         let best = Some(base.fom_db + 0.5);
-        let rejected = evaluate_candidate_v1(&p, best, 104, 1, 2.0, 0, 0.0, &[0.5, 1.0, -0.25], 1, 0, &[], 1e-4, 1e-4, 1e-4, &params_fn(), &options_fn(), 0, 0, false).expect("rej");
+        let rejected = evaluate_candidate_v1(
+            &p,
+            best,
+            104,
+            1,
+            2.0,
+            0,
+            0.0,
+            &[0.5, 1.0, -0.25],
+            1,
+            0,
+            &[],
+            1e-4,
+            1e-4,
+            1e-4,
+            &params_fn(),
+            &options_fn(),
+            0,
+            0,
+            false,
+        )
+        .expect("rej");
         assert!(rejected.is_none());
-        let kept = evaluate_candidate_v1(&p, best, 104, 1, 2.0, 0, 0.0, &[0.5, 1.0, -0.25], 1, 0, &[], 1e-4, 1e-4, 1e-4, &params_fn(), &options_fn(), 0, 0, true).expect("ret");
+        let kept = evaluate_candidate_v1(
+            &p,
+            best,
+            104,
+            1,
+            2.0,
+            0,
+            0.0,
+            &[0.5, 1.0, -0.25],
+            1,
+            0,
+            &[],
+            1e-4,
+            1e-4,
+            1e-4,
+            &params_fn(),
+            &options_fn(),
+            0,
+            0,
+            true,
+        )
+        .expect("ret");
         assert!(kept.is_some());
     }
 }

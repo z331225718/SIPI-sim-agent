@@ -23,7 +23,7 @@ reference replicates the membership rule over 4 test cases.
   single item list, membership matches typed equivalence items).
 - Cross-check: 4 test cases (contains, missing, trimming, non-list) driven through product runner
   `p4b_02b85_parameter_list_contains_runner`; independent Python reference matches 100% on
-  contains flags and error keys; 4/4 matched_hash_bound.
+  contains flags and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

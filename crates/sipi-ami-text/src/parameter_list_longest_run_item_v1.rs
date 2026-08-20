@@ -56,8 +56,8 @@ pub fn parameter_list_longest_run_item_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListLongestRunItemErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListLongestRunItemErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListLongestRunItemErrorV1::MalformedList)?;
     let mut best_item = &items[0];
     let mut best_len = 1usize;
     let mut current_item = &items[0];
@@ -75,7 +75,6 @@ pub fn parameter_list_longest_run_item_v1(
         }
     }
     if current_len > best_len {
-        best_len = current_len;
         best_item = current_item;
     }
     Ok(best_item.clone())

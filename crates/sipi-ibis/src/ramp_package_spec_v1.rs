@@ -40,7 +40,11 @@ impl RampSpecV1 {
         if r_load.get() <= 0.0 {
             return Err(RampSpecErrorV1::NonPositiveLoad);
         }
-        Ok(Self { d_v_dt_r, d_v_dt_f, r_load })
+        Ok(Self {
+            d_v_dt_r,
+            d_v_dt_f,
+            r_load,
+        })
     }
 
     pub const fn d_v_dt_r(self) -> VoltsPerSecond {
@@ -74,11 +78,7 @@ pub enum PackageSpecErrorV1 {
 }
 
 impl PackageSpecV1 {
-    pub fn try_new(
-        r_pin: Ohms,
-        l_pin: Henries,
-        c_pin: Farads,
-    ) -> Result<Self, PackageSpecErrorV1> {
+    pub fn try_new(r_pin: Ohms, l_pin: Henries, c_pin: Farads) -> Result<Self, PackageSpecErrorV1> {
         if r_pin.get() <= 0.0 {
             return Err(PackageSpecErrorV1::NonPositiveResistance);
         }
@@ -88,7 +88,11 @@ impl PackageSpecV1 {
         if c_pin.get() <= 0.0 {
             return Err(PackageSpecErrorV1::NonPositiveCapacitance);
         }
-        Ok(Self { r_pin, l_pin, c_pin })
+        Ok(Self {
+            r_pin,
+            l_pin,
+            c_pin,
+        })
     }
 
     pub const fn r_pin(self) -> Ohms {
@@ -107,8 +111,7 @@ impl PackageSpecV1 {
 /// Explicit scope policy of this slice: declaration validation only. No
 /// waveform construction, no initial-slope model, no network solve, no
 /// decoder, no profile acceptance.
-pub const RAMP_PACKAGE_SCOPE_POLICY_V1: &str =
-    "sipi.p4a-04g.ramp-package-spec-v1.declaration-only";
+pub const RAMP_PACKAGE_SCOPE_POLICY_V1: &str = "sipi.p4a-04g.ramp-package-spec-v1.declaration-only";
 
 #[cfg(test)]
 mod tests {
@@ -160,7 +163,8 @@ mod tests {
 
     #[test]
     fn package_accepts_positive_declaration() {
-        let spec = PackageSpecV1::try_new(ohms(1.0), henries(1.0e-9), farads(1.0e-12)).expect("valid package");
+        let spec = PackageSpecV1::try_new(ohms(1.0), henries(1.0e-9), farads(1.0e-12))
+            .expect("valid package");
         assert_eq!(spec.r_pin().get(), 1.0);
         assert_eq!(spec.l_pin().get(), 1.0e-9);
         assert_eq!(spec.c_pin().get(), 1.0e-12);

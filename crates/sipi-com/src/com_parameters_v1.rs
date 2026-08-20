@@ -69,14 +69,17 @@ pub fn merge_com_parameters_v1(
         } else {
             return Err(ComParametersErrorV1::MissingValue(key.clone()));
         };
-        if let Some(v) = value {
-            if consumed.insert(key.clone(), v).is_some() {
-                return Err(ComParametersErrorV1::DuplicateKey(key.clone()));
-            }
+        if let Some(v) = value
+            && consumed.insert(key.clone(), v).is_some()
+        {
+            return Err(ComParametersErrorV1::DuplicateKey(key.clone()));
         }
     }
     let unconsumed = unconsumed_keys.to_vec();
-    Ok(ComParametersV1 { consumed, unconsumed })
+    Ok(ComParametersV1 {
+        consumed,
+        unconsumed,
+    })
 }
 
 #[cfg(test)]
@@ -85,7 +88,10 @@ mod tests {
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(COM_PARAMETERS_POLICY_V1, "sipi.p5-05e.com-parameters-v1.typed-dto");
+        assert_eq!(
+            COM_PARAMETERS_POLICY_V1,
+            "sipi.p5-05e.com-parameters-v1.typed-dto"
+        );
     }
 
     #[test]
@@ -94,7 +100,10 @@ mod tests {
         wb.insert("fb".to_string(), ResolvedDefaultV1::Scalar(53.125e9));
         let keys = vec!["fb".to_string()];
         let dto = merge_com_parameters_v1(&keys, &wb, &BTreeMap::new(), &[]).expect("merge");
-        assert_eq!(dto.consumed().get("fb"), Some(&ResolvedDefaultV1::Scalar(53.125e9)));
+        assert_eq!(
+            dto.consumed().get("fb"),
+            Some(&ResolvedDefaultV1::Scalar(53.125e9))
+        );
     }
 
     #[test]
@@ -103,13 +112,17 @@ mod tests {
         def.insert("a_fext".to_string(), ResolvedDefaultV1::Scalar(0.5));
         let keys = vec!["a_fext".to_string()];
         let dto = merge_com_parameters_v1(&keys, &BTreeMap::new(), &def, &[]).expect("merge");
-        assert_eq!(dto.consumed().get("a_fext"), Some(&ResolvedDefaultV1::Scalar(0.5)));
+        assert_eq!(
+            dto.consumed().get("a_fext"),
+            Some(&ResolvedDefaultV1::Scalar(0.5))
+        );
     }
 
     #[test]
     fn missing_value_rejected() {
         let keys = vec!["fb".to_string()];
-        let err = merge_com_parameters_v1(&keys, &BTreeMap::new(), &BTreeMap::new(), &[]).err().expect("err");
+        let err = merge_com_parameters_v1(&keys, &BTreeMap::new(), &BTreeMap::new(), &[])
+            .expect_err("err");
         assert_eq!(err, ComParametersErrorV1::MissingValue("fb".to_string()));
     }
 
@@ -118,13 +131,16 @@ mod tests {
         let keys = vec!["fb".to_string()];
         let mut def = BTreeMap::new();
         def.insert("fb".to_string(), ResolvedDefaultV1::Scalar(53.125e9));
-        let dto = merge_com_parameters_v1(&keys, &BTreeMap::new(), &def, &["extraneous".to_string()]).expect("merge");
+        let dto =
+            merge_com_parameters_v1(&keys, &BTreeMap::new(), &def, &["extraneous".to_string()])
+                .expect("merge");
         assert_eq!(dto.unconsumed(), &["extraneous".to_string()]);
     }
 
     #[test]
     fn empty_consumed_rejected() {
-        let err = merge_com_parameters_v1(&[], &BTreeMap::new(), &BTreeMap::new(), &[]).err().expect("err");
+        let err =
+            merge_com_parameters_v1(&[], &BTreeMap::new(), &BTreeMap::new(), &[]).expect_err("err");
         assert_eq!(err, ComParametersErrorV1::EmptyConsumed);
     }
 
@@ -133,7 +149,7 @@ mod tests {
         let keys = vec!["fb".to_string(), "fb".to_string()];
         let mut def = BTreeMap::new();
         def.insert("fb".to_string(), ResolvedDefaultV1::Scalar(1.0));
-        let err = merge_com_parameters_v1(&keys, &BTreeMap::new(), &def, &[]).err().expect("err");
+        let err = merge_com_parameters_v1(&keys, &BTreeMap::new(), &def, &[]).expect_err("err");
         assert!(matches!(err, ComParametersErrorV1::DuplicateKey(_)));
     }
 }

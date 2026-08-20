@@ -64,7 +64,8 @@ pub fn calculate_com_metrics_v1(
     t_o_s: f64,
     eye_opening_v: Option<f64>,
 ) -> Result<ComMetricsV1, ComMetricsErrorV1> {
-    if available_signal_v <= 0.0 || !(0.0 < spec_ber && spec_ber < 1.0)
+    if available_signal_v <= 0.0
+        || !(0.0 < spec_ber && spec_ber < 1.0)
         || !pass_threshold_db.is_finite()
     {
         return Err(ComMetricsErrorV1::InvalidControls);
@@ -121,8 +122,7 @@ pub fn calculate_com_metrics_v1(
 }
 
 /// Explicit scope policy of the metrics stage.
-pub const COM_METRICS_POLICY_V1: &str =
-    "sipi.p5-04c.com-metrics-v1.scalar-cdf-metrics";
+pub const COM_METRICS_POLICY_V1: &str = "sipi.p5-04c.com-metrics-v1.scalar-cdf-metrics";
 
 #[cfg(test)]
 mod tests {
@@ -138,7 +138,8 @@ mod tests {
     #[test]
     fn computes_scalar_metrics() {
         let (x, cdf) = pdf();
-        let metrics = calculate_com_metrics_v1(1.0, &x, &cdf, 1e-4, 3.0, 0.0, None).expect("metrics");
+        let metrics =
+            calculate_com_metrics_v1(1.0, &x, &cdf, 1e-4, 3.0, 0.0, None).expect("metrics");
         // spec_ber=1e-4 < 0.05 -> first cdf > spec_ber is index 0, interference = 1.0
         assert!((metrics.available_signal_v() - 1.0).abs() < 1e-12);
         assert!((metrics.com_db() - 0.0).abs() < 1e-9);
@@ -170,7 +171,8 @@ mod tests {
     #[test]
     fn c2m_branch_uses_eye_opening() {
         let (x, cdf) = pdf();
-        let metrics = calculate_com_metrics_v1(1.0, &x, &cdf, 1e-4, 3.0, 1e-9, Some(0.5)).expect("metrics");
+        let metrics =
+            calculate_com_metrics_v1(1.0, &x, &cdf, 1e-4, 3.0, 1e-9, Some(0.5)).expect("metrics");
         assert!((metrics.veo_mv() - 500.0).abs() < 1e-9);
         // VEC = 20*log10(2A/eye) = 20*log10(4)
         assert!((metrics.vec_db() - 20.0 * 4.0_f64.log10()).abs() < 1e-9);

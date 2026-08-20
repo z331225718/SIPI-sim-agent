@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ibis::{
-    lift_add_submodel_v1, lift_submodel_declaration_v1, SUBMODEL_DECLARATION_POLICY_V1,
+    SUBMODEL_DECLARATION_POLICY_V1, lift_add_submodel_v1, lift_submodel_declaration_v1,
 };
 
 fn main() {
@@ -31,8 +31,14 @@ fn main() {
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
 
     let output = if value.get("submodel_type").is_some() {
-        let sname = value.get("submodel_name").and_then(|v| v.as_str()).unwrap_or("");
-        let stype = value.get("submodel_type").and_then(|v| v.as_str()).unwrap_or("");
+        let sname = value
+            .get("submodel_name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        let stype = value
+            .get("submodel_type")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
         let mode = value.get("mode").and_then(|v| v.as_str()).unwrap_or("");
 
         match lift_submodel_declaration_v1(sname, stype, mode) {
@@ -55,7 +61,10 @@ fn main() {
             }
         }
     } else {
-        let sname = value.get("submodel_name").and_then(|v| v.as_str()).unwrap_or("");
+        let sname = value
+            .get("submodel_name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
         let mode = value.get("mode").and_then(|v| v.as_str()).unwrap_or("");
 
         match lift_add_submodel_v1(sname, mode) {

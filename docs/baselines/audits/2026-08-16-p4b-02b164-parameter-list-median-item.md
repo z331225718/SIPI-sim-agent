@@ -26,7 +26,7 @@ reference replicates the median rule over 4 test cases.
   as separate positions, spacing canonicalized, non-list).
 - Cross-check: 4 test cases (odd count, even count lower median, duplicates, non-list) driven
   through product runner `p4b_02b164_parameter_list_median_item_runner`; independent Python
-  reference matches 100% on items and error keys; 4/4 matched_hash_bound.
+  reference matches 100% on items and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

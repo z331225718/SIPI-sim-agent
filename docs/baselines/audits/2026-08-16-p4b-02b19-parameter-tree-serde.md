@@ -18,7 +18,7 @@ are strictly rejected. An independent Python reference recomputes JSON Serde and
   rejects invalid json structure).
 - Cross-check: 3 test cases (standard tree serde, nested branches serde, empty document)
   driven through product runner `p4b_02b19_parameter_tree_serde_runner`; independent Python reference
-  matches 100% on valid flags, roundtrip S-expression formatted text, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, roundtrip S-expression formatted text, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

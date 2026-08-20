@@ -43,8 +43,12 @@ impl SeriesPinPairV1 {
         if !pf.is_ascii() || !ps.is_ascii() {
             return Err(SeriesPinMappingGroupErrorV1::NonAsciiName);
         }
-        if !pf.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !ps.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+        if !pf
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !ps
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
         {
             return Err(SeriesPinMappingGroupErrorV1::InvalidName);
         }

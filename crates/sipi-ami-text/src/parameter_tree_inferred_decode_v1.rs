@@ -13,9 +13,9 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    decode_parameter_tree_leaf_values_v1, infer_parameter_tree_leaf_types_v1,
     AmiParameterTreeV1, AmiParameterTypeV1, DecodedLeafValueV1,
     ParameterTreeLeafValueDecodingErrorV1, ParameterTreeTypeInferenceErrorV1,
+    decode_parameter_tree_leaf_values_v1, infer_parameter_tree_leaf_types_v1,
 };
 
 /// Scope policy for the parameter tree inferred decoding core.
@@ -210,7 +210,10 @@ mod tests {
         );
         assert_eq!(
             result.values().get("l"),
-            Some(&DecodedLeafValueV1::List(vec!["1".to_string(), "2".to_string()]))
+            Some(&DecodedLeafValueV1::List(vec![
+                "1".to_string(),
+                "2".to_string()
+            ]))
         );
     }
 }

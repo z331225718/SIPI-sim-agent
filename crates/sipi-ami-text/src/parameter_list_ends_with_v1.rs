@@ -59,10 +59,10 @@ pub fn list_ends_with_v1(
     {
         return Err(ParameterListEndsWithErrorV1::NotAList);
     }
-    let value_items = list_items(value.value_token())
-        .ok_or(ParameterListEndsWithErrorV1::MalformedList)?;
-    let suffix_items = list_items(suffix.value_token())
-        .ok_or(ParameterListEndsWithErrorV1::MalformedList)?;
+    let value_items =
+        list_items(value.value_token()).ok_or(ParameterListEndsWithErrorV1::MalformedList)?;
+    let suffix_items =
+        list_items(suffix.value_token()).ok_or(ParameterListEndsWithErrorV1::MalformedList)?;
     if suffix_items.len() > value_items.len() {
         return Ok(false);
     }

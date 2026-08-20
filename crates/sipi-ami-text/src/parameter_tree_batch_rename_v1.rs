@@ -11,7 +11,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
 
 /// Scope policy for the parameter tree batch rename core.
 pub const PARAMETER_TREE_BATCH_RENAME_POLICY_V1: &str =
@@ -87,7 +87,10 @@ fn rename_node(
             // Phase 2: insert renamed leaves; a collision with any child (renamed
             // or pre-existing) is a sibling collision.
             for (new_key, renamed_child) in renamed_entries {
-                if new_children.insert(new_key.clone(), renamed_child).is_some() {
+                if new_children
+                    .insert(new_key.clone(), renamed_child)
+                    .is_some()
+                {
                     return Err(ParameterTreeBatchRenameErrorV1::SiblingNameCollision(
                         new_key,
                     ));
@@ -210,9 +213,8 @@ mod tests {
             "root",
             vec![leaf("gain", &["0.5"]), leaf("steps", &["7"])],
         ));
-        let renamed =
-            rename_parameter_tree_leaves_v1(&t, &renames_of(&[("gain", "amplitude")]))
-                .expect("renamed");
+        let renamed = rename_parameter_tree_leaves_v1(&t, &renames_of(&[("gain", "amplitude")]))
+            .expect("renamed");
         assert!(find_leaf(renamed.root_node(), "steps").is_some());
     }
 
@@ -226,8 +228,7 @@ mod tests {
     #[test]
     fn missing_old_name_fails_closed() {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
-        let error =
-            rename_parameter_tree_leaves_v1(&t, &renames_of(&[("nope", "x")])).unwrap_err();
+        let error = rename_parameter_tree_leaves_v1(&t, &renames_of(&[("nope", "x")])).unwrap_err();
         assert_eq!(
             error,
             ParameterTreeBatchRenameErrorV1::MissingLeaf("nope".to_string())
@@ -261,10 +262,7 @@ mod tests {
 
     #[test]
     fn sibling_swap_is_supported() {
-        let t = tree(branch(
-            "root",
-            vec![leaf("a", &["0.5"]), leaf("b", &["7"])],
-        ));
+        let t = tree(branch("root", vec![leaf("a", &["0.5"]), leaf("b", &["7"])]));
         let renamed = rename_parameter_tree_leaves_v1(&t, &renames_of(&[("a", "b"), ("b", "a")]))
             .expect("swap");
         assert!(find_leaf(renamed.root_node(), "a").is_some());
@@ -310,9 +308,8 @@ mod tests {
             "root",
             vec![branch("sub", vec![leaf("deep", &["1.0"])])],
         ));
-        let renamed =
-            rename_parameter_tree_leaves_v1(&t, &renames_of(&[("deep", "shallow")]))
-                .expect("renamed");
+        let renamed = rename_parameter_tree_leaves_v1(&t, &renames_of(&[("deep", "shallow")]))
+            .expect("renamed");
         assert!(find_leaf(renamed.root_node(), "shallow").is_some());
         assert!(find_leaf(renamed.root_node(), "deep").is_none());
     }

@@ -25,7 +25,7 @@ rejected. An independent Python reference replicates the tokenize/build/resolve/
 - Cross-check: 4 test cases (set float value, set nested value, missing type, invalid value for
   type) driven through product runner `p4b_02b39_parameter_tree_leaf_value_set_runner`; independent
   Python reference matches 100% on valid flags, root names, resulting tree structures, and error
-  contexts; 4/4 matched_hash_bound.
+  contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

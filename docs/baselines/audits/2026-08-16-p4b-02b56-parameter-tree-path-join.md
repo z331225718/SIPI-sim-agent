@@ -19,7 +19,7 @@ An independent Python reference replicates the dotted join over 4 test cases.
   raw segments preserved).
 - Cross-check: 4 test cases (basic, deep, single, empty) driven through product runner
   `p4b_02b56_parameter_tree_path_join_runner`; independent Python reference matches 100% on
-  valid flags, joined paths, and error contexts; 4/4 matched_hash_bound.
+  valid flags, joined paths, and error contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

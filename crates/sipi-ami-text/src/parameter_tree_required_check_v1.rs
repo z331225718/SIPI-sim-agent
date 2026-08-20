@@ -9,9 +9,9 @@
 //! required. The check reports in the result; an incomplete tree is not itself
 //! an error. Fail-closed: an empty required-name set is strictly rejected.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
 
 /// Scope policy for the required-name check core.
 pub const PARAMETER_TREE_REQUIRED_NAME_CHECK_POLICY_V1: &str =
@@ -136,11 +136,8 @@ mod tests {
             "root",
             vec![leaf("gain", &["0.5"]), leaf("steps", &["7"])],
         ));
-        let result = check_parameter_tree_required_names_v1(
-            &t,
-            &required_of(&["gain", "steps"]),
-        )
-        .expect("checked");
+        let result = check_parameter_tree_required_names_v1(&t, &required_of(&["gain", "steps"]))
+            .expect("checked");
         assert_eq!(result.required_count(), 2);
         assert_eq!(result.present(), 2);
         assert!(result.missing().is_empty());
@@ -150,16 +147,11 @@ mod tests {
     #[test]
     fn missing_required_names_are_reported_sorted() {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
-        let result = check_parameter_tree_required_names_v1(
-            &t,
-            &required_of(&["mode", "gain", "steps"]),
-        )
-        .expect("checked");
+        let result =
+            check_parameter_tree_required_names_v1(&t, &required_of(&["mode", "gain", "steps"]))
+                .expect("checked");
         assert_eq!(result.present(), 1);
-        assert_eq!(
-            result.missing(),
-            &["mode".to_string(), "steps".to_string()]
-        );
+        assert_eq!(result.missing(), &["mode".to_string(), "steps".to_string()]);
         assert!(!result.is_complete());
     }
 
@@ -169,11 +161,8 @@ mod tests {
             "root",
             vec![branch("sub", vec![leaf("deep", &["1.0"])])],
         ));
-        let result = check_parameter_tree_required_names_v1(
-            &t,
-            &required_of(&["deep"]),
-        )
-        .expect("checked");
+        let result =
+            check_parameter_tree_required_names_v1(&t, &required_of(&["deep"])).expect("checked");
         assert!(result.is_complete());
         assert_eq!(result.present(), 1);
     }

@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_series_pin_record_v1, SERIES_PIN_MAPPING_TABLE_POLICY_V1,
-};
+use sipi_ibis::{SERIES_PIN_MAPPING_TABLE_POLICY_V1, lift_series_pin_record_v1};
 
 fn main() {
     let mut input = None;
@@ -29,9 +27,18 @@ fn main() {
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
-    let pf = value.get("pin_first").and_then(|v| v.as_str()).unwrap_or("");
-    let ps = value.get("pin_second").and_then(|v| v.as_str()).unwrap_or("");
-    let mn = value.get("model_name").and_then(|v| v.as_str()).unwrap_or("");
+    let pf = value
+        .get("pin_first")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let ps = value
+        .get("pin_second")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let mn = value
+        .get("model_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let ftg = value.get("function_table_group").and_then(|v| v.as_str());
 
     let output = match lift_series_pin_record_v1(pf, ps, mn, ftg) {

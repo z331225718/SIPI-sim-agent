@@ -57,8 +57,8 @@ pub fn parameter_list_is_balanced_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListIsBalancedErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListIsBalancedErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListIsBalancedErrorV1::MalformedList)?;
 
     let mut run_lengths: Vec<usize> = Vec::new();
     let mut current_len = 1usize;

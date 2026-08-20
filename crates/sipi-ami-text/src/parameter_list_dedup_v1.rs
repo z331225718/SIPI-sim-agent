@@ -51,8 +51,7 @@ pub fn deduplicate_parameter_list_items_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListDedupErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListDedupErrorV1::MalformedList)?;
+    let items = list_items(value.value_token()).ok_or(ParameterListDedupErrorV1::MalformedList)?;
     let mut seen: Vec<String> = Vec::new();
     for item in items {
         if !seen.contains(&item) {

@@ -83,40 +83,28 @@ mod tests {
     fn contains_contiguous_sublist() {
         let v = value("channels", "List", "(a, b, c, d)");
         let sublist = ["b", "c"];
-        assert_eq!(
-            parameter_list_contains_sublist_v1(&v, &sublist),
-            Ok(true)
-        );
+        assert_eq!(parameter_list_contains_sublist_v1(&v, &sublist), Ok(true));
     }
 
     #[test]
     fn missing_sublist_is_false() {
         let v = value("channels", "List", "(a, b, c)");
         let sublist = ["b", "d"];
-        assert_eq!(
-            parameter_list_contains_sublist_v1(&v, &sublist),
-            Ok(false)
-        );
+        assert_eq!(parameter_list_contains_sublist_v1(&v, &sublist), Ok(false));
     }
 
     #[test]
     fn full_sublist_matches() {
         let v = value("channels", "List", "(a, b)");
         let sublist = ["a", "b"];
-        assert_eq!(
-            parameter_list_contains_sublist_v1(&v, &sublist),
-            Ok(true)
-        );
+        assert_eq!(parameter_list_contains_sublist_v1(&v, &sublist), Ok(true));
     }
 
     #[test]
     fn empty_sublist_is_vacuously_contained() {
         let v = value("channels", "List", "(a, b)");
         let sublist: [&str; 0] = [];
-        assert_eq!(
-            parameter_list_contains_sublist_v1(&v, &sublist),
-            Ok(true)
-        );
+        assert_eq!(parameter_list_contains_sublist_v1(&v, &sublist), Ok(true));
     }
 
     #[test]
@@ -133,14 +121,8 @@ mod tests {
     fn items_are_trimmed_but_query_is_raw() {
         let v = value("channels", "List", "( a , b , c )");
         let sublist = ["b", "c"];
-        assert_eq!(
-            parameter_list_contains_sublist_v1(&v, &sublist),
-            Ok(true)
-        );
+        assert_eq!(parameter_list_contains_sublist_v1(&v, &sublist), Ok(true));
         let spaced = [" b ", "c"];
-        assert_eq!(
-            parameter_list_contains_sublist_v1(&v, &spaced),
-            Ok(false)
-        );
+        assert_eq!(parameter_list_contains_sublist_v1(&v, &spaced), Ok(false));
     }
 }

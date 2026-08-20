@@ -43,12 +43,18 @@ pub fn anti_causal_precursor_fraction_v1(
     let mut peak_idx = 0usize;
     let mut peak_val = f64::NEG_INFINITY;
     for i in 0..n {
-        if impulse[i] > peak_val { peak_val = impulse[i]; peak_idx = i; }
+        if impulse[i] > peak_val {
+            peak_val = impulse[i];
+            peak_idx = i;
+        }
     }
     if peak_idx < peak_exclusion {
         return Ok(0.0);
     }
-    let precursor: f64 = impulse[peak_idx - peak_exclusion..peak_idx].iter().map(|v| v * v).sum();
+    let precursor: f64 = impulse[peak_idx - peak_exclusion..peak_idx]
+        .iter()
+        .map(|v| v * v)
+        .sum();
     Ok(precursor / total_energy)
 }
 
@@ -58,7 +64,7 @@ pub fn detect_anti_causal_v1(
     peak_exclusion: usize,
     threshold: f64,
 ) -> Result<bool, WarningDetectorErrorV1> {
-    if !threshold.is_finite() || !(0.0 <= threshold && threshold <= 1.0) {
+    if !threshold.is_finite() || !(0.0..=1.0).contains(&threshold) {
         return Err(WarningDetectorErrorV1::InvalidThreshold);
     }
     let fraction = anti_causal_precursor_fraction_v1(impulse, peak_exclusion)?;
@@ -73,12 +79,18 @@ pub fn detect_high_freq_non_decay_v1(
     tail_bins: usize,
 ) -> Result<bool, WarningDetectorErrorV1> {
     let n = magnitude_db.len();
-    if n < 2 || tail_bins == 0 { return Err(WarningDetectorErrorV1::EmptyInput); }
+    if n < 2 || tail_bins == 0 {
+        return Err(WarningDetectorErrorV1::EmptyInput);
+    }
     let start = n.saturating_sub(tail_bins);
-    if start < 1 { return Err(WarningDetectorErrorV1::EmptyInput); }
-    let tail_avg: f64 = magnitude_db[start..].iter().map(|v| *v).sum::<f64>() / tail_bins as f64;
+    if start < 1 {
+        return Err(WarningDetectorErrorV1::EmptyInput);
+    }
+    let tail_avg: f64 = magnitude_db[start..].iter().copied().sum::<f64>() / tail_bins as f64;
     let head_avg = magnitude_db[start - 1];
-    if !tail_avg.is_finite() || !head_avg.is_finite() { return Err(WarningDetectorErrorV1::NonFinite); }
+    if !tail_avg.is_finite() || !head_avg.is_finite() {
+        return Err(WarningDetectorErrorV1::NonFinite);
+    }
     Ok(tail_avg >= head_avg)
 }
 
@@ -88,7 +100,10 @@ mod tests {
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(WARNING_DETECTOR_POLICY_V1, "sipi.p5-02m.warning-detector.v1.deterministic");
+        assert_eq!(
+            WARNING_DETECTOR_POLICY_V1,
+            "sipi.p5-02m.warning-detector.v1.deterministic"
+        );
     }
 
     #[test]
@@ -109,13 +124,19 @@ mod tests {
 
     #[test]
     fn rejects_empty() {
-        assert_eq!(anti_causal_precursor_fraction_v1(&[], 2).err(), Some(WarningDetectorErrorV1::EmptyInput));
+        assert_eq!(
+            anti_causal_precursor_fraction_v1(&[], 2).err(),
+            Some(WarningDetectorErrorV1::EmptyInput)
+        );
     }
 
     #[test]
     fn rejects_bad_threshold() {
         let impulse = vec![0.0, 1.0];
-        assert_eq!(detect_anti_causal_v1(&impulse, 2, 1.5).err(), Some(WarningDetectorErrorV1::InvalidThreshold));
+        assert_eq!(
+            detect_anti_causal_v1(&impulse, 2, 1.5).err(),
+            Some(WarningDetectorErrorV1::InvalidThreshold)
+        );
     }
 
     #[test]
@@ -129,5 +150,4 @@ mod tests {
         let mag = vec![-30.0, -25.0, -20.0, -15.0, -10.0];
         assert!(detect_high_freq_non_decay_v1(&mag, 2).expect("ok"));
     }
-    
 }

@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ibis::{
-    lift_model_selector_keywords_v1, ModelOptionEntryV1, MODEL_SELECTOR_KEYWORDS_POLICY_V1,
+    MODEL_SELECTOR_KEYWORDS_POLICY_V1, ModelOptionEntryV1, lift_model_selector_keywords_v1,
 };
 
 fn main() {
@@ -29,16 +29,23 @@ fn main() {
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
-    let sname = value.get("selector_name").and_then(|v| v.as_str()).unwrap_or("");
-    let options = value.get("model_options").and_then(|v| v.as_array()).map(|arr| {
-        arr.iter()
-            .filter_map(|item| {
-                let mn = item.get("model_name").and_then(|v| v.as_str())?;
-                let desc = item.get("description").and_then(|v| v.as_str());
-                ModelOptionEntryV1::try_new(mn, desc).ok()
-            })
-            .collect()
-    }).unwrap_or_default();
+    let sname = value
+        .get("selector_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let options = value
+        .get("model_options")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|item| {
+                    let mn = item.get("model_name").and_then(|v| v.as_str())?;
+                    let desc = item.get("description").and_then(|v| v.as_str());
+                    ModelOptionEntryV1::try_new(mn, desc).ok()
+                })
+                .collect()
+        })
+        .unwrap_or_default();
 
     let output = match lift_model_selector_keywords_v1(sname, options) {
         Ok(sel) => {

@@ -70,7 +70,7 @@ P6_ARTIFACT_REPORT_AUDIT_SHA256 = "4574bf42788a087e9947f6017194a0cb75a5bdc7f1238
 P7_ISOLATED_INSTALL_AUDIT_SHA256 = "8682cd4718c4a9dbaf57635fe0386d159f2c54cc11a361c90566967bc6a3fb66"
 P2_ONE_NODE_RC_PULSE_CLI_AUDIT_SHA256 = "3fe3222b08b4b8e0026357b690db3daa5e190b230b92d6cac4baf6d2e8606738"
 P2_ONE_NODE_RC_PWL_CLI_AUDIT_SHA256 = "79f82d24f8046811bb9ce98ed8fa9c103d480d175de7953040f622bfdfd4dfc1"
-P4A_IBIS_CONFORMANCE_MATRIX_SHA256 = "7619545902753d7393dedd6e087f83741821dd09eb65fa7e8056454b431a1cf5"
+P4A_IBIS_CONFORMANCE_MATRIX_SHA256 = "029b55845d62e39492df465b2d0f1af6359bb239d9a24728187730b89652dfca"
 P4A_IBIS_STRUCTURAL_INSPECT_AUDIT_SHA256 = "85458c464ad85a6a52640c25cc7f234e316fa25aefc14a125d9028142687e17f"
 PRODUCT_OWNED_UNAVAILABLE_CATALOG_ROUTES_V1 = {
     "project-validate": {
@@ -1111,11 +1111,13 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
         raise PublicationError("publication_tran_row_missing")
     current_compare_id = "tran-rc-pulse-current-external-compare-v4"
     historical_compare_id = "tran-rc-pulse-current-external-compare-v3"
+    source_drift_blocker = "current_external_compare_evidence_source_drift"
     if (
-        tran["acceptance_state"] != "accepted"
-        or tran["external_oracle"] is not True
+        tran["acceptance_state"] != "specified"
+        or tran["external_oracle"] is not False
         or tran["evidence_ids"] != ["tran-rc-pulse-contract", "p7-isolated-install", current_compare_id]
-        or tran["blockers"] != ["release_promotion_blocked"]
+        or set(tran["blockers"]) != {"release_promotion_blocked", source_drift_blocker}
+        or len(tran["blockers"]) != 2
         or tran["non_claims"] != [
             "fixed_profile_only_not_general_tran_or_netlist_support",
             "not_cross_platform_or_release_certification",
@@ -1133,8 +1135,13 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
         raise PublicationError("publication_tran_acceptance_binding_invalid")
     try:
         verify_current_tran_evidence(load_yaml(ROOT / current_entry["path"]))
-    except (CurrentTranEvidenceError, OSError, RuntimeError):
+    except CurrentTranEvidenceError as error:
+        if str(error) != "evidence_product_source_drift":
+            raise PublicationError("publication_tran_external_evidence_invalid") from None
+    except (OSError, RuntimeError):
         raise PublicationError("publication_tran_external_evidence_invalid") from None
+    else:
+        raise PublicationError("publication_tran_current_evidence_not_drifted")
 
     historical_entry = index_by_id.get(historical_compare_id)
     if historical_entry != {
@@ -1158,16 +1165,15 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
     channel = next((row for row in rows if row["id"] == "channel"), None)
     compare_id = "channel-s2p-cli-current-external-compare-v8"
     historical_compare_id = "channel-s2p-cli-current-external-compare-v7"
-    source_drift_blocker = "current_external_compare_evidence_source_drift"
     if channel is None:
         raise PublicationError("publication_channel_row_missing")
     if (
         channel["acceptance_state"] != "specified"
         or channel["external_oracle"] is not False
         or compare_id not in channel["evidence_ids"]
-        or "caller_input_unattested" not in channel["blockers"]
-        or "periodic_kernel_not_link_simulation" not in channel["blockers"]
-        or source_drift_blocker in channel["blockers"]
+        or set(channel["blockers"])
+        != {"caller_input_unattested", "periodic_kernel_not_link_simulation", source_drift_blocker}
+        or len(channel["blockers"]) != 3
     ):
         raise PublicationError("publication_channel_acceptance_binding_invalid")
     entry = index_by_id.get(compare_id)
@@ -1179,11 +1185,14 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
     ):
         raise PublicationError("publication_channel_acceptance_binding_invalid")
     try:
-        current_result = verify_current_channel_cli_evidence(load_yaml(ROOT / entry["path"]))
-    except (CurrentChannelEvidenceError, OSError, RuntimeError):
-        raise PublicationError("publication_channel_current_evidence_invalid") from None
-    if current_result.get("valid") is not True:
+        verify_current_channel_cli_evidence(load_yaml(ROOT / entry["path"]))
+    except CurrentChannelEvidenceError as error:
+        if str(error) != "evidence_product_source_drift":
+            raise PublicationError("publication_channel_current_evidence_invalid") from None
+    except (OSError, RuntimeError):
         raise PublicationError("publication_channel_current_evidence_invalid")
+    else:
+        raise PublicationError("publication_channel_current_evidence_not_drifted")
 
     historical_entry = index_by_id.get(historical_compare_id)
     if (

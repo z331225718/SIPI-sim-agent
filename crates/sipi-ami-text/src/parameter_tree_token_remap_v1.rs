@@ -9,7 +9,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
 
 /// Scope policy for the parameter tree token remap core.
 pub const PARAMETER_TREE_TOKEN_REMAP_POLICY_V1: &str =
@@ -50,9 +50,7 @@ fn collect_leaf_tokens(node: &AmiParameterTreeNodeV1, out: &mut BTreeSet<String>
                 collect_leaf_tokens(child, out);
             }
         }
-        AmiParameterTreeNodeV1::Leaf {
-            value_tokens, ..
-        } => {
+        AmiParameterTreeNodeV1::Leaf { value_tokens, .. } => {
             out.extend(value_tokens.iter().cloned());
         }
     }
@@ -67,19 +65,14 @@ fn remap_node(
         AmiParameterTreeNodeV1::Branch { name, children } => {
             let new_children = children
                 .iter()
-                .map(|(key, child)| {
-                    (key.clone(), remap_node(child, remap, replacements))
-                })
+                .map(|(key, child)| (key.clone(), remap_node(child, remap, replacements)))
                 .collect();
             AmiParameterTreeNodeV1::Branch {
                 name: name.clone(),
                 children: new_children,
             }
         }
-        AmiParameterTreeNodeV1::Leaf {
-            name,
-            value_tokens,
-        } => {
+        AmiParameterTreeNodeV1::Leaf { name, value_tokens } => {
             let mut new_tokens = Vec::with_capacity(value_tokens.len());
             for token in value_tokens {
                 match remap.get(token) {
@@ -182,20 +175,17 @@ mod tests {
     fn remaps_leaf_value_tokens() {
         let t = tree(branch(
             "root",
-            vec![leaf("gain", &["Float", "0.5"]), leaf("steps", &["Integer", "7"])],
+            vec![
+                leaf("gain", &["Float", "0.5"]),
+                leaf("steps", &["Integer", "7"]),
+            ],
         ));
-        let result = remap_parameter_tree_tokens_v1(
-            &t,
-            &remap_of(&[("0.5", "0.55"), ("7", "8")]),
-        )
-        .expect("remapped");
+        let result = remap_parameter_tree_tokens_v1(&t, &remap_of(&[("0.5", "0.55"), ("7", "8")]))
+            .expect("remapped");
         assert_eq!(result.replacements(), 2);
         match find_leaf(result.tree().root_node(), "gain").expect("gain") {
             AmiParameterTreeNodeV1::Leaf { value_tokens, .. } => {
-                assert_eq!(
-                    value_tokens,
-                    &vec!["Float".to_string(), "0.55".to_string()]
-                );
+                assert_eq!(value_tokens, &vec!["Float".to_string(), "0.55".to_string()]);
             }
             AmiParameterTreeNodeV1::Branch { .. } => panic!("expected leaf"),
         }
@@ -207,11 +197,8 @@ mod tests {
             "root",
             vec![leaf("x", &["1", "2"]), leaf("y", &["2", "3"])],
         ));
-        let result = remap_parameter_tree_tokens_v1(
-            &t,
-            &remap_of(&[("2", "9")]),
-        )
-        .expect("remapped");
+        let result =
+            remap_parameter_tree_tokens_v1(&t, &remap_of(&[("2", "9")])).expect("remapped");
         assert_eq!(result.replacements(), 2);
         match find_leaf(result.tree().root_node(), "x").expect("x") {
             AmiParameterTreeNodeV1::Leaf { value_tokens, .. } => {
@@ -231,8 +218,7 @@ mod tests {
     #[test]
     fn missing_token_fails_closed() {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
-        let error =
-            remap_parameter_tree_tokens_v1(&t, &remap_of(&[("zzz", "1")])).unwrap_err();
+        let error = remap_parameter_tree_tokens_v1(&t, &remap_of(&[("zzz", "1")])).unwrap_err();
         assert_eq!(
             error,
             ParameterTreeTokenRemapErrorV1::MissingToken("zzz".to_string())
@@ -242,8 +228,7 @@ mod tests {
     #[test]
     fn empty_remap_value_fails_closed() {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
-        let error =
-            remap_parameter_tree_tokens_v1(&t, &remap_of(&[("0.5", "")])).unwrap_err();
+        let error = remap_parameter_tree_tokens_v1(&t, &remap_of(&[("0.5", "")])).unwrap_err();
         assert_eq!(
             error,
             ParameterTreeTokenRemapErrorV1::InvalidRemapValue("".to_string())
@@ -255,8 +240,7 @@ mod tests {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
         // "gain" appears as a NAME, not as a leaf value token; a remap key that
         // only matches a name is a MissingToken error (names are never remapped).
-        let error = remap_parameter_tree_tokens_v1(&t, &remap_of(&[("gain", "x")]))
-            .unwrap_err();
+        let error = remap_parameter_tree_tokens_v1(&t, &remap_of(&[("gain", "x")])).unwrap_err();
         assert_eq!(
             error,
             ParameterTreeTokenRemapErrorV1::MissingToken("gain".to_string())

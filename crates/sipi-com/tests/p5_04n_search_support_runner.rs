@@ -8,9 +8,9 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_com::{
-    apply_ctle_candidate_v1, ctle_frequency_response_v1, high_pass_candidates_v1,
-    indexed_config_value_v1, qualified_ctle_pair_v1, selected_accm_rms_v1, selected_sndr_v1,
-    system_noise_response_v1, CtleParamsV1, SEARCH_SUPPORT_POLICY_V1,
+    CtleParamsV1, SEARCH_SUPPORT_POLICY_V1, apply_ctle_candidate_v1, ctle_frequency_response_v1,
+    high_pass_candidates_v1, indexed_config_value_v1, qualified_ctle_pair_v1, selected_accm_rms_v1,
+    selected_sndr_v1, system_noise_response_v1,
 };
 
 fn f64s(value: &Value) -> Vec<f64> {

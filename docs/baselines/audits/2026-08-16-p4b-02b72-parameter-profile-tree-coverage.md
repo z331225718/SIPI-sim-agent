@@ -25,7 +25,7 @@ Python reference replicates the tree build and leaf-name counting over 4 test ca
 - Cross-check: 4 test cases (full coverage, missing name, ambiguous name, empty profile) driven
   through product runner `p4b_02b72_parameter_profile_tree_coverage_runner`; independent Python
   reference matches 100% on profile_names, covered/ambiguous/missing lists, complete and
-  unambiguous flags; 4/4 matched_hash_bound.
+  unambiguous flags; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -23,7 +23,7 @@ instead of panicking). An independent Python reference replicates the dedup rule
   trimmed before compare, non-list, single item, all duplicates collapse).
 - Cross-check: 4 test cases (with dups, no dups, spacing dups, non-list) driven through product
   runner `p4b_02b98_parameter_list_dedup_runner`; independent Python reference matches 100% on
-  deduped tokens and error keys; 4/4 matched_hash_bound.
+  deduped tokens and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -24,7 +24,7 @@ reference replicates the sort rule over 4 test cases.
   single unchanged, spacing canonicalized).
 - Cross-check: 4 test cases (sort multi, numeric lex, duplicates, non-list) driven through product
   runner `p4b_02b105_parameter_list_sort_runner`; independent Python reference matches 100% on
-  sorted tokens and error keys; 4/4 matched_hash_bound.
+  sorted tokens and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

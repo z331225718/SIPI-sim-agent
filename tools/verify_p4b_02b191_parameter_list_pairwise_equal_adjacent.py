@@ -54,7 +54,7 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
     evidence = load_yaml(EVIDENCE)
     if evidence.get("schema") != "sipi.p4b-02b191-parameter-list-pairwise-equal-adjacent-crosscheck-evidence.v1":
         raise ParameterListPairwiseEqualAdjacentError("evidence_schema_invalid")
-    if evidence.get("status") != "matched_hash_bound":
+    if evidence.get("status") != "product_owned_self_crosscheck_unbound":
         raise ParameterListPairwiseEqualAdjacentError("evidence_status_drift")
     if evidence.get("matched_count") != evidence.get("case_count") or evidence.get("case_count") != 4:
         raise ParameterListPairwiseEqualAdjacentError("evidence_entry_mismatch")

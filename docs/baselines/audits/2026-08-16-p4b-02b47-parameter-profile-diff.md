@@ -22,7 +22,7 @@ Python reference replicates the by-name comparison over 4 test cases.
   empty against full; mixed diff with all categories).
 - Cross-check: 4 test cases (identical, added and removed, value change, empty a) driven through
   product runner `p4b_02b47_parameter_profile_diff_runner`; independent Python reference matches
-  100% on valid flags, matched counts, added/removed lists, and change records; 4/4 matched_hash_bound.
+  100% on valid flags, matched counts, added/removed lists, and change records; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

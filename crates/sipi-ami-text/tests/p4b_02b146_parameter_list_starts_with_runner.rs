@@ -9,11 +9,11 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    list_starts_with_v1, AmiParameterValueV1, ParameterListStartsWithErrorV1,
-    PARAMETER_LIST_STARTS_WITH_POLICY_V1,
+    AmiParameterValueV1, PARAMETER_LIST_STARTS_WITH_POLICY_V1, ParameterListStartsWithErrorV1,
+    list_starts_with_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -26,7 +26,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b146_parameter_list_starts_with_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b146_parameter_list_starts_with_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -35,9 +37,18 @@ fn main() {
     let name = value.get("name").and_then(|v| v.as_str()).unwrap_or("");
     let type_token = value.get("type").and_then(|v| v.as_str()).unwrap_or("");
     let value_token = value.get("value").and_then(|v| v.as_str()).unwrap_or("");
-    let prefix_name = value.get("prefix_name").and_then(|v| v.as_str()).unwrap_or("");
-    let prefix_type = value.get("prefix_type").and_then(|v| v.as_str()).unwrap_or("");
-    let prefix_value = value.get("prefix_value").and_then(|v| v.as_str()).unwrap_or("");
+    let prefix_name = value
+        .get("prefix_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let prefix_type = value
+        .get("prefix_type")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let prefix_value = value
+        .get("prefix_value")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let main = match AmiParameterValueV1::try_new(name, type_token, value_token) {
         Ok(p) => p,
         Err(_) => {
@@ -47,7 +58,8 @@ fn main() {
                 "input_error": "invalid_value",
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -63,7 +75,8 @@ fn main() {
                 "input_error": "invalid_prefix_value",
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

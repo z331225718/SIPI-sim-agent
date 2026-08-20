@@ -10,7 +10,7 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    hash_parameter_profile_v1, AmiParameterValueV1, PARAMETER_PROFILE_FINGERPRINT_POLICY_V1,
+    AmiParameterValueV1, PARAMETER_PROFILE_FINGERPRINT_POLICY_V1, hash_parameter_profile_v1,
 };
 
 fn build_profile(entry: &Value) -> Option<BTreeMap<String, AmiParameterValueV1>> {
@@ -25,7 +25,7 @@ fn build_profile(entry: &Value) -> Option<BTreeMap<String, AmiParameterValueV1>>
     Some(profile)
 }
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -38,7 +38,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b96_parameter_profile_fingerprint_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b96_parameter_profile_fingerprint_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -53,7 +55,8 @@ fn main() {
                 "input_error": "invalid_profile",
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

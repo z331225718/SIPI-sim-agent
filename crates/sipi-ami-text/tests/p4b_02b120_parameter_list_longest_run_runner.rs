@@ -10,11 +10,11 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    longest_run_parameter_list_v1, AmiParameterValueV1, ParameterListLongestRunErrorV1,
-    PARAMETER_LIST_LONGEST_RUN_POLICY_V1,
+    AmiParameterValueV1, PARAMETER_LIST_LONGEST_RUN_POLICY_V1, ParameterListLongestRunErrorV1,
+    longest_run_parameter_list_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -27,7 +27,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b120_parameter_list_longest_run_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b120_parameter_list_longest_run_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -45,7 +47,8 @@ fn main() {
                 "input_error": "invalid_value",
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

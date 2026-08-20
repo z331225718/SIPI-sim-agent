@@ -50,9 +50,7 @@ pub fn count_parameter_list_items_v1(
         .collect();
     // Mirror 02b1: every item must be non-empty after trimming; if any is
     // empty the shape is malformed (defensive for validated inputs).
-    let all_non_empty = inner
-        .split(',')
-        .all(|item| !item.trim().is_empty());
+    let all_non_empty = inner.split(',').all(|item| !item.trim().is_empty());
     if !all_non_empty {
         return Err(ParameterListItemCountErrorV1::MalformedList);
     }

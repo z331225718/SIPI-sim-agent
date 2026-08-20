@@ -8,8 +8,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ibis::{
-    lift_series_switch_block_v1, lift_series_switch_record_v1, lift_series_switch_thresholds_v1,
-    SERIES_SWITCH_KEYWORDS_POLICY_V1,
+    SERIES_SWITCH_KEYWORDS_POLICY_V1, lift_series_switch_block_v1, lift_series_switch_record_v1,
+    lift_series_switch_thresholds_v1,
 };
 
 fn main() {
@@ -31,8 +31,14 @@ fn main() {
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
 
-    let on_g = value.get("on_group_name").and_then(|v| v.as_str()).unwrap_or("");
-    let off_g = value.get("off_group_name").and_then(|v| v.as_str()).unwrap_or("");
+    let on_g = value
+        .get("on_group_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let off_g = value
+        .get("off_group_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
 
     let switch_rec = match lift_series_switch_record_v1(on_g, off_g) {
         Ok(r) => r,
@@ -43,7 +49,8 @@ fn main() {
                 "record_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -56,26 +63,28 @@ fn main() {
     let cseries = value.get("cseries_farad").and_then(|v| v.as_f64());
     let lseries = value.get("lseries_henry").and_then(|v| v.as_f64());
 
-    let thresholds = if vthresh.is_some() || rseries.is_some() || cseries.is_some() || lseries.is_some() {
-        match lift_series_switch_thresholds_v1(vthresh, rseries, cseries, lseries) {
-            Ok(t) => Some(t),
-            Err(e) => {
-                let output = serde_json::json!({
-                    "policy": SERIES_SWITCH_KEYWORDS_POLICY_V1,
-                    "valid": false,
-                    "threshold_error": format!("{e:?}"),
-                });
-                if let Some(p) = report {
-                    std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
-                } else {
-                    println!("{}", serde_json::to_string_pretty(&output).expect("json"));
+    let thresholds =
+        if vthresh.is_some() || rseries.is_some() || cseries.is_some() || lseries.is_some() {
+            match lift_series_switch_thresholds_v1(vthresh, rseries, cseries, lseries) {
+                Ok(t) => Some(t),
+                Err(e) => {
+                    let output = serde_json::json!({
+                        "policy": SERIES_SWITCH_KEYWORDS_POLICY_V1,
+                        "valid": false,
+                        "threshold_error": format!("{e:?}"),
+                    });
+                    if let Some(p) = report {
+                        std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                            .expect("write");
+                    } else {
+                        println!("{}", serde_json::to_string_pretty(&output).expect("json"));
+                    }
+                    return;
                 }
-                return;
             }
-        }
-    } else {
-        None
-    };
+        } else {
+            None
+        };
 
     let output = match lift_series_switch_block_v1(switch_rec, thresholds) {
         Ok(block) => {

@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b189-parameter-list-last-occurrence-indices-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b189.parameter-list-last-occurrence-indices-v1.last-occurrence-index
 matched_count: 4
 case_count: 4

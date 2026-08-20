@@ -18,7 +18,7 @@ An independent Python reference recomputes the path toposort over 3 test cases.
 - 3 Rust unit tests green (policy fixed; parents precede children; single node paths).
 - Cross-check: 3 test cases (nested toposort, single node toposort, wide toposort)
   driven through product runner `p4b_02b28_parameter_tree_toposort_runner`; independent Python reference
-  matches 100% on valid flags, path counts, and ordered path lists; 3/3 matched_hash_bound.
+  matches 100% on valid flags, path counts, and ordered path lists; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

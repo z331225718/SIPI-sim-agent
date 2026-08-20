@@ -12,8 +12,8 @@ use std::path::PathBuf;
 use sha2::{Digest, Sha256};
 
 use sipi_compare::{
-    c4_metric_names, c4_metric_specs_v1, C4ProfileErrorV1, C4_PROFILE_POLICY_V1,
-    C4_RELATIVE_TOLERANCE_V1,
+    C4_PROFILE_POLICY_V1, C4_RELATIVE_TOLERANCE_V1, C4ProfileErrorV1, c4_metric_names,
+    c4_metric_specs_v1,
 };
 
 fn main() {

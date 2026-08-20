@@ -19,7 +19,7 @@ are strictly rejected. An independent Python reference recomputes tree structura
   rejects kind conflict; rejects root mismatch).
 - Cross-check: 3 test cases (complementary and override, kind conflict, root mismatch)
   driven through product runner `p4b_02b12_parameter_tree_merge_runner`; independent Python reference
-  matches 100% on valid flags, merged S-expression formatted text, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, merged S-expression formatted text, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

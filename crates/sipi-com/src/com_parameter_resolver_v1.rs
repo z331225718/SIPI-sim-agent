@@ -43,9 +43,7 @@ fn get_scalar(
             };
         }
     }
-    Err(ComParameterResolverErrorV1::MissingKey(
-        keys[0].to_string(),
-    ))
+    Err(ComParameterResolverErrorV1::MissingKey(keys[0].to_string()))
 }
 
 fn get_vector(
@@ -61,9 +59,7 @@ fn get_vector(
             };
         }
     }
-    Err(ComParameterResolverErrorV1::MissingKey(
-        keys[0].to_string(),
-    ))
+    Err(ComParameterResolverErrorV1::MissingKey(keys[0].to_string()))
 }
 
 fn get_string(
@@ -94,13 +90,18 @@ pub fn resolve_com_parameter_controls_v1(
     let dfe_first_max = get_scalar(map, &["dfe_first_max", "DFE_FIRST_MAX"]).unwrap_or(0.0);
     let cdr = get_string(map, &["cdr", "CDR"], "MM");
     let peak_start = get_scalar(map, &["peak_start", "PEAK_START"]).unwrap_or(16.0) as usize;
-    let peak_stop = get_scalar(map, &["peak_stop", "PEAK_STOP"]).ok().map(|v| v as usize);
+    let peak_stop = get_scalar(map, &["peak_stop", "PEAK_STOP"])
+        .ok()
+        .map(|v| v as usize);
 
     let dfe_max = get_vector(map, &["dfe_max", "DFE_MAX"]).unwrap_or_default();
     let dfe_min = get_vector(map, &["dfe_min", "DFE_MIN"]).unwrap_or_default();
-    let dfe_tap_count = get_scalar(map, &["dfe_tap_count", "DFE_TAP_COUNT"]).unwrap_or(dfe_max.len() as f64) as i64;
+    let dfe_tap_count =
+        get_scalar(map, &["dfe_tap_count", "DFE_TAP_COUNT"]).unwrap_or(dfe_max.len() as f64) as i64;
     let dfe_step = get_scalar(map, &["dfe_step", "DFE_STEP"]).unwrap_or(0.0);
-    let floating_dfe = get_scalar(map, &["floating_dfe", "FLOATING_DFE"]).map(|v| v != 0.0).unwrap_or(false);
+    let floating_dfe = get_scalar(map, &["floating_dfe", "FLOATING_DFE"])
+        .map(|v| v != 0.0)
+        .unwrap_or(false);
 
     let available_signal_v = get_scalar(map, &["A_v", "AVAILABLE_SIGNAL"])?;
     let r_lm_ohm = get_scalar(map, &["R_LM", "R_LM_OHM"])?;
@@ -111,9 +112,11 @@ pub fn resolve_com_parameter_controls_v1(
     let sigma_n_v = get_scalar(map, &["sigma_N", "SIGMA_N"])?;
     let amplitude_dd_v = get_scalar(map, &["A_DD", "AMPLITUDE_DD"])?;
     let spec_ber = get_scalar(map, &["spec_ber", "SPEC_BER"])?;
-    let noise_crest_factor = get_scalar(map, &["noise_crest_factor", "NOISE_CREST_FACTOR"]).unwrap_or(0.0);
+    let noise_crest_factor =
+        get_scalar(map, &["noise_crest_factor", "NOISE_CREST_FACTOR"]).unwrap_or(0.0);
     let sigma_ne_v = get_scalar(map, &["sigma_ne", "SIGMA_NE"]).unwrap_or(0.0);
-    let pass_threshold_db = get_scalar(map, &["pass_threshold_db", "PASS_THRESHOLD"]).unwrap_or(3.0);
+    let pass_threshold_db =
+        get_scalar(map, &["pass_threshold_db", "PASS_THRESHOLD"]).unwrap_or(3.0);
     let t_o_s = get_scalar(map, &["t_o_s", "T_O_S"]).unwrap_or(0.0);
 
     let controls = ComChainControlsV1::try_new(
@@ -167,7 +170,10 @@ mod tests {
         map.insert("SNR_TX".to_string(), ResolvedDefaultV1::Scalar(30.0));
         map.insert("sigma_X".to_string(), ResolvedDefaultV1::Scalar(0.03));
         map.insert("sigma_RJ".to_string(), ResolvedDefaultV1::Scalar(1e-4));
-        map.insert("h_J".to_string(), ResolvedDefaultV1::Vector(vec![0.3, 0.5, 0.2]));
+        map.insert(
+            "h_J".to_string(),
+            ResolvedDefaultV1::Vector(vec![0.3, 0.5, 0.2]),
+        );
         map.insert("sigma_N".to_string(), ResolvedDefaultV1::Scalar(0.01));
         map.insert("A_DD".to_string(), ResolvedDefaultV1::Scalar(0.4));
         map.insert("spec_ber".to_string(), ResolvedDefaultV1::Scalar(1e-4));
@@ -192,7 +198,9 @@ mod tests {
 
     #[test]
     fn rejects_empty_dto() {
-        let empty_dto = merge_com_parameters_v1(&["x".to_string()], &BTreeMap::new(), &BTreeMap::new(), &[]).unwrap_err();
+        let empty_dto =
+            merge_com_parameters_v1(&["x".to_string()], &BTreeMap::new(), &BTreeMap::new(), &[])
+                .unwrap_err();
         let _ = empty_dto;
     }
 
@@ -200,7 +208,9 @@ mod tests {
     fn rejects_missing_required_key() {
         let mut map = BTreeMap::new();
         map.insert("samples_per_ui".to_string(), ResolvedDefaultV1::Scalar(8.0));
-        let dto = merge_com_parameters_v1(&["samples_per_ui".to_string()], &map, &BTreeMap::new(), &[]).unwrap();
+        let dto =
+            merge_com_parameters_v1(&["samples_per_ui".to_string()], &map, &BTreeMap::new(), &[])
+                .unwrap();
         assert!(matches!(
             resolve_com_parameter_controls_v1(&dto),
             Err(ComParameterResolverErrorV1::MissingKey(_))
@@ -210,8 +220,13 @@ mod tests {
     #[test]
     fn rejects_invalid_type() {
         let mut map = BTreeMap::new();
-        map.insert("samples_per_ui".to_string(), ResolvedDefaultV1::String("eight".to_string()));
-        let dto = merge_com_parameters_v1(&["samples_per_ui".to_string()], &map, &BTreeMap::new(), &[]).unwrap();
+        map.insert(
+            "samples_per_ui".to_string(),
+            ResolvedDefaultV1::String("eight".to_string()),
+        );
+        let dto =
+            merge_com_parameters_v1(&["samples_per_ui".to_string()], &map, &BTreeMap::new(), &[])
+                .unwrap();
         assert!(matches!(
             resolve_com_parameter_controls_v1(&dto),
             Err(ComParameterResolverErrorV1::InvalidType(_))
@@ -229,7 +244,10 @@ mod tests {
         map.insert("SNR_TX".to_string(), ResolvedDefaultV1::Scalar(30.0));
         map.insert("sigma_X".to_string(), ResolvedDefaultV1::Scalar(0.03));
         map.insert("sigma_RJ".to_string(), ResolvedDefaultV1::Scalar(1e-4));
-        map.insert("h_J".to_string(), ResolvedDefaultV1::Vector(vec![0.3, 0.5, 0.2]));
+        map.insert(
+            "h_J".to_string(),
+            ResolvedDefaultV1::Vector(vec![0.3, 0.5, 0.2]),
+        );
         map.insert("sigma_N".to_string(), ResolvedDefaultV1::Scalar(0.01));
         map.insert("A_DD".to_string(), ResolvedDefaultV1::Scalar(0.4));
         map.insert("spec_ber".to_string(), ResolvedDefaultV1::Scalar(1e-4));

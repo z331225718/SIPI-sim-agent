@@ -32,7 +32,7 @@ pub struct ParameterTreeTokenStatsV1 {
 fn walk(node: &AmiParameterTreeNodeV1, stats: &mut ParameterTreeTokenStatsV1) {
     match node {
         AmiParameterTreeNodeV1::Branch { children, .. } => {
-            for (_, child) in children {
+            for child in children.values() {
                 walk(child, stats);
             }
         }
@@ -69,9 +69,9 @@ pub fn compute_parameter_tree_token_stats_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ParseLimitsV1;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
     use crate::parse_ami_text_v1;
-    use crate::ParseLimitsV1;
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()

@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use sipi_ibis::{
-    lift_model_declarations_v1, parse_structural_v1, MODEL_DECLARATION_POLICY_V1, ParseLimitsV1,
+    MODEL_DECLARATION_POLICY_V1, ParseLimitsV1, lift_model_declarations_v1, parse_structural_v1,
 };
 
 fn main() {
@@ -29,14 +29,24 @@ fn main() {
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
-    let limits = ParseLimitsV1::try_new(8 * 1024 * 1024, 4 * 1024 * 1024, 2 * 1024 * 1024, 4 * 1024 * 1024).expect("limits");
+    let limits = ParseLimitsV1::try_new(
+        8 * 1024 * 1024,
+        4 * 1024 * 1024,
+        2 * 1024 * 1024,
+        4 * 1024 * 1024,
+    )
+    .expect("limits");
     let document = match parse_structural_v1(&bytes, limits) {
         Ok(doc) => doc,
         Err(e) => {
-            println!("{}", serde_json::to_string(&serde_json::json!({
-                "policy": MODEL_DECLARATION_POLICY_V1,
-                "parse_error": format!("{e}"),
-            })).expect("json"));
+            println!(
+                "{}",
+                serde_json::to_string(&serde_json::json!({
+                    "policy": MODEL_DECLARATION_POLICY_V1,
+                    "parse_error": format!("{e}"),
+                }))
+                .expect("json")
+            );
             return;
         }
     };
@@ -60,10 +70,14 @@ fn main() {
             }
         }
         Err(e) => {
-            println!("{}", serde_json::to_string(&serde_json::json!({
-                "policy": MODEL_DECLARATION_POLICY_V1,
-                "lift_error": format!("{e}"),
-            })).expect("json"));
+            println!(
+                "{}",
+                serde_json::to_string(&serde_json::json!({
+                    "policy": MODEL_DECLARATION_POLICY_V1,
+                    "lift_error": format!("{e}"),
+                }))
+                .expect("json")
+            );
         }
     }
 }

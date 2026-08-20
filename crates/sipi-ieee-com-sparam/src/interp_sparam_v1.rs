@@ -472,7 +472,7 @@ fn linear_interpolate(
 mod tests {
     use super::*;
     use sipi_channel::{
-        reduce_selected_p3c_fixed_four_port_bench_v1, FourPortS, SelectedP3cFourPortSpectrumV1,
+        FourPortS, SelectedP3cFourPortSpectrumV1, reduce_selected_p3c_fixed_four_port_bench_v1,
     };
     use sipi_types::Ohms;
 

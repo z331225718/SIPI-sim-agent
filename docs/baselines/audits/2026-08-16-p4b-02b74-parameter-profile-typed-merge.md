@@ -26,7 +26,7 @@ over 4 test cases.
 - Cross-check: 4 test cases (disjoint merge, spelling variants, typed conflict, empty profiles)
   driven through product runner `p4b_02b74_parameter_profile_typed_merge_runner`; independent
   Python reference matches 100% on valid flags, matched counts, merged maps, and conflict details;
-  4/4 matched_hash_bound.
+  4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

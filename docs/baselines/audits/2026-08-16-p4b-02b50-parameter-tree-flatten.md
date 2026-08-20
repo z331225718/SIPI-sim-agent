@@ -21,7 +21,7 @@ reference replicates the tokenize/build/flatten pipeline over 4 test cases.
   branch records carry empty value tokens).
 - Cross-check: 4 test cases (basic tree, nested, single leaf, root only) driven through product
   runner `p4b_02b50_parameter_tree_flatten_runner`; independent Python reference matches 100% on
-  valid flags and record lists; 4/4 matched_hash_bound.
+  valid flags and record lists; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

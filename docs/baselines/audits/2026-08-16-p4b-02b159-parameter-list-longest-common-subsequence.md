@@ -29,7 +29,7 @@ reference replicates the LCS rule over 4 test cases.
 - Cross-check: 4 test cases (partial overlap, subsequence, left-biased tie, non-list)
   driven through product runner `p4b_02b159_parameter_list_longest_common_subsequence_runner`;
   independent Python reference matches 100% on canonical tokens and error keys; 4/4
-  matched_hash_bound.
+  product_owned_self_crosscheck_unbound.
 
 ## Binding
 

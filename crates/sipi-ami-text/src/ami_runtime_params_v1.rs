@@ -31,7 +31,11 @@ pub enum RuntimeParamsErrorV1 {
     /// A catalog entry looked up for a default could not be found (invariant).
     CatalogLookup(String),
     /// The candidate value's type does not match the catalog entry type.
-    TypeMismatch { name: String, expected: &'static str, value: String },
+    TypeMismatch {
+        name: String,
+        expected: &'static str,
+        value: String,
+    },
 }
 
 /// One resolved runtime parameter in catalog (sorted-name) order.
@@ -44,10 +48,18 @@ pub struct RuntimeParamV1 {
 }
 
 impl RuntimeParamV1 {
-    pub fn name(&self) -> &str { &self.name }
-    pub const fn usage(&self) -> AmiUsageV1 { self.usage }
-    pub const fn parameter_type(&self) -> AmiParameterTypeV1 { self.parameter_type }
-    pub fn value(&self) -> &AmiParameterValueV1 { &self.value }
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub const fn usage(&self) -> AmiUsageV1 {
+        self.usage
+    }
+    pub const fn parameter_type(&self) -> AmiParameterTypeV1 {
+        self.parameter_type
+    }
+    pub fn value(&self) -> &AmiParameterValueV1 {
+        &self.value
+    }
 }
 
 /// An ordered typed runtime parameter table.
@@ -57,7 +69,9 @@ pub struct AmiRuntimeParamsV1 {
 }
 
 impl AmiRuntimeParamsV1 {
-    pub fn params(&self) -> &[RuntimeParamV1] { &self.params }
+    pub fn params(&self) -> &[RuntimeParamV1] {
+        &self.params
+    }
 
     /// Look up a resolved runtime parameter by name.
     pub fn get(&self, name: &str) -> Option<&RuntimeParamV1> {
@@ -94,9 +108,8 @@ pub fn build_ami_runtime_params_v1(
         }
         match entry.usage() {
             AmiUsageV1::In => {
-                let default = materialize_default_v1(catalog, &name).map_err(|_| {
-                    RuntimeParamsErrorV1::MissingRuntimeValue(name.clone())
-                })?;
+                let default = materialize_default_v1(catalog, &name)
+                    .map_err(|_| RuntimeParamsErrorV1::MissingRuntimeValue(name.clone()))?;
                 params.push(runtime_param(entry, default));
             }
             AmiUsageV1::Out | AmiUsageV1::Info => {
@@ -131,7 +144,12 @@ mod tests {
     }
 
     fn in_entry(name: &str, ty: AmiParameterTypeV1, default: Option<&str>) -> CatalogEntryV1 {
-        CatalogEntryV1::new(name.to_string(), AmiUsageV1::In, ty, default.map(String::from))
+        CatalogEntryV1::new(
+            name.to_string(),
+            AmiUsageV1::In,
+            ty,
+            default.map(String::from),
+        )
     }
 
     fn out_entry(name: &str, ty: AmiParameterTypeV1) -> CatalogEntryV1 {
@@ -140,14 +158,24 @@ mod tests {
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(AMI_RUNTIME_PARAMS_POLICY_V1, "sipi.p4b-02b5.ami-runtime-params.v1.typed");
+        assert_eq!(
+            AMI_RUNTIME_PARAMS_POLICY_V1,
+            "sipi.p4b-02b5.ami-runtime-params.v1.typed"
+        );
     }
 
     #[test]
     fn candidate_wins_over_default_for_in() {
-        let c = catalog(vec![in_entry("swing", AmiParameterTypeV1::Float, Some("0.5"))]);
+        let c = catalog(vec![in_entry(
+            "swing",
+            AmiParameterTypeV1::Float,
+            Some("0.5"),
+        )]);
         let mut cand = std::collections::BTreeMap::new();
-        cand.insert("swing".to_string(), val("swing", AmiParameterTypeV1::Float, "0.9"));
+        cand.insert(
+            "swing".to_string(),
+            val("swing", AmiParameterTypeV1::Float, "0.9"),
+        );
         let table = build_ami_runtime_params_v1(&c, &cand).expect("ok");
         assert_eq!(table.params().len(), 1);
         assert_eq!(table.get("swing").unwrap().value().value_token(), "0.9");
@@ -155,8 +183,13 @@ mod tests {
 
     #[test]
     fn default_used_when_no_candidate_for_in() {
-        let c = catalog(vec![in_entry("swing", AmiParameterTypeV1::Float, Some("0.5"))]);
-        let table = build_ami_runtime_params_v1(&c, &std::collections::BTreeMap::new()).expect("ok");
+        let c = catalog(vec![in_entry(
+            "swing",
+            AmiParameterTypeV1::Float,
+            Some("0.5"),
+        )]);
+        let table =
+            build_ami_runtime_params_v1(&c, &std::collections::BTreeMap::new()).expect("ok");
         assert_eq!(table.params().len(), 1);
         assert_eq!(table.get("swing").unwrap().value().value_token(), "0.5");
         assert_eq!(table.get("swing").unwrap().usage(), AmiUsageV1::In);
@@ -165,14 +198,19 @@ mod tests {
     #[test]
     fn in_without_candidate_or_default_is_error() {
         let c = catalog(vec![in_entry("swing", AmiParameterTypeV1::Float, None)]);
-        let err = build_ami_runtime_params_v1(&c, &std::collections::BTreeMap::new()).err().expect("err");
-        assert_eq!(err, RuntimeParamsErrorV1::MissingRuntimeValue("swing".to_string()));
+        let err =
+            build_ami_runtime_params_v1(&c, &std::collections::BTreeMap::new()).expect_err("err");
+        assert_eq!(
+            err,
+            RuntimeParamsErrorV1::MissingRuntimeValue("swing".to_string())
+        );
     }
 
     #[test]
     fn out_and_info_omitted_without_candidate() {
         let c = catalog(vec![out_entry("out_x", AmiParameterTypeV1::Float)]);
-        let table = build_ami_runtime_params_v1(&c, &std::collections::BTreeMap::new()).expect("ok");
+        let table =
+            build_ami_runtime_params_v1(&c, &std::collections::BTreeMap::new()).expect("ok");
         assert_eq!(table.params().len(), 0);
     }
 
@@ -180,7 +218,10 @@ mod tests {
     fn out_carried_when_candidate_supplied() {
         let c = catalog(vec![out_entry("out_x", AmiParameterTypeV1::Float)]);
         let mut cand = std::collections::BTreeMap::new();
-        cand.insert("out_x".to_string(), val("out_x", AmiParameterTypeV1::Float, "3.0"));
+        cand.insert(
+            "out_x".to_string(),
+            val("out_x", AmiParameterTypeV1::Float, "3.0"),
+        );
         let table = build_ami_runtime_params_v1(&c, &cand).expect("ok");
         assert_eq!(table.params().len(), 1);
         assert_eq!(table.get("out_x").unwrap().value().value_token(), "3.0");
@@ -193,7 +234,8 @@ mod tests {
             in_entry("zeta", AmiParameterTypeV1::Float, Some("1.0")),
             in_entry("alpha", AmiParameterTypeV1::Float, Some("2.0")),
         ]);
-        let table = build_ami_runtime_params_v1(&c, &std::collections::BTreeMap::new()).expect("ok");
+        let table =
+            build_ami_runtime_params_v1(&c, &std::collections::BTreeMap::new()).expect("ok");
         let names: Vec<&str> = table.params().iter().map(|p| p.name()).collect();
         assert_eq!(names, vec!["alpha", "zeta"]);
     }
@@ -206,9 +248,15 @@ mod tests {
         // error: these model-populated roles are simply not populated.
         let c = catalog(vec![
             out_entry("out_x", AmiParameterTypeV1::Float),
-            CatalogEntryV1::new("info_y", AmiUsageV1::Info, AmiParameterTypeV1::String_, None),
+            CatalogEntryV1::new(
+                "info_y",
+                AmiUsageV1::Info,
+                AmiParameterTypeV1::String_,
+                None,
+            ),
         ]);
-        let table = build_ami_runtime_params_v1(&c, &std::collections::BTreeMap::new()).expect("ok");
+        let table =
+            build_ami_runtime_params_v1(&c, &std::collections::BTreeMap::new()).expect("ok");
         assert_eq!(table.params().len(), 0);
     }
 }

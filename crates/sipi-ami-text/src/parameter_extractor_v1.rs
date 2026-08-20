@@ -9,8 +9,7 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    AmiParameterValueErrorV1, AmiParameterValueV1, AmiTextDocumentV1, AmiTextListV1,
-    AmiTextNodeV1,
+    AmiParameterValueErrorV1, AmiParameterValueV1, AmiTextDocumentV1, AmiTextListV1, AmiTextNodeV1,
 };
 
 /// Scope policy for the parameter extractor core.
@@ -38,21 +37,25 @@ fn scan_list(
     map: &mut BTreeMap<String, AmiParameterValueV1>,
 ) -> Result<(), ParameterExtractorErrorV1> {
     let items = list.items();
-    if items.len() == 3 {
-        if let (Some(name), Some(ty), Some(val)) = (
+    if items.len() == 3
+        && let (Some(name), Some(ty), Some(val)) = (
             item_spelling(&items[0]),
             item_spelling(&items[1]),
             item_spelling(&items[2]),
-        ) {
-            if matches!(ty, "Float" | "Integer" | "Boolean" | "String" | "List") {
-                let param_val = AmiParameterValueV1::try_new(name, ty, val)
-                    .map_err(ParameterExtractorErrorV1::InvalidValue)?;
-                if map.insert(param_val.name().to_string(), param_val).is_some() {
-                    return Err(ParameterExtractorErrorV1::DuplicateParameter(name.to_string()));
-                }
-                return Ok(());
-            }
+        )
+        && matches!(ty, "Float" | "Integer" | "Boolean" | "String" | "List")
+    {
+        let param_val = AmiParameterValueV1::try_new(name, ty, val)
+            .map_err(ParameterExtractorErrorV1::InvalidValue)?;
+        if map
+            .insert(param_val.name().to_string(), param_val)
+            .is_some()
+        {
+            return Err(ParameterExtractorErrorV1::DuplicateParameter(
+                name.to_string(),
+            ));
         }
+        return Ok(());
     }
     for item in items {
         if let AmiTextNodeV1::List(sub_list) = item {
@@ -82,7 +85,7 @@ pub fn extract_parameter_values_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, parse_ami_text_v1};
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
@@ -130,11 +133,8 @@ mod tests {
 
     #[test]
     fn rejects_duplicate_parameters() {
-        let doc = parse_ami_text_v1(
-            b"(root (swing Float 0.5) (swing Float 0.9))",
-            limits(),
-        )
-        .expect("parse");
+        let doc = parse_ami_text_v1(b"(root (swing Float 0.5) (swing Float 0.9))", limits())
+            .expect("parse");
         assert_eq!(
             extract_parameter_values_v1(&doc),
             Err(ParameterExtractorErrorV1::DuplicateParameter(
@@ -145,7 +145,8 @@ mod tests {
 
     #[test]
     fn rejects_invalid_value_syntax() {
-        let doc = parse_ami_text_v1(b"(root (swing Float invalid_float))", limits()).expect("parse");
+        let doc =
+            parse_ami_text_v1(b"(root (swing Float invalid_float))", limits()).expect("parse");
         assert!(matches!(
             extract_parameter_values_v1(&doc),
             Err(ParameterExtractorErrorV1::InvalidValue(_))

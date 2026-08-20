@@ -19,7 +19,8 @@ pub fn apply_internal_port_order_v1(s: &FourPortSMatrixV1) -> FourPortSMatrixV1 
     // com_t_v1()[0][0] is a valid finite Complex64 placeholder; overwritten below.
     for row in 0..4 {
         for column in 0..4 {
-            result[row][column] = s[FILE_TO_INTERNAL_ORDER_V1[row]][FILE_TO_INTERNAL_ORDER_V1[column]];
+            result[row][column] =
+                s[FILE_TO_INTERNAL_ORDER_V1[row]][FILE_TO_INTERNAL_ORDER_V1[column]];
         }
     }
     result
@@ -48,8 +49,7 @@ pub fn ingest_row_v1(matrix: &FourPortSMatrixV1) -> sipi_types::Complex64 {
 }
 
 /// Explicit scope policy of the ingest pipeline.
-pub const INGEST_POLICY_V1: &str =
-    "sipi.p5-04b.network-ingest-v1.read-reorder-transform";
+pub const INGEST_POLICY_V1: &str = "sipi.p5-04b.network-ingest-v1.read-reorder-transform";
 
 #[cfg(test)]
 mod tests {
@@ -82,7 +82,11 @@ mod tests {
         s[1][0] = cm(1.0, 0.0);
         s[3][2] = cm(1.0, 0.0);
         let sdd21 = ingest_row_v1(&s);
-        assert!((sdd21.real() - 1.0).abs() < 1e-12, "sdd21 real {:?}", sdd21.real());
+        assert!(
+            (sdd21.real() - 1.0).abs() < 1e-12,
+            "sdd21 real {:?}",
+            sdd21.real()
+        );
         assert!(sdd21.imaginary().abs() < 1e-12);
     }
 

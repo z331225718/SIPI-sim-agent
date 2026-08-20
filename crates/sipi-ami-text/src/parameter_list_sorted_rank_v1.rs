@@ -63,8 +63,8 @@ pub fn parameter_list_sorted_rank_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListSortedRankErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListSortedRankErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListSortedRankErrorV1::MalformedList)?;
     let mut sorted = items.clone();
     sorted.sort();
     match sorted.iter().position(|item| item == query) {

@@ -61,8 +61,7 @@ pub fn slice_parameter_list_items_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListSliceErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListSliceErrorV1::MalformedList)?;
+    let items = list_items(value.value_token()).ok_or(ParameterListSliceErrorV1::MalformedList)?;
     let item_count = items.len();
     if start > end {
         return Err(ParameterListSliceErrorV1::IndexOutOfRange {

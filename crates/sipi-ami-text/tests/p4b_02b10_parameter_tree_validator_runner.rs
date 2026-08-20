@@ -8,11 +8,11 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    build_parameter_trees_v1, parse_ami_text_v1, validate_parameter_trees_v1, ParseLimitsV1,
-    TreeValidationLimitsV1, PARAMETER_TREE_VALIDATOR_POLICY_V1,
+    PARAMETER_TREE_VALIDATOR_POLICY_V1, ParseLimitsV1, TreeValidationLimitsV1,
+    build_parameter_trees_v1, parse_ami_text_v1, validate_parameter_trees_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -25,14 +25,22 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b10_parameter_tree_validator_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b10_parameter_tree_validator_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
     let text = value.get("text").and_then(|v| v.as_str()).unwrap_or("");
-    let max_depth = value.get("max_depth").and_then(|v| v.as_u64()).unwrap_or(32) as usize;
-    let max_leaf_tokens = value.get("max_leaf_tokens").and_then(|v| v.as_u64()).unwrap_or(1024) as usize;
+    let max_depth = value
+        .get("max_depth")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(32) as usize;
+    let max_leaf_tokens = value
+        .get("max_leaf_tokens")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(1024) as usize;
 
     let limits = ParseLimitsV1::try_new(8 * 1024 * 1024, 64, 4096, 4096).expect("limits");
     let doc = match parse_ami_text_v1(text.as_bytes(), limits) {
@@ -44,7 +52,8 @@ fn main() {
                 "parse_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -61,7 +70,8 @@ fn main() {
                 "build_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -69,7 +79,8 @@ fn main() {
         }
     };
 
-    let tree_limits = TreeValidationLimitsV1::try_new(max_depth, max_leaf_tokens).expect("tree limits");
+    let tree_limits =
+        TreeValidationLimitsV1::try_new(max_depth, max_leaf_tokens).expect("tree limits");
     let output = match validate_parameter_trees_v1(&trees, tree_limits) {
         Ok(_) => {
             serde_json::json!({

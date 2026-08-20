@@ -6,7 +6,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_com::{apply_rx_ffe_v1, force_floating_rx_ffe_v1, force_rx_ffe_v1, RX_FFE_POLICY_V1};
+use sipi_com::{RX_FFE_POLICY_V1, apply_rx_ffe_v1, force_floating_rx_ffe_v1, force_rx_ffe_v1};
 
 fn f64s(value: &Value) -> Vec<f64> {
     value

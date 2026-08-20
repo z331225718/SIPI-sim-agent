@@ -7,11 +7,9 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ami_text::{
-    parse_parameter_tree_path_string_v1, PARAMETER_TREE_PATH_STRING_POLICY_V1,
-};
+use sipi_ami_text::{PARAMETER_TREE_PATH_STRING_POLICY_V1, parse_parameter_tree_path_string_v1};
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -24,7 +22,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b45_parameter_tree_path_string_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b45_parameter_tree_path_string_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -34,10 +34,8 @@ fn main() {
 
     let output = match parse_parameter_tree_path_string_v1(path) {
         Ok(segments) => {
-            let segments_json: Vec<Value> = segments
-                .iter()
-                .map(|s| Value::String(s.clone()))
-                .collect();
+            let segments_json: Vec<Value> =
+                segments.iter().map(|s| Value::String(s.clone())).collect();
             serde_json::json!({
                 "policy": PARAMETER_TREE_PATH_STRING_POLICY_V1,
                 "valid": true,

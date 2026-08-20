@@ -13,7 +13,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1, AmiParameterValueV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterValueV1};
 
 /// Explicit scope policy of this slice: profile-to-tree leaf coverage report.
 pub const PARAMETER_PROFILE_TREE_COVERAGE_POLICY_V1: &str =
@@ -103,7 +103,7 @@ pub fn check_parameter_profile_tree_coverage_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{build_parameter_trees_v1, parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, build_parameter_trees_v1, parse_ami_text_v1};
 
     fn tree(text: &str) -> AmiParameterTreeV1 {
         let limits = ParseLimitsV1::try_new(8 * 1024 * 1024, 64, 4096, 4096).expect("limits");
@@ -182,10 +182,7 @@ mod tests {
         let p = profile(&[("gain", "Float", "1.25"), ("steps", "Integer", "8")]);
         let report = check_parameter_profile_tree_coverage_v1(&t, &p);
         assert_eq!(report.profile_names(), 2);
-        assert_eq!(
-            report.missing(),
-            &["gain".to_string(), "steps".to_string()]
-        );
+        assert_eq!(report.missing(), &["gain".to_string(), "steps".to_string()]);
         assert!(report.covered().is_empty());
         assert!(report.ambiguous().is_empty());
         assert!(!report.complete());

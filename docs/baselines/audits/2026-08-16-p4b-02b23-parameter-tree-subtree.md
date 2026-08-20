@@ -20,7 +20,7 @@ An independent Python reference recomputes subtree extraction over 3 test cases.
   rejects empty path; rejects root mismatch; rejects missing path segment).
 - Cross-check: 3 test cases (root subtree, nested subtree, missing path)
   driven through product runner `p4b_02b23_parameter_tree_subtree_runner`; independent Python reference
-  matches 100% on valid flags, subtree canonical JSON, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, subtree canonical JSON, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

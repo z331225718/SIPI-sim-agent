@@ -12,7 +12,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{ToleranceV1, UnitTagV1, MetricSpecV1};
+use crate::{MetricSpecV1, ToleranceV1, UnitTagV1};
 
 /// Stable scope policy of the C4 COM metric-profile core.
 pub const C4_PROFILE_POLICY_V1: &str = "sipi.p3c-03c.c4-profile.v1.com-icn-erl-1pct";
@@ -27,11 +27,7 @@ pub enum C4ProfileErrorV1 {
 }
 
 /// The fixed C4 metric list: (name, unit token, relative tolerance).
-pub const C4_METRICS: [(&str, &str); 3] = [
-    ("COM_dB", "db"),
-    ("ICN_mV", "mv"),
-    ("ERL", "db"),
-];
+pub const C4_METRICS: [(&str, &str); 3] = [("COM_dB", "db"), ("ICN_mV", "mv"), ("ERL", "db")];
 
 /// Builds the C4 metric specs for the P3C-03c compare engine from a
 /// caller-supplied finite reference map.
@@ -52,15 +48,22 @@ pub fn c4_metric_specs_v1(
             return Err(C4ProfileErrorV1::NonFiniteReference(name.to_string()));
         }
         let unit_tag = UnitTagV1::try_new(unit.to_string()).expect("static unit");
-        let tolerance = ToleranceV1::try_new(0.0, C4_RELATIVE_TOLERANCE_V1).expect("static tolerance");
-        specs.push(MetricSpecV1::new(name.to_string(), unit_tag, reference, tolerance).expect("valid spec"));
+        let tolerance =
+            ToleranceV1::try_new(0.0, C4_RELATIVE_TOLERANCE_V1).expect("static tolerance");
+        specs.push(
+            MetricSpecV1::new(name.to_string(), unit_tag, reference, tolerance)
+                .expect("valid spec"),
+        );
     }
     Ok(specs)
 }
 
 /// Convenience: the fixed C4 metric names in profile order.
 pub fn c4_metric_names() -> Vec<String> {
-    C4_METRICS.iter().map(|(name, _)| name.to_string()).collect()
+    C4_METRICS
+        .iter()
+        .map(|(name, _)| name.to_string())
+        .collect()
 }
 
 #[cfg(test)]
@@ -73,7 +76,10 @@ mod tests {
 
     #[test]
     fn policy_and_units_fixed() {
-        assert_eq!(C4_PROFILE_POLICY_V1, "sipi.p3c-03c.c4-profile.v1.com-icn-erl-1pct");
+        assert_eq!(
+            C4_PROFILE_POLICY_V1,
+            "sipi.p3c-03c.c4-profile.v1.com-icn-erl-1pct"
+        );
         assert!((C4_RELATIVE_TOLERANCE_V1 - 0.01).abs() < 1e-15);
         assert_eq!(c4_metric_names(), vec!["COM_dB", "ICN_mV", "ERL"]);
     }
@@ -117,4 +123,3 @@ mod tests {
         );
     }
 }
-

@@ -4,7 +4,7 @@
 //! source, P5-04e source map). Orders the Create_Noise_PDF combination
 //! through Eq. 93A-45 using the ported convolution and quantile core.
 
-use crate::discrete_pdf_v1::{convolve_v1, DiscretePdfV1, PdfErrorV1};
+use crate::discrete_pdf_v1::{DiscretePdfV1, PdfErrorV1, convolve_v1};
 
 /// The combined noise PDF result surface.
 #[derive(Clone, Debug, PartialEq)]
@@ -44,7 +44,11 @@ pub fn combine_r480_noise_pdf_v1(
         return Err(PdfErrorV1::InvalidQuantile);
     }
     let bin_size = sci_pdf.bin_size();
-    for pdf in fext_pdfs.iter().chain(next_pdfs.iter()).chain([gaussian_pdf, dual_dirac_pdf]) {
+    for pdf in fext_pdfs
+        .iter()
+        .chain(next_pdfs.iter())
+        .chain([gaussian_pdf, dual_dirac_pdf])
+    {
         if pdf.bin_size() != bin_size {
             return Err(PdfErrorV1::ConvolveBinMismatch);
         }
@@ -74,8 +78,7 @@ pub fn combine_r480_noise_pdf_v1(
 }
 
 /// Explicit scope policy of the combined noise PDF stage.
-pub const COMBINED_NOISE_PDF_POLICY_V1: &str =
-    "sipi.p5-04e.combined-noise-pdf-v1.eq-93a-45-order";
+pub const COMBINED_NOISE_PDF_POLICY_V1: &str = "sipi.p5-04e.combined-noise-pdf-v1.eq-93a-45-order";
 
 #[cfg(test)]
 mod tests {
@@ -85,7 +88,8 @@ mod tests {
     #[test]
     fn all_delta_inputs_yield_delta_output() {
         let delta = DiscretePdfV1::try_new(1e-4, 0, vec![1.0]).expect("delta");
-        let result = combine_r480_noise_pdf_v1(&delta, &[], &[], &delta, &delta, 1e-4).expect("combined");
+        let result =
+            combine_r480_noise_pdf_v1(&delta, &[], &[], &delta, &delta, 1e-4).expect("combined");
         assert_eq!(result.combined().probability().len(), 1);
         assert!((result.combined().probability()[0] - 1.0).abs() < 1e-12);
         assert!((result.peak_interference_v() - 0.0).abs() < 1e-12);
@@ -94,7 +98,8 @@ mod tests {
     #[test]
     fn gaussian_input_produces_combined_pdf() {
         let gaussian = normal_pdf_v1(0.01, 3.0, 1e-4).expect("gaussian");
-        let result = combine_r480_noise_pdf_v1(&gaussian, &[], &[], &gaussian, &gaussian, 1e-4).expect("combined");
+        let result = combine_r480_noise_pdf_v1(&gaussian, &[], &[], &gaussian, &gaussian, 1e-4)
+            .expect("combined");
         assert!(result.combined().probability().len() > gaussian.probability().len());
         let cdf = result.cdf();
         assert!((cdf[cdf.len() - 1] - 1.0).abs() < 1e-9);
@@ -105,7 +110,7 @@ mod tests {
         let a = DiscretePdfV1::try_new(1e-4, 0, vec![1.0]).expect("a");
         let b = DiscretePdfV1::try_new(1e-3, 0, vec![1.0]).expect("b");
         assert_eq!(
-            combine_r480_noise_pdf_v1(&a, &[b.clone()], &[], &a, &a, 1e-4),
+            combine_r480_noise_pdf_v1(&a, std::slice::from_ref(&b), &[], &a, &a, 1e-4),
             Err(PdfErrorV1::ConvolveBinMismatch)
         );
     }

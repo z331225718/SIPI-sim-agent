@@ -12,7 +12,7 @@ a fully-distinct list of length > 1 is balanced (all runs have length 1).
 
 ## Cross-check
 
-- 4/4 matched_hash_bound (balanced_two_runs, unbalanced_runs,
+- 4/4 product_owned_self_crosscheck_unbound (balanced_two_runs, unbalanced_runs,
   all_equal_single_run, non_list)
 - Evidence: `p4b-02b185-parameter-list-is-balanced-crosscheck-evidence.v1.yaml`
 

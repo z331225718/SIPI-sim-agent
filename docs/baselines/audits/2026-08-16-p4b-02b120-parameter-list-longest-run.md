@@ -25,7 +25,7 @@ reference replicates the run rule over 4 test cases.
   spacing canonicalized).
 - Cross-check: 4 test cases (longest run, earliest tie, all distinct, non-list) driven through
   product runner `p4b_02b120_parameter_list_longest_run_runner`; independent Python reference
-  matches 100% on item/length pairs and error keys; 4/4 matched_hash_bound.
+  matches 100% on item/length pairs and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

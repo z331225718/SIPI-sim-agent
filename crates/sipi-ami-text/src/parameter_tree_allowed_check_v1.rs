@@ -8,9 +8,9 @@
 //! names is not itself an error. Fail-closed: an empty allowed-name set is
 //! strictly rejected.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
 
 /// Scope policy for the parameter tree allowed-name check core.
 pub const PARAMETER_TREE_ALLOWED_NAME_CHECK_POLICY_V1: &str =
@@ -125,9 +125,8 @@ mod tests {
             "root",
             vec![leaf("gain", &["0.5"]), leaf("steps", &["7"])],
         ));
-        let result =
-            check_parameter_tree_allowed_names_v1(&t, &allowed_of(&["gain", "steps"]))
-                .expect("checked");
+        let result = check_parameter_tree_allowed_names_v1(&t, &allowed_of(&["gain", "steps"]))
+            .expect("checked");
         assert_eq!(result.leaves_checked(), 2);
         assert!(result.violations().is_empty());
         assert!(result.is_clean());
@@ -149,13 +148,14 @@ mod tests {
     fn violations_are_sorted_and_deduplicated() {
         let t = tree(branch(
             "root",
-            vec![leaf("beta", &["1"]), leaf("alpha", &["2"]), leaf("gain", &["3"])],
+            vec![
+                leaf("beta", &["1"]),
+                leaf("alpha", &["2"]),
+                leaf("gain", &["3"]),
+            ],
         ));
-        let result = check_parameter_tree_allowed_names_v1(
-            &t,
-            &allowed_of(&["alpha"]),
-        )
-        .expect("checked");
+        let result =
+            check_parameter_tree_allowed_names_v1(&t, &allowed_of(&["alpha"])).expect("checked");
         assert_eq!(
             result.violations(),
             &["beta".to_string(), "gain".to_string()]
@@ -180,8 +180,7 @@ mod tests {
     #[test]
     fn empty_allowed_set_fails_closed() {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
-        let error =
-            check_parameter_tree_allowed_names_v1(&t, &allowed_of(&[])).unwrap_err();
+        let error = check_parameter_tree_allowed_names_v1(&t, &allowed_of(&[])).unwrap_err();
         assert_eq!(error, ParameterTreeAllowedNameErrorV1::EmptyAllowedSet);
     }
 }

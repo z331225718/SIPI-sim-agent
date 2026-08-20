@@ -23,7 +23,7 @@ independent Python reference replicates the listing over 4 test cases.
   string/list names, empty profile).
 - Cross-check: 4 test cases (float names, integer names, no match, unknown type) driven through
   product runner `p4b_02b86_parameter_profile_names_by_type_runner`; independent Python reference
-  matches 100% on sorted name lists and error keys; 4/4 matched_hash_bound.
+  matches 100% on sorted name lists and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

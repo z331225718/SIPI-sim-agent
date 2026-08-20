@@ -25,7 +25,7 @@ independent Python reference replicates the typed matching over 4 test cases.
 - Cross-check: 4 test cases (match found, no match, multiple matches, invalid query) driven
   through product runner `p4b_02b80_parameter_profile_value_lookup_runner`; independent Python
   reference matches 100% on valid flags, sorted match lists, and error presence; 4/4
-  matched_hash_bound.
+  product_owned_self_crosscheck_unbound.
 
 ## Binding
 

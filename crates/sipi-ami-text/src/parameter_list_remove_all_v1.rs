@@ -57,8 +57,8 @@ pub fn remove_all_parameter_list_items_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListRemoveAllErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListRemoveAllErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListRemoveAllErrorV1::MalformedList)?;
     let kept: Vec<String> = items
         .into_iter()
         .filter(|candidate| candidate.as_str() != item)

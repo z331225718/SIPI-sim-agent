@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT / "tools") not in sys.path:
@@ -14,29 +15,56 @@ import verify_plan_open_items_gate_coverage as GATE
 
 
 class CoverageTests(unittest.TestCase):
-    def test_all_open_items_have_gates(self) -> None:
+    def test_current_plan_and_ledger_have_tracked_coverage(self) -> None:
         result = GATE.validate(ROOT)
         self.assertTrue(result["valid"])
-        self.assertEqual(result["items"], 46)
-        self.assertEqual(result["gates"], 363)
+        self.assertEqual(result["items"], 28)
+        self.assertGreater(result["gates"], 0)
+        self.assertEqual(result["coverage_scope"], "tracked_gate_inventory_only")
+        self.assertEqual(result["executed_gates"], 0)
+        self.assertEqual(result["execution_claim"], "not_evaluated_by_this_verifier")
 
-    def test_every_open_item_mapped(self) -> None:
-        expected = set(GATE.OPEN_ITEM_GATES)
-        self.assertGreaterEqual(len(expected), 46)
-        self.assertIn("P1-04B", expected)
-        self.assertIn("P7-09", expected)
-        self.assertIn("P4A-01", expected)
-        self.assertIn("P6-10", expected)
-        self.assertEqual(set(GATE.OPEN_ITEM_GATES), expected)
+    def test_mapping_is_derived_from_ledger(self) -> None:
+        expected = GATE._ledger_gate_map(GATE._read_ledger(ROOT))
+        self.assertEqual(GATE.OPEN_ITEM_GATES, expected)
 
-    def test_each_item_has_nonempty_gate_list(self) -> None:
-        for item, gates in GATE.OPEN_ITEM_GATES.items():
-            self.assertTrue(isinstance(gates, list) and gates, item)
+    def test_plan_ledger_mismatch_is_rejected(self) -> None:
+        with mock.patch.object(GATE, "_plan_open_items", return_value=["P9-99"]):
+            with self.assertRaisesRegex(GATE.CoverageError, "plan_ledger_item_mismatch"):
+                GATE.validate(ROOT)
 
-    def test_all_gates_exist_on_disk(self) -> None:
-        for item, gates in GATE.OPEN_ITEM_GATES.items():
-            for gate in gates:
-                self.assertTrue((ROOT / gate).is_file(), f"{item}: {gate} missing")
+    def test_plan_integrity_rejects_concatenated_checklists(self) -> None:
+        with mock.patch.object(
+            Path,
+            "read_text",
+            return_value="- [ ] **P9-99** first - [x] **P9-98** second\n",
+        ):
+            with self.assertRaisesRegex(GATE.CoverageError, "plan_checklists_concatenated"):
+                GATE._plan_open_items(ROOT)
+
+    def test_untracked_gate_is_rejected(self) -> None:
+        ledger = {
+            "schema": "sipi.plan-remaining-items.ledger.v1",
+            "total_open": 1,
+            "items": [{"id": "P9-99", "gate": ["tools/verify_untracked.py"]}],
+        }
+        with mock.patch.object(GATE, "_read_ledger", return_value=ledger), \
+             mock.patch.object(GATE, "_plan_open_items", return_value=["P9-99"]), \
+             mock.patch.object(GATE, "_tracked_paths", return_value=set()):
+            with self.assertRaisesRegex(GATE.CoverageError, "gate_untracked"):
+                GATE.validate(ROOT)
+
+    def test_duplicate_gate_is_rejected(self) -> None:
+        ledger = {
+            "schema": "sipi.plan-remaining-items.ledger.v1",
+            "total_open": 1,
+            "items": [{"id": "P9-99", "gate": ["tools/verify_x.py", "tools/verify_x.py"]}],
+        }
+        with mock.patch.object(GATE, "_read_ledger", return_value=ledger), \
+             mock.patch.object(GATE, "_plan_open_items", return_value=["P9-99"]), \
+             mock.patch.object(GATE, "_tracked_paths", return_value={"tools/verify_x.py"}):
+            with self.assertRaisesRegex(GATE.CoverageError, "item_gate_duplicate"):
+                GATE.validate(ROOT)
 
 
 if __name__ == "__main__":

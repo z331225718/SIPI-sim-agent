@@ -21,7 +21,7 @@ valid result). An independent Python reference replicates the shared-prefix comp
   one path contained; empty path fails closed).
 - Cross-check: 4 test cases (shared prefix, identical, disjoint, empty) driven through product
   runner `p4b_02b67_parameter_tree_longest_common_prefix_runner`; independent Python reference
-  matches 100% on valid flags, prefix segments, and error contexts; 4/4 matched_hash_bound.
+  matches 100% on valid flags, prefix segments, and error contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

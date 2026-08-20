@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_receiver_thresholds_v1, RECEIVER_THRESHOLDS_POLICY_V1,
-};
+use sipi_ibis::{RECEIVER_THRESHOLDS_POLICY_V1, lift_receiver_thresholds_v1};
 
 fn main() {
     let mut input = None;
@@ -35,26 +33,27 @@ fn main() {
     let vdiff_dc = value.get("vdiff_dc_v").and_then(|v| v.as_f64());
     let tskew = value.get("tskew_s").and_then(|v| v.as_f64());
 
-    let output = match lift_receiver_thresholds_v1(vcross_low, vcross_high, vdiff_ac, vdiff_dc, tskew) {
-        Ok(rx) => {
-            serde_json::json!({
-                "policy": RECEIVER_THRESHOLDS_POLICY_V1,
-                "valid": true,
-                "vcross_low_v": rx.vcross_low_v().map(|v| v.get()),
-                "vcross_high_v": rx.vcross_high_v().map(|v| v.get()),
-                "vdiff_ac_v": rx.vdiff_ac_v().map(|v| v.get()),
-                "vdiff_dc_v": rx.vdiff_dc_v().map(|v| v.get()),
-                "tskew_s": rx.tskew_s().map(|v| v.get()),
-            })
-        }
-        Err(e) => {
-            serde_json::json!({
-                "policy": RECEIVER_THRESHOLDS_POLICY_V1,
-                "valid": false,
-                "lift_error": format!("{e:?}"),
-            })
-        }
-    };
+    let output =
+        match lift_receiver_thresholds_v1(vcross_low, vcross_high, vdiff_ac, vdiff_dc, tskew) {
+            Ok(rx) => {
+                serde_json::json!({
+                    "policy": RECEIVER_THRESHOLDS_POLICY_V1,
+                    "valid": true,
+                    "vcross_low_v": rx.vcross_low_v().map(|v| v.get()),
+                    "vcross_high_v": rx.vcross_high_v().map(|v| v.get()),
+                    "vdiff_ac_v": rx.vdiff_ac_v().map(|v| v.get()),
+                    "vdiff_dc_v": rx.vdiff_dc_v().map(|v| v.get()),
+                    "tskew_s": rx.tskew_s().map(|v| v.get()),
+                })
+            }
+            Err(e) => {
+                serde_json::json!({
+                    "policy": RECEIVER_THRESHOLDS_POLICY_V1,
+                    "valid": false,
+                    "lift_error": format!("{e:?}"),
+                })
+            }
+        };
 
     if let Some(path) = report {
         std::fs::write(path, serde_json::to_string_pretty(&output).expect("json")).expect("write");

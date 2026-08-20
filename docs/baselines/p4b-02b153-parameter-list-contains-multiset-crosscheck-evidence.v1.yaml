@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b153-parameter-list-contains-multiset-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b153.parameter-list-contains-multiset-v1.multiset-containment
 matched_count: 4
 case_count: 4

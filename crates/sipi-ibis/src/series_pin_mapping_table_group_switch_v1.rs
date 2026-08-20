@@ -48,9 +48,15 @@ impl TypedSeriesPinGroupSwitchRecordV1 {
         if !gn.is_ascii() || !on_g.is_ascii() || !off_g.is_ascii() {
             return Err(SeriesPinTableGroupSwitchErrorV1::NonAsciiName);
         }
-        if !gn.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !on_g.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !off_g.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+        if !gn
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !on_g
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !off_g
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
         {
             return Err(SeriesPinTableGroupSwitchErrorV1::InvalidName);
         }
@@ -60,17 +66,13 @@ impl TypedSeriesPinGroupSwitchRecordV1 {
 
         let ftg = function_table_group.and_then(|g| {
             let t = g.into().trim().to_string();
-            if t.is_empty() {
-                None
-            } else {
-                Some(t)
-            }
+            if t.is_empty() { None } else { Some(t) }
         });
 
-        if let Some(ref g) = ftg {
-            if !g.is_ascii() {
-                return Err(SeriesPinTableGroupSwitchErrorV1::NonAsciiName);
-            }
+        if let Some(ref g) = ftg
+            && !g.is_ascii()
+        {
+            return Err(SeriesPinTableGroupSwitchErrorV1::NonAsciiName);
         }
 
         Ok(Self {

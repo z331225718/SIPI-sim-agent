@@ -57,10 +57,10 @@ pub fn list_jaccard_index_v1(
     {
         return Err(ParameterListJaccardIndexErrorV1::NotAList);
     }
-    let left_items = list_items(left.value_token())
-        .ok_or(ParameterListJaccardIndexErrorV1::MalformedList)?;
-    let right_items = list_items(right.value_token())
-        .ok_or(ParameterListJaccardIndexErrorV1::MalformedList)?;
+    let left_items =
+        list_items(left.value_token()).ok_or(ParameterListJaccardIndexErrorV1::MalformedList)?;
+    let right_items =
+        list_items(right.value_token()).ok_or(ParameterListJaccardIndexErrorV1::MalformedList)?;
     let mut distinct_left: Vec<String> = Vec::new();
     for item in &left_items {
         if !distinct_left.contains(item) {

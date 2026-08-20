@@ -5,7 +5,7 @@
 //! Fail-closed: invalid diff inputs fail closed; empty diff lists produce an identical status summary.
 
 use crate::parameter_tree_diff_stats_v1::{
-    compute_parameter_tree_diff_stats_v1, AmiParameterTreeDiffStatsV1,
+    AmiParameterTreeDiffStatsV1, compute_parameter_tree_diff_stats_v1,
 };
 use crate::parameter_tree_diff_v1::TreeDiffEntryV1;
 
@@ -34,17 +34,26 @@ pub fn generate_parameter_tree_diff_summary_v1(
         .map_err(|e| ParameterTreeDiffSummaryErrorV1::InvalidDiffSequence(format!("{e:?}")))?;
 
     let mut lines = Vec::new();
-    lines.push(format!("AMI Parameter Tree Diff Summary Report"));
+    lines.push("AMI Parameter Tree Diff Summary Report".to_string());
     lines.push(format!("Policy: {}", PARAMETER_TREE_DIFF_SUMMARY_POLICY_V1));
 
     if stats.is_identical() {
         lines.push("Status: Identical (0 differences)".to_string());
     } else {
-        lines.push(format!("Status: Modified ({} differences)", stats.total_diffs));
+        lines.push(format!(
+            "Status: Modified ({} differences)",
+            stats.total_diffs
+        ));
         lines.push(format!("  Missing Nodes: {}", stats.missing_nodes_count));
         lines.push(format!("  Extra Nodes: {}", stats.extra_nodes_count));
-        lines.push(format!("  Kind Mismatches: {}", stats.kind_mismatches_count));
-        lines.push(format!("  Value Mismatches: {}", stats.value_mismatches_count));
+        lines.push(format!(
+            "  Kind Mismatches: {}",
+            stats.kind_mismatches_count
+        ));
+        lines.push(format!(
+            "  Value Mismatches: {}",
+            stats.value_mismatches_count
+        ));
 
         lines.push("Diff Details:".to_string());
         for entry in diffs {
@@ -69,9 +78,14 @@ pub fn generate_parameter_tree_diff_summary_v1(
         }
     }
 
-    let summary_text = lines.join("
-");
-    Ok(AmiParameterTreeDiffSummaryReportV1 { stats, summary_text })
+    let summary_text = lines.join(
+        "
+",
+    );
+    Ok(AmiParameterTreeDiffSummaryReportV1 {
+        stats,
+        summary_text,
+    })
 }
 
 #[cfg(test)]
@@ -90,13 +104,19 @@ mod tests {
     fn generates_identical_summary() {
         let report = generate_parameter_tree_diff_summary_v1(&[]).expect("report");
         assert!(report.stats.is_identical());
-        assert!(report.summary_text.contains("Status: Identical (0 differences)"));
+        assert!(
+            report
+                .summary_text
+                .contains("Status: Identical (0 differences)")
+        );
     }
 
     #[test]
     fn generates_modified_summary() {
         let diffs = vec![
-            TreeDiffEntryV1::MissingNode { path: "root.node_b".to_string() },
+            TreeDiffEntryV1::MissingNode {
+                path: "root.node_b".to_string(),
+            },
             TreeDiffEntryV1::ValueMismatch {
                 path: "root.val".to_string(),
                 left: vec!["0.5".to_string()],
@@ -106,8 +126,16 @@ mod tests {
 
         let report = generate_parameter_tree_diff_summary_v1(&diffs).expect("report");
         assert_eq!(report.stats.total_diffs, 2);
-        assert!(report.summary_text.contains("Status: Modified (2 differences)"));
+        assert!(
+            report
+                .summary_text
+                .contains("Status: Modified (2 differences)")
+        );
         assert!(report.summary_text.contains("- [Missing] root.node_b"));
-        assert!(report.summary_text.contains("- [Value Mismatch] root.val: left=[0.5] right=[0.9]"));
+        assert!(
+            report
+                .summary_text
+                .contains("- [Value Mismatch] root.val: left=[0.5] right=[0.9]")
+        );
     }
 }

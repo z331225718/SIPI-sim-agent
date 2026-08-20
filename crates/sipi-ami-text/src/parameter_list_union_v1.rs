@@ -59,10 +59,10 @@ pub fn list_union_v1(
     {
         return Err(ParameterListUnionErrorV1::NotAList);
     }
-    let left_items = list_items(left.value_token())
-        .ok_or(ParameterListUnionErrorV1::MalformedList)?;
-    let right_items = list_items(right.value_token())
-        .ok_or(ParameterListUnionErrorV1::MalformedList)?;
+    let left_items =
+        list_items(left.value_token()).ok_or(ParameterListUnionErrorV1::MalformedList)?;
+    let right_items =
+        list_items(right.value_token()).ok_or(ParameterListUnionErrorV1::MalformedList)?;
     let mut result = left_items.clone();
     result.extend(
         right_items
@@ -85,40 +85,28 @@ mod tests {
     fn union_appends_right_only_items() {
         let a = value("left", "List", "(a, b, c)");
         let b = value("right", "List", "(b, d)");
-        assert_eq!(
-            list_union_v1(&a, &b),
-            Ok("(a, b, c, d)".to_string())
-        );
+        assert_eq!(list_union_v1(&a, &b), Ok("(a, b, c, d)".to_string()));
     }
 
     #[test]
     fn left_duplicates_preserved() {
         let a = value("left", "List", "(a, a, b)");
         let b = value("right", "List", "(a)");
-        assert_eq!(
-            list_union_v1(&a, &b),
-            Ok("(a, a, b)".to_string())
-        );
+        assert_eq!(list_union_v1(&a, &b), Ok("(a, a, b)".to_string()));
     }
 
     #[test]
     fn equal_values_union_is_left() {
         let a = value("left", "List", "(a, b)");
         let b = value("right", "List", "(a, b)");
-        assert_eq!(
-            list_union_v1(&a, &b),
-            Ok("(a, b)".to_string())
-        );
+        assert_eq!(list_union_v1(&a, &b), Ok("(a, b)".to_string()));
     }
 
     #[test]
     fn disjoint_lists_full_join() {
         let a = value("left", "List", "(a, b)");
         let b = value("right", "List", "(x, y)");
-        assert_eq!(
-            list_union_v1(&a, &b),
-            Ok("(a, b, x, y)".to_string())
-        );
+        assert_eq!(list_union_v1(&a, &b), Ok("(a, b, x, y)".to_string()));
     }
 
     #[test]
@@ -135,9 +123,6 @@ mod tests {
     fn spacing_is_canonicalized() {
         let a = value("left", "List", "( a , b , c )");
         let b = value("right", "List", "(b, d)");
-        assert_eq!(
-            list_union_v1(&a, &b),
-            Ok("(a, b, c, d)".to_string())
-        );
+        assert_eq!(list_union_v1(&a, &b), Ok("(a, b, c, d)".to_string()));
     }
 }

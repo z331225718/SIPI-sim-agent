@@ -20,7 +20,7 @@ are strictly rejected. An independent Python reference recomputes tree validatio
   exceeded max depth rejection; exceeded max leaf tokens rejection).
 - Cross-check: 3 test cases (valid normal tree, exceeded max depth, exceeded max leaf tokens)
   driven through product runner `p4b_02b10_parameter_tree_validator_runner`; independent Python reference
-  matches 100% on valid flags, validated tree counts, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, validated tree counts, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

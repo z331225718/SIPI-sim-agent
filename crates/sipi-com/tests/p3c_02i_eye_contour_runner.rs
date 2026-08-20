@@ -8,7 +8,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_com::{statistical_eye_contour_v1, EyeGridV1, EYE_CONTOUR_POLICY_V1};
+use sipi_com::{EYE_CONTOUR_POLICY_V1, EyeGridV1, statistical_eye_contour_v1};
 
 fn main() {
     let mut input = None;
@@ -47,7 +47,10 @@ fn main() {
             q_grid.push(row_values);
         }
     }
-    let target_q = value.get("target_q").and_then(|v| v.as_f64()).unwrap_or(f64::NAN);
+    let target_q = value
+        .get("target_q")
+        .and_then(|v| v.as_f64())
+        .unwrap_or(f64::NAN);
 
     let grid = EyeGridV1::new(time_offsets, voltage_levels, q_grid);
     let output = match statistical_eye_contour_v1(&grid, target_q) {

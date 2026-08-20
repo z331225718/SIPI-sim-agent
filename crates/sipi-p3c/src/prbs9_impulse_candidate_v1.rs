@@ -11,7 +11,7 @@ use sipi_contracts::{
     CausalFirChannelV1, LinkContractError, LinkPlanV1, RxStagesV1, TxStageV1, UniformTimebaseV1,
 };
 use sipi_ieee_com_sparam::SelectedP3cTruncatedResponseV1;
-use sipi_link::{convolve_causal_fir_v1, ConvolutionLimitsV1, LinkError};
+use sipi_link::{ConvolutionLimitsV1, LinkError, convolve_causal_fir_v1};
 use sipi_types::{FiniteF64, Seconds, Volts};
 
 pub const P3C_PRBS9_PERIOD_UI_V1: usize = 511;

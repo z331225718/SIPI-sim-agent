@@ -36,7 +36,9 @@ impl TypedReceiverThresholdsV1 {
         vdiff_dc_v: Option<f64>,
         tskew_s: Option<f64>,
     ) -> Result<Self, ReceiverThresholdsErrorV1> {
-        let validate_finite = |val: Option<f64>, kind: &'static str| -> Result<Option<FiniteF64>, ReceiverThresholdsErrorV1> {
+        let validate_finite = |val: Option<f64>,
+                               kind: &'static str|
+         -> Result<Option<FiniteF64>, ReceiverThresholdsErrorV1> {
             match val {
                 None => Ok(None),
                 Some(v) => {
@@ -50,22 +52,25 @@ impl TypedReceiverThresholdsV1 {
             }
         };
 
-        let validate_non_negative = |val: Option<f64>, kind: &'static str| -> Result<Option<FiniteF64>, ReceiverThresholdsErrorV1> {
-            match val {
-                None => Ok(None),
-                Some(v) => {
-                    if !v.is_finite() {
-                        return Err(ReceiverThresholdsErrorV1::NonFiniteValue);
+        let validate_non_negative =
+            |val: Option<f64>,
+             kind: &'static str|
+             -> Result<Option<FiniteF64>, ReceiverThresholdsErrorV1> {
+                match val {
+                    None => Ok(None),
+                    Some(v) => {
+                        if !v.is_finite() {
+                            return Err(ReceiverThresholdsErrorV1::NonFiniteValue);
+                        }
+                        if v < 0.0 {
+                            return Err(ReceiverThresholdsErrorV1::NegativeThreshold);
+                        }
+                        let finite = FiniteF64::try_new(v, kind)
+                            .map_err(|_| ReceiverThresholdsErrorV1::NonFiniteValue)?;
+                        Ok(Some(finite))
                     }
-                    if v < 0.0 {
-                        return Err(ReceiverThresholdsErrorV1::NegativeThreshold);
-                    }
-                    let finite = FiniteF64::try_new(v, kind)
-                        .map_err(|_| ReceiverThresholdsErrorV1::NonFiniteValue)?;
-                    Ok(Some(finite))
                 }
-            }
-        };
+            };
 
         let vcross_low_v = validate_finite(vcross_low_v, "vcross_low_v")?;
         let vcross_high_v = validate_finite(vcross_high_v, "vcross_high_v")?;
@@ -128,14 +133,9 @@ mod tests {
 
     #[test]
     fn valid_full_thresholds() {
-        let rx = lift_receiver_thresholds_v1(
-            Some(0.8),
-            Some(1.2),
-            Some(0.15),
-            Some(0.10),
-            Some(20e-12),
-        )
-        .expect("lift");
+        let rx =
+            lift_receiver_thresholds_v1(Some(0.8), Some(1.2), Some(0.15), Some(0.10), Some(20e-12))
+                .expect("lift");
         assert_eq!(rx.vcross_low_v().unwrap().get(), 0.8);
         assert_eq!(rx.vcross_high_v().unwrap().get(), 1.2);
         assert_eq!(rx.vdiff_ac_v().unwrap().get(), 0.15);

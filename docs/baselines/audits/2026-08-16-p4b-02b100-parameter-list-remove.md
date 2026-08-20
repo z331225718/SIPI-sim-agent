@@ -26,7 +26,7 @@ rule over 4 test cases.
   sole item yields empty token, spacing canonicalized).
 - Cross-check: 4 test cases (remove middle, remove last, out of range, non-list) driven through
   product runner `p4b_02b100_parameter_list_remove_runner`; independent Python reference matches
-  100% on removed tokens and error keys with index/count; 4/4 matched_hash_bound.
+  100% on removed tokens and error keys with index/count; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

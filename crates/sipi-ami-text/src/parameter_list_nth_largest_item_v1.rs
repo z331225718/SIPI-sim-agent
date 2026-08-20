@@ -61,8 +61,8 @@ pub fn parameter_list_nth_largest_item_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListNthLargestItemErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListNthLargestItemErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListNthLargestItemErrorV1::MalformedList)?;
     let item_count = items.len();
     if nth >= item_count {
         return Err(ParameterListNthLargestItemErrorV1::IndexOutOfRange {
@@ -87,23 +87,44 @@ mod tests {
     #[test]
     fn computes_nth_largest() {
         let v = value("param", "List", "(c, a, b)");
-        assert_eq!(parameter_list_nth_largest_item_v1(&v, 0), Ok("c".to_string()));
-        assert_eq!(parameter_list_nth_largest_item_v1(&v, 1), Ok("b".to_string()));
-        assert_eq!(parameter_list_nth_largest_item_v1(&v, 2), Ok("a".to_string()));
+        assert_eq!(
+            parameter_list_nth_largest_item_v1(&v, 0),
+            Ok("c".to_string())
+        );
+        assert_eq!(
+            parameter_list_nth_largest_item_v1(&v, 1),
+            Ok("b".to_string())
+        );
+        assert_eq!(
+            parameter_list_nth_largest_item_v1(&v, 2),
+            Ok("a".to_string())
+        );
     }
 
     #[test]
     fn duplicates_count_as_separate_positions() {
         let v = value("param", "List", "(b, a, b)");
-        assert_eq!(parameter_list_nth_largest_item_v1(&v, 0), Ok("b".to_string()));
-        assert_eq!(parameter_list_nth_largest_item_v1(&v, 1), Ok("b".to_string()));
-        assert_eq!(parameter_list_nth_largest_item_v1(&v, 2), Ok("a".to_string()));
+        assert_eq!(
+            parameter_list_nth_largest_item_v1(&v, 0),
+            Ok("b".to_string())
+        );
+        assert_eq!(
+            parameter_list_nth_largest_item_v1(&v, 1),
+            Ok("b".to_string())
+        );
+        assert_eq!(
+            parameter_list_nth_largest_item_v1(&v, 2),
+            Ok("a".to_string())
+        );
     }
 
     #[test]
     fn single_item_only_rank_zero() {
         let v = value("param", "List", "(x)");
-        assert_eq!(parameter_list_nth_largest_item_v1(&v, 0), Ok("x".to_string()));
+        assert_eq!(
+            parameter_list_nth_largest_item_v1(&v, 0),
+            Ok("x".to_string())
+        );
     }
 
     #[test]
@@ -121,7 +142,10 @@ mod tests {
     #[test]
     fn spacing_is_canonicalized() {
         let v = value("param", "List", "( c , a , b )");
-        assert_eq!(parameter_list_nth_largest_item_v1(&v, 1), Ok("b".to_string()));
+        assert_eq!(
+            parameter_list_nth_largest_item_v1(&v, 1),
+            Ok("b".to_string())
+        );
     }
 
     #[test]

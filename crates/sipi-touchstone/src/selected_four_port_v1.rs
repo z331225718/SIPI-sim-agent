@@ -93,6 +93,7 @@ fn map_common_error(error: super::TouchstoneError) -> SelectedFourPortTouchstone
     }
 }
 
+#[allow(clippy::needless_range_loop)]
 fn parse_record(
     tokens: &[&[u8]],
 ) -> Result<ParsedSelectedFourPortRowV1, SelectedFourPortTouchstoneErrorV1> {
@@ -251,6 +252,7 @@ mod tests {
         )
     }
 
+    #[allow(clippy::needless_range_loop)]
     fn record(frequency: f64, values: &[(usize, usize, f64, f64)]) -> String {
         let mut matrix = [[(0.0, 0.0); SELECTED_P3C_PORT_COUNT]; SELECTED_P3C_PORT_COUNT];
         for &(output, incident, real, imaginary) in values {

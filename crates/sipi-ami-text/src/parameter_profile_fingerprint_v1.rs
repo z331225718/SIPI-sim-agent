@@ -15,7 +15,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{serialize_parameter_profile_v1, AmiParameterValueV1};
+use crate::{AmiParameterValueV1, serialize_parameter_profile_v1};
 
 /// Explicit scope policy of this slice: FNV-1a 64 canonical profile fingerprint.
 pub const PARAMETER_PROFILE_FINGERPRINT_POLICY_V1: &str =
@@ -35,9 +35,7 @@ fn fnv1a64(bytes: &[u8]) -> u64 {
 }
 
 /// 64-bit fingerprint of a profile's canonical serialization.
-pub fn hash_parameter_profile_v1(
-    profile: &BTreeMap<String, AmiParameterValueV1>,
-) -> u64 {
+pub fn hash_parameter_profile_v1(profile: &BTreeMap<String, AmiParameterValueV1>) -> u64 {
     let serialized = serialize_parameter_profile_v1(profile);
     fnv1a64(serialized.as_bytes())
 }

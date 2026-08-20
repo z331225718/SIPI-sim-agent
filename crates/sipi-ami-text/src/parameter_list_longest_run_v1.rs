@@ -54,8 +54,8 @@ pub fn longest_run_parameter_list_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListLongestRunErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListLongestRunErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListLongestRunErrorV1::MalformedList)?;
     let mut best: (String, usize) = (items[0].clone(), 1);
     let mut current: (String, usize) = (items[0].clone(), 1);
     for item in &items[1..] {
@@ -82,37 +82,25 @@ mod tests {
     #[test]
     fn finds_longest_run() {
         let v = value("channels", "List", "(a, a, b, c, c, c)");
-        assert_eq!(
-            longest_run_parameter_list_v1(&v),
-            Ok(("c".to_string(), 3))
-        );
+        assert_eq!(longest_run_parameter_list_v1(&v), Ok(("c".to_string(), 3)));
     }
 
     #[test]
     fn tie_resolves_to_earliest_run() {
         let v = value("channels", "List", "(a, a, b, b)");
-        assert_eq!(
-            longest_run_parameter_list_v1(&v),
-            Ok(("a".to_string(), 2))
-        );
+        assert_eq!(longest_run_parameter_list_v1(&v), Ok(("a".to_string(), 2)));
     }
 
     #[test]
     fn all_distinct_has_unit_runs() {
         let v = value("channels", "List", "(a, b, c)");
-        assert_eq!(
-            longest_run_parameter_list_v1(&v),
-            Ok(("a".to_string(), 1))
-        );
+        assert_eq!(longest_run_parameter_list_v1(&v), Ok(("a".to_string(), 1)));
     }
 
     #[test]
     fn single_item_is_its_own_longest_run() {
         let v = value("channels", "List", "(x)");
-        assert_eq!(
-            longest_run_parameter_list_v1(&v),
-            Ok(("x".to_string(), 1))
-        );
+        assert_eq!(longest_run_parameter_list_v1(&v), Ok(("x".to_string(), 1)));
     }
 
     #[test]
@@ -127,9 +115,6 @@ mod tests {
     #[test]
     fn spacing_is_canonicalized() {
         let v = value("channels", "List", "( a , a , b )");
-        assert_eq!(
-            longest_run_parameter_list_v1(&v),
-            Ok(("a".to_string(), 2))
-        );
+        assert_eq!(longest_run_parameter_list_v1(&v), Ok(("a".to_string(), 2)));
     }
 }

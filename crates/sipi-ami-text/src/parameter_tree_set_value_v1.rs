@@ -11,8 +11,8 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    AmiParameterTreeV1, AmiParameterTreeNodeV1, AmiParameterTypeV1,
-    AmiParameterValueErrorV1, AmiParameterValueV1,
+    AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterTypeV1, AmiParameterValueErrorV1,
+    AmiParameterValueV1,
 };
 
 /// Scope policy for the parameter tree leaf value set core.
@@ -50,9 +50,9 @@ fn set_node(
     match node {
         AmiParameterTreeNodeV1::Branch { name, children } => {
             let target = segments[0];
-            let child = children.get(target).ok_or_else(|| {
-                ParameterTreeValueSetErrorV1::PathNotFound(target.to_string())
-            })?;
+            let child = children
+                .get(target)
+                .ok_or_else(|| ParameterTreeValueSetErrorV1::PathNotFound(target.to_string()))?;
             let new_child = if segments.len() == 1 {
                 // The target child is the leaf to modify.
                 match child {
@@ -86,7 +86,9 @@ fn set_node(
                             value_tokens: vec![value_token.to_string()],
                         }
                     }
-                    AmiParameterTreeNodeV1::Branch { name: branch_name, .. } => {
+                    AmiParameterTreeNodeV1::Branch {
+                        name: branch_name, ..
+                    } => {
                         return Err(ParameterTreeValueSetErrorV1::TargetNotLeaf {
                             name: branch_name.clone(),
                         });
@@ -167,15 +169,17 @@ mod tests {
     fn sets_root_level_leaf_value() {
         let t = tree(branch(
             "root",
-            vec![leaf("gain", &["Float", "0.5"]), leaf("steps", &["Integer", "7"])],
+            vec![
+                leaf("gain", &["Float", "0.5"]),
+                leaf("steps", &["Integer", "7"]),
+            ],
         ));
         let types = type_map(&[
             ("gain", AmiParameterTypeV1::Float),
             ("steps", AmiParameterTypeV1::Integer),
         ]);
         let updated =
-            set_parameter_tree_leaf_value_v1(&t, &["root", "gain"], &types, "1.25")
-                .expect("set");
+            set_parameter_tree_leaf_value_v1(&t, &["root", "gain"], &types, "1.25").expect("set");
         let root = updated.root_node();
         match root {
             AmiParameterTreeNodeV1::Branch { children, .. } => {
@@ -189,10 +193,7 @@ mod tests {
                 let steps = children.get("steps").expect("steps");
                 match steps {
                     AmiParameterTreeNodeV1::Leaf { value_tokens, .. } => {
-                        assert_eq!(
-                            value_tokens,
-                            &vec!["Integer".to_string(), "7".to_string()]
-                        );
+                        assert_eq!(value_tokens, &vec!["Integer".to_string(), "7".to_string()]);
                     }
                     AmiParameterTreeNodeV1::Branch { .. } => panic!("expected leaf"),
                 }
@@ -206,10 +207,7 @@ mod tests {
                 let gain = children.get("gain").expect("gain");
                 match gain {
                     AmiParameterTreeNodeV1::Leaf { value_tokens, .. } => {
-                        assert_eq!(
-                            value_tokens,
-                            &vec!["Float".to_string(), "0.5".to_string()]
-                        );
+                        assert_eq!(value_tokens, &vec!["Float".to_string(), "0.5".to_string()]);
                     }
                     AmiParameterTreeNodeV1::Branch { .. } => panic!("expected leaf"),
                 }
@@ -225,9 +223,8 @@ mod tests {
             vec![branch("sub", vec![leaf("deep", &["Float", "1.0"])])],
         ));
         let types = type_map(&[("deep", AmiParameterTypeV1::Float)]);
-        let updated =
-            set_parameter_tree_leaf_value_v1(&t, &["root", "sub", "deep"], &types, "2.5")
-                .expect("set");
+        let updated = set_parameter_tree_leaf_value_v1(&t, &["root", "sub", "deep"], &types, "2.5")
+            .expect("set");
         match updated.root_node() {
             AmiParameterTreeNodeV1::Branch { children, .. } => {
                 let sub = children.get("sub").expect("sub");
@@ -252,8 +249,7 @@ mod tests {
     fn empty_path_fails_closed() {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
         let types = type_map(&[("gain", AmiParameterTypeV1::Float)]);
-        let error =
-            set_parameter_tree_leaf_value_v1(&t, &[], &types, "1.0").unwrap_err();
+        let error = set_parameter_tree_leaf_value_v1(&t, &[], &types, "1.0").unwrap_err();
         assert_eq!(error, ParameterTreeValueSetErrorV1::EmptyPath);
     }
 
@@ -262,8 +258,7 @@ mod tests {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
         let types = type_map(&[("gain", AmiParameterTypeV1::Float)]);
         let error =
-            set_parameter_tree_leaf_value_v1(&t, &["other", "gain"], &types, "1.0")
-                .unwrap_err();
+            set_parameter_tree_leaf_value_v1(&t, &["other", "gain"], &types, "1.0").unwrap_err();
         assert_eq!(error, ParameterTreeValueSetErrorV1::RootMismatch);
     }
 
@@ -272,8 +267,7 @@ mod tests {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
         let types = type_map(&[("gain", AmiParameterTypeV1::Float)]);
         let error =
-            set_parameter_tree_leaf_value_v1(&t, &["root", "nope"], &types, "1.0")
-                .unwrap_err();
+            set_parameter_tree_leaf_value_v1(&t, &["root", "nope"], &types, "1.0").unwrap_err();
         assert_eq!(
             error,
             ParameterTreeValueSetErrorV1::PathNotFound("nope".to_string())
@@ -288,8 +282,7 @@ mod tests {
         ));
         let types = type_map(&[("deep", AmiParameterTypeV1::Float)]);
         let error =
-            set_parameter_tree_leaf_value_v1(&t, &["root", "sub"], &types, "1.0")
-                .unwrap_err();
+            set_parameter_tree_leaf_value_v1(&t, &["root", "sub"], &types, "1.0").unwrap_err();
         assert_eq!(
             error,
             ParameterTreeValueSetErrorV1::TargetNotLeaf {
@@ -303,8 +296,7 @@ mod tests {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
         let types = type_map(&[]);
         let error =
-            set_parameter_tree_leaf_value_v1(&t, &["root", "gain"], &types, "1.0")
-                .unwrap_err();
+            set_parameter_tree_leaf_value_v1(&t, &["root", "gain"], &types, "1.0").unwrap_err();
         assert_eq!(
             error,
             ParameterTreeValueSetErrorV1::MissingType("gain".to_string())
@@ -316,8 +308,7 @@ mod tests {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
         let types = type_map(&[("gain", AmiParameterTypeV1::Float)]);
         let error =
-            set_parameter_tree_leaf_value_v1(&t, &["root", "gain"], &types, "x1")
-                .unwrap_err();
+            set_parameter_tree_leaf_value_v1(&t, &["root", "gain"], &types, "x1").unwrap_err();
         assert_eq!(
             error,
             ParameterTreeValueSetErrorV1::InvalidValue {
@@ -332,8 +323,7 @@ mod tests {
         let t = tree(branch("root", vec![leaf("my-gain", &["0.5"])]));
         let types = type_map(&[("my-gain", AmiParameterTypeV1::Float)]);
         let error =
-            set_parameter_tree_leaf_value_v1(&t, &["root", "my-gain"], &types, "1.0")
-                .unwrap_err();
+            set_parameter_tree_leaf_value_v1(&t, &["root", "my-gain"], &types, "1.0").unwrap_err();
         assert_eq!(
             error,
             ParameterTreeValueSetErrorV1::InvalidLeafName("my-gain".to_string())

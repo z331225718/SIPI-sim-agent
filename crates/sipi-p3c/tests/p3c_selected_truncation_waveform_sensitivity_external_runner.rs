@@ -10,11 +10,11 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use sipi_artifacts::ArtifactRoot;
 use sipi_compare::selected_highloss_prbs9_waveform_only_v3::{
-    compare_selected_highloss_prbs9_waveform_only_v3, SelectedHighlossPrbs9WaveformPairV3,
+    SelectedHighlossPrbs9WaveformPairV3, compare_selected_highloss_prbs9_waveform_only_v3,
 };
 use sipi_contracts::SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_SAMPLE_COUNT_V3;
 use sipi_ieee_com_sparam::{
@@ -22,10 +22,10 @@ use sipi_ieee_com_sparam::{
     truncate_selected_p3c_response_v1,
 };
 use sipi_p3c::{
-    admit_selected_p3c_sealed_s4p_v2, diagnose_selected_p3c_full_causal_third_period_v1,
-    generate_selected_p3c_prbs9_impulse_candidate_v1, SelectedP3cSealedS4pIdentityV2,
     P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_START_V1, SELECTED_P3C_S4P_BYTE_LENGTH_V1,
-    SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1,
+    SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1, SelectedP3cSealedS4pIdentityV2,
+    admit_selected_p3c_sealed_s4p_v2, diagnose_selected_p3c_full_causal_third_period_v1,
+    generate_selected_p3c_prbs9_impulse_candidate_v1,
 };
 
 const SOURCE_ENV: &str = "SIPI_P3C_SEALED_S4P_EXTERNAL_SOURCE";
@@ -81,11 +81,15 @@ fn sha256_reader(mut reader: impl Read) -> Result<(u64, String), String> {
     let mut length = 0_u64;
     let mut buffer = [0_u8; 64 * 1024];
     loop {
-        let read = reader.read(&mut buffer).map_err(|_| "identity_read".to_owned())?;
+        let read = reader
+            .read(&mut buffer)
+            .map_err(|_| "identity_read".to_owned())?;
         if read == 0 {
             break;
         }
-        length = length.checked_add(read as u64).ok_or_else(|| "identity_length_overflow".to_owned())?;
+        length = length
+            .checked_add(read as u64)
+            .ok_or_else(|| "identity_length_overflow".to_owned())?;
         hasher.update(&buffer[..read]);
     }
     Ok((length, format!("{:x}", hasher.finalize())))
@@ -93,7 +97,11 @@ fn sha256_reader(mut reader: impl Read) -> Result<(u64, String), String> {
 
 fn source_identity(path: &Path) -> Result<(u64, String), String> {
     let identity = sha256_reader(File::open(path).map_err(|_| "source_open".to_owned())?)?;
-    (identity == (SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_SHA256_V1.to_owned()))
+    (identity
+        == (
+            SELECTED_P3C_S4P_BYTE_LENGTH_V1,
+            SELECTED_P3C_S4P_SHA256_V1.to_owned(),
+        ))
         .then_some(identity)
         .ok_or_else(|| "source_identity".to_owned())
 }
@@ -111,19 +119,27 @@ fn reference_values(path: &Path) -> Result<(Vec<f64>, String), String> {
         let tx = f64::from_le_bytes(tuple[8..16].try_into().map_err(|_| "reference_layout")?);
         let rx = f64::from_le_bytes(tuple[16..].try_into().map_err(|_| "reference_layout")?);
         let expected = index as f64 * f64::from_bits(DT_BITS);
-        if !time.is_finite() || !tx.is_finite() || !rx.is_finite()
+        if !time.is_finite()
+            || !tx.is_finite()
+            || !rx.is_finite()
             || (time - expected).abs() > 8.0 * f64::EPSILON.max(expected.abs() * f64::EPSILON)
         {
             return Err("reference_grid".to_owned());
         }
         values.push(rx);
     }
-    let payload = values.iter().flat_map(|value| value.to_le_bytes()).collect::<Vec<_>>();
+    let payload = values
+        .iter()
+        .flat_map(|value| value.to_le_bytes())
+        .collect::<Vec<_>>();
     Ok((values, sha256(&payload)))
 }
 
 fn fresh_root(index: usize) -> Result<PathBuf, String> {
-    let nonce = SystemTime::now().duration_since(UNIX_EPOCH).map_err(|_| "clock".to_owned())?.as_nanos();
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| "clock".to_owned())?
+        .as_nanos();
     let root = env::temp_dir().join(format!("sipi-p3c-truncation-sensitivity-{index}-{nonce}"));
     fs::create_dir(&root).map_err(|_| "root_create".to_owned())?;
     Ok(root)
@@ -154,37 +170,74 @@ fn run_once(source: &Path, reference_path: &Path, index: usize) -> Result<RunFac
         let before = source_identity(source)?;
         let artifact_id = format!("selected-s4p-truncation-sensitivity-{index}");
         let store = ArtifactRoot::open_or_create(&root).map_err(|_| "source_root".to_owned())?;
-        let mut stage = store.begin(&artifact_id).map_err(|_| "source_begin".to_owned())?;
-        stage.stage_reader(SELECTED_P3C_S4P_FILE_NAME_V1, File::open(source).map_err(|_| "source_reopen".to_owned())?, SELECTED_P3C_S4P_BYTE_LENGTH_V1).map_err(|_| "source_stage".to_owned())?;
-        stage.seal().map_err(|_| "source_seal".to_owned())?.publish_new().map_err(|_| "source_publish".to_owned())?;
+        let mut stage = store
+            .begin(&artifact_id)
+            .map_err(|_| "source_begin".to_owned())?;
+        stage
+            .stage_reader(
+                SELECTED_P3C_S4P_FILE_NAME_V1,
+                File::open(source).map_err(|_| "source_reopen".to_owned())?,
+                SELECTED_P3C_S4P_BYTE_LENGTH_V1,
+            )
+            .map_err(|_| "source_stage".to_owned())?;
+        stage
+            .seal()
+            .map_err(|_| "source_seal".to_owned())?
+            .publish_new()
+            .map_err(|_| "source_publish".to_owned())?;
         if source_identity(source)? != before {
             return Err("source_drift".to_owned());
         }
-        let manifest = sha256(&fs::read(root.join(&artifact_id).join("success.json")).map_err(|_| "manifest_read".to_owned())?);
-        let reader = ArtifactRoot::open_existing(&root).map_err(|_| "source_reopen_root".to_owned())?;
-        let identity = SelectedP3cSealedS4pIdentityV2::try_new(&artifact_id, &manifest).map_err(|_| "source_request_identity".to_owned())?;
-        let admitted = admit_selected_p3c_sealed_s4p_v2(&reader, &identity).map_err(|_| "source_admission".to_owned())?;
+        let manifest = sha256(
+            &fs::read(root.join(&artifact_id).join("success.json"))
+                .map_err(|_| "manifest_read".to_owned())?,
+        );
+        let reader =
+            ArtifactRoot::open_existing(&root).map_err(|_| "source_reopen_root".to_owned())?;
+        let identity = SelectedP3cSealedS4pIdentityV2::try_new(&artifact_id, &manifest)
+            .map_err(|_| "source_request_identity".to_owned())?;
+        let admitted = admit_selected_p3c_sealed_s4p_v2(&reader, &identity)
+            .map_err(|_| "source_admission".to_owned())?;
         if admitted.source_byte_length() != before.0 || admitted.source_sha256() != before.1 {
             return Err("source_admission_provenance".to_owned());
         }
-        let reference_before = sha256_reader(File::open(reference_path).map_err(|_| "reference_open".to_owned())?)?;
+        let reference_before =
+            sha256_reader(File::open(reference_path).map_err(|_| "reference_open".to_owned())?)?;
         let (reference, reference_rx_payload_sha256) = reference_values(reference_path)?;
-        if sha256_reader(File::open(reference_path).map_err(|_| "reference_reopen".to_owned())?)? != reference_before {
+        if sha256_reader(File::open(reference_path).map_err(|_| "reference_reopen".to_owned())?)?
+            != reference_before
+        {
             return Err("reference_drift".to_owned());
         }
-        let spectrum = interpolate_selected_p3c_hdiff_v1(admitted.transfer()).map_err(|_| "interpolation".to_owned())?;
-        let causal = enforce_selected_p3c_causality_v1(&spectrum).map_err(|_| "causality".to_owned())?;
-        let causal_values = causal.samples().iter().map(|sample| sample.get()).collect::<Vec<_>>();
-        let truncated = truncate_selected_p3c_response_v1(&causal).map_err(|_| "truncation".to_owned())?;
-        let baseline = generate_selected_p3c_prbs9_impulse_candidate_v1(&truncated).map_err(|_| "candidate_convolution".to_owned())?;
-        let truncated_values = baseline.waveform_prefix().iter().map(|sample| sample.get()).collect::<Vec<_>>();
+        let spectrum = interpolate_selected_p3c_hdiff_v1(admitted.transfer())
+            .map_err(|_| "interpolation".to_owned())?;
+        let causal =
+            enforce_selected_p3c_causality_v1(&spectrum).map_err(|_| "causality".to_owned())?;
+        let causal_values = causal
+            .samples()
+            .iter()
+            .map(|sample| sample.get())
+            .collect::<Vec<_>>();
+        let truncated =
+            truncate_selected_p3c_response_v1(&causal).map_err(|_| "truncation".to_owned())?;
+        let baseline = generate_selected_p3c_prbs9_impulse_candidate_v1(&truncated)
+            .map_err(|_| "candidate_convolution".to_owned())?;
+        let truncated_values = baseline
+            .waveform_prefix()
+            .iter()
+            .map(|sample| sample.get())
+            .collect::<Vec<_>>();
         let truncated_nrmse_bits = metric(&reference, truncated_values.clone())?;
         if u64::from_str_radix(&truncated_nrmse_bits, 16).ok() != Some(BASELINE_NRMSE_BITS) {
             return Err("baseline_nrmse_not_reproduced".to_owned());
         }
         let full = diagnose_selected_p3c_full_causal_third_period_v1(&causal)
             .map_err(|error| format!("full_causal_diagnostic:{error:?}"))?;
-        let full_values = full.samples().iter().map(|sample| sample.get()).collect::<Vec<_>>();
+        let full_values = full
+            .samples()
+            .iter()
+            .map(|sample| sample.get())
+            .collect::<Vec<_>>();
         let mut full_for_metric = vec![0.0; P3C_TRUNCATION_SENSITIVITY_THIRD_PERIOD_START_V1];
         full_for_metric.extend_from_slice(&full_values);
         Ok(RunFact {
@@ -192,11 +245,20 @@ fn run_once(source: &Path, reference_path: &Path, index: usize) -> Result<RunFac
             record_count: admitted.record_count(),
             reference_rx_payload_sha256,
             causality_iterations: causal.iteration_count(),
-            causal_response_sha256: waveform_digest(b"sipi.p3c.selected-bounded-causal-response.v1\0", &causal_values),
+            causal_response_sha256: waveform_digest(
+                b"sipi.p3c.selected-bounded-causal-response.v1\0",
+                &causal_values,
+            ),
             retained_taps: truncated.sample_count(),
-            truncated_prefix_sha256: waveform_digest(b"sipi.p3c.selected-highloss-prbs9-waveform-prefix.v3\0", &truncated_values),
+            truncated_prefix_sha256: waveform_digest(
+                b"sipi.p3c.selected-highloss-prbs9-waveform-prefix.v3\0",
+                &truncated_values,
+            ),
             truncated_nrmse_bits,
-            full_causal_third_sha256: waveform_digest(b"sipi.p3c.selected-full-causal-third-period.v1\0", &full_values),
+            full_causal_third_sha256: waveform_digest(
+                b"sipi.p3c.selected-full-causal-third-period.v1\0",
+                &full_values,
+            ),
             full_causal_nrmse_bits: metric(&reference, full_for_metric)?,
         })
     })();
@@ -227,7 +289,10 @@ fn p3c_selected_truncation_waveform_sensitivity_external_runner_v1() {
     let source = required_path(SOURCE_ENV).unwrap();
     let reference = required_path(REFERENCE_ENV).unwrap();
     let report = required_path(REPORT_ENV).unwrap();
-    assert!(!report.exists() && !report.starts_with(env::current_dir().unwrap()), "report_path_not_fresh_external");
+    assert!(
+        !report.exists() && !report.starts_with(env::current_dir().unwrap()),
+        "report_path_not_fresh_external"
+    );
     let first = run_once(&source, &reference, 1).unwrap();
     let second = run_once(&source, &reference, 2).unwrap();
     assert_ne!(first.source_manifest_sha256, second.source_manifest_sha256);

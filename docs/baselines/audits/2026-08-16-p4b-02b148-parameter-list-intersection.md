@@ -27,7 +27,7 @@ Python reference replicates the intersection rule over 4 test cases.
   non-list, spacing canonicalized).
 - Cross-check: 4 test cases (intersection, duplicates, disjoint, non-list) driven through
   product runner `p4b_02b148_parameter_list_intersection_runner`; independent Python reference
-  matches 100% on tokens and error keys; 4/4 matched_hash_bound.
+  matches 100% on tokens and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

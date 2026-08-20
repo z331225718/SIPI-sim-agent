@@ -8,11 +8,11 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use sipi_ami_text::{
-    validate_candidate_set_v1, AmiParameterTypeV1, AmiParameterValueV1, AmiUsageV1, CatalogEntryV1,
-    ParameterCatalogV1, PARAMETER_CATALOG_POLICY_V1,
+    AmiParameterTypeV1, AmiParameterValueV1, AmiUsageV1, CatalogEntryV1,
+    PARAMETER_CATALOG_POLICY_V1, ParameterCatalogV1, validate_candidate_set_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -37,8 +37,12 @@ fn main() {
         for e in arr {
             let name = e["name"].as_str().expect("name").to_string();
             let usage = AmiUsageV1::from_token(e["usage"].as_str().expect("usage")).expect("usage");
-            let ty = AmiParameterTypeV1::from_token(e["type"].as_str().expect("type")).expect("type");
-            let default = e.get("default").and_then(|d| d.as_str()).map(|s| s.to_string());
+            let ty =
+                AmiParameterTypeV1::from_token(e["type"].as_str().expect("type")).expect("type");
+            let default = e
+                .get("default")
+                .and_then(|d| d.as_str())
+                .map(|s| s.to_string());
             entries.push(CatalogEntryV1::new(name, usage, ty, default));
         }
     }
@@ -50,7 +54,10 @@ fn main() {
         for (name, spec) in cand {
             let ty_token = spec["type"].as_str().expect("type");
             let val = spec["value"].as_str().expect("value");
-            values.insert(name.clone(), AmiParameterValueV1::try_new(name, ty_token, val).expect("value"));
+            values.insert(
+                name.clone(),
+                AmiParameterValueV1::try_new(name, ty_token, val).expect("value"),
+            );
         }
     }
 

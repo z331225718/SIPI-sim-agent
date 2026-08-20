@@ -26,7 +26,7 @@ the tree build and extraction over 4 test cases.
   occurrence, mixed counts, tree without typed leaves).
 - Cross-check: 4 test cases (typed forms, mixed skipped, nested, duplicate) driven through product
   runner `p4b_02b87_parameter_tree_leaf_type_map_runner`; independent Python reference matches
-  100% on type maps and all counts; 4/4 matched_hash_bound.
+  100% on type maps and all counts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

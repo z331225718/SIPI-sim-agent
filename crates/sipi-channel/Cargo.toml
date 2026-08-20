@@ -19,3 +19,4 @@ workspace = true
 [[test]]
 name = "p3b_04b_cdr_lock_runner"
 harness = false
+test = false

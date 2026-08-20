@@ -56,8 +56,8 @@ pub fn parameter_list_run_count_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListRunCountErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListRunCountErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListRunCountErrorV1::MalformedList)?;
     let mut runs = 1usize;
     for pair in items.windows(2) {
         if pair[0] != pair[1] {

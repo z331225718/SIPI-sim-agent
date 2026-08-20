@@ -16,8 +16,8 @@ use sipi_ieee_com_sparam::{
     interpolate_selected_p3c_hdiff_v1, inverse_selected_p3c_uniform_spectrum_v1,
 };
 use sipi_p3c::{
-    admit_selected_p3c_sealed_s4p_v2, SelectedP3cSealedS4pIdentityV2,
     SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1,
+    SelectedP3cSealedS4pIdentityV2, admit_selected_p3c_sealed_s4p_v2,
 };
 
 const SOURCE_ENV: &str = "SIPI_P3C_SOURCE";

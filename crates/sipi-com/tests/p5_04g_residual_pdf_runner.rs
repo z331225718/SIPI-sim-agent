@@ -8,9 +8,7 @@
 use std::path::PathBuf;
 
 use sha2::{Digest, Sha256};
-use sipi_com::{
-    residual_channel_pdf_v1, RESIDUAL_CHANNEL_PDF_POLICY_V1,
-};
+use sipi_com::{RESIDUAL_CHANNEL_PDF_POLICY_V1, residual_channel_pdf_v1};
 
 fn read_f64_array(path: &PathBuf, label: &str) -> Vec<f64> {
     let bytes = std::fs::read(path).expect("read");
@@ -97,9 +95,15 @@ fn main() {
         "policy": RESIDUAL_CHANNEL_PDF_POLICY_V1,
     });
     if let Some(path) = report {
-        std::fs::write(path, serde_json::to_string_pretty(&report_json).expect("json"))
-            .expect("write");
+        std::fs::write(
+            path,
+            serde_json::to_string_pretty(&report_json).expect("json"),
+        )
+        .expect("write");
     } else {
-        println!("{}", serde_json::to_string_pretty(&report_json).expect("json"));
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&report_json).expect("json")
+        );
     }
 }

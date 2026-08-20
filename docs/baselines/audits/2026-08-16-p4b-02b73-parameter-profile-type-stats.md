@@ -23,7 +23,7 @@ Python reference counts the same type tokens over 4 test cases.
   mixed deterministic counts, only-float profile, sum-of-type-counts invariant).
 - Cross-check: 4 test cases (mixed types, only float, empty profile, large mixed) driven through
   product runner `p4b_02b73_parameter_profile_type_stats_runner`; independent Python reference
-  matches 100% on total and all five per-type counts; 4/4 matched_hash_bound.
+  matches 100% on total and all five per-type counts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -15,13 +15,12 @@ pub struct DiscretePdfV1 {
 }
 
 impl DiscretePdfV1 {
-    pub fn try_new(
-        bin_size: f64,
-        min_bin: i64,
-        probability: Vec<f64>,
-    ) -> Result<Self, PdfErrorV1> {
-        if !(bin_size > 0.0) || probability.is_empty()
-            || probability.iter().any(|value| *value < 0.0 || !value.is_finite())
+    pub fn try_new(bin_size: f64, min_bin: i64, probability: Vec<f64>) -> Result<Self, PdfErrorV1> {
+        if !(bin_size > 0.0)
+            || probability.is_empty()
+            || probability
+                .iter()
+                .any(|value| *value < 0.0 || !value.is_finite())
         {
             return Err(PdfErrorV1::InvalidPdf);
         }
@@ -69,7 +68,7 @@ impl DiscretePdfV1 {
 
     /// First support point whose CDF reaches `probability`.
     pub fn first_quantile(&self, probability: f64) -> Result<f64, PdfErrorV1> {
-        if !(0.0 <= probability && probability <= 1.0) {
+        if !(0.0..=1.0).contains(&probability) {
             return Err(PdfErrorV1::InvalidQuantile);
         }
         let cdf = self.cdf();
@@ -138,8 +137,10 @@ pub fn convolve_v1(
     if left.bin_size != right.bin_size {
         return Err(PdfErrorV1::ConvolveBinMismatch);
     }
-    let left_single = left.probability.len() == 1 && left.probability[0] == 1.0 && left.min_bin == 0;
-    let right_single = right.probability.len() == 1 && right.probability[0] == 1.0 && right.min_bin == 0;
+    let left_single =
+        left.probability.len() == 1 && left.probability[0] == 1.0 && left.min_bin == 0;
+    let right_single =
+        right.probability.len() == 1 && right.probability[0] == 1.0 && right.min_bin == 0;
     if left_single || right_single {
         let (other, single_min) = if left_single {
             (right, left.min_bin)
@@ -167,8 +168,7 @@ pub fn convolve_v1(
 }
 
 /// Explicit scope policy of the discrete PDF stage core.
-pub const DISCRETE_PDF_POLICY_V1: &str =
-    "sipi.p5-04d.discrete-pdf-v1.normal-convolve-quantile";
+pub const DISCRETE_PDF_POLICY_V1: &str = "sipi.p5-04d.discrete-pdf-v1.normal-convolve-quantile";
 
 #[cfg(test)]
 mod tests {
@@ -201,7 +201,11 @@ mod tests {
         let gaussian = normal_pdf_v1(0.01, 3.0, 1e-4).expect("gaussian");
         let result = convolve_v1(&gaussian, &delta).expect("convolution");
         // Normalization re-entry may leave ~1e-16 relative differences.
-        for (left, right) in result.probability().iter().zip(gaussian.probability().iter()) {
+        for (left, right) in result
+            .probability()
+            .iter()
+            .zip(gaussian.probability().iter())
+        {
             assert!((left - right).abs() < 1e-14, "delta identity drift");
         }
     }

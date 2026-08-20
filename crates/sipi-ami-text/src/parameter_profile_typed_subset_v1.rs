@@ -18,8 +18,8 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    parameter_values_equivalent_v1, AmiParameterValueV1, ParameterValueEquivalenceV1,
-    ParameterValueInequivalenceReasonV1,
+    AmiParameterValueV1, ParameterValueEquivalenceV1, ParameterValueInequivalenceReasonV1,
+    parameter_values_equivalent_v1,
 };
 
 /// Explicit scope policy of this slice: typed subset check of profiles.
@@ -121,10 +121,7 @@ mod tests {
     #[test]
     fn true_subset_is_reported() {
         let subset = profile(&[("gain", "Float", "0.5")]);
-        let superset = profile(&[
-            ("gain", "Float", "0.5"),
-            ("steps", "Integer", "7"),
-        ]);
+        let superset = profile(&[("gain", "Float", "0.5"), ("steps", "Integer", "7")]);
         let result = check_parameter_profile_typed_subset_v1(&subset, &superset);
         assert!(result.is_subset());
         assert!(result.missing().is_empty());

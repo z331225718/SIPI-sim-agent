@@ -8,7 +8,7 @@
 //! sigma. The candidate evaluation body and the C2M eye search remain
 //! separate scopes.
 
-use crate::dfe_v1::{find_dfe_bank_locations_v1, DfeErrorV1};
+use crate::dfe_v1::{DfeErrorV1, find_dfe_bank_locations_v1};
 use crate::erf_v1::erfcinv_v1;
 
 /// Explicit scope policy of the candidate helper stage.
@@ -59,11 +59,7 @@ pub fn r480_bbn_q_factor_v1(
 }
 
 /// Port of `_cannot_improve_fom` (strict upper-bound rejection).
-pub fn cannot_improve_fom_v1(
-    available_signal: f64,
-    sigma: f64,
-    best_fom_db: Option<f64>,
-) -> bool {
+pub fn cannot_improve_fom_v1(available_signal: f64, sigma: f64, best_fom_db: Option<f64>) -> bool {
     let Some(best_fom_db) = best_fom_db else {
         return false;
     };
@@ -105,7 +101,10 @@ pub fn dfe_candidate_bounds_v1(
     let fixed_count = parameters.ndfe;
     let fixed_max = parameters.bmax.clone();
     let fixed_min = parameters.bmin.clone();
-    if fixed_count < 0 || fixed_max.len() != fixed_count as usize || fixed_min.len() != fixed_count as usize {
+    if fixed_count < 0
+        || fixed_max.len() != fixed_count as usize
+        || fixed_min.len() != fixed_count as usize
+    {
         return Err(CandidateErrorV1::DfeBoundsMismatch);
     }
     if !parameters.floating_dfe {
@@ -138,7 +137,7 @@ pub fn dfe_candidate_bounds_v1(
     )?;
     let mut floating_max = vec![0.0_f64; (maximum_count - fixed_count) as usize];
     for location in &locations {
-        let index = *location as i64 - fixed_count;
+        let index = *location - fixed_count;
         if index >= 0 && index < floating_max.len() as i64 {
             floating_max[index as usize] = parameters.bmaxg;
         }
@@ -185,10 +184,7 @@ pub fn jitter_response_v1(
         if sampling_offset <= 1 {
             sampling_offset += samples_per_ui;
         }
-        let mut early_start = sampling_offset - 2;
-        if early_start < 0 {
-            early_start += samples_per_ui;
-        }
+        let early_start = sampling_offset - 2;
         let late_start = sampling_offset;
         let early: Vec<f64> = values
             .iter()
@@ -290,17 +286,29 @@ mod tests {
     fn dfe_bounds_fixed_and_floating() {
         let pulse = pulse();
         let fixed = DfeCandidateParamsV1 {
-            ndfe: 2, bmax: vec![0.5, 0.5], bmin: vec![-0.5, -0.5], floating_dfe: false,
-            n_bmax: 2, n_bf: 1, n_bg: 1, bmaxg: 0.3,
+            ndfe: 2,
+            bmax: vec![0.5, 0.5],
+            bmin: vec![-0.5, -0.5],
+            floating_dfe: false,
+            n_bmax: 2,
+            n_bf: 1,
+            n_bg: 1,
+            bmaxg: 0.3,
         };
-        let (count, maximum, minimum, locations) =
+        let (count, maximum, _minimum, locations) =
             dfe_candidate_bounds_v1(&pulse, 80, 8, &fixed).expect("fixed");
         assert_eq!(count, 2);
         assert_eq!(maximum, vec![0.5, 0.5]);
         assert!(locations.is_empty());
         let floating = DfeCandidateParamsV1 {
-            ndfe: 1, bmax: vec![0.5], bmin: vec![-0.5], floating_dfe: true,
-            n_bmax: 4, n_bf: 1, n_bg: 1, bmaxg: 0.3,
+            ndfe: 1,
+            bmax: vec![0.5],
+            bmin: vec![-0.5],
+            floating_dfe: true,
+            n_bmax: 4,
+            n_bf: 1,
+            n_bg: 1,
+            bmaxg: 0.3,
         };
         let (count, maximum, minimum, locations) =
             dfe_candidate_bounds_v1(&pulse, 80, 8, &floating).expect("floating");

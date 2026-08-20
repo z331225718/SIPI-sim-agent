@@ -26,7 +26,7 @@ reference replicates the rule over 4 test cases.
   single item zero, spacing canonicalized, non-list).
 - Cross-check: 4 test cases (mixed counts, all distinct, single repeated, non-list) driven
   through product runner `p4b_02b173_parameter_list_total_equal_pair_count_runner`;
-  independent Python reference matches 100% on counts and error keys; 4/4 matched_hash_bound.
+  independent Python reference matches 100% on counts and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b165-parameter-list-mode-items-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b165.parameter-list-mode-items-v1.mode-items
 matched_count: 4
 case_count: 4

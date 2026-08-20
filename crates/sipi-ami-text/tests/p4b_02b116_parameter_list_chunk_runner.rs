@@ -10,11 +10,11 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    chunk_parameter_list_v1, AmiParameterValueV1, ParameterListChunkErrorV1,
-    PARAMETER_LIST_CHUNK_POLICY_V1,
+    AmiParameterValueV1, PARAMETER_LIST_CHUNK_POLICY_V1, ParameterListChunkErrorV1,
+    chunk_parameter_list_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -36,7 +36,10 @@ fn main() {
     let name = value.get("name").and_then(|v| v.as_str()).unwrap_or("");
     let type_token = value.get("type").and_then(|v| v.as_str()).unwrap_or("");
     let value_token = value.get("value").and_then(|v| v.as_str()).unwrap_or("");
-    let chunk_size = value.get("chunk_size").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+    let chunk_size = value
+        .get("chunk_size")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as usize;
     let parameter = match AmiParameterValueV1::try_new(name, type_token, value_token) {
         Ok(p) => p,
         Err(_) => {
@@ -46,7 +49,8 @@ fn main() {
                 "input_error": "invalid_value",
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

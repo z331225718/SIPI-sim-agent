@@ -55,8 +55,8 @@ pub fn parameter_list_mode_frequency_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListModeFrequencyErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListModeFrequencyErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListModeFrequencyErrorV1::MalformedList)?;
     let mut counts: Vec<(String, usize)> = Vec::new();
     for item in &items {
         match counts.iter_mut().find(|(existing, _)| existing == item) {

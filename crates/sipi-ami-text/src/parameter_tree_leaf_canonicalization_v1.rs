@@ -21,8 +21,8 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    canonicalize_parameter_value_spelling_v1, AmiParameterTreeV1, AmiParameterTreeNodeV1,
-    AmiParameterTypeV1, AmiParameterValueV1,
+    AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterTypeV1, AmiParameterValueV1,
+    canonicalize_parameter_value_spelling_v1,
 };
 
 /// Explicit scope policy of this slice: canonical leaf spellings of a tree.
@@ -92,8 +92,7 @@ fn canonicalize_node(
                     if let Ok(parameter) =
                         AmiParameterValueV1::try_new(name, type_token, &value_token)
                     {
-                        let canonical =
-                            canonicalize_parameter_value_spelling_v1(&parameter);
+                        let canonical = canonicalize_parameter_value_spelling_v1(&parameter);
                         let emitted = if quoted {
                             format!("\"{}\"", canonical)
                         } else {
@@ -134,7 +133,7 @@ pub fn canonicalize_parameter_tree_leaf_spellings_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{build_parameter_trees_v1, parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, build_parameter_trees_v1, parse_ami_text_v1};
 
     fn tree(text: &str) -> AmiParameterTreeV1 {
         let limits = ParseLimitsV1::try_new(8 * 1024 * 1024, 64, 4096, 4096).expect("limits");
@@ -237,7 +236,8 @@ mod tests {
 
     #[test]
     fn canonicalization_preserves_structure() {
-        let t = tree("(root (sub (steps Integer 007) (channels List \"(a,b)\")) (on Boolean True))");
+        let t =
+            tree("(root (sub (steps Integer 007) (channels List \"(a,b)\")) (on Boolean True))");
         let result = canonicalize_parameter_tree_leaf_spellings_v1(&t);
         assert_eq!(result.leaves(), 3);
         assert_eq!(result.canonicalized(), 2);

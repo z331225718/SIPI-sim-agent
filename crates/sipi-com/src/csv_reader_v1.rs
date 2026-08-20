@@ -9,9 +9,7 @@
 use std::fs;
 use std::path::Path;
 
-use crate::workbook_v1::{
-    column_letter, CellValueV1, ComSettingsV1, RawCellV1, WorkbookErrorV1,
-};
+use crate::workbook_v1::{CellValueV1, ComSettingsV1, RawCellV1, WorkbookErrorV1, column_letter};
 
 /// Explicit scope policy of the CSV reader stage.
 pub const CSV_READER_POLICY_V1: &str = "sipi.p5-05b.csv-reader-v1.rfc4180-utf8sig";
@@ -61,10 +59,10 @@ pub fn csv_value_v1(value: &str) -> CellValueV1 {
     if value.is_empty() {
         return CellValueV1::None;
     }
-    if is_csv_number(value) {
-        if let Ok(numeric) = value.parse::<f64>() {
-            return CellValueV1::Number(numeric);
-        }
+    if is_csv_number(value)
+        && let Ok(numeric) = value.parse::<f64>()
+    {
+        return CellValueV1::Number(numeric);
     }
     CellValueV1::String(value.to_string())
 }
@@ -125,8 +123,8 @@ fn parse_csv_record(record: &str) -> Result<Vec<String>, WorkbookErrorV1> {
 /// (port of `ComSettings.from_csv`).
 pub fn read_com_settings_csv_v1(path: &Path) -> Result<ComSettingsV1, WorkbookErrorV1> {
     let bytes = fs::read(path).map_err(|_| WorkbookErrorV1::InvalidCsvConfiguration)?;
-    let mut text = String::from_utf8(bytes)
-        .map_err(|_| WorkbookErrorV1::InvalidCsvConfiguration)?;
+    let mut text =
+        String::from_utf8(bytes).map_err(|_| WorkbookErrorV1::InvalidCsvConfiguration)?;
     if let Some(rest) = text.strip_prefix('\u{feff}') {
         text = rest.to_string();
     }

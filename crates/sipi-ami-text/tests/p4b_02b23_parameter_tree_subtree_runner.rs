@@ -8,10 +8,10 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use sipi_ami_text::{
+    AmiParameterTreeNodeV1, PARAMETER_TREE_SUBTREE_POLICY_V1, ParseLimitsV1,
     build_parameter_trees_v1, extract_parameter_tree_subtree_v1, parse_ami_text_v1,
-    AmiParameterTreeNodeV1, ParseLimitsV1, PARAMETER_TREE_SUBTREE_POLICY_V1,
 };
 
 fn node_to_json(node: &AmiParameterTreeNodeV1) -> Value {
@@ -37,7 +37,7 @@ fn node_to_json(node: &AmiParameterTreeNodeV1) -> Value {
     }
 }
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -69,7 +69,8 @@ fn main() {
                 "parse_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -86,7 +87,8 @@ fn main() {
                 "build_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

@@ -25,7 +25,7 @@ Python reference replicates the typed comparison over 4 test cases.
 - Cross-check: 4 test cases (identical profiles, spelling variants, missing name, value mismatch)
   driven through product runner `p4b_02b71_parameter_profile_equivalence_runner`; independent Python
   reference matches 100% on equivalent flags, sorted left_only/right_only lists, and mismatch
-  name/reason lists; 4/4 matched_hash_bound.
+  name/reason lists; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

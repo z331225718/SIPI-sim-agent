@@ -8,7 +8,7 @@
 //! Scalar arithmetic delegates to the shared scalar evaluator in
 //! value_consumption_v1.
 
-use super::value_consumption_v1::{evaluate_scalar, ConsumptionErrorV1, ResolvedDefaultV1};
+use super::value_consumption_v1::{ConsumptionErrorV1, ResolvedDefaultV1, evaluate_scalar};
 
 /// A resolved MATLAB numeric literal (P5-02k).
 #[derive(Clone, Debug, PartialEq)]
@@ -42,7 +42,11 @@ fn is_number_token(token: &str) -> bool {
                 has_dot = true;
                 i += 1;
             }
-            b'e' | b'E' if has_digit && i > 0 && (bytes[i - 1].is_ascii_digit() || bytes[i - 1] == b'.') => {
+            b'e' | b'E'
+                if has_digit
+                    && i > 0
+                    && (bytes[i - 1].is_ascii_digit() || bytes[i - 1] == b'.') =>
+            {
                 i += 1;
                 if i < bytes.len() && (bytes[i] == b'+' || bytes[i] == b'-') {
                     i += 1;
@@ -154,7 +158,13 @@ fn expand_scaled_ones(row: &str) -> Result<String, ConsumptionErrorV1> {
             let mut k2 = star;
             while k2 > 0 {
                 let c = bytes[k2 - 1];
-                if c.is_ascii_digit() || c == b'.' || c == b'e' || c == b'E' || c == b'+' || c == b'-' {
+                if c.is_ascii_digit()
+                    || c == b'.'
+                    || c == b'e'
+                    || c == b'E'
+                    || c == b'+'
+                    || c == b'-'
+                {
                     k2 -= 1;
                 } else {
                     break;
@@ -195,12 +205,20 @@ fn expand_scaled_ones(row: &str) -> Result<String, ConsumptionErrorV1> {
             };
             let args = &row[i + 5..close];
             let comma = args.find(',').ok_or(ConsumptionErrorV1::InvalidLiteral)?;
-            let dim1: usize = args[..comma].trim().parse().map_err(|_| ConsumptionErrorV1::InvalidLiteral)?;
-            let dim2: usize = args[comma + 1..].trim().parse().map_err(|_| ConsumptionErrorV1::InvalidLiteral)?;
-            if dim1 != 1 || dim2 < 1 || dim2 > 4096 {
+            let dim1: usize = args[..comma]
+                .trim()
+                .parse()
+                .map_err(|_| ConsumptionErrorV1::InvalidLiteral)?;
+            let dim2: usize = args[comma + 1..]
+                .trim()
+                .parse()
+                .map_err(|_| ConsumptionErrorV1::InvalidLiteral)?;
+            if dim1 != 1 || !(1..=4096).contains(&dim2) {
                 return Err(ConsumptionErrorV1::UnsafeExpression);
             }
-            let factor: f64 = factor_str.parse().map_err(|_| ConsumptionErrorV1::InvalidLiteral)?;
+            let factor: f64 = factor_str
+                .parse()
+                .map_err(|_| ConsumptionErrorV1::InvalidLiteral)?;
             let mut repeat = String::new();
             for _ in 0..dim2 {
                 if !repeat.is_empty() {
@@ -263,7 +281,7 @@ fn has_spaced_sign(text: &str) -> bool {
 }
 
 /// Split on whitespace or commas (port of re.split(r"[ ,]+", compact)).
-fn split_on_sep<'a>(text: &'a str) -> Vec<&'a str> {
+fn split_on_sep(text: &str) -> Vec<&str> {
     let mut tokens = Vec::new();
     let mut start: Option<usize> = None;
     for (i, ch) in text.char_indices() {
@@ -334,8 +352,14 @@ mod tests {
             parse_literal_v1("[1 3 2 4]").unwrap(),
             LiteralV1::Vector(vec![1.0, 3.0, 2.0, 4.0])
         );
-        assert_eq!(parse_literal_v1("[50,50]").unwrap(), LiteralV1::Vector(vec![50.0, 50.0]));
-        assert_eq!(parse_literal_v1("[0 0]").unwrap(), LiteralV1::Vector(vec![0.0, 0.0]));
+        assert_eq!(
+            parse_literal_v1("[50,50]").unwrap(),
+            LiteralV1::Vector(vec![50.0, 50.0])
+        );
+        assert_eq!(
+            parse_literal_v1("[0 0]").unwrap(),
+            LiteralV1::Vector(vec![0.0, 0.0])
+        );
         assert_eq!(
             parse_literal_v1("[1 2; 3 4]").unwrap(),
             LiteralV1::Matrix(vec![vec![1.0, 2.0], vec![3.0, 4.0]])
@@ -344,15 +368,30 @@ mod tests {
 
     #[test]
     fn colon_ranges() {
-        assert_eq!(parse_literal_v1("[1:1:3]").unwrap(), LiteralV1::Vector(vec![1.0, 2.0, 3.0]));
-        assert_eq!(parse_literal_v1("[1:3]").unwrap(), LiteralV1::Vector(vec![1.0, 2.0, 3.0]));
+        assert_eq!(
+            parse_literal_v1("[1:1:3]").unwrap(),
+            LiteralV1::Vector(vec![1.0, 2.0, 3.0])
+        );
+        assert_eq!(
+            parse_literal_v1("[1:3]").unwrap(),
+            LiteralV1::Vector(vec![1.0, 2.0, 3.0])
+        );
     }
 
     #[test]
     fn single_negative_disambiguation() {
-        assert_eq!(parse_literal_v1("[1 - 2]").unwrap(), LiteralV1::Vector(vec![-1.0]));
-        assert_eq!(parse_literal_v1("[1 -2]").unwrap(), LiteralV1::Vector(vec![1.0, -2.0]));
-        assert_eq!(parse_literal_v1("[-50 -50]").unwrap(), LiteralV1::Vector(vec![-50.0, -50.0]));
+        assert_eq!(
+            parse_literal_v1("[1 - 2]").unwrap(),
+            LiteralV1::Vector(vec![-1.0])
+        );
+        assert_eq!(
+            parse_literal_v1("[1 -2]").unwrap(),
+            LiteralV1::Vector(vec![1.0, -2.0])
+        );
+        assert_eq!(
+            parse_literal_v1("[-50 -50]").unwrap(),
+            LiteralV1::Vector(vec![-50.0, -50.0])
+        );
     }
 
     #[test]

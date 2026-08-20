@@ -7,7 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_com::{fit_bathtub_curve_v1, BathtubSampleV1, BATHTUB_FIT_POLICY_V1};
+use sipi_com::{BATHTUB_FIT_POLICY_V1, BathtubSampleV1, fit_bathtub_curve_v1};
 
 fn main() {
     let mut input = None;

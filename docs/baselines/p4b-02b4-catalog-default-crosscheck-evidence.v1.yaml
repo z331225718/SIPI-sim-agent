@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b4.catalog-default-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b4.catalog-default.v1.validity
 matched_count: 8
 case_count: 8

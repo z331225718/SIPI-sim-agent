@@ -25,7 +25,7 @@ order). An independent Python reference replicates the parsing and validation ov
   non-object root, missing fields, invalid value).
 - Cross-check: 4 test cases (valid profile, invalid JSON, missing value, unknown type) driven
   through product runner `p4b_02b82_parameter_profile_deserialization_runner`; independent Python
-  reference matches 100% on valid flags, profile maps, and error/name keys; 4/4 matched_hash_bound.
+  reference matches 100% on valid flags, profile maps, and error/name keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

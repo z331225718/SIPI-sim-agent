@@ -14,7 +14,7 @@
 
 use std::{error::Error, fmt};
 
-use rustfft::{num_complex::Complex, FftPlanner};
+use rustfft::{FftPlanner, num_complex::Complex};
 use sipi_types::{FiniteF64, Seconds};
 
 use crate::SelectedP3cUniformSpectrumV1;
@@ -189,7 +189,7 @@ fn within_residual_bound(residue: f64, scale: f64, absolute: f64, relative: f64)
 mod tests {
     use super::*;
     use sipi_channel::{
-        reduce_selected_p3c_fixed_four_port_bench_v1, FourPortS, SelectedP3cFourPortSpectrumV1,
+        FourPortS, SelectedP3cFourPortSpectrumV1, reduce_selected_p3c_fixed_four_port_bench_v1,
     };
     use sipi_types::Complex64;
     use sipi_types::{Hertz, Ohms};
@@ -204,9 +204,11 @@ mod tests {
         assert_eq!(response.sample_count(), 8);
         assert!((response.sample_interval().get() - 1.0 / 16.0).abs() < 1.0e-15);
         assert!((response.samples()[0].get() - 1.0).abs() < 1.0e-12);
-        assert!(response.samples()[1..]
-            .iter()
-            .all(|sample| sample.get().abs() < 1.0e-12));
+        assert!(
+            response.samples()[1..]
+                .iter()
+                .all(|sample| sample.get().abs() < 1.0e-12)
+        );
     }
 
     #[test]

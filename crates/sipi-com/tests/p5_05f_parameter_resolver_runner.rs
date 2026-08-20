@@ -9,8 +9,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_com::{
-    merge_com_parameters_v1, resolve_com_parameter_controls_v1, ResolvedDefaultV1,
-    COM_PARAMETER_RESOLVER_POLICY_V1,
+    COM_PARAMETER_RESOLVER_POLICY_V1, ResolvedDefaultV1, merge_com_parameters_v1,
+    resolve_com_parameter_controls_v1,
 };
 
 fn parse_resolved_default(v: &Value) -> Option<ResolvedDefaultV1> {
@@ -67,7 +67,8 @@ fn main() {
                 "dto_error": format!("{e:?}"),
             });
             if let Some(path) = report {
-                std::fs::write(path, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(path, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

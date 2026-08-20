@@ -39,8 +39,12 @@ impl TypedSeriesSwitchRecordV1 {
         if !on_g.is_ascii() || !off_g.is_ascii() {
             return Err(SeriesSwitchMappingTableErrorV1::NonAsciiName);
         }
-        if !on_g.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !off_g.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+        if !on_g
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !off_g
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
         {
             return Err(SeriesSwitchMappingTableErrorV1::InvalidName);
         }

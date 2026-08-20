@@ -8,10 +8,10 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    longest_common_path_prefix_v1, PARAMETER_TREE_LONGEST_COMMON_PREFIX_POLICY_V1,
+    PARAMETER_TREE_LONGEST_COMMON_PREFIX_POLICY_V1, longest_common_path_prefix_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -24,7 +24,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b67_parameter_tree_longest_common_prefix_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b67_parameter_tree_longest_common_prefix_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -41,10 +43,7 @@ fn main() {
 
     let output = match longest_common_path_prefix_v1(&a, &b) {
         Ok(prefix) => {
-            let prefix_json: Vec<Value> = prefix
-                .iter()
-                .map(|s| Value::String(s.clone()))
-                .collect();
+            let prefix_json: Vec<Value> = prefix.iter().map(|s| Value::String(s.clone())).collect();
             serde_json::json!({
                 "policy": PARAMETER_TREE_LONGEST_COMMON_PREFIX_POLICY_V1,
                 "valid": true,

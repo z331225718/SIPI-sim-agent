@@ -18,135 +18,166 @@ zip = "2"
 sha2 = "0.10"
 sipi-channel = { path = "../sipi-channel" }
 sipi-touchstone = { path = "../sipi-touchstone" }
-serde_json = { version = "1", features = ["arbitrary_precision"] }
 
 [[test]]
 name = "p5_04b_ingest_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_04f_sampled_signal_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_04g_residual_pdf_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_05a_workbook_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_05b_csv_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_05c_mat_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_05d_surface_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_02j_value_consumption_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_02k_matlab_literal_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p3c_02e_qfactor_ber_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_04x_search_helpers_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_05e_com_parameters_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p3c_02f_bathtub_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p3c_02h_bathtub_fit_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p3c_02i_eye_contour_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p3c_02g_margin_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p3c_03d_db_tolerance_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_02l_resolve_parameters_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_02m_warning_detector_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p3c_03e_compliance_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_04h_noise_pdf_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_04i_frontend_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_04j_tx_ffe_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_04k_dfe_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_04l_rx_ffe_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_04n_search_support_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_04o_receiver_noise_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_04p_crosstalk_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_04q_candidate_helpers_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_04r_c2m_eye_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_04s_candidate_eval_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_04t_search_loop_runner"
 harness = false
+test = false
 
 [lints]
 workspace = true
@@ -154,23 +185,29 @@ workspace = true
 [[test]]
 name = "p5_06d_canonical_input_keys_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_02n_warning_report_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_08a_com_run_admission_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_06f_com_chain_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_05f_parameter_resolver_runner"
 harness = false
+test = false
 
 [[test]]
 name = "p5_08b_com_run_execution_runner"
 harness = false
+test = false

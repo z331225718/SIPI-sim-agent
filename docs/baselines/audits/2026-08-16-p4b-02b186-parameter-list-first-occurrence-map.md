@@ -12,7 +12,7 @@ first-occurrence-indices (same data as ordered Vec of pairs vs keyed map).
 
 ## Cross-check
 
-- 4/4 matched_hash_bound (mixed, all_equal, all_distinct, non_list)
+- 4/4 product_owned_self_crosscheck_unbound (mixed, all_equal, all_distinct, non_list)
 - Evidence: `p4b-02b186-parameter-list-first-occurrence-map-crosscheck-evidence.v1.yaml`
 
 ## Verifier

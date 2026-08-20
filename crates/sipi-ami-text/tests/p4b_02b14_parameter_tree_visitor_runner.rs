@@ -8,8 +8,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    build_parameter_trees_v1, parse_ami_text_v1, traverse_parameter_trees_v1, VisitorEventV1,
-    ParseLimitsV1, PARAMETER_TREE_VISITOR_POLICY_V1,
+    PARAMETER_TREE_VISITOR_POLICY_V1, ParseLimitsV1, VisitorEventV1, build_parameter_trees_v1,
+    parse_ami_text_v1, traverse_parameter_trees_v1,
 };
 
 fn visitor_event_to_json(event: &VisitorEventV1) -> serde_json::Value {
@@ -36,7 +36,7 @@ fn visitor_event_to_json(event: &VisitorEventV1) -> serde_json::Value {
     }
 }
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -66,7 +66,8 @@ fn main() {
                 "parse_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -83,7 +84,8 @@ fn main() {
                 "build_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -93,7 +95,8 @@ fn main() {
 
     let output = match traverse_parameter_trees_v1(&trees) {
         Ok(events) => {
-            let event_json_list: Vec<serde_json::Value> = events.iter().map(visitor_event_to_json).collect();
+            let event_json_list: Vec<serde_json::Value> =
+                events.iter().map(visitor_event_to_json).collect();
             serde_json::json!({
                 "policy": PARAMETER_TREE_VISITOR_POLICY_V1,
                 "valid": true,

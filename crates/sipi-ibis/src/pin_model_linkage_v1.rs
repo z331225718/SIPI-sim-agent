@@ -130,12 +130,19 @@ mod tests {
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(PIN_MODEL_LINKAGE_POLICY_V1, "sipi.p4a-03f.pin-model-linkage.v1.typed");
+        assert_eq!(
+            PIN_MODEL_LINKAGE_POLICY_V1,
+            "sipi.p4a-03f.pin-model-linkage.v1.typed"
+        );
     }
 
     #[test]
     fn resolves_all_pins_to_declared_models() {
-        let pins = vec![pin("A1", "DQ0", "DQ_PIN"), pin("B2", "DQ1", "DQ_PIN"), pin("C3", "CK", "CK_PIN")];
+        let pins = vec![
+            pin("A1", "DQ0", "DQ_PIN"),
+            pin("B2", "DQ1", "DQ_PIN"),
+            pin("C3", "CK", "CK_PIN"),
+        ];
         let models = vec![model("DQ_PIN"), model("CK_PIN")];
         let result = resolve_pin_model_linkage_v1(&pins, &models, &markers(&[])).expect("ok");
         assert_eq!(result.resolved_count(), 3);
@@ -158,18 +165,27 @@ mod tests {
     fn nc_is_unresolved_without_allowance() {
         let pins = vec![pin("A1", "NC", "NC"), pin("B2", "DQ0", "DQ_PIN")];
         let models = vec![model("DQ_PIN")];
-        let err = resolve_pin_model_linkage_v1(&pins, &models, &markers(&[])).err().expect("err");
-        assert!(matches!(err, PinModelLinkageErrorV1::UnresolvedModel { pin, model } if pin == "A1" && model == "NC"));
+        let err = resolve_pin_model_linkage_v1(&pins, &models, &markers(&[])).expect_err("err");
+        assert!(
+            matches!(err, PinModelLinkageErrorV1::UnresolvedModel { pin, model } if pin == "A1" && model == "NC")
+        );
     }
 
     #[test]
     fn unknown_model_rejected_in_pin_order() {
-        let pins = vec![pin("A1", "DQ0", "DQ_PIN"), pin("B2", "DQ1", "MISSING"), pin("C3", "DQ2", "DQ_PIN")];
+        let pins = vec![
+            pin("A1", "DQ0", "DQ_PIN"),
+            pin("B2", "DQ1", "MISSING"),
+            pin("C3", "DQ2", "DQ_PIN"),
+        ];
         let models = vec![model("DQ_PIN")];
-        let err = resolve_pin_model_linkage_v1(&pins, &models, &markers(&[])).err().expect("err");
+        let err = resolve_pin_model_linkage_v1(&pins, &models, &markers(&[])).expect_err("err");
         assert_eq!(
             err,
-            PinModelLinkageErrorV1::UnresolvedModel { pin: "B2".to_string(), model: "MISSING".to_string() }
+            PinModelLinkageErrorV1::UnresolvedModel {
+                pin: "B2".to_string(),
+                model: "MISSING".to_string()
+            }
         );
     }
 
@@ -193,7 +209,11 @@ mod tests {
 
     #[test]
     fn marker_and_resolved_order_is_deterministic() {
-        let pins = vec![pin("A1", "NC", "NC"), pin("B2", "DQ0", "DQ_PIN"), pin("C3", "NC2", "NC")];
+        let pins = vec![
+            pin("A1", "NC", "NC"),
+            pin("B2", "DQ0", "DQ_PIN"),
+            pin("C3", "NC2", "NC"),
+        ];
         let models = vec![model("DQ_PIN"), model("OTHER")];
         let result = resolve_pin_model_linkage_v1(&pins, &models, &markers(&["NC"])).expect("ok");
         assert_eq!(result.resolved(), &["DQ_PIN"]);

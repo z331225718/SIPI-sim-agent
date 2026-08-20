@@ -8,11 +8,11 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    classify_parameter_tree_path_relation_v1, ParameterTreePathRelationV1,
-    PARAMETER_TREE_PATH_RELATION_POLICY_V1,
+    PARAMETER_TREE_PATH_RELATION_POLICY_V1, ParameterTreePathRelationV1,
+    classify_parameter_tree_path_relation_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -25,7 +25,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b65_parameter_tree_path_relation_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b65_parameter_tree_path_relation_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");

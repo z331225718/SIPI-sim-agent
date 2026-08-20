@@ -58,9 +58,15 @@ impl TypedSeriesPinSelectorThresholdRecordV1 {
         if !pf.is_ascii() || !ps.is_ascii() || !ms.is_ascii() {
             return Err(SeriesPinTableSelectorThresholdsErrorV1::NonAsciiName);
         }
-        if !pf.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !ps.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !ms.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+        if !pf
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !ps
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !ms
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
         {
             return Err(SeriesPinTableSelectorThresholdsErrorV1::InvalidName);
         }
@@ -68,36 +74,44 @@ impl TypedSeriesPinSelectorThresholdRecordV1 {
             return Err(SeriesPinTableSelectorThresholdsErrorV1::IdenticalPins);
         }
 
-        let validate_non_negative = |val: Option<f64>, kind: &'static str| -> Result<Option<FiniteF64>, SeriesPinTableSelectorThresholdsErrorV1> {
-            match val {
-                None => Ok(None),
-                Some(v) => {
-                    if !v.is_finite() {
-                        return Err(SeriesPinTableSelectorThresholdsErrorV1::NonFiniteValue);
+        let validate_non_negative =
+            |val: Option<f64>,
+             kind: &'static str|
+             -> Result<Option<FiniteF64>, SeriesPinTableSelectorThresholdsErrorV1> {
+                match val {
+                    None => Ok(None),
+                    Some(v) => {
+                        if !v.is_finite() {
+                            return Err(SeriesPinTableSelectorThresholdsErrorV1::NonFiniteValue);
+                        }
+                        if v < 0.0 {
+                            return Err(
+                                SeriesPinTableSelectorThresholdsErrorV1::NegativeThresholdParameter,
+                            );
+                        }
+                        let finite = FiniteF64::try_new(v, kind)
+                            .map_err(|_| SeriesPinTableSelectorThresholdsErrorV1::NonFiniteValue)?;
+                        Ok(Some(finite))
                     }
-                    if v < 0.0 {
-                        return Err(SeriesPinTableSelectorThresholdsErrorV1::NegativeThresholdParameter);
-                    }
-                    let finite = FiniteF64::try_new(v, kind)
-                        .map_err(|_| SeriesPinTableSelectorThresholdsErrorV1::NonFiniteValue)?;
-                    Ok(Some(finite))
                 }
-            }
-        };
+            };
 
-        let validate_finite = |val: Option<f64>, kind: &'static str| -> Result<Option<FiniteF64>, SeriesPinTableSelectorThresholdsErrorV1> {
-            match val {
-                None => Ok(None),
-                Some(v) => {
-                    if !v.is_finite() {
-                        return Err(SeriesPinTableSelectorThresholdsErrorV1::NonFiniteValue);
+        let validate_finite =
+            |val: Option<f64>,
+             kind: &'static str|
+             -> Result<Option<FiniteF64>, SeriesPinTableSelectorThresholdsErrorV1> {
+                match val {
+                    None => Ok(None),
+                    Some(v) => {
+                        if !v.is_finite() {
+                            return Err(SeriesPinTableSelectorThresholdsErrorV1::NonFiniteValue);
+                        }
+                        let finite = FiniteF64::try_new(v, kind)
+                            .map_err(|_| SeriesPinTableSelectorThresholdsErrorV1::NonFiniteValue)?;
+                        Ok(Some(finite))
                     }
-                    let finite = FiniteF64::try_new(v, kind)
-                        .map_err(|_| SeriesPinTableSelectorThresholdsErrorV1::NonFiniteValue)?;
-                    Ok(Some(finite))
                 }
-            }
-        };
+            };
 
         let vthreshold_v = validate_finite(vthreshold_v, "vthreshold_v")?;
         let rseries_ohm = validate_non_negative(rseries_ohm, "rseries_ohm")?;
@@ -225,7 +239,15 @@ mod tests {
     #[test]
     fn rejects_negative_rseries() {
         assert_eq!(
-            lift_series_pin_selector_threshold_record_v1("P1", "P2", "SEL1", None, Some(-50.0), None, None),
+            lift_series_pin_selector_threshold_record_v1(
+                "P1",
+                "P2",
+                "SEL1",
+                None,
+                Some(-50.0),
+                None,
+                None
+            ),
             Err(SeriesPinTableSelectorThresholdsErrorV1::NegativeThresholdParameter)
         );
     }

@@ -11,7 +11,7 @@
 
 use sipi_types::Complex64;
 
-use crate::equalizer_frontend_v1::{complex_div, complex_mul, td_ctle_v1, EqualizerErrorV1};
+use crate::equalizer_frontend_v1::{complex_div, complex_mul, td_ctle_v1};
 
 /// Explicit scope policy of the search support stage.
 pub const SEARCH_SUPPORT_POLICY_V1: &str =
@@ -88,7 +88,11 @@ pub fn qualified_ctle_pair_v1(
     }
     // argsort(g2qual)[::-1]: descending threshold order (stable).
     let mut order: Vec<usize> = (0..g2qual.len()).collect();
-    order.sort_by(|a, b| g2qual[*b].partial_cmp(&g2qual[*a]).unwrap_or(std::cmp::Ordering::Equal));
+    order.sort_by(|a, b| {
+        g2qual[*b]
+            .partial_cmp(&g2qual[*a])
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     for (row, threshold_index) in order.iter().enumerate() {
         let threshold = g2qual[*threshold_index];
         let upper = if row == 0 {
@@ -142,7 +146,10 @@ pub fn selected_accm_rms_v1(
         return Err(SearchErrorV1::PackageCaseIndex);
     }
     let source_index = pkg_len_select[package_case_index] - 1;
-    if source_index < 0 || source_index as usize >= ac_cm_rms.len() || ac_cm_rms[source_index as usize] < 0.0 {
+    if source_index < 0
+        || source_index as usize >= ac_cm_rms.len()
+        || ac_cm_rms[source_index as usize] < 0.0
+    {
         return Err(SearchErrorV1::SelectedValue);
     }
     Ok(ac_cm_rms[source_index as usize])
@@ -196,7 +203,8 @@ pub fn ctle_frequency_response_v1(
     let base: Vec<Complex64> = frequency
         .iter()
         .map(|value| {
-            let numerator = Complex64::try_new(10.0_f64.powf(gain / 20.0), *value / fz).expect("complex");
+            let numerator =
+                Complex64::try_new(10.0_f64.powf(gain / 20.0), *value / fz).expect("complex");
             let d1 = Complex64::try_new(1.0, *value / fp1).expect("complex");
             let d2 = Complex64::try_new(1.0, *value / fp2).expect("complex");
             complex_div(numerator, complex_mul(d1, d2))
@@ -208,11 +216,9 @@ pub fn ctle_frequency_response_v1(
             .iter()
             .zip(base.iter())
             .map(|(value, entry)| {
-                let numerator = Complex64::try_new(
-                    10.0_f64.powf(high_pass_gain_db / 20.0),
-                    *value / high_pass,
-                )
-                .expect("complex");
+                let numerator =
+                    Complex64::try_new(10.0_f64.powf(high_pass_gain_db / 20.0), *value / high_pass)
+                        .expect("complex");
                 let denominator = Complex64::try_new(1.0, *value / high_pass).expect("complex");
                 complex_mul(*entry, complex_div(numerator, denominator))
             })
@@ -227,7 +233,8 @@ pub fn ctle_frequency_response_v1(
             .zip(base.iter())
             .map(|(value, entry)| {
                 let numerator = Complex64::try_new(1.0, *value / high_pass_zero).expect("complex");
-                let denominator = Complex64::try_new(1.0, *value / high_pass_pole).expect("complex");
+                let denominator =
+                    Complex64::try_new(1.0, *value / high_pass_pole).expect("complex");
                 complex_mul(*entry, complex_div(numerator, denominator))
             })
             .collect();
@@ -250,16 +257,8 @@ pub fn apply_ctle_candidate_v1(
     let fz = indexed_config_value_v1(&parameters.ctle_fz, ctle_index, "CTLE_fz")?;
     let fp1 = indexed_config_value_v1(&parameters.ctle_fp1, ctle_index, "CTLE_fp1")?;
     let fp2 = indexed_config_value_v1(&parameters.ctle_fp2, ctle_index, "CTLE_fp2")?;
-    let result = td_ctle_v1(
-        impulse,
-        baud_hz,
-        fz,
-        fp1,
-        fp2,
-        ctle_gain_db,
-        samples_per_ui,
-    )
-    .map_err(|_| SearchErrorV1::InvalidControls)?;
+    let result = td_ctle_v1(impulse, baud_hz, fz, fp1, fp2, ctle_gain_db, samples_per_ui)
+        .map_err(|_| SearchErrorV1::InvalidControls)?;
     if parameters.ctle_type == "CL120d" {
         let high_pass = indexed_config_value_v1(&parameters.f_hp, high_pass_index, "f_HP")?;
         return td_ctle_v1(
@@ -296,14 +295,23 @@ mod tests {
 
     #[test]
     fn indexed_scalar_and_range() {
-        assert_eq!(indexed_config_value_v1(&[2.5], 7, "x").expect("scalar"), 2.5);
-        assert_eq!(indexed_config_value_v1(&[1.0, 2.0], 1, "x").expect("index"), 2.0);
+        assert_eq!(
+            indexed_config_value_v1(&[2.5], 7, "x").expect("scalar"),
+            2.5
+        );
+        assert_eq!(
+            indexed_config_value_v1(&[1.0, 2.0], 1, "x").expect("index"),
+            2.0
+        );
         assert!(indexed_config_value_v1(&[1.0, 2.0], 2, "x").is_err());
     }
 
     #[test]
     fn high_pass_candidates_branches() {
-        assert_eq!(high_pass_candidates_v1("CL120e", &[]).expect("e"), vec![(0, 0.0)]);
+        assert_eq!(
+            high_pass_candidates_v1("CL120e", &[]).expect("e"),
+            vec![(0, 0.0)]
+        );
         let gains = high_pass_candidates_v1("CL120d", &[0.0, -3.0, -6.0]).expect("d");
         assert_eq!(gains.len(), 3);
         assert_eq!(gains[1], (1, -3.0));
@@ -315,12 +323,30 @@ mod tests {
         let gqual = vec![vec![0.0, 6.0], vec![-6.0, 0.0]];
         let g2qual = vec![0.0, -6.0];
         // g2qual descending: [0.0, -6.0]; high_pass = -3 -> row 1 range [-6, 0]
-        let ok = qualified_ctle_pair_v1("CL120d", &[0.0, -3.0, -6.0], &[-3.0], 0, 1, 0.0, &gqual, &g2qual)
-            .expect("qualified");
+        let ok = qualified_ctle_pair_v1(
+            "CL120d",
+            &[0.0, -3.0, -6.0],
+            &[-3.0],
+            0,
+            1,
+            0.0,
+            &gqual,
+            &g2qual,
+        )
+        .expect("qualified");
         assert!(ok);
         // dc_gain outside the admissible range -> false
-        let outside = qualified_ctle_pair_v1("CL120d", &[0.0, -3.0, -6.0], &[3.0], 0, 1, 0.0, &gqual, &g2qual)
-            .expect("outside");
+        let outside = qualified_ctle_pair_v1(
+            "CL120d",
+            &[0.0, -3.0, -6.0],
+            &[3.0],
+            0,
+            1,
+            0.0,
+            &gqual,
+            &g2qual,
+        )
+        .expect("outside");
         assert!(!outside);
         // dc_gain + high_pass = 0.0 > 0.0? no; ceiling 0.0 sentinel off
         let ceiling = qualified_ctle_pair_v1("CL120d", &[0.0, -3.0], &[4.0], 0, 1, 1.0, &[], &[])
@@ -330,8 +356,19 @@ mod tests {
         let over = qualified_ctle_pair_v1("CL120d", &[0.0, -3.0], &[5.0], 0, 1, 1.0, &[], &[])
             .expect("over");
         assert!(!over);
-        assert!(qualified_ctle_pair_v1("CL120d", &[0.0], &[1.0], 0, 0, 0.0, &[vec![1.0]], &[0.0, 1.0])
-            .is_err());
+        assert!(
+            qualified_ctle_pair_v1(
+                "CL120d",
+                &[0.0],
+                &[1.0],
+                0,
+                0,
+                0.0,
+                &[vec![1.0]],
+                &[0.0, 1.0]
+            )
+            .is_err()
+        );
     }
 
     #[test]
@@ -367,10 +404,14 @@ mod tests {
             f_hp_p: vec![1e9],
         };
         let frequencies: Vec<f64> = (0..4).map(|index| index as f64 * 5e9).collect();
-        let response = ctle_frequency_response_v1(&frequencies, 0, 0, 0.0, &parameters).expect("fd");
+        let response =
+            ctle_frequency_response_v1(&frequencies, 0, 0, 0.0, &parameters).expect("fd");
         assert_eq!(response.len(), 4);
-        let impulse: Vec<f64> = (0..32).map(|index| (-(index as f64 - 16.0) * (index as f64 - 16.0) / 60.0).exp()).collect();
-        let filtered = apply_ctle_candidate_v1(&impulse, 53.125e9, 4, 0, 6.0, 0, 0.0, &parameters).expect("td");
+        let impulse: Vec<f64> = (0..32)
+            .map(|index| (-(index as f64 - 16.0) * (index as f64 - 16.0) / 60.0).exp())
+            .collect();
+        let filtered = apply_ctle_candidate_v1(&impulse, 53.125e9, 4, 0, 6.0, 0, 0.0, &parameters)
+            .expect("td");
         assert_eq!(filtered.len(), impulse.len());
         assert!(filtered.iter().all(|value| value.is_finite()));
     }

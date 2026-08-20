@@ -29,7 +29,7 @@ cases.
 - Cross-check: 4 test cases (integer+list, raw types, mixed nested, invalid untouched) driven
   through product runner `p4b_02b78_parameter_tree_leaf_canonicalization_runner`; independent
   Python reference matches 100% on leaves/canonicalized counts and canonical trees; 4/4
-  matched_hash_bound.
+  product_owned_self_crosscheck_unbound.
 
 ## Binding
 

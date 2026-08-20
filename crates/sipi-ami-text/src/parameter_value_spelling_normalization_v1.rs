@@ -43,9 +43,9 @@ pub fn canonicalize_parameter_value_spelling_v1(value: &AmiParameterValueV1) -> 
                 token.to_string()
             }
         }
-        AmiParameterTypeV1::Boolean
-        | AmiParameterTypeV1::Float
-        | AmiParameterTypeV1::String_ => token.to_string(),
+        AmiParameterTypeV1::Boolean | AmiParameterTypeV1::Float | AmiParameterTypeV1::String_ => {
+            token.to_string()
+        }
     }
 }
 
@@ -131,11 +131,7 @@ mod tests {
         for (name, type_token, value_token) in cases {
             let first =
                 canonicalize_parameter_value_spelling_v1(&value(name, type_token, value_token));
-            let second = canonicalize_parameter_value_spelling_v1(&value(
-                name,
-                type_token,
-                &first,
-            ));
+            let second = canonicalize_parameter_value_spelling_v1(&value(name, type_token, &first));
             assert_eq!(first, second);
         }
     }

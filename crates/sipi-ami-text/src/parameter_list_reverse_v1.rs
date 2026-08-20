@@ -51,8 +51,8 @@ pub fn reverse_parameter_list_items_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListReverseErrorV1::NotAList);
     }
-    let mut items = list_items(value.value_token())
-        .ok_or(ParameterListReverseErrorV1::MalformedList)?;
+    let mut items =
+        list_items(value.value_token()).ok_or(ParameterListReverseErrorV1::MalformedList)?;
     items.reverse();
     Ok(format!("({})", items.join(", ")))
 }
@@ -86,10 +86,7 @@ mod tests {
     #[test]
     fn single_item_is_unchanged() {
         let v = value("channels", "List", "(x)");
-        assert_eq!(
-            reverse_parameter_list_items_v1(&v),
-            Ok("(x)".to_string())
-        );
+        assert_eq!(reverse_parameter_list_items_v1(&v), Ok("(x)".to_string()));
     }
 
     #[test]

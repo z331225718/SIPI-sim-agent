@@ -55,8 +55,8 @@ pub fn get_parameter_list_item_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListItemAccessErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListItemAccessErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListItemAccessErrorV1::MalformedList)?;
     items
         .get(index)
         .cloned()

@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b114-parameter-list-split-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b114.parameter-list-split-v1.split-at-index
 matched_count: 5
 case_count: 5

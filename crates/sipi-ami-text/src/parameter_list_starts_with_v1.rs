@@ -58,10 +58,10 @@ pub fn list_starts_with_v1(
     {
         return Err(ParameterListStartsWithErrorV1::NotAList);
     }
-    let value_items = list_items(value.value_token())
-        .ok_or(ParameterListStartsWithErrorV1::MalformedList)?;
-    let prefix_items = list_items(prefix.value_token())
-        .ok_or(ParameterListStartsWithErrorV1::MalformedList)?;
+    let value_items =
+        list_items(value.value_token()).ok_or(ParameterListStartsWithErrorV1::MalformedList)?;
+    let prefix_items =
+        list_items(prefix.value_token()).ok_or(ParameterListStartsWithErrorV1::MalformedList)?;
     if prefix_items.len() > value_items.len() {
         return Ok(false);
     }

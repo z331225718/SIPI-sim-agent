@@ -21,7 +21,7 @@ the tokenize/build/count pipeline over 4 test cases.
   counts only leaves).
 - Cross-check: 4 test cases (cross-depth duplicates, unique names, root leaf, deep nesting) driven
   through product runner `p4b_02b59_parameter_tree_leaf_occurrences_runner`; independent Python
-  reference matches 100% on valid flags, total counts, and occurrence maps; 4/4 matched_hash_bound.
+  reference matches 100% on valid flags, total counts, and occurrence maps; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -61,8 +61,7 @@ pub fn chunk_parameter_list_v1(
     if chunk_size == 0 {
         return Err(ParameterListChunkErrorV1::InvalidChunkSize);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListChunkErrorV1::MalformedList)?;
+    let items = list_items(value.value_token()).ok_or(ParameterListChunkErrorV1::MalformedList)?;
     Ok(items
         .chunks(chunk_size)
         .map(|chunk| format!("({})", chunk.join(", ")))

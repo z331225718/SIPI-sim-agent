@@ -97,12 +97,7 @@ mod tests {
     fn profile(pairs: &[(&str, &str, &str)]) -> BTreeMap<String, AmiParameterValueV1> {
         pairs
             .iter()
-            .map(|(name, type_token, value)| {
-                (
-                    name.to_string(),
-                    parameter(name, type_token, value),
-                )
-            })
+            .map(|(name, type_token, value)| (name.to_string(), parameter(name, type_token, value)))
             .collect()
     }
 
@@ -112,15 +107,10 @@ mod tests {
 
     #[test]
     fn complete_profile_is_reported() {
-        let parameters = profile(&[
-            ("gain", "Float", "0.5"),
-            ("steps", "Integer", "7"),
-        ]);
-        let result = check_parameter_profile_completeness_v1(
-            &parameters,
-            &required_of(&["gain", "steps"]),
-        )
-        .expect("checked");
+        let parameters = profile(&[("gain", "Float", "0.5"), ("steps", "Integer", "7")]);
+        let result =
+            check_parameter_profile_completeness_v1(&parameters, &required_of(&["gain", "steps"]))
+                .expect("checked");
         assert_eq!(result.expected(), 2);
         assert_eq!(result.present(), 2);
         assert!(result.missing().is_empty());
@@ -137,24 +127,15 @@ mod tests {
         .expect("checked");
         assert_eq!(result.expected(), 3);
         assert_eq!(result.present(), 1);
-        assert_eq!(
-            result.missing(),
-            &["mode".to_string(), "steps".to_string()]
-        );
+        assert_eq!(result.missing(), &["mode".to_string(), "steps".to_string()]);
         assert!(!result.is_complete());
     }
 
     #[test]
     fn extra_parameters_are_ignored() {
-        let parameters = profile(&[
-            ("gain", "Float", "0.5"),
-            ("extra", "Integer", "1"),
-        ]);
-        let result = check_parameter_profile_completeness_v1(
-            &parameters,
-            &required_of(&["gain"]),
-        )
-        .expect("checked");
+        let parameters = profile(&[("gain", "Float", "0.5"), ("extra", "Integer", "1")]);
+        let result = check_parameter_profile_completeness_v1(&parameters, &required_of(&["gain"]))
+            .expect("checked");
         assert_eq!(result.expected(), 1);
         assert_eq!(result.present(), 1);
         assert!(result.is_complete());
@@ -163,11 +144,8 @@ mod tests {
     #[test]
     fn empty_required_fails_closed() {
         let parameters = profile(&[("gain", "Float", "0.5")]);
-        let error = check_parameter_profile_completeness_v1(
-            &parameters,
-            &required_of(&[]),
-        )
-        .unwrap_err();
+        let error =
+            check_parameter_profile_completeness_v1(&parameters, &required_of(&[])).unwrap_err();
         assert_eq!(error, ParameterProfileCompletenessErrorV1::EmptyRequired);
     }
 }

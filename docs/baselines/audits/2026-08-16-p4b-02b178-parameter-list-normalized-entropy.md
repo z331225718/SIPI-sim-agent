@@ -29,7 +29,7 @@ independent Python reference replicates the evenness rule over 4 test cases, com
 - Cross-check: 4 test cases (all equal, all distinct, unbalanced, non-list) driven through
   product runner `p4b_02b178_parameter_list_normalized_entropy_runner`; independent Python
   reference matches 100% on 12-decimal evenness strings and error keys; 4/4
-  matched_hash_bound.
+  product_owned_self_crosscheck_unbound.
 
 ## Binding
 

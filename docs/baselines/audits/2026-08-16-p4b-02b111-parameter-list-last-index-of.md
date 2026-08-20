@@ -25,7 +25,7 @@ replicates the lookup rule over 4 test cases.
   items, non-list, occurrence-count-tail consistency).
 - Cross-check: 4 test cases (last occurrence, single occurrence, absent item, non-list) driven
   through product runner `p4b_02b111_parameter_list_last_index_of_runner`; independent Python
-  reference matches 100% on indices and error keys; 4/4 matched_hash_bound.
+  reference matches 100% on indices and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

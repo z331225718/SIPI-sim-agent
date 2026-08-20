@@ -5,9 +5,7 @@
 
 use std::path::PathBuf;
 
-use sipi_com::{
-    ber_to_q_factor_v1, q_factor_to_ber_v1, QFACTOR_BER_POLICY_V1,
-};
+use sipi_com::{QFACTOR_BER_POLICY_V1, ber_to_q_factor_v1, q_factor_to_ber_v1};
 
 fn main() {
     let mut input = None;

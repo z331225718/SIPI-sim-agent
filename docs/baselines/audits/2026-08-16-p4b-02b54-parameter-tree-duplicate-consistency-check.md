@@ -23,7 +23,7 @@ An independent Python reference replicates the tokenize/build/classify pipeline 
   consistency split).
 - Cross-check: 4 test cases (consistent, inconsistent, unique, mixed) driven through product
   runner `p4b_02b54_parameter_tree_duplicate_check_runner`; independent Python reference matches
-  100% on valid flags and all four report fields; 4/4 matched_hash_bound.
+  100% on valid flags and all four report fields; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -58,8 +58,8 @@ pub fn parameter_list_majority_item_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListMajorityItemErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListMajorityItemErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListMajorityItemErrorV1::MalformedList)?;
     let item_count = items.len();
     let mut counts: Vec<(String, usize)> = Vec::new();
     for item in &items {

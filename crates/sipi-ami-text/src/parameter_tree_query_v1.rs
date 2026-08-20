@@ -39,9 +39,9 @@ fn query_node<'a>(
     match node {
         AmiParameterTreeNodeV1::Branch { children, .. } => {
             let next_segment = segments[0];
-            let child = children.get(next_segment).ok_or_else(|| {
-                ParameterTreeQueryErrorV1::PathNotFound(next_segment.to_string())
-            })?;
+            let child = children
+                .get(next_segment)
+                .ok_or_else(|| ParameterTreeQueryErrorV1::PathNotFound(next_segment.to_string()))?;
             query_node(child, &segments[1..])
         }
         AmiParameterTreeNodeV1::Leaf { name, .. } => {
@@ -68,7 +68,7 @@ pub fn query_parameter_tree_v1<'a>(
 mod tests {
     use super::*;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
-    use crate::{parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, parse_ami_text_v1};
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
@@ -91,13 +91,17 @@ mod tests {
         .expect("parse");
         let trees = build_parameter_trees_v1(&doc).expect("build");
 
-        let res_root = query_parameter_tree_v1(&trees[0], &["Reserved_Parameters"]).expect("query root");
+        let res_root =
+            query_parameter_tree_v1(&trees[0], &["Reserved_Parameters"]).expect("query root");
         assert!(matches!(res_root, QueryResultV1::Branch(_)));
 
-        let res_leaf = query_parameter_tree_v1(&trees[0], &["Reserved_Parameters", "tx_swing"]).expect("query leaf");
+        let res_leaf = query_parameter_tree_v1(&trees[0], &["Reserved_Parameters", "tx_swing"])
+            .expect("query leaf");
         assert!(matches!(res_leaf, QueryResultV1::Leaf(_)));
 
-        let res_nested = query_parameter_tree_v1(&trees[0], &["Reserved_Parameters", "dfe", "tap_1"]).expect("query nested");
+        let res_nested =
+            query_parameter_tree_v1(&trees[0], &["Reserved_Parameters", "dfe", "tap_1"])
+                .expect("query nested");
         assert!(matches!(res_nested, QueryResultV1::Leaf(_)));
     }
 
@@ -127,7 +131,9 @@ mod tests {
         let trees = build_parameter_trees_v1(&doc).expect("build");
         assert_eq!(
             query_parameter_tree_v1(&trees[0], &["root", "nonexistent"]),
-            Err(ParameterTreeQueryErrorV1::PathNotFound("nonexistent".to_string()))
+            Err(ParameterTreeQueryErrorV1::PathNotFound(
+                "nonexistent".to_string()
+            ))
         );
     }
 }

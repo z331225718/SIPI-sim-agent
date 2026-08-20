@@ -55,8 +55,8 @@ pub fn parameter_list_all_equal_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListAllEqualErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListAllEqualErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListAllEqualErrorV1::MalformedList)?;
     let first = &items[0];
     Ok(items.iter().all(|item| item == first))
 }

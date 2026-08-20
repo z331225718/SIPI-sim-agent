@@ -24,7 +24,7 @@ cases.
 - Cross-check: 4 test cases (two trees merge, duplicate across trees, error in second tree, empty
   list) driven through product runner `p4b_02b42_parameter_tree_typed_form_multi_runner`;
   independent Python reference matches 100% on valid flags, consumed counts, merged parameter
-  maps, and error contexts; 4/4 matched_hash_bound.
+  maps, and error contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

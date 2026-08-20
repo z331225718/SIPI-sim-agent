@@ -44,25 +44,25 @@ impl TypedSeriesPinGroupModelRecordV1 {
         if !gn.is_ascii() || !mn.is_ascii() {
             return Err(SeriesPinTableGroupModelErrorV1::NonAsciiName);
         }
-        if !gn.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !mn.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+        if !gn
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !mn
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
         {
             return Err(SeriesPinTableGroupModelErrorV1::InvalidName);
         }
 
         let ftg = function_table_group.and_then(|g| {
             let t = g.into().trim().to_string();
-            if t.is_empty() {
-                None
-            } else {
-                Some(t)
-            }
+            if t.is_empty() { None } else { Some(t) }
         });
 
-        if let Some(ref g) = ftg {
-            if !g.is_ascii() {
-                return Err(SeriesPinTableGroupModelErrorV1::NonAsciiName);
-            }
+        if let Some(ref g) = ftg
+            && !g.is_ascii()
+        {
+            return Err(SeriesPinTableGroupModelErrorV1::NonAsciiName);
         }
 
         Ok(Self {
@@ -91,11 +91,7 @@ pub fn lift_series_pin_group_model_record_v1(
     model_name: &str,
     function_table_group: Option<&str>,
 ) -> Result<TypedSeriesPinGroupModelRecordV1, SeriesPinTableGroupModelErrorV1> {
-    TypedSeriesPinGroupModelRecordV1::try_new(
-        group_name,
-        model_name,
-        function_table_group,
-    )
+    TypedSeriesPinGroupModelRecordV1::try_new(group_name, model_name, function_table_group)
 }
 
 #[cfg(test)]
@@ -112,12 +108,8 @@ mod tests {
 
     #[test]
     fn valid_full_group_model_record() {
-        let rec = lift_series_pin_group_model_record_v1(
-            "SERIES_GRP1",
-            "R_SERIES_50",
-            Some("GRP1"),
-        )
-        .expect("lift");
+        let rec = lift_series_pin_group_model_record_v1("SERIES_GRP1", "R_SERIES_50", Some("GRP1"))
+            .expect("lift");
         assert_eq!(rec.group_name(), "SERIES_GRP1");
         assert_eq!(rec.model_name(), "R_SERIES_50");
         assert_eq!(rec.function_table_group(), Some("GRP1"));
@@ -125,12 +117,8 @@ mod tests {
 
     #[test]
     fn valid_minimal_group_model_record() {
-        let rec = lift_series_pin_group_model_record_v1(
-            "SERIES_GRP1",
-            "R_SERIES_50",
-            None,
-        )
-        .expect("lift");
+        let rec = lift_series_pin_group_model_record_v1("SERIES_GRP1", "R_SERIES_50", None)
+            .expect("lift");
         assert_eq!(rec.group_name(), "SERIES_GRP1");
         assert_eq!(rec.model_name(), "R_SERIES_50");
         assert_eq!(rec.function_table_group(), None);

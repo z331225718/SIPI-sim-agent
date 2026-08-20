@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_com::{
-    cursor_sample_index_v1, fd_ctle_v1, td_ctle_v1, EQUALIZER_FRONTEND_POLICY_V1,
-};
+use sipi_com::{EQUALIZER_FRONTEND_POLICY_V1, cursor_sample_index_v1, fd_ctle_v1, td_ctle_v1};
 
 fn main() {
     let mut input = None;
@@ -44,8 +42,15 @@ fn main() {
         let cdr = cursor["cdr"].as_str().expect("cdr");
         let peak_start = cursor["peak_start"].as_u64().unwrap_or(0) as usize;
         let peak_stop = cursor["peak_stop"].as_u64().map(|v| v as usize);
-        let sample = cursor_sample_index_v1(&pulse, samples_per_ui, dfe_first_max, cdr, peak_start, peak_stop)
-            .expect("cursor");
+        let sample = cursor_sample_index_v1(
+            &pulse,
+            samples_per_ui,
+            dfe_first_max,
+            cdr,
+            peak_start,
+            peak_stop,
+        )
+        .expect("cursor");
         output["cursor"] = serde_json::json!({
             "cursor_index": sample.cursor_index(),
             "no_zero_crossing": sample.no_zero_crossing(),

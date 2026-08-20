@@ -26,7 +26,7 @@ merge over 4 test cases.
   cross-type conflict overridden, empty profiles, matched+overridden counts).
 - Cross-check: 4 test cases (disjoint merge, spelling variants, override conflict, empty profiles)
   driven through product runner `p4b_02b76_parameter_profile_override_merge_runner`; independent
-  Python reference matches 100% on matched/overridden counts and merged maps; 4/4 matched_hash_bound.
+  Python reference matches 100% on matched/overridden counts and merged maps; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

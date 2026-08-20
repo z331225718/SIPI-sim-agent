@@ -17,10 +17,8 @@
 //! deterministic sorted (path) order; `valid()` is true exactly when no
 //! invalid leaf was found.
 
-use std::collections::BTreeMap;
-
 use crate::{
-    AmiParameterTreeV1, AmiParameterTreeNodeV1, AmiParameterTypeV1, AmiParameterValueErrorV1,
+    AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterTypeV1, AmiParameterValueErrorV1,
     AmiParameterValueV1,
 };
 
@@ -109,21 +107,21 @@ fn collect(
         }
         AmiParameterTreeNodeV1::Leaf { name, value_tokens } => {
             report.leaves_total += 1;
-            if value_tokens.len() == 2 {
-                if let Some(_parameter_type) = AmiParameterTypeV1::from_token(&value_tokens[0]) {
-                    report.typed_leaves += 1;
-                    match AmiParameterValueV1::try_new(name, &value_tokens[0], &value_tokens[1]) {
-                        Ok(_) => {
-                            report.valid_leaves += 1;
-                        }
-                        Err(error) => {
-                            report.invalid.push(ParameterTreeLeafValueValidityIssueV1 {
-                                path: current,
-                                type_token: value_tokens[0].clone(),
-                                value_token: value_tokens[1].clone(),
-                                error,
-                            });
-                        }
+            if value_tokens.len() == 2
+                && let Some(_parameter_type) = AmiParameterTypeV1::from_token(&value_tokens[0])
+            {
+                report.typed_leaves += 1;
+                match AmiParameterValueV1::try_new(name, &value_tokens[0], &value_tokens[1]) {
+                    Ok(_) => {
+                        report.valid_leaves += 1;
+                    }
+                    Err(error) => {
+                        report.invalid.push(ParameterTreeLeafValueValidityIssueV1 {
+                            path: current,
+                            type_token: value_tokens[0].clone(),
+                            value_token: value_tokens[1].clone(),
+                            error,
+                        });
                     }
                 }
             }
@@ -148,7 +146,7 @@ pub fn check_parameter_tree_leaf_value_validity_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{build_parameter_trees_v1, parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, build_parameter_trees_v1, parse_ami_text_v1};
 
     fn tree(text: &str) -> AmiParameterTreeV1 {
         let limits = ParseLimitsV1::try_new(8 * 1024 * 1024, 64, 4096, 4096).expect("limits");
@@ -200,7 +198,10 @@ mod tests {
         let report = check_parameter_tree_leaf_value_validity_v1(&t);
         assert_eq!(report.invalid().len(), 1);
         assert_eq!(report.invalid()[0].path(), "root.sub.steps");
-        assert_eq!(report.invalid()[0].error(), &AmiParameterValueErrorV1::InvalidInteger);
+        assert_eq!(
+            report.invalid()[0].error(),
+            &AmiParameterValueErrorV1::InvalidInteger
+        );
     }
 
     #[test]
@@ -211,9 +212,15 @@ mod tests {
         assert_eq!(report.valid_leaves(), 1);
         assert_eq!(report.invalid().len(), 2);
         assert_eq!(report.invalid()[0].path(), "root.channels");
-        assert_eq!(report.invalid()[0].error(), &AmiParameterValueErrorV1::InvalidList);
+        assert_eq!(
+            report.invalid()[0].error(),
+            &AmiParameterValueErrorV1::InvalidList
+        );
         assert_eq!(report.invalid()[1].path(), "root.on");
-        assert_eq!(report.invalid()[1].error(), &AmiParameterValueErrorV1::InvalidBoolean);
+        assert_eq!(
+            report.invalid()[1].error(),
+            &AmiParameterValueErrorV1::InvalidBoolean
+        );
     }
 
     #[test]

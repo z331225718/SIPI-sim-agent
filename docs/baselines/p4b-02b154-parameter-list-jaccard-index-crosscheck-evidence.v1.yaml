@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b154-parameter-list-jaccard-index-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b154.parameter-list-jaccard-index-v1.jaccard-index
 matched_count: 4
 case_count: 4

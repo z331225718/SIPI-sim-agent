@@ -7,11 +7,9 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ami_text::{
-    relative_parameter_tree_path_v1, PARAMETER_TREE_RELATIVE_PATH_POLICY_V1,
-};
+use sipi_ami_text::{PARAMETER_TREE_RELATIVE_PATH_POLICY_V1, relative_parameter_tree_path_v1};
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -24,7 +22,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b66_parameter_tree_relative_path_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b66_parameter_tree_relative_path_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -41,10 +41,8 @@ fn main() {
 
     let output = match relative_parameter_tree_path_v1(&ancestor, &path) {
         Ok(relative) => {
-            let relative_json: Vec<Value> = relative
-                .iter()
-                .map(|s| Value::String(s.clone()))
-                .collect();
+            let relative_json: Vec<Value> =
+                relative.iter().map(|s| Value::String(s.clone())).collect();
             serde_json::json!({
                 "policy": PARAMETER_TREE_RELATIVE_PATH_POLICY_V1,
                 "valid": true,

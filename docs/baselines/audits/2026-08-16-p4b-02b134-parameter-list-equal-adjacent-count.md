@@ -25,7 +25,7 @@ reference replicates the adjacency rule over 4 test cases.
   spacing canonicalized).
 - Cross-check: 4 test cases (equal adjacent, all distinct, all equal, non-list) driven through
   product runner `p4b_02b134_parameter_list_equal_adjacent_count_runner`; independent Python
-  reference matches 100% on counts and error keys; 4/4 matched_hash_bound.
+  reference matches 100% on counts and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

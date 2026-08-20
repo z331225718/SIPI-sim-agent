@@ -9,7 +9,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
 
 /// Scope policy for the token frequencies core.
 pub const PARAMETER_TREE_TOKEN_FREQUENCIES_POLICY_V1: &str =
@@ -43,9 +43,7 @@ fn walk(
                 walk(child, frequencies, total);
             }
         }
-        AmiParameterTreeNodeV1::Leaf {
-            value_tokens, ..
-        } => {
+        AmiParameterTreeNodeV1::Leaf { value_tokens, .. } => {
             for token in value_tokens {
                 *total += 1;
                 *frequencies.entry(token.clone()).or_insert(0) += 1;
@@ -119,10 +117,7 @@ mod tests {
 
     #[test]
     fn unique_tokens_count_once() {
-        let t = tree(branch(
-            "root",
-            vec![leaf("a", &["1"]), leaf("b", &["2"])],
-        ));
+        let t = tree(branch("root", vec![leaf("a", &["1"]), leaf("b", &["2"])]));
         let result = compute_parameter_tree_token_frequencies_v1(&t);
         assert_eq!(result.total_tokens(), 2);
         assert_eq!(result.frequencies().get("1"), Some(&1));

@@ -24,7 +24,7 @@ An independent Python reference replicates the tokenize/build/classify pipeline 
 - Cross-check: 4 test cases (all conforming, mixed violations, empty leaf, nested conforming)
   driven through product runner `p4b_02b58_parameter_tree_typed_form_report_runner`; independent
   Python reference matches 100% on valid flags, counts, and full entry lists with reasons;
-  4/4 matched_hash_bound.
+  4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_com::{
-    build_r480_noise_pdf_v1, DiscretePdfV1, BUILD_NOISE_PDF_POLICY_V1,
-};
+use sipi_com::{BUILD_NOISE_PDF_POLICY_V1, DiscretePdfV1, build_r480_noise_pdf_v1};
 
 fn pdf_from_json(value: &Value) -> DiscretePdfV1 {
     let bin_size = value["bin_size"].as_f64().expect("bin_size");
@@ -80,9 +78,7 @@ fn main() {
         value["spec_ber"].as_f64().expect("spec_ber"),
         value["noise_crest_factor"].as_f64().unwrap_or(0.0),
         value["sigma_ne_v"].as_f64().unwrap_or(0.0),
-        value["bbn_q_factor"].as_f64().map(|v| {
-            if v.is_nan() { None } else { Some(v) }
-        }).flatten(),
+        value["bbn_q_factor"].as_f64().filter(|v| !v.is_nan()),
         value["sigma_tx_override_v"].as_f64(),
         value["sigma_rj_override_v"].as_f64(),
     )

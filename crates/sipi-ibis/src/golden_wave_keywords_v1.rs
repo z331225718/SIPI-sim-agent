@@ -61,7 +61,10 @@ mod tests {
         let wave = lift_golden_wave_declaration_v1("GOLDEN_WAVE_1", Some("DUT_FBGA84")).unwrap();
         let block = lift_golden_wave_block_v1(wave).expect("lift");
 
-        assert_eq!(block.waveform_declaration().waveform_name(), "GOLDEN_WAVE_1");
+        assert_eq!(
+            block.waveform_declaration().waveform_name(),
+            "GOLDEN_WAVE_1"
+        );
         assert_eq!(block.waveform_declaration().dut_name(), Some("DUT_FBGA84"));
     }
 }

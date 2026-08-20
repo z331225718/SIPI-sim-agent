@@ -58,16 +58,22 @@ pub fn list_multiset_equal_v1(
     {
         return Err(ParameterListMultisetEqualErrorV1::NotAList);
     }
-    let left_items = list_items(left.value_token())
-        .ok_or(ParameterListMultisetEqualErrorV1::MalformedList)?;
-    let right_items = list_items(right.value_token())
-        .ok_or(ParameterListMultisetEqualErrorV1::MalformedList)?;
+    let left_items =
+        list_items(left.value_token()).ok_or(ParameterListMultisetEqualErrorV1::MalformedList)?;
+    let right_items =
+        list_items(right.value_token()).ok_or(ParameterListMultisetEqualErrorV1::MalformedList)?;
     if left_items.len() != right_items.len() {
         return Ok(false);
     }
     for item in &left_items {
-        let left_count = left_items.iter().filter(|candidate| *candidate == item).count();
-        let right_count = right_items.iter().filter(|candidate| *candidate == item).count();
+        let left_count = left_items
+            .iter()
+            .filter(|candidate| *candidate == item)
+            .count();
+        let right_count = right_items
+            .iter()
+            .filter(|candidate| *candidate == item)
+            .count();
         if left_count != right_count {
             return Ok(false);
         }

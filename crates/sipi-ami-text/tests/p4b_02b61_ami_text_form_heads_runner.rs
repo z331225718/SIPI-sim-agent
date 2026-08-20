@@ -8,11 +8,10 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    count_ami_text_form_heads_v1, parse_ami_text_v1, ParseLimitsV1,
-    AMI_TEXT_FORM_HEADS_POLICY_V1,
+    AMI_TEXT_FORM_HEADS_POLICY_V1, ParseLimitsV1, count_ami_text_form_heads_v1, parse_ami_text_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -43,7 +42,8 @@ fn main() {
                 "parse_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

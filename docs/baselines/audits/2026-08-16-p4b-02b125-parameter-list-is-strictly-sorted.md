@@ -25,7 +25,7 @@ reference replicates the order rule over 4 test cases.
   wrong direction, non-list, single item).
 - Cross-check: 4 test cases (strictly ascending, strictly descending, equal breaks strict,
   non-list) driven through product runner `p4b_02b125_parameter_list_is_strictly_sorted_runner`;
-  independent Python reference matches 100% on booleans and error keys; 4/4 matched_hash_bound.
+  independent Python reference matches 100% on booleans and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

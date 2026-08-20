@@ -7,9 +7,9 @@
 //! violations in the result; a tree with reserved names is not itself an error.
 //! Fail-closed: an empty reserved-name set is strictly rejected.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
 
 /// Scope policy for the parameter tree reserved-name check core.
 pub const PARAMETER_TREE_RESERVED_NAME_CHECK_POLICY_V1: &str =
@@ -148,13 +148,14 @@ mod tests {
     fn violations_are_sorted_and_deduplicated() {
         let t = tree(branch(
             "root",
-            vec![leaf("beta", &["1"]), leaf("alpha", &["2"]), leaf("gain", &["3"])],
+            vec![
+                leaf("beta", &["1"]),
+                leaf("alpha", &["2"]),
+                leaf("gain", &["3"]),
+            ],
         ));
-        let result = check_parameter_tree_reserved_names_v1(
-            &t,
-            &reserved_of(&["alpha", "beta"]),
-        )
-        .expect("checked");
+        let result = check_parameter_tree_reserved_names_v1(&t, &reserved_of(&["alpha", "beta"]))
+            .expect("checked");
         assert_eq!(
             result.violations(),
             &["alpha".to_string(), "beta".to_string()]

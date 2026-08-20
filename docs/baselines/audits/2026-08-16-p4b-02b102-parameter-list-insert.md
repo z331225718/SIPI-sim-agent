@@ -25,7 +25,7 @@ item count. An independent Python reference replicates the insert rule over 4 te
   out of range, empty new item, non-list).
 - Cross-check: 4 test cases (insert middle, insert start, out of range, empty new item) driven
   through product runner `p4b_02b102_parameter_list_insert_runner`; independent Python reference
-  matches 100% on inserted tokens and error keys with index/count; 4/4 matched_hash_bound.
+  matches 100% on inserted tokens and error keys with index/count; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

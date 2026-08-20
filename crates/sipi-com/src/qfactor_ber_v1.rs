@@ -80,10 +80,7 @@ pub fn estimate_q_factor_v1(
 }
 
 /// Estimates BER from a peak-to-peak amplitude and a one-sided noise sigma.
-pub fn estimate_ber_v1(
-    amplitude_pp_v: f64,
-    noise_sigma_v: f64,
-) -> Result<f64, QFactorBerErrorV1> {
+pub fn estimate_ber_v1(amplitude_pp_v: f64, noise_sigma_v: f64) -> Result<f64, QFactorBerErrorV1> {
     let q = estimate_q_factor_v1(amplitude_pp_v, noise_sigma_v)?;
     q_factor_to_ber_v1(q)
 }
@@ -94,8 +91,14 @@ mod tests {
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(QFACTOR_BER_POLICY_V1, "sipi.p3c-02e.qfactor-ber.v1.estimator");
-        assert_eq!(OWNER_TOLERANCE_POLICY_V1, "sipi.p3c-02e.qfactor-ber.v1.tolerance-0p1db");
+        assert_eq!(
+            QFACTOR_BER_POLICY_V1,
+            "sipi.p3c-02e.qfactor-ber.v1.estimator"
+        );
+        assert_eq!(
+            OWNER_TOLERANCE_POLICY_V1,
+            "sipi.p3c-02e.qfactor-ber.v1.tolerance-0p1db"
+        );
     }
 
     #[test]
@@ -149,7 +152,13 @@ mod tests {
 
     #[test]
     fn rejects_bad_ber_range() {
-        assert_eq!(ber_to_q_factor_v1(0.0).err(), Some(QFactorBerErrorV1::BerOutOfRange));
-        assert_eq!(ber_to_q_factor_v1(1.0).err(), Some(QFactorBerErrorV1::BerOutOfRange));
+        assert_eq!(
+            ber_to_q_factor_v1(0.0).err(),
+            Some(QFactorBerErrorV1::BerOutOfRange)
+        );
+        assert_eq!(
+            ber_to_q_factor_v1(1.0).err(),
+            Some(QFactorBerErrorV1::BerOutOfRange)
+        );
     }
 }

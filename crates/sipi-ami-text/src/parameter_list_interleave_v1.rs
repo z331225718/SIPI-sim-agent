@@ -58,10 +58,10 @@ pub fn interleave_parameter_list_values_v1(
     {
         return Err(ParameterListInterleaveErrorV1::NotAList);
     }
-    let left_items = list_items(left.value_token())
-        .ok_or(ParameterListInterleaveErrorV1::MalformedList)?;
-    let right_items = list_items(right.value_token())
-        .ok_or(ParameterListInterleaveErrorV1::MalformedList)?;
+    let left_items =
+        list_items(left.value_token()).ok_or(ParameterListInterleaveErrorV1::MalformedList)?;
+    let right_items =
+        list_items(right.value_token()).ok_or(ParameterListInterleaveErrorV1::MalformedList)?;
     let mut interleaved: Vec<String> = Vec::new();
     let shared = left_items.len().min(right_items.len());
     for index in 0..shared {

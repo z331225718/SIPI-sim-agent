@@ -25,7 +25,7 @@ test cases.
   paths, non-typed leaves, dotted path canonicalization).
 - Cross-check: 4 test cases (typed leaf, nested, missing path, non-typed leaf) driven through
   product runner `p4b_02b88_parameter_tree_leaf_type_resolution_runner`; independent Python
-  reference matches 100% on type tokens and error/path keys; 4/4 matched_hash_bound.
+  reference matches 100% on type tokens and error/path keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

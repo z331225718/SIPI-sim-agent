@@ -7,7 +7,10 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use sipi_compare::{compare_metric_profile_v1, MetricProfileV1, MetricSpecV1, ToleranceV1, UnitTagV1, METRIC_COMPARE_POLICY_V1};
+use sipi_compare::{
+    METRIC_COMPARE_POLICY_V1, MetricProfileV1, MetricSpecV1, ToleranceV1, UnitTagV1,
+    compare_metric_profile_v1,
+};
 
 fn main() {
     let mut input = None;
@@ -33,7 +36,8 @@ fn main() {
     if let Some(spec_array) = value.get("specs").and_then(|v| v.as_array()) {
         for spec in spec_array {
             let name = spec["name"].as_str().expect("name").to_string();
-            let unit = UnitTagV1::try_new(spec["unit"].as_str().expect("unit").to_string()).unwrap();
+            let unit =
+                UnitTagV1::try_new(spec["unit"].as_str().expect("unit").to_string()).unwrap();
             let reference = spec["reference"].as_f64().expect("reference");
             let abs = spec["abs"].as_f64().expect("abs");
             let rel = spec["rel"].as_f64().expect("rel");
@@ -61,7 +65,9 @@ fn main() {
                 "passed": r.passed(),
             })).collect::<Vec<_>>(),
         }),
-        Err(e) => serde_json::json!({ "error": format!("{e:?}"), "policy": METRIC_COMPARE_POLICY_V1 }),
+        Err(e) => {
+            serde_json::json!({ "error": format!("{e:?}"), "policy": METRIC_COMPARE_POLICY_V1 })
+        }
     };
     if let Some(path) = report {
         std::fs::write(path, serde_json::to_string(&output).expect("json")).expect("write");

@@ -26,7 +26,7 @@ tokenize/build/validate/decode pipeline over 4 test cases.
 - Cross-check: 4 test cases (mixed decode, multi-token value, missing type, invalid value for type)
   driven through product runner `p4b_02b37_parameter_tree_leaf_value_decoding_runner`; independent
   Python reference matches 100% on valid flags, decoded counts, value maps, and error contexts;
-  4/4 matched_hash_bound.
+  4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b79-parameter-profile-typed-diff-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b79.parameter-profile-typed-diff-v1.typed-profile-diff
 matched_count: 4
 case_count: 4

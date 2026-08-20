@@ -10,7 +10,7 @@
 
 use std::collections::HashMap;
 
-use crate::value_consumption_v1::{resolve_default_value_v1, ResolvedDefaultV1};
+use crate::value_consumption_v1::{ResolvedDefaultV1, resolve_default_value_v1};
 
 /// Stable scope policy of the P5-02l default-set resolver.
 pub const RESOLVE_PARAMETERS_POLICY_V1: &str = "sipi.p5-02l.resolve-parameters.v1.default-set";
@@ -54,12 +54,18 @@ mod tests {
     use super::*;
 
     fn scalars(values: &[(&str, f64)]) -> HashMap<String, ResolvedDefaultV1> {
-        values.iter().map(|(k, v)| (k.to_string(), ResolvedDefaultV1::Scalar(*v))).collect()
+        values
+            .iter()
+            .map(|(k, v)| (k.to_string(), ResolvedDefaultV1::Scalar(*v)))
+            .collect()
     }
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(RESOLVE_PARAMETERS_POLICY_V1, "sipi.p5-02l.resolve-parameters.v1.default-set");
+        assert_eq!(
+            RESOLVE_PARAMETERS_POLICY_V1,
+            "sipi.p5-02l.resolve-parameters.v1.default-set"
+        );
     }
 
     #[test]
@@ -70,31 +76,40 @@ mod tests {
         ]);
         let params = scalars(&[("fb", 53.125e9)]);
         let resolved = resolve_default_set_v1(&expressions, &params, &HashMap::new()).expect("res");
-        assert_eq!(resolved.get("a_fext"), Some(&ResolvedDefaultV1::Scalar(0.5)));
-        assert_eq!(resolved.get("ctle_fp1"), Some(&ResolvedDefaultV1::Scalar(53.125e9 / 4.0)));
+        assert_eq!(
+            resolved.get("a_fext"),
+            Some(&ResolvedDefaultV1::Scalar(0.5))
+        );
+        assert_eq!(
+            resolved.get("ctle_fp1"),
+            Some(&ResolvedDefaultV1::Scalar(53.125e9 / 4.0))
+        );
     }
 
     #[test]
     fn unresolved_expression_rejected() {
-        let expressions = HashMap::from([
-            ("missing".to_string(), "param.does_not_exist".to_string()),
-        ]);
-        let err = resolve_default_set_v1(&expressions, &HashMap::new(), &HashMap::new()).err().expect("err");
+        let expressions =
+            HashMap::from([("missing".to_string(), "param.does_not_exist".to_string())]);
+        let err = resolve_default_set_v1(&expressions, &HashMap::new(), &HashMap::new())
+            .expect_err("err");
         assert!(matches!(err, ResolveParametersErrorV1::Unresolved { .. }));
     }
 
     #[test]
     fn empty_set_is_ok() {
-        let resolved = resolve_default_set_v1(&HashMap::new(), &HashMap::new(), &HashMap::new()).expect("ok");
+        let resolved =
+            resolve_default_set_v1(&HashMap::new(), &HashMap::new(), &HashMap::new()).expect("ok");
         assert!(resolved.is_empty());
     }
 
     #[test]
     fn vector_default_resolved() {
-        let expressions = HashMap::from([
-            ("snp_port".to_string(), "[1 3 2 4]".to_string()),
-        ]);
-        let resolved = resolve_default_set_v1(&expressions, &HashMap::new(), &HashMap::new()).expect("res");
-        assert_eq!(resolved.get("snp_port"), Some(&ResolvedDefaultV1::Vector(vec![1.0, 3.0, 2.0, 4.0])));
+        let expressions = HashMap::from([("snp_port".to_string(), "[1 3 2 4]".to_string())]);
+        let resolved =
+            resolve_default_set_v1(&expressions, &HashMap::new(), &HashMap::new()).expect("res");
+        assert_eq!(
+            resolved.get("snp_port"),
+            Some(&ResolvedDefaultV1::Vector(vec![1.0, 3.0, 2.0, 4.0]))
+        );
     }
 }

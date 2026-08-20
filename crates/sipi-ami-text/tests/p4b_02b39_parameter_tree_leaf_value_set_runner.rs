@@ -10,9 +10,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    build_parameter_trees_v1, parse_ami_text_v1, set_parameter_tree_leaf_value_v1,
-    AmiParameterTreeNodeV1, AmiParameterTypeV1, ParseLimitsV1,
-    PARAMETER_TREE_LEAF_VALUE_SET_POLICY_V1,
+    AmiParameterTreeNodeV1, AmiParameterTypeV1, PARAMETER_TREE_LEAF_VALUE_SET_POLICY_V1,
+    ParseLimitsV1, build_parameter_trees_v1, parse_ami_text_v1, set_parameter_tree_leaf_value_v1,
 };
 
 fn node_to_json(node: &AmiParameterTreeNodeV1) -> Value {
@@ -25,23 +24,25 @@ fn node_to_json(node: &AmiParameterTreeNodeV1) -> Value {
             map.insert("children".to_string(), Value::Array(children_json));
             Value::Object(map)
         }
-        AmiParameterTreeNodeV1::Leaf {
-            name,
-            value_tokens,
-        } => {
+        AmiParameterTreeNodeV1::Leaf { name, value_tokens } => {
             let mut map = serde_json::Map::new();
             map.insert("kind".to_string(), Value::String("leaf".to_string()));
             map.insert("name".to_string(), Value::String(name.clone()));
             map.insert(
                 "value_tokens".to_string(),
-                Value::Array(value_tokens.iter().map(|t| Value::String(t.clone())).collect()),
+                Value::Array(
+                    value_tokens
+                        .iter()
+                        .map(|t| Value::String(t.clone()))
+                        .collect(),
+                ),
             );
             Value::Object(map)
         }
     }
 }
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -54,7 +55,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b39_parameter_tree_leaf_value_set_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b39_parameter_tree_leaf_value_set_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -64,7 +67,9 @@ fn main() {
     let mut type_map = BTreeMap::new();
     if let Some(types) = value.get("types").and_then(|v| v.as_object()) {
         for (name, type_token) in types {
-            if let Some(parameter_type) = type_token.as_str().and_then(AmiParameterTypeV1::from_token) {
+            if let Some(parameter_type) =
+                type_token.as_str().and_then(AmiParameterTypeV1::from_token)
+            {
                 type_map.insert(name.clone(), parameter_type);
             }
         }
@@ -90,7 +95,8 @@ fn main() {
                 "parse_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -106,7 +112,8 @@ fn main() {
                 "build_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -114,23 +121,24 @@ fn main() {
         }
     };
 
-    let output = match set_parameter_tree_leaf_value_v1(&trees[0], &path_refs, &type_map, &value_token) {
-        Ok(updated) => {
-            serde_json::json!({
-                "policy": PARAMETER_TREE_LEAF_VALUE_SET_POLICY_V1,
-                "valid": true,
-                "root_name": updated.root_name(),
-                "tree": node_to_json(updated.root_node()),
-            })
-        }
-        Err(e) => {
-            serde_json::json!({
-                "policy": PARAMETER_TREE_LEAF_VALUE_SET_POLICY_V1,
-                "valid": false,
-                "set_error": format!("{e:?}"),
-            })
-        }
-    };
+    let output =
+        match set_parameter_tree_leaf_value_v1(&trees[0], &path_refs, &type_map, value_token) {
+            Ok(updated) => {
+                serde_json::json!({
+                    "policy": PARAMETER_TREE_LEAF_VALUE_SET_POLICY_V1,
+                    "valid": true,
+                    "root_name": updated.root_name(),
+                    "tree": node_to_json(updated.root_node()),
+                })
+            }
+            Err(e) => {
+                serde_json::json!({
+                    "policy": PARAMETER_TREE_LEAF_VALUE_SET_POLICY_V1,
+                    "valid": false,
+                    "set_error": format!("{e:?}"),
+                })
+            }
+        };
 
     if let Some(path) = report {
         std::fs::write(path, serde_json::to_string_pretty(&output).expect("json")).expect("write");

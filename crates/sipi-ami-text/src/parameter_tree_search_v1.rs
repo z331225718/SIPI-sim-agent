@@ -6,7 +6,7 @@
 //! children byte-wise, depth first). Zero matches is a valid result. Fail-closed:
 //! an empty search token is strictly rejected.
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
 
 /// Scope policy for the parameter tree leaf search core.
 pub const PARAMETER_TREE_LEAF_SEARCH_POLICY_V1: &str =
@@ -34,9 +34,7 @@ fn search_node(
                 path.pop();
             }
         }
-        AmiParameterTreeNodeV1::Leaf {
-            value_tokens, ..
-        } => {
+        AmiParameterTreeNodeV1::Leaf { value_tokens, .. } => {
             if value_tokens.iter().any(|t| t == token) {
                 out.push(path.clone());
             }

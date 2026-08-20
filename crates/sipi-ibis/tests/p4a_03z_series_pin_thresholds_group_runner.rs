@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ibis::{
-    lift_series_pin_table_group_thresholds_v1, SERIES_PIN_TABLE_THRESHOLDS_GROUP_POLICY_V1,
+    SERIES_PIN_TABLE_THRESHOLDS_GROUP_POLICY_V1, lift_series_pin_table_group_thresholds_v1,
 };
 
 fn main() {
@@ -24,7 +24,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4a_03z_series_pin_thresholds_group_runner --input <json> [--report <path>]");
+        println!(
+            "usage: p4a_03z_series_pin_thresholds_group_runner --input <json> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -34,7 +36,13 @@ fn main() {
     let cseries = value.get("cseries_farad").and_then(|v| v.as_f64());
     let lseries = value.get("lseries_henry").and_then(|v| v.as_f64());
 
-    let output = match lift_series_pin_table_group_thresholds_v1("GROUP_DEFAULT", vthresh, rseries, cseries, lseries) {
+    let output = match lift_series_pin_table_group_thresholds_v1(
+        "GROUP_DEFAULT",
+        vthresh,
+        rseries,
+        cseries,
+        lseries,
+    ) {
         Ok(thresh) => {
             serde_json::json!({
                 "policy": SERIES_PIN_TABLE_THRESHOLDS_GROUP_POLICY_V1,

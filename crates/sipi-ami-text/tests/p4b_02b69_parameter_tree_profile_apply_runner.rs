@@ -10,9 +10,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    apply_parameter_profile_to_tree_v1, build_parameter_trees_v1, parse_ami_text_v1,
-    AmiParameterTreeNodeV1, AmiParameterValueV1, ParseLimitsV1,
-    PARAMETER_TREE_PROFILE_APPLY_POLICY_V1,
+    AmiParameterTreeNodeV1, AmiParameterValueV1, PARAMETER_TREE_PROFILE_APPLY_POLICY_V1,
+    ParseLimitsV1, apply_parameter_profile_to_tree_v1, build_parameter_trees_v1, parse_ami_text_v1,
 };
 
 fn node_to_json(node: &AmiParameterTreeNodeV1) -> Value {
@@ -25,16 +24,18 @@ fn node_to_json(node: &AmiParameterTreeNodeV1) -> Value {
             map.insert("children".to_string(), Value::Array(children_json));
             Value::Object(map)
         }
-        AmiParameterTreeNodeV1::Leaf {
-            name,
-            value_tokens,
-        } => {
+        AmiParameterTreeNodeV1::Leaf { name, value_tokens } => {
             let mut map = serde_json::Map::new();
             map.insert("kind".to_string(), Value::String("leaf".to_string()));
             map.insert("name".to_string(), Value::String(name.clone()));
             map.insert(
                 "value_tokens".to_string(),
-                Value::Array(value_tokens.iter().map(|t| Value::String(t.clone())).collect()),
+                Value::Array(
+                    value_tokens
+                        .iter()
+                        .map(|t| Value::String(t.clone()))
+                        .collect(),
+                ),
             );
             Value::Object(map)
         }
@@ -53,7 +54,7 @@ fn parse_profile(value: &Value) -> Option<BTreeMap<String, AmiParameterValueV1>>
     Some(profile)
 }
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -66,7 +67,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b69_parameter_tree_profile_apply_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b69_parameter_tree_profile_apply_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -82,7 +85,8 @@ fn main() {
                 "input_error": "invalid_profile",
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -100,7 +104,8 @@ fn main() {
                 "parse_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -116,7 +121,8 @@ fn main() {
                 "build_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

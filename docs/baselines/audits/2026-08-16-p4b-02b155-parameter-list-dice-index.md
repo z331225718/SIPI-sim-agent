@@ -25,7 +25,7 @@ over 4 test cases.
   duplicates ignored, non-list, spacing canonicalized).
 - Cross-check: 4 test cases (identical sets, disjoint, partial overlap, non-list) driven through
   product runner `p4b_02b155_parameter_list_dice_index_runner`; independent Python reference
-  matches 100% on formatted indices and error keys; 4/4 matched_hash_bound.
+  matches 100% on formatted indices and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

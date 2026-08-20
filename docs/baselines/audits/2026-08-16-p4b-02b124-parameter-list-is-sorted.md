@@ -25,7 +25,7 @@ defensive instead of panicking). An independent Python reference replicates the 
   non-list, single item).
 - Cross-check: 4 test cases (ascending, descending, not sorted, non-list) driven through product
   runner `p4b_02b124_parameter_list_is_sorted_runner`; independent Python reference matches
-  100% on booleans and error keys; 4/4 matched_hash_bound.
+  100% on booleans and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

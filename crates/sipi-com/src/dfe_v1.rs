@@ -115,11 +115,18 @@ pub fn apply_tail_rss_bounds_v1(
 
 /// Port of `clip_dfe` (flat surface; row/column orientation is
 /// equivalent in the product API).
-pub fn clip_dfe_v1(values: &[f64], maximum: &[f64], minimum: &[f64]) -> Result<Vec<f64>, DfeErrorV1> {
+pub fn clip_dfe_v1(
+    values: &[f64],
+    maximum: &[f64],
+    minimum: &[f64],
+) -> Result<Vec<f64>, DfeErrorV1> {
     let taps: Vec<f64> = values.to_vec();
     let upper: Vec<f64> = maximum.to_vec();
     let lower: Vec<f64> = minimum.to_vec();
-    if upper.len() != taps.len() || lower.len() != taps.len() || lower.iter().zip(upper.iter()).any(|(low, high)| low > high) {
+    if upper.len() != taps.len()
+        || lower.len() != taps.len()
+        || lower.iter().zip(upper.iter()).any(|(low, high)| low > high)
+    {
         return Err(DfeErrorV1::InvalidClipThresholds);
     }
     Ok(taps
@@ -154,7 +161,11 @@ fn invalidate_preceding_overlap(energy: &mut [f64], start: usize, width: usize, 
 
 fn stable_order_descending(energy: &[f64]) -> Vec<usize> {
     let mut order: Vec<usize> = (0..energy.len()).collect();
-    order.sort_by(|a, b| energy[*b].partial_cmp(&energy[*a]).unwrap_or(std::cmp::Ordering::Equal));
+    order.sort_by(|a, b| {
+        energy[*b]
+            .partial_cmp(&energy[*a])
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     order
 }
 
@@ -180,7 +191,10 @@ pub fn find_dfe_bank_locations_v1(
     if bank_count == 0 {
         return Ok(Vec::new());
     }
-    let window: Vec<f64> = values[start_index..=end_index].iter().map(|value| value.abs()).collect();
+    let window: Vec<f64> = values[start_index..=end_index]
+        .iter()
+        .map(|value| value.abs())
+        .collect();
     let mut reduced: Vec<f64> = window
         .iter()
         .map(|value| (0.0_f64).max(value - coefficient_limit * cursor))
@@ -218,7 +232,11 @@ pub fn find_dfe_bank_locations_v1(
             for (offset, index) in candidate.iter().enumerate() {
                 selected[bank * taps_per_bank + offset] = *index as i64;
             }
-            let invalid_indices: Vec<usize> = candidate.iter().copied().filter(|index| *index < energy.len()).collect();
+            let invalid_indices: Vec<usize> = candidate
+                .iter()
+                .copied()
+                .filter(|index| *index < energy.len())
+                .collect();
             for index in invalid_indices {
                 energy[index] = invalid;
             }
@@ -270,9 +288,16 @@ pub fn find_dfe_bank_locations_v1(
                 }
                 let bad_positions: Vec<usize> = bad
                     .iter()
-                    .map(|value| order.iter().position(|entry| entry == value).expect("position"))
+                    .map(|value| {
+                        order
+                            .iter()
+                            .position(|entry| entry == value)
+                            .expect("position")
+                    })
                     .collect();
-                if !found_good && bad_positions.iter().min().copied().unwrap_or(usize::MAX) < position {
+                if !found_good
+                    && bad_positions.iter().min().copied().unwrap_or(usize::MAX) < position
+                {
                     if candidate[0] < energy.len() {
                         energy[candidate[0]] = invalid;
                     }
@@ -289,7 +314,11 @@ pub fn find_dfe_bank_locations_v1(
             }
             break;
         }
-        let invalid_indices: Vec<usize> = candidate.iter().copied().filter(|index| *index < energy.len()).collect();
+        let invalid_indices: Vec<usize> = candidate
+            .iter()
+            .copied()
+            .filter(|index| *index < energy.len())
+            .collect();
         for index in invalid_indices {
             energy[index] = invalid;
         }
@@ -304,7 +333,10 @@ pub fn find_dfe_bank_locations_v1(
             }
         }
     }
-    let mut result: Vec<i64> = selected.iter().map(|value| value + start_index as i64).collect();
+    let mut result: Vec<i64> = selected
+        .iter()
+        .map(|value| value + start_index as i64)
+        .collect();
     result.sort_unstable();
     Ok(result)
 }
@@ -321,7 +353,10 @@ pub fn apply_dfe_bank_v1(
 ) -> Result<DfeBankResultV1, DfeErrorV1> {
     let mut residual: Vec<f64> = hisi.to_vec();
     let mut reference: Vec<f64> = hisi_ref.to_vec();
-    if residual.len() != reference.len() || start_index + tap_count > residual.len() || cursor == 0.0 {
+    if residual.len() != reference.len()
+        || start_index + tap_count > residual.len()
+        || cursor == 0.0
+    {
         return Err(DfeErrorV1::InvalidBankWaveform);
     }
     if coefficient_limit < 0.0 || quantization_step < 0.0 {
@@ -332,8 +367,17 @@ pub fn apply_dfe_bank_v1(
         values
             .iter()
             .map(|value| {
-                let sign = if *value > 0.0 { 1.0 } else if *value < 0.0 { -1.0 } else { 0.0 };
-                ((value / cursor).abs() / quantization_step).floor() * quantization_step * sign * cursor
+                let sign = if *value > 0.0 {
+                    1.0
+                } else if *value < 0.0 {
+                    -1.0
+                } else {
+                    0.0
+                };
+                ((value / cursor).abs() / quantization_step).floor()
+                    * quantization_step
+                    * sign
+                    * cursor
             })
             .collect()
     } else {
@@ -342,7 +386,13 @@ pub fn apply_dfe_bank_v1(
     let coefficients: Vec<f64> = quantized
         .iter()
         .map(|value| {
-            let sign = if *value > 0.0 { 1.0 } else if *value < 0.0 { -1.0 } else { 0.0 };
+            let sign = if *value > 0.0 {
+                1.0
+            } else if *value < 0.0 {
+                -1.0
+            } else {
+                0.0
+            };
             (value / cursor).abs().min(coefficient_limit) * sign
         })
         .collect();
@@ -366,23 +416,22 @@ mod tests {
         let taps = vec![0.1, 0.2, 0.3, 0.4];
         let maximum = vec![0.5, 0.5, 0.5, 0.5];
         let minimum = vec![-0.5, -0.5, -0.5, -0.5];
-        let bounds = apply_tail_rss_bounds_v1(&taps, &maximum, &minimum, Some(2), 0.25)
-            .expect("bounds");
+        let bounds =
+            apply_tail_rss_bounds_v1(&taps, &maximum, &minimum, Some(2), 0.25).expect("bounds");
         // tail = [0.3, 0.4], rss = 0.5 >= 0.25 -> magnitude = 0.25 * |tail| / 0.5
         assert!((bounds.tail_rss() - 0.5).abs() < 1e-12);
         assert!((bounds.maximum()[2] - 0.15).abs() < 1e-12);
         assert!((bounds.maximum()[3] - 0.2).abs() < 1e-12);
         assert!((bounds.minimum()[3] + 0.2).abs() < 1e-12);
-        let none = apply_tail_rss_bounds_v1(&taps, &maximum, &minimum, None, 0.25)
-            .expect("bounds");
+        let none = apply_tail_rss_bounds_v1(&taps, &maximum, &minimum, None, 0.25).expect("bounds");
         assert_eq!(none.tail_rss(), 0.0);
         assert_eq!(none.maximum(), &maximum);
     }
 
     #[test]
     fn clip_elementwise() {
-        let clipped = clip_dfe_v1(&[0.8, -0.8, 0.0], &[0.5, 0.5, 0.5], &[-0.2, -0.2, -0.2])
-            .expect("clipped");
+        let clipped =
+            clip_dfe_v1(&[0.8, -0.8, 0.0], &[0.5, 0.5, 0.5], &[-0.2, -0.2, -0.2]).expect("clipped");
         assert_eq!(clipped, vec![0.5, -0.2, 0.0]);
         assert!(clip_dfe_v1(&[1.0], &[0.5], &[0.6]).is_err());
     }
@@ -391,8 +440,7 @@ mod tests {
     fn bank_locations_basic() {
         // Energy concentrated at the first bank positions.
         let hisi = vec![1.0, 1.0, 0.1, 0.1, 1.0, 1.0, 0.05, 0.05];
-        let locations = find_dfe_bank_locations_v1(&hisi, 0, 7, 2, 1.0, 0.0, 2)
-            .expect("locations");
+        let locations = find_dfe_bank_locations_v1(&hisi, 0, 7, 2, 1.0, 0.0, 2).expect("locations");
         assert_eq!(locations.len(), 4);
         assert!(locations.iter().all(|index| *index >= 0));
     }
@@ -401,8 +449,7 @@ mod tests {
     fn bank_apply_quantized() {
         let hisi = vec![0.1, 0.05, 0.2];
         let hisi_ref = vec![0.0, 0.0, 0.0];
-        let result = apply_dfe_bank_v1(&hisi, &hisi_ref, 0, 3, 0.1, 1.0, 0.5)
-            .expect("bank");
+        let result = apply_dfe_bank_v1(&hisi, &hisi_ref, 0, 3, 0.1, 1.0, 0.5).expect("bank");
         // quantized = floor(|v/0.1|/0.5)*0.5*sign*0.1
         assert_eq!(result.coefficients().len(), 3);
         assert_eq!(result.residual().len(), 3);

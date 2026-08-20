@@ -50,7 +50,9 @@ impl TypedDiffPinDeclarationV1 {
             return Err(DiffPinDeclarationErrorV1::IdenticalPins);
         }
 
-        let validate_val = |val: Option<f64>, kind: &'static str| -> Result<Option<FiniteF64>, DiffPinDeclarationErrorV1> {
+        let validate_val = |val: Option<f64>,
+                            kind: &'static str|
+         -> Result<Option<FiniteF64>, DiffPinDeclarationErrorV1> {
             match val {
                 None => Ok(None),
                 Some(v) => {
@@ -119,13 +121,8 @@ mod tests {
 
     #[test]
     fn valid_full_diff_pin() {
-        let diff = lift_diff_pin_declaration_v1(
-            "DP1",
-            "DN1",
-            Some(0.1),
-            Some(1e-10),
-        )
-        .expect("lift");
+        let diff =
+            lift_diff_pin_declaration_v1("DP1", "DN1", Some(0.1), Some(1e-10)).expect("lift");
         assert_eq!(diff.pin_non_inv(), "DP1");
         assert_eq!(diff.pin_inv(), "DN1");
         assert_eq!(diff.vdiff_v().unwrap().get(), 0.1);

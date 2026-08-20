@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use sipi_com::{compliance_report_v1, ComplianceMetricSpecV1, COMPLIANCE_REPORT_POLICY_V1};
+use sipi_com::{COMPLIANCE_REPORT_POLICY_V1, ComplianceMetricSpecV1, compliance_report_v1};
 
 fn main() {
     let mut input = None;
@@ -37,7 +37,9 @@ fn main() {
     }
     let mut candidates = BTreeMap::new();
     if let Some(o) = value.get("candidates").and_then(|v| v.as_object()) {
-        for (k, v) in o { candidates.insert(k.clone(), v.as_f64().unwrap()); }
+        for (k, v) in o {
+            candidates.insert(k.clone(), v.as_f64().unwrap());
+        }
     }
 
     let output = match compliance_report_v1(&profile, &candidates) {
@@ -47,8 +49,13 @@ fn main() {
             })).collect();
             serde_json::json!({ "policy": COMPLIANCE_REPORT_POLICY_V1, "ok": true, "passed": rpt.passed(), "results": results })
         }
-        Err(e) => serde_json::json!({ "policy": COMPLIANCE_REPORT_POLICY_V1, "ok": false, "error": format!("{e:?}") }),
+        Err(e) => {
+            serde_json::json!({ "policy": COMPLIANCE_REPORT_POLICY_V1, "ok": false, "error": format!("{e:?}") })
+        }
     };
-    if let Some(path) = report { std::fs::write(path, serde_json::to_string(&output).expect("json")).expect("write"); }
-    else { println!("{}", serde_json::to_string(&output).expect("json")); }
+    if let Some(path) = report {
+        std::fs::write(path, serde_json::to_string(&output).expect("json")).expect("write");
+    } else {
+        println!("{}", serde_json::to_string(&output).expect("json"));
+    }
 }

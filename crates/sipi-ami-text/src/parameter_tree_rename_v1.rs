@@ -5,8 +5,10 @@
 //! with the renamed node. Fail-closed: empty paths, root renames, invalid new names,
 //! root-name mismatches, or missing path segments are strictly rejected.
 
+use crate::parameter_tree_subtree_v1::{
+    ParameterTreeSubtreeErrorV1, extract_parameter_tree_subtree_v1,
+};
 use crate::parameter_trees_v1::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
-use crate::parameter_tree_subtree_v1::{extract_parameter_tree_subtree_v1, ParameterTreeSubtreeErrorV1};
 
 /// Scope policy for the parameter tree rename core.
 pub const PARAMETER_TREE_RENAME_POLICY_V1: &str =
@@ -28,25 +30,27 @@ fn is_valid_identifier(name: &str) -> bool {
     let trimmed = name.trim();
     !trimmed.is_empty()
         && trimmed.is_ascii()
-        && trimmed.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+        && trimmed
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
 }
 
-fn rename_node(node: &AmiParameterTreeNodeV1, segments: &[&str], new_name: &str) -> Result<AmiParameterTreeNodeV1, ParameterTreeRenameErrorV1> {
+fn rename_node(
+    node: &AmiParameterTreeNodeV1,
+    segments: &[&str],
+    new_name: &str,
+) -> Result<AmiParameterTreeNodeV1, ParameterTreeRenameErrorV1> {
     if segments.is_empty() {
         // target node reached: rename it
         return Ok(match node {
-            AmiParameterTreeNodeV1::Branch { children, .. } => {
-                AmiParameterTreeNodeV1::Branch {
-                    name: new_name.to_string(),
-                    children: children.clone(),
-                }
-            }
-            AmiParameterTreeNodeV1::Leaf { value_tokens, .. } => {
-                AmiParameterTreeNodeV1::Leaf {
-                    name: new_name.to_string(),
-                    value_tokens: value_tokens.clone(),
-                }
-            }
+            AmiParameterTreeNodeV1::Branch { children, .. } => AmiParameterTreeNodeV1::Branch {
+                name: new_name.to_string(),
+                children: children.clone(),
+            },
+            AmiParameterTreeNodeV1::Leaf { value_tokens, .. } => AmiParameterTreeNodeV1::Leaf {
+                name: new_name.to_string(),
+                value_tokens: value_tokens.clone(),
+            },
         });
     }
 
@@ -54,9 +58,9 @@ fn rename_node(node: &AmiParameterTreeNodeV1, segments: &[&str], new_name: &str)
     match node {
         AmiParameterTreeNodeV1::Branch { name, children } => {
             let mut new_children = children.clone();
-            let child = new_children.get(*head).ok_or_else(|| {
-                ParameterTreeRenameErrorV1::MissingPath(segments.join("."))
-            })?;
+            let child = new_children
+                .get(*head)
+                .ok_or_else(|| ParameterTreeRenameErrorV1::MissingPath(segments.join(".")))?;
             if rest.is_empty() {
                 // target child is the node to rename: insert under the new name key
                 let renamed = rename_node(child, &[], new_name)?;
@@ -119,7 +123,9 @@ pub fn rename_parameter_tree_node_v1(
             ParameterTreeSubtreeErrorV1::RootMismatch { expected, actual } => {
                 ParameterTreeRenameErrorV1::RootMismatch { expected, actual }
             }
-            ParameterTreeSubtreeErrorV1::MissingPath(p) => ParameterTreeRenameErrorV1::MissingPath(p),
+            ParameterTreeSubtreeErrorV1::MissingPath(p) => {
+                ParameterTreeRenameErrorV1::MissingPath(p)
+            }
         });
     }
 
@@ -130,9 +136,9 @@ pub fn rename_parameter_tree_node_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ParseLimitsV1;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
     use crate::parse_ami_text_v1;
-    use crate::ParseLimitsV1;
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
@@ -162,7 +168,8 @@ mod tests {
     #[test]
     fn renames_branch_node() {
         let tree = tree_of("(root (branch_a (leaf_1 10)) (branch_b 20))");
-        let renamed = rename_parameter_tree_node_v1(&tree, "root.branch_a", "branch_x").expect("rename");
+        let renamed =
+            rename_parameter_tree_node_v1(&tree, "root.branch_a", "branch_x").expect("rename");
         let out = extract_parameter_tree_subtree_v1(&renamed, "root.branch_x").expect("extract");
         assert_eq!(out.name(), "branch_x");
     }
@@ -190,7 +197,9 @@ mod tests {
         let tree = tree_of("(root (a 1))");
         assert_eq!(
             rename_parameter_tree_node_v1(&tree, "root.a.nope", "x"),
-            Err(ParameterTreeRenameErrorV1::MissingPath("root.a.nope".to_string()))
+            Err(ParameterTreeRenameErrorV1::MissingPath(
+                "root.a.nope".to_string()
+            ))
         );
     }
 }

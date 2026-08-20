@@ -14,13 +14,12 @@ use std::{
 use sha2::{Digest, Sha256};
 use sipi_artifacts::ArtifactRoot;
 use sipi_ieee_com_sparam::{
-    enforce_selected_p3c_causality_v1, interpolate_selected_p3c_hdiff_v1,
     CausalityEnforcementErrorV1, InterpSparamErrorV1, SelectedP3cCausalityStopV1,
+    enforce_selected_p3c_causality_v1, interpolate_selected_p3c_hdiff_v1,
 };
 use sipi_p3c::{
-    admit_selected_p3c_sealed_s4p_v2, SelectedP3cSealedS4pIdentityV2,
-    SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1,
-    SELECTED_P3C_S4P_SHA256_V1,
+    SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1,
+    SelectedP3cSealedS4pIdentityV2, admit_selected_p3c_sealed_s4p_v2,
 };
 
 const SOURCE_ENV: &str = "SIPI_P3C_SEALED_S4P_EXTERNAL_SOURCE";
@@ -38,7 +37,10 @@ enum Outcome {
         stop: &'static str,
         causal_response_sha256: String,
     },
-    Rejected { stage: &'static str, error: &'static str },
+    Rejected {
+        stage: &'static str,
+        error: &'static str,
+    },
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -53,30 +55,47 @@ fn sha256_reader(mut reader: impl Read) -> Result<(u64, String), String> {
     let mut length = 0_u64;
     let mut buffer = [0_u8; 64 * 1024];
     loop {
-        let read = reader.read(&mut buffer).map_err(|error| format!("source_hash:{error}"))?;
-        if read == 0 { break; }
-        length = length.checked_add(read as u64).ok_or_else(|| "source_length_overflow".to_owned())?;
+        let read = reader
+            .read(&mut buffer)
+            .map_err(|error| format!("source_hash:{error}"))?;
+        if read == 0 {
+            break;
+        }
+        length = length
+            .checked_add(read as u64)
+            .ok_or_else(|| "source_length_overflow".to_owned())?;
         digest.update(&buffer[..read]);
     }
     Ok((length, format!("{:x}", digest.finalize())))
 }
 
 fn source_identity(source: &Path) -> Result<(u64, String), String> {
-    let identity = sha256_reader(File::open(source).map_err(|error| format!("source_open:{error}"))?)?;
-    if identity != (SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_SHA256_V1.to_owned()) {
+    let identity =
+        sha256_reader(File::open(source).map_err(|error| format!("source_open:{error}"))?)?;
+    if identity
+        != (
+            SELECTED_P3C_S4P_BYTE_LENGTH_V1,
+            SELECTED_P3C_S4P_SHA256_V1.to_owned(),
+        )
+    {
         return Err("source_identity_mismatch".to_owned());
     }
     Ok(identity)
 }
 
 fn fresh_root(index: usize) -> Result<PathBuf, String> {
-    let nonce = SystemTime::now().duration_since(UNIX_EPOCH).map_err(|_| "clock_before_epoch".to_owned())?.as_nanos();
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| "clock_before_epoch".to_owned())?
+        .as_nanos();
     let root = env::temp_dir().join(format!("sipi-p3c-causality-{index}-{nonce}"));
     fs::create_dir(&root).map_err(|error| format!("root_create:{error}"))?;
     Ok(root)
 }
 
-fn sha256_bytes(bytes: &[u8]) -> String { format!("{:x}", Sha256::digest(bytes)) }
+fn sha256_bytes(bytes: &[u8]) -> String {
+    format!("{:x}", Sha256::digest(bytes))
+}
 
 fn interpolation_error_name(error: InterpSparamErrorV1) -> &'static str {
     match error {
@@ -96,7 +115,9 @@ fn causality_error_name(error: CausalityEnforcementErrorV1) -> &'static str {
     match error {
         CausalityEnforcementErrorV1::RawPeriodicInput(_) => "raw_periodic_input",
         CausalityEnforcementErrorV1::InputAllZero => "input_all_zero",
-        CausalityEnforcementErrorV1::NoFirstHalfThresholdCrossing => "no_first_half_threshold_crossing",
+        CausalityEnforcementErrorV1::NoFirstHalfThresholdCrossing => {
+            "no_first_half_threshold_crossing"
+        }
         CausalityEnforcementErrorV1::IterationBecameAllZero => "iteration_became_all_zero",
         CausalityEnforcementErrorV1::NonPositiveErrorDenominator => "nonpositive_error_denominator",
         CausalityEnforcementErrorV1::InverseImaginaryResidue => "inverse_imaginary_residue",
@@ -108,17 +129,29 @@ fn causality_error_name(error: CausalityEnforcementErrorV1) -> &'static str {
 fn outcome(admitted: &sipi_p3c::AdmittedSelectedP3cStaticTransferV2) -> Outcome {
     let uniform = match interpolate_selected_p3c_hdiff_v1(admitted.transfer()) {
         Ok(value) => value,
-        Err(error) => return Outcome::Rejected { stage: "interpolation", error: interpolation_error_name(error) },
+        Err(error) => {
+            return Outcome::Rejected {
+                stage: "interpolation",
+                error: interpolation_error_name(error),
+            };
+        }
     };
     let causal = match enforce_selected_p3c_causality_v1(&uniform) {
         Ok(value) => value,
-        Err(error) => return Outcome::Rejected { stage: "causality_enforcement", error: causality_error_name(error) },
+        Err(error) => {
+            return Outcome::Rejected {
+                stage: "causality_enforcement",
+                error: causality_error_name(error),
+            };
+        }
     };
     let mut digest = Sha256::new();
     digest.update(b"sipi.p3c.selected-causality-response.v1\0");
     digest.update((causal.sample_count() as u64).to_be_bytes());
     digest.update(causal.sample_interval().get().to_bits().to_be_bytes());
-    for sample in causal.samples() { digest.update(sample.get().to_bits().to_be_bytes()); }
+    for sample in causal.samples() {
+        digest.update(sample.get().to_bits().to_be_bytes());
+    }
     let stop = match causal.stop() {
         SelectedP3cCausalityStopV1::RelativeError => "relative_error",
         SelectedP3cCausalityStopV1::SuccessiveErrorDifference => "successive_error_difference",
@@ -138,32 +171,91 @@ fn observe_once(source: &Path, index: usize) -> Result<RunFact, String> {
     let before = source_identity(source)?;
     let root = fresh_root(index)?;
     let result = (|| {
-        let store = ArtifactRoot::open_or_create(&root).map_err(|error| format!("artifact_root:{error:?}"))?;
+        let store = ArtifactRoot::open_or_create(&root)
+            .map_err(|error| format!("artifact_root:{error:?}"))?;
         let artifact_id = format!("selected-s4p-causality-{index}");
-        let mut stage = store.begin(&artifact_id).map_err(|error| format!("artifact_begin:{error:?}"))?;
-        stage.stage_reader(SELECTED_P3C_S4P_FILE_NAME_V1, File::open(source).map_err(|error| format!("source_reopen:{error}"))?, SELECTED_P3C_S4P_BYTE_LENGTH_V1).map_err(|error| format!("artifact_stage:{error:?}"))?;
-        stage.seal().map_err(|error| format!("artifact_seal:{error:?}"))?.publish_new().map_err(|error| format!("artifact_publish:{error:?}"))?;
-        if source_identity(source)? != before { return Err("source_changed_during_materialization".to_owned()); }
-        let manifest_sha256 = sha256_bytes(&fs::read(root.join(&artifact_id).join("success.json")).map_err(|error| format!("manifest_read:{error}"))?);
-        let reader = ArtifactRoot::open_existing(&root).map_err(|error| format!("artifact_reopen:{error:?}"))?;
-        let identity = SelectedP3cSealedS4pIdentityV2::try_new(&artifact_id, &manifest_sha256).map_err(|error| format!("identity:{error}"))?;
-        let admitted = admit_selected_p3c_sealed_s4p_v2(&reader, &identity).map_err(|error| format!("admission:{error}"))?;
-        if admitted.source_byte_length() != before.0 || admitted.source_sha256() != before.1 || admitted.artifact_id() != artifact_id || admitted.manifest_sha256() != manifest_sha256 || admitted.record_count() == 0 { return Err("admission_provenance_mismatch".to_owned()); }
-        Ok(RunFact { manifest_sha256, record_count: admitted.record_count(), outcome: outcome(&admitted) })
+        let mut stage = store
+            .begin(&artifact_id)
+            .map_err(|error| format!("artifact_begin:{error:?}"))?;
+        stage
+            .stage_reader(
+                SELECTED_P3C_S4P_FILE_NAME_V1,
+                File::open(source).map_err(|error| format!("source_reopen:{error}"))?,
+                SELECTED_P3C_S4P_BYTE_LENGTH_V1,
+            )
+            .map_err(|error| format!("artifact_stage:{error:?}"))?;
+        stage
+            .seal()
+            .map_err(|error| format!("artifact_seal:{error:?}"))?
+            .publish_new()
+            .map_err(|error| format!("artifact_publish:{error:?}"))?;
+        if source_identity(source)? != before {
+            return Err("source_changed_during_materialization".to_owned());
+        }
+        let manifest_sha256 = sha256_bytes(
+            &fs::read(root.join(&artifact_id).join("success.json"))
+                .map_err(|error| format!("manifest_read:{error}"))?,
+        );
+        let reader = ArtifactRoot::open_existing(&root)
+            .map_err(|error| format!("artifact_reopen:{error:?}"))?;
+        let identity = SelectedP3cSealedS4pIdentityV2::try_new(&artifact_id, &manifest_sha256)
+            .map_err(|error| format!("identity:{error}"))?;
+        let admitted = admit_selected_p3c_sealed_s4p_v2(&reader, &identity)
+            .map_err(|error| format!("admission:{error}"))?;
+        if admitted.source_byte_length() != before.0
+            || admitted.source_sha256() != before.1
+            || admitted.artifact_id() != artifact_id
+            || admitted.manifest_sha256() != manifest_sha256
+            || admitted.record_count() == 0
+        {
+            return Err("admission_provenance_mismatch".to_owned());
+        }
+        Ok(RunFact {
+            manifest_sha256,
+            record_count: admitted.record_count(),
+            outcome: outcome(&admitted),
+        })
     })();
     let cleanup = fs::remove_dir_all(&root).map_err(|error| format!("root_cleanup:{error}"));
-    match (result, cleanup) { (Ok(fact), Ok(())) => Ok(fact), (Err(error), Ok(())) | (_, Err(error)) => Err(error) }
+    match (result, cleanup) {
+        (Ok(fact), Ok(())) => Ok(fact),
+        (Err(error), Ok(())) | (_, Err(error)) => Err(error),
+    }
 }
 
 fn required_path(name: &str) -> Result<PathBuf, String> {
     let path = PathBuf::from(env::var_os(name).ok_or_else(|| format!("{name}_missing"))?);
-    path.is_absolute().then_some(path).ok_or_else(|| format!("{name}_not_absolute"))
+    path.is_absolute()
+        .then_some(path)
+        .ok_or_else(|| format!("{name}_not_absolute"))
 }
 
 fn run_json(fact: &RunFact) -> String {
     match &fact.outcome {
-        Outcome::Admitted { uniform_bin_count, causal_sample_count, sample_interval_bits, iteration_count, final_error_bits, stop, causal_response_sha256 } => format!("{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"causality_status\":\"admitted\",\"uniform_bin_count\":{},\"causal_sample_count\":{},\"sample_interval_bits\":\"{}\",\"iteration_count\":{},\"final_error_bits\":\"{}\",\"stop\":\"{}\",\"causal_response_sha256\":\"{}\"}}", fact.manifest_sha256, fact.record_count, uniform_bin_count, causal_sample_count, sample_interval_bits, iteration_count, final_error_bits, stop, causal_response_sha256),
-        Outcome::Rejected { stage, error } => format!("{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"causality_status\":\"rejected\",\"stage\":\"{}\",\"error\":\"{}\"}}", fact.manifest_sha256, fact.record_count, stage, error),
+        Outcome::Admitted {
+            uniform_bin_count,
+            causal_sample_count,
+            sample_interval_bits,
+            iteration_count,
+            final_error_bits,
+            stop,
+            causal_response_sha256,
+        } => format!(
+            "{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"causality_status\":\"admitted\",\"uniform_bin_count\":{},\"causal_sample_count\":{},\"sample_interval_bits\":\"{}\",\"iteration_count\":{},\"final_error_bits\":\"{}\",\"stop\":\"{}\",\"causal_response_sha256\":\"{}\"}}",
+            fact.manifest_sha256,
+            fact.record_count,
+            uniform_bin_count,
+            causal_sample_count,
+            sample_interval_bits,
+            iteration_count,
+            final_error_bits,
+            stop,
+            causal_response_sha256
+        ),
+        Outcome::Rejected { stage, error } => format!(
+            "{{\"manifest_sha256\":\"{}\",\"record_count\":{},\"causality_status\":\"rejected\",\"stage\":\"{}\",\"error\":\"{}\"}}",
+            fact.manifest_sha256, fact.record_count, stage, error
+        ),
     }
 }
 
@@ -172,15 +264,38 @@ fn run() -> Result<(), String> {
     let report = required_path(REPORT_ENV)?;
     let first = observe_once(&source, 1)?;
     let second = observe_once(&source, 2)?;
-    if first.record_count != second.record_count || first.manifest_sha256 == second.manifest_sha256 || first.outcome != second.outcome { return Err("fresh_runs_not_independent_or_repeatable".to_owned()); }
-    fs::create_dir_all(report.parent().ok_or_else(|| "report_parent_missing".to_owned())?).map_err(|error| format!("report_parent_create:{error}"))?;
-    let status = match first.outcome { Outcome::Admitted { .. } => "observed", Outcome::Rejected { .. } => "rejected" };
-    let payload = format!("{{\"schema\":\"{}\",\"status\":\"{}\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"source_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n", SCHEMA, status, SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_SHA256_V1, run_json(&first), run_json(&second));
+    if first.record_count != second.record_count
+        || first.manifest_sha256 == second.manifest_sha256
+        || first.outcome != second.outcome
+    {
+        return Err("fresh_runs_not_independent_or_repeatable".to_owned());
+    }
+    fs::create_dir_all(
+        report
+            .parent()
+            .ok_or_else(|| "report_parent_missing".to_owned())?,
+    )
+    .map_err(|error| format!("report_parent_create:{error}"))?;
+    let status = match first.outcome {
+        Outcome::Admitted { .. } => "observed",
+        Outcome::Rejected { .. } => "rejected",
+    };
+    let payload = format!(
+        "{{\"schema\":\"{}\",\"status\":\"{}\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"source_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n",
+        SCHEMA,
+        status,
+        SELECTED_P3C_S4P_BYTE_LENGTH_V1,
+        SELECTED_P3C_S4P_SHA256_V1,
+        run_json(&first),
+        run_json(&second)
+    );
     fs::write(report, payload).map_err(|error| format!("report_write:{error}"))
 }
 
 #[test]
 #[ignore = "external-only selected S4P causality observation; requires explicit source and report paths"]
 fn p3c_sealed_s4p_external_causality_runner_v1() {
-    run().unwrap_or_else(|error| panic!("p3c_sealed_s4p_external_causality_runner_v1_failed:{error}"));
+    run().unwrap_or_else(|error| {
+        panic!("p3c_sealed_s4p_external_causality_runner_v1_failed:{error}")
+    });
 }

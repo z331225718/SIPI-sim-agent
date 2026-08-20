@@ -8,8 +8,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ibis::{
-    lift_receiver_thresholds_block_v1, lift_receiver_thresholds_v1,
-    RECEIVER_THRESHOLDS_KEYWORDS_POLICY_V1,
+    RECEIVER_THRESHOLDS_KEYWORDS_POLICY_V1, lift_receiver_thresholds_block_v1,
+    lift_receiver_thresholds_v1,
 };
 
 fn main() {
@@ -25,7 +25,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4a_03ah_receiver_thresholds_keywords_runner --input <json> [--report <path>]");
+        println!(
+            "usage: p4a_03ah_receiver_thresholds_keywords_runner --input <json> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -46,7 +48,8 @@ fn main() {
                 "threshold_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

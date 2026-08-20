@@ -5,7 +5,7 @@
 
 use std::path::PathBuf;
 
-use sipi_com::{db_tolerance_check_v1, DB_TOLERANCE_POLICY_V1};
+use sipi_com::{DB_TOLERANCE_POLICY_V1, db_tolerance_check_v1};
 
 fn main() {
     let mut input = None;

@@ -24,7 +24,7 @@ profile with sorted keys and compact separators over 4 test cases.
   deterministic across input orders, round-trip parse).
 - Cross-check: 4 test cases (simple profile, sorted order, mixed types, empty profile) driven
   through product runner `p4b_02b81_parameter_profile_serialization_runner`; independent Python
-  reference matches 100% on the exact serialized strings; 4/4 matched_hash_bound.
+  reference matches 100% on the exact serialized strings; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

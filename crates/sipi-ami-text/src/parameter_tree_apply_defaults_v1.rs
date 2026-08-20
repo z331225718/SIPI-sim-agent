@@ -9,7 +9,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
 
 /// Scope policy for the parameter tree defaults application core.
 pub const PARAMETER_TREE_APPLY_DEFAULTS_POLICY_V1: &str =
@@ -164,11 +164,9 @@ mod tests {
     #[test]
     fn fills_missing_leaves_at_root() {
         let t = tree(branch("root", vec![leaf("gain", &["Float", "0.5"])]));
-        let result = apply_parameter_tree_defaults_v1(
-            &t,
-            &defaults_of(&[("steps", &["Integer", "7"])]),
-        )
-        .expect("applied");
+        let result =
+            apply_parameter_tree_defaults_v1(&t, &defaults_of(&[("steps", &["Integer", "7"])]))
+                .expect("applied");
         assert_eq!(result.added(), 1);
         assert_eq!(result.skipped(), 0);
         let root = result.tree().root_node();
@@ -178,10 +176,7 @@ mod tests {
                 let steps = children.get("steps").expect("steps");
                 match steps {
                     AmiParameterTreeNodeV1::Leaf { value_tokens, .. } => {
-                        assert_eq!(
-                            value_tokens,
-                            &vec!["Integer".to_string(), "7".to_string()]
-                        );
+                        assert_eq!(value_tokens, &vec!["Integer".to_string(), "7".to_string()]);
                     }
                     AmiParameterTreeNodeV1::Branch { .. } => panic!("expected leaf"),
                 }
@@ -193,11 +188,9 @@ mod tests {
     #[test]
     fn existing_leaf_is_skipped() {
         let t = tree(branch("root", vec![leaf("gain", &["Float", "0.5"])]));
-        let result = apply_parameter_tree_defaults_v1(
-            &t,
-            &defaults_of(&[("gain", &["Float", "9.9"])]),
-        )
-        .expect("applied");
+        let result =
+            apply_parameter_tree_defaults_v1(&t, &defaults_of(&[("gain", &["Float", "9.9"])]))
+                .expect("applied");
         assert_eq!(result.added(), 0);
         assert_eq!(result.skipped(), 1);
         assert_eq!(result.tree(), &t);
@@ -209,11 +202,9 @@ mod tests {
             "root",
             vec![branch("sub", vec![leaf("gain", &["1.0"])])],
         ));
-        let result = apply_parameter_tree_defaults_v1(
-            &t,
-            &defaults_of(&[("gain", &["Float", "9.9"])]),
-        )
-        .expect("applied");
+        let result =
+            apply_parameter_tree_defaults_v1(&t, &defaults_of(&[("gain", &["Float", "9.9"])]))
+                .expect("applied");
         assert_eq!(result.added(), 0);
         assert_eq!(result.skipped(), 1);
         assert_eq!(result.tree(), &t);
@@ -229,11 +220,8 @@ mod tests {
     #[test]
     fn empty_default_tokens_fail_closed() {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
-        let error = apply_parameter_tree_defaults_v1(
-            &t,
-            &defaults_of(&[("steps", &[])]),
-        )
-        .unwrap_err();
+        let error =
+            apply_parameter_tree_defaults_v1(&t, &defaults_of(&[("steps", &[])])).unwrap_err();
         assert_eq!(
             error,
             ParameterTreeDefaultsErrorV1::EmptyDefaultTokens("steps".to_string())
@@ -243,11 +231,9 @@ mod tests {
     #[test]
     fn root_leaf_tree_fails_closed() {
         let t = tree(leaf("gain", &["0.5"]));
-        let error = apply_parameter_tree_defaults_v1(
-            &t,
-            &defaults_of(&[("steps", &["Integer", "7"])]),
-        )
-        .unwrap_err();
+        let error =
+            apply_parameter_tree_defaults_v1(&t, &defaults_of(&[("steps", &["Integer", "7"])]))
+                .unwrap_err();
         assert_eq!(error, ParameterTreeDefaultsErrorV1::RootNotBranch);
     }
 
@@ -255,7 +241,10 @@ mod tests {
     fn mixed_add_and_skip_counts() {
         let t = tree(branch(
             "root",
-            vec![leaf("gain", &["Float", "0.5"]), leaf("mode", &["String", "fast"])],
+            vec![
+                leaf("gain", &["Float", "0.5"]),
+                leaf("mode", &["String", "fast"]),
+            ],
         ));
         let result = apply_parameter_tree_defaults_v1(
             &t,

@@ -141,7 +141,9 @@ mod tests {
     fn rejects_duplicate_member_pin() {
         assert_eq!(
             lift_bus_label_declaration_v1("DQ_BUS", vec!["DQ0".to_string(), "DQ0".to_string()]),
-            Err(BusLabelDeclarationErrorV1::DuplicateMemberPin("DQ0".to_string()))
+            Err(BusLabelDeclarationErrorV1::DuplicateMemberPin(
+                "DQ0".to_string()
+            ))
         );
     }
 

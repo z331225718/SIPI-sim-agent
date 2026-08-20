@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_test_data_declaration_v1, TEST_DATA_DECLARATION_POLICY_V1,
-};
+use sipi_ibis::{TEST_DATA_DECLARATION_POLICY_V1, lift_test_data_declaration_v1};
 
 fn main() {
     let mut input = None;
@@ -29,7 +27,10 @@ fn main() {
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
-    let fname = value.get("fixture_name").and_then(|v| v.as_str()).unwrap_or("");
+    let fname = value
+        .get("fixture_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let r_fix = value.get("r_fixture_ohm").and_then(|v| v.as_f64());
     let c_fix = value.get("c_fixture_farad").and_then(|v| v.as_f64());
     let l_fix = value.get("l_fixture_henry").and_then(|v| v.as_f64());

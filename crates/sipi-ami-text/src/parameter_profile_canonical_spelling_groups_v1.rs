@@ -16,7 +16,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{canonicalize_parameter_value_spelling_v1, AmiParameterValueV1};
+use crate::{AmiParameterValueV1, canonicalize_parameter_value_spelling_v1};
 
 /// Explicit scope policy of this slice: canonical spelling groups of profiles.
 pub const PARAMETER_PROFILE_CANONICAL_SPELLING_GROUPS_POLICY_V1: &str =
@@ -81,10 +81,7 @@ pub fn group_parameter_profile_names_by_canonical_spelling_v1(
     let mut by_spelling: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for (name, parameter) in profile {
         let canonical = canonicalize_parameter_value_spelling_v1(parameter);
-        by_spelling
-            .entry(canonical)
-            .or_default()
-            .push(name.clone());
+        by_spelling.entry(canonical).or_default().push(name.clone());
     }
     let groups = by_spelling
         .into_iter()
@@ -120,29 +117,29 @@ mod tests {
         let result = group_parameter_profile_names_by_canonical_spelling_v1(&p);
         assert_eq!(result.group_count(), 2);
         assert_eq!(result.groups()[0].spelling(), "7");
-        assert_eq!(result.groups()[0].names(), &["a".to_string(), "b".to_string()]);
+        assert_eq!(
+            result.groups()[0].names(),
+            &["a".to_string(), "b".to_string()]
+        );
         assert_eq!(result.groups()[1].spelling(), "8");
         assert_eq!(result.covered_names(), 3);
     }
 
     #[test]
     fn list_spacing_groups_together() {
-        let p = profile(&[
-            ("x", "List", "(a,b,c)"),
-            ("y", "List", "(a, b, c)"),
-        ]);
+        let p = profile(&[("x", "List", "(a,b,c)"), ("y", "List", "(a, b, c)")]);
         let result = group_parameter_profile_names_by_canonical_spelling_v1(&p);
         assert_eq!(result.group_count(), 1);
         assert_eq!(result.groups()[0].spelling(), "(a, b, c)");
-        assert_eq!(result.groups()[0].names(), &["x".to_string(), "y".to_string()]);
+        assert_eq!(
+            result.groups()[0].names(),
+            &["x".to_string(), "y".to_string()]
+        );
     }
 
     #[test]
     fn float_spellings_stay_separate() {
-        let p = profile(&[
-            ("a", "Float", "0.5"),
-            ("b", "Float", "0.50"),
-        ]);
+        let p = profile(&[("a", "Float", "0.5"), ("b", "Float", "0.50")]);
         let result = group_parameter_profile_names_by_canonical_spelling_v1(&p);
         assert_eq!(result.group_count(), 2);
         assert_eq!(result.singleton_count(), 2);
@@ -183,7 +180,10 @@ mod tests {
         assert_eq!(result.groups()[0].spelling(), "0.5");
         assert_eq!(result.groups()[0].names(), &["c".to_string()]);
         assert_eq!(result.groups()[1].spelling(), "7");
-        assert_eq!(result.groups()[1].names(), &["a".to_string(), "b".to_string()]);
+        assert_eq!(
+            result.groups()[1].names(),
+            &["a".to_string(), "b".to_string()]
+        );
         assert_eq!(result.covered_names(), 3);
     }
 }

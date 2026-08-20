@@ -6,7 +6,7 @@
 //! is the export/inspection primitive for trees. Flattening is total and
 //! result-based: any tree flattens.
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
 
 /// Scope policy for the parameter tree flatten core.
 pub const PARAMETER_TREE_FLATTEN_POLICY_V1: &str =
@@ -65,10 +65,7 @@ fn flatten_node(
                 path.pop();
             }
         }
-        AmiParameterTreeNodeV1::Leaf {
-            name,
-            value_tokens,
-        } => {
+        AmiParameterTreeNodeV1::Leaf { name, value_tokens } => {
             out.push(ParameterTreeNodeRecordV1 {
                 path: path.clone(),
                 kind: ParameterTreeNodeKindV1::Leaf,
@@ -81,9 +78,7 @@ fn flatten_node(
 
 /// Flatten `tree` into canonical preorder records (root first, then children
 /// byte-wise, depth first). Result-based: any tree flattens.
-pub fn flatten_parameter_tree_v1(
-    tree: &AmiParameterTreeV1,
-) -> Vec<ParameterTreeNodeRecordV1> {
+pub fn flatten_parameter_tree_v1(tree: &AmiParameterTreeV1) -> Vec<ParameterTreeNodeRecordV1> {
     let mut out = Vec::new();
     let mut path = vec![tree.root_name().to_string()];
     flatten_node(tree.root_node(), &mut path, &mut out);
@@ -123,7 +118,10 @@ mod tests {
     fn flattens_mixed_tree_in_canonical_order() {
         let t = tree(branch(
             "root",
-            vec![leaf("gain", &["Float", "0.5"]), leaf("steps", &["Integer", "7"])],
+            vec![
+                leaf("gain", &["Float", "0.5"]),
+                leaf("steps", &["Integer", "7"]),
+            ],
         ));
         let records = flatten_parameter_tree_v1(&t);
         assert_eq!(records.len(), 3);
@@ -155,11 +153,7 @@ mod tests {
             vec![
                 vec!["root".to_string()],
                 vec!["root".to_string(), "sub".to_string()],
-                vec![
-                    "root".to_string(),
-                    "sub".to_string(),
-                    "deep".to_string()
-                ],
+                vec!["root".to_string(), "sub".to_string(), "deep".to_string()],
             ]
         );
     }

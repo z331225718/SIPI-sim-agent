@@ -9,8 +9,7 @@
 use sipi_types::Complex64;
 
 /// Explicit scope policy of the equalizer front-end stage.
-pub const EQUALIZER_FRONTEND_POLICY_V1: &str =
-    "sipi.p5-04i.equalizer-frontend-v1.cursor-ctle";
+pub const EQUALIZER_FRONTEND_POLICY_V1: &str = "sipi.p5-04i.equalizer-frontend-v1.cursor-ctle";
 
 /// Fail-closed equalizer front-end errors (port of ConfigError paths).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -228,9 +227,7 @@ pub fn td_ctle_v1(
     let p1d = (1.0 + p1 / bilinear_fs) / (1.0 - p1 / bilinear_fs);
     let p2d = (1.0 + p2 / bilinear_fs) / (1.0 - p2 / bilinear_fs);
     let zd = (1.0 + z / bilinear_fs) / (1.0 - z / bilinear_fs);
-    let kd = (bilinear_fs - z) / ((bilinear_fs - p1) * (bilinear_fs - p2))
-        * fp1_hz
-        / fz_hz;
+    let kd = (bilinear_fs - z) / ((bilinear_fs - p1) * (bilinear_fs - p2)) * fp1_hz / fz_hz;
     // b = -p2 * kd * poly((zd, -1)); poly roots (zd, -1) -> [1, 1-zd, -zd]
     let b0 = -p2 * kd * 1.0;
     let b1 = -p2 * kd * (1.0 - zd);
@@ -323,8 +320,7 @@ mod tests {
     #[test]
     fn td_ctle_impulse_response_finite() {
         let impulse = pulse();
-        let filtered =
-            td_ctle_v1(&impulse, 53.125e9, 10e9, 30e9, 40e9, 6.0, 8).expect("filtered");
+        let filtered = td_ctle_v1(&impulse, 53.125e9, 10e9, 30e9, 40e9, 6.0, 8).expect("filtered");
         assert_eq!(filtered.len(), impulse.len());
         assert!(filtered.iter().all(|value| value.is_finite()));
         assert!(!filtered.iter().all(|value| *value == 0.0));

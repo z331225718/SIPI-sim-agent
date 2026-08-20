@@ -924,14 +924,13 @@ fn ibis_quasi_static_artifact_evaluate_requires_one_exact_sealed_model() {
     assert!(!stdout.contains("[GND_clamp]"));
     assert!(output.stderr.is_empty());
 
-    let unknown_field = format!(
-        "{}",
-        request.replacen(
+    let unknown_field = request
+        .replacen(
             "\"selection\":",
             "\"path\":\"outside.ibs\",\"selection\":",
-            1
+            1,
         )
-    );
+        .to_string();
     let rejected = run_ibis_quasi_static_artifact_evaluate(&root, unknown_field.as_bytes());
     assert_eq!(rejected.status.code(), Some(3));
     assert!(

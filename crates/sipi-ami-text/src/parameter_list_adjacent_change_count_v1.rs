@@ -57,10 +57,7 @@ pub fn parameter_list_adjacent_change_count_v1(
     }
     let items = list_items(value.value_token())
         .ok_or(ParameterListAdjacentChangeCountErrorV1::MalformedList)?;
-    let changes = items
-        .windows(2)
-        .filter(|pair| pair[0] != pair[1])
-        .count();
+    let changes = items.windows(2).filter(|pair| pair[0] != pair[1]).count();
     Ok(changes)
 }
 

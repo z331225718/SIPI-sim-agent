@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b91-parameter-tree-leaf-value-validity-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b91.parameter-tree-leaf-value-validity-v1.declared-type-value-validity
 matched_count: 4
 case_count: 4

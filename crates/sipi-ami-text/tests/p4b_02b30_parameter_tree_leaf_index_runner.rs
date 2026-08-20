@@ -9,11 +9,11 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    build_parameter_tree_leaf_index_v1, build_parameter_trees_v1, parse_ami_text_v1,
-    ParseLimitsV1, PARAMETER_TREE_LEAF_INDEX_POLICY_V1,
+    PARAMETER_TREE_LEAF_INDEX_POLICY_V1, ParseLimitsV1, build_parameter_tree_leaf_index_v1,
+    build_parameter_trees_v1, parse_ami_text_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -26,14 +26,19 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b30_parameter_tree_leaf_index_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b30_parameter_tree_leaf_index_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
 
     let text = value.get("text").and_then(|v| v.as_str()).unwrap_or("");
-    let leaf_path = value.get("leaf_path").and_then(|v| v.as_str()).unwrap_or("");
+    let leaf_path = value
+        .get("leaf_path")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
 
     let limits = ParseLimitsV1::try_new(8 * 1024 * 1024, 64, 4096, 4096).expect("limits");
     let doc = match parse_ami_text_v1(text.as_bytes(), limits) {
@@ -45,7 +50,8 @@ fn main() {
                 "parse_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -61,7 +67,8 @@ fn main() {
                 "build_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -78,7 +85,8 @@ fn main() {
                 "index_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

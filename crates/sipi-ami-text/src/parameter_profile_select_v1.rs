@@ -71,12 +71,7 @@ mod tests {
     fn profile(pairs: &[(&str, &str, &str)]) -> BTreeMap<String, AmiParameterValueV1> {
         pairs
             .iter()
-            .map(|(name, type_token, value)| {
-                (
-                    name.to_string(),
-                    parameter(name, type_token, value),
-                )
-            })
+            .map(|(name, type_token, value)| (name.to_string(), parameter(name, type_token, value)))
             .collect()
     }
 
@@ -86,12 +81,9 @@ mod tests {
 
     #[test]
     fn selects_requested_subset() {
-        let parameters = profile(&[
-            ("gain", "Float", "0.5"),
-            ("steps", "Integer", "7"),
-        ]);
-        let result = select_parameter_profile_v1(&parameters, &select_of(&["gain"]))
-            .expect("selected");
+        let parameters = profile(&[("gain", "Float", "0.5"), ("steps", "Integer", "7")]);
+        let result =
+            select_parameter_profile_v1(&parameters, &select_of(&["gain"])).expect("selected");
         assert_eq!(result.selected_count(), 1);
         assert!(result.selected().contains_key("gain"));
         assert!(!result.selected().contains_key("steps"));
@@ -99,15 +91,9 @@ mod tests {
 
     #[test]
     fn selecting_all_returns_identical_map() {
-        let parameters = profile(&[
-            ("gain", "Float", "0.5"),
-            ("steps", "Integer", "7"),
-        ]);
-        let result = select_parameter_profile_v1(
-            &parameters,
-            &select_of(&["gain", "steps"]),
-        )
-        .expect("selected");
+        let parameters = profile(&[("gain", "Float", "0.5"), ("steps", "Integer", "7")]);
+        let result = select_parameter_profile_v1(&parameters, &select_of(&["gain", "steps"]))
+            .expect("selected");
         assert_eq!(result.selected(), &parameters);
     }
 
@@ -121,8 +107,7 @@ mod tests {
     #[test]
     fn missing_parameter_fails_closed() {
         let parameters = profile(&[("gain", "Float", "0.5")]);
-        let error =
-            select_parameter_profile_v1(&parameters, &select_of(&["nope"])).unwrap_err();
+        let error = select_parameter_profile_v1(&parameters, &select_of(&["nope"])).unwrap_err();
         assert_eq!(
             error,
             ParameterProfileSelectionErrorV1::MissingParameter("nope".to_string())

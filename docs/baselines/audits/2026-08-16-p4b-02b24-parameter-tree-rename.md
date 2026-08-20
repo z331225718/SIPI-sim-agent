@@ -21,7 +21,7 @@ An independent Python reference recomputes node rename over 3 test cases.
   rejects root rename; rejects invalid new name; rejects missing path).
 - Cross-check: 3 test cases (rename leaf node, rename branch node, root rename forbidden)
   driven through product runner `p4b_02b24_parameter_tree_rename_runner`; independent Python reference
-  matches 100% on valid flags, renamed tree canonical JSON, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, renamed tree canonical JSON, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

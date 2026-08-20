@@ -8,7 +8,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_com::{parse_literal_v1, LiteralV1, VALUE_CONSUMPTION_POLICY_V1};
+use sipi_com::{LiteralV1, VALUE_CONSUMPTION_POLICY_V1, parse_literal_v1};
 
 fn normalized(value: &LiteralV1) -> Value {
     match value {

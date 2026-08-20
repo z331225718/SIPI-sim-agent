@@ -21,7 +21,7 @@ over 4 test cases.
   quoted tokens not atoms; empty document fails closed).
 - Cross-check: 4 test cases (mixed, two forms, deep nesting, empty text) driven through product
   runner `p4b_02b51_ami_text_document_stats_runner`; independent Python reference matches 100% on
-  valid flags and all four counts; 4/4 matched_hash_bound.
+  valid flags and all four counts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

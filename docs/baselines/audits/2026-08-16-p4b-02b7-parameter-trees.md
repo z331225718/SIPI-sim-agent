@@ -21,7 +21,7 @@ no valid trees built (`NoValidTrees`), or duplicate child node names under the s
 - Cross-check: 3 test cases (valid tree hierarchy, nested branches, duplicate child)
   driven through product runner `p4b_02b7_parameter_trees_runner`; independent Python reference
   matches 100% on valid flags, tree counts, root names, nested tree structures, and error strings;
-  3/3 matched_hash_bound.
+  3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

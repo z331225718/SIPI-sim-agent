@@ -25,7 +25,7 @@ independent Python reference replicates the Hamming rule over 4 test cases.
   mismatch, non-list, spacing canonicalized).
 - Cross-check: 4 test cases (Hamming, identical, length mismatch, non-list) driven through
   product runner `p4b_02b145_parameter_list_hamming_distance_runner`; independent Python
-  reference matches 100% on distances and error keys; 4/4 matched_hash_bound.
+  reference matches 100% on distances and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

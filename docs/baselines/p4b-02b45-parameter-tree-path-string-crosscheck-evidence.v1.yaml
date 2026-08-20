@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b45-parameter-tree-path-string-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b45.parameter-tree-path-string-v1.dotted-path-parse
 matched_count: 4
 case_count: 4

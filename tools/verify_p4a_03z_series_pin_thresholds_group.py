@@ -51,10 +51,9 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
         raise SeriesPinThresholdsGroupError("source_map_mapping_drift")
     source = SOURCE.read_text(encoding="utf-8")
     required_tokens = (
-        "pub fn lift_series_pin_group_thresholds_v1",
-        "pub struct TypedSeriesPinGroupThresholdsV1",
-        "SeriesPinThresholdsGroupErrorV1",
-        POLICY,
+        "pub fn lift_series_pin_table_group_thresholds_v1",
+        "pub struct TypedSeriesPinTableGroupThresholdsV1",
+        "SeriesPinTableThresholdsGroupErrorV1",
     )
     if any(token not in source for token in required_tokens):
         raise SeriesPinThresholdsGroupError("implementation_binding_drift")

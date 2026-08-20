@@ -10,13 +10,14 @@
 //!      skipped;
 //!   3. reject any assembled parameter name in the reserved set
 //!      (P4B-02b43 semantics applied strictly).
+//!
 //! Fail-closed at every step; an empty defaults map is allowed (no filling).
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    extract_typed_parameter_forms_multi_v1, AmiParameterTreeV1, AmiParameterTypeV1,
-    AmiParameterValueErrorV1, AmiParameterValueV1, ParameterTreeMultiFormErrorV1,
+    AmiParameterTreeV1, AmiParameterTypeV1, AmiParameterValueErrorV1, AmiParameterValueV1,
+    ParameterTreeMultiFormErrorV1, extract_typed_parameter_forms_multi_v1,
 };
 
 /// Scope policy for the parameter profile assembly core.
@@ -256,7 +257,10 @@ mod tests {
     fn reserved_name_used_fails_closed() {
         let t1 = tree(branch(
             "root",
-            vec![leaf("gain", &["Float", "0.5"]), leaf("Reserved_Parameters", &["Integer", "1"])],
+            vec![
+                leaf("gain", &["Float", "0.5"]),
+                leaf("Reserved_Parameters", &["Integer", "1"]),
+            ],
         ));
         let error = assemble_parameter_profile_v1(
             &[t1],
@@ -266,21 +270,15 @@ mod tests {
         .unwrap_err();
         assert_eq!(
             error,
-            ParameterProfileAssemblyErrorV1::ReservedNameUsed(
-                "Reserved_Parameters".to_string()
-            )
+            ParameterProfileAssemblyErrorV1::ReservedNameUsed("Reserved_Parameters".to_string())
         );
     }
 
     #[test]
     fn empty_reserved_set_fails_closed() {
         let t1 = tree(branch("root", vec![leaf("gain", &["Float", "0.5"])]));
-        let error = assemble_parameter_profile_v1(
-            &[t1],
-            &defaults_of(&[]),
-            &reserved_of(&[]),
-        )
-        .unwrap_err();
+        let error =
+            assemble_parameter_profile_v1(&[t1], &defaults_of(&[]), &reserved_of(&[])).unwrap_err();
         assert_eq!(error, ParameterProfileAssemblyErrorV1::EmptyReservedSet);
     }
 
@@ -295,15 +293,13 @@ mod tests {
         .unwrap_err();
         assert_eq!(
             error,
-            ParameterProfileAssemblyErrorV1::Extraction(
-                ParameterTreeMultiFormErrorV1::TreeError(
-                    0,
-                    crate::ParameterTreeTypedFormErrorV1::UnknownTypeToken {
-                        leaf: "steps".to_string(),
-                        token: "Real".to_string(),
-                    }
-                )
-            )
+            ParameterProfileAssemblyErrorV1::Extraction(ParameterTreeMultiFormErrorV1::TreeError(
+                0,
+                crate::ParameterTreeTypedFormErrorV1::UnknownTypeToken {
+                    leaf: "steps".to_string(),
+                    token: "Real".to_string(),
+                }
+            ))
         );
     }
 

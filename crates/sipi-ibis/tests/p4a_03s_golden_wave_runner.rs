@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_golden_wave_declaration_v1, GOLDEN_WAVE_DECLARATION_POLICY_V1,
-};
+use sipi_ibis::{GOLDEN_WAVE_DECLARATION_POLICY_V1, lift_golden_wave_declaration_v1};
 
 fn main() {
     let mut input = None;
@@ -29,7 +27,10 @@ fn main() {
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
-    let wname = value.get("waveform_name").and_then(|v| v.as_str()).unwrap_or("");
+    let wname = value
+        .get("waveform_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let dname = value.get("dut_name").and_then(|v| v.as_str());
 
     let output = match lift_golden_wave_declaration_v1(wname, dname) {

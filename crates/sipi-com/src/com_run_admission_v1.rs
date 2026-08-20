@@ -40,11 +40,21 @@ pub struct ComRunAdmissionV1 {
 }
 
 impl ComRunAdmissionV1 {
-    pub const fn admitted(&self) -> bool { self.admitted }
-    pub const fn schema_matched(&self) -> bool { self.schema_matched }
-    pub const fn artifact_bound(&self) -> bool { self.artifact_bound }
-    pub const fn consumed_key_count(&self) -> usize { self.consumed_key_count }
-    pub fn invalid_reason(&self) -> Option<&str> { self.invalid_reason.as_deref() }
+    pub const fn admitted(&self) -> bool {
+        self.admitted
+    }
+    pub const fn schema_matched(&self) -> bool {
+        self.schema_matched
+    }
+    pub const fn artifact_bound(&self) -> bool {
+        self.artifact_bound
+    }
+    pub const fn consumed_key_count(&self) -> usize {
+        self.consumed_key_count
+    }
+    pub fn invalid_reason(&self) -> Option<&str> {
+        self.invalid_reason.as_deref()
+    }
 }
 
 /// Validates the structural contract of a COM run request.
@@ -56,8 +66,8 @@ impl ComRunAdmissionV1 {
 pub fn com_run_admission_v1(
     request_bytes: &[u8],
 ) -> Result<ComRunAdmissionV1, ComRunAdmissionErrorV1> {
-    let value: serde_json::Value = serde_json::from_slice(request_bytes)
-        .map_err(|_| ComRunAdmissionErrorV1::InvalidJson)?;
+    let value: serde_json::Value =
+        serde_json::from_slice(request_bytes).map_err(|_| ComRunAdmissionErrorV1::InvalidJson)?;
     let obj = match value.as_object() {
         Some(obj) => obj,
         None => return Err(ComRunAdmissionErrorV1::InvalidJson),
@@ -69,8 +79,14 @@ pub fn com_run_admission_v1(
     if schema != COM_RUN_REQUEST_SCHEMA_V1 {
         return Err(ComRunAdmissionErrorV1::SchemaMismatch);
     }
-    let root = obj.get("artifact_root").and_then(|v| v.as_str()).unwrap_or("");
-    let id = obj.get("artifact_id").and_then(|v| v.as_str()).unwrap_or("");
+    let root = obj
+        .get("artifact_root")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let id = obj
+        .get("artifact_id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let bound = !root.is_empty() && !id.is_empty();
     let params = match obj.get("params") {
         Some(v) => v.as_object().ok_or(ComRunAdmissionErrorV1::InvalidJson)?,
@@ -129,7 +145,10 @@ mod tests {
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(COM_RUN_ADMISSION_POLICY_V1, "sipi.p5-08a.com-run-request.v1.admission");
+        assert_eq!(
+            COM_RUN_ADMISSION_POLICY_V1,
+            "sipi.p5-08a.com-run-request.v1.admission"
+        );
         assert_eq!(COM_RUN_REQUEST_SCHEMA_V1, "sipi.com.run-request.v1");
     }
 
@@ -153,7 +172,10 @@ mod tests {
             "\"schema\":\"sipi.wrong\",\"artifact_root\":\"r\",\"artifact_id\":\"a\",{}",
             valid_params()
         );
-        assert_eq!(com_run_admission_v1(&request(&body)).err(), Some(ComRunAdmissionErrorV1::SchemaMismatch));
+        assert_eq!(
+            com_run_admission_v1(&request(&body)).err(),
+            Some(ComRunAdmissionErrorV1::SchemaMismatch)
+        );
     }
 
     #[test]
@@ -174,7 +196,8 @@ mod tests {
 
     #[test]
     fn rejects_missing_params() {
-        let body = "\"schema\":\"sipi.com.run-request.v1\",\"artifact_root\":\"r\",\"artifact_id\":\"a\"";
+        let body =
+            "\"schema\":\"sipi.com.run-request.v1\",\"artifact_root\":\"r\",\"artifact_id\":\"a\"";
         let adm = com_run_admission_v1(&request(body)).expect("ok");
         assert!(!adm.admitted());
         assert_eq!(adm.invalid_reason(), Some("missing_params"));
@@ -182,13 +205,18 @@ mod tests {
 
     #[test]
     fn rejects_invalid_json() {
-        assert_eq!(com_run_admission_v1(b"not-json").err(), Some(ComRunAdmissionErrorV1::InvalidJson));
+        assert_eq!(
+            com_run_admission_v1(b"not-json").err(),
+            Some(ComRunAdmissionErrorV1::InvalidJson)
+        );
     }
 
     #[test]
     fn rejects_nested_non_scalar_param() {
         let body = "\"schema\":\"sipi.com.run-request.v1\",\"artifact_root\":\"r\",\"artifact_id\":\"a\",\"params\":{\"k\":{\"nested\":1}}";
-        assert_eq!(com_run_admission_v1(&request(body)).err(), Some(ComRunAdmissionErrorV1::NonScalarParam));
+        assert_eq!(
+            com_run_admission_v1(&request(body)).err(),
+            Some(ComRunAdmissionErrorV1::NonScalarParam)
+        );
     }
 }
-

@@ -27,7 +27,7 @@ check over 4 test cases.
 - Cross-check: 4 test cases (canonical profile, non-canonical integer, non-canonical list, empty
   profile) driven through product runner `p4b_02b95_parameter_profile_canonical_spelling_check_runner`;
   independent Python reference matches 100% on entry counts, canonical flags, and issue lists;
-  4/4 matched_hash_bound.
+  4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

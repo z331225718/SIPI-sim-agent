@@ -8,8 +8,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ibis::{
-    lift_model_selector_declaration_v1, lift_series_pin_mapping_v1, ModelBranchV1,
-    MODEL_SELECTOR_DECLARATION_POLICY_V1,
+    MODEL_SELECTOR_DECLARATION_POLICY_V1, ModelBranchV1, lift_model_selector_declaration_v1,
+    lift_series_pin_mapping_v1,
 };
 
 fn main() {
@@ -33,15 +33,22 @@ fn main() {
 
     let output = if value.get("selector_name").is_some() {
         let sname = value["selector_name"].as_str().unwrap_or("");
-        let branches = value.get("branches").and_then(|v| v.as_array()).map(|arr| {
-            arr.iter()
-                .map(|b| {
-                    let mn = b.get("model_name").and_then(|v| v.as_str()).unwrap_or("");
-                    let desc = b.get("description").and_then(|v| v.as_str()).map(|s| s.to_string());
-                    ModelBranchV1::new(mn, desc)
-                })
-                .collect()
-        }).unwrap_or_default();
+        let branches = value
+            .get("branches")
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .map(|b| {
+                        let mn = b.get("model_name").and_then(|v| v.as_str()).unwrap_or("");
+                        let desc = b
+                            .get("description")
+                            .and_then(|v| v.as_str())
+                            .map(|s| s.to_string());
+                        ModelBranchV1::new(mn, desc)
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
 
         match lift_model_selector_declaration_v1(sname, branches) {
             Ok(sel) => {
@@ -62,9 +69,18 @@ fn main() {
             }
         }
     } else {
-        let pf = value.get("pin_first").and_then(|v| v.as_str()).unwrap_or("");
-        let ps = value.get("pin_second").and_then(|v| v.as_str()).unwrap_or("");
-        let mn = value.get("model_name").and_then(|v| v.as_str()).unwrap_or("");
+        let pf = value
+            .get("pin_first")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        let ps = value
+            .get("pin_second")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        let mn = value
+            .get("model_name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
 
         match lift_series_pin_mapping_v1(pf, ps, mn) {
             Ok(map) => {

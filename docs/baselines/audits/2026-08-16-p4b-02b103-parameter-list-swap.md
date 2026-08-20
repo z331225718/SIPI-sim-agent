@@ -25,7 +25,7 @@ rule over 4 test cases.
   non-list, spacing canonicalized).
 - Cross-check: 4 test cases (swap middle, swap ends, equal indices, out of range) driven through
   product runner `p4b_02b103_parameter_list_swap_runner`; independent Python reference matches
-  100% on swapped tokens and error keys with index/count; 4/4 matched_hash_bound.
+  100% on swapped tokens and error keys with index/count; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

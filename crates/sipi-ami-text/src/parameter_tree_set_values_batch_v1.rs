@@ -11,8 +11,8 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    AmiParameterTreeV1, AmiParameterTreeNodeV1, AmiParameterTypeV1,
-    AmiParameterValueErrorV1, AmiParameterValueV1,
+    AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterTypeV1, AmiParameterValueErrorV1,
+    AmiParameterValueV1,
 };
 
 /// Scope policy for the parameter tree batch value set core.
@@ -57,10 +57,7 @@ impl ParameterTreeValueSetBatchV1 {
     }
 }
 
-fn count_leaf_occurrences(
-    node: &AmiParameterTreeNodeV1,
-    counts: &mut BTreeMap<String, usize>,
-) {
+fn count_leaf_occurrences(node: &AmiParameterTreeNodeV1, counts: &mut BTreeMap<String, usize>) {
     match node {
         AmiParameterTreeNodeV1::Branch { children, .. } => {
             for child in children.values() {
@@ -82,9 +79,7 @@ fn apply_updates(
         AmiParameterTreeNodeV1::Branch { name, children } => {
             let new_children = children
                 .iter()
-                .map(|(key, child)| {
-                    (key.clone(), apply_updates(child, updates, updated))
-                })
+                .map(|(key, child)| (key.clone(), apply_updates(child, updates, updated)))
                 .collect();
             AmiParameterTreeNodeV1::Branch {
                 name: name.clone(),
@@ -127,9 +122,7 @@ pub fn set_parameter_tree_leaf_values_v1(
     for (name, token) in updates {
         match counts.get(name) {
             None => {
-                return Err(ParameterTreeBatchValueSetErrorV1::MissingLeaf(
-                    name.clone(),
-                ));
+                return Err(ParameterTreeBatchValueSetErrorV1::MissingLeaf(name.clone()));
             }
             Some(&count) if count > 1 => {
                 return Err(ParameterTreeBatchValueSetErrorV1::AmbiguousName(
@@ -225,7 +218,10 @@ mod tests {
     fn batch_updates_leaf_values() {
         let t = tree(branch(
             "root",
-            vec![leaf("gain", &["Float", "0.5"]), leaf("steps", &["Integer", "7"])],
+            vec![
+                leaf("gain", &["Float", "0.5"]),
+                leaf("steps", &["Integer", "7"]),
+            ],
         ));
         let types = type_map(&[
             ("gain", AmiParameterTypeV1::Float),
@@ -262,12 +258,8 @@ mod tests {
             ],
         ));
         let types = type_map(&[("gain", AmiParameterTypeV1::Float)]);
-        let error = set_parameter_tree_leaf_values_v1(
-            &t,
-            &types,
-            &updates_of(&[("gain", "3.0")]),
-        )
-        .unwrap_err();
+        let error = set_parameter_tree_leaf_values_v1(&t, &types, &updates_of(&[("gain", "3.0")]))
+            .unwrap_err();
         assert_eq!(
             error,
             ParameterTreeBatchValueSetErrorV1::AmbiguousName("gain".to_string())
@@ -278,12 +270,8 @@ mod tests {
     fn missing_leaf_fails_closed() {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
         let types = type_map(&[("gain", AmiParameterTypeV1::Float)]);
-        let error = set_parameter_tree_leaf_values_v1(
-            &t,
-            &types,
-            &updates_of(&[("nope", "1.0")]),
-        )
-        .unwrap_err();
+        let error = set_parameter_tree_leaf_values_v1(&t, &types, &updates_of(&[("nope", "1.0")]))
+            .unwrap_err();
         assert_eq!(
             error,
             ParameterTreeBatchValueSetErrorV1::MissingLeaf("nope".to_string())
@@ -294,8 +282,7 @@ mod tests {
     fn empty_updates_fails_closed() {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
         let types = type_map(&[("gain", AmiParameterTypeV1::Float)]);
-        let error =
-            set_parameter_tree_leaf_values_v1(&t, &types, &updates_of(&[])).unwrap_err();
+        let error = set_parameter_tree_leaf_values_v1(&t, &types, &updates_of(&[])).unwrap_err();
         assert_eq!(error, ParameterTreeBatchValueSetErrorV1::EmptyUpdates);
     }
 
@@ -303,12 +290,8 @@ mod tests {
     fn missing_type_fails_closed() {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
         let types = type_map(&[]);
-        let error = set_parameter_tree_leaf_values_v1(
-            &t,
-            &types,
-            &updates_of(&[("gain", "1.0")]),
-        )
-        .unwrap_err();
+        let error = set_parameter_tree_leaf_values_v1(&t, &types, &updates_of(&[("gain", "1.0")]))
+            .unwrap_err();
         assert_eq!(
             error,
             ParameterTreeBatchValueSetErrorV1::MissingType("gain".to_string())
@@ -319,12 +302,8 @@ mod tests {
     fn invalid_value_fails_closed() {
         let t = tree(branch("root", vec![leaf("gain", &["0.5"])]));
         let types = type_map(&[("gain", AmiParameterTypeV1::Float)]);
-        let error = set_parameter_tree_leaf_values_v1(
-            &t,
-            &types,
-            &updates_of(&[("gain", "x1")]),
-        )
-        .unwrap_err();
+        let error = set_parameter_tree_leaf_values_v1(&t, &types, &updates_of(&[("gain", "x1")]))
+            .unwrap_err();
         assert_eq!(
             error,
             ParameterTreeBatchValueSetErrorV1::InvalidValue {

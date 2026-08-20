@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ibis::{
-    lift_golden_wave_block_v1, lift_golden_wave_declaration_v1, GOLDEN_WAVE_KEYWORDS_POLICY_V1,
+    GOLDEN_WAVE_KEYWORDS_POLICY_V1, lift_golden_wave_block_v1, lift_golden_wave_declaration_v1,
 };
 
 fn main() {
@@ -30,7 +30,10 @@ fn main() {
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
 
-    let wname = value.get("waveform_name").and_then(|v| v.as_str()).unwrap_or("");
+    let wname = value
+        .get("waveform_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let dname = value.get("dut_name").and_then(|v| v.as_str());
 
     let wave_decl = match lift_golden_wave_declaration_v1(wname, dname) {
@@ -42,7 +45,8 @@ fn main() {
                 "waveform_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

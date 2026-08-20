@@ -27,7 +27,7 @@ test cases.
 - Cross-check: 4 test cases (subset ok, spelling variants, missing name, mismatched value) driven
   through product runner `p4b_02b90_parameter_profile_typed_subset_runner`; independent Python
   reference matches 100% on is_subset flags, sorted missing lists, and mismatched name/reason
-  entries; 4/4 matched_hash_bound.
+  entries; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

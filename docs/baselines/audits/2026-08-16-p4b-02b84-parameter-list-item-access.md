@@ -24,7 +24,7 @@ Python reference replicates the item reading rule over 4 test cases.
   first and last items, single item list).
 - Cross-check: 4 test cases (middle item, spacing, out of range, non-list) driven through product
   runner `p4b_02b84_parameter_list_item_access_runner`; independent Python reference matches 100%
-  on items and error keys with index/count; 4/4 matched_hash_bound.
+  on items and error keys with index/count; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

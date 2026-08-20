@@ -25,7 +25,7 @@ An independent Python reference replicates the canonical rules over 4 test cases
   boolean, canonicalized count, empty profile, idempotence).
 - Cross-check: 4 test cases (integer+list, raw types, already canonical, empty profile) driven
   through product runner `p4b_02b77_parameter_profile_canonicalization_runner`; independent Python
-  reference matches 100% on entries/canonicalized counts and canonical maps; 4/4 matched_hash_bound.
+  reference matches 100% on entries/canonicalized counts and canonical maps; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

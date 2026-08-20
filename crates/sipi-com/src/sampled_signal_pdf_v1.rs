@@ -7,7 +7,7 @@
 //! convolution, and the sparse PAM4 acceleration used by the exhaustive
 //! C2M equalizer-search scope.
 
-use crate::discrete_pdf_v1::{convolve_v1, matlab_round, DiscretePdfV1, PdfErrorV1};
+use crate::discrete_pdf_v1::{DiscretePdfV1, PdfErrorV1, convolve_v1, matlab_round};
 
 /// Explicit scope policy of the sampled-signal PDF stage.
 pub const SAMPLED_SIGNAL_PDF_POLICY_V1: &str =
@@ -56,9 +56,19 @@ pub fn from_values_v1(
     for (offset, (_, probability_index)) in indexed.iter().enumerate() {
         mass[(bins[offset] - minimum) as usize] += probabilities[*probability_index];
     }
-    let first = mass.iter().position(|value| *value != 0.0).expect("non-zero mass");
-    let last = mass.iter().rposition(|value| *value != 0.0).expect("non-zero mass");
-    DiscretePdfV1::try_new(bin_size, minimum + first as i64, mass[first..=last].to_vec())
+    let first = mass
+        .iter()
+        .position(|value| *value != 0.0)
+        .expect("non-zero mass");
+    let last = mass
+        .iter()
+        .rposition(|value| *value != 0.0)
+        .expect("non-zero mass");
+    DiscretePdfV1::try_new(
+        bin_size,
+        minimum + first as i64,
+        mass[first..=last].to_vec(),
+    )
 }
 
 fn is_unit_delta(pdf: &DiscretePdfV1) -> bool {
@@ -78,19 +88,16 @@ pub fn sparse_pam_component_v1(value: f64, levels: u32, bin_size: f64) -> (Vec<i
         let mut unique: Vec<i64> = Vec::new();
         let mut counts: Vec<u32> = Vec::new();
         for bin in bins {
-            if let Some(last) = unique.last_mut() {
-                if *last == bin {
-                    *counts.last_mut().expect("count") += 1;
-                    continue;
-                }
+            if let Some(last) = unique.last_mut()
+                && *last == bin
+            {
+                *counts.last_mut().expect("count") += 1;
+                continue;
             }
             unique.push(bin);
             counts.push(1);
         }
-        let probabilities: Vec<f64> = counts
-            .iter()
-            .map(|count| *count as f64 * mass)
-            .collect();
+        let probabilities: Vec<f64> = counts.iter().map(|count| *count as f64 * mass).collect();
         (unique, probabilities)
     } else {
         let bins: Vec<i64> = PAM4_SYMBOL_VALUES
@@ -100,11 +107,11 @@ pub fn sparse_pam_component_v1(value: f64, levels: u32, bin_size: f64) -> (Vec<i
         let mut unique: Vec<i64> = Vec::new();
         let mut probabilities: Vec<f64> = Vec::new();
         for bin in bins {
-            if let Some(last) = unique.last() {
-                if *last == bin {
-                    *probabilities.last_mut().expect("probability") += mass;
-                    continue;
-                }
+            if let Some(last) = unique.last()
+                && *last == bin
+            {
+                *probabilities.last_mut().expect("probability") += mass;
+                continue;
             }
             unique.push(bin);
             probabilities.push(mass);
@@ -126,14 +133,14 @@ pub fn accelerated_sampled_signal_pdf_v1(
         let (component_bins, component_probability) =
             sparse_pam_component_v1(value.abs(), levels, bin_size);
         let next_minimum = minimum + component_bins[0];
-        let next_maximum = minimum + probability.len() as i64 - 1
-            + component_bins[component_bins.len() - 1];
-        let mut next_probability =
-            vec![0.0_f64; (next_maximum - next_minimum + 1) as usize];
+        let next_maximum =
+            minimum + probability.len() as i64 - 1 + component_bins[component_bins.len() - 1];
+        let mut next_probability = vec![0.0_f64; (next_maximum - next_minimum + 1) as usize];
         for (component_bin, mass) in component_bins.iter().zip(component_probability.iter()) {
             let start = (minimum + component_bin - next_minimum) as usize;
-            for (offset, entry) in
-                next_probability[start..start + probability.len()].iter_mut().enumerate()
+            for (offset, entry) in next_probability[start..start + probability.len()]
+                .iter_mut()
+                .enumerate()
             {
                 *entry += mass * probability[offset];
             }
@@ -266,8 +273,8 @@ mod tests {
 
     #[test]
     fn from_values_coalesces_and_trims() {
-        let pdf = from_values_v1(1.0, &[-0.6, 0.6, 0.61, 2.4], &[0.25, 0.25, 0.25, 0.25])
-            .expect("pdf");
+        let pdf =
+            from_values_v1(1.0, &[-0.6, 0.6, 0.61, 2.4], &[0.25, 0.25, 0.25, 0.25]).expect("pdf");
         assert_eq!(pdf.min_bin(), -1);
         assert_eq!(pdf.probability().len(), 4);
         assert!((pdf.probability()[0] - 0.25).abs() < 1e-12);

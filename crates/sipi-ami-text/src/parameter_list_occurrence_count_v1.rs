@@ -54,7 +54,10 @@ pub fn count_parameter_list_item_occurrences_v1(
     }
     let items = list_items(value.value_token())
         .ok_or(ParameterListOccurrenceCountErrorV1::MalformedList)?;
-    Ok(items.iter().filter(|candidate| candidate.as_str() == item).count())
+    Ok(items
+        .iter()
+        .filter(|candidate| candidate.as_str() == item)
+        .count())
 }
 
 #[cfg(test)]

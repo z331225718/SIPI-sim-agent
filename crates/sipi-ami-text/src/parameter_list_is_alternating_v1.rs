@@ -56,8 +56,8 @@ pub fn parameter_list_is_alternating_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListIsAlternatingErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListIsAlternatingErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListIsAlternatingErrorV1::MalformedList)?;
     Ok(items.windows(2).all(|pair| pair[0] != pair[1]))
 }
 

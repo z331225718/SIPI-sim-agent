@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_circuit_call_declaration_v1, PortMapV1, CIRCUIT_CALL_DECLARATION_POLICY_V1,
-};
+use sipi_ibis::{CIRCUIT_CALL_DECLARATION_POLICY_V1, PortMapV1, lift_circuit_call_declaration_v1};
 
 fn main() {
     let mut input = None;
@@ -29,16 +27,23 @@ fn main() {
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
-    let cname = value.get("circuit_name").and_then(|v| v.as_str()).unwrap_or("");
-    let port_mappings = value.get("port_mappings").and_then(|v| v.as_array()).map(|arr| {
-        arr.iter()
-            .map(|pm| {
-                let p = pm.get("port_name").and_then(|v| v.as_str()).unwrap_or("");
-                let n = pm.get("node_name").and_then(|v| v.as_str()).unwrap_or("");
-                PortMapV1::new(p, n)
-            })
-            .collect()
-    }).unwrap_or_default();
+    let cname = value
+        .get("circuit_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let port_mappings = value
+        .get("port_mappings")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .map(|pm| {
+                    let p = pm.get("port_name").and_then(|v| v.as_str()).unwrap_or("");
+                    let n = pm.get("node_name").and_then(|v| v.as_str()).unwrap_or("");
+                    PortMapV1::new(p, n)
+                })
+                .collect()
+        })
+        .unwrap_or_default();
 
     let output = match lift_circuit_call_declaration_v1(cname, port_mappings) {
         Ok(call) => {

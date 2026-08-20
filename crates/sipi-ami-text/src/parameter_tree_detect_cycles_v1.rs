@@ -1,7 +1,7 @@
 //! AMI parameter tree cycle detection core (P4B-02b25).
 //!
 //! Detects structural cycles in typed `AmiParameterTreeV1` hierarchies
-//! (`detect_parameter_tree_cycles_v1`) using a DFS white/gray/black visited-state walk.
+//! (`detect_parameter_tree_cycles_v1`) using a DFS gray/black visited-state walk.
 //! Fail-closed: built trees are acyclic by construction; this core exposes the detection
 //! as an explicit integrity check returning the first offending path when a cycle exists.
 
@@ -26,7 +26,7 @@ pub struct ParameterTreeCycleScanV1 {
     pub cycle_path: Option<String>,
 }
 
-/// Detect structural cycles in a parameter tree using a DFS white/gray/black walk.
+/// Detect structural cycles in a parameter tree using a DFS gray/black walk.
 ///
 /// Trees are immutable and acyclic by construction, so this scan returns
 /// `is_acyclic: true` for every valid tree. The scan is exposed as an explicit
@@ -37,7 +37,6 @@ pub fn detect_parameter_tree_cycles_v1(
 ) -> Result<ParameterTreeCycleScanV1, ParameterTreeDetectCyclesErrorV1> {
     #[derive(Clone, Copy, Eq, PartialEq)]
     enum Color {
-        White,
         Gray,
         Black,
     }
@@ -59,7 +58,7 @@ pub fn detect_parameter_tree_cycles_v1(
         }
         colors.insert(current.clone(), Color::Gray);
         if let AmiParameterTreeNodeV1::Branch { children, .. } = node {
-            for (_, child) in children {
+            for child in children.values() {
                 if let Some(cycle) = walk(child, &current, colors) {
                     return Some(cycle);
                 }
@@ -80,9 +79,9 @@ pub fn detect_parameter_tree_cycles_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ParseLimitsV1;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
     use crate::parse_ami_text_v1;
-    use crate::ParseLimitsV1;
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
@@ -98,11 +97,8 @@ mod tests {
 
     #[test]
     fn acyclic_tree_scan() {
-        let doc = parse_ami_text_v1(
-            b"(root (branch_a (leaf_1 10)) (branch_b 20))",
-            limits(),
-        )
-        .expect("parse");
+        let doc = parse_ami_text_v1(b"(root (branch_a (leaf_1 10)) (branch_b 20))", limits())
+            .expect("parse");
         let trees = build_parameter_trees_v1(&doc).expect("build");
         let scan = detect_parameter_tree_cycles_v1(&trees[0]).expect("scan");
         assert!(scan.is_acyclic);

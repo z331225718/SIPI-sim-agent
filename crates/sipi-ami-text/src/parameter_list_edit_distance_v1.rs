@@ -59,10 +59,10 @@ pub fn list_edit_distance_v1(
     {
         return Err(ParameterListEditDistanceErrorV1::NotAList);
     }
-    let left_items = list_items(left.value_token())
-        .ok_or(ParameterListEditDistanceErrorV1::MalformedList)?;
-    let right_items = list_items(right.value_token())
-        .ok_or(ParameterListEditDistanceErrorV1::MalformedList)?;
+    let left_items =
+        list_items(left.value_token()).ok_or(ParameterListEditDistanceErrorV1::MalformedList)?;
+    let right_items =
+        list_items(right.value_token()).ok_or(ParameterListEditDistanceErrorV1::MalformedList)?;
     let n = left_items.len();
     let m = right_items.len();
     let mut previous: Vec<usize> = (0..=m).collect();

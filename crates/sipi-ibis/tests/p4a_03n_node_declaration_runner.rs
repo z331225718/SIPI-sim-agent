@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_node_declaration_v1, NODE_DECLARATION_POLICY_V1,
-};
+use sipi_ibis::{NODE_DECLARATION_POLICY_V1, lift_node_declaration_v1};
 
 fn main() {
     let mut input = None;
@@ -29,7 +27,10 @@ fn main() {
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
-    let nname = value.get("node_name").and_then(|v| v.as_str()).unwrap_or("");
+    let nname = value
+        .get("node_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let sname = value.get("signal_name").and_then(|v| v.as_str());
 
     let output = match lift_node_declaration_v1(nname, sname) {

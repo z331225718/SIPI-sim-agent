@@ -17,7 +17,7 @@ Fail-closed: invalid diff inputs fail closed; empty diff lists produce an identi
 - 3 Rust unit tests green (policy fixed; generates identical summary; generates modified summary).
 - Cross-check: 3 test cases (identical trees summary, modified trees summary, root mismatch summary)
   driven through product runner `p4b_02b22_parameter_tree_diff_summary_runner`; independent Python reference
-  matches 100% on valid flags, total diff counts, is_identical flags, and formatted summary text; 3/3 matched_hash_bound.
+  matches 100% on valid flags, total diff counts, is_identical flags, and formatted summary text; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

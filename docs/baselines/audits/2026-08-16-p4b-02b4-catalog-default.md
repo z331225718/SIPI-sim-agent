@@ -14,7 +14,7 @@ product pass/fail against an independent Python reference across 8 cases.
 
 ## Result
 
-- 8/8 matched_hash_bound (Float/Integer/Boolean/List valid, invalid, no-default).
+- 8/8 product_owned_self_crosscheck_unbound (Float/Integer/Boolean/List valid, invalid, no-default).
 - sipi-ami-text unit suite 32 tests green (8 new catalog_default tests).
 - Profile-agnostic; no reserved-name catalog / AMI runtime.
 

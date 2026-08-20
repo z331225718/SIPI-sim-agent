@@ -62,7 +62,7 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
     evidence = load_yaml(EVIDENCE)
     if evidence.get("schema") != "sipi.p4b-02b3.parameter-catalog-crosscheck-evidence.v1":
         raise CatalogError("evidence_schema_invalid")
-    if evidence.get("status") != "matched_hash_bound":
+    if evidence.get("status") != "product_owned_self_crosscheck_unbound":
         raise CatalogError("evidence_status_drift")
     if evidence.get("matched_count") != evidence.get("case_count"):
         raise CatalogError("evidence_entry_mismatch")

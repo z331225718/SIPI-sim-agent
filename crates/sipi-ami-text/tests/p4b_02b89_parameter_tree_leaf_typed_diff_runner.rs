@@ -6,13 +6,12 @@
 //! comparison against an independent reference. Ignored by default;
 //! external-custody tooling only.
 
-use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
+    AmiParameterTreeV1, PARAMETER_TREE_LEAF_TYPED_DIFF_POLICY_V1, ParseLimitsV1,
     build_parameter_trees_v1, diff_parameter_tree_leaves_typed_v1, parse_ami_text_v1,
-    AmiParameterTreeV1, ParseLimitsV1, PARAMETER_TREE_LEAF_TYPED_DIFF_POLICY_V1,
 };
 
 fn build_tree(text: &str) -> Result<AmiParameterTreeV1, String> {
@@ -22,7 +21,7 @@ fn build_tree(text: &str) -> Result<AmiParameterTreeV1, String> {
     Ok(trees.remove(0))
 }
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -35,14 +34,22 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b89_parameter_tree_leaf_typed_diff_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b89_parameter_tree_leaf_typed_diff_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
 
-    let left_text = value.get("left_text").and_then(|v| v.as_str()).unwrap_or("");
-    let right_text = value.get("right_text").and_then(|v| v.as_str()).unwrap_or("");
+    let left_text = value
+        .get("left_text")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let right_text = value
+        .get("right_text")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let left = match build_tree(left_text) {
         Ok(t) => t,
         Err(e) => {
@@ -52,7 +59,8 @@ fn main() {
                 "left_error": e,
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -68,7 +76,8 @@ fn main() {
                 "right_error": e,
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

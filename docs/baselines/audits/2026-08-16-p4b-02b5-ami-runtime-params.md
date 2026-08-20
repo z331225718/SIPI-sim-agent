@@ -22,7 +22,7 @@ scenarios, matching ok/error/param-triples exactly.
 
 ## Result
 
-- 8/8 matched_hash_bound (candidate-overrides-default; default-fallback;
+- 8/8 product_owned_self_crosscheck_unbound (candidate-overrides-default; default-fallback;
   mixed roles sorted order; Out/Info omission and carry-through; missing-In
   error; candidate type mismatch; Integer/Boolean types;
   unknown-candidate-ignored).

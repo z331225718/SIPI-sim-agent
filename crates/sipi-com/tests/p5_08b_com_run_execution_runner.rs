@@ -9,8 +9,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_com::{
-    execute_com_run_v1, merge_com_parameters_v1, ResolvedDefaultV1,
-    COM_RUN_EXECUTION_POLICY_V1, COM_RUN_RESULT_SCHEMA_V1,
+    COM_RUN_EXECUTION_POLICY_V1, COM_RUN_RESULT_SCHEMA_V1, ResolvedDefaultV1, execute_com_run_v1,
+    merge_com_parameters_v1,
 };
 
 fn f64s(value: &Value) -> Vec<f64> {

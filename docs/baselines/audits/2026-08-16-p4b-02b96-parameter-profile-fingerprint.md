@@ -24,7 +24,7 @@ An independent Python reference replicates the serialization and FNV-1a 64 over 
   independent, empty profile equals hash of `{}`, float spelling changes hash).
 - Cross-check: 4 test cases (simple profile, sorted order, empty profile, spelling differs) driven
   through product runner `p4b_02b96_parameter_profile_fingerprint_runner`; independent Python
-  reference matches 100% on the exact 64-bit hashes; 4/4 matched_hash_bound.
+  reference matches 100% on the exact 64-bit hashes; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

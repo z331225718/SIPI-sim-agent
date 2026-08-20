@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_series_pin_group_switch_record_v1, SERIES_PIN_TABLE_GROUP_SWITCH_POLICY_V1,
-};
+use sipi_ibis::{SERIES_PIN_TABLE_GROUP_SWITCH_POLICY_V1, lift_series_pin_group_switch_record_v1};
 
 fn main() {
     let mut input = None;
@@ -24,14 +22,25 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4a_03an_series_pin_table_group_switch_runner --input <json> [--report <path>]");
+        println!(
+            "usage: p4a_03an_series_pin_table_group_switch_runner --input <json> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
-    let gn = value.get("group_name").and_then(|v| v.as_str()).unwrap_or("");
-    let on_g = value.get("on_group_name").and_then(|v| v.as_str()).unwrap_or("");
-    let off_g = value.get("off_group_name").and_then(|v| v.as_str()).unwrap_or("");
+    let gn = value
+        .get("group_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let on_g = value
+        .get("on_group_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let off_g = value
+        .get("off_group_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let ftg = value.get("function_table_group").and_then(|v| v.as_str());
 
     let output = match lift_series_pin_group_switch_record_v1(gn, on_g, off_g, ftg) {

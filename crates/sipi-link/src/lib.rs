@@ -18,19 +18,15 @@ mod receiver;
 mod time_warp_v1;
 
 pub use prbs9_inject_v1::{
-    owner_default_inject_waveform_v1, prbs9_inject_waveform_v1, InjectWaveformErrorV1,
-    PRBS9_INJECT_POLICY_V1,
+    InjectWaveformErrorV1, PRBS9_INJECT_POLICY_V1, owner_default_inject_waveform_v1,
+    prbs9_inject_waveform_v1,
 };
-pub use prbs9_v1::{
-    Prbs9V1, PRBS9_OWNER_SEED_BITS, PRBS9_POLICY_V1, PRBS9_STAGES,
-};
-pub use time_warp_v1::{
-    time_warp_shift_v1, TimeWarpErrorV1, TIME_WARP_POLICY_V1,
-};
+pub use prbs9_v1::{PRBS9_OWNER_SEED_BITS, PRBS9_POLICY_V1, PRBS9_STAGES, Prbs9V1};
 pub use receiver::{
     ReceiverDecisionV1, ReceiverError, ReceiverPhaseSelectionV2, ReceiverResultV1, ReferenceBitsV1,
     run_fixed_receiver_delegated_ambiguity_v2, run_fixed_receiver_v1,
 };
+pub use time_warp_v1::{TIME_WARP_POLICY_V1, TimeWarpErrorV1, time_warp_shift_v1};
 
 /// Stable, explicit bounds for one causal FIR operation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

@@ -10,14 +10,14 @@ use sipi_contracts::{
     CausalFirChannelV1, LinkContractError, LinkPlanV1, RxStagesV1, TxStageV1, UniformTimebaseV1,
 };
 use sipi_ieee_com_sparam::SelectedP3cTruncatedResponseV1;
-use sipi_link::{convolve_causal_fir_v1, ConvolutionLimitsV1, LinkError};
+use sipi_link::{ConvolutionLimitsV1, LinkError, convolve_causal_fir_v1};
 use sipi_types::{FiniteF64, Seconds, Volts};
 
 use crate::{
-    P3C_PRBS9_OSR_V1, P3C_PRBS9_PERIODS_V1, P3C_PRBS9_PERIOD_UI_V1,
-    P3C_PRBS9_SAMPLE_INTERVAL_BITS_V1, P3C_PRBS9_THIRD_PERIOD_START_V1,
-    P3C_PRBS9_TOTAL_SAMPLES_V1, P3C_SELECTED_FULL_LINEAR_MACS_V1,
-    P3C_SELECTED_FULL_LINEAR_SAMPLES_V1, P3C_SELECTED_TRUNCATED_RESPONSE_SAMPLES_V1,
+    P3C_PRBS9_OSR_V1, P3C_PRBS9_PERIOD_UI_V1, P3C_PRBS9_PERIODS_V1,
+    P3C_PRBS9_SAMPLE_INTERVAL_BITS_V1, P3C_PRBS9_THIRD_PERIOD_START_V1, P3C_PRBS9_TOTAL_SAMPLES_V1,
+    P3C_SELECTED_FULL_LINEAR_MACS_V1, P3C_SELECTED_FULL_LINEAR_SAMPLES_V1,
+    P3C_SELECTED_TRUNCATED_RESPONSE_SAMPLES_V1,
 };
 
 /// Full linear response plus the fixed strict-grid candidate prefix.

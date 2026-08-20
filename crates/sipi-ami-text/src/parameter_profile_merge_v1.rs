@@ -98,12 +98,7 @@ mod tests {
     fn profile(pairs: &[(&str, &str, &str)]) -> BTreeMap<String, AmiParameterValueV1> {
         pairs
             .iter()
-            .map(|(name, type_token, value)| {
-                (
-                    name.to_string(),
-                    parameter(name, type_token, value),
-                )
-            })
+            .map(|(name, type_token, value)| (name.to_string(), parameter(name, type_token, value)))
             .collect()
     }
 
@@ -125,7 +120,10 @@ mod tests {
         let result = merge_parameter_profiles_v1(&a, &b).expect("merged");
         assert_eq!(result.matched(), 1);
         assert_eq!(result.parameters().len(), 1);
-        assert_eq!(result.parameters().get("gain").expect("gain").value_token(), "0.5");
+        assert_eq!(
+            result.parameters().get("gain").expect("gain").value_token(),
+            "0.5"
+        );
     }
 
     #[test]
@@ -178,10 +176,7 @@ mod tests {
             ("steps", "Integer", "7"),
             ("mode", "String", "fast"),
         ]);
-        let b = profile(&[
-            ("gain", "Float", "0.5"),
-            ("enabled", "Boolean", "True"),
-        ]);
+        let b = profile(&[("gain", "Float", "0.5"), ("enabled", "Boolean", "True")]);
         let result = merge_parameter_profiles_v1(&a, &b).expect("merged");
         assert_eq!(result.matched(), 1);
         assert_eq!(result.parameters().len(), 4);

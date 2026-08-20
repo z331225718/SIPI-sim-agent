@@ -27,7 +27,7 @@ reference replicates the removal rule over 4 test cases.
   trimmed items, non-list, single-item removal).
 - Cross-check: 4 test cases (removes all occurrences, no occurrence, all removed, non-list)
   driven through product runner `p4b_02b112_parameter_list_remove_all_runner`; independent
-  Python reference matches 100% on tokens and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on tokens and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

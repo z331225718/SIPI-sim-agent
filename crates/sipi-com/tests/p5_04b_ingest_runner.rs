@@ -9,10 +9,10 @@ use std::path::PathBuf;
 
 use sha2::{Digest, Sha256};
 use sipi_channel::FourPortS;
-use sipi_com::{apply_internal_port_order_v1, sdd21_v1, FourPortSMatrixV1};
+use sipi_com::{FourPortSMatrixV1, apply_internal_port_order_v1, sdd21_v1};
 use sipi_touchstone::{
-    selected_four_port_v1::{parse_selected_four_port_hz_s_ri_50_v2, ParsedSelectedFourPortV1},
     TouchstoneParseLimitsV1,
+    selected_four_port_v1::{ParsedSelectedFourPortV1, parse_selected_four_port_hz_s_ri_50_v2},
 };
 use sipi_types::Complex64;
 
@@ -22,9 +22,9 @@ fn cm(real: f64, imaginary: f64) -> Complex64 {
 
 fn to_matrix(four: FourPortS) -> FourPortSMatrixV1 {
     let mut matrix = [[cm(0.0, 0.0); 4]; 4];
-    for output in 0..4 {
-        for incident in 0..4 {
-            matrix[output][incident] = four.at(output, incident).expect("port");
+    for (output, row) in matrix.iter_mut().enumerate() {
+        for (incident, value) in row.iter_mut().enumerate() {
+            *value = four.at(output, incident).expect("port");
         }
     }
     matrix
@@ -80,9 +80,15 @@ fn main() {
         "target": target,
     });
     if let Some(path) = report {
-        std::fs::write(path, serde_json::to_string_pretty(&report_json).expect("json"))
-            .expect("write");
+        std::fs::write(
+            path,
+            serde_json::to_string_pretty(&report_json).expect("json"),
+        )
+        .expect("write");
     } else {
-        println!("{}", serde_json::to_string_pretty(&report_json).expect("json"));
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&report_json).expect("json")
+        );
     }
 }

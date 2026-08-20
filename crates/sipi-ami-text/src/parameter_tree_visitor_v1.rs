@@ -19,9 +19,16 @@ pub enum ParameterTreeVisitorErrorV1 {
 /// Visitor event generated during tree traversal.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum VisitorEventV1 {
-    EnterBranch { path: String },
-    LeaveBranch { path: String },
-    VisitLeaf { path: String, value_tokens: Vec<String> },
+    EnterBranch {
+        path: String,
+    },
+    LeaveBranch {
+        path: String,
+    },
+    VisitLeaf {
+        path: String,
+        value_tokens: Vec<String>,
+    },
 }
 
 fn traverse_node(
@@ -37,7 +44,9 @@ fn traverse_node(
 
     match node {
         AmiParameterTreeNodeV1::Branch { children, .. } => {
-            events.push(VisitorEventV1::EnterBranch { path: current_path.clone() });
+            events.push(VisitorEventV1::EnterBranch {
+                path: current_path.clone(),
+            });
             for child in children.values() {
                 traverse_node(child, &current_path, events);
             }
@@ -70,7 +79,7 @@ pub fn traverse_parameter_trees_v1(
 mod tests {
     use super::*;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
-    use crate::{parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, parse_ami_text_v1};
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
@@ -94,18 +103,44 @@ mod tests {
         let trees = build_parameter_trees_v1(&doc).expect("build");
         let events = traverse_parameter_trees_v1(&trees).expect("traverse");
 
-        assert_eq!(events[0], VisitorEventV1::EnterBranch { path: "Reserved_Parameters".to_string() });
-        assert_eq!(events[1], VisitorEventV1::EnterBranch { path: "Reserved_Parameters.dfe".to_string() });
-        assert_eq!(events[2], VisitorEventV1::VisitLeaf {
-            path: "Reserved_Parameters.dfe.tap_1".to_string(),
-            value_tokens: vec!["Integer".to_string(), "2".to_string()],
-        });
-        assert_eq!(events[3], VisitorEventV1::LeaveBranch { path: "Reserved_Parameters.dfe".to_string() });
-        assert_eq!(events[4], VisitorEventV1::VisitLeaf {
-            path: "Reserved_Parameters.tx_swing".to_string(),
-            value_tokens: vec!["Float".to_string(), "0.5".to_string()],
-        });
-        assert_eq!(events[5], VisitorEventV1::LeaveBranch { path: "Reserved_Parameters".to_string() });
+        assert_eq!(
+            events[0],
+            VisitorEventV1::EnterBranch {
+                path: "Reserved_Parameters".to_string()
+            }
+        );
+        assert_eq!(
+            events[1],
+            VisitorEventV1::EnterBranch {
+                path: "Reserved_Parameters.dfe".to_string()
+            }
+        );
+        assert_eq!(
+            events[2],
+            VisitorEventV1::VisitLeaf {
+                path: "Reserved_Parameters.dfe.tap_1".to_string(),
+                value_tokens: vec!["Integer".to_string(), "2".to_string()],
+            }
+        );
+        assert_eq!(
+            events[3],
+            VisitorEventV1::LeaveBranch {
+                path: "Reserved_Parameters.dfe".to_string()
+            }
+        );
+        assert_eq!(
+            events[4],
+            VisitorEventV1::VisitLeaf {
+                path: "Reserved_Parameters.tx_swing".to_string(),
+                value_tokens: vec!["Float".to_string(), "0.5".to_string()],
+            }
+        );
+        assert_eq!(
+            events[5],
+            VisitorEventV1::LeaveBranch {
+                path: "Reserved_Parameters".to_string()
+            }
+        );
     }
 
     #[test]

@@ -19,7 +19,7 @@ are strictly rejected. An independent Python reference recomputes tree structura
   rejects root mismatch; rejects path not found).
 - Cross-check: 3 test cases (prune leaf node, cannot prune root, path not found)
   driven through product runner `p4b_02b13_parameter_tree_pruning_runner`; independent Python reference
-  matches 100% on valid flags, pruned S-expression formatted text, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, pruned S-expression formatted text, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

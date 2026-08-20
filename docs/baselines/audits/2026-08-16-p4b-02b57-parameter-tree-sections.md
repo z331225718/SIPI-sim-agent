@@ -21,7 +21,7 @@ tokenize/build/listing pipeline over 4 test cases.
   root-leaf tree fails closed).
 - Cross-check: 4 test cases (mixed sections, leaf-only sections, root leaf, nested branches)
   driven through product runner `p4b_02b57_parameter_tree_sections_runner`; independent Python
-  reference matches 100% on valid flags, section lists, and error contexts; 4/4 matched_hash_bound.
+  reference matches 100% on valid flags, section lists, and error contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

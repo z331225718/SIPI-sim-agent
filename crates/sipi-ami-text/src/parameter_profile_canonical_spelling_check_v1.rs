@@ -17,7 +17,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{canonicalize_parameter_value_spelling_v1, AmiParameterValueV1};
+use crate::{AmiParameterValueV1, canonicalize_parameter_value_spelling_v1};
 
 /// Explicit scope policy of this slice: canonical profile spelling check.
 pub const PARAMETER_PROFILE_CANONICAL_SPELLING_CHECK_POLICY_V1: &str =
@@ -150,10 +150,7 @@ mod tests {
 
     #[test]
     fn float_and_string_are_never_flagged() {
-        let p = profile(&[
-            ("gain", "Float", "0.50"),
-            ("mode", "String", "Linear "),
-        ]);
+        let p = profile(&[("gain", "Float", "0.50"), ("mode", "String", "Linear ")]);
         let report = check_parameter_profile_spellings_canonical_v1(&p);
         assert!(report.non_canonical().is_empty());
         assert!(report.canonical());

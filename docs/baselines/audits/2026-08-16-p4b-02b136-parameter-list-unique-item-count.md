@@ -24,7 +24,7 @@ independent Python reference replicates the unique rule over 4 test cases.
   spacing canonicalized).
 - Cross-check: 4 test cases (all distinct, repeated items, all equal, non-list) driven through
   product runner `p4b_02b136_parameter_list_unique_item_count_runner`; independent Python
-  reference matches 100% on counts and error keys; 4/4 matched_hash_bound.
+  reference matches 100% on counts and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

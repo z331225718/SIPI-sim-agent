@@ -30,7 +30,7 @@ the `(start, end)` arrays for bit-exact equality per run.
   single item zero extent, spacing canonicalized, non-list).
 - Cross-check: 4 test cases (mixed, all equal, all distinct, non-list) driven through product
   runner `p4b_02b183_parameter_list_run_boundaries_runner`; independent Python reference
-  matches 100% on run-boundary arrays and error keys; 4/4 matched_hash_bound.
+  matches 100% on run-boundary arrays and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -54,7 +54,7 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
     evidence = load_yaml(EVIDENCE)
     if evidence.get("schema") != "sipi.p4b-02b187-parameter-list-last-occurrence-map-crosscheck-evidence.v1":
         raise ParameterListLastOccurrenceMapError("evidence_schema_invalid")
-    if evidence.get("status") != "matched_hash_bound":
+    if evidence.get("status") != "product_owned_self_crosscheck_unbound":
         raise ParameterListLastOccurrenceMapError("evidence_status_drift")
     if evidence.get("matched_count") != evidence.get("case_count") or evidence.get("case_count") != 4:
         raise ParameterListLastOccurrenceMapError("evidence_entry_mismatch")

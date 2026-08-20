@@ -5,7 +5,7 @@
 
 use std::path::PathBuf;
 
-use sipi_com::{BathtubSampleV1, margins_from_bathtub_v1, HORIZONTAL_MARGIN_POLICY_V1};
+use sipi_com::{BathtubSampleV1, HORIZONTAL_MARGIN_POLICY_V1, margins_from_bathtub_v1};
 
 fn main() {
     let mut input = None;
@@ -31,7 +31,10 @@ fn main() {
     let mut samples = Vec::new();
     if let Some(arr) = value.get("samples").and_then(|v| v.as_array()) {
         for s in arr {
-            samples.push(BathtubSampleV1::new(s[0].as_f64().unwrap(), s[1].as_f64().unwrap()));
+            samples.push(BathtubSampleV1::new(
+                s[0].as_f64().unwrap(),
+                s[1].as_f64().unwrap(),
+            ));
         }
     }
 
@@ -39,7 +42,9 @@ fn main() {
     let output = match &result {
         Ok(m) => serde_json::json!({ "policy": HORIZONTAL_MARGIN_POLICY_V1, "ok": true,
             "eye_width": m.eye_width_ui(), "left": m.left_margin_ui(), "right": m.right_margin_ui() }),
-        Err(e) => serde_json::json!({ "policy": HORIZONTAL_MARGIN_POLICY_V1, "ok": false, "error": format!("{e:?}") }),
+        Err(e) => {
+            serde_json::json!({ "policy": HORIZONTAL_MARGIN_POLICY_V1, "ok": false, "error": format!("{e:?}") })
+        }
     };
     if let Some(path) = report {
         std::fs::write(path, serde_json::to_string(&output).expect("json")).expect("write");

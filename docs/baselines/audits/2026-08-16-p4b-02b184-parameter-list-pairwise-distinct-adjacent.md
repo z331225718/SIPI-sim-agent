@@ -29,7 +29,7 @@ right)` arrays for bit-exact equality per position.
   item empty result, non-list).
 - Cross-check: 4 test cases (mixed, duplicate pairs, all equal empty, non-list) driven through
   product runner `p4b_02b184_parameter_list_pairwise_distinct_adjacent_runner`; independent
-  Python reference matches 100% on pair arrays and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on pair arrays and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

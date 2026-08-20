@@ -106,10 +106,7 @@ mod tests {
     fn empty_prefix_yields_empty_token() {
         let a = value("left", "List", "(a, b)");
         let b = value("right", "List", "(x, y)");
-        assert_eq!(
-            list_longest_common_prefix_v1(&a, &b),
-            Ok("()".to_string())
-        );
+        assert_eq!(list_longest_common_prefix_v1(&a, &b), Ok("()".to_string()));
     }
 
     #[test]

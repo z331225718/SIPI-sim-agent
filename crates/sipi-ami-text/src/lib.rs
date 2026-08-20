@@ -5,972 +5,1322 @@
 //! This crate intentionally has no AMI parameter, model, ABI, file, or runtime
 //! semantics. It retains only bounded UTF-8 structural text and source spans.
 
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
 mod ami_runtime_params_v1;
-mod parameter_extractor_v1;
-mod parameter_trees_v1;
-mod parameter_tree_query_v1;
-mod parameter_tree_formatter_v1;
-mod parameter_tree_validator_v1;
-mod parameter_tree_diff_v1;
-mod parameter_tree_merge_v1;
-mod parameter_tree_pruning_v1;
-mod parameter_tree_visitor_v1;
-mod parameter_tree_transformer_v1;
-mod parameter_tree_index_v1;
-mod parameter_tree_diff_patch_v1;
-mod parameter_tree_filter_v1;
-mod parameter_tree_serde_v1;
-mod parameter_tree_diff_stats_v1;
-mod parameter_tree_diff_filter_v1;
-mod parameter_tree_diff_summary_v1;
-mod parameter_tree_subtree_v1;
-mod parameter_tree_rename_v1;
-mod parameter_tree_detect_cycles_v1;
-mod parameter_tree_compose_v1;
-mod parameter_tree_replace_v1;
-mod parameter_tree_toposort_v1;
-mod parameter_tree_depth_stats_v1;
-mod parameter_tree_leaf_index_v1;
-mod parameter_tree_token_stats_v1;
-mod parameter_tree_validate_values_v1;
-mod parameter_tree_infer_types_v1;
-mod parameter_tree_typed_form_v1;
-mod parameter_tree_project_v1;
-mod parameter_tree_batch_rename_v1;
-mod parameter_tree_decode_values_v1;
-mod parameter_tree_apply_defaults_v1;
-mod parameter_tree_set_value_v1;
-mod parameter_tree_search_v1;
-mod parameter_tree_inferred_decode_v1;
-mod parameter_tree_typed_form_multi_v1;
-mod parameter_tree_reserved_check_v1;
-mod parameter_profile_assembly_v1;
-mod parameter_tree_path_string_v1;
-mod parameter_tree_expected_check_v1;
-mod parameter_profile_diff_v1;
-mod parameter_profile_merge_v1;
-mod parameter_tree_allowed_check_v1;
-mod parameter_tree_flatten_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
 mod ami_text_document_stats_v1;
-mod parameter_tree_token_remap_v1;
-mod parameter_tree_set_values_batch_v1;
-mod parameter_tree_duplicate_check_v1;
-mod parameter_profile_completeness_v1;
-mod parameter_tree_path_join_v1;
-mod parameter_tree_sections_v1;
-mod parameter_tree_typed_form_report_v1;
-mod parameter_tree_leaf_occurrences_v1;
-mod parameter_tree_token_frequencies_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
 mod ami_text_form_heads_v1;
-mod parameter_tree_required_check_v1;
-mod parameter_tree_distinct_leaf_names_v1;
-mod parameter_profile_select_v1;
-mod parameter_tree_path_relation_v1;
-mod parameter_tree_relative_path_v1;
-mod parameter_tree_longest_common_prefix_v1;
-mod parameter_tree_path_prefixes_v1;
-mod parameter_tree_profile_apply_v1;
-mod parameter_value_equivalence_v1;
-mod parameter_profile_equivalence_v1;
-mod parameter_profile_tree_coverage_v1;
-mod parameter_profile_type_stats_v1;
-mod parameter_profile_typed_merge_v1;
-mod parameter_value_spelling_normalization_v1;
-mod parameter_profile_override_merge_v1;
-mod parameter_profile_canonicalization_v1;
-mod parameter_tree_leaf_canonicalization_v1;
-mod parameter_profile_typed_diff_v1;
-mod parameter_profile_value_lookup_v1;
-mod parameter_profile_serialization_v1;
-mod parameter_profile_deserialization_v1;
-mod parameter_list_item_count_v1;
-mod parameter_list_item_access_v1;
-mod parameter_list_contains_v1;
-mod parameter_profile_names_by_type_v1;
-mod parameter_tree_leaf_type_map_v1;
-mod parameter_tree_leaf_type_resolution_v1;
-mod parameter_tree_leaf_typed_diff_v1;
-mod parameter_profile_typed_subset_v1;
-mod parameter_tree_leaf_value_validity_v1;
-mod parameter_profile_canonical_spelling_groups_v1;
-mod parameter_tree_typed_leaf_type_counts_v1;
-mod parameter_tree_leaf_canonical_spelling_check_v1;
-mod parameter_profile_canonical_spelling_check_v1;
-mod parameter_profile_fingerprint_v1;
-mod parameter_tree_typed_leaf_fingerprint_v1;
-mod parameter_list_dedup_v1;
-mod parameter_list_replace_v1;
-mod parameter_list_remove_v1;
-mod parameter_list_append_v1;
-mod parameter_list_insert_v1;
-mod parameter_list_swap_v1;
-mod parameter_list_reverse_v1;
-mod parameter_list_sort_v1;
-mod parameter_list_join_v1;
-mod parameter_list_first_occurrence_map_v1;
-mod parameter_list_last_occurrence_map_v1;
-mod parameter_list_occurrence_indices_map_v1;
-mod parameter_list_last_occurrence_indices_v1;
-mod parameter_list_frequency_map_v1;
-mod parameter_list_pairwise_equal_adjacent_v1;
-mod parameter_list_relative_frequency_map_v1;
-mod parameter_list_prevalence_map_v1;
-mod parameter_list_is_balanced_v1;
-mod parameter_list_distinct_count_v1;
-mod parameter_list_occurrence_count_v1;
-mod parameter_list_slice_v1;
-mod parameter_list_index_of_v1;
-mod parameter_list_last_index_of_v1;
-mod parameter_list_remove_all_v1;
-mod parameter_list_keep_only_v1;
-mod parameter_list_split_v1;
-mod parameter_list_rotate_v1;
-mod parameter_list_chunk_v1;
-mod parameter_list_head_tail_v1;
-mod parameter_list_window_v1;
-mod parameter_list_run_length_encode_v1;
-mod parameter_list_longest_run_v1;
-mod parameter_list_frequency_v1;
-mod parameter_list_most_frequent_v1;
-mod parameter_list_least_frequent_v1;
-mod parameter_list_is_sorted_v1;
-mod parameter_list_is_strictly_sorted_v1;
-mod parameter_list_is_palindrome_v1;
-mod parameter_list_contains_sublist_v1;
-mod parameter_list_sublist_index_v1;
-mod parameter_list_last_sublist_index_v1;
-mod parameter_list_longest_common_prefix_v1;
-mod parameter_list_longest_common_suffix_v1;
-mod parameter_list_interleave_v1;
-mod parameter_list_inversion_count_v1;
-mod parameter_list_equal_adjacent_count_v1;
-mod parameter_list_distinct_pair_count_v1;
-mod parameter_list_unique_item_count_v1;
-mod parameter_list_duplicate_item_count_v1;
-mod parameter_list_first_duplicate_index_v1;
-mod parameter_list_last_duplicate_index_v1;
-mod parameter_list_multi_remove_all_v1;
-mod parameter_list_multi_keep_only_v1;
-mod parameter_list_longest_common_subsequence_length_v1;
-mod parameter_list_edit_distance_v1;
-mod parameter_list_has_subsequence_v1;
-mod parameter_list_hamming_distance_v1;
-mod parameter_list_starts_with_v1;
-mod parameter_list_ends_with_v1;
-mod parameter_list_intersection_v1;
-mod parameter_list_symmetric_difference_v1;
-mod parameter_list_union_v1;
-mod parameter_list_relative_complement_v1;
-mod parameter_list_multiset_equal_v1;
-mod parameter_list_contains_multiset_v1;
-mod parameter_list_jaccard_index_v1;
-mod parameter_list_dice_index_v1;
-mod parameter_list_overlap_coefficient_v1;
-mod parameter_list_contains_sequence_v1;
-mod parameter_list_tversky_index_v1;
-mod parameter_list_longest_common_subsequence_v1;
-mod parameter_list_all_equal_v1;
-mod parameter_list_min_max_item_v1;
-mod parameter_list_nth_smallest_item_v1;
-mod parameter_list_nth_largest_item_v1;
-mod parameter_list_median_item_v1;
-mod parameter_list_mode_items_v1;
-mod parameter_list_anti_mode_items_v1;
-mod parameter_list_dedup_keep_last_v1;
-mod parameter_list_run_count_v1;
-mod parameter_list_sorted_rank_v1;
-mod parameter_list_longest_run_item_v1;
-mod parameter_list_longest_run_start_index_v1;
-mod parameter_list_adjacent_change_count_v1;
-mod parameter_list_total_equal_pair_count_v1;
-mod parameter_list_majority_item_v1;
-mod parameter_list_is_alternating_v1;
-mod parameter_list_entropy_v1;
-mod parameter_list_gini_impurity_v1;
-mod parameter_list_normalized_entropy_v1;
-mod parameter_list_mode_frequency_v1;
-mod parameter_list_prevalence_ratio_v1;
-mod parameter_list_frequency_normalized_v1;
-mod parameter_list_first_occurrence_indices_v1;
-mod parameter_list_run_boundaries_v1;
-mod parameter_list_pairwise_distinct_adjacent_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
 mod catalog_default_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
 mod parameter_catalog_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_extractor_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
 mod parameter_form_binding_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_adjacent_change_count_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_all_equal_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_anti_mode_items_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_append_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_chunk_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_contains_multiset_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_contains_sequence_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_contains_sublist_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_contains_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_dedup_keep_last_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_dedup_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_dice_index_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_distinct_count_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_distinct_pair_count_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_duplicate_item_count_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_edit_distance_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_ends_with_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_entropy_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_equal_adjacent_count_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_first_duplicate_index_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_first_occurrence_indices_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_first_occurrence_map_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_frequency_map_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_frequency_normalized_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_frequency_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_gini_impurity_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_hamming_distance_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_has_subsequence_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_head_tail_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_index_of_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_insert_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_interleave_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_intersection_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_inversion_count_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_is_alternating_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_is_balanced_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_is_palindrome_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_is_sorted_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_is_strictly_sorted_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_item_access_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_item_count_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_jaccard_index_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_join_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_keep_only_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_last_duplicate_index_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_last_index_of_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_last_occurrence_indices_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_last_occurrence_map_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_last_sublist_index_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_least_frequent_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_longest_common_prefix_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_longest_common_subsequence_length_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_longest_common_subsequence_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_longest_common_suffix_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_longest_run_item_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_longest_run_start_index_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_longest_run_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_majority_item_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_median_item_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_min_max_item_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_mode_frequency_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_mode_items_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_most_frequent_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_multi_keep_only_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_multi_remove_all_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_multiset_equal_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_normalized_entropy_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_nth_largest_item_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_nth_smallest_item_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_occurrence_count_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_occurrence_indices_map_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_overlap_coefficient_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_pairwise_distinct_adjacent_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_pairwise_equal_adjacent_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_prevalence_map_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_prevalence_ratio_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_relative_complement_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_relative_frequency_map_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_remove_all_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_remove_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_replace_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_reverse_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_rotate_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_run_boundaries_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_run_count_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_run_length_encode_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_slice_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_sort_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_sorted_rank_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_split_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_starts_with_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_sublist_index_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_swap_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_symmetric_difference_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_total_equal_pair_count_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_tversky_index_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_union_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_unique_item_count_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_list_window_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_assembly_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_canonical_spelling_check_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_canonical_spelling_groups_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_canonicalization_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_completeness_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_deserialization_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_diff_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_equivalence_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_fingerprint_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_merge_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_names_by_type_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_override_merge_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_select_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_serialization_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_tree_coverage_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_type_stats_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_typed_diff_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_typed_merge_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_typed_subset_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_profile_value_lookup_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_allowed_check_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_apply_defaults_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_batch_rename_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_compose_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_decode_values_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_depth_stats_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_detect_cycles_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_diff_filter_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_diff_patch_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_diff_stats_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_diff_summary_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_diff_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_distinct_leaf_names_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_duplicate_check_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_expected_check_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_filter_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_flatten_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_formatter_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_index_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_infer_types_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_inferred_decode_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_leaf_canonical_spelling_check_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_leaf_canonicalization_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_leaf_index_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_leaf_occurrences_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_leaf_type_map_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_leaf_type_resolution_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_leaf_typed_diff_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_leaf_value_validity_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_longest_common_prefix_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_merge_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_path_join_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_path_prefixes_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_path_relation_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_path_string_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_profile_apply_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_project_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_pruning_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_query_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_relative_path_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_rename_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_replace_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_required_check_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_reserved_check_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_search_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_sections_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_serde_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_set_value_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_set_values_batch_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_subtree_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_token_frequencies_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_token_remap_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_token_stats_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_toposort_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_transformer_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_typed_form_multi_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_typed_form_report_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_typed_form_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_typed_leaf_fingerprint_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_typed_leaf_type_counts_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_validate_values_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_validator_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_tree_visitor_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_trees_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_value_equivalence_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+mod parameter_value_spelling_normalization_v1;
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
 mod parameter_value_v1;
-pub use parameter_tree_diff_summary_v1::{
-    generate_parameter_tree_diff_summary_v1, AmiParameterTreeDiffSummaryReportV1,
-    ParameterTreeDiffSummaryErrorV1, PARAMETER_TREE_DIFF_SUMMARY_POLICY_V1,
-};
-pub use parameter_tree_subtree_v1::{
-    extract_parameter_tree_subtree_v1, ParameterTreeSubtreeErrorV1,
-    PARAMETER_TREE_SUBTREE_POLICY_V1,
-};
-pub use parameter_tree_rename_v1::{
-    rename_parameter_tree_node_v1, ParameterTreeRenameErrorV1,
-    PARAMETER_TREE_RENAME_POLICY_V1,
-};
-pub use parameter_tree_detect_cycles_v1::{
-    detect_parameter_tree_cycles_v1, ParameterTreeCycleScanV1,
-    ParameterTreeDetectCyclesErrorV1, PARAMETER_TREE_DETECT_CYCLES_POLICY_V1,
-};
-pub use parameter_tree_compose_v1::{
-    compose_parameter_tree_subtree_v1, ParameterTreeComposeErrorV1,
-    PARAMETER_TREE_COMPOSE_POLICY_V1,
-};
-pub use parameter_tree_replace_v1::{
-    replace_parameter_tree_node_v1, ParameterTreeReplaceErrorV1,
-    PARAMETER_TREE_REPLACE_POLICY_V1,
-};
-pub use parameter_tree_toposort_v1::{
-    toposort_parameter_tree_paths_v1, ParameterTreeToposortErrorV1,
-    PARAMETER_TREE_TOPOSORT_POLICY_V1,
-};
-pub use parameter_tree_depth_stats_v1::{
-    compute_parameter_tree_depth_stats_v1, ParameterTreeDepthStatsV1,
-    ParameterTreeDepthStatsErrorV1, PARAMETER_TREE_DEPTH_STATS_POLICY_V1,
-};
-pub use parameter_tree_leaf_index_v1::{
-    build_parameter_tree_leaf_index_v1, ParameterTreeLeafIndexV1,
-    ParameterTreeLeafIndexErrorV1, PARAMETER_TREE_LEAF_INDEX_POLICY_V1,
-};
-pub use parameter_tree_token_stats_v1::{
-    compute_parameter_tree_token_stats_v1, ParameterTreeTokenStatsV1,
-    ParameterTreeTokenStatsErrorV1, PARAMETER_TREE_TOKEN_STATS_POLICY_V1,
-};
-pub use parameter_tree_validate_values_v1::{
-    validate_parameter_tree_values_v1, ParameterTreeValueValidationV1,
-    ParameterTreeValueValidationErrorV1, PARAMETER_TREE_VALUE_VALIDATION_POLICY_V1,
-};
-pub use parameter_tree_infer_types_v1::{
-    infer_parameter_tree_leaf_types_v1, ParameterTreeTypeInferenceV1,
-    ParameterTreeTypeInferenceErrorV1, PARAMETER_TREE_VALUE_TYPE_INFERENCE_POLICY_V1,
-};
-pub use parameter_tree_typed_form_v1::{
-    extract_typed_parameter_forms_v1, ParameterTreeTypedFormsV1,
-    ParameterTreeTypedFormErrorV1, PARAMETER_TREE_TYPED_FORM_POLICY_V1,
-};
-pub use parameter_tree_project_v1::{
-    project_parameter_tree_leaves_v1, ParameterTreeProjectErrorV1,
-    PARAMETER_TREE_LEAF_PROJECTION_POLICY_V1,
-};
-pub use parameter_tree_batch_rename_v1::{
-    rename_parameter_tree_leaves_v1, ParameterTreeBatchRenameErrorV1,
-    PARAMETER_TREE_BATCH_RENAME_POLICY_V1,
-};
-pub use parameter_tree_decode_values_v1::{
-    decode_parameter_tree_leaf_values_v1, DecodedLeafValueV1,
-    ParameterTreeLeafValueDecodingV1, ParameterTreeLeafValueDecodingErrorV1,
-    PARAMETER_TREE_LEAF_VALUE_DECODING_POLICY_V1,
-};
-pub use parameter_tree_apply_defaults_v1::{
-    apply_parameter_tree_defaults_v1, ParameterTreeDefaultsAppliedV1,
-    ParameterTreeDefaultsErrorV1, PARAMETER_TREE_APPLY_DEFAULTS_POLICY_V1,
-};
-pub use parameter_tree_set_value_v1::{
-    set_parameter_tree_leaf_value_v1, ParameterTreeValueSetErrorV1,
-    PARAMETER_TREE_LEAF_VALUE_SET_POLICY_V1,
-};
-pub use parameter_tree_search_v1::{
-    find_parameter_tree_leaves_by_token_v1, ParameterTreeSearchErrorV1,
-    PARAMETER_TREE_LEAF_SEARCH_POLICY_V1,
-};
-pub use parameter_tree_inferred_decode_v1::{
-    decode_parameter_tree_with_inferred_types_v1, ParameterTreeInferredDecodingV1,
-    ParameterTreeInferredDecodingErrorV1, PARAMETER_TREE_INFERRED_DECODE_POLICY_V1,
-};
-pub use parameter_tree_typed_form_multi_v1::{
-    extract_typed_parameter_forms_multi_v1, ParameterTreeMultiTypedFormsV1,
-    ParameterTreeMultiFormErrorV1, PARAMETER_TREE_TYPED_FORM_MULTI_POLICY_V1,
-};
-pub use parameter_tree_reserved_check_v1::{
-    check_parameter_tree_reserved_names_v1, ParameterTreeReservedNameCheckV1,
-    ParameterTreeReservedNameErrorV1, PARAMETER_TREE_RESERVED_NAME_CHECK_POLICY_V1,
-};
-pub use parameter_profile_assembly_v1::{
-    assemble_parameter_profile_v1, ParameterProfileAssemblyV1,
-    ParameterProfileAssemblyErrorV1, PARAMETER_PROFILE_ASSEMBLY_POLICY_V1,
-};
-pub use parameter_tree_path_string_v1::{
-    parse_parameter_tree_path_string_v1, ParameterTreePathParseErrorV1,
-    PARAMETER_TREE_PATH_STRING_POLICY_V1,
-};
-pub use parameter_tree_expected_check_v1::{
-    check_parameter_tree_against_expected_v1, ParameterTreeExpectedCheckV1,
-    ParameterTreeExpectedCheckErrorV1, ParameterTreeValueMismatchV1,
-    PARAMETER_TREE_EXPECTED_CHECK_POLICY_V1,
-};
-pub use parameter_profile_diff_v1::{
-    diff_parameter_profiles_v1, ParameterProfileDiffV1, ParameterValueChangeV1,
-    PARAMETER_PROFILE_DIFF_POLICY_V1,
-};
-pub use parameter_profile_merge_v1::{
-    merge_parameter_profiles_v1, ParameterProfileMergeV1, ParameterProfileMergeErrorV1,
-    PARAMETER_PROFILE_MERGE_POLICY_V1,
-};
-pub use parameter_tree_allowed_check_v1::{
-    check_parameter_tree_allowed_names_v1, ParameterTreeAllowedNameCheckV1,
-    ParameterTreeAllowedNameErrorV1, PARAMETER_TREE_ALLOWED_NAME_CHECK_POLICY_V1,
-};
-pub use parameter_tree_flatten_v1::{
-    flatten_parameter_tree_v1, ParameterTreeNodeKindV1, ParameterTreeNodeRecordV1,
-    PARAMETER_TREE_FLATTEN_POLICY_V1,
-};
-pub use ami_text_document_stats_v1::{
-    compute_ami_text_document_stats_v1, AmiTextDocumentStatsV1, AmiTextStatsErrorV1,
-    AMI_TEXT_DOCUMENT_STATS_POLICY_V1,
-};
-pub use parameter_tree_token_remap_v1::{
-    remap_parameter_tree_tokens_v1, ParameterTreeTokenRemapV1,
-    ParameterTreeTokenRemapErrorV1, PARAMETER_TREE_TOKEN_REMAP_POLICY_V1,
-};
-pub use parameter_tree_set_values_batch_v1::{
-    set_parameter_tree_leaf_values_v1, ParameterTreeValueSetBatchV1,
-    ParameterTreeBatchValueSetErrorV1, PARAMETER_TREE_BATCH_VALUE_SET_POLICY_V1,
-};
-pub use parameter_tree_duplicate_check_v1::{
-    check_parameter_tree_duplicate_consistency_v1, ParameterTreeDuplicateCheckV1,
-    PARAMETER_TREE_DUPLICATE_CHECK_POLICY_V1,
-};
-pub use parameter_profile_completeness_v1::{
-    check_parameter_profile_completeness_v1, ParameterProfileCompletenessV1,
-    ParameterProfileCompletenessErrorV1, PARAMETER_PROFILE_COMPLETENESS_POLICY_V1,
-};
-pub use parameter_tree_path_join_v1::{
-    join_parameter_tree_path_v1, ParameterTreePathJoinErrorV1,
-    PARAMETER_TREE_PATH_JOIN_POLICY_V1,
-};
-pub use parameter_tree_sections_v1::{
-    list_parameter_tree_sections_v1, ParameterTreeSectionKindV1, ParameterTreeSectionV1,
-    ParameterTreeSectionsErrorV1, PARAMETER_TREE_SECTIONS_POLICY_V1,
-};
-pub use parameter_tree_typed_form_report_v1::{
-    check_parameter_tree_typed_form_conformance_v1, ParameterTreeTypedFormReportEntryV1,
-    ParameterTreeTypedFormReportV1, TypedFormViolationV1,
-    PARAMETER_TREE_TYPED_FORM_CONFORMANCE_POLICY_V1,
-};
-pub use parameter_tree_leaf_occurrences_v1::{
-    count_parameter_tree_leaf_occurrences_v1, ParameterTreeLeafOccurrencesV1,
-    PARAMETER_TREE_LEAF_OCCURRENCES_POLICY_V1,
-};
-pub use parameter_tree_token_frequencies_v1::{
-    compute_parameter_tree_token_frequencies_v1, ParameterTreeTokenFrequenciesV1,
-    PARAMETER_TREE_TOKEN_FREQUENCIES_POLICY_V1,
-};
-pub use ami_text_form_heads_v1::{
-    count_ami_text_form_heads_v1, AmiTextFormHeadsErrorV1, AMI_TEXT_FORM_HEADS_POLICY_V1,
-};
-pub use parameter_tree_required_check_v1::{
-    check_parameter_tree_required_names_v1, ParameterTreeRequiredNameCheckV1,
-    ParameterTreeRequiredNameErrorV1, PARAMETER_TREE_REQUIRED_NAME_CHECK_POLICY_V1,
-};
-pub use parameter_tree_distinct_leaf_names_v1::{
-    list_parameter_tree_distinct_leaf_names_v1, ParameterTreeDistinctLeafNamesV1,
-    PARAMETER_TREE_DISTINCT_LEAF_NAMES_POLICY_V1,
-};
-pub use parameter_profile_select_v1::{
-    select_parameter_profile_v1, ParameterProfileSelectionV1,
-    ParameterProfileSelectionErrorV1, PARAMETER_PROFILE_SELECTION_POLICY_V1,
-};
-pub use parameter_tree_path_relation_v1::{
-    classify_parameter_tree_path_relation_v1, ParameterTreePathRelationErrorV1,
-    ParameterTreePathRelationV1, PARAMETER_TREE_PATH_RELATION_POLICY_V1,
-};
-pub use parameter_tree_relative_path_v1::{
-    relative_parameter_tree_path_v1, ParameterTreeRelativePathErrorV1,
-    PARAMETER_TREE_RELATIVE_PATH_POLICY_V1,
-};
-pub use parameter_tree_longest_common_prefix_v1::{
-    longest_common_path_prefix_v1, ParameterTreeLcpErrorV1,
-    PARAMETER_TREE_LONGEST_COMMON_PREFIX_POLICY_V1,
-};
-pub use parameter_tree_path_prefixes_v1::{
-    enumerate_parameter_tree_path_prefixes_v1, ParameterTreePathPrefixErrorV1,
-    PARAMETER_TREE_PATH_PREFIXES_POLICY_V1,
-};
-pub use parameter_list_occurrence_count_v1::{
-    count_parameter_list_item_occurrences_v1, ParameterListOccurrenceCountErrorV1,
-    PARAMETER_LIST_OCCURRENCE_COUNT_POLICY_V1,
-};
-pub use parameter_list_slice_v1::{
-    slice_parameter_list_items_v1, ParameterListSliceErrorV1,
-    PARAMETER_LIST_SLICE_POLICY_V1,
-};
-pub use parameter_list_index_of_v1::{
-    index_of_parameter_list_item_v1, ParameterListIndexOfErrorV1,
-    PARAMETER_LIST_INDEX_OF_POLICY_V1,
-};
-pub use parameter_list_last_index_of_v1::{
-    last_index_of_parameter_list_item_v1, ParameterListLastIndexOfErrorV1,
-    PARAMETER_LIST_LAST_INDEX_OF_POLICY_V1,
-};
-pub use parameter_list_remove_all_v1::{
-    remove_all_parameter_list_items_v1, ParameterListRemoveAllErrorV1,
-    PARAMETER_LIST_REMOVE_ALL_POLICY_V1,
-};
-pub use parameter_list_keep_only_v1::{
-    keep_only_parameter_list_items_v1, ParameterListKeepOnlyErrorV1,
-    PARAMETER_LIST_KEEP_ONLY_POLICY_V1,
-};
-pub use parameter_list_split_v1::{
-    split_parameter_list_at_index_v1, ParameterListSplitErrorV1,
-    PARAMETER_LIST_SPLIT_POLICY_V1,
-};
-pub use parameter_list_rotate_v1::{
-    rotate_parameter_list_left_v1, ParameterListRotateErrorV1,
-    PARAMETER_LIST_ROTATE_POLICY_V1,
-};
-pub use parameter_list_chunk_v1::{
-    chunk_parameter_list_v1, ParameterListChunkErrorV1,
-    PARAMETER_LIST_CHUNK_POLICY_V1,
-};
-pub use parameter_list_head_tail_v1::{
-    parameter_list_head_tail_v1, ParameterListHeadTailErrorV1,
-    PARAMETER_LIST_HEAD_TAIL_POLICY_V1,
-};
-pub use parameter_list_window_v1::{
-    window_parameter_list_v1, ParameterListWindowErrorV1,
-    PARAMETER_LIST_WINDOW_POLICY_V1,
-};
-pub use parameter_list_run_length_encode_v1::{
-    run_length_encode_parameter_list_v1, ParameterListRunLengthEncodeErrorV1,
-    PARAMETER_LIST_RUN_LENGTH_ENCODE_POLICY_V1,
-};
-pub use parameter_list_longest_run_v1::{
-    longest_run_parameter_list_v1, ParameterListLongestRunErrorV1,
-    PARAMETER_LIST_LONGEST_RUN_POLICY_V1,
-};
-pub use parameter_list_frequency_v1::{
-    parameter_list_item_frequencies_v1, ParameterListFrequencyErrorV1,
-    PARAMETER_LIST_FREQUENCY_POLICY_V1,
-};
-pub use parameter_list_most_frequent_v1::{
-    most_frequent_parameter_list_item_v1, ParameterListMostFrequentErrorV1,
-    PARAMETER_LIST_MOST_FREQUENT_POLICY_V1,
-};
-pub use parameter_list_least_frequent_v1::{
-    least_frequent_parameter_list_item_v1, ParameterListLeastFrequentErrorV1,
-    PARAMETER_LIST_LEAST_FREQUENT_POLICY_V1,
-};
-pub use parameter_list_is_sorted_v1::{
-    parameter_list_is_sorted_v1, ParameterListIsSortedErrorV1,
-    PARAMETER_LIST_IS_SORTED_POLICY_V1,
-};
-pub use parameter_list_is_strictly_sorted_v1::{
-    parameter_list_is_strictly_sorted_v1, ParameterListIsStrictlySortedErrorV1,
-    PARAMETER_LIST_IS_STRICTLY_SORTED_POLICY_V1,
-};
-pub use parameter_list_is_palindrome_v1::{
-    parameter_list_is_palindrome_v1, ParameterListIsPalindromeErrorV1,
-    PARAMETER_LIST_IS_PALINDROME_POLICY_V1,
-};
-pub use parameter_list_contains_sublist_v1::{
-    parameter_list_contains_sublist_v1, ParameterListContainsSublistErrorV1,
-    PARAMETER_LIST_CONTAINS_SUBLIST_POLICY_V1,
-};
-pub use parameter_list_sublist_index_v1::{
-    sublist_index_parameter_list_v1, ParameterListSublistIndexErrorV1,
-    PARAMETER_LIST_SUBLIST_INDEX_POLICY_V1,
-};
-pub use parameter_list_last_sublist_index_v1::{
-    last_sublist_index_parameter_list_v1, ParameterListLastSublistIndexErrorV1,
-    PARAMETER_LIST_LAST_SUBLIST_INDEX_POLICY_V1,
-};
-pub use parameter_list_longest_common_prefix_v1::{
-    list_longest_common_prefix_v1, ParameterListLongestCommonPrefixErrorV1,
-    PARAMETER_LIST_LONGEST_COMMON_PREFIX_POLICY_V1,
-};
-pub use parameter_list_longest_common_suffix_v1::{
-    list_longest_common_suffix_v1, ParameterListLongestCommonSuffixErrorV1,
-    PARAMETER_LIST_LONGEST_COMMON_SUFFIX_POLICY_V1,
-};
-pub use parameter_list_interleave_v1::{
-    interleave_parameter_list_values_v1, ParameterListInterleaveErrorV1,
-    PARAMETER_LIST_INTERLEAVE_POLICY_V1,
-};
-pub use parameter_list_inversion_count_v1::{
-    parameter_list_inversion_count_v1, ParameterListInversionCountErrorV1,
-    PARAMETER_LIST_INVERSION_COUNT_POLICY_V1,
-};
-pub use parameter_list_equal_adjacent_count_v1::{
-    parameter_list_equal_adjacent_count_v1, ParameterListEqualAdjacentCountErrorV1,
-    PARAMETER_LIST_EQUAL_ADJACENT_COUNT_POLICY_V1,
-};
-pub use parameter_list_distinct_pair_count_v1::{
-    parameter_list_distinct_pair_count_v1, ParameterListDistinctPairCountErrorV1,
-    PARAMETER_LIST_DISTINCT_PAIR_COUNT_POLICY_V1,
-};
-pub use parameter_list_unique_item_count_v1::{
-    parameter_list_unique_item_count_v1, ParameterListUniqueItemCountErrorV1,
-    PARAMETER_LIST_UNIQUE_ITEM_COUNT_POLICY_V1,
-};
-pub use parameter_list_duplicate_item_count_v1::{
-    parameter_list_duplicate_item_count_v1, ParameterListDuplicateItemCountErrorV1,
-    PARAMETER_LIST_DUPLICATE_ITEM_COUNT_POLICY_V1,
-};
-pub use parameter_list_first_duplicate_index_v1::{
-    parameter_list_first_duplicate_index_v1, ParameterListFirstDuplicateIndexErrorV1,
-    PARAMETER_LIST_FIRST_DUPLICATE_INDEX_POLICY_V1,
-};
-pub use parameter_list_last_duplicate_index_v1::{
-    parameter_list_last_duplicate_index_v1, ParameterListLastDuplicateIndexErrorV1,
-    PARAMETER_LIST_LAST_DUPLICATE_INDEX_POLICY_V1,
-};
-pub use parameter_list_multi_remove_all_v1::{
-    remove_all_parameter_list_items_multi_v1, ParameterListMultiRemoveAllErrorV1,
-    PARAMETER_LIST_MULTI_REMOVE_ALL_POLICY_V1,
-};
-pub use parameter_list_multi_keep_only_v1::{
-    keep_only_parameter_list_items_multi_v1, ParameterListMultiKeepOnlyErrorV1,
-    PARAMETER_LIST_MULTI_KEEP_ONLY_POLICY_V1,
-};
-pub use parameter_list_longest_common_subsequence_length_v1::{
-    list_longest_common_subsequence_length_v1, ParameterListLongestCommonSubsequenceLengthErrorV1,
-    PARAMETER_LIST_LONGEST_COMMON_SUBSEQUENCE_LENGTH_POLICY_V1,
-};
-pub use parameter_list_edit_distance_v1::{
-    list_edit_distance_v1, ParameterListEditDistanceErrorV1,
-    PARAMETER_LIST_EDIT_DISTANCE_POLICY_V1,
-};
-pub use parameter_list_has_subsequence_v1::{
-    parameter_list_has_subsequence_v1, ParameterListHasSubsequenceErrorV1,
-    PARAMETER_LIST_HAS_SUBSEQUENCE_POLICY_V1,
-};
-pub use parameter_list_hamming_distance_v1::{
-    list_hamming_distance_v1, ParameterListHammingDistanceErrorV1,
-    PARAMETER_LIST_HAMMING_DISTANCE_POLICY_V1,
-};
-pub use parameter_list_starts_with_v1::{
-    list_starts_with_v1, ParameterListStartsWithErrorV1,
-    PARAMETER_LIST_STARTS_WITH_POLICY_V1,
-};
-pub use parameter_list_ends_with_v1::{
-    list_ends_with_v1, ParameterListEndsWithErrorV1,
-    PARAMETER_LIST_ENDS_WITH_POLICY_V1,
-};
-pub use parameter_list_intersection_v1::{
-    list_intersection_v1, ParameterListIntersectionErrorV1,
-    PARAMETER_LIST_INTERSECTION_POLICY_V1,
-};
-pub use parameter_list_symmetric_difference_v1::{
-    list_symmetric_difference_v1, ParameterListSymmetricDifferenceErrorV1,
-    PARAMETER_LIST_SYMMETRIC_DIFFERENCE_POLICY_V1,
-};
-pub use parameter_list_union_v1::{
-    list_union_v1, ParameterListUnionErrorV1,
-    PARAMETER_LIST_UNION_POLICY_V1,
-};
-pub use parameter_list_relative_complement_v1::{
-    list_relative_complement_v1, ParameterListRelativeComplementErrorV1,
-    PARAMETER_LIST_RELATIVE_COMPLEMENT_POLICY_V1,
-};
-pub use parameter_list_multiset_equal_v1::{
-    list_multiset_equal_v1, ParameterListMultisetEqualErrorV1,
-    PARAMETER_LIST_MULTISET_EQUAL_POLICY_V1,
-};
-pub use parameter_list_contains_multiset_v1::{
-    list_contains_multiset_v1, ParameterListContainsMultisetErrorV1,
-    PARAMETER_LIST_CONTAINS_MULTISET_POLICY_V1,
-};
-pub use parameter_list_jaccard_index_v1::{
-    list_jaccard_index_v1, ParameterListJaccardIndexErrorV1,
-    PARAMETER_LIST_JACCARD_INDEX_POLICY_V1,
-};
-pub use parameter_list_dice_index_v1::{
-    list_dice_index_v1, ParameterListDiceIndexErrorV1,
-    PARAMETER_LIST_DICE_INDEX_POLICY_V1,
-};
-pub use parameter_list_overlap_coefficient_v1::{
-    list_overlap_coefficient_v1, ParameterListOverlapCoefficientErrorV1,
-    PARAMETER_LIST_OVERLAP_COEFFICIENT_POLICY_V1,
-};
-pub use parameter_list_contains_sequence_v1::{
-    list_contains_sequence_v1, ParameterListContainsSequenceErrorV1,
-    PARAMETER_LIST_CONTAINS_SEQUENCE_POLICY_V1,
-};
-pub use parameter_list_tversky_index_v1::{
-    list_tversky_index_v1, ParameterListTverskyIndexErrorV1,
-    PARAMETER_LIST_TVERSKY_INDEX_POLICY_V1,
-};
-pub use parameter_list_longest_common_subsequence_v1::{
-    list_longest_common_subsequence_v1, ParameterListLongestCommonSubsequenceErrorV1,
-    PARAMETER_LIST_LONGEST_COMMON_SUBSEQUENCE_POLICY_V1,
-};
-pub use parameter_list_all_equal_v1::{
-    parameter_list_all_equal_v1, ParameterListAllEqualErrorV1,
-    PARAMETER_LIST_ALL_EQUAL_POLICY_V1,
-};
-pub use parameter_list_min_max_item_v1::{
-    parameter_list_min_item_v1, parameter_list_max_item_v1,
-    ParameterListMinMaxItemErrorV1, PARAMETER_LIST_MIN_MAX_ITEM_POLICY_V1,
-};
-pub use parameter_list_nth_smallest_item_v1::{
-    parameter_list_nth_smallest_item_v1, ParameterListNthSmallestItemErrorV1,
-    PARAMETER_LIST_NTH_SMALLEST_ITEM_POLICY_V1,
-};
-pub use parameter_list_nth_largest_item_v1::{
-    parameter_list_nth_largest_item_v1, ParameterListNthLargestItemErrorV1,
-    PARAMETER_LIST_NTH_LARGEST_ITEM_POLICY_V1,
-};
-pub use parameter_list_median_item_v1::{
-    parameter_list_median_item_v1, ParameterListMedianItemErrorV1,
-    PARAMETER_LIST_MEDIAN_ITEM_POLICY_V1,
-};
-pub use parameter_list_mode_items_v1::{
-    parameter_list_mode_items_v1, ParameterListModeItemsErrorV1,
-    PARAMETER_LIST_MODE_ITEMS_POLICY_V1,
-};
-pub use parameter_list_anti_mode_items_v1::{
-    parameter_list_anti_mode_items_v1, ParameterListAntiModeItemsErrorV1,
-    PARAMETER_LIST_ANTI_MODE_ITEMS_POLICY_V1,
-};
-pub use parameter_list_dedup_keep_last_v1::{
-    parameter_list_dedup_keep_last_v1, ParameterListDedupKeepLastErrorV1,
-    PARAMETER_LIST_DEDUP_KEEP_LAST_POLICY_V1,
-};
-pub use parameter_list_run_count_v1::{
-    parameter_list_run_count_v1, ParameterListRunCountErrorV1,
-    PARAMETER_LIST_RUN_COUNT_POLICY_V1,
-};
-pub use parameter_list_sorted_rank_v1::{
-    parameter_list_sorted_rank_v1, ParameterListSortedRankErrorV1,
-    PARAMETER_LIST_SORTED_RANK_POLICY_V1,
-};
-pub use parameter_list_longest_run_item_v1::{
-    parameter_list_longest_run_item_v1, ParameterListLongestRunItemErrorV1,
-    PARAMETER_LIST_LONGEST_RUN_ITEM_POLICY_V1,
-};
-pub use parameter_list_longest_run_start_index_v1::{
-    parameter_list_longest_run_start_index_v1, ParameterListLongestRunStartIndexErrorV1,
-    PARAMETER_LIST_LONGEST_RUN_START_INDEX_POLICY_V1,
-};
-pub use parameter_list_adjacent_change_count_v1::{
-    parameter_list_adjacent_change_count_v1, ParameterListAdjacentChangeCountErrorV1,
-    PARAMETER_LIST_ADJACENT_CHANGE_COUNT_POLICY_V1,
-};
-pub use parameter_list_total_equal_pair_count_v1::{
-    parameter_list_total_equal_pair_count_v1, ParameterListTotalEqualPairCountErrorV1,
-    PARAMETER_LIST_TOTAL_EQUAL_PAIR_COUNT_POLICY_V1,
-};
-pub use parameter_list_majority_item_v1::{
-    parameter_list_majority_item_v1, ParameterListMajorityItemErrorV1,
-    PARAMETER_LIST_MAJORITY_ITEM_POLICY_V1,
-};
-pub use parameter_list_is_alternating_v1::{
-    parameter_list_is_alternating_v1, ParameterListIsAlternatingErrorV1,
-    PARAMETER_LIST_IS_ALTERNATING_POLICY_V1,
-};
-pub use parameter_list_entropy_v1::{
-    parameter_list_entropy_v1, ParameterListEntropyErrorV1,
-    PARAMETER_LIST_ENTROPY_POLICY_V1,
-};
-pub use parameter_list_gini_impurity_v1::{
-    parameter_list_gini_impurity_v1, ParameterListGiniImpurityErrorV1,
-    PARAMETER_LIST_GINI_IMPURITY_POLICY_V1,
-};
-pub use parameter_list_normalized_entropy_v1::{
-    parameter_list_normalized_entropy_v1, ParameterListNormalizedEntropyErrorV1,
-    PARAMETER_LIST_NORMALIZED_ENTROPY_POLICY_V1,
-};
-pub use parameter_list_mode_frequency_v1::{
-    parameter_list_mode_frequency_v1, ParameterListModeFrequencyErrorV1,
-    PARAMETER_LIST_MODE_FREQUENCY_POLICY_V1,
-};
-pub use parameter_list_prevalence_ratio_v1::{
-    parameter_list_prevalence_ratio_v1, ParameterListPrevalenceRatioErrorV1,
-    PARAMETER_LIST_PREVALENCE_RATIO_POLICY_V1,
-};
-pub use parameter_list_frequency_normalized_v1::{
-    parameter_list_frequency_normalized_v1, ParameterListFrequencyNormalizedErrorV1,
-    PARAMETER_LIST_FREQUENCY_NORMALIZED_POLICY_V1,
-};
-pub use parameter_list_first_occurrence_indices_v1::{
-    parameter_list_first_occurrence_indices_v1, ParameterListFirstOccurrenceIndicesErrorV1,
-    PARAMETER_LIST_FIRST_OCCURRENCE_INDICES_POLICY_V1,
-};
-pub use parameter_list_run_boundaries_v1::{
-    parameter_list_run_boundaries_v1, ParameterListRunBoundariesErrorV1,
-    PARAMETER_LIST_RUN_BOUNDARIES_POLICY_V1,
-};
-pub use parameter_list_pairwise_distinct_adjacent_v1::{
-    parameter_list_pairwise_distinct_adjacent_v1, ParameterListPairwiseDistinctAdjacentErrorV1,
-    PARAMETER_LIST_PAIRWISE_DISTINCT_ADJACENT_POLICY_V1,
-};
-pub use parameter_list_first_occurrence_map_v1::{
-    parameter_list_first_occurrence_map_v1, ParameterListFirstOccurrenceMapErrorV1,
-    PARAMETER_LIST_FIRST_OCCURRENCE_MAP_POLICY_V1,
-};
-pub use parameter_list_last_occurrence_map_v1::{
-    parameter_list_last_occurrence_map_v1, ParameterListLastOccurrenceMapErrorV1,
-    PARAMETER_LIST_LAST_OCCURRENCE_MAP_POLICY_V1,
-};
-pub use parameter_list_occurrence_indices_map_v1::{
-    parameter_list_occurrence_indices_map_v1, ParameterListOccurrenceIndicesMapErrorV1,
-    PARAMETER_LIST_OCCURRENCE_INDICES_MAP_POLICY_V1,
-};
-pub use parameter_list_last_occurrence_indices_v1::{
-    parameter_list_last_occurrence_indices_v1, ParameterListLastOccurrenceIndicesErrorV1,
-    PARAMETER_LIST_LAST_OCCURRENCE_INDICES_POLICY_V1,
-};
-pub use parameter_list_frequency_map_v1::{
-    parameter_list_frequency_map_v1, ParameterListFrequencyMapErrorV1,
-    PARAMETER_LIST_FREQUENCY_MAP_POLICY_V1,
-};
-pub use parameter_list_pairwise_equal_adjacent_v1::{
-    parameter_list_pairwise_equal_adjacent_v1, ParameterListPairwiseEqualAdjacentErrorV1,
-    PARAMETER_LIST_PAIRWISE_EQUAL_ADJACENT_POLICY_V1,
-};
-pub use parameter_list_relative_frequency_map_v1::{
-    parameter_list_relative_frequency_map_v1, ParameterListRelativeFrequencyMapErrorV1,
-    PARAMETER_LIST_RELATIVE_FREQUENCY_MAP_POLICY_V1,
-};
-pub use parameter_list_prevalence_map_v1::{
-    parameter_list_prevalence_map_v1, ParameterListPrevalenceMapErrorV1,
-    PARAMETER_LIST_PREVALENCE_MAP_POLICY_V1,
-};
-pub use parameter_list_is_balanced_v1::{
-    parameter_list_is_balanced_v1, ParameterListIsBalancedErrorV1,
-    PARAMETER_LIST_IS_BALANCED_POLICY_V1,
-};
-pub use parameter_list_distinct_count_v1::{
-    count_distinct_parameter_list_items_v1, ParameterListDistinctCountErrorV1,
-    PARAMETER_LIST_DISTINCT_COUNT_POLICY_V1,
-};
-pub use parameter_list_join_v1::{
-    join_parameter_list_values_v1, ParameterListJoinErrorV1,
-    PARAMETER_LIST_JOIN_POLICY_V1,
-};
-pub use parameter_list_sort_v1::{
-    sort_parameter_list_items_v1, ParameterListSortErrorV1,
-    PARAMETER_LIST_SORT_POLICY_V1,
-};
-pub use parameter_list_reverse_v1::{
-    reverse_parameter_list_items_v1, ParameterListReverseErrorV1,
-    PARAMETER_LIST_REVERSE_POLICY_V1,
-};
-pub use parameter_list_swap_v1::{
-    swap_parameter_list_items_v1, ParameterListSwapErrorV1,
-    PARAMETER_LIST_SWAP_POLICY_V1,
-};
-pub use parameter_list_insert_v1::{
-    insert_parameter_list_item_v1, ParameterListInsertErrorV1,
-    PARAMETER_LIST_INSERT_POLICY_V1,
-};
-pub use parameter_list_append_v1::{
-    append_parameter_list_item_v1, ParameterListAppendErrorV1,
-    PARAMETER_LIST_APPEND_POLICY_V1,
-};
-pub use parameter_list_remove_v1::{
-    remove_parameter_list_item_v1, ParameterListRemoveErrorV1,
-    PARAMETER_LIST_REMOVE_POLICY_V1,
-};
-pub use parameter_list_replace_v1::{
-    replace_parameter_list_item_v1, ParameterListReplaceErrorV1,
-    PARAMETER_LIST_REPLACE_POLICY_V1,
-};
-pub use parameter_list_dedup_v1::{
-    deduplicate_parameter_list_items_v1, ParameterListDedupErrorV1,
-    PARAMETER_LIST_DEDUP_POLICY_V1,
-};
-pub use parameter_tree_typed_leaf_fingerprint_v1::{
-    fingerprint_parameter_tree_typed_leaves_v1, PARAMETER_TREE_TYPED_LEAF_FINGERPRINT_POLICY_V1,
-};
-pub use parameter_profile_fingerprint_v1::{
-    hash_parameter_profile_v1, PARAMETER_PROFILE_FINGERPRINT_POLICY_V1,
-};
-pub use parameter_profile_canonical_spelling_check_v1::{
-    check_parameter_profile_spellings_canonical_v1, ParameterProfileCanonicalSpellingCheckV1,
-    ParameterProfileCanonicalSpellingIssueV1, PARAMETER_PROFILE_CANONICAL_SPELLING_CHECK_POLICY_V1,
-};
-pub use parameter_tree_leaf_canonical_spelling_check_v1::{
-    check_parameter_tree_leaf_spellings_canonical_v1,
-    ParameterTreeLeafCanonicalSpellingCheckV1, ParameterTreeLeafCanonicalSpellingIssueV1,
-    PARAMETER_TREE_LEAF_CANONICAL_SPELLING_CHECK_POLICY_V1,
-};
-pub use parameter_tree_typed_leaf_type_counts_v1::{
-    count_parameter_tree_typed_leaves_by_type_v1, ParameterTreeTypedLeafTypeCountsV1,
-    PARAMETER_TREE_TYPED_LEAF_TYPE_COUNTS_POLICY_V1,
-};
-pub use parameter_profile_canonical_spelling_groups_v1::{
-    group_parameter_profile_names_by_canonical_spelling_v1,
-    ParameterProfileCanonicalSpellingGroupsV1, ParameterProfileCanonicalSpellingGroupV1,
-    PARAMETER_PROFILE_CANONICAL_SPELLING_GROUPS_POLICY_V1,
-};
-pub use parameter_tree_leaf_value_validity_v1::{
-    check_parameter_tree_leaf_value_validity_v1, ParameterTreeLeafValueValidityReportV1,
-    ParameterTreeLeafValueValidityIssueV1, PARAMETER_TREE_LEAF_VALUE_VALIDITY_POLICY_V1,
-};
-pub use parameter_profile_typed_subset_v1::{
-    check_parameter_profile_typed_subset_v1, ParameterProfileTypedSubsetV1,
-    ParameterProfileTypedSubsetMismatchV1, PARAMETER_PROFILE_TYPED_SUBSET_POLICY_V1,
-};
-pub use parameter_tree_leaf_typed_diff_v1::{
-    diff_parameter_tree_leaves_typed_v1, ParameterTreeLeafTypedDiffV1,
-    ParameterTreeLeafTypedChangeV1, PARAMETER_TREE_LEAF_TYPED_DIFF_POLICY_V1,
-};
-pub use parameter_tree_leaf_type_resolution_v1::{
-    resolve_parameter_tree_leaf_type_v1, ParameterTreeLeafTypeResolutionErrorV1,
-    PARAMETER_TREE_LEAF_TYPE_RESOLUTION_POLICY_V1,
-};
-pub use parameter_tree_leaf_type_map_v1::{
-    extract_parameter_tree_leaf_type_map_v1, ParameterTreeLeafTypeMapV1,
-    PARAMETER_TREE_LEAF_TYPE_MAP_POLICY_V1,
-};
-pub use parameter_profile_names_by_type_v1::{
-    list_parameter_profile_names_by_type_v1, ParameterProfileNamesByTypeV1,
-    ParameterProfileNamesByTypeErrorV1, PARAMETER_PROFILE_NAMES_BY_TYPE_POLICY_V1,
-};
-pub use parameter_list_contains_v1::{
-    parameter_list_contains_item_v1, ParameterListContainsErrorV1,
-    PARAMETER_LIST_CONTAINS_POLICY_V1,
-};
-pub use parameter_list_item_access_v1::{
-    get_parameter_list_item_v1, ParameterListItemAccessErrorV1,
-    PARAMETER_LIST_ITEM_ACCESS_POLICY_V1,
-};
-pub use parameter_list_item_count_v1::{
-    count_parameter_list_items_v1, ParameterListItemCountErrorV1,
-    PARAMETER_LIST_ITEM_COUNT_POLICY_V1,
-};
-pub use parameter_profile_deserialization_v1::{
-    deserialize_parameter_profile_v1, ParameterProfileDeserializationV1,
-    ParameterProfileDeserializationErrorV1, PARAMETER_PROFILE_DESERIALIZATION_POLICY_V1,
-};
-pub use parameter_profile_serialization_v1::{
-    serialize_parameter_profile_v1, PARAMETER_PROFILE_SERIALIZATION_POLICY_V1,
-};
-pub use parameter_profile_value_lookup_v1::{
-    find_parameter_profile_names_by_value_v1, ParameterProfileValueLookupV1,
-    ParameterProfileValueLookupErrorV1, PARAMETER_PROFILE_VALUE_LOOKUP_POLICY_V1,
-};
-pub use parameter_profile_typed_diff_v1::{
-    diff_parameter_profiles_typed_v1, ParameterProfileTypedDiffV1,
-    ParameterProfileTypedChangeV1, PARAMETER_PROFILE_TYPED_DIFF_POLICY_V1,
-};
-pub use parameter_tree_leaf_canonicalization_v1::{
-    canonicalize_parameter_tree_leaf_spellings_v1, ParameterTreeLeafCanonicalizationV1,
-    PARAMETER_TREE_LEAF_CANONICALIZATION_POLICY_V1,
-};
-pub use parameter_profile_canonicalization_v1::{
-    canonicalize_parameter_profile_v1, ParameterProfileCanonicalizationV1,
-    PARAMETER_PROFILE_CANONICALIZATION_POLICY_V1,
-};
-pub use parameter_profile_override_merge_v1::{
-    merge_parameter_profiles_with_override_v1, ParameterProfileOverrideMergeV1,
-    PARAMETER_PROFILE_OVERRIDE_MERGE_POLICY_V1,
-};
-pub use parameter_value_spelling_normalization_v1::{
-    canonicalize_parameter_value_spelling_v1,
-    PARAMETER_VALUE_SPELLING_NORMALIZATION_POLICY_V1,
-};
-pub use parameter_profile_typed_merge_v1::{
-    merge_parameter_profiles_typed_v1, ParameterProfileTypedMergeV1,
-    ParameterProfileTypedMergeErrorV1, PARAMETER_PROFILE_TYPED_MERGE_POLICY_V1,
-};
-pub use parameter_profile_type_stats_v1::{
-    compute_parameter_profile_type_stats_v1, ParameterProfileTypeStatsV1,
-    PARAMETER_PROFILE_TYPE_STATS_POLICY_V1,
-};
-pub use parameter_profile_tree_coverage_v1::{
-    check_parameter_profile_tree_coverage_v1, ParameterProfileTreeCoverageV1,
-    PARAMETER_PROFILE_TREE_COVERAGE_POLICY_V1,
-};
-pub use parameter_profile_equivalence_v1::{
-    parameter_profiles_equivalent_v1, ParameterProfileEquivalenceV1,
-    ParameterProfileInequivalenceV1, ParameterProfileValueMismatchV1,
-    PARAMETER_PROFILE_EQUIVALENCE_POLICY_V1,
-};
-pub use parameter_value_equivalence_v1::{
-    parameter_values_equivalent_v1, ParameterValueEquivalenceV1,
-    ParameterValueInequivalenceReasonV1, PARAMETER_VALUE_EQUIVALENCE_POLICY_V1,
-};
-pub use parameter_tree_profile_apply_v1::{
-    apply_parameter_profile_to_tree_v1, ParameterTreeProfileApplyErrorV1,
-    ParameterTreeProfileApplyV1, PARAMETER_TREE_PROFILE_APPLY_POLICY_V1,
-};
-pub use parameter_tree_diff_filter_v1::{
-    filter_parameter_tree_diffs_v1, ParameterTreeDiffFilterErrorV1,
-    PARAMETER_TREE_DIFF_FILTER_POLICY_V1,
-};
-pub use parameter_tree_diff_stats_v1::{
-    compute_parameter_tree_diff_stats_v1, AmiParameterTreeDiffStatsV1,
-    ParameterTreeDiffStatsErrorV1, PARAMETER_TREE_DIFF_STATS_POLICY_V1,
-};
-pub use parameter_tree_serde_v1::{
-    deserialize_parameter_trees_v1, serialize_parameter_trees_v1,
-    ParameterTreeSerdeErrorV1, PARAMETER_TREE_SERDE_POLICY_V1,
-};
-pub use parameter_tree_filter_v1::{
-    filter_parameter_trees_v1, ParameterTreeFilterErrorV1,
-    PARAMETER_TREE_FILTER_POLICY_V1,
-};
-pub use parameter_tree_diff_patch_v1::{
-    apply_parameter_tree_diff_patch_v1, apply_parameter_tree_diff_patch_with_context_v1, ParameterTreeDiffPatchErrorV1,
-    PARAMETER_TREE_DIFF_PATCH_POLICY_V1,
-};
-pub use parameter_tree_index_v1::{
-    build_parameter_tree_index_v1, AmiParameterTreeIndexV1,
-    ParameterTreeIndexErrorV1, PARAMETER_TREE_INDEX_POLICY_V1,
-};
-pub use parameter_tree_transformer_v1::{
-    transform_parameter_trees_v1, ParameterTreeTransformerErrorV1,
-    PARAMETER_TREE_TRANSFORMER_POLICY_V1,
-};
-pub use parameter_tree_visitor_v1::{
-    traverse_parameter_trees_v1, ParameterTreeVisitorErrorV1, VisitorEventV1,
-    PARAMETER_TREE_VISITOR_POLICY_V1,
-};
-pub use parameter_tree_pruning_v1::{
-    prune_parameter_tree_v1, ParameterTreePruningErrorV1,
-    PARAMETER_TREE_PRUNING_POLICY_V1,
-};
-pub use parameter_tree_merge_v1::{
-    merge_parameter_trees_v1, ParameterTreeMergeErrorV1,
-    PARAMETER_TREE_MERGE_POLICY_V1,
-};
-pub use parameter_tree_diff_v1::{
-    diff_parameter_trees_v1, ParameterTreeDiffErrorV1, TreeDiffEntryV1,
-    PARAMETER_TREE_DIFF_POLICY_V1,
-};
-pub use parameter_tree_validator_v1::{
-    validate_parameter_trees_v1, ParameterTreeValidatorErrorV1,
-    TreeValidationLimitsV1, PARAMETER_TREE_VALIDATOR_POLICY_V1,
-};
-pub use parameter_tree_formatter_v1::{
-    format_parameter_trees_v1, ParameterTreeFormatterErrorV1,
-    PARAMETER_TREE_FORMATTER_POLICY_V1,
-};
-pub use parameter_tree_query_v1::{
-    query_parameter_tree_v1, ParameterTreeQueryErrorV1, QueryResultV1,
-    PARAMETER_TREE_QUERY_POLICY_V1,
-};
-pub use parameter_trees_v1::{
-    build_parameter_trees_v1, AmiParameterTreeNodeV1, AmiParameterTreeV1,
-    ParameterTreesErrorV1, PARAMETER_TREES_POLICY_V1,
-};
-pub use parameter_extractor_v1::{
-    extract_parameter_values_v1, ParameterExtractorErrorV1,
-    PARAMETER_EXTRACTOR_POLICY_V1,
-};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
 pub use ami_runtime_params_v1::{
-    build_ami_runtime_params_v1, AmiRuntimeParamsV1, RuntimeParamV1, RuntimeParamsErrorV1,
-    AMI_RUNTIME_PARAMS_POLICY_V1,
+    AMI_RUNTIME_PARAMS_POLICY_V1, AmiRuntimeParamsV1, RuntimeParamV1, RuntimeParamsErrorV1,
+    build_ami_runtime_params_v1,
 };
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use ami_text_document_stats_v1::{
+    AMI_TEXT_DOCUMENT_STATS_POLICY_V1, AmiTextDocumentStatsV1, AmiTextStatsErrorV1,
+    compute_ami_text_document_stats_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use ami_text_form_heads_v1::{
+    AMI_TEXT_FORM_HEADS_POLICY_V1, AmiTextFormHeadsErrorV1, count_ami_text_form_heads_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
 pub use catalog_default_v1::{
-    materialize_default_v1, token_valid_for_type_v1, validate_catalog_defaults_v1,
-    CatalogDefaultErrorV1, CATALOG_DEFAULT_POLICY_V1,
+    CATALOG_DEFAULT_POLICY_V1, CatalogDefaultErrorV1, materialize_default_v1,
+    token_valid_for_type_v1, validate_catalog_defaults_v1,
 };
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
 pub use parameter_catalog_v1::{
-    validate_candidate_set_v1, AmiUsageV1, CatalogEntryV1, CatalogErrorV1, ParameterCatalogV1,
-    PARAMETER_CATALOG_POLICY_V1,
+    AmiUsageV1, CatalogEntryV1, CatalogErrorV1, PARAMETER_CATALOG_POLICY_V1, ParameterCatalogV1,
+    validate_candidate_set_v1,
 };
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_extractor_v1::{
+    PARAMETER_EXTRACTOR_POLICY_V1, ParameterExtractorErrorV1, extract_parameter_values_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
 pub use parameter_form_binding_v1::{
-    bind_parameter_value_v1, ParameterFormBindingErrorV1, ParameterFormBindingV1,
-    PARAMETER_FORM_BINDING_POLICY_V1,
+    PARAMETER_FORM_BINDING_POLICY_V1, ParameterFormBindingErrorV1, ParameterFormBindingV1,
+    bind_parameter_value_v1,
 };
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_adjacent_change_count_v1::{
+    PARAMETER_LIST_ADJACENT_CHANGE_COUNT_POLICY_V1, ParameterListAdjacentChangeCountErrorV1,
+    parameter_list_adjacent_change_count_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_all_equal_v1::{
+    PARAMETER_LIST_ALL_EQUAL_POLICY_V1, ParameterListAllEqualErrorV1, parameter_list_all_equal_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_anti_mode_items_v1::{
+    PARAMETER_LIST_ANTI_MODE_ITEMS_POLICY_V1, ParameterListAntiModeItemsErrorV1,
+    parameter_list_anti_mode_items_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_append_v1::{
+    PARAMETER_LIST_APPEND_POLICY_V1, ParameterListAppendErrorV1, append_parameter_list_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_chunk_v1::{
+    PARAMETER_LIST_CHUNK_POLICY_V1, ParameterListChunkErrorV1, chunk_parameter_list_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_contains_multiset_v1::{
+    PARAMETER_LIST_CONTAINS_MULTISET_POLICY_V1, ParameterListContainsMultisetErrorV1,
+    list_contains_multiset_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_contains_sequence_v1::{
+    PARAMETER_LIST_CONTAINS_SEQUENCE_POLICY_V1, ParameterListContainsSequenceErrorV1,
+    list_contains_sequence_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_contains_sublist_v1::{
+    PARAMETER_LIST_CONTAINS_SUBLIST_POLICY_V1, ParameterListContainsSublistErrorV1,
+    parameter_list_contains_sublist_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_contains_v1::{
+    PARAMETER_LIST_CONTAINS_POLICY_V1, ParameterListContainsErrorV1,
+    parameter_list_contains_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_dedup_keep_last_v1::{
+    PARAMETER_LIST_DEDUP_KEEP_LAST_POLICY_V1, ParameterListDedupKeepLastErrorV1,
+    parameter_list_dedup_keep_last_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_dedup_v1::{
+    PARAMETER_LIST_DEDUP_POLICY_V1, ParameterListDedupErrorV1, deduplicate_parameter_list_items_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_dice_index_v1::{
+    PARAMETER_LIST_DICE_INDEX_POLICY_V1, ParameterListDiceIndexErrorV1, list_dice_index_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_distinct_count_v1::{
+    PARAMETER_LIST_DISTINCT_COUNT_POLICY_V1, ParameterListDistinctCountErrorV1,
+    count_distinct_parameter_list_items_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_distinct_pair_count_v1::{
+    PARAMETER_LIST_DISTINCT_PAIR_COUNT_POLICY_V1, ParameterListDistinctPairCountErrorV1,
+    parameter_list_distinct_pair_count_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_duplicate_item_count_v1::{
+    PARAMETER_LIST_DUPLICATE_ITEM_COUNT_POLICY_V1, ParameterListDuplicateItemCountErrorV1,
+    parameter_list_duplicate_item_count_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_edit_distance_v1::{
+    PARAMETER_LIST_EDIT_DISTANCE_POLICY_V1, ParameterListEditDistanceErrorV1, list_edit_distance_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_ends_with_v1::{
+    PARAMETER_LIST_ENDS_WITH_POLICY_V1, ParameterListEndsWithErrorV1, list_ends_with_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_entropy_v1::{
+    PARAMETER_LIST_ENTROPY_POLICY_V1, ParameterListEntropyErrorV1, parameter_list_entropy_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_equal_adjacent_count_v1::{
+    PARAMETER_LIST_EQUAL_ADJACENT_COUNT_POLICY_V1, ParameterListEqualAdjacentCountErrorV1,
+    parameter_list_equal_adjacent_count_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_first_duplicate_index_v1::{
+    PARAMETER_LIST_FIRST_DUPLICATE_INDEX_POLICY_V1, ParameterListFirstDuplicateIndexErrorV1,
+    parameter_list_first_duplicate_index_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_first_occurrence_indices_v1::{
+    PARAMETER_LIST_FIRST_OCCURRENCE_INDICES_POLICY_V1, ParameterListFirstOccurrenceIndicesErrorV1,
+    parameter_list_first_occurrence_indices_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_first_occurrence_map_v1::{
+    PARAMETER_LIST_FIRST_OCCURRENCE_MAP_POLICY_V1, ParameterListFirstOccurrenceMapErrorV1,
+    parameter_list_first_occurrence_map_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_frequency_map_v1::{
+    PARAMETER_LIST_FREQUENCY_MAP_POLICY_V1, ParameterListFrequencyMapErrorV1,
+    parameter_list_frequency_map_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_frequency_normalized_v1::{
+    PARAMETER_LIST_FREQUENCY_NORMALIZED_POLICY_V1, ParameterListFrequencyNormalizedErrorV1,
+    parameter_list_frequency_normalized_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_frequency_v1::{
+    PARAMETER_LIST_FREQUENCY_POLICY_V1, ParameterListFrequencyErrorV1,
+    parameter_list_item_frequencies_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_gini_impurity_v1::{
+    PARAMETER_LIST_GINI_IMPURITY_POLICY_V1, ParameterListGiniImpurityErrorV1,
+    parameter_list_gini_impurity_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_hamming_distance_v1::{
+    PARAMETER_LIST_HAMMING_DISTANCE_POLICY_V1, ParameterListHammingDistanceErrorV1,
+    list_hamming_distance_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_has_subsequence_v1::{
+    PARAMETER_LIST_HAS_SUBSEQUENCE_POLICY_V1, ParameterListHasSubsequenceErrorV1,
+    parameter_list_has_subsequence_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_head_tail_v1::{
+    PARAMETER_LIST_HEAD_TAIL_POLICY_V1, ParameterListHeadTailErrorV1, parameter_list_head_tail_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_index_of_v1::{
+    PARAMETER_LIST_INDEX_OF_POLICY_V1, ParameterListIndexOfErrorV1, index_of_parameter_list_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_insert_v1::{
+    PARAMETER_LIST_INSERT_POLICY_V1, ParameterListInsertErrorV1, insert_parameter_list_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_interleave_v1::{
+    PARAMETER_LIST_INTERLEAVE_POLICY_V1, ParameterListInterleaveErrorV1,
+    interleave_parameter_list_values_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_intersection_v1::{
+    PARAMETER_LIST_INTERSECTION_POLICY_V1, ParameterListIntersectionErrorV1, list_intersection_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_inversion_count_v1::{
+    PARAMETER_LIST_INVERSION_COUNT_POLICY_V1, ParameterListInversionCountErrorV1,
+    parameter_list_inversion_count_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_is_alternating_v1::{
+    PARAMETER_LIST_IS_ALTERNATING_POLICY_V1, ParameterListIsAlternatingErrorV1,
+    parameter_list_is_alternating_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_is_balanced_v1::{
+    PARAMETER_LIST_IS_BALANCED_POLICY_V1, ParameterListIsBalancedErrorV1,
+    parameter_list_is_balanced_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_is_palindrome_v1::{
+    PARAMETER_LIST_IS_PALINDROME_POLICY_V1, ParameterListIsPalindromeErrorV1,
+    parameter_list_is_palindrome_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_is_sorted_v1::{
+    PARAMETER_LIST_IS_SORTED_POLICY_V1, ParameterListIsSortedErrorV1, parameter_list_is_sorted_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_is_strictly_sorted_v1::{
+    PARAMETER_LIST_IS_STRICTLY_SORTED_POLICY_V1, ParameterListIsStrictlySortedErrorV1,
+    parameter_list_is_strictly_sorted_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_item_access_v1::{
+    PARAMETER_LIST_ITEM_ACCESS_POLICY_V1, ParameterListItemAccessErrorV1,
+    get_parameter_list_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_item_count_v1::{
+    PARAMETER_LIST_ITEM_COUNT_POLICY_V1, ParameterListItemCountErrorV1,
+    count_parameter_list_items_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_jaccard_index_v1::{
+    PARAMETER_LIST_JACCARD_INDEX_POLICY_V1, ParameterListJaccardIndexErrorV1, list_jaccard_index_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_join_v1::{
+    PARAMETER_LIST_JOIN_POLICY_V1, ParameterListJoinErrorV1, join_parameter_list_values_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_keep_only_v1::{
+    PARAMETER_LIST_KEEP_ONLY_POLICY_V1, ParameterListKeepOnlyErrorV1,
+    keep_only_parameter_list_items_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_last_duplicate_index_v1::{
+    PARAMETER_LIST_LAST_DUPLICATE_INDEX_POLICY_V1, ParameterListLastDuplicateIndexErrorV1,
+    parameter_list_last_duplicate_index_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_last_index_of_v1::{
+    PARAMETER_LIST_LAST_INDEX_OF_POLICY_V1, ParameterListLastIndexOfErrorV1,
+    last_index_of_parameter_list_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_last_occurrence_indices_v1::{
+    PARAMETER_LIST_LAST_OCCURRENCE_INDICES_POLICY_V1, ParameterListLastOccurrenceIndicesErrorV1,
+    parameter_list_last_occurrence_indices_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_last_occurrence_map_v1::{
+    PARAMETER_LIST_LAST_OCCURRENCE_MAP_POLICY_V1, ParameterListLastOccurrenceMapErrorV1,
+    parameter_list_last_occurrence_map_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_last_sublist_index_v1::{
+    PARAMETER_LIST_LAST_SUBLIST_INDEX_POLICY_V1, ParameterListLastSublistIndexErrorV1,
+    last_sublist_index_parameter_list_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_least_frequent_v1::{
+    PARAMETER_LIST_LEAST_FREQUENT_POLICY_V1, ParameterListLeastFrequentErrorV1,
+    least_frequent_parameter_list_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_longest_common_prefix_v1::{
+    PARAMETER_LIST_LONGEST_COMMON_PREFIX_POLICY_V1, ParameterListLongestCommonPrefixErrorV1,
+    list_longest_common_prefix_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_longest_common_subsequence_length_v1::{
+    PARAMETER_LIST_LONGEST_COMMON_SUBSEQUENCE_LENGTH_POLICY_V1,
+    ParameterListLongestCommonSubsequenceLengthErrorV1, list_longest_common_subsequence_length_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_longest_common_subsequence_v1::{
+    PARAMETER_LIST_LONGEST_COMMON_SUBSEQUENCE_POLICY_V1,
+    ParameterListLongestCommonSubsequenceErrorV1, list_longest_common_subsequence_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_longest_common_suffix_v1::{
+    PARAMETER_LIST_LONGEST_COMMON_SUFFIX_POLICY_V1, ParameterListLongestCommonSuffixErrorV1,
+    list_longest_common_suffix_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_longest_run_item_v1::{
+    PARAMETER_LIST_LONGEST_RUN_ITEM_POLICY_V1, ParameterListLongestRunItemErrorV1,
+    parameter_list_longest_run_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_longest_run_start_index_v1::{
+    PARAMETER_LIST_LONGEST_RUN_START_INDEX_POLICY_V1, ParameterListLongestRunStartIndexErrorV1,
+    parameter_list_longest_run_start_index_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_longest_run_v1::{
+    PARAMETER_LIST_LONGEST_RUN_POLICY_V1, ParameterListLongestRunErrorV1,
+    longest_run_parameter_list_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_majority_item_v1::{
+    PARAMETER_LIST_MAJORITY_ITEM_POLICY_V1, ParameterListMajorityItemErrorV1,
+    parameter_list_majority_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_median_item_v1::{
+    PARAMETER_LIST_MEDIAN_ITEM_POLICY_V1, ParameterListMedianItemErrorV1,
+    parameter_list_median_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_min_max_item_v1::{
+    PARAMETER_LIST_MIN_MAX_ITEM_POLICY_V1, ParameterListMinMaxItemErrorV1,
+    parameter_list_max_item_v1, parameter_list_min_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_mode_frequency_v1::{
+    PARAMETER_LIST_MODE_FREQUENCY_POLICY_V1, ParameterListModeFrequencyErrorV1,
+    parameter_list_mode_frequency_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_mode_items_v1::{
+    PARAMETER_LIST_MODE_ITEMS_POLICY_V1, ParameterListModeItemsErrorV1,
+    parameter_list_mode_items_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_most_frequent_v1::{
+    PARAMETER_LIST_MOST_FREQUENT_POLICY_V1, ParameterListMostFrequentErrorV1,
+    most_frequent_parameter_list_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_multi_keep_only_v1::{
+    PARAMETER_LIST_MULTI_KEEP_ONLY_POLICY_V1, ParameterListMultiKeepOnlyErrorV1,
+    keep_only_parameter_list_items_multi_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_multi_remove_all_v1::{
+    PARAMETER_LIST_MULTI_REMOVE_ALL_POLICY_V1, ParameterListMultiRemoveAllErrorV1,
+    remove_all_parameter_list_items_multi_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_multiset_equal_v1::{
+    PARAMETER_LIST_MULTISET_EQUAL_POLICY_V1, ParameterListMultisetEqualErrorV1,
+    list_multiset_equal_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_normalized_entropy_v1::{
+    PARAMETER_LIST_NORMALIZED_ENTROPY_POLICY_V1, ParameterListNormalizedEntropyErrorV1,
+    parameter_list_normalized_entropy_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_nth_largest_item_v1::{
+    PARAMETER_LIST_NTH_LARGEST_ITEM_POLICY_V1, ParameterListNthLargestItemErrorV1,
+    parameter_list_nth_largest_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_nth_smallest_item_v1::{
+    PARAMETER_LIST_NTH_SMALLEST_ITEM_POLICY_V1, ParameterListNthSmallestItemErrorV1,
+    parameter_list_nth_smallest_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_occurrence_count_v1::{
+    PARAMETER_LIST_OCCURRENCE_COUNT_POLICY_V1, ParameterListOccurrenceCountErrorV1,
+    count_parameter_list_item_occurrences_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_occurrence_indices_map_v1::{
+    PARAMETER_LIST_OCCURRENCE_INDICES_MAP_POLICY_V1, ParameterListOccurrenceIndicesMapErrorV1,
+    parameter_list_occurrence_indices_map_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_overlap_coefficient_v1::{
+    PARAMETER_LIST_OVERLAP_COEFFICIENT_POLICY_V1, ParameterListOverlapCoefficientErrorV1,
+    list_overlap_coefficient_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_pairwise_distinct_adjacent_v1::{
+    PARAMETER_LIST_PAIRWISE_DISTINCT_ADJACENT_POLICY_V1,
+    ParameterListPairwiseDistinctAdjacentErrorV1, parameter_list_pairwise_distinct_adjacent_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_pairwise_equal_adjacent_v1::{
+    PARAMETER_LIST_PAIRWISE_EQUAL_ADJACENT_POLICY_V1, ParameterListPairwiseEqualAdjacentErrorV1,
+    parameter_list_pairwise_equal_adjacent_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_prevalence_map_v1::{
+    PARAMETER_LIST_PREVALENCE_MAP_POLICY_V1, ParameterListPrevalenceMapErrorV1,
+    parameter_list_prevalence_map_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_prevalence_ratio_v1::{
+    PARAMETER_LIST_PREVALENCE_RATIO_POLICY_V1, ParameterListPrevalenceRatioErrorV1,
+    parameter_list_prevalence_ratio_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_relative_complement_v1::{
+    PARAMETER_LIST_RELATIVE_COMPLEMENT_POLICY_V1, ParameterListRelativeComplementErrorV1,
+    list_relative_complement_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_relative_frequency_map_v1::{
+    PARAMETER_LIST_RELATIVE_FREQUENCY_MAP_POLICY_V1, ParameterListRelativeFrequencyMapErrorV1,
+    parameter_list_relative_frequency_map_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_remove_all_v1::{
+    PARAMETER_LIST_REMOVE_ALL_POLICY_V1, ParameterListRemoveAllErrorV1,
+    remove_all_parameter_list_items_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_remove_v1::{
+    PARAMETER_LIST_REMOVE_POLICY_V1, ParameterListRemoveErrorV1, remove_parameter_list_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_replace_v1::{
+    PARAMETER_LIST_REPLACE_POLICY_V1, ParameterListReplaceErrorV1, replace_parameter_list_item_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_reverse_v1::{
+    PARAMETER_LIST_REVERSE_POLICY_V1, ParameterListReverseErrorV1, reverse_parameter_list_items_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_rotate_v1::{
+    PARAMETER_LIST_ROTATE_POLICY_V1, ParameterListRotateErrorV1, rotate_parameter_list_left_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_run_boundaries_v1::{
+    PARAMETER_LIST_RUN_BOUNDARIES_POLICY_V1, ParameterListRunBoundariesErrorV1,
+    parameter_list_run_boundaries_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_run_count_v1::{
+    PARAMETER_LIST_RUN_COUNT_POLICY_V1, ParameterListRunCountErrorV1, parameter_list_run_count_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_run_length_encode_v1::{
+    PARAMETER_LIST_RUN_LENGTH_ENCODE_POLICY_V1, ParameterListRunLengthEncodeErrorV1,
+    run_length_encode_parameter_list_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_slice_v1::{
+    PARAMETER_LIST_SLICE_POLICY_V1, ParameterListSliceErrorV1, slice_parameter_list_items_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_sort_v1::{
+    PARAMETER_LIST_SORT_POLICY_V1, ParameterListSortErrorV1, sort_parameter_list_items_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_sorted_rank_v1::{
+    PARAMETER_LIST_SORTED_RANK_POLICY_V1, ParameterListSortedRankErrorV1,
+    parameter_list_sorted_rank_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_split_v1::{
+    PARAMETER_LIST_SPLIT_POLICY_V1, ParameterListSplitErrorV1, split_parameter_list_at_index_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_starts_with_v1::{
+    PARAMETER_LIST_STARTS_WITH_POLICY_V1, ParameterListStartsWithErrorV1, list_starts_with_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_sublist_index_v1::{
+    PARAMETER_LIST_SUBLIST_INDEX_POLICY_V1, ParameterListSublistIndexErrorV1,
+    sublist_index_parameter_list_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_swap_v1::{
+    PARAMETER_LIST_SWAP_POLICY_V1, ParameterListSwapErrorV1, swap_parameter_list_items_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_symmetric_difference_v1::{
+    PARAMETER_LIST_SYMMETRIC_DIFFERENCE_POLICY_V1, ParameterListSymmetricDifferenceErrorV1,
+    list_symmetric_difference_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_total_equal_pair_count_v1::{
+    PARAMETER_LIST_TOTAL_EQUAL_PAIR_COUNT_POLICY_V1, ParameterListTotalEqualPairCountErrorV1,
+    parameter_list_total_equal_pair_count_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_tversky_index_v1::{
+    PARAMETER_LIST_TVERSKY_INDEX_POLICY_V1, ParameterListTverskyIndexErrorV1, list_tversky_index_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_union_v1::{
+    PARAMETER_LIST_UNION_POLICY_V1, ParameterListUnionErrorV1, list_union_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_unique_item_count_v1::{
+    PARAMETER_LIST_UNIQUE_ITEM_COUNT_POLICY_V1, ParameterListUniqueItemCountErrorV1,
+    parameter_list_unique_item_count_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_list_window_v1::{
+    PARAMETER_LIST_WINDOW_POLICY_V1, ParameterListWindowErrorV1, window_parameter_list_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_assembly_v1::{
+    PARAMETER_PROFILE_ASSEMBLY_POLICY_V1, ParameterProfileAssemblyErrorV1,
+    ParameterProfileAssemblyV1, assemble_parameter_profile_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_canonical_spelling_check_v1::{
+    PARAMETER_PROFILE_CANONICAL_SPELLING_CHECK_POLICY_V1, ParameterProfileCanonicalSpellingCheckV1,
+    ParameterProfileCanonicalSpellingIssueV1, check_parameter_profile_spellings_canonical_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_canonical_spelling_groups_v1::{
+    PARAMETER_PROFILE_CANONICAL_SPELLING_GROUPS_POLICY_V1,
+    ParameterProfileCanonicalSpellingGroupV1, ParameterProfileCanonicalSpellingGroupsV1,
+    group_parameter_profile_names_by_canonical_spelling_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_canonicalization_v1::{
+    PARAMETER_PROFILE_CANONICALIZATION_POLICY_V1, ParameterProfileCanonicalizationV1,
+    canonicalize_parameter_profile_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_completeness_v1::{
+    PARAMETER_PROFILE_COMPLETENESS_POLICY_V1, ParameterProfileCompletenessErrorV1,
+    ParameterProfileCompletenessV1, check_parameter_profile_completeness_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_deserialization_v1::{
+    PARAMETER_PROFILE_DESERIALIZATION_POLICY_V1, ParameterProfileDeserializationErrorV1,
+    ParameterProfileDeserializationV1, deserialize_parameter_profile_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_diff_v1::{
+    PARAMETER_PROFILE_DIFF_POLICY_V1, ParameterProfileDiffV1, ParameterValueChangeV1,
+    diff_parameter_profiles_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_equivalence_v1::{
+    PARAMETER_PROFILE_EQUIVALENCE_POLICY_V1, ParameterProfileEquivalenceV1,
+    ParameterProfileInequivalenceV1, ParameterProfileValueMismatchV1,
+    parameter_profiles_equivalent_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_fingerprint_v1::{
+    PARAMETER_PROFILE_FINGERPRINT_POLICY_V1, hash_parameter_profile_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_merge_v1::{
+    PARAMETER_PROFILE_MERGE_POLICY_V1, ParameterProfileMergeErrorV1, ParameterProfileMergeV1,
+    merge_parameter_profiles_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_names_by_type_v1::{
+    PARAMETER_PROFILE_NAMES_BY_TYPE_POLICY_V1, ParameterProfileNamesByTypeErrorV1,
+    ParameterProfileNamesByTypeV1, list_parameter_profile_names_by_type_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_override_merge_v1::{
+    PARAMETER_PROFILE_OVERRIDE_MERGE_POLICY_V1, ParameterProfileOverrideMergeV1,
+    merge_parameter_profiles_with_override_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_select_v1::{
+    PARAMETER_PROFILE_SELECTION_POLICY_V1, ParameterProfileSelectionErrorV1,
+    ParameterProfileSelectionV1, select_parameter_profile_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_serialization_v1::{
+    PARAMETER_PROFILE_SERIALIZATION_POLICY_V1, serialize_parameter_profile_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_tree_coverage_v1::{
+    PARAMETER_PROFILE_TREE_COVERAGE_POLICY_V1, ParameterProfileTreeCoverageV1,
+    check_parameter_profile_tree_coverage_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_type_stats_v1::{
+    PARAMETER_PROFILE_TYPE_STATS_POLICY_V1, ParameterProfileTypeStatsV1,
+    compute_parameter_profile_type_stats_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_typed_diff_v1::{
+    PARAMETER_PROFILE_TYPED_DIFF_POLICY_V1, ParameterProfileTypedChangeV1,
+    ParameterProfileTypedDiffV1, diff_parameter_profiles_typed_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_typed_merge_v1::{
+    PARAMETER_PROFILE_TYPED_MERGE_POLICY_V1, ParameterProfileTypedMergeErrorV1,
+    ParameterProfileTypedMergeV1, merge_parameter_profiles_typed_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_typed_subset_v1::{
+    PARAMETER_PROFILE_TYPED_SUBSET_POLICY_V1, ParameterProfileTypedSubsetMismatchV1,
+    ParameterProfileTypedSubsetV1, check_parameter_profile_typed_subset_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_profile_value_lookup_v1::{
+    PARAMETER_PROFILE_VALUE_LOOKUP_POLICY_V1, ParameterProfileValueLookupErrorV1,
+    ParameterProfileValueLookupV1, find_parameter_profile_names_by_value_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_allowed_check_v1::{
+    PARAMETER_TREE_ALLOWED_NAME_CHECK_POLICY_V1, ParameterTreeAllowedNameCheckV1,
+    ParameterTreeAllowedNameErrorV1, check_parameter_tree_allowed_names_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_apply_defaults_v1::{
+    PARAMETER_TREE_APPLY_DEFAULTS_POLICY_V1, ParameterTreeDefaultsAppliedV1,
+    ParameterTreeDefaultsErrorV1, apply_parameter_tree_defaults_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_batch_rename_v1::{
+    PARAMETER_TREE_BATCH_RENAME_POLICY_V1, ParameterTreeBatchRenameErrorV1,
+    rename_parameter_tree_leaves_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_compose_v1::{
+    PARAMETER_TREE_COMPOSE_POLICY_V1, ParameterTreeComposeErrorV1,
+    compose_parameter_tree_subtree_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_decode_values_v1::{
+    DecodedLeafValueV1, PARAMETER_TREE_LEAF_VALUE_DECODING_POLICY_V1,
+    ParameterTreeLeafValueDecodingErrorV1, ParameterTreeLeafValueDecodingV1,
+    decode_parameter_tree_leaf_values_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_depth_stats_v1::{
+    PARAMETER_TREE_DEPTH_STATS_POLICY_V1, ParameterTreeDepthStatsErrorV1,
+    ParameterTreeDepthStatsV1, compute_parameter_tree_depth_stats_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_detect_cycles_v1::{
+    PARAMETER_TREE_DETECT_CYCLES_POLICY_V1, ParameterTreeCycleScanV1,
+    ParameterTreeDetectCyclesErrorV1, detect_parameter_tree_cycles_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_diff_filter_v1::{
+    PARAMETER_TREE_DIFF_FILTER_POLICY_V1, ParameterTreeDiffFilterErrorV1,
+    filter_parameter_tree_diffs_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_diff_patch_v1::{
+    PARAMETER_TREE_DIFF_PATCH_POLICY_V1, ParameterTreeDiffPatchErrorV1,
+    apply_parameter_tree_diff_patch_v1, apply_parameter_tree_diff_patch_with_context_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_diff_stats_v1::{
+    AmiParameterTreeDiffStatsV1, PARAMETER_TREE_DIFF_STATS_POLICY_V1,
+    ParameterTreeDiffStatsErrorV1, compute_parameter_tree_diff_stats_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_diff_summary_v1::{
+    AmiParameterTreeDiffSummaryReportV1, PARAMETER_TREE_DIFF_SUMMARY_POLICY_V1,
+    ParameterTreeDiffSummaryErrorV1, generate_parameter_tree_diff_summary_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_diff_v1::{
+    PARAMETER_TREE_DIFF_POLICY_V1, ParameterTreeDiffErrorV1, TreeDiffEntryV1,
+    diff_parameter_trees_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_distinct_leaf_names_v1::{
+    PARAMETER_TREE_DISTINCT_LEAF_NAMES_POLICY_V1, ParameterTreeDistinctLeafNamesV1,
+    list_parameter_tree_distinct_leaf_names_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_duplicate_check_v1::{
+    PARAMETER_TREE_DUPLICATE_CHECK_POLICY_V1, ParameterTreeDuplicateCheckV1,
+    check_parameter_tree_duplicate_consistency_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_expected_check_v1::{
+    PARAMETER_TREE_EXPECTED_CHECK_POLICY_V1, ParameterTreeExpectedCheckErrorV1,
+    ParameterTreeExpectedCheckV1, ParameterTreeValueMismatchV1,
+    check_parameter_tree_against_expected_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_filter_v1::{
+    PARAMETER_TREE_FILTER_POLICY_V1, ParameterTreeFilterErrorV1, filter_parameter_trees_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_flatten_v1::{
+    PARAMETER_TREE_FLATTEN_POLICY_V1, ParameterTreeNodeKindV1, ParameterTreeNodeRecordV1,
+    flatten_parameter_tree_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_formatter_v1::{
+    PARAMETER_TREE_FORMATTER_POLICY_V1, ParameterTreeFormatterErrorV1, format_parameter_trees_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_index_v1::{
+    AmiParameterTreeIndexV1, PARAMETER_TREE_INDEX_POLICY_V1, ParameterTreeIndexErrorV1,
+    build_parameter_tree_index_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_infer_types_v1::{
+    PARAMETER_TREE_VALUE_TYPE_INFERENCE_POLICY_V1, ParameterTreeTypeInferenceErrorV1,
+    ParameterTreeTypeInferenceV1, infer_parameter_tree_leaf_types_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_inferred_decode_v1::{
+    PARAMETER_TREE_INFERRED_DECODE_POLICY_V1, ParameterTreeInferredDecodingErrorV1,
+    ParameterTreeInferredDecodingV1, decode_parameter_tree_with_inferred_types_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_leaf_canonical_spelling_check_v1::{
+    PARAMETER_TREE_LEAF_CANONICAL_SPELLING_CHECK_POLICY_V1,
+    ParameterTreeLeafCanonicalSpellingCheckV1, ParameterTreeLeafCanonicalSpellingIssueV1,
+    check_parameter_tree_leaf_spellings_canonical_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_leaf_canonicalization_v1::{
+    PARAMETER_TREE_LEAF_CANONICALIZATION_POLICY_V1, ParameterTreeLeafCanonicalizationV1,
+    canonicalize_parameter_tree_leaf_spellings_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_leaf_index_v1::{
+    PARAMETER_TREE_LEAF_INDEX_POLICY_V1, ParameterTreeLeafIndexErrorV1, ParameterTreeLeafIndexV1,
+    build_parameter_tree_leaf_index_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_leaf_occurrences_v1::{
+    PARAMETER_TREE_LEAF_OCCURRENCES_POLICY_V1, ParameterTreeLeafOccurrencesV1,
+    count_parameter_tree_leaf_occurrences_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_leaf_type_map_v1::{
+    PARAMETER_TREE_LEAF_TYPE_MAP_POLICY_V1, ParameterTreeLeafTypeMapV1,
+    extract_parameter_tree_leaf_type_map_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_leaf_type_resolution_v1::{
+    PARAMETER_TREE_LEAF_TYPE_RESOLUTION_POLICY_V1, ParameterTreeLeafTypeResolutionErrorV1,
+    resolve_parameter_tree_leaf_type_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_leaf_typed_diff_v1::{
+    PARAMETER_TREE_LEAF_TYPED_DIFF_POLICY_V1, ParameterTreeLeafTypedChangeV1,
+    ParameterTreeLeafTypedDiffV1, diff_parameter_tree_leaves_typed_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_leaf_value_validity_v1::{
+    PARAMETER_TREE_LEAF_VALUE_VALIDITY_POLICY_V1, ParameterTreeLeafValueValidityIssueV1,
+    ParameterTreeLeafValueValidityReportV1, check_parameter_tree_leaf_value_validity_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_longest_common_prefix_v1::{
+    PARAMETER_TREE_LONGEST_COMMON_PREFIX_POLICY_V1, ParameterTreeLcpErrorV1,
+    longest_common_path_prefix_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_merge_v1::{
+    PARAMETER_TREE_MERGE_POLICY_V1, ParameterTreeMergeErrorV1, merge_parameter_trees_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_path_join_v1::{
+    PARAMETER_TREE_PATH_JOIN_POLICY_V1, ParameterTreePathJoinErrorV1, join_parameter_tree_path_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_path_prefixes_v1::{
+    PARAMETER_TREE_PATH_PREFIXES_POLICY_V1, ParameterTreePathPrefixErrorV1,
+    enumerate_parameter_tree_path_prefixes_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_path_relation_v1::{
+    PARAMETER_TREE_PATH_RELATION_POLICY_V1, ParameterTreePathRelationErrorV1,
+    ParameterTreePathRelationV1, classify_parameter_tree_path_relation_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_path_string_v1::{
+    PARAMETER_TREE_PATH_STRING_POLICY_V1, ParameterTreePathParseErrorV1,
+    parse_parameter_tree_path_string_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_profile_apply_v1::{
+    PARAMETER_TREE_PROFILE_APPLY_POLICY_V1, ParameterTreeProfileApplyErrorV1,
+    ParameterTreeProfileApplyV1, apply_parameter_profile_to_tree_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_project_v1::{
+    PARAMETER_TREE_LEAF_PROJECTION_POLICY_V1, ParameterTreeProjectErrorV1,
+    project_parameter_tree_leaves_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_pruning_v1::{
+    PARAMETER_TREE_PRUNING_POLICY_V1, ParameterTreePruningErrorV1, prune_parameter_tree_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_query_v1::{
+    PARAMETER_TREE_QUERY_POLICY_V1, ParameterTreeQueryErrorV1, QueryResultV1,
+    query_parameter_tree_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_relative_path_v1::{
+    PARAMETER_TREE_RELATIVE_PATH_POLICY_V1, ParameterTreeRelativePathErrorV1,
+    relative_parameter_tree_path_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_rename_v1::{
+    PARAMETER_TREE_RENAME_POLICY_V1, ParameterTreeRenameErrorV1, rename_parameter_tree_node_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_replace_v1::{
+    PARAMETER_TREE_REPLACE_POLICY_V1, ParameterTreeReplaceErrorV1, replace_parameter_tree_node_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_required_check_v1::{
+    PARAMETER_TREE_REQUIRED_NAME_CHECK_POLICY_V1, ParameterTreeRequiredNameCheckV1,
+    ParameterTreeRequiredNameErrorV1, check_parameter_tree_required_names_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_reserved_check_v1::{
+    PARAMETER_TREE_RESERVED_NAME_CHECK_POLICY_V1, ParameterTreeReservedNameCheckV1,
+    ParameterTreeReservedNameErrorV1, check_parameter_tree_reserved_names_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_search_v1::{
+    PARAMETER_TREE_LEAF_SEARCH_POLICY_V1, ParameterTreeSearchErrorV1,
+    find_parameter_tree_leaves_by_token_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_sections_v1::{
+    PARAMETER_TREE_SECTIONS_POLICY_V1, ParameterTreeSectionKindV1, ParameterTreeSectionV1,
+    ParameterTreeSectionsErrorV1, list_parameter_tree_sections_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_serde_v1::{
+    PARAMETER_TREE_SERDE_POLICY_V1, ParameterTreeSerdeErrorV1, deserialize_parameter_trees_v1,
+    serialize_parameter_trees_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_set_value_v1::{
+    PARAMETER_TREE_LEAF_VALUE_SET_POLICY_V1, ParameterTreeValueSetErrorV1,
+    set_parameter_tree_leaf_value_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_set_values_batch_v1::{
+    PARAMETER_TREE_BATCH_VALUE_SET_POLICY_V1, ParameterTreeBatchValueSetErrorV1,
+    ParameterTreeValueSetBatchV1, set_parameter_tree_leaf_values_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_subtree_v1::{
+    PARAMETER_TREE_SUBTREE_POLICY_V1, ParameterTreeSubtreeErrorV1,
+    extract_parameter_tree_subtree_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_token_frequencies_v1::{
+    PARAMETER_TREE_TOKEN_FREQUENCIES_POLICY_V1, ParameterTreeTokenFrequenciesV1,
+    compute_parameter_tree_token_frequencies_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_token_remap_v1::{
+    PARAMETER_TREE_TOKEN_REMAP_POLICY_V1, ParameterTreeTokenRemapErrorV1,
+    ParameterTreeTokenRemapV1, remap_parameter_tree_tokens_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_token_stats_v1::{
+    PARAMETER_TREE_TOKEN_STATS_POLICY_V1, ParameterTreeTokenStatsErrorV1,
+    ParameterTreeTokenStatsV1, compute_parameter_tree_token_stats_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_toposort_v1::{
+    PARAMETER_TREE_TOPOSORT_POLICY_V1, ParameterTreeToposortErrorV1,
+    toposort_parameter_tree_paths_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_transformer_v1::{
+    PARAMETER_TREE_TRANSFORMER_POLICY_V1, ParameterTreeTransformerErrorV1,
+    transform_parameter_trees_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_typed_form_multi_v1::{
+    PARAMETER_TREE_TYPED_FORM_MULTI_POLICY_V1, ParameterTreeMultiFormErrorV1,
+    ParameterTreeMultiTypedFormsV1, extract_typed_parameter_forms_multi_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_typed_form_report_v1::{
+    PARAMETER_TREE_TYPED_FORM_CONFORMANCE_POLICY_V1, ParameterTreeTypedFormReportEntryV1,
+    ParameterTreeTypedFormReportV1, TypedFormViolationV1,
+    check_parameter_tree_typed_form_conformance_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_typed_form_v1::{
+    PARAMETER_TREE_TYPED_FORM_POLICY_V1, ParameterTreeTypedFormErrorV1, ParameterTreeTypedFormsV1,
+    extract_typed_parameter_forms_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_typed_leaf_fingerprint_v1::{
+    PARAMETER_TREE_TYPED_LEAF_FINGERPRINT_POLICY_V1, fingerprint_parameter_tree_typed_leaves_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_typed_leaf_type_counts_v1::{
+    PARAMETER_TREE_TYPED_LEAF_TYPE_COUNTS_POLICY_V1, ParameterTreeTypedLeafTypeCountsV1,
+    count_parameter_tree_typed_leaves_by_type_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_validate_values_v1::{
+    PARAMETER_TREE_VALUE_VALIDATION_POLICY_V1, ParameterTreeValueValidationErrorV1,
+    ParameterTreeValueValidationV1, validate_parameter_tree_values_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_validator_v1::{
+    PARAMETER_TREE_VALIDATOR_POLICY_V1, ParameterTreeValidatorErrorV1, TreeValidationLimitsV1,
+    validate_parameter_trees_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_tree_visitor_v1::{
+    PARAMETER_TREE_VISITOR_POLICY_V1, ParameterTreeVisitorErrorV1, VisitorEventV1,
+    traverse_parameter_trees_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_trees_v1::{
+    AmiParameterTreeNodeV1, AmiParameterTreeV1, PARAMETER_TREES_POLICY_V1, ParameterTreesErrorV1,
+    build_parameter_trees_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_value_equivalence_v1::{
+    PARAMETER_VALUE_EQUIVALENCE_POLICY_V1, ParameterValueEquivalenceV1,
+    ParameterValueInequivalenceReasonV1, parameter_values_equivalent_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
+pub use parameter_value_spelling_normalization_v1::{
+    PARAMETER_VALUE_SPELLING_NORMALIZATION_POLICY_V1, canonicalize_parameter_value_spelling_v1,
+};
+#[cfg(any(test, feature = "p4b-self-crosscheck"))]
 pub use parameter_value_v1::{
-    AmiParameterTypeV1, AmiParameterValueErrorV1, AmiParameterValueV1,
-    PARAMETER_VALUE_POLICY_V1,
+    AmiParameterTypeV1, AmiParameterValueErrorV1, AmiParameterValueV1, MAX_PARAMETER_LIST_ITEMS_V1,
+    MAX_PARAMETER_LIST_PAIR_CELLS_V1, MAX_PARAMETER_NAME_BYTES_V1,
+    MAX_PARAMETER_VALUE_TOKEN_BYTES_V1, PARAMETER_VALUE_POLICY_V1,
 };
 
 use std::{error::Error, fmt, num::NonZeroUsize};

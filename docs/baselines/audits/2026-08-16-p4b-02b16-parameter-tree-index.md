@@ -18,7 +18,7 @@ are strictly rejected. An independent Python reference recomputes flat path inde
 - 3 Rust unit tests green (policy fixed; indexes tree leaves; rejects empty tree list).
 - Cross-check: 3 test cases (standard tree indexing, nested branches indexing, empty document)
   driven through product runner `p4b_02b16_parameter_tree_index_runner`; independent Python reference
-  matches 100% on valid flags, leaf counts, flat path index maps, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, leaf counts, flat path index maps, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

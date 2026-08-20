@@ -27,7 +27,7 @@ bit-exact equality per distinct item.
   indices, single item index zero, spacing canonicalized, non-list).
 - Cross-check: 4 test cases (mixed, all equal, all distinct, non-list) driven through product runner
   `p4b_02b182_parameter_list_first_occurrence_indices_runner`; independent Python reference matches
-  100% on first-occurrence-index arrays and error keys; 4/4 matched_hash_bound.
+  100% on first-occurrence-index arrays and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

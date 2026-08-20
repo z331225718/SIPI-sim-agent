@@ -27,7 +27,7 @@ removal). An independent Python reference replicates the slice rule over 5 test 
   spacing canonicalized).
 - Cross-check: 5 test cases (middle slice, full slice, empty slice, out-of-range, non-list) driven
   through product runner `p4b_02b109_parameter_list_slice_runner`; independent Python reference
-  matches 100% on tokens and error keys; 5/5 matched_hash_bound.
+  matches 100% on tokens and error keys; 5/5 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

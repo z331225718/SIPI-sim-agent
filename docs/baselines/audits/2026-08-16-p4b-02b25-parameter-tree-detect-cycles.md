@@ -19,7 +19,7 @@ An independent Python reference recomputes the cycle scan over 3 test cases.
 - 3 Rust unit tests green (policy fixed; acyclic tree scan; single node tree is acyclic).
 - Cross-check: 3 test cases (nested acyclic tree, single node tree, wide acyclic tree)
   driven through product runner `p4b_02b25_parameter_tree_detect_cycles_runner`; independent Python reference
-  matches 100% on valid flags, is_acyclic flags, cycle paths, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, is_acyclic flags, cycle paths, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

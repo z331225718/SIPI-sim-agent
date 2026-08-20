@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ibis::{
-    lift_bus_label_block_v1, lift_bus_label_declaration_v1, BUS_LABEL_KEYWORDS_POLICY_V1,
+    BUS_LABEL_KEYWORDS_POLICY_V1, lift_bus_label_block_v1, lift_bus_label_declaration_v1,
 };
 
 fn str_list(value: Option<&Value>) -> Vec<String> {
@@ -41,7 +41,10 @@ fn main() {
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
 
-    let bname = value.get("bus_label_name").and_then(|v| v.as_str()).unwrap_or("");
+    let bname = value
+        .get("bus_label_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let pins = str_list(value.get("member_pins"));
 
     let bus_decl = match lift_bus_label_declaration_v1(bname, pins) {
@@ -53,7 +56,8 @@ fn main() {
                 "bus_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

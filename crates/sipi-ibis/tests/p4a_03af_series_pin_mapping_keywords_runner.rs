@@ -8,8 +8,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ibis::{
-    lift_series_pin_mapping_block_v1, lift_series_pin_record_v1, lift_series_pin_thresholds_v1,
-    SERIES_PIN_MAPPING_KEYWORDS_POLICY_V1,
+    SERIES_PIN_MAPPING_KEYWORDS_POLICY_V1, lift_series_pin_mapping_block_v1,
+    lift_series_pin_record_v1, lift_series_pin_thresholds_v1,
 };
 
 fn main() {
@@ -25,15 +25,26 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4a_03af_series_pin_mapping_keywords_runner --input <json> [--report <path>]");
+        println!(
+            "usage: p4a_03af_series_pin_mapping_keywords_runner --input <json> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
 
-    let pf = value.get("pin_first").and_then(|v| v.as_str()).unwrap_or("");
-    let ps = value.get("pin_second").and_then(|v| v.as_str()).unwrap_or("");
-    let mn = value.get("model_name").and_then(|v| v.as_str()).unwrap_or("");
+    let pf = value
+        .get("pin_first")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let ps = value
+        .get("pin_second")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let mn = value
+        .get("model_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let ftg = value.get("function_table_group").and_then(|v| v.as_str());
 
     let pin_rec = match lift_series_pin_record_v1(pf, ps, mn, ftg) {
@@ -45,7 +56,8 @@ fn main() {
                 "record_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -58,26 +70,28 @@ fn main() {
     let cseries = value.get("cseries_farad").and_then(|v| v.as_f64());
     let lseries = value.get("lseries_henry").and_then(|v| v.as_f64());
 
-    let thresholds = if vthresh.is_some() || rseries.is_some() || cseries.is_some() || lseries.is_some() {
-        match lift_series_pin_thresholds_v1(vthresh, rseries, cseries, lseries) {
-            Ok(t) => Some(t),
-            Err(e) => {
-                let output = serde_json::json!({
-                    "policy": SERIES_PIN_MAPPING_KEYWORDS_POLICY_V1,
-                    "valid": false,
-                    "threshold_error": format!("{e:?}"),
-                });
-                if let Some(p) = report {
-                    std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
-                } else {
-                    println!("{}", serde_json::to_string_pretty(&output).expect("json"));
+    let thresholds =
+        if vthresh.is_some() || rseries.is_some() || cseries.is_some() || lseries.is_some() {
+            match lift_series_pin_thresholds_v1(vthresh, rseries, cseries, lseries) {
+                Ok(t) => Some(t),
+                Err(e) => {
+                    let output = serde_json::json!({
+                        "policy": SERIES_PIN_MAPPING_KEYWORDS_POLICY_V1,
+                        "valid": false,
+                        "threshold_error": format!("{e:?}"),
+                    });
+                    if let Some(p) = report {
+                        std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                            .expect("write");
+                    } else {
+                        println!("{}", serde_json::to_string_pretty(&output).expect("json"));
+                    }
+                    return;
                 }
-                return;
             }
-        }
-    } else {
-        None
-    };
+        } else {
+            None
+        };
 
     let output = match lift_series_pin_mapping_block_v1(pin_rec, thresholds) {
         Ok(block) => {

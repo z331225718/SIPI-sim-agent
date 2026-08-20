@@ -26,7 +26,7 @@ reference replicates the frequency rule over 4 test cases.
   non-list, spacing canonicalized).
 - Cross-check: 4 test cases (repeated items, first-occurrence order, all distinct, non-list)
   driven through product runner `p4b_02b121_parameter_list_frequency_runner`; independent
-  Python reference matches 100% on frequency pairs and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on frequency pairs and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

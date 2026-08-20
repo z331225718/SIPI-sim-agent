@@ -13,8 +13,7 @@ use std::collections::BTreeMap;
 use crate::{AmiTextDocumentV1, AmiTextNodeV1};
 
 /// Scope policy for the AMI text form heads counting core.
-pub const AMI_TEXT_FORM_HEADS_POLICY_V1: &str =
-    "sipi.p4b-02b61.ami-text-form-heads-v1.head-counts";
+pub const AMI_TEXT_FORM_HEADS_POLICY_V1: &str = "sipi.p4b-02b61.ami-text-form-heads-v1.head-counts";
 
 /// Fail-closed errors during form heads counting.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -59,8 +58,8 @@ pub fn count_ami_text_form_heads_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parse_ami_text_v1;
     use crate::ParseLimitsV1;
+    use crate::parse_ami_text_v1;
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(8 * 1024 * 1024, 64, 4096, 4096).expect("limits")

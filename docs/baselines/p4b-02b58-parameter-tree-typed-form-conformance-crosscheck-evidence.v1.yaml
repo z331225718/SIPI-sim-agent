@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b58-parameter-tree-typed-form-conformance-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b58.parameter-tree-typed-form-conformance-v1.full-report
 matched_count: 4
 case_count: 4

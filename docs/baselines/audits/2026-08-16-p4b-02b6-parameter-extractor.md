@@ -22,7 +22,7 @@ are strictly rejected. An independent Python reference recomputes the AST parame
 - Cross-check: 3 test cases (valid 3-parameter document, nested document, duplicate parameter name)
   driven through product runner `p4b_02b6_parameter_extractor_runner`; independent Python reference
   matches 100% on valid flags, parameter counts, parameter types/values, and error strings;
-  3/3 matched_hash_bound.
+  3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

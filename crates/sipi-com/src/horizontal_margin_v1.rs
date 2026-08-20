@@ -7,7 +7,7 @@
 //! to each bathtub edge). A non-positive margin is flagged, consistent
 //! with a receiver that cannot sample reliably at the target BER.
 
-use crate::bathtub_v1::{bathtub_opening_width_v1, BathtubErrorV1, BathtubSampleV1};
+use crate::bathtub_v1::{BathtubErrorV1, BathtubSampleV1, bathtub_opening_width_v1};
 
 /// Composes the bathtub opening at a target BER (P3C-02f) with a
 /// sampling-point offset to yield horizontal margins end to end.
@@ -17,7 +17,9 @@ pub fn margins_from_bathtub_v1(
     sample_offset_from_left_edge_ui: f64,
 ) -> Result<HorizontalMarginsV1, HorizontalMarginErrorV1> {
     let width = bathtub_opening_width_v1(samples, target_ber).map_err(|e| match e {
-        BathtubErrorV1::NoOpening => HorizontalMarginErrorV1::NonPositiveEyeWidth,        _ => HorizontalMarginErrorV1::NonFinite,    })?;
+        BathtubErrorV1::NoOpening => HorizontalMarginErrorV1::NonPositiveEyeWidth,
+        _ => HorizontalMarginErrorV1::NonFinite,
+    })?;
     compute_horizontal_margins_v1(width, sample_offset_from_left_edge_ui)
 }
 /// Stable scope policy of the P3C-02g horizontal margin core.
@@ -92,7 +94,10 @@ mod tests {
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(HORIZONTAL_MARGIN_POLICY_V1, "sipi.p3c-02g.horizontal-margin.v1.timing");
+        assert_eq!(
+            HORIZONTAL_MARGIN_POLICY_V1,
+            "sipi.p3c-02g.horizontal-margin.v1.timing"
+        );
     }
 
     #[test]
@@ -113,17 +118,29 @@ mod tests {
 
     #[test]
     fn rejects_nonpositive_eye() {
-        assert_eq!(compute_horizontal_margins_v1(0.0, 0.0).err(), Some(HorizontalMarginErrorV1::NonPositiveEyeWidth));
+        assert_eq!(
+            compute_horizontal_margins_v1(0.0, 0.0).err(),
+            Some(HorizontalMarginErrorV1::NonPositiveEyeWidth)
+        );
     }
 
     #[test]
     fn rejects_sample_outside_eye() {
-        assert_eq!(compute_horizontal_margins_v1(0.8, 0.9).err(), Some(HorizontalMarginErrorV1::SampleOutsideEye));
-        assert_eq!(compute_horizontal_margins_v1(0.8, -0.1).err(), Some(HorizontalMarginErrorV1::SampleOutsideEye));
+        assert_eq!(
+            compute_horizontal_margins_v1(0.8, 0.9).err(),
+            Some(HorizontalMarginErrorV1::SampleOutsideEye)
+        );
+        assert_eq!(
+            compute_horizontal_margins_v1(0.8, -0.1).err(),
+            Some(HorizontalMarginErrorV1::SampleOutsideEye)
+        );
     }
 
     #[test]
     fn rejects_nonfinite() {
-        assert_eq!(compute_horizontal_margins_v1(f64::NAN, 0.0).err(), Some(HorizontalMarginErrorV1::NonFinite));
+        assert_eq!(
+            compute_horizontal_margins_v1(f64::NAN, 0.0).err(),
+            Some(HorizontalMarginErrorV1::NonFinite)
+        );
     }
 }

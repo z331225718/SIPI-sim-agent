@@ -58,10 +58,15 @@ mod tests {
 
     #[test]
     fn valid_test_data_block() {
-        let fix = lift_test_data_declaration_v1("FIX_DUT_1", Some(50.0), Some(2e-12), None, Some(1.5)).unwrap();
+        let fix =
+            lift_test_data_declaration_v1("FIX_DUT_1", Some(50.0), Some(2e-12), None, Some(1.5))
+                .unwrap();
         let block = lift_test_data_block_v1(fix).expect("lift");
 
         assert_eq!(block.fixture_declaration().fixture_name(), "FIX_DUT_1");
-        assert_eq!(block.fixture_declaration().r_fixture_ohm().unwrap().get(), 50.0);
+        assert_eq!(
+            block.fixture_declaration().r_fixture_ohm().unwrap().get(),
+            50.0
+        );
     }
 }

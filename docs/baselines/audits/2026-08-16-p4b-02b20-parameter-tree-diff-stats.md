@@ -17,7 +17,7 @@ Fail-closed: invalid diff inputs fail closed; empty diff lists return zero count
 - 3 Rust unit tests green (policy fixed; computes stats correctly; empty diffs produce zero stats).
 - Cross-check: 3 test cases (identical trees, mixed diff stats, root mismatch)
   driven through product runner `p4b_02b20_parameter_tree_diff_stats_runner`; independent Python reference
-  matches 100% on valid flags, total diff counts, breakdown counts, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, total diff counts, breakdown counts, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

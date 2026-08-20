@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_series_pin_thresholds_v1, SERIES_PIN_THRESHOLDS_POLICY_V1,
-};
+use sipi_ibis::{SERIES_PIN_THRESHOLDS_POLICY_V1, lift_series_pin_thresholds_v1};
 
 fn main() {
     let mut input = None;

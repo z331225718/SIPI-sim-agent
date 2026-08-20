@@ -21,10 +21,20 @@ pub enum ParameterTreeDiffErrorV1 {
 /// One atomic structural difference between two parameter trees.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum TreeDiffEntryV1 {
-    MissingNode { path: String },
-    ExtraNode { path: String },
-    KindMismatch { path: String },
-    ValueMismatch { path: String, left: Vec<String>, right: Vec<String> },
+    MissingNode {
+        path: String,
+    },
+    ExtraNode {
+        path: String,
+    },
+    KindMismatch {
+        path: String,
+    },
+    ValueMismatch {
+        path: String,
+        left: Vec<String>,
+        right: Vec<String>,
+    },
 }
 
 fn diff_nodes(
@@ -41,8 +51,14 @@ fn diff_nodes(
 
     match (left, right) {
         (
-            AmiParameterTreeNodeV1::Branch { children: l_children, .. },
-            AmiParameterTreeNodeV1::Branch { children: r_children, .. },
+            AmiParameterTreeNodeV1::Branch {
+                children: l_children,
+                ..
+            },
+            AmiParameterTreeNodeV1::Branch {
+                children: r_children,
+                ..
+            },
         ) => {
             let all_keys: BTreeSet<&String> = l_children.keys().chain(r_children.keys()).collect();
             for key in all_keys {
@@ -51,15 +67,23 @@ fn diff_nodes(
                 let child_path = format!("{current_path}.{key}");
                 match (l_child, r_child) {
                     (Some(l), Some(r)) => diff_nodes(&current_path, l, r, diffs),
-                    (Some(_), None) => diffs.push(TreeDiffEntryV1::MissingNode { path: child_path }),
+                    (Some(_), None) => {
+                        diffs.push(TreeDiffEntryV1::MissingNode { path: child_path })
+                    }
                     (None, Some(_)) => diffs.push(TreeDiffEntryV1::ExtraNode { path: child_path }),
                     (None, None) => unreachable!(),
                 }
             }
         }
         (
-            AmiParameterTreeNodeV1::Leaf { value_tokens: l_vals, .. },
-            AmiParameterTreeNodeV1::Leaf { value_tokens: r_vals, .. },
+            AmiParameterTreeNodeV1::Leaf {
+                value_tokens: l_vals,
+                ..
+            },
+            AmiParameterTreeNodeV1::Leaf {
+                value_tokens: r_vals,
+                ..
+            },
         ) => {
             if l_vals != r_vals {
                 diffs.push(TreeDiffEntryV1::ValueMismatch {
@@ -95,7 +119,7 @@ pub fn diff_parameter_trees_v1(
 mod tests {
     use super::*;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
-    use crate::{parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, parse_ami_text_v1};
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
@@ -111,11 +135,8 @@ mod tests {
 
     #[test]
     fn diffs_identical_trees_as_empty() {
-        let doc = parse_ami_text_v1(
-            b"(Reserved_Parameters (tx_swing Float 0.5))",
-            limits(),
-        )
-        .expect("parse");
+        let doc = parse_ami_text_v1(b"(Reserved_Parameters (tx_swing Float 0.5))", limits())
+            .expect("parse");
         let trees = build_parameter_trees_v1(&doc).expect("build");
         let diffs = diff_parameter_trees_v1(&trees[0], &trees[0]).expect("diff");
         assert!(diffs.is_empty());
@@ -140,7 +161,8 @@ mod tests {
     #[test]
     fn detects_value_and_kind_mismatches() {
         let doc1 = parse_ami_text_v1(b"(root (val Float 0.5) (kind 10))", limits()).expect("parse");
-        let doc2 = parse_ami_text_v1(b"(root (val Float 0.9) (kind (sub 10)))", limits()).expect("parse");
+        let doc2 =
+            parse_ami_text_v1(b"(root (val Float 0.9) (kind (sub 10)))", limits()).expect("parse");
         let t1 = &build_parameter_trees_v1(&doc1).unwrap()[0];
         let t2 = &build_parameter_trees_v1(&doc2).unwrap()[0];
         let diffs = diff_parameter_trees_v1(t1, t2).unwrap();

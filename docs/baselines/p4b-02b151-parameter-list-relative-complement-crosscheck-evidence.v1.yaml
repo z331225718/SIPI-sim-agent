@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b151-parameter-list-relative-complement-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b151.parameter-list-relative-complement-v1.relative-complement
 matched_count: 4
 case_count: 4

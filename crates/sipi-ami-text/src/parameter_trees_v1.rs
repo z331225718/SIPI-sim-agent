@@ -10,14 +10,14 @@ use std::collections::BTreeMap;
 use crate::{AmiTextDocumentV1, AmiTextListV1, AmiTextNodeV1};
 
 /// Scope policy for the parameter trees core.
-pub const PARAMETER_TREES_POLICY_V1: &str =
-    "sipi.p4b-02b7.parameter-trees-v1.ast-forms-to-tree";
+pub const PARAMETER_TREES_POLICY_V1: &str = "sipi.p4b-02b7.parameter-trees-v1.ast-forms-to-tree";
 
 /// Fail-closed errors during AMI parameter tree construction.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ParameterTreesErrorV1 {
     EmptyDocument,
     InvalidNodeName,
+    MixedNodeContent,
     DuplicateChild(String),
     NoValidTrees,
 }
@@ -97,8 +97,18 @@ fn build_tree_node(list: &AmiTextListV1) -> Result<AmiParameterTreeNodeV1, Param
 
     let name = head_spelling.trim().to_string();
 
-    // If remaining items are all atoms/quoted (no nested lists), treat as Leaf
-    let has_sublist = items[1..].iter().any(|item| matches!(item, AmiTextNodeV1::List(_)));
+    // A form is either a leaf payload or a branch. Silently ignoring scalar
+    // siblings in a branch would lose caller input, so mixed content is invalid.
+    let has_sublist = items[1..]
+        .iter()
+        .any(|item| matches!(item, AmiTextNodeV1::List(_)));
+    let has_scalar = items[1..]
+        .iter()
+        .any(|item| !matches!(item, AmiTextNodeV1::List(_)));
+
+    if has_sublist && has_scalar {
+        return Err(ParameterTreesErrorV1::MixedNodeContent);
+    }
 
     if !has_sublist {
         let mut tokens = Vec::new();
@@ -149,7 +159,7 @@ pub fn build_parameter_trees_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, parse_ami_text_v1};
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
@@ -186,14 +196,25 @@ mod tests {
 
     #[test]
     fn rejects_duplicate_child_names() {
-        let doc = parse_ami_text_v1(
-            b"(root (child_a 1) (child_a 2))",
-            limits(),
-        )
-        .expect("parse");
+        let doc = parse_ami_text_v1(b"(root (child_a 1) (child_a 2))", limits()).expect("parse");
         assert_eq!(
             build_parameter_trees_v1(&doc),
             Err(ParameterTreesErrorV1::DuplicateChild("child_a".to_string()))
+        );
+    }
+
+    #[test]
+    fn rejects_mixed_scalar_and_child_content_without_data_loss() {
+        let doc = parse_ami_text_v1(b"(root scalar (child 1))", limits()).expect("parse");
+        assert_eq!(
+            build_parameter_trees_v1(&doc),
+            Err(ParameterTreesErrorV1::MixedNodeContent)
+        );
+
+        let doc = parse_ami_text_v1(b"(root (child 1) \"scalar\")", limits()).expect("parse");
+        assert_eq!(
+            build_parameter_trees_v1(&doc),
+            Err(ParameterTreesErrorV1::MixedNodeContent)
         );
     }
 }

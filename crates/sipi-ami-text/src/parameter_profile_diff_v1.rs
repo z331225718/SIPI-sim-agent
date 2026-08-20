@@ -31,6 +31,7 @@ impl ParameterValueChangeV1 {
         &self.old
     }
 
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(&self) -> &AmiParameterValueV1 {
         &self.new
     }
@@ -114,12 +115,7 @@ mod tests {
     fn profile(pairs: &[(&str, &str, &str)]) -> BTreeMap<String, AmiParameterValueV1> {
         pairs
             .iter()
-            .map(|(name, type_token, value)| {
-                (
-                    name.to_string(),
-                    parameter(name, type_token, value),
-                )
-            })
+            .map(|(name, type_token, value)| (name.to_string(), parameter(name, type_token, value)))
             .collect()
     }
 

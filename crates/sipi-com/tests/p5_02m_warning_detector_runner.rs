@@ -6,8 +6,8 @@
 use std::path::PathBuf;
 
 use sipi_com::{
-    anti_causal_precursor_fraction_v1, detect_anti_causal_v1, detect_high_freq_non_decay_v1,
-    WARNING_DETECTOR_POLICY_V1,
+    WARNING_DETECTOR_POLICY_V1, anti_causal_precursor_fraction_v1, detect_anti_causal_v1,
+    detect_high_freq_non_decay_v1,
 };
 
 fn main() {
@@ -29,10 +29,20 @@ fn main() {
     let bytes = std::fs::read(&input).expect("read input");
     let value: serde_json::Value = serde_json::from_slice(&bytes).expect("input json");
 
-    let impulse: Vec<f64> = value["impulse"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect();
+    let impulse: Vec<f64> = value["impulse"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_f64().unwrap())
+        .collect();
     let exclusion = value["exclusion"].as_u64().unwrap_or(2) as usize;
     let threshold = value["threshold"].as_f64().unwrap_or(0.05);
-    let mag: Vec<f64> = value["mag"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect();
+    let mag: Vec<f64> = value["mag"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_f64().unwrap())
+        .collect();
     let tail = value["tail"].as_u64().unwrap_or(2) as usize;
 
     let output = serde_json::json!({

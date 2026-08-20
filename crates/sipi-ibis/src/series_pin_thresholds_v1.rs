@@ -33,24 +33,29 @@ impl TypedSeriesPinThresholdsV1 {
         cseries_farad: Option<f64>,
         lseries_henry: Option<f64>,
     ) -> Result<Self, SeriesPinThresholdsErrorV1> {
-        let validate_non_negative = |val: Option<f64>, kind: &'static str| -> Result<Option<FiniteF64>, SeriesPinThresholdsErrorV1> {
-            match val {
-                None => Ok(None),
-                Some(v) => {
-                    if !v.is_finite() {
-                        return Err(SeriesPinThresholdsErrorV1::NonFiniteValue);
+        let validate_non_negative =
+            |val: Option<f64>,
+             kind: &'static str|
+             -> Result<Option<FiniteF64>, SeriesPinThresholdsErrorV1> {
+                match val {
+                    None => Ok(None),
+                    Some(v) => {
+                        if !v.is_finite() {
+                            return Err(SeriesPinThresholdsErrorV1::NonFiniteValue);
+                        }
+                        if v < 0.0 {
+                            return Err(SeriesPinThresholdsErrorV1::NegativeThresholdParameter);
+                        }
+                        let finite = FiniteF64::try_new(v, kind)
+                            .map_err(|_| SeriesPinThresholdsErrorV1::NonFiniteValue)?;
+                        Ok(Some(finite))
                     }
-                    if v < 0.0 {
-                        return Err(SeriesPinThresholdsErrorV1::NegativeThresholdParameter);
-                    }
-                    let finite = FiniteF64::try_new(v, kind)
-                        .map_err(|_| SeriesPinThresholdsErrorV1::NonFiniteValue)?;
-                    Ok(Some(finite))
                 }
-            }
-        };
+            };
 
-        let validate_finite = |val: Option<f64>, kind: &'static str| -> Result<Option<FiniteF64>, SeriesPinThresholdsErrorV1> {
+        let validate_finite = |val: Option<f64>,
+                               kind: &'static str|
+         -> Result<Option<FiniteF64>, SeriesPinThresholdsErrorV1> {
             match val {
                 None => Ok(None),
                 Some(v) => {
@@ -118,13 +123,8 @@ mod tests {
 
     #[test]
     fn valid_full_thresholds() {
-        let thresh = lift_series_pin_thresholds_v1(
-            Some(1.2),
-            Some(50.0),
-            Some(1e-12),
-            Some(5e-9),
-        )
-        .expect("lift");
+        let thresh = lift_series_pin_thresholds_v1(Some(1.2), Some(50.0), Some(1e-12), Some(5e-9))
+            .expect("lift");
         assert_eq!(thresh.vthreshold_v().unwrap().get(), 1.2);
         assert_eq!(thresh.rseries_ohm().unwrap().get(), 50.0);
         assert_eq!(thresh.cseries_farad().unwrap().get(), 1e-12);

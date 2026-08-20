@@ -7,6 +7,22 @@
 
 use sipi_types::FiniteF64;
 
+fn validate_non_negative_threshold(
+    val: Option<f64>,
+    kind: &'static str,
+) -> Result<Option<FiniteF64>, SeriesPinTableGroupModelThresholdsErrorV1> {
+    match val {
+        None => Ok(None),
+        Some(v) if !v.is_finite() => Err(SeriesPinTableGroupModelThresholdsErrorV1::NonFiniteValue),
+        Some(v) if v < 0.0 => {
+            Err(SeriesPinTableGroupModelThresholdsErrorV1::NegativeThresholdParameter)
+        }
+        Some(v) => FiniteF64::try_new(v, kind)
+            .map(Some)
+            .map_err(|_| SeriesPinTableGroupModelThresholdsErrorV1::NonFiniteValue),
+    }
+}
+
 /// Scope policy for the typed series pin table group thresholds core.
 pub const SERIES_PIN_TABLE_GROUP_MODEL_THRESHOLDS_POLICY_V1: &str =
     "sipi.p4a-03aw.series-pin-table-group-model-thresholds-v1.typed-group-model-thresholds";
@@ -61,9 +77,15 @@ impl TypedSeriesPinGroupModelThresholdRecordV1 {
         if !pf.is_ascii() || !ps.is_ascii() || !mn.is_ascii() {
             return Err(SeriesPinTableGroupModelThresholdsErrorV1::NonAsciiName);
         }
-        if !pf.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !ps.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
-            || !mn.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+        if !pf
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !ps
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            || !mn
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
         {
             return Err(SeriesPinTableGroupModelThresholdsErrorV1::InvalidName);
         }
@@ -73,57 +95,43 @@ impl TypedSeriesPinGroupModelThresholdRecordV1 {
 
         let gn = group_name.and_then(|g| {
             let t = g.into().trim().to_string();
-            if t.is_empty() {
-                None
-            } else {
-                Some(t)
-            }
+            if t.is_empty() { None } else { Some(t) }
         });
 
         if let Some(ref g) = gn {
             if !g.is_ascii() {
                 return Err(SeriesPinTableGroupModelThresholdsErrorV1::NonAsciiName);
             }
-            if !g.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.') {
+            if !g
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            {
                 return Err(SeriesPinTableGroupModelThresholdsErrorV1::InvalidName);
             }
         }
 
-        let validate_non_negative = |val: Option<f64>, kind: &'static str| -> Result<Option<FiniteF64>, SeriesPinTableGroupModelThresholdsErrorV1> {
-            match val {
-                None => Ok(None),
-                Some(v) => {
-                    if !v.is_finite() {
-                        return Err(SeriesPinTableGroupModelThresholdsErrorV1::NonFiniteValue);
+        let validate_finite =
+            |val: Option<f64>,
+             kind: &'static str|
+             -> Result<Option<FiniteF64>, SeriesPinTableGroupModelThresholdsErrorV1> {
+                match val {
+                    None => Ok(None),
+                    Some(v) => {
+                        if !v.is_finite() {
+                            return Err(SeriesPinTableGroupModelThresholdsErrorV1::NonFiniteValue);
+                        }
+                        let finite = FiniteF64::try_new(v, kind).map_err(|_| {
+                            SeriesPinTableGroupModelThresholdsErrorV1::NonFiniteValue
+                        })?;
+                        Ok(Some(finite))
                     }
-                    if v < 0.0 {
-                        return Err(SeriesPinTableGroupModelThresholdsErrorV1::NegativeThresholdParameter);
-                    }
-                    let finite = FiniteF64::try_new(v, kind)
-                        .map_err(|_| SeriesPinTableGroupModelThresholdsErrorV1::NonFiniteValue)?;
-                    Ok(Some(finite))
                 }
-            }
-        };
-
-        let validate_finite = |val: Option<f64>, kind: &'static str| -> Result<Option<FiniteF64>, SeriesPinTableGroupModelThresholdsErrorV1> {
-            match val {
-                None => Ok(None),
-                Some(v) => {
-                    if !v.is_finite() {
-                        return Err(SeriesPinTableGroupModelThresholdsErrorV1::NonFiniteValue);
-                    }
-                    let finite = FiniteF64::try_new(v, kind)
-                        .map_err(|_| SeriesPinTableGroupModelThresholdsErrorV1::NonFiniteValue)?;
-                    Ok(Some(finite))
-                }
-            }
-        };
+            };
 
         let vthreshold_v = validate_finite(vthreshold_v, "vthreshold_v")?;
-        let rseries_ohm = validate_non_negative(rseries_ohm, "rseries_ohm")?;
-        let cseries_farad = validate_non_negative(cseries_farad, "cseries_farad")?;
-        let lseries_henry = validate_non_negative(lseries_henry, "lseries_henry")?;
+        let rseries_ohm = validate_non_negative_threshold(rseries_ohm, "rseries_ohm")?;
+        let cseries_farad = validate_non_negative_threshold(cseries_farad, "cseries_farad")?;
+        let lseries_henry = validate_non_negative_threshold(lseries_henry, "lseries_henry")?;
 
         Ok(Self {
             pin_first: pf,
@@ -249,7 +257,16 @@ mod tests {
     #[test]
     fn rejects_empty_pin_name() {
         assert_eq!(
-            lift_series_pin_group_model_threshold_record_v1("", "P2", "R_SERIES_50", None, None, None, None, None),
+            lift_series_pin_group_model_threshold_record_v1(
+                "",
+                "P2",
+                "R_SERIES_50",
+                None,
+                None,
+                None,
+                None,
+                None
+            ),
             Err(SeriesPinTableGroupModelThresholdsErrorV1::EmptyPinName)
         );
     }
@@ -257,7 +274,16 @@ mod tests {
     #[test]
     fn rejects_negative_rseries() {
         assert_eq!(
-            lift_series_pin_group_model_threshold_record_v1("P1", "P2", "R_SERIES_50", None, None, Some(-50.0), None, None),
+            lift_series_pin_group_model_threshold_record_v1(
+                "P1",
+                "P2",
+                "R_SERIES_50",
+                None,
+                None,
+                Some(-50.0),
+                None,
+                None
+            ),
             Err(SeriesPinTableGroupModelThresholdsErrorV1::NegativeThresholdParameter)
         );
     }

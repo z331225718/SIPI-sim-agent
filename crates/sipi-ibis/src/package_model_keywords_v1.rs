@@ -163,7 +163,9 @@ mod tests {
     fn rejects_duplicate_pin_number() {
         assert_eq!(
             lift_package_model_keywords_v1("PKG_BGA", 2, vec!["A1".to_string(), "A1".to_string()]),
-            Err(PackageModelKeywordsErrorV1::DuplicatePinNumber("A1".to_string()))
+            Err(PackageModelKeywordsErrorV1::DuplicatePinNumber(
+                "A1".to_string()
+            ))
         );
     }
 }

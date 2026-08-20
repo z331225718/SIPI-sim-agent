@@ -66,10 +66,10 @@ pub fn list_tversky_index_v1(
     {
         return Err(ParameterListTverskyIndexErrorV1::NotAList);
     }
-    let left_items = list_items(left.value_token())
-        .ok_or(ParameterListTverskyIndexErrorV1::MalformedList)?;
-    let right_items = list_items(right.value_token())
-        .ok_or(ParameterListTverskyIndexErrorV1::MalformedList)?;
+    let left_items =
+        list_items(left.value_token()).ok_or(ParameterListTverskyIndexErrorV1::MalformedList)?;
+    let right_items =
+        list_items(right.value_token()).ok_or(ParameterListTverskyIndexErrorV1::MalformedList)?;
     let mut distinct_left: Vec<String> = Vec::new();
     for item in &left_items {
         if !distinct_left.contains(item) {
@@ -89,8 +89,7 @@ pub fn list_tversky_index_v1(
     let left_only = distinct_left.len() - intersection;
     let right_only = distinct_right.len() - intersection;
     let numerator = intersection as f64;
-    let denominator =
-        numerator + alpha * left_only as f64 + beta * right_only as f64;
+    let denominator = numerator + alpha * left_only as f64 + beta * right_only as f64;
     Ok(numerator / denominator)
 }
 

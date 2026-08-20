@@ -441,15 +441,24 @@ impl fmt::Display for TranError {
                 write!(formatter, "pulse corners must fit within one period")
             }
             Self::PwlKnotValueCountMismatch => {
-                write!(formatter, "PWL knot times and values must have equal length")
+                write!(
+                    formatter,
+                    "PWL knot times and values must have equal length"
+                )
             }
-            Self::PwlKnotAxisTooShort => write!(formatter, "PWL source requires at least two knots"),
+            Self::PwlKnotAxisTooShort => {
+                write!(formatter, "PWL source requires at least two knots")
+            }
             Self::InvalidPwlKnotAxisStart => write!(formatter, "PWL knot axis must start at zero"),
-            Self::NonIncreasingPwlKnotAxis => write!(formatter, "PWL knot axis must strictly increase"),
+            Self::NonIncreasingPwlKnotAxis => {
+                write!(formatter, "PWL knot axis must strictly increase")
+            }
             Self::PwlCoverageMismatch => {
                 write!(formatter, "PWL source must end at the final output time")
             }
-            Self::PwlOutsideCoverage => write!(formatter, "PWL evaluation is outside source coverage"),
+            Self::PwlOutsideCoverage => {
+                write!(formatter, "PWL evaluation is outside source coverage")
+            }
             Self::OutputLimitExceeded => write!(formatter, "output sample limit exceeded"),
             Self::BreakpointLimitExceeded => {
                 write!(formatter, "integration breakpoint limit exceeded")
@@ -863,7 +872,10 @@ mod tests {
         .unwrap()
     }
 
-    fn pwl_request(output_times: &[f64], source: PiecewiseLinearVoltageV1) -> OneNodeRcPwlRequestV1 {
+    fn pwl_request(
+        output_times: &[f64],
+        source: PiecewiseLinearVoltageV1,
+    ) -> OneNodeRcPwlRequestV1 {
         OneNodeRcPwlRequestV1::try_new(
             output_times
                 .iter()
@@ -966,7 +978,10 @@ mod tests {
 
     #[test]
     fn pwl_source_inserts_non_output_knot_before_backward_euler_step() {
-        let request = pwl_request(&[0.0, 2.0], pwl_source(&[(0.0, 0.0), (1.0, 1.0), (2.0, 1.0)]));
+        let request = pwl_request(
+            &[0.0, 2.0],
+            pwl_source(&[(0.0, 0.0), (1.0, 1.0), (2.0, 1.0)]),
+        );
         let result = simulate_one_node_rc_pwl(&request, pwl_limits(2, 3)).unwrap();
         assert_eq!(
             result
@@ -1009,7 +1024,10 @@ mod tests {
     #[test]
     fn pwl_axis_coverage_and_breakpoint_limits_fail_closed() {
         assert_eq!(
-            PiecewiseLinearVoltageV1::try_new(vec![seconds(0.0).unwrap()], vec![volts(0.0).unwrap()]),
+            PiecewiseLinearVoltageV1::try_new(
+                vec![seconds(0.0).unwrap()],
+                vec![volts(0.0).unwrap()]
+            ),
             Err(TranError::PwlKnotAxisTooShort)
         );
         assert_eq!(
@@ -1037,7 +1055,10 @@ mod tests {
             ),
             Err(TranError::PwlCoverageMismatch)
         );
-        let request = pwl_request(&[0.0, 2.0], pwl_source(&[(0.0, 0.0), (1.0, 1.0), (2.0, 1.0)]));
+        let request = pwl_request(
+            &[0.0, 2.0],
+            pwl_source(&[(0.0, 0.0), (1.0, 1.0), (2.0, 1.0)]),
+        );
         assert_eq!(
             simulate_one_node_rc_pwl(&request, pwl_limits(2, 2)),
             Err(TranError::BreakpointLimitExceeded)

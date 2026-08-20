@@ -32,8 +32,14 @@ fn merge_nodes(
 
     match (left, right) {
         (
-            AmiParameterTreeNodeV1::Branch { name, children: l_children },
-            AmiParameterTreeNodeV1::Branch { children: r_children, .. },
+            AmiParameterTreeNodeV1::Branch {
+                name,
+                children: l_children,
+            },
+            AmiParameterTreeNodeV1::Branch {
+                children: r_children,
+                ..
+            },
         ) => {
             let mut merged_children = BTreeMap::new();
             for (key, l_child) in l_children {
@@ -54,10 +60,7 @@ fn merge_nodes(
                 children: merged_children,
             })
         }
-        (
-            AmiParameterTreeNodeV1::Leaf { .. },
-            AmiParameterTreeNodeV1::Leaf { .. },
-        ) => {
+        (AmiParameterTreeNodeV1::Leaf { .. }, AmiParameterTreeNodeV1::Leaf { .. }) => {
             // Right-side leaf overrides left-side leaf
             Ok(right.clone())
         }
@@ -84,7 +87,7 @@ pub fn merge_parameter_trees_v1(
 mod tests {
     use super::*;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
-    use crate::{parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, parse_ami_text_v1};
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
@@ -100,8 +103,10 @@ mod tests {
 
     #[test]
     fn merges_complementary_branches_and_overrides_leaves() {
-        let doc1 = parse_ami_text_v1(b"(root (node_a 1) (val Float 0.5))", limits()).expect("parse");
-        let doc2 = parse_ami_text_v1(b"(root (node_b 2) (val Float 0.9))", limits()).expect("parse");
+        let doc1 =
+            parse_ami_text_v1(b"(root (node_a 1) (val Float 0.5))", limits()).expect("parse");
+        let doc2 =
+            parse_ami_text_v1(b"(root (node_b 2) (val Float 0.9))", limits()).expect("parse");
         let t1 = &build_parameter_trees_v1(&doc1).unwrap()[0];
         let t2 = &build_parameter_trees_v1(&doc2).unwrap()[0];
         let merged = merge_parameter_trees_v1(t1, t2).expect("merge");

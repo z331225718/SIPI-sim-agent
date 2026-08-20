@@ -18,7 +18,7 @@ An independent Python reference recomputes token statistics over 3 test cases.
 - 3 Rust unit tests green (policy fixed; computes token stats; single leaf token stats).
 - Cross-check: 3 test cases (typed token stats, single leaf token stats, repeated token stats)
   driven through product runner `p4b_02b31_parameter_tree_token_stats_runner`; independent Python reference
-  matches 100% on valid flags, leaf counts, token counts, max tokens per leaf, and distinct token lists; 3/3 matched_hash_bound.
+  matches 100% on valid flags, leaf counts, token counts, max tokens per leaf, and distinct token lists; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

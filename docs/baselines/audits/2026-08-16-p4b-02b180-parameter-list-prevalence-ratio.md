@@ -27,7 +27,7 @@ test cases, comparing 12-decimal formatted strings bit-for-bit.
 - Cross-check: 4 test cases (all equal, all distinct, unbalanced, non-list) driven through
   product runner `p4b_02b180_parameter_list_prevalence_ratio_runner`; independent Python
   reference matches 100% on 12-decimal prevalence-ratio strings and error keys; 4/4
-  matched_hash_bound.
+  product_owned_self_crosscheck_unbound.
 
 ## Binding
 

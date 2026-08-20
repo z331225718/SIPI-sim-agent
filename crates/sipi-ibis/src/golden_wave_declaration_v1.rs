@@ -46,18 +46,17 @@ impl TypedGoldenWaveDeclarationV1 {
 
         let dut = dut_name.and_then(|d| {
             let t = d.into().trim().to_string();
-            if t.is_empty() {
-                None
-            } else {
-                Some(t)
-            }
+            if t.is_empty() { None } else { Some(t) }
         });
 
         if let Some(ref d) = dut {
             if !d.is_ascii() {
                 return Err(GoldenWaveDeclarationErrorV1::NonAsciiName);
             }
-            if !d.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.') {
+            if !d
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            {
                 return Err(GoldenWaveDeclarationErrorV1::InvalidName);
             }
         }
@@ -99,8 +98,8 @@ mod tests {
 
     #[test]
     fn valid_full_golden_wave() {
-        let wave = lift_golden_wave_declaration_v1("GOLDEN_WAVE_1", Some("DUT_FBGA84"))
-            .expect("lift");
+        let wave =
+            lift_golden_wave_declaration_v1("GOLDEN_WAVE_1", Some("DUT_FBGA84")).expect("lift");
         assert_eq!(wave.waveform_name(), "GOLDEN_WAVE_1");
         assert_eq!(wave.dut_name(), Some("DUT_FBGA84"));
     }

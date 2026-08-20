@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_series_switch_group_v1, SERIES_SWITCH_GROUPS_POLICY_V1,
-};
+use sipi_ibis::{SERIES_SWITCH_GROUPS_POLICY_V1, lift_series_switch_group_v1};
 
 fn str_list(value: Option<&Value>) -> Vec<String> {
     value
@@ -40,7 +38,10 @@ fn main() {
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
-    let group_name = value.get("group_name").and_then(|v| v.as_str()).unwrap_or("");
+    let group_name = value
+        .get("group_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let on_models = str_list(value.get("on_state_models"));
     let off_models = str_list(value.get("off_state_models"));
 

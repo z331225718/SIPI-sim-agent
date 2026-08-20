@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_series_switch_record_v1, SERIES_SWITCH_MAPPING_TABLE_POLICY_V1,
-};
+use sipi_ibis::{SERIES_SWITCH_MAPPING_TABLE_POLICY_V1, lift_series_switch_record_v1};
 
 fn main() {
     let mut input = None;
@@ -29,8 +27,14 @@ fn main() {
     };
     let bytes = std::fs::read(&input).expect("read input");
     let value: Value = serde_json::from_slice(&bytes).expect("input json");
-    let on_g = value.get("on_group_name").and_then(|v| v.as_str()).unwrap_or("");
-    let off_g = value.get("off_group_name").and_then(|v| v.as_str()).unwrap_or("");
+    let on_g = value
+        .get("on_group_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let off_g = value
+        .get("off_group_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
 
     let output = match lift_series_switch_record_v1(on_g, off_g) {
         Ok(rec) => {

@@ -53,8 +53,8 @@ pub fn parameter_list_inversion_count_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListInversionCountErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListInversionCountErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListInversionCountErrorV1::MalformedList)?;
     let mut count = 0usize;
     for i in 0..items.len() {
         for j in (i + 1)..items.len() {

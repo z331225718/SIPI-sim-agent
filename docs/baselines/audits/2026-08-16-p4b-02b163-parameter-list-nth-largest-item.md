@@ -28,7 +28,7 @@ Python reference replicates the descending order-statistic rule over 4 test case
 - Cross-check: 4 test cases (middle rank, rank zero, duplicates, rank out of range) driven
   through product runner `p4b_02b163_parameter_list_nth_largest_item_runner`; independent
   Python reference matches 100% on items, error keys, index and item_count; 4/4
-  matched_hash_bound.
+  product_owned_self_crosscheck_unbound.
 
 ## Binding
 

@@ -26,7 +26,7 @@ reference replicates the sequence rule over 4 test cases.
   equal values, non-list, spacing canonicalized).
 - Cross-check: 4 test cases (contiguous contained, non-contiguous, longer query, non-list)
   driven through product runner `p4b_02b157_parameter_list_contains_sequence_runner`;
-  independent Python reference matches 100% on booleans and error keys; 4/4 matched_hash_bound.
+  independent Python reference matches 100% on booleans and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

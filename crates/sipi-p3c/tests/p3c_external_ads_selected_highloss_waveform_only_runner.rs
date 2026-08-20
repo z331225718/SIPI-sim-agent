@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+#![allow(clippy::too_many_arguments)]
 
 //! External-only v3 waveform-only comparison. It retains no source, ADS, or
 //! waveform bytes in the emitted report.
@@ -28,10 +29,10 @@ use sipi_ieee_com_sparam::{
     truncate_selected_p3c_response_v1,
 };
 use sipi_p3c::{
-    admit_selected_p3c_sealed_s4p_v2, generate_selected_p3c_prbs9_impulse_candidate_v1,
+    SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1,
+    SelectedP3cSealedS4pIdentityV2, admit_selected_p3c_sealed_s4p_v2,
+    generate_selected_p3c_prbs9_impulse_candidate_v1,
     generate_selected_p3c_prbs9_impulse_candidate_v2,
-    SelectedP3cSealedS4pIdentityV2, SELECTED_P3C_S4P_BYTE_LENGTH_V1,
-    SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1,
 };
 
 const SOURCE_ENV: &str = "SIPI_P3C_SEALED_S4P_EXTERNAL_SOURCE";
@@ -94,7 +95,9 @@ fn sha256_reader(mut reader: impl Read) -> Result<(u64, String), String> {
     let mut length = 0_u64;
     let mut buffer = [0_u8; 64 * 1024];
     loop {
-        let read = reader.read(&mut buffer).map_err(|_| "identity_read".to_owned())?;
+        let read = reader
+            .read(&mut buffer)
+            .map_err(|_| "identity_read".to_owned())?;
         if read == 0 {
             break;
         }
@@ -156,8 +159,7 @@ fn waveform_payload(values: &[f64]) -> Result<Vec<u8>, String> {
 
 fn reference_values(path: &Path) -> Result<(Vec<f64>, String), String> {
     let bytes = fs::read(path).map_err(|_| "reference_read".to_owned())?;
-    if bytes.len()
-        != SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_SAMPLE_COUNT_V3 * ADS_TUPLE_BYTES
+    if bytes.len() != SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_SAMPLE_COUNT_V3 * ADS_TUPLE_BYTES
         || sha256(&bytes) != ADS_CANONICAL_SHA256
     {
         return Err("reference_identity".to_owned());
@@ -200,7 +202,9 @@ fn publish_waveform(
         "{{\"schema\":\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACT_SCHEMA_V3}\",\"contract_sha256\":\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_CONTRACT_SHA256_V3}\",\"quantity\":\"differential_voltage\",\"unit\":\"volts_differential\",\"timebase_profile\":\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_TIMEBASE_PROFILE_V3}\",\"sample_count\":{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_SAMPLE_COUNT_V3},\"encoding\":\"ieee754-binary64-little-endian\",\"payload\":{{\"byte_length\":{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_BYTE_LENGTH_V3},\"sha256\":\"{payload_sha256}\"}}}}"
     );
     let store = ArtifactRoot::open_or_create(root).map_err(|_| "metric_root".to_owned())?;
-    let mut stage = store.begin(artifact_id).map_err(|_| "metric_begin".to_owned())?;
+    let mut stage = store
+        .begin(artifact_id)
+        .map_err(|_| "metric_begin".to_owned())?;
     stage
         .stage_reader("waveform.json", metadata.as_bytes(), 4096)
         .map_err(|_| "metric_metadata".to_owned())?;
@@ -219,11 +223,17 @@ fn publish_waveform(
     Ok((manifest_sha256(root, artifact_id)?, payload_sha256))
 }
 
-fn candidate_values(source: &Path, root: &Path, index: usize) -> Result<(usize, String, Vec<f64>), String> {
+fn candidate_values(
+    source: &Path,
+    root: &Path,
+    index: usize,
+) -> Result<(usize, String, Vec<f64>), String> {
     let before = selected_source_identity(source)?;
     let artifact_id = format!("selected-s4p-{index}");
     let store = ArtifactRoot::open_or_create(root).map_err(|_| "source_root".to_owned())?;
-    let mut stage = store.begin(&artifact_id).map_err(|_| "source_begin".to_owned())?;
+    let mut stage = store
+        .begin(&artifact_id)
+        .map_err(|_| "source_begin".to_owned())?;
     stage
         .stage_reader(
             SELECTED_P3C_S4P_FILE_NAME_V1,
@@ -269,11 +279,17 @@ fn candidate_values(source: &Path, root: &Path, index: usize) -> Result<(usize, 
     Ok((admitted.record_count(), manifest, values))
 }
 
-fn candidate_values_v2(source: &Path, root: &Path, index: usize) -> Result<(usize, String, Vec<f64>), String> {
+fn candidate_values_v2(
+    source: &Path,
+    root: &Path,
+    index: usize,
+) -> Result<(usize, String, Vec<f64>), String> {
     let before = selected_source_identity(source)?;
     let artifact_id = format!("selected-s4p-v2-{index}");
     let store = ArtifactRoot::open_or_create(root).map_err(|_| "source_root".to_owned())?;
-    let mut stage = store.begin(&artifact_id).map_err(|_| "source_begin".to_owned())?;
+    let mut stage = store
+        .begin(&artifact_id)
+        .map_err(|_| "source_begin".to_owned())?;
     stage
         .stage_reader(
             SELECTED_P3C_S4P_FILE_NAME_V1,
@@ -319,7 +335,10 @@ fn candidate_values_v2(source: &Path, root: &Path, index: usize) -> Result<(usiz
     Ok((admitted.record_count(), manifest, values))
 }
 
-fn string_field<'a>(object: &'a serde_json::Map<String, Value>, key: &str) -> Result<&'a str, String> {
+fn string_field<'a>(
+    object: &'a serde_json::Map<String, Value>,
+    key: &str,
+) -> Result<&'a str, String> {
     object
         .get(key)
         .and_then(Value::as_str)
@@ -376,12 +395,14 @@ fn invoke_cli(
         .ok_or_else(|| "cli_stdin".to_owned())?
         .write_all(request.as_bytes())
         .map_err(|_| "cli_write".to_owned())?;
-    let output = child.wait_with_output().map_err(|_| "cli_wait".to_owned())?;
+    let output = child
+        .wait_with_output()
+        .map_err(|_| "cli_wait".to_owned())?;
     if !output.status.success() || !output.stderr.is_empty() {
         return Err("cli_rejected".to_owned());
     }
-    let envelope: Value = serde_json::from_slice(&output.stdout)
-        .map_err(|_| "cli_response_json".to_owned())?;
+    let envelope: Value =
+        serde_json::from_slice(&output.stdout).map_err(|_| "cli_response_json".to_owned())?;
     let envelope = envelope
         .as_object()
         .ok_or_else(|| "cli_response_shape".to_owned())?;
@@ -506,7 +527,12 @@ fn run_once(source: &Path, reference: &Path, cli: &Path, index: usize) -> Result
     result
 }
 
-fn run_once_v2(source: &Path, reference: &Path, cli: &Path, index: usize) -> Result<RunFact, String> {
+fn run_once_v2(
+    source: &Path,
+    reference: &Path,
+    cli: &Path,
+    index: usize,
+) -> Result<RunFact, String> {
     let s4p_root = fresh_root("s4p-v2", index)?;
     let metric_root = fresh_root("metric-v2", index)?;
     let result = (|| {
@@ -586,23 +612,32 @@ fn p3c_external_ads_selected_highloss_waveform_only_runner_v3() {
     let first = run_once(&source, &reference, &cli, 1).unwrap();
     let second = run_once(&source, &reference, &cli, 2).unwrap();
     assert_ne!(first.source_manifest_sha256, second.source_manifest_sha256);
-    assert_ne!(first.reference_manifest_sha256, second.reference_manifest_sha256);
-    assert_ne!(first.candidate_manifest_sha256, second.candidate_manifest_sha256);
+    assert_ne!(
+        first.reference_manifest_sha256,
+        second.reference_manifest_sha256
+    );
+    assert_ne!(
+        first.candidate_manifest_sha256,
+        second.candidate_manifest_sha256
+    );
     assert_eq!(first.record_count, second.record_count);
-    assert_eq!(first.candidate_prefix_sha256, second.candidate_prefix_sha256);
+    assert_eq!(
+        first.candidate_prefix_sha256,
+        second.candidate_prefix_sha256
+    );
     assert_eq!(first.metric, second.metric);
     fs::create_dir_all(report.parent().unwrap()).unwrap();
     let payload = format!(
-            "{{\"schema\":\"{REPORT_SCHEMA}\",\"status\":\"{}\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"ads_canonical_triple_payload_sha256\":\"{ADS_CANONICAL_SHA256}\",\"contract_sha256\":\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_CONTRACT_SHA256_V3}\",\"source_reference_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n",
-            if first.metric.within_selected_waveform_only_profile {
-                "accepted"
-            } else {
-                "observed_not_accepted"
-            },
-            SELECTED_P3C_S4P_BYTE_LENGTH_V1,
-            SELECTED_P3C_S4P_SHA256_V1,
-            run_json(&first),
-            run_json(&second),
+        "{{\"schema\":\"{REPORT_SCHEMA}\",\"status\":\"{}\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"ads_canonical_triple_payload_sha256\":\"{ADS_CANONICAL_SHA256}\",\"contract_sha256\":\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_CONTRACT_SHA256_V3}\",\"source_reference_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n",
+        if first.metric.within_selected_waveform_only_profile {
+            "accepted"
+        } else {
+            "observed_not_accepted"
+        },
+        SELECTED_P3C_S4P_BYTE_LENGTH_V1,
+        SELECTED_P3C_S4P_SHA256_V1,
+        run_json(&first),
+        run_json(&second),
     );
     serde_json::from_str::<Value>(&payload).expect("report_json");
     fs::write(report, payload).unwrap();
@@ -622,15 +657,28 @@ fn p3c_external_ads_selected_highloss_waveform_only_runner_v2() {
     let first = run_once_v2(&source, &reference, &cli, 1).unwrap();
     let second = run_once_v2(&source, &reference, &cli, 2).unwrap();
     assert_ne!(first.source_manifest_sha256, second.source_manifest_sha256);
-    assert_ne!(first.reference_manifest_sha256, second.reference_manifest_sha256);
-    assert_ne!(first.candidate_manifest_sha256, second.candidate_manifest_sha256);
+    assert_ne!(
+        first.reference_manifest_sha256,
+        second.reference_manifest_sha256
+    );
+    assert_ne!(
+        first.candidate_manifest_sha256,
+        second.candidate_manifest_sha256
+    );
     assert_eq!(first.record_count, second.record_count);
-    assert_eq!(first.candidate_prefix_sha256, second.candidate_prefix_sha256);
+    assert_eq!(
+        first.candidate_prefix_sha256,
+        second.candidate_prefix_sha256
+    );
     assert_eq!(first.metric, second.metric);
     fs::create_dir_all(report.parent().unwrap()).unwrap();
     let payload = format!(
         "{{\"schema\":\"{REPORT_SCHEMA_V2}\",\"status\":\"{}\",\"source_byte_length\":{},\"source_sha256\":\"{}\",\"ads_canonical_triple_payload_sha256\":\"{ADS_CANONICAL_SHA256}\",\"contract_sha256\":\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_CONTRACT_SHA256_V3}\",\"source_reference_identity_checks\":\"before_stage_after_equal\",\"fresh_runs\":[{},{}],\"cleanup_status\":\"complete\"}}\n",
-        if first.metric.within_selected_waveform_only_profile { "accepted" } else { "observed_not_accepted" },
+        if first.metric.within_selected_waveform_only_profile {
+            "accepted"
+        } else {
+            "observed_not_accepted"
+        },
         SELECTED_P3C_S4P_BYTE_LENGTH_V1,
         SELECTED_P3C_S4P_SHA256_V1,
         run_json(&first),

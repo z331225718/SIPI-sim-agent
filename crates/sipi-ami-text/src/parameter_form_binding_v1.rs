@@ -68,12 +68,12 @@ pub fn bind_parameter_value_v1(
     if items.len() != 3 {
         return Err(ParameterFormBindingErrorV1::FormNotThreeItems);
     }
-    let name_spelling = item_spelling(&items[0])
-        .ok_or(ParameterFormBindingErrorV1::FormItemIsNestedList)?;
-    let type_spelling = item_spelling(&items[1])
-        .ok_or(ParameterFormBindingErrorV1::FormItemIsNestedList)?;
-    let value_spelling = item_spelling(&items[2])
-        .ok_or(ParameterFormBindingErrorV1::FormItemIsNestedList)?;
+    let name_spelling =
+        item_spelling(&items[0]).ok_or(ParameterFormBindingErrorV1::FormItemIsNestedList)?;
+    let type_spelling =
+        item_spelling(&items[1]).ok_or(ParameterFormBindingErrorV1::FormItemIsNestedList)?;
+    let value_spelling =
+        item_spelling(&items[2]).ok_or(ParameterFormBindingErrorV1::FormItemIsNestedList)?;
     if name_spelling != value.name() {
         return Err(ParameterFormBindingErrorV1::NameSpellingMismatch);
     }
@@ -97,7 +97,7 @@ pub const PARAMETER_FORM_BINDING_POLICY_V1: &str =
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{parse_and_bind_v1, AmiParameterValueErrorV1, ParseLimitsV1};
+    use crate::{AmiParameterValueErrorV1, ParseLimitsV1, parse_and_bind_v1};
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(2048, 8, 64, 256).expect("limits")

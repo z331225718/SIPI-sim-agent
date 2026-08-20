@@ -25,7 +25,7 @@ panicking). An independent Python reference replicates the run-count rule over 4
   canonicalized, non-list).
 - Cross-check: 4 test cases (single run, multiple runs, all distinct, non-list) driven
   through product runner `p4b_02b168_parameter_list_run_count_runner`; independent Python
-  reference matches 100% on counts and error keys; 4/4 matched_hash_bound.
+  reference matches 100% on counts and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

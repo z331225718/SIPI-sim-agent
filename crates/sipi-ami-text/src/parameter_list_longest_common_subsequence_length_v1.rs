@@ -90,40 +90,28 @@ mod tests {
     fn computes_lcs_length() {
         let a = value("left", "List", "(a, b, c, d)");
         let b = value("right", "List", "(b, d, e)");
-        assert_eq!(
-            list_longest_common_subsequence_length_v1(&a, &b),
-            Ok(2)
-        );
+        assert_eq!(list_longest_common_subsequence_length_v1(&a, &b), Ok(2));
     }
 
     #[test]
     fn one_is_subsequence_of_other() {
         let a = value("left", "List", "(a, b, c)");
         let b = value("right", "List", "(x, a, y, b, c)");
-        assert_eq!(
-            list_longest_common_subsequence_length_v1(&a, &b),
-            Ok(3)
-        );
+        assert_eq!(list_longest_common_subsequence_length_v1(&a, &b), Ok(3));
     }
 
     #[test]
     fn identical_values_full_length() {
         let a = value("left", "List", "(a, b, c)");
         let b = value("right", "List", "(a, b, c)");
-        assert_eq!(
-            list_longest_common_subsequence_length_v1(&a, &b),
-            Ok(3)
-        );
+        assert_eq!(list_longest_common_subsequence_length_v1(&a, &b), Ok(3));
     }
 
     #[test]
     fn disjoint_values_zero() {
         let a = value("left", "List", "(a, b)");
         let b = value("right", "List", "(x, y)");
-        assert_eq!(
-            list_longest_common_subsequence_length_v1(&a, &b),
-            Ok(0)
-        );
+        assert_eq!(list_longest_common_subsequence_length_v1(&a, &b), Ok(0));
     }
 
     #[test]
@@ -140,9 +128,6 @@ mod tests {
     fn spacing_is_canonicalized() {
         let a = value("left", "List", "( a , b , c )");
         let b = value("right", "List", "(x, b, c)");
-        assert_eq!(
-            list_longest_common_subsequence_length_v1(&a, &b),
-            Ok(2)
-        );
+        assert_eq!(list_longest_common_subsequence_length_v1(&a, &b), Ok(2));
     }
 }

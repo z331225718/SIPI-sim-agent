@@ -25,7 +25,7 @@ exists). An independent Python reference replicates the window rule over 5 test 
   window size, non-list, spacing canonicalized).
 - Cross-check: 5 test cases (windows of three, single window, window larger than list, zero
   window size, non-list) driven through product runner `p4b_02b118_parameter_list_window_runner`;
-  independent Python reference matches 100% on tokens and error keys; 5/5 matched_hash_bound.
+  independent Python reference matches 100% on tokens and error keys; 5/5 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

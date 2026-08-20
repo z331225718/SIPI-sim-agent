@@ -25,7 +25,7 @@ rule over 4 test cases.
   spacing canonicalized, single-item identity).
 - Cross-check: 4 test cases (rotate by one, rotate by two, full rotation, non-list) driven
   through product runner `p4b_02b115_parameter_list_rotate_runner`; independent Python
-  reference matches 100% on tokens and error keys; 4/4 matched_hash_bound.
+  reference matches 100% on tokens and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

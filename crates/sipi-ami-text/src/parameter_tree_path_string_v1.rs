@@ -93,9 +93,6 @@ mod tests {
     #[test]
     fn raw_segments_are_preserved() {
         let segments = parse_parameter_tree_path_string_v1("root.my-gain").expect("parsed");
-        assert_eq!(
-            segments,
-            vec!["root".to_string(), "my-gain".to_string()]
-        );
+        assert_eq!(segments, vec!["root".to_string(), "my-gain".to_string()]);
     }
 }

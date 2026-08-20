@@ -8,7 +8,7 @@
 use std::path::PathBuf;
 
 use sha2::{Digest, Sha256};
-use sipi_com::{sampled_signal_pdf_v1, SAMPLED_SIGNAL_PDF_POLICY_V1};
+use sipi_com::{SAMPLED_SIGNAL_PDF_POLICY_V1, sampled_signal_pdf_v1};
 
 fn main() {
     let mut samples = None;
@@ -49,9 +49,15 @@ fn main() {
         "policy": SAMPLED_SIGNAL_PDF_POLICY_V1,
     });
     if let Some(path) = report {
-        std::fs::write(path, serde_json::to_string_pretty(&report_json).expect("json"))
-            .expect("write");
+        std::fs::write(
+            path,
+            serde_json::to_string_pretty(&report_json).expect("json"),
+        )
+        .expect("write");
     } else {
-        println!("{}", serde_json::to_string_pretty(&report_json).expect("json"));
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&report_json).expect("json")
+        );
     }
 }

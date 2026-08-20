@@ -26,7 +26,7 @@ independent Python reference replicates the mode rule over 4 test cases.
   canonicalized, non-list).
 - Cross-check: 4 test cases (single mode, multiple modes, all distinct, non-list) driven
   through product runner `p4b_02b165_parameter_list_mode_items_runner`; independent Python
-  reference matches 100% on canonical tokens and error keys; 4/4 matched_hash_bound.
+  reference matches 100% on canonical tokens and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

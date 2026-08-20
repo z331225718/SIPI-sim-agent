@@ -7,8 +7,10 @@
 //! missing path segments, or replacement-name collisions with a sibling
 //! are strictly rejected.
 
+use crate::parameter_tree_subtree_v1::{
+    ParameterTreeSubtreeErrorV1, extract_parameter_tree_subtree_v1,
+};
 use crate::parameter_trees_v1::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
-use crate::parameter_tree_subtree_v1::{extract_parameter_tree_subtree_v1, ParameterTreeSubtreeErrorV1};
 
 /// Scope policy for the parameter tree replace core.
 pub const PARAMETER_TREE_REPLACE_POLICY_V1: &str =
@@ -31,7 +33,9 @@ fn is_valid_identifier(name: &str) -> bool {
     let trimmed = name.trim();
     !trimmed.is_empty()
         && trimmed.is_ascii()
-        && trimmed.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+        && trimmed
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
 }
 
 fn replace_node(
@@ -47,9 +51,9 @@ fn replace_node(
                 return Ok(replacement.clone());
             }
             let (head, rest) = (&segments[0], &segments[1..]);
-            let child = new_children.get_mut(*head).ok_or_else(|| {
-                ParameterTreeReplaceErrorV1::MissingPath(full_path.to_string())
-            })?;
+            let child = new_children
+                .get_mut(*head)
+                .ok_or_else(|| ParameterTreeReplaceErrorV1::MissingPath(full_path.to_string()))?;
             if rest.is_empty() {
                 let replacement_name = replacement.name();
                 // Replacing the last child: the replacement name must not collide with a sibling.
@@ -72,9 +76,9 @@ fn replace_node(
                 children: new_children,
             })
         }
-        AmiParameterTreeNodeV1::Leaf { .. } => {
-            Err(ParameterTreeReplaceErrorV1::MissingPath(full_path.to_string()))
-        }
+        AmiParameterTreeNodeV1::Leaf { .. } => Err(ParameterTreeReplaceErrorV1::MissingPath(
+            full_path.to_string(),
+        )),
     }
 }
 
@@ -121,7 +125,9 @@ pub fn replace_parameter_tree_node_v1(
             ParameterTreeSubtreeErrorV1::RootMismatch { expected, actual } => {
                 ParameterTreeReplaceErrorV1::RootMismatch { expected, actual }
             }
-            ParameterTreeSubtreeErrorV1::MissingPath(p) => ParameterTreeReplaceErrorV1::MissingPath(p),
+            ParameterTreeSubtreeErrorV1::MissingPath(p) => {
+                ParameterTreeReplaceErrorV1::MissingPath(p)
+            }
         });
     }
 
@@ -133,9 +139,9 @@ pub fn replace_parameter_tree_node_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ParseLimitsV1;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
     use crate::parse_ami_text_v1;
-    use crate::ParseLimitsV1;
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()
@@ -148,7 +154,11 @@ mod tests {
 
     fn node_of(text: &str) -> AmiParameterTreeNodeV1 {
         let doc = parse_ami_text_v1(text.as_bytes(), limits()).expect("parse");
-        build_parameter_trees_v1(&doc).expect("build").remove(0).root_node().clone()
+        build_parameter_trees_v1(&doc)
+            .expect("build")
+            .remove(0)
+            .root_node()
+            .clone()
     }
 
     #[test]
@@ -172,8 +182,10 @@ mod tests {
     fn replaces_branch_node() {
         let tree = tree_of("(root (branch_a (leaf_1 10)) (branch_b 20))");
         let repl = node_of("(branch_x (leaf_9 90))");
-        let replaced = replace_parameter_tree_node_v1(&tree, "root.branch_a", &repl).expect("replace");
-        let out = extract_parameter_tree_subtree_v1(&replaced, "root.branch_x.leaf_9").expect("extract");
+        let replaced =
+            replace_parameter_tree_node_v1(&tree, "root.branch_a", &repl).expect("replace");
+        let out =
+            extract_parameter_tree_subtree_v1(&replaced, "root.branch_x.leaf_9").expect("extract");
         assert_eq!(out.name(), "leaf_9");
     }
 
@@ -182,7 +194,10 @@ mod tests {
         let tree = tree_of("(root (a 1))");
         let repl = node_of("(other 9)");
         let result = replace_parameter_tree_node_v1(&tree, "root", &repl);
-        assert!(matches!(result, Err(ParameterTreeReplaceErrorV1::RootReplaceForbidden)));
+        assert!(matches!(
+            result,
+            Err(ParameterTreeReplaceErrorV1::RootReplaceForbidden)
+        ));
     }
 
     #[test]
@@ -191,7 +206,9 @@ mod tests {
         let repl = node_of("(b 9)");
         assert_eq!(
             replace_parameter_tree_node_v1(&tree, "root.a", &repl),
-            Err(ParameterTreeReplaceErrorV1::SiblingNameCollision("b".to_string()))
+            Err(ParameterTreeReplaceErrorV1::SiblingNameCollision(
+                "b".to_string()
+            ))
         );
     }
 
@@ -201,7 +218,9 @@ mod tests {
         let repl = node_of("(x 9)");
         assert_eq!(
             replace_parameter_tree_node_v1(&tree, "root.a.nope", &repl),
-            Err(ParameterTreeReplaceErrorV1::MissingPath("root.a.nope".to_string()))
+            Err(ParameterTreeReplaceErrorV1::MissingPath(
+                "root.a.nope".to_string()
+            ))
         );
     }
 }

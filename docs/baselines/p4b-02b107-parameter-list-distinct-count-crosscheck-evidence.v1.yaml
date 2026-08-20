@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b107-parameter-list-distinct-count-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b107.parameter-list-distinct-count-v1.distinct-item-count
 matched_count: 4
 case_count: 4

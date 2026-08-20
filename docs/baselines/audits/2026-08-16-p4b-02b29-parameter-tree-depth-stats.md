@@ -18,7 +18,7 @@ An independent Python reference recomputes depth statistics over 3 test cases.
 - 3 Rust unit tests green (policy fixed; computes nested depth stats; single node depth stats).
 - Cross-check: 3 test cases (nested depth stats, single node depth stats, deep depth stats)
   driven through product runner `p4b_02b29_parameter_tree_depth_stats_runner`; independent Python reference
-  matches 100% on valid flags, max/min depth, leaf counts, and per-depth histograms; 3/3 matched_hash_bound.
+  matches 100% on valid flags, max/min depth, leaf counts, and per-depth histograms; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

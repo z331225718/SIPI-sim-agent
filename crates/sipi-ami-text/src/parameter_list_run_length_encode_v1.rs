@@ -135,10 +135,7 @@ mod tests {
         let v = value("channels", "List", "( a , a , b )");
         assert_eq!(
             run_length_encode_parameter_list_v1(&v),
-            Ok(vec![
-                ("a".to_string(), 2),
-                ("b".to_string(), 1),
-            ])
+            Ok(vec![("a".to_string(), 2), ("b".to_string(), 1),])
         );
     }
 }

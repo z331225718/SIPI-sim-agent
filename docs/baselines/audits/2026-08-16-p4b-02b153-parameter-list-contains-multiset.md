@@ -26,7 +26,7 @@ over 4 test cases.
   non-list, spacing canonicalized).
 - Cross-check: 4 test cases (sub-multiset, count exceeded, missing item, non-list) driven
   through product runner `p4b_02b153_parameter_list_contains_multiset_runner`; independent
-  Python reference matches 100% on booleans and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on booleans and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

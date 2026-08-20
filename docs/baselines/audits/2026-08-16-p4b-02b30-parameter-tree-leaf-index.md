@@ -20,7 +20,7 @@ are strictly rejected. An independent Python reference recomputes the leaf index
   rejects missing leaf path).
 - Cross-check: 3 test cases (leaf index resolve, branch path rejected, missing leaf path)
   driven through product runner `p4b_02b30_parameter_tree_leaf_index_runner`; independent Python reference
-  matches 100% on valid flags, leaf counts, leaf path lists, resolution results, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, leaf counts, leaf path lists, resolution results, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

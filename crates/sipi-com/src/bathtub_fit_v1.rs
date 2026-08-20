@@ -13,8 +13,7 @@
 use crate::BathtubSampleV1;
 
 /// Scope policy for the bathtub curve fit core.
-pub const BATHTUB_FIT_POLICY_V1: &str =
-    "sipi.p3c-02h.bathtub-curve-fit.v1.log-ber-poly-fit";
+pub const BATHTUB_FIT_POLICY_V1: &str = "sipi.p3c-02h.bathtub-curve-fit.v1.log-ber-poly-fit";
 
 /// Maximum supported polynomial fit order.
 pub const BATHTUB_FIT_MAX_ORDER: usize = 3;
@@ -76,7 +75,7 @@ impl BathtubCurveFitV1 {
 ///
 /// `augmented` is an n x (n + 1) matrix; the solution vector is returned.
 /// Returns None when a pivot is zero (degenerate system).
-fn gaussian_solve(augmented: &mut Vec<Vec<f64>>) -> Option<Vec<f64>> {
+fn gaussian_solve(augmented: &mut [Vec<f64>]) -> Option<Vec<f64>> {
     let n = augmented.len();
     for col in 0..n {
         // Partial pivoting: row with the largest absolute value in this column.
@@ -171,8 +170,7 @@ pub fn fit_bathtub_curve_v1(
         line.push(rhs[row]);
         augmented.push(line);
     }
-    let coefficients = gaussian_solve(&mut augmented)
-        .ok_or(BathtubFitErrorV1::NumericFailure)?;
+    let coefficients = gaussian_solve(&mut augmented).ok_or(BathtubFitErrorV1::NumericFailure)?;
     if coefficients.iter().any(|c| !c.is_finite()) {
         return Err(BathtubFitErrorV1::NumericFailure);
     }
@@ -246,11 +244,7 @@ mod tests {
 
     #[test]
     fn evaluate_matches_fitted_values() {
-        let samples = vec![
-            sample(0.0, 1e-2),
-            sample(1.0, 1e-5),
-            sample(2.0, 1e-8),
-        ];
+        let samples = vec![sample(0.0, 1e-2), sample(1.0, 1e-5), sample(2.0, 1e-8)];
         let fit = fit_bathtub_curve_v1(&samples, 1).expect("fit");
         for s in &samples {
             let y = s.ber().log10();
@@ -268,11 +262,7 @@ mod tests {
 
     #[test]
     fn invalid_fit_order_fails_closed() {
-        let samples = vec![
-            sample(0.0, 1e-2),
-            sample(1.0, 1e-5),
-            sample(2.0, 1e-8),
-        ];
+        let samples = vec![sample(0.0, 1e-2), sample(1.0, 1e-5), sample(2.0, 1e-8)];
         let error = fit_bathtub_curve_v1(&samples, 0).unwrap_err();
         assert_eq!(error, BathtubFitErrorV1::InvalidFitOrder);
         let error = fit_bathtub_curve_v1(&samples, 4).unwrap_err();
@@ -281,11 +271,7 @@ mod tests {
 
     #[test]
     fn insufficient_samples_for_order_fails_closed() {
-        let samples = vec![
-            sample(0.0, 1e-2),
-            sample(1.0, 1e-5),
-            sample(2.0, 1e-8),
-        ];
+        let samples = vec![sample(0.0, 1e-2), sample(1.0, 1e-5), sample(2.0, 1e-8)];
         let error = fit_bathtub_curve_v1(&samples, 3).unwrap_err();
         assert_eq!(
             error,
@@ -298,22 +284,14 @@ mod tests {
 
     #[test]
     fn time_not_ascending_fails_closed() {
-        let samples = vec![
-            sample(0.0, 1e-2),
-            sample(0.0, 1e-5),
-            sample(2.0, 1e-8),
-        ];
+        let samples = vec![sample(0.0, 1e-2), sample(0.0, 1e-5), sample(2.0, 1e-8)];
         let error = fit_bathtub_curve_v1(&samples, 1).unwrap_err();
         assert_eq!(error, BathtubFitErrorV1::TimeNotAscending);
     }
 
     #[test]
     fn invalid_ber_fails_closed() {
-        let samples = vec![
-            sample(0.0, 0.0),
-            sample(1.0, 1e-5),
-            sample(2.0, 1e-8),
-        ];
+        let samples = vec![sample(0.0, 0.0), sample(1.0, 1e-5), sample(2.0, 1e-8)];
         let error = fit_bathtub_curve_v1(&samples, 1).unwrap_err();
         assert_eq!(error, BathtubFitErrorV1::InvalidBer);
     }

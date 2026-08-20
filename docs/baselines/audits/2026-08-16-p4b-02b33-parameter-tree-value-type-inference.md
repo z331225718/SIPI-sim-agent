@@ -24,7 +24,7 @@ reference replicates the tokenize/build/inference pipeline over 4 test cases.
 - Cross-check: 4 test cases (mixed single-token types, conflicting multi-token, string fallback,
   duplicate leaf names) driven through product runner
   `p4b_02b33_parameter_tree_value_type_inference_runner`; independent Python reference matches 100%
-  on valid flags, inferred counts, type maps, and error contexts; 4/4 matched_hash_bound.
+  on valid flags, inferred counts, type maps, and error contexts; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

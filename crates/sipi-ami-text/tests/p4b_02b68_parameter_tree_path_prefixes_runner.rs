@@ -8,10 +8,10 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    enumerate_parameter_tree_path_prefixes_v1, PARAMETER_TREE_PATH_PREFIXES_POLICY_V1,
+    PARAMETER_TREE_PATH_PREFIXES_POLICY_V1, enumerate_parameter_tree_path_prefixes_v1,
 };
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -24,7 +24,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b68_parameter_tree_path_prefixes_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b68_parameter_tree_path_prefixes_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -39,9 +41,7 @@ fn main() {
         Ok(prefixes) => {
             let prefixes_json: Vec<Value> = prefixes
                 .iter()
-                .map(|p| {
-                    Value::Array(p.iter().map(|s| Value::String(s.clone())).collect())
-                })
+                .map(|p| Value::Array(p.iter().map(|s| Value::String(s.clone())).collect()))
                 .collect();
             serde_json::json!({
                 "policy": PARAMETER_TREE_PATH_PREFIXES_POLICY_V1,

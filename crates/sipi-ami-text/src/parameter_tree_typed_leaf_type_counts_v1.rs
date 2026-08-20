@@ -12,7 +12,7 @@
 //! deterministic (sorted children, canonical order); the per-type counts sum
 //! to `total_typed` and `total_typed + skipped` equals the total leaf count.
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1, AmiParameterTypeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterTypeV1};
 
 /// Explicit scope policy of this slice: typed-leaf type counts of a tree.
 pub const PARAMETER_TREE_TYPED_LEAF_TYPE_COUNTS_POLICY_V1: &str =
@@ -118,7 +118,7 @@ pub fn count_parameter_tree_typed_leaves_by_type_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{build_parameter_trees_v1, parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, build_parameter_trees_v1, parse_ami_text_v1};
 
     fn tree(text: &str) -> AmiParameterTreeV1 {
         let limits = ParseLimitsV1::try_new(8 * 1024 * 1024, 64, 4096, 4096).expect("limits");
@@ -129,7 +129,9 @@ mod tests {
 
     #[test]
     fn counts_each_declared_type() {
-        let t = tree("(root (gain Float 0.5) (steps Integer 7) (on Boolean True) (mode String Linear) (channels List \"(a, b)\"))");
+        let t = tree(
+            "(root (gain Float 0.5) (steps Integer 7) (on Boolean True) (mode String Linear) (channels List \"(a, b)\"))",
+        );
         let counts = count_parameter_tree_typed_leaves_by_type_v1(&t);
         assert_eq!(counts.total_typed(), 5);
         assert_eq!(counts.float_count(), 1);
@@ -161,7 +163,9 @@ mod tests {
 
     #[test]
     fn sum_invariant_holds() {
-        let t = tree("(root (gain Float 0.5) (a Integer 1) (b Integer 2) (on Boolean True) (mode String Linear) (plain 5))");
+        let t = tree(
+            "(root (gain Float 0.5) (a Integer 1) (b Integer 2) (on Boolean True) (mode String Linear) (plain 5))",
+        );
         let counts = count_parameter_tree_typed_leaves_by_type_v1(&t);
         assert_eq!(counts.total_typed(), 5);
         assert_eq!(counts.skipped(), 1);

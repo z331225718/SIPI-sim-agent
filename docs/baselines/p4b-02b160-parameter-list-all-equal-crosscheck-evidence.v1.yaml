@@ -1,5 +1,5 @@
 schema: sipi.p4b-02b160-parameter-list-all-equal-crosscheck-evidence.v1
-status: matched_hash_bound
+status: product_owned_self_crosscheck_unbound
 policy: sipi.p4b-02b160.parameter-list-all-equal-v1.all-equal
 matched_count: 4
 case_count: 4

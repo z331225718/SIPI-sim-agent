@@ -26,7 +26,7 @@ over 4 test cases.
   different lengths, non-list, spacing canonicalized).
 - Cross-check: 4 test cases (order-insensitive, counts mismatch, different lengths, non-list)
   driven through product runner `p4b_02b152_parameter_list_multiset_equal_runner`; independent
-  Python reference matches 100% on booleans and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on booleans and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

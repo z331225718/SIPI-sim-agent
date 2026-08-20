@@ -9,7 +9,7 @@
 //! (0, 1] and the sum of all proportions equals 1.0. This is the map形态
 //! companion of 02b181 frequency-normalized (which returns the same data as
 //! an ordered `Vec<(String, f64)>` in first-occurrence order): the two slices
-//! carry identical information but differ in access structure — O(1) lookup by
+//! carry identical information but differ in access structure — O(log n) lookup by
 //! item key (this slice) vs positional iteration (02b181). Per item the
 //! proportion equals `count / len` where `count` comes from the 02b190
 //! frequency map, and the maximum entry is the 02b180 prevalence ratio.

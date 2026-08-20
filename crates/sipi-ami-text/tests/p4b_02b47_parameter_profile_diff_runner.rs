@@ -10,7 +10,7 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    diff_parameter_profiles_v1, AmiParameterValueV1, PARAMETER_PROFILE_DIFF_POLICY_V1,
+    AmiParameterValueV1, PARAMETER_PROFILE_DIFF_POLICY_V1, diff_parameter_profiles_v1,
 };
 
 fn parse_profile(value: &Value) -> Option<BTreeMap<String, AmiParameterValueV1>> {
@@ -32,7 +32,7 @@ fn parameter_to_json(parameter: &AmiParameterValueV1) -> Value {
     })
 }
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -60,7 +60,8 @@ fn main() {
                 "input_error": "invalid_profile_a",
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -76,7 +77,8 @@ fn main() {
                 "input_error": "invalid_profile_b",
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

@@ -56,10 +56,10 @@ pub fn join_parameter_list_values_v1(
     {
         return Err(ParameterListJoinErrorV1::NotAList);
     }
-    let left_items = list_items(left.value_token())
-        .ok_or(ParameterListJoinErrorV1::MalformedList)?;
-    let right_items = list_items(right.value_token())
-        .ok_or(ParameterListJoinErrorV1::MalformedList)?;
+    let left_items =
+        list_items(left.value_token()).ok_or(ParameterListJoinErrorV1::MalformedList)?;
+    let right_items =
+        list_items(right.value_token()).ok_or(ParameterListJoinErrorV1::MalformedList)?;
     let mut items = left_items;
     items.extend(right_items);
     Ok(format!("({})", items.join(", ")))

@@ -60,10 +60,10 @@ pub fn list_intersection_v1(
     {
         return Err(ParameterListIntersectionErrorV1::NotAList);
     }
-    let left_items = list_items(left.value_token())
-        .ok_or(ParameterListIntersectionErrorV1::MalformedList)?;
-    let right_items = list_items(right.value_token())
-        .ok_or(ParameterListIntersectionErrorV1::MalformedList)?;
+    let left_items =
+        list_items(left.value_token()).ok_or(ParameterListIntersectionErrorV1::MalformedList)?;
+    let right_items =
+        list_items(right.value_token()).ok_or(ParameterListIntersectionErrorV1::MalformedList)?;
     let kept: Vec<String> = left_items
         .into_iter()
         .filter(|candidate| right_items.contains(candidate))
@@ -83,20 +83,14 @@ mod tests {
     fn intersection_in_left_order() {
         let a = value("left", "List", "(a, b, a, c)");
         let b = value("right", "List", "(b, c, d)");
-        assert_eq!(
-            list_intersection_v1(&a, &b),
-            Ok("(b, c)".to_string())
-        );
+        assert_eq!(list_intersection_v1(&a, &b), Ok("(b, c)".to_string()));
     }
 
     #[test]
     fn duplicates_preserved() {
         let a = value("left", "List", "(a, a, b)");
         let b = value("right", "List", "(a)");
-        assert_eq!(
-            list_intersection_v1(&a, &b),
-            Ok("(a, a)".to_string())
-        );
+        assert_eq!(list_intersection_v1(&a, &b), Ok("(a, a)".to_string()));
     }
 
     #[test]
@@ -110,10 +104,7 @@ mod tests {
     fn equal_values_full_intersection() {
         let a = value("left", "List", "(a, b)");
         let b = value("right", "List", "(a, b)");
-        assert_eq!(
-            list_intersection_v1(&a, &b),
-            Ok("(a, b)".to_string())
-        );
+        assert_eq!(list_intersection_v1(&a, &b), Ok("(a, b)".to_string()));
     }
 
     #[test]
@@ -130,9 +121,6 @@ mod tests {
     fn spacing_is_canonicalized() {
         let a = value("left", "List", "( a , b , c )");
         let b = value("right", "List", "(b, c)");
-        assert_eq!(
-            list_intersection_v1(&a, &b),
-            Ok("(b, c)".to_string())
-        );
+        assert_eq!(list_intersection_v1(&a, &b), Ok("(b, c)".to_string()));
     }
 }

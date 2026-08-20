@@ -18,7 +18,7 @@ Fail-closed: empty diff lists (`EmptyDiffList`), invalid target paths (`InvalidP
 - 3 Rust unit tests green (policy fixed; applies value mismatch patch; rejects empty diff list).
 - Cross-check: 3 test cases (value mismatch patch, structural node patch, empty left document)
   driven through product runner `p4b_02b17_parameter_tree_diff_patch_runner`; independent Python reference
-  matches 100% on valid flags, patched S-expression formatted text, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, patched S-expression formatted text, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

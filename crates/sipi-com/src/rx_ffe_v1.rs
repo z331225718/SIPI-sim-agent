@@ -11,8 +11,7 @@
 pub const RX_FFE_POLICY_V1: &str = "sipi.p5-04l.rx-ffe-v1.apply-force-fixed";
 
 /// Explicit scope policy of the floating RxFFE sub-slice.
-pub const FLOATING_RX_FFE_POLICY_V1: &str =
-    "sipi.p5-04m.rx-ffe-v1.floating-bank-force";
+pub const FLOATING_RX_FFE_POLICY_V1: &str = "sipi.p5-04m.rx-ffe-v1.floating-bank-force";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RxFfeErrorV1 {
@@ -123,7 +122,13 @@ fn floor_quantize(values: &[f64], step: f64) -> Vec<f64> {
     values
         .iter()
         .map(|value| {
-            let sign = if *value > 0.0 { 1.0 } else if *value < 0.0 { -1.0 } else { 0.0 };
+            let sign = if *value > 0.0 {
+                1.0
+            } else if *value < 0.0 {
+                -1.0
+            } else {
+                0.0
+            };
             (value / step).abs().floor() * sign * step
         })
         .collect()
@@ -155,7 +160,8 @@ pub fn force_rx_ffe_v1(
     let mut matrix = vec![vec![0.0_f64; count]; count];
     for output_tap in 0..count {
         for input_tap in 0..count {
-            let index = cursor_index as i64 + (output_tap as i64 - input_tap as i64) * samples_per_ui as i64;
+            let index = cursor_index as i64
+                + (output_tap as i64 - input_tap as i64) * samples_per_ui as i64;
             if 0 <= index && index < values.len() as i64 {
                 matrix[output_tap][input_tap] = values[index as usize];
             }
@@ -170,7 +176,13 @@ pub fn force_rx_ffe_v1(
         } else {
             0.0
         };
-        let sign = if postcursor > 0.0 { 1.0 } else if postcursor < 0.0 { -1.0 } else { 0.0 };
+        let sign = if postcursor > 0.0 {
+            1.0
+        } else if postcursor < 0.0 {
+            -1.0
+        } else {
+            0.0
+        };
         forcing[precursor_count + 1] =
             (dfe_first_max * forcing[precursor_count]).min(postcursor.abs()) * sign;
     }
@@ -188,7 +200,12 @@ pub fn force_rx_ffe_v1(
         taps = floor_quantize(&taps, tap_step);
     }
     let filtered = if return_filtered {
-        Some(apply_rx_ffe_v1(&taps, precursor_count, samples_per_ui, &values)?)
+        Some(apply_rx_ffe_v1(
+            &taps,
+            precursor_count,
+            samples_per_ui,
+            &values,
+        )?)
     } else {
         None
     };
@@ -248,12 +265,18 @@ fn rxffe_floating_locations_v1(
     }
     let mut energy: Vec<f64> = h0n.iter().zip(h1n.iter()).map(|(a, b)| a - b).collect();
     let mut selected_relative = vec![0i64; taps_per_bank * bank_count];
-    let ordered_set: Vec<i64> = (1..(bank_count - 1) * taps_per_bank + 2).map(|v| v as i64).collect();
+    let ordered_set: Vec<i64> = (1..(bank_count - 1) * taps_per_bank + 2)
+        .map(|v| v as i64)
+        .collect();
     let mut next_bank: Option<usize> = None;
     let negative_infinity = f64::NEG_INFINITY;
     for bank in 1..=bank_count {
         let mut order: Vec<usize> = (0..energy.len()).collect();
-        order.sort_by(|a, b| energy[*b].partial_cmp(&energy[*a]).unwrap_or(std::cmp::Ordering::Equal));
+        order.sort_by(|a, b| {
+            energy[*b]
+                .partial_cmp(&energy[*a])
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         let order_one: Vec<i64> = order.iter().map(|value| *value as i64 + 1).collect();
         if bank == 1 {
             let mut prefix: Vec<i64> = order_one.iter().take(ordered_set.len()).copied().collect();
@@ -288,7 +311,8 @@ fn rxffe_floating_locations_v1(
             }
             continue;
         }
-        let mut new_bank: Vec<usize> = (order_one[0] as usize..order_one[0] as usize + taps_per_bank).collect();
+        let mut new_bank: Vec<usize> =
+            (order_one[0] as usize..order_one[0] as usize + taps_per_bank).collect();
         if *new_bank.last().expect("new bank") > length {
             return Err(RxFfeErrorV1::BankRange);
         }
@@ -321,7 +345,11 @@ fn rxffe_floating_locations_v1(
                     order_one.clone()
                 } else {
                     let mut reordered: Vec<usize> = (0..energy.len()).collect();
-                    reordered.sort_by(|a, b| energy[*b].partial_cmp(&energy[*a]).unwrap_or(std::cmp::Ordering::Equal));
+                    reordered.sort_by(|a, b| {
+                        energy[*b]
+                            .partial_cmp(&energy[*a])
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    });
                     reordered.iter().map(|value| *value as i64 + 1).collect()
                 };
                 first_time = false;
@@ -330,7 +358,11 @@ fn rxffe_floating_locations_v1(
                 let bad_positions: Vec<i64> = bad
                     .iter()
                     .map(|item| {
-                        order_current.iter().position(|entry| entry == item).expect("in order") as i64 + 1
+                        order_current
+                            .iter()
+                            .position(|entry| entry == item)
+                            .expect("in order") as i64
+                            + 1
                     })
                     .collect();
                 let mut found_good = false;
@@ -345,12 +377,15 @@ fn rxffe_floating_locations_v1(
                         break;
                     }
                 }
-                if !found_good && bad_positions.iter().min().copied().unwrap_or(i64::MAX) < position {
+                if !found_good && bad_positions.iter().min().copied().unwrap_or(i64::MAX) < position
+                {
                     if new_bank[0] > energy.len() {
                         return Err(RxFfeErrorV1::BankRange);
                     }
                     energy[new_bank[0] - 1] = negative_infinity;
-                    new_bank = (order_current[1] as usize..order_current[1] as usize + taps_per_bank).collect();
+                    new_bank = (order_current[1] as usize
+                        ..order_current[1] as usize + taps_per_bank)
+                        .collect();
                     if *new_bank.last().expect("new bank") > length {
                         return Err(RxFfeErrorV1::BankRange);
                     }
@@ -361,7 +396,6 @@ fn rxffe_floating_locations_v1(
                     next_bank = Some(good.max(1) as usize);
                 }
             }
-            loops += 1;
             break;
         }
         for value in new_bank.iter() {
@@ -423,7 +457,8 @@ pub fn force_floating_rx_ffe_v1(
     let mut matrix = vec![vec![0.0_f64; count]; count];
     for output_tap in 0..count {
         for input_tap in 0..count {
-            let index = cursor_index as i64 + (output_tap as i64 - input_tap as i64) * samples_per_ui as i64;
+            let index = cursor_index as i64
+                + (output_tap as i64 - input_tap as i64) * samples_per_ui as i64;
             if 0 <= index && index < values.len() as i64 {
                 matrix[output_tap][input_tap] = values[index as usize];
             }
@@ -438,7 +473,13 @@ pub fn force_floating_rx_ffe_v1(
         } else {
             0.0
         };
-        let sign = if postcursor > 0.0 { 1.0 } else if postcursor < 0.0 { -1.0 } else { 0.0 };
+        let sign = if postcursor > 0.0 {
+            1.0
+        } else if postcursor < 0.0 {
+            -1.0
+        } else {
+            0.0
+        };
         forcing[precursor_count + 1] =
             (dfe_first_max * forcing[precursor_count]).min(postcursor.abs()) * sign;
     }
@@ -487,7 +528,12 @@ pub fn force_floating_rx_ffe_v1(
         retained[location] = taps[location];
     }
     let filtered = if return_filtered {
-        Some(apply_rx_ffe_v1(&retained, precursor_count, samples_per_ui, &values)?)
+        Some(apply_rx_ffe_v1(
+            &retained,
+            precursor_count,
+            samples_per_ui,
+            &values,
+        )?)
     } else {
         None
     };
@@ -514,9 +560,7 @@ mod tests {
         // shift 0: +1.0 * w; shift -4: 0.5 * roll(+4); shift +4: -0.25 * roll(-4)
         let expected: Vec<f64> = (0..8)
             .map(|i| {
-                1.0 * waveform[i]
-                    + 0.5 * waveform[(i + 4) % 8]
-                    + -0.25 * waveform[(i + 8 - 4) % 8]
+                1.0 * waveform[i] + 0.5 * waveform[(i + 4) % 8] + -0.25 * waveform[(i + 8 - 4) % 8]
             })
             .collect();
         for (a, b) in filtered.iter().zip(expected.iter()) {
@@ -533,8 +577,8 @@ mod tests {
                 (-(i - 16.0) * (i - 16.0) / 80.0).exp() * (i * 0.5).sin()
             })
             .collect();
-        let result = force_rx_ffe_v1(&waveform, 16, 1, 2, 4, 0.0, false, 0.0, true)
-            .expect("forced");
+        let result =
+            force_rx_ffe_v1(&waveform, 16, 1, 2, 4, 0.0, false, 0.0, true).expect("forced");
         assert_eq!(result.taps().len(), 4);
         assert!(result.filtered().is_some());
         // matrix @ taps == forcing
@@ -558,12 +602,16 @@ mod tests {
                 (-(i - 16.0) * (i - 16.0) / 80.0).exp()
             })
             .collect();
-        let unity = force_rx_ffe_v1(&waveform, 16, 1, 1, 4, 0.0, true, 0.0, false)
-            .expect("unity");
+        let unity = force_rx_ffe_v1(&waveform, 16, 1, 1, 4, 0.0, true, 0.0, false).expect("unity");
         assert!((unity.taps()[1] - 1.0).abs() < 1e-12);
-        let quantized = force_rx_ffe_v1(&waveform, 16, 1, 1, 4, 0.0, true, 0.25, false)
-            .expect("quantized");
-        assert!(quantized.taps().iter().all(|value| (value / 0.25).fract().abs() < 1e-9));
+        let quantized =
+            force_rx_ffe_v1(&waveform, 16, 1, 1, 4, 0.0, true, 0.25, false).expect("quantized");
+        assert!(
+            quantized
+                .taps()
+                .iter()
+                .all(|value| (value / 0.25).fract().abs() < 1e-9)
+        );
     }
 
     #[test]
@@ -585,8 +633,11 @@ mod tests {
 
     #[test]
     fn floating_locations_basic() {
-        let basis = vec![1.0, 0.9, 0.1, 0.05, 0.8, 0.85, 0.05, 0.02, 0.1, 0.08, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        let locations = rxffe_floating_locations_v1(&basis, 3, 12, 2, 1.0, 0.0, 2).expect("locations");
+        let basis = vec![
+            1.0, 0.9, 0.1, 0.05, 0.8, 0.85, 0.05, 0.02, 0.1, 0.08, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        ];
+        let locations =
+            rxffe_floating_locations_v1(&basis, 3, 12, 2, 1.0, 0.0, 2).expect("locations");
         assert_eq!(locations.len(), 4);
         assert!(locations.iter().all(|value| *value >= 0));
     }
@@ -611,18 +662,25 @@ mod tests {
     #[test]
     fn floating_controls_fail_closed() {
         let waveform = vec![1.0; 32];
-        assert!(force_floating_rx_ffe_v1(
-            &waveform, 4, 1, 1, 1, 4, 0.0, false, 0.0, 2, 2, 2, 0.5, "taps", true,
-        )
-        .is_err());
-        assert!(force_floating_rx_ffe_v1(
-            &waveform, 4, 1, 1, 8, 4, 0.0, false, 0.0, 0, 2, 2, 0.5, "taps", true,
-        )
-        .is_err());
+        assert!(
+            force_floating_rx_ffe_v1(
+                &waveform, 4, 1, 1, 1, 4, 0.0, false, 0.0, 2, 2, 2, 0.5, "taps", true,
+            )
+            .is_err()
+        );
+        assert!(
+            force_floating_rx_ffe_v1(
+                &waveform, 4, 1, 1, 8, 4, 0.0, false, 0.0, 0, 2, 2, 0.5, "taps", true,
+            )
+            .is_err()
+        );
     }
     #[test]
     fn policy_string_is_fixed() {
         assert_eq!(RX_FFE_POLICY_V1, "sipi.p5-04l.rx-ffe-v1.apply-force-fixed");
-        assert_eq!(FLOATING_RX_FFE_POLICY_V1, "sipi.p5-04m.rx-ffe-v1.floating-bank-force");
+        assert_eq!(
+            FLOATING_RX_FFE_POLICY_V1,
+            "sipi.p5-04m.rx-ffe-v1.floating-bank-force"
+        );
     }
 }

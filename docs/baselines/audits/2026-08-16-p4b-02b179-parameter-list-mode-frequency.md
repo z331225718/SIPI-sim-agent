@@ -25,7 +25,7 @@ reference replicates the rule over 4 test cases.
   spacing canonicalized, non-list).
 - Cross-check: 4 test cases (has mode, all distinct, all equal, non-list) driven through
   product runner `p4b_02b179_parameter_list_mode_frequency_runner`; independent Python
-  reference matches 100% on counts and error keys; 4/4 matched_hash_bound.
+  reference matches 100% on counts and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

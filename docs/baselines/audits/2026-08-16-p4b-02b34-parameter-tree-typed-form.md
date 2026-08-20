@@ -25,7 +25,7 @@ reference replicates the tokenize/build/extract pipeline over 4 test cases.
 - Cross-check: 4 test cases (valid typed tree, multi-token form, unknown type token, invalid value
   for type) driven through product runner `p4b_02b34_parameter_tree_typed_form_runner`; independent
   Python reference matches 100% on valid flags, consumed counts, parameter maps, and error contexts;
-  4/4 matched_hash_bound.
+  4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

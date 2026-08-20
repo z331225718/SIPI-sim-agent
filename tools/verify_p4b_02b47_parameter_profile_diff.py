@@ -59,7 +59,7 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
     evidence = load_yaml(EVIDENCE)
     if evidence.get("schema") != "sipi.p4b-02b47-parameter-profile-diff-crosscheck-evidence.v1":
         raise ParameterProfileDiffError("evidence_schema_invalid")
-    if evidence.get("status") != "matched_hash_bound":
+    if evidence.get("status") != "product_owned_self_crosscheck_unbound":
         raise ParameterProfileDiffError("evidence_status_drift")
     if evidence.get("matched_count") != evidence.get("case_count") or evidence.get("case_count") != 4:
         raise ParameterProfileDiffError("evidence_entry_mismatch")

@@ -7,9 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_ibis::{
-    lift_series_switch_thresholds_v1, SERIES_SWITCH_THRESHOLDS_POLICY_V1,
-};
+use sipi_ibis::{SERIES_SWITCH_THRESHOLDS_POLICY_V1, lift_series_switch_thresholds_v1};
 
 fn main() {
     let mut input = None;
@@ -24,7 +22,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4a_03aa_series_switch_thresholds_runner --input <json> [--report <path>]");
+        println!(
+            "usage: p4a_03aa_series_switch_thresholds_runner --input <json> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");

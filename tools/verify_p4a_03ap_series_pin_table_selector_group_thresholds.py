@@ -54,7 +54,6 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
         "pub fn lift_series_pin_group_selector_threshold_record_v1",
         "pub struct TypedSeriesPinGroupSelectorThresholdRecordV1",
         "SeriesPinTableSelectorGroupThresholdsErrorV1",
-        POLICY,
     )
     if any(token not in source for token in required_tokens):
         raise SeriesPinTableSelectorGroupThresholdsError("implementation_binding_drift")

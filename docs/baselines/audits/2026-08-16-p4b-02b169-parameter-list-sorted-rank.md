@@ -28,7 +28,7 @@ rank 0). An independent Python reference replicates the rank rule over 4 test ca
   canonicalized, non-list, raw query byte equality).
 - Cross-check: 4 test cases (middle rank, duplicates first rank, query not found, non-list)
   driven through product runner `p4b_02b169_parameter_list_sorted_rank_runner`; independent
-  Python reference matches 100% on ranks and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on ranks and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

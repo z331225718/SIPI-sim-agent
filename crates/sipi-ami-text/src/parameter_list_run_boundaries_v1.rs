@@ -62,8 +62,8 @@ pub fn parameter_list_run_boundaries_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListRunBoundariesErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListRunBoundariesErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListRunBoundariesErrorV1::MalformedList)?;
     let mut boundaries: Vec<(usize, usize)> = Vec::new();
     let mut run_start = 0usize;
     for (index, item) in items.iter().enumerate().skip(1) {
@@ -117,7 +117,10 @@ mod tests {
     #[test]
     fn spacing_is_canonicalized() {
         let v = value("param", "List", "( a , a , b )");
-        assert_eq!(parameter_list_run_boundaries_v1(&v), Ok(vec![(0, 1), (2, 2)]));
+        assert_eq!(
+            parameter_list_run_boundaries_v1(&v),
+            Ok(vec![(0, 1), (2, 2)])
+        );
     }
 
     #[test]

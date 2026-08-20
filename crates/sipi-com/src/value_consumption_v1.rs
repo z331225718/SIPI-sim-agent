@@ -11,8 +11,7 @@ use std::collections::HashMap;
 use std::f64;
 
 /// Explicit scope policy of the value-consumption stage.
-pub const VALUE_CONSUMPTION_POLICY_V1: &str =
-    "sipi.p5-02j.value-consumption.v1.default-resolution";
+pub const VALUE_CONSUMPTION_POLICY_V1: &str = "sipi.p5-02j.value-consumption.v1.default-resolution";
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ConsumptionErrorV1 {
@@ -64,7 +63,7 @@ pub(crate) fn evaluate_scalar(text: &str) -> Result<f64, ConsumptionErrorV1> {
 /// Tokenize + evaluate a scalar arithmetic grammar.
 fn eval_expression(expression: &str) -> Result<f64, ConsumptionErrorV1> {
     // Recursive-descent over: expr := term (('+'|'-') term)*
-    let mut tokens = tokenize(expression)?;
+    let tokens = tokenize(expression)?;
     if tokens.is_empty() {
         return Err(ConsumptionErrorV1::InvalidLiteral);
     }
@@ -96,13 +95,34 @@ fn tokenize(expression: &str) -> Result<Vec<Token>, ConsumptionErrorV1> {
         let ch = bytes[index];
         match ch {
             b' ' => index += 1,
-            b'+' => { tokens.push(Token::Plus); index += 1; }
-            b'-' => { tokens.push(Token::Minus); index += 1; }
-            b'*' => { tokens.push(Token::Star); index += 1; }
-            b'/' => { tokens.push(Token::Slash); index += 1; }
-            b'^' => { tokens.push(Token::Caret); index += 1; }
-            b'(' => { tokens.push(Token::Open); index += 1; }
-            b')' => { tokens.push(Token::Close); index += 1; }
+            b'+' => {
+                tokens.push(Token::Plus);
+                index += 1;
+            }
+            b'-' => {
+                tokens.push(Token::Minus);
+                index += 1;
+            }
+            b'*' => {
+                tokens.push(Token::Star);
+                index += 1;
+            }
+            b'/' => {
+                tokens.push(Token::Slash);
+                index += 1;
+            }
+            b'^' => {
+                tokens.push(Token::Caret);
+                index += 1;
+            }
+            b'(' => {
+                tokens.push(Token::Open);
+                index += 1;
+            }
+            b')' => {
+                tokens.push(Token::Close);
+                index += 1;
+            }
             b'.' | b'0'..=b'9' => {
                 let start = index;
                 while index < bytes.len()
@@ -248,15 +268,15 @@ pub fn resolve_default_value_v1(
         return Ok(ResolvedDefaultV1::Empty);
     }
     // Direct param.X / OP.X reference.
-    if let Some(rest) = expression.strip_prefix("param.") {
-        if valid_ident(rest) {
-            return reference_value("param", rest, parameters, options);
-        }
+    if let Some(rest) = expression.strip_prefix("param.")
+        && valid_ident(rest)
+    {
+        return reference_value("param", rest, parameters, options);
     }
-    if let Some(rest) = expression.strip_prefix("OP.") {
-        if valid_ident(rest) {
-            return reference_value("OP", rest, parameters, options);
-        }
+    if let Some(rest) = expression.strip_prefix("OP.")
+        && valid_ident(rest)
+    {
+        return reference_value("OP", rest, parameters, options);
     }
     // Substitute scalar param/OP references inside the expression.
     let mut referenced = expression.to_string();
@@ -294,7 +314,8 @@ pub fn resolve_default_value_v1(
 
 fn valid_ident(name: &str) -> bool {
     let bytes = name.as_bytes();
-    !name.is_empty() && bytes[0].is_ascii_alphabetic()
+    !name.is_empty()
+        && bytes[0].is_ascii_alphabetic()
         && name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
 }
 
@@ -325,11 +346,16 @@ mod tests {
         m.insert("a_fext".to_string(), ResolvedDefaultV1::Scalar(0.5));
         m
     }
-    fn empty() -> HashMap<String, ResolvedDefaultV1> { HashMap::new() }
+    fn empty() -> HashMap<String, ResolvedDefaultV1> {
+        HashMap::new()
+    }
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(VALUE_CONSUMPTION_POLICY_V1, "sipi.p5-02j.value-consumption.v1.default-resolution");
+        assert_eq!(
+            VALUE_CONSUMPTION_POLICY_V1,
+            "sipi.p5-02j.value-consumption.v1.default-resolution"
+        );
     }
     #[test]
     fn scalar_arithmetic() {
@@ -341,25 +367,48 @@ mod tests {
     }
     #[test]
     fn boolean_and_empty() {
-        assert_eq!(resolve_default_value_v1("true", &empty(), &empty()).expect("t"), ResolvedDefaultV1::Boolean(true));
-        assert_eq!(resolve_default_value_v1("false", &empty(), &empty()).expect("f"), ResolvedDefaultV1::Boolean(false));
-        assert_eq!(resolve_default_value_v1("[]", &empty(), &empty()).expect("e"), ResolvedDefaultV1::Empty);
+        assert_eq!(
+            resolve_default_value_v1("true", &empty(), &empty()).expect("t"),
+            ResolvedDefaultV1::Boolean(true)
+        );
+        assert_eq!(
+            resolve_default_value_v1("false", &empty(), &empty()).expect("f"),
+            ResolvedDefaultV1::Boolean(false)
+        );
+        assert_eq!(
+            resolve_default_value_v1("[]", &empty(), &empty()).expect("e"),
+            ResolvedDefaultV1::Empty
+        );
     }
     #[test]
     fn string_literal() {
-        assert_eq!(resolve_default_value_v1("'MM'", &empty(), &empty()).expect("s"), ResolvedDefaultV1::String("MM".to_string()));
+        assert_eq!(
+            resolve_default_value_v1("'MM'", &empty(), &empty()).expect("s"),
+            ResolvedDefaultV1::String("MM".to_string())
+        );
     }
     #[test]
     fn direct_and_derived_reference() {
         let p = default_params();
-        assert_eq!(resolve_default_value_v1("param.fb", &p, &empty()).expect("ref"), ResolvedDefaultV1::Scalar(53.125e9));
-        assert_eq!(resolve_default_value_v1("param.a_fext", &p, &empty()).expect("ref2"), ResolvedDefaultV1::Scalar(0.5));
-        assert_eq!(resolve_default_value_v1("param.fb/4", &p, &empty()).expect("derived"), ResolvedDefaultV1::Scalar(53.125e9 / 4.0));
+        assert_eq!(
+            resolve_default_value_v1("param.fb", &p, &empty()).expect("ref"),
+            ResolvedDefaultV1::Scalar(53.125e9)
+        );
+        assert_eq!(
+            resolve_default_value_v1("param.a_fext", &p, &empty()).expect("ref2"),
+            ResolvedDefaultV1::Scalar(0.5)
+        );
+        assert_eq!(
+            resolve_default_value_v1("param.fb/4", &p, &empty()).expect("derived"),
+            ResolvedDefaultV1::Scalar(53.125e9 / 4.0)
+        );
     }
     #[test]
     fn dfe_lower_bounds_special() {
         let p = default_params();
-        assert!(matches!(resolve_default_value_v1("-1*param.bmax(2:param.ndfe)", &p, &empty()).expect("dfe"), ResolvedDefaultV1::Scalar(v) if v == -0.5));
+        assert!(
+            matches!(resolve_default_value_v1("-1*param.bmax(2:param.ndfe)", &p, &empty()).expect("dfe"), ResolvedDefaultV1::Scalar(v) if v == -0.5)
+        );
     }
     #[test]
     fn unresolved_rejected() {

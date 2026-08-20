@@ -202,7 +202,10 @@ mod tests {
 
     #[test]
     fn policy_fixed() {
-        assert_eq!(METRIC_COMPARE_POLICY_V1, "sipi.p3c-03c.metric-compare.v1.profile-agnostic");
+        assert_eq!(
+            METRIC_COMPARE_POLICY_V1,
+            "sipi.p3c-03c.metric-compare.v1.profile-agnostic"
+        );
     }
 
     #[test]
@@ -210,7 +213,8 @@ mod tests {
         let profile = MetricProfileV1::compile(vec![
             MetricSpecV1::new("fom", unit("db"), 53.426, tol(0.01, 0.0)).unwrap(),
             MetricSpecV1::new("veo", unit("mv"), 100.0, tol(1.0, 0.0)).unwrap(),
-        ]).expect("profile");
+        ])
+        .expect("profile");
         let mut cand = BTreeMap::new();
         cand.insert("fom".to_string(), 53.43);
         cand.insert("veo".to_string(), 100.5);
@@ -224,9 +228,10 @@ mod tests {
     fn rejects_missing_candidate() {
         let profile = MetricProfileV1::compile(vec![
             MetricSpecV1::new("fom", unit("db"), 53.426, tol(0.01, 0.0)).unwrap(),
-        ]).expect("profile");
+        ])
+        .expect("profile");
         let cand = BTreeMap::new();
-        let err = compare_metric_profile_v1(&profile, &cand).err().expect("err");
+        let err = compare_metric_profile_v1(&profile, &cand).expect_err("err");
         assert!(matches!(err, MetricCompareErrorV1::MissingCandidate(_)));
     }
 
@@ -234,7 +239,8 @@ mod tests {
     fn rejects_unknown_candidate_metric() {
         let profile = MetricProfileV1::compile(vec![
             MetricSpecV1::new("fom", unit("db"), 53.426, tol(0.01, 0.0)).unwrap(),
-        ]).expect("profile");
+        ])
+        .expect("profile");
         let mut cand = BTreeMap::new();
         cand.insert("fom".to_string(), 53.4265); // within 0.01 of 53.426
         cand.insert("extra".to_string(), 1.0);
@@ -248,7 +254,8 @@ mod tests {
     fn detects_out_of_tolerance() {
         let profile = MetricProfileV1::compile(vec![
             MetricSpecV1::new("fom", unit("db"), 53.426, tol(0.01, 0.0)).unwrap(),
-        ]).expect("profile");
+        ])
+        .expect("profile");
         let mut cand = BTreeMap::new();
         cand.insert("fom".to_string(), 60.0); // 6.5 dB away, > 0.01
         let report = compare_metric_profile_v1(&profile, &cand).expect("cmp");
@@ -260,7 +267,8 @@ mod tests {
     fn relative_tolerance_used_for_nonzero_reference() {
         let profile = MetricProfileV1::compile(vec![
             MetricSpecV1::new("veo", unit("mv"), 100.0, tol(0.0, 0.05)).unwrap(),
-        ]).expect("profile");
+        ])
+        .expect("profile");
         let mut cand = BTreeMap::new();
         cand.insert("veo".to_string(), 99.0); // within 5% of 100 = 5
         let report = compare_metric_profile_v1(&profile, &cand).expect("cmp");
@@ -269,7 +277,7 @@ mod tests {
 
     #[test]
     fn empty_profile_rejected() {
-        let err = MetricProfileV1::compile(vec![]).err().expect("err");
+        let err = MetricProfileV1::compile(vec![]).expect_err("err");
         assert_eq!(err, MetricCompareErrorV1::EmptyProfile);
     }
 
@@ -278,7 +286,8 @@ mod tests {
         let err = MetricProfileV1::compile(vec![
             MetricSpecV1::new("fom", unit("db"), 1.0, tol(0.0, 0.0)).unwrap(),
             MetricSpecV1::new("fom", unit("db"), 2.0, tol(0.0, 0.0)).unwrap(),
-        ]).err().expect("err");
+        ])
+        .expect_err("err");
         assert!(matches!(err, MetricCompareErrorV1::DuplicateMetric(_)));
     }
 }

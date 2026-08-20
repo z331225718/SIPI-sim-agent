@@ -13,8 +13,8 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    AmiParameterTreeV1, AmiParameterTreeNodeV1, AmiParameterTypeV1,
-    AmiParameterValueErrorV1, AmiParameterValueV1,
+    AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterTypeV1, AmiParameterValueErrorV1,
+    AmiParameterValueV1,
 };
 
 /// Scope policy for the parameter tree leaf value decoding core.
@@ -69,15 +69,13 @@ impl ParameterTreeLeafValueDecodingV1 {
 }
 
 fn decode_token(
-    leaf: &str,
+    _leaf: &str,
     parameter_type: AmiParameterTypeV1,
     token: &str,
 ) -> Result<DecodedLeafValueV1, ParameterTreeLeafValueDecodingErrorV1> {
     match parameter_type {
         AmiParameterTypeV1::Float => {
-            let value = token
-                .parse::<f64>()
-                .expect("validated finite float token");
+            let value = token.parse::<f64>().expect("validated finite float token");
             Ok(DecodedLeafValueV1::Float(value))
         }
         AmiParameterTypeV1::Integer => {
@@ -95,7 +93,10 @@ fn decode_token(
         AmiParameterTypeV1::String_ => Ok(DecodedLeafValueV1::String(token.to_string())),
         AmiParameterTypeV1::List => {
             let inner = &token[1..token.len() - 1];
-            let items = inner.split(',').map(|item| item.trim().to_string()).collect();
+            let items = inner
+                .split(',')
+                .map(|item| item.trim().to_string())
+                .collect();
             Ok(DecodedLeafValueV1::List(items))
         }
     }
@@ -113,10 +114,7 @@ fn decode_node(
             }
             Ok(())
         }
-        AmiParameterTreeNodeV1::Leaf {
-            name,
-            value_tokens,
-        } => {
+        AmiParameterTreeNodeV1::Leaf { name, value_tokens } => {
             let parameter_type = type_map
                 .get(name)
                 .copied()
@@ -234,16 +232,28 @@ mod tests {
         ]);
         let result = decode_parameter_tree_leaf_values_v1(&t, &types).expect("decoded");
         assert_eq!(result.leaves_decoded(), 5);
-        assert_eq!(result.values().get("gain"), Some(&DecodedLeafValueV1::Float(0.5)));
-        assert_eq!(result.values().get("steps"), Some(&DecodedLeafValueV1::Integer(7)));
-        assert_eq!(result.values().get("enabled"), Some(&DecodedLeafValueV1::Boolean(true)));
+        assert_eq!(
+            result.values().get("gain"),
+            Some(&DecodedLeafValueV1::Float(0.5))
+        );
+        assert_eq!(
+            result.values().get("steps"),
+            Some(&DecodedLeafValueV1::Integer(7))
+        );
+        assert_eq!(
+            result.values().get("enabled"),
+            Some(&DecodedLeafValueV1::Boolean(true))
+        );
         assert_eq!(
             result.values().get("mode"),
             Some(&DecodedLeafValueV1::String("fast".to_string()))
         );
         assert_eq!(
             result.values().get("l"),
-            Some(&DecodedLeafValueV1::List(vec!["1".to_string(), "2".to_string()]))
+            Some(&DecodedLeafValueV1::List(vec![
+                "1".to_string(),
+                "2".to_string()
+            ]))
         );
     }
 

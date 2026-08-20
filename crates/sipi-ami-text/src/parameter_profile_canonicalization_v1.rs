@@ -16,9 +16,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{
-    canonicalize_parameter_value_spelling_v1, AmiParameterValueV1,
-};
+use crate::{AmiParameterValueV1, canonicalize_parameter_value_spelling_v1};
 
 /// Explicit scope policy of this slice: canonical spelling of a whole profile.
 pub const PARAMETER_PROFILE_CANONICALIZATION_POLICY_V1: &str =
@@ -56,16 +54,11 @@ pub fn canonicalize_parameter_profile_v1(
     let mut canonicalized = 0usize;
     let mut parameters = BTreeMap::new();
     for (name, value) in profile {
-        let canonical =
-            canonicalize_parameter_value_spelling_v1(value);
+        let canonical = canonicalize_parameter_value_spelling_v1(value);
         if canonical != value.value_token() {
             canonicalized += 1;
         }
-        match AmiParameterValueV1::try_new(
-            name,
-            value.parameter_type().token(),
-            &canonical,
-        ) {
+        match AmiParameterValueV1::try_new(name, value.parameter_type().token(), &canonical) {
             Ok(rebuild) => {
                 parameters.insert(name.clone(), rebuild);
             }

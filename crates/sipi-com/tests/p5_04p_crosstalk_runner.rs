@@ -7,11 +7,11 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_types::Complex64;
 use sipi_com::{
-    crosstalk_noise_v1, td_source_crosstalk_noise_v1, XtalkChannelV1, XtalkParamsV1,
-    CROSSTALK_NOISE_POLICY_V1,
+    CROSSTALK_NOISE_POLICY_V1, XtalkChannelV1, XtalkParamsV1, crosstalk_noise_v1,
+    td_source_crosstalk_noise_v1,
 };
+use sipi_types::Complex64;
 
 fn f64s(value: &Value) -> Vec<f64> {
     value
@@ -80,7 +80,10 @@ fn main() {
             sigma_x: case["parameters"]["sigma_x"].as_f64().expect("sigma"),
         };
         let taps = case["rx_ffe_taps"].as_array().map(|items| {
-            items.iter().map(|item| item.as_f64().expect("tap")).collect::<Vec<f64>>()
+            items
+                .iter()
+                .map(|item| item.as_f64().expect("tap"))
+                .collect::<Vec<f64>>()
         });
         let pc = case["rx_ffe_precursor_count"].as_u64().map(|v| v as usize);
         let result = crosstalk_noise_v1(

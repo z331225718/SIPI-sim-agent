@@ -6,7 +6,7 @@
 //! like `Reserved_Parameters`). Fail-closed: a root-leaf tree (no sections
 //! possible) is strictly rejected; an empty section list is a valid result.
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
 
 /// Scope policy for the parameter tree sections listing core.
 pub const PARAMETER_TREE_SECTIONS_POLICY_V1: &str =
@@ -56,18 +56,12 @@ pub fn list_parameter_tree_sections_v1(
             .map(|child| ParameterTreeSectionV1 {
                 name: child.name().to_string(),
                 kind: match child {
-                    AmiParameterTreeNodeV1::Branch { .. } => {
-                        ParameterTreeSectionKindV1::Branch
-                    }
-                    AmiParameterTreeNodeV1::Leaf { .. } => {
-                        ParameterTreeSectionKindV1::Leaf
-                    }
+                    AmiParameterTreeNodeV1::Branch { .. } => ParameterTreeSectionKindV1::Branch,
+                    AmiParameterTreeNodeV1::Leaf { .. } => ParameterTreeSectionKindV1::Leaf,
                 },
             })
             .collect()),
-        AmiParameterTreeNodeV1::Leaf { .. } => {
-            Err(ParameterTreeSectionsErrorV1::RootNotBranch)
-        }
+        AmiParameterTreeNodeV1::Leaf { .. } => Err(ParameterTreeSectionsErrorV1::RootNotBranch),
     }
 }
 
@@ -118,13 +112,18 @@ mod tests {
     fn lists_leaf_only_sections() {
         let t = tree(branch(
             "root",
-            vec![leaf("gain", &["Float", "0.5"]), leaf("steps", &["Integer", "7"])],
+            vec![
+                leaf("gain", &["Float", "0.5"]),
+                leaf("steps", &["Integer", "7"]),
+            ],
         ));
         let sections = list_parameter_tree_sections_v1(&t).expect("sections");
         assert_eq!(sections.len(), 2);
-        assert!(sections
-            .iter()
-            .all(|s| s.kind() == ParameterTreeSectionKindV1::Leaf));
+        assert!(
+            sections
+                .iter()
+                .all(|s| s.kind() == ParameterTreeSectionKindV1::Leaf)
+        );
     }
 
     #[test]

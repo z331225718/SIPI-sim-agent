@@ -29,7 +29,7 @@ test cases.
 - Cross-check: 4 test cases (canonical tree, non-canonical integer, nested, no typed) driven
   through product runner `p4b_02b94_parameter_tree_leaf_canonical_spelling_check_runner`;
   independent Python reference matches 100% on typed counts, canonical flags, and issue lists;
-  4/4 matched_hash_bound.
+  4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

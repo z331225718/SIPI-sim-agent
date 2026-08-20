@@ -27,7 +27,7 @@ removal). An independent Python reference replicates the difference rule over 4 
   disjoint full left, non-list, spacing canonicalized).
 - Cross-check: 4 test cases (relative complement, duplicates, equal values, non-list) driven
   through product runner `p4b_02b151_parameter_list_relative_complement_runner`; independent
-  Python reference matches 100% on tokens and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on tokens and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

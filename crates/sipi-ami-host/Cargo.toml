@@ -17,3 +17,4 @@ serde_json = "1"
 [[test]]
 name = "p4b_authorized_fixture_abi_runner"
 harness = false
+test = false

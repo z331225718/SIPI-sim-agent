@@ -18,7 +18,7 @@ Fail-closed: empty tree lists (`EmptyTreeList`) are strictly rejected. An indepe
 - 3 Rust unit tests green (policy fixed; formats tree hierarchy; empty tree list rejection).
 - Cross-check: 3 test cases (valid tree formatting, nested branches formatting, empty document)
   driven through product runner `p4b_02b9_parameter_tree_formatter_runner`; independent Python reference
-  matches 100% on valid flags, formatted S-expression text strings, and error codes/messages; 3/3 matched_hash_bound.
+  matches 100% on valid flags, formatted S-expression text strings, and error codes/messages; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

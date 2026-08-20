@@ -25,7 +25,7 @@ fn collect_paths(node: &AmiParameterTreeNodeV1, prefix: &str, out: &mut Vec<Stri
     };
     out.push(current.clone());
     if let AmiParameterTreeNodeV1::Branch { children, .. } = node {
-        for (_, child) in children {
+        for child in children.values() {
             collect_paths(child, &current, out);
         }
     }
@@ -46,9 +46,9 @@ pub fn toposort_parameter_tree_paths_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ParseLimitsV1;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
     use crate::parse_ami_text_v1;
-    use crate::ParseLimitsV1;
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()

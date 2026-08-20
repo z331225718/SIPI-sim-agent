@@ -18,7 +18,7 @@ Fail-closed: root node name mismatch (`RootMismatch`) is strictly rejected. An i
   detects value and kind mismatches; rejects root mismatch).
 - Cross-check: 3 test cases (identical trees, missing and extra nodes, root mismatch)
   driven through product runner `p4b_02b11_parameter_tree_diff_runner`; independent Python reference
-  matches 100% on valid flags, diff counts, structural diff items, and error strings; 3/3 matched_hash_bound.
+  matches 100% on valid flags, diff counts, structural diff items, and error strings; 3/3 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

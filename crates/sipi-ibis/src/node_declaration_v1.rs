@@ -6,8 +6,7 @@
 //! are strictly rejected.
 
 /// Scope policy for the typed node declaration core.
-pub const NODE_DECLARATION_POLICY_V1: &str =
-    "sipi.p4a-03n.node-declaration-v1.typed-node";
+pub const NODE_DECLARATION_POLICY_V1: &str = "sipi.p4a-03n.node-declaration-v1.typed-node";
 
 /// Fail-closed errors during node declaration lifting.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -46,17 +45,13 @@ impl TypedNodeDeclarationV1 {
 
         let sig = signal_name.and_then(|s| {
             let t = s.into().trim().to_string();
-            if t.is_empty() {
-                None
-            } else {
-                Some(t)
-            }
+            if t.is_empty() { None } else { Some(t) }
         });
 
-        if let Some(ref s) = sig {
-            if !s.is_ascii() {
-                return Err(NodeDeclarationErrorV1::NonAsciiNodeName);
-            }
+        if let Some(ref s) = sig
+            && !s.is_ascii()
+        {
+            return Err(NodeDeclarationErrorV1::NonAsciiNodeName);
         }
 
         Ok(Self {

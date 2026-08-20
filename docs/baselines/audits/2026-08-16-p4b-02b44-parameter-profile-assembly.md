@@ -28,7 +28,7 @@ tokenize/build/extract/fill/reject pipeline over 4 test cases.
 - Cross-check: 4 test cases (assemble full, reserved used, malformed default, empty reserved)
   driven through product runner `p4b_02b44_parameter_profile_assembly_runner`; independent Python
   reference matches 100% on valid flags, counts, assembled parameter maps, and error contexts;
-  4/4 matched_hash_bound.
+  4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

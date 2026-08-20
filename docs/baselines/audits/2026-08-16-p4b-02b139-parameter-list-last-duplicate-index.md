@@ -25,7 +25,7 @@ reference replicates the repeat rule over 4 test cases.
   spacing canonicalized).
 - Cross-check: 4 test cases (last repeat, adjacent repeat, all distinct, non-list) driven
   through product runner `p4b_02b139_parameter_list_last_duplicate_index_runner`; independent
-  Python reference matches 100% on indices and error keys; 4/4 matched_hash_bound.
+  Python reference matches 100% on indices and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

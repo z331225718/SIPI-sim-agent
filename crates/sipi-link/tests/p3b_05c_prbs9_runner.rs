@@ -7,7 +7,7 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use sipi_link::{Prbs9V1, PRBS9_POLICY_V1};
+use sipi_link::{PRBS9_POLICY_V1, Prbs9V1};
 
 fn main() {
     let mut input = None;

@@ -58,8 +58,8 @@ pub fn parameter_list_anti_mode_items_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListAntiModeItemsErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListAntiModeItemsErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListAntiModeItemsErrorV1::MalformedList)?;
     let mut order: Vec<String> = Vec::new();
     let mut counts: Vec<(String, usize)> = Vec::new();
     for item in &items {
@@ -97,7 +97,10 @@ mod tests {
     #[test]
     fn single_anti_mode() {
         let v = value("param", "List", "(b, b, a, b, c)");
-        assert_eq!(parameter_list_anti_mode_items_v1(&v), Ok("(a, c)".to_string()));
+        assert_eq!(
+            parameter_list_anti_mode_items_v1(&v),
+            Ok("(a, c)".to_string())
+        );
     }
 
     #[test]
@@ -109,7 +112,10 @@ mod tests {
     #[test]
     fn all_distinct_items_are_anti_modes() {
         let v = value("param", "List", "(c, a, b)");
-        assert_eq!(parameter_list_anti_mode_items_v1(&v), Ok("(c, a, b)".to_string()));
+        assert_eq!(
+            parameter_list_anti_mode_items_v1(&v),
+            Ok("(c, a, b)".to_string())
+        );
     }
 
     #[test]

@@ -65,14 +65,23 @@ mod tests {
     #[test]
     fn filters_diffs_by_predicate() {
         let diffs = vec![
-            TreeDiffEntryV1::MissingNode { path: "root.node_b".to_string() },
-            TreeDiffEntryV1::ExtraNode { path: "root.node_c".to_string() },
+            TreeDiffEntryV1::MissingNode {
+                path: "root.node_b".to_string(),
+            },
+            TreeDiffEntryV1::ExtraNode {
+                path: "root.node_c".to_string(),
+            },
         ];
 
         let filtered = filter_parameter_tree_diffs_v1(&diffs, |path, _| path != "root.node_b")
             .expect("filter");
         assert_eq!(filtered.len(), 1);
-        assert_eq!(filtered[0], TreeDiffEntryV1::ExtraNode { path: "root.node_c".to_string() });
+        assert_eq!(
+            filtered[0],
+            TreeDiffEntryV1::ExtraNode {
+                path: "root.node_c".to_string()
+            }
+        );
     }
 
     #[test]
@@ -85,7 +94,9 @@ mod tests {
 
     #[test]
     fn rejects_empty_filtered_result() {
-        let diffs = vec![TreeDiffEntryV1::MissingNode { path: "root.node_b".to_string() }];
+        let diffs = vec![TreeDiffEntryV1::MissingNode {
+            path: "root.node_b".to_string(),
+        }];
         assert_eq!(
             filter_parameter_tree_diffs_v1(&diffs, |_, _| false),
             Err(ParameterTreeDiffFilterErrorV1::EmptyFilteredResult)

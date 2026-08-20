@@ -54,24 +54,29 @@ impl TypedTestDataDeclarationV1 {
             return Err(TestDataDeclarationErrorV1::InvalidFixtureName);
         }
 
-        let validate_non_negative = |val: Option<f64>, kind: &'static str| -> Result<Option<FiniteF64>, TestDataDeclarationErrorV1> {
-            match val {
-                None => Ok(None),
-                Some(v) => {
-                    if !v.is_finite() {
-                        return Err(TestDataDeclarationErrorV1::NonFiniteValue);
+        let validate_non_negative =
+            |val: Option<f64>,
+             kind: &'static str|
+             -> Result<Option<FiniteF64>, TestDataDeclarationErrorV1> {
+                match val {
+                    None => Ok(None),
+                    Some(v) => {
+                        if !v.is_finite() {
+                            return Err(TestDataDeclarationErrorV1::NonFiniteValue);
+                        }
+                        if v < 0.0 {
+                            return Err(TestDataDeclarationErrorV1::NegativeFixtureParameter);
+                        }
+                        let finite = FiniteF64::try_new(v, kind)
+                            .map_err(|_| TestDataDeclarationErrorV1::NonFiniteValue)?;
+                        Ok(Some(finite))
                     }
-                    if v < 0.0 {
-                        return Err(TestDataDeclarationErrorV1::NegativeFixtureParameter);
-                    }
-                    let finite = FiniteF64::try_new(v, kind)
-                        .map_err(|_| TestDataDeclarationErrorV1::NonFiniteValue)?;
-                    Ok(Some(finite))
                 }
-            }
-        };
+            };
 
-        let validate_finite = |val: Option<f64>, kind: &'static str| -> Result<Option<FiniteF64>, TestDataDeclarationErrorV1> {
+        let validate_finite = |val: Option<f64>,
+                               kind: &'static str|
+         -> Result<Option<FiniteF64>, TestDataDeclarationErrorV1> {
             match val {
                 None => Ok(None),
                 Some(v) => {
@@ -168,7 +173,8 @@ mod tests {
 
     #[test]
     fn valid_minimal_test_data() {
-        let fixture = lift_test_data_declaration_v1("FIX_MIN", None, None, None, None).expect("lift");
+        let fixture =
+            lift_test_data_declaration_v1("FIX_MIN", None, None, None, None).expect("lift");
         assert_eq!(fixture.fixture_name(), "FIX_MIN");
         assert_eq!(fixture.r_fixture_ohm(), None);
         assert_eq!(fixture.c_fixture_farad(), None);

@@ -5,7 +5,7 @@
 
 use std::path::PathBuf;
 
-use sipi_link::{prbs9_inject_waveform_v1, PRBS9_INJECT_POLICY_V1};
+use sipi_link::{PRBS9_INJECT_POLICY_V1, prbs9_inject_waveform_v1};
 
 fn main() {
     let mut input = None;
@@ -32,7 +32,10 @@ fn main() {
 
     let waveform = prbs9_inject_waveform_v1(seed, bits, spu, amp).expect("waveform");
     // Pack each sample into a deterministic 0/1-level byte for hashing.
-    let packed: Vec<u8> = waveform.iter().map(|v| if *v > 0.0 { 1u8 } else { 0u8 }).collect();
+    let packed: Vec<u8> = waveform
+        .iter()
+        .map(|v| if *v > 0.0 { 1u8 } else { 0u8 })
+        .collect();
 
     let output = serde_json::json!({
         "policy": PRBS9_INJECT_POLICY_V1,

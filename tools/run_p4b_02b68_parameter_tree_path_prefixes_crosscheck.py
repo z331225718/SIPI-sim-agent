@@ -9,6 +9,7 @@ Fail closed on any mismatch.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -31,11 +32,12 @@ def ref_prefixes(path: list[str]) -> dict[str, Any]:
 
 
 def main() -> int:
-    built = subprocess.run([str(CARGO), "build", "-p", "sipi-ami-text", "--test", "p4b_02b68_parameter_tree_path_prefixes_runner"],
+    built = subprocess.run([str(CARGO), "build", "-p", "sipi-ami-text", "--bin", "p4b_02b_crosscheck_runner", "--features", "p4b-self-crosscheck"],
                            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=ROOT)
     if built.returncode != 0:
         raise SystemExit("runner build failed: " + built.stdout + built.stderr)
-    runner = sorted((ROOT / "target" / "debug" / "deps").glob("p4b_02b68_parameter_tree_path_prefixes_runner-*.exe"))[-1]
+    runner = ROOT / "target" / "debug" / ("p4b_02b_crosscheck_runner.exe" if os.name == "nt" else "p4b_02b_crosscheck_runner")
+    os.environ["SIPI_P4B_RUNNER"] = "p4b_02b68_parameter_tree_path_prefixes_runner"
 
     cases = [
         {"label": "deep", "path": ["root", "sub", "deep"]},
@@ -83,7 +85,7 @@ def main() -> int:
 
     evidence = {
         "schema": EVIDENCE_SCHEMA,
-        "status": "matched_hash_bound" if ok_all else "mis_match",
+        "status": "product_owned_self_crosscheck_unbound" if ok_all else "mis_match",
         "policy": POLICY,
         "matched_count": sum(1 for e in entries if e["matched"]),
         "case_count": len(entries),

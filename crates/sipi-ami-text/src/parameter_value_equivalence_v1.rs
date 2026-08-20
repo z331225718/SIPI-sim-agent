@@ -45,10 +45,7 @@ pub enum ParameterValueInequivalenceReasonV1 {
     /// Boolean tokens differ (`True` vs `False`).
     BooleanMismatch { left: bool, right: bool },
     /// Raw String spellings differ (byte equality, no normalization).
-    StringMismatch {
-        left: String,
-        right: String,
-    },
+    StringMismatch { left: String, right: String },
     /// List item counts differ.
     ListLengthMismatch { left: usize, right: usize },
     /// The item at `index` (0-based, after trimming) differs.
@@ -299,10 +296,7 @@ mod tests {
         assert_eq!(
             parameter_values_equivalent_v1(&a, &c),
             ParameterValueEquivalenceV1::NotEquivalent(
-                ParameterValueInequivalenceReasonV1::ListLengthMismatch {
-                    left: 3,
-                    right: 2,
-                }
+                ParameterValueInequivalenceReasonV1::ListLengthMismatch { left: 3, right: 2 }
             )
         );
     }
@@ -325,10 +319,7 @@ mod tests {
         assert_eq!(
             parameter_values_equivalent_v1(&c, &d),
             ParameterValueEquivalenceV1::NotEquivalent(
-                ParameterValueInequivalenceReasonV1::IntegerMismatch {
-                    left: 7,
-                    right: 8,
-                }
+                ParameterValueInequivalenceReasonV1::IntegerMismatch { left: 7, right: 8 }
             )
         );
         let e = value("on", "Boolean", "True");

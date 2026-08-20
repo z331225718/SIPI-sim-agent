@@ -147,14 +147,13 @@ fn tap_numbers(values: &BTreeMap<String, Vec<f64>>, direction: &str) -> Vec<usiz
     let mut numbers = Vec::new();
     for key in values.keys() {
         let prefix = format!("tx_ffe_{direction}");
-        if let Some(rest) = key.strip_prefix(&prefix) {
-            if let Some(digits) = rest.strip_suffix("_values") {
-                if !digits.is_empty() && digits.chars().all(|c| c.is_ascii_digit()) {
-                    if let Ok(number) = digits.parse::<usize>() {
-                        numbers.push(number);
-                    }
-                }
-            }
+        if let Some(rest) = key.strip_prefix(&prefix)
+            && let Some(digits) = rest.strip_suffix("_values")
+            && !digits.is_empty()
+            && digits.chars().all(|c| c.is_ascii_digit())
+            && let Ok(number) = digits.parse::<usize>()
+        {
+            numbers.push(number);
         }
     }
     numbers.sort_unstable();
@@ -197,7 +196,11 @@ pub fn build_txffe_grid_v1(
     let mut indices: Vec<Vec<i64>> = {
         let index_columns: Vec<Vec<f64>> = columns
             .iter()
-            .map(|column| (1..=column.len() as i64).map(|index| index as f64).collect())
+            .map(|column| {
+                (1..=column.len() as i64)
+                    .map(|index| index as f64)
+                    .collect()
+            })
             .collect();
         full_grid_matrix_v1(&index_columns)?
             .into_iter()
@@ -224,8 +227,8 @@ pub fn build_txffe_grid_v1(
         cursor = kept_cursor;
     }
     if grid.is_empty() {
-        grid = vec![Vec::new(); 0];
-        indices = vec![Vec::new(); 0];
+        grid = Vec::new();
+        indices = Vec::new();
         cursor = Vec::new();
     }
     // taps = [grid[:, :len(cm)], cursor[:, None], grid[:, len(cm):]]
@@ -275,7 +278,10 @@ where
         if !value.is_finite() {
             return Err(TxFfeErrorV1::CandidateNonFiniteScore);
         }
-        if best.as_ref().is_none_or(|(_, best_score, _)| value > *best_score) {
+        if best
+            .as_ref()
+            .is_none_or(|(_, best_score, _)| value > *best_score)
+        {
             best = Some((index, value, candidate.clone()));
         }
     }
@@ -316,14 +322,20 @@ pub fn select_fom_tracker_v1(
         }
     }
     let ordered: Vec<f64> = (0..expected_size)
-        .map(|index| if mask[index] { values[index] } else { f64::NEG_INFINITY })
+        .map(|index| {
+            if mask[index] {
+                values[index]
+            } else {
+                f64::NEG_INFINITY
+            }
+        })
         .collect();
     let mut best_index = 0usize;
     let mut best_score = ordered[0];
-    for index in 1..expected_size {
-        if ordered[index] > best_score {
+    for (index, &score) in ordered.iter().enumerate().skip(1) {
+        if score > best_score {
             best_index = index;
-            best_score = ordered[index];
+            best_score = score;
         }
     }
     // C-order unravel: final axis fastest.
@@ -397,7 +409,10 @@ mod tests {
 
     #[test]
     fn strict_first_maximum_ties() {
-        assert_eq!(first_strict_best_v1(&[2.0, 5.0, 5.0, 3.0]).expect("best"), 1);
+        assert_eq!(
+            first_strict_best_v1(&[2.0, 5.0, 5.0, 3.0]).expect("best"),
+            1
+        );
         assert_eq!(first_strict_best_v1(&[1.0]).expect("best"), 0);
         assert!(first_strict_best_v1(&[f64::NAN]).is_err());
         assert!(first_strict_best_v1(&[]).is_err());

@@ -50,8 +50,8 @@ pub fn count_distinct_parameter_list_items_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListDistinctCountErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListDistinctCountErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListDistinctCountErrorV1::MalformedList)?;
     let mut distinct: Vec<String> = Vec::new();
     for item in items {
         if !distinct.contains(&item) {

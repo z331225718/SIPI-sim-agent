@@ -10,22 +10,22 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use sipi_artifacts::ArtifactRoot;
 use sipi_compare::selected_highloss_prbs9_waveform_only_v3::{
-    compare_selected_highloss_prbs9_waveform_only_v3, SelectedHighlossPrbs9WaveformPairV3,
+    SelectedHighlossPrbs9WaveformPairV3, compare_selected_highloss_prbs9_waveform_only_v3,
 };
 use sipi_contracts::SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_SAMPLE_COUNT_V3;
 use sipi_ieee_com_sparam::{
-    enforce_selected_p3c_causality_v1, interpolate_selected_p3c_hdiff_v1,
-    truncate_selected_p3c_response_v1, zero_extend_selected_p3c_oob_diagnostic_v1,
-    SelectedP3cUniformSpectrumV1,
+    SelectedP3cUniformSpectrumV1, enforce_selected_p3c_causality_v1,
+    interpolate_selected_p3c_hdiff_v1, truncate_selected_p3c_response_v1,
+    zero_extend_selected_p3c_oob_diagnostic_v1,
 };
 use sipi_p3c::{
-    admit_selected_p3c_sealed_s4p_v2, generate_selected_p3c_prbs9_impulse_candidate_v1,
-    SelectedP3cSealedS4pIdentityV2, SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1,
-    SELECTED_P3C_S4P_SHA256_V1,
+    SELECTED_P3C_S4P_BYTE_LENGTH_V1, SELECTED_P3C_S4P_FILE_NAME_V1, SELECTED_P3C_S4P_SHA256_V1,
+    SelectedP3cSealedS4pIdentityV2, admit_selected_p3c_sealed_s4p_v2,
+    generate_selected_p3c_prbs9_impulse_candidate_v1,
 };
 
 const SOURCE_ENV: &str = "SIPI_P3C_SEALED_S4P_EXTERNAL_SOURCE";

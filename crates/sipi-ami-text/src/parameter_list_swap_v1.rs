@@ -57,8 +57,8 @@ pub fn swap_parameter_list_items_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListSwapErrorV1::NotAList);
     }
-    let mut items = list_items(value.value_token())
-        .ok_or(ParameterListSwapErrorV1::MalformedList)?;
+    let mut items =
+        list_items(value.value_token()).ok_or(ParameterListSwapErrorV1::MalformedList)?;
     for index in [index_a, index_b] {
         if index >= items.len() {
             return Err(ParameterListSwapErrorV1::IndexOutOfRange {

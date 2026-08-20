@@ -5,7 +5,7 @@
 //! (`deserialize_parameter_trees_v1`).
 //! Fail-closed: empty tree lists or malformed JSON tree structures are strictly rejected.
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::BTreeMap;
 
 use crate::parameter_trees_v1::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
@@ -54,9 +54,14 @@ fn json_to_node(val: &Value) -> Result<AmiParameterTreeNodeV1, ParameterTreeSerd
 
     match kind {
         "branch" => {
-            let children_obj = val.get("children").and_then(|v| v.as_object()).ok_or_else(|| {
-                ParameterTreeSerdeErrorV1::InvalidJsonStructure("missing children map".to_string())
-            })?;
+            let children_obj =
+                val.get("children")
+                    .and_then(|v| v.as_object())
+                    .ok_or_else(|| {
+                        ParameterTreeSerdeErrorV1::InvalidJsonStructure(
+                            "missing children map".to_string(),
+                        )
+                    })?;
             let mut children = BTreeMap::new();
             for (k, v) in children_obj {
                 let child_node = json_to_node(v)?;
@@ -68,9 +73,14 @@ fn json_to_node(val: &Value) -> Result<AmiParameterTreeNodeV1, ParameterTreeSerd
             })
         }
         "leaf" => {
-            let tokens_arr = val.get("value_tokens").and_then(|v| v.as_array()).ok_or_else(|| {
-                ParameterTreeSerdeErrorV1::InvalidJsonStructure("missing value_tokens list".to_string())
-            })?;
+            let tokens_arr = val
+                .get("value_tokens")
+                .and_then(|v| v.as_array())
+                .ok_or_else(|| {
+                    ParameterTreeSerdeErrorV1::InvalidJsonStructure(
+                        "missing value_tokens list".to_string(),
+                    )
+                })?;
             let mut value_tokens = Vec::new();
             for t in tokens_arr {
                 let s = t.as_str().ok_or_else(|| {
@@ -128,9 +138,14 @@ pub fn deserialize_parameter_trees_v1(
 
     let mut trees = Vec::new();
     for t_val in trees_arr {
-        let rname = t_val.get("root_name").and_then(|v| v.as_str()).ok_or_else(|| {
-            ParameterTreeSerdeErrorV1::InvalidJsonStructure("missing root_name field".to_string())
-        })?;
+        let rname = t_val
+            .get("root_name")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                ParameterTreeSerdeErrorV1::InvalidJsonStructure(
+                    "missing root_name field".to_string(),
+                )
+            })?;
         let rnode_val = t_val.get("root_node").ok_or_else(|| {
             ParameterTreeSerdeErrorV1::InvalidJsonStructure("missing root_node field".to_string())
         })?;
@@ -145,7 +160,7 @@ pub fn deserialize_parameter_trees_v1(
 mod tests {
     use super::*;
     use crate::parameter_trees_v1::build_parameter_trees_v1;
-    use crate::{parse_ami_text_v1, ParseLimitsV1};
+    use crate::{ParseLimitsV1, parse_ami_text_v1};
 
     fn limits() -> ParseLimitsV1 {
         ParseLimitsV1::try_new(1024, 16, 64, 128).unwrap()

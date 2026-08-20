@@ -9,9 +9,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    build_parameter_trees_v1, decode_parameter_tree_with_inferred_types_v1,
-    parse_ami_text_v1, DecodedLeafValueV1, ParseLimitsV1,
-    PARAMETER_TREE_INFERRED_DECODE_POLICY_V1,
+    DecodedLeafValueV1, PARAMETER_TREE_INFERRED_DECODE_POLICY_V1, ParseLimitsV1,
+    build_parameter_trees_v1, decode_parameter_tree_with_inferred_types_v1, parse_ami_text_v1,
 };
 
 fn decoded_to_json(value: &DecodedLeafValueV1) -> Value {
@@ -24,7 +23,7 @@ fn decoded_to_json(value: &DecodedLeafValueV1) -> Value {
     }
 }
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -37,7 +36,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b41_parameter_tree_inferred_decode_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b41_parameter_tree_inferred_decode_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -55,7 +56,8 @@ fn main() {
                 "parse_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -71,7 +73,8 @@ fn main() {
                 "build_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -83,7 +86,10 @@ fn main() {
         Ok(result) => {
             let mut leaf_types = serde_json::Map::new();
             for (name, parameter_type) in result.leaf_types() {
-                leaf_types.insert(name.clone(), Value::String(parameter_type.token().to_string()));
+                leaf_types.insert(
+                    name.clone(),
+                    Value::String(parameter_type.token().to_string()),
+                );
             }
             let mut values = serde_json::Map::new();
             for (name, decoded) in result.values() {

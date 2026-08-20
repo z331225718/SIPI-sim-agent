@@ -7,9 +7,7 @@
 
 use std::path::PathBuf;
 
-use sipi_com::{
-    com_run_admission_v1, ComRunAdmissionErrorV1, ComRunAdmissionV1, COM_RUN_ADMISSION_POLICY_V1,
-};
+use sipi_com::{COM_RUN_ADMISSION_POLICY_V1, ComRunAdmissionErrorV1, com_run_admission_v1};
 
 fn main() {
     let mut input = None;

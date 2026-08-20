@@ -59,7 +59,7 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
     evidence = load_yaml(EVIDENCE)
     if evidence.get("schema") != "sipi.p4b-02b172-parameter-list-adjacent-change-count-crosscheck-evidence.v1":
         raise ParameterListAdjacentChangeCountError("evidence_schema_invalid")
-    if evidence.get("status") != "matched_hash_bound":
+    if evidence.get("status") != "product_owned_self_crosscheck_unbound":
         raise ParameterListAdjacentChangeCountError("evidence_status_drift")
     if evidence.get("matched_count") != evidence.get("case_count") or evidence.get("case_count") != 4:
         raise ParameterListAdjacentChangeCountError("evidence_entry_mismatch")

@@ -7,8 +7,8 @@
 use std::path::PathBuf;
 
 use sipi_ami_text::{
-    build_parameter_trees_v1, parse_ami_text_v1, AmiParameterTreeNodeV1, ParseLimitsV1,
-    PARAMETER_TREES_POLICY_V1,
+    AmiParameterTreeNodeV1, PARAMETER_TREES_POLICY_V1, ParseLimitsV1, build_parameter_trees_v1,
+    parse_ami_text_v1,
 };
 
 fn node_to_json(node: &AmiParameterTreeNodeV1) -> serde_json::Value {
@@ -34,7 +34,7 @@ fn node_to_json(node: &AmiParameterTreeNodeV1) -> serde_json::Value {
     }
 }
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -61,7 +61,8 @@ fn main() {
                 "parse_error": format!("{e:?}"),
             });
             if let Some(path) = report {
-                std::fs::write(path, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(path, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

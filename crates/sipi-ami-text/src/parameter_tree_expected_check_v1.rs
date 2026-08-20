@@ -10,7 +10,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{AmiParameterTreeV1, AmiParameterTreeNodeV1};
+use crate::{AmiParameterTreeNodeV1, AmiParameterTreeV1};
 
 /// Scope policy for the parameter tree expected-value check core.
 pub const PARAMETER_TREE_EXPECTED_CHECK_POLICY_V1: &str =
@@ -86,10 +86,7 @@ fn collect_leaf_tokens(
             }
             Ok(())
         }
-        AmiParameterTreeNodeV1::Leaf {
-            name,
-            value_tokens,
-        } => {
+        AmiParameterTreeNodeV1::Leaf { name, value_tokens } => {
             if out.contains_key(name) {
                 return Err(ParameterTreeExpectedCheckErrorV1::DuplicateLeaf(
                     name.clone(),
@@ -180,14 +177,14 @@ mod tests {
     fn full_match_reports_matched() {
         let t = tree(branch(
             "root",
-            vec![leaf("gain", &["Float", "0.5"]), leaf("steps", &["Integer", "7"])],
+            vec![
+                leaf("gain", &["Float", "0.5"]),
+                leaf("steps", &["Integer", "7"]),
+            ],
         ));
         let result = check_parameter_tree_against_expected_v1(
             &t,
-            &expected_of(&[
-                ("gain", &["Float", "0.5"]),
-                ("steps", &["Integer", "7"]),
-            ]),
+            &expected_of(&[("gain", &["Float", "0.5"]), ("steps", &["Integer", "7"])]),
         )
         .expect("checked");
         assert_eq!(result.expected_count(), 2);
@@ -220,7 +217,10 @@ mod tests {
         assert_eq!(result.mismatched().len(), 1);
         let mismatch = &result.mismatched()[0];
         assert_eq!(mismatch.name(), "gain");
-        assert_eq!(mismatch.expected(), &["Float".to_string(), "9.9".to_string()]);
+        assert_eq!(
+            mismatch.expected(),
+            &["Float".to_string(), "9.9".to_string()]
+        );
         assert_eq!(mismatch.actual(), &["Float".to_string(), "0.5".to_string()]);
     }
 
@@ -230,11 +230,9 @@ mod tests {
             "root",
             vec![leaf("gain", &["0.5"]), leaf("extra", &["1"])],
         ));
-        let result = check_parameter_tree_against_expected_v1(
-            &t,
-            &expected_of(&[("gain", &["0.5"])]),
-        )
-        .expect("checked");
+        let result =
+            check_parameter_tree_against_expected_v1(&t, &expected_of(&[("gain", &["0.5"])]))
+                .expect("checked");
         assert_eq!(result.matched(), 1);
         assert_eq!(result.expected_count(), 1);
     }
@@ -255,11 +253,9 @@ mod tests {
                 leaf("gain", &["2.0"]),
             ],
         ));
-        let error = check_parameter_tree_against_expected_v1(
-            &t,
-            &expected_of(&[("gain", &["1.0"])]),
-        )
-        .unwrap_err();
+        let error =
+            check_parameter_tree_against_expected_v1(&t, &expected_of(&[("gain", &["1.0"])]))
+                .unwrap_err();
         assert_eq!(
             error,
             ParameterTreeExpectedCheckErrorV1::DuplicateLeaf("gain".to_string())

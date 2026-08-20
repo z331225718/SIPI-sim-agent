@@ -26,7 +26,7 @@ Python reference replicates the collection, serialization, and FNV-1a 64 over 4 
   path, skipped leaves ignored, no typed leaves hashes `{}`).
 - Cross-check: 4 test cases (typed leaves, change value, skipped ignored, no typed) driven through
   product runner `p4b_02b97_parameter_tree_typed_leaf_fingerprint_runner`; independent Python
-  reference matches 100% on the exact 64-bit hashes; 4/4 matched_hash_bound.
+  reference matches 100% on the exact 64-bit hashes; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 

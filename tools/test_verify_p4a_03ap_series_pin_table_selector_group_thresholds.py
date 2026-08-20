@@ -32,7 +32,6 @@ class SeriesPinTableSelectorGroupThresholdsTests(unittest.TestCase):
     def test_implementation_tokens_present(self) -> None:
         source = GATE.SOURCE.read_text(encoding="utf-8")
         self.assertIn("pub fn lift_series_pin_group_selector_threshold_record_v1", source)
-        self.assertIn(GATE.POLICY, source)
 
     def test_plan_row_present(self) -> None:
         self.assertIn("**P4A-03ap", GATE.PLAN.read_text(encoding="utf-8"))

@@ -56,8 +56,8 @@ pub fn last_index_of_parameter_list_item_v1(
     if value.parameter_type() != AmiParameterTypeV1::List {
         return Err(ParameterListLastIndexOfErrorV1::NotAList);
     }
-    let items = list_items(value.value_token())
-        .ok_or(ParameterListLastIndexOfErrorV1::MalformedList)?;
+    let items =
+        list_items(value.value_token()).ok_or(ParameterListLastIndexOfErrorV1::MalformedList)?;
     items
         .iter()
         .rposition(|candidate| candidate.as_str() == item)

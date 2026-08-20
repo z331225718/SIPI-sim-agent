@@ -76,10 +76,7 @@ mod tests {
             ("beta_x".to_string(), "0".to_string()),
         ];
         let lines = canonical_input_keys_v1(&entries).expect("ok");
-        assert_eq!(
-            lines,
-            vec!["alpha=0.5", "beta_x=0", "zeta=1.0"]
-        );
+        assert_eq!(lines, vec!["alpha=0.5", "beta_x=0", "zeta=1.0"]);
     }
 
     #[test]

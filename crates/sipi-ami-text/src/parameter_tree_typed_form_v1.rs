@@ -12,8 +12,8 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    AmiParameterTreeV1, AmiParameterTreeNodeV1, AmiParameterTypeV1,
-    AmiParameterValueErrorV1, AmiParameterValueV1,
+    AmiParameterTreeNodeV1, AmiParameterTreeV1, AmiParameterTypeV1, AmiParameterValueErrorV1,
+    AmiParameterValueV1,
 };
 
 /// Scope policy for the parameter tree typed-form extraction core.
@@ -71,19 +71,14 @@ fn extract_node(
             }
             Ok(())
         }
-        AmiParameterTreeNodeV1::Leaf {
-            name,
-            value_tokens,
-        } => {
+        AmiParameterTreeNodeV1::Leaf { name, value_tokens } => {
             if value_tokens.is_empty() {
                 return Err(ParameterTreeTypedFormErrorV1::EmptyValueTokens(
                     name.clone(),
                 ));
             }
             if value_tokens.len() == 1 {
-                return Err(ParameterTreeTypedFormErrorV1::NotTypedForm {
-                    leaf: name.clone(),
-                });
+                return Err(ParameterTreeTypedFormErrorV1::NotTypedForm { leaf: name.clone() });
             }
             if value_tokens.len() > 2 {
                 return Err(ParameterTreeTypedFormErrorV1::MultiTokenForm {

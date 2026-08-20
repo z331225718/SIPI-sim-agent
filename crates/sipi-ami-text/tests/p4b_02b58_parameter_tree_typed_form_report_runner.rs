@@ -9,9 +9,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_ami_text::{
-    build_parameter_trees_v1, check_parameter_tree_typed_form_conformance_v1,
-    parse_ami_text_v1, ParseLimitsV1, TypedFormViolationV1,
-    PARAMETER_TREE_TYPED_FORM_CONFORMANCE_POLICY_V1,
+    PARAMETER_TREE_TYPED_FORM_CONFORMANCE_POLICY_V1, ParseLimitsV1, TypedFormViolationV1,
+    build_parameter_trees_v1, check_parameter_tree_typed_form_conformance_v1, parse_ami_text_v1,
 };
 
 fn violation_to_json(violation: &TypedFormViolationV1) -> Value {
@@ -37,7 +36,7 @@ fn violation_to_json(violation: &TypedFormViolationV1) -> Value {
     }
 }
 
-fn main() {
+pub(crate) fn main() {
     let mut input = None;
     let mut report = None;
     let mut args = std::env::args().skip(1);
@@ -50,7 +49,9 @@ fn main() {
         }
     }
     let Some(input) = input else {
-        println!("usage: p4b_02b58_parameter_tree_typed_form_report_runner --input <path> [--report <path>]");
+        println!(
+            "usage: p4b_02b58_parameter_tree_typed_form_report_runner --input <path> [--report <path>]"
+        );
         return;
     };
     let bytes = std::fs::read(&input).expect("read input");
@@ -68,7 +69,8 @@ fn main() {
                 "parse_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }
@@ -84,7 +86,8 @@ fn main() {
                 "build_error": format!("{e:?}"),
             });
             if let Some(p) = report {
-                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json")).expect("write");
+                std::fs::write(p, serde_json::to_string_pretty(&output).expect("json"))
+                    .expect("write");
             } else {
                 println!("{}", serde_json::to_string_pretty(&output).expect("json"));
             }

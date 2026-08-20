@@ -8,15 +8,24 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 use sipi_com::{
-    evaluate_candidate_v1, CandidateEvalOptionsV1, CandidateEvalParamsV1,
-    CANDIDATE_EVAL_POLICY_V1,
+    CANDIDATE_EVAL_POLICY_V1, CandidateEvalOptionsV1, CandidateEvalParamsV1, evaluate_candidate_v1,
 };
 
 fn f64s(value: &Value) -> Vec<f64> {
-    value.as_array().expect("array").iter().map(|i| i.as_f64().expect("f64")).collect()
+    value
+        .as_array()
+        .expect("array")
+        .iter()
+        .map(|i| i.as_f64().expect("f64"))
+        .collect()
 }
 fn i64s(value: &Value) -> Vec<i64> {
-    value.as_array().expect("array").iter().map(|i| i.as_i64().expect("i64")).collect()
+    value
+        .as_array()
+        .expect("array")
+        .iter()
+        .map(|i| i.as_i64().expect("i64"))
+        .collect()
 }
 
 fn parameters(value: &Value) -> CandidateEvalParamsV1 {
@@ -54,12 +63,17 @@ fn options(value: &Value) -> CandidateEvalOptionsV1 {
         tx_rd_sel: value["tx_rd_sel"].as_i64().expect("trs"),
         pkg_len_select: i64s(&value["pkg_len_select"]),
         sndr: f64s(&value["sndr"]),
-        limit_jitter_contrib_to_dfe_span: value["limit_jitter_contrib_to_dfe_span"].as_bool().expect("lj"),
+        limit_jitter_contrib_to_dfe_span: value["limit_jitter_contrib_to_dfe_span"]
+            .as_bool()
+            .expect("lj"),
         force_pdf_bin_size: value["force_pdf_bin_size"].as_bool().expect("fps"),
         bin_size: value["bin_size"].as_f64().expect("bs"),
         force_bbn_q_factor: value["force_bbn_q_factor"].as_bool().expect("fbq"),
         bbn_q_factor: value["bbn_q_factor"].as_f64().expect("bq"),
-        histogram_window_weight: value["histogram_window_weight"].as_str().expect("hww").to_string(),
+        histogram_window_weight: value["histogram_window_weight"]
+            .as_str()
+            .expect("hww")
+            .to_string(),
     }
 }
 

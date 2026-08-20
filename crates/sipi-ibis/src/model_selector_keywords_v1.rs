@@ -50,17 +50,13 @@ impl ModelOptionEntryV1 {
 
         let desc = description.and_then(|d| {
             let t = d.trim().to_string();
-            if t.is_empty() {
-                None
-            } else {
-                Some(t)
-            }
+            if t.is_empty() { None } else { Some(t) }
         });
 
-        if let Some(ref d) = desc {
-            if !d.is_ascii() {
-                return Err(ModelSelectorKeywordsErrorV1::NonAsciiName);
-            }
+        if let Some(ref d) = desc
+            && !d.is_ascii()
+        {
+            return Err(ModelSelectorKeywordsErrorV1::NonAsciiName);
         }
 
         Ok(Self {
@@ -184,7 +180,9 @@ mod tests {
         let opt2 = ModelOptionEntryV1::try_new("MODE_50OHM", None).unwrap();
         assert_eq!(
             lift_model_selector_keywords_v1("SEL_1", vec![opt1, opt2]),
-            Err(ModelSelectorKeywordsErrorV1::DuplicateModelOption("MODE_50OHM".to_string()))
+            Err(ModelSelectorKeywordsErrorV1::DuplicateModelOption(
+                "MODE_50OHM".to_string()
+            ))
         );
     }
 }

@@ -29,7 +29,7 @@ over 4 test cases.
 - Cross-check: 4 test cases (jaccard parameters, asymmetric parameters, disjoint,
   negative parameter) driven through product runner
   `p4b_02b158_parameter_list_tversky_index_runner`; independent Python reference matches
-  100% on 12-decimal index strings and error keys; 4/4 matched_hash_bound.
+  100% on 12-decimal index strings and error keys; 4/4 product_owned_self_crosscheck_unbound.
 
 ## Binding
 
