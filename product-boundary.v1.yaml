@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 41841504260a943bc80238eafe0a1e1f08ebace9fc1983c1e0e30c89ac44523b
+  tracked_paths_sha256: 90eb2e7159272374bd6f868320fd21f1a45b46d1588202c1180b113d4d329821
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -8243,6 +8243,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-21-p7-current-candidate-chain-rejected-evaluation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-21-p7-current-canonical-build-license-material-observation.md:
       rule: historical-docs
       class: migration_only
@@ -15072,6 +15078,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p7-current-candidate-chain-rebinding-preflight.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p7-current-candidate-chain-rejected-evaluation.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -26399,6 +26411,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p7_current_candidate_chain_rejected_evaluation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p7_current_candidate_pe_rejection_diagnosis.py:
       rule: migration-tools
       class: migration_only
@@ -29844,6 +29862,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p7_current_candidate_chain_rebinding_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p7_current_candidate_chain_rejected_evaluation.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

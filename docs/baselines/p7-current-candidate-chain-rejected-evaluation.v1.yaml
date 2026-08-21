@@ -1,0 +1,161 @@
+{
+  "schema": "sipi.p7-current-candidate-chain-rejected-evaluation.v1",
+  "kind": "current_chain_rejected_at_evaluation_not_release",
+  "candidate_source_commit": "167b97140d510d22c2add060a5554bdf5699d7d6",
+  "candidate_tree": "435503d98c214d2e0d28121880a0c5513045dfe9",
+  "candidate_cargo_lock_sha256": "e7c4270e3457c408f4ca15d34402a895ecd08f5e369f155e09f4bfc09d390609",
+  "candidate_toolchain_sha256": "3cc13c37191008eaab5490eea2136223fa1bc5b5d2aa9c74a199a0c0c854aa90",
+  "candidate_executable": {
+    "sha256": "5abf41c8207f13b1e33653d791a41615efa919e828b1f4330bf823786e7a4ac7",
+    "bytes": 4194304,
+    "platform": "windows-x86_64"
+  },
+  "recording": {
+    "candidate_tree_excludes_this_record": true,
+    "evidence_subject_is_candidate_source_commit_not_record_commit": true,
+    "external_reports_and_payloads_retained_outside_repository": true,
+    "machine_identity_retained": false
+  },
+  "evidence": {
+    "layout_policy": {
+      "sha256": "6bc3732cd128d3a16274ef02cf82e0499049a4016e83802cd07d14e75871ccf8",
+      "bytes": 665
+    },
+    "twin_report": {
+      "sha256": "6cb7e762b116344767db1850f02bb9f74f3d9097318e4bd4a38286605cf4712a",
+      "bytes": 1255
+    },
+    "layout_report": {
+      "sha256": "f3becd4f393b1c5d1daa6eefa6806e690811e4c87fb741e2e8daf3c55f1e5e4c",
+      "bytes": 1724
+    },
+    "composition_report": {
+      "sha256": "b9202e10cd721c3bb905c4a37c43be29f746e211e6d636b3bb437ffc3725f0bb",
+      "bytes": 58358
+    },
+    "archive_report": {
+      "sha256": "e8e113a3151a9294e50efe75619eff6915992e0193b7631b8abb5e89d389bc00",
+      "bytes": 1140
+    },
+    "install_report": {
+      "sha256": "84311ee3c1ce9ce847a6af2d776f7a72751f91ff63e2f8fd826bf12d5bef5552",
+      "bytes": 2032
+    },
+    "performance_observation": {
+      "sha256": "f6d5a03e6dfb371291d8753f12e5bb8e5237d965be3126f7fd30bc69f18bf6ce",
+      "bytes": 4368
+    },
+    "evaluation_rejection_output": {
+      "sha256": "7df87668b80ed82e5f93ea673f2b7a7e8d73c8d628a89ae54d25b200499d6428",
+      "bytes": 126
+    }
+  },
+  "stage_observations": {
+    "twin_build": {
+      "status": "identical",
+      "binary_sha256": "5abf41c8207f13b1e33653d791a41615efa919e828b1f4330bf823786e7a4ac7",
+      "binary_bytes": 4194304
+    },
+    "static_layout": {
+      "status": "layout_conformant",
+      "policy_sha256": "6bc3732cd128d3a16274ef02cf82e0499049a4016e83802cd07d14e75871ccf8",
+      "executable_sha256": "5abf41c8207f13b1e33653d791a41615efa919e828b1f4330bf823786e7a4ac7",
+      "executable_bytes": 4194304,
+      "delay_import_directory_present": false
+    },
+    "composition": {
+      "evidence_status": "incomplete",
+      "promotion_status": "blocked"
+    },
+    "archive": {
+      "structural_admission": "conformant",
+      "composition_evidence_status": "incomplete",
+      "promotion_status": "blocked",
+      "archive_sha256": "d7703795da9b225ca37d110bafbc4d93e9b6e945dbbf50197749501ec30f30df",
+      "archive_bytes": 1232644
+    },
+    "isolated_install": {
+      "status": "isolated_install_smoke_passed",
+      "environment_class": "same_host_isolated_prefix",
+      "fresh_machine": false,
+      "fresh_user": "not_assessed",
+      "host_loader_closure": "not_assessed",
+      "promotion_status": "blocked"
+    },
+    "performance": {
+      "status": "observed_pending_owner_budget",
+      "protocol": {
+        "warmup_count": 3,
+        "measured_count": 10,
+        "wall_clock": "perf_counter_ns",
+        "peak_working_set": "GetProcessMemoryInfo.PeakWorkingSetSize"
+      },
+      "observed_medians": {
+        "wall_time_ns": 26349750,
+        "peak_working_set_bytes": 4681728
+      },
+      "numeric_observation_under_delegated_thresholds": true,
+      "policy_verdict": "not_evaluated"
+    },
+    "evaluation": {
+      "report_present": false,
+      "status": "rejected",
+      "reason": "evidence_json_invalid"
+    }
+  },
+  "performance_policy_custody": {
+    "policy_sha256": "700abb092a2da02331ff93407965d7e2414a3f14832def90127d0cc361645d28",
+    "required_baseline_observation_sha256": "f6bcef3ee820919062018a6c3d37128260ca4cc28e8bb8c8867e3e98d060ae4f",
+    "required_p1_locked_build_report_sha256": "a17d68e504d5112b401aac970431e31460db67faecc975a19fe0d1bb6a9de1f7",
+    "status": "historical_baseline_custody_unavailable",
+    "evaluation_blocker": "evidence_json_invalid"
+  },
+  "chain_state": {
+    "twin_build": "identical",
+    "static_layout": "layout_conformant",
+    "composition_evidence_status": "incomplete",
+    "archive_structural_admission": "conformant",
+    "install_environment_class": "same_host_isolated_prefix",
+    "performance_status": "observed_pending_owner_budget",
+    "performance_threshold_verdict": "not_evaluated",
+    "candidate_evaluation_status": "rejected",
+    "promotion_status": "blocked",
+    "release_candidate": false
+  },
+  "gate_summary": {
+    "observed_conformant_not_release": [
+      "twin_build_identity",
+      "static_layout_v2",
+      "archive_structural_admission",
+      "same_host_isolated_install_smoke"
+    ],
+    "observed_but_not_promotable": [
+      "composition_license_notice_evidence_incomplete",
+      "performance_numeric_observation_without_policy_verdict",
+      "fresh_machine_missing",
+      "dynamic_runtime_dependency_closure_not_assessed",
+      "uncertified_domain_profiles"
+    ],
+    "rejected": [
+      "candidate_evaluation_baseline_custody"
+    ]
+  },
+  "global_blockers": [
+    "license_notice_pending",
+    "fresh_machine_evidence_missing",
+    "uncertified_domain_profiles",
+    "performance_baseline_custody_unavailable",
+    "current_candidate_p7_chain_not_admitted"
+  ],
+  "promotion_status": "blocked",
+  "release_candidate": false,
+  "non_claims": [
+    "not_a_release_tag_or_candidate",
+    "not_a_candidate_performance_policy_verdict",
+    "not_a_release_approval_or_license_notice_clearance",
+    "not_a_fresh_machine_or_fresh_user_certification",
+    "not_a_dynamic_or_runtime_dependency_closure",
+    "not_a_cross_platform_or_profile_certification"
+  ],
+  "audit_ref": "docs/baselines/audits/2026-08-21-p7-current-candidate-chain-rejected-evaluation.md"
+}
