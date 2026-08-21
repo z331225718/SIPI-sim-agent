@@ -1,0 +1,62 @@
+schema: sipi.p5-08f.specified-com-artifact-route.v1
+status: specified_route_prerequisite_implemented_p5_08_open
+policy: sipi.p5-08f.com-run-artifact-specified-v1.product-owned-non-oracle
+implementation:
+  parameter_module: {path: crates/sipi-com/src/com_specified_parameter_ingestion_v1.rs, sha256: 9f5ed916d2566b66e2b3401ecd3fe8973020fce9755cf71496f3069c5d0b28b6}
+  execution_module: {path: crates/sipi-com/src/com_specified_artifact_execution_v1.rs, sha256: b25be2b0450137ccd8a5cdf15640c5b8f0dff68aed19fb36452944198017633f}
+  public_surface: {path: crates/sipi-com/src/lib.rs, sha256: 64f6e08a176f3f30f1d1144ffe30c97f78b6ca2a08cb8b5151fb69468b422368}
+  cli_surface: {path: crates/sipi-cli/src/main.rs, sha256: a3c9bf33b150da7fde2acec04363cfb4e48183ad4343049dc9769c4078187f73}
+  contract_surface: {path: crates/sipi-contracts/src/lib.rs, sha256: 6bc98037d55bc76a93edeca8b5930d29daf84893a6c86e1134c72b07eb758d12}
+  route: [com, run-artifact]
+  request_schema: sipi.com.run-artifact-request.v1
+  response_schema: sipi.com.run-artifact-specified-result.v1
+  entrypoint: execute_com_run_artifact_from_product_values_v1
+  parameter_entrypoint: ingest_com_specified_parameters_v1
+  legacy_com_route: {id: com.run, availability: unavailable}
+bindings:
+  - {id: p5-08a, path: docs/baselines/p5-08a-com-run-admission-stage.v1.yaml, sha256: bb8b0af330ae014c23137c4cebee5a3976a8b6e8a421f0e20b08be3f8ea2c799}
+  - {id: p5-08b, path: docs/baselines/p5-08b-com-run-execution-stage.v1.yaml, sha256: d5fa3e67b85a31ccb5142d2f50124117c42fa6deced51b440acb1bbb1d3d8d14}
+  - {id: p5-08d, path: docs/baselines/p5-08d-com-run-artifact-provenance-bounded.v1.yaml, sha256: b6d3b865289eb05589cc2ede971fe268af4947473f200719d0903881f4ee5398}
+  - {id: p5-08e, path: docs/baselines/p5-08e-com-run-artifact-execution.v1.yaml, sha256: baeb4de8cf0698505ce622eaee2fbea1a0051bcff8e6ab889f6e129a6a4a9379}
+contract:
+  request_fields: [schema, request_id, pulse_artifact_id, pulse_manifest_sha256, artifact_root, artifact_id, consumed_keys, params, defaults, unconsumed_keys]
+  explicit_partition: true
+  partition_authority: caller_supplied_product_owned_not_workbook_or_profile
+  unknown_fields: rejected
+  finite_values_only: true
+  pulse_file: pulse.f64le
+  pulse_encoding: finite_little_endian_f64
+  result_file: result.json
+  input_manifest_max_bytes: 65536
+  pulse_max_bytes: 524288
+  result_max_bytes: 16384
+  output_publication: immutable_publish_new
+scope:
+  product_owned_bounded_execution: true
+  workbook_read: false
+  p5_05g_workbook_ingestion_reused: false
+  independent_explicit_partition: true
+  profile_inference: false
+  auto_tuning: false
+  behavioral_replication: not_claimed
+  agent_com_parity: not_claimed
+  external_acceptance: blocked
+  ieee_certification: false
+  release_evidence: false
+legacy_boundary:
+  p5_08e_source_unchanged: true
+  legacy_wire_unchanged: true
+  p5_08d_source_unchanged: true
+  new_route_is_not_p7_acceptance: true
+  p5_08_main_item_closed: false
+non_claims:
+  - not_agent_com_parity
+  - not_external_oracle_compare
+  - not_acceptance_evidence
+  - not_ieee_certification
+  - not_release_evidence
+  - not_hostile_writer_safe
+  - not_p5_05g_workbook_ingestion
+audit:
+  path: docs/baselines/audits/2026-08-21-p5-08f-specified-com-artifact-route.md
+  sha256: 38ae168b8fd9f3f53c97fd8e08a787e69ee4706f2f0170a844b2c563d8acfcfa

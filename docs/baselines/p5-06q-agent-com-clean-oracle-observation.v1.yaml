@@ -1,0 +1,111 @@
+schema: sipi.p5-06q.agent-com-clean-oracle-observation.v1
+status: blocked_missing_td_iln_scalar_and_compare_contract
+authority: pinned_external_observation_only
+scope:
+  work_item: P5-06
+  slice: P5-06q
+  external_runtime: two_fresh_runs_outside_product_repository
+  product_runtime_invoked: false
+  product_vs_oracle_compare_executed: false
+  acceptance_or_release_promoted: false
+  historical_evidence_rewritten: false
+invocation:
+  repository: https://github.com/z331225718/agent-com.git
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  entrypoint:
+    load_config: "load_config(config_path, overrides={'COMPUTE_TDILN': 1})"
+    run: run_com(config=loaded, channels=ChannelSet(thru), options=RunOptions(loaded.profile, diagnostics=False))
+  profile: r480
+  diagnostics: false
+inputs:
+  workbook:
+    path: matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120F_C2C_08_17_2022.xlsx
+    bytes: 67087
+    sha256: e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925
+  channels:
+    - role: THRU
+      path: fixtures/synthetic/thru_10db_at_26p56ghz.s4p
+      bytes: 6425196
+      sha256: b14a92e7f844608aaee5b4cbd3dfda08d7af48bfedb4526043a0733b8823e584
+  channel_count: 1
+  clean_input_binding: exact_relative_paths_and_sha256
+runs:
+  count: 2
+  case_count: 2
+  payloads:
+    - id: run-01
+      external_only_label: p5-06-agent-com-run-01.json
+      bytes: 51793
+      sha256: 2aa43d7487d7481a9d4463d7e69e7a397cc5bf30efcfad6cb0239d43f7dfae54
+    - id: run-02
+      external_only_label: p5-06-agent-com-run-02.json
+      bytes: 51793
+      sha256: 2aa43d7487d7481a9d4463d7e69e7a397cc5bf30efcfad6cb0239d43f7dfae54
+  repeatability: byte_identical_payloads
+  cases:
+    - case_index: 0
+      COM_dB: 6.680468404393122
+      ERL_dB: Infinity
+      ERL11_dB: Infinity
+      ERL22_dB: Infinity
+    - case_index: 1
+      COM_dB: 6.8626430506219
+      ERL_dB: Infinity
+      ERL11_dB: Infinity
+      ERL22_dB: Infinity
+  missing_scalar_fields:
+    - TD_ILN_dB
+    - TD_ILN
+  observed_non_substitutes:
+    FOM_TDILN:
+      value: 22.36644896404741
+      allowed_as_TD_ILN_dB: false
+    ICN_mV:
+      allowed_as_TD_ILN_dB: false
+    iln_vector:
+      allowed_as_TD_ILN_dB: false
+licensing:
+  root_license:
+    path: LICENSE
+    kind: MIT
+    git_blob: 55aac2e4f8c36a978d315efb02815972579b8293
+    bytes: 1067
+    sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+  manifest:
+    path: LICENSE-MANIFEST.md
+    git_blob: 07cf6a6a59f7d06c18b242af4f6c359c7ea68686
+    bytes: 5911
+    sha256: 48f3e22c2b1a0ec558f28fb56ed41e3b76eb6c6192cddf3dea8a0adc5493ec65
+  allowlist:
+    - {path: src/agent_com/api.py, git_blob: 3e7808982a63123f2bac65a86f3abb627c287be1, bytes: 21445, sha256: b7527f60d55b6f73fb449bc2472f957a6bc2a9ecf1d7bc8808756bf7fba39570}
+    - {path: src/agent_com/_orchestration.py, git_blob: 5d260a0aab941f1a1955fe3abef36d85a56034c0, bytes: 90877, sha256: 069a5c08f9da6ad5b5be5648723eb05b0e3de8cf0dcb1ae7f54e23df7ab0db69}
+    - {path: src/agent_com/metrics/tdiln.py, git_blob: 53aacf1c15b57cf314f0e7db5148884bf7afe3c2, bytes: 7068, sha256: d0465246f6fd5d22d5978f5cdf2a78f7fccdfbfdd7ad0676092b4494d3698873}
+    - {path: src/agent_com/config/consumption.py, git_blob: 50fc02d837a67f3b503a73672ec4fbcc40d39b73, bytes: 210466, sha256: c6202e42b5e5ccb7fa1f78c780b9ecf031af5400b35cd23f20ef7348207d28a7}
+    - {path: src/agent_com/config/materialize.py, git_blob: a8856f91fe9208738446f539aa52ade2ea2c0bcf, bytes: 19030, sha256: 42f85e3cd5df74158acc10b9388f663419740b374756cdbd8332f052063d265c}
+    - {path: src/agent_com/config/excel.py, git_blob: 1cce4365b64f3bb0ef1f7617107d2df4c929afc7, bytes: 12218, sha256: 2886e9986b9c3a7c1fbdc6179878679ae26bb92f511c6b0689644f9a6c053c4d}
+    - {path: src/agent_com/models.py, git_blob: 92167e385db50c76a9999c2df5118d46951b8243, bytes: 6994, sha256: e97bd1c67fbf53f940e45fb94905e6bd5e924b164a3eecf1548a652ba0f327af}
+    - {path: schemas/r480-capability-envelope-v1.yaml, git_blob: 69aeffa675341733277ccaf19a8e878cb716a315, bytes: 9636, sha256: 9b3329e25559e595187ae1a0530785d5a8dbbdc02a035eeb44326aa91ee34b73}
+    - {path: schemas/legacy-output-r480.json, git_blob: 7980dcffb5a88557b8cb2e8107fae06355c91169, bytes: 2121, sha256: aa74317a43a7152c7ed3937a04093e6c84d5583652ca4d9af2ac0fed98ad9ea6}
+  source_closure: selected_entrypoint_profile_and_metric_schema_pinned; full_legacy_source_license_review_not_claimed
+required_metrics:
+  - {id: COM_dB, source_fields: [COM_dB], unit: dB, status: observed_scalar}
+  - {id: ERL_dB, source_fields: [ERL], unit: dB, status: observed_nonfinite_in_both_cases}
+  - {id: TD_ILN_dB, source_fields: [TD_ILN], unit: dB, status: missing_scalar}
+comparison_boundary:
+  checkpoint_policy: strict_same_checkpoint_no_alignment
+  alignment_or_interpolation: false
+  owner_absolute_tolerance_db: {COM_dB: 0.1, ERL_dB: 0.1, TD_ILN_dB: 0.1}
+  tolerance_authority: owner_policy_only_not_oracle_authority
+  acceptance: blocked_missing_td_iln_value_input_checkpoint_and_tolerance_binding
+non_claims:
+  - not_product_vs_agent_com_compare
+  - not_td_iln_scalar_observation
+  - not_icn_to_td_iln_alias
+  - not_fom_tdiln_to_td_iln_alias
+  - not_checkpoint_alignment
+  - not_acceptance_evidence
+  - not_release_evidence
+audit:
+  path: docs/baselines/audits/2026-08-21-p5-06q-agent-com-clean-oracle-observation.md
+  sha256: 76ac8cdcb38e56d72b30f68045e6af9247d668a5574c79bb3981f1502be248c6

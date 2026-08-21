@@ -1,0 +1,54 @@
+schema: sipi.p4a-02.dynamic-endpoint-current-disposition.v2
+status: e3a_dynamic_endpoint_deferred_static_declaration_continues
+promotion_eligible: false
+additive: true
+decision:
+  anchor: user_selected_all_recommendations_2026-08-21
+  e3: A
+  dynamic_endpoint_this_stage: do_not_implement
+predecessors:
+  static_scope_split:
+    path: docs/baselines/p4a-02-static-declaration-scope-and-dynamic-blocker.v1.yaml
+    sha256: 0d2de27120aa885333978a1de544f76d8c4957dfc1df1893746eb996a7cbc3a7
+    unchanged: true
+  dynamic_composition_contract:
+    path: docs/baselines/p4a-dynamic-endpoint-transient-composition-contract.v1.yaml
+    sha256: 66fde46614c19b4587e7f805eac373379faeec83ec6af795e9e9ab153946a6da
+    unchanged: true
+current_disposition:
+  structural_inventory_continues: true
+  typed_declaration_linkage_continues: true
+  admitted_static_primitives_continue: true
+  dynamic_endpoint_admission: false
+  dynamic_endpoint_implementation: false
+  transient_integration: false
+  quasi_static_or_batch_as_transient_evidence: forbidden
+dynamic_blocker:
+  id: P4A-T12
+  status: retained_unchanged_until_later_additive_profile
+  missing_fields:
+    - reference_node_channel_return_binding_pending
+    - supply_semantics_pending
+    - initial_state_policy_pending
+    - integration_method_pending
+    - timebase_pending
+    - output_grid_pending
+    - channel_return_binding_pending
+    - stimulus_semantics_pending
+    - dynamic_numeric_bounds_pending
+    - dynamic_tolerance_pending
+    - dynamic_acceptance_evidence_missing
+reconsideration:
+  requires_later_owner_selected_profile: true
+  all_dynamic_fields_must_be_frozen: true
+  independent_acceptance_evidence_required: true
+  implicit_predecessor_defaults: forbidden
+audit:
+  path: docs/baselines/audits/2026-08-21-p4a-02-dynamic-endpoint-current-disposition.md
+  sha256: 44e54e5afc413e19756d94174af68c25c4f132a32dc82e4314bc00c5efb7b907
+non_claims:
+  - not_dynamic_endpoint_implementation
+  - not_transient_behavior_or_parity
+  - not_general_ibis_compatibility
+  - not_external_profile_acceptance
+  - not_release_evidence

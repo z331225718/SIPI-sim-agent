@@ -5,7 +5,7 @@
 //! Serialization is deterministic for these fixed structs and lists in this
 //! Rust toolchain. It is not a cross-implementation canonical JSON claim.
 
-use std::{error::Error, fmt, num::NonZeroUsize};
+use std::{collections::BTreeMap, error::Error, fmt, num::NonZeroUsize};
 
 use schemars::{JsonSchema, schema_for};
 use serde::{Deserialize, Serialize};
@@ -61,7 +61,35 @@ pub const RECEIVER_DIAGNOSTIC_PROFILE_ID: &str = "channel-rfm-block-2-current-dr
 pub const PROJECT_PLAN_SCHEMA: &str = "sipi.project.v1";
 pub const FIXED_PROJECT_RUN_REQUEST_SCHEMA: &str =
     "sipi.project.fixed-tran-causal-fir-run-request.v1";
+pub const COM_RUN_ARTIFACT_REQUEST_SCHEMA: &str = "sipi.com.run-artifact-request.v1";
 pub const PLANNED_DOMAINS: [&str; 4] = ["tran", "channel", "ibis-ami", "com"];
+
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ComParameterValueV1 {
+    Scalar(f64),
+    Boolean(bool),
+    String(String),
+    Vector(Vec<f64>),
+    Matrix(Vec<Vec<f64>>),
+}
+
+/// Additive caller-owned request for bounded pulse-artifact composition.
+/// It does not infer a profile, read a workbook, or claim external parity.
+#[derive(Clone, Debug, JsonSchema, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ComRunArtifactRequestV1 {
+    pub schema: String,
+    pub request_id: String,
+    pub pulse_artifact_id: String,
+    pub pulse_manifest_sha256: String,
+    pub artifact_root: String,
+    pub artifact_id: String,
+    pub consumed_keys: Vec<String>,
+    pub params: BTreeMap<String, ComParameterValueV1>,
+    pub defaults: BTreeMap<String, ComParameterValueV1>,
+    pub unconsumed_keys: Vec<String>,
+}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ContractError {
@@ -2817,6 +2845,109 @@ pub fn parse_tran_rc_pulse_request_v1(input: &[u8]) -> Result<TranRcPulseRequest
     Ok(request)
 }
 
+pub fn parse_com_run_artifact_request_v1(
+    input: &[u8],
+) -> Result<ComRunArtifactRequestV1, ContractError> {
+    let request: ComRunArtifactRequestV1 =
+        serde_json::from_slice(input).map_err(|error| ContractError::Json(error.to_string()))?;
+    if request.schema != COM_RUN_ARTIFACT_REQUEST_SCHEMA
+        || !valid_request_id(&request.request_id)
+        || !valid_artifact_id(&request.pulse_artifact_id)
+        || !valid_artifact_id(&request.artifact_id)
+        || !valid_artifact_root(&request.artifact_root)
+        || !valid_sha256(&request.pulse_manifest_sha256)
+        || request.consumed_keys.is_empty()
+        || request.consumed_keys.len() > 64
+        || request
+            .consumed_keys
+            .iter()
+            .any(|key| !valid_parameter_key(key))
+        || !unique_strings(&request.consumed_keys)
+        || request
+            .params
+            .keys()
+            .chain(request.defaults.keys())
+            .any(|key| !valid_parameter_key(key))
+        || request
+            .params
+            .keys()
+            .chain(request.defaults.keys())
+            .any(|key| !request.consumed_keys.iter().any(|item| item == key))
+        || request
+            .params
+            .keys()
+            .any(|key| request.defaults.contains_key(key))
+        || request.unconsumed_keys.iter().any(|key| {
+            !valid_parameter_key(key) || request.consumed_keys.iter().any(|item| item == key)
+        })
+        || !unique_strings(&request.unconsumed_keys)
+        || request
+            .consumed_keys
+            .iter()
+            .any(|key| !request.params.contains_key(key) && !request.defaults.contains_key(key))
+        || !request
+            .params
+            .values()
+            .chain(request.defaults.values())
+            .all(valid_com_parameter_value)
+    {
+        return Err(ContractError::Version);
+    }
+    Ok(request)
+}
+
+fn valid_com_parameter_value(value: &ComParameterValueV1) -> bool {
+    match value {
+        ComParameterValueV1::Scalar(value) => value.is_finite(),
+        ComParameterValueV1::Boolean(_) => true,
+        ComParameterValueV1::String(value) => !value.is_empty() && value.len() <= 4096,
+        ComParameterValueV1::Vector(values) => {
+            !values.is_empty()
+                && values.len() <= 4096
+                && values.iter().all(|value| value.is_finite())
+        }
+        ComParameterValueV1::Matrix(rows) => {
+            !rows.is_empty()
+                && rows.len() <= 256
+                && rows.iter().all(|row| {
+                    !row.is_empty()
+                        && row.len() <= 4096
+                        && row.iter().all(|value| value.is_finite())
+                })
+        }
+    }
+}
+
+fn valid_parameter_key(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 128
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.'))
+}
+
+fn valid_artifact_root(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 4096
+        && !value.contains('\0')
+        && !value.contains("://")
+        && !value
+            .split(['/', '\\'])
+            .any(|segment| matches!(segment, "." | ".."))
+}
+
+fn valid_sha256(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+fn unique_strings(values: &[String]) -> bool {
+    let mut seen = std::collections::BTreeSet::new();
+    values.iter().all(|value| seen.insert(value))
+}
+
 pub fn parse_tran_one_node_rc_pulse_request_v1(
     input: &[u8],
 ) -> Result<TranOneNodeRcPulseRequestV1, ContractError> {
@@ -3314,6 +3445,10 @@ pub fn tran_rc_pulse_request_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(TranRcPulseRequestV1))
 }
 
+pub fn com_run_artifact_request_schema_json() -> Result<Vec<u8>, ContractError> {
+    deterministic_json(&schema_for!(ComRunArtifactRequestV1))
+}
+
 pub fn tran_one_node_rc_pulse_request_schema_json() -> Result<Vec<u8>, ContractError> {
     deterministic_json(&schema_for!(TranOneNodeRcPulseRequestV1))
 }
@@ -3561,6 +3696,22 @@ mod tests {
             deterministic_json(&CapabilityCatalogV1::unsupported()).unwrap()
         );
         assert!(capability_schema_json().unwrap().starts_with(b"{"));
+    }
+
+    #[test]
+    fn specified_com_artifact_request_requires_explicit_partition_and_identity() {
+        let valid = br#"{"schema":"sipi.com.run-artifact-request.v1","request_id":"com-artifact-1","pulse_artifact_id":"pulse-1","pulse_manifest_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","artifact_root":"artifact-root","artifact_id":"result-1","consumed_keys":["A_v","samples_per_ui"],"params":{"A_v":0.5},"defaults":{"samples_per_ui":8.0},"unconsumed_keys":["extra"]}"#;
+        let request = parse_com_run_artifact_request_v1(valid).expect("request");
+        assert_eq!(request.artifact_id, "result-1");
+        assert!(com_run_artifact_request_schema_json().is_ok());
+        assert!(parse_com_run_artifact_request_v1(
+            br#"{"schema":"sipi.com.run-artifact-request.v1","request_id":"com-artifact-1","pulse_artifact_id":"pulse-1","pulse_manifest_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","artifact_root":"artifact-root","artifact_id":"result-1","consumed_keys":["A_v"],"params":{"A_v":0.5},"defaults":{},"unconsumed_keys":[],"extra":true}"#
+        )
+        .is_err());
+        assert!(parse_com_run_artifact_request_v1(
+            br#"{"schema":"sipi.com.run-artifact-request.v1","request_id":"com-artifact-1","pulse_artifact_id":"pulse-1","pulse_manifest_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","artifact_root":"artifact-root","artifact_id":"result-1","consumed_keys":["A_v","h_J"],"params":{"A_v":0.5},"defaults":{},"unconsumed_keys":[]}"#
+        )
+        .is_err());
     }
 
     #[test]

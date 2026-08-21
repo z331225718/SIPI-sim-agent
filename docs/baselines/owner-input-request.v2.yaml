@@ -22,6 +22,7 @@ entries:
       - tools/verify_p4b_08_s4p_observation.py
       - tools/verify_p4b_08b_s4p_ami_matrix_preflight.py
       - tools/verify_p4b_08c_ads_netlist_topology_semantic_response.py
+      - tools/verify_p4b_dual_ami_lane3_admission.py
   - id: P4A-01
     kind: external_asset_oracle
     blocker: external_asset_oracle
@@ -32,15 +33,7 @@ entries:
       - tools/verify_owner_decision_reconciliation_v2.py
       - tools/verify_p4a_01_selected_ibis_truncation_disposition.py
       - tools/verify_p4a_03_complete_typed_inventory_consumer.py
-  - id: P4A-02
-    kind: external_asset_oracle
-    blocker: external_asset_oracle
-    decision_point: provide authoritative dynamic endpoint semantics and evidence for reference, supply, initial state, integration, timebase, grid, stimulus, resource, tolerance, and acceptance; current static observations do not authorize runtime
-    gate:
-      - tools/verify_p4a_ibis71_behavior_scope_preflight.py
-      - tools/verify_p4a_02b_gen5_behavior_spec.py
-      - tools/verify_p4a_dynamic_endpoint_transient_composition_contract.py
-      - tools/verify_p4a_02_static_declaration_scope_and_dynamic_blocker.py
+      - tools/verify_p4a_01_official_object_rights_recheck.py
   - id: P4B-09
     kind: external_asset_oracle
     blocker: external_asset_oracle
@@ -48,6 +41,7 @@ entries:
     gate:
       - tools/verify_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py
       - tools/verify_p4b_ads_pcie_gen5_dual_ami_runtime_preflight.py
+      - tools/verify_p4b_dual_ami_lane3_admission.py
   - id: P5-02
     kind: external_asset_oracle
     blocker: external_asset_oracle
@@ -66,6 +60,7 @@ entries:
       - tools/verify_p5_02n_warning_report.py
       - tools/verify_p5_02o_source_observed_mlse_warning_vocabulary_subset.py
       - tools/verify_p5_02p_pinned_mlse_default_consumption_observation.py
+      - tools/verify_p5_02q_agent_com_clean_default_warning_observation.py
   - id: P5-06
     kind: external_asset_oracle
     blocker: external_asset_oracle
@@ -82,6 +77,8 @@ entries:
       - tools/verify_p5_r480_reference_custody_preflight.py
       - tools/verify_p5_06_pinned_source_external_oracle_candidate_document.py
       - tools/verify_p5_06k_required_com_compare_contract_gap.py
+      - tools/verify_p5_06q_agent_com_clean_oracle_observation.py
+      - tools/verify_p3c_03c_com_metric_checkpoint_boundary.py
 non_claims:
   - no_owner_decision_items_remain_in_the_current_request
   - external_asset_oracle_authorization_is_not_product_implementation_acceptance

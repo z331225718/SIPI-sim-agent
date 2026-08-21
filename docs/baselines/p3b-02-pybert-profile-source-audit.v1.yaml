@@ -1,0 +1,68 @@
+{
+  "schema": "sipi.p3b-02.pybert-profile-source-audit.v1",
+  "status": "blocked_no_mechanically_unique_fixed_profile",
+  "predecessor": {
+    "path": "docs/baselines/p3b-02-named-fir-prerequisite.v2.yaml",
+    "sha256": "7de82872cc4a07dfee91c96b64173fd806048000c2815ae784d414319077d5bf",
+    "unchanged": true
+  },
+  "external_source": {
+    "repository": "Py-bert-agent",
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24",
+    "custody": "external_only_hash_bound",
+    "license": {"spdx": "BSD-3-Clause", "path": "LICENSE", "git_blob": "64d198ba43675ede5fbdef1ec918a63954951640"},
+    "objects": {
+      "src/pybert/pybert.py": "1af665c4595fff1ff5fb30341fe063bd10e5cd89",
+      "src/pybert/models/bert.py": "f04340c1028078175b26d7882efeeaf96f001abf",
+      "src/pybert/models/tx_tap.py": "5fe0384712a0128ced0f6860e482aa71beb567e9",
+      "src/pybert_web/models.py": "ec69a14ed97dbb500e57e378c4d8f39d359aaf20",
+      "src/pybert_web/engine_adapter.py": "8cdb9fb612635b58cf2e071a9e90d07d272faa61",
+      "native/pybert-core/src/equalization.rs": "ae91583c5675a82fe229918c41602b8531fb775d",
+      "native/pybert-core/src/input.rs": "ae6d1883b65640d1719022df2c9e8b0763636dc0",
+      "native/pybert-core/src/simulation.rs": "1f19bff64315e0042bab89d67e9131c289f5e583"
+    }
+  },
+  "candidates": {
+    "legacy_desktop": {
+      "ctle": {"bandwidth_hz": 12000000000.0, "peak_frequency_hz": 5000000000.0, "peak_magnitude_db": 1.7, "frequency_step_hz": 10000000.0, "frequency_max_hz": 40000000000.0, "construction": "make_ctle_irfft_linear_interp_sum_normalize_trim"},
+      "ffe": {"declared_tap_count": 15, "actual_tuner_count": 20, "cursor_position": 5, "default_weights": [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "spacing": "one_ui", "boundary": "sparse_linear_convolution_truncated_to_input"}
+    },
+    "web_adapter": {
+      "ctle": {"bandwidth_hz": 12000000000.0, "peak_frequency_hz": 5000000000.0, "peak_magnitude_db": 4.0, "frequency_step_hz": 10000000.0, "frequency_max_hz": 40000000000.0},
+      "ffe": {"enabled": true, "cursor_position": 5, "weights_count": 20, "weights": [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}
+    },
+    "native_default": {
+      "native_ctle_enabled": true,
+      "ctle": null,
+      "result": "MissingCtleConfiguration",
+      "ffe": {"enabled": false, "weights": [], "cursor_position": 0}
+    }
+  },
+  "conflicts": [
+    "legacy_peak_magnitude_1_7_db_vs_web_peak_magnitude_4_0_db",
+    "legacy_enabled_delayed_unity_ffe_vs_native_disabled_empty_ffe",
+    "legacy_declared_15_taps_vs_materialized_20_tuners",
+    "legacy_irfft_resample_normalize_trim_vs_parameterized_native_grid",
+    "profile_timebase_delay_and_output_length_not_frozen_by_owner_decision"
+  ],
+  "decision": {
+    "unique_fixed_profile": false,
+    "selected_profile": null,
+    "selection_by_oracle_closeness": false,
+    "product_change": "none",
+    "wire_v1_changed": false,
+    "reason": "pinned source contains multiple conflicting defaults and no mechanical precedence rule"
+  },
+  "current_product": {
+    "named_fir_path": "crates/sipi-link/src/rx_named_fir_v1.rs",
+    "named_fir_sha256": "30d87038569cc5277c994f4309e1702ba274cb1c56df699bcf14cf468b949e9e",
+    "status": "prerequisite_only_not_ctle_or_ffe_profile"
+  },
+  "non_claims": [
+    "No PyBERT source bytes are stored or redistributed by this evidence.",
+    "BSD-3-Clause permission does not resolve which conflicting profile is authoritative.",
+    "No CTLE or RX FFE profile is admitted, accepted, or released.",
+    "The bypass-only v1 wire contract remains unchanged."
+  ]
+}

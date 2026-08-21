@@ -53,6 +53,8 @@ from verify_p4b_dual_ami_pe_loader_declarations import (
 )
 from verify_p3b_link_stage_capabilities import verify as verify_link_stage_capabilities
 from verify_p4a_ibis_conformance_matrix import MatrixError, validate as validate_ibis_matrix
+from verify_p5_08f_specified_com_artifact_route import RouteError as ComArtifactRouteError
+from verify_p5_08f_specified_com_artifact_route import validate as validate_com_artifact_route
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -289,6 +291,7 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
     _validate_selected_highloss_waveform_only_route(rows, index_by_id)
     _validate_ami_blocked_route(rows, index_by_id)
     _validate_com_blocked_route(rows, index_by_id, root)
+    _validate_com_artifact_route(rows, manifest_by_id, index_by_id)
     _validate_product_owned_unavailable_catalog_routes(rows, manifest_by_id, index_by_id)
     _validate_receiver_diagnostic_route(rows, manifest_by_id, index_by_id, root)
     _validate_aligned_array_compare_route(rows, manifest_by_id, index_by_id, root)
@@ -474,6 +477,52 @@ def _validate_com_blocked_route(
         or document.get("external_materials", {}).get("product_material") != "prohibited"
     ):
         raise PublicationError("publication_com_blocked_evidence_promoted")
+
+
+def _validate_com_artifact_route(
+    rows: list[dict[str, Any]],
+    manifest_by_id: dict[str, dict[str, Any]],
+    index_by_id: dict[str, dict[str, Any]],
+) -> None:
+    row = next((item for item in rows if item["id"] == "com-run-artifact"), None)
+    command = manifest_by_id.get("com.run-artifact")
+    evidence_id = "p5-08f-specified-com-artifact-route"
+    evidence = index_by_id.get(evidence_id)
+    if (
+        row is None
+        or row["domain"] != "com"
+        or row["command_id"] != "com.run-artifact"
+        or row["product_surface"] != "available"
+        or row["acceptance_state"] != "specified"
+        or row["external_oracle"] is not False
+        or row["evidence_ids"] != [evidence_id]
+        or row["blockers"]
+        != ["caller_supplied_parameter_partition_only", "authoritative_com_profile_not_accepted"]
+        or row["non_claims"] != ["not_agent_com_parity_or_external_acceptance"]
+        or command is None
+        or command["route"] != ["com", "run-artifact"]
+        or command["availability"] != "available"
+        or command["transport"] != "stdin_json_v1"
+        or command["request_schema"] != "sipi.com.run-artifact-request.v1"
+        or command["response_schema"] != "sipi.com.run-artifact-specified-result.v1"
+        or command["unavailable_reason"] is not None
+        or command["nonclaim"] != "product_owned_bounded_artifact_execution_non_oracle_only"
+    ):
+        raise PublicationError("publication_com_artifact_route_binding_invalid")
+    if (
+        evidence is None
+        or evidence["kind"] != "capability_contract"
+        or evidence["path"] != "docs/baselines/p5-08f-specified-com-artifact-route.v1.yaml"
+        or evidence["subject"] != "com"
+        or evidence["evidence_state"] != "specified"
+    ):
+        raise PublicationError("publication_com_artifact_evidence_invalid")
+    try:
+        result = validate_com_artifact_route()
+    except (ComArtifactRouteError, OSError, RuntimeError, ValueError):
+        raise PublicationError("publication_com_artifact_evidence_invalid") from None
+    if result.get("valid") is not True or result.get("p5_08_closed") is not False:
+        raise PublicationError("publication_com_artifact_evidence_promoted")
 
 
 def _validate_product_owned_unavailable_catalog_routes(

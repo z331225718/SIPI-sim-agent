@@ -31,6 +31,8 @@ mod com_run_admission_v1;
 mod com_run_artifact_execution_v1;
 mod com_run_artifact_provenance_v1;
 mod com_run_execution_v1;
+mod com_specified_artifact_execution_v1;
+mod com_specified_parameter_ingestion_v1;
 mod combined_noise_pdf_v1;
 mod compliance_report_v1;
 mod crosstalk_noise_v1;
@@ -118,6 +120,16 @@ pub use com_run_artifact_provenance_v1::{
 pub use com_run_execution_v1::{
     COM_RUN_EXECUTION_POLICY_V1, COM_RUN_RESULT_SCHEMA_V1, ComRunExecutionErrorV1,
     ComRunResultEnvelopeV1, execute_com_run_v1,
+};
+pub use com_specified_artifact_execution_v1::{
+    COM_RUN_ARTIFACT_SPECIFIED_POLICY_V1, COM_RUN_ARTIFACT_SPECIFIED_RESULT_SCHEMA_V1,
+    ComSpecifiedArtifactExecutionErrorV1, ComSpecifiedArtifactExecutionReportV1,
+    execute_com_run_artifact_from_product_values_v1,
+};
+pub use com_specified_parameter_ingestion_v1::{
+    COM_SPECIFIED_PARAMETER_INGESTION_POLICY_V1, ComSpecifiedParameterConsumptionReportV1,
+    ComSpecifiedParameterIngestionErrorV1, ComSpecifiedParameterIngestionV1,
+    ingest_com_specified_parameters_v1,
 };
 pub use combined_noise_pdf_v1::{
     COMBINED_NOISE_PDF_POLICY_V1, CombinedNoisePdfV1, combine_r480_noise_pdf_v1,

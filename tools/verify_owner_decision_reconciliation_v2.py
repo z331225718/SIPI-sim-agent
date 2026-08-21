@@ -2,7 +2,7 @@
 
 The v1 owner request is historical and immutable.  This gate binds the
 additive v2 decision record to the current ledger/PLAN state and requires the
-current request to contain only the seven external asset/oracle blockers.
+current request to contain only the six remaining external asset/oracle blockers.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ SEMANTICS = "semantics_not_implemented"
 SCOPED_RESOLVED = "resolved_scoped"
 EXTERNAL = "external_asset_oracle"
 OWNER_IDS = ("P3B-02", "P3B-04", "P3B-05", "P3C-01", "P4A-01")
-EXTERNAL_IDS = ("P1-04B", "P4A-01", "P4A-02", "P4B-08", "P4B-09", "P5-02", "P5-06")
+EXTERNAL_IDS = ("P1-04B", "P4A-01", "P4B-08", "P4B-09", "P5-02", "P5-06")
 CURRENT_REQUEST_PURPOSE = (
     "Current owner-input request after the five recorded semantic decisions were reconciled. "
     "Resolved owner-decision rows are not repeated here; only external asset/oracle blockers remain."
@@ -40,7 +40,6 @@ CURRENT_REQUEST_PURPOSE = (
 CURRENT_REQUEST_DECISION_POINTS = {
     "P1-04B": "provide exact selected profile, custody, rights, and distribution facts for the trusted external fixtures; comparison permission is already recorded",
     "P4A-01": "provide exact complete official IBIS asset custody, rights, selected profile, and admissible model/corner facts; the tracked truncated prefix is rejected for semantic use",
-    "P4A-02": "provide authoritative dynamic endpoint semantics and evidence for reference, supply, initial state, integration, timebase, grid, stimulus, resource, tolerance, and acceptance; current static observations do not authorize runtime",
     "P4B-08": "provide AMI rights, exact parameter compatibility, dynamic dependency closure, isolated vendor worker, and fresh-runtime evidence; S4P topology/port mapping is already observed",
     "P4B-09": "provide an authorized profile and fresh isolated runtime evidence for sipi ami run; silent fallback is prohibited",
     "P5-02": "provide authoritative MATLAB/Agent-COM oracle material and the remaining warning/default-layout evidence beyond the pinned MLSE source observations",
@@ -63,12 +62,7 @@ CURRENT_REQUEST_GATES = {
         "tools/verify_owner_decision_reconciliation_v2.py",
         "tools/verify_p4a_01_selected_ibis_truncation_disposition.py",
         "tools/verify_p4a_03_complete_typed_inventory_consumer.py",
-    ],
-    "P4A-02": [
-        "tools/verify_p4a_ibis71_behavior_scope_preflight.py",
-        "tools/verify_p4a_02b_gen5_behavior_spec.py",
-        "tools/verify_p4a_dynamic_endpoint_transient_composition_contract.py",
-        "tools/verify_p4a_02_static_declaration_scope_and_dynamic_blocker.py",
+        "tools/verify_p4a_01_official_object_rights_recheck.py",
     ],
     "P4B-08": [
         "tools/verify_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py",
@@ -76,10 +70,12 @@ CURRENT_REQUEST_GATES = {
         "tools/verify_p4b_08_s4p_observation.py",
         "tools/verify_p4b_08b_s4p_ami_matrix_preflight.py",
         "tools/verify_p4b_08c_ads_netlist_topology_semantic_response.py",
+        "tools/verify_p4b_dual_ami_lane3_admission.py",
     ],
     "P4B-09": [
         "tools/verify_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py",
         "tools/verify_p4b_ads_pcie_gen5_dual_ami_runtime_preflight.py",
+        "tools/verify_p4b_dual_ami_lane3_admission.py",
     ],
     "P5-02": [
         "tools/verify_com_r480_acceptance.py",
@@ -95,6 +91,7 @@ CURRENT_REQUEST_GATES = {
         "tools/verify_p5_02n_warning_report.py",
         "tools/verify_p5_02o_source_observed_mlse_warning_vocabulary_subset.py",
         "tools/verify_p5_02p_pinned_mlse_default_consumption_observation.py",
+        "tools/verify_p5_02q_agent_com_clean_default_warning_observation.py",
     ],
     "P5-06": [
         "tools/verify_release_capability_publication.py",
@@ -108,10 +105,12 @@ CURRENT_REQUEST_GATES = {
         "tools/verify_p5_r480_reference_custody_preflight.py",
         "tools/verify_p5_06_pinned_source_external_oracle_candidate_document.py",
         "tools/verify_p5_06k_required_com_compare_contract_gap.py",
+        "tools/verify_p5_06q_agent_com_clean_oracle_observation.py",
+        "tools/verify_p3c_03c_com_metric_checkpoint_boundary.py",
     ],
 }
 CURRENT_LEDGER_IDS = {
-    "P1-04B", "P2-06", "P3B-02", "P3C-03", "P4A-01", "P4A-02", "P4A-03",
+    "P1-04B", "P3B-02", "P3C-03", "P4A-01", "P4A-03",
     "P4B-02", "P4B-08", "P4B-09", "P5-02", "P5-06", "P5-08",
     "P7-01", "P7-02", "P7-03", "P7-04", "P7-05", "P7-06", "P7-07", "P7-08", "P7-09",
 }
@@ -122,6 +121,7 @@ RECONCILED_SEMANTICS_GATES = {
         "tools/verify_owner_decision_reconciliation_v2.py",
         "tools/verify_p3b_02_equalizer_semantics_gap.py",
         "tools/verify_p3b_02_named_fir_prerequisite.py",
+        "tools/verify_p3b_02_pybert_profile_source_audit.py",
     ],
 }
 HISTORICAL_REQUEST_SHA256 = "a38f3688b343ed83c1c79c3c32cf5f459c1ab99fbc7fef7f1cdc825fe792c677"

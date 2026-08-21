@@ -18,7 +18,7 @@ class CoverageTests(unittest.TestCase):
     def test_current_plan_and_ledger_have_tracked_coverage(self) -> None:
         result = GATE.validate(ROOT)
         self.assertTrue(result["valid"])
-        self.assertEqual(result["items"], 24)
+        self.assertEqual(result["items"], 20)
         self.assertGreater(result["gates"], 0)
         self.assertEqual(result["coverage_scope"], "tracked_gate_inventory_only")
         self.assertEqual(result["executed_gates"], 0)

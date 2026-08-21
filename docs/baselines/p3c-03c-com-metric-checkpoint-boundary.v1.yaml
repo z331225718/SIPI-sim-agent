@@ -1,0 +1,45 @@
+schema: sipi.p3c-03c.com-metric-checkpoint-boundary.v1
+status: same_checkpoint_compare_surface_implemented_acceptance_open
+authority: product_comparison_policy_only
+scope:
+  work_item: P3C-03
+  slice: P3C-03c
+  product_runtime_invoked: false
+  external_oracle_selected: false
+  product_vs_oracle_compare_executed: false
+  acceptance_or_release_promoted: false
+implementation:
+  source:
+    path: crates/sipi-compare/src/com_metric_checkpoint_v1.rs
+    sha256: 55e4021f7df51b9b7c936d8f7f144451b6d8cd3dfd93a3aedbdaf9c4d09a28ca
+  public_surface:
+    path: crates/sipi-compare/src/lib.rs
+    sha256: 92d18708db1c8251dca4118c4e3abf01fb00a02722351938d5886310ca6c48ca
+  entrypoint: compare_com_metric_checkpoint_v1
+  report_type: ComMetricCheckpointCompareReportV1
+  policy: sipi.p3c-03.com-metric-checkpoint-v1.strict-same-checkpoint-no-alignment
+  metrics: [COM_dB, ERL_dB, TD_ILN_dB]
+  all_values_finite_required: true
+  checkpoint: caller_supplied_exact_nonempty_ascii_identity
+comparison:
+  alignment_policy: strict_same_checkpoint_no_alignment
+  interpolation: false
+  unit_conversion: false
+  icn_alias: false
+  owner_absolute_tolerance_db: {COM_dB: 0.1, ERL_dB: 0.1, TD_ILN_dB: 0.1}
+  owner_relative_tolerance: 0.0
+  tolerance_authority: owner_policy_comparison_only_not_acceptance
+  mismatched_checkpoint: rejected
+  external_oracle_status: not_selected
+tests:
+  focused_unit_tests: 5
+  covers: [same_checkpoint_pass, checkpoint_mismatch, non_owner_tolerance, explicit_td_iln, malformed_checkpoint]
+non_claims:
+  - not_agent_com_parity
+  - not_external_oracle_compare
+  - not_td_iln_algorithm
+  - not_acceptance_evidence
+  - not_release_evidence
+audit:
+  path: docs/baselines/audits/2026-08-21-p3c-03c-com-metric-checkpoint-boundary.md
+  sha256: aa6319054e81926db429bd77312071a918df50396897713d02a93bb04af0c489

@@ -1,0 +1,82 @@
+{
+  "schema": "sipi.p2-06.exact-parser-measurement-replay.v2",
+  "status": "exact_profile_scoped_close_supported",
+  "predecessor": {
+    "path": "docs/baselines/p2-06-exact-rc-measurement-current-external-compare.v1.yaml",
+    "sha256": "a3089d5eb13173e1fc8c54aa8fb2c17d9b2d29263e786fd80e7308317b901682",
+    "limitation_superseded": "waveform_observed_measurement_authority_not_bound",
+    "unchanged": true
+  },
+  "external_report": {
+    "schema": "sipi.p2-06.exact-rc-measurement-compare.v1",
+    "sha256": "4678a4febb13d105e6ed739701f1e860916d369ab54e20ae6f50ed4251836d96",
+    "custody": "operator_external_only"
+  },
+  "input": {
+    "profile": "strict_seven_line_single_pulse_rc_tran_max_vout",
+    "bytes": 143,
+    "sha256": "e205a2e1ba71c77d1063f92bd877b449bcf10bfdedc3e9dd2ebdf505038d4f84",
+    "same_bytes_supplied_to_oracle_and_product": true,
+    "origin": "first_party_exact_profile"
+  },
+  "external_source": {
+    "repository": "Agent-Spice",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402",
+    "license": "MIT",
+    "redistribution": "external_only_hash_bound",
+    "objects": {
+      "LICENSE": "55aac2e4f8c36a978d315efb02815972579b8293",
+      "LICENSE-MANIFEST.md": "2b549451fdf28b4fbaf524010efbe33c6d49b385",
+      "native/agent-spice-sim/Cargo.toml": "b56d29811d0293c878b22485523f03ea06dc2d91",
+      "native/agent-spice-sim/src/netlist.rs": "83ffa04c90fb7c523875fb93c64b1f245793bcd1",
+      "native/agent-spice-sim/src/simulator.rs": "ed5712567420013d70c39a14257e1f77004a64b4",
+      "native/agent-spice-sim/src/result.rs": "f13c37b9fd367c5cb66a148deecedcea7d12b794",
+      "native/agent-spice-sim/src/main.rs": "a333857287fc093f2f1fa515b135fe31a2bc9eb1"
+    },
+    "path": {
+      "parse": "netlist.rs Parser::parse_measurement",
+      "evaluate": "simulator.rs evaluate_measurements",
+      "result": "result.rs SimulationResult.measurements",
+      "publish": "main.rs output::write_json"
+    }
+  },
+  "replay": {
+    "oracle_fresh_processes": 2,
+    "product_fresh_processes": 2,
+    "oracle_git_dirty": false,
+    "oracle_measurement_source": "SimulationResult.measurements[0]",
+    "oracle_measurement_value_volts": 0.0019980013647638,
+    "product_measurement_value_volts": 0.001997004991014977,
+    "sample_count": 4,
+    "measurement_max_absolute_error_volts": 9.963737488231927e-7,
+    "voltage_max_absolute_error_volts": 9.963737488231927e-7,
+    "absolute_tolerance_volts": 2.0e-6,
+    "relative_tolerance": 5.0e-4,
+    "accepted": true
+  },
+  "product": {
+    "parser_source": "crates/sipi-tran/src/parsed_rc_measurement_v1.rs",
+    "parser_source_sha256": "af16bf6503bc25a40fcb2f4c87b820dbf5b65119145264af4d79789851769d3c",
+    "harness_source": "crates/sipi-tran/examples/exact_rc_measurement_stdin.rs",
+    "harness_source_sha256": "bd84ef5c3a93a20ac2a4e41512cc5407d3aa556331f47750b57181ccfac7ab23",
+    "comparator": "tools/compare_p2_06_exact_rc_measurement.py",
+    "comparator_sha256": "590d734482aceb2e182a4d415a59b3ccc50a154ab1f6e16ca6e3cabf76bd9941",
+    "stdin_budget_bytes": 4096
+  },
+  "closure": {
+    "exact_profile_scoped_close": true,
+    "same_input_original_parser_executed": true,
+    "external_measurement_result_observed": true,
+    "measurement_reduced_by_original_engine": true,
+    "sampled_max_reduced_by_comparator": false,
+    "generic_spice_or_mna": false,
+    "op_or_ac": false,
+    "general_measurements": false
+  },
+  "non_claims": [
+    "This closes only the strict seven-line bounded RC/PULSE/MAX V(out) profile.",
+    "The product still rejects OP, AC, generic devices, reordered statements, and measurement extensions.",
+    "No Agent-Spice source, deck fixture, waveform array, binary, or result payload is stored in this repository."
+  ]
+}

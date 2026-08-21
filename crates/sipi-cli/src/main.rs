@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 use std::{
+    collections::BTreeMap,
     env,
     io::{self, Cursor, Read},
     num::NonZeroUsize,
@@ -12,6 +13,11 @@ use std::{
 use sha2::{Digest, Sha256};
 use sipi_artifacts::{ArtifactRoot, VerifiedConsumptionPolicyV1};
 use sipi_channel::{ChannelLimitsV1, resolve_matched_kernel_v1};
+use sipi_com::{
+    COM_RUN_ARTIFACT_REQUEST_MAX_BYTES_V1, COM_RUN_ARTIFACT_SPECIFIED_RESULT_SCHEMA_V1,
+    ComRunPulseArtifactIdentityV1, ResolvedDefaultV1,
+    execute_com_run_artifact_from_product_values_v1,
+};
 use sipi_compare::{
     ARRAY_COMPARE_POLICY_V1, AlignedArrayV1, ArrayShapeV1, SemanticBindingDigestV1, ToleranceV1,
     UnitTagV1, compare_arrays_v1,
@@ -22,9 +28,9 @@ use sipi_compare::{
 };
 use sipi_contracts::{
     ARRAY_COMPARE_REQUEST_SCHEMA, ARTIFACT_REPORT_REQUEST_SCHEMA, CAPABILITIES_SCHEMA,
-    CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA, CapabilityCatalogV1,
-    FIXED_PROJECT_RUN_REQUEST_SCHEMA, IBIS_DC_EVALUATE_REQUEST_SCHEMA,
-    IBIS_QUASI_STATIC_ARTIFACT_BATCH_EVALUATE_REQUEST_SCHEMA,
+    CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA, COM_RUN_ARTIFACT_REQUEST_SCHEMA,
+    CapabilityCatalogV1, ComParameterValueV1, FIXED_PROJECT_RUN_REQUEST_SCHEMA,
+    IBIS_DC_EVALUATE_REQUEST_SCHEMA, IBIS_QUASI_STATIC_ARTIFACT_BATCH_EVALUATE_REQUEST_SCHEMA,
     IBIS_QUASI_STATIC_ARTIFACT_EVALUATE_REQUEST_SCHEMA, IBIS_QUASI_STATIC_EVALUATE_REQUEST_SCHEMA,
     LINK_PLAN_SCHEMA, PLANNED_DOMAINS, PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA,
     PRBS9_WAVEFORM_ARTIFACT_BYTE_LENGTH_V1, RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA, RULE_LEDGER_V1,
@@ -32,16 +38,16 @@ use sipi_contracts::{
     SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_BYTE_LENGTH_V3, TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA,
     TRAN_ONE_NODE_RC_PWL_REQUEST_SCHEMA, array_compare_request_schema_json,
     artifact_report_request_schema_json, capability_schema_json,
-    channel_matched_two_port_kernel_run_request_schema_json, deterministic_json,
-    fixed_project_run_request_schema_json, ibis_dc_evaluate_request_schema_json,
-    ibis_inspect_request_schema_json,
+    channel_matched_two_port_kernel_run_request_schema_json, com_run_artifact_request_schema_json,
+    deterministic_json, fixed_project_run_request_schema_json,
+    ibis_dc_evaluate_request_schema_json, ibis_inspect_request_schema_json,
     ibis_quasi_static_artifact_batch_evaluate_request_schema_json,
     ibis_quasi_static_artifact_evaluate_request_schema_json,
     ibis_quasi_static_evaluate_request_schema_json, link_causal_fir_request_schema_json,
     link_plan_schema_json, parse_array_compare_request_v1, parse_artifact_report_request_v1,
-    parse_channel_matched_two_port_kernel_run_request_v1, parse_fixed_project_run_request_v1,
-    parse_ibis_dc_evaluate_request_v1, parse_ibis_inspect_request_v1,
-    parse_ibis_quasi_static_artifact_batch_evaluate_request_v1,
+    parse_channel_matched_two_port_kernel_run_request_v1, parse_com_run_artifact_request_v1,
+    parse_fixed_project_run_request_v1, parse_ibis_dc_evaluate_request_v1,
+    parse_ibis_inspect_request_v1, parse_ibis_quasi_static_artifact_batch_evaluate_request_v1,
     parse_ibis_quasi_static_artifact_evaluate_request_v1,
     parse_ibis_quasi_static_evaluate_request_v1, parse_link_causal_fir_request_v1,
     parse_prbs9_metric_artifacts_request_v1, parse_prbs9_waveform_artifact_v1,
@@ -166,6 +172,34 @@ const ARTIFACT_INSPECTION_BINDINGS: &[CallerBindingV1] = &[
     CallerBindingV1 {
         pointer: "/artifact_id",
         role: "published_artifact_identity",
+        explicit_required: true,
+    },
+];
+
+const COM_RUN_ARTIFACT_BINDINGS: &[CallerBindingV1] = &[
+    CallerBindingV1 {
+        pointer: "/invocation/pulse_root",
+        role: "caller_owned_pulse_artifact_root",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/pulse_artifact_id",
+        role: "sealed_pulse_artifact_identity",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/pulse_manifest_sha256",
+        role: "sealed_pulse_manifest_identity",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/artifact_root",
+        role: "caller_owned_result_artifact_root",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/artifact_id",
+        role: "result_artifact_identity",
         explicit_required: true,
     },
 ];
@@ -523,6 +557,16 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         nonclaim: "no_com_solver_or_oracle_workflow",
     },
     CommandDescriptorV1 {
+        id: "com.run-artifact",
+        route: &["com", "run-artifact"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "stdin_json_v1",
+        request_schema: Some(COM_RUN_ARTIFACT_REQUEST_SCHEMA),
+        response_schema: Some("sipi.com.run-artifact-specified-result.v1"),
+        unavailable_reason: None,
+        nonclaim: "product_owned_bounded_artifact_execution_non_oracle_only",
+    },
+    CommandDescriptorV1 {
         id: "project.validate",
         route: &["project", "validate"],
         availability: CommandAvailabilityV1::Unavailable,
@@ -833,6 +877,15 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         successful_exit: 0,
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
+    CommandProtocolProfileV1 {
+        command_id: "com.run-artifact",
+        example_id: None,
+        required_options: &["--pulse-root"],
+        caller_bindings: COM_RUN_ARTIFACT_BINDINGS,
+        validation_rule_id: Some("com.run-artifact.specified-non-oracle.v1"),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
 ];
 
 struct Response {
@@ -948,6 +1001,13 @@ fn main() {
         && id == "--artifact-id"
     {
         ProcessAdapter::project_run_stdin(artifact_root, artifact_id)
+    } else if let [command, action, stdin, pulse, pulse_root] = &arguments[..]
+        && command == "com"
+        && action == "run-artifact"
+        && stdin == "--stdin"
+        && pulse == "--pulse-root"
+    {
+        ProcessAdapter::com_run_artifact_stdin(pulse_root)
     } else {
         dispatch(&arguments)
     };
@@ -985,6 +1045,13 @@ impl ProcessAdapter {
             Ok(input) => input,
             Err(code) => return error(2, code, "stdin request is invalid"),
         };
+        if input.len() > COM_RUN_ARTIFACT_REQUEST_MAX_BYTES_V1 {
+            return error(
+                3,
+                "contract_rejected",
+                "specified COM artifact request was rejected",
+            );
+        }
         if parse_tran_rc_pulse_request_v1(&input).is_err() {
             return error(3, "contract_rejected", "TRAN request was rejected");
         }
@@ -1237,6 +1304,24 @@ impl ProcessAdapter {
         };
         run_artifact_report(request.artifact_root(), request.artifact_id())
     }
+
+    fn com_run_artifact_stdin(pulse_root: &str) -> Response {
+        let input = match read_stdin_request() {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        let request = match parse_com_run_artifact_request_v1(&input) {
+            Ok(request) => request,
+            Err(_) => {
+                return error(
+                    3,
+                    "contract_rejected",
+                    "specified COM artifact request was rejected",
+                );
+            }
+        };
+        run_com_artifact(pulse_root, &request)
+    }
 }
 
 fn read_stdin_request() -> Result<Vec<u8>, &'static str> {
@@ -1251,6 +1336,121 @@ fn read_stdin_request() -> Result<Vec<u8>, &'static str> {
     } else {
         Ok(input)
     }
+}
+
+fn run_com_artifact(
+    pulse_root_path: &str,
+    request: &sipi_contracts::ComRunArtifactRequestV1,
+) -> Response {
+    let pulse_root = match ArtifactRoot::open_existing(Path::new(pulse_root_path)) {
+        Ok(root) => root,
+        Err(_) => {
+            return error(
+                5,
+                "operational_failure",
+                "pulse artifact root is unavailable",
+            );
+        }
+    };
+    let pulse_identity = match ComRunPulseArtifactIdentityV1::try_new(
+        request.pulse_artifact_id.clone(),
+        request.pulse_manifest_sha256.clone(),
+    ) {
+        Ok(identity) => identity,
+        Err(_) => {
+            return error(
+                3,
+                "contract_rejected",
+                "pulse artifact identity was rejected",
+            );
+        }
+    };
+    let provided_values = match product_parameter_values(&request.params) {
+        Ok(values) => values,
+        Err(_) => return error(3, "contract_rejected", "COM parameter values were rejected"),
+    };
+    let defaults = match product_parameter_values(&request.defaults) {
+        Ok(values) => values,
+        Err(_) => return error(3, "contract_rejected", "COM default values were rejected"),
+    };
+    let report = match execute_com_run_artifact_from_product_values_v1(
+        &request.artifact_root,
+        &request.artifact_id,
+        &pulse_root,
+        &pulse_identity,
+        &request.consumed_keys,
+        &provided_values,
+        &defaults,
+        &request.unconsumed_keys,
+    ) {
+        Ok(report) => report,
+        Err(_) => {
+            return error(
+                5,
+                "operational_failure",
+                "COM artifact execution did not complete",
+            );
+        }
+    };
+    let result = report.result();
+    let parameters = report.parameter_consumption();
+    success(format!(
+        "{{\"schema\":\"{}\",\"policy\":\"{}\",\"input\":{{\"artifact_id\":\"{}\",\"manifest_sha256\":\"{}\",\"payload\":\"pulse.f64le\",\"pulse_sample_count\":{}}},\"output_artifact_id\":\"{}\",\"parameters\":{{\"policy\":\"{}\",\"consumed_keys\":{},\"provided_value_keys\":{},\"defaulted_keys\":{},\"unconsumed_keys\":{},\"workbook_value_keys\":[]}},\"result\":{{\"schema\":\"{}\",\"policy\":\"{}\",\"admitted\":{},\"com_db\":{},\"vec_db\":{},\"veo_mv\":{},\"sigma_n_v\":{},\"invalid_reason\":null}},\"scope\":{{\"behavioral_replication\":\"not_claimed\",\"agent_com_parity\":\"not_claimed\",\"external_acceptance\":\"blocked\",\"ieee_certification\":false,\"release_evidence\":false}}}}",
+        COM_RUN_ARTIFACT_SPECIFIED_RESULT_SCHEMA_V1,
+        sipi_com::COM_RUN_ARTIFACT_SPECIFIED_POLICY_V1,
+        report.input_artifact_id(),
+        report.input_manifest_sha256(),
+        report.pulse_sample_count(),
+        report.output_provenance().binding().artifact_id(),
+        sipi_com::COM_SPECIFIED_PARAMETER_INGESTION_POLICY_V1,
+        json_string_array(parameters.consumed_keys()),
+        json_string_array(parameters.provided_value_keys()),
+        json_string_array(parameters.defaulted_keys()),
+        json_string_array(parameters.unconsumed_keys()),
+        result.schema(),
+        result.policy(),
+        result.admitted(),
+        result.com_db().map_or_else(|| "null".to_owned(), json_f64),
+        result.vec_db().map_or_else(|| "null".to_owned(), json_f64),
+        result.veo_mv().map_or_else(|| "null".to_owned(), json_f64),
+        result
+            .sigma_n_v()
+            .map_or_else(|| "null".to_owned(), json_f64),
+    ))
+}
+
+fn json_f64(value: f64) -> String {
+    serde_json::to_string(&value).unwrap_or_else(|_| "null".to_owned())
+}
+
+fn product_parameter_values(
+    values: &BTreeMap<String, ComParameterValueV1>,
+) -> Result<BTreeMap<String, ResolvedDefaultV1>, ()> {
+    values
+        .iter()
+        .map(|(key, value)| {
+            let resolved = match value {
+                ComParameterValueV1::Scalar(value) if value.is_finite() => {
+                    ResolvedDefaultV1::Scalar(*value)
+                }
+                ComParameterValueV1::Boolean(value) => ResolvedDefaultV1::Boolean(*value),
+                ComParameterValueV1::String(value) => ResolvedDefaultV1::String(value.clone()),
+                ComParameterValueV1::Vector(values) => ResolvedDefaultV1::Vector(values.clone()),
+                ComParameterValueV1::Matrix(values) => ResolvedDefaultV1::Matrix(values.clone()),
+                ComParameterValueV1::Scalar(_) => return Err(()),
+            };
+            Ok((key.clone(), resolved))
+        })
+        .collect()
+}
+
+fn json_string_array(values: &[String]) -> String {
+    let encoded = values
+        .iter()
+        .map(|value| serde_json::to_string(value).unwrap_or_else(|_| "\"\"".to_owned()))
+        .collect::<Vec<_>>()
+        .join(",");
+    format!("[{encoded}]")
 }
 
 fn run_fixed_tran(artifact_root: &str, artifact_id: &str, request: &[u8]) -> Response {
@@ -2927,6 +3127,7 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["compare", "prbs9-waveform-only"]
             | ["project", "run"]
             | ["report", "inspect"]
+            | ["com", "run-artifact"]
     )
 }
 
@@ -3024,6 +3225,8 @@ fn schema_bytes(id: &str) -> Result<Option<Vec<u8>>, sipi_contracts::ContractErr
         project_plan_schema_json().map(Some)
     } else if id == FIXED_PROJECT_RUN_REQUEST_SCHEMA {
         fixed_project_run_request_schema_json().map(Some)
+    } else if id == COM_RUN_ARTIFACT_REQUEST_SCHEMA {
+        com_run_artifact_request_schema_json().map(Some)
     } else if id == sipi_contracts::RECEIVER_INPUT_SCHEMA {
         receiver_input_schema_json().map(Some)
     } else if id == RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA {
@@ -3409,8 +3612,13 @@ fn doctor_json() -> String {
 }
 
 fn schema_list_json() -> String {
-    format!(
-        "{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"{CAPABILITIES_SCHEMA}\",\"{ARTIFACT_REPORT_REQUEST_SCHEMA}\",\"{CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA}\",\"{ARRAY_COMPARE_REQUEST_SCHEMA}\",\"{PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA}\",\"{SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACTS_REQUEST_SCHEMA_V3}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA}\",\"{}\",\"{}\"]}}",
+    let schemas = [
+        CAPABILITIES_SCHEMA,
+        ARTIFACT_REPORT_REQUEST_SCHEMA,
+        CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA,
+        ARRAY_COMPARE_REQUEST_SCHEMA,
+        PRBS9_METRIC_ARTIFACTS_REQUEST_SCHEMA,
+        SELECTED_HIGHLOSS_PRBS9_WAVEFORM_ONLY_ARTIFACTS_REQUEST_SCHEMA_V3,
         IBIS_DC_EVALUATE_REQUEST_SCHEMA,
         IBIS_QUASI_STATIC_ARTIFACT_BATCH_EVALUATE_REQUEST_SCHEMA,
         IBIS_QUASI_STATIC_ARTIFACT_EVALUATE_REQUEST_SCHEMA,
@@ -3424,9 +3632,16 @@ fn schema_list_json() -> String {
         sipi_contracts::RECEIVER_SEMANTICS_SCHEMA,
         RECEIVER_DIAGNOSTIC_RUN_REQUEST_SCHEMA,
         sipi_contracts::RX_LOAD_DIFFERENTIAL_RC_EVALUATE_REQUEST_SCHEMA,
+        TRAN_ONE_NODE_RC_PULSE_REQUEST_SCHEMA,
         sipi_contracts::TRAN_RC_PULSE_REQUEST_SCHEMA,
         sipi_contracts::VALIDATION_REQUEST_SCHEMA,
-    )
+        COM_RUN_ARTIFACT_REQUEST_SCHEMA,
+    ]
+    .into_iter()
+    .map(|schema| format!("\"{schema}\""))
+    .collect::<Vec<_>>()
+    .join(",");
+    format!("{{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[{schemas}]}}")
 }
 
 fn schema_show(id: &str) -> Response {
@@ -3474,6 +3689,7 @@ fn validate_self(schema: Option<&str>) -> Response {
             && id != sipi_contracts::LINK_CAUSAL_FIR_REQUEST_SCHEMA
             && id != sipi_contracts::PROJECT_PLAN_SCHEMA
             && id != FIXED_PROJECT_RUN_REQUEST_SCHEMA
+            && id != COM_RUN_ARTIFACT_REQUEST_SCHEMA
             && id != sipi_contracts::RECEIVER_INPUT_SCHEMA
             && id != sipi_contracts::RECEIVER_SEMANTICS_SCHEMA
     }) {
@@ -3505,6 +3721,7 @@ fn validate_self(schema: Option<&str>) -> Response {
         && link_causal_fir_request_schema_json().is_ok()
         && project_plan_schema_json().is_ok()
         && fixed_project_run_request_schema_json().is_ok()
+        && com_run_artifact_request_schema_json().is_ok()
         && receiver_input_schema_json().is_ok()
         && receiver_semantics_schema_json().is_ok()
         && command_protocol_profiles_are_valid(COMMAND_MANIFEST_V1, COMMAND_PROTOCOL_PROFILES_V1)
@@ -3542,7 +3759,10 @@ fn inspect_capability(id: &str) -> Response {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::{
+        fs,
+        sync::atomic::{AtomicUsize, Ordering},
+    };
 
     static TEST_NONCE: AtomicUsize = AtomicUsize::new(0);
 
@@ -3776,6 +3996,135 @@ mod tests {
     }
 
     #[test]
+    fn specified_com_artifact_route_is_explicit_and_legacy_com_stays_closed() {
+        let manifest = command_manifest_json();
+        assert!(manifest.contains("\"id\":\"com.run-artifact\""));
+        assert!(manifest.contains("product_owned_bounded_artifact_execution_non_oracle_only"));
+        assert!(!manifest.contains(
+            "\"id\":\"com.run\",\"route\":[\"com\",\"run\"],\"availability\":\"available\""
+        ));
+        let catalog = command_protocol_catalog_json().expect("catalog");
+        assert!(catalog.contains("\"command_id\":\"com.run-artifact\""));
+        assert!(
+            catalog.contains("\"validation_rule_id\":\"com.run-artifact.specified-non-oracle.v1\"")
+        );
+        assert!(
+            schema_bytes(COM_RUN_ARTIFACT_REQUEST_SCHEMA)
+                .unwrap()
+                .is_some()
+        );
+        assert_eq!(dispatch(&args(&["com", "run"])).code, 4);
+    }
+
+    #[test]
+    fn specified_com_request_result_and_cli_route_share_one_bounded_schema() {
+        let nonce = TEST_NONCE.fetch_add(1, Ordering::Relaxed);
+        let pulse_root = std::env::temp_dir().join(format!("sipi-cli-com-specified-pulse-{nonce}"));
+        let output_root =
+            std::env::temp_dir().join(format!("sipi-cli-com-specified-output-{nonce}"));
+        let _ = fs::remove_dir_all(&pulse_root);
+        let _ = fs::remove_dir_all(&output_root);
+        let pulse_store = ArtifactRoot::open_or_create(&pulse_root).expect("pulse root");
+        let pulse = (0..64)
+            .map(|index| {
+                let index = index as f64;
+                0.5 * (-(index - 28.0) * (index - 28.0) / 80.0).exp() * (index - 28.0) * 0.4
+                    + 0.002 * (index * 0.9).sin()
+            })
+            .collect::<Vec<_>>();
+        let pulse_bytes = pulse
+            .iter()
+            .flat_map(|value| value.to_le_bytes())
+            .collect::<Vec<_>>();
+        let mut pulse_stage = pulse_store.begin("pulse-1").expect("pulse staging");
+        pulse_stage
+            .stage_reader("pulse.f64le", Cursor::new(pulse_bytes), 524_288)
+            .expect("pulse payload");
+        pulse_stage
+            .seal()
+            .expect("pulse seal")
+            .publish_new()
+            .expect("pulse publish");
+        let manifest_bytes =
+            fs::read(pulse_root.join("pulse-1").join("success.json")).expect("pulse manifest");
+        let pulse_manifest_sha256 = format!("{:x}", Sha256::digest(&manifest_bytes));
+
+        let consumed_keys = [
+            "samples_per_ui",
+            "LEVELS",
+            "bin_size",
+            "A_v",
+            "R_LM",
+            "SNR_TX",
+            "sigma_X",
+            "sigma_RJ",
+            "h_J",
+            "sigma_N",
+            "A_DD",
+            "spec_ber",
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
+        let mut params = BTreeMap::new();
+        params.insert(
+            "samples_per_ui".to_owned(),
+            ComParameterValueV1::Scalar(8.0),
+        );
+        params.insert("LEVELS".to_owned(), ComParameterValueV1::Scalar(4.0));
+        params.insert("bin_size".to_owned(), ComParameterValueV1::Scalar(0.01));
+        params.insert("A_v".to_owned(), ComParameterValueV1::Scalar(0.5));
+        params.insert("R_LM".to_owned(), ComParameterValueV1::Scalar(50.0));
+        params.insert("SNR_TX".to_owned(), ComParameterValueV1::Scalar(30.0));
+        params.insert("sigma_X".to_owned(), ComParameterValueV1::Scalar(0.03));
+        params.insert("sigma_RJ".to_owned(), ComParameterValueV1::Scalar(1e-4));
+        params.insert(
+            "h_J".to_owned(),
+            ComParameterValueV1::Vector(vec![0.3, 0.5, 0.2]),
+        );
+        params.insert("sigma_N".to_owned(), ComParameterValueV1::Scalar(0.01));
+        params.insert("A_DD".to_owned(), ComParameterValueV1::Scalar(0.4));
+        params.insert("spec_ber".to_owned(), ComParameterValueV1::Scalar(1e-4));
+        let request = sipi_contracts::ComRunArtifactRequestV1 {
+            schema: COM_RUN_ARTIFACT_REQUEST_SCHEMA.to_owned(),
+            request_id: "com-artifact-1".to_owned(),
+            pulse_artifact_id: "pulse-1".to_owned(),
+            pulse_manifest_sha256,
+            artifact_root: output_root.to_string_lossy().into_owned(),
+            artifact_id: "result-1".to_owned(),
+            consumed_keys,
+            params,
+            defaults: BTreeMap::new(),
+            unconsumed_keys: Vec::new(),
+        };
+        let request_bytes = serde_json::to_vec(&request).expect("request JSON");
+        let parsed = parse_com_run_artifact_request_v1(&request_bytes).expect("request contract");
+        let response = run_com_artifact(&pulse_root.to_string_lossy(), &parsed);
+        assert_eq!(response.code, 0);
+        let response_json: serde_json::Value =
+            serde_json::from_str(&response.stdout.expect("CLI response")).expect("response JSON");
+        let result_bytes =
+            fs::read(output_root.join("result-1").join("result.json")).expect("result artifact");
+        let result_json: serde_json::Value =
+            serde_json::from_slice(&result_bytes).expect("result JSON");
+        assert_eq!(response_json, result_json);
+        assert_eq!(
+            response_json["schema"],
+            COM_RUN_ARTIFACT_SPECIFIED_RESULT_SCHEMA_V1
+        );
+        assert_eq!(response_json["scope"]["agent_com_parity"], "not_claimed");
+        assert!(
+            ArtifactRoot::open_existing(&output_root)
+                .expect("output root")
+                .verify_published("result-1")
+                .is_ok()
+        );
+        assert_eq!(dispatch(&args(&["com", "run"])).code, 4);
+        let _ = fs::remove_dir_all(pulse_root);
+        let _ = fs::remove_dir_all(output_root);
+    }
+
+    #[test]
     fn discovery_and_self_commands_are_static_and_fail_closed() {
         for command in [
             args(&["doctor", "--json"]),
@@ -3803,7 +4152,7 @@ mod tests {
     fn schema_list_uses_the_schema_inventory_order() {
         assert_eq!(
             schema_list_json(),
-            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.compare.aligned-arrays-request.v1\",\"sipi.compare.prbs9-metric-artifacts-request.v1\",\"sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-request.v3\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-artifact-batch-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-artifact-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.receiver.diagnostic-run-request.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.one-node-rc-pulse-request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\"]}"
+            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.compare.aligned-arrays-request.v1\",\"sipi.compare.prbs9-metric-artifacts-request.v1\",\"sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-request.v3\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-artifact-batch-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-artifact-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.receiver.diagnostic-run-request.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.one-node-rc-pulse-request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\",\"sipi.com.run-artifact-request.v1\"]}"
         );
     }
 

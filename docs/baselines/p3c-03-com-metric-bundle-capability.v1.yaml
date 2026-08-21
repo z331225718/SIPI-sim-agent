@@ -19,7 +19,7 @@ implementation:
     sha256: 8cfaa822e666e2c9fae0710f2e41cabc001d55e2a8a13acb5e4fb370444c30ed
   public_surface:
     path: crates/sipi-compare/src/lib.rs
-    sha256: a8472e62b5892a8fa5a0b4aa88b26e33c12176f5ca3a2a81128a8406509e1b74
+    sha256: 92d18708db1c8251dca4118c4e3abf01fb00a02722351938d5886310ca6c48ca
   policy: sipi.p3c-03.com-metric-bundle.v1.com-erl-td-iln-explicit-tolerances
   bundle_type: ComMetricBundleV1
   tolerance_type: ComMetricTolerancesV1

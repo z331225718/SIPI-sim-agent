@@ -1,0 +1,79 @@
+schema: sipi.p4a-03.selected-model-missing-selection-blocker.v1
+status: d4_scoped_grammar_authorized_selection_missing
+promotion_eligible: false
+decision:
+  anchor: user_selected_all_recommendations_2026-08-21
+  d4: A
+  rule: implement_only_grammar_required_by_explicitly_selected_model
+predecessors:
+  required_profile_inventory:
+    path: docs/baselines/p4a-01-required-profile-inventory.v1.yaml
+    sha256: 45b6de079275d89c05656b98ca40dea122721107a373ab13f0bae84f26bdb495
+  owner_decision_reconciliation:
+    path: docs/baselines/owner-decision-reconciliation.v2.yaml
+    sha256: 4e9109e3adde405f3c6529bd6d09f27828a0cc56959eeb024b5600865bbba1f0
+  official_rights_recheck:
+    path: docs/baselines/p4a-01-official-object-rights-recheck.v1.yaml
+    sha256: 8fdddc0053907d5957eb84739c1a106e43ccf1eb2c87ae2fe1c43a30ff579d66
+  complete_typed_inventory:
+    path: docs/baselines/p4a-03-complete-typed-inventory-consumer.v2.yaml
+    sha256: cb5365bc95da97261ef349ee4a7bc193213b871094ad32a1ed05cc943c277d1b
+exact_external_inventory:
+  asset_sha256: 53e27609dbb81e7685456a48c611111fed34ca14477623e46a9a9a582a7a646b
+  model_count: 95
+  model_types: {Input: 37, I/O: 58}
+  pin_reference_counts:
+    GND: 58
+    NC: 56
+    POWER: 52
+    DQ_PIN: 22
+    CA_PIN: 6
+    CKE_PIN: 3
+    CLK_PIN: 2
+    CS_PIN: 1
+  selectors:
+    CA_PIN: 9
+    CLK_PIN: 9
+    CS_PIN: 9
+    DQ_PIN: 67
+  selector_branch_model_count: 94
+  direct_referenced_models: [CKE_PIN]
+  referenced_declared_model_count: 95
+  declaration_keyword_families:
+    input_models:
+      model_count: 37
+      sections: [GND Clamp, POWER Clamp]
+    io_models:
+      model_count: 58
+      sections: [Composite Current, Falling Waveform, GND Clamp, ISSO_PD, ISSO_PU, POWER Clamp, Pulldown, Pullup, Ramp, Rising Waveform]
+mechanical_uniqueness:
+  signal_role_unique: false
+  selector_unique: false
+  selector_branch_unique: false
+  model_unique: false
+  corner_or_pvt_unique: false
+  table_family_unique: false
+  direct_cke_reference_is_global_product_selection: false
+missing_selection_fields:
+  - product_signal_or_pin_role
+  - model_or_model_selector
+  - selector_branch_if_selector_is_used
+  - corner_and_pvt_policy
+  - required_table_or_behavior_family
+disposition:
+  selected_model_scoped_grammar_admitted: false
+  selected_model_electrical_consumer_admitted: false
+  existing_declaration_linkage_consumer_continues: true
+  guessing_first_or_direct_model: forbidden
+  guessing_typical_corner: forbidden
+  guessing_table_family: forbidden
+audit:
+  path: docs/baselines/audits/2026-08-21-p4a-03-selected-model-missing-selection.md
+  sha256: 1e4e622ab95ea8d535d31a63d6f05355ba866cd494529a88e891f42bab981866
+non_claims:
+  - not_selected_model_or_selector_branch
+  - not_selected_corner_or_pvt
+  - not_selected_table_or_behavior_family
+  - not_electrical_behavior
+  - not_general_ibis_grammar_or_compatibility
+  - not_external_profile_acceptance_or_release_evidence

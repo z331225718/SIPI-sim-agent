@@ -19,7 +19,7 @@ class OwnerDecisionReconciliationV2Tests(unittest.TestCase):
         result = GATE.validate()
         self.assertTrue(result["valid"])
         self.assertEqual(result["reconciled_owner_decisions"], 5)
-        self.assertEqual(result["current_external_asset_oracle_blockers"], 7)
+        self.assertEqual(result["current_external_asset_oracle_blockers"], 6)
 
     def test_rejects_resolved_item_in_current_request(self) -> None:
         request = copy.deepcopy(self.request)
@@ -90,7 +90,7 @@ class OwnerDecisionReconciliationV2Tests(unittest.TestCase):
 
     def test_rejects_ledger_item_substitution(self) -> None:
         ledger = copy.deepcopy(self.ledger)
-        row = next(item for item in ledger["items"] if item["id"] == "P2-06")
+        row = next(item for item in ledger["items"] if item["id"] == "P3C-03")
         row["id"] = "P2-FAKE"
         with self.assertRaises(GATE.ReconciliationError):
             GATE.validate(self.document, current_request=self.request, ledger=ledger, plan_text=self.plan)

@@ -8,6 +8,7 @@
 
 pub mod c4_metric_profile_v1;
 pub mod com_metric_bundle_v1;
+pub mod com_metric_checkpoint_v1;
 pub mod metric_compare_v1;
 pub use c4_metric_profile_v1::{
     C4_PROFILE_POLICY_V1, C4_RELATIVE_TOLERANCE_V1, C4ProfileErrorV1, c4_metric_names,
@@ -16,6 +17,11 @@ pub use c4_metric_profile_v1::{
 pub use com_metric_bundle_v1::{
     COM_METRIC_BUNDLE_POLICY_V1, ComMetricBundleV1, ComMetricTolerancesV1,
     compare_com_metric_bundle_v1,
+};
+pub use com_metric_checkpoint_v1::{
+    COM_CHECKPOINT_ALIGNMENT_POLICY_V1, COM_METRIC_CHECKPOINT_POLICY_V1,
+    COM_OWNER_ABSOLUTE_TOLERANCE_DB_V1, ComMetricCheckpointCompareErrorV1,
+    ComMetricCheckpointCompareReportV1, compare_com_metric_checkpoint_v1,
 };
 pub use metric_compare_v1::{
     METRIC_COMPARE_POLICY_V1, MetricCompareErrorV1, MetricCompareReportV1, MetricCompareResultV1,

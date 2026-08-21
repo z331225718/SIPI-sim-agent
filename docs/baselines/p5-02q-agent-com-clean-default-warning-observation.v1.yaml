@@ -1,0 +1,68 @@
+schema: sipi.p5-02q.agent-com-clean-default-warning-observation.v1
+status: clean_default_warning_observed_blocked
+authority: pinned_external_observation_only
+scope:
+  work_item: P5-02
+  slice: P5-02q
+  product_runtime_invoked: false
+  external_runtime: two_fresh_runs_outside_product_repository
+  acceptance_or_release_promoted: false
+invocation:
+  repository: https://github.com/z331225718/agent-com.git
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  profile: r480
+  entrypoint: "load_config(config_path, overrides={'COMPUTE_TDILN': 1}); cfg.materialize()"
+  overrides: {COMPUTE_TDILN: 1}
+source_allowlist:
+  - {path: matlab_src/com_ieee8023_480.m, git_blob: 2e226d785c1ed2403f6d0a11288bf75939021814, bytes: 458971, normalized_sha256: 88db14d7d82dab980d223a5be02a28013c11e0d0239e0e97e36c9d36fef55596}
+  - {path: src/agent_com/config/excel.py, git_blob: 1cce4365b64f3bb0ef1f7617107d2df4c929afc7, bytes: 12218, normalized_sha256: 2886e9986b9c3a7c1fbdc6179878679ae26bb92f511c6b0689644f9a6c053c4d}
+source_lines:
+  defaults: [8915, 8926, 8927, 8930, 9222]
+  warning_surface: R480-CONFIG-CONSUMPTION-PARTIAL
+inputs:
+  workbook: matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120F_C2C_08_17_2022.xlsx
+  workbook_sha256: e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925
+  parameter_surface: COM_Settings
+runs:
+  count: 2
+  payloads:
+    - {id: run-01, external_only_label: p5-02-clean-observation-run-01.json, bytes: 1211, sha256: 4563a0fee6a96098717a347263323ae4a4e6fdc5fc41287d5f05f1dfd53e610c}
+    - {id: run-02, external_only_label: p5-02-clean-observation-run-02.json, bytes: 1211, sha256: 4563a0fee6a96098717a347263323ae4a4e6fdc5fc41287d5f05f1dfd53e610c}
+  repeatability: byte_identical_payloads
+  profile_string: BehaviorProfile(source_revision='r480', reader_semantics='r480', fix_ids=frozenset())
+observed_values:
+  materialized_parameters:
+    DER_CDR: 0.01
+    Q_budget_adj: 0.0
+    R_LM: 0.95
+    samples_per_ui: 32
+    trunc: 128.0
+  materialized_options:
+    CDR: MM
+    COMPUTE_TDILN: 1
+  source_default_semantics:
+    DER_CDR: fallback_literal
+    trunc: fallback_literal
+    N_tc: prior_value_alias_to_trunc
+    Q_budget_adj: fallback_literal
+    CDR: fallback_literal
+warning:
+  code: R480-CONFIG-CONSUMPTION-PARTIAL
+  severity: WARNING
+  observed_in_both_runs: true
+  complete_cross_runtime_warning_contract: false
+remaining_blockers:
+  - workbook_provenance_and_duplicate_key_contract
+  - complete_warning_payload_parity
+  - full_profile_default_consumption_matrix
+  - checkpoint_alignment_and_metric_tolerance
+non_claims:
+  - not_product_default_authority
+  - not_product_agent_com_parity
+  - not_complete_warning_contract
+  - not_acceptance_evidence
+  - not_release_evidence
+audit:
+  path: docs/baselines/audits/2026-08-21-p5-02q-agent-com-clean-default-warning-observation.md
+  sha256: da74456948b6c6ace2040ec2e37afdd0ab53ef6ee9572311af66991ff1aae6f4

@@ -1,0 +1,64 @@
+schema: sipi.p4a-01.official-object-rights-recheck.v1
+status: exact_identity_revalidated_external_only_rights_unverified
+promotion_eligible: false
+predecessor:
+  path: docs/baselines/p4a-01-selected-ibis-truncation-disposition.v1.yaml
+  sha256: dbc1072584528cc9ae722eaa022b7548e4244799f2726f7f6d420a2c64902f0f
+  unchanged: true
+source:
+  owner: Alliance Memory Inc.
+  part: AS4C512M16MD4V-053BIN
+  requested_product_url: https://www.alliancememory.com/as4c512m16md4v/
+  observed_product_redirect_url: https://www.alliancememory.com/eol-as4c512m16md4v/
+  canonical_download_url: https://www.alliancememory.com/wp-content/uploads/as4c512m16md4v-053bin.ibs
+transport_recheck:
+  checked_at_utc: '2026-08-21T11:41:10Z'
+  download_status: 200
+  content_length: 6138000
+  last_modified_utc: '2025-03-06T07:20:24Z'
+  etag: '"5da890-62fa756e29e00"'
+  fresh_retrieval_identity_match: true
+identity:
+  byte_length: 6138000
+  sha256: 53e27609dbb81e7685456a48c611111fed34ca14477623e46a9a9a582a7a646b
+  ibis_version: '5.0'
+  file_name: as4c512m16md4v-053bin.ibs
+  file_rev: '1.0'
+  file_date: '2023-05-02'
+embedded_notices:
+  source_block:
+    line_span: [8, 10]
+    normalized_text_sha256: 7b6fa6959d4ef9196528a523fb5608c663482f9960cfdfb683555ceb3ab7a6e3
+  disclaimer_block:
+    line_span: [18, 21]
+    normalized_text_sha256: a8f6a681be675d9631e6f755cad9d20ca4db76cb5ec2dfdfb1d3f00314811b34
+    customer_application_modification_statement_present: true
+  copyright_block:
+    line_span: [22, 22]
+    normalized_text_sha256: 122e45ce547a1712bb90c5563dbde0307b57a3aad943b6d59df61e5731ff2361
+    all_rights_reserved_present: true
+  explicit_license_marker_count: 0
+  explicit_permission_marker_count: 0
+  explicit_redistribution_marker_count: 0
+rights_disposition:
+  rights_status: unverified
+  modification_statement_is_redistribution_permission: false
+  product_source_use_authorized: false
+  redistribution_authorized: false
+  external_identity_observation_authorized: true
+custody:
+  complete_bytes: external_operator_only
+  complete_bytes_present_in_worktree: false
+  tracked_complete_fixture: false
+  runtime_default: false
+  acceptance_profile: false
+  release_input: false
+audit:
+  path: docs/baselines/audits/2026-08-21-p4a-01-official-object-rights-recheck.md
+  sha256: 80551b4f3127fc76e9dbd967f6d0810bcf560554bcac01b2b91ae472c62be4ec
+non_claims:
+  - not_legal_advice
+  - not_a_license_grant
+  - not_redistribution_permission
+  - not_product_fixture_or_source
+  - not_runtime_acceptance_or_release_evidence

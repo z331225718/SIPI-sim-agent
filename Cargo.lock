@@ -1186,9 +1186,11 @@ dependencies = [
 name = "sipi-cli"
 version = "0.1.0"
 dependencies = [
+ "serde_json",
  "sha2",
  "sipi-artifacts",
  "sipi-channel",
+ "sipi-com",
  "sipi-compare",
  "sipi-contracts",
  "sipi-ibis",

@@ -17,7 +17,7 @@ SCHEMA = "sipi.p3c-03.com-metric-bundle-capability.v1"
 STATUS = "p3c_03_required_metric_bundle_prerequisite_implemented_acceptance_open"
 REFERENCES = {
     "crates/sipi-compare/src/com_metric_bundle_v1.rs": "8cfaa822e666e2c9fae0710f2e41cabc001d55e2a8a13acb5e4fb370444c30ed",
-    "crates/sipi-compare/src/lib.rs": "a8472e62b5892a8fa5a0b4aa88b26e33c12176f5ca3a2a81128a8406509e1b74",
+    "crates/sipi-compare/src/lib.rs": "92d18708db1c8251dca4118c4e3abf01fb00a02722351938d5886310ca6c48ca",
     "docs/baselines/p5-06k-required-com-compare-contract-gap.v1.yaml": "6bf07e6265176569ceee8a5250bf3012fe47881d4c982a6edc8fb59ce65c91d9",
     "docs/baselines/audits/2026-08-21-p3c-03-com-metric-bundle-capability.md": "5722964c57ddfc814fffd290664c28cf7c8f13312858bce88255115477f2656d",
 }

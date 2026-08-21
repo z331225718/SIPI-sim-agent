@@ -1,0 +1,57 @@
+schema: sipi.owner-recommended-bundle-authorization.v1
+status: authorized_policy_external_facts_pending
+authority:
+  actor: user
+  recorded_at: "2026-08-21"
+  reply: "全部按推荐"
+  prompt:
+    path: docs/owner-response-request-20260821-remaining-22.md
+    sha256: 68063ad2f1e9e182ff16eb1651eaa68534d0bbfbdfa73edc815d2eb5b66211ab
+    baseline_commit: 58ddf6f9
+decisions:
+  D1: A
+  D2: A
+  D3:
+    option: A
+    oracle: pinned_agent_com_r480
+    metrics: [COM_dB, ERL_dB, TD_ILN_dB]
+    absolute_tolerance_db: 0.1
+    alignment: prohibited
+    checkpoint: strict_same_checkpoint_pending_exact_name
+  D4: A
+  D5: A
+  D6: A
+  E3: A
+  E4: A
+  E7: accepted
+external_boundary:
+  access: read_only_external
+  execution: clean_or_isolated_outside_repository
+  repository_evidence: hash_length_bounded_aggregate_only
+  third_party_bytes_in_repository: prohibited
+  third_party_bytes_in_release: prohibited
+  redistribution_without_explicit_proof: prohibited
+  source_specific_license_audit_required: true
+release_target:
+  platform: windows_x86_64_msvc
+  minimum_os: windows_10_or_server_2016
+  package_contents: [sipi.exe, LICENSE]
+  fresh_machine_required: true
+unresolved_external_facts:
+  - P2_same_deck_agent_spice_measurement_entry_may_be_absent
+  - P3B_unique_ctle_ffe_profile_may_be_absent
+  - P4A_selected_model_selector_corner_pvt_table_family
+  - P4A_complete_asset_redistribution_rights
+  - P4B_vendor_runtime_grant_and_exact_tx_rx_profile
+  - P4B_dynamic_dependency_and_isolation_closure
+  - P5_agent_com_exact_entry_input_and_checkpoint
+  - P5_td_iln_authoritative_output_field_and_value
+non_claims:
+  - owner_policy_does_not_create_third_party_rights
+  - recommended_option_does_not_authorize_guessing_missing_values
+  - external_execution_authorization_is_not_product_acceptance
+  - tolerance_selection_is_not_oracle_authority
+  - specified_cli_is_not_external_oracle_acceptance
+  - p7_release_gates_remain_blocked
+  - historical_evidence_is_not_rewritten
+audit_ref: docs/baselines/audits/2026-08-21-owner-recommended-bundle-authorization.md

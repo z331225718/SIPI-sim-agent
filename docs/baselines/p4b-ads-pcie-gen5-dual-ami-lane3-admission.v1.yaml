@@ -1,0 +1,119 @@
+schema: sipi.p4b-ads-pcie-gen5-dual-ami-lane3-admission.v1
+status: blocked_before_vendor_load_missing_runtime_rights_and_parameter_observation
+decision_scope:
+  owner_choices: [D5=A, E4=A]
+  effect: authorize_external_only_admission_workflow
+  cannot_establish: [third_party_runtime_rights, redistribution_rights, vendor_parameter_consumption]
+serial_stage_order:
+  - asset_identity_and_rights_snapshot
+  - selected_profile_host_forwarded_parameter_subset
+  - pe_import_and_dynamic_closure
+  - isolated_worker_admission
+  - ami_init_and_get_wave
+selected_profile:
+  id: ads-pcie-gen5-dual-ami-windows-x64-v1
+  platform: windows-x86_64
+  composition: tx_and_rx_pair
+  unique_profile_status: ready_existing_dual_binding
+  models:
+    - id: pcie_tx
+      role: tx
+      ami_root: whistler_tx
+      ami_asset: ctspcie_tx_gen5.ami
+      dll_asset: ctspcie_tx_win64.dll
+    - id: pcie_rx
+      role: rx
+      ami_root: whistler_rx
+      ami_asset: ctspcie_rx_gen5.ami
+      dll_asset: ctspcie_rx_win64.dll
+asset_identity_and_rights_snapshot:
+  status: identity_ready_rights_blocked
+  local_identity_recheck_date: '2026-08-21'
+  local_identity_recheck: exact_name_length_sha256_match
+  asset_preflight:
+    path: docs/baselines/p4b-ads-pcie-gen5-dual-ami-asset-preflight.v1.yaml
+    sha256: 7e9281833b13a38be8d523619afc5f4e163e330a314325e8ff3ea4f3faa13dcd
+  assets:
+    - logical_name: ctspcie_tx_gen5.ami
+      kind: ami_text
+      byte_length: 3280
+      sha256: 9272e241901d8fa749909e501c6625e508961f581e624c3f64d18a27a2408fb0
+    - logical_name: ctspcie_rx_gen5.ami
+      kind: ami_text
+      byte_length: 7489
+      sha256: 9e6206eddd32ab9d1a2ec8237d84608509131f7c3fc309c4f90f44a87f8905c1
+    - logical_name: ctspcie_tx_win64.dll
+      kind: dll
+      byte_length: 370045
+      sha256: 05d299826a9c69ae8ac3d236d88adcad5860fc7e229243f1541d1734b8ed28ea
+    - logical_name: ctspcie_rx_win64.dll
+      kind: dll
+      byte_length: 8850494
+      sha256: 88a284f0967ad332f6230a8c5e791f47e9d22a05ae6778426c35707a18a3ab63
+  runtime_rights:
+    status: blocked
+    reason: exact_hash_bound_vendor_private_runtime_grant_not_evidenced
+    owner_permission_is_vendor_rights: false
+    redistribution_authorized: false
+    assets_external_only: true
+selected_profile_host_forwarded_parameter_subset:
+  status: blocked_no_unique_hash_bound_runtime_parameter_observation
+  production_adapter:
+    path: docs/baselines/p4b-02-production-parameter-adapter-selection.v1.yaml
+    sha256: cecc3921cf39bf1d531302f51c6db14b1d9007171949bd150592eafdfc695012
+    representation: AmiTextBindingV1
+    behavior: complete_raw_ami_text_verified_and_forwarded_to_AMI_Init
+    typed_parameter_helper_consumer_count: 0
+  declared_ami_identity_is_runtime_consumption: false
+  existing_ads_log_set:
+    status: not_selected_as_unique_runtime_observation
+    repository_custody: external_only
+    may_prove_at_most: host_forwarded_parameter_subset
+    proves_dll_internal_consumption: false
+  selected_parameter_names: []
+  promoted_p4b_02_helper_modules: []
+  deletion_plan_changed: false
+pe_import_and_dynamic_closure:
+  status: static_ready_dynamic_blocked
+  static_record:
+    path: docs/baselines/p4b-dual-ami-pe-loader-declarations.v1.yaml
+    sha256: b9b12a4c5bb03daabc3c8172d44cefce2feabe834d9628eee9a2428f669af1ab
+  machine: windows-x86_64
+  exports: [AMI_Close, AMI_GetWave, AMI_Init]
+  direct_import_modules: [kernel32.dll, msvcrt.dll, user32.dll]
+  dynamic_dependency_closure: blocked_not_assessed
+  sidecar_resolution: blocked_not_assessed
+isolated_worker_admission:
+  status: blocked_not_security_sandbox
+  worker_source:
+    path: crates/sipi-ami-worker/src/lib.rs
+    sha256: ec918dce4d55ff348ad93cca978947df291642f4c23974f9740fedf1f75e8902
+  bounded_process_and_artifact_mechanics: ready
+  vendor_security_isolation: blocked
+  vendor_worker_admitted: false
+ami_init_and_get_wave:
+  status: not_invoked_due_to_prior_gates
+  dll_loaded: false
+  ami_init_invoked: false
+  ami_get_wave_invoked: false
+  fresh_runtime_evidence: false
+strict_stop:
+  first_blocking_stage: asset_identity_and_rights_snapshot
+  reason: exact_hash_bound_vendor_private_runtime_grant_not_evidenced
+  required_inputs:
+    - exact_hash_bound_vendor_private_runtime_grant_for_tx_rx_and_required_sidecars
+    - one_owner_selected_hash_bound_tx_rx_runtime_parameter_tree_observation
+    - complete_transitive_dependency_and_sidecar_closure
+    - approved_external_security_isolation_and_lifecycle_policy
+    - fresh_isolated_init_and_get_wave_observation_after_all_prior_gates_pass
+non_claims:
+  - not_vendor_runtime_rights
+  - not_typed_parameter_semantics
+  - not_dll_internal_parameter_consumption
+  - not_dynamic_dependency_closure
+  - not_security_sandbox_or_worker_admission
+  - not_ami_init_or_get_wave_evidence
+  - not_product_or_release_admission
+audit:
+  path: docs/baselines/audits/2026-08-21-p4b-dual-ami-lane3-admission.md
+  sha256: 67d9a336a1b7174cfc84e32fcef730fe83ada2f222c948ed1aa700fafd21d111

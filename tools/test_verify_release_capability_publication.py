@@ -126,10 +126,20 @@ def manifest_for(publication: dict) -> list[dict]:
         "request_schema": "sipi.ibis.inspect.request.v1", "response_schema": "sipi.ibis.inspect.response.v1",
         "unavailable_reason": None, "nonclaim": "structural_inspection_only",
     }
+    com_run_artifact = {
+        "route": ["com", "run-artifact"], "availability": "available", "transport": "stdin_json_v1",
+        "request_schema": "sipi.com.run-artifact-request.v1",
+        "response_schema": "sipi.com.run-artifact-specified-result.v1",
+        "unavailable_reason": None,
+        "nonclaim": "product_owned_bounded_artifact_execution_non_oracle_only",
+    }
     commands = []
     for row in publication["rows"]:
         if row["command_id"] == "ibis.inspect":
             commands.append({"id": row["command_id"], **ibis_inspect})
+            continue
+        if row["command_id"] == "com.run-artifact":
+            commands.append({"id": row["command_id"], **com_run_artifact})
             continue
         if row["command_id"] == "link.receiver.run":
             commands.append({"id": row["command_id"], **receiver_diagnostic})
@@ -280,10 +290,11 @@ class PublicationTests(unittest.TestCase):
             "prbs9-metric-artifact-compare": "publication_prbs9_artifact_metric_binding_invalid",
             "selected-highloss-prbs9-waveform-only-compare": "publication_selected_highloss_waveform_only_binding_invalid",
             "link-receiver-diagnostic": "publication_receiver_diagnostic_route_binding_invalid",
+            "com-run-artifact": "publication_com_artifact_route_binding_invalid",
         }
         publication = self.publication()
         available_ids = [row["id"] for row in publication["rows"] if row["product_surface"] == "available"]
-        self.assertEqual(len(available_ids), 26)
+        self.assertEqual(len(available_ids), 27)
         for row_id in available_ids:
             with self.subTest(row_id=row_id):
                 mutated = self.publication()
@@ -540,6 +551,36 @@ class PublicationTests(unittest.TestCase):
         with patch.object(GATE, "verify_ami_loader_declarations", return_value={"worker_admitted": False, "runtime_invoked": True, "dynamic_closure": "blocked_not_assessed"}):
             with self.assertRaisesRegex(GATE.PublicationError, "publication_ami_blocked_evidence_promoted"):
                 GATE.validate(publication, manifest_for(publication), ROOT)
+
+    def test_com_artifact_route_stays_specified_and_non_oracle(self) -> None:
+        for field, value in {
+            "acceptance_state": "accepted",
+            "external_oracle": True,
+            "blockers": ["bogus"],
+            "non_claims": ["bogus"],
+            "evidence_ids": ["p6-command-manifest"],
+        }.items():
+            publication = self.publication()
+            row = next(item for item in publication["rows"] if item["id"] == "com-run-artifact")
+            row[field] = value
+            with self.subTest(row_field=field), self.assertRaises(GATE.PublicationError):
+                GATE.validate(publication, manifest_for(publication), ROOT)
+
+        publication = self.publication()
+        manifest = manifest_for(publication)
+        command = next(item for item in manifest if item["id"] == "com.run-artifact")
+        command["request_schema"] = "sipi.wrong.v1"
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_com_artifact_route_binding_invalid"):
+            GATE.validate(publication, manifest, ROOT)
+
+        publication = self.publication()
+        evidence = next(
+            item for item in publication["report_index"]
+            if item["id"] == "p5-08f-specified-com-artifact-route"
+        )
+        evidence["evidence_state"] = "observed"
+        with self.assertRaisesRegex(GATE.PublicationError, "publication_com_artifact_evidence_invalid"):
+            GATE.validate(publication, manifest_for(publication), ROOT)
 
     def test_product_owned_unavailable_catalog_routes_stay_bound_to_live_descriptors(self) -> None:
         expected = {
