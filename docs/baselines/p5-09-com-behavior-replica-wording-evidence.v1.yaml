@@ -1,0 +1,63 @@
+schema: sipi.p5-09.com-behavior-replica-wording-evidence.v1
+status: scoped_wording_contract_bound_blockers_observed
+contract_ref: docs/baselines/p5-09-com-behavior-replica-wording-contract.v1.yaml
+contract:
+  path: docs/baselines/p5-09-com-behavior-replica-wording-contract.v1.yaml
+  sha256: 86c0b001624ce17bdc48c7d2f04063f232d3f64a61b8963c3f88087923e4c6a6
+audit:
+  path: docs/baselines/audits/2026-08-21-p5-09-com-behavior-replica-wording.md
+  sha256: fabdb5a79db5bca5038dcc735a1569bf097b6ab6fbbd5d72475a15cf763954eb
+bindings:
+  - id: com_r480_acceptance
+    path: docs/baselines/com-r480-acceptance.v1.yaml
+    sha256: e90fca0d14968a04e09df90cd8bd4fcc7f749abfa07ad2b4b29dc297351ef03b
+    role: selected_profile_and_external_oracle_boundary
+  - id: com_publication
+    path: docs/baselines/release-capability-publication.v1.yaml
+    sha256: 3e99b86e33b71b3496e8598ad27356b29e5c5cf9cfef75db5235492ddba4a6ce
+    role: current_com_command_publication_boundary
+  - id: com_run_admission
+    path: docs/baselines/p5-08a-com-run-admission-stage.v1.yaml
+    sha256: bb8b0af330ae014c23137c4cebee5a3976a8b6e8a421f0e20b08be3f8ea2c799
+    role: admission_is_not_full_runtime
+  - id: com_run_execution
+    path: docs/baselines/p5-08b-com-run-execution-stage.v1.yaml
+    sha256: d5fa3e67b85a31ccb5142d2f50124117c42fa6deced51b440acb1bbb1d3d8d14
+    role: bounded_execution_slice_not_full_stack
+  - id: com_run_artifact
+    path: docs/baselines/p5-08d-com-run-artifact-provenance-bounded.v1.yaml
+    sha256: b6d3b865289eb05589cc2ede971fe268af4947473f200719d0903881f4ee5398
+    role: local_metadata_report_only
+  - id: com_r480_reference_custody
+    path: docs/baselines/p5-r480-reference-custody-preflight.v1.yaml
+    sha256: 9819bd5b01120808f0b38191a2b9dbbf2925c9b6e19e59a9e13caa1ed1f4730b
+    role: external_oracle_metrics_and_runtime_blockers
+expected_scope:
+  wording_scope: candidate_only
+  behavioral_replication: not_claimed
+  product_capability: not_claimed
+  external_oracle_status: blocked_missing_authoritative_reference
+  metrics_status: full_metric_checkpoint_tolerance_blocked
+  runtime_status: full_runtime_artifact_provenance_blocked
+  product_acceptance: false
+  promotion: false
+expected_publication_row:
+  command_id: com.run
+  domain: com
+  product_surface: unavailable
+  acceptance_state: blocked
+  external_oracle: true
+  blockers:
+    - authoritative_reference_missing
+  non_claims:
+    - no_com_solver_or_oracle_workflow
+non_claims:
+  - evidence_is_wording_scope_only
+  - no_behavioral_replication_claim
+  - wording_candidate_not_product_capability
+  - external_oracle_remains_blocked
+  - full_metrics_and_tolerances_remain_blocked
+  - full_runtime_and_provenance_remain_blocked
+  - no_ieee_certification_or_official_conformance_claim
+  - no_reference_implementation_claim
+  - no_product_acceptance_or_promotion

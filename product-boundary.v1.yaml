@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: f6bee26e060ccf68381b9d88d9dd0828dd133e0876f2c3995c8ac205281a9b6a
+  tracked_paths_sha256: 2b2fc25ffc0507beb47ed4a3e1664c95339f3b3d4d0063dc7069a37c5e0b687f
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -7889,6 +7889,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-21-p5-02p-pinned-mlse-default-consumption-observation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-21-p5-06-pinned-source-external-matlab-oracle-candidate-run.md:
       rule: historical-docs
       class: migration_only
@@ -7896,6 +7902,18 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-21-p5-06i-external-result-custody.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-21-p5-06k-required-com-compare-contract-gap.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-21-p5-09-com-behavior-replica-wording.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -13793,6 +13811,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p5-02p-pinned-mlse-default-consumption-observation.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p5-03a-com-stage-output-envelope.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -14339,6 +14363,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p5-06k-required-com-compare-contract-gap.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p5-07-canonical-json-property-surface.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -14394,6 +14424,18 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p5-08d-com-run-artifact-provenance-bounded.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p5-09-com-behavior-replica-wording-contract.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p5-09-com-behavior-replica-wording-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -25211,6 +25253,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p5_02p_pinned_mlse_default_consumption_observation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p5_03a_com_stage_output_envelope.py:
       rule: migration-tools
       class: migration_only
@@ -25433,6 +25481,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p5_06k_required_com_compare_contract_gap.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p5_07a_fixture_inventory.py:
       rule: migration-tools
       class: migration_only
@@ -25464,6 +25518,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p5_08d_com_run_artifact_provenance_bounded.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p5_09_com_behavior_replica_wording.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -28433,6 +28493,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_p5_02p_pinned_mlse_default_consumption_observation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_p5_03a_com_stage_output_envelope.py:
       rule: migration-tools
       class: migration_only
@@ -28655,6 +28721,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_p5_06k_required_com_compare_contract_gap.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_p5_07a_fixture_inventory.py:
       rule: migration-tools
       class: migration_only
@@ -28686,6 +28758,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p5_08d_com_run_artifact_provenance_bounded.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p5_09_com_behavior_replica_wording.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

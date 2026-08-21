@@ -398,9 +398,10 @@
         "tools/verify_p5_02l_resolve_parameters.py",
         "tools/verify_p5_02m_warning_detector.py",
         "tools/verify_p5_02n_warning_report.py",
-        "tools/verify_p5_02o_source_observed_mlse_warning_vocabulary_subset.py"
+        "tools/verify_p5_02o_source_observed_mlse_warning_vocabulary_subset.py",
+        "tools/verify_p5_02p_pinned_mlse_default_consumption_observation.py"
       ],
-      "note": "02e-02m delivered: canonical JSON v2 + warning obs + scalar/vector-matrix defaults + default-set resolver + deterministic warning detector; 02n deterministic warning-report aggregator (8/8 crosscheck) delivered; 02o binds an evidence-only three-entry MLSE warning vocabulary subset and explicitly excludes the msgbox call without adding a Rust API; owner decision 2026-08-16 authorizes MATLAB oracle golden; full warning contract (MLSE/DER/CDR) still pending"
+      "note": "02e-02m delivered: canonical JSON v2 + warning obs + scalar/vector-matrix defaults + default-set resolver + deterministic warning detector; 02n deterministic warning-report aggregator (8/8 crosscheck) delivered; 02o binds an evidence-only three-entry MLSE warning vocabulary subset; 02p source-binds five pinned MLSE default/consumer facts when run with the external Agent-COM source root. No Rust API is added; the full warning/default contract and authoritative oracle remain pending"
     },
     {
       "id": "P5-05",
@@ -429,9 +430,10 @@
         "tools/verify_p5_06f_com_chain_core.py",
         "tools/verify_p5_06g_oracle_chain_compare.py",
         "tools/verify_p5_r480_reference_custody_preflight.py",
-        "tools/verify_p5_06_pinned_source_external_oracle_candidate_document.py"
+        "tools/verify_p5_06_pinned_source_external_oracle_candidate_document.py",
+        "tools/verify_p5_06k_required_com_compare_contract_gap.py"
       ],
-      "note": "P5-06i remains the historical ignored MAT/CSV observation. P5-06j records a pinned-source external MATLAB oracle candidate run and locks seven exact artifact hashes plus HDF5/JSON/log budgets through an independent checked-in document gate with mutation tests. The source checkout is dirty; config/fixture, generated instrumented output and invocation authorization/startup isolation are not fully Git-bound or closed. Still blocked on full warning/MLSE/DER/CDR contract, checkpoint/full-metric alignment tolerances, MAT-v7.3 product reader support and product-vs-oracle compare; no authority, acceptance or release claim is made."
+      "note": "P5-06i remains the historical ignored MAT/CSV observation. P5-06j records a pinned-source external MATLAB oracle candidate run with bounded artifact identities. P5-06k source-binds the required COM/ERL/TD-ILN compare surface and proves that the existing C4 ICN metric cannot substitute for TD-ILN. The source checkout/output provenance, alignment policy, checkpoint/final tolerances, full warning contract, MAT-v7.3 product reader and product-vs-oracle compare remain unresolved; no authority, acceptance or release claim is made."
     },
     {
       "id": "P5-08",
@@ -448,9 +450,10 @@
       "id": "P5-09",
       "blocker": "semantics_not_implemented",
       "gate": [
-        "tools/verify_release_capability_publication.py"
+        "tools/verify_release_capability_publication.py",
+        "tools/verify_p5_09_com_behavior_replica_wording.py"
       ],
-      "note": "IEEE non-certification copy pending COM reports"
+      "note": "09a freezes candidate-only wording and all non-claims, but no actual product report or capability consumer is bound; completed behavior replication, IEEE certification, external oracle, runtime, acceptance and release remain unclaimed"
     },
     {
       "id": "P7-01",

@@ -41,8 +41,8 @@ CURRENT_REQUEST_DECISION_POINTS = {
     "P1-04B": "provide exact selected profile, custody, rights, and distribution facts for the trusted external fixtures; comparison permission is already recorded",
     "P4B-08": "provide AMI rights, exact parameter compatibility, dynamic dependency closure, isolated vendor worker, and fresh-runtime evidence; S4P topology/port mapping is already observed",
     "P4B-09": "provide an authorized profile and fresh isolated runtime evidence for sipi ami run; silent fallback is prohibited",
-    "P5-02": "provide the canonical R480 parameter JSON and authoritative MATLAB/agent-com oracle material, including the remaining warning and default-layout evidence",
-    "P5-06": "provide current MATLAB oracle output and compare-matrix evidence for the required COM example, including full metric/checkpoint alignment",
+    "P5-02": "provide authoritative MATLAB/Agent-COM oracle material and the remaining warning/default-layout evidence beyond the pinned MLSE source observations",
+    "P5-06": "provide current clean MATLAB oracle/input provenance plus alignment and checkpoint/final tolerances for the required COM/ERL/TD-ILN compare contract",
 }
 CURRENT_REQUEST_NON_CLAIMS = {
     "no_owner_decision_items_remain_in_the_current_request",
@@ -79,6 +79,7 @@ CURRENT_REQUEST_GATES = {
         "tools/verify_p5_02m_warning_detector.py",
         "tools/verify_p5_02n_warning_report.py",
         "tools/verify_p5_02o_source_observed_mlse_warning_vocabulary_subset.py",
+        "tools/verify_p5_02p_pinned_mlse_default_consumption_observation.py",
     ],
     "P5-06": [
         "tools/verify_release_capability_publication.py",
@@ -91,6 +92,7 @@ CURRENT_REQUEST_GATES = {
         "tools/verify_p5_06g_oracle_chain_compare.py",
         "tools/verify_p5_r480_reference_custody_preflight.py",
         "tools/verify_p5_06_pinned_source_external_oracle_candidate_document.py",
+        "tools/verify_p5_06k_required_com_compare_contract_gap.py",
     ],
 }
 CURRENT_LEDGER_IDS = {

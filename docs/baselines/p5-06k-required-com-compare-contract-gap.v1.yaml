@@ -1,0 +1,323 @@
+schema: sipi.p5-06k.required-com-compare-contract-gap.v1
+status: required_com_compare_contract_gap_observed_not_closed
+scope:
+  work_item: P5-06k
+  source_basis: canonical_agent_com_git_objects_and_existing_external_records_only
+  canonical_commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  matlab_invoked: false
+  product_rust_changed: false
+  historical_evidence_changed: false
+  compare_executed: false
+  acceptance_or_release_promoted: false
+
+canonical_agent_com:
+  origin: https://github.com/z331225718/agent-com.git
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  object_format: sha1
+  object_facts:
+    - id: capability_selection_schema
+      path: schemas/r480-capability-envelope-v1.yaml
+      git_blob: 69aeffa675341733277ccaf19a8e878cb716a315
+      content_sha256: 9b3329e25559e595187ae1a0530785d5a8dbbdc02a035eeb44326aa91ee34b73
+      byte_length: 9636
+      proves:
+        - profile_rule_ids_and_fingerprints
+        - input_kind_and_channel_role_sets
+      does_not_prove:
+        - compare_metric_bundle
+        - checkpoint_alignment_policy
+        - metric_or_checkpoint_tolerances
+    - id: stable_case_metric_and_checkpoint_extractor
+      path: tools/matlab_oracle/com_oracle_case_metrics.m
+      git_blob: 9d13c8c9468a31ff9c06e2985bb6d03efc6428b6
+      content_sha256: 93fb174b26256b485a86e56ed765858eec7f5f28371df56e182c3a5e8d77a794
+      byte_length: 3401
+      proves:
+        - observed_output_metric_key_surface
+        - observed_internal_checkpoint_field_surface
+        - case_index_is_retained_in_extracted_records
+      does_not_prove:
+        - required_td_iln_compare_value
+        - cross_implementation_alignment
+        - acceptance_tolerance
+    - id: legacy_output_schema
+      path: schemas/legacy-output-r480.json
+      git_blob: 7980dcffb5a88557b8cb2e8107fae06355c91169
+      content_sha256: aa74317a43a7152c7ed3937a04093e6c84d5583652ca4d9af2ac0fed98ad9ea6
+      byte_length: 2121
+      proves:
+        - legacy_td_iln_field_name_TD_ILN
+        - legacy_td_iln_fom_field_name_FOM_TDILN
+        - legacy_com_and_erl_field_names
+      does_not_prove:
+        - td_iln_db_value_in_current_observed_matrix
+        - td_iln_comparison_tolerance
+        - metric_alias_policy
+    - id: matlab_repeatability_runner
+      path: tools/run_matlab_oracle.py
+      git_blob: 36d4fa55f6eaf9ecdd72ba2cebfbc1b01908e8bc
+      content_sha256: db63ed42375ac990cb53d9926f603e050b652b0706c079f2e4456a5d97d87d42
+      byte_length: 30851
+      proves:
+        - repeated_run_case_count_and_case_order_checks
+        - repeated_run_scalar_metric_absolute_tolerance_1e-12
+        - network_observation_checks
+      does_not_prove:
+        - product_to_oracle_acceptance_tolerance
+        - full_compare_matrix_alignment
+    - id: network_checkpoint_tests
+      path: tests/test_network_matlab_checkpoint.py
+      git_blob: 00f85011a7df88fe25fe9228e30f1605068dd583
+      content_sha256: ff7757b1303eb32dcd5fc893cff7d2d9969f5610eee7c6648b8fcc8179b02906
+      byte_length: 2473
+      proves:
+        - raw_and_mixed_network_checkpoint_comparison_shape
+        - network_rtol_1e-12_atol_1e-14_test_values
+      does_not_prove:
+        - final_com_erl_td_iln_tolerance
+        - product_oracle_acceptance
+    - id: isolated_mlse_checkpoint_test
+      path: tests/test_mlse.py
+      git_blob: 6628e3bbcf563fe57ea08e7af41553aa8b6c92aa
+      content_sha256: b9ca3a6edc6a498a73b22a61a7dd35f5a995d5c8c8cb14c7854584d294d98a71
+      byte_length: 4568
+      proves:
+        - vertical_mlse_checkpoint_field_comparison_shape
+        - isolated_mlse_abs_2e-12_test_value
+      does_not_prove:
+        - full_com_compare_checkpoint_tolerance
+        - final_metric_tolerance
+
+required_compare_contract:
+  input_identity:
+    required_keys:
+      - normalized_input_digest
+      - channel_role_manifest_digest
+      - parameter_set_digest
+    status: missing_clean_replayable_binding
+    observed_but_insufficient:
+      - external_payload_OP_and_param_digests
+      - observed_network_roles_and_target_frequency
+    gap: >-
+      Existing payload observations bind selected OP/param bytes, but do not
+      provide an authorized, clean, replayable manifest that binds exact
+      channel files, role manifest, parameter set, and normalized input to the
+      required compare case.
+  stage_observables:
+    required_keys:
+      - selected_channel_evidence
+      - equalizer_selection_evidence
+      - pdf_axes_and_density
+    status: missing_compare_alignment_contract
+    observed_but_insufficient:
+      - network_role_and_frequency_summary
+      - TXLE_and_DFE_tap_snapshots
+      - PDF_related_scalar_checkpoint_names
+    gap: >-
+      The records expose bounded snapshots but do not define the exact stage
+      identity, array axes, density representation, selection provenance, or
+      per-stage comparison rule needed to align product and oracle outputs.
+  metric_bundle:
+    required:
+      - id: com_db
+        unit: dB
+        comparison_level: scalar
+        source_aliases: [COM_dB]
+        status: alias_observed_value_observed_tolerance_missing
+      - id: erl_db
+        unit: dB
+        comparison_level: scalar
+        source_aliases: [ERL]
+        status: alias_observed_value_observed_tolerance_missing
+      - id: td_iln_db
+        unit: dB
+        comparison_level: scalar
+        source_aliases: [TD_ILN]
+        status: legacy_alias_only_value_and_tolerance_missing
+    observed_external_surface:
+      - COM_dB
+      - CTLE_DC_gain_dB
+      - ERL
+      - ERL11
+      - ERL22
+      - FOM
+      - ICN_mV
+      - IL_dB_channel_only_at_Fnq
+      - Peak_ISI_XTK_and_Noise_interference_at_BER_mV
+      - VEC_dB
+      - VEO_mV
+      - fitted_IL_dB_at_Fnq
+      - g_DC_HP
+      - itick
+    observed_c4_surface:
+      ids: [COM_dB, ICN_mV, ERL]
+      policy: sipi.p3c-03c.c4-profile.v1.com-icn-erl-1pct
+      relative_tolerance: 0.01
+      scope: c4_metric_profile_only
+      cannot_substitute_for: [td_iln_db]
+    gap: >-
+      Required COM/ERL/TD-ILN is not the observed C4 COM_dB/ICN_mV/ERL
+      surface. ICN_mV is not TD-ILN. The pinned source only exposes TD_ILN in
+      the legacy output schema; current observed metric surfaces do not bind a
+      TD_ILN value or a required td_iln_db tolerance.
+  checkpoint_contract:
+    observed_required_matrix_keys:
+      - DFE_taps
+      - TXLE_taps
+      - itick
+      - sgm_Ani__isi_xt_noise
+      - sigma_N
+      - tail_RSS
+    observed_case_count: 2
+    observed_case_checkpoint_digests: true
+    source_helper_checkpoint_groups:
+      top_level:
+        - TXLE_taps
+        - DFE_taps
+        - floating_tap_locations
+        - tail_RSS
+        - sigma_N
+        - sigma_bn
+        - itick
+        - sgm_Q
+        - peak_clip
+        - sigma_before_clip
+        - P2ptopsigma_clip
+        - sgm_Ani__isi_xt_noise
+      param:
+        - ndfe
+        - N_bf
+        - N_bg
+        - N_bmax
+        - N_tail_start
+        - bmax
+        - bmin
+        - use_bmax
+        - use_bmin
+        - SNDR
+        - B_float_RSS_MAX
+        - P_qc
+        - Q_budget_adj
+        - kappa1
+        - kappa2
+      fom_result:
+        - txffe
+        - ctle
+        - best_G_high_pass
+        - DFE_taps
+        - floating_tap_locations
+        - best_bmax
+        - best_bmin
+        - tail_RSS
+        - t_s
+        - itick
+        - sigma_N
+        - FOM
+      mlse:
+        - Q_budget_adj
+        - COM_from_matlab
+        - delta_com
+        - COM
+        - DER_MLSE
+        - DER_MLSE_trunc
+    status: checkpoint_alignment_and_tolerance_missing
+    gap: >-
+      Checkpoint names and bounded values are observed, but the required
+      contract lacks exact case/stage identity, array shape and axis semantics,
+      units, sample/time index alignment, selection provenance, and
+      per-checkpoint tolerances. A checkpoint digest alone cannot close those
+      comparisons.
+  alignment_policy:
+    required_dimensions:
+      - normalized_input_identity
+      - case_index_and_case_order
+      - channel_role_and_port_order
+      - frequency_axis_and_target_frequency
+      - equalizer_selection_identity
+      - checkpoint_stage_identity_and_axes
+      - metric_name_unit_and_scalar_semantics
+      - nonfinite_value_policy
+    observed_facts:
+      case_order_check: repeated_runner_checks_case_count_and_order_only
+      target_frequency_hz: 26560000000.0
+      observed_network_roles: [THRU, FEXT1, NEXT1]
+      observed_port_order: [1, 3, 2, 4]
+      network_array_check_tolerances: {rtol: 1.0e-12, atol: 1.0e-14}
+    status: missing
+    gap: >-
+      The source and records do not define a full product/oracle alignment
+      policy for the required input, selected channel, equalizer, PDF,
+      checkpoint arrays, and COM/ERL/TD-ILN scalar aliases.
+  tolerance_policy:
+    required_components:
+      - final_metric_tolerance_per_required_metric
+      - intermediate_checkpoint_tolerance_per_field_or_array
+      - stage_observable_tolerance
+      - normalized_input_tolerance_or_exact_digest_rule
+    observed_non_acceptance_tolerances:
+      - id: repeated_matlab_run_scalar_metrics
+        value: 1.0e-12
+        scope: runner_repeatability_only
+      - id: network_raw_and_mixed_arrays
+        value: {rtol: 1.0e-12, atol: 1.0e-14}
+        scope: network_stage_only
+      - id: vertical_mlse_kernel_checkpoint
+        value: {abs: 2.0e-12}
+        scope: isolated_MLSE_kernel_test_only
+      - id: c4_metric_profile
+        value: {relative: 0.01}
+        scope: [COM_dB, ICN_mV, ERL]
+    status: missing_for_required_com_compare
+    gap: >-
+      No observed tolerance is a valid substitute for a required COM/ERL/TD-ILN
+      final metric policy plus checkpoint and stage alignment tolerances.
+
+provenance_gaps:
+  clean_oracle:
+    - exact_authoritative_reference_artifact_payload
+    - oracle_runner_invocation_authorization
+    - matlab_startup_isolation
+    - generated_output_git_object_custody
+    - complete_warning_and_checkpoint_contract
+  clean_input:
+    - authorized_replayable_channel_fixture_manifest
+    - channel_role_manifest_digest_bound_to_each_case
+    - parameter_set_digest_bound_to_each_case
+    - normalized_input_digest_bound_to_the_required_matrix
+  status: unresolved
+
+audit:
+  path: docs/baselines/audits/2026-08-21-p5-06k-required-com-compare-contract-gap.md
+  sha256: 28c6e4f4d6502cebfe46603afc83be674e2b4c4af466c655c5a2be98226359a4
+
+references:
+  - path: docs/baselines/com-r480-acceptance.v1.yaml
+    sha256: e90fca0d14968a04e09df90cd8bd4fcc7f749abfa07ad2b4b29dc297351ef03b
+    role: required_input_stage_metric_and_authoritative_reference_contract
+  - path: docs/baselines/p5-06-oracle-metric-surface.v1.yaml
+    sha256: 677ed155b9851352f3fe128212eb4b60a22be9ed03fd7afd763a3de0736a3036
+    role: observed_14_metric_and_6_checkpoint_surface
+  - path: docs/baselines/p5-06-matlab-oracle-first-run-evidence.v1.yaml
+    sha256: 4e2f6bb1d55376f3b317acaa75008a4603f910c184c619c130ee786a90453d24
+    role: two_case_summary_and_checkpoint_observation
+  - path: docs/baselines/p5-06i-external-result-custody.v1.yaml
+    sha256: 1226111d891cad2f353b290a2cedfec1d6e6c75eae0318be82e4c991f2c1801f
+    role: four_external_payload_observations_and_explicit_missing_tolerances
+  - path: docs/baselines/p5-r480-reference-custody-preflight.v1.yaml
+    sha256: 9819bd5b01120808f0b38191a2b9dbbf2925c9b6e19e59a9e13caa1ed1f4730b
+    role: admission_blockers_and_full_matrix_gap_inventory
+  - path: docs/baselines/p5-06-pinned-source-external-matlab-oracle-candidate-run.v1.yaml
+    sha256: 294984a6ef9f8ad756435dd133afc953866537326f623858c90890f7de3e43d4
+    role: pinned_source_candidate_run_and_unclosed_provenance
+
+non_claims:
+  - not_a_matlab_run
+  - not_a_product_oracle
+  - not_a_product_vs_oracle_compare
+  - not_acceptance_evidence
+  - not_release_evidence
+  - not_a_td_iln_value_or_tolerance_selection
+  - not_a_c4_to_required_metric_alias_promotion
+  - not_a_full_checkpoint_alignment_policy
+  - not_a_clean_input_oracle_provenance_closure

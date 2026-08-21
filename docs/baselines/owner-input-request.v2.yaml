@@ -32,7 +32,7 @@ entries:
   - id: P5-02
     kind: external_asset_oracle
     blocker: external_asset_oracle
-    decision_point: provide the canonical R480 parameter JSON and authoritative MATLAB/agent-com oracle material, including the remaining warning and default-layout evidence
+    decision_point: provide authoritative MATLAB/Agent-COM oracle material and the remaining warning/default-layout evidence beyond the pinned MLSE source observations
     gate:
       - tools/verify_com_r480_acceptance.py
       - tools/verify_p5_02e_canonical_parameter_reference.py
@@ -46,10 +46,11 @@ entries:
       - tools/verify_p5_02m_warning_detector.py
       - tools/verify_p5_02n_warning_report.py
       - tools/verify_p5_02o_source_observed_mlse_warning_vocabulary_subset.py
+      - tools/verify_p5_02p_pinned_mlse_default_consumption_observation.py
   - id: P5-06
     kind: external_asset_oracle
     blocker: external_asset_oracle
-    decision_point: provide current MATLAB oracle output and compare-matrix evidence for the required COM example, including full metric/checkpoint alignment
+    decision_point: provide current clean MATLAB oracle/input provenance plus alignment and checkpoint/final tolerances for the required COM/ERL/TD-ILN compare contract
     gate:
       - tools/verify_release_capability_publication.py
       - tools/verify_p5_06a_matlab_oracle_first_run.py
@@ -61,6 +62,7 @@ entries:
       - tools/verify_p5_06g_oracle_chain_compare.py
       - tools/verify_p5_r480_reference_custody_preflight.py
       - tools/verify_p5_06_pinned_source_external_oracle_candidate_document.py
+      - tools/verify_p5_06k_required_com_compare_contract_gap.py
 non_claims:
   - no_owner_decision_items_remain_in_the_current_request
   - external_asset_oracle_authorization_is_not_product_implementation_acceptance

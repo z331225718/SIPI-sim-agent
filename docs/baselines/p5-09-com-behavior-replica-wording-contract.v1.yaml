@@ -1,0 +1,71 @@
+schema: sipi.p5-09.com-behavior-replica-wording-contract.v1
+status: scoped_closed_wording_only
+policy: sipi.p5-09.behavior-replica-not-ieee-certification.v1
+scope:
+  domain: com
+  profile_id: com-r480-envelope-v1
+  closure: scoped
+  closure_boundary: report_and_capability_wording_candidate_only
+  product_behavior_replica: wording_candidate_only
+  behavioral_replication: not_claimed
+  product_capability: not_claimed
+  external_oracle: blocked
+  metrics: blocked
+  runtime: blocked
+  product_acceptance: false
+  promotion: false
+wording:
+  report_title: COM R4.80 behavior-replica wording candidate
+  report_claim: Candidate wording for the selected COM R4.80 behavior profile; no completed behavioral replication is claimed.
+  report_disclaimer: Wording candidate only; this is not IEEE official certification.
+  capability_label: behavior_replica_candidate
+  capability_description: Candidate wording for the selected COM R4.80 behavior profile; implementation and external comparison remain blocked.
+  capability_disclaimer: Not an IEEE official certification, standards-compliant result, reference implementation, conformance result, validated result, approved result, qualified result, equivalent result, matching result, passing result, or completed behavioral replication.
+  external_oracle: External oracle comparison remains blocked.
+  metrics: Full metric, checkpoint, and tolerance evidence remains blocked.
+  runtime: Full COM runtime, artifact, and provenance workflow remains blocked.
+policy_rules:
+  positive_claim_fields:
+    - report_title
+    - report_claim
+    - capability_label
+    - capability_description
+    - external_oracle
+    - metrics
+    - runtime
+  forbidden_positive_patterns:
+    - '(?i)\bieee[- ]certified\b'
+    - '(?i)\bcertified\b'
+    - '(?i)\bcertification\b'
+    - '(?i)\bofficial\b'
+    - '(?i)\bofficial(?:\s+ieee)?\s+certification\b'
+    - '(?i)\bieee(?:[/\s-]+)?standards?[- ]compliant\b'
+    - '(?i)\bstandards?[- ]compliant\b'
+    - '(?i)\bvalidated\b'
+    - '(?i)\bapproved\b'
+    - '(?i)\bqualified\b'
+    - '(?i)\bequivalent\b'
+    - '(?i)\bmatch(?:es|ed|ing)?\b'
+    - '(?i)\bpass(?:es|ed|ing)?\b'
+    - '(?i)\breference\s+implementation\b'
+    - '(?i)\bparity\b'
+    - '(?i)\bconformance\b'
+    - '(?i)\brelease(?:[- ]ready)?\b'
+    - '(?i)\baccept(?:ed|ance)\b'
+    - '(?i)\bbehavioral\s+replication\s+of\b'
+  disclaimer_fields:
+    - report_disclaimer
+    - capability_disclaimer
+non_claims:
+  - not_behavioral_replication_claim
+  - wording_candidate_not_product_capability
+  - not_ieee_official_certification
+  - not_reference_implementation
+  - not_conformance_result
+  - not_external_oracle_result
+  - not_full_metric_checkpoint_tolerance
+  - not_full_com_runtime_or_provenance
+  - not_product_acceptance
+  - not_promotion
+evidence_ref: docs/baselines/p5-09-com-behavior-replica-wording-evidence.v1.yaml
+audit_ref: docs/baselines/audits/2026-08-21-p5-09-com-behavior-replica-wording.md

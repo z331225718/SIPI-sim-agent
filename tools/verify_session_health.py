@@ -9,6 +9,7 @@ reports a single health verdict:
 - owner-input request ledger binding
 - remaining-items ledger
 - open-item gate coverage
+- closed P5-09 wording boundary
 
 Exit code is 1 if any check fails, else 0.
 """
@@ -34,6 +35,7 @@ CHECKS = [
     ("owner-input-request-current-reconciliation", "tools/verify_owner_decision_reconciliation_v2.py", []),
     ("remaining-items-ledger", "tools/verify_plan_remaining_items_ledger.py", []),
     ("open-item-gate-coverage", "tools/verify_plan_open_items_gate_coverage.py", []),
+    ("p5-09-wording-boundary", "tools/verify_p5_09_com_behavior_replica_wording.py", []),
 ]
 
 
