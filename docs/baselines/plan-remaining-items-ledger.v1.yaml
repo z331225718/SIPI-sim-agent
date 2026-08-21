@@ -91,7 +91,7 @@
         "tools/verify_p3c_exact_impulse_current_replay_preparation.py",
         "tools/verify_p3c_exact_impulse_current_replay_evidence.py"
       ],
-      "note": "03a/03b/03c/03d/03e + C4 profile core (04x) delivered; exact-impulse current replay preparation is specified, but T08 is blocked because the exact ADS canonical payload bytes are missing, so two-fresh replay/candidate/reference/NRMSE were not evaluated; remaining: obtain exact external reference custody, complete full compare matrix across more cases/artifacts, and release gates"
+      "note": "03a/03b/03c/03d/03e + C4 profile core (04x) delivered; the exact ADS canonical payload was recovered from two retained original-ADS custody runs and T08 current two-fresh replay completed, but strict same-index third-period NRMSE is 0.02911956313297956 and exceeds the fixed 1% gate; remaining: resolve the waveform-model discrepancy without alignment/fitting/tolerance relaxation, complete the compare matrix across more cases/artifacts, and release gates"
     },
     {
       "id": "P4A-01",

@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: b582b9d67636bb487086803c400c8bc91a13cde076e586a02bd6e7282880a6a2
+  tracked_paths_sha256: da3f32863612c3502be048833fed66f02fa25ddc6b9e8d922657560f7b036f7f
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -7781,6 +7781,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-21-p3c-exact-impulse-current-replay-v2.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-21-p3c-exact-impulse-current-replay.md:
       rule: historical-docs
       class: migration_only
@@ -8526,6 +8532,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-exact-impulse-current-replay-evidence.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-exact-impulse-current-replay-evidence.v2.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -20033,6 +20045,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p3c_exact_impulse_current_replay_preparation_v2.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/observe_p3c_sealed_selected_s4p_causality.py:
       rule: migration-tools
       class: migration_only
@@ -22806,6 +22824,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p3c_exact_impulse_current_replay_evidence.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p3c_exact_impulse_current_replay_evidence_v2.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -25890,6 +25914,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_exact_impulse_current_replay_evidence.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_exact_impulse_current_replay_evidence_v2.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
