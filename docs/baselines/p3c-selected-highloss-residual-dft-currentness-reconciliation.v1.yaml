@@ -1,0 +1,28 @@
+schema: sipi.p3c-selected-highloss-residual-dft-currentness-reconciliation.v1
+status: historical_observation_source_drifted_current_replay_missing
+historical_record:
+  path: docs/baselines/p3c-selected-highloss-residual-dft-v2-current-head-observation-evidence.v1.yaml
+  byte_length: 7045
+  sha256: ed463c99d4beadfb6409b9146b7a5d3c669e609a42a77dc213bb64b02a1b1328
+  clean_archive_commit: 97b0f271abcb7df02a3a9b259c4dafee86f3a783
+historical_verifier:
+  path: tools/verify_p3c_selected_highloss_residual_dft_v2_current_head_observation_evidence.py
+  sha256: c4b2dc8ec7b0cbe996e34c7f05fbf55b86fc05776ca87c59376036195e1abc13
+  expected_exit_code: 1
+  expected_output: p3c_selected_highloss_residual_dft_current_head_evidence_failed:source_drift
+state:
+  historical_observation_preserved: true
+  current_product_inventory_matches: false
+  current_external_replay_available: false
+  current_candidate_baseline_reproduced: false
+  current_residual_spectral_distribution_observed: false
+  current_parseval_integrity_verified: false
+  selected_highloss_waveform_only_profile_accepted: false
+  acceptance_ready: false
+  release_ledger_promoted: false
+non_claims:
+  - historical_nrmse_and_band_summaries_are_not_current_candidate_evidence
+  - source_drift_does_not_invalidate_the_historical_observation
+  - no_replay_alignment_fit_tolerance_or_policy_change_performed
+  - no_receiver_profile_or_release_admission
+audit_ref: docs/baselines/audits/2026-08-21-p3c-residual-dft-currentness-reconciliation.md

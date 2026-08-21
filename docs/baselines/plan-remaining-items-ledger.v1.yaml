@@ -100,9 +100,9 @@
         "tools/verify_p3c_original_project_channel_semantics_observation.py",
         "tools/verify_p3_original_project_eye_jitter_semantics_observation.py",
         "tools/verify_p3_ads_retained_workspace_jitter_closure_observation.py",
-        "tools/verify_p3c_selected_highloss_residual_dft_v2_current_head_observation_evidence.py"
+        "tools/verify_p3c_selected_highloss_residual_dft_currentness_reconciliation.py"
       ],
-      "note": "03a/03b/03c/03d/03e + C4 profile core (04x) delivered. Current-head external-only residual DFT rebind (clean archive 97b0f271, two fresh runs) is observed and verified, but its 0.02911956313297956 strict same-index NRMSE still exceeds the fixed 1% gate. Historical replay source inventory used CRLF checkout rather than canonical Git identities, so that record remains forensic; source-only semantics match but no root cause is identified or excluded. Remaining: resolve the waveform discrepancy without alignment/fitting/tolerance relaxation, complete receiver/eye-contour and more cases/artifacts, and release gates"
+      "note": "03a/03b/03c/03d/03e + C4 profile core (04x) delivered. The clean-archive 97b0f271 two-fresh residual DFT record remains historical after current product source drift; its 0.02911956313297956 strict same-index NRMSE and band summaries are not current-candidate evidence. Historical replay identity issues remain forensic; no root cause is identified or excluded. Remaining: fresh current replay, resolve the waveform discrepancy without alignment/fitting/tolerance relaxation, receiver/eye-contour and release gates"
     },
     {
       "id": "P4A-01",
