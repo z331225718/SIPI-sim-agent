@@ -1,0 +1,77 @@
+schema: sipi.p3-ads-retained-workspace-jitter-closure-observation.v1
+kind: external_retained_ads_workspace_dependency_closure_not_product_admission
+captured_at_utc: "2026-08-21"
+workspace:
+  root_ref: ads_retained_workspace
+  files:
+    - path: workspace.ads
+      sha256: 9882100aae00151622e6d7a8afa04e43651e4f4cbcb83349f40df525c5b091b9
+      bytes: 1414
+    - path: netlist.log
+      sha256: 676838f9bff5f92cd0e645da7db20b3adf3399cab015300d1d3b34e8098f3983
+      bytes: 7858
+    - path: EyeProbeSummary.xls
+      sha256: ea65986f08486c43d8af6e16b2d31fdcf32e9075755e8ba17e31faa29ad3af5f
+      bytes: 5632
+    - path: original.ds
+      sha256: d295530dc5aa28697e2b23a0d471a520613efc309a570a68964c538cb6f45d76
+      bytes: 348672
+    - path: nojitter.ds
+      sha256: 17c5c6f633ad0c47d63d100277b78013519adb104fe469e10fad2dbb1cd4e8a4
+      bytes: 480768
+    - path: txonly.ds
+      sha256: 88663636b344a43f378a269f61c191122dfc555f568bff4227a92aff3d715d9f
+      bytes: 464384
+    - path: rxonly.ds
+      sha256: 697328a7c9ae06d1377e7d32393dee26fa8aa0b4246abc22347dada264ea7df5
+      bytes: 349696
+observed_configuration:
+  channel: statistical
+  bitrate_gbps: 32
+  samples_per_ui: 32
+  ami_jitter_enable: 1
+  jitter_values: all_retained_tx_rx_jitter_dcd_noise_values_zero
+  eye_probe:
+    save_jitter_rms: false
+    save_jitter_pp: false
+    save_bathtub: false
+    save_waveform: false
+    save_contour: true
+    time_points: 400
+    amplitude_resolution_v: 0.001
+    ber_contour: [1.0e-12, 1.0e-11, 1.0e-10, 1.0e-9, 1.0e-8, 1.0e-7, 1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3]
+  receiver:
+    wave_capture_delay: 1000
+    wave_capture_count: 2047
+    wave_capture_mode: 2
+    cdr_lock_semantics_observed: false
+  equalizer:
+    adaptive_mode: 3
+    gain_db: 0
+    lfeq: 0
+    peak: 0
+    product_stage_contract_observed: false
+missing_fields:
+  - jitter_observable_definition_and_reference
+  - jitter_tolerance_and_acceptance_rule
+  - eye_folding_and_bin_semantics
+  - cdr_clock_source_acquisition_and_lock_contract
+  - product_equalizer_profile_and_stage_identity
+  - canonical_input_asset_and_external_runtime_dependency_closure
+conclusion:
+  highest_value_slice: retained_workspace_dependency_closure_and_missing_field_audit
+  product_algorithm_implemented: false
+  strict_waveform_mismatch_explained: false
+  status: blocked_missing_product_semantics_and_runtime_identity
+admission:
+  external_workspace_promoted: false
+  receiver_accepted: false
+  candidate_waveform_accepted: false
+  release_promoted: false
+non_claims:
+  - retained_ds_and_xls_bytes_are_not_product_input
+  - disabled_eye_outputs_are_not_observed_jitter_or_bathtub_results
+  - ADS_configuration_strings_do_not_define_product_or_legal_semantics
+  - no_alignment_gain_dc_polarity_tolerance_relaxation_or_oracle_fit_was_used
+  - no_release_or_external_runtime_authorization_is_claimed
+audit_ref: docs/baselines/audits/2026-08-21-p3-ads-retained-workspace-jitter-closure.md

@@ -11,12 +11,13 @@
   "items": [
     {
       "id": "P1-04B",
-      "blocker": "owner_decision",
+      "blocker": "external_asset_oracle",
       "gate": [
         "tools/verify_p1_04b_legacy_fixture_boundary.py",
-        "tools/verify_p1_legacy_fixture_required_profile_facts.py"
+        "tools/verify_p1_legacy_fixture_required_profile_facts.py",
+        "tools/verify_p1_04b_comparison_permission_reconciliation.py"
       ],
-      "note": "all 14 legacy assets remain blocked_unknown and the three pinned source/archive identities are observed; nine required_by labels are gate-demand clues, not a selected profile. Required profile confirmation and distribution authority remain pending"
+      "note": "owner permission to use trusted external fixtures for comparison is recorded; all 14 legacy assets remain blocked_unknown and nine required_by labels are gate-demand clues, not a selected profile. Exact profile/custody/rights and distribution authority remain pending external facts"
     },
     {
       "id": "P2-06",
@@ -24,9 +25,10 @@
       "gate": [
         "tools/verify_p2_06_stage_compare_coverage.py",
         "tools/verify_p2_06_generalized_parsed_circuit_measurement_read_only.py",
+        "tools/verify_p2_06_bounded_measurement_source_dependency_audit.py",
         "tools/verify_tran_rc_pulse_current_external_compare_evidence_v5.py"
       ],
-      "note": "fixed Windows x86_64 RC/PULSE profile current evidence v5 is accepted; pinned Agent-Spice parser/measurement objects are now read-only verified, but generalized parsed-circuit/measurements remain pending a product netlist surface and owner contract"
+      "note": "fixed Windows x86_64 RC/PULSE profile current evidence v5 is accepted; pinned Agent-Spice parser/measurement objects and their parser/retained-point/window/result/comparison dependency closure are now read-only verified, but generalized parsed-circuit/measurements remain pending a product netlist and measurement contract"
     },
     {
       "id": "P3B-02",
@@ -97,6 +99,7 @@
         "tools/verify_p3c_exact_impulse_current_replay_identity_reconciliation_v3.py",
         "tools/verify_p3c_original_project_channel_semantics_observation.py",
         "tools/verify_p3_original_project_eye_jitter_semantics_observation.py",
+        "tools/verify_p3_ads_retained_workspace_jitter_closure_observation.py",
         "tools/verify_p3c_selected_highloss_residual_dft_v2_current_head_observation_evidence.py"
       ],
       "note": "03a/03b/03c/03d/03e + C4 profile core (04x) delivered. Current-head external-only residual DFT rebind (clean archive 97b0f271, two fresh runs) is observed and verified, but its 0.02911956313297956 strict same-index NRMSE still exceeds the fixed 1% gate. Historical replay source inventory used CRLF checkout rather than canonical Git identities, so that record remains forensic; source-only semantics match but no root cause is identified or excluded. Remaining: resolve the waveform discrepancy without alignment/fitting/tolerance relaxation, complete receiver/eye-contour and more cases/artifacts, and release gates"
@@ -180,7 +183,8 @@
         "tools/verify_p4a_03bd_series_pin_table_selector_group_thresholds.py",
         "tools/verify_p4a_03be_series_pin_table_selector.py",
         "tools/verify_p4a_03bf_series_pin_table_group.py",
-        "tools/verify_p4a_03bg_series_pin_table_selector_thresholds.py"
+        "tools/verify_p4a_03bg_series_pin_table_selector_thresholds.py",
+        "tools/verify_p4a_03d_exact_asset_structural_consumer.py"
       ],
       "note": "owner A6 authorized IBIS 5.0 profile; 03d typed Model declaration (67 models) + 03e typed [Pin] declaration (200 pins) + 03f pin-to-model linkage + 03g [Component] + 03h [Package Model] + 03i [Model Selector] + 03j [Diff Pin] + 03k [Series Switch Groups] + 03l [Submodel] + 03m [Circuit Call] + 03n [Node Declarations] + 03o [Series Pin Mapping] + 03p [Series Switch Groups Table] + 03q [Receiver Thresholds] + 03r [Test Data] + 03s [Golden Waveforms] + 03t [Bus Label] + 03u [Series Thresholds] + 03v [Series Pin Group] + 03w [Series Pin Table Selector] + 03x [Series Pin Group Model] + 03y [Series Pin Group Selector] + 03z [Series Group Thresholds] + 03aa [Series Switch Thresholds] + 03ab [Model Sub-Keywords] + 03ac [Series Pin Table Group Thresholds] + 03ad [Model Selector Keywords] + 03ae [Package Model Keywords] + 03af [Series Pin Block Keywords] + 03ag [Series Switch Block Keywords] + 03ah [Receiver Thresholds Block Keywords] + 03ai [Test Data Block Keywords] + 03aj [Golden Waveforms Block Keywords] + 03ak [Bus Label Block Keywords] + 03al [Diff Pin Block Keywords] + 03am [Series Pin Table Selector Thresholds] + 03an [Series Pin Table Group Switch] + 03ao [Series Pin Table Group Switch Thresholds] + 03ap [Series Pin Table Selector Group Thresholds] + 03aq [Series Pin Table Selector Binding] + 03ar [Series Pin Table Group Model Binding] + 03as [Series Pin Table Group Selector Binding] + 03at [Series Pin Table Group Thresholds] + 03au [Series Pin Table Selector Group Thresholds] + 03av [Series Pin Table Selector Thresholds] + 03aw [Series Pin Table Group Model Thresholds] + 03ax [Series Pin Table Selector Binding] + 03ay [Series Pin Table Selector Group Thresholds] + 03az [Series Pin Table Selector Binding] + 03ba [Series Pin Table Selector Thresholds] + 03bb [Series Pin Table Group Switch] + 03bc [Series Pin Table Group Switch Thresholds] + 03bd [Series Pin Table Selector Group Thresholds] + 03be [Series Pin Table Selector Binding] + 03bf [Series Pin Table Group Model Binding] + 03bg [Series Pin Table Selector Thresholds] (3/3 crosscheck) ported; remaining typed AST surface and profile required-keyword rules still pending"
     },
@@ -463,9 +467,10 @@
       "gate": [
         "tools/verify_release_capability_publication.py",
         "tools/verify_p5_08a_com_run_admission.py",
-        "tools/verify_p5_08b_com_run_execution.py"
+        "tools/verify_p5_08b_com_run_execution.py",
+        "tools/verify_p5_08d_com_run_artifact_provenance_bounded.py"
       ],
-      "note": "08a request admission + 08b run execution/result envelope core (3/3 crosscheck) delivered; the legacy v1 InvalidJson/SchemaMismatch wire tokens are now explicit and verifier-bound rather than derived from Rust Debug; full sipi com run conformance stack remains deferred"
+      "note": "08a request admission + 08b run execution/result envelope core (3/3 crosscheck) delivered; legacy v1 invalid tokens are explicit rather than Debug-derived, and 08d adds a bounded local metadata-only artifact report leaf. Payload-to-COM execution, external provenance, profile and full sipi com run conformance remain deferred"
     },
     {
       "id": "P5-09",
@@ -534,13 +539,14 @@
     },
     {
       "id": "P7-08",
-      "blocker": "owner_decision",
+      "blocker": "release_gate",
       "gate": [
         "tools/verify_p7_08_path_scoped_replacement_map.py",
         "tools/verify_p7_08_drift_gate_retirement_strategy.py",
-        "tools/verify_p7_08_retirement_approval_record.py"
+        "tools/verify_p7_08_retirement_approval_record.py",
+        "tools/verify_p7_08_owner_decision_reconciliation.py"
       ],
-      "note": "owner retirement approval recorded 2026-08-16; required profile / drift-gate removal / release gates still pending"
+      "note": "owner retirement approval recorded 2026-08-16 and no longer requested; required profile acceptance, same-batch drift-gate removal, license/fresh-machine and release gates remain pending"
     },
     {
       "id": "P7-09",

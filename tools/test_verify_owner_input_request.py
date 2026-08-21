@@ -19,9 +19,9 @@ class OwnerInputTests(unittest.TestCase):
     def test_request_matches_ledger_input_classes(self) -> None:
         result = GATE.validate(ROOT)
         self.assertTrue(result["valid"])
-        self.assertEqual(result["entries"], 11)
-        self.assertEqual(result["owner_decision"], 7)
-        self.assertEqual(result["external_asset"], 4)
+        self.assertEqual(result["entries"], 10)
+        self.assertEqual(result["owner_decision"], 5)
+        self.assertEqual(result["external_asset"], 5)
 
     def test_every_entry_has_decision_point_and_gate(self) -> None:
         request = GATE.load_yaml(GATE.DEFAULT)

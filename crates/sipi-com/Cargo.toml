@@ -12,6 +12,7 @@ serde_json = "1"
 flate2 = "1"
 quick-xml = "0.37"
 sipi-types = { path = "../sipi-types" }
+sipi-artifacts = { path = "../sipi-artifacts" }
 zip = "2"
 
 [dev-dependencies]

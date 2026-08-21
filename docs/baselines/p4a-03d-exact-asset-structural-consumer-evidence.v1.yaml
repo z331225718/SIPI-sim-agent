@@ -1,0 +1,47 @@
+schema: sipi.p4a-03d.exact-asset-structural-consumer-evidence.v1
+status: external_only_hash_bound_structural_consumer_observation
+authority:
+  actor: user
+  decision_ref: docs/baselines/owner-input-request.v1.yaml
+  scope: owner_selected_ibis_asset_structural_typed_declaration_observation
+custody:
+  asset_path_is_product_policy: false
+  electrical_behavior_evaluated: false
+  external_profile_admitted: false
+  runtime_invoked: false
+  external_roots: cli_injected_only
+source_contract:
+  repository: SIPI-sim-agent
+  commit: b6071779d8164e685d15ddf45c19dcb6b2553c78
+  tree: 5f4859d40e9cfedb4445c0cc17e3bd4b1dfecdaa
+  parser_path: crates/sipi-ibis/src/lib.rs
+  parser_blob: f4eeb00d2c61217c90fb111b58f354a133ee7a35
+  consumer_path: crates/sipi-ibis/tests/p4a_03d_model_declaration_runner.rs
+  consumer_blob: 9995e007b746a1edac492c10dd4b2644fb0a39b2
+  consumer_policy: sipi.p4a-03d.model-declaration.v1.typed-declaration-only
+asset:
+  relative_path: as4c512m16md4v-053bin.ibs
+  byte_length: 4215925
+  sha256: d72cf62b56d67d30f4004f56ea3b79b4cb1241615692b147682f47540e615a0b
+  registry_id: p4a01-required-profile-ibs
+  registry_status: external_reference_only
+  rights_status: owner_selected_for_structural_observation_only
+consumer_observation:
+  declaration_count: 67
+  model_types:
+    Input: 27
+    IO: 40
+  policy: sipi.p4a-03d.model-declaration.v1.typed-declaration-only
+  output:
+    format: json
+    byte_length: 1486
+    sha256: 8caca28058b7fc453f2459cd08dba42edb112d2abde0657ffc0c3c9e71732f2d
+    external_only: true
+non_claims:
+  - not_required_keyword_profile_acceptance
+  - not_model_selector_admission
+  - not_corner_or_table_semantics
+  - not_electrical_behavior
+  - not_transient_endpoint
+  - not_ami_behavior
+  - not_runtime_or_release_evidence

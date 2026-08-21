@@ -1,0 +1,52 @@
+schema: sipi.p5-08d.com-run-artifact-provenance-bounded.v1
+status: bounded_local_artifact_report_observed
+policy: sipi.p5-08d.com-run-artifact-provenance-v1.bounded
+request_schema: sipi.com.run-request.v1
+report_schema: sipi.artifact-report.v1
+implementation:
+  source_path: crates/sipi-com/src/com_run_artifact_provenance_v1.rs
+  source_git_blob_oid_sha1: 092af3b18e123435c483a1a203d91b1a9f53ce40
+  source_content_sha256: a58270e247a36f22ec768378d586f4b14ba4c6492a203fb1d8dfdecc352ef41a
+  source_status: canonical_git_object_identity_bound_base_commit_is_lineage_not_acceptance
+  cargo_manifest_path: crates/sipi-com/Cargo.toml
+  cargo_manifest_git_blob_oid_sha1: df13187de19adb0004822fa26c565c50b1e790af
+  cargo_manifest_content_sha256: c3c46cbb3d216bd1dc7fb8d14cab1485e2d347bcccf5e2be5f9ee939147edf0f
+  product_base_commit: b6071779d8164e685d15ddf45c19dcb6b2553c78
+  product_base_tree: 5f4859d40e9cfedb4445c0cc17e3bd4b1dfecdaa
+  artifact_reader_dependency: crates/sipi-artifacts/src/lib.rs
+  artifact_reader_base_blob: 794fbecd0465bc73f33dd0264755b45b9f23366b
+bounded_read_policy:
+  request_max_bytes: 65536
+  maximum_manifest_bytes: 65536
+  maximum_entry_count: 64
+  maximum_total_payload_bytes: 16777216
+  maximum_report_bytes: 16384
+  policy_note: exact_io_budgets_not_com_metric_tolerances
+fixture:
+  artifact_id: result-1
+  payload_path: report.json
+  payload_bytes: 14
+  payload_sha256: 23bd670b3ff114c2eeec2ce27fd6def314530f33f6a46b2c4fb05964628bba9b
+  manifest_sha256: dc44cc8d5ded60f3cbcf4c1b85c57fdc3e6d0b902cc5569e4a91d11f48c7d89c
+  report_sha256: 2422c29429d48db15cf3ddb6dbba681457a367cb0c21dc0e0bb43ed2407f96f0
+observed:
+  binding_parse: passed
+  bounded_report_projection: passed
+  missing_root: rejected_as_artifact_not_verified
+  tampered_payload: rejected_as_artifact_not_verified
+  legacy_run_result_wire: unchanged
+  external_matlab_oracle_execution: not_performed
+non_claims:
+  - local_verified_metadata_only
+  - no_hostile_writer_safety
+  - no_ownership_signature_or_external_origin
+  - not_com_execution
+  - not_profile_selection
+  - not_matlab_oracle_provenance
+  - not_generator_input_config_provenance
+  - not_payload_to_com_pipeline
+  - not_checkpoint_alignment
+  - not_mlse_der_cdr_semantics
+  - not_metric_tolerance
+  - not_acceptance
+  - not_release

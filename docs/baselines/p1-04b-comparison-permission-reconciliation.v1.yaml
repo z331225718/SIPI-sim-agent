@@ -1,0 +1,27 @@
+schema: sipi.p1-04b.comparison-permission-reconciliation.v1
+status: owner_permission_recorded_external_facts_pending
+authority:
+  source: docs/baselines/owner-input-request.v1.yaml
+  decision: external fixtures are globally trusted; do not block comparison
+historical_facts:
+  path: docs/baselines/p1-legacy-fixture-required-profile-facts.v1.yaml
+  sha256: 3848535dcd03008a8815bd1631f9fea9d8790112c56a3fa401f6821dd9f14596
+state:
+  comparison_permission_decided: true
+  blocker_class: external_asset_oracle
+  required_profile_selected: false
+  required_profile_accepted: false
+  distribution_authorized: false
+  product_input_admitted: false
+  runtime_admitted: false
+  release_admitted: false
+remaining_external_facts:
+  - exact_selected_profile
+  - external_custody_identity
+  - consumption_and_distribution_rights
+non_claims:
+  - trusted_for_external_comparison_is_not_redistribution_permission
+  - trusted_for_external_comparison_is_not_product_or_runtime_admission
+  - required_by_labels_are_not_profile_selection
+  - no_license_or_release_conclusion
+audit_ref: docs/baselines/audits/2026-08-21-p1-04b-comparison-permission-reconciliation.md

@@ -1,0 +1,22 @@
+schema: sipi.p7-08.owner-decision-reconciliation.v1
+status: owner_retirement_approval_resolved_release_gates_pending
+approval_record:
+  path: docs/baselines/p7-08-retirement-approval-record.v1.yaml
+  sha256: 3fdc41a119fd4caf0f434ed9b4dcb04e553b8e411521467704dfbeb4d7b430df
+  approval_state: owner_approved
+state:
+  blocker_class: release_gate
+  owner_input_requested: false
+  owner_retirement_approval: satisfied
+  required_profile_accepted: false
+  same_batch_drift_gate_removal: false
+  release_license_fresh_machine_gates: false
+  path_deletion_performed: false
+  drift_gate_removed: false
+  release_admitted: false
+non_claims:
+  - retirement_plan_approval_is_not_path_deletion
+  - retirement_plan_approval_is_not_profile_acceptance
+  - retirement_plan_approval_is_not_license_or_fresh_machine_clearance
+  - retirement_plan_approval_is_not_release_promotion
+audit_ref: docs/baselines/audits/2026-08-21-p7-08-owner-decision-reconciliation.md

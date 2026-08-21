@@ -59,6 +59,40 @@ P5-08a runner 是另一个已冻结为 snake_case 的 crosscheck surface，继�
 该切片只加固既有 request/result conformance，不声称执行 MATLAB、full COM solver 或
 acceptance。
 
+## 新增 P5-08d：bounded artifact binding/report leaf
+
+`crates/sipi-com/src/com_run_artifact_provenance_v1.rs` 只读取既有
+`sipi.com.run-request.v1` 的 `artifact_root` / `artifact_id` 绑定，并委托
+`sipi-artifacts` 的 `inspect_verified_v1` 做 metadata-only integrity projection。request
+JSON 上限为 65536 bytes；manifest、entry count、payload 总量和 report 上限精确锁为
+65536 / 64 / 16777216 / 16384。这些是文件读取预算，不是 MLSE/DER/CDR 或 COM metric
+tolerance。root/id 规则与既有 artifact-report binding 对齐，且不改变旧 admission/result
+wire。API 只返回 metadata report；delegated reader 可能在预算内读取 payload 文件重算
+hash，但不会把 payload 返回或送入 COM pipeline。
+
+`ArtifactReportV1.integrity_lineage` 的 `unavailable` 值不构成 external provenance；本 leaf
+只声明本地 bounded metadata/hash projection，并明确不提供 hostile-writer safety、ownership、
+signature 或 external-origin proof。沿用 legacy request 的 root/id surface 是因为它已经是
+`sipi.com.run-request.v1` 的绑定字段；本切片不新增字段、不改变 v1 wire，也不把 root 当作
+profile/config/generator authority。
+
+本地 fixture 的 payload / manifest / report SHA-256 分别为
+`23bd670b3ff114c2eeec2ce27fd6def314530f33f6a46b2c4fb05964628bba9b`、
+`dc44cc8d5ded60f3cbcf4c1b85c57fdc3e6d0b902cc5569e4a91d11f48c7d89c`、
+`2422c29429d48db15cf3ddb6dbba681457a367cb0c21dc0e0bb43ed2407f96f0`；它们只是仓内
+bounded reader 测试材料，不是 MATLAB oracle 或 release evidence。新增 evidence
+`p5-08d-com-run-artifact-provenance-bounded.v1.yaml` 与独立 verifier/mutation tests
+锁定 schema、canonical Git object/content identities、预算和 non-claims。实现文件的
+Git blob OID / content SHA-256 为 `092af3b18e123435c483a1a203d91b1a9f53ce40` /
+`a58270e247a36f22ec768378d586f4b14ba4c6492a203fb1d8dfdecc352ef41a`；这些只绑定实现
+字节，不把 base lineage 或本地 fixture 冒充 acceptance。依赖的产品基线为 commit
+`b6071779d8164e685d15ddf45c19dcb6b2553c78`，`sipi-artifacts/src/lib.rs` base blob 为
+`794fbecd0465bc73f33dd0264755b45b9f23366b`。
+
+该 leaf 仍不声称 artifact existence 之外的 external provenance、COM execution、profile
+selection、payload-to-COM consumption、checkpoint alignment、MLSE/DER/CDR semantics、metric
+tolerance、acceptance 或 release。
+
 产品基线对象为 `SIPI-sim-agent` commit `fbec03c7cc370a630a0869329263caf0f1294731`
 （tree `324298c913e1c83483f37504d73bdfa4f32f5893`）：
 
@@ -72,9 +106,11 @@ acceptance。
 ## 验证
 
 - `cargo fmt --all -- --check`：通过。
-- `cargo test -p sipi-com --lib`：259 passed。
+- `cargo test -p sipi-com --lib`：263 passed。
 - `cargo clippy --workspace --all-targets --locked -- -D warnings`：通过。
 - `cargo test --workspace --all-targets --locked --no-fail-fast`：通过；ignored external harness 未被冒充为 crosscheck 执行。
 - `python -B -m unittest tools.test_verify_p5_08b_com_run_execution`：7 passed。
+- `python -B -m unittest tools.test_verify_p5_08d_com_run_artifact_provenance_bounded`：9 passed；
+  static document verifier：valid。
 - P0 product-boundary / clean-room / Rust source-map / license-preflight gates：全部 valid，license 仍 provisional、`release_ready=false`。
 - 同一 OMP 只读审查 staged diff：0 High / 0 Critical。

@@ -27,6 +27,7 @@ mod com_metrics_v1;
 mod com_parameter_resolver_v1;
 mod com_parameters_v1;
 mod com_run_admission_v1;
+mod com_run_artifact_provenance_v1;
 mod com_run_execution_v1;
 mod combined_noise_pdf_v1;
 mod compliance_report_v1;
@@ -94,6 +95,13 @@ pub use com_parameters_v1::{
 pub use com_run_admission_v1::{
     COM_RUN_ADMISSION_POLICY_V1, COM_RUN_REQUEST_SCHEMA_V1, ComRunAdmissionErrorV1,
     ComRunAdmissionV1, com_run_admission_v1,
+};
+pub use com_run_artifact_provenance_v1::{
+    COM_RUN_ARTIFACT_MAX_ENTRY_COUNT_V1, COM_RUN_ARTIFACT_MAX_MANIFEST_BYTES_V1,
+    COM_RUN_ARTIFACT_MAX_REPORT_BYTES_V1, COM_RUN_ARTIFACT_MAX_TOTAL_PAYLOAD_BYTES_V1,
+    COM_RUN_ARTIFACT_PROVENANCE_POLICY_V1, COM_RUN_ARTIFACT_REQUEST_MAX_BYTES_V1,
+    ComRunArtifactBindingV1, ComRunArtifactProvenanceErrorV1, ComRunArtifactProvenanceV1,
+    inspect_com_run_artifact_provenance_v1, parse_com_run_artifact_binding_v1,
 };
 pub use com_run_execution_v1::{
     COM_RUN_EXECUTION_POLICY_V1, COM_RUN_RESULT_SCHEMA_V1, ComRunExecutionErrorV1,
