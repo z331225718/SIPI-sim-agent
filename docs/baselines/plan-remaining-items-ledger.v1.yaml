@@ -1,7 +1,7 @@
 {
   "schema": "sipi.plan-remaining-items.ledger.v1",
   "status": "provisional",
-  "total_open": 24,
+  "total_open": 22,
   "blocker_classes": {
     "owner_decision": "requires an owner decision (profile/CDR/metric/Link semantics or workload approval)",
     "external_asset_oracle": "requires external assets or oracle material (DLL/fixture/MATLAB/agent-com/fresh-machine/license)",
@@ -26,9 +26,10 @@
         "tools/verify_p2_06_stage_compare_coverage.py",
         "tools/verify_p2_06_generalized_parsed_circuit_measurement_read_only.py",
         "tools/verify_p2_06_bounded_measurement_source_dependency_audit.py",
-        "tools/verify_tran_rc_pulse_current_external_compare_evidence_v5.py"
+        "tools/verify_tran_rc_pulse_current_external_compare_evidence_v5.py",
+        "tools/verify_p2_06_exact_rc_measurement_implementation.py"
       ],
-      "note": "fixed Windows x86_64 RC/PULSE profile current evidence v5 is accepted; pinned Agent-Spice parser/measurement objects and their parser/retained-point/window/result/comparison dependency closure are now read-only verified, but generalized parsed-circuit/measurements remain pending a product netlist and measurement contract"
+      "note": "The strict seven-line RC/PULSE/.tran/MAX V(out) product consumer is implemented and its waveform path was observed against pinned Agent-Spice. The oracle run did not execute the same deck or expose an Agent-Spice measurement result, so generalized parsed-circuit and measurement semantics remain open."
     },
     {
       "id": "P3B-02",
@@ -37,24 +38,10 @@
         "tools/verify_p3b_02_link_kernel_singleton.py",
         "tools/verify_p3_original_project_eye_jitter_semantics_observation.py",
         "tools/verify_owner_decision_reconciliation_v2.py",
-        "tools/verify_p3b_02_equalizer_semantics_gap.py"
+        "tools/verify_p3b_02_equalizer_semantics_gap.py",
+        "tools/verify_p3b_02_named_fir_prerequisite.py"
       ],
-      "note": "Owner recommendation A is reconciled as RX CTLE -> RX FFE with explicit per-stage selection or bypass and no auto-tuning/silent default. The additive gap gate binds the live bypass-only contract and enumerates the missing CTLE/FFE state, units, timebase, tolerance, oracle and provenance semantics; runtime remains semantics_not_implemented"
-    },
-    {
-      "id": "P3C-02",
-      "blocker": "semantics_not_implemented",
-      "gate": [
-        "tools/verify_release_capability_publication.py",
-        "tools/verify_p3c_02_bathtub_decision_preflight.py",
-        "tools/verify_p3c_02e_qfactor_ber.py",
-        "tools/verify_p3c_02f_bathtub.py",
-        "tools/verify_p3c_02g_horizontal_margin.py",
-        "tools/verify_p3c_02h_bathtub_fit.py",
-        "tools/verify_p3c_02i_eye_contour.py",
-        "tools/verify_p3c_02_current_semantics_gap.py"
-      ],
-      "note": "eye/jitter (02c) + 02e Q/BER + 02f bathtub opening + 02g horizontal margin + 02h curve fit + 02i contour are delivered as bounded cores. The current owner profile is waveform-only and excludes eye/TIE/bathtub, so product folding/bin/receiver semantics remain explicitly unselected"
+      "note": "Owner-selected RX CTLE -> RX FFE ordering and an explicit two-slot bounded causal-FIR composition prerequisite exist. CTLE transfer/grid/state and FFE UI/cursor/profile semantics, tolerance, oracle and provenance remain unimplemented; wire v1 remains bypass-only."
     },
     {
       "id": "P3C-03",
@@ -73,30 +60,32 @@
         "tools/verify_p3_original_project_eye_jitter_semantics_observation.py",
         "tools/verify_p3_ads_retained_workspace_jitter_closure_observation.py",
         "tools/verify_p3c_selected_highloss_residual_dft_currentness_reconciliation.py",
-        "tools/verify_p3c_03_current_semantics_gap.py"
+        "tools/verify_p3c_03_com_metric_bundle_capability.py"
       ],
-      "note": "03a/03b/03c/03d/03e + C4 profile core are delivered; metric comparison now rejects profile-external candidates. Current gap evidence binds required COM/ERL/TD-ILN versus C4 COM/ICN/ERL and forbids substitution. Historical replay remains source-drift; alignment, provenance, tolerance, authoritative reference, receiver and release remain unresolved"
+      "note": "A typed COM/ERL/TD-ILN bundle with caller-supplied per-metric tolerances is implemented. Current high-loss comparison still lacks authoritative reference and TD-ILN value, clean input provenance, checkpoint alignment and accepted tolerances; C4 ICN is not a substitute."
     },
     {
       "id": "P4A-01",
-      "blocker": "semantics_not_implemented",
+      "blocker": "external_asset_oracle",
       "gate": [
         "tools/verify_p4a_ibis_example_rx_candidate_inventory.py",
         "tools/verify_p4a_01_required_profile_inventory.py",
         "tools/verify_owner_decision_reconciliation_v2.py",
-        "tools/verify_p4a_03_typed_inventory_consumer.py"
+        "tools/verify_p4a_01_selected_ibis_truncation_disposition.py",
+        "tools/verify_p4a_03_complete_typed_inventory_consumer.py"
       ],
-      "note": "Owner recommendation A freezes the exact IBIS 5.0 file without guessing model/corner behavior. The typed consumer reaches the selected asset and fail-closes on an undeclared DQ_PIN selector branch model; exhaustive inventory and behavior selection remain under P4A-02/P4A-03"
+      "note": "The tracked IBIS file is proven to be a strict truncated prefix of the official object, lacks final [End], and is rejected for semantic/electrical use. Exact full-asset custody, profile selection and rights remain external blockers; no model is synthesized."
     },
     {
       "id": "P4A-02",
-      "blocker": "semantics_not_implemented",
+      "blocker": "external_asset_oracle",
       "gate": [
         "tools/verify_p4a_ibis71_behavior_scope_preflight.py",
         "tools/verify_p4a_02b_gen5_behavior_spec.py",
-        "tools/verify_p4a_dynamic_endpoint_transient_composition_contract.py"
+        "tools/verify_p4a_dynamic_endpoint_transient_composition_contract.py",
+        "tools/verify_p4a_02_static_declaration_scope_and_dynamic_blocker.py"
       ],
-      "note": "owner C1 decision 2026-08-16: use authorized external Gen5 profile; dynamic endpoint contract now fixes REF, constitutive terms, SI units and fail-closed boundaries, but channel return/terminal map, supply, initial state, integration/timebase/output grid, stimulus, resource limits, tolerance and acceptance evidence remain pending; T12 admission is false"
+      "note": "Authorized Gen5 results and bounded static/declaration facts are recorded, but they do not define the dynamic endpoint. Exact authority and evidence for reference/supply/initial-state/integration/timebase/grid/stimulus/resource/tolerance/acceptance remain external blockers; dynamic admission is false."
     },
     {
       "id": "P4A-03",
@@ -160,9 +149,9 @@
         "tools/verify_p4a_03bf_series_pin_table_group.py",
         "tools/verify_p4a_03bg_series_pin_table_selector_thresholds.py",
         "tools/verify_p4a_03d_exact_asset_structural_consumer.py",
-        "tools/verify_p4a_03_typed_inventory_consumer.py"
+        "tools/verify_p4a_03_complete_typed_inventory_consumer.py"
       ],
-      "note": "03d..03bg typed declarations/keyword leaves exist; 03bh adds the first bounded structural-to-typed Model/Selector/Pin linkage consumer and reaches the selected asset fail-closed boundary. The selected asset has an undeclared selector branch target, while model/corner/PVT, electrical behavior, complete AST/rules, external conformance and acceptance remain pending"
+      "note": "The product consumer now requires a complete document with one payload-free final [End] and can enumerate bounded Model/Selector/Pin linkage on the exact external object. Complete AST/rules, electrical behavior, model/corner/PVT selection and external conformance remain unimplemented."
     },
     {
       "id": "P4B-02",
@@ -363,9 +352,10 @@
         "tools/verify_p4b_02b192_parameter_list_relative_frequency_map.py",
         "tools/verify_p4b_02b193_parameter_list_prevalence_map.py",
         "tools/verify_p4b_02b_runner_consolidation.py",
-        "tools/verify_p4b_02_parameter_selection.py"
+        "tools/verify_p4b_02_parameter_selection.py",
+        "tools/verify_p4b_02_production_parameter_adapter_selection.py"
       ],
-      "note": "All 193 feature-quarantined parameter modules are classified by the 2026-08-21 selection charter: keep_for_product=0, quarantine_pending_requirement=34, delete_candidate=159. Default host/worker has no parameter-semantic consumer and 191 self-crosschecks are product-owned/unbound. P4B-02 remains open until an exact authorized AMI parameter contract, one production adapter consumer and independent oracle exist; no deletion has been executed."
+      "note": "The production worker/host adapter is identified as raw parse_and_bind -> verify_binding -> AmiTextBinding -> AMI_Init. The 193 quarantined helpers remain keep=0/pending=34/delete-candidate=159; an authorized AMI parameter contract and typed semantic profile are still missing."
     },
     {
       "id": "P4B-08",
@@ -433,18 +423,10 @@
         "tools/verify_release_capability_publication.py",
         "tools/verify_p5_08a_com_run_admission.py",
         "tools/verify_p5_08b_com_run_execution.py",
-        "tools/verify_p5_08d_com_run_artifact_provenance_bounded.py"
+        "tools/verify_p5_08d_com_run_artifact_provenance_bounded.py",
+        "tools/verify_p5_08e_com_run_artifact_execution.py"
       ],
-      "note": "08a request admission + 08b run execution/result envelope core (3/3 crosscheck) delivered; legacy v1 invalid tokens are explicit rather than Debug-derived, and 08d adds a bounded local metadata-only artifact report leaf. Payload-to-COM execution, external provenance, profile and full sipi com run conformance remain deferred"
-    },
-    {
-      "id": "P5-09",
-      "blocker": "semantics_not_implemented",
-      "gate": [
-        "tools/verify_release_capability_publication.py",
-        "tools/verify_p5_09_com_behavior_replica_wording.py"
-      ],
-      "note": "09a freezes candidate-only wording and all non-claims, but no actual product report or capability consumer is bound; completed behavior replication, IEEE certification, external oracle, runtime, acceptance and release remain unclaimed"
+      "note": "A bounded internal pulse-artifact -> parameter ingestion -> COM execution -> immutable result artifact -> metadata report composition is implemented with pre-parse request limits. Public sipi com run, authoritative oracle/profile acceptance, external provenance and hostile-writer semantics remain unimplemented."
     },
     {
       "id": "P7-01",

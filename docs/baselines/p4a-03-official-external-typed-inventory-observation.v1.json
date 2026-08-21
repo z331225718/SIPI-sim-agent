@@ -1,0 +1,32 @@
+{
+  "schema": "sipi.p4a-03.official-external-typed-inventory-observation.v1",
+  "status": "bounded_declaration_linkage_passed",
+  "custody": "external_operator_only",
+  "runner": "p4a_03_typed_inventory_runner",
+  "explicit_markers": ["GND", "NC", "POWER"],
+  "result": {
+    "policy": "sipi.p4a-03.typed-inventory-consumer.v1.declaration-linkage-only",
+    "valid": true,
+    "input_byte_length": 6138000,
+    "input_sha256": "53e27609dbb81e7685456a48c611111fed34ca14477623e46a9a9a582a7a646b",
+    "declared_version": "5.0",
+    "component_names": ["AS4C512M16MD4V-053BIN"],
+    "model_count": 95,
+    "selector_count": 4,
+    "pin_count": 200,
+    "direct_model_pin_count": 3,
+    "selector_pin_count": 31,
+    "marker_pin_count": 166,
+    "electrical_behavior_status": "not_evaluated",
+    "profile_selection_status": "not_selected"
+  },
+  "promotion_eligible": false,
+  "non_claims": [
+    "not_a_product_asset_route",
+    "not_model_or_corner_selection",
+    "not_electrical_behavior",
+    "not_transient_or_ami_runtime",
+    "not_general_ibis_compatibility",
+    "not_external_profile_acceptance_or_release_evidence"
+  ]
+}

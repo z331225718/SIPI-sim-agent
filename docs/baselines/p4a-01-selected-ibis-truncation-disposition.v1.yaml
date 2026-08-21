@@ -1,0 +1,60 @@
+schema: sipi.p4a-01.selected-ibis-truncation-disposition.v1
+status: exact_unusable_profile_disposition
+promotion_eligible: false
+purpose: >-
+  Close the selected tracked asset question without inventing missing model,
+  selector, corner, reference, supply, or electrical semantics.
+selected_tracked_object:
+  path: fixtures/ibis/as4c512m16md4v-053bin.ibs
+  byte_length: 4215925
+  sha256: d72cf62b56d67d30f4004f56ea3b79b4cb1241615692b147682f47540e615a0b
+  git_blob_sha1: a44c10340018582ab1fbeac757c92e784e79df2e
+  final_8_bytes_hex: 392e34303030652d
+  end_record_count: 0
+  model_block_count: 67
+  model_selector_count: 4
+official_external_object:
+  product_page_url: https://www.alliancememory.com/as4c512m16md4v/
+  canonical_download_url: https://www.alliancememory.com/wp-content/uploads/as4c512m16md4v-053bin.ibs
+  custody: external_operator_only
+  byte_length: 6138000
+  sha256: 53e27609dbb81e7685456a48c611111fed34ca14477623e46a9a9a582a7a646b
+  end_record_count: 1
+  model_block_count: 95
+  model_selector_count: 4
+  declared_cke_pin_model: true
+strict_prefix_proof:
+  tracked_equals_official_prefix: true
+  missing_byte_count: 1922075
+  first_64_suffix_bytes_hex: 313020202020372e373430363137652d30382020202d312e353533303938652d303720202020332e363836313637652d30390d0a202020202020392e36303030
+selector_observation:
+  first_tracked_missing_branch:
+    selector: DQ_PIN
+    model: DQ_60OHM_60OHM_PREEMP_ON
+  official_unknown_branch_count: 0
+disposition:
+  selected_tracked_asset_profile: unusable_for_semantic_or_electrical_profile
+  allowed_use: exact_structural_prefix_observation_only
+  synthesize_missing_model: forbidden
+  infer_later_reference_or_marker: forbidden
+  model_corner_pvt_selection: false
+  electrical_behavior: false
+  transient_behavior: false
+rights_boundary:
+  official_rights_status: unverified
+  redistribution_authorized: false
+  git_asset: false
+  product_fixture: false
+  runtime_input: false
+  acceptance_profile: false
+  release_input: false
+audit:
+  path: docs/baselines/audits/2026-08-21-p4a-01-selected-ibis-truncation-disposition.md
+  sha256: 0f5b6ad5b7c11fee250ddab78fc38b73395307b5897ff179f74356ac4f8dc09b
+non_claims:
+  - not_general_ibis_compatibility
+  - not_model_corner_or_pvt_selection
+  - not_electrical_behavior
+  - not_transient_integration
+  - not_external_profile_acceptance
+  - not_redistribution_or_release_evidence

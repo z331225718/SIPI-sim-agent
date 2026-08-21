@@ -1121,10 +1121,10 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
     historical_compare_id = "tran-rc-pulse-current-external-compare-v4"
     older_compare_id = "tran-rc-pulse-current-external-compare-v3"
     if (
-        tran["acceptance_state"] != "accepted"
-        or tran["external_oracle"] is not True
+        tran["acceptance_state"] != "specified"
+        or tran["external_oracle"] is not False
         or tran["evidence_ids"] != ["tran-rc-pulse-contract", "p7-isolated-install", current_compare_id]
-        or tran["blockers"] != ["release_promotion_blocked"]
+        or tran["blockers"] != ["current_external_compare_evidence_source_drift", "release_promotion_blocked"]
         or tran["non_claims"] != [
             "fixed_profile_only_not_general_tran_or_netlist_support",
             "not_cross_platform_or_release_certification",
@@ -1142,8 +1142,13 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
         raise PublicationError("publication_tran_acceptance_binding_invalid")
     try:
         verify_current_tran_evidence(load_yaml(ROOT / current_entry["path"]))
-    except (CurrentTranEvidenceError, OSError, RuntimeError):
+    except CurrentTranEvidenceError as error:
+        if str(error) != "evidence_product_source_drift":
+            raise PublicationError("publication_tran_external_evidence_invalid") from None
+    except (OSError, RuntimeError):
         raise PublicationError("publication_tran_external_evidence_invalid") from None
+    else:
+        raise PublicationError("publication_tran_external_evidence_not_drifted")
 
     historical_entry = index_by_id.get(historical_compare_id)
     if historical_entry != {
@@ -1193,7 +1198,11 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
         channel["acceptance_state"] != "specified"
         or channel["external_oracle"] is not False
         or channel["evidence_ids"] != ["channel-s2p-contract", "p3a-matched-channel-cli-run", compare_id]
-        or channel["blockers"] != ["caller_input_unattested", "periodic_kernel_not_link_simulation"]
+        or channel["blockers"] != [
+            "caller_input_unattested",
+            "periodic_kernel_not_link_simulation",
+            "current_external_compare_evidence_source_drift",
+        ]
     ):
         raise PublicationError("publication_channel_acceptance_binding_invalid")
     entry = index_by_id.get(compare_id)
@@ -1207,8 +1216,13 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
         raise PublicationError("publication_channel_acceptance_binding_invalid")
     try:
         verify_current_channel_cli_evidence(load_yaml(ROOT / entry["path"]))
-    except (CurrentChannelEvidenceError, OSError, RuntimeError):
+    except CurrentChannelEvidenceError as error:
+        if str(error) != "evidence_product_source_drift":
+            raise PublicationError("publication_channel_current_evidence_invalid") from None
+    except (OSError, RuntimeError):
         raise PublicationError("publication_channel_current_evidence_invalid") from None
+    else:
+        raise PublicationError("publication_channel_current_evidence_not_drifted")
 
     historical_entry = index_by_id.get(historical_compare_id)
     if historical_entry != {

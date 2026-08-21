@@ -289,10 +289,8 @@ class PublicationTests(unittest.TestCase):
                 mutated = self.publication()
                 row = next(item for item in mutated["rows"] if item["id"] == row_id)
                 if row_id == "tran-rc-pulse":
-                    self.assertEqual(row["acceptance_state"], "accepted")
-                    self.assertTrue(row["external_oracle"])
-                    GATE.validate(mutated, manifest_for(mutated), ROOT)
-                    continue
+                    self.assertEqual(row["acceptance_state"], "specified")
+                    self.assertFalse(row["external_oracle"])
                 row["acceptance_state"] = "accepted"
                 row["external_oracle"] = True
                 expected = specialized_rejections.get(row_id, "publication_acceptance_authority_missing")
@@ -342,7 +340,7 @@ class PublicationTests(unittest.TestCase):
     def test_tran_current_and_historical_evidence_require_exact_states(self) -> None:
         publication = self.publication()
         tran = next(row for row in publication["rows"] if row["id"] == "tran-rc-pulse")
-        tran["blockers"].append("current_external_compare_evidence_source_drift")
+        tran["blockers"].remove("current_external_compare_evidence_source_drift")
         with self.assertRaisesRegex(GATE.PublicationError, "publication_tran_acceptance_binding_invalid"):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
@@ -387,7 +385,7 @@ class PublicationTests(unittest.TestCase):
 
         publication = self.publication()
         tran = next(row for row in publication["rows"] if row["id"] == "tran-rc-pulse")
-        tran["external_oracle"] = False
+        tran["external_oracle"] = True
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 
@@ -1210,7 +1208,7 @@ class PublicationTests(unittest.TestCase):
     def test_channel_cli_requires_current_evidence_without_claiming_general_support(self) -> None:
         publication = self.publication()
         channel = next(row for row in publication["rows"] if row["id"] == "channel")
-        channel["blockers"].append("current_external_compare_evidence_source_drift")
+        channel["blockers"].remove("current_external_compare_evidence_source_drift")
         with self.assertRaises(GATE.PublicationError):
             GATE.validate(publication, manifest_for(publication), ROOT)
 

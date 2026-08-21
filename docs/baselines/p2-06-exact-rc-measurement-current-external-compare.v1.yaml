@@ -1,0 +1,54 @@
+{
+  "schema": "sipi.p2-06.exact-rc-measurement-current-external-compare.v1",
+  "status": "waveform_observed_measurement_authority_not_bound",
+  "scope": "exact bounded RC/PULSE transient plus sampled MAX V(out)",
+  "external_report": {
+    "schema": "sipi.p2-06.exact-rc-measurement-compare.v1",
+    "sha256": "ebc5fa065cde1d35419566afc1cacafbfd450abdd199eeddaf98761180e49eb5",
+    "custody": "operator_external_only"
+  },
+  "source": {
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402",
+    "path": "native/AgentSpice.Engine/fixtures/rc.cir",
+    "git_blob": "f9c29055902fe8aa2b268b4375a5bdbbf67df9da",
+    "content_sha256": "bcdbd81a40dde01f0e72a8c36be928b6a7325fabbc25f83f72073757154dcefc",
+    "redistribution": "external_only"
+  },
+  "oracle": {
+    "executable_sha256": "c6e5022f0b3442cc72bef6ff54cd6116f70f2f85b3dcff91072277e534030913",
+    "git_dirty": false,
+    "runs": 2,
+    "sample_count": 4
+  },
+  "product": {
+    "executable_sha256": "db68675b319cb00eac2ba1e874a67431aeac7163f20cdd07a3b9cab0977440c9",
+    "runs": 2,
+    "source_sha256": {
+      "Cargo.lock": "feb03cb9c16268fc06a2df23573806d8b40c335757bddab412ce9f2630cd8866",
+      "crates/sipi-runtime/src/lib.rs": "c2b22b3aeed6d0d4f0e40847def056619253cd4cdb83713b549d8e45d5e39e03",
+      "crates/sipi-tran/Cargo.toml": "52bd5dc83f33ab1745e829f6862d7e9e39d2cbf95318d8e24fe8dfcc4fa7df5f",
+      "crates/sipi-tran/src/bin/sipi_tran_exact_rc_measurement_harness.rs": "66c95d2da0b2216473772c89457a8d7a099b41507c4d57aef73e3e2da3a3ae09",
+      "crates/sipi-tran/src/lib.rs": "baf7da2de3952fe992fb836113bf7d614e9e5f76849c3af74bbc85a3538ec1fb",
+      "crates/sipi-tran/src/parsed_rc_measurement_v1.rs": "af16bf6503bc25a40fcb2f4c87b820dbf5b65119145264af4d79789851769d3c",
+      "crates/sipi-types/src/lib.rs": "3de5e2cb9e0875adac7f17cd3de237e3002292412b1d41ff6609b829d7af3a18"
+    }
+  },
+  "comparison": {
+    "time_axis_seconds_max_absolute_error": 0.0,
+    "voltage_in_volts_max_absolute_error": 0.0,
+    "voltage_out_volts_max_absolute_error": 9.963737488231927e-7,
+    "max_v_out_volts_max_absolute_error": 9.963737488231927e-7,
+    "voltage_absolute_tolerance": 2.0e-6,
+    "voltage_relative_tolerance": 5.0e-4
+  },
+  "closure": {
+    "exact_profile_scoped_close": false,
+    "same_input_parsed_circuit_compare": false,
+    "external_measurement_result_observed": false,
+    "sampled_max_reduced_by_product_comparator": true,
+    "generic_spice_or_mna": false,
+    "op_or_ac": false,
+    "general_measurements": false
+  }
+}

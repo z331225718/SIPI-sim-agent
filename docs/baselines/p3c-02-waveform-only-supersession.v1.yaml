@@ -1,0 +1,67 @@
+schema: sipi.p3c-02.waveform-only-supersession.v1
+status: p3c_02_current_route_obligation_resolved_not_applicable
+purpose: >-
+  Bind the current owner-selected waveform-only route and record that eye,
+  TIE, receiver, folding/bin, and bathtub semantics are not requirements of
+  that route, without deleting generic cores or claiming waveform acceptance.
+scope:
+  work_item: P3C-02
+  route: selected_highloss_exact
+  resolution: current_route_semantics_scoped_closed
+  product_rust_changed: false
+  historical_evidence_rewritten: false
+  generic_cores_deleted: false
+  external_runtime_invoked: false
+  acceptance_or_release_promoted: false
+owner_decision:
+  path: docs/baselines/owner-decision-reconciliation.v2.yaml
+  sha256: 4e9109e3adde405f3c6529bd6d09f27828a0cc56959eeb024b5600865bbba1f0
+  decision_id: P3C-01
+  profile: selected_highloss_exact
+  receiver: none
+  scope: waveform_only
+  included_observables: [waveform]
+  excluded_observables: [eye, TIE, bathtub]
+  closed_eye_fallback: prohibited
+selected_route_contract:
+  path: docs/baselines/p3c-selected-highloss-prbs9-waveform-only-contract.v3.yaml
+  sha256: db0d9a663b311105be329d79060f05a5179f40fd7eccf448faf85d45b73da64a
+  receiver_or_equalizer_stage: none
+  waveform_alignment: prohibited
+  eye_status: excluded_not_evaluated_for_this_selected_closed_eye_profile
+  jitter_status: excluded_not_evaluated_for_this_selected_closed_eye_profile
+selected_route_core:
+  path: docs/baselines/p3c-selected-highloss-prbs9-waveform-only-core.v3.yaml
+  sha256: d1562d0fc8de56584b3be1082f7b8dafc9a20693cae44330cb012bbd4e385e36
+  entrypoint: compare_selected_highloss_prbs9_waveform_only_v3
+  selected_highloss_waveform_only_contract_ready: true
+  acceptance_ready: false
+supersession:
+  prior_gap_path: docs/baselines/p3c-02-current-semantics-gap.v1.yaml
+  prior_gap_sha256: 59dd1e96188038e92944cebec349c8f8c971b7556ef9bd562c38bd79c030884e
+  superseded_claim: current_selected_route_requires_new_eye_or_bathtub_semantics
+  replacement: eye_tie_bathtub_not_applicable_to_current_selected_route
+  prior_record_retained: true
+retained_capabilities:
+  disposition: generic_or_future_receiver_profile_only
+  surfaces:
+    - strict_grid_sampled_eye_and_tie
+    - q_factor_and_ber
+    - bathtub_opening
+    - horizontal_margin
+    - bathtub_curve_fit
+    - statistical_eye_contour
+future_extension_gate:
+  required: new_owner_selected_additive_profile
+  guessing_from_original_project: prohibited
+  alignment_or_tolerance_relaxation: prohibited
+non_claims:
+  - not_waveform_acceptance
+  - not_receiver_acceptance
+  - not_eye_or_bathtub_acceptance
+  - not_external_oracle_evidence
+  - not_com_parity
+  - not_release_evidence
+audit:
+  path: docs/baselines/audits/2026-08-21-p3c-02-waveform-only-supersession.md
+  sha256: 2f7e1cf06080867d9bfafc2a5dbdd3874f564dc772b7634972beb1f1fdbc9ba2

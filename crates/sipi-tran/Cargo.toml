@@ -21,3 +21,8 @@ workspace = true
 name = "sipi-tran-rc-pulse-harness"
 path = "src/bin/sipi_tran_rc_pulse_harness.rs"
 required-features = ["rc-pulse-harness"]
+
+[[bin]]
+name = "sipi-tran-exact-rc-measurement-harness"
+path = "src/bin/sipi_tran_exact_rc_measurement_harness.rs"
+required-features = ["rc-pulse-harness"]

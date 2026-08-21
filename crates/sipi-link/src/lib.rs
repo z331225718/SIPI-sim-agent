@@ -3,8 +3,9 @@
 //! Product-owned, deterministic Link primitives for the P3B boundary.
 //!
 //! It contains direct causal-FIR convolution and one approved fixed,
-//! data-aided receiver. It has no S-parameter resolver, equalizer, I/O, CLI,
-//! or external-oracle dependency.
+//! data-aided receiver. Named RX stage slots may compose that same FIR kernel,
+//! but do not define an admitted CTLE or FFE transfer profile. The crate has no
+//! S-parameter resolver, I/O, CLI, or external-oracle dependency.
 
 use std::{error::Error, fmt, num::NonZeroUsize};
 
@@ -15,6 +16,7 @@ use sipi_types::{Axis, NonZeroStep, Seconds, TypeError, Volts, Waveform};
 mod prbs9_inject_v1;
 mod prbs9_v1;
 mod receiver;
+mod rx_named_fir_v1;
 mod time_warp_v1;
 
 pub use prbs9_inject_v1::{
@@ -25,6 +27,10 @@ pub use prbs9_v1::{PRBS9_OWNER_SEED_BITS, PRBS9_POLICY_V1, PRBS9_STAGES, Prbs9V1
 pub use receiver::{
     ReceiverDecisionV1, ReceiverError, ReceiverPhaseSelectionV2, ReceiverResultV1, ReferenceBitsV1,
     run_fixed_receiver_delegated_ambiguity_v2, run_fixed_receiver_v1,
+};
+pub use rx_named_fir_v1::{
+    ExplicitCausalFirV1, RX_NAMED_FIR_PREREQUISITE_POLICY_V1, RxNamedFirErrorV1, RxNamedFirPlanV1,
+    RxNamedFirResultV1, RxNamedFirStageV1, apply_rx_named_fir_prerequisite_v1,
 };
 pub use time_warp_v1::{TIME_WARP_POLICY_V1, TimeWarpErrorV1, time_warp_shift_v1};
 

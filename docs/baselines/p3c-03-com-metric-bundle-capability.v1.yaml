@@ -1,0 +1,68 @@
+schema: sipi.p3c-03.com-metric-bundle-capability.v1
+status: p3c_03_required_metric_bundle_prerequisite_implemented_acceptance_open
+purpose: >-
+  Bind the additive typed COM/ERL/TD-ILN scalar bundle and strict compare path
+  while keeping reference, provenance, alignment, tolerance selection, oracle,
+  and acceptance outside the implementation claim.
+scope:
+  work_item: P3C-03
+  role: p5_06_prerequisite_capability
+  main_item_closed: false
+  external_runtime_invoked: false
+  product_vs_oracle_compare_executed: false
+  historical_evidence_rewritten: false
+  c4_profile_changed: false
+  acceptance_or_release_promoted: false
+implementation:
+  source:
+    path: crates/sipi-compare/src/com_metric_bundle_v1.rs
+    sha256: 8cfaa822e666e2c9fae0710f2e41cabc001d55e2a8a13acb5e4fb370444c30ed
+  public_surface:
+    path: crates/sipi-compare/src/lib.rs
+    sha256: a8472e62b5892a8fa5a0b4aa88b26e33c12176f5ca3a2a81128a8406509e1b74
+  policy: sipi.p3c-03.com-metric-bundle.v1.com-erl-td-iln-explicit-tolerances
+  bundle_type: ComMetricBundleV1
+  tolerance_type: ComMetricTolerancesV1
+  compare_entrypoint: compare_com_metric_bundle_v1
+  metrics:
+    - {id: com_db, unit: db}
+    - {id: erl_db, unit: db}
+    - {id: td_iln_db, unit: db}
+  complete_typed_bundle_required: true
+  finite_reference_and_candidate_required: true
+  tolerance_per_metric_explicit: true
+  default_tolerance: null
+  compare_engine_reused: compare_metric_profile_v1
+  public_map_or_alias_input: false
+  alignment: none
+  unit_conversion: none
+  cli: none
+substitution_guard:
+  icn_field_present: false
+  icn_to_td_iln_alias: false
+  legacy_c4_profile_unchanged: true
+required_contract:
+  path: docs/baselines/p5-06k-required-com-compare-contract-gap.v1.yaml
+  sha256: 6bf07e6265176569ceee8a5250bf3012fe47881d4c982a6edc8fb59ce65c91d9
+  exact_metric_identity_surface_implemented: true
+  external_acceptance_contract_complete: false
+remaining_blockers:
+  - authoritative_reference_artifact_missing
+  - td_iln_reference_value_missing
+  - clean_input_provenance_missing
+  - checkpoint_alignment_missing
+  - required_per_metric_acceptance_tolerances_missing
+prohibited_shortcuts:
+  - alias_icn_as_td_iln
+  - infer_default_tolerance_from_c4_or_repeatability_tests
+  - align_or_convert_units_inside_bundle_compare
+  - use_historical_source_drift_as_current_oracle
+non_claims:
+  - not_td_iln_algorithm_implementation
+  - not_product_vs_oracle_compare
+  - not_com_parity
+  - not_acceptance_evidence
+  - not_release_evidence
+audit:
+  path: docs/baselines/audits/2026-08-21-p3c-03-com-metric-bundle-capability.md
+  sha256: 5722964c57ddfc814fffd290664c28cf7c8f13312858bce88255115477f2656d

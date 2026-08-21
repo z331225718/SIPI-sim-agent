@@ -1,0 +1,85 @@
+schema: sipi.p5-09b.com-behavior-replica-wording-retirement.v1
+status: candidate_wording_retired_product_report_bound
+predecessor:
+  contract_path: docs/baselines/p5-09-com-behavior-replica-wording-contract.v1.yaml
+  contract_sha256: 86c0b001624ce17bdc48c7d2f04063f232d3f64a61b8963c3f88087923e4c6a6
+  evidence_path: docs/baselines/p5-09-com-behavior-replica-wording-evidence.v1.yaml
+  evidence_sha256: 49052cd182693372a75d792664f21b9279abd88c40bc09f180a0f6249e3ef697
+  unchanged: true
+policy: sipi.p5-09.behavior-replica-not-ieee-certification.v1
+scope:
+  domain: com
+  profile_id: com-r480-envelope-v1
+  closure: superseded
+  closure_boundary: bounded_artifact_execution_report_only
+  product_behavior_replica: retired_unpublished_candidate
+  behavioral_replication: not_claimed
+  product_capability: bounded_artifact_execution_only
+  external_oracle: blocked
+  metrics: blocked
+  runtime: bounded_local_artifact_execution
+  product_acceptance: false
+  promotion: false
+consumer:
+  path: crates/sipi-com/src/com_run_artifact_execution_v1.rs
+  symbol: ComRunArtifactExecutionReportV1
+  producer: execute_com_run_artifact_v1
+  semantics_status: product_owned_bounded_execution_complete
+  behavioral_replication_status: not_claimed
+  external_acceptance_status: blocked_missing_authoritative_reference
+wording:
+  report_title: COM bounded artifact execution report
+  report_claim: Product-owned bounded payload execution completed; no external equivalence is asserted.
+  report_disclaimer: This report is not IEEE official certification, a reference implementation, or an external COM comparison result.
+  capability_label: bounded_artifact_execution
+  capability_description: Consumes one verified local pulse artifact and publishes one verified local COM result artifact.
+  capability_disclaimer: This capability does not establish behavioral replication, standards compliance, conformance, external equivalence, product acceptance, or release readiness.
+  external_oracle: External oracle comparison remains blocked.
+  metrics: Full metric, checkpoint, and tolerance evidence remains blocked.
+  runtime: Bounded local pulse-to-result artifact execution is implemented.
+policy_rules:
+  positive_claim_fields:
+    - report_title
+    - report_claim
+    - capability_label
+    - capability_description
+    - external_oracle
+    - metrics
+    - runtime
+  forbidden_positive_patterns:
+    - '(?i)\bieee[- ]certified\b'
+    - '(?i)\bcertified\b'
+    - '(?i)\bcertification\b'
+    - '(?i)\bofficial\b'
+    - '(?i)\bofficial(?:\s+ieee)?\s+certification\b'
+    - '(?i)\bieee(?:[/\s-]+)?standards?[- ]compliant\b'
+    - '(?i)\bstandards?[- ]compliant\b'
+    - '(?i)\bvalidated\b'
+    - '(?i)\bapproved\b'
+    - '(?i)\bqualified\b'
+    - '(?i)\bequivalent\b'
+    - '(?i)\bmatch(?:es|ed|ing)?\b'
+    - '(?i)\bpass(?:es|ed|ing)?\b'
+    - '(?i)\breference\s+implementation\b'
+    - '(?i)\bparity\b'
+    - '(?i)\bconformance\b'
+    - '(?i)\brelease(?:[- ]ready)?\b'
+    - '(?i)\baccept(?:ed|ance)\b'
+    - '(?i)\bbehavioral\s+replication\s+of\b'
+  disclaimer_fields:
+    - report_disclaimer
+    - capability_disclaimer
+non_claims:
+  - retired_candidate_is_not_product_wording
+  - not_behavioral_replication_claim
+  - bounded_execution_is_not_external_equivalence
+  - not_ieee_official_certification
+  - not_reference_implementation
+  - not_conformance_result
+  - not_external_oracle_result
+  - not_full_metric_checkpoint_tolerance
+  - not_public_com_run_cli_admission
+  - not_product_acceptance
+  - not_promotion
+evidence_ref: docs/baselines/p5-09b-com-behavior-replica-wording-retirement-evidence.v1.yaml
+audit_ref: docs/baselines/audits/2026-08-21-p5-09b-com-behavior-replica-wording-retirement.md

@@ -19,7 +19,7 @@ class OwnerDecisionReconciliationV2Tests(unittest.TestCase):
         result = GATE.validate()
         self.assertTrue(result["valid"])
         self.assertEqual(result["reconciled_owner_decisions"], 5)
-        self.assertEqual(result["current_external_asset_oracle_blockers"], 5)
+        self.assertEqual(result["current_external_asset_oracle_blockers"], 7)
 
     def test_rejects_resolved_item_in_current_request(self) -> None:
         request = copy.deepcopy(self.request)

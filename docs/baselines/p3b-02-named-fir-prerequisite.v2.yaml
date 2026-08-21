@@ -1,0 +1,82 @@
+schema: sipi.p3b-02.named-fir-prerequisite.v2
+status: blocked_missing_transfer_profile_semantics
+predecessor:
+  path: docs/baselines/p3b-02-equalizer-semantics-gap.v1.yaml
+  sha256: 636f7d9d8b7ae65a5c987173b93e07166ef55a21ac549191290e84b885afbc4b
+  unchanged: true
+authority:
+  actor: project
+  decision_ref: docs/baselines/owner-decision-reconciliation.v2.yaml
+  decision_sha256: 4e9109e3adde405f3c6529bd6d09f27828a0cc56959eeb024b5600865bbba1f0
+  scope: owner-decision-boundary-to-current-bypass-only-link-surface
+
+owner_decision:
+  id: P3B-02
+  answer: A
+  receiver_chain: [RX CTLE, RX FFE]
+  stage_order: RX CTLE->RX FFE
+  stage_selection: explicit_optional_per_simulation
+  bypass: explicit_per_stage
+  auto_tuning: prohibited
+  silent_default: prohibited
+  v1_boundary: bypass_only_unchanged
+  future_extension: additive_profile_only
+
+current_surface:
+  wire_schema:
+    path: crates/sipi-contracts/schemas/sipi.link-plan.v1.schema.json
+    ctle_kinds: [bypass]
+    ffe_kinds: [bypass]
+  rust_contract:
+    path: crates/sipi-contracts/src/lib.rs
+    ctle_variants: [Bypass]
+    ffe_variants: [Bypass]
+  singleton_gate: tools/verify_p3b_02_link_kernel_singleton.py
+  runtime_admission:
+    named_fir_prerequisite:
+      path: crates/sipi-link/src/rx_named_fir_v1.rs
+      source_sha256: 30d87038569cc5277c994f4309e1702ba274cb1c56df699bcf14cf468b949e9e
+      policy: sipi.p3b-02.rx-named-fir-prerequisite-v1
+      stage_order: ctle_named_slot->ffe_named_slot
+      choices: [bypass, explicit_causal_fir]
+      semantics: finite_sample_spaced_taps_tap0_zero_prehistory_full_linear
+    ctle_runtime: false
+    ffe_runtime: false
+    profile_acceptance: false
+
+missing_semantics:
+  ctle:
+    - transfer_function_representation_and_units
+    - normalization_reference_and_frequency_or_time_domain_boundary
+    - state_initialization_and_update_semantics
+    - bounds_numeric_policy_and_failure_taxonomy
+  ffe:
+    - tap_order_and_cursor_convention
+    - tap_units_sign_and_initial_state
+    - sample_or_ui_domain_and_boundary_handling
+    - bounds_numeric_policy_and_failure_taxonomy
+  shared:
+    - stage_output_binding_and_timebase_contract
+    - independent_reference_and_compare_tolerance
+    - runtime_provenance_and_publication_boundary
+
+decision:
+  selected_profile: none
+  implementation_status: named_fir_prerequisite_only_no_product_equalizer_profile
+  reason:
+    - owner decision fixes chain and selection policy but not executable CTLE or FFE equations
+    - current link-plan schema and Rust contract admit bypass only
+    - named FIR slots prove explicit ordering and bounded composition without claiming CTLE or FFE transfer semantics
+
+admission:
+  product_equalizer_implemented: false
+  external_source_promoted: false
+  acceptance_promoted: false
+  release_promoted: false
+
+non_claims:
+  - The named causal-FIR prerequisite is not an admitted CTLE or FFE runtime profile.
+  - This record does not select a silent equalizer default or enable auto-tuning.
+  - This record does not change the v1 bypass-only wire contract.
+  - This record does not copy PyBERT, PyAMI, Agent-COM, or vendor equalizer code.
+  - This record does not establish external parity, acceptance, certification, or release readiness.

@@ -16,6 +16,11 @@ sipi-types = { path = "../sipi-types" }
 serde_json = "1"
 
 [[test]]
+name = "p4a_03_typed_inventory_runner"
+harness = false
+test = false
+
+[[test]]
 name = "p4a_03d_model_declaration_runner"
 harness = false
 test = false

@@ -22,6 +22,25 @@ entries:
       - tools/verify_p4b_08_s4p_observation.py
       - tools/verify_p4b_08b_s4p_ami_matrix_preflight.py
       - tools/verify_p4b_08c_ads_netlist_topology_semantic_response.py
+  - id: P4A-01
+    kind: external_asset_oracle
+    blocker: external_asset_oracle
+    decision_point: provide exact complete official IBIS asset custody, rights, selected profile, and admissible model/corner facts; the tracked truncated prefix is rejected for semantic use
+    gate:
+      - tools/verify_p4a_ibis_example_rx_candidate_inventory.py
+      - tools/verify_p4a_01_required_profile_inventory.py
+      - tools/verify_owner_decision_reconciliation_v2.py
+      - tools/verify_p4a_01_selected_ibis_truncation_disposition.py
+      - tools/verify_p4a_03_complete_typed_inventory_consumer.py
+  - id: P4A-02
+    kind: external_asset_oracle
+    blocker: external_asset_oracle
+    decision_point: provide authoritative dynamic endpoint semantics and evidence for reference, supply, initial state, integration, timebase, grid, stimulus, resource, tolerance, and acceptance; current static observations do not authorize runtime
+    gate:
+      - tools/verify_p4a_ibis71_behavior_scope_preflight.py
+      - tools/verify_p4a_02b_gen5_behavior_spec.py
+      - tools/verify_p4a_dynamic_endpoint_transient_composition_contract.py
+      - tools/verify_p4a_02_static_declaration_scope_and_dynamic_blocker.py
   - id: P4B-09
     kind: external_asset_oracle
     blocker: external_asset_oracle

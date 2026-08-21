@@ -1,0 +1,55 @@
+schema: sipi.p4b-02.production-parameter-adapter-selection.v1
+status: production_adapter_selected_external_profile_blocked
+selection_charter:
+  path: docs/baselines/p4b-02-parameter-selection-charter.v1.yaml
+  sha256: 4a30714d148cdf15f45ae1c87e6cc313bfdbb01050141149e7fbfa5137345dcd
+production_adapter:
+  representation: AmiTextBindingV1
+  selection: bounded_raw_ami_text_binding
+  worker:
+    path: crates/sipi-ami-worker/src/lib.rs
+    sha256: ec918dce4d55ff348ad93cca978947df291642f4c23974f9740fedf1f75e8902
+    consumer: run_one_job
+    parse_symbol: parse_and_bind_v1
+  host:
+    path: crates/sipi-ami-host/src/lib.rs
+    sha256: 4a092661dad97199af08cb089290a913d2563d250fdc88fa5503048c31b78540
+    consumer: AmiHostV1::initialize
+    verify_symbol: verify_binding_v1
+    abi_sink: AMI_Init
+  text_core:
+    path: crates/sipi-ami-text/src/lib.rs
+    sha256: 54b9a6abc85216e0f2161d3b88bec75a775521c4e0a711fc5de5eec81d6841e2
+  selected_semantic_helper_modules: []
+inventory:
+  total_feature_quarantined_modules: 193
+  keep_for_product: 0
+  quarantine_pending_requirement: 34
+  delete_candidate: 159
+  default_parameter_consumers: 0
+deletion_plan:
+  status: separate_batch_not_executed
+  candidate_count: 159
+  prerequisite: owner_scoped_same_batch_source_export_test_and_gate_removal
+  bulk_deletion_performed: false
+blockers:
+  quarantine_requires:
+    - authorized_ami_profile
+    - explicit_parameter_requirement
+    - live_typed_consumer
+    - independent_oracle
+  external_acceptance:
+    - vendor_rights
+    - dynamic_dependency_closure
+    - isolated_vendor_runtime
+    - external_waveform_parity
+non_claims:
+  - no_typed_parameter_semantics_selected
+  - no_quarantined_helper_promoted
+  - no_delete_candidate_removed
+  - not_vendor_model_acceptance
+  - not_external_runtime_or_waveform_parity
+  - not_release_evidence
+audit:
+  path: docs/baselines/audits/2026-08-21-p4b-02-production-parameter-adapter-selection.md
+  sha256: f3f9b65ed9f4894131ad2fb898fd2d33dfb0fdd65a5dbe31e937ea7d3ddf539d

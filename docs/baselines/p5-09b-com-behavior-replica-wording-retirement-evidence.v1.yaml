@@ -1,0 +1,59 @@
+schema: sipi.p5-09b.com-behavior-replica-wording-retirement-evidence.v1
+status: retired_candidate_bound_to_product_report
+contract_ref: docs/baselines/p5-09b-com-behavior-replica-wording-retirement.v1.yaml
+contract:
+  path: docs/baselines/p5-09b-com-behavior-replica-wording-retirement.v1.yaml
+  sha256: fcae054d3284258dbda9246bb1ac7f989263da24525f5c1843998e31b8776a13
+audit:
+  path: docs/baselines/audits/2026-08-21-p5-09b-com-behavior-replica-wording-retirement.md
+  sha256: 5e86013966157d626f3e40922dd804397ff0fd8edbad7cf18e6ca499cd1f9ed7
+bindings:
+  - id: product_report_contract
+    path: docs/baselines/p5-08e-com-run-artifact-execution.v1.yaml
+    sha256: baeb4de8cf0698505ce622eaee2fbea1a0051bcff8e6ab889f6e129a6a4a9379
+    role: actual_bounded_execution_report_contract
+  - id: product_report_source
+    path: crates/sipi-com/src/com_run_artifact_execution_v1.rs
+    sha256: 02cd2a051dad54b39aabd4d1643f9a3a1b40bd2553522da7faf3ce4aed4b3e48
+    role: actual_product_report_consumer
+  - id: com_r480_acceptance
+    path: docs/baselines/com-r480-acceptance.v1.yaml
+    sha256: e90fca0d14968a04e09df90cd8bd4fcc7f749abfa07ad2b4b29dc297351ef03b
+    role: external_oracle_and_acceptance_boundary
+  - id: com_publication
+    path: docs/baselines/release-capability-publication.v1.yaml
+    sha256: 29ba106b461043a3fbd2714c6201dbe01131bfb2a37a6942f1ed7ea7a7f7b1a2
+    role: public_com_command_remains_unavailable
+  - id: com_r480_reference_custody
+    path: docs/baselines/p5-r480-reference-custody-preflight.v1.yaml
+    sha256: 9819bd5b01120808f0b38191a2b9dbbf2925c9b6e19e59a9e13caa1ed1f4730b
+    role: external_oracle_metric_and_tolerance_blockers
+expected_scope:
+  closure: superseded
+  retired_candidate: behavior_replica_candidate
+  product_capability: bounded_artifact_execution_only
+  product_report_symbol: ComRunArtifactExecutionReportV1
+  semantics_status: product_owned_bounded_execution_complete
+  behavioral_replication: not_claimed
+  external_acceptance: blocked_missing_authoritative_reference
+  product_acceptance: false
+  promotion: false
+expected_publication_row:
+  command_id: com.run
+  domain: com
+  product_surface: unavailable
+  acceptance_state: blocked
+  external_oracle: true
+  blockers:
+    - authoritative_reference_missing
+  non_claims:
+    - no_com_solver_or_oracle_workflow
+non_claims:
+  - retired_candidate_was_never_product_capability
+  - bounded_execution_does_not_claim_behavioral_replication
+  - external_oracle_remains_blocked
+  - full_metrics_and_tolerances_remain_blocked
+  - public_com_run_remains_unavailable
+  - no_ieee_certification_or_official_conformance_claim
+  - no_reference_implementation_claim
+  - no_product_acceptance_or_promotion

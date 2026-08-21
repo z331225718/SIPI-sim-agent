@@ -1,0 +1,96 @@
+schema: sipi.p4a-03.complete-typed-inventory-consumer.v2
+status: bounded_declaration_linkage_scope_closed
+predecessor:
+  path: docs/baselines/p4a-03-typed-inventory-consumer.v1.yaml
+  sha256: 3b7c8132321f356947b3e9b8e363dcdf6dfa8c09d1a1daed56eb2b640313c5d7
+  unchanged: true
+policy: sipi.p4a-03.typed-inventory-consumer.v1.declaration-linkage-only
+purpose: >-
+  Bind a product-owned complete-document consumer for bounded structural,
+  declaration, selector, pin, and explicit reference-linkage facts only.
+source:
+  implementation: crates/sipi-ibis/src/typed_inventory_v1.rs
+  implementation_sha256: e4334111e2ba764628694617e28307b17829c4cd926e97008a894c84c2e26581
+  export_surface: crates/sipi-ibis/src/lib.rs
+  external_test_runner: crates/sipi-ibis/tests/p4a_03_typed_inventory_runner.rs
+  external_test_runner_sha256: c40e66888285273c16255facb761f63eef6587276cf1e136684473821c324e29
+  selected_tracked_asset: fixtures/ibis/as4c512m16md4v-053bin.ibs
+  selected_tracked_asset_sha256: d72cf62b56d67d30f4004f56ea3b79b4cb1241615692b147682f47540e615a0b
+  p4a_01_disposition: docs/baselines/p4a-01-selected-ibis-truncation-disposition.v1.yaml
+  p4a_01_disposition_sha256: dbc1072584528cc9ae722eaa022b7548e4244799f2726f7f6d420a2c64902f0f
+evidence:
+  path: docs/baselines/p4a-03-official-external-typed-inventory-observation.v1.json
+  sha256: 580be094cbdb013f4cb52b1afdde7557e0a02319e1a0764d23130aad23fef69b
+audit:
+  path: docs/baselines/audits/2026-08-21-p4a-03-complete-typed-inventory-consumer.md
+  sha256: df390a1afa1b4b63bd2a3d89303e3e969a59806a10e881f8907824490667176a
+admission:
+  library_consumer_api: true
+  test_only_external_path_runner: true
+  public_cli_route: false
+  product_runtime_invoked: false
+  complete_document_required: true
+  exactly_one_final_payload_free_end: true
+  bounded_ascii_input: true
+  structural_parser_reused: true
+  semantic_envelope_reused: true
+  model_declarations_lifted: true
+  model_selector_declarations_lifted: true
+  pin_declarations_lifted: true
+  selector_branch_must_reference_declared_model: true
+  pin_reference_classification: [declared_model, model_selector, caller_marker]
+  caller_marker_default: forbidden
+  model_or_selector_branch_selection: false
+  corner_or_pvt_selection: false
+  supply_or_reference_inference: false
+  electrical_behavior: false
+  transient_integration: false
+  ami_runtime: false
+  external_profile_acceptance: false
+  release_promotion: false
+verification:
+  unit_tests: 8
+  positive_scope:
+    - synthetic_complete_declaration_selector_marker_fixture
+    - exact_external_official_declaration_linkage_observation
+  negative_scope:
+    - nul_input_rejected_before_typed_result
+    - missing_model_type_rejected
+    - missing_caller_marker_rejected
+    - missing_end_rejected
+    - duplicate_end_rejected
+    - end_payload_rejected
+    - record_after_end_rejected
+selected_tracked_asset_observation:
+  status: rejected_incomplete_document
+  rejection: {code: missing_end}
+  disposition_ref: docs/baselines/p4a-01-selected-ibis-truncation-disposition.v1.yaml
+external_official_observation:
+  custody: external_operator_only
+  input_byte_length: 6138000
+  input_sha256: 53e27609dbb81e7685456a48c611111fed34ca14477623e46a9a9a582a7a646b
+  declared_version: "5.0"
+  component_names: [AS4C512M16MD4V-053BIN]
+  model_count: 95
+  selector_count: 4
+  pin_count: 200
+  direct_model_pin_count: 3
+  selector_pin_count: 31
+  marker_pin_count: 166
+  explicit_markers: [GND, NC, POWER]
+  electrical_behavior_status: not_evaluated
+  profile_selection_status: not_selected
+remaining_fields_outside_closed_scope:
+  - owner_selected_model_selector_branch
+  - explicit_corner_and_pvt_policy
+  - electrical_profile_decoder_and_acceptance
+  - dynamic_endpoint_reference_supply_initial_state_integration_timebase_stimulus_resource_and_tolerance
+non_claims:
+  - not_complete_ibis_semantic_parser
+  - not_general_ibis_compatibility
+  - not_model_or_corner_selection
+  - not_electrical_behavior
+  - not_transient_or_quasi_static_upgrade
+  - not_ami_behavior_or_runtime
+  - not_external_profile_acceptance
+  - not_release_evidence

@@ -1,0 +1,77 @@
+schema: sipi.p4a-02.static-declaration-scope-and-dynamic-blocker.v1
+status: bounded_static_declaration_scope_closed_dynamic_endpoint_blocked
+promotion_eligible: false
+purpose: >-
+  Separate exact authorized behavior observation and existing bounded
+  static/declaration inventory from an independently blocked dynamic endpoint.
+predecessors:
+  authorized_behavior_observation:
+    path: docs/baselines/p4a-02b-gen5-behavior-spec-observation.v1.yaml
+    sha256: c1dc39db65c8eaec948f0967b9e6818764ce80df9c5c42baf507495bd013116f
+  static_conformance_matrix:
+    path: docs/baselines/p4a-ibis-conformance-matrix.v1.yaml
+    sha256: 029b55845d62e39492df465b2d0f1af6359bb239d9a24728187730b89652dfca
+  typed_declaration_linkage_consumer:
+    path: docs/baselines/p4a-03-complete-typed-inventory-consumer.v2.yaml
+    sha256: cb5365bc95da97261ef349ee4a7bc193213b871094ad32a1ed05cc943c277d1b
+  dynamic_composition_contract:
+    path: docs/baselines/p4a-dynamic-endpoint-transient-composition-contract.v1.yaml
+    sha256: 66fde46614c19b4587e7f805eac373379faeec83ec6af795e9e9ab153946a6da
+closeable_scope:
+  status: closed_evidence_reconciled
+  includes:
+    - exact_authorized_gen5_behavior_spec_identity_and_probe_observation
+    - existing_product_static_and_declaration_capability_inventory
+    - complete_document_typed_model_selector_pin_linkage_consumer
+  excludes:
+    - gen5_behavior_implementation
+    - selected_gen5_electrical_profile
+    - dynamic_endpoint
+    - transient_solver
+    - ami_runtime
+  authorized_tx_observation: success_all
+  authorized_rx_observation: probe_crash_all
+  product_runtime_incurred: false
+dynamic_endpoint_blocker:
+  id: P4A-T12
+  status: independent_external_decision_and_evidence_blocker
+  admission: false
+  implementation_authorized: false
+  missing_fields:
+    - reference_node_channel_return_binding_pending
+    - supply_semantics_pending
+    - initial_state_policy_pending
+    - integration_method_pending
+    - timebase_pending
+    - output_grid_pending
+    - channel_return_binding_pending
+    - stimulus_semantics_pending
+    - dynamic_numeric_bounds_pending
+    - dynamic_tolerance_pending
+    - dynamic_acceptance_evidence_missing
+  forbidden_shortcuts:
+    - infer_terminal_or_reference_mapping
+    - inherit_supply_or_initial_state
+    - promote_quasi_static_or_batch_to_transient
+    - adopt_predecessor_timebase_resource_or_tolerance_without_decision
+    - accept_external_oracle_or_parity_as_semantics
+admission:
+  bounded_static_declaration_scope_closeable: true
+  general_ibis: false
+  gen5_profile_selected: false
+  electrical_behavior_implemented: false
+  dynamic_endpoint: false
+  transient_integration: false
+  ami_runtime: false
+  external_profile_acceptance: false
+  release_promotion: false
+audit:
+  path: docs/baselines/audits/2026-08-21-p4a-02-static-scope-dynamic-blocker.md
+  sha256: 0a466722ff2e886710f58ccd2f5e7a3488da64523a4efb10954bbb8bba9133dd
+non_claims:
+  - not_gen5_behavior_implementation
+  - not_selected_electrical_profile
+  - not_general_ibis_compatibility
+  - not_transient_or_ami_runtime
+  - not_external_profile_acceptance
+  - not_release_evidence

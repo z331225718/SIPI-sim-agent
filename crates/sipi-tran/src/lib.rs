@@ -12,6 +12,15 @@ use std::{error::Error, fmt, num::NonZeroUsize};
 use sipi_runtime::RunContext;
 use sipi_types::{Axis, FiniteF64, Ohms, Seconds, TypeError, Volts, Waveform};
 
+mod parsed_rc_measurement_v1;
+
+pub use parsed_rc_measurement_v1::{
+    EXACT_RC_MEASUREMENT_DECK_POLICY_V1, ExactRcMeasurementDeckErrorV1,
+    ExactRcMeasurementDeckLimitsV1, ExactRcMeasurementDeckV1, ExactRcMeasurementResultV1,
+    ExactRcMeasurementRunV1, parse_and_simulate_exact_rc_measurement_deck_v1,
+    parse_exact_rc_measurement_deck_v1, simulate_exact_rc_measurement_deck_v1,
+};
+
 /// Identity of the externally compared fixed RC/PULSE profile.
 pub const RC_PULSE_PROFILE_ID: &str = "tran-rc-pulse-v1";
 

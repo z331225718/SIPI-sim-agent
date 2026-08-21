@@ -29,6 +29,10 @@ pub enum IbisTypedInventoryErrorV1 {
     Model(ModelDeclarationErrorV1),
     Pin(PinDeclarationErrorV1),
     Selector(ModelSelectorDeclarationErrorV1),
+    MissingEnd,
+    DuplicateEnd,
+    InvalidEnd,
+    TrailingRecordAfterEnd,
     SelectorMissingName,
     SelectorMissingBranches {
         selector: String,
@@ -60,6 +64,12 @@ impl fmt::Display for IbisTypedInventoryErrorV1 {
             Self::Model(error) => write!(formatter, "IBIS typed model inventory: {error:?}"),
             Self::Pin(error) => write!(formatter, "IBIS typed pin inventory: {error:?}"),
             Self::Selector(error) => write!(formatter, "IBIS model selector: {error:?}"),
+            Self::MissingEnd => write!(formatter, "IBIS document is missing its final [End]"),
+            Self::DuplicateEnd => write!(formatter, "IBIS document contains more than one [End]"),
+            Self::InvalidEnd => write!(formatter, "IBIS [End] must not have a payload"),
+            Self::TrailingRecordAfterEnd => {
+                write!(formatter, "IBIS document contains a record after [End]")
+            }
             Self::SelectorMissingName => write!(formatter, "IBIS model selector name is missing"),
             Self::SelectorMissingBranches { selector } => {
                 write!(formatter, "IBIS model selector has no branches: {selector}")
@@ -202,6 +212,7 @@ impl IbisTypedInventoryServiceV1 {
     ) -> Result<IbisTypedInventoryReportV1, IbisTypedInventoryErrorV1> {
         let structural =
             parse_structural_v1(bytes, limits).map_err(IbisTypedInventoryErrorV1::Structural)?;
+        require_final_end(structural.records())?;
         let envelope =
             build_semantic_envelope_v1(&structural).map_err(IbisTypedInventoryErrorV1::Semantic)?;
         let models = lift_model_declarations_v1(structural.records())
@@ -245,6 +256,35 @@ impl IbisTypedInventoryServiceV1 {
             linkage,
         })
     }
+}
+
+fn require_final_end(records: &[StructuralRecordV1]) -> Result<(), IbisTypedInventoryErrorV1> {
+    let ends: Vec<(usize, bool)> = records
+        .iter()
+        .enumerate()
+        .filter_map(|(index, record)| match record {
+            StructuralRecordV1::Keyword {
+                keyword, payload, ..
+            } if keyword.spelling().eq_ignore_ascii_case("End") => {
+                Some((index, payload.is_empty()))
+            }
+            _ => None,
+        })
+        .collect();
+    let [(index, empty)] = ends.as_slice() else {
+        return Err(if ends.is_empty() {
+            IbisTypedInventoryErrorV1::MissingEnd
+        } else {
+            IbisTypedInventoryErrorV1::DuplicateEnd
+        });
+    };
+    if !empty {
+        return Err(IbisTypedInventoryErrorV1::InvalidEnd);
+    }
+    if *index + 1 != records.len() {
+        return Err(IbisTypedInventoryErrorV1::TrailingRecordAfterEnd);
+    }
+    Ok(())
 }
 
 fn lift_model_selectors(
@@ -391,6 +431,7 @@ Model_type Output
 0V 0A
 [Pulldown]
 0V 0A
+[End]
 "#
     }
 
@@ -423,7 +464,7 @@ Model_type Output
 
     #[test]
     fn rejects_missing_typed_model_type_before_linkage() {
-        let source = b"[IBIS Ver] 5.0\n[Component] board\n[Pin]\nA1 SIG M\n[Model] M\n";
+        let source = b"[IBIS Ver] 5.0\n[Component] board\n[Pin]\nA1 SIG M\n[Model] M\n[End]\n";
         let error = IbisTypedInventoryServiceV1::inspect(source, limits(), &BTreeSet::new())
             .expect_err("missing model type must reject");
         assert!(matches!(
@@ -444,18 +485,47 @@ Model_type Output
     }
 
     #[test]
-    fn selected_asset_reaches_explicit_unresolved_reference_boundary() {
+    fn selected_asset_rejects_at_complete_document_boundary() {
         let bytes = include_bytes!("../../../fixtures/ibis/as4c512m16md4v-053bin.ibs");
         let limits =
             ParseLimitsV1::try_new(8 * 1024 * 1024, 4 * 1024 * 1024, 128 * 1024, 256 * 1024)
                 .expect("limits");
         let error =
             IbisTypedInventoryServiceV1::inspect(bytes, limits, &markers(&["GND", "NC", "POWER"]))
-                .expect_err("the selected asset contains a selector branch without a model block");
-        assert!(matches!(
-            error,
-            IbisTypedInventoryErrorV1::SelectorBranchUnknown { selector, model }
-                if selector == "DQ_PIN" && model == "DQ_60OHM_60OHM_PREEMP_ON"
-        ));
+                .expect_err("the selected asset is a truncated document prefix");
+        assert_eq!(error, IbisTypedInventoryErrorV1::MissingEnd);
+    }
+
+    #[test]
+    fn rejects_duplicate_end_markers() {
+        let mut bytes = source().to_vec();
+        bytes.extend_from_slice(b"[End]\n");
+        assert_eq!(
+            IbisTypedInventoryServiceV1::inspect(&bytes, limits(), &markers(&["NC"]))
+                .expect_err("duplicate End must reject"),
+            IbisTypedInventoryErrorV1::DuplicateEnd
+        );
+    }
+
+    #[test]
+    fn rejects_end_payload() {
+        let mut bytes = source()[..source().len() - b"[End]\n".len()].to_vec();
+        bytes.extend_from_slice(b"[End] payload\n");
+        assert_eq!(
+            IbisTypedInventoryServiceV1::inspect(&bytes, limits(), &markers(&["NC"]))
+                .expect_err("End payload must reject"),
+            IbisTypedInventoryErrorV1::InvalidEnd
+        );
+    }
+
+    #[test]
+    fn rejects_record_after_end() {
+        let mut bytes = source().to_vec();
+        bytes.extend_from_slice(b"trailing\n");
+        assert_eq!(
+            IbisTypedInventoryServiceV1::inspect(&bytes, limits(), &markers(&["NC"]))
+                .expect_err("record after End must reject"),
+            IbisTypedInventoryErrorV1::TrailingRecordAfterEnd
+        );
     }
 }

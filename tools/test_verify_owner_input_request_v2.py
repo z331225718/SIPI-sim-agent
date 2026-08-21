@@ -13,7 +13,7 @@ class CurrentOwnerInputRequestTests(unittest.TestCase):
         self.request = GATE._load(GATE.CURRENT_REQUEST)
         self.ledger = GATE._load(GATE.LEDGER)
 
-    def test_current_request_has_exactly_five_external_blockers(self) -> None:
+    def test_current_request_has_exactly_seven_external_blockers(self) -> None:
         result = GATE.validate_current_request(self.request, ledger=self.ledger)
         self.assertTrue(result["valid"])
         self.assertEqual({entry["id"] for entry in self.request["entries"]}, set(GATE.EXTERNAL_IDS))

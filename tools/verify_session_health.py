@@ -37,7 +37,11 @@ CHECKS = [
     ("remaining-items-ledger", "tools/verify_plan_remaining_items_ledger.py", []),
     ("open-item-gate-coverage", "tools/verify_plan_open_items_gate_coverage.py", []),
     ("p5-05-parameter-ingestion", "tools/verify_p5_05g_parameter_ingestion.py", []),
-    ("p5-09-wording-boundary", "tools/verify_p5_09_com_behavior_replica_wording.py", []),
+    (
+        "p5-09-wording-retirement",
+        "tools/verify_p5_09b_com_behavior_replica_wording_retirement.py",
+        [],
+    ),
 ]
 
 
