@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 90eb2e7159272374bd6f868320fd21f1a45b46d1588202c1180b113d4d329821
+  tracked_paths_sha256: e2acaad7c536d0003a2cd67e9b44a08c9d14c56aaf6896e673df470722747b38
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -8219,6 +8219,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-21-p5-08h-com-run-main-scoped-closure.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-21-p5-09-com-behavior-replica-wording.md:
       rule: historical-docs
       class: migration_only
@@ -14952,6 +14958,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p5-08g-com-run-specified-scoped-closure.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p5-08h-com-run-main-scoped-closure.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -26303,6 +26315,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p5_08h_com_run_main_scoped_closure.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p5_09_com_behavior_replica_wording.py:
       rule: migration-tools
       class: migration_only
@@ -29742,6 +29760,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p5_08g_com_run_specified_scoped_closure.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p5_08h_com_run_main_scoped_closure.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

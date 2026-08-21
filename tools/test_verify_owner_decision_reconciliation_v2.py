@@ -20,7 +20,7 @@ class OwnerDecisionReconciliationV2Tests(unittest.TestCase):
         self.assertTrue(result["valid"])
         self.assertEqual(result["reconciled_owner_decisions"], 5)
         self.assertEqual(result["current_external_asset_oracle_blockers"], 10)
-        self.assertEqual(result["remaining_semantics_items"], 1)
+        self.assertEqual(result["remaining_semantics_items"], 0)
 
     def test_p3b_owner_decision_is_implementation_ready_but_profile_external(self) -> None:
         decision = next(item for item in self.document["decisions"] if item["id"] == "P3B-02")

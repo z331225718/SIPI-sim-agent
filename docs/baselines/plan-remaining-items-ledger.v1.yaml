@@ -1,7 +1,7 @@
 {
   "schema": "sipi.plan-remaining-items.ledger.v1",
   "status": "provisional",
-  "total_open": 20,
+  "total_open": 19,
   "blocker_classes": {
     "owner_decision": "requires an owner decision (profile/CDR/metric/Link semantics or workload approval)",
     "external_asset_oracle": "requires external assets or oracle material (DLL/fixture/MATLAB/agent-com/fresh-machine/license)",
@@ -408,20 +408,6 @@
         "tools/verify_p5_06r_agent_com_metric_authority_observation.py"
       ],
       "note": "A clean pinned Agent-COM run observed COM but returned non-finite ERL and no TD-ILN scalar, so no authoritative three-metric reference exists. Strict same-checkpoint/no-alignment and 0.1 dB policy are frozen; exact input/checkpoint provenance and usable ERL/TD-ILN outputs remain blocked."
-    },
-    {
-      "id": "P5-08",
-      "blocker": "semantics_not_implemented",
-      "gate": [
-        "tools/verify_release_capability_publication.py",
-        "tools/verify_p5_08a_com_run_admission.py",
-        "tools/verify_p5_08b_com_run_execution.py",
-        "tools/verify_p5_08d_com_run_artifact_provenance_bounded.py",
-        "tools/verify_p5_08e_com_run_artifact_execution.py",
-        "tools/verify_p5_08f_specified_com_artifact_route.py",
-        "tools/verify_p5_08g_com_run_specified_scoped_closure.py"
-      ],
-      "note": "A bounded specified/non-oracle com.run-artifact route now composes caller-supplied product parameters, a sealed pulse artifact, COM execution and immutable result publication. Legacy com.run remains unavailable; authoritative profile/oracle acceptance, workbook ingestion, external provenance and hostile-writer semantics remain unimplemented."
     },
     {
       "id": "P7-01",

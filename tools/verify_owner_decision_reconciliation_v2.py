@@ -155,7 +155,7 @@ for _item_id in ("P4A-03", "P4B-02"):
     )
 CURRENT_LEDGER_IDS = {
     "P1-04B", "P3B-02", "P3C-03", "P4A-01", "P4A-03",
-    "P4B-02", "P4B-08", "P4B-09", "P5-02", "P5-06", "P5-08",
+    "P4B-02", "P4B-08", "P4B-09", "P5-02", "P5-06",
     "P7-01", "P7-02", "P7-03", "P7-04", "P7-05", "P7-06", "P7-07", "P7-08", "P7-09",
 }
 RECONCILED_PROFILE_EXTERNAL_GATES = {
@@ -442,7 +442,6 @@ def validate(
     _require(set(by_id) == set(OWNER_IDS), "decision_set_invalid")
     _require(set(document.get("non_claims", [])) == {
         "reconciled_owner_decisions_are_not_product_implementation_acceptance",
-        "semantics_not_implemented_rows_remain_open",
         "external_asset_oracle_rows_remain_open",
         "historical_v1_documents_are_not_rewritten",
         "no_release_or_license_promotion",

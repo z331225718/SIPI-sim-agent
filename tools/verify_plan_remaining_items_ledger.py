@@ -36,7 +36,7 @@ BLOCKER_CLASSES = frozenset({
 })
 EXPECTED_BLOCKER_COUNTS = {
     "external_asset_oracle": 10,
-    "semantics_not_implemented": 1,
+    "semantics_not_implemented": 0,
     "release_gate": 9,
 }
 

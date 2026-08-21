@@ -24,7 +24,7 @@ LEDGER_PATH = "docs/baselines/plan-remaining-items-ledger.v1.yaml"
 OPEN_ITEM_RE = re.compile(r"^\s*- \[ \] \*\*(P[0-9A-Z-]+)\*\*", re.MULTILINE)
 EXPECTED_BLOCKER_COUNTS = {
     "external_asset_oracle": 10,
-    "semantics_not_implemented": 1,
+    "semantics_not_implemented": 0,
     "release_gate": 9,
 }
 

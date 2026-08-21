@@ -120,7 +120,6 @@ decisions:
       - does_not_promote_p4a_02_or_p4a_03
 non_claims:
   - reconciled_owner_decisions_are_not_product_implementation_acceptance
-  - semantics_not_implemented_rows_remain_open
   - external_asset_oracle_rows_remain_open
   - historical_v1_documents_are_not_rewritten
   - no_release_or_license_promotion

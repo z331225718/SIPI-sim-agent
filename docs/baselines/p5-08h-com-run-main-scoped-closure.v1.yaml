@@ -1,0 +1,137 @@
+schema: sipi.p5-08h.com-run-main-scoped-closure.v1
+status: p5_08_main_scoped_replacement_closed
+policy: sipi.p5-08h.com-run-artifact-specified-non-oracle-main-scope-v1
+decision:
+  d6: A
+  route: [com, run-artifact]
+  resolution: specified_non_oracle_exact_artifact_scoped_replacement
+  closure_kind: additive_scoped_replacement
+  p5_08_scoped_close: true
+  p5_08_main_item_closed: true
+  current_disposition_superseded: true
+  rationale: full_general_com_conformance_is_not_required_for_the_selected_public_bounded_route
+historical:
+  prior_scoped_closure:
+    id: p5-08g
+    path: docs/baselines/p5-08g-com-run-specified-scoped-closure.v1.yaml
+    sha256: a054e5f63ccf62922c1f154c08da1e42b556e8cec05c26def5afdc1dc0747de3
+    status: scoped_specified_non_oracle_closed_p5_08_main_open
+    p5_08_main_item_closed: false
+    historical_record_retained: true
+  prior_audit:
+    path: docs/baselines/audits/2026-08-21-p5-08g-com-run-specified-scoped-closure.md
+    sha256: 3facd2a9aacbf5019e5a3b3a7b5c9da59df218f71847f5aa6430f1ff658db2a7
+    historical_record_retained: true
+live_route:
+  command_manifest_source:
+    path: crates/sipi-cli/src/main.rs
+    sha256: f9e41429321731659ea458de1bd4550fe0a195e6bc8ba0d3ff910980b36d26b0
+  command_id: com.run-artifact
+  route: [com, run-artifact]
+  availability: available
+  transport: stdin_json_v1
+  request_schema: sipi.com.run-artifact-request.v1
+  response_schema: sipi.com.run-artifact-specified-result.v1
+  unavailable_reason: null
+  nonclaim: product_owned_bounded_artifact_execution_non_oracle_only
+  legacy_command_id: com.run
+  legacy_route: [com, run]
+  legacy_availability: unavailable
+  legacy_unavailable_reason: com_profile_not_admitted
+  legacy_nonclaim: no_com_solver_or_oracle_workflow
+publication:
+  path: docs/baselines/release-capability-publication.v1.yaml
+  sha256: ef3e7285ca08d0234dba8f9499c652b55d9232c2e02e5f475a24464a7e25c4d4
+  route_row_id: com-run-artifact
+  product_surface: available
+  acceptance_state: specified
+  external_oracle: false
+  evidence_id: p5-08f-specified-com-artifact-route
+  legacy_row_id: com
+  legacy_product_surface: unavailable
+  legacy_acceptance_state: blocked
+  legacy_external_oracle: true
+contract:
+  caller_owned_parameter_partition:
+    authority: caller_supplied_explicit_consumed_provided_defaulted_unconsumed_sets
+    unknown_fields: rejected
+    values_outside_consumed: rejected
+    provided_default_overlap: rejected
+    duplicate_unconsumed: rejected
+    workbook_values: forbidden
+    profile_inference: false
+    auto_tuning: false
+  pulse:
+    exact_file_set: [pulse.f64le]
+    encoding: finite_little_endian_f64
+    sealed_manifest_sha256_required: true
+    maximum_manifest_bytes: 65536
+    maximum_payload_bytes: 524288
+    custody_call: consume_exact_verified_v1
+  request:
+    maximum_bytes: 65536
+    maximum_containers: 256
+    maximum_container_items: 256
+    maximum_string_bytes: 4096
+    maximum_nesting: 32
+    budget_stage: bounded_stdin_reader_and_lexical_preflight_before_deserialize_or_artifact_access
+  result:
+    schema: sipi.com.run-artifact-specified-result.v1
+    exact_file: result.json
+    maximum_bytes: 16384
+    publication: immutable_publish_new
+    output_binding: caller_owned_root_and_id
+  leakage:
+    path_leakage: false
+    waveform_leakage: false
+    payload_leakage: false
+    result_allowlist: [artifact_id, manifest_sha256, payload_name, pulse_sample_count, parameter_key_sets, bounded_result_scalars, scope_flags]
+threat_model:
+  writer_model: non_hostile_concurrent_writer_only
+  custody: local_exact_verified_no_hostile_writer_guarantee
+  hostile_writer_safe: false
+  external_provenance: false
+  external_ownership: false
+  external_signature: false
+scope:
+  product_owned_bounded_execution: true
+  agent_com_parity: false
+  external_provenance: false
+  external_ownership: false
+  external_signature: false
+  hostile_writer_safe: false
+  authoritative_profile: false
+  authoritative_oracle: false
+  external_acceptance: false
+  ieee_certification: false
+  release_evidence: false
+  p5_02_unchanged: true
+  p5_06_unchanged: true
+non_claims:
+  - not_agent_com_parity
+  - not_external_provenance
+  - not_external_ownership
+  - not_external_signature
+  - not_hostile_writer_safe
+  - not_authoritative_profile_or_oracle
+  - not_acceptance
+  - not_ieee_certification
+  - not_release_evidence
+  - not_p5_02_or_p5_06_changed
+remaining_blockers:
+  P5-02: external_asset_oracle
+  P5-06: external_asset_oracle
+  P7: release_gate
+tests:
+  command_manifest_invocation: cargo_run_sipi_cli_commands_json
+  required_cases:
+    - invokes_and_binds_current_command_manifest
+    - binds_current_publication_route_state
+    - binds_historical_p5_08g_without_rewriting_it
+    - rejects_main_item_reopen
+    - rejects_com_run_promotion
+    - rejects_budget_schema_threat_and_nonclaim_drift
+    - preserves_p5_02_p5_06_p7_blocked_state
+audit:
+  path: docs/baselines/audits/2026-08-21-p5-08h-com-run-main-scoped-closure.md
+  sha256: 7d8258c37292c45e262d87c6cc62eb3293e33d935eaa078f87e101ccd4b93fe7
