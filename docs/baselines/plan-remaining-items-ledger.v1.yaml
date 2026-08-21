@@ -397,9 +397,10 @@
         "tools/verify_p5_02k_matlab_literal.py",
         "tools/verify_p5_02l_resolve_parameters.py",
         "tools/verify_p5_02m_warning_detector.py",
-        "tools/verify_p5_02n_warning_report.py"
+        "tools/verify_p5_02n_warning_report.py",
+        "tools/verify_p5_02o_source_observed_mlse_warning_vocabulary_subset.py"
       ],
-      "note": "02e-02m delivered: canonical JSON v2 + warning obs + scalar/vector-matrix defaults + default-set resolver + deterministic warning detector; 02n deterministic warning-report aggregator (8/8 crosscheck) delivered; owner decision 2026-08-16 authorizes MATLAB oracle golden; full warning contract (MLSE/DER/CDR) still pending"
+      "note": "02e-02m delivered: canonical JSON v2 + warning obs + scalar/vector-matrix defaults + default-set resolver + deterministic warning detector; 02n deterministic warning-report aggregator (8/8 crosscheck) delivered; 02o binds an evidence-only three-entry MLSE warning vocabulary subset and explicitly excludes the msgbox call without adding a Rust API; owner decision 2026-08-16 authorizes MATLAB oracle golden; full warning contract (MLSE/DER/CDR) still pending"
     },
     {
       "id": "P5-05",

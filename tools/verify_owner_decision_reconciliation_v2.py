@@ -78,6 +78,7 @@ CURRENT_REQUEST_GATES = {
         "tools/verify_p5_02l_resolve_parameters.py",
         "tools/verify_p5_02m_warning_detector.py",
         "tools/verify_p5_02n_warning_report.py",
+        "tools/verify_p5_02o_source_observed_mlse_warning_vocabulary_subset.py",
     ],
     "P5-06": [
         "tools/verify_release_capability_publication.py",

@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 7758402b405e644f7406d2c2c3d1541243d082f6f3dec79e1a24d55e83229ece
+  tracked_paths_sha256: f6bee26e060ccf68381b9d88d9dd0828dd133e0876f2c3995c8ac205281a9b6a
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -7883,6 +7883,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-21-p5-02o-source-observed-mlse-warning-vocabulary-subset.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-21-p5-06-pinned-source-external-matlab-oracle-candidate-run.md:
       rule: historical-docs
       class: migration_only
@@ -13776,6 +13782,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p5-02n-warning-report-stage.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p5-02o-source-observed-mlse-warning-vocabulary-subset.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -25193,6 +25205,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p5_02o_source_observed_mlse_warning_vocabulary_subset.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p5_03a_com_stage_output_envelope.py:
       rule: migration-tools
       class: migration_only
@@ -28404,6 +28422,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p5_02n_warning_report.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p5_02o_source_observed_mlse_warning_vocabulary_subset.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

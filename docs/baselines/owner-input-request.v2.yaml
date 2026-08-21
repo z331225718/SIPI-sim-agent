@@ -45,6 +45,7 @@ entries:
       - tools/verify_p5_02l_resolve_parameters.py
       - tools/verify_p5_02m_warning_detector.py
       - tools/verify_p5_02n_warning_report.py
+      - tools/verify_p5_02o_source_observed_mlse_warning_vocabulary_subset.py
   - id: P5-06
     kind: external_asset_oracle
     blocker: external_asset_oracle
