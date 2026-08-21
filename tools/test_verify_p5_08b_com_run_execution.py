@@ -50,6 +50,25 @@ class ComRunExecutionTests(unittest.TestCase):
                 with self.assertRaises(GATE.ComRunExecutionError):
                     GATE.validate(ROOT)
 
+    def test_rejects_legacy_reason_code_mutation(self) -> None:
+        import copy
+        import tempfile
+        import unittest.mock as mock
+
+        evidence = copy.deepcopy(GATE.load_yaml(GATE.EVIDENCE))
+        evidence["entries"][1]["product"]["invalid_reason"] = "schema_mismatch"
+        evidence["entries"][1]["reference"]["invalid_reason"] = "schema_mismatch"
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp) / "evidence.yaml"
+            tmp_path.write_text(
+                GATE.yaml.safe_dump(evidence, sort_keys=False), encoding="utf-8"
+            )
+            with mock.patch.object(GATE, "EVIDENCE", tmp_path):
+                with self.assertRaisesRegex(
+                    GATE.ComRunExecutionError, "evidence_content_drift"
+                ):
+                    GATE.validate(ROOT)
+
 
 if __name__ == "__main__":
     unittest.main()

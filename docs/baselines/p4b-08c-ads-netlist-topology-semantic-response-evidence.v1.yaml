@@ -1,0 +1,145 @@
+schema: sipi.p4b-08c.ads-netlist-topology-semantic-response-evidence.v1
+status: external_only_topology_and_semantic_response_observed
+authority:
+  actor: user
+  decision_ref: docs/baselines/owner-input-request.v1.yaml
+  scope: ADS_netlist_topology_and_PyBERT_semantic_response_observation_only
+custody:
+  product_assets: false
+  product_policy: false
+  release_input: false
+  runtime_invoked: false
+  external_roots: cli_injected_only
+source_oracle:
+  repository: pybert
+  source_root: external/.m5b-pybert-source
+  commit: f6ba0311350fc67bd90fa13b8d578312f956d7e7
+  tree: ac7006ea26cf9e8d885c0e4f1b82797d2e9342a1
+  license_conclusion: NOASSERTION
+  license_evidence:
+    - path: LICENSE
+      blob: 64d198ba43675ede5fbdef1ec918a63954951640
+      byte_length: 1466
+    - path: NOTICE
+      blob: d179d695538ffe55e7ca6ba8e31ea8e6b6279cad
+      byte_length: 679
+  files:
+    - path: src/pybert_web/ads_bench.py
+      blob: 663bdfabfc9a1c7dae31d544e108ec8d8980996b
+      consumer_symbols: [parse_ads_netlist, build_ads_channel_topology]
+    - path: src/pybert/utility/channel_topology.py
+      blob: f28e9975311d6ac1e24802b053216e516181673b
+      consumer_symbols: [ChannelTopology, SParamBlock, SignalIntent]
+    - path: src/pybert/utility/sparam.py
+      blob: 8599a80943860f6811436e235074172e4d7c7220
+      consumer_symbols: [build_semantic_sparam_response]
+    - path: tests/test_ads_bench.py
+      blob: 311c44562685f4dac2abf813b5e4db5675b71c7f
+      consumer_symbols: [test_ads_manifest_request_uses_semantic_channel_metadata, test_semantic_response_matches_ads_tx_init_in_main_cursor]
+external_inputs:
+  workspace_relative_root: ADS/MyWorkspace_wrk
+  netlist:
+    path: netlist.log
+    byte_length: 7858
+    sha256: 676838f9bff5f92cd0e645da7db20b3adf3399cab015300d1d3b34e8098f3983
+    git_object: false
+    registry_status: not_registered
+    rights_status: not_authorized_for_product_use
+  s4p_chain:
+    - name: tx_drv
+      path: ibis_ami/s4p/pcie_tx_drv_Typ.s4p
+      byte_length: 7776278
+      sha256: 3b72c3b235fbf4eff7ecec4c1490a052677b8caac6c355bcb187d41e156791c1
+      registry_material_id: ads-pcie-gen5-s4p-tx-typ
+      registry_status: external_only
+      rights_status: not_authorized_for_product_use
+    - name: SnP1
+      path: data/channel_gen5_highloss.s4p
+      byte_length: 1834156
+      sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+      registry_material_id: null
+      registry_status: not_registered
+      rights_status: not_authorized_for_product_use
+    - name: rx_fe
+      path: ibis_ami/s4p/pcie_rx_fe_Typ.s4p
+      byte_length: 6258154
+      sha256: 0f5f4dfe39012144abf859ec91db647fd1be4d36f41f3befbf24bf62f9775f7f
+      registry_material_id: ads-pcie-gen5-s4p-rx-typ
+      registry_status: external_only
+      rights_status: not_authorized_for_product_use
+topology:
+  source_pair: [N__2, N__9]
+  load_pair: [N__1, N__8]
+  differential_path: true
+  z0_ohm: 100.0
+  blocks:
+    - name: tx_drv
+      nodes: [N__2, N__9, N__11, N__3]
+      input_pair: [N__2, N__9]
+      output_pair: [N__11, N__3]
+      port_order: [1, 2, 3, 4]
+      port_map: {"1": N__2, "2": N__9, "3": N__11, "4": N__3}
+    - name: SnP1
+      nodes: [N__11, N__7, N__3, N__4]
+      input_pair: [N__11, N__3]
+      output_pair: [N__7, N__4]
+      port_order: [1, 3, 2, 4]
+      port_map: {"1": N__11, "2": N__7, "3": N__3, "4": N__4}
+    - name: rx_fe
+      nodes: [N__7, N__4, N__1, N__8]
+      input_pair: [N__7, N__4]
+      output_pair: [N__1, N__8]
+      port_order: [1, 2, 3, 4]
+      port_map: {"1": N__7, "2": N__4, "3": N__1, "4": N__8}
+semantic_response:
+  intent: ami_init_channel_response
+  conversion_policy: mixed_mode_sdd_to_open_circuit_vdiff
+  operations: [renumber_for_topology, cascade, se2gmm, extract_sdd21, convert_sdd_abcd_to_open_circuit_vdiff]
+  block_count: 3
+  z0_ohm: 100.0
+  low_frequency_observation:
+    frequency_index: 0
+    frequency_hz: 0.0
+    sdd21_abs: 0.5990020074930338
+    sdd21_db: -4.451434442307726
+    open_circuit_vdiff_abs: 0.9256036352607088
+    open_circuit_vdiff_db: -0.6714989676739803
+  generated_artifacts_external_only:
+    network:
+      relative_path: semantic_channel_a88d83b4ae7e2993.s2p
+      format: s2p
+      byte_length: 841295
+      sha256: 0f9df9ccdc9ce22e1735dce7123c028e009808b94c23816a7dc17aa1101b7af3
+    metadata:
+      relative_path: semantic_channel_a88d83b4ae7e2993.json
+      format: json
+      byte_length: 2247
+      sha256: 6560788b22ead8ef50c84f52937b95afa806206c96f676844d5849031c638a5e
+admission:
+  port_mapping_observed: true
+  semantic_response_observed: true
+  typed_edge_to_channel: false
+  ami_matrix_construction: false
+  victim_aggressor_columns: false
+  matrix_time_step: false
+  impulse_conversion_policy: false
+  rights_admitted: false
+  product_runtime_invoked: false
+  release_admitted: false
+blockers:
+  - central_channel_s4p_not_registered_or_product_authorized
+  - victim_aggressor_column_semantics_not_frozen
+  - ami_matrix_time_step_not_frozen
+  - impulse_conversion_policy_not_frozen
+  - typed_edge_to_sipi_channel_absent
+  - vendor_rights_and_runtime_closure_blocked
+non_claims:
+  - not_product_policy
+  - not_product_fixture
+  - not_ami_matrix
+  - not_victim_aggressor_semantics
+  - not_matrix_time_step
+  - not_impulse_conversion_policy
+  - not_vendor_runtime
+  - not_system_parity
+  - not_release_evidence

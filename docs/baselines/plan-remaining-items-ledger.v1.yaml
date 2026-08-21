@@ -23,17 +23,19 @@
       "blocker": "semantics_not_implemented",
       "gate": [
         "tools/verify_p2_06_stage_compare_coverage.py",
+        "tools/verify_p2_06_generalized_parsed_circuit_measurement_read_only.py",
         "tools/verify_tran_rc_pulse_current_external_compare_evidence_v5.py"
       ],
-      "note": "fixed Windows x86_64 RC/PULSE profile current evidence v5 is accepted; generalized parsed-circuit/measurements remain pending netlist surface"
+      "note": "fixed Windows x86_64 RC/PULSE profile current evidence v5 is accepted; pinned Agent-Spice parser/measurement objects are now read-only verified, but generalized parsed-circuit/measurements remain pending a product netlist surface and owner contract"
     },
     {
       "id": "P3B-02",
       "blocker": "owner_decision",
       "gate": [
-        "tools/verify_p3b_02_link_kernel_singleton.py"
+        "tools/verify_p3b_02_link_kernel_singleton.py",
+        "tools/verify_p3_original_project_eye_jitter_semantics_observation.py"
       ],
-      "note": "equalizer subset pending Link profile"
+      "note": "PyBERT/Agent-COM eye, jitter and equalizer source semantics are read-only verified; equalizer subset remains pending a selected Link profile and product contract"
     },
     {
       "id": "P3B-04",
@@ -52,7 +54,8 @@
         "tools/verify_p3b_05b_seed_noise_jitter_decision_preflight.py",
         "tools/verify_p3b_05c_prbs9_sequence.py",
         "tools/verify_p3b_05d_prbs9_inject.py",
-        "tools/verify_p3b_05e_time_warp.py"
+        "tools/verify_p3b_05e_time_warp.py",
+        "tools/verify_p3_original_project_eye_jitter_semantics_observation.py"
       ],
       "note": "owner A4 decision (PRBS9, seed 0b000000001, TX, time model); 05c PRBS9 core + 05d TX-injection waveform + 05e deterministic per-sample time-warp shift (linear interpolation, 10/10 crosscheck) ported; jitter/observables/tolerance still out of scope"
     },
@@ -60,7 +63,8 @@
       "id": "P3C-01",
       "blocker": "owner_decision",
       "gate": [
-        "tools/verify_p3c_prbs9_metric_core_v2.py"
+        "tools/verify_p3c_prbs9_metric_core_v2.py",
+        "tools/verify_p3_original_project_eye_jitter_semantics_observation.py"
       ],
       "note": "eye folding/bin and TIE reference frozen by v2 contract (01e); bathtub estimator/tolerance and receiver stage pending owner decision"
     },
@@ -92,6 +96,7 @@
         "tools/verify_p3c_exact_impulse_current_replay_evidence.py",
         "tools/verify_p3c_exact_impulse_current_replay_identity_reconciliation_v3.py",
         "tools/verify_p3c_original_project_channel_semantics_observation.py",
+        "tools/verify_p3_original_project_eye_jitter_semantics_observation.py",
         "tools/verify_p3c_selected_highloss_residual_dft_v2_current_head_observation_evidence.py"
       ],
       "note": "03a/03b/03c/03d/03e + C4 profile core (04x) delivered. Current-head external-only residual DFT rebind (clean archive 97b0f271, two fresh runs) is observed and verified, but its 0.02911956313297956 strict same-index NRMSE still exceeds the fixed 1% gate. Historical replay source inventory used CRLF checkout rather than canonical Git identities, so that record remains forensic; source-only semantics match but no root cause is identified or excluded. Remaining: resolve the waveform discrepancy without alignment/fitting/tolerance relaxation, complete receiver/eye-contour and more cases/artifacts, and release gates"
@@ -389,9 +394,10 @@
         "tools/verify_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py",
         "tools/verify_p4b_ads_pcie_gen5_dual_ami_runtime_preflight.py",
         "tools/verify_p4b_08_s4p_observation.py",
-        "tools/verify_p4b_08b_s4p_ami_matrix_preflight.py"
+        "tools/verify_p4b_08b_s4p_ami_matrix_preflight.py",
+        "tools/verify_p4b_08c_ads_netlist_topology_semantic_response.py"
       ],
-      "note": "08a S4P structures observed and static exact asset/PE identities are ready; rights, parameter compatibility, dynamic dependency closure, isolated vendor worker and fresh runtime remain blocked, so the typed runtime edge is not admitted"
+      "note": "08a S4P structures and 08c ADS netlist topology/selected semantic response are observed with exact external identities; rights, AMI parameter compatibility, dynamic dependency closure, isolated vendor worker and fresh runtime remain blocked, so the typed runtime edge is not admitted"
     },
     {
       "id": "P4B-09",
@@ -459,7 +465,7 @@
         "tools/verify_p5_08a_com_run_admission.py",
         "tools/verify_p5_08b_com_run_execution.py"
       ],
-      "note": "08a request admission + 08b run execution & result envelope core (3/3 crosscheck) delivered; full sipi com run conformance stack still deferred per owner smaller-slice decision"
+      "note": "08a request admission + 08b run execution/result envelope core (3/3 crosscheck) delivered; the legacy v1 InvalidJson/SchemaMismatch wire tokens are now explicit and verifier-bound rather than derived from Rust Debug; full sipi com run conformance stack remains deferred"
     },
     {
       "id": "P5-09",

@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: a539edd4ca390650331f1934a44fbc4f748200210a2f51408a4ae13358c74842
+  tracked_paths_sha256: 9280dae04a25002d42067c7199b5d0f8643b13fb605b4f06b58f2ceae34e7840
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -7775,7 +7775,19 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-21-p2-06-generalized-parsed-circuit-measurement-read-only.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-21-p2-fixed-tran-current-evidence-rebinding-v5.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-21-p3-original-project-eye-jitter-semantics.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -7823,6 +7835,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-21-p4b-08c-ads-netlist-topology-semantic-response.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-21-p5-06-pinned-source-external-matlab-oracle-candidate-run.md:
       rule: historical-docs
       class: migration_only
@@ -7830,6 +7848,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-21-p5-06i-external-result-custody.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-21-p5-com-source-gap-and-run-conformance.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8153,7 +8177,19 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p2-06-generalized-parsed-circuit-measurement-read-only-evidence.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p2-06-stage-compare-coverage.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3-original-project-eye-jitter-semantics-observation.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -13530,6 +13566,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p4b-08-s4p-observation-evidence.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p4b-08c-ads-netlist-topology-semantic-response-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -22685,6 +22727,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p2_06_generalized_parsed_circuit_measurement_read_only.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p2_06_stage_compare_coverage.py:
       rule: migration-tools
       class: migration_only
@@ -22698,6 +22746,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p2_09a_performance_protocol_consistency.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p3_original_project_eye_jitter_semantics_observation.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -24899,6 +24953,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p4b_08c_ads_netlist_topology_semantic_response.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py:
       rule: migration-tools
       class: migration_only
@@ -25823,6 +25883,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_p2_06_generalized_parsed_circuit_measurement_read_only.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_p2_06_stage_compare_coverage.py:
       rule: migration-tools
       class: migration_only
@@ -25836,6 +25902,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p2_09a_performance_protocol_consistency.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3_original_project_eye_jitter_semantics_observation.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -28038,6 +28110,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p4b_08b_s4p_ami_matrix_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p4b_08c_ads_netlist_topology_semantic_response.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

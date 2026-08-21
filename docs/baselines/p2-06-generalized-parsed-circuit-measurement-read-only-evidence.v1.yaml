@@ -1,0 +1,97 @@
+schema: sipi.p2-06.generalized-parsed-circuit-measurement-read-only-evidence.v1
+status: blocked_no_current_contract_slice
+authority:
+  actor: project
+  decision_ref: task-t10-2026-08-21-agent-spice-p2-06-audit
+  scope: exact_git_object_and_clean_room_read_only_audit
+
+current_product:
+  commit: fbec03c7cc370a630a0869329263caf0f1294731
+  tree: 324298c913e1c83483f37504d73bdfa4f32f5893
+  source_inventory:
+    crates/sipi-tran: 6583a013c17931cbf79e2c0cf339c781e0273537
+    crates/sipi-tran/src/lib.rs: faa836467dc0e83a9b831c73ce637c03b76b8f59
+    crates/sipi-contracts: 45cb474fb470d88256788ab69f9020d273c26952
+    crates/sipi-contracts/src/lib.rs: 54194613628aafb6cf45c626ee5612e716257dd0
+    crates/sipi-cli/src/main.rs: 75e1a028a5c37db4120535c44b839fd79dc17e84
+    crates/sipi-cli/tests/cli.rs: 11b6c8e7db71260c2b9135001ac1ba18cd0b2830
+    docs/baselines/p2-03-tran-semantic-freeze.v1.yaml: 123e6a68558e1b56880e6c27b0047776bd6b8de5
+    docs/baselines/tran-rc-pulse-acceptance.v1.yaml: 52231bb2ca98aa50a530a91dd955717f61164d2f
+    docs/baselines/p2-06-stage-compare-coverage.v1.yaml: 4002dcc6f6f5e5736577affc09bae5b18c904b30
+  source_inventory_kind: mixed_tree_and_blob_git_object_ids_sha1
+  contract_observation:
+    parsed_circuit: rejected
+    request_surface: typed_one_node_rc_pulse_and_rc_pwl_only
+    measurement_semantics: not_implemented
+    result_surface: time_axis_voltage_in_voltage_out_only
+    generic_spice_expansion: prohibited
+
+external_agent_spice:
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  source_inventory:
+    native/agent-spice-sim: 273af568660c867f457366abcb43ed11163d637d
+    native/agent-spice-sim/src/netlist.rs: 83ffa04c90fb7c523875fb93c64b1f245793bcd1
+    native/agent-spice-sim/src/result.rs: f13c37b9fd367c5cb66a148deecedcea7d12b794
+    native/agent-spice-sim/src/simulator.rs: ed5712567420013d70c39a14257e1f77004a64b4
+    native/agent-spice-sim/src/main.rs: a333857287fc093f2f1fa515b135fe31a2bc9eb1
+    native/agent-spice-sim/Cargo.toml: b56d29811d0293c878b22485523f03ea06dc2d91
+    native/agent-spice-sim/Cargo.lock: d23dfb66a1ce13a91316d952fb52d988c4bcb238
+    LICENSE: 55aac2e4f8c36a978d315efb02815972579b8293
+    LICENSE-MANIFEST.md: 2b549451fdf28b4fbaf524010efbe33c6d49b385
+    native/AgentSpice.Engine/fixtures/rc.cir: f9c29055902fe8aa2b268b4375a5bdbbf67df9da
+  source_inventory_kind: mixed_tree_and_blob_git_object_ids_sha1
+  fixture_content_sha256:
+    native/AgentSpice.Engine/fixtures/rc.cir: bcdbd81a40dde01f0e72a8c36be928b6a7325fabbc25f83f72073757154dcefc
+  license_boundary:
+    crate_declared_license: MIT
+    project_license: MIT
+    source_classification: authorized_private
+    reference_fixture_classification: authorized_private
+    product_use: comparator_reference_only
+    source_reuse_in_product: prohibited_by_current_clean_room_boundary
+    license_note: MIT evidence is recorded, but it does not replace the current product contract or clean-room boundary decision.
+
+observed_original_semantics:
+  parsed_circuit:
+    type: generic_netlist_deck
+    definitions:
+      - Deck
+      - Element
+      - Analysis
+    parser_entrypoints:
+      - "netlist.rs:773 Deck::parse_file"
+      - "netlist.rs:1844 Parser::parse_line"
+      - "netlist.rs:1857 Parser::parse_line_inner"
+    accepted_families: resistor_capacitor_inductor_sources_controlled_sources_ports_subcircuits_directives
+    product_admission: not_admitted
+  measurements:
+    result_type: "result.rs:22 MeasurementResult"
+    result_container: "result.rs:52 SimulationResult.measurements"
+    parser_entrypoint: "netlist.rs:2291 Parser::parse_measurement"
+    operation_families: find_derivative_min_max_average_rms_integral_when_delay_parameter
+    evaluator_entrypoint: "simulator.rs:378 evaluate_measurements"
+    product_admission: not_admitted
+  cli_result_path:
+    parser_call: "main.rs:207 Deck::parse_file"
+    retention_policy: "main.rs:231 retain_points includes measurements"
+    json_output: "main.rs:255 output::write_json; main.rs:268 measurement field"
+
+slice_decision:
+  selected: none
+  implementation_status: read_only_audit_no_product_api
+  reason:
+    - current product freezes measurement_semantics as not_implemented
+    - current product rejects arbitrary_netlist and has no parser contract
+    - current result schemas expose only time_axis_voltage_in_voltage_out for bounded TRAN
+    - importing the original parser or measurement evaluator would expand fixed RC/PULSE/PWL into generic SPICE
+  owner_decisions_required_before_any_future_slice:
+    - measurement result schema and operation semantics
+    - comparison and tolerance policy for measurements
+    - parsed-circuit request schema, supported device subset, and publication boundary
+
+non_claims:
+  - This record does not add or advertise a parser, measurement API, or generic SPICE support.
+  - This record does not copy original Agent-Spice source, fixture text, or waveforms into SIPI.
+  - MIT classification is provenance evidence, not a product admission decision or legal opinion.
+  - No product binary, external oracle run, tolerance change, or publication state is changed.

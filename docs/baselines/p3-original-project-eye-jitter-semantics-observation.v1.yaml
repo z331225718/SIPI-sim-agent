@@ -1,0 +1,73 @@
+schema: sipi.p3-original-project-eye-jitter-semantics-observation.v1
+kind: external_original_source_semantics_observation_not_product_admission
+captured_at_utc: "2026-08-21"
+sources:
+  - root_ref: pybert
+    commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+    tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+    files:
+      - path: src/pybert/utility/jitter.py
+        git_blob_sha1: 467cd706906352883d9784ff29b17610034aede5
+        bytes: 22543
+        functions: [find_crossing_times, find_crossings, calc_jitter]
+      - path: src/pybert/utility/statistical_eye.py
+        git_blob_sha1: 195f87f48cecc55bf7bcda371c4c51b17111ea21
+        bytes: 38893
+        functions: [calculate_statistical_eye, _periodic_jitter_kernel, _phase_samples]
+      - path: native/pybert-core/src/jitter.rs
+        git_blob_sha1: 92e0fd6e6b2d40590b967f5f5d057a3de2969672
+        bytes: 24270
+        functions: [find_crossing_times, calculate_dual_dirac_jitter]
+    license_material:
+      path: LICENSE
+      git_blob_sha1: 64d198ba43675ede5fbdef1ec918a63954951640
+      bytes: 1466
+      conclusion: NOASSERTION
+  - root_ref: agent-com
+    commit: 034b21b2f293b2ef97cb8be269b1bf2be38e0086
+    tree: dc6e5529612d7272f23547a796b53e1456cc49cb
+    files:
+      - path: src/agent_com/metrics/eye.py
+        git_blob_sha1: e0f9eb617e98ece73d2b710e49b2f2c826f3281f
+        bytes: 4054
+        functions: [center_of_ui, eye_cdf, ber_contour, find_eye_width]
+      - path: src/agent_com/equalization/apply.py
+        git_blob_sha1: 07534980f64cbe86b6ceff3c2f5f9107d4fd7b24
+        bytes: 4246
+        functions: [apply_r480_equalization]
+    license_material:
+      path: null
+      status: absent_at_pinned_commit
+      conclusion: NOASSERTION
+observed_semantics:
+  pybert_jitter:
+    crossing: threshold sign-change with linear interpolation; optional min_delay and rising_first
+    calc_jitter: pre-aligned ideal/actual crossing streams, pattern-period grouping, configurable histogram bins and smoothing, spectral and dual-dirac diagnostics
+    statistical_eye: phase sweep plus discrete voltage bins; optional horizontal/TX jitter and noise distributions
+  agent_com_eye:
+    center_of_ui: nearest zero-based sample to half UI
+    contour: two-column top/bottom voltage contour, pointwise tail CDF and interpolated crossings
+    flat_crossing: rejected
+  source_semantics_are_not_owner_profile: true
+decision_surface:
+  p3b_05_jitter_observable: pending_required_profile_observables_and_tolerance
+  p3c_02_eye_folding_bins: pending_owner_decision
+  equalizer_subset: pending_link_profile_and_independent_semantics
+strict_waveform_reference:
+  evidence_path: docs/baselines/p3c-original-project-channel-semantics-observation.v1.yaml
+  evidence_sha256: 6eda7ddfa1a37e7e02351881530ae61b0615293c0ce2cb91d8a66d83b712a836
+  full_chain_nrmse: 0.02911956313297956
+  fixed_limit: 0.01
+  source_only_interior_nrmse: 0.0
+  conclusion: source_only_boundary_observed_full_chain_root_cause_unresolved
+admission:
+  product_semantics_implemented: false
+  external_source_promoted: false
+  release_promoted: false
+non_claims:
+  - source_function_names_and_literals_do_not_select_product_semantics
+  - no_PyBERT_or_Agent_COM_code_was_copied
+  - no_alignment_gain_dc_polarity_tolerance_or_oracle_fit_was_used
+  - license_material_observation_is_not_a_legal_conclusion
+  - strict_waveform_mismatch_cause_remains_unresolved
+audit_ref: docs/baselines/audits/2026-08-21-p3-original-project-eye-jitter-semantics.md

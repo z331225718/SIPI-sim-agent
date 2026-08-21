@@ -20,6 +20,19 @@ pub const COM_RUN_EXECUTION_POLICY_V1: &str =
 /// Canonical "sipi com run" result envelope schema id.
 pub const COM_RUN_RESULT_SCHEMA_V1: &str = "sipi.com.run-result.v1";
 
+// The v1 result envelope historically exposed these exact enum-style tokens.
+// Keep the mapping explicit so a Rust rename cannot silently alter the wire.
+fn legacy_v1_admission_error_code(error: &ComRunAdmissionErrorV1) -> &'static str {
+    match error {
+        ComRunAdmissionErrorV1::InvalidJson => "InvalidJson",
+        ComRunAdmissionErrorV1::SchemaMismatch => "SchemaMismatch",
+        ComRunAdmissionErrorV1::MissingArtifactRoot => "MissingArtifactRoot",
+        ComRunAdmissionErrorV1::MissingArtifactId => "MissingArtifactId",
+        ComRunAdmissionErrorV1::EmptyParams => "EmptyParams",
+        ComRunAdmissionErrorV1::NonScalarParam => "NonScalarParam",
+    }
+}
+
 /// Fail-closed errors when performing COM run execution.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ComRunExecutionErrorV1 {
@@ -101,7 +114,7 @@ pub fn execute_com_run_v1(
                 vec_db: None,
                 veo_mv: None,
                 sigma_n_v: None,
-                invalid_reason: Some(format!("{err:?}")),
+                invalid_reason: Some(legacy_v1_admission_error_code(&err).to_owned()),
             });
         }
     };
@@ -221,7 +234,35 @@ mod tests {
         .into_bytes();
         let env = execute_com_run_v1(&req, &pulse64(), &sample_dto()).expect("exec");
         assert!(!env.admitted());
-        assert!(env.invalid_reason().is_some());
+        assert_eq!(env.invalid_reason(), Some("SchemaMismatch"));
+    }
+
+    #[test]
+    fn returns_stable_reason_for_invalid_json() {
+        let env = execute_com_run_v1(b"not-json", &pulse64(), &sample_dto()).expect("exec");
+        assert!(!env.admitted());
+        assert_eq!(env.invalid_reason(), Some("InvalidJson"));
+    }
+
+    #[test]
+    fn legacy_v1_error_codes_are_exhaustive_and_stable() {
+        let cases = [
+            (ComRunAdmissionErrorV1::InvalidJson, "InvalidJson"),
+            (ComRunAdmissionErrorV1::SchemaMismatch, "SchemaMismatch"),
+            (
+                ComRunAdmissionErrorV1::MissingArtifactRoot,
+                "MissingArtifactRoot",
+            ),
+            (
+                ComRunAdmissionErrorV1::MissingArtifactId,
+                "MissingArtifactId",
+            ),
+            (ComRunAdmissionErrorV1::EmptyParams, "EmptyParams"),
+            (ComRunAdmissionErrorV1::NonScalarParam, "NonScalarParam"),
+        ];
+        for (error, expected) in cases {
+            assert_eq!(legacy_v1_admission_error_code(&error), expected);
+        }
     }
 
     #[test]

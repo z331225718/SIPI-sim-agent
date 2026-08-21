@@ -24,6 +24,60 @@ SOURCE = ROOT / "crates" / "sipi-com" / "src" / "com_run_execution_v1.rs"
 PLAN = ROOT / "PLAN.md"
 SCHEMA = "sipi.p5-08b.com-run-execution-stage.v1"
 POLICY = "sipi.p5-08b.com-run-execution-v1.admission-to-result"
+EXPECTED_ENTRIES = [
+    {
+        "label": "valid_admitted_run",
+        "matched": True,
+        "product": {
+            "admitted": True,
+            "com_db": -9.993741652368078,
+            "invalid_reason": None,
+            "policy": POLICY,
+            "result_schema": "sipi.com.run-result.v1",
+            "sigma_n_v": 0.010044899373313801,
+            "vec_db": 313.07119549054045,
+            "veo_mv": -2160.0,
+        },
+        "reference": {
+            "admitted": True,
+            "invalid_reason": None,
+            "com_db": -9.993741652368078,
+            "vec_db": 313.07119549054045,
+            "veo_mv": -2160.0,
+            "sigma_n_v": 0.010044899373313801,
+        },
+    },
+    {
+        "label": "invalid_schema",
+        "matched": True,
+        "product": {
+            "admitted": False,
+            "com_db": None,
+            "invalid_reason": "SchemaMismatch",
+            "policy": POLICY,
+            "result_schema": "sipi.com.run-result.v1",
+            "sigma_n_v": None,
+            "vec_db": None,
+            "veo_mv": None,
+        },
+        "reference": {"admitted": False, "invalid_reason": "SchemaMismatch"},
+    },
+    {
+        "label": "missing_artifact_id",
+        "matched": True,
+        "product": {
+            "admitted": False,
+            "com_db": None,
+            "invalid_reason": "unbound_artifacts",
+            "policy": POLICY,
+            "result_schema": "sipi.com.run-result.v1",
+            "sigma_n_v": None,
+            "vec_db": None,
+            "veo_mv": None,
+        },
+        "reference": {"admitted": False, "invalid_reason": "unbound_artifacts"},
+    },
+]
 
 
 class ComRunExecutionError(RuntimeError):
@@ -54,6 +108,8 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
         "pub fn execute_com_run_v1",
         "pub struct ComRunResultEnvelopeV1",
         "COM_RUN_RESULT_SCHEMA_V1",
+        "fn legacy_v1_admission_error_code",
+        'ComRunAdmissionErrorV1::SchemaMismatch => "SchemaMismatch"',
         POLICY,
     )
     if any(token not in source for token in required_tokens):
@@ -61,10 +117,12 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
     evidence = load_yaml(EVIDENCE)
     if evidence.get("schema") != "sipi.p5-08b.com-run-execution-crosscheck-evidence.v1":
         raise ComRunExecutionError("evidence_schema_invalid")
-    if evidence.get("status") != "matched_hash_bound":
+    if evidence.get("status") != "matched_hash_bound" or evidence.get("policy") != POLICY:
         raise ComRunExecutionError("evidence_status_drift")
     if evidence.get("matched_count") != evidence.get("case_count") or evidence.get("case_count") != 3:
         raise ComRunExecutionError("evidence_entry_mismatch")
+    if evidence.get("entries") != EXPECTED_ENTRIES:
+        raise ComRunExecutionError("evidence_content_drift")
     plan_text = PLAN.read_text(encoding="utf-8")
     if "**P5-08b" not in plan_text:
         raise ComRunExecutionError("plan_row_missing")
