@@ -29,6 +29,17 @@ class OwnerInputTests(unittest.TestCase):
             self.assertTrue(entry["decision_point"], entry["id"])
             self.assertTrue((ROOT / entry["gate"]).is_file(), f"{entry['id']}: {entry['gate']}")
 
+    def test_p4b08_requests_only_remaining_external_runtime_facts(self) -> None:
+        request = GATE.load_yaml(GATE.DEFAULT)
+        entry = next(item for item in request["entries"] if item["id"] == "P4B-08")
+        self.assertEqual(entry["kind"], "external_asset")
+        self.assertIn("topology/port mapping is already observed", entry["decision_point"])
+        self.assertIn("dynamic dependency closure", entry["decision_point"])
+        self.assertEqual(
+            entry["gate"],
+            "tools/verify_p4b_08c_ads_netlist_topology_semantic_response.py",
+        )
+
     def test_rejects_extra_entry(self) -> None:
         request = copy.deepcopy(GATE.load_yaml(GATE.DEFAULT))
         request["entries"].append({"id": "P2-06", "kind": "owner_decision", "decision_point": "x", "gate": "tools/verify_p2_06_stage_compare_coverage.py"})
