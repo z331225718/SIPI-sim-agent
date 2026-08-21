@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: da3f32863612c3502be048833fed66f02fa25ddc6b9e8d922657560f7b036f7f
+  tracked_paths_sha256: f06c7a25cc4af52802b2daef9bb87fd3c90b5736248bbe07fb2cc3ab3190fff6
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -7781,6 +7781,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-21-p3c-exact-impulse-current-replay-identity-reconciliation-v3.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-21-p3c-exact-impulse-current-replay-v2.md:
       rule: historical-docs
       class: migration_only
@@ -7793,13 +7799,31 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-21-p3c-original-project-channel-semantics-observation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-21-p4b-02-parameter-selection.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-21-p5-06i-external-result-custody.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-21-p7-license-notice-currentness-reconciliation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-21-p7-license-notice-identity-inconsistency-reconciliation-v2.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8543,6 +8567,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3c-exact-impulse-current-replay-identity-reconciliation.v3.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p3c-exact-impulse-current-replay-preparation.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -8622,6 +8652,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-ieee-bsd-truncation-direct-port.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-original-project-channel-semantics-observation.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -14111,6 +14147,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p5-06i-external-result-custody.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p5-07-canonical-json-property-surface.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -14280,6 +14322,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p7-license-notice-currentness-reconciliation.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p7-license-notice-identity-inconsistency-reconciliation.v2.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -20105,6 +20153,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p5_06i_external_result_custody.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/observe_p7_bcryptprimitives_processprng_preflight.py:
       rule: migration-tools
       class: migration_only
@@ -22325,6 +22379,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_observe_p5_06i_external_result_custody.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_observe_p7_candidate_build_license_material.py:
       rule: migration-tools
       class: migration_only
@@ -22835,6 +22895,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_exact_impulse_current_replay_identity_reconciliation_v3.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_exact_impulse_current_replay_preparation.py:
       rule: migration-tools
       class: migration_only
@@ -22914,6 +22980,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p3c_ieee_bsd_truncation_direct_port.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p3c_original_project_channel_semantics_observation.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -25217,6 +25289,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p7_license_notice_identity_inconsistency_reconciliation_v2.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p7_processprng_layout_policy_v2.py:
       rule: migration-tools
       class: migration_only
@@ -25925,6 +26003,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_p3c_exact_impulse_current_replay_identity_reconciliation_v3.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_p3c_exact_impulse_current_replay_preparation.py:
       rule: migration-tools
       class: migration_only
@@ -26004,6 +26088,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_ieee_bsd_truncation_direct_port.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_original_project_channel_semantics_observation.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -28326,6 +28416,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p7_license_notice_currentness_reconciliation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p7_license_notice_identity_inconsistency_reconciliation_v2.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

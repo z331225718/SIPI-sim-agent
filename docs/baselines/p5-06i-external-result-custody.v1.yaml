@@ -1,0 +1,1652 @@
+schema: sipi.p5-06i.external-result-custody.v1
+status: external_result_payload_observed_not_authoritative
+purpose: Hash-bound observation of ignored external COM 16-Aug-2026 result MAT/CSV
+  pairs; complete OP/param payload digests and observed default/checkpoint/metric
+  surfaces are recorded without MATLAB invocation or product promotion.
+authorization_ref: docs/baselines/authorized-material-registry.v1.yaml
+external_source:
+  logical_root: external_com_checkout
+  identity:
+    canonical_origin: https://github.com/z331225718/agent-com.git
+    object_format: sha1
+    commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+    tree: 7094ab6e84989b218730c52432c70da10261f8ea
+    worktree_status_at_observation: M matlab_src/config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.mat
+  result_relative: results/100GEL_C2M_host_16-Aug-2026
+  matlab_invoked: false
+  matlab_invocation_authorized: false
+  result_generator_commit_verified: false
+  embedded_code_revision_authority: self_declared_only
+  ignored_outputs_git_object_bound: false
+registered_materials:
+- id: com-r480-matlab-source
+  logical_name: com_ieee8023_480.m
+  kind: matlab_source
+  logical_root: external_com_checkout
+  relative_to_root: matlab_src/com_ieee8023_480.m
+  sha256: 642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad
+  byte_length: 469713
+  registry_sha256: 642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad
+  identity_status: matched_record
+- id: com-r480-config-120g-c2m
+  logical_name: config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.xlsx
+  kind: com_config_sheet
+  logical_root: external_com_checkout
+  relative_to_root: matlab_src/config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.xlsx
+  sha256: f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9
+  byte_length: 63311
+  registry_sha256: f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9
+  identity_status: matched_record
+- id: com-synthetic-thru
+  logical_name: thru_10db_at_26p56ghz.s4p
+  kind: com_fixture
+  logical_root: external_com_checkout
+  relative_to_root: fixtures/synthetic/thru_10db_at_26p56ghz.s4p
+  sha256: b14a92e7f844608aaee5b4cbd3dfda08d7af48bfedb4526043a0733b8823e584
+  byte_length: 6425196
+  registry_sha256: b14a92e7f844608aaee5b4cbd3dfda08d7af48bfedb4526043a0733b8823e584
+  identity_status: matched_record
+- id: com-synthetic-fext
+  logical_name: fext_m40db_at_26p56ghz.s4p
+  kind: com_fixture
+  logical_root: external_com_checkout
+  relative_to_root: fixtures/synthetic/fext_m40db_at_26p56ghz.s4p
+  sha256: f6a5bf0ec04ec474fe3685cbdb868ac97eb707b5233a4f4ccca5caf3152438cc
+  byte_length: 6425159
+  registry_sha256: f6a5bf0ec04ec474fe3685cbdb868ac97eb707b5233a4f4ccca5caf3152438cc
+  identity_status: matched_record
+- id: com-synthetic-next
+  logical_name: next_m40db_at_26p56ghz.s4p
+  kind: com_fixture
+  logical_root: external_com_checkout
+  relative_to_root: fixtures/synthetic/next_m40db_at_26p56ghz.s4p
+  sha256: a2ae19041148a381533862130c02953a029bb9eb06c11a7b47f1b4d93506033a
+  byte_length: 6424879
+  registry_sha256: a2ae19041148a381533862130c02953a029bb9eb06c11a7b47f1b4d93506033a
+  identity_status: matched_record
+- id: com-synthetic-manifest
+  logical_name: manifest.json
+  kind: com_fixture_manifest
+  logical_root: external_com_checkout
+  relative_to_root: fixtures/synthetic/manifest.json
+  sha256: cf9a9e5b9cc7d690be0e507414deee867743297a47279e4df18f5bed3724bce7
+  byte_length: 2374
+  registry_sha256: cf9a9e5b9cc7d690be0e507414deee867743297a47279e4df18f5bed3724bce7
+  identity_status: matched_record
+canonical_input:
+  ref: docs/baselines/p5-r480-canonical-parameter-json.v2.yaml
+  key_count: 214
+  statically_evaluated_calls: 3
+  needs_oracle_calls: 20
+  source_sha256: 642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad
+canonicalization:
+  schema: sipi.p5-06i.mat-payload-canonical-json.v1
+  hash: sha256
+  json: UTF-8, sort_keys=true, separators=(',', ':'), allow_nan=false
+  mat_struct_fields: sorted
+  ndarray: dtype+shape+flattened_C_order_values
+  nonfinite: explicit_nan_or_inf_markers
+payload_count: 4
+payloads:
+- case_identity: &id001
+    family: fixtures
+    index: 1
+    id: fixtures_case1
+  mat:
+    logical_root: external_com_checkout
+    relative_to_root: results/100GEL_C2M_host_16-Aug-2026/C2M_eval_ fixtures--thru_case1_results.mat
+    sha256: 4735668ec3731e2181d594f54f308dbbbbfd0e7885bfdd1c780ab0d222a74c7e
+    byte_length: 9219
+    header:
+      format: MATLAB 5.0 MAT-file
+      platform_header: 'MATLAB 5.0 MAT-file, Platform: PCWIN64, Created on: Sun Aug
+        16 17:14:52 2026'
+      created_on_header: Sun Aug 16 17:14:52 2026
+    registry_status: not_in_authorized_material_registry_external_observation
+  csv:
+    logical_root: external_com_checkout
+    relative_to_root: results/100GEL_C2M_host_16-Aug-2026/C2M_eval_ fixtures--thru_case1_results.csv
+    sha256: 761205c8fa02a256841a0fa0d834121c2046a3028411fc3630eee546d4cd6f64
+    byte_length: 7611
+    header_count: 98
+    row_count: 1
+    header_matches_output_fields: true
+    payload_role: rounded_text_projection_not_exact_payload
+  variable_inventory:
+  - name: output_args
+    shape:
+    - 1
+    - 1
+    class: struct
+  - name: OP
+    shape:
+    - 1
+    - 1
+    class: struct
+  - name: param
+    shape:
+    - 1
+    - 1
+    class: struct
+  field_counts:
+    output_args: 98
+    OP: 95
+    param: 177
+  field_names_sha256:
+    output_args: 2a93501167ca3703a28323391473e6e8cc40db8ae3f39b7ac0c924e27ac58b20
+    OP: 8e80f34e5d2a6cf4f7ddece0105e6401571893471ebb11d995023ad1db15cc30
+    param: 19a21a3260dfacedbe581bfbf2dcee9897b0b5dc4b314aa7d80804201309fe74
+  payload_digests:
+    normalized_input_op_param_sha256: 5c7ca3291e42de885b3bea031f65f55634b9a8347bec449981a6f5d38d1cce60
+    output_args_sha256: 21ea515ff993919a3f390c14107f260feb7acf62f0addd90ca95dee01823bfdf
+    full_mat_payload_sha256: 50213ba1c5e97d528398662c1363d9c3efcf642be07b94f3386cc13386436f4f
+  observed_identity:
+    code_revision:
+      kind: string
+      value: '4.80'
+    config_file:
+      kind: redacted_absolute_path
+      domain: external_com_checkout
+      basename: config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.xlsx
+      sha256_domain_separated: 525c0c2cda6ee3274a2e7e06ae61c4774bc04becb98d9b04794cb33a6784e332
+    file_names:
+      kind: string
+      value: '"C2M_eval_ fixtures--thru,C2M_eval_ fixtures--fext,C2M_eval_ fixtures--next"'
+    base:
+      kind: string
+      value: C2M_eval_ fixtures--thru
+  normalized_input_surface:
+    canonical_key_count: 214
+    selected_fields:
+      fb:
+        kind: finite
+        value: 53125000000.0
+      max_start_freq:
+        kind: integer
+        value: 50000000
+      ndfe:
+        kind: integer
+        value: 4
+      specBER:
+        kind: finite
+        value: 1.0e-05
+      f_r:
+        kind: finite
+        value: 0.75
+      snpPortsOrder:
+        shape:
+        - 4
+        dtype: uint8
+        digest: 0e1aa2e8ef03605fe66beb12a32f9cb148f8866fa6928589191e388c3c4e9dc8
+        values:
+        - kind: integer
+          value: 1
+        - kind: integer
+          value: 3
+        - kind: integer
+          value: 2
+        - kind: integer
+          value: 4
+      ui:
+        kind: finite
+        value: 1.8823529411764707e-11
+      sample_dt:
+        kind: finite
+        value: 5.882352941176471e-13
+      base:
+        kind: string
+        value: C2M_eval_ fixtures--thru
+      GET_FD:
+        kind: integer
+        value: 1
+      TDMODE:
+        kind: integer
+        value: 0
+      PMD_type:
+        kind: string
+        value: C2M
+    port_order_observed: '[ 1 3 2 4 ]'
+    normalized_input_digest_status: bound_to_complete_OP_and_param_payload
+  default_resolution:
+    canonical_ref: docs/baselines/p5-r480-canonical-parameter-json.v2.yaml
+    needs_oracle_occurrence_count: 20
+    entries:
+    - key: ACCM_MAX_Freq
+      occurrence: 0
+      expression: param.fb
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53125000000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: Display frequency domain
+      occurrence: 0
+      expression: OP.GET_FD
+      required: 'false'
+      observed_value:
+        kind: integer
+        value: 1
+      status: observed_resolved_for_this_mat_payload
+    - key: N_bmax
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_bx
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_f
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_f
+      occurrence: 1
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_v
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: PHY
+      occurrence: 0
+      expression: OP.PMD_type
+      required: 'false'
+      observed_value:
+        kind: string
+        value: C2M
+      status: observed_resolved_for_this_mat_payload
+    - key: P_qc
+      occurrence: 0
+      expression: 2*param.specBER
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 2.0e-05
+      status: observed_resolved_for_this_mat_payload
+    - key: RC_Start
+      occurrence: 0
+      expression: param.fb/2
+      required: 'false'
+      observed_value:
+        kind: finite
+        value: 26562500000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: RC_end
+      occurrence: 0
+      expression: param.fb*param.f_r
+      required: 'false'
+      observed_value:
+        kind: finite
+        value: 39843750000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: TDMODE
+      occurrence: 0
+      expression: OP.TDMODE
+      required: 'false'
+      observed_value:
+        kind: integer
+        value: 0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_1
+      occurrence: 0
+      expression: param.max_start_freq/1e9
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 0.05
+      status: observed_resolved_for_this_mat_payload
+    - key: f_2
+      occurrence: 0
+      expression: param.fb/1e9
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53.125
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p1
+      occurrence: 0
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p1
+      occurrence: 1
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p2
+      occurrence: 0
+      expression: param.fb
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53125000000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p2
+      occurrence: 1
+      expression: param.fb
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53125000000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_z
+      occurrence: 0
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_z
+      occurrence: 1
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    contract_status: observed_values_only_not_generic_default_contract
+  metrics:
+    fields:
+      FOM:
+        kind: finite
+        value: 6.029923244850435
+      COM_dB: &id002
+        kind: finite
+        value: 5.190191599808681
+      VEC_dB:
+        kind: finite
+        value: 6.938873046658207
+      VEO_mV:
+        kind: finite
+        value: 46.76000000000001
+      ERL: &id004
+        kind: finite
+        value: 16.742740133561476
+      ERL11:
+        kind: inf
+        sign: 1
+      ERL22:
+        kind: finite
+        value: 16.742740133561476
+      IL_dB_channel_only_at_Fnq:
+        kind: finite
+        value: 10.000735704402235
+      fitted_IL_dB_at_Fnq:
+        kind: finite
+        value: 9.834912844951186
+      ICN_mV: &id003
+        kind: finite
+        value: 4.601554213273623
+      Peak_ISI_XTK_and_Noise_interference_at_BER_mV:
+        kind: finite
+        value: 57.18848278499239
+      CTLE_DC_gain_dB:
+        kind: integer
+        value: -3
+      g_DC_HP:
+        kind: finite
+        value: -0.5
+      itick:
+        kind: integer
+        value: 0
+    metric_digest: 6aa3e90c8b9850d7454917aba72130a109caa9f2371bfc2773223d8d31f4e51a
+  checkpoints:
+    fields:
+      TXLE_taps:
+        shape:
+        - 5
+        dtype: float64
+        digest: c746d6388676ae0195d84349ad3f035e5bd16040a2f4cb95c9529e0758c65639
+        values:
+        - kind: finite
+          value: 0.0
+        - kind: finite
+          value: 0.0
+        - kind: finite
+          value: -0.08
+        - kind: finite
+          value: 0.92
+        - kind: finite
+          value: 0.0
+      DFE_taps:
+        shape:
+        - 4
+        dtype: float64
+        digest: 1d1d18d6a02ed68c56b8b2733ec8dd65b10a0860338518ce7d1fa11445bc4faf
+        values:
+        - kind: finite
+          value: 0.3568406617319051
+        - kind: finite
+          value: 0.05991816936142061
+        - kind: finite
+          value: 0.008697641124174848
+        - kind: finite
+          value: 0.0005691271494146214
+      tail_RSS:
+        kind: integer
+        value: 0
+      sigma_N:
+        kind: finite
+        value: 0.0011600846233942998
+      itick:
+        kind: integer
+        value: 0
+      sgm_Ani__isi_xt_noise:
+        kind: finite
+        value: 0.0061944440067733
+    checkpoint_digest: 74d346b8139736267a96cfd9aa9e4b6419c1e8ac9dfcfb364362f9ebdb695c7d
+    tolerance_status: missing
+- case_identity: &id005
+    family: fixtures
+    index: 2
+    id: fixtures_case2
+  mat:
+    logical_root: external_com_checkout
+    relative_to_root: results/100GEL_C2M_host_16-Aug-2026/C2M_eval_ fixtures--thru_case2_results.mat
+    sha256: bcfb14b506eb481586ea6651b7c1f0f4d59845e2ee37c98e3916baa36fe7b69f
+    byte_length: 9263
+    header:
+      format: MATLAB 5.0 MAT-file
+      platform_header: 'MATLAB 5.0 MAT-file, Platform: PCWIN64, Created on: Sun Aug
+        16 17:20:33 2026'
+      created_on_header: Sun Aug 16 17:20:33 2026
+    registry_status: not_in_authorized_material_registry_external_observation
+  csv:
+    logical_root: external_com_checkout
+    relative_to_root: results/100GEL_C2M_host_16-Aug-2026/C2M_eval_ fixtures--thru_case2_results.csv
+    sha256: 2d1f307bbaa3c70ab66b2845f95b9b226c1c8fc558b31ef31d15ff1ed0c7172e
+    byte_length: 7574
+    header_count: 98
+    row_count: 1
+    header_matches_output_fields: true
+    payload_role: rounded_text_projection_not_exact_payload
+  variable_inventory:
+  - name: output_args
+    shape:
+    - 1
+    - 1
+    class: struct
+  - name: OP
+    shape:
+    - 1
+    - 1
+    class: struct
+  - name: param
+    shape:
+    - 1
+    - 1
+    class: struct
+  field_counts:
+    output_args: 98
+    OP: 95
+    param: 177
+  field_names_sha256:
+    output_args: 2a93501167ca3703a28323391473e6e8cc40db8ae3f39b7ac0c924e27ac58b20
+    OP: 8e80f34e5d2a6cf4f7ddece0105e6401571893471ebb11d995023ad1db15cc30
+    param: 19a21a3260dfacedbe581bfbf2dcee9897b0b5dc4b314aa7d80804201309fe74
+  payload_digests:
+    normalized_input_op_param_sha256: 00e8576e440353cf7c9ea3e94d9ef8f3a2ed3fadca7418328dbbaeca31332721
+    output_args_sha256: 406c8f8d3fd8be764836d5e9811d0d6e73955737638c526de4154e0661c7d995
+    full_mat_payload_sha256: ab9026c483cd84dd0aeeb923cb8ef79c916ec2a8e063068438af28f69a7560fa
+  observed_identity:
+    code_revision:
+      kind: string
+      value: '4.80'
+    config_file:
+      kind: redacted_absolute_path
+      domain: external_com_checkout
+      basename: config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.xlsx
+      sha256_domain_separated: 525c0c2cda6ee3274a2e7e06ae61c4774bc04becb98d9b04794cb33a6784e332
+    file_names:
+      kind: string
+      value: '"C2M_eval_ fixtures--thru,C2M_eval_ fixtures--fext,C2M_eval_ fixtures--next"'
+    base:
+      kind: string
+      value: C2M_eval_ fixtures--thru
+  normalized_input_surface:
+    canonical_key_count: 214
+    selected_fields:
+      fb:
+        kind: finite
+        value: 53125000000.0
+      max_start_freq:
+        kind: integer
+        value: 50000000
+      ndfe:
+        kind: integer
+        value: 4
+      specBER:
+        kind: finite
+        value: 1.0e-05
+      f_r:
+        kind: finite
+        value: 0.75
+      snpPortsOrder:
+        shape:
+        - 4
+        dtype: uint8
+        digest: 0e1aa2e8ef03605fe66beb12a32f9cb148f8866fa6928589191e388c3c4e9dc8
+        values:
+        - kind: integer
+          value: 1
+        - kind: integer
+          value: 3
+        - kind: integer
+          value: 2
+        - kind: integer
+          value: 4
+      ui:
+        kind: finite
+        value: 1.8823529411764707e-11
+      sample_dt:
+        kind: finite
+        value: 5.882352941176471e-13
+      base:
+        kind: string
+        value: C2M_eval_ fixtures--thru
+      GET_FD:
+        kind: integer
+        value: 1
+      TDMODE:
+        kind: integer
+        value: 0
+      PMD_type:
+        kind: string
+        value: C2M
+    port_order_observed: '[ 1 3 2 4 ]'
+    normalized_input_digest_status: bound_to_complete_OP_and_param_payload
+  default_resolution:
+    canonical_ref: docs/baselines/p5-r480-canonical-parameter-json.v2.yaml
+    needs_oracle_occurrence_count: 20
+    entries:
+    - key: ACCM_MAX_Freq
+      occurrence: 0
+      expression: param.fb
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53125000000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: Display frequency domain
+      occurrence: 0
+      expression: OP.GET_FD
+      required: 'false'
+      observed_value:
+        kind: integer
+        value: 1
+      status: observed_resolved_for_this_mat_payload
+    - key: N_bmax
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_bx
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_f
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_f
+      occurrence: 1
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_v
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: PHY
+      occurrence: 0
+      expression: OP.PMD_type
+      required: 'false'
+      observed_value:
+        kind: string
+        value: C2M
+      status: observed_resolved_for_this_mat_payload
+    - key: P_qc
+      occurrence: 0
+      expression: 2*param.specBER
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 2.0e-05
+      status: observed_resolved_for_this_mat_payload
+    - key: RC_Start
+      occurrence: 0
+      expression: param.fb/2
+      required: 'false'
+      observed_value:
+        kind: finite
+        value: 26562500000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: RC_end
+      occurrence: 0
+      expression: param.fb*param.f_r
+      required: 'false'
+      observed_value:
+        kind: finite
+        value: 39843750000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: TDMODE
+      occurrence: 0
+      expression: OP.TDMODE
+      required: 'false'
+      observed_value:
+        kind: integer
+        value: 0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_1
+      occurrence: 0
+      expression: param.max_start_freq/1e9
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 0.05
+      status: observed_resolved_for_this_mat_payload
+    - key: f_2
+      occurrence: 0
+      expression: param.fb/1e9
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53.125
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p1
+      occurrence: 0
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p1
+      occurrence: 1
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p2
+      occurrence: 0
+      expression: param.fb
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53125000000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p2
+      occurrence: 1
+      expression: param.fb
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53125000000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_z
+      occurrence: 0
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_z
+      occurrence: 1
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    contract_status: observed_values_only_not_generic_default_contract
+  metrics:
+    fields:
+      FOM:
+        kind: finite
+        value: 5.858374500465274
+      COM_dB: &id006
+        kind: finite
+        value: 4.877647775233487
+      VEC_dB:
+        kind: finite
+        value: 7.337070919529902
+      VEO_mV:
+        kind: finite
+        value: 37.53999999999999
+      ERL: &id008
+        kind: finite
+        value: 16.742740133561476
+      ERL11:
+        kind: inf
+        sign: 1
+      ERL22:
+        kind: finite
+        value: 16.742740133561476
+      IL_dB_channel_only_at_Fnq:
+        kind: finite
+        value: 10.000735704402235
+      fitted_IL_dB_at_Fnq:
+        kind: finite
+        value: 9.834912844951186
+      ICN_mV: &id007
+        kind: finite
+        value: 4.601554213273623
+      Peak_ISI_XTK_and_Noise_interference_at_BER_mV:
+        kind: finite
+        value: 49.82707866914524
+      CTLE_DC_gain_dB:
+        kind: integer
+        value: -3
+      g_DC_HP:
+        kind: finite
+        value: -0.5
+      itick:
+        kind: integer
+        value: 0
+    metric_digest: ced2d000fed9188dc17a3b23585d8a2952284527fa076a3e2e31772eedfa08a8
+  checkpoints:
+    fields:
+      TXLE_taps:
+        shape:
+        - 5
+        dtype: float64
+        digest: 39e2daa9053852398d544ee89177f23ae1612f337ae69a0218fefb933e52e865
+        values:
+        - kind: finite
+          value: 0.0
+        - kind: finite
+          value: 0.02
+        - kind: finite
+          value: -0.12
+        - kind: finite
+          value: 0.86
+        - kind: finite
+          value: 0.0
+      DFE_taps:
+        shape:
+        - 4
+        dtype: float64
+        digest: a0d5d1fbd64957e328e7b540d413d92017a91f00f4de386c95749c6a9ff9c965
+        values:
+        - kind: finite
+          value: 0.3727297300582382
+        - kind: finite
+          value: 0.08147462288270561
+        - kind: finite
+          value: 0.020948323566630962
+        - kind: finite
+          value: 0.007440896370777928
+      tail_RSS:
+        kind: integer
+        value: 0
+      sigma_N:
+        kind: finite
+        value: 0.0011600846233942998
+      itick:
+        kind: integer
+        value: 0
+      sgm_Ani__isi_xt_noise:
+        kind: finite
+        value: 0.005511480767520568
+    checkpoint_digest: bbabc3e7840a056dfae5e1556a2076bbdd49ec4e2c7bcda962719e0711f81f23
+    tolerance_status: missing
+- case_identity: &id009
+    family: synthetic
+    index: 1
+    id: synthetic_case1
+  mat:
+    logical_root: external_com_checkout
+    relative_to_root: results/100GEL_C2M_host_16-Aug-2026/C2M_eval_ synthetic--thru_10db_at_26p56ghz_case1_results.mat
+    sha256: bf79a0dfeb4c4d10e7f3844e0b59ef33947d247866348d7b6359d881595d066e
+    byte_length: 9265
+    header:
+      format: MATLAB 5.0 MAT-file
+      platform_header: 'MATLAB 5.0 MAT-file, Platform: PCWIN64, Created on: Sun Aug
+        16 16:49:16 2026'
+      created_on_header: Sun Aug 16 16:49:16 2026
+    registry_status: not_in_authorized_material_registry_external_observation
+  csv:
+    logical_root: external_com_checkout
+    relative_to_root: results/100GEL_C2M_host_16-Aug-2026/C2M_eval_ synthetic--thru_10db_at_26p56ghz_case1_results.csv
+    sha256: 73360aa8ec2e69f460db32435e35702d5fe05778ba7923b0443a331517b48014
+    byte_length: 7667
+    header_count: 98
+    row_count: 1
+    header_matches_output_fields: true
+    payload_role: rounded_text_projection_not_exact_payload
+  variable_inventory:
+  - name: output_args
+    shape:
+    - 1
+    - 1
+    class: struct
+  - name: OP
+    shape:
+    - 1
+    - 1
+    class: struct
+  - name: param
+    shape:
+    - 1
+    - 1
+    class: struct
+  field_counts:
+    output_args: 98
+    OP: 95
+    param: 177
+  field_names_sha256:
+    output_args: 2a93501167ca3703a28323391473e6e8cc40db8ae3f39b7ac0c924e27ac58b20
+    OP: 8e80f34e5d2a6cf4f7ddece0105e6401571893471ebb11d995023ad1db15cc30
+    param: 19a21a3260dfacedbe581bfbf2dcee9897b0b5dc4b314aa7d80804201309fe74
+  payload_digests:
+    normalized_input_op_param_sha256: cd7b6e4dc2914bd27c8cd08f5fd7d1adc97a77eca2d5acd7021fec6cc5904b27
+    output_args_sha256: 1d6c4852d7d0627436c9caf81403e3740391a804f7363c411742f2fe60f60e34
+    full_mat_payload_sha256: 1930ccb22ddde83c9ddcf0cda0862b9dc2a6859ebc0b0bd737196bcee43c9716
+  observed_identity:
+    code_revision:
+      kind: string
+      value: '4.80'
+    config_file:
+      kind: redacted_absolute_path
+      domain: external_com_checkout
+      basename: config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.xlsx
+      sha256_domain_separated: 727dca89bf423524fedd90e597a4ca86494bb9e25072d5f53bddcc81bf7ce745
+    file_names:
+      kind: string
+      value: '"C2M_eval_ synthetic--thru_10db_at_26p56ghz,C2M_eval_ synthetic--fext_m40db_at_26p56ghz,C2M_eval_
+        synthetic--next_m40db_at_26p56ghz"'
+    base:
+      kind: string
+      value: C2M_eval_ synthetic--thru_10db_at_26p56ghz
+  normalized_input_surface:
+    canonical_key_count: 214
+    selected_fields:
+      fb:
+        kind: finite
+        value: 53125000000.0
+      max_start_freq:
+        kind: integer
+        value: 50000000
+      ndfe:
+        kind: integer
+        value: 4
+      specBER:
+        kind: finite
+        value: 1.0e-05
+      f_r:
+        kind: finite
+        value: 0.75
+      snpPortsOrder:
+        shape:
+        - 4
+        dtype: uint8
+        digest: 0e1aa2e8ef03605fe66beb12a32f9cb148f8866fa6928589191e388c3c4e9dc8
+        values:
+        - kind: integer
+          value: 1
+        - kind: integer
+          value: 3
+        - kind: integer
+          value: 2
+        - kind: integer
+          value: 4
+      ui:
+        kind: finite
+        value: 1.8823529411764707e-11
+      sample_dt:
+        kind: finite
+        value: 5.882352941176471e-13
+      base:
+        kind: string
+        value: C2M_eval_ synthetic--thru_10db_at_26p56ghz
+      GET_FD:
+        kind: integer
+        value: 1
+      TDMODE:
+        kind: integer
+        value: 0
+      PMD_type:
+        kind: string
+        value: C2M
+    port_order_observed: '[ 1 3 2 4 ]'
+    normalized_input_digest_status: bound_to_complete_OP_and_param_payload
+  default_resolution:
+    canonical_ref: docs/baselines/p5-r480-canonical-parameter-json.v2.yaml
+    needs_oracle_occurrence_count: 20
+    entries:
+    - key: ACCM_MAX_Freq
+      occurrence: 0
+      expression: param.fb
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53125000000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: Display frequency domain
+      occurrence: 0
+      expression: OP.GET_FD
+      required: 'false'
+      observed_value:
+        kind: integer
+        value: 1
+      status: observed_resolved_for_this_mat_payload
+    - key: N_bmax
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_bx
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_f
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_f
+      occurrence: 1
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_v
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: PHY
+      occurrence: 0
+      expression: OP.PMD_type
+      required: 'false'
+      observed_value:
+        kind: string
+        value: C2M
+      status: observed_resolved_for_this_mat_payload
+    - key: P_qc
+      occurrence: 0
+      expression: 2*param.specBER
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 2.0e-05
+      status: observed_resolved_for_this_mat_payload
+    - key: RC_Start
+      occurrence: 0
+      expression: param.fb/2
+      required: 'false'
+      observed_value:
+        kind: finite
+        value: 26562500000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: RC_end
+      occurrence: 0
+      expression: param.fb*param.f_r
+      required: 'false'
+      observed_value:
+        kind: finite
+        value: 39843750000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: TDMODE
+      occurrence: 0
+      expression: OP.TDMODE
+      required: 'false'
+      observed_value:
+        kind: integer
+        value: 0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_1
+      occurrence: 0
+      expression: param.max_start_freq/1e9
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 0.05
+      status: observed_resolved_for_this_mat_payload
+    - key: f_2
+      occurrence: 0
+      expression: param.fb/1e9
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53.125
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p1
+      occurrence: 0
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p1
+      occurrence: 1
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p2
+      occurrence: 0
+      expression: param.fb
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53125000000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p2
+      occurrence: 1
+      expression: param.fb
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53125000000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_z
+      occurrence: 0
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_z
+      occurrence: 1
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    contract_status: observed_values_only_not_generic_default_contract
+  metrics:
+    fields:
+      FOM:
+        kind: finite
+        value: 6.029923244850435
+      COM_dB: &id010
+        kind: finite
+        value: 5.190191599808681
+      VEC_dB:
+        kind: finite
+        value: 6.938873046658207
+      VEO_mV:
+        kind: finite
+        value: 46.76000000000001
+      ERL: &id012
+        kind: finite
+        value: 16.742740133561476
+      ERL11:
+        kind: inf
+        sign: 1
+      ERL22:
+        kind: finite
+        value: 16.742740133561476
+      IL_dB_channel_only_at_Fnq:
+        kind: finite
+        value: 10.000735704402235
+      fitted_IL_dB_at_Fnq:
+        kind: finite
+        value: 9.834912844951186
+      ICN_mV: &id011
+        kind: finite
+        value: 4.601554213273623
+      Peak_ISI_XTK_and_Noise_interference_at_BER_mV:
+        kind: finite
+        value: 57.18848278499239
+      CTLE_DC_gain_dB:
+        kind: integer
+        value: -3
+      g_DC_HP:
+        kind: finite
+        value: -0.5
+      itick:
+        kind: integer
+        value: 0
+    metric_digest: 6aa3e90c8b9850d7454917aba72130a109caa9f2371bfc2773223d8d31f4e51a
+  checkpoints:
+    fields:
+      TXLE_taps:
+        shape:
+        - 5
+        dtype: float64
+        digest: c746d6388676ae0195d84349ad3f035e5bd16040a2f4cb95c9529e0758c65639
+        values:
+        - kind: finite
+          value: 0.0
+        - kind: finite
+          value: 0.0
+        - kind: finite
+          value: -0.08
+        - kind: finite
+          value: 0.92
+        - kind: finite
+          value: 0.0
+      DFE_taps:
+        shape:
+        - 4
+        dtype: float64
+        digest: 1d1d18d6a02ed68c56b8b2733ec8dd65b10a0860338518ce7d1fa11445bc4faf
+        values:
+        - kind: finite
+          value: 0.3568406617319051
+        - kind: finite
+          value: 0.05991816936142061
+        - kind: finite
+          value: 0.008697641124174848
+        - kind: finite
+          value: 0.0005691271494146214
+      tail_RSS:
+        kind: integer
+        value: 0
+      sigma_N:
+        kind: finite
+        value: 0.0011600846233942998
+      itick:
+        kind: integer
+        value: 0
+      sgm_Ani__isi_xt_noise:
+        kind: finite
+        value: 0.0061944440067733
+    checkpoint_digest: 74d346b8139736267a96cfd9aa9e4b6419c1e8ac9dfcfb364362f9ebdb695c7d
+    tolerance_status: missing
+- case_identity: &id013
+    family: synthetic
+    index: 2
+    id: synthetic_case2
+  mat:
+    logical_root: external_com_checkout
+    relative_to_root: results/100GEL_C2M_host_16-Aug-2026/C2M_eval_ synthetic--thru_10db_at_26p56ghz_case2_results.mat
+    sha256: 0c86b467addbf0c729f0541abbdbe9d87d27ce0828974222f10c9ce7ca0798a1
+    byte_length: 9311
+    header:
+      format: MATLAB 5.0 MAT-file
+      platform_header: 'MATLAB 5.0 MAT-file, Platform: PCWIN64, Created on: Sun Aug
+        16 16:54:58 2026'
+      created_on_header: Sun Aug 16 16:54:58 2026
+    registry_status: not_in_authorized_material_registry_external_observation
+  csv:
+    logical_root: external_com_checkout
+    relative_to_root: results/100GEL_C2M_host_16-Aug-2026/C2M_eval_ synthetic--thru_10db_at_26p56ghz_case2_results.csv
+    sha256: 50c93639f0b3b8b5caec0c45d15c0e4051638315531c5f8fab67f61acf7f3652
+    byte_length: 7630
+    header_count: 98
+    row_count: 1
+    header_matches_output_fields: true
+    payload_role: rounded_text_projection_not_exact_payload
+  variable_inventory:
+  - name: output_args
+    shape:
+    - 1
+    - 1
+    class: struct
+  - name: OP
+    shape:
+    - 1
+    - 1
+    class: struct
+  - name: param
+    shape:
+    - 1
+    - 1
+    class: struct
+  field_counts:
+    output_args: 98
+    OP: 95
+    param: 177
+  field_names_sha256:
+    output_args: 2a93501167ca3703a28323391473e6e8cc40db8ae3f39b7ac0c924e27ac58b20
+    OP: 8e80f34e5d2a6cf4f7ddece0105e6401571893471ebb11d995023ad1db15cc30
+    param: 19a21a3260dfacedbe581bfbf2dcee9897b0b5dc4b314aa7d80804201309fe74
+  payload_digests:
+    normalized_input_op_param_sha256: 0ac66f00414f6758649527bd45716e3a288cc8a533b0ebbecdd7506ae6cb26c6
+    output_args_sha256: 623185aaaf17448b84de219c32968e0f0edb6ada86e19adcfd276d0ceb399617
+    full_mat_payload_sha256: 22492f88bf0b647233c36d433db7dcfb30d7268476de10779ddf235fe92bce48
+  observed_identity:
+    code_revision:
+      kind: string
+      value: '4.80'
+    config_file:
+      kind: redacted_absolute_path
+      domain: external_com_checkout
+      basename: config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.xlsx
+      sha256_domain_separated: 727dca89bf423524fedd90e597a4ca86494bb9e25072d5f53bddcc81bf7ce745
+    file_names:
+      kind: string
+      value: '"C2M_eval_ synthetic--thru_10db_at_26p56ghz,C2M_eval_ synthetic--fext_m40db_at_26p56ghz,C2M_eval_
+        synthetic--next_m40db_at_26p56ghz"'
+    base:
+      kind: string
+      value: C2M_eval_ synthetic--thru_10db_at_26p56ghz
+  normalized_input_surface:
+    canonical_key_count: 214
+    selected_fields:
+      fb:
+        kind: finite
+        value: 53125000000.0
+      max_start_freq:
+        kind: integer
+        value: 50000000
+      ndfe:
+        kind: integer
+        value: 4
+      specBER:
+        kind: finite
+        value: 1.0e-05
+      f_r:
+        kind: finite
+        value: 0.75
+      snpPortsOrder:
+        shape:
+        - 4
+        dtype: uint8
+        digest: 0e1aa2e8ef03605fe66beb12a32f9cb148f8866fa6928589191e388c3c4e9dc8
+        values:
+        - kind: integer
+          value: 1
+        - kind: integer
+          value: 3
+        - kind: integer
+          value: 2
+        - kind: integer
+          value: 4
+      ui:
+        kind: finite
+        value: 1.8823529411764707e-11
+      sample_dt:
+        kind: finite
+        value: 5.882352941176471e-13
+      base:
+        kind: string
+        value: C2M_eval_ synthetic--thru_10db_at_26p56ghz
+      GET_FD:
+        kind: integer
+        value: 1
+      TDMODE:
+        kind: integer
+        value: 0
+      PMD_type:
+        kind: string
+        value: C2M
+    port_order_observed: '[ 1 3 2 4 ]'
+    normalized_input_digest_status: bound_to_complete_OP_and_param_payload
+  default_resolution:
+    canonical_ref: docs/baselines/p5-r480-canonical-parameter-json.v2.yaml
+    needs_oracle_occurrence_count: 20
+    entries:
+    - key: ACCM_MAX_Freq
+      occurrence: 0
+      expression: param.fb
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53125000000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: Display frequency domain
+      occurrence: 0
+      expression: OP.GET_FD
+      required: 'false'
+      observed_value:
+        kind: integer
+        value: 1
+      status: observed_resolved_for_this_mat_payload
+    - key: N_bmax
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_bx
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_f
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_f
+      occurrence: 1
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: N_v
+      occurrence: 0
+      expression: param.ndfe
+      required: 'true'
+      observed_value:
+        kind: integer
+        value: 4
+      status: observed_resolved_for_this_mat_payload
+    - key: PHY
+      occurrence: 0
+      expression: OP.PMD_type
+      required: 'false'
+      observed_value:
+        kind: string
+        value: C2M
+      status: observed_resolved_for_this_mat_payload
+    - key: P_qc
+      occurrence: 0
+      expression: 2*param.specBER
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 2.0e-05
+      status: observed_resolved_for_this_mat_payload
+    - key: RC_Start
+      occurrence: 0
+      expression: param.fb/2
+      required: 'false'
+      observed_value:
+        kind: finite
+        value: 26562500000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: RC_end
+      occurrence: 0
+      expression: param.fb*param.f_r
+      required: 'false'
+      observed_value:
+        kind: finite
+        value: 39843750000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: TDMODE
+      occurrence: 0
+      expression: OP.TDMODE
+      required: 'false'
+      observed_value:
+        kind: integer
+        value: 0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_1
+      occurrence: 0
+      expression: param.max_start_freq/1e9
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 0.05
+      status: observed_resolved_for_this_mat_payload
+    - key: f_2
+      occurrence: 0
+      expression: param.fb/1e9
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53.125
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p1
+      occurrence: 0
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p1
+      occurrence: 1
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p2
+      occurrence: 0
+      expression: param.fb
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53125000000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_p2
+      occurrence: 1
+      expression: param.fb
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 53125000000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_z
+      occurrence: 0
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    - key: f_z
+      occurrence: 1
+      expression: param.fb/4
+      required: 'true'
+      observed_value:
+        kind: finite
+        value: 13281250000.0
+      status: observed_resolved_for_this_mat_payload
+    contract_status: observed_values_only_not_generic_default_contract
+  metrics:
+    fields:
+      FOM:
+        kind: finite
+        value: 5.858374500465274
+      COM_dB: &id014
+        kind: finite
+        value: 4.877647775233487
+      VEC_dB:
+        kind: finite
+        value: 7.337070919529902
+      VEO_mV:
+        kind: finite
+        value: 37.53999999999999
+      ERL: &id016
+        kind: finite
+        value: 16.742740133561476
+      ERL11:
+        kind: inf
+        sign: 1
+      ERL22:
+        kind: finite
+        value: 16.742740133561476
+      IL_dB_channel_only_at_Fnq:
+        kind: finite
+        value: 10.000735704402235
+      fitted_IL_dB_at_Fnq:
+        kind: finite
+        value: 9.834912844951186
+      ICN_mV: &id015
+        kind: finite
+        value: 4.601554213273623
+      Peak_ISI_XTK_and_Noise_interference_at_BER_mV:
+        kind: finite
+        value: 49.82707866914524
+      CTLE_DC_gain_dB:
+        kind: integer
+        value: -3
+      g_DC_HP:
+        kind: finite
+        value: -0.5
+      itick:
+        kind: integer
+        value: 0
+    metric_digest: ced2d000fed9188dc17a3b23585d8a2952284527fa076a3e2e31772eedfa08a8
+  checkpoints:
+    fields:
+      TXLE_taps:
+        shape:
+        - 5
+        dtype: float64
+        digest: 39e2daa9053852398d544ee89177f23ae1612f337ae69a0218fefb933e52e865
+        values:
+        - kind: finite
+          value: 0.0
+        - kind: finite
+          value: 0.02
+        - kind: finite
+          value: -0.12
+        - kind: finite
+          value: 0.86
+        - kind: finite
+          value: 0.0
+      DFE_taps:
+        shape:
+        - 4
+        dtype: float64
+        digest: a0d5d1fbd64957e328e7b540d413d92017a91f00f4de386c95749c6a9ff9c965
+        values:
+        - kind: finite
+          value: 0.3727297300582382
+        - kind: finite
+          value: 0.08147462288270561
+        - kind: finite
+          value: 0.020948323566630962
+        - kind: finite
+          value: 0.007440896370777928
+      tail_RSS:
+        kind: integer
+        value: 0
+      sigma_N:
+        kind: finite
+        value: 0.0011600846233942998
+      itick:
+        kind: integer
+        value: 0
+      sgm_Ani__isi_xt_noise:
+        kind: finite
+        value: 0.005511480767520568
+    checkpoint_digest: bbabc3e7840a056dfae5e1556a2076bbdd49ec4e2c7bcda962719e0711f81f23
+    tolerance_status: missing
+aggregate_observed_metric_surface:
+  c4_fields:
+  - COM_dB
+  - ICN_mV
+  - ERL
+  payload_values:
+  - case_identity: *id001
+    COM_dB: *id002
+    ICN_mV: *id003
+    ERL: *id004
+  - case_identity: *id005
+    COM_dB: *id006
+    ICN_mV: *id007
+    ERL: *id008
+  - case_identity: *id009
+    COM_dB: *id010
+    ICN_mV: *id011
+    ERL: *id012
+  - case_identity: *id013
+    COM_dB: *id014
+    ICN_mV: *id015
+    ERL: *id016
+  digest: 2b5704a440a3aaf90c6aba60f2592899cbfb2d10415c05ec6579f2a6084ce1a5
+  required_acceptance_metric_ids:
+  - com_db
+  - erl_db
+  - td_iln_db
+  scope_status: incomplete_tdiln_and_tolerance_policy_missing
+warning_contract:
+  exact_run_warning_report_status: missing
+  source_static_warning_inventory_ref: docs/baselines/p5-r480-warning-observation.v1.yaml
+  source_static_warning_call_count: 25
+  source_static_warning_inventory_digest: 99acc4cb75d7f31e84d4e75f72a5f343e361ae87b72af815baf3d8a60f553078
+  full_mlse_der_cdr_contract: missing
+reference_artifact_payload:
+  observed:
+  - case_result_mat_files
+  - case_result_csv_projections
+  - OP_struct
+  - param_struct
+  - output_args_struct
+  missing:
+  - exact_matlab_oracle.mat
+  - exact_summary.json
+  - run_warning_report
+  - checkpoint_tolerances
+  - full_metric_tolerance_and_alignment_policy
+  status: partial_payload_only
+non_claims:
+- not_a_MATLAB_invocation
+- not_a_product_oracle
+- not_a_product_compare
+- not_acceptance_evidence
+- not_release_evidence
+- not_a_generic_default_contract
+- not_a_warning_contract
+- result_generator_commit_unverified
+- embedded_code_revision_self_declared
+- ignored_outputs_not_git_object_bound
+- observer_limited_to_eight_exact_hash_and_length_bound_files

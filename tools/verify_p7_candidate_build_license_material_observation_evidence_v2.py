@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import stat
 import subprocess
+import sys
 import tarfile
 from typing import Any
 

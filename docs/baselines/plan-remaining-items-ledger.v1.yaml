@@ -89,9 +89,11 @@
         "tools/verify_p3c_04x_c4_profile.py",
         "tools/verify_p3c_04y_c4_oracle_compare.py",
         "tools/verify_p3c_exact_impulse_current_replay_preparation.py",
-        "tools/verify_p3c_exact_impulse_current_replay_evidence.py"
+        "tools/verify_p3c_exact_impulse_current_replay_evidence.py",
+        "tools/verify_p3c_exact_impulse_current_replay_identity_reconciliation_v3.py",
+        "tools/verify_p3c_original_project_channel_semantics_observation.py"
       ],
-      "note": "03a/03b/03c/03d/03e + C4 profile core (04x) delivered; the exact ADS canonical payload was recovered from two retained original-ADS custody runs and T08 current two-fresh replay completed, but strict same-index third-period NRMSE is 0.02911956313297956 and exceeds the fixed 1% gate; remaining: resolve the waveform-model discrepancy without alignment/fitting/tolerance relaxation, complete the compare matrix across more cases/artifacts, and release gates"
+      "note": "03a/03b/03c/03d/03e + C4 profile core (04x) delivered. Historical replay source inventory used CRLF checkout rather than canonical Git identities, so its 0.02911956313297956 NRMSE is forensic only; source-only semantics match but no root cause is identified or excluded. Remaining: execute a canonical current replay, resolve the waveform discrepancy without alignment/fitting/tolerance relaxation, complete more cases/artifacts, and release gates"
     },
     {
       "id": "P4A-01",
@@ -445,7 +447,7 @@
         "tools/verify_p5_06g_oracle_chain_compare.py",
         "tools/verify_p5_r480_reference_custody_preflight.py"
       ],
-      "note": "Historical oracle surfaces and product self-crosschecks remain non-authoritative. The current custody preflight blocks T14 on registry/Git mismatch, MATLAB isolation/invocation authorization, replayable custody and normalized-input digest, 20 unresolved defaults, warnings/checkpoint tolerances/full metric policy, and unavailable MAT payload; full compare matrix still awaits exact authoritative custody"
+      "note": "P5-06i hash-binds four ignored MAT/CSV files from a dirty Agent-COM checkout plus normalized OP/param, 20 observed defaults, 6 checkpoints and 14 metrics. The outputs are not Git objects, their generator commit is unverified and embedded code_revision is self-declared. Still blocked on exact matlab_oracle output, warning/full-MLSE/DER/CDR contract, checkpoint/full-metric tolerances and alignment, MATLAB startup isolation/invocation, MAT result reader support and product-vs-oracle compare."
     },
     {
       "id": "P5-08",
@@ -518,9 +520,10 @@
       "blocker": "release_gate",
       "gate": [
         "tools/verify_p7_candidate_build_license_material_observation_evidence_v2.py",
-        "tools/verify_p7_license_notice_currentness_reconciliation.py"
+        "tools/verify_p7_license_notice_currentness_reconciliation.py",
+        "tools/verify_p7_license_notice_identity_inconsistency_reconciliation_v2.py"
       ],
-      "note": "07c/07d are historical source-drift records and their external reports are unavailable; prior 86-package metadata inventory is non-conclusive. Dependency/NOTICE/first-party approvals, SBOM, strict manifest, environment/profile certification and release remain blocked"
+      "note": "07c/07d and reconciliation v1 remain historical; v2 records that seven checkout digests are not canonical Git byte identities and EOL equivalence is diagnostic only. External reports are unavailable, so the prior 86-package inventory is non-current and non-conclusive. Dependency/NOTICE/first-party approvals, SBOM, strict manifest, environment/profile certification and release remain blocked"
     },
     {
       "id": "P7-08",

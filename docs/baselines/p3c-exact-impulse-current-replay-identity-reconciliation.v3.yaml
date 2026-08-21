@@ -1,0 +1,57 @@
+schema: sipi.p3c-exact-impulse-current-replay-identity-reconciliation.v3
+kind: additive_historical_checkout_identity_correction_not_replay_evidence
+recorded_at: "2026-08-21"
+historical_records:
+  preparation:
+    path: docs/baselines/p3c-exact-impulse-current-replay-preparation.v1.yaml
+    sha256: 9709f18df807381dd024d15e6979976e7b7d5ddb32aca953d43d2b8875d8bc36
+    rewritten: false
+  blocked_v1:
+    path: docs/baselines/p3c-exact-impulse-current-replay-evidence.v1.yaml
+    sha256: 5a9fda52a4dd209d4964000542c741d137596d42ce6cc2fd4bcde14a0581d325
+    rewritten: false
+  recovered_v2:
+    path: docs/baselines/p3c-exact-impulse-current-replay-evidence.v2.yaml
+    sha256: dbd57c9524ddccb05527fa4e1e944297a2d2eaedfe12841a942afb48d70e6871
+    rewritten: false
+clean_archive_commit: 7f21b5fc8f3290b3726d64c1858bd8f013816920
+source_identity_observations:
+  crates/sipi-p3c/tests/p3c_external_ads_selected_highloss_waveform_only_runner.rs:
+    recorded_checkout_sha256: 067a6c3c772f86c6737836f7c10dde1cf071340321c62323fb6f9cd236aa1200
+    canonical_git_blob_sha256: feaa53bcf1295038a941bfde214bbed6f60abd3ac7df8876c5022dfe245816fe
+  crates/sipi-p3c/src/prbs9_impulse_candidate_v2.rs:
+    recorded_checkout_sha256: d6182ab20dddc50acb89eef5b6232739eb6ee12a6cef2332505476f84ef680ac
+    canonical_git_blob_sha256: ec3ee799f5d42988d0b78ba02c5ea29ea766c8179622659be711ac02f3991ad9
+  crates/sipi-ieee-com-sparam/src/interp_sparam_v1.rs:
+    recorded_checkout_sha256: d33d9196e5630f50cb3cfa4598bc2ee57ba34251380dc828baf2ffb4c1d45cac
+    canonical_git_blob_sha256: 26e3918bcbee01c0ec54430831d24d6ed904b1c11576715f3a23c6e15f124918
+  crates/sipi-ieee-com-sparam/src/s21_to_causal_v1.rs:
+    recorded_checkout_sha256: fe4976e544d78e743e000cad4efd9e3a147f7c5d30ae1a6789bb2bed8460a0ee
+    canonical_git_blob_sha256: 5233a6ade2a4fd33678fd0fb94bf6c278848cc2e67cd43f6b846c487e11586cc
+  crates/sipi-ieee-com-sparam/src/s21_to_truncated_v1.rs:
+    recorded_checkout_sha256: dc0923ee6398e990594e9b001993ecdbd9798f865546339e57f1b8417063b407
+    canonical_git_blob_sha256: 160a1fc3b65f250cfa1fc86c50951878bc708a7660f8d6ad0fe3682690986c4b
+  crates/sipi-compare/src/selected_highloss_prbs9_waveform_only_v3.rs:
+    recorded_checkout_sha256: 48f44cb7a0471ec312cfdbf5d8dbb0a8c998f8a0e9bf1d542ad959da518a63f3
+    canonical_git_blob_sha256: df4fdd75531562b952ef56d85057507edd516be13c31565358ef4084155cb0e5
+  crates/sipi-cli/src/main.rs:
+    recorded_checkout_sha256: e19a687e9b210777afc94796236fd6ffd7541ab3a32734e7f93310e7441ad689
+    canonical_git_blob_sha256: a97707d8d16c83953c3c0f2d525a81fe8424d115e0e55f3854ee4518b8bc000f
+identity_result:
+  exact_matches: 0
+  eol_transform_matches: 7
+  replay_report_inherited_as_canonical_archive_evidence: false
+  historical_numeric_result_status: forensic_observation_only_not_current_exact_replay
+gates:
+  historical_identity_inconsistency_recorded: true
+  current_exact_replay_verified: false
+  candidate_waveform_accepted: false
+  receiver_accepted: false
+  release_ready: false
+  promotion_status: blocked
+non_claims:
+  - eol_equivalence_is_not_exact_source_identity
+  - historical_report_does_not_prove_canonical_archive_execution
+  - historical_numeric_summary_is_forensic_only
+  - no_root_cause_or_policy_change_is_authorized
+audit_ref: docs/baselines/audits/2026-08-21-p3c-exact-impulse-current-replay-identity-reconciliation-v3.md

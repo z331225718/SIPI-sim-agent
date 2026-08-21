@@ -1,0 +1,85 @@
+schema: sipi.p7-license-notice-identity-inconsistency-reconciliation.v2
+kind: additive_historical_identity_correction_not_currentness_or_legal_evidence
+recorded_at: "2026-08-21"
+historical_records:
+  reconciliation_v1:
+    path: docs/baselines/p7-license-notice-currentness-reconciliation.v1.yaml
+    sha256: b7a43442bd08fd014874cb0102ed6d43017e7bc0472b83c4a689903658f661f6
+    rewritten: false
+  build_evidence_v2:
+    path: docs/baselines/p7-candidate-build-license-material-observation-evidence.v2.yaml
+    sha256: 3ec62e0a3188830bcf0416bee995b25ac9e017c35eeead33e3e358bcaa2c0199
+    rewritten: false
+identity_observations:
+  - id: baseline_cargo_lock
+    commit: 805ebb6bbaf588dec08685be4eb78a8ce2fff563
+    path: Cargo.lock
+    recorded_sha256: 12a9656214b2c5cefc4547a83ed9b2ce57eb629e8dbb062fa1d35724a758ce21
+    canonical_git_blob_sha256: 43c931a505347f95bb632a76f142c31756c72fbd0558ff15cbff32864e0d4b9d
+    exact_match: false
+    content_equivalent_under_eol_transform: true
+  - id: baseline_toolchain
+    commit: 805ebb6bbaf588dec08685be4eb78a8ce2fff563
+    path: rust-toolchain.toml
+    recorded_sha256: 512bedfbbe3c4ef614fbb901b3661f40b4adb701d26c94664e79ca765aa3d109
+    canonical_git_blob_sha256: 3cc13c37191008eaab5490eea2136223fa1bc5b5d2aa9c74a199a0c0c854aa90
+    exact_match: false
+    content_equivalent_under_eol_transform: true
+  - id: baseline_observer
+    commit: 805ebb6bbaf588dec08685be4eb78a8ce2fff563
+    path: tools/observe_p7_candidate_build_license_material_v2.py
+    recorded_sha256: addcee98d164d64f36f7179ebb4544f22507b129267bd368014d4910b3b9cbd6
+    canonical_git_blob_sha256: 2c95a14c88b5bc7bb18f84fad5f66e614b7c7931e22aa2965e3470348334478d
+    exact_match: false
+    content_equivalent_under_eol_transform: true
+  - id: baseline_license_manifest
+    commit: 805ebb6bbaf588dec08685be4eb78a8ce2fff563
+    path: license-manifest.v2.yaml
+    recorded_sha256: a79c6da642f634a09884442c83c7f9add1ea170598f262ed83184f0e4de62fad
+    canonical_git_blob_sha256: b2739cc5d0d2e9e1066495c8004b27e506d9aa8972bde76101655697e537f966
+    exact_match: false
+    content_equivalent_under_eol_transform: false
+  - id: historical_candidate_cargo_lock
+    commit: f49849998a9b53fcf56be4a45b2f1fa0418d2588
+    path: Cargo.lock
+    recorded_sha256: d10679ecbb0884cc3325f9b67afaf9a8d61a9f826c262f6fefd437538df34e99
+    canonical_git_blob_sha256: 2334e200f6ea1be70934d1adf3d0b62fc7a10769950eb2c4b19cbe4ea32a50c0
+    exact_match: false
+    content_equivalent_under_eol_transform: true
+  - id: historical_candidate_toolchain
+    commit: f49849998a9b53fcf56be4a45b2f1fa0418d2588
+    path: rust-toolchain.toml
+    recorded_sha256: 512bedfbbe3c4ef614fbb901b3661f40b4adb701d26c94664e79ca765aa3d109
+    canonical_git_blob_sha256: 3cc13c37191008eaab5490eea2136223fa1bc5b5d2aa9c74a199a0c0c854aa90
+    exact_match: false
+    content_equivalent_under_eol_transform: true
+  - id: historical_observer_source
+    commit: 02fffadab6cce468d95d404baf89d6b62a6756cc
+    path: tools/observe_p7_candidate_build_license_material_v2.py
+    recorded_sha256: addcee98d164d64f36f7179ebb4544f22507b129267bd368014d4910b3b9cbd6
+    canonical_git_blob_sha256: 2c95a14c88b5bc7bb18f84fad5f66e614b7c7931e22aa2965e3470348334478d
+    exact_match: false
+    content_equivalent_under_eol_transform: true
+currentness:
+  state: historical_identity_inconsistent_external_reports_missing
+  historical_package_set_current: false
+  historical_metadata_current: false
+  current_build_replay: not_observed
+gates:
+  historical_identity_inconsistency_recorded: true
+  historical_package_set_reconciled: false
+  historical_declared_metadata_reconciled: false
+  dependency_snapshot_ready: false
+  dependencies_approved: false
+  notices_approved: false
+  first_party_approved: false
+  release_sbom: false
+  release_ready: false
+  promotion_status: blocked
+non_claims:
+  - eol_equivalence_is_diagnostic_not_exact_identity
+  - recorded_checkout_digest_is_not_canonical_git_blob_identity
+  - historical_counts_are_not_current_package_members
+  - not_a_dependency_notice_or_first_party_approval
+  - not_release_ready
+audit_ref: docs/baselines/audits/2026-08-21-p7-license-notice-identity-inconsistency-reconciliation-v2.md
