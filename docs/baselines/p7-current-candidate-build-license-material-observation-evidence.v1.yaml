@@ -1,0 +1,47 @@
+schema: sipi.p7-current-candidate-build-license-material-observation-evidence.v1
+kind: current_external_actual_build_closure_observation_not_license_decision
+candidate:
+  commit: 97b0f271abcb7df02a3a9b259c4dafee86f3a783
+  tree: 7ae439ec366e30e050931ecb1f18f360e66540c1
+  cargo_lock_sha256: 43c931a505347f95bb632a76f142c31756c72fbd0558ff15cbff32864e0d4b9d
+  toolchain_sha256: 3cc13c37191008eaab5490eea2136223fa1bc5b5d2aa9c74a199a0c0c854aa90
+observer:
+  source_commit: 97b0f271abcb7df02a3a9b259c4dafee86f3a783
+  source_tree: 7ae439ec366e30e050931ecb1f18f360e66540c1
+  path: tools/observe_p7_candidate_build_license_material_v2.py
+  sha256: 2c95a14c88b5bc7bb18f84fad5f66e614b7c7931e22aa2965e3470348334478d
+  clean_archive_execution: true
+  checkout_materialization: git_worktree_detached_core_autocrlf_false
+historical_predecessor:
+  path: docs/baselines/p7-candidate-build-license-material-observation-evidence.v2.yaml
+  sha256: 3ec62e0a3188830bcf0416bee995b25ac9e017c35eeead33e3e358bcaa2c0199
+  status: historical_metadata_superset_rejected_not_actual_build_closure
+external_report:
+  sha256: 39b8dd0a88c2357c05bee566e2c42aec2ebdeaecbbf4f4644efa07b0410a3085
+  bytes: 57976
+result:
+  status: selected_windows_build_license_material_observed_not_concluded
+  fresh_builds: 2
+  package_set_sha256: ceed1c50195318fdbde69e313c7d7c44394cd4b5b319614680572d3208d7170d
+  package_counts:
+    total: 86
+    registry: 73
+    workspace: 13
+gates:
+  selected_windows_build_package_set_observed: true
+  license_declared_metadata_observed: true
+  dependency_snapshot_ready: false
+  dependencies_approved: false
+  notices_approved: false
+  first_party_approved: false
+  release_sbom: false
+  release_ready: false
+  promotion_status: blocked
+non_claims:
+  - license_concluded_NOASSERTION
+  - notice_requirement_not_evaluated
+  - not_a_complete_cargo_lock_snapshot
+  - not_an_spdx_or_cyclonedx_sbom
+  - not_a_notice_or_legal_compatibility_decision
+  - not_a_first_party_promotion_or_release_approval
+audit_ref: docs/baselines/audits/2026-08-21-p7-current-canonical-build-license-material-observation.md

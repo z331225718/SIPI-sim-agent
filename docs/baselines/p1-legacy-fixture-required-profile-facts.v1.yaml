@@ -1,0 +1,55 @@
+schema: sipi.p1-legacy-fixture-required-profile-facts.v1
+kind: external_snapshot_identity_and_required_profile_clue_observation
+captured_at_utc: "2026-08-21"
+manifest:
+  path: fixtures/manifest.v1.json
+  sha256: 9601a1755c628bd85da0b4205858fa232687ecd39d1a398f3d26cd6a8a612e79
+  bytes: 12904
+source_snapshots:
+  - root_ref: agent-spice
+    commit: 90f0374bc9987e9197d4dcaa3912432fbd766a5e
+    tree: b5db1cb9a1a989459dffe7db885790abeaf47290
+    git_archive_tar_sha256: ed28cedfae54baf961c599eedbf8327a47bf6f82314c7752c494bc8b7ae192d4
+    git_archive_tar_bytes: 124753920
+  - root_ref: pybert
+    commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+    tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+    git_archive_tar_sha256: ffe693b13b598e7c365adeda4bb46cc776ffbd8135b3ac0c8f7568ed8b5d6c92
+    git_archive_tar_bytes: 133396480
+  - root_ref: agent-com
+    commit: 034b21b2f293b2ef97cb8be269b1bf2be38e0086
+    tree: dc6e5529612d7272f23547a796b53e1456cc49cb
+    git_archive_tar_sha256: 6f8eda32959ff15e712f7b0de7c64d45ce1cd44fcdbabc2aee74302eaaa63662
+    git_archive_tar_bytes: 43939840
+profile_facts:
+  asset_count: 14
+  distribution_status_counts:
+    blocked_unknown: 14
+  required_by_required_count: 9
+  required_asset_ids:
+    - agent-spice-python-fixtures
+    - agent-spice-native-fixtures
+    - pybert-models
+    - pybert-golden-fixtures
+    - agent-com-matlab-source-and-workbooks
+    - agent-com-synthetic-sparameter-fixtures
+    - agent-com-local-partial-matlab-oracle
+    - agent-com-authoritative-matlab-golden
+    - ads-solver-unresolved
+  required_profile_fields_present: false
+  required_profile_values: []
+gates:
+  source_snapshot_git_objects_observed: true
+  source_archive_identities_observed: true
+  legacy_fixture_boundary_passed: true
+  required_profile_selected: false
+  required_profile_accepted: false
+  distribution_authorized: false
+  owner_decision_required: true
+non_claims:
+  - required_by_gate_labels_are_not_a_required_profile_selection
+  - no_legacy_fixture_is_promoted_into_product_or_public_bundle
+  - source_archive_identity_does_not_grant_distribution_rights
+  - no_license_or_notice_conclusion_is_made
+  - no_profile_parity_or_release_acceptance_is_claimed
+audit_ref: docs/baselines/audits/2026-08-21-p1-legacy-fixture-required-profile-facts.md

@@ -1,0 +1,85 @@
+schema: sipi.p3c-selected-highloss-residual-dft-v2-current-head-observation-evidence.v1
+status: external_selected_v2_residual_spectral_distribution_observed_current_clean_archive
+authority:
+  actor: product
+  decision_ref: fixed-p3c-04ar-diagnostic-policy-v1
+  scope: current_v2_candidate_third_period_dft_diagnostic_only
+predecessor: docs/baselines/p3c-selected-highloss-residual-dft-v2-observation-evidence.v1.yaml
+external_observation:
+  schema: sipi.p3c.external-ads-selected-highloss-residual-dft-v2-runner.v1
+  custody: external_only
+  report_path_retained: false
+  report_byte_length: 3605
+  report_content_sha256: 24256d63b269aec2e130903dc88efc0a928fd3c49aa99241506afe6edd21ff85
+  clean_archive_commit: 97b0f271abcb7df02a3a9b259c4dafee86f3a783
+  clean_archive_tree: 7ae439ec366e30e050931ecb1f18f360e66540c1
+  source_sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+  ads_canonical_triple_payload_sha256: 5ec5211a273d313655f0b8ced35d58ea89d0bba113f5edc3fd9712218f46e726
+  reference_rx_payload_sha256: 2cf94baf436bd04ff86baeca7d03eab1e6d9a8ce019163d43987a0200eb1bfa5
+  candidate_prefix_sha256: 46b95963363de9439194ebcbf034088cdf984ea5c7d1b72ba3bb1ebf67a1ae3d
+  fresh_runs: 2
+  source_manifests: [52b98a806628449d2b9c75c786bf9dc9700885d8885a38cbc3215653df6852a5, 100fe11e401cf070bc75299a751300f1b4da7a597da0b866793d00f8c679729c]
+  record_count: 2002
+  fixed_dft: {samples: 16352, sample_interval_bits: 3d712e0be826d695, window: rectangular, forward_sign: negative, normalization: none, factorization: [32, 7, 73], bands: [[0, 1], [1, 256], [256, 639], [639, 8177]]}
+  time_nrmse_bits: 3f9dd184cd51df98
+  frequency_nrmse_bits: 3f9dd184cd51df99
+  reference_spectrum_sha256: d6284475a6a6226c089d29844962a27f3aa66b1dd2720d448cfa8afed42a51de
+  candidate_spectrum_sha256: a3980d7b2a7b6b9031c6d4836f2149e4b7b18c7802bee412802179e2f1a9227f
+  residual_spectrum_sha256: 5528d65ac6344adbece92cd494129d50f12df454a9b70bfbfb6e4d15de64cfe9
+  maximum_residual_energy_bin: 65
+  bands:
+    - {reference_energy_bits: 3eac2af8c261f3bf, candidate_energy_bits: 3eab92753b2d6821, residual_energy_bits: 3dda150a0058278d, residual_to_reference_sqrt_bits: 3f85c60a006e3b22}
+    - {reference_energy_bits: 3f9205e8112c702a, candidate_energy_bits: 3f9205d8fda9dc8c, residual_energy_bits: 3edaf65a79c85d0e, residual_to_reference_sqrt_bits: 3f9391d7e7d0cca1}
+    - {reference_energy_bits: 3ec94879f8d1b113, candidate_energy_bits: 3ec9cb713e03275f, residual_energy_bits: 3eaedf25e5cc9178, residual_to_reference_sqrt_bits: 3fe1ae1b4250cb96}
+    - {reference_energy_bits: 3edfd3826e41ba44, candidate_energy_bits: 3e1a95b0d79fefa7, residual_energy_bits: 3edfd115600f2e39, residual_to_reference_sqrt_bits: 3feffec7c0db812d}
+  cleanup_status: complete
+  source_inventory:
+    Cargo.lock: 43c931a505347f95bb632a76f142c31756c72fbd0558ff15cbff32864e0d4b9d
+    Cargo.toml: 5a0ad6288e1c5759d58f179ef1f772ce56ee05e31818ce1ce58e24a467eb7cc1
+    rust-toolchain.toml: 3cc13c37191008eaab5490eea2136223fa1bc5b5d2aa9c74a199a0c0c854aa90
+    crates/sipi-artifacts/Cargo.toml: f6e918a1e9fd46bd6c23ec41054f1f4614f3f1845267bc9e8f34ce0e944d5dbb
+    crates/sipi-artifacts/src/lib.rs: 53e8636b2f61bb1d58e043de8bcc505830f84077b95b0d4333cd57965cab9669
+    crates/sipi-touchstone/Cargo.toml: 3940aa60ec93d4e26f20887d61a71967e156b9ece60a154de5899307c15a4b6b
+    crates/sipi-touchstone/src/lib.rs: 902f4fe36a5b04856057a81863b4c97c6ef87a4c0824b8018c96f0aaa038e4c9
+    crates/sipi-touchstone/src/selected_four_port_v1.rs: 46591e007be7bbd4580c69a8ab1e8933ece48ff1af6c892695b2814b2cafa627
+    crates/sipi-channel/Cargo.toml: 31c778a78259d524be88894916e2edf6a0cffd69db6ba5c27a8cb7ed4aae03e4
+    crates/sipi-channel/src/p3c_fixed_four_port_bench_v1.rs: c546fa998eeb5ff3163521cd3cdd422a1caffc458c584fbf705a97b13210d008
+    crates/sipi-ieee-com-sparam/Cargo.toml: 5324faf830e36e2fb05a500eef9881f1cc4a40f204eaa5b5b7dd365521ca8b5f
+    crates/sipi-ieee-com-sparam/src/interp_sparam_v1.rs: 26e3918bcbee01c0ec54430831d24d6ed904b1c11576715f3a23c6e15f124918
+    crates/sipi-ieee-com-sparam/src/s21_to_causal_v1.rs: 5233a6ade2a4fd33678fd0fb94bf6c278848cc2e67cd43f6b846c487e11586cc
+    crates/sipi-ieee-com-sparam/src/s21_to_truncated_v1.rs: 160a1fc3b65f250cfa1fc86c50951878bc708a7660f8d6ad0fe3682690986c4b
+    crates/sipi-p3c/Cargo.toml: 3b721139ddaaa0a8e05de082c2e449aca4af9a49f9ab961309a4a8b8e3bdf8f1
+    crates/sipi-p3c/src/lib.rs: 225bbf1717ac7f6e9ac0bdaa94a206bc05431d9cb1c6a537a9517bd85cf0275e
+    crates/sipi-p3c/src/prbs9_impulse_candidate_v2.rs: ec3ee799f5d42988d0b78ba02c5ea29ea766c8179622659be711ac02f3991ad9
+    crates/sipi-p3c/tests/p3c_external_ads_selected_highloss_residual_dft_runner.rs: cd736793c2ce258fd8a4f3b7b726d10ad646c9479a8d57040bd03244f265fabd
+    crates/sipi-compare/Cargo.toml: f1018988e9905e7ccfc2406088128e6404ded94f61418d358625d0e6e432c42a
+    crates/sipi-compare/src/lib.rs: 6474c6607ff870dd2ffd39f85a493ab07b517bb0c66aeb0ec0912edecffa2b93
+    crates/sipi-compare/src/selected_highloss_prbs9_waveform_only_v3.rs: df4fdd75531562b952ef56d85057507edd516be13c31565358ef4084155cb0e5
+    crates/sipi-contracts/Cargo.toml: 13cb23b7d4fc99b23706985588b54ee1e35c5cfd58015da8f2df6dcc3a79d650
+    crates/sipi-contracts/src/lib.rs: 973da79223bb55c2e529693480227a3a5a68ffe653e53d26906114927f1db2fb
+    crates/sipi-link/Cargo.toml: 800374374f5dd937af51757ff48f649cc9fc39c27f51d83c04243170572f5eb2
+    crates/sipi-link/src/lib.rs: 9ded6b2978fd471c7cc67a99c780cb51211fdaf7af37eefdb652d869b20843c6
+    crates/sipi-runtime/Cargo.toml: 3714636096b689c44c81c003fba314a3c12fef5ffd7506def254d38b8a152d3f
+    crates/sipi-runtime/src/lib.rs: c2b22b3aeed6d0d4f0e40847def056619253cd4cdb83713b549d8e45d5e39e03
+    crates/sipi-types/Cargo.toml: 9d3b191ef16cc8a6e808a80d9ad192889ece1ea95fe74ca598b450aedb97cb10
+    crates/sipi-types/src/lib.rs: 3de5e2cb9e0875adac7f17cd3de237e3002292412b1d41ff6609b829d7af3a18
+    docs/clean-room/specs/p3c-selected-highloss-residual-dft-v2-observation.v1.md: add9a23ec41d609dab8a5ac56d8501ef8dd3b35693c5c7b351ff42139bc88e94
+admission:
+  selected_residual_dft_diagnostic_defined: true
+  external_selected_v2_residual_dft_invoked: true
+  current_v2_candidate_baseline_reproduced: true
+  residual_spectral_distribution_observed: true
+  parseval_integrity_verified: true
+  selected_highloss_waveform_only_profile_accepted: false
+  acceptance_ready: false
+  release_ledger_promoted: false
+blockers:
+  - selected_highloss_waveform_nrmse_exceeds_fixed_one_percent_limit
+  - strict_v2_source_strobe_identity_not_observed_and_no_source_tolerance_authorized
+  - residual_spectral_distribution_does_not_identify_physical_cause
+  - accepted_receiver_stage_missing
+  - statistical_eye_contour_semantics_missing
+non_claims:
+  - The bands only describe the raw current residual; they do not select, correct, filter, or inverse-transform a candidate.
+  - This is not an ADS/COM parity, causality, interpolation, passivity, source, receiver, acceptance, or release result.
+  - No path, waveform, residual vector, spectrum bin, external report, or uv.lock content is retained.

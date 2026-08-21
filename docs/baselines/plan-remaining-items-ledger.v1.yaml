@@ -13,9 +13,10 @@
       "id": "P1-04B",
       "blocker": "owner_decision",
       "gate": [
-        "tools/verify_p1_04b_legacy_fixture_boundary.py"
+        "tools/verify_p1_04b_legacy_fixture_boundary.py",
+        "tools/verify_p1_legacy_fixture_required_profile_facts.py"
       ],
-      "note": "required profile confirmation pending"
+      "note": "all 14 legacy assets remain blocked_unknown and the three pinned source/archive identities are observed; nine required_by labels are gate-demand clues, not a selected profile. Required profile confirmation and distribution authority remain pending"
     },
     {
       "id": "P2-06",
@@ -88,12 +89,12 @@
         "tools/verify_p3c_03e_compliance_report.py",
         "tools/verify_p3c_04x_c4_profile.py",
         "tools/verify_p3c_04y_c4_oracle_compare.py",
-        "tools/verify_p3c_exact_impulse_current_replay_preparation.py",
         "tools/verify_p3c_exact_impulse_current_replay_evidence.py",
         "tools/verify_p3c_exact_impulse_current_replay_identity_reconciliation_v3.py",
-        "tools/verify_p3c_original_project_channel_semantics_observation.py"
+        "tools/verify_p3c_original_project_channel_semantics_observation.py",
+        "tools/verify_p3c_selected_highloss_residual_dft_v2_current_head_observation_evidence.py"
       ],
-      "note": "03a/03b/03c/03d/03e + C4 profile core (04x) delivered. Historical replay source inventory used CRLF checkout rather than canonical Git identities, so its 0.02911956313297956 NRMSE is forensic only; source-only semantics match but no root cause is identified or excluded. Remaining: execute a canonical current replay, resolve the waveform discrepancy without alignment/fitting/tolerance relaxation, complete more cases/artifacts, and release gates"
+      "note": "03a/03b/03c/03d/03e + C4 profile core (04x) delivered. Current-head external-only residual DFT rebind (clean archive 97b0f271, two fresh runs) is observed and verified, but its 0.02911956313297956 strict same-index NRMSE still exceeds the fixed 1% gate. Historical replay source inventory used CRLF checkout rather than canonical Git identities, so that record remains forensic; source-only semantics match but no root cause is identified or excluded. Remaining: resolve the waveform discrepancy without alignment/fitting/tolerance relaxation, complete receiver/eye-contour and more cases/artifacts, and release gates"
     },
     {
       "id": "P4A-01",
@@ -445,9 +446,10 @@
         "tools/verify_p5_06e_oracle_metric_reference.py",
         "tools/verify_p5_06f_com_chain_core.py",
         "tools/verify_p5_06g_oracle_chain_compare.py",
-        "tools/verify_p5_r480_reference_custody_preflight.py"
+        "tools/verify_p5_r480_reference_custody_preflight.py",
+        "tools/verify_p5_06_pinned_source_external_oracle_candidate_document.py"
       ],
-      "note": "P5-06i hash-binds four ignored MAT/CSV files from a dirty Agent-COM checkout plus normalized OP/param, 20 observed defaults, 6 checkpoints and 14 metrics. The outputs are not Git objects, their generator commit is unverified and embedded code_revision is self-declared. Still blocked on exact matlab_oracle output, warning/full-MLSE/DER/CDR contract, checkpoint/full-metric tolerances and alignment, MATLAB startup isolation/invocation, MAT result reader support and product-vs-oracle compare."
+      "note": "P5-06i remains the historical ignored MAT/CSV observation. P5-06j records a pinned-source external MATLAB oracle candidate run and locks seven exact artifact hashes plus HDF5/JSON/log budgets through an independent checked-in document gate with mutation tests. The source checkout is dirty; config/fixture, generated instrumented output and invocation authorization/startup isolation are not fully Git-bound or closed. Still blocked on full warning/MLSE/DER/CDR contract, checkpoint/full-metric alignment tolerances, MAT-v7.3 product reader support and product-vs-oracle compare; no authority, acceptance or release claim is made."
     },
     {
       "id": "P5-08",
@@ -519,11 +521,10 @@
       "id": "P7-07",
       "blocker": "release_gate",
       "gate": [
-        "tools/verify_p7_candidate_build_license_material_observation_evidence_v2.py",
-        "tools/verify_p7_license_notice_currentness_reconciliation.py",
-        "tools/verify_p7_license_notice_identity_inconsistency_reconciliation_v2.py"
+        "tools/verify_p7_license_notice_identity_inconsistency_reconciliation_v2.py",
+        "tools/verify_p7_current_candidate_build_license_material_observation.py"
       ],
-      "note": "07c/07d and reconciliation v1 remain historical; v2 records that seven checkout digests are not canonical Git byte identities and EOL equivalence is diagnostic only. External reports are unavailable, so the prior 86-package inventory is non-current and non-conclusive. Dependency/NOTICE/first-party approvals, SBOM, strict manifest, environment/profile certification and release remain blocked"
+      "note": "07c/07d and reconciliation v1 remain historical; v2 records that seven checkout digests are not canonical Git byte identities and EOL equivalence is diagnostic only. A fresh current-candidate observation now re-establishes the actual 86-package Windows build closure (73 registry, 13 workspace) with strict package-schema and canonical-digest verification, but it remains metadata/material identity only. Dependency/NOTICE/first-party approvals, SBOM, strict manifest, environment/profile certification and release remain blocked"
     },
     {
       "id": "P7-08",
