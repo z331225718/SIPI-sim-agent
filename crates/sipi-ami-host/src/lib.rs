@@ -12,7 +12,9 @@ use std::{
 };
 
 use sha2::{Digest, Sha256};
-use sipi_ami_text::{AmiTextBindingV1, ParseLimitsV1, verify_binding_v1};
+use sipi_ami_text::{
+    AmiForwardedParameterSubsetV1, AmiTextBindingV1, ParseLimitsV1, verify_binding_v1,
+};
 
 const SUCCESS: c_long = 1;
 const IMAGE_FILE_MACHINE_AMD64: u16 = 0x8664;
@@ -224,6 +226,22 @@ impl AmiHostV1 {
             handle,
             active: true,
         })
+    }
+
+    /// Validate an exact typed host-forwarded subset before forwarding the
+    /// unchanged raw AMI text.  This proves neither DLL consumption nor
+    /// runtime acceptance of any selected value.
+    pub fn initialize_forwarded_subset(
+        self,
+        request: AmiInitRequestV1,
+        binding: &AmiTextBindingV1,
+        subset: &AmiForwardedParameterSubsetV1,
+        limits: ParseLimitsV1,
+    ) -> Result<AmiInstanceV1, AmiHostErrorV1> {
+        subset
+            .verify_binding_v1(binding)
+            .map_err(|_| AmiHostErrorV1::InvalidParameters)?;
+        self.initialize(request, binding, limits)
     }
 }
 

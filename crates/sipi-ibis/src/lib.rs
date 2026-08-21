@@ -33,6 +33,7 @@ mod pin_model_linkage_v1;
 mod ramp_package_spec_v1;
 mod receiver_thresholds_keywords_v1;
 mod receiver_thresholds_v1;
+mod selected_model_v1;
 mod series_pin_mapping_group_v1;
 mod series_pin_mapping_keywords_v1;
 mod series_pin_mapping_table_group_model_thresholds_v1;
@@ -143,6 +144,12 @@ pub use receiver_thresholds_keywords_v1::{
 pub use receiver_thresholds_v1::{
     RECEIVER_THRESHOLDS_POLICY_V1, ReceiverThresholdsErrorV1, TypedReceiverThresholdsV1,
     lift_receiver_thresholds_v1,
+};
+pub use selected_model_v1::{
+    CornerPvtV1, RequiredTableIdentityV1, ResolvedModelTargetV1, SELECTED_MODEL_MAX_NAME_BYTES_V1,
+    SELECTED_MODEL_MAX_TABLE_ROWS_V1, SELECTED_MODEL_POLICY_V1, SelectedModelConsumerErrorV1,
+    SelectedModelConsumerV1, SelectedModelRequestErrorV1, SelectedModelRequestV1,
+    SelectedModelSelectionV1, SelectedModelTargetV1, SignalPinRoleV1, TableFamilyV1,
 };
 pub use series_pin_mapping_group_v1::{
     SERIES_PIN_MAPPING_GROUP_POLICY_V1, SeriesPinMappingGroupErrorV1, SeriesPinPairV1,

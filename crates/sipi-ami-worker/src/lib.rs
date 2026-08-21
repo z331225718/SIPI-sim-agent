@@ -16,7 +16,11 @@ use std::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sipi_ami_host::{AmiGetWaveRequestV1, AmiHostV1, AmiInitRequestV1, DllSha256V1};
-use sipi_ami_text::{ParseLimitsV1, parse_and_bind_v1};
+use sipi_ami_text::{
+    AmiForwardedParameterSubsetV1, AmiParameterProfileLimitsV1, AmiParameterProfileRoleV1,
+    AmiParameterSelectionV1, AmiTextBindingV1, ParseLimitsV1, build_ami_parameter_tree_v1,
+    build_forwarded_parameter_subset_v1, parse_and_bind_v1,
+};
 use sipi_artifacts::ArtifactRoot;
 
 const JOB_SCHEMA: &str = "sipi.ami-worker.job.v1";
@@ -93,6 +97,25 @@ pub enum SupervisorOutcomeV1 {
     CancelledBeforeStart,
     TimedOut,
     Failed,
+}
+
+/// Parse one exact AMI text binding and validate the caller's explicit typed
+/// host-forwarded subset.  This adapter is intentionally independent from the
+/// worker's DLL lifecycle and never supplies a declaration default.
+pub fn prepare_forwarded_parameter_subset_v1(
+    parameters: &[u8],
+    role: AmiParameterProfileRoleV1,
+    selections: &[AmiParameterSelectionV1],
+    parse_limits: ParseLimitsV1,
+    profile_limits: AmiParameterProfileLimitsV1,
+) -> Result<(AmiTextBindingV1, AmiForwardedParameterSubsetV1), WorkerErrorV1> {
+    let binding =
+        parse_and_bind_v1(parameters, parse_limits).map_err(|_| WorkerErrorV1::InvalidSidecar)?;
+    let tree = build_ami_parameter_tree_v1(&binding, role, profile_limits)
+        .map_err(|_| WorkerErrorV1::InvalidSidecar)?;
+    let subset = build_forwarded_parameter_subset_v1(&tree, selections)
+        .map_err(|_| WorkerErrorV1::InvalidSidecar)?;
+    Ok((binding, subset))
 }
 
 pub fn run_one_job(root: &Path) -> Result<(), WorkerErrorV1> {
@@ -374,4 +397,38 @@ fn decode_f64(path: &Path) -> Result<Vec<f64>, WorkerErrorV1> {
         result.push(value);
     }
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sipi_ami_text::{
+        AmiDeclaredParameterTypeV1, AmiParameterSelectionFormatV1, AmiParameterUsageV1,
+    };
+
+    const PARAMETERS: &[u8] = br#"(whistler_tx
+      (Reserved_Parameters
+        (Modulation (Usage In) (Type String) (Value "NRZ"))))"#;
+
+    #[test]
+    fn typed_subset_adapter_returns_hash_bound_binding() {
+        let parse_limits = ParseLimitsV1::try_new(4096, 16, 128, 256).expect("limits");
+        let selections = [AmiParameterSelectionV1::new(
+            "whistler_tx/Reserved_Parameters/Modulation",
+            AmiParameterUsageV1::In,
+            AmiDeclaredParameterTypeV1::String,
+            AmiParameterSelectionFormatV1::Value,
+            "\"NRZ\"",
+        )];
+        let (binding, subset) = prepare_forwarded_parameter_subset_v1(
+            PARAMETERS,
+            AmiParameterProfileRoleV1::Tx,
+            &selections,
+            parse_limits,
+            AmiParameterProfileLimitsV1::selected_profile(),
+        )
+        .expect("subset");
+        assert_eq!(subset.parameters().len(), 1);
+        subset.verify_binding_v1(&binding).expect("binding");
+    }
 }

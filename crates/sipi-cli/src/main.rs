@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+mod com_run_artifact_preflight_v1;
+
 use std::{
     collections::BTreeMap,
     env,
@@ -10,6 +12,7 @@ use std::{
     time::Duration,
 };
 
+use com_run_artifact_preflight_v1::preflight_com_run_artifact_request_v1;
 use sha2::{Digest, Sha256};
 use sipi_artifacts::{ArtifactRoot, VerifiedConsumptionPolicyV1};
 use sipi_channel::{ChannelLimitsV1, resolve_matched_kernel_v1};
@@ -1306,10 +1309,17 @@ impl ProcessAdapter {
     }
 
     fn com_run_artifact_stdin(pulse_root: &str) -> Response {
-        let input = match read_stdin_request() {
+        let input = match read_bounded_stdin_request(COM_RUN_ARTIFACT_REQUEST_MAX_BYTES_V1) {
             Ok(input) => input,
             Err(code) => return error(2, code, "stdin request is invalid"),
         };
+        if preflight_com_run_artifact_request_v1(&input).is_err() {
+            return error(
+                3,
+                "contract_rejected",
+                "specified COM artifact request was rejected",
+            );
+        }
         let request = match parse_com_run_artifact_request_v1(&input) {
             Ok(request) => request,
             Err(_) => {
@@ -1325,13 +1335,16 @@ impl ProcessAdapter {
 }
 
 fn read_stdin_request() -> Result<Vec<u8>, &'static str> {
-    const MAXIMUM: usize = 1_048_576;
-    let mut input = Vec::with_capacity(8192);
+    read_bounded_stdin_request(1_048_576)
+}
+
+fn read_bounded_stdin_request(maximum: usize) -> Result<Vec<u8>, &'static str> {
+    let mut input = Vec::with_capacity(maximum.min(8192));
     io::stdin()
-        .take((MAXIMUM + 1) as u64)
+        .take((maximum + 1) as u64)
         .read_to_end(&mut input)
         .map_err(|_| "operational_failure")?;
-    if input.len() > MAXIMUM || input.is_empty() || input.starts_with(&[0xEF, 0xBB, 0xBF]) {
+    if input.len() > maximum || input.is_empty() || input.starts_with(&[0xEF, 0xBB, 0xBF]) {
         Err("invalid_input")
     } else {
         Ok(input)

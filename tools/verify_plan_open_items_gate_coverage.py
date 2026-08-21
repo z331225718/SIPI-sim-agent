@@ -22,6 +22,11 @@ SCHEMA = "sipi.plan-open-items.gate-coverage.v2"
 PLAN_PATH = "PLAN.md"
 LEDGER_PATH = "docs/baselines/plan-remaining-items-ledger.v1.yaml"
 OPEN_ITEM_RE = re.compile(r"^\s*- \[ \] \*\*(P[0-9A-Z-]+)\*\*", re.MULTILINE)
+EXPECTED_BLOCKER_COUNTS = {
+    "external_asset_oracle": 10,
+    "semantics_not_implemented": 1,
+    "release_gate": 9,
+}
 
 
 class CoverageError(RuntimeError):
@@ -43,10 +48,15 @@ def _ledger_gate_map(document: dict[str, Any]) -> dict[str, list[str]]:
     if not isinstance(items, list) or not items:
         raise CoverageError("ledger_items_invalid")
     result: dict[str, list[str]] = {}
+    counts = {key: 0 for key in EXPECTED_BLOCKER_COUNTS}
     for entry in items:
         if not isinstance(entry, dict) or not isinstance(entry.get("id"), str):
             raise CoverageError("ledger_item_invalid")
         item_id = entry["id"]
+        blocker = entry.get("blocker")
+        if blocker not in counts:
+            raise CoverageError(f"ledger_blocker_invalid:{item_id}")
+        counts[blocker] += 1
         gates = entry.get("gate")
         if item_id in result:
             raise CoverageError(f"ledger_item_duplicate:{item_id}")
@@ -55,6 +65,8 @@ def _ledger_gate_map(document: dict[str, Any]) -> dict[str, list[str]]:
         result[item_id] = gates
     if document.get("total_open") != len(result):
         raise CoverageError("ledger_total_open_mismatch")
+    if counts != EXPECTED_BLOCKER_COUNTS:
+        raise CoverageError(f"ledger_blocker_counts_invalid:{counts}")
     return result
 
 
@@ -117,6 +129,10 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
         "valid": True,
         "items": len(gate_map),
         "gates": gate_count,
+        "blocker_counts": {
+            blocker: sum(entry.get("blocker") == blocker for entry in _read_ledger(root).get("items", []))
+            for blocker in EXPECTED_BLOCKER_COUNTS
+        },
         "coverage_scope": "tracked_gate_inventory_only",
         "executed_gates": 0,
         "execution_claim": "not_evaluated_by_this_verifier",

@@ -1,0 +1,56 @@
+schema: sipi.p4a-03.selected-model-grammar-consumer.v1
+status: bounded_explicit_grammar_consumer_closed_external_profile_missing
+policy: sipi.p4a-03.selected-model-consumer.v1.explicit-profile-only
+implementation:
+  path: crates/sipi-ibis/src/selected_model_v1.rs
+  sha256: 94dff9a40fe9061c460a1ad6c5cb56e9e6db3a74ceab2f99de2a1ea328d020df
+  export_surface: crates/sipi-ibis/src/lib.rs
+runner:
+  path: crates/sipi-ibis/tests/p4a_03bk_selected_model_runner.rs
+  sha256: 5880e68d8723a0c1cde1513cea6385d45d834334bac373705ee723aee38492bd
+spec:
+  path: docs/clean-room/specs/p4a-ibis-selected-model-grammar-consumer.v1.md
+audit:
+  path: docs/baselines/audits/2026-08-21-p4a-03-selected-model-grammar-consumer.md
+evidence:
+  path: docs/baselines/p4a-03bk-selected-model-crosscheck-evidence.v1.json
+  sha256: 9602586089e003777aca42d93b70c6d572dcc5089a5e0393650c76fe9961d63b
+grammar:
+  signal_or_pin_role_required: true
+  direct_model_or_selector_branch_required: true
+  corner_required: true
+  voltage_v_required: true
+  temperature_c_required: true
+  table_family_required: true
+  defaults: forbidden
+  selector_branch_position_fallback: forbidden
+consumer:
+  complete_document_required: true
+  final_end_payload_free_required: true
+  unique_role_required: true
+  unique_target_required: true
+  unique_table_family_required: true
+  table_values_evaluated: false
+  transient: false
+  ami_runtime: false
+external_official_observation:
+  custody: external_operator_only
+  byte_length: 6138000
+  sha256: 53e27609dbb81e7685456a48c611111fed34ca14477623e46a9a9a582a7a646b
+  complete_document: true
+  model_count: 95
+  selector_count: 4
+  pin_count: 200
+  selected_profile_status: missing_required_selected_profile
+  promotion_eligible: false
+disposition:
+  p4a_03_grammar_consumer: bounded_scope_closed
+  p4a_03_external_profile_oracle: blocked_external_asset_oracle
+  p4a_01_rights: blocked_external_rights
+non_claims:
+  - not_general_ibis_grammar
+  - not_selected_official_model_or_corner
+  - not_external_rights_or_redistribution
+  - not_table_value_evaluation
+  - not_transient_or_ami_runtime
+  - not_release_evidence

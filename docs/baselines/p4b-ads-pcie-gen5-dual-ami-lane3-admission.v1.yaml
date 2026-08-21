@@ -1,5 +1,5 @@
 schema: sipi.p4b-ads-pcie-gen5-dual-ami-lane3-admission.v1
-status: blocked_before_vendor_load_missing_runtime_rights_and_parameter_observation
+status: blocked_before_vendor_load_missing_runtime_rights_and_runtime_observation
 decision_scope:
   owner_choices: [D5=A, E4=A]
   effect: authorize_external_only_admission_workflow
@@ -57,16 +57,19 @@ asset_identity_and_rights_snapshot:
     redistribution_authorized: false
     assets_external_only: true
 selected_profile_host_forwarded_parameter_subset:
-  status: blocked_no_unique_hash_bound_runtime_parameter_observation
+  status: external_asset_oracle
   production_adapter:
     path: docs/baselines/p4b-02-production-parameter-adapter-selection.v1.yaml
-    sha256: cecc3921cf39bf1d531302f51c6db14b1d9007171949bd150592eafdfc695012
-    representation: AmiTextBindingV1
-    behavior: complete_raw_ami_text_verified_and_forwarded_to_AMI_Init
+    sha256: 278071da818e88d3b38c0df6043c9e383b2ac6da8029a82f62c8be1c4be86bcd
+    representation: AmiForwardedParameterSubsetV1
+    behavior: typed_subset_verified_then_complete_raw_ami_text_forwarded_to_AMI_Init
     typed_parameter_helper_consumer_count: 0
+    observation:
+      path: docs/baselines/p4b-02-ads-pcie-gen5-parameter-subset-observation.v1.json
+      sha256: 705be3f1bd41d17505f46a787ab1373e16afbaacde8e3fe6bff6c762b2900367
   declared_ami_identity_is_runtime_consumption: false
   existing_ads_log_set:
-    status: not_selected_as_unique_runtime_observation
+    status: selected_as_hash_only_host_forwarded_observation_not_runtime
     repository_custody: external_only
     may_prove_at_most: host_forwarded_parameter_subset
     proves_dll_internal_consumption: false
@@ -87,7 +90,7 @@ isolated_worker_admission:
   status: blocked_not_security_sandbox
   worker_source:
     path: crates/sipi-ami-worker/src/lib.rs
-    sha256: ec918dce4d55ff348ad93cca978947df291642f4c23974f9740fedf1f75e8902
+    sha256: 074f3c6669a2db100739376c1b12b8b1a0bbea2c5aa9a8dcaa1b17d0c90a6e5c
   bounded_process_and_artifact_mechanics: ready
   vendor_security_isolation: blocked
   vendor_worker_admitted: false
@@ -102,13 +105,13 @@ strict_stop:
   reason: exact_hash_bound_vendor_private_runtime_grant_not_evidenced
   required_inputs:
     - exact_hash_bound_vendor_private_runtime_grant_for_tx_rx_and_required_sidecars
-    - one_owner_selected_hash_bound_tx_rx_runtime_parameter_tree_observation
+    - one_owner_selected_hash_bound_tx_rx_host_forwarded_subset_observation
     - complete_transitive_dependency_and_sidecar_closure
     - approved_external_security_isolation_and_lifecycle_policy
     - fresh_isolated_init_and_get_wave_observation_after_all_prior_gates_pass
 non_claims:
   - not_vendor_runtime_rights
-  - not_typed_parameter_semantics
+  - not_typed_parameter_tree_as_vendor_runtime
   - not_dll_internal_parameter_consumption
   - not_dynamic_dependency_closure
   - not_security_sandbox_or_worker_admission
@@ -116,4 +119,4 @@ non_claims:
   - not_product_or_release_admission
 audit:
   path: docs/baselines/audits/2026-08-21-p4b-dual-ami-lane3-admission.md
-  sha256: 67d9a336a1b7174cfc84e32fcef730fe83ada2f222c948ed1aa700fafd21d111
+  sha256: c489371fc33677a8d650c8299eb5a4f6caabcd72f9b188725760b758d111ba77

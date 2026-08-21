@@ -14,7 +14,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "docs/baselines/p4b-ads-pcie-gen5-dual-ami-lane3-admission.v1.yaml"
 SCHEMA = "sipi.p4b-ads-pcie-gen5-dual-ami-lane3-admission.v1"
-STATUS = "blocked_before_vendor_load_missing_runtime_rights_and_parameter_observation"
+STATUS = "blocked_before_vendor_load_missing_runtime_rights_and_runtime_observation"
 STAGES = [
     "asset_identity_and_rights_snapshot",
     "selected_profile_host_forwarded_parameter_subset",
@@ -26,13 +26,13 @@ BOUND_FILES = {
     "docs/baselines/p4b-ads-pcie-gen5-dual-ami-asset-preflight.v1.yaml":
         "7e9281833b13a38be8d523619afc5f4e163e330a314325e8ff3ea4f3faa13dcd",
     "docs/baselines/p4b-02-production-parameter-adapter-selection.v1.yaml":
-        "cecc3921cf39bf1d531302f51c6db14b1d9007171949bd150592eafdfc695012",
+        "278071da818e88d3b38c0df6043c9e383b2ac6da8029a82f62c8be1c4be86bcd",
     "docs/baselines/p4b-dual-ami-pe-loader-declarations.v1.yaml":
         "b9b12a4c5bb03daabc3c8172d44cefce2feabe834d9628eee9a2428f669af1ab",
     "crates/sipi-ami-worker/src/lib.rs":
-        "ec918dce4d55ff348ad93cca978947df291642f4c23974f9740fedf1f75e8902",
+        "074f3c6669a2db100739376c1b12b8b1a0bbea2c5aa9a8dcaa1b17d0c90a6e5c",
     "docs/baselines/audits/2026-08-21-p4b-dual-ami-lane3-admission.md":
-        "67d9a336a1b7174cfc84e32fcef730fe83ada2f222c948ed1aa700fafd21d111",
+        "c489371fc33677a8d650c8299eb5a4f6caabcd72f9b188725760b758d111ba77",
 }
 ASSETS = [
     ("ctspcie_tx_gen5.ami", "ami_text", 3280, "9272e241901d8fa749909e501c6625e508961f581e624c3f64d18a27a2408fb0"),
@@ -112,18 +112,22 @@ def verify_document(document: dict[str, Any], root: Path = ROOT) -> dict[str, An
 
     parameters = document.get(STAGES[1])
     _require(isinstance(parameters, dict), "parameter_stage_missing")
-    _require(parameters.get("status") == "blocked_no_unique_hash_bound_runtime_parameter_observation", "parameter_status_invalid")
+    _require(parameters.get("status") == "external_asset_oracle", "parameter_status_invalid")
     adapter = parameters.get("production_adapter")
     _require(isinstance(adapter, dict), "production_adapter_missing")
-    _require(adapter.get("representation") == "AmiTextBindingV1", "adapter_representation_invalid")
-    _require(adapter.get("behavior") == "complete_raw_ami_text_verified_and_forwarded_to_AMI_Init", "adapter_behavior_invalid")
+    _require(adapter.get("representation") == "AmiForwardedParameterSubsetV1", "adapter_representation_invalid")
+    _require(adapter.get("behavior") == "typed_subset_verified_then_complete_raw_ami_text_forwarded_to_AMI_Init", "adapter_behavior_invalid")
     _require(adapter.get("typed_parameter_helper_consumer_count") == 0, "typed_consumer_claim_invalid")
+    _require(adapter.get("observation") == {
+        "path": "docs/baselines/p4b-02-ads-pcie-gen5-parameter-subset-observation.v1.json",
+        "sha256": "705be3f1bd41d17505f46a787ab1373e16afbaacde8e3fe6bff6c762b2900367",
+    }, "parameter_observation_binding_invalid")
     _require(parameters.get("declared_ami_identity_is_runtime_consumption") is False, "declaration_consumption_claim")
     _require(parameters.get("selected_parameter_names") == [], "parameter_names_must_remain_empty")
     _require(parameters.get("promoted_p4b_02_helper_modules") == [], "helper_promotion_not_allowed")
     logs = parameters.get("existing_ads_log_set")
     _require(isinstance(logs, dict), "ads_log_boundary_missing")
-    _require(logs.get("status") == "not_selected_as_unique_runtime_observation", "ads_log_selection_invalid")
+    _require(logs.get("status") == "selected_as_hash_only_host_forwarded_observation_not_runtime", "ads_log_selection_invalid")
     _require(logs.get("may_prove_at_most") == "host_forwarded_parameter_subset", "host_forwarded_wording_invalid")
     _require(logs.get("proves_dll_internal_consumption") is False, "dll_consumption_claim")
 
@@ -177,7 +181,7 @@ def verify_document(document: dict[str, Any], root: Path = ROOT) -> dict[str, An
     non_claims = document.get("non_claims")
     _require(isinstance(non_claims, list) and {
         "not_vendor_runtime_rights",
-        "not_typed_parameter_semantics",
+        "not_typed_parameter_tree_as_vendor_runtime",
         "not_dll_internal_parameter_consumption",
         "not_dynamic_dependency_closure",
         "not_security_sandbox_or_worker_admission",
@@ -190,7 +194,7 @@ def verify_document(document: dict[str, Any], root: Path = ROOT) -> dict[str, An
         "profile": profile["id"],
         "asset_count": len(ASSETS),
         "rights": "blocked",
-        "parameter_subset": "blocked",
+        "parameter_subset": "external_asset_oracle",
         "dynamic_closure": "blocked",
         "worker_admitted": False,
         "runtime_invoked": False,

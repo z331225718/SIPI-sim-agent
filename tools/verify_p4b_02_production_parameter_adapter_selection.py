@@ -1,4 +1,4 @@
-"""Verify the P4B-02 raw AMI-text production adapter selection."""
+"""Verify the P4B-02 typed host-forwarded AMI subset adapter selection."""
 
 from __future__ import annotations
 
@@ -23,23 +23,31 @@ SCHEMA = "sipi.p4b-02.production-parameter-adapter-selection.v1"
 EXPECTED_FILES = {
     "selection_charter": (
         "docs/baselines/p4b-02-parameter-selection-charter.v1.yaml",
-        "4a30714d148cdf15f45ae1c87e6cc313bfdbb01050141149e7fbfa5137345dcd",
+        "ae5abb548c38d69935ce8f724adc7072c38d1a2d6284636cee1a4046592ccaf8",
     ),
     "worker": (
         "crates/sipi-ami-worker/src/lib.rs",
-        "ec918dce4d55ff348ad93cca978947df291642f4c23974f9740fedf1f75e8902",
+        "074f3c6669a2db100739376c1b12b8b1a0bbea2c5aa9a8dcaa1b17d0c90a6e5c",
     ),
     "host": (
         "crates/sipi-ami-host/src/lib.rs",
-        "4a092661dad97199af08cb089290a913d2563d250fdc88fa5503048c31b78540",
+        "b1905b62962148844f4576dc323dc13cd6a71a8f38cc3633d13b42cb51050b71",
     ),
     "text_core": (
         "crates/sipi-ami-text/src/lib.rs",
-        "54b9a6abc85216e0f2161d3b88bec75a775521c4e0a711fc5de5eec81d6841e2",
+        "d7a85027984207a65ad96257b2e349767ca9550402f38f0f5632d832a503e114",
+    ),
+    "typed_adapter": (
+        "crates/sipi-ami-text/src/ami_parameter_subset_v1.rs",
+        "774770abce9b6aea3d80630753edcc1afad4c9e09782f369222f03cc0f303c1c",
+    ),
+    "observation": (
+        "docs/baselines/p4b-02-ads-pcie-gen5-parameter-subset-observation.v1.json",
+        "705be3f1bd41d17505f46a787ab1373e16afbaacde8e3fe6bff6c762b2900367",
     ),
 }
 AUDIT_REF = "docs/baselines/audits/2026-08-21-p4b-02-production-parameter-adapter-selection.md"
-AUDIT_SHA256 = "f3f9b65ed9f4894131ad2fb898fd2d33dfb0fdd65a5dbe31e937ea7d3ddf539d"
+AUDIT_SHA256 = "89cba0a9480c92de19d49040d2d9109371b0a0081241d416486707ed4026483f"
 
 
 class AdapterSelectionError(RuntimeError):
@@ -71,7 +79,7 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
     document = _load(EVIDENCE)
     _require(document.get("schema") == SCHEMA, "schema_invalid")
     _require(
-        document.get("status") == "production_adapter_selected_external_profile_blocked",
+        document.get("status") == "external_asset_oracle",
         "status_invalid",
     )
     charter = document.get("selection_charter")
@@ -90,15 +98,21 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
 
     adapter = document.get("production_adapter")
     _require(isinstance(adapter, dict), "production_adapter_missing")
-    _require(adapter.get("representation") == "AmiTextBindingV1", "adapter_representation_invalid")
-    _require(adapter.get("selection") == "bounded_raw_ami_text_binding", "adapter_selection_invalid")
+    _require(
+        adapter.get("representation") == "AmiForwardedParameterSubsetV1",
+        "adapter_representation_invalid",
+    )
+    _require(
+        adapter.get("selection") == "bounded_typed_host_forwarded_subset",
+        "adapter_selection_invalid",
+    )
     _require(adapter.get("selected_semantic_helper_modules") == [], "semantic_helper_selection_not_empty")
     _require(
         adapter.get("worker")
         == {
             "path": EXPECTED_FILES["worker"][0],
             "sha256": EXPECTED_FILES["worker"][1],
-            "consumer": "run_one_job",
+            "consumer": "prepare_forwarded_parameter_subset_v1",
             "parse_symbol": "parse_and_bind_v1",
         },
         "worker_binding_invalid",
@@ -108,8 +122,8 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
         == {
             "path": EXPECTED_FILES["host"][0],
             "sha256": EXPECTED_FILES["host"][1],
-            "consumer": "AmiHostV1::initialize",
-            "verify_symbol": "verify_binding_v1",
+            "consumer": "AmiHostV1::initialize_forwarded_subset",
+            "verify_symbol": "AmiForwardedParameterSubsetV1::verify_binding_v1",
             "abi_sink": "AMI_Init",
         },
         "host_binding_invalid",
@@ -119,10 +133,33 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
         == {"path": EXPECTED_FILES["text_core"][0], "sha256": EXPECTED_FILES["text_core"][1]},
         "text_core_binding_invalid",
     )
+    _require(
+        adapter.get("typed_adapter")
+        == {
+            "path": EXPECTED_FILES["typed_adapter"][0],
+            "sha256": EXPECTED_FILES["typed_adapter"][1],
+            "policy": "sipi.p4b-02.ami-parameter-subset.v1.host-forwarded-only",
+            "selected_profiles": ["tx", "rx"],
+            "explicit_values": True,
+            "defaults_or_auto_tune": False,
+        },
+        "typed_adapter_binding_invalid",
+    )
+    _require(
+        adapter.get("observation")
+        == {
+            "path": EXPECTED_FILES["observation"][0],
+            "sha256": EXPECTED_FILES["observation"][1],
+            "fresh_reads_per_profile": 2,
+        },
+        "observation_binding_invalid",
+    )
 
     worker = (root / EXPECTED_FILES["worker"][0]).read_text(encoding="utf-8")
     host = (root / EXPECTED_FILES["host"][0]).read_text(encoding="utf-8")
     for token in (
+        "pub fn prepare_forwarded_parameter_subset_v1",
+        "parse_and_bind_v1(parameters, parse_limits)",
         "pub fn run_one_job",
         "parse_and_bind_v1(&parameters, limits)",
         "parameters: FileIdentityV1",
@@ -130,6 +167,8 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
         _require(token in worker, f"worker_consumer_missing:{token}")
     for token in (
         "pub fn initialize",
+        "pub fn initialize_forwarded_subset",
+        ".verify_binding_v1(binding)",
         "verify_binding_v1(binding.raw().bytes(), binding, limits)",
         "CString::new(binding.raw().bytes())",
         "(self.init)",
@@ -187,10 +226,11 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
     _require(
         document.get("non_claims")
         == [
-            "no_typed_parameter_semantics_selected",
+            "typed_subset_identity_only",
             "no_quarantined_helper_promoted",
             "no_delete_candidate_removed",
             "not_vendor_model_acceptance",
+            "not_dll_internal_parameter_consumption",
             "not_external_runtime_or_waveform_parity",
             "not_release_evidence",
         ],
@@ -204,7 +244,7 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
     return {
         "schema": SCHEMA,
         "valid": True,
-        "adapter": "bounded_raw_ami_text_binding",
+        "adapter": "bounded_typed_host_forwarded_subset",
         "selected_semantic_helper_count": 0,
         "quarantine_count": 34,
         "delete_candidate_count": 159,

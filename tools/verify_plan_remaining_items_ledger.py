@@ -34,6 +34,11 @@ BLOCKER_CLASSES = frozenset({
     "semantics_not_implemented",
     "release_gate",
 })
+EXPECTED_BLOCKER_COUNTS = {
+    "external_asset_oracle": 10,
+    "semantics_not_implemented": 1,
+    "release_gate": 9,
+}
 
 
 class LedgerError(RuntimeError):
@@ -79,6 +84,9 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
         missing = sorted(actual - set(ledger_items))
         extra = sorted(set(ledger_items) - actual)
         raise LedgerError(f"ledger_drift:missing={missing}:extra={extra}")
+    counts = {blocker: sum(entry.get("blocker") == blocker for entry in ledger_items.values()) for blocker in BLOCKER_CLASSES}
+    if counts != {**{key: 0 for key in BLOCKER_CLASSES}, **EXPECTED_BLOCKER_COUNTS}:
+        raise LedgerError(f"blocker_counts_invalid:{counts}")
     for item_id, entry in ledger_items.items():
         if entry.get("blocker") not in BLOCKER_CLASSES:
             raise LedgerError(f"item_blocker_invalid:{item_id}")
@@ -88,7 +96,7 @@ def validate(root: Path = ROOT) -> dict[str, Any]:
         for gate in gates:
             if not (root / gate).is_file():
                 raise LedgerError(f"item_gate_missing:{item_id}:{gate}")
-    return {"valid": True, "items": len(ledger_items)}
+    return {"valid": True, "items": len(ledger_items), "blocker_counts": counts}
 
 
 def main() -> int:

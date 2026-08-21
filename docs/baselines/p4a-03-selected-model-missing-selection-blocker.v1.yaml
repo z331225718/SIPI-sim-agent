@@ -11,7 +11,7 @@ predecessors:
     sha256: 45b6de079275d89c05656b98ca40dea122721107a373ab13f0bae84f26bdb495
   owner_decision_reconciliation:
     path: docs/baselines/owner-decision-reconciliation.v2.yaml
-    sha256: 4e9109e3adde405f3c6529bd6d09f27828a0cc56959eeb024b5600865bbba1f0
+    sha256: 2a6ad010faffe030a4608dce5d6956a82d4bfb058ea728521bb664c0369a3851
   official_rights_recheck:
     path: docs/baselines/p4a-01-official-object-rights-recheck.v1.yaml
     sha256: 8fdddc0053907d5957eb84739c1a106e43ccf1eb2c87ae2fe1c43a30ff579d66

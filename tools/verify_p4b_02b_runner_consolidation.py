@@ -38,13 +38,21 @@ def _validate_cargo(text: str) -> None:
     if document.get("features") != {"default": [], "p4b-self-crosscheck": []}:
         raise RunnerConsolidationError("cargo_quarantine_feature_drift")
     bins = document.get("bin")
-    expected = [{
-        "name": BIN_NAME,
-        "path": "src/bin/p4b_02b_crosscheck_runner.rs",
-        "test": False,
-        "bench": False,
-        "required-features": ["p4b-self-crosscheck"],
-    }]
+    expected = [
+        {
+            "name": BIN_NAME,
+            "path": "src/bin/p4b_02b_crosscheck_runner.rs",
+            "test": False,
+            "bench": False,
+            "required-features": ["p4b-self-crosscheck"],
+        },
+        {
+            "name": "p4b_02_ami_parameter_subset_observer",
+            "path": "src/bin/p4b_02_ami_parameter_subset_observer.rs",
+            "test": False,
+            "bench": False,
+        },
+    ]
     if bins != expected:
         raise RunnerConsolidationError("cargo_dispatcher_target_drift")
 
@@ -126,7 +134,7 @@ def validate(root: Path = ROOT) -> dict[str, object]:
     return {
         "valid": True,
         "runner_sources": len(stems),
-        "cargo_targets": 1,
+        "cargo_targets": 2,
         "scripts": len(scripts),
         "evidence": len(evidence),
         "execution_claim": "not_executed_by_this_verifier",

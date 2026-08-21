@@ -18,6 +18,9 @@ class LedgerTests(unittest.TestCase):
         result = GATE.validate(ROOT)
         self.assertTrue(result["valid"])
         self.assertEqual(result["items"], 20)
+        self.assertEqual(result["blocker_counts"]["external_asset_oracle"], 10)
+        self.assertEqual(result["blocker_counts"]["semantics_not_implemented"], 1)
+        self.assertEqual(result["blocker_counts"]["release_gate"], 9)
 
     def test_ledger_items_equal_plan_open_items(self) -> None:
         ledger = GATE.load_yaml(GATE.LEDGER)

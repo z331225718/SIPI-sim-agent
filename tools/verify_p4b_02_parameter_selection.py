@@ -208,13 +208,27 @@ def _validate_live_consumers(root: Path, charter: dict[str, Any], modules: list[
         symbols = consumer.get("symbols")
         if not isinstance(path, str) or not (root / path).is_file():
             raise SelectionError(f"default_consumer_path_missing:{path}")
-        if consumer.get("parameter_semantics") is not False:
+        parameter_semantics = consumer.get("parameter_semantics")
+        if parameter_semantics not in (False, True):
             raise SelectionError(f"default_consumer_parameter_claim:{consumer.get('component')}")
         source = (root / path).read_text(encoding="utf-8")
         if not isinstance(symbols, list) or any(symbol not in source for symbol in symbols):
             raise SelectionError(f"default_consumer_symbol_missing:{consumer.get('component')}")
-        if re.search(r"(?:AmiParameter|ParameterCatalog|RuntimeParam|ami_runtime_params|parameter_[a-z0-9_]+)", source):
+        if parameter_semantics is False and re.search(
+            r"(?:AmiParameter|ParameterCatalog|RuntimeParam|ami_runtime_params|parameter_[a-z0-9_]+)",
+            source,
+        ):
             raise SelectionError(f"default_consumer_parameter_export:{consumer.get('component')}")
+        if parameter_semantics is True:
+            required = {
+                "sipi-ami-host": ("initialize_forwarded_subset", "AmiForwardedParameterSubsetV1"),
+                "sipi-ami-worker": (
+                    "prepare_forwarded_parameter_subset_v1",
+                    "AmiParameterProfileLimitsV1",
+                ),
+            }.get(consumer.get("component"), ())
+            if any(token not in source for token in required):
+                raise SelectionError(f"scoped_adapter_consumer_missing:{consumer.get('component')}")
     for manifest in (root / "crates").glob("*/Cargo.toml"):
         if manifest.parent.name not in production_manifest_names:
             text = manifest.read_text(encoding="utf-8")

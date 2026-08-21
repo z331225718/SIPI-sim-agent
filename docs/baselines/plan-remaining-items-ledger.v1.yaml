@@ -15,26 +15,28 @@
       "gate": [
         "tools/verify_p1_04b_legacy_fixture_boundary.py",
         "tools/verify_p1_legacy_fixture_required_profile_facts.py",
-        "tools/verify_p1_04b_comparison_permission_reconciliation.py"
+        "tools/verify_p1_04b_comparison_permission_reconciliation.py",
+        "tools/verify_p1_04b_oracle_only_scope_closure.py"
       ],
       "note": "owner permission to use trusted external fixtures for comparison is recorded; all 14 legacy assets remain blocked_unknown and nine required_by labels are gate-demand clues, not a selected profile. Exact profile/custody/rights and distribution authority remain pending external facts"
     },
     {
       "id": "P3B-02",
-      "blocker": "semantics_not_implemented",
+      "blocker": "external_asset_oracle",
       "gate": [
         "tools/verify_p3b_02_link_kernel_singleton.py",
         "tools/verify_p3_original_project_eye_jitter_semantics_observation.py",
         "tools/verify_owner_decision_reconciliation_v2.py",
         "tools/verify_p3b_02_equalizer_semantics_gap.py",
         "tools/verify_p3b_02_named_fir_prerequisite.py",
-        "tools/verify_p3b_02_pybert_profile_source_audit.py"
+        "tools/verify_p3b_02_pybert_profile_source_audit.py",
+        "tools/verify_p3b_02_pybert_semantics.py"
       ],
-      "note": "Owner-selected RX CTLE -> RX FFE ordering and an explicit two-slot bounded causal-FIR composition prerequisite exist. PyBERT source audit found conflicting CTLE defaults and incompatible FFE shapes/states, so no unique profile can be selected mechanically; wire v1 remains bypass-only."
+      "note": "Owner-selected RX CTLE -> RX FFE ordering and an explicit two-slot bounded causal-FIR composition are implementation-ready. PyBERT source audit found conflicting CTLE defaults and incompatible FFE shapes/states, so no unique external profile can be selected mechanically; wire v1 remains bypass-only."
     },
     {
       "id": "P3C-03",
-      "blocker": "semantics_not_implemented",
+      "blocker": "external_asset_oracle",
       "gate": [
         "tools/verify_release_capability_publication.py",
         "tools/verify_p3c_03_profile_compare_decision_preflight.py",
@@ -50,9 +52,10 @@
         "tools/verify_p3_ads_retained_workspace_jitter_closure_observation.py",
         "tools/verify_p3c_selected_highloss_residual_dft_currentness_reconciliation.py",
         "tools/verify_p3c_03_com_metric_bundle_capability.py",
-        "tools/verify_p3c_03c_com_metric_checkpoint_boundary.py"
+        "tools/verify_p3c_03c_com_metric_checkpoint_boundary.py",
+        "tools/verify_p5_06r_agent_com_metric_authority_observation.py"
       ],
-      "note": "A strict same-checkpoint COM/ERL/TD-ILN compare boundary with explicit 0.1 dB absolute tolerances is implemented. Current comparison still lacks an authoritative TD-ILN value and exact clean checkpoint/input provenance; C4 ICN is not a substitute."
+      "note": "A strict same-checkpoint COM/ERL/TD-ILN compare boundary with explicit 0.1 dB absolute tolerances is implemented. Current comparison still lacks an authoritative TD-ILN value, exact clean checkpoint/input provenance, and external tolerance authority; C4 ICN is not a substitute."
     },
     {
       "id": "P4A-01",
@@ -69,7 +72,7 @@
     },
     {
       "id": "P4A-03",
-      "blocker": "semantics_not_implemented",
+      "blocker": "external_asset_oracle",
       "gate": [
         "tools/verify_p4a_official_pure_ibis_structural_scope_preflight.py",
         "tools/verify_p4a_03d_model_declaration.py",
@@ -130,13 +133,14 @@
         "tools/verify_p4a_03bg_series_pin_table_selector_thresholds.py",
         "tools/verify_p4a_03d_exact_asset_structural_consumer.py",
         "tools/verify_p4a_03_complete_typed_inventory_consumer.py",
-        "tools/verify_p4a_03_selected_model_missing_selection_blocker.py"
+        "tools/verify_p4a_03_selected_model_missing_selection_blocker.py",
+        "tools/verify_p4a_03_selected_model_grammar_consumer.py"
       ],
-      "note": "The complete-document consumer enumerates all 95 models and selector/pin linkage, but the official object provides no unique selected model, branch, corner/PVT or table family. Scoped parser work remains blocked rather than guessing a selection."
+      "note": "The complete-document consumer and selected-model grammar consumer are implemented, but the official object provides no unique selected model, branch, corner/PVT or table family and rights remain external. Scoped parser work remains blocked rather than guessing a selection."
     },
     {
       "id": "P4B-02",
-      "blocker": "semantics_not_implemented",
+      "blocker": "external_asset_oracle",
       "gate": [
         "tools/verify_p4b_external_ami_asset_set.py",
         "tools/verify_p4b_02b1_parameter_value_core.py",
@@ -335,9 +339,10 @@
         "tools/verify_p4b_02b_runner_consolidation.py",
         "tools/verify_p4b_02_parameter_selection.py",
         "tools/verify_p4b_02_production_parameter_adapter_selection.py",
-        "tools/verify_p4b_dual_ami_lane3_admission.py"
+        "tools/verify_p4b_dual_ami_lane3_admission.py",
+        "tools/verify_p4b_02_parameter_subset_observation.py"
       ],
-      "note": "The production worker/host adapter remains raw parse_and_bind -> verify_binding -> AmiTextBinding -> AMI_Init. Exact assets are known, but vendor runtime rights and a unique hash-bound parameter-tree observation are missing; 193 helpers remain keep=0/pending=34/delete-candidate=159."
+      "note": "The bounded parameter subset observer and production adapter semantics are implementation-ready, but exact external parameter/profile compatibility, rights, and runtime facts remain missing; 193 helpers remain keep=0/pending=34/delete-candidate=159."
     },
     {
       "id": "P4B-08",
@@ -399,7 +404,8 @@
         "tools/verify_p5_06_pinned_source_external_oracle_candidate_document.py",
         "tools/verify_p5_06k_required_com_compare_contract_gap.py",
         "tools/verify_p5_06q_agent_com_clean_oracle_observation.py",
-        "tools/verify_p3c_03c_com_metric_checkpoint_boundary.py"
+        "tools/verify_p3c_03c_com_metric_checkpoint_boundary.py",
+        "tools/verify_p5_06r_agent_com_metric_authority_observation.py"
       ],
       "note": "A clean pinned Agent-COM run observed COM but returned non-finite ERL and no TD-ILN scalar, so no authoritative three-metric reference exists. Strict same-checkpoint/no-alignment and 0.1 dB policy are frozen; exact input/checkpoint provenance and usable ERL/TD-ILN outputs remain blocked."
     },
@@ -412,7 +418,8 @@
         "tools/verify_p5_08b_com_run_execution.py",
         "tools/verify_p5_08d_com_run_artifact_provenance_bounded.py",
         "tools/verify_p5_08e_com_run_artifact_execution.py",
-        "tools/verify_p5_08f_specified_com_artifact_route.py"
+        "tools/verify_p5_08f_specified_com_artifact_route.py",
+        "tools/verify_p5_08g_com_run_specified_scoped_closure.py"
       ],
       "note": "A bounded specified/non-oracle com.run-artifact route now composes caller-supplied product parameters, a sealed pulse artifact, COM execution and immutable result publication. Legacy com.run remains unavailable; authoritative profile/oracle acceptance, workbook ingestion, external provenance and hostile-writer semantics remain unimplemented."
     },
@@ -488,7 +495,8 @@
       "id": "P7-09",
       "blocker": "release_gate",
       "gate": [
-        "tools/verify_external_history_citations.py"
+        "tools/verify_external_history_citations.py",
+        "tools/verify_p7_retirement_deletion_release_audit.py"
       ],
       "note": "registry done; deletion/release audit pending"
     }

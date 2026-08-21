@@ -1,0 +1,211 @@
+schema: sipi.p5-06r.agent-com-metric-authority-observation.v1
+status: finite_com_erl_fom_tdiln_observed_scalar_td_iln_missing
+authority: pinned_external_source_and_run_observation_only
+scope:
+  work_items: [P5-02, P5-06, P3C-03]
+  slice: P5-06r
+  source_observation: true
+  external_runtime: two_fresh_clean_agent_com_runs
+  product_runtime_invoked: false
+  matlab_invoked: false
+  product_vs_oracle_compare_executed: false
+  acceptance_or_release_promoted: false
+  historical_evidence_rewritten: false
+
+canonical_selection:
+  origin: https://github.com/z331225718/agent-com.git
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  object_format: sha1
+  profile:
+    id: r480
+    source_revision: r480
+    reader_semantics: r480
+    fix_ids: []
+  config:
+    role: canonical_120f_c2c_workbook
+    path: matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120F_C2C_08_17_2022.xlsx
+    git_blob: 22b633b6092b4b0de0ca89273515329b362eabae
+    bytes: 67087
+    sha256: e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925
+  channel:
+    role: THRU
+    path: fixtures/synthetic/erl_reflective_10db_at_26p56ghz.s4p
+    git_blob: cb5d03536833aa1d62f6db97bae0dba6238349cb
+    bytes: 6457063
+    sha256: 72327f8d36cd7c51aaf64d803ac6e86b557d017fe574d7b2b05d4583e9494126
+  override:
+    COMPUTE_TDILN: 1
+  selection_basis:
+    existing_named_profile: BehaviorProfile.r480
+    existing_named_config: tests/test_run_api.py::STRICT_120F_C2C_CONFIG
+    existing_named_reflective_input: tests/test_f22_riln_golden.py::test_f22_riln_is_exposed_by_the_public_s4p_nonmmse_result
+    existing_fixture_documentation: fixtures/synthetic/README.md
+    selection_policy: one_existing_tuple_only_no_parameter_or_result_sweep
+
+source_objects:
+  - path: matlab_src/com_ieee8023_480.m
+    git_blob: 2e226d785c1ed2403f6d0a11288bf75939021814
+    bytes: 458971
+    normalized_sha256: 88db14d7d82dab980d223a5be02a28013c11e0d0239e0e97e36c9d36fef55596
+    authority:
+      output_initialization_lines: [1531, 1539, 1540]
+      td_iln_generation_lines: [1635, 1636, 1637, 1645, 1646, 1647]
+      td_iln_struct_generation_lines: [4681, 4726, 4732, 4742, 4764, 4769, 4770]
+      compute_tdiln_default_line: 9233
+  - path: schemas/legacy-output-r480.json
+    git_blob: 7980dcffb5a88557b8cb2e8107fae06355c91169
+    bytes: 2121
+    normalized_sha256: aa74317a43a7152c7ed3937a04093e6c84d5583652ca4d9af2ac0fed98ad9ea6
+    authority:
+      fields: [COM_dB, ERL, FOM_TDILN, TD_ILN]
+      td_iln_kind: struct
+      scalar_td_iln_db_field: absent
+  - path: src/agent_com/_orchestration.py
+    git_blob: 5d260a0aab941f1a1955fe3abef36d85a56034c0
+    bytes: 90877
+    normalized_sha256: 069a5c08f9da6ad5b5be5648723eb05b0e3de8cf0dcb1ae7f54e23df7ab0db69
+    authority:
+      com_metrics_lines: [469, 471]
+      tdiln_metrics_lines: [500, 534, 536, 664, 665]
+      erl_metrics_lines: [722, 752, 760, 763, 769, 770]
+      tdiln_entrypoint_lines: [1266, 1270, 1276]
+  - path: src/agent_com/metrics/tdiln.py
+    git_blob: 53aacf1c15b57cf314f0e7db5148884bf7afe3c2
+    bytes: 7068
+    normalized_sha256: d0465246f6fd5d22d5978f5cdf2a78f7fccdfbfdd7ad0676092b4494d3698873
+    authority:
+      result_type: TdIlnResult
+      scalar_fields: [snr_isi_fom_db, snr_isi_fom_pdf_db]
+      array_fields: [fit, iln_db, reference_pulse, fitted_pulse, iln_pulse, time_s]
+      td_iln_db_field: absent
+  - path: src/agent_com/erl/metric.py
+    git_blob: ee809c9f464583b850c3e585adc8a3cfc981729b
+    bytes: 4029
+    normalized_sha256: 4051b618324448f4968e59fbb81358eb6b62bdd58e94ddf9ab67e8cfde09b3b5
+    authority:
+      erl_result_field: erl_db
+      zero_reflection_policy_line: 103
+  - path: src/agent_com/models.py
+    git_blob: 92167e385db50c76a9999c2df5118d46951b8243
+    bytes: 6994
+    normalized_sha256: e97bd1c67fbf53f940e45fb94905e6bd5e924b164a3eecf1548a652ba0f327af
+    authority:
+      profile_factory_lines: [17, 33, 43]
+  - path: schemas/behavior-presets.yaml
+    git_blob: 7f67deffd1e6100f1d67912df786bbf7612eb5cc
+    bytes: 578
+    normalized_sha256: 906e1b05bedf620fa431406b0ea41fae81dd235e759ff2155c17e68dccdf6d3e
+    authority:
+      profile_id: r480
+  - path: src/agent_com/reporting.py
+    git_blob: efbb14dda4d656a71e6915f5c5026b719e22d141
+    bytes: 82620
+    normalized_sha256: 14c4e4f0e5e51ee6fe76343ef133a565b8c922a0794acfe6c36ac3c7bbc1a0e1
+    authority:
+      metric_definitions_lines: [24, 26, 29, 34]
+
+authority_map:
+  COM_dB:
+    source_field: COM_dB
+    unit: dB
+    generation: source_and_public_case_metric
+    status: observed_finite
+  ERL_dB:
+    source_field: ERL
+    unit: dB
+    generation: TDR_PTDR_selected_erl
+    status: observed_finite_for_reflective_input
+  FOM_TDILN:
+    source_field: FOM_TDILN
+    unit: dB
+    generation: TD_ILN.SNR_ISI_FOM_PDF
+    status: observed_finite_auxiliary_fom
+    required_td_iln_substitute: false
+  TD_ILN_dB:
+    source_field: TD_ILN
+    unit: dB
+    generation: no_authoritative_scalar_generation_observed
+    status: missing_scalar
+    source_td_iln_kind: struct_or_typed_array_result
+
+runs:
+  count: 2
+  payload_kind: external_hash_only_scalar_projection
+  payload_serialization: json_sort_keys_true_compact_utf8
+  payloads:
+    - {id: run-01, bytes: 398, sha256: 7f62d3ed65649e3a2eed0d3f2cb6fa1891c586361dd9cb559378445ab64862e5}
+    - {id: run-02, bytes: 398, sha256: 7f62d3ed65649e3a2eed0d3f2cb6fa1891c586361dd9cb559378445ab64862e5}
+  repeatability: byte_identical_payloads
+  cases:
+    - case_index: 0
+      COM_dB: 6.6804682852917585
+      ERL_dB: 36.59476569210085
+      ERL11_dB: 38.131566296755295
+      ERL22_dB: 36.59476569210085
+      FOM_TDILN: 22.366448964047528
+      ICN_mV: 0.0
+      TD_ILN_dB: missing
+      TD_ILN: missing
+    - case_index: 1
+      COM_dB: 6.851887606480109
+      ERL_dB: 36.59476569210085
+      ERL11_dB: 38.131566296755295
+      ERL22_dB: 36.59476569210085
+      FOM_TDILN: 22.366448964047528
+      ICN_mV: 0.0
+      TD_ILN_dB: missing
+      TD_ILN: missing
+
+required_metric_surface:
+  metrics:
+    - {id: COM_dB, unit: dB, finite_in_all_cases: true, status: observed}
+    - {id: ERL_dB, unit: dB, finite_in_all_cases: true, status: observed}
+    - {id: TD_ILN_dB, unit: dB, finite_in_all_cases: false, status: missing_scalar}
+  auxiliary_non_substitutes:
+    - {id: FOM_TDILN, allowed_as: TD_ILN_dB, allowed: false}
+    - {id: ICN_mV, allowed_as: TD_ILN_dB, allowed: false}
+    - {id: iln_vector, allowed_as: TD_ILN_dB, allowed: false}
+
+minimal_authoritative_gap:
+  missing:
+    - authoritative_finite_TD_ILN_scalar_or_explicit_scalar_semantics
+    - TD_ILN_checkpoint_identity_and_units
+    - same_case_normalized_input_and_channel_role_manifest_for_product_compare
+    - per_metric_external_acceptance_tolerances
+  present_but_insufficient:
+    - finite_COM_dB
+    - finite_ERL_dB
+    - finite_FOM_TDILN
+    - legacy_TD_ILN_struct_field_name
+    - typed_TdIlnResult_arrays_and_fom_scalars
+  decision: source_api_gap_not_closed_by_canonical_input
+
+p3c_03_transition:
+  typed_compare_existing:
+    bundle_metrics: [COM_dB, ERL_dB, TD_ILN_dB]
+    checkpoint_policy: strict_same_checkpoint_no_alignment
+    finite_values_required: true
+    product_crate_changed_in_this_slice: false
+  semantics_to_external_compare:
+    decision: conditionally_ready_not_admitted
+    reason: typed_compare_exists_but_authoritative_TD_ILN_scalar_is_missing
+    next_gate_inputs:
+      - finite_TD_ILN_dB_reference_and_candidate
+      - exact_normalized_input_digest
+      - exact_case_and_checkpoint_identity
+      - explicit_per_metric_tolerances
+
+non_claims:
+  - not_td_iln_scalar_observation
+  - not_fom_tdiln_to_td_iln_alias
+  - not_icn_to_td_iln_alias
+  - not_product_vs_agent_com_compare
+  - not_com_parity
+  - not_acceptance_evidence
+  - not_release_evidence
+  - not_parameter_sweep
+
+audit:
+  path: docs/baselines/audits/2026-08-21-p5-06r-agent-com-metric-authority-observation.md
+  sha256: d615efff9fd46343399572fc24c1a2f2dfa2fc4112359f3337e6efea09d9553b

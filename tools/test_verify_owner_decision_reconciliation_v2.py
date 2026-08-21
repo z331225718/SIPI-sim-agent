@@ -19,7 +19,13 @@ class OwnerDecisionReconciliationV2Tests(unittest.TestCase):
         result = GATE.validate()
         self.assertTrue(result["valid"])
         self.assertEqual(result["reconciled_owner_decisions"], 5)
-        self.assertEqual(result["current_external_asset_oracle_blockers"], 6)
+        self.assertEqual(result["current_external_asset_oracle_blockers"], 10)
+        self.assertEqual(result["remaining_semantics_items"], 1)
+
+    def test_p3b_owner_decision_is_implementation_ready_but_profile_external(self) -> None:
+        decision = next(item for item in self.document["decisions"] if item["id"] == "P3B-02")
+        self.assertEqual(decision["blocker_after"], "implementation_ready_profile_external")
+        self.assertIn("does_not_claim_a_profile_is_selected_from_external_sources", decision["non_claims"])
 
     def test_rejects_resolved_item_in_current_request(self) -> None:
         request = copy.deepcopy(self.request)

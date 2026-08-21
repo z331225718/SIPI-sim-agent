@@ -16,6 +16,7 @@ use sipi_types::{Axis, NonZeroStep, Seconds, TypeError, Volts, Waveform};
 mod prbs9_inject_v1;
 mod prbs9_v1;
 mod receiver;
+mod rx_ctle_ffe_v1;
 mod rx_named_fir_v1;
 mod time_warp_v1;
 
@@ -27,6 +28,12 @@ pub use prbs9_v1::{PRBS9_OWNER_SEED_BITS, PRBS9_POLICY_V1, PRBS9_STAGES, Prbs9V1
 pub use receiver::{
     ReceiverDecisionV1, ReceiverError, ReceiverPhaseSelectionV2, ReceiverResultV1, ReferenceBitsV1,
     run_fixed_receiver_delegated_ambiguity_v2, run_fixed_receiver_v1,
+};
+pub use rx_ctle_ffe_v1::{
+    CtleGridOriginV1, CtleGridV1, CtleNormalizationV1, CtleStateV1, CtleTransferV1,
+    FfeCursorConventionV1, FfeProfileV1, FfeSamplingV1, FfeStateV1, FfeTapOrderV1, FfeTapSignV1,
+    FfeTapUnitsV1, RX_CTLE_FFE_EXPLICIT_SEMANTICS_POLICY_V1, RxCtleFfeErrorV1, RxCtleFfeProfileV1,
+    RxCtleFfeResultV1, RxCtleStageV1, RxFfeStageV1, apply_rx_ctle_ffe_v1,
 };
 pub use rx_named_fir_v1::{
     ExplicitCausalFirV1, RX_NAMED_FIR_PREREQUISITE_POLICY_V1, RxNamedFirErrorV1, RxNamedFirPlanV1,

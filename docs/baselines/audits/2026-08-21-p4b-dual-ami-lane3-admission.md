@@ -15,11 +15,14 @@
    for these exact assets. Owner choice `D5=A/E4=A` authorizes the proposed
    external-only procedure, but it does not establish third-party runtime
    rights. The sequence therefore stops before any DLL load.
-3. Parameters: the production worker parses and binds the complete raw AMI
-   text, and the host verifies then forwards those same bytes to `AMI_Init`.
-   It does not consume any typed P4B-02 helper. A vendor `.ami` declaration is
-   not proof that a DLL consumes a parameter. Existing ADS logs are not a
-   unique owner-selected runtime observation, so no typed subset is promoted.
+3. Parameters: the production worker and host now expose a narrow
+   `AmiForwardedParameterSubsetV1` adapter for the selected external TX/RX
+   texts. Two fresh reads produce hash-only canonical tree/subset evidence
+   (eight TX and thirty RX selected values). The adapter validates explicit
+   type/format/range/usage identity and forwards unchanged raw text only after
+   that check. A vendor `.ami` declaration or host-forwarded subset is not
+   proof that a DLL consumes a parameter. The P4B-02 decision is therefore
+   `external_asset_oracle`, not vendor-runtime acceptance.
 4. Loader closure: the existing static PE record establishes AMD64, three AMI
    exports, and direct imports. It explicitly does not establish transitive
    dynamic dependency or sidecar closure.
@@ -33,10 +36,8 @@
 - A vendor or license-administrator grant bound to the exact TX/RX asset
   identities, explicitly allowing private Windows x64 execution and covering
   required sidecars and non-system dependencies.
-- One owner-selected, hash-bound TX/RX parameter-tree observation for the
-  intended run, plus evidence of the exact bytes the host forwards. Without
-  DLL telemetry, any resulting names remain only a
-  `host_forwarded_parameter_subset` and not a DLL-consumption claim.
+- Vendor-runtime telemetry remains required before any DLL-consumption claim;
+  the current hash-only subset evidence is intentionally not runtime evidence.
 - A complete static/transitive dependency inventory and an approved external
   security isolation boundary with timeout, crash containment, output budget,
   and close-on-termination policy.

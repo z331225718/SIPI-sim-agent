@@ -1,5 +1,5 @@
 schema: sipi.owner-decision-reconciliation.v2
-status: current_owner_decisions_reconciled_semantics_pending
+status: current_owner_decisions_reconciled_implementation_ready_profile_external
 authority:
   actor: user
   recorded_at: "2026-08-21"
@@ -21,7 +21,7 @@ decisions:
   - id: P3B-02
     answer: A
     blocker_before: owner_decision
-    blocker_after: semantics_not_implemented
+    blocker_after: implementation_ready_profile_external
     current_request: false
     recommendation:
       receiver_chain: [RX CTLE, RX FFE]
@@ -36,6 +36,7 @@ decisions:
       - does_not_widen_owner_input_request_v1
       - does_not_enable_automatic_tuning
       - does_not_select_a_silent_default_stage
+      - does_not_claim_a_profile_is_selected_from_external_sources
       - does_not_claim_ctle_or_ffe_runtime_implementation
   - id: P3B-04
     answer: A

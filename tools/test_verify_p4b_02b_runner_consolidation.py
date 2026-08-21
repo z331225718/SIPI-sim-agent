@@ -19,7 +19,7 @@ class RunnerConsolidationTests(unittest.TestCase):
         result = GATE.validate(ROOT)
         self.assertTrue(result["valid"])
         self.assertEqual(result["runner_sources"], 191)
-        self.assertEqual(result["cargo_targets"], 1)
+        self.assertEqual(result["cargo_targets"], 2)
         self.assertEqual(result["execution_claim"], "not_executed_by_this_verifier")
 
     def test_rejects_reintroduced_cargo_test_target(self) -> None:

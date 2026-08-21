@@ -1,0 +1,219 @@
+{
+  "external_official": {
+    "byte_length": 6138000,
+    "complete_document": true,
+    "expected": {
+      "complete_document": true,
+      "error": "missing_required_selected_profile",
+      "model_count": 95,
+      "pin_count": 200,
+      "selector_count": 4
+    },
+    "matched": true,
+    "model_count": 95,
+    "pin_count": 200,
+    "product": {
+      "complete_document": true,
+      "error": "missing_required_selected_profile",
+      "model_count": 95,
+      "pin_count": 200,
+      "policy": "sipi.p4a-03.selected-model-consumer.v1.explicit-profile-only",
+      "required": [
+        "role",
+        "model_or_selector_branch",
+        "corner_pvt",
+        "table_family"
+      ],
+      "selector_count": 4,
+      "valid": false
+    },
+    "selection_status": "missing_required_selected_profile",
+    "selector_count": 4,
+    "sha256": "53e27609dbb81e7685456a48c611111fed34ca14477623e46a9a9a582a7a646b"
+  },
+  "implementation": {
+    "path": "crates/sipi-ibis/src/selected_model_v1.rs",
+    "sha256": "94dff9a40fe9061c460a1ad6c5cb56e9e6db3a74ceab2f99de2a1ea328d020df"
+  },
+  "non_claims": [
+    "not_general_ibis_grammar",
+    "not_external_rights_or_redistribution",
+    "not_selected_official_model_or_corner",
+    "not_table_value_evaluation",
+    "not_transient_or_ami_runtime",
+    "not_release_evidence"
+  ],
+  "policy": "sipi.p4a-03.selected-model-consumer.v1.explicit-profile-only",
+  "promotion_eligible": false,
+  "runner": {
+    "path": "crates/sipi-ibis/tests/p4a_03bk_selected_model_runner.rs",
+    "sha256": "5880e68d8723a0c1cde1513cea6385d45d834334bac373705ee723aee38492bd"
+  },
+  "schema": "sipi.p4a-03bk.selected-model-crosscheck-evidence.v1",
+  "status": "matched_synthetic_and_external_missing_profile",
+  "synthetic": {
+    "case_count": 11,
+    "entries": [
+      {
+        "expected": {
+          "branch": "M_DIRECT",
+          "selector": null,
+          "table_family": "GND Clamp",
+          "valid": true
+        },
+        "label": "direct_model",
+        "matched": true,
+        "product": {
+          "branch": "M_DIRECT",
+          "corner": "typical",
+          "model_type": "Input",
+          "pin_name": "P1",
+          "policy": "sipi.p4a-03.selected-model-consumer.v1.explicit-profile-only",
+          "role": {
+            "kind": "signal",
+            "name": "SIG"
+          },
+          "selector": null,
+          "signal_name": "SIG",
+          "status": "selected_model_resolved",
+          "table_family": "GND Clamp",
+          "table_row_count": 2,
+          "table_section_line": 11,
+          "temperature_c": 25.0,
+          "valid": true,
+          "voltage_v": 1.2
+        }
+      },
+      {
+        "expected": {
+          "branch": "M_BRANCH",
+          "selector": "SEL",
+          "table_family": "POWER Clamp",
+          "valid": true
+        },
+        "label": "selector_branch",
+        "matched": true,
+        "product": {
+          "branch": "M_BRANCH",
+          "corner": "slow",
+          "model_type": "Input",
+          "pin_name": "P2",
+          "policy": "sipi.p4a-03.selected-model-consumer.v1.explicit-profile-only",
+          "role": {
+            "kind": "pin",
+            "name": "P2"
+          },
+          "selector": "SEL",
+          "signal_name": "SEL_SIG",
+          "status": "selected_model_resolved",
+          "table_family": "POWER Clamp",
+          "table_row_count": 2,
+          "table_section_line": 16,
+          "temperature_c": 85.0,
+          "valid": true,
+          "voltage_v": 1.1
+        }
+      },
+      {
+        "label": "missing_profile",
+        "matched": true,
+        "product": {
+          "complete_document": true,
+          "error": "missing_required_selected_profile",
+          "model_count": 3,
+          "pin_count": 2,
+          "policy": "sipi.p4a-03.selected-model-consumer.v1.explicit-profile-only",
+          "required": [
+            "role",
+            "model_or_selector_branch",
+            "corner_pvt",
+            "table_family"
+          ],
+          "selector_count": 1,
+          "valid": false
+        }
+      },
+      {
+        "label": "ambiguous_role",
+        "matched": true,
+        "product": {
+          "error": "RoleAmbiguous { kind: \"signal\", name: \"SIG\", count: 2 }",
+          "policy": "sipi.p4a-03.selected-model-consumer.v1.explicit-profile-only",
+          "valid": false
+        }
+      },
+      {
+        "label": "model_with_selector_fields",
+        "matched": true,
+        "product": {
+          "detail": "unknown_selected_profile_field:branch",
+          "error": "invalid_selected_profile",
+          "policy": "sipi.p4a-03.selected-model-consumer.v1.explicit-profile-only",
+          "valid": false
+        }
+      },
+      {
+        "label": "selector_branch_with_model_field",
+        "matched": true,
+        "product": {
+          "detail": "unknown_selected_profile_field:model",
+          "error": "invalid_selected_profile",
+          "policy": "sipi.p4a-03.selected-model-consumer.v1.explicit-profile-only",
+          "valid": false
+        }
+      },
+      {
+        "label": "model_with_unknown_target_field",
+        "matched": true,
+        "product": {
+          "detail": "unknown_selected_profile_field:unexpected",
+          "error": "invalid_selected_profile",
+          "policy": "sipi.p4a-03.selected-model-consumer.v1.explicit-profile-only",
+          "valid": false
+        }
+      },
+      {
+        "label": "selector_branch_with_unknown_target_field",
+        "matched": true,
+        "product": {
+          "detail": "unknown_selected_profile_field:unexpected",
+          "error": "invalid_selected_profile",
+          "policy": "sipi.p4a-03.selected-model-consumer.v1.explicit-profile-only",
+          "valid": false
+        }
+      },
+      {
+        "label": "profile_with_unknown_root_field",
+        "matched": true,
+        "product": {
+          "detail": "unknown_selected_profile_field:unexpected",
+          "error": "invalid_selected_profile",
+          "policy": "sipi.p4a-03.selected-model-consumer.v1.explicit-profile-only",
+          "valid": false
+        }
+      },
+      {
+        "label": "role_with_unknown_field",
+        "matched": true,
+        "product": {
+          "detail": "unknown_selected_profile_field:unexpected",
+          "error": "invalid_selected_profile",
+          "policy": "sipi.p4a-03.selected-model-consumer.v1.explicit-profile-only",
+          "valid": false
+        }
+      },
+      {
+        "label": "pvt_with_unknown_field",
+        "matched": true,
+        "product": {
+          "detail": "unknown_selected_profile_field:unexpected",
+          "error": "invalid_selected_profile",
+          "policy": "sipi.p4a-03.selected-model-consumer.v1.explicit-profile-only",
+          "valid": false
+        }
+      }
+    ],
+    "matched_count": 11,
+    "source_sha256": "c7ad096b97bfdc287657128bbd9f9e06b911e4a3e252ac8fa98a1f018e0638ac"
+  }
+}

@@ -1,0 +1,235 @@
+schema: sipi.p1-04b.oracle-only-scope-closure.v1
+status: scoped_boundary_closed_external_facts_pending
+closure:
+  item: P1-04B
+  closure_kind: additive_child_scope_closure
+  boundary: legacy_fixture_oracle_only
+  oracle_only_boundary_closed: true
+  p1_04b_main_item_closed: false
+  product_materialization: false
+  legacy_schema_in_product_rust: false
+  product_input_admitted: false
+  runtime_admitted: false
+  release_admitted: false
+  redistribution_authorized: false
+  rights_conclusion: false
+  unresolved_external_facts_retained: true
+  retained_external_facts:
+    - exact_selected_profile
+    - external_custody_identity
+    - consumption_and_distribution_rights
+comparison_permission:
+  source: docs/baselines/owner-input-request.v1.yaml
+  decision: external fixtures are globally trusted; do not block comparison
+  comparison_permission_decided: true
+  permitted_scope: external_comparison_only
+  profile_selection: false
+  redistribution: false
+  product_input_admission: false
+  runtime_admission: false
+  release_admission: false
+  license_or_rights_conclusion: false
+manifest:
+  path: fixtures/manifest.v1.json
+  sha256: 9601a1755c628bd85da0b4205858fa232687ecd39d1a398f3d26cd6a8a612e79
+  bytes: 12904
+  asset_count: 14
+  required_by_required_count: 9
+  required_by_optional_count: 5
+  required_asset_ids:
+    - agent-spice-python-fixtures
+    - agent-spice-native-fixtures
+    - pybert-models
+    - pybert-golden-fixtures
+    - agent-com-matlab-source-and-workbooks
+    - agent-com-synthetic-sparameter-fixtures
+    - agent-com-local-partial-matlab-oracle
+    - agent-com-authoritative-matlab-golden
+    - ads-solver-unresolved
+  all_distribution_status: blocked_unknown
+asset_responsibilities:
+  - id: agent-spice-python-fixtures
+    domain: P2-circuit
+    gate: G4 circuit
+    requirement: required
+    owner: agent-spice-maintainer
+  - id: agent-spice-native-fixtures
+    domain: P2-circuit
+    gate: G4 circuit
+    requirement: required
+    owner: agent-spice-maintainer
+  - id: agent-spice-sparam-benchmarks
+    domain: P3A-channel
+    gate: G4 s-parameter
+    requirement: optional
+    owner: agent-spice-maintainer
+  - id: agent-spice-third-party-solver-material
+    domain: P2-circuit
+    gate: G4 external solver
+    requirement: optional
+    owner: third-party-compliance-owner
+  - id: agent-spice-generated-images
+    domain: migration-documentation
+    gate: documentation
+    requirement: optional
+    owner: agent-spice-maintainer
+  - id: pybert-models
+    domain: P4B-AMI
+    gate: G4 ibis-ami
+    requirement: required
+    owner: pybert-maintainer
+  - id: pybert-golden-fixtures
+    domain: P3B-link
+    gate: G4 link
+    requirement: required
+    owner: pybert-maintainer
+  - id: pybert-user-images
+    domain: migration-documentation
+    gate: documentation
+    requirement: optional
+    owner: pybert-maintainer
+  - id: agent-com-matlab-source-and-workbooks
+    domain: P5-COM
+    gate: G4 COM
+    requirement: required
+    owner: agent-com-maintainer
+  - id: agent-com-synthetic-sparameter-fixtures
+    domain: P5-COM
+    gate: G4 COM
+    requirement: required
+    owner: agent-com-maintainer
+  - id: agent-com-benchmarks-and-images
+    domain: P5-COM
+    gate: benchmark publication
+    requirement: optional
+    owner: agent-com-maintainer
+  - id: agent-com-local-partial-matlab-oracle
+    domain: P5-COM
+    gate: G4 COM golden
+    requirement: required
+    owner: agent-com-maintainer
+  - id: agent-com-authoritative-matlab-golden
+    domain: P5-COM
+    gate: G4 COM golden
+    requirement: required
+    owner: agent-com-maintainer
+  - id: ads-solver-unresolved
+    domain: P4B-AMI
+    gate: G4 ADS
+    requirement: required
+    owner: external-solver-owner
+external_blockers:
+  - domain: P3B
+    work_items: [P3B-02]
+    assets: [pybert-golden-fixtures]
+    gate_refs:
+      - tools/verify_p3b_02_pybert_semantics.py
+      - docs/baselines/p3b-02-pybert-source-semantic-observation.v1.yaml
+    required_profile: external_asset_oracle
+    profile:
+      selected: null
+      status: unselected_conflicting_source_defaults
+    custody: external_only_hash_bound_observation
+    rights: not_established
+    distribution: blocked_unknown
+    oracle: not_admitted
+  - domain: P4A
+    work_items: [P4A-01, P4A-03]
+    assets: []
+    gate_refs:
+      - tools/verify_p4a_03_selected_model_grammar_consumer.py
+      - docs/baselines/p4a-03-selected-model-grammar-consumer.v1.yaml
+      - docs/baselines/p4a-01-official-object-rights-recheck.v1.yaml
+    required_profile: external_asset_oracle
+    profile:
+      selected: null
+      status: missing_required_selected_profile
+    custody: external_operator_only_observation
+    rights: blocked_external_rights
+    distribution: blocked_unknown
+    oracle: not_admitted
+  - domain: P4B
+    work_items: [P4B-02, P4B-08, P4B-09]
+    assets: [pybert-models, ads-solver-unresolved]
+    gate_refs:
+      - tools/verify_p4b_02_parameter_subset_observation.py
+      - docs/baselines/p4b-02-ads-pcie-gen5-parameter-subset-observation.v1.json
+      - tools/verify_p4b_dual_ami_lane3_admission.py
+      - docs/baselines/p4b-ads-pcie-gen5-dual-ami-lane3-admission.v1.yaml
+    required_profile: external_asset_oracle
+    profile:
+      selected: ads-pcie-gen5-dual-ami-windows-x64-v1
+      status: observed_external_binding_not_admitted
+    custody: external_observation_only
+    rights: not_established
+    distribution: blocked_unknown
+    oracle: runtime_not_admitted
+  - domain: P5
+    work_items: [P5-02, P5-06]
+    assets:
+      - agent-com-matlab-source-and-workbooks
+      - agent-com-synthetic-sparameter-fixtures
+      - agent-com-local-partial-matlab-oracle
+      - agent-com-authoritative-matlab-golden
+    gate_refs:
+      - tools/verify_p5_06r_agent_com_metric_authority_observation.py
+      - docs/baselines/p5-06r-agent-com-metric-authority-observation.v1.yaml
+    required_profile: external_asset_oracle
+    profile:
+      selected: r480
+      status: observed_external_profile_not_authoritative
+    custody: external_source_and_run_observation_only
+    rights: not_established
+    distribution: blocked_unknown
+    oracle: compare_not_admitted
+rights_retention:
+  unresolved_asset_ids:
+    - agent-spice-python-fixtures
+    - agent-spice-native-fixtures
+    - agent-spice-sparam-benchmarks
+    - agent-spice-third-party-solver-material
+    - agent-spice-generated-images
+    - pybert-models
+    - pybert-golden-fixtures
+    - pybert-user-images
+    - agent-com-matlab-source-and-workbooks
+    - agent-com-synthetic-sparameter-fixtures
+    - agent-com-benchmarks-and-images
+    - agent-com-local-partial-matlab-oracle
+    - agent-com-authoritative-matlab-golden
+    - ads-solver-unresolved
+  distribution_authorized: false
+  custody_transferred: false
+  rights_lost: false
+  owner_facts_preserved: true
+bindings:
+  legacy_boundary_verifier:
+    path: tools/verify_p1_04b_legacy_fixture_boundary.py
+    sha256: 1d8886af9a94caae2ff5c5b8db3637a9d4f82c9fba678515ede34a8298b48e3d
+  legacy_boundary_audit:
+    path: docs/baselines/audits/2026-08-16-p1-04b-legacy-fixture-boundary.md
+    sha256: ab6c3b8408fbbce0f3b3b931b83b0aaf2e91d87f813c36f01c4418cdc3476ed4
+  required_profile_facts_verifier:
+    path: tools/verify_p1_legacy_fixture_required_profile_facts.py
+    sha256: 5b2229664ce376fdca6b37d5664879c34592f9873b22916a21c211263827f922
+  comparison_permission_verifier:
+    path: tools/verify_p1_04b_comparison_permission_reconciliation.py
+    sha256: cc6bdcf7b610cac8c0bddf2cb551a4be3406af393350d021d3523d359c5789c7
+  required_profile_facts:
+    path: docs/baselines/p1-legacy-fixture-required-profile-facts.v1.yaml
+    sha256: 3848535dcd03008a8815bd1631f9fea9d8790112c56a3fa401f6821dd9f14596
+  comparison_permission_reconciliation:
+    path: docs/baselines/p1-04b-comparison-permission-reconciliation.v1.yaml
+    sha256: 584032cbacd2a19aee6bca787fa1bbcc5ece2d83232902e3e098bd4657a2cfb0
+non_claims:
+  - scoped_close_is_not_full_p1_04b_item_close
+  - trusted_comparison_is_not_redistribution_permission
+  - trusted_comparison_is_not_product_or_runtime_admission
+  - required_by_labels_are_not_profile_selection
+  - source_archive_identity_is_not_distribution_authority
+  - no_license_or_rights_conclusion
+  - no_external_oracle_acceptance
+  - no_release_promotion
+audit:
+  path: docs/baselines/audits/2026-08-21-p1-04b-oracle-only-scope-closure.md
+  sha256: c1ee373e9786fbd3c2706ec5c7ced9004a35eb17af97bb6ea942b9ac2ca4f703

@@ -2,8 +2,13 @@
 
 //! Clean-room bounded structural parsing for AMI-like text forms.
 //!
-//! This crate intentionally has no AMI parameter, model, ABI, file, or runtime
-//! semantics. It retains only bounded UTF-8 structural text and source spans.
+//! The structural core intentionally has no vendor model, ABI, file, or
+//! runtime semantics. A separate narrow adapter records only the explicitly
+//! selected ADS profile declaration types and host-forwarded subset identity;
+//! it never loads a model or infers a default.
+
+#[path = "ami_parameter_subset_v1.rs"]
+mod p4b_02_parameter_subset_v1;
 
 #[cfg(any(test, feature = "p4b-self-crosscheck"))]
 mod ami_runtime_params_v1;
@@ -409,6 +414,14 @@ pub use ami_text_form_heads_v1::{
 pub use catalog_default_v1::{
     CATALOG_DEFAULT_POLICY_V1, CatalogDefaultErrorV1, materialize_default_v1,
     token_valid_for_type_v1, validate_catalog_defaults_v1,
+};
+pub use p4b_02_parameter_subset_v1::{
+    AMI_PARAMETER_SUBSET_POLICY_V1, AMI_PARAMETER_TREE_POLICY_V1, AmiDeclaredParameterTypeV1,
+    AmiForwardedParameterSubsetV1, AmiParameterFormatV1, AmiParameterProfileLimitsV1,
+    AmiParameterProfileRoleV1, AmiParameterSelectionFormatV1, AmiParameterSelectionV1,
+    AmiParameterTreeEntryV1, AmiParameterUsageV1, AmiRangeV1, AmiSubsetErrorV1,
+    AmiTypedParameterTreeV1, build_ami_parameter_tree_v1, build_forwarded_parameter_subset_v1,
+    selected_rx_forwarded_parameters_v1, selected_tx_forwarded_parameters_v1,
 };
 #[cfg(any(test, feature = "p4b-self-crosscheck"))]
 pub use parameter_catalog_v1::{

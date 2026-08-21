@@ -13,6 +13,7 @@ default = []
 p4b-self-crosscheck = []
 
 [dependencies]
+sha2 = "0.10"
 serde_json = "1"
 
 [[bin]]
@@ -21,6 +22,12 @@ path = "src/bin/p4b_02b_crosscheck_runner.rs"
 test = false
 bench = false
 required-features = ["p4b-self-crosscheck"]
+
+[[bin]]
+name = "p4b_02_ami_parameter_subset_observer"
+path = "src/bin/p4b_02_ami_parameter_subset_observer.rs"
+test = false
+bench = false
 
 [lints]
 workspace = true

@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 7497eb8e61de9ab0a58613eba218392187c83dcb17329b0458302f34e45a4a61
+  tracked_paths_sha256: 41841504260a943bc80238eafe0a1e1f08ebace9fc1983c1e0e30c89ac44523b
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -125,6 +125,12 @@ inventory:
       license: LicenseRef-Provenance-Pending
       provenance: project_authored
       distribution: non-distributed
+    crates/sipi-ami-text/src/ami_parameter_subset_v1.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     crates/sipi-ami-text/src/ami_runtime_params_v1.rs:
       rule: p1-rust-foundation
       class: quarantine
@@ -138,6 +144,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-ami-text/src/ami_text_form_heads_v1.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-ami-text/src/bin/p4b_02_ami_parameter_subset_observer.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -2531,6 +2543,12 @@ inventory:
       license: LicenseRef-Provenance-Pending
       provenance: project_authored
       distribution: non-distributed
+    crates/sipi-cli/src/com_run_artifact_preflight_v1.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     crates/sipi-cli/src/main.rs:
       rule: p1-rust-foundation
       class: quarantine
@@ -3455,6 +3473,12 @@ inventory:
       license: LicenseRef-Provenance-Pending
       provenance: project_authored
       distribution: non-distributed
+    crates/sipi-ibis/src/selected_model_v1.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     crates/sipi-ibis/src/series_pin_mapping_group_v1.rs:
       rule: p1-rust-foundation
       class: quarantine
@@ -3839,6 +3863,12 @@ inventory:
       license: LicenseRef-Provenance-Pending
       provenance: project_authored
       distribution: non-distributed
+    crates/sipi-ibis/tests/p4a_03bk_selected_model_runner.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     crates/sipi-ibis/tests/p4a_03d_model_declaration_runner.rs:
       rule: p1-rust-foundation
       class: quarantine
@@ -4074,6 +4104,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-link/src/receiver.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-link/src/rx_ctle_ffe_v1.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -7871,6 +7907,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-21-p1-04b-oracle-only-scope-closure.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-21-p1-legacy-fixture-required-profile-facts.md:
       rule: historical-docs
       class: migration_only
@@ -7926,6 +7968,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-21-p3b-02-equalizer-semantics-gap.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-21-p3b-02-explicit-semantics-and-pybert-observation.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8045,6 +8093,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-21-p4a-03-selected-model-grammar-consumer.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-21-p4a-03-selected-model-missing-selection.md:
       rule: historical-docs
       class: migration_only
@@ -8064,6 +8118,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-21-p4b-02-parameter-selection.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-21-p4b-02-parameter-subset-observation.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8135,6 +8195,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-21-p5-06r-agent-com-metric-authority-observation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-21-p5-08e-com-run-artifact-execution.md:
       rule: historical-docs
       class: migration_only
@@ -8142,6 +8208,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-21-p5-08f-specified-com-artifact-route.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-21-p5-08g-com-run-specified-scoped-closure.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8184,6 +8256,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-21-p7-license-notice-identity-inconsistency-reconciliation-v2.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-21-p7-retirement-deletion-release-audit.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8501,6 +8579,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p1-04b-oracle-only-scope-closure.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p1-legacy-fixture-required-profile-facts.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -8574,6 +8658,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3b-02-pybert-profile-source-audit.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3b-02-pybert-source-semantic-observation.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -9437,6 +9527,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p4a-03-selected-model-grammar-consumer.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p4a-03-selected-model-missing-selection-blocker.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -10043,6 +10139,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p4a-03bk-selected-model-crosscheck-evidence.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p4a-03d-exact-asset-structural-consumer-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -10542,6 +10644,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p4a-official-pure-ibis-structural-scope-preflight.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p4b-02-ads-pcie-gen5-parameter-subset-observation.v1.json:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -14759,6 +14867,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p5-06r-agent-com-metric-authority-observation.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p5-07-canonical-json-property-surface.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -14826,6 +14940,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p5-08f-specified-com-artifact-route.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p5-08g-com-run-specified-scoped-closure.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -14994,6 +15114,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p7-processprng-layout-policy.v2.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p7-retirement-deletion-release-audit.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -15869,6 +15995,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/clean-room/specs/p4a-ibis-selected-model-grammar-consumer.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/clean-room/specs/p4a-ibis-structural-parser-foundation.v1.md:
       rule: historical-docs
       class: migration_only
@@ -15966,6 +16098,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/clean-room/specs/p5-agent-com-git-object-preflight.v1.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/clean-room/specs/p5-agent-com-metric-authority-observation.v1.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -20681,6 +20819,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/observe_p3b_02_pybert_semantics.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/observe_p3c_ads_explicit_convolution_sweep.py:
       rule: migration-tools
       class: migration_only
@@ -21210,6 +21354,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/run_p4a_03bg_series_pin_table_selector_thresholds_crosscheck.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/run_p4a_03bk_selected_model_crosscheck.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -23303,6 +23453,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p1_04b_oracle_only_scope_closure.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p1_foundation_gate_coverage.py:
       rule: migration-tools
       class: migration_only
@@ -23412,6 +23568,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p3b_02_pybert_profile_source_audit.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p3b_02_pybert_semantics.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -24035,6 +24197,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p4a_03_selected_model_grammar_consumer.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p4a_03_selected_model_missing_selection_blocker.py:
       rule: migration-tools
       class: migration_only
@@ -24480,6 +24648,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p4b_02_parameter_selection.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p4b_02_parameter_subset_observation.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -26057,6 +26231,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p5_06r_agent_com_metric_authority_observation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p5_07a_fixture_inventory.py:
       rule: migration-tools
       class: migration_only
@@ -26100,6 +26280,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p5_08f_specified_com_artifact_route.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p5_08g_com_run_specified_scoped_closure.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -26268,6 +26454,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p7_release_composition.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p7_retirement_deletion_release_audit.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -26693,6 +26885,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_p1_04b_oracle_only_scope_closure.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_p1_foundation_gate_coverage.py:
       rule: migration-tools
       class: migration_only
@@ -26802,6 +27000,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3b_02_pybert_profile_source_audit.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3b_02_pybert_semantics.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -27431,6 +27635,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_p4a_03_selected_model_grammar_consumer.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_p4a_03_selected_model_missing_selection_blocker.py:
       rule: migration-tools
       class: migration_only
@@ -27876,6 +28086,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p4b_02_parameter_selection.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p4b_02_parameter_subset_observation.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -29453,6 +29669,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_p5_06r_agent_com_metric_authority_observation.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_p5_07a_fixture_inventory.py:
       rule: migration-tools
       class: migration_only
@@ -29496,6 +29718,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p5_08f_specified_com_artifact_route.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p5_08g_com_run_specified_scoped_closure.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -29682,6 +29910,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p7_release_composition.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p7_retirement_deletion_release_audit.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

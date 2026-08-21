@@ -1,25 +1,36 @@
 schema: sipi.p4b-02.production-parameter-adapter-selection.v1
-status: production_adapter_selected_external_profile_blocked
+status: external_asset_oracle
 selection_charter:
   path: docs/baselines/p4b-02-parameter-selection-charter.v1.yaml
-  sha256: 4a30714d148cdf15f45ae1c87e6cc313bfdbb01050141149e7fbfa5137345dcd
+  sha256: ae5abb548c38d69935ce8f724adc7072c38d1a2d6284636cee1a4046592ccaf8
 production_adapter:
-  representation: AmiTextBindingV1
-  selection: bounded_raw_ami_text_binding
+  representation: AmiForwardedParameterSubsetV1
+  selection: bounded_typed_host_forwarded_subset
   worker:
     path: crates/sipi-ami-worker/src/lib.rs
-    sha256: ec918dce4d55ff348ad93cca978947df291642f4c23974f9740fedf1f75e8902
-    consumer: run_one_job
+    sha256: 074f3c6669a2db100739376c1b12b8b1a0bbea2c5aa9a8dcaa1b17d0c90a6e5c
+    consumer: prepare_forwarded_parameter_subset_v1
     parse_symbol: parse_and_bind_v1
   host:
     path: crates/sipi-ami-host/src/lib.rs
-    sha256: 4a092661dad97199af08cb089290a913d2563d250fdc88fa5503048c31b78540
-    consumer: AmiHostV1::initialize
-    verify_symbol: verify_binding_v1
+    sha256: b1905b62962148844f4576dc323dc13cd6a71a8f38cc3633d13b42cb51050b71
+    consumer: AmiHostV1::initialize_forwarded_subset
+    verify_symbol: AmiForwardedParameterSubsetV1::verify_binding_v1
     abi_sink: AMI_Init
   text_core:
     path: crates/sipi-ami-text/src/lib.rs
-    sha256: 54b9a6abc85216e0f2161d3b88bec75a775521c4e0a711fc5de5eec81d6841e2
+    sha256: d7a85027984207a65ad96257b2e349767ca9550402f38f0f5632d832a503e114
+  typed_adapter:
+    path: crates/sipi-ami-text/src/ami_parameter_subset_v1.rs
+    sha256: 774770abce9b6aea3d80630753edcc1afad4c9e09782f369222f03cc0f303c1c
+    policy: sipi.p4b-02.ami-parameter-subset.v1.host-forwarded-only
+    selected_profiles: [tx, rx]
+    explicit_values: true
+    defaults_or_auto_tune: false
+  observation:
+    path: docs/baselines/p4b-02-ads-pcie-gen5-parameter-subset-observation.v1.json
+    sha256: 705be3f1bd41d17505f46a787ab1373e16afbaacde8e3fe6bff6c762b2900367
+    fresh_reads_per_profile: 2
   selected_semantic_helper_modules: []
 inventory:
   total_feature_quarantined_modules: 193
@@ -44,12 +55,13 @@ blockers:
     - isolated_vendor_runtime
     - external_waveform_parity
 non_claims:
-  - no_typed_parameter_semantics_selected
+  - typed_subset_identity_only
   - no_quarantined_helper_promoted
   - no_delete_candidate_removed
   - not_vendor_model_acceptance
+  - not_dll_internal_parameter_consumption
   - not_external_runtime_or_waveform_parity
   - not_release_evidence
 audit:
   path: docs/baselines/audits/2026-08-21-p4b-02-production-parameter-adapter-selection.md
-  sha256: f3f9b65ed9f4894131ad2fb898fd2d33dfb0fdd65a5dbe31e937ea7d3ddf539d
+  sha256: 89cba0a9480c92de19d49040d2d9109371b0a0081241d416486707ed4026483f

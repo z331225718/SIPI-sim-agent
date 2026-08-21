@@ -13,11 +13,18 @@ class CurrentOwnerInputRequestTests(unittest.TestCase):
         self.request = GATE._load(GATE.CURRENT_REQUEST)
         self.ledger = GATE._load(GATE.LEDGER)
 
-    def test_current_request_has_exactly_six_external_blockers(self) -> None:
+    def test_current_request_has_exactly_ten_external_blockers(self) -> None:
         result = GATE.validate_current_request(self.request, ledger=self.ledger)
         self.assertTrue(result["valid"])
         self.assertEqual({entry["id"] for entry in self.request["entries"]}, set(GATE.EXTERNAL_IDS))
+        self.assertEqual(len(self.request["entries"]), 10)
         self.assertEqual(result["owner_decision"], 0)
+
+    def test_new_external_rows_preserve_delegated_discretion_without_profile_selection(self) -> None:
+        points = {entry["id"]: entry["decision_point"] for entry in self.request["entries"]}
+        for item_id in ("P3B-02", "P3C-03", "P4A-03", "P4B-02"):
+            self.assertIn("owner", points[item_id])
+            self.assertIn("no mechanically unique", points[item_id])
 
     def test_rejects_owner_decision_entry(self) -> None:
         request = copy.deepcopy(self.request)

@@ -1,0 +1,110 @@
+schema: sipi.p5-08g.com-run-specified-scoped-closure.v1
+status: scoped_specified_non_oracle_closed_p5_08_main_open
+policy: sipi.p5-08g.com-run-artifact-specified-non-oracle-scoped-closure-v1
+closure:
+  d6: A
+  route: [com, run-artifact]
+  scope: specified_non_oracle_exact_artifact_route
+  closure_kind: additive_child_closure
+  p5_08_scoped_close: true
+  p5_08_main_item_closed: false
+  child_closure_required: true
+  rationale: full_p5_08_conformance_requires_external_profile_oracle_and_acceptance
+threat_model:
+  writer_model: non_hostile_concurrent_writer_only
+  custody: local_exact_verified_no_hostile_writer_guarantee
+  hostile_writer_safe: false
+  external_provenance: false
+  external_ownership: false
+  external_signature: false
+implementation:
+  parameter_module: {path: crates/sipi-com/src/com_specified_parameter_ingestion_v1.rs, sha256: 9f5ed916d2566b66e2b3401ecd3fe8973020fce9755cf71496f3069c5d0b28b6}
+  execution_module: {path: crates/sipi-com/src/com_specified_artifact_execution_v1.rs, sha256: b25be2b0450137ccd8a5cdf15640c5b8f0dff68aed19fb36452944198017633f}
+  public_surface: {path: crates/sipi-com/src/lib.rs, sha256: 64f6e08a176f3f30f1d1144ffe30c97f78b6ca2a08cb8b5151fb69468b422368}
+  cli_surface: {path: crates/sipi-cli/src/main.rs, sha256: f9e41429321731659ea458de1bd4550fe0a195e6bc8ba0d3ff910980b36d26b0}
+  preflight_module: {path: crates/sipi-cli/src/com_run_artifact_preflight_v1.rs, sha256: c39cf4b7a4cfc015226a25a7e368860bf3fa33af23c7c1c3394f679815034525}
+  contract_source: {path: crates/sipi-contracts/src/lib.rs, sha256: 6bc98037d55bc76a93edeca8b5930d29daf84893a6c86e1134c72b07eb758d12}
+  contract_schema: {path: crates/sipi-contracts/schemas/sipi.com.run-artifact-request.v1.schema.json, sha256: 1cdfb38d304128826e06b30ef3b43eb88c59b06a27f4ff26684b3b2210d6d5b0}
+  artifact_custody_source: {path: crates/sipi-artifacts/src/lib.rs, sha256: 53e8636b2f61bb1d58e043de8bcc505830f84077b95b0d4333cd57965cab9669}
+  route: [com, run-artifact]
+  request_schema: sipi.com.run-artifact-request.v1
+  response_schema: sipi.com.run-artifact-specified-result.v1
+  library_entrypoint: execute_com_run_artifact_from_product_values_v1
+  cli_entrypoint: com_run_artifact_stdin
+contract:
+  caller_owned_parameter_partition:
+    authority: caller_supplied_explicit_consumed_provided_defaulted_unconsumed_sets
+    unknown_fields: rejected
+    values_outside_consumed: rejected
+    provided_default_overlap: rejected
+    duplicate_unconsumed: rejected
+    workbook_values: forbidden
+    profile_inference: false
+    auto_tuning: false
+  pulse:
+    exact_file_set: [pulse.f64le]
+    encoding: finite_little_endian_f64
+    sealed_manifest_sha256_required: true
+    maximum_manifest_bytes: 65536
+    maximum_payload_bytes: 524288
+    custody_call: consume_exact_verified_v1
+  request:
+    maximum_bytes: 65536
+    maximum_containers: 256
+    maximum_container_items: 256
+    maximum_string_bytes: 4096
+    maximum_nesting: 32
+    budget_stage: bounded_stdin_reader_and_lexical_preflight_before_deserialize_or_artifact_access
+  result:
+    schema: sipi.com.run-artifact-specified-result.v1
+    exact_file: result.json
+    maximum_bytes: 16384
+    publication: immutable_publish_new
+    output_binding: caller_owned_root_and_id
+  leakage:
+    path_leakage: false
+    waveform_leakage: false
+    payload_leakage: false
+    result_allowlist: [artifact_id, manifest_sha256, payload_name, pulse_sample_count, parameter_key_sets, bounded_result_scalars, scope_flags]
+scope:
+  product_owned_bounded_execution: true
+  agent_com_parity: false
+  external_provenance: false
+  external_ownership: false
+  external_signature: false
+  hostile_writer_safe: false
+  authoritative_profile: false
+  authoritative_oracle: false
+  external_acceptance: false
+  ieee_certification: false
+  release_evidence: false
+  p5_02_unchanged: true
+  p5_06_unchanged: true
+bindings:
+  - {id: p5-08e, path: docs/baselines/p5-08e-com-run-artifact-execution.v1.yaml, sha256: baeb4de8cf0698505ce622eaee2fbea1a0051bcff8e6ab889f6e129a6a4a9379}
+  - {id: p5-08f, path: docs/baselines/p5-08f-specified-com-artifact-route.v1.yaml, sha256: 8d7fa496b43e3c4c6ef685be1f36113d0307c3cdb91f0d2dac7dd9e3c73ccded}
+non_claims:
+  - not_agent_com_parity
+  - not_external_provenance
+  - not_external_ownership
+  - not_external_signature
+  - not_hostile_writer_safe
+  - not_authoritative_profile_or_oracle
+  - not_acceptance
+  - not_ieee_certification
+  - not_release_evidence
+  - not_p5_02_or_p5_06_changed
+tests:
+  rust_surface: {path: crates/sipi-cli/src/main.rs, sha256: f9e41429321731659ea458de1bd4550fe0a195e6bc8ba0d3ff910980b36d26b0}
+  required_cases:
+    - specified_com_artifact_route_is_explicit_and_legacy_com_stays_closed
+    - specified_com_request_result_and_cli_route_share_one_bounded_schema
+    - reports_provided_defaulted_and_unconsumed_without_workbook_claim
+    - rejects_values_outside_partition
+    - rejects_provided_default_overlap
+    - accepts_bounded_nested_request_shape
+    - rejects_oversized_request_before_deserialization
+    - rejects_long_string_and_container_budget
+audit:
+  path: docs/baselines/audits/2026-08-21-p5-08g-com-run-specified-scoped-closure.md
+  sha256: 3facd2a9aacbf5019e5a3b3a7b5c9da59df218f71847f5aa6430f1ff658db2a7

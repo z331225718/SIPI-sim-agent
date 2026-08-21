@@ -25,7 +25,7 @@ class ProductionAdapterSelectionTests(unittest.TestCase):
     def test_current_selection_is_valid(self) -> None:
         result = GATE.validate()
         self.assertTrue(result["valid"])
-        self.assertEqual(result["adapter"], "bounded_raw_ami_text_binding")
+        self.assertEqual(result["adapter"], "bounded_typed_host_forwarded_subset")
         self.assertEqual(result["selected_semantic_helper_count"], 0)
         self.assertEqual(result["quarantine_count"], 34)
         self.assertEqual(result["delete_candidate_count"], 159)
@@ -43,6 +43,13 @@ class ProductionAdapterSelectionTests(unittest.TestCase):
         document["production_adapter"]["worker"]["sha256"] = "0" * 64
         with patch.object(GATE, "EVIDENCE", self._path(document)):
             with self.assertRaisesRegex(GATE.AdapterSelectionError, "worker_binding_invalid"):
+                GATE.validate()
+
+    def test_rejects_typed_adapter_hash_drift(self) -> None:
+        document = copy.deepcopy(self.document)
+        document["production_adapter"]["typed_adapter"]["sha256"] = "0" * 64
+        with patch.object(GATE, "EVIDENCE", self._path(document)):
+            with self.assertRaisesRegex(GATE.AdapterSelectionError, "typed_adapter_binding_invalid"):
                 GATE.validate()
 
     def test_rejects_inventory_promotion(self) -> None:

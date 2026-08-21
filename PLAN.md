@@ -387,7 +387,7 @@ PyBERT 和 PyAMI 不作为实现代码输入。观察侧将既有 7-profile、S2
 
 **Current owner-input reconciliation v2 (2026-08-21):**
 
-- P3B-02: owner decision A reconciled; remaining blocker `semantics_not_implemented`.
+- P3B-02: owner decision A reconciled; implementation-ready CTLE->FFE semantics remain blocked on an external profile/oracle (`implementation_ready_profile_external`), with no profile selected.
 - P3B-04: owner decision A reconciled; scoped owner row closed; current public `cdr=none`.
 - P3B-05: owner decision A reconciled; scoped owner row closed; deterministic PRBS9/time-warp core remains bounded.
 - P3C-01: owner decision A reconciled; scoped owner row closed; exact profile is receiver-free waveform-only.
@@ -399,11 +399,26 @@ they are not current owner-request entries. The deterministic **P3B-05b**
 decision-surface preflight remains recorded as a completed historical slice.
 
 The current owner request is now limited to external asset/oracle blockers
-`P1-04B`, `P4B-08`, `P4B-09`, `P5-02`, and `P5-06`. The additive
+`P1-04B`, `P3B-02`, `P3C-03`, `P4A-01`, `P4A-03`, `P4B-02`, `P4B-08`,
+`P4B-09`, `P5-02`, and `P5-06`. The additive
 reconciliation does not alter the historical v1 request/checklist or product
 Rust semantics; P4A structural inventory is not behavior selection, and the
 P3B/P3C non-claims remain enforced by
 `tools/verify_owner_decision_reconciliation_v2.py`.
+
+**Wave 2 additive reconciliation (2026-08-21):** P3B-02 CTLE->FFE stage
+ordering and bounded composition, P3C-03 strict typed COM/ERL/TD-ILN compare,
+P4A-03 selected-model grammar consumption, and P4B-02 AMI parameter-subset
+observation are explicit implementation slices. The user delegated the
+remaining profile/selection judgment, but no mechanically unique external
+profile, rights, custody, checkpoint, TD-ILN, tolerance, or runtime facts are
+present. Accordingly the 20 unchecked main items remain open and are
+classified as 10 `external_asset_oracle`, 1 `semantics_not_implemented` (P5-08),
+and 9 `release_gate`; no acceptance or release state is promoted. New
+child/audit gates are additive only: P1-04B oracle-only closure, P3B PyBERT
+observation, P4A selected-model grammar consumer, P4B parameter-subset
+observation, P5-06r metric authority observation, P5-08g specified COM route,
+and P7 retirement/deletion audit.
 
 **Recommended bundle authorization reconciliation (2026-08-21):** user reply
 `全部按推荐` is recorded by

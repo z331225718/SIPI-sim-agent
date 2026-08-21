@@ -2,7 +2,7 @@
 
 The v1 owner request is historical and immutable.  This gate binds the
 additive v2 decision record to the current ledger/PLAN state and requires the
-current request to contain only the six remaining external asset/oracle blockers.
+current request to contain only the ten remaining external asset/oracle blockers.
 """
 
 from __future__ import annotations
@@ -29,17 +29,25 @@ HISTORICAL_CHECKLIST = ROOT / "docs/baselines/owner-decision-checklist.v1.md"
 SCHEMA = "sipi.owner-decision-reconciliation.v2"
 CURRENT_REQUEST_SCHEMA = "sipi.owner-input-request.v2"
 SEMANTICS = "semantics_not_implemented"
+IMPLEMENTATION_READY_PROFILE_EXTERNAL = "implementation_ready_profile_external"
 SCOPED_RESOLVED = "resolved_scoped"
 EXTERNAL = "external_asset_oracle"
 OWNER_IDS = ("P3B-02", "P3B-04", "P3B-05", "P3C-01", "P4A-01")
-EXTERNAL_IDS = ("P1-04B", "P4A-01", "P4B-08", "P4B-09", "P5-02", "P5-06")
+EXTERNAL_IDS = (
+    "P1-04B", "P3B-02", "P3C-03", "P4A-01", "P4A-03",
+    "P4B-02", "P4B-08", "P4B-09", "P5-02", "P5-06",
+)
 CURRENT_REQUEST_PURPOSE = (
-    "Current owner-input request after the five recorded semantic decisions were reconciled. "
+    "Current owner-input request after the five recorded owner decisions were reconciled. "
     "Resolved owner-decision rows are not repeated here; only external asset/oracle blockers remain."
 )
 CURRENT_REQUEST_DECISION_POINTS = {
     "P1-04B": "provide exact selected profile, custody, rights, and distribution facts for the trusted external fixtures; comparison permission is already recorded",
+    "P3B-02": "provide authoritative external Link CTLE/FFE profile, source custody, and rights facts; owner stage-order discretion is recorded, but conflicting PyBERT defaults/shapes leave no mechanically unique profile selection",
+    "P3C-03": "provide authoritative TD_ILN value, exact clean checkpoint/input provenance, and per-metric tolerances; owner compare scope is recorded, but no mechanically unique external metric authority is available",
     "P4A-01": "provide exact complete official IBIS asset custody, rights, selected profile, and admissible model/corner facts; the tracked truncated prefix is rejected for semantic use",
+    "P4A-03": "provide exact complete official IBIS object rights, selected model/selector/branch/corner/PVT/table-family facts; owner delegated selection discretion is recorded, but no mechanically unique external behavior profile exists",
+    "P4B-02": "provide exact AMI asset, parameter subset/default, compatibility, rights, and runtime facts; owner delegated parameter-selection discretion is recorded, but no mechanically unique external profile is available",
     "P4B-08": "provide AMI rights, exact parameter compatibility, dynamic dependency closure, isolated vendor worker, and fresh-runtime evidence; S4P topology/port mapping is already observed",
     "P4B-09": "provide an authorized profile and fresh isolated runtime evidence for sipi ami run; silent fallback is prohibited",
     "P5-02": "provide authoritative MATLAB/Agent-COM oracle material and the remaining warning/default-layout evidence beyond the pinned MLSE source observations",
@@ -55,6 +63,34 @@ CURRENT_REQUEST_GATES = {
         "tools/verify_p1_04b_legacy_fixture_boundary.py",
         "tools/verify_p1_legacy_fixture_required_profile_facts.py",
         "tools/verify_p1_04b_comparison_permission_reconciliation.py",
+        "tools/verify_p1_04b_oracle_only_scope_closure.py",
+    ],
+    "P3B-02": [
+        "tools/verify_p3b_02_link_kernel_singleton.py",
+        "tools/verify_p3_original_project_eye_jitter_semantics_observation.py",
+        "tools/verify_owner_decision_reconciliation_v2.py",
+        "tools/verify_p3b_02_equalizer_semantics_gap.py",
+        "tools/verify_p3b_02_named_fir_prerequisite.py",
+        "tools/verify_p3b_02_pybert_profile_source_audit.py",
+        "tools/verify_p3b_02_pybert_semantics.py",
+    ],
+    "P3C-03": [
+        "tools/verify_release_capability_publication.py",
+        "tools/verify_p3c_03_profile_compare_decision_preflight.py",
+        "tools/verify_p3c_03c_metric_compare.py",
+        "tools/verify_p3c_03d_db_tolerance.py",
+        "tools/verify_p3c_03e_compliance_report.py",
+        "tools/verify_p3c_04x_c4_profile.py",
+        "tools/verify_p3c_04y_c4_oracle_compare.py",
+        "tools/verify_p3c_exact_impulse_current_replay_evidence.py",
+        "tools/verify_p3c_exact_impulse_current_replay_identity_reconciliation_v3.py",
+        "tools/verify_p3c_original_project_channel_semantics_observation.py",
+        "tools/verify_p3_original_project_eye_jitter_semantics_observation.py",
+        "tools/verify_p3_ads_retained_workspace_jitter_closure_observation.py",
+        "tools/verify_p3c_selected_highloss_residual_dft_currentness_reconciliation.py",
+        "tools/verify_p3c_03_com_metric_bundle_capability.py",
+        "tools/verify_p3c_03c_com_metric_checkpoint_boundary.py",
+        "tools/verify_p5_06r_agent_com_metric_authority_observation.py",
     ],
     "P4A-01": [
         "tools/verify_p4a_ibis_example_rx_candidate_inventory.py",
@@ -107,14 +143,22 @@ CURRENT_REQUEST_GATES = {
         "tools/verify_p5_06k_required_com_compare_contract_gap.py",
         "tools/verify_p5_06q_agent_com_clean_oracle_observation.py",
         "tools/verify_p3c_03c_com_metric_checkpoint_boundary.py",
+        "tools/verify_p5_06r_agent_com_metric_authority_observation.py",
     ],
 }
+# Keep the large generated gate inventories for the two new external rows
+# bound to the ledger while retaining an exact request/ledger equality check.
+_CURRENT_LEDGER = yaml.safe_load(LEDGER.read_text(encoding="utf-8"))
+for _item_id in ("P4A-03", "P4B-02"):
+    CURRENT_REQUEST_GATES[_item_id] = next(
+        row["gate"] for row in _CURRENT_LEDGER["items"] if row["id"] == _item_id
+    )
 CURRENT_LEDGER_IDS = {
     "P1-04B", "P3B-02", "P3C-03", "P4A-01", "P4A-03",
     "P4B-02", "P4B-08", "P4B-09", "P5-02", "P5-06", "P5-08",
     "P7-01", "P7-02", "P7-03", "P7-04", "P7-05", "P7-06", "P7-07", "P7-08", "P7-09",
 }
-RECONCILED_SEMANTICS_GATES = {
+RECONCILED_PROFILE_EXTERNAL_GATES = {
     "P3B-02": [
         "tools/verify_p3b_02_link_kernel_singleton.py",
         "tools/verify_p3_original_project_eye_jitter_semantics_observation.py",
@@ -122,6 +166,7 @@ RECONCILED_SEMANTICS_GATES = {
         "tools/verify_p3b_02_equalizer_semantics_gap.py",
         "tools/verify_p3b_02_named_fir_prerequisite.py",
         "tools/verify_p3b_02_pybert_profile_source_audit.py",
+        "tools/verify_p3b_02_pybert_semantics.py",
     ],
 }
 HISTORICAL_REQUEST_SHA256 = "a38f3688b343ed83c1c79c3c32cf5f459c1ab99fbc7fef7f1cdc825fe792c677"
@@ -214,6 +259,7 @@ def _expected_non_claims() -> dict[str, set[str]]:
             "does_not_widen_owner_input_request_v1",
             "does_not_enable_automatic_tuning",
             "does_not_select_a_silent_default_stage",
+            "does_not_claim_a_profile_is_selected_from_external_sources",
             "does_not_claim_ctle_or_ffe_runtime_implementation",
         },
         "P3B-04": {
@@ -347,7 +393,7 @@ def validate(
         "schema", "status", "authority", "scope", "decisions", "non_claims", "ledger_ref", "current_request_ref", "audit_ref"
     }, "reconciliation_shape_invalid")
     _require(document.get("schema") == SCHEMA, "reconciliation_schema_invalid")
-    _require(document.get("status") == "current_owner_decisions_reconciled_semantics_pending", "reconciliation_status_invalid")
+    _require(document.get("status") == "current_owner_decisions_reconciled_implementation_ready_profile_external", "reconciliation_status_invalid")
     authority = document.get("authority")
     _require(isinstance(authority, dict), "authority_invalid")
     _require(authority.get("actor") == "user" and authority.get("decision_label") == "A", "authority_decision_invalid")
@@ -381,7 +427,13 @@ def validate(
         _require(decision_id not in by_id, f"decision_duplicate:{decision_id}")
         _require(decision.get("answer") == "A", f"decision_answer_invalid:{decision_id}")
         _require(decision.get("blocker_before") == "owner_decision", f"decision_before_invalid:{decision_id}")
-        expected_after = SEMANTICS if decision_id in {"P3B-02", "P4A-01"} else SCOPED_RESOLVED
+        expected_after = (
+            IMPLEMENTATION_READY_PROFILE_EXTERNAL
+            if decision_id == "P3B-02"
+            else SEMANTICS
+            if decision_id == "P4A-01"
+            else SCOPED_RESOLVED
+        )
         _require(decision.get("blocker_after") == expected_after, f"decision_after_invalid:{decision_id}")
         _require(decision.get("current_request") is False, f"decision_request_flag_invalid:{decision_id}")
         _require(decision.get("recommendation") == expected_recommendations[decision_id], f"decision_recommendation_invalid:{decision_id}")
@@ -405,8 +457,8 @@ def validate(
     _require(set(rows) == CURRENT_LEDGER_IDS, "ledger_item_set_invalid")
     for item_id in ("P3B-02",):
         row = rows.get(item_id)
-        _require(row is not None and row.get("blocker") == SEMANTICS, f"ledger_reclassified_state_invalid:{item_id}")
-        _require(row.get("gate") == RECONCILED_SEMANTICS_GATES[item_id], f"reconciliation_gate_policy_drift:{item_id}")
+        _require(row is not None and row.get("blocker") == EXTERNAL, f"ledger_reclassified_state_invalid:{item_id}")
+        _require(row.get("gate") == RECONCILED_PROFILE_EXTERNAL_GATES[item_id], f"reconciliation_gate_policy_drift:{item_id}")
     for item_id in ("P3B-04", "P3B-05", "P3C-01"):
         _require(item_id not in rows, f"scoped_resolved_item_remains_open:{item_id}")
     _require(not any(row.get("blocker") == "owner_decision" for row in rows.values()), "ledger_owner_decision_class_remains")

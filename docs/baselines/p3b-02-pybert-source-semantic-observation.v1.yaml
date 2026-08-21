@@ -1,0 +1,155 @@
+{
+  "external_source": {
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "custody": "external_only_hash_bound",
+    "license": {
+      "git_blob": "64d198ba43675ede5fbdef1ec918a63954951640",
+      "path": "LICENSE",
+      "spdx": "BSD-3-Clause"
+    },
+    "objects": {
+      "native/pybert-core/src/equalization.rs": {
+        "git_blob_sha1": "ae91583c5675a82fe229918c41602b8531fb775d",
+        "marker_presence_verified": true,
+        "markers": [
+          "pub struct CtleConfig",
+          "pub fn ctle_frequency_response",
+          "pub fn ctle_impulse_response",
+          "pub fn ffe_impulse_response",
+          "pub fn apply_ffe"
+        ]
+      },
+      "native/pybert-core/src/input.rs": {
+        "git_blob_sha1": "ae6d1883b65640d1719022df2c9e8b0763636dc0",
+        "marker_presence_verified": true,
+        "markers": [
+          "pub struct FfeConfigV1",
+          "pub cursor_position: usize",
+          "pub struct CtleConfigV1",
+          "pub native_ctle_enabled: bool"
+        ]
+      },
+      "native/pybert-core/src/simulation.rs": {
+        "git_blob_sha1": "1f19bff64315e0042bab89d67e9131c289f5e583",
+        "marker_presence_verified": true,
+        "markers": [
+          "let rx_filter",
+          "let ctle_output",
+          "let rx_ffe_weights",
+          "sparse_tapped_convolve_truncated(&ctle_output"
+        ]
+      },
+      "src/pybert/models/bert.py": {
+        "git_blob_sha1": "f04340c1028078175b26d7882efeeaf96f001abf",
+        "marker_presence_verified": true,
+        "markers": [
+          "def _get_native_ctle_impulse",
+          "make_ctle(rx_bw, peak_freq, peak_mag, w)",
+          "impulse = irfft(ctle_H)",
+          "kernel = interp1d(t_irfft, impulse, bounds_error=False, fill_value=0)",
+          "ctle_h *= sum(impulse) / sum(ctle_h)",
+          "ctle_h, _ = trim_impulse(ctle_h, front_porch=False, min_len=min_len, max_len=max_len)",
+          "def _run_rx_ffe_stage",
+          "ffe_out = _sparse_tapped_convolve(ctle_out, ffe_h, len(ctle_out))",
+          "ffe_out = _linear_convolve(ctle_out, ffe_h)[:len(ctle_out)]"
+        ]
+      },
+      "src/pybert/pybert.py": {
+        "git_blob_sha1": "1af665c4595fff1ff5fb30341fe063bd10e5cd89",
+        "marker_presence_verified": true,
+        "markers": [
+          "gPeakFreq",
+          "gPeakMag",
+          "gNtaps"
+        ]
+      },
+      "src/pybert_web/engine_adapter.py": {
+        "git_blob_sha1": "8cdb9fb612635b58cf2e071a9e90d07d272faa61",
+        "marker_presence_verified": true,
+        "markers": [
+          "\"peakMagnitudeDb\": rx.peak_mag",
+          "\"cursorPosition\": 5",
+          "\"ffe\": {",
+          "receive FFE"
+        ]
+      },
+      "src/pybert_web/models.py": {
+        "git_blob_sha1": "ec69a14ed97dbb500e57e378c4d8f39d359aaf20",
+        "marker_presence_verified": true,
+        "markers": [
+          "ffe_weights: list[float]",
+          "cursor_pos: int",
+          "peak_mag: float = Field(default=4.0",
+          "ctle_enable: bool = True"
+        ]
+      }
+    },
+    "repository": "Py-bert-agent",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+  },
+  "non_claims": [
+    "No PyBERT source bytes are stored or redistributed by this report.",
+    "The observation is not external numeric parity or acceptance.",
+    "The product does not select a profile by oracle closeness.",
+    "The v1 bypass-only wire contract is unchanged."
+  ],
+  "product": {
+    "path": "crates/sipi-link/src/rx_ctle_ffe_v1.rs",
+    "policy": "sipi.p3b-02.rx-ctle-ffe-explicit-semantics-v1",
+    "runtime_surface": "in_memory_caller_supplied_only",
+    "sha256": "a97f518f0f4368e53bc512f6237921e475f7c1e897b72c77677aed993a34a6cc",
+    "wire_v1": "bypass_only_unchanged"
+  },
+  "profile_status": {
+    "reason": "pinned source semantics are observed but conflicting defaults do not mechanically select one profile",
+    "required": "external_asset_oracle",
+    "selected_profile": null
+  },
+  "schema": "sipi.p3b-02.pybert-source-semantic-observation.v1",
+  "semantics": {
+    "chain_order": [
+      "RX CTLE",
+      "RX FFE"
+    ],
+    "ctle": {
+      "grid": "explicit_uniform_sample_interval_count_and_input_sample_zero_origin",
+      "normalization": "explicit_none_unit_sum_or_peak_abs_target",
+      "state": "explicit_zero_initial",
+      "transfer_representation": "caller_supplied_causal_time_domain_impulse"
+    },
+    "ffe": {
+      "cursor": "explicit_index_and_output_origin_convention",
+      "domain": "explicit_sample_spaced_or_ui_spaced",
+      "sign": "explicit_direct_or_negated",
+      "state": "explicit_zero_initial",
+      "tap_order": "explicit_ascending_or_descending_time",
+      "units": "explicit_normalized_voltage_ratio"
+    },
+    "shared": {
+      "bounds": "caller_supplied_output_and_mac_limits_fail_closed",
+      "kernel": "sipi_link_convolve_causal_fir_v1_via_named_prerequisite",
+      "output": "full_linear_causal_convolution_with_negative_precursor_axis_when_selected",
+      "timebase": "uniform_zero_origin_input_and_exact_stage_interval_match",
+      "tuning": "no_auto_tune_or_silent_fallback"
+    },
+    "stage_selection": "explicit_per_stage_bypass_or_caller_profile"
+  },
+  "source_observations": {
+    "default_conflict": {
+      "legacy_peak_magnitude_db": 1.7,
+      "profile_selection": null,
+      "selection_by_oracle_closeness": false,
+      "web_peak_magnitude_db": 4.0,
+      "web_rx_cursor_position": 5.0
+    },
+    "legacy_ctle": {
+      "semantic": "make_ctle_to_irfft_to_interp1d_to_sum_normalization_to_trim",
+      "source": "src/pybert/models/bert.py"
+    },
+    "legacy_ffe": {
+      "semantic": "sample_spaced_taps_after_ctle_with_sparse_or_linear_convolution_truncated_to_input",
+      "source": "src/pybert/models/bert.py"
+    }
+  },
+  "status": "observed_product_semantics_external_profile_required"
+}

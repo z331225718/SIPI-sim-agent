@@ -28,15 +28,15 @@
       "component": "sipi-ami-host",
       "path": "crates/sipi-ami-host/src/lib.rs",
       "symbols": ["AmiTextBindingV1", "ParseLimitsV1", "verify_binding_v1"],
-      "parameter_semantics": false,
-      "description": "Host validates and forwards raw bound AMI text; it does not consume a parameter-semantic export."
+      "parameter_semantics": true,
+      "description": "Host retains the raw binding route and additionally consumes the narrow hash-bound forwarded-subset adapter; it does not consume any of the 193 feature-quarantined helpers."
     },
     {
       "component": "sipi-ami-worker",
       "path": "crates/sipi-ami-worker/src/lib.rs",
       "symbols": ["ParseLimitsV1", "parse_and_bind_v1"],
-      "parameter_semantics": false,
-      "description": "Worker parses and binds raw parameter bytes before the ABI call; it does not consume a parameter-semantic export."
+      "parameter_semantics": true,
+      "description": "Worker retains the raw binding route and additionally exposes the narrow typed forwarded-subset adapter; it does not consume any of the 193 feature-quarantined helpers."
     }
   ],
   "evidence_inventory": {

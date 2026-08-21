@@ -19,7 +19,8 @@ class CoverageTests(unittest.TestCase):
         result = GATE.validate(ROOT)
         self.assertTrue(result["valid"])
         self.assertEqual(result["items"], 20)
-        self.assertGreater(result["gates"], 0)
+        self.assertEqual(result["gates"], 351)
+        self.assertEqual(result["blocker_counts"], GATE.EXPECTED_BLOCKER_COUNTS)
         self.assertEqual(result["coverage_scope"], "tracked_gate_inventory_only")
         self.assertEqual(result["executed_gates"], 0)
         self.assertEqual(result["execution_claim"], "not_evaluated_by_this_verifier")
@@ -46,11 +47,12 @@ class CoverageTests(unittest.TestCase):
         ledger = {
             "schema": "sipi.plan-remaining-items.ledger.v1",
             "total_open": 1,
-            "items": [{"id": "P9-99", "gate": ["tools/verify_untracked.py"]}],
+            "items": [{"id": "P9-99", "blocker": "external_asset_oracle", "gate": ["tools/verify_untracked.py"]}],
         }
         with mock.patch.object(GATE, "_read_ledger", return_value=ledger), \
              mock.patch.object(GATE, "_plan_open_items", return_value=["P9-99"]), \
-             mock.patch.object(GATE, "_tracked_paths", return_value=set()):
+             mock.patch.object(GATE, "_tracked_paths", return_value=set()), \
+             mock.patch.object(GATE, "EXPECTED_BLOCKER_COUNTS", {"external_asset_oracle": 1, "semantics_not_implemented": 0, "release_gate": 0}):
             with self.assertRaisesRegex(GATE.CoverageError, "gate_untracked"):
                 GATE.validate(ROOT)
 
@@ -58,11 +60,12 @@ class CoverageTests(unittest.TestCase):
         ledger = {
             "schema": "sipi.plan-remaining-items.ledger.v1",
             "total_open": 1,
-            "items": [{"id": "P9-99", "gate": ["tools/verify_x.py", "tools/verify_x.py"]}],
+            "items": [{"id": "P9-99", "blocker": "external_asset_oracle", "gate": ["tools/verify_x.py", "tools/verify_x.py"]}],
         }
         with mock.patch.object(GATE, "_read_ledger", return_value=ledger), \
              mock.patch.object(GATE, "_plan_open_items", return_value=["P9-99"]), \
-             mock.patch.object(GATE, "_tracked_paths", return_value={"tools/verify_x.py"}):
+             mock.patch.object(GATE, "_tracked_paths", return_value={"tools/verify_x.py"}), \
+             mock.patch.object(GATE, "EXPECTED_BLOCKER_COUNTS", {"external_asset_oracle": 1, "semantics_not_implemented": 0, "release_gate": 0}):
             with self.assertRaisesRegex(GATE.CoverageError, "item_gate_duplicate"):
                 GATE.validate(ROOT)
 

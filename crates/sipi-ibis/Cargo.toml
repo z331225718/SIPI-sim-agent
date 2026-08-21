@@ -298,3 +298,8 @@ test = false
 name = "p4a_03bg_series_pin_table_selector_thresholds_runner"
 harness = false
 test = false
+
+[[test]]
+name = "p4a_03bk_selected_model_runner"
+harness = false
+test = false
