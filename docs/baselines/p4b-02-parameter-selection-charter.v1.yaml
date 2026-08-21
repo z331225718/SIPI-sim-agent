@@ -1,0 +1,328 @@
+{
+  "schema": "sipi.p4b-02.parameter-selection-charter.v1",
+  "status": "selection_baseline",
+  "baseline_commit": "805ebb6bbaf588dec08685be4eb78a8ce2fff563",
+  "scope": "The 193 parameter-semantic module/export groups currently visible only to test or p4b-self-crosscheck builds.",
+  "inventory": {
+    "source": "crates/sipi-ami-text/src/lib.rs",
+    "module_pattern": "^mod (ami_|catalog_|parameter_)[A-Za-z0-9_]+;$",
+    "module_count": 193,
+    "module_inventory_sha256": "f67ba0bc084823a6bdbe7f2852bb22c8169b18ec41d6edca94e49297ea018168",
+    "hash_input": "sorted module names, one UTF-8 name per line, trailing LF"
+  },
+  "decision_rule": {
+    "keep_for_product": "A group may be kept only when an accepted AMI contract requirement, a live default host/worker product consumer, an allocated bounded-complexity budget, and a future independent-oracle gate are all present.",
+    "quarantine_pending_requirement": "Retain only as feature-quarantined source when a plausible future AMI profile could require the behavior, but the requirement or product consumer is not yet accepted.",
+    "delete_candidate": "Mark speculative list/tree/profile utilities with no identified AMI contract requirement and no product consumer for deletion review; this charter does not delete source.",
+    "self_crosscheck_is_not_authority": true,
+    "product_owned_self_crosscheck_status": "product_owned_self_crosscheck_unbound"
+  },
+  "expected_counts": {
+    "keep_for_product": 0,
+    "quarantine_pending_requirement": 34,
+    "delete_candidate": 159
+  },
+  "current_keep_for_product": [],
+  "observed_default_consumers": [
+    {
+      "component": "sipi-ami-host",
+      "path": "crates/sipi-ami-host/src/lib.rs",
+      "symbols": ["AmiTextBindingV1", "ParseLimitsV1", "verify_binding_v1"],
+      "parameter_semantics": false,
+      "description": "Host validates and forwards raw bound AMI text; it does not consume a parameter-semantic export."
+    },
+    {
+      "component": "sipi-ami-worker",
+      "path": "crates/sipi-ami-worker/src/lib.rs",
+      "symbols": ["ParseLimitsV1", "parse_and_bind_v1"],
+      "parameter_semantics": false,
+      "description": "Worker parses and binds raw parameter bytes before the ABI call; it does not consume a parameter-semantic export."
+    }
+  ],
+  "evidence_inventory": {
+    "glob": "docs/baselines/p4b-02b*-crosscheck-evidence.v1.yaml",
+    "expected_count": 191,
+    "required_status": "product_owned_self_crosscheck_unbound",
+    "independent_oracle": false,
+    "may_authorize_keep": false,
+    "binding_requirements_for_future_promotion": ["source_digest", "runner_digest", "reference_digest", "contract_digest"]
+  },
+  "next_ticket_T03": {
+    "required_consumer_path": "authorized AMI profile -> typed parameter adapter -> sipi-ami-host::AmiHostV1::initialize / sipi-ami-worker::run_one_job",
+    "required_inputs": ["owner-authorized-profile", "exact-AMI-parameter-contract", "live-default-consumer", "independent-hash-bound-oracle"],
+    "prohibited_shortcut": "Do not promote a product-owned self-crosscheck or wire all 193 APIs into the host/worker merely to create a consumer."
+  },
+  "groups": [
+    {
+      "id": "core-parameter-contract",
+      "classification": "quarantine_pending_requirement",
+      "selectors": {
+        "exact": [
+          "ami_runtime_params_v1",
+          "catalog_default_v1",
+          "parameter_catalog_v1",
+          "parameter_extractor_v1",
+          "parameter_form_binding_v1",
+          "parameter_trees_v1",
+          "parameter_value_v1"
+        ]
+      },
+      "ami_contract_requirement": {
+        "status": "pending_owner_profile",
+        "statement": "A future authorized AMI profile may need typed value identity, catalog Usage/Type/default resolution, and a bounded runtime-parameter table, but no accepted profile currently specifies these product semantics.",
+        "references": [
+          "docs/baselines/owner-decision-checklist.v1.md",
+          "docs/clean-room/specs/p4b-ami-text-structural-foundation.v1.md",
+          "docs/baselines/audits/2026-08-16-p4b-02b1-parameter-value-core.md",
+          "docs/baselines/audits/2026-08-16-p4b-02b3-parameter-catalog.md",
+          "docs/baselines/audits/2026-08-16-p4b-02b5-ami-runtime-params.md"
+        ]
+      },
+      "production_consumer": {
+        "status": "none_in_default_product",
+        "paths": [],
+        "symbols": []
+      },
+      "complexity_budget": {
+        "status": "not_allocated",
+        "max_new_runtime_dependencies": 0,
+        "max_new_public_symbols": 0,
+        "pair_work_bound": "reuse_existing_262144_only",
+        "basis": "Existing 256-byte name, 65536-byte value, 512-item List and 262144 pair-cell limits are construction bounds, not a promotion budget."
+      },
+      "evidence_basis": {
+        "existing_authority": "product_owned_self_crosscheck_unbound",
+        "independent_oracle": false,
+        "can_authorize_product_keep": false
+      }
+    },
+    {
+      "id": "typed-profile-admission",
+      "classification": "quarantine_pending_requirement",
+      "selectors": {
+        "exact": [
+          "parameter_tree_allowed_check_v1",
+          "parameter_tree_apply_defaults_v1",
+          "parameter_tree_decode_values_v1",
+          "parameter_tree_expected_check_v1",
+          "parameter_tree_infer_types_v1",
+          "parameter_tree_inferred_decode_v1",
+          "parameter_tree_leaf_type_map_v1",
+          "parameter_tree_leaf_type_resolution_v1",
+          "parameter_tree_leaf_value_validity_v1",
+          "parameter_tree_profile_apply_v1",
+          "parameter_tree_required_check_v1",
+          "parameter_tree_reserved_check_v1",
+          "parameter_tree_sections_v1",
+          "parameter_tree_set_value_v1",
+          "parameter_tree_set_values_batch_v1",
+          "parameter_tree_typed_form_multi_v1",
+          "parameter_tree_typed_form_report_v1",
+          "parameter_tree_typed_form_v1",
+          "parameter_tree_validate_values_v1",
+          "parameter_tree_validator_v1",
+          "parameter_profile_assembly_v1",
+          "parameter_profile_completeness_v1",
+          "parameter_profile_deserialization_v1",
+          "parameter_profile_names_by_type_v1",
+          "parameter_profile_select_v1",
+          "parameter_profile_serialization_v1",
+          "parameter_profile_tree_coverage_v1"
+        ]
+      },
+      "ami_contract_requirement": {
+        "status": "pending_owner_profile",
+        "statement": "Typed forms, reserved/default checks, profile selection and profile serialization can be considered only after B2 supplies a concrete authorized AMI profile and its exact parameter grammar; current structural and stage documents explicitly do not establish that requirement.",
+        "references": [
+          "docs/baselines/owner-decision-checklist.v1.md",
+          "docs/clean-room/specs/p4b-ami-text-structural-foundation.v1.md",
+          "docs/baselines/audits/2026-08-16-p4b-02b44-parameter-profile-assembly.md",
+          "docs/baselines/audits/2026-08-16-p4b-02b55-parameter-profile-completeness.md",
+          "docs/baselines/audits/2026-08-16-p4b-02b64-parameter-profile-select.md",
+          "docs/baselines/audits/2026-08-16-p4b-02b81-parameter-profile-serialization.md"
+        ]
+      },
+      "production_consumer": {
+        "status": "none_in_default_product",
+        "paths": [],
+        "symbols": []
+      },
+      "complexity_budget": {
+        "status": "not_allocated",
+        "max_new_runtime_dependencies": 0,
+        "max_new_public_symbols": 0,
+        "pair_work_bound": "reuse_existing_262144_only",
+        "basis": "Profile/tree helpers are currently self-tests only; no product allocation exists for recursive transforms, profile state, serialization or a second semantic parser."
+      },
+      "evidence_basis": {
+        "existing_authority": "product_owned_self_crosscheck_unbound",
+        "independent_oracle": false,
+        "can_authorize_product_keep": false
+      }
+    },
+    {
+      "id": "list-algorithm-surface",
+      "classification": "delete_candidate",
+      "selectors": {
+        "prefixes": ["parameter_list_"]
+      },
+      "ami_contract_requirement": {
+        "status": "none_identified",
+        "statement": "The AMI parameter List token requires profile-defined spelling and validation, not generic sorting, set algebra, statistics, distance, run analysis or sequence algorithms.",
+        "references": [
+          "docs/clean-room/specs/p4b-ami-text-structural-foundation.v1.md",
+          "docs/handoff-20260820-p4b02-round249.md"
+        ]
+      },
+      "production_consumer": {
+        "status": "none_in_default_product",
+        "paths": [],
+        "symbols": []
+      },
+      "complexity_budget": {
+        "status": "zero_product_budget",
+        "max_new_runtime_dependencies": 0,
+        "max_new_public_symbols": 0,
+        "pair_work_bound": "not_applicable",
+        "basis": "No product work should be spent on these utilities unless a future profile names a specific operation and consumer."
+      },
+      "evidence_basis": {
+        "existing_authority": "product_owned_self_crosscheck_unbound",
+        "independent_oracle": false,
+        "can_authorize_product_keep": false
+      }
+    },
+    {
+      "id": "tree-utility-surface",
+      "classification": "delete_candidate",
+      "selectors": {
+        "prefixes": ["parameter_tree_"],
+        "exclude": [
+          "parameter_tree_allowed_check_v1",
+          "parameter_tree_apply_defaults_v1",
+          "parameter_tree_decode_values_v1",
+          "parameter_tree_expected_check_v1",
+          "parameter_tree_infer_types_v1",
+          "parameter_tree_inferred_decode_v1",
+          "parameter_tree_leaf_type_map_v1",
+          "parameter_tree_leaf_type_resolution_v1",
+          "parameter_tree_leaf_value_validity_v1",
+          "parameter_tree_profile_apply_v1",
+          "parameter_tree_required_check_v1",
+          "parameter_tree_reserved_check_v1",
+          "parameter_tree_sections_v1",
+          "parameter_tree_set_value_v1",
+          "parameter_tree_set_values_batch_v1",
+          "parameter_tree_typed_form_multi_v1",
+          "parameter_tree_typed_form_report_v1",
+          "parameter_tree_typed_form_v1",
+          "parameter_tree_validate_values_v1",
+          "parameter_tree_validator_v1"
+        ]
+      },
+      "ami_contract_requirement": {
+        "status": "none_identified",
+        "statement": "Generic tree diff, merge, path, traversal, formatting, indexing, statistics and mutation helpers are not required by the current raw-byte AMI text contract and have no accepted profile requirement.",
+        "references": [
+          "docs/clean-room/specs/p4b-ami-text-structural-foundation.v1.md",
+          "docs/handoff-20260820-p4b02-round249.md"
+        ]
+      },
+      "production_consumer": {
+        "status": "none_in_default_product",
+        "paths": [],
+        "symbols": []
+      },
+      "complexity_budget": {
+        "status": "zero_product_budget",
+        "max_new_runtime_dependencies": 0,
+        "max_new_public_symbols": 0,
+        "pair_work_bound": "not_applicable",
+        "basis": "Recursive and transformation helpers remain test-only and must not grow a second parser or a general parameter-tree runtime."
+      },
+      "evidence_basis": {
+        "existing_authority": "product_owned_self_crosscheck_unbound",
+        "independent_oracle": false,
+        "can_authorize_product_keep": false
+      }
+    },
+    {
+      "id": "profile-analysis-surface",
+      "classification": "delete_candidate",
+      "selectors": {
+        "prefixes": ["parameter_profile_"],
+        "exclude": [
+          "parameter_profile_assembly_v1",
+          "parameter_profile_completeness_v1",
+          "parameter_profile_deserialization_v1",
+          "parameter_profile_names_by_type_v1",
+          "parameter_profile_select_v1",
+          "parameter_profile_serialization_v1",
+          "parameter_profile_tree_coverage_v1"
+        ]
+      },
+      "ami_contract_requirement": {
+        "status": "none_identified",
+        "statement": "Profile diff, merge, canonicalization, fingerprint, equivalence, typed subset and value-lookup conveniences have no current AMI contract requirement and cannot be justified by product-owned self-comparisons.",
+        "references": [
+          "docs/clean-room/specs/p4b-ami-text-structural-foundation.v1.md",
+          "docs/handoff-20260820-p4b02-round249.md"
+        ]
+      },
+      "production_consumer": {
+        "status": "none_in_default_product",
+        "paths": [],
+        "symbols": []
+      },
+      "complexity_budget": {
+        "status": "zero_product_budget",
+        "max_new_runtime_dependencies": 0,
+        "max_new_public_symbols": 0,
+        "pair_work_bound": "not_applicable",
+        "basis": "No profile comparison or fingerprinting is part of an accepted runtime route; deletion review avoids preserving unowned semantic surface."
+      },
+      "evidence_basis": {
+        "existing_authority": "product_owned_self_crosscheck_unbound",
+        "independent_oracle": false,
+        "can_authorize_product_keep": false
+      }
+    },
+    {
+      "id": "text-inspection-and-value-normalization",
+      "classification": "delete_candidate",
+      "selectors": {
+        "exact": [
+          "ami_text_document_stats_v1",
+          "ami_text_form_heads_v1",
+          "parameter_value_equivalence_v1",
+          "parameter_value_spelling_normalization_v1"
+        ]
+      },
+      "ami_contract_requirement": {
+        "status": "none_identified",
+        "statement": "Document statistics, form-head inspection, value equivalence and normalization are outside the exact raw-byte structural contract; normalization is explicitly prohibited at that boundary.",
+        "references": [
+          "docs/clean-room/specs/p4b-ami-text-structural-foundation.v1.md",
+          "docs/baselines/audits/2026-08-16-p4b-02b1-parameter-value-core.md"
+        ]
+      },
+      "production_consumer": {
+        "status": "none_in_default_product",
+        "paths": [],
+        "symbols": []
+      },
+      "complexity_budget": {
+        "status": "zero_product_budget",
+        "max_new_runtime_dependencies": 0,
+        "max_new_public_symbols": 0,
+        "pair_work_bound": "not_applicable",
+        "basis": "The default product retains exact raw bytes and structural spans only; no budget is assigned to derived inspection or normalization semantics."
+      },
+      "evidence_basis": {
+        "existing_authority": "product_owned_self_crosscheck_unbound",
+        "independent_oracle": false,
+        "can_authorize_product_keep": false
+      }
+    }
+  ]
+}

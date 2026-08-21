@@ -1,0 +1,342 @@
+schema: sipi.p5-13.com-r480-reference-custody-preflight.v1
+ticket: T13
+baseline_commit: 805ebb6b
+status: reference_custody_vertical_preflight_recorded_blocked
+profile:
+  id: com-r480-envelope-v1
+  acceptance_contract:
+    path: docs/baselines/com-r480-acceptance.v1.yaml
+    sha256: e90fca0d14968a04e09df90cd8bd4fcc7f749abfa07ad2b4b29dc297351ef03b
+scope:
+  oracle: external_matlab_only
+  product_self_comparison_as_oracle: forbidden
+  unauthorized_matlab_rerun: forbidden
+  unauthorized_external_asset_read: forbidden
+  product_runtime_dependency: forbidden
+hash_bindings:
+  acceptance_contract:
+    path: docs/baselines/com-r480-acceptance.v1.yaml
+    sha256: e90fca0d14968a04e09df90cd8bd4fcc7f749abfa07ad2b4b29dc297351ef03b
+  availability_preflight:
+    path: docs/baselines/com-r480-reference-availability-preflight.v1.yaml
+    sha256: ca44d298350f1ab2c4d8f270450359290d4ec28868a6735508c7efe5b6b4a582
+  matlab_runner_preflight:
+    path: docs/baselines/com-r480-matlab-runner-capability-preflight.v1.yaml
+    sha256: 00b0f84c64d97153a84cbd5130064b52a7b6b1666aa50d6d83e6217c06aaf20d
+  oracle_invocation_preflight:
+    path: docs/baselines/com-r480-oracle-invocation-surface-preflight.v1.yaml
+    sha256: 57952d63868e54f32678ad0b7bd2b7a27287388631e2c3dd103e180057d72e99
+  git_object_preflight:
+    path: docs/baselines/p5-agent-com-git-object-preflight.v1.yaml
+    sha256: e787d0830c17561c5f8054eae681f7ee976da8d61201846cf40a1d1166d5809b
+  material_registry:
+    path: docs/baselines/authorized-material-registry.v1.yaml
+    sha256: e5c172bcb20d37aee933fefbbdfd0a816a82e9888f0ce6ed6a4d63f20e153b71
+  oracle_first_run:
+    path: docs/baselines/p5-06-matlab-oracle-first-run-evidence.v1.yaml
+    sha256: 4e2f6bb1d55376f3b317acaa75008a4603f910c184c619c130ee786a90453d24
+  oracle_metric_surface:
+    path: docs/baselines/p5-06-oracle-metric-surface.v1.yaml
+    sha256: 677ed155b9851352f3fe128212eb4b60a22be9ed03fd7afd763a3de0736a3036
+  normalized_input_surface:
+    path: docs/baselines/p5-06-normalized-input-surface.v1.yaml
+    sha256: 886e2cdd52c90ed4e2dba59e162438a5dd14673fa160bb26225add75837f718f
+  oracle_metric_reference:
+    path: docs/baselines/p5-06e-com-oracle-metric-reference.v1.yaml
+    sha256: 92a61cb9f7558e953d3ad1f35fd8c1bd0e482366ac6bb4f7d171d9a075ea5ef1
+  canonical_parameter_reference:
+    path: docs/baselines/p5-r480-canonical-parameter-reference.v1.yaml
+    sha256: 489d70e7634e5daed0fe59f45bbb76a60904fd50045817e42715ce478c0d6a33
+  canonical_parameter_json:
+    path: docs/baselines/p5-r480-canonical-parameter-json.v2.yaml
+    sha256: 7758452793602e2bf46b5b2a3267007785a7719d67c118a06e196ed46594b383
+  warning_observation:
+    path: docs/baselines/p5-r480-warning-observation.v1.yaml
+    sha256: 862f1c930d1aff2463815273ba048dcb80edd52b8e80b56a4ec7eaa063f530b4
+external_source:
+  git_target:
+    canonical_origin: https://github.com/z331225718/agent-com.git
+    commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+    tree: 7094ab6e84989b218730c52432c70da10261f8ea
+    object_format: sha1
+  capability_object:
+    path: schemas/r480-capability-envelope-v1.yaml
+    git_blob: 69aeffa675341733277ccaf19a8e878cb716a315
+    content_sha256: 9b3329e25559e595187ae1a0530785d5a8dbbdc02a035eeb44326aa91ee34b73
+    byte_length: 9636
+  oracle_runner_object:
+    path: tools/run_matlab_oracle.py
+    git_blob: 36d4fa55f6eaf9ecdd72ba2cebfbc1b01908e8bc
+    content_sha256: db63ed42375ac990cb53d9926f603e050b652b0706c079f2e4456a5d97d87d42
+    byte_length: 30851
+  capability_registry_copy:
+    material_id: com-r480-capability-envelope
+    content_sha256: 40f8020d178eda102d9032ce3691701ee8bc581a3c9cc5beaa894d1f326d51c7
+    byte_length: 9985
+    status: conflicting_external_copy
+external_materials:
+  registry:
+    path: docs/baselines/authorized-material-registry.v1.yaml
+    sha256: e5c172bcb20d37aee933fefbbdfd0a816a82e9888f0ce6ed6a4d63f20e153b71
+    status: authorized_external_only
+  selected_digest: e5d621760825cdf3be8d22b5862efb92aae08e5164d8e459c3dff7fb00158b09
+  selected:
+    - id: com-r480-capability-envelope
+      logical_name: r480-capability-envelope-v1.yaml
+      kind: com_schema
+      path: C:/Users/z3312/code/COM/schemas/r480-capability-envelope-v1.yaml
+      sha256: 40f8020d178eda102d9032ce3691701ee8bc581a3c9cc5beaa894d1f326d51c7
+      byte_length: 9985
+      bound_items: [P5-02]
+      identity_status: matched_record
+    - id: com-r480-config-120g-c2m
+      logical_name: config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.xlsx
+      kind: com_config_sheet
+      path: C:/Users/z3312/code/COM/matlab_src/config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.xlsx
+      sha256: f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9
+      byte_length: 63311
+      bound_items: [P5-06]
+      identity_status: matched_record
+    - id: com-r480-legacy-output
+      logical_name: legacy-output-r480.json
+      kind: com_oracle_output
+      path: C:/Users/z3312/code/COM/schemas/legacy-output-r480.json
+      sha256: 2d56ade42fa9ec7afe16fc5ecd30dd425d703afb52f45bd779536c652f1f54db
+      byte_length: 2149
+      bound_items: [P5-06]
+      identity_status: matched_record
+    - id: com-r480-matlab-source
+      logical_name: com_ieee8023_480.m
+      kind: matlab_source
+      path: C:/Users/z3312/code/COM/matlab_src/com_ieee8023_480.m
+      sha256: 642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad
+      byte_length: 469713
+      bound_items: [P5-02, P5-06]
+      identity_status: matched_record
+    - id: com-synthetic-fext
+      logical_name: fext_m40db_at_26p56ghz.s4p
+      kind: com_fixture
+      path: C:/Users/z3312/code/COM/fixtures/synthetic/fext_m40db_at_26p56ghz.s4p
+      sha256: f6a5bf0ec04ec474fe3685cbdb868ac97eb707b5233a4f4ccca5caf3152438cc
+      byte_length: 6425159
+      bound_items: [P5-06]
+      identity_status: matched_record
+    - id: com-synthetic-manifest
+      logical_name: manifest.json
+      kind: com_fixture_manifest
+      path: C:/Users/z3312/code/COM/fixtures/synthetic/manifest.json
+      sha256: cf9a9e5b9cc7d690be0e507414deee867743297a47279e4df18f5bed3724bce7
+      byte_length: 2374
+      bound_items: [P5-06]
+      identity_status: matched_record
+    - id: com-synthetic-next
+      logical_name: next_m40db_at_26p56ghz.s4p
+      kind: com_fixture
+      path: C:/Users/z3312/code/COM/fixtures/synthetic/next_m40db_at_26p56ghz.s4p
+      sha256: a2ae19041148a381533862130c02953a029bb9eb06c11a7b47f1b4d93506033a
+      byte_length: 6424879
+      bound_items: [P5-06]
+      identity_status: matched_record
+    - id: com-synthetic-thru
+      logical_name: thru_10db_at_26p56ghz.s4p
+      kind: com_fixture
+      path: C:/Users/z3312/code/COM/fixtures/synthetic/thru_10db_at_26p56ghz.s4p
+      sha256: b14a92e7f844608aaee5b4cbd3dfda08d7af48bfedb4526043a0733b8823e584
+      byte_length: 6425196
+      bound_items: [P5-06]
+      identity_status: matched_record
+    - id: matlab-r2024b
+      logical_name: matlab.exe
+      kind: matlab_runtime
+      path: C:/Program Files/MATLAB/R2024b/bin/matlab.exe
+      sha256: 4b0fcf8112211ad1ae6ef5e51df0801d7afbe89c4daaac45473a46e1de16e633
+      byte_length: 458288
+      bound_items: [P5-02, P5-06, P5-07]
+      identity_status: matched_record
+runner:
+  capability_preflight:
+    path: docs/baselines/com-r480-matlab-runner-capability-preflight.v1.yaml
+    sha256: 00b0f84c64d97153a84cbd5130064b52a7b6b1666aa50d6d83e6217c06aaf20d
+    status: indeterminate_startup_isolation_unproven
+    report:
+      schema: sipi.com.matlab-runner-probe-report.v1
+      sha256: f6b1fc48d2749b22c6d2cb4c0ff0b9edfa7131237a5f06ad2cbec1872aa2df16
+    executable:
+      material_id: matlab-r2024b
+      sha256: 4b0fcf8112211ad1ae6ef5e51df0801d7afbe89c4daaac45473a46e1de16e633
+      byte_length: 458288
+    builtin_identity:
+      release: 2024b
+      version: 24.2.0.2712019 (R2024b)
+      platform: PCWIN64
+    isolation:
+      cwd: external_empty_temp
+      matlabpath: cleared
+      matlab_prefdir: external_temporary
+      startup_isolation: unproven
+  invocation_surface:
+    path: docs/baselines/com-r480-oracle-invocation-surface-preflight.v1.yaml
+    sha256: 57952d63868e54f32678ad0b7bd2b7a27287388631e2c3dd103e180057d72e99
+    status: runner_interface_partially_observed
+    report:
+      schema: sipi.com.r480.oracle-invocation-surface-report.v1
+      sha256: b4fd1ff3600463c2761cb30ff28f0ace258eada66be880ff0a74a06ccb66f44f
+    tool:
+      path: tools/run_matlab_oracle.py
+      git_blob: 36d4fa55f6eaf9ecdd72ba2cebfbc1b01908e8bc
+      content_sha256: db63ed42375ac990cb53d9926f603e050b652b0706c079f2e4456a5d97d87d42
+      byte_length: 30851
+    execution:
+      authorized: false
+      invoked: false
+      status: dynamic_invocation_not_authorized_or_not_safe
+  historical_first_run:
+    evidence_path: docs/baselines/p5-06-matlab-oracle-first-run-evidence.v1.yaml
+    evidence_sha256: 4e2f6bb1d55376f3b317acaa75008a4603f910c184c619c130ee786a90453d24
+    status: hash_bound_external_observation_not_replayable_custody
+    materialization: fresh_materialization_cleaned
+    replay_manifest: missing
+    startup_isolation: unproven
+canonical_inputs:
+  source_reference:
+    path: docs/baselines/p5-r480-canonical-parameter-reference.v1.yaml
+    sha256: 489d70e7634e5daed0fe59f45bbb76a60904fd50045817e42715ce478c0d6a33
+    source_sha256: 642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad
+    key_count: 214
+    call_count: 229
+  canonical_json_v2:
+    path: docs/baselines/p5-r480-canonical-parameter-json.v2.yaml
+    sha256: 7758452793602e2bf46b5b2a3267007785a7719d67c118a06e196ed46594b383
+    source_sha256: 642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad
+    key_count: 214
+    statically_evaluated_calls: 3
+    needs_oracle_calls: 20
+    default_kind_counts:
+      inf_literal: 1
+      literal: 163
+      needs_matlab_oracle: 20
+      none: 20
+      resolved_reference: 7
+      statically_evaluated: 3
+      string_literal: 15
+  normalized_surface:
+    path: docs/baselines/p5-06-normalized-input-surface.v1.yaml
+    sha256: 886e2cdd52c90ed4e2dba59e162438a5dd14673fa160bb26225add75837f718f
+    config_material_id: com-r480-config-120g-c2m
+    config_sha256: f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9
+    canonical_keys: 214
+    keys_in_config: 82
+    port_order: '[ 1 3 2 4 ]'
+    keys_digest: 53f3be62a8327ac87e77ab61382fc77d305d250eca047c9a453854cd4aec00d9
+  normalized_input_digest:
+    status: missing
+    value: null
+defaults:
+  status: partial_static_observation_not_authoritative
+  source_sha256: 642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad
+  resolved_default_contract: missing
+  caller_dependent_defaults: 20
+  external_default_payload: not_recorded
+  product_or_python_self_crosscheck: excluded_as_oracle
+warnings:
+  static_observation:
+    path: docs/baselines/p5-r480-warning-observation.v1.yaml
+    sha256: 862f1c930d1aff2463815273ba048dcb80edd52b8e80b56a4ec7eaa063f530b4
+    source_sha256: 642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad
+    warning_call_count: 25
+    inventory_digest: 99acc4cb75d7f31e84d4e75f72a5f343e361ae87b72af815baf3d8a60f553078
+  exact_run_warning_report:
+    status: missing
+    contract: missing
+checkpoints:
+  evidence_path: docs/baselines/p5-06-matlab-oracle-first-run-evidence.v1.yaml
+  summary_json_sha256: 151d8a03bbc4ef399a84dc97c6c4b6a87c22e3d12a1a0a611b07806c835b55ed
+  case_count: 2
+  keys:
+    - DFE_taps
+    - TXLE_taps
+    - itick
+    - sgm_Ani__isi_xt_noise
+    - sigma_N
+    - tail_RSS
+  keys_digest: 8def09ef82da18e536e074c76abeedd34e616b19cd30580efdfd3cfd3a8ddb13
+  network_metrics_digest: c7c80a279f717fa0ca0b92f8fa6979d0a1608218af97edd83e1923a58927bfd5
+  case_checkpoint_digests:
+    case_1: c52b3626d2a196808dc80daac938e8f14c23455c7f1c59a7a6add7dcec24c42d
+    case_2: 9eef31a5815407357efb5a5e1dea8c9d6e1244cf1d1444c83edcdaf0597cf11c
+  payload_status: summary_content_only
+  per_checkpoint_tolerance: missing
+metrics:
+  surface:
+    path: docs/baselines/p5-06-oracle-metric-surface.v1.yaml
+    sha256: 677ed155b9851352f3fe128212eb4b60a22be9ed03fd7afd763a3de0736a3036
+    case_count: 2
+    network_roles: [THRU, FEXT1, NEXT1]
+    output_metric_keys: [COM_dB, CTLE_DC_gain_dB, ERL, ERL11, ERL22, FOM, ICN_mV, IL_dB_channel_only_at_Fnq, Peak_ISI_XTK_and_Noise_interference_at_BER_mV, VEC_dB, VEO_mV, fitted_IL_dB_at_Fnq, g_DC_HP, itick]
+    output_metric_keys_digest: b685bf240f7d97b827e89a8025c869a4413227db2798c6e45c693c1628e32d94
+  summary_output_metrics_digest: 97669f35a820cf02176227e153805674be8b2b8a1e746e9ae5edf494a8ec6726
+  case_output_metrics_digest: cd995b124233c863e04032de7b7c7c70a1fb2d8aa1fc0c77da758d6a8607b529
+  c4_reference:
+    path: docs/baselines/p5-06e-com-oracle-metric-reference.v1.yaml
+    sha256: 92a61cb9f7558e953d3ad1f35fd8c1bd0e482366ac6bb4f7d171d9a075ea5ef1
+    summary_json_sha256: 151d8a03bbc4ef399a84dc97c6c4b6a87c22e3d12a1a0a611b07806c835b55ed
+    aggregate_reference:
+      COM_dB: 5.190191599808681
+      ICN_mV: 4.601554213273623
+      ERL: 16.742740133561476
+    aggregate_reference_digest: f7b30359cecf9958952caf7b7081c2e78e6057dd3336d84ae87e1d8dbda1bae7
+    case_references:
+      - {case_index: 1, COM_dB: 5.190191599808681, ICN_mV: 4.601554213273623, ERL: 16.742740133561476}
+      - {case_index: 2, COM_dB: 4.877647775233487, ICN_mV: 4.601554213273623, ERL: 16.742740133561476}
+    policy: sipi.p3c-03c.c4-profile.v1.com-icn-erl-1pct
+  acceptance_metric_scope:
+    required_metric_ids: [com_db, erl_db, td_iln_db]
+    observed_c4_metric_ids: [COM_dB, ICN_mV, ERL]
+    status: incomplete_scope_mismatch
+tolerance:
+  status: incomplete_for_t14
+  observed_c4_policy:
+    id: sipi.p3c-03c.c4-profile.v1.com-icn-erl-1pct
+    relative_tolerance: 0.01
+    metrics: [COM_dB, ICN_mV, ERL]
+    scope: c4_metric_profile_only
+  full_matrix:
+    metric_tolerances: missing
+    intermediate_checkpoint_tolerances: missing
+    warning_tolerances: missing
+    alignment_policy: missing
+    normalized_input_tolerance: missing
+artifacts:
+  first_run:
+    evidence_path: docs/baselines/p5-06-matlab-oracle-first-run-evidence.v1.yaml
+    evidence_sha256: 4e2f6bb1d55376f3b317acaa75008a4603f910c184c619c130ee786a90453d24
+    matlab_oracle_mat_sha256: dd47cb3dbe3f72e63b19c6331f4cbc504027f3b72b4a12bdc8503e9c993edbca
+    summary_json_sha256: 151d8a03bbc4ef399a84dc97c6c4b6a87c22e3d12a1a0a611b07806c835b55ed
+    stdout_tail_sha256: d37597ec49c670a12060b78a68cf9cd5263a1df6d9268a351dbdb8b6e6c8be1b
+    custody: external_only
+    payload_status: summary_recorded_mat_payload_unavailable
+  runner_reports:
+    matlab_probe_report_sha256: f6b1fc48d2749b22c6d2cb4c0ff0b9edfa7131237a5f06ad2cbec1872aa2df16
+    invocation_surface_report_sha256: b4fd1ff3600463c2761cb30ff28f0ace258eada66be880ff0a74a06ccb66f44f
+admission:
+  t14_full_compare_matrix_admitted: false
+  status: blocked
+  blockers:
+    - capability_envelope_registry_copy_mismatch
+    - matlab_runner_startup_isolation_unproven
+    - oracle_invocation_authorization_missing
+    - replayable_external_custody_manifest_missing
+    - normalized_input_digest_missing
+    - caller_dependent_defaults_unresolved
+    - exact_run_warning_report_missing
+    - intermediate_checkpoint_tolerances_missing
+    - acceptance_metric_scope_incomplete
+    - full_metric_tolerance_and_alignment_policy_missing
+    - reference_artifact_payload_missing
+    - product_self_crosschecks_disqualified_as_oracle
+  next_step: T14_not_admitted_until_all_blockers_are_resolved_by_authorized_external_replay
+non_claims:
+  - This is a custody and replayability preflight, not COM acceptance or parity evidence.
+  - MATLAB, workbook, fixture, oracle output, and runner material remain external-only and are not product inputs.
+  - Product Rust and product Python self-comparisons are not authoritative oracle evidence.
+  - No unauthorized MATLAB rerun or unauthorized external-asset read was performed for this record.

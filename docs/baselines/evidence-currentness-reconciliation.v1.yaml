@@ -1,0 +1,304 @@
+schema: sipi.evidence-currentness-reconciliation.v1
+baseline_commit: 805ebb6b
+scope: [P2, P3, P4, P5, P7]
+policy:
+  historical_evidence_immutable: true
+  additive_successors_only: true
+  external_replay_required_for_current: true
+  frozen_tolerances_unchanged: true
+  release_promotion_unchanged: true
+  external_assets_repacked: false
+  allowed_classifications: [current, external_input_missing, historical, implementation_failure, source_drift]
+reconciliation:
+  disposition: p2_p3a_current_successors_replayed_other_classifications_unchanged
+  historical_records_rewritten: false
+  new_current_successors: [p2-tran-current-v5, p3a-channel-current-v9]
+  source_drift_replay_performed: true
+  release_gate_promoted: false
+truth_table:
+  - id: p2-tran-current-v3
+    domain: P2
+    evidence: docs/baselines/tran-rc-pulse-current-external-compare-evidence.v3.yaml
+    verifier: tools/verify_tran_rc_pulse_current_external_compare_evidence_v3.py
+    evidence_state: historical
+    classification: source_drift
+    evidence_sha256: 63bf69ebe5f2fe5bbd9b0f2cafe17e0553d191b70f87e6a002da7d7f443bfec1
+    verifier_sha256: a8f5ff383a4c9397e8afed90c5884cf6c6cea2be7a90045676170d0c09c0f768
+    expected: {exit_code: 2, stderr_contains: evidence_product_source_drift}
+    release_claim: false
+    note: Historical fixed RC/PULSE compare is mechanically rejected because its product source binding predates the current candidate.
+  - id: p2-tran-current-v4-wrapper
+    domain: P2
+    evidence: docs/baselines/tran-rc-pulse-current-external-compare-evidence.v4.yaml
+    verifier: tools/verify_tran_rc_pulse_current_external_compare_evidence_v4.py
+    evidence_state: historical
+    classification: source_drift
+    evidence_sha256: 5a128e7346b33ef755d4ebb7ba09ff761588e7fb0a20627fe32bd7fdc423ed63
+    verifier_sha256: e6d7c66d375bad7fa26425250138045305512a9d84414b39d1ebd8832d426a78
+    expected: {exit_code: 2, stderr_contains: evidence_product_source_drift}
+    release_claim: false
+    note: The wrapper now reports the historical product source drift as structured JSON; it does not restore current evidence.
+  - id: p3a-channel-current-v8
+    domain: P3
+    evidence: docs/baselines/channel-s2p-matched-cli-current-external-compare-evidence.v8.yaml
+    verifier: tools/verify_channel_s2p_matched_cli_current_external_compare_evidence_v8.py
+    evidence_state: historical
+    classification: source_drift
+    evidence_sha256: b376708ee73c907a09f7e0c8a72f17095b183f3ae2fe1be3cc8135a1d123d924
+    verifier_sha256: 8fc6328865af59a3209638467121f3a0753973f7ef4eb3eb36a6949443ec273d
+    expected: {exit_code: 2, stderr_contains: evidence_product_source_drift}
+    release_claim: false
+    note: The v8 CLI comparison remains historical after later product-tree changes.
+  - id: p3c-selected-s4p-static
+    domain: P3
+    evidence: docs/baselines/p3c-selected-s4p-external-static-custody-evidence.v1.yaml
+    verifier: tools/verify_p3c_selected_s4p_external_static_custody_evidence.py
+    evidence_state: historical
+    classification: source_drift
+    evidence_sha256: 174010a95e2116062d8f317bfc940ea47409cd962361557a18aefceeb1322031
+    verifier_sha256: cb7abb97f64e0542fe0e00e10f7a7ee39e9cc19b4c86ca41aa7c62a39a949550
+    expected: {exit_code: 1, stderr_contains: static_custody_evidence_product_source_drift}
+    release_claim: false
+    note: Historical selected-S4P custody evidence is retained but not current.
+  - id: p3c-selected-s4p-uniform
+    domain: P3
+    evidence: docs/baselines/p3c-selected-s4p-uniform-spectrum-observation-evidence.v1.yaml
+    verifier: tools/verify_p3c_selected_s4p_uniform_spectrum_observation_evidence.py
+    evidence_state: historical
+    classification: source_drift
+    evidence_sha256: 9eadfa85e8b56c67b6024015bbc3e2ab23d9e5c2854442e695463f75c4d88421
+    verifier_sha256: e970c892670c1dd8753cee7345e351f8676391351892d719669c9eb617860a3b
+    expected: {exit_code: 1, stderr_contains: uniform_spectrum_product_source_drift}
+    release_claim: false
+    note: Historical selected-S4P uniform-spectrum observation is retained but not current.
+  - id: p3c-selected-s4p-raw-periodic
+    domain: P3
+    evidence: docs/baselines/p3c-selected-s4p-raw-periodic-observation-evidence.v1.yaml
+    verifier: tools/verify_p3c_selected_s4p_raw_periodic_observation_evidence.py
+    evidence_state: historical
+    classification: source_drift
+    evidence_sha256: 274cc475374e9ba5fb8bdaf5193633f6e29f2ab6a170a8a9f9011a88ee235865
+    verifier_sha256: ab1d1c863577b32291b182d0c60609d275c916acb9fabacc1f4415ce518548a7
+    expected: {exit_code: 1, stderr_contains: raw_periodic_product_source_drift}
+    release_claim: false
+    note: Historical selected-S4P raw periodic observation is retained but not current.
+  - id: p3c-selected-s4p-causality
+    domain: P3
+    evidence: docs/baselines/p3c-selected-s4p-causality-observation-evidence.v1.yaml
+    verifier: tools/verify_p3c_selected_s4p_causality_observation_evidence.py
+    evidence_state: historical
+    classification: source_drift
+    evidence_sha256: 389fb8ab6238c2da21c802b829d02d134db7ffdf60d0550a53b08e33cc2f581a
+    verifier_sha256: 63ae9fb7e86a60ce158b12b86bec4b9dea7d01da87fb912026253b3e34c18ac7
+    expected: {exit_code: 1, stderr_contains: causality_product_source_drift}
+    release_claim: false
+    note: Historical selected-S4P bounded-causality observation is retained but not current.
+  - id: p3c-selected-s4p-truncation
+    domain: P3
+    evidence: docs/baselines/p3c-selected-s4p-truncation-observation-evidence.v1.yaml
+    verifier: tools/verify_p3c_selected_s4p_truncation_observation_evidence.py
+    evidence_state: historical
+    classification: source_drift
+    evidence_sha256: 2624fdcd1655579e216d16f41d523ed1294d03a9262076a976695af873c97f88
+    verifier_sha256: 5b07043e940c6ca0da0aa0ab27b34590a22bf241587d6c0d2ca33531391f4cb3
+    expected: {exit_code: 1, stderr_contains: truncation_product_source_drift}
+    release_claim: false
+    note: The truncation observation is not a current causal-FIR or candidate acceptance record.
+  - id: p3c-highloss-waveform-only
+    domain: P3
+    evidence: docs/baselines/p3c-external-ads-selected-highloss-waveform-only-observation-evidence.v3.yaml
+    verifier: tools/verify_p3c_external_ads_selected_highloss_waveform_only_observation_evidence.py
+    evidence_state: historical
+    classification: source_drift
+    evidence_sha256: bbd3afa54e57aa64fbd48878074460cc5137073fcbfa9c76a4b29c9eda705a63
+    verifier_sha256: 487f706c0a2d2828ceaec00c91a226a2f7c64f1ff5fba6e072ea38b7840797f4
+    expected: {exit_code: 1, stdout_contains: waveform_only_product_source_drift}
+    release_claim: false
+    note: Historical ADS waveform-only observation has no current external binding.
+  - id: p3c-selected-sensitivity-gate
+    domain: P3
+    evidence: docs/baselines/p3c-selected-sensitivity-historical-source-drift.v1.yaml
+    verifier: tools/verify_p3c_selected_sensitivity_historical_source_drift.py
+    evidence_state: historical
+    classification: historical
+    evidence_sha256: 7a8ca667663bb85f2f159bf36b7c48aed42bed825948e925bd224b630efd20fa
+    verifier_sha256: 4c27a838781d2aadae8194e45e56d18e81516abb19c5f206d423b5c2d41e4853
+    expected: {exit_code: 0, stdout_contains: current_evidence_available}
+    release_claim: false
+    note: The reconciliation gate itself passes while explicitly reporting no current replacement evidence.
+  - id: p3c-selected-s4p-gate
+    domain: P3
+    evidence: docs/baselines/p3c-selected-s4p-historical-observation-source-drift.v1.yaml
+    verifier: tools/verify_p3c_selected_s4p_historical_observation_source_drift.py
+    evidence_state: historical
+    classification: source_drift
+    evidence_sha256: 8a5d4b6de2c4f7a428c34ba82d2aa8dcfa8304bdfac823ff95726526a3b5a4a4
+    verifier_sha256: 159bd539709a3f48909a99dcf359129e85ea154301d922950264cbf005ed80fe
+    expected: {exit_code: 1, stderr_contains: historical_source_drift_successor_not_current}
+    release_claim: false
+    note: The successor verifier mechanically detects a product-source inventory mismatch; the historical gate remains blocked rather than promoting stale evidence.
+  - id: p4a-input-typ-static
+    domain: P4
+    evidence: docs/baselines/p4a-ibis-input-typ-static-acceptance.v1.yaml
+    verifier: tools/verify_p4a_ibis_input_typ_static_acceptance.py
+    evidence_state: current
+    classification: current
+    evidence_sha256: b7898956bd091a3a2f0d397ea227dc8b58ba826acff5b85810ce70e4c7620b8b
+    verifier_sha256: 677c3776630a1d343c8e7bde0ed92537c1e8bfb3761007a8ff90392eed5baf26
+    expected: {exit_code: 0, stdout_contains: required_accepted_external_compare}
+    release_claim: false
+    note: Current static IBIS input-typ observation; it does not establish transient or general IBIS parity.
+  - id: p4a-conformance-matrix
+    domain: P4
+    evidence: docs/baselines/p4a-ibis-conformance-matrix.v1.yaml
+    verifier: tools/verify_p4a_ibis_conformance_matrix.py
+    evidence_state: current
+    classification: current
+    evidence_sha256: 029b55845d62e39492df465b2d0f1af6359bb239d9a24728187730b89652dfca
+    verifier_sha256: 8a6adcd9e3cef6477aedb601dab406e7eafaac05d98eb3387c3ee71aba286670
+    expected: {exit_code: 0, stdout_contains: boundary_recorded}
+    release_claim: false
+    note: Current bounded IBIS conformance inventory; profile promotion remains outside this record.
+  - id: p4b-external-ami-assets
+    domain: P4
+    evidence: docs/baselines/p4b-external-ami-asset-set.v1.yaml
+    verifier: tools/verify_p4b_external_ami_asset_set.py
+    evidence_state: current
+    classification: external_input_missing
+    evidence_sha256: cf507e73ece91e4d5b2b4e6ed90c3f306bc7d38bbf4a68263b7238cdfb3bc721
+    verifier_sha256: d11b96a52c67de7b10a335c83616dc65810b01fca43e2e4c98daee8fa3b6f528
+    expected: {exit_code: 0, stdout_contains: external_only_admission_blocked}
+    release_claim: false
+    note: External AMI assets are identified but rights/runtime inputs are not admitted or repackaged.
+  - id: p4b-authorized-abi-observation
+    domain: P4
+    evidence: docs/baselines/p4b-07-authorized-fixture-abi-observation-evidence.v1.yaml
+    verifier: tools/verify_p4b_07_authorized_fixture_abi_observation.py
+    evidence_state: current
+    classification: current
+    evidence_sha256: 7d978499a925057c7f618f924d1102508a74f601ce4c3c6c9f4c460bfe1f80b8
+    verifier_sha256: 7090db5054ac6ddb4fda5a629600b834fb58cb78c51d1121d23f6ecf30c35e6b
+    expected: {exit_code: 0, stdout_contains: p4b-07.authorized-fixture-abi-observation.v1}
+    release_claim: false
+    note: ABI observation is hash-only and remains separate from AMI runtime admission.
+  - id: p4b-s4p-observation
+    domain: P4
+    evidence: docs/baselines/p4b-08-s4p-observation-evidence.v1.yaml
+    verifier: tools/verify_p4b_08_s4p_observation.py
+    evidence_state: current
+    classification: current
+    evidence_sha256: 15253d73b6e2ac6c8206832d3231cd5598557e388a0531a5882faca06a78348b
+    verifier_sha256: f68927a28d43caaf9a0f6051705fbab044189d763312d55f273559a6fadd269e
+    expected: {exit_code: 0, stdout_contains: p4b-08.s4p-observation-evidence.v1}
+    release_claim: false
+    note: S4P asset identity observation only; no AMI execution or profile acceptance is implied.
+  - id: p5-canonical-reference
+    domain: P5
+    evidence: docs/baselines/p5-r480-canonical-parameter-reference.v1.yaml
+    verifier: tools/verify_p5_02e_canonical_parameter_reference.py
+    evidence_state: historical
+    classification: external_input_missing
+    evidence_sha256: 489d70e7634e5daed0fe59f45bbb76a60904fd50045817e42715ce478c0d6a33
+    verifier_sha256: 615b789cc76225c4c8e1b33a7fafa240f5078175d60cd01806d0e69b2af71ddc
+    expected: {exit_code: 0, stdout_contains: p5-02.canonical-parameter-reference.v1}
+    release_claim: false
+    note: The verifier validates a hash-only record, but the authoritative absolute-path MATLAB source is not an admitted worktree input.
+  - id: p5-warning-report
+    domain: P5
+    evidence: docs/baselines/p5-02n-warning-report-crosscheck-evidence.v1.yaml
+    verifier: tools/verify_p5_02n_warning_report.py
+    evidence_state: current
+    classification: current
+    evidence_sha256: f2f93db31f89bd5363a84e8139a46a82ea73e290a5778b0c6b36793b1c909c77
+    verifier_sha256: 4512be9f81d9e42dd353d7fbf872be580fa4bb6ebc0902406399d4cf019606c5
+    expected: {exit_code: 0, stdout_contains: p5-02n.warning-report-stage.v1}
+    release_claim: false
+    note: Product-owned warning report stage is current as a stage check, not COM acceptance.
+  - id: p5-matlab-first-run
+    domain: P5
+    evidence: docs/baselines/p5-06-matlab-oracle-first-run-evidence.v1.yaml
+    verifier: tools/verify_p5_06a_matlab_oracle_first_run.py
+    evidence_state: historical
+    classification: historical
+    evidence_sha256: 4e2f6bb1d55376f3b317acaa75008a4603f910c184c619c130ee786a90453d24
+    verifier_sha256: c4d5e69555702dd23fb15e5688d73ce84ee49adab7d4a783333607dd9b787d05
+    expected: {exit_code: 0, stdout_contains: p5-06.matlab-oracle-first-run-evidence.v1}
+    release_claim: false
+    note: Historical MATLAB runtime observation; no current Rust COM acceptance is claimed.
+  - id: p5-oracle-chain
+    domain: P5
+    evidence: docs/baselines/p5-06g-oracle-chain-compare-crosscheck-evidence.v1.yaml
+    verifier: tools/verify_p5_06g_oracle_chain_compare.py
+    evidence_state: current
+    classification: current
+    evidence_sha256: 65d910ca5e24cbbc2f972cb99c07b8e00733545a433ad6bd964c3aca8d4dd80d
+    verifier_sha256: cc3e1cd9d6e18aacf327267a8214554bae58e0d4ed62df0ae08c2f20cd84da50
+    expected: {exit_code: 0, stdout_contains: p5-06g.oracle-chain-compare-stage.v1}
+    release_claim: false
+    note: Hash-bound chain compare stage is current but its existing metric mismatch remains visible and no release gate is raised.
+  - id: p7-chain-preflight
+    domain: P7
+    evidence: docs/baselines/p7-current-candidate-chain-rebinding-preflight.v1.yaml
+    verifier: tools/verify_p7_current_candidate_chain_rebinding_preflight.py
+    evidence_state: historical
+    classification: historical
+    evidence_sha256: e2b02b8c327b97e15e61fe8597cdcb7cdfaf88e89cd0462f7e7adbf04f24f21c
+    verifier_sha256: bba58a48916772d27e6147ed548b51567ef17515e5061e41602ef2371b63376b
+    expected: {exit_code: 0, stdout_contains: p7-current-candidate-chain-rebinding-preflight.v1}
+    release_claim: false
+    note: Historical candidate-chain preflight is retained as blocked evidence.
+  - id: p7-evidence-anchor-v2
+    domain: P7
+    evidence: docs/baselines/p7-evidence-anchor.v2.yaml
+    verifier: tools/verify_p7_evidence_anchor_v2.py
+    evidence_state: historical
+    classification: historical
+    evidence_sha256: 0733acf659ea05f7f6f9f42194e4a4a9da6d8020e51bfb3b9ea89e1d0585666a
+    verifier_sha256: 045b01313141ce2103aced4c5f1f8ff6170667cba466bf9efd1ea9fa36a9d92b
+    expected: {exit_code: 0, stdout_contains: p7-evidence-anchor.v2}
+    release_claim: false
+    note: Historical P7 chain anchor; promotion remains blocked by its own non-claims.
+  - id: p7-license-material-v2
+    domain: P7
+    evidence: docs/baselines/p7-candidate-build-license-material-observation-evidence.v2.yaml
+    verifier: tools/verify_p7_candidate_build_license_material_observation_evidence_v2.py
+    evidence_state: historical
+    classification: historical
+    evidence_sha256: 3ec62e0a3188830bcf0416bee995b25ac9e017c35eeead33e3e358bcaa2c0199
+    verifier_sha256: 8d4882164875f2d961df90ffbb3a32e795c9fca802fa5db7efd344adcb023370
+    expected: {exit_code: 0, stdout_contains: p7-candidate-build-license-material-observation-evidence.v2}
+    release_claim: false
+    note: Actual-build material observation remains non-conclusive and does not clear NOTICE or release gates.
+  - id: p7-publication-manifest-input
+    domain: P7
+    evidence: docs/baselines/release-capability-publication.v1.yaml
+    verifier: tools/verify_release_capability_publication.py
+    evidence_state: historical
+    classification: external_input_missing
+    evidence_sha256: 3e99b86e33b71b3496e8598ad27356b29e5c5cf9cfef75db5235492ddba4a6ce
+    verifier_sha256: a6c6b32dc1a9f535d6397e5c023ebe692dd7b350faa51ec2a8ef4e34127f6a05
+    expected: {exit_code: 2, stderr_contains: "the following arguments are required: --command-manifest"}
+    release_claim: false
+    note: Publication verification cannot execute without the required command-manifest input; this is not a publication pass or release promotion.
+  - id: p2-tran-current-v5
+    domain: P2
+    evidence: docs/baselines/tran-rc-pulse-current-external-compare-evidence.v5.yaml
+    verifier: tools/verify_tran_rc_pulse_current_external_compare_evidence_v5.py
+    evidence_state: current
+    classification: current
+    evidence_sha256: 974272b64cdb7297bf9d3378d223815f1154932da37cef8d84b4a2943829f418
+    verifier_sha256: 6ec3d1754d64d01e9e13fcb6aa8c14be74775f7beeaa2d11e2742a23fbbca346
+    expected: {exit_code: 0, stdout_contains: sipi.tran.rc-pulse.current-external-compare-evidence.v5}
+    release_claim: false
+    note: Current clean-archive/two-fresh fixed Windows RC/PULSE profile evidence; no general TRAN or release claim.
+  - id: p3a-channel-current-v9
+    domain: P3
+    evidence: docs/baselines/channel-s2p-matched-cli-current-external-compare-evidence.v9.yaml
+    verifier: tools/verify_channel_s2p_matched_cli_current_external_compare_evidence_v9.py
+    evidence_state: current
+    classification: current
+    evidence_sha256: 5ac5f94a56406dd9b86dc6fe6419b3a6421dd5c852321220af6437af4ebf114e
+    verifier_sha256: 3b380073751fb47d882dec6ae9b791d8720cbc73224e10eeb5e8d0c4633bc595
+    expected: {exit_code: 0, stdout_contains: sipi.channel.s2p-matched.cli-current-external-compare-evidence.v9}
+    release_claim: false
+    note: Current clean-archive/two-fresh selected S2P periodic-kernel evidence; caller input remains unattested and no Link or release claim is made.

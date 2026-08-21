@@ -1,0 +1,126 @@
+schema: sipi.p7-license-notice-currentness-reconciliation.v1
+kind: additive_currentness_reconciliation_not_legal_conclusion
+recorded_at: "2026-08-21"
+baseline:
+  commit: 805ebb6bbaf588dec08685be4eb78a8ce2fff563
+  tree: 5a378052ea8fdadb8754f22d0a0150088cec6332
+  cargo_lock_sha256: 12a9656214b2c5cefc4547a83ed9b2ce57eb629e8dbb062fa1d35724a758ce21
+  toolchain_sha256: 512bedfbbe3c4ef614fbb901b3661f40b4adb701d26c94664e79ca765aa3d109
+  observer:
+    path: tools/observe_p7_candidate_build_license_material_v2.py
+    sha256: addcee98d164d64f36f7179ebb4544f22507b129267bd368014d4910b3b9cbd6
+  license_manifest:
+    path: license-manifest.v2.yaml
+    sha256: a79c6da642f634a09884442c83c7f9add1ea170598f262ed83184f0e4de62fad
+historical_build:
+  evidence_ref: docs/baselines/p7-candidate-build-license-material-observation-evidence.v2.yaml
+  evidence_sha256: 3ec62e0a3188830bcf0416bee995b25ac9e017c35eeead33e3e358bcaa2c0199
+  candidate:
+    commit: f49849998a9b53fcf56be4a45b2f1fa0418d2588
+    tree: eb14221de2e742f88dcf18ec26e6790c1fb1005b
+    cargo_lock_sha256: d10679ecbb0884cc3325f9b67afaf9a8d61a9f826c262f6fefd437538df34e99
+    toolchain_sha256: 512bedfbbe3c4ef614fbb901b3661f40b4adb701d26c94664e79ca765aa3d109
+  observer_source:
+    commit: 02fffadab6cce468d95d404baf89d6b62a6756cc
+    tree: 38e48a367f00e0f767cd43c434bcd1b6242c4f38
+    sha256: addcee98d164d64f36f7179ebb4544f22507b129267bd368014d4910b3b9cbd6
+  external_report:
+    sha256: 3a5da5b5ec1a64eb523eb1cd4d586156b9d326237d3615afe024078f3542bd29
+    bytes: 57976
+    availability: missing
+    verification: not_run_external_bytes_unavailable
+  exact_build:
+    target: x86_64-pc-windows-msvc
+    release: true
+    locked: true
+    offline: true
+    fresh_builds: 2
+    package_set_sha256: ff34e43289a5ba721ac8f5487894d7afd64481f0e71a795ece822a1fe229e927
+    package_counts: { total: 86, registry: 73, workspace: 13 }
+    package_members: unavailable_external_report_bytes
+  material_identity:
+    per_package_manifest_metadata: unavailable_external_report_bytes
+    license_file_materials: unavailable_external_report_bytes
+    notice_candidates: unavailable_external_report_bytes
+normalization:
+  evidence_ref: docs/baselines/p7-compiled-license-metadata-normalization-evidence.v1.yaml
+  evidence_sha256: 45c55cd340d77d4522944423e6eeb66f7218e4eff3e5a727e2de60049523d593
+  input:
+    sha256: 3a5da5b5ec1a64eb523eb1cd4d586156b9d326237d3615afe024078f3542bd29
+    bytes: 57976
+    package_set_sha256: ff34e43289a5ba721ac8f5487894d7afd64481f0e71a795ece822a1fe229e927
+  external_report:
+    sha256: d023d4680dda293bc2df746f2f2a24b9e40978504b4acaaa5d4b0cb480e15017
+    bytes: 1209
+    availability: missing
+    verification: not_run_external_bytes_unavailable
+  record_count: 86
+  category_counts:
+    declared_string_unparsed: 73
+    license_file_declared: 0
+    workspace_inherited_declared_unresolved: 0
+    metadata_absent: 0
+    conflicting_or_unbound: 13
+  normalized_records_sha256: d0cb395ea32228de4131c0e5dce51aa0484f85bd689b368c2efada398e63b07c
+  unresolved_set_sha256: 678479d6023e26b7b9eaba0c2930edaec4cba3c5b09b751c1c530df03bfec27f
+  material_identity: unavailable_external_report_bytes
+currentness:
+  state: historical_source_drift_and_external_bytes_missing
+  candidate_commit_matches_baseline: false
+  candidate_tree_matches_baseline: false
+  candidate_cargo_lock_matches_baseline: false
+  candidate_toolchain_matches_baseline: true
+  observer_source_commit_matches_baseline: false
+  observer_byte_identity_matches_baseline: true
+  current_build_replay: not_observed
+  current_package_set: unavailable
+  current_declared_metadata: unavailable
+  current_license_file_material_identity: unavailable
+  current_notice_material_identity: unavailable
+gates:
+  historical_package_set_reconciled: true
+  historical_declared_metadata_reconciled: true
+  current_package_set_observed: false
+  current_declared_metadata_observed: false
+  current_license_file_material_observed: false
+  current_notice_material_observed: false
+  dependency_snapshot_ready: false
+  dependencies_approved: false
+  notices_approved: false
+  first_party_approved: false
+  release_sbom: false
+  release_ready: false
+  promotion_status: blocked
+unresolved:
+  - id: current_candidate_source_drift
+    status: blocked
+    detail: historical candidate commit/tree and archived Cargo.lock differ from baseline
+  - id: historical_build_report_bytes_missing
+    status: blocked
+    detail: exact 57976-byte report is referenced by hash only
+  - id: historical_normalization_report_bytes_missing
+    status: blocked
+    detail: exact 1209-byte normalization report is referenced by hash only
+  - id: current_package_member_inventory_missing
+    status: blocked
+    detail: current exact package members cannot be derived from counts or package-set hash
+  - id: current_license_notice_material_identity_missing
+    status: blocked
+    detail: per-package license-file and NOTICE identities require current external report bytes
+next_required_external_inputs:
+  - current_build_report_json_with_sha256_and_byte_length
+  - current_normalization_report_json_with_sha256_and_byte_length
+  - current_per_package_registry_lock_checksum_and_manifest_metadata
+  - current_per_package_license_file_notice_copyright_material_sha256_and_byte_length
+  - first_party_product_path_owner_scope_and_approval_input
+  - dependency_distribution_rights_and_notice_review_input
+non_claims:
+  - cargo_license_strings_are_not_legal_conclusions
+  - historical_counts_do_not_prove_current_package_members
+  - missing_notice_material_bytes_do_not_prove_notice_not_required
+  - not_an_spdx_or_cyclonedx_sbom
+  - not_a_dependency_or_first_party_approval
+  - not_a_notice_or_legal_compatibility_decision
+  - not_release_ready
+  - promotion_status_blocked
+audit_ref: docs/baselines/audits/2026-08-21-p7-license-notice-currentness-reconciliation.md

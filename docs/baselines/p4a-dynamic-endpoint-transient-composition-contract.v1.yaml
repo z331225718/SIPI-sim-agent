@@ -1,0 +1,161 @@
+schema: sipi.p4a-dynamic-endpoint-transient-composition-contract.v1
+status: specified_blocked_dynamic_semantics_pending
+promotion_eligible: false
+t12_admission:
+  state: blocked
+  admission: false
+  rule: all_required_dynamic_fields_confirmed_and_evidenced
+  blockers:
+    - reference_node_channel_return_binding_pending
+    - supply_semantics_pending
+    - initial_state_policy_pending
+    - integration_method_pending
+    - timebase_pending
+    - output_grid_pending
+    - channel_return_binding_pending
+    - stimulus_semantics_pending
+    - dynamic_numeric_bounds_pending
+    - dynamic_tolerance_pending
+    - dynamic_acceptance_evidence_missing
+profile:
+  id: p4a-ibis-input-typ-plus-selected-differential-rc-transient-v1
+  state: candidate_contract_only
+  required: false
+  ibis_input_profile: ibis-org-sample1-input-typ-static-v2
+  electrical_load_profile: rx-electrical-load-diff100-cload1pf-per-leg-v1
+predecessor_contracts:
+  endpoint_semantics: docs/clean-room/specs/p4a-electrical-endpoint-semantic-contract.v1.md
+  endpoint_baseline: docs/baselines/p4a-electrical-endpoint-semantic-contract.v1.yaml
+  ibis_static_profile: docs/clean-room/specs/p4a-ibis-input-typ-static-profile.v1.md
+  ibis_static_acceptance: docs/baselines/p4a-ibis-input-typ-static-acceptance.v1.yaml
+  ibis_quasi_static: docs/clean-room/specs/p4a-ibis-quasi-static-clamp-ccomp.v1.md
+  p2_transient_semantics: docs/clean-room/specs/p2-tran-rc-pulse-semantic-contract.v1.md
+  p2_acceptance: docs/baselines/tran-rc-pulse-acceptance.v1.yaml
+  p2_one_node_rc: docs/clean-room/specs/p2-tran-one-node-rc-pulse.v1.md
+  p2_one_node_pwl: docs/clean-room/specs/p2-tran-one-node-rc-pwl.v1.md
+  p2_semantic_freeze: docs/baselines/p2-03-tran-semantic-freeze.v1.yaml
+reference_node:
+  status: endpoint_role_confirmed_binding_pending
+  endpoint_role: ref
+  ibis_signal_role: sig
+  electrical_load_roles: [p, n, ref]
+  channel_return_binding: pending_owner_decision
+  ibis_to_load_terminal_map: pending_owner_decision
+  implicit_global_ground: forbidden
+  implicit_node_zero: forbidden
+  inferred_reference_from_waveform: forbidden
+supply:
+  status: blocked_not_defined
+  source: pending_owner_decision
+  power_clamp_binding: explicit_independent_drive_only_until_supply_is_selected
+  pvt_or_corner_inference: forbidden
+  signal_or_reference_inference: forbidden
+  implicit_default: forbidden
+initial_state:
+  status: blocked_owner_decision
+  retained_state_surface: pending_owner_decision
+  initialization_mode: pending_owner_decision
+  operating_point: unsupported_not_selected
+  uic_like_mode: unsupported_not_selected
+  implicit_initialization: forbidden
+  inherit_p2_zero_initial_output: forbidden
+integration_timebase_output:
+  status: blocked_owner_decision
+  integration_method: pending_owner_decision
+  internal_stepping: pending_owner_decision
+  timebase: pending_owner_decision
+  output_grid: pending_owner_decision
+  output_alignment: pending_owner_decision
+  p2_reference_only:
+    method: backward_euler_f64
+    stepping: fixed_breakpoint_union
+    output_sampling: requested_axis_only
+    adopted_by_p4a_composition: false
+channel_return_stimulus:
+  status: blocked_owner_decision
+  return_binding: pending_owner_decision
+  stimulus_binding: pending_owner_decision
+  stimulus_kind: pending_owner_decision
+  waveform_owner: pending_owner_decision
+  derivative_source: pending_owner_decision
+  implicit_channel_or_stimulus: forbidden
+  slope_inference_from_unaligned_samples: forbidden
+ibis_constitutive_semantics:
+  status: constitutive_core_confirmed_dynamic_coupling_pending
+  model_scope: input_typ_typical_only
+  clamp:
+    drives: explicit_independent_ground_and_power_voltages
+    interpolation: linear_within_table_domain
+    out_of_domain: reject
+    extrapolation: forbidden
+    current_sign: positive_into_sig_shunt
+    total: ground_plus_power
+  c_comp:
+    units: farads
+    domain: finite_nonnegative
+    relation: C_comp_times_d_dt_V_SIG_minus_V_REF
+    current_sign: positive_into_sig_shunt
+    zero_slope_contribution: zero
+    slope_input: explicit_continuous_derivative
+    dynamic_state_and_initialization: pending_owner_decision
+  composition_current:
+    algebraic_sum: ground_plus_power_plus_c_comp
+    hidden_supply_or_pvt_term: forbidden
+units:
+  status: confirmed_existing_typed_contracts
+  voltage: V
+  current: A
+  resistance: ohm
+  capacitance: F
+  time: s
+  voltage_derivative: V_per_s
+  selected_one_pf_canonical_value: 1.0e-12
+  implicit_unit_inference: forbidden
+bounds:
+  status: invariants_confirmed_numeric_caps_pending
+  invariants:
+    - finite_inputs_and_derived_values
+    - positive_resistance_and_rc_capacitance
+    - nonnegative_finite_c_comp
+    - strictly_ordered_explicit_axes_when_an_axis_is_selected
+    - no_partial_output_on_rejection
+    - no_table_extrapolation
+  numeric_caps:
+    output_samples: pending_owner_decision
+    stimulus_points: pending_owner_decision
+    ibis_table_knots: pending_owner_decision
+    integration_breakpoints: pending_owner_decision
+    work_units: pending_owner_decision
+  predecessor_limits_not_adopted:
+    p2_max_output_samples: 4096
+    p2_max_integration_breakpoints: 16384
+    ibis_batch_max_probes: 1024
+tolerance:
+  status: blocked_owner_decision
+  time_axis: pending_owner_decision
+  output_grid_alignment: pending_owner_decision
+  voltage_waveform: pending_owner_decision
+  current_waveform: pending_owner_decision
+  state_or_trace: pending_owner_decision
+  comparison_rule: pending_owner_decision
+  external_oracle_or_parity: prohibited
+  predecessor_tolerances_not_adopted:
+    p4a_static_dc_absolute_current_a: 1.0e-12
+    p4a_static_dc_relative_current: 1.0e-09
+    p2_time_absolute_s: 1.0e-15
+    p2_voltage_out_absolute_v: 2.0e-06
+failure_behavior:
+  status: confirmed_fail_closed_boundary
+  missing_or_pending_required_field: reject_admission
+  nonfinite_input_or_derived_value: reject_without_partial_output
+  out_of_domain_table_drive: reject_without_extrapolation
+  overflow_or_invalid_state: reject_without_partial_output
+  unknown_or_implicit_binding: reject
+  quasi_static_or_batch_as_transient_evidence: forbidden
+  general_netlist_or_spice_fallback: forbidden
+  external_engine_or_parity_fallback: forbidden
+  accepted_result_while_t12_blocked: forbidden
+non_claims:
+  - This is a semantic admission boundary, not a Rust solver or public API.
+  - Quasi-static and quasi-static-batch routes remain memoryless and are not transient evidence.
+  - No general netlist/SPICE, AMI runtime, channel resolver, external parity, or release claim is made.

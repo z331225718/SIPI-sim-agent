@@ -1,0 +1,118 @@
+schema: sipi.p3c-exact-impulse-current-replay-evidence.v1
+ticket: T08
+status: external_only_two_fresh_current_replay_blocked_missing_ads_reference
+authority:
+  actor: project
+  decision_ref: task-t08-2026-08-21-exact-impulse-current-replay
+  scope: exact_selected_s4p_ads_reference_current_v2_impulse_replay_only
+baseline:
+  commit: 805ebb6bbaf588dec08685be4eb78a8ce2fff563
+  tree: 5a378052ea8fdadb8754f22d0a0150088cec6332
+  preparation_contract:
+    path: docs/baselines/p3c-exact-impulse-current-replay-preparation.v1.yaml
+    sha256: 9709f18df807381dd024d15e6979976e7b7d5ddb32aca953d43d2b8875d8bc36
+  preparation_spec:
+    path: docs/clean-room/specs/p3c-exact-impulse-current-replay-preparation.v1.md
+    sha256: bc2746a2a6c075c0ce62d21c117f99183b60b205684130e817bb3dddaaba90c0
+observer:
+  path: tools/observe_p3c_exact_impulse_current_replay_preparation.py
+  sha256: e775c7275f0d1b94d7da8e7e11750748fdd8249b031dda682aeeabf64a3cd3f5
+  invocation:
+    mode: locked_offline_clean_archive_external_target
+    command: cargo test --locked --offline -p sipi-p3c --test p3c_external_ads_selected_highloss_waveform_only_runner -- --ignored p3c_external_ads_selected_highloss_waveform_only_runner_v2
+    clean_archive_materialized: false
+    clean_archive_bytes_retained: false
+    external_target: true
+    status: rejected_before_runner
+    rejection_stage: external_input_preflight
+    rejection_reason: ads_reference_missing_exact_bytes
+    report_written: false
+    report_bytes_retained: false
+rust_runner_probe:
+  command: cargo test --locked --offline -p sipi-p3c --test p3c_external_ads_selected_highloss_waveform_only_runner -- --ignored p3c_external_ads_selected_highloss_waveform_only_runner_v2
+  ignored_test: p3c_external_ads_selected_highloss_waveform_only_runner_v2
+  clean_archive_materialized: true
+  clean_archive_bytes_retained: false
+  external_target: true
+  status: rejected_missing_external_reference
+  rejection_stage: reference_identity
+  rejection_reason: reference_open
+  report_written: false
+  report_bytes_retained: false
+inputs:
+  selected_s4p:
+    logical_name: channel_gen5_highloss.s4p
+    byte_length: 1834156
+    sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+    custody: external_only
+    exact_identity_observed: true
+  ads_reference:
+    logical_name: ads_canonical_triple_payload_le_f64.bin
+    expected_byte_length: 1177344
+    expected_sha256: 5ec5211a273d313655f0b8ced35d58ea89d0bba113f5edc3fd9712218f46e726
+    tuple_format: little_endian_f64_time_tx_differential_rx_differential
+    observed_column: rx_differential
+    samples: 49056
+    sample_interval_bits: 3d712e0be826d695
+    custody: external_only
+    exact_identity_observed: false
+    missing_reason: no_exact_external_bytes_available
+    search:
+      status: no_exact_bytes_found
+      scope: [ads_workspace_data_root, known_external_reference_and_artifact_roots]
+      logical_name_matches: 0
+      exact_length_matches: 0
+      sha256_match_attempted: false
+      bytes_reconstructed: false
+      historical_summary_substituted: false
+      old_report_reused: false
+  product_cli:
+    logical_name: sipi.exe
+    custody: external_only
+    clean_archive_commit: 805ebb6bbaf588dec08685be4eb78a8ce2fff563
+    clean_archive_build: true
+    cargo_profile: release
+    cargo_locked: true
+    cargo_offline: true
+    target_external: true
+    byte_length: 3975168
+    sha256: 11c4ff6c81a4420ed95317b211d474c49ce55ab8224cf0d9e6a44efb50156c02
+    bytes_tracked_in_repository: false
+replay:
+  route: ieee_bsd_impulse_only
+  fresh_replay_runs: 0
+  fresh_custody_runs: 0
+  runner_invoked: false
+  candidate_waveform_evaluated: false
+  reference_waveform_evaluated: false
+  candidate_payload_sha256: null
+  reference_rx_payload_sha256: null
+  strict_index_nrmse_bits: null
+  strict_index_nrmse_limit_bits: 3f847ae147ae147b
+  strict_index_compare_status: blocked_missing_ads_reference
+  blocker: t08_external_ads_reference_exact_bytes_missing
+admission:
+  selected_s4p_identity_observed: true
+  ads_reference_identity_observed: false
+  product_cli_identity_observed: true
+  locked_offline_release_build_observed: true
+  external_replay_executed: false
+  current_candidate_waveform_evaluated: false
+  current_reference_binding_evaluated: false
+  strict_index_compare_accepted: false
+  causal_fir_admitted: false
+  accepted_receiver: false
+  p4b_ami_runtime_invoked: false
+  p5_reference_evaluated: false
+  release_ledger_promoted: false
+blockers:
+  - t08_external_ads_reference_exact_bytes_missing
+  - t08_two_fresh_replay_not_executed
+  - t08_candidate_reference_binding_not_evaluated
+  - strict_index_waveform_only_acceptance_not_evaluated
+non_claims:
+  - This is a structured blocked external-input observation, not current waveform evidence.
+  - The exact ADS canonical payload was not reconstructed from its hash, and no historical summary or old report was substituted.
+  - No ADS simulator was launched; no candidate or reference waveform bytes were retained.
+  - No rational fit, delay or alignment search, gain or DC fitting, polarity transform, parameter sweep, or tolerance relaxation was performed.
+  - The selected S4P identity and clean-archive release CLI build are recorded, but they do not promote the candidate or any receiver or release gate.

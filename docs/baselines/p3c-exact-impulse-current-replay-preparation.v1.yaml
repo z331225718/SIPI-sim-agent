@@ -1,0 +1,175 @@
+schema: sipi.p3c-exact-impulse-current-replay-preparation.v1
+status: external_only_two_fresh_current_replay_preparation_pending
+authority:
+  actor: project
+  decision_ref: task-t07-2026-08-21-current-candidate-replay-preparation
+  scope: exact_selected_s4p_ads_reference_current_v2_impulse_replay_only
+baseline:
+  commit: 805ebb6bbaf588dec08685be4eb78a8ce2fff563
+  tree: 5a378052ea8fdadb8754f22d0a0150088cec6332
+  historical_evidence_currentness: external_replay_required
+  historical_records_rewritten: false
+selected_inputs:
+  s4p:
+    logical_name: channel_gen5_highloss.s4p
+    byte_length: 1834156
+    sha256: 25c39335ec4294b5110d7eb79ba669fa1d4941e909e41bf972c6666f8f67ea47
+    custody: external_only
+    bytes_tracked_in_repository: false
+  ads_reference:
+    logical_name: ads_canonical_triple_payload_le_f64.bin
+    byte_length: 1177344
+    sha256: 5ec5211a273d313655f0b8ced35d58ea89d0bba113f5edc3fd9712218f46e726
+    tuple_format: little_endian_f64_time_tx_differential_rx_differential
+    observed_column: rx_differential
+    samples: 49056
+    sample_interval_bits: 3d712e0be826d695
+    custody: external_only
+    bytes_tracked_in_repository: false
+  product_cli:
+    custody: external_only
+    identity: t08_supplied_executable_sha256_required
+    bytes_tracked_in_repository: false
+clean_archive:
+  commit: 805ebb6bbaf588dec08685be4eb78a8ce2fff563
+  tree: 5a378052ea8fdadb8754f22d0a0150088cec6332
+  materialization: git_archive_only
+  archive_bytes_retained: false
+  worktree_execution: prohibited
+runner:
+  observer: tools/observe_p3c_exact_impulse_current_replay_preparation.py
+  existing_ignored_test: crates/sipi-p3c/tests/p3c_external_ads_selected_highloss_waveform_only_runner.rs
+  test_name: p3c_external_ads_selected_highloss_waveform_only_runner_v2
+  test_mode: ignored_external_only
+  cargo_command: cargo test --locked --offline -p sipi-p3c --test p3c_external_ads_selected_highloss_waveform_only_runner -- --ignored p3c_external_ads_selected_highloss_waveform_only_runner_v2
+  source_inventory: clean_archive_product_paths_below
+  ads_runtime_invoked: false
+  ads_reference_read_only: true
+  candidate_reference_bytes_retained: false
+custody:
+  fresh_replay_runs: 2
+  fresh_custody_runs: 2
+  fresh_artifact_roots_per_run: 2
+  artifact_id_reuse: prohibited
+  source_identity_checks: before_stage_after_equal
+  reference_identity_checks: before_read_after_read_equal
+  distinct_manifest_identities: required
+  equal_canonical_facts: required
+  cleanup: complete_required
+  cleanup_failure: reject
+impulse_chain:
+  route: ieee_bsd_impulse_only
+  stages:
+    - sealed_selected_s4p_admission_v2
+    - ieee_bsd_interpolation_v1
+    - ieee_bsd_raw_periodic_internal_to_bounded_causality_v1
+    - ieee_bsd_bounded_causality_v1
+    - ieee_bsd_truncation_v1
+    - prbs9_finite_edge_v2_direct_full_linear_convolution
+    - strict_index_waveform_only_compare_v3
+  s_parameter_fit: prohibited
+  rational_fit: prohibited
+  alternative_solver: prohibited
+  current_candidate:
+    api: generate_selected_p3c_prbs9_impulse_candidate_v2
+    module: crates/sipi-p3c/src/prbs9_impulse_candidate_v2.rs
+    source_policy: finite_edge_boundary_pretransition_phase1_new_level
+    source_amplitude_volts_differential: [-1.0, 1.0]
+    sample_zero: first_symbol_current
+    ui_boundary_phase_0: prior_symbol
+    ui_boundary_phases_1_through_31: current_symbol
+    samples_per_ui: 32
+    periods: 3
+    warmup_periods: 2
+    sample_interval_bits: 3d712e0be826d695
+    period_sha256: 4437fb3beb2fa1ca99b4177673c53fc20089ac9cf68b1adaa1e0fad14d742127
+    v1_runtime_selector: prohibited
+  strict_index_compare:
+    contract_schema: sipi.p3c-selected-highloss-prbs9-waveform-only-contract.v3
+    contract_sha256: db0d9a663b311105be329d79060f05a5179f40fd7eccf448faf85d45b73da64a
+    compared_period: third
+    start_index: 32704
+    sample_count: 16352
+    same_index: required
+    same_seed: required
+    alignment: prohibited
+    delay_sweep: prohibited
+    gain_fit: prohibited
+    dc_removal: prohibited
+    polarity_flip: prohibited
+    resampling: prohibited
+    phase_or_fold_search: prohibited
+    output_strobe_sweep: prohibited
+    causality_parameter_sweep: prohibited
+    passivity_parameter_sweep: prohibited
+    truncation_parameter_sweep: prohibited
+    nrmse_parameter_sweep: prohibited
+    relative_rms_limit: 0.01
+report:
+  custody: external_only
+  format: hash_only_json
+  path: outside_worktree_required
+  retained_in_repository: false
+  includes: [clean_archive_identity, source_identity, reference_identity, cli_sha256, manifest_sha256s, candidate_payload_sha256, strict_index_metric_bits, stage_qualified_rejection]
+  excludes: [s4p_bytes, ads_reference_bytes, candidate_bytes, waveform_arrays, absolute_paths]
+  status_if_strict_compare_fails: prepared_observed_not_accepted
+  status_if_any_stage_fails: rejected_with_stage_and_reason
+admission:
+  preparation_contract_verified: true
+  external_replay_executed: false
+  current_candidate_waveform_evaluated: false
+  current_reference_binding_evaluated: false
+  strict_index_compare_accepted: false
+  causal_fir_admitted: false
+  accepted_receiver: false
+  p4b_ami_runtime_invoked: false
+  p5_reference_evaluated: false
+  release_ledger_promoted: false
+blockers:
+  - t08_two_fresh_external_replay_not_executed
+  - t08_external_s4p_input_missing_from_workspace
+  - t08_external_ads_reference_input_missing_from_workspace
+  - t08_external_product_cli_identity_missing
+  - current_replay_report_not_retained_as_evidence
+  - strict_index_waveform_only_acceptance_requires_owner_gate_after_replay
+  - accepted_receiver_stage_missing
+non_claims:
+  - This preparation contract is not current evidence and does not reinterpret historical evidence.
+  - No ADS simulator is launched by the observer or the existing ignored Rust runner; the ADS payload is read-only external input.
+  - No S-parameter rational fit, delay search, causality sweep, passivity sweep, output-strobe sweep, alignment, gain, DC, or polarity transform is permitted.
+  - A successful two-fresh replay proves only repeatable hash-bound observation facts; it does not promote candidate, receiver, P4B, P5, or release gates.
+  - The ArtifactRoot custody path retains its existing no-hostile-concurrent-writer assumption.
+product_source_inventory:
+  Cargo.lock: 12a9656214b2c5cefc4547a83ed9b2ce57eb629e8dbb062fa1d35724a758ce21
+  Cargo.toml: f2913d980432eaa113aaa34be91e6eab6d577eb324687a3e10449721228c42c5
+  rust-toolchain.toml: 512bedfbbe3c4ef614fbb901b3661f40b4adb701d26c94664e79ca765aa3d109
+  crates/sipi-artifacts/Cargo.toml: 37817d937973b48c42d935a314a67130921b3537b6a45ba1fb242e5217b6789c
+  crates/sipi-artifacts/src/lib.rs: 0dc7bbd7026dc3113e2f52acba8353c7e3b71a1fe1436afbd1927ab00b5fc1bf
+  crates/sipi-channel/Cargo.toml: cd9431768ac0dbe388e45059be2f00c6e1ff596c610d5222c2e35cedd7e8b5e6
+  crates/sipi-channel/src/lib.rs: 302a2bafaaf074f2968d496ffef9c68c9be12ad040b021a46dbcd93d26865b6b
+  crates/sipi-channel/src/p3c_fixed_four_port_bench_v1.rs: 248bf24c494d9c956a96e2781f35f546d5de9f70f6157457da7a54aeb60baa70
+  crates/sipi-contracts/Cargo.toml: e9ec60833778d8888af64796df9202934247e365575dcbc88722f27f5668f20c
+  crates/sipi-contracts/src/lib.rs: a3338007450ebd0d0a326a3f513b6157f54c2e29c70857dd80e6f3c8d0322f77
+  crates/sipi-ieee-com-sparam/Cargo.toml: 044d3d837957f99bf3429d7c51cf1b32129ae2744d921bd95def313a0aa1942b
+  crates/sipi-ieee-com-sparam/NOTICE-IEEE-802-COM.md: bddd0b824dd61554c17c53ccd6fc0f2065ef8de5007928908c8323e8bb04eca9
+  crates/sipi-ieee-com-sparam/SOURCE-MAP.md: 61361ed7fbd36950a939ba0896966547858c08b57dc538374eccf96e18d47e29
+  crates/sipi-ieee-com-sparam/src/lib.rs: 4a655303e67f124dff26ab9c89334aa3bdb9674472bf13f2d727b41805070121
+  crates/sipi-ieee-com-sparam/src/interp_sparam_v1.rs: d33d9196e5630f50cb3cfa4598bc2ee57ba34251380dc828baf2ffb4c1d45cac
+  crates/sipi-ieee-com-sparam/src/s21_to_raw_periodic_v1.rs: af06e393e6e92461e80befcc21187ba8bdf4bf68e988e82632937f02625b43a4
+  crates/sipi-ieee-com-sparam/src/s21_to_causal_v1.rs: fe4976e544d78e743e000cad4efd9e3a147f7c5d30ae1a6789bb2bed8460a0ee
+  crates/sipi-ieee-com-sparam/src/s21_to_truncated_v1.rs: dc0923ee6398e990594e9b001993ecdbd9798f865546339e57f1b8417063b407
+  crates/sipi-link/Cargo.toml: baa90efae4beae4de8d39cda79b26de7585e39c4bf77a14df60d24c82ca675c8
+  crates/sipi-link/src/lib.rs: 494e03e710b70f3fe80eb838e594a3d2fd7e828d52695bed7462b2100b5664f6
+  crates/sipi-p3c/Cargo.toml: 0ecfe1113ccd171470b06e0e7d69571085ed53e2cd5c6cdd6f27f0b81b4b2c75
+  crates/sipi-p3c/src/lib.rs: ce08b859a5fe196336ece2b41348814921101f25f485589414849fc885f559de
+  crates/sipi-p3c/src/prbs9_impulse_candidate_v1.rs: 65c6d6877095451552c3f4cebf5531c3208279cfcf16e080b9e20c055db6881d
+  crates/sipi-p3c/src/prbs9_impulse_candidate_v2.rs: d6182ab20dddc50acb89eef5b6232739eb6ee12a6cef2332505476f84ef680ac
+  crates/sipi-p3c/tests/p3c_external_ads_selected_highloss_waveform_only_runner.rs: 067a6c3c772f86c6737836f7c10dde1cf071340321c62323fb6f9cd236aa1200
+  crates/sipi-compare/Cargo.toml: b5610b24b0c678f88b1a6dfa74d5ddc6d90fa84faa68e6ba707dad2c9e1d4a71
+  crates/sipi-compare/src/lib.rs: 90a97c6973f7cb6812bb11c51f996b1dc6bdee57d266759525a51d8fb39d73a0
+  crates/sipi-compare/src/selected_highloss_prbs9_waveform_only_v3.rs: 48f44cb7a0471ec312cfdbf5d8dbb0a8c998f8a0e9bf1d542ad959da518a63f3
+  crates/sipi-touchstone/Cargo.toml: 7fcfb8330e8962e20b1e60a0c93dc7eda8e7a363895dd23a0a4ea76cad772fcb
+  crates/sipi-touchstone/src/lib.rs: 359b0c44894d6cf2b03eca19626d180a9f921695a71681e901c5bcb0c77fc5cc
+  crates/sipi-touchstone/src/selected_four_port_v1.rs: 2199739346c08c2737b543e0519f43a53e988e6a30aefed4ed05bcfdcb0bf2dd
+  crates/sipi-types/Cargo.toml: c5c112540ec14ffcd319a5b15553422409ced82ea541630bd659a916ba4bf31e
+  crates/sipi-types/src/lib.rs: 88e978e92b68220fe93be1c89be9549fe1a07b8506e043130e3942afde0036d1

@@ -1,0 +1,220 @@
+schema: sipi.p4b-ads-pcie-gen5-dual-ami-runtime-preflight.v1
+status: blocked_external_rights_or_runtime_evidence_missing
+profile:
+  id: ads-pcie-gen5-dual-ami-windows-x64-v1
+  platform: windows-x86_64
+  custody: external_only_hash_only
+  packaging: prohibited
+  product_asset: false
+  release_input: false
+  default_runtime: false
+  worker_admission: blocked
+  runtime_admission: blocked
+  promotion_status: blocked
+asset_identity:
+  status: ready
+  basis: exact_logical_name_byte_length_sha256_and_existing_binding_observed
+  asset_set_digest: 7da0e7c0367e7174945eadfa1c49dc88e9cd99e5a2309b64b884721e54290bf7
+  assets:
+    - id: pcie-gen5-ibis
+      kind: ibis
+      logical_name: pcie_gen5.ibs
+      byte_length: 5537
+      sha256: 9ff15bf9a5ad685d0ad700b26287b5f50e1c6e1ff9c6808e5a0f0ef86896d665
+      binding: shared_input_model
+      identity_status: ready
+      rights_status: blocked
+    - id: pcie-tx-ami
+      kind: ami_text
+      logical_name: ctspcie_tx_gen5.ami
+      byte_length: 3280
+      sha256: 9272e241901d8fa749909e501c6625e508961f581e624c3f64d18a27a2408fb0
+      binding: tx_parameter_text
+      identity_status: ready
+      rights_status: blocked
+    - id: pcie-rx-ami
+      kind: ami_text
+      logical_name: ctspcie_rx_gen5.ami
+      byte_length: 7489
+      sha256: 9e6206eddd32ab9d1a2ec8237d84608509131f7c3fc309c4f90f44a87f8905c1
+      binding: rx_parameter_text
+      identity_status: ready
+      rights_status: blocked
+    - id: pcie-tx-dll
+      kind: dll
+      logical_name: ctspcie_tx_win64.dll
+      byte_length: 370045
+      sha256: 05d299826a9c69ae8ac3d236d88adcad5860fc7e229243f1541d1734b8ed28ea
+      binding: tx_primary_dynamic_library
+      identity_status: ready
+      rights_status: blocked
+    - id: pcie-rx-dll
+      kind: dll
+      logical_name: ctspcie_rx_win64.dll
+      byte_length: 8850494
+      sha256: 88a284f0967ad332f6230a8c5e791f47e9d22a05ae6778426c35707a18a3ab63
+      binding: rx_primary_dynamic_library
+      identity_status: ready
+      rights_status: blocked
+rights:
+  status: blocked
+  reason: exact_external_asset_rights_are_not_evidenced
+  owner_authorization:
+    actor: user
+    decision_ref: user-approved-2026-08-11-p4b-dual-ami-external-observer
+    scope: external_oracle_candidate
+    authorization_status: scoped_owner_permission_only
+  third_party_rights_status: unverified
+  applies_to: [pcie-gen5-ibis, pcie-tx-ami, pcie-rx-ami, pcie-tx-dll, pcie-rx-dll]
+  required_inputs:
+    - exact_hash_bound_vendor_license_or_run_authorization_for_each_asset
+    - explicit_private_runtime_and_no_redistribution_scope
+    - rights_for_required_sidecars_and_transitive_non_system_dependencies
+parameter_compatibility:
+  status: blocked
+  reason: parameter_contract_and_ami_init_binding_missing
+  observed_bindings:
+    - model_id: pcie_tx
+      ibis_asset: pcie-gen5-ibis
+      ami_asset: pcie-tx-ami
+      dll_asset: pcie-tx-dll
+      ibis_declared_platform: Windows_mingw64-g++_64
+      ami_root: whistler_tx
+      declared_model_version: '6.1'
+      compatibility_status: blocked
+    - model_id: pcie_rx
+      ibis_asset: pcie-gen5-ibis
+      ami_asset: pcie-rx-ami
+      dll_asset: pcie-rx-dll
+      ibis_declared_platform: Windows_mingw64-g++_64
+      ami_root: whistler_rx
+      declared_model_version: '6.1'
+      compatibility_status: blocked
+  observed_spec_version: '5.1'
+  required_inputs:
+    - exact_hash_bound_ami_parameter_schema_names_types_defaults_ranges
+    - exact_ibis_algorithmic_model_linkage_and_port_contract
+    - fresh_ami_init_parameter_binding_result_for_tx_and_rx
+    - explicit_rejection_evidence_for_unknown_or_unsupported_parameters
+static_pe_imports:
+  status: ready
+  basis: p4b05c_external_static_declaration_only
+  runtime_evidence_substitute: false
+  dlls:
+    pcie-tx-dll:
+      byte_length: 370045
+      sha256: 05d299826a9c69ae8ac3d236d88adcad5860fc7e229243f1541d1734b8ed28ea
+      machine: windows-x86_64
+      exports: [AMI_Close, AMI_GetWave, AMI_Init]
+      normal_import_modules: [kernel32.dll, msvcrt.dll, user32.dll]
+      normal_import_symbol_count: 120
+      normal_import_symbol_manifest_sha256: 469f3d78f21a24f7788f925f01ce0e8778ccf9e70567442aacf751ea1690c040
+      delay_imports: []
+      bound_imports: []
+      export_forwarders: []
+      embedded_manifests: []
+      tls_directory: present
+      clr_directory: absent
+      dynamic_loader_capability_indicators: []
+    pcie-rx-dll:
+      byte_length: 8850494
+      sha256: 88a284f0967ad332f6230a8c5e791f47e9d22a05ae6778426c35707a18a3ab63
+      machine: windows-x86_64
+      exports: [AMI_Close, AMI_GetWave, AMI_Init]
+      normal_import_modules: [kernel32.dll, msvcrt.dll, user32.dll]
+      normal_import_symbol_count: 126
+      normal_import_symbol_manifest_sha256: 1009c13ac574a286de77d1d5685f312be86f239d81633eddc2d0ab2f4dfe74ab
+      delay_imports: []
+      bound_imports: []
+      export_forwarders: []
+      embedded_manifests: []
+      tls_directory: present
+      clr_directory: absent
+      dynamic_loader_capability_indicators: []
+  cannot_establish:
+    - dynamic_dependency_closure
+    - rights_or_redistribution
+    - worker_admission
+    - ami_load_or_get_wave
+    - ibis_ami_compatibility
+  required_inputs:
+    - independent_fresh_static_observation_bound_to_asset_set
+dynamic_dependency_closure:
+  status: blocked
+  reason: p4b05c_explicitly_blocked_not_assessed
+  static_imports_are_not_closure: true
+  transitive_non_system_modules: not_observed
+  system_resolution: not_observed
+  loaded_module_observation: not_observed
+  sidecar_resolution: not_observed
+  closure_status: blocked_not_assessed
+  required_inputs:
+    - two_fresh_private_materializations_of_each_exact_dll
+    - complete_transitive_module_name_path_and_sha256_inventory
+    - system_api_set_and_system32_resolution_bound_to_target_windows_versions
+    - sidecar_and_loader_probe_results_without_unlisted_files
+isolated_worker:
+  status: blocked
+  product_owned_mock_readiness:
+    hash_pinned_input_and_worker: ready
+    cooperative_cancel_and_deadline: ready
+    parent_timeout_recovery: ready
+    atomic_success_publication: ready
+  vendor_runtime_readiness:
+    sandbox: blocked
+    close_on_forced_termination: blocked
+    dynamic_dependency_closure: blocked
+    vendor_runtime_invocation: blocked
+    rights_bound_admission: blocked
+  worker_admission: blocked
+  required_inputs:
+    - approved_isolation_boundary_and_fresh_worker_observation
+    - close_on_kill_or_explicit_vendor_lifecycle_policy
+    - exact_asset_and_closure_manifest_consumed_by_worker
+fresh_runtime_observation:
+  status: blocked
+  reason: prior_observation_is_external_hash_only_and_not_product_runtime
+  product_runtime_invoked: false
+  isolated_worker_invoked: false
+  prior_p4b07:
+    custody: two_fresh_external_materializations
+    result: raw_output_hash_only
+    tx_probe_status: success
+    rx_probe_status: probe_crash
+    product_runtime: false
+    worker_admission: false
+  required_inputs:
+    - rights_and_closure_gates_passed_without_packaging_vendor_assets
+    - exact_parameterized_tx_and_rx_requests_with_hashes
+    - fresh_isolated_worker_lifecycle_and_get_wave_observation
+    - raw_output_and_diagnostic_hashes_with_exit_and_timeout_records
+evidence_bindings:
+  - id: asset_identity_and_rights_boundary
+    path: docs/baselines/p4b-ads-pcie-gen5-dual-ami-asset-preflight.v1.yaml
+    sha256: 7e9281833b13a38be8d523619afc5f4e163e330a314325e8ff3ea4f3faa13dcd
+    claim: exact_identity_observed_rights_unverified
+  - id: static_pe_loader_declarations
+    path: docs/baselines/p4b-dual-ami-pe-loader-declarations.v1.yaml
+    sha256: b9b12a4c5bb03daabc3c8172d44cefce2feabe834d9628eee9a2428f669af1ab
+    claim: static_imports_observed_dynamic_closure_blocked
+  - id: prior_fresh_external_abi_observation
+    path: docs/baselines/p4b-07-authorized-fixture-abi-observation-evidence.v1.yaml
+    sha256: 7d978499a925057c7f618f924d1102508a74f601ce4c3c6c9f4c460bfe1f80b8
+    claim: prior_external_raw_hash_only_not_product_runtime
+  - id: worker_partial_state
+    path: docs/baselines/audits/2026-08-11-p4b-ami-private-worker.md
+    sha256: 364799d23b44576ad61422ec026a8192553ff2121a533fac5940131c10e3c004
+    claim: mock_worker_mechanics_only_vendor_runtime_blocked
+non_claims:
+  - exact identity is not third_party_rights_or_redistribution_permission
+  - static PE imports are not complete static_or_dynamic_dependency_closure
+  - static PE imports cannot substitute for fresh runtime evidence
+  - AMI text and IBIS identity are not AMI_parameter_compatibility
+  - mock worker readiness is not vendor_worker_admission
+  - prior external fixture probes are not product_runtime_or_profile_parity
+  - no vendor DLL or AMI asset is packaged_or_promoted
+next_inputs:
+  - exact_hash_bound_rights_and_private_runtime_authorization
+  - complete_dynamic_dependency_closure_for_each_dll
+  - independent_ami_parameter_compatibility_contract_and_binding
+  - isolated_worker_readiness_and_fresh_runtime_observation

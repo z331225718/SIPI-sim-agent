@@ -20,6 +20,10 @@ from verify_tran_rc_pulse_current_external_compare_evidence_v3 import (
     verify_document as verify_previous_tran_evidence,
 )
 from verify_tran_rc_pulse_current_external_compare_evidence_v4 import (
+    EvidenceError as PreviousCurrentTranEvidenceError,
+    verify_document as verify_previous_current_tran_evidence,
+)
+from verify_tran_rc_pulse_current_external_compare_evidence_v5 import (
     EvidenceError as CurrentTranEvidenceError,
     verify_document as verify_current_tran_evidence,
 )
@@ -32,6 +36,10 @@ from verify_channel_s2p_matched_cli_current_external_compare_evidence_v7 import 
     verify_document as verify_previous_current_channel_cli_evidence,
 )
 from verify_channel_s2p_matched_cli_current_external_compare_evidence_v8 import (
+    EvidenceError as PreviousCurrentChannelEvidenceErrorV8,
+    verify_document as verify_previous_current_channel_cli_evidence_v8,
+)
+from verify_channel_s2p_matched_cli_current_external_compare_evidence_v9 import (
     EvidenceError as CurrentChannelEvidenceError,
     verify_document as verify_current_channel_cli_evidence,
 )
@@ -1109,15 +1117,14 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
     tran = next((row for row in rows if row["id"] == "tran-rc-pulse"), None)
     if tran is None:
         raise PublicationError("publication_tran_row_missing")
-    current_compare_id = "tran-rc-pulse-current-external-compare-v4"
-    historical_compare_id = "tran-rc-pulse-current-external-compare-v3"
-    source_drift_blocker = "current_external_compare_evidence_source_drift"
+    current_compare_id = "tran-rc-pulse-current-external-compare-v5"
+    historical_compare_id = "tran-rc-pulse-current-external-compare-v4"
+    older_compare_id = "tran-rc-pulse-current-external-compare-v3"
     if (
-        tran["acceptance_state"] != "specified"
-        or tran["external_oracle"] is not False
+        tran["acceptance_state"] != "accepted"
+        or tran["external_oracle"] is not True
         or tran["evidence_ids"] != ["tran-rc-pulse-contract", "p7-isolated-install", current_compare_id]
-        or set(tran["blockers"]) != {"release_promotion_blocked", source_drift_blocker}
-        or len(tran["blockers"]) != 2
+        or tran["blockers"] != ["release_promotion_blocked"]
         or tran["non_claims"] != [
             "fixed_profile_only_not_general_tran_or_netlist_support",
             "not_cross_platform_or_release_certification",
@@ -1128,24 +1135,38 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
     if current_entry != {
         "id": current_compare_id,
         "kind": "external_compare_evidence",
-        "path": "docs/baselines/tran-rc-pulse-current-external-compare-evidence.v4.yaml",
+        "path": "docs/baselines/tran-rc-pulse-current-external-compare-evidence.v5.yaml",
         "subject": "tran-rc-pulse",
         "evidence_state": "observed",
     }:
         raise PublicationError("publication_tran_acceptance_binding_invalid")
     try:
         verify_current_tran_evidence(load_yaml(ROOT / current_entry["path"]))
-    except CurrentTranEvidenceError as error:
-        if str(error) != "evidence_product_source_drift":
-            raise PublicationError("publication_tran_external_evidence_invalid") from None
-    except (OSError, RuntimeError):
+    except (CurrentTranEvidenceError, OSError, RuntimeError):
         raise PublicationError("publication_tran_external_evidence_invalid") from None
-    else:
-        raise PublicationError("publication_tran_current_evidence_not_drifted")
 
     historical_entry = index_by_id.get(historical_compare_id)
     if historical_entry != {
         "id": historical_compare_id,
+        "kind": "external_compare_evidence",
+        "path": "docs/baselines/tran-rc-pulse-current-external-compare-evidence.v4.yaml",
+        "subject": "tran-rc-pulse",
+        "evidence_state": "observed",
+    }:
+        raise PublicationError("publication_tran_historical_evidence_invalid")
+    try:
+        verify_previous_current_tran_evidence(load_yaml(ROOT / historical_entry["path"]))
+    except PreviousCurrentTranEvidenceError as error:
+        if str(error) != "evidence_product_source_drift":
+            raise PublicationError("publication_tran_historical_evidence_invalid") from None
+    except (OSError, RuntimeError):
+        raise PublicationError("publication_tran_historical_evidence_invalid") from None
+    else:
+        raise PublicationError("publication_tran_historical_evidence_not_drifted")
+
+    older_entry = index_by_id.get(older_compare_id)
+    if older_entry != {
+        "id": older_compare_id,
         "kind": "external_compare_evidence",
         "path": "docs/baselines/tran-rc-pulse-current-external-compare-evidence.v3.yaml",
         "subject": "tran-rc-pulse",
@@ -1153,7 +1174,7 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
     }:
         raise PublicationError("publication_tran_historical_evidence_invalid")
     try:
-        verify_previous_tran_evidence(load_yaml(ROOT / historical_entry["path"]))
+        verify_previous_tran_evidence(load_yaml(ROOT / older_entry["path"]))
     except PreviousTranEvidenceError as error:
         if str(error) != "evidence_product_source_drift":
             raise PublicationError("publication_tran_historical_evidence_invalid") from None
@@ -1163,47 +1184,63 @@ def _validate_profile_scoped_external_acceptance(rows: list[dict[str, Any]], ind
         raise PublicationError("publication_tran_historical_evidence_not_drifted")
 
     channel = next((row for row in rows if row["id"] == "channel"), None)
-    compare_id = "channel-s2p-cli-current-external-compare-v8"
-    historical_compare_id = "channel-s2p-cli-current-external-compare-v7"
+    compare_id = "channel-s2p-cli-current-external-compare-v9"
+    historical_compare_id = "channel-s2p-cli-current-external-compare-v8"
+    older_compare_id = "channel-s2p-cli-current-external-compare-v7"
     if channel is None:
         raise PublicationError("publication_channel_row_missing")
     if (
         channel["acceptance_state"] != "specified"
         or channel["external_oracle"] is not False
-        or compare_id not in channel["evidence_ids"]
-        or set(channel["blockers"])
-        != {"caller_input_unattested", "periodic_kernel_not_link_simulation", source_drift_blocker}
-        or len(channel["blockers"]) != 3
+        or channel["evidence_ids"] != ["channel-s2p-contract", "p3a-matched-channel-cli-run", compare_id]
+        or channel["blockers"] != ["caller_input_unattested", "periodic_kernel_not_link_simulation"]
     ):
         raise PublicationError("publication_channel_acceptance_binding_invalid")
     entry = index_by_id.get(compare_id)
-    if (
-        entry is None
-        or entry["kind"] != "external_compare_evidence"
-        or entry["subject"] != "channel"
-        or entry["evidence_state"] != "observed"
-    ):
+    if entry != {
+        "id": compare_id,
+        "kind": "external_compare_evidence",
+        "path": "docs/baselines/channel-s2p-matched-cli-current-external-compare-evidence.v9.yaml",
+        "subject": "channel",
+        "evidence_state": "observed",
+    }:
         raise PublicationError("publication_channel_acceptance_binding_invalid")
     try:
         verify_current_channel_cli_evidence(load_yaml(ROOT / entry["path"]))
-    except CurrentChannelEvidenceError as error:
-        if str(error) != "evidence_product_source_drift":
-            raise PublicationError("publication_channel_current_evidence_invalid") from None
-    except (OSError, RuntimeError):
-        raise PublicationError("publication_channel_current_evidence_invalid")
-    else:
-        raise PublicationError("publication_channel_current_evidence_not_drifted")
+    except (CurrentChannelEvidenceError, OSError, RuntimeError):
+        raise PublicationError("publication_channel_current_evidence_invalid") from None
 
     historical_entry = index_by_id.get(historical_compare_id)
-    if (
-        historical_entry is None
-        or historical_entry["kind"] != "external_compare_evidence"
-        or historical_entry["subject"] != "channel"
-        or historical_entry["evidence_state"] != "observed"
+    if historical_entry != {
+        "id": historical_compare_id,
+        "kind": "external_compare_evidence",
+        "path": "docs/baselines/channel-s2p-matched-cli-current-external-compare-evidence.v8.yaml",
+        "subject": "channel",
+        "evidence_state": "observed",
+    }:
+        raise PublicationError("publication_channel_historical_evidence_invalid")
+    try:
+        verify_previous_current_channel_cli_evidence_v8(load_yaml(ROOT / historical_entry["path"]))
+    except PreviousCurrentChannelEvidenceErrorV8 as error:
+        if str(error) != "evidence_product_source_drift":
+            raise PublicationError("publication_channel_historical_evidence_invalid") from None
+    except (OSError, RuntimeError):
+        raise PublicationError("publication_channel_historical_evidence_invalid") from None
+    else:
+        raise PublicationError("publication_channel_historical_evidence_not_drifted")
+
+    older_entry = index_by_id.get(older_compare_id)
+    if older_entry is None or (
+        older_entry["kind"], older_entry["path"], older_entry["subject"], older_entry["evidence_state"]
+    ) != (
+        "external_compare_evidence",
+        "docs/baselines/channel-s2p-matched-cli-current-external-compare-evidence.v7.yaml",
+        "channel",
+        "observed",
     ):
         raise PublicationError("publication_channel_historical_evidence_invalid")
     try:
-        verify_previous_current_channel_cli_evidence(load_yaml(ROOT / historical_entry["path"]))
+        verify_previous_current_channel_cli_evidence(load_yaml(ROOT / older_entry["path"]))
     except PreviousCurrentChannelEvidenceError as error:
         if str(error) != "evidence_product_source_drift":
             raise PublicationError("publication_channel_historical_evidence_invalid") from None

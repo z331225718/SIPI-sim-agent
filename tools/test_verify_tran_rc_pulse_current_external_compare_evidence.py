@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+import json
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -61,8 +63,29 @@ class CurrentTranEvidenceTests(unittest.TestCase):
         with self.assertRaises(GATE_V3.EvidenceError):
             GATE_V3.verify_document(drift)
 
-    def test_v4_current_candidate_evidence_is_valid(self) -> None:
-        self.assertTrue(GATE_V4.verify_document(self.document(GATE_V4))["valid"])
+    def test_v4_current_candidate_evidence_is_historical_after_candidate_drift(self) -> None:
+        with self.assertRaisesRegex(GATE_V4.EvidenceError, "evidence_product_source_drift"):
+            GATE_V4.verify_document(self.document(GATE_V4))
+
+    def test_v4_cli_reports_source_drift_as_structured_json(self) -> None:
+        completed = subprocess.run(
+            [sys.executable, "-B", "tools/verify_tran_rc_pulse_current_external_compare_evidence_v4.py"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 2)
+        self.assertEqual(completed.stdout, "")
+        self.assertEqual(
+            json.loads(completed.stderr),
+            {
+                "reason": "evidence_product_source_drift",
+                "schema": GATE_V4.SCHEMA,
+                "valid": False,
+            },
+        )
 
     def test_v4_rejects_historical_schema_and_product_drift(self) -> None:
         wrong_schema = self.document(GATE_V4)

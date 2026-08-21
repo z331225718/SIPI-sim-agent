@@ -1,4 +1,4 @@
-"""Verify the P2 fixed TRAN current-candidate evidence record v4."""
+"""Verify the P2 fixed TRAN current-candidate evidence record v5."""
 
 from __future__ import annotations
 
@@ -18,13 +18,17 @@ from verify_tran_rc_pulse_external_compare_evidence import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SCHEMA = "sipi.tran.rc-pulse.current-external-compare-evidence.v4"
-EVIDENCE = ROOT / "docs" / "baselines" / "tran-rc-pulse-current-external-compare-evidence.v4.yaml"
+SCHEMA = "sipi.tran.rc-pulse.current-external-compare-evidence.v5"
+EVIDENCE = ROOT / "docs" / "baselines" / "tran-rc-pulse-current-external-compare-evidence.v5.yaml"
+EXPECTED_PRODUCT_COMMIT = "805ebb6bbaf588dec08685be4eb78a8ce2fff563"
 
 
 def verify_document(document: object, report_path: Path | None = None) -> dict[str, object]:
     if not isinstance(document, dict) or document.get("schema") != SCHEMA:
         raise EvidenceError("current_evidence_schema_invalid")
+    product = document.get("product")
+    if not isinstance(product, dict) or product.get("source_commit") != EXPECTED_PRODUCT_COMMIT:
+        raise EvidenceError("current_evidence_product_commit_invalid")
     historical_shape = copy.deepcopy(document)
     historical_shape["schema"] = HISTORICAL_SCHEMA
     result = verify_historical_shape(historical_shape, report_path)
