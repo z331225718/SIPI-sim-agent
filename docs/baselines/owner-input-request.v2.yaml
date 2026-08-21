@@ -1,0 +1,66 @@
+schema: sipi.owner-input-request.v2
+status: awaiting_external_asset_oracle
+purpose: Current owner-input request after the five recorded semantic decisions were reconciled. Resolved owner-decision rows are not repeated here; only external asset/oracle blockers remain.
+reconciliation_ref: docs/baselines/owner-decision-reconciliation.v2.yaml
+historical_v1_unchanged: true
+entries:
+  - id: P1-04B
+    kind: external_asset_oracle
+    blocker: external_asset_oracle
+    decision_point: provide exact selected profile, custody, rights, and distribution facts for the trusted external fixtures; comparison permission is already recorded
+    gate:
+      - tools/verify_p1_04b_legacy_fixture_boundary.py
+      - tools/verify_p1_legacy_fixture_required_profile_facts.py
+      - tools/verify_p1_04b_comparison_permission_reconciliation.py
+  - id: P4B-08
+    kind: external_asset_oracle
+    blocker: external_asset_oracle
+    decision_point: provide AMI rights, exact parameter compatibility, dynamic dependency closure, isolated vendor worker, and fresh-runtime evidence; S4P topology/port mapping is already observed
+    gate:
+      - tools/verify_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py
+      - tools/verify_p4b_ads_pcie_gen5_dual_ami_runtime_preflight.py
+      - tools/verify_p4b_08_s4p_observation.py
+      - tools/verify_p4b_08b_s4p_ami_matrix_preflight.py
+      - tools/verify_p4b_08c_ads_netlist_topology_semantic_response.py
+  - id: P4B-09
+    kind: external_asset_oracle
+    blocker: external_asset_oracle
+    decision_point: provide an authorized profile and fresh isolated runtime evidence for sipi ami run; silent fallback is prohibited
+    gate:
+      - tools/verify_p4b_ads_pcie_gen5_dual_ami_asset_preflight.py
+      - tools/verify_p4b_ads_pcie_gen5_dual_ami_runtime_preflight.py
+  - id: P5-02
+    kind: external_asset_oracle
+    blocker: external_asset_oracle
+    decision_point: provide the canonical R480 parameter JSON and authoritative MATLAB/agent-com oracle material, including the remaining warning and default-layout evidence
+    gate:
+      - tools/verify_com_r480_acceptance.py
+      - tools/verify_p5_02e_canonical_parameter_reference.py
+      - tools/verify_p5_02f_parameter_json_draft.py
+      - tools/verify_p5_02g_canonical_json.py
+      - tools/verify_p5_02h_canonical_json_v2.py
+      - tools/verify_p5_02i_warning_observation.py
+      - tools/verify_p5_02j_value_consumption.py
+      - tools/verify_p5_02k_matlab_literal.py
+      - tools/verify_p5_02l_resolve_parameters.py
+      - tools/verify_p5_02m_warning_detector.py
+      - tools/verify_p5_02n_warning_report.py
+  - id: P5-06
+    kind: external_asset_oracle
+    blocker: external_asset_oracle
+    decision_point: provide current MATLAB oracle output and compare-matrix evidence for the required COM example, including full metric/checkpoint alignment
+    gate:
+      - tools/verify_release_capability_publication.py
+      - tools/verify_p5_06a_matlab_oracle_first_run.py
+      - tools/verify_p5_06b_oracle_metric_surface.py
+      - tools/verify_p5_06c_normalized_input_surface.py
+      - tools/verify_p5_06d_canonical_input_keys.py
+      - tools/verify_p5_06e_oracle_metric_reference.py
+      - tools/verify_p5_06f_com_chain_core.py
+      - tools/verify_p5_06g_oracle_chain_compare.py
+      - tools/verify_p5_r480_reference_custody_preflight.py
+      - tools/verify_p5_06_pinned_source_external_oracle_candidate_document.py
+non_claims:
+  - no_owner_decision_items_remain_in_the_current_request
+  - external_asset_oracle_authorization_is_not_product_implementation_acceptance
+  - current_request_does_not_rewrite_owner_input_request_v1

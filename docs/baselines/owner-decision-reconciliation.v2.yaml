@@ -1,0 +1,128 @@
+schema: sipi.owner-decision-reconciliation.v2
+status: current_owner_decisions_reconciled_semantics_pending
+authority:
+  actor: user
+  recorded_at: "2026-08-21"
+  decision_label: A
+  source:
+    owner_input_request_v1:
+      path: docs/baselines/owner-input-request.v1.yaml
+      sha256: a38f3688b343ed83c1c79c3c32cf5f459c1ab99fbc7fef7f1cdc825fe792c677
+      immutable: true
+    owner_decision_checklist_v1:
+      path: docs/baselines/owner-decision-checklist.v1.md
+      sha256: 9496cb5242a702903ee44ea7ad1d55dddbdda5153588aba6a83c37916df986c1
+      immutable: true
+scope:
+  current_request_contains_only_external_asset_oracle_blockers: true
+  product_rust_semantics_changed: false
+  historical_v1_documents_changed: false
+decisions:
+  - id: P3B-02
+    answer: A
+    blocker_before: owner_decision
+    blocker_after: semantics_not_implemented
+    current_request: false
+    recommendation:
+      receiver_chain: [RX CTLE, RX FFE]
+      stage_order: RX CTLE->RX FFE
+      stage_selection: explicit_optional_per_simulation
+      bypass: explicit_per_stage
+      auto_tuning: prohibited
+      silent_default: prohibited
+      v1_boundary: bypass_only_unchanged
+      future_extension: additive_profile_only
+    non_claims:
+      - does_not_widen_owner_input_request_v1
+      - does_not_enable_automatic_tuning
+      - does_not_select_a_silent_default_stage
+      - does_not_claim_ctle_or_ffe_runtime_implementation
+  - id: P3B-04
+    answer: A
+    blocker_before: owner_decision
+    blocker_after: resolved_scoped
+    current_request: false
+    recommendation:
+      current_public_profile:
+        cdr: none
+        lock: not_applicable
+        reset: not_applicable
+        cancel: not_applicable
+      ami_internal_cdr: future_authenticated_route_only
+      cdr_04b_core: existing_core_not_clock_source
+    non_claims:
+      - public_cdr_none_is_not_ami_internal_cdr_support
+      - cdr_04b_core_is_not_a_clock_source
+      - cdr_04b_core_is_not_public_profile_selection
+      - no_public_lock_reset_cancel_semantics_are_claimed
+  - id: P3B-05
+    answer: A
+    blocker_before: owner_decision
+    blocker_after: resolved_scoped
+    current_request: false
+    recommendation:
+      stimulus: PRBS9
+      seed_literal: "0x001"
+      seed_integer: 1
+      injection_position: TX
+      time_warp: caller_supplied_sample_unit
+      shift_formula: p=n+shift[n]
+      interpolation: linear
+      random_number_generator: prohibited
+      amplitude_noise: prohibited
+      library_determinism: true
+      external_tolerance_claim: false
+    non_claims:
+      - does_not_add_rng
+      - does_not_add_amplitude_noise
+      - does_not_make_an_external_tolerance_claim
+      - does_not_promote_receiver_or_jitter_acceptance
+  - id: P3C-01
+    answer: A
+    blocker_before: owner_decision
+    blocker_after: resolved_scoped
+    current_request: false
+    recommendation:
+      profile: selected_highloss_exact
+      receiver: none
+      scope: waveform_only
+      included_observables: [waveform]
+      excluded_observables: [eye, TIE, bathtub]
+      closed_eye_fallback: prohibited
+      q_factor: generic_or_future_receiver_capability_only
+      db_tolerance_0_1: generic_or_future_receiver_capability_only
+    non_claims:
+      - does_not_generalize_to_arbitrary_closed_eye_inputs
+      - does_not_claim_eye_observation
+      - does_not_claim_tie_observation
+      - does_not_claim_bathtub_or_ber_observation
+  - id: P4A-01
+    answer: A
+    blocker_before: owner_decision
+    blocker_after: semantics_not_implemented
+    current_request: false
+    recommendation:
+      ibis_version: 5.0
+      file_path: fixtures/ibis/as4c512m16md4v-053bin.ibs
+      structural_inventory: observed_structural_inventory_only
+      inventory_ref: docs/baselines/p4a-01-required-profile-inventory.v1.yaml
+      inventory_exhaustiveness: not_claimed
+      model_selector: not_selected
+      corner: not_selected
+      behavior_selection: delegated_to_P4A-02_and_P4A-03
+      structural_inventory_is_not_behavior_selection: true
+      guessing: prohibited
+    non_claims:
+      - does_not_guess_model_or_corner
+      - does_not_select_ibis_behavior
+      - does_not_promote_a_product_ibis_parser
+      - does_not_promote_p4a_02_or_p4a_03
+non_claims:
+  - reconciled_owner_decisions_are_not_product_implementation_acceptance
+  - semantics_not_implemented_rows_remain_open
+  - external_asset_oracle_rows_remain_open
+  - historical_v1_documents_are_not_rewritten
+  - no_release_or_license_promotion
+ledger_ref: docs/baselines/plan-remaining-items-ledger.v1.yaml
+current_request_ref: docs/baselines/owner-input-request.v2.yaml
+audit_ref: docs/baselines/audits/2026-08-21-owner-input-current-reconciliation-v2.md

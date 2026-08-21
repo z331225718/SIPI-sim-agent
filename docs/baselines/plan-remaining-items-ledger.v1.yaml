@@ -1,7 +1,7 @@
 {
   "schema": "sipi.plan-remaining-items.ledger.v1",
   "status": "provisional",
-  "total_open": 28,
+  "total_open": 25,
   "blocker_classes": {
     "owner_decision": "requires an owner decision (profile/CDR/metric/Link semantics or workload approval)",
     "external_asset_oracle": "requires external assets or oracle material (DLL/fixture/MATLAB/agent-com/fresh-machine/license)",
@@ -32,43 +32,13 @@
     },
     {
       "id": "P3B-02",
-      "blocker": "owner_decision",
+      "blocker": "semantics_not_implemented",
       "gate": [
         "tools/verify_p3b_02_link_kernel_singleton.py",
-        "tools/verify_p3_original_project_eye_jitter_semantics_observation.py"
+        "tools/verify_p3_original_project_eye_jitter_semantics_observation.py",
+        "tools/verify_owner_decision_reconciliation_v2.py"
       ],
-      "note": "PyBERT/Agent-COM eye, jitter and equalizer source semantics are read-only verified; equalizer subset remains pending a selected Link profile and product contract"
-    },
-    {
-      "id": "P3B-04",
-      "blocker": "owner_decision",
-      "gate": [
-        "tools/verify_channel_rfm_receiver_readiness.py",
-        "tools/verify_p3b_04b_cdr_lock.py"
-      ],
-      "note": "delegated-policy agreement recorded (amendment approved 2026-08-11); 04b CDR lock semantics delivered (4/4 crosscheck); receiver semantic approval contract still pending"
-    },
-    {
-      "id": "P3B-05",
-      "blocker": "owner_decision",
-      "gate": [
-        "tools/verify_p3b_05a_causal_fir_request_rejection.py",
-        "tools/verify_p3b_05b_seed_noise_jitter_decision_preflight.py",
-        "tools/verify_p3b_05c_prbs9_sequence.py",
-        "tools/verify_p3b_05d_prbs9_inject.py",
-        "tools/verify_p3b_05e_time_warp.py",
-        "tools/verify_p3_original_project_eye_jitter_semantics_observation.py"
-      ],
-      "note": "owner A4 decision (PRBS9, seed 0b000000001, TX, time model); 05c PRBS9 core + 05d TX-injection waveform + 05e deterministic per-sample time-warp shift (linear interpolation, 10/10 crosscheck) ported; jitter/observables/tolerance still out of scope"
-    },
-    {
-      "id": "P3C-01",
-      "blocker": "owner_decision",
-      "gate": [
-        "tools/verify_p3c_prbs9_metric_core_v2.py",
-        "tools/verify_p3_original_project_eye_jitter_semantics_observation.py"
-      ],
-      "note": "eye folding/bin and TIE reference frozen by v2 contract (01e); bathtub estimator/tolerance and receiver stage pending owner decision"
+      "note": "Owner recommendation A is reconciled as RX CTLE -> RX FFE with explicit per-stage selection or bypass and no auto-tuning/silent default; current v1 remains bypass-only and the additive profile/implementation is still semantics_not_implemented"
     },
     {
       "id": "P3C-02",
@@ -106,12 +76,13 @@
     },
     {
       "id": "P4A-01",
-      "blocker": "owner_decision",
+      "blocker": "semantics_not_implemented",
       "gate": [
         "tools/verify_p4a_ibis_example_rx_candidate_inventory.py",
-        "tools/verify_p4a_01_required_profile_inventory.py"
+        "tools/verify_p4a_01_required_profile_inventory.py",
+        "tools/verify_owner_decision_reconciliation_v2.py"
       ],
-      "note": "owner selected required profile 2026-08-16 (A6: IBIS 5.0, fixtures/ibis/as4c512m16md4v-053bin.ibs); observer-only structural inventory hash-bound (26 keywords / 67 model blocks / 4 table families); parser and semantic stages remain separate (P4A-02/03)"
+      "note": "Owner recommendation A freezes the exact IBIS 5.0 file and observed structural inventory without guessing model/corner behavior; the current inventory is explicitly non-exhaustive, so exhaustive structural inventory remains semantics_not_implemented while behavior selection stays under P4A-02/P4A-03"
     },
     {
       "id": "P4A-02",

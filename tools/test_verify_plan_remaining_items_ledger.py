@@ -17,7 +17,7 @@ class LedgerTests(unittest.TestCase):
     def test_ledger_matches_plan(self) -> None:
         result = GATE.validate(ROOT)
         self.assertTrue(result["valid"])
-        self.assertEqual(result["items"], 28)
+        self.assertEqual(result["items"], 25)
 
     def test_ledger_items_equal_plan_open_items(self) -> None:
         ledger = GATE.load_yaml(GATE.LEDGER)
@@ -36,10 +36,11 @@ class LedgerTests(unittest.TestCase):
             for gate in entry["gate"]:
                 self.assertTrue((ROOT / gate).is_file(), f"{entry['id']}: {gate}")
 
-    def test_all_four_classes_present(self) -> None:
+    def test_current_classes_are_allowed_and_owner_decision_is_absent(self) -> None:
         ledger = GATE.load_yaml(GATE.LEDGER)
         classes = {entry["blocker"] for entry in ledger["items"]}
-        self.assertEqual(classes, GATE.BLOCKER_CLASSES)
+        self.assertTrue(classes <= GATE.BLOCKER_CLASSES)
+        self.assertNotIn("owner_decision", classes)
 
 
 if __name__ == "__main__":

@@ -1,15 +1,16 @@
-"""Verify the consolidated owner-input request against the remaining-items ledger.
+"""Verify the immutable historical v1 owner-input request.
 
-The request entry set must equal the ledger ids whose blocker class is
-owner_decision or external_asset_oracle; every entry must carry a
-non-empty decision point, a kind matching its ledger blocker class, and an
-existing gate file. Any drift fails closed.
+The current request is additive v2.  This verifier intentionally keeps the
+v1 record useful without making the historical document follow the current
+ledger after owner decisions were reconciled.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -20,7 +21,19 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT = ROOT / "docs" / "baselines" / "owner-input-request.v1.yaml"
 LEDGER = ROOT / "docs" / "baselines" / "plan-remaining-items-ledger.v1.yaml"
 SCHEMA = "sipi.owner-input-request.v1"
-INPUT_CLASSES = {"owner_decision", "external_asset_oracle"}
+HISTORICAL_SHA256 = "a38f3688b343ed83c1c79c3c32cf5f459c1ab99fbc7fef7f1cdc825fe792c677"
+HISTORICAL_IDS = {
+    "P1-04B": "external_asset",
+    "P3B-02": "owner_decision",
+    "P3B-04": "owner_decision",
+    "P3B-05": "owner_decision",
+    "P3C-01": "owner_decision",
+    "P4A-01": "owner_decision",
+    "P4B-08": "external_asset",
+    "P4B-09": "external_asset",
+    "P5-02": "external_asset",
+    "P5-06": "external_asset",
+}
 
 
 class OwnerInputError(RuntimeError):
@@ -35,31 +48,27 @@ def load_yaml(path: Path) -> dict[str, Any]:
 
 
 def validate(root: Path = ROOT) -> dict[str, Any]:
+    if hashlib.sha256(DEFAULT.read_bytes()).hexdigest() != HISTORICAL_SHA256:
+        raise OwnerInputError("historical_request_changed")
     request = load_yaml(DEFAULT)
     if request.get("schema") != SCHEMA or request.get("status") != "awaiting_owner_input":
         raise OwnerInputError("request_schema_or_status_invalid")
     entries = request.get("entries")
     if not isinstance(entries, list) or not entries:
         raise OwnerInputError("entries_invalid")
-    ledger = load_yaml(LEDGER)
-    ledger_input = {
-        entry["id"]: entry
-        for entry in ledger.get("items", [])
-        if isinstance(entry, dict) and entry.get("blocker") in INPUT_CLASSES
-    }
     requested = {entry["id"] for entry in entries}
-    if requested != set(ledger_input):
-        missing = sorted(set(ledger_input) - requested)
-        extra = sorted(requested - set(ledger_input))
+    if requested != set(HISTORICAL_IDS):
+        missing = sorted(set(HISTORICAL_IDS) - requested)
+        extra = sorted(requested - set(HISTORICAL_IDS))
         raise OwnerInputError(f"entry_set_drift:missing={missing}:extra={extra}")
     for entry in entries:
         entry_id = entry.get("id")
         kind = entry.get("kind")
         decision = entry.get("decision_point")
         gate = entry.get("gate")
-        if not entry_id or entry_id not in ledger_input:
+        if not entry_id or entry_id not in HISTORICAL_IDS:
             raise OwnerInputError(f"entry_unknown:{entry_id}")
-        expected_kind = "owner_decision" if ledger_input[entry_id]["blocker"] == "owner_decision" else "external_asset"
+        expected_kind = HISTORICAL_IDS[entry_id]
         if kind != expected_kind:
             raise OwnerInputError(f"entry_kind_mismatch:{entry_id}")
         if not isinstance(decision, str) or not decision:

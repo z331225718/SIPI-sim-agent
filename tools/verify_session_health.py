@@ -31,6 +31,7 @@ CHECKS = [
     ("slice-reference-audit", "tools/audit_slice_references.py", []),
     ("plan-reference-audit", "tools/audit_plan_references.py", []),
     ("owner-input-request", "tools/verify_owner_input_request.py", []),
+    ("owner-input-request-current-reconciliation", "tools/verify_owner_decision_reconciliation_v2.py", []),
     ("remaining-items-ledger", "tools/verify_plan_remaining_items_ledger.py", []),
     ("open-item-gate-coverage", "tools/verify_plan_open_items_gate_coverage.py", []),
 ]
