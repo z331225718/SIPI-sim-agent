@@ -150,6 +150,15 @@ pub fn compare_metric_profile_v1(
     profile: &MetricProfileV1,
     candidates: &BTreeMap<String, f64>,
 ) -> Result<MetricCompareReportV1, MetricCompareErrorV1> {
+    // The profile is a closed metric surface.  Rejecting extras here keeps a
+    // caller from silently smuggling an unprofiled value into a report that
+    // otherwise looks complete.
+    if let Some(name) = candidates
+        .keys()
+        .find(|name| !profile.specs.contains_key(*name))
+    {
+        return Err(MetricCompareErrorV1::UnknownCandidateMetric(name.clone()));
+    }
     let mut results = Vec::new();
     let mut passed = true;
     for (name, spec) in &profile.specs {
@@ -244,10 +253,12 @@ mod tests {
         let mut cand = BTreeMap::new();
         cand.insert("fom".to_string(), 53.4265); // within 0.01 of 53.426
         cand.insert("extra".to_string(), 1.0);
-        // unknown candidate metrics are not rejected in this engine (only missing ones are),
-        // so this should still produce a valid report with fom checked.
-        let report = compare_metric_profile_v1(&profile, &cand).expect("cmp");
-        assert!(report.passed());
+        assert_eq!(
+            compare_metric_profile_v1(&profile, &cand),
+            Err(MetricCompareErrorV1::UnknownCandidateMetric(
+                "extra".to_string()
+            ))
+        );
     }
 
     #[test]

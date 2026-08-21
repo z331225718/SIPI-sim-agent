@@ -1,0 +1,74 @@
+schema: sipi.p3c-02.current-semantics-gap.v1
+status: p3c_02_semantic_boundary_observed_not_closed
+purpose: >-
+  Reconcile the current P3C-02 eye-folding/bin and bathtub boundary without
+  promoting an original-project implementation or inventing a receiver,
+  reference, or acceptance profile.
+scope:
+  work_item: P3C-02
+  basis: current_owner_reconciliation_and_product_contracts
+  product_rust_changed_for_this_record: false
+  external_runtime_invoked: false
+  external_reference_bound: false
+  historical_evidence_rewritten: false
+  acceptance_or_release_promoted: false
+owner_scope:
+  path: docs/baselines/owner-decision-reconciliation.v2.yaml
+  sha256: 4e9109e3adde405f3c6529bd6d09f27828a0cc56959eeb024b5600865bbba1f0
+  decision_id: P3C-01
+  profile: selected_highloss_exact
+  receiver: none
+  scope: waveform_only
+  included_observables: [waveform]
+  excluded_observables: [eye, TIE, bathtub]
+  closed_eye_fallback: prohibited
+current_product_contract:
+  path: docs/baselines/p3c-prbs9-metric-core.v2.yaml
+  sha256: 4cd55eee3897b3705e25e1c7e0e5f1e5090efb0b8689b0bb8837f6252c036c13
+  status: product_owned_strict_grid_waveform_eye_tie_core_specified_not_profile_accepted
+  fixed_eye_rules:
+    phase: sample_index_modulo_32
+    partition: frozen_prbs9_current_ui
+    opening: min_high_minus_max_low
+    width: contiguous_positive_bins_containing_center_times_dt
+    wraparound: prohibited
+    interpolation: prohibited
+  admission:
+    external_reference_binding: not_evaluated
+    accepted_receiver: false
+    acceptance_ready: false
+    release_ledger_promoted: false
+original_source_observation:
+  path: docs/baselines/p3-original-project-eye-jitter-semantics-observation.v1.yaml
+  sha256: d5d28e855865db033b3678ad3bf7e63f6fd1073a81dede8aadb9d70cdcae1a66
+  source_semantics_are_not_owner_profile: true
+  observed_eye_surfaces: [phase_sweep, discrete_voltage_bins, pointwise_tail_cdf, contour_crossings]
+  decision_surface:
+    p3c_02_eye_folding_bins: pending_owner_decision
+  source_port_admitted: false
+gap:
+  status: unresolved
+  blockers:
+    - current_selected_profile_excludes_eye_tie_bathtub
+    - generic_com_eye_folding_and_bin_contract_not_selected
+    - accepted_receiver_stage_missing
+    - external_reference_binding_missing
+  allowed_next_step: >-
+    Obtain a current owner amendment that selects the eye/bin and bathtub
+    input, folding, estimator, tolerance, and receiver semantics; only then
+    add an additive product module with independent tests.
+  prohibited_shortcuts:
+    - infer_product_semantics_from_pybert_or_agent_com_source_names
+    - treat_waveform_only_metric_core_as_com_bathtub_acceptance
+    - add_alignment_gain_dc_polarity_or_tolerance_relaxation
+non_claims:
+  - not_a_receiver_implementation
+  - not_a_bathtub_estimator_selection
+  - not_a_new_eye_folding_or_bin_api
+  - not_external_oracle_evidence
+  - not_com_parity
+  - not_acceptance_evidence
+  - not_release_evidence
+audit:
+  path: docs/baselines/audits/2026-08-21-p3c-02-current-semantics-gap.md
+  sha256: 92cd9ad28049331a17390b227de2857598a7de34918c67af7d35378f0fd09746

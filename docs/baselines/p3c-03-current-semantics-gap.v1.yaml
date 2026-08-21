@@ -1,0 +1,86 @@
+schema: sipi.p3c-03.current-semantics-gap.v1
+status: p3c_03_required_compare_surface_gap_observed_not_closed
+purpose: >-
+  Reconcile the current C4 profile-compare implementation with the required
+  COM compare surface without silently replacing ICN with TD-ILN, inventing
+  alignment/tolerance policy, or promoting a release claim.
+scope:
+  work_item: P3C-03
+  basis: current_product_profile_and_pinned_required_contract_gap
+  product_rust_change_in_scope: exact_candidate_surface_rejection_only
+  external_runtime_invoked: false
+  product_vs_oracle_compare_executed: false
+  historical_evidence_rewritten: false
+  acceptance_or_release_promoted: false
+current_c4_surface:
+  profile_path: crates/sipi-compare/src/c4_metric_profile_v1.rs
+  profile_policy: sipi.p3c-03c.c4-profile.v1.com-icn-erl-1pct
+  metrics:
+    - {name: COM_dB, unit: db}
+    - {name: ICN_mV, unit: mv}
+    - {name: ERL, unit: db}
+  relative_tolerance: 0.01
+  reference_binding: caller_supplied_finite_reference
+  compare_engine:
+    path: crates/sipi-compare/src/metric_compare_v1.rs
+    candidate_surface: exact_profile_names
+    unknown_candidate_metrics: rejected
+    missing_candidate_metrics: rejected
+required_contract:
+  evidence_path: docs/baselines/p5-06k-required-com-compare-contract-gap.v1.yaml
+  evidence_sha256: 6bf07e6265176569ceee8a5250bf3012fe47881d4c982a6edc8fb59ce65c91d9
+  required_metrics:
+    - {id: com_db, source_aliases: [COM_dB], status: alias_observed_value_observed_tolerance_missing}
+    - {id: erl_db, source_aliases: [ERL], status: alias_observed_value_observed_tolerance_missing}
+    - {id: td_iln_db, source_aliases: [TD_ILN], status: legacy_alias_only_value_and_tolerance_missing}
+  c4_substitution_guard:
+    current_c4_metric: ICN_mV
+    required_metric: td_iln_db
+    substitution_allowed: false
+  unresolved:
+    source_input_provenance: true
+    checkpoint_alignment: true
+    required_metric_tolerance: true
+    authoritative_reference_artifact: true
+publication_boundary:
+  path: docs/baselines/release-capability-publication.v1.yaml
+  compare_acceptance_state: specified
+  blockers:
+    - caller_supplied_alignment_and_semantic_binding
+    - metric_profile_semantics_not_implemented
+  external_oracle: false
+references:
+  - path: docs/baselines/p5-06k-required-com-compare-contract-gap.v1.yaml
+    sha256: 6bf07e6265176569ceee8a5250bf3012fe47881d4c982a6edc8fb59ce65c91d9
+  - path: docs/baselines/release-capability-publication.v1.yaml
+    sha256: 3e99b86e33b71b3496e8598ad27356b29e5c5cf9cfef75db5235492ddba4a6ce
+  - path: crates/sipi-compare/src/c4_metric_profile_v1.rs
+    sha256: 193da6f9d33f1a987abd20f7b4ed43107de43a8ccfc5f4d3bd9bf1269c29a5c2
+  - path: crates/sipi-compare/src/metric_compare_v1.rs
+    sha256: 7f286ec6ca97173cc456d546e7f53c9f05db8d859640daaef9fcea8f3a1a7e14
+gap:
+  status: unresolved
+  blockers:
+    - current_c4_surface_is_not_the_required_com_td_iln_contract
+    - td_iln_value_and_tolerance_missing
+    - input_and_checkpoint_alignment_missing
+    - authoritative_reference_artifact_missing
+  allowed_next_step: >-
+    Bind a fresh current product/external compare only after the required
+    COM/ERL/TD-ILN values, input provenance, checkpoint alignment, and
+    acceptance tolerances are independently fixed. Keep C4 ICN as a distinct
+    owner profile until an explicit owner amendment changes it.
+  prohibited_shortcuts:
+    - alias_icn_as_td_iln
+    - relax_alignment_or_tolerance_to_force_a_match
+    - use_historical_source_drift_as_current_evidence
+    - promote_c4_profile_to_com_acceptance
+non_claims:
+  - not_td_iln_implementation
+  - not_product_vs_oracle_compare
+  - not_com_parity
+  - not_acceptance_evidence
+  - not_release_evidence
+audit:
+  path: docs/baselines/audits/2026-08-21-p3c-03-current-semantics-gap.md
+  sha256: 9a615d0cc6813b0f98bd3a8fc2d5f08729361a8c4fdfe4ec16d2482a388a962f

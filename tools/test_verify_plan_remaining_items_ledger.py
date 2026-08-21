@@ -17,7 +17,7 @@ class LedgerTests(unittest.TestCase):
     def test_ledger_matches_plan(self) -> None:
         result = GATE.validate(ROOT)
         self.assertTrue(result["valid"])
-        self.assertEqual(result["items"], 25)
+        self.assertEqual(result["items"], 24)
 
     def test_ledger_items_equal_plan_open_items(self) -> None:
         ledger = GATE.load_yaml(GATE.LEDGER)

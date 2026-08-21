@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 2b2fc25ffc0507beb47ed4a3e1664c95339f3b3d4d0063dc7069a37c5e0b687f
+  tracked_paths_sha256: f03e5fd9e77229c36ffbe002b73fc19d8ae3f0da6556d5329130a5f1a153a530
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -2609,6 +2609,12 @@ inventory:
       license: LicenseRef-Provenance-Pending
       provenance: project_authored
       distribution: non-distributed
+    crates/sipi-com/src/com_parameter_ingestion_v1.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     crates/sipi-com/src/com_parameter_resolver_v1.rs:
       rule: p1-rust-foundation
       class: quarantine
@@ -3576,6 +3582,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-ibis/src/test_data_keywords_v1.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-ibis/src/typed_inventory_v1.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -7829,6 +7841,24 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-21-p3b-02-equalizer-semantics-gap.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-21-p3c-02-current-semantics-gap.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-21-p3c-03-current-semantics-gap.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-21-p3c-exact-impulse-current-replay-identity-reconciliation-v3.md:
       rule: historical-docs
       class: migration_only
@@ -7865,6 +7895,18 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-21-p4a-01-02-semantics-gap.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-21-p4a-03-typed-inventory-consumer.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-21-p4a-03d-exact-asset-structural-consumer.md:
       rule: historical-docs
       class: migration_only
@@ -7890,6 +7932,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-21-p5-02p-pinned-mlse-default-consumption-observation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-21-p5-05g-com-parameter-ingestion.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8297,6 +8345,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3b-02-equalizer-semantics-gap.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p3b-04b-cdr-lock-crosscheck-evidence.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -8387,6 +8441,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/p3c-02-current-semantics-gap.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/p3c-02e-mit-source-map.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -8472,6 +8532,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p3c-02i-statistical-eye-contour-stage.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p3c-03-current-semantics-gap.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -9084,6 +9150,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p4a-02b-gen5-behavior-spec-observation.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p4a-03-typed-inventory-consumer.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -14268,6 +14340,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/p5-05f-parameter-resolver-stage.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/p5-05g-com-parameter-ingestion-stage.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -22943,6 +23021,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3b_02_equalizer_semantics_gap.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3b_02_link_kernel_singleton.py:
       rule: migration-tools
       class: migration_only
@@ -23009,6 +23093,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p3c_02_current_semantics_gap.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p3c_02e_qfactor_ber.py:
       rule: migration-tools
       class: migration_only
@@ -23034,6 +23124,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p3c_02i_eye_contour.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p3c_03_current_semantics_gap.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -23502,6 +23598,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_p4a_02b_gen5_behavior_spec.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_p4a_03_typed_inventory_consumer.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -25427,6 +25529,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_p5_05g_parameter_ingestion.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_p5_06_authoritative_matlab_oracle_run.py:
       rule: migration-tools
       class: migration_only
@@ -26177,6 +26285,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_p3b_02_equalizer_semantics_gap.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_p3b_02_link_kernel_singleton.py:
       rule: migration-tools
       class: migration_only
@@ -26243,6 +26357,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_p3c_02_current_semantics_gap.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_p3c_02e_qfactor_ber.py:
       rule: migration-tools
       class: migration_only
@@ -26268,6 +26388,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p3c_02i_eye_contour.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p3c_03_current_semantics_gap.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -26742,6 +26868,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p4a_02b_gen5_behavior_spec.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p4a_03_typed_inventory_consumer.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -28662,6 +28794,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_p5_05f_parameter_resolver.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_p5_05g_parameter_ingestion.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

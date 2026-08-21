@@ -97,7 +97,7 @@ CURRENT_REQUEST_GATES = {
 }
 CURRENT_LEDGER_IDS = {
     "P1-04B", "P2-06", "P3B-02", "P3C-02", "P3C-03", "P4A-01", "P4A-02", "P4A-03",
-    "P4B-02", "P4B-08", "P4B-09", "P5-02", "P5-05", "P5-06", "P5-08", "P5-09",
+    "P4B-02", "P4B-08", "P4B-09", "P5-02", "P5-06", "P5-08", "P5-09",
     "P7-01", "P7-02", "P7-03", "P7-04", "P7-05", "P7-06", "P7-07", "P7-08", "P7-09",
 }
 RECONCILED_SEMANTICS_GATES = {
@@ -105,11 +105,13 @@ RECONCILED_SEMANTICS_GATES = {
         "tools/verify_p3b_02_link_kernel_singleton.py",
         "tools/verify_p3_original_project_eye_jitter_semantics_observation.py",
         "tools/verify_owner_decision_reconciliation_v2.py",
+        "tools/verify_p3b_02_equalizer_semantics_gap.py",
     ],
     "P4A-01": [
         "tools/verify_p4a_ibis_example_rx_candidate_inventory.py",
         "tools/verify_p4a_01_required_profile_inventory.py",
         "tools/verify_owner_decision_reconciliation_v2.py",
+        "tools/verify_p4a_03_typed_inventory_consumer.py",
     ],
 }
 HISTORICAL_REQUEST_SHA256 = "a38f3688b343ed83c1c79c3c32cf5f459c1ab99fbc7fef7f1cdc825fe792c677"

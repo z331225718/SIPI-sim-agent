@@ -1,0 +1,28 @@
+schema: sipi.p5-05g.com-parameter-ingestion-stage.v1
+status: implemented_self_tested
+policy: sipi.p5-05g.com-parameter-ingestion-v1.workbook-to-dto-report
+purpose: >-
+  Product-owned composition consumer from a classified COM_Settings surface to
+  the typed COM parameter DTO.  It preserves workbook priority, resolved
+  default fallback, and an explicit consumed/workbook/defaulted/unconsumed
+  report without inventing a profile key set.
+scope:
+  canonical_consumed_keys: caller_supplied_selected_profile
+  workbook_lookup: existing_case_insensitive_lookup_v1
+  typed_conversion: existing_resolved_default_envelope_only
+  unconsumed_fields: retained_in_dto_and_report
+  source_identity_binding: product_tree_source_hash
+non_claims:
+  - not_authoritative_com_oracle
+  - not_full_r480_parameter_contract
+  - not_profile_acceptance
+  - not_ieee_certification
+  - not_release_evidence
+implementation:
+  path: crates/sipi-com/src/com_parameter_ingestion_v1.rs
+  sha256: 8f03e3b9e855c45ef6a0d301b4eab86685fe4e3b1d4293b880b3f77a6e71cd01
+  function: ingest_com_parameters_v1
+  test_count: 8
+audit:
+  path: docs/baselines/audits/2026-08-21-p5-05g-com-parameter-ingestion.md
+  sha256: f3c1d31792df3166a8d3d0f36b81d2b3c034cbf7207ace1046d0dbb7c78e2dc9

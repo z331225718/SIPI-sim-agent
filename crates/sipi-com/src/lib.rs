@@ -24,6 +24,7 @@ mod candidate_helpers_v1;
 mod canonical_input_keys_v1;
 mod com_chain_v1;
 mod com_metrics_v1;
+mod com_parameter_ingestion_v1;
 mod com_parameter_resolver_v1;
 mod com_parameters_v1;
 mod com_run_admission_v1;
@@ -84,6 +85,10 @@ pub use com_chain_v1::{
 };
 pub use com_metrics_v1::{
     COM_METRICS_POLICY_V1, ComMetricsErrorV1, ComMetricsV1, calculate_com_metrics_v1,
+};
+pub use com_parameter_ingestion_v1::{
+    COM_PARAMETER_INGESTION_POLICY_V1, ComParameterConsumptionReportV1,
+    ComParameterIngestionErrorV1, ComParameterIngestionV1, ingest_com_parameters_v1,
 };
 pub use com_parameter_resolver_v1::{
     COM_PARAMETER_RESOLVER_POLICY_V1, ComParameterResolverErrorV1,

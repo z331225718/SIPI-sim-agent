@@ -1,7 +1,7 @@
 {
   "schema": "sipi.plan-remaining-items.ledger.v1",
   "status": "provisional",
-  "total_open": 25,
+  "total_open": 24,
   "blocker_classes": {
     "owner_decision": "requires an owner decision (profile/CDR/metric/Link semantics or workload approval)",
     "external_asset_oracle": "requires external assets or oracle material (DLL/fixture/MATLAB/agent-com/fresh-machine/license)",
@@ -36,9 +36,10 @@
       "gate": [
         "tools/verify_p3b_02_link_kernel_singleton.py",
         "tools/verify_p3_original_project_eye_jitter_semantics_observation.py",
-        "tools/verify_owner_decision_reconciliation_v2.py"
+        "tools/verify_owner_decision_reconciliation_v2.py",
+        "tools/verify_p3b_02_equalizer_semantics_gap.py"
       ],
-      "note": "Owner recommendation A is reconciled as RX CTLE -> RX FFE with explicit per-stage selection or bypass and no auto-tuning/silent default; current v1 remains bypass-only and the additive profile/implementation is still semantics_not_implemented"
+      "note": "Owner recommendation A is reconciled as RX CTLE -> RX FFE with explicit per-stage selection or bypass and no auto-tuning/silent default. The additive gap gate binds the live bypass-only contract and enumerates the missing CTLE/FFE state, units, timebase, tolerance, oracle and provenance semantics; runtime remains semantics_not_implemented"
     },
     {
       "id": "P3C-02",
@@ -50,9 +51,10 @@
         "tools/verify_p3c_02f_bathtub.py",
         "tools/verify_p3c_02g_horizontal_margin.py",
         "tools/verify_p3c_02h_bathtub_fit.py",
-        "tools/verify_p3c_02i_eye_contour.py"
+        "tools/verify_p3c_02i_eye_contour.py",
+        "tools/verify_p3c_02_current_semantics_gap.py"
       ],
-      "note": "eye/jitter (02c) + 02e Q/BER + 02f bathtub opening + 02g horizontal margin ported and crosschecked (owner A5); 02h bathtub curve fit + 02i statistical eye contour delivered (4/4 crosscheck each); eye folding/bins semantics still pending"
+      "note": "eye/jitter (02c) + 02e Q/BER + 02f bathtub opening + 02g horizontal margin + 02h curve fit + 02i contour are delivered as bounded cores. The current owner profile is waveform-only and excludes eye/TIE/bathtub, so product folding/bin/receiver semantics remain explicitly unselected"
     },
     {
       "id": "P3C-03",
@@ -70,9 +72,10 @@
         "tools/verify_p3c_original_project_channel_semantics_observation.py",
         "tools/verify_p3_original_project_eye_jitter_semantics_observation.py",
         "tools/verify_p3_ads_retained_workspace_jitter_closure_observation.py",
-        "tools/verify_p3c_selected_highloss_residual_dft_currentness_reconciliation.py"
+        "tools/verify_p3c_selected_highloss_residual_dft_currentness_reconciliation.py",
+        "tools/verify_p3c_03_current_semantics_gap.py"
       ],
-      "note": "03a/03b/03c/03d/03e + C4 profile core (04x) delivered. The clean-archive 97b0f271 two-fresh residual DFT record remains historical after current product source drift; its 0.02911956313297956 strict same-index NRMSE and band summaries are not current-candidate evidence. Historical replay identity issues remain forensic; no root cause is identified or excluded. Remaining: fresh current replay, resolve the waveform discrepancy without alignment/fitting/tolerance relaxation, receiver/eye-contour and release gates"
+      "note": "03a/03b/03c/03d/03e + C4 profile core are delivered; metric comparison now rejects profile-external candidates. Current gap evidence binds required COM/ERL/TD-ILN versus C4 COM/ICN/ERL and forbids substitution. Historical replay remains source-drift; alignment, provenance, tolerance, authoritative reference, receiver and release remain unresolved"
     },
     {
       "id": "P4A-01",
@@ -80,9 +83,10 @@
       "gate": [
         "tools/verify_p4a_ibis_example_rx_candidate_inventory.py",
         "tools/verify_p4a_01_required_profile_inventory.py",
-        "tools/verify_owner_decision_reconciliation_v2.py"
+        "tools/verify_owner_decision_reconciliation_v2.py",
+        "tools/verify_p4a_03_typed_inventory_consumer.py"
       ],
-      "note": "Owner recommendation A freezes the exact IBIS 5.0 file and observed structural inventory without guessing model/corner behavior; the current inventory is explicitly non-exhaustive, so exhaustive structural inventory remains semantics_not_implemented while behavior selection stays under P4A-02/P4A-03"
+      "note": "Owner recommendation A freezes the exact IBIS 5.0 file without guessing model/corner behavior. The typed consumer reaches the selected asset and fail-closes on an undeclared DQ_PIN selector branch model; exhaustive inventory and behavior selection remain under P4A-02/P4A-03"
     },
     {
       "id": "P4A-02",
@@ -155,9 +159,10 @@
         "tools/verify_p4a_03be_series_pin_table_selector.py",
         "tools/verify_p4a_03bf_series_pin_table_group.py",
         "tools/verify_p4a_03bg_series_pin_table_selector_thresholds.py",
-        "tools/verify_p4a_03d_exact_asset_structural_consumer.py"
+        "tools/verify_p4a_03d_exact_asset_structural_consumer.py",
+        "tools/verify_p4a_03_typed_inventory_consumer.py"
       ],
-      "note": "owner A6 authorized IBIS 5.0 profile; 03d typed Model declaration (67 models) + 03e typed [Pin] declaration (200 pins) + 03f pin-to-model linkage + 03g [Component] + 03h [Package Model] + 03i [Model Selector] + 03j [Diff Pin] + 03k [Series Switch Groups] + 03l [Submodel] + 03m [Circuit Call] + 03n [Node Declarations] + 03o [Series Pin Mapping] + 03p [Series Switch Groups Table] + 03q [Receiver Thresholds] + 03r [Test Data] + 03s [Golden Waveforms] + 03t [Bus Label] + 03u [Series Thresholds] + 03v [Series Pin Group] + 03w [Series Pin Table Selector] + 03x [Series Pin Group Model] + 03y [Series Pin Group Selector] + 03z [Series Group Thresholds] + 03aa [Series Switch Thresholds] + 03ab [Model Sub-Keywords] + 03ac [Series Pin Table Group Thresholds] + 03ad [Model Selector Keywords] + 03ae [Package Model Keywords] + 03af [Series Pin Block Keywords] + 03ag [Series Switch Block Keywords] + 03ah [Receiver Thresholds Block Keywords] + 03ai [Test Data Block Keywords] + 03aj [Golden Waveforms Block Keywords] + 03ak [Bus Label Block Keywords] + 03al [Diff Pin Block Keywords] + 03am [Series Pin Table Selector Thresholds] + 03an [Series Pin Table Group Switch] + 03ao [Series Pin Table Group Switch Thresholds] + 03ap [Series Pin Table Selector Group Thresholds] + 03aq [Series Pin Table Selector Binding] + 03ar [Series Pin Table Group Model Binding] + 03as [Series Pin Table Group Selector Binding] + 03at [Series Pin Table Group Thresholds] + 03au [Series Pin Table Selector Group Thresholds] + 03av [Series Pin Table Selector Thresholds] + 03aw [Series Pin Table Group Model Thresholds] + 03ax [Series Pin Table Selector Binding] + 03ay [Series Pin Table Selector Group Thresholds] + 03az [Series Pin Table Selector Binding] + 03ba [Series Pin Table Selector Thresholds] + 03bb [Series Pin Table Group Switch] + 03bc [Series Pin Table Group Switch Thresholds] + 03bd [Series Pin Table Selector Group Thresholds] + 03be [Series Pin Table Selector Binding] + 03bf [Series Pin Table Group Model Binding] + 03bg [Series Pin Table Selector Thresholds] (3/3 crosscheck) ported; remaining typed AST surface and profile required-keyword rules still pending"
+      "note": "03d..03bg typed declarations/keyword leaves exist; 03bh adds the first bounded structural-to-typed Model/Selector/Pin linkage consumer and reaches the selected asset fail-closed boundary. The selected asset has an undeclared selector branch target, while model/corner/PVT, electrical behavior, complete AST/rules, external conformance and acceptance remain pending"
     },
     {
       "id": "P4B-02",
@@ -402,20 +407,6 @@
         "tools/verify_p5_02p_pinned_mlse_default_consumption_observation.py"
       ],
       "note": "02e-02m delivered: canonical JSON v2 + warning obs + scalar/vector-matrix defaults + default-set resolver + deterministic warning detector; 02n deterministic warning-report aggregator (8/8 crosscheck) delivered; 02o binds an evidence-only three-entry MLSE warning vocabulary subset; 02p source-binds five pinned MLSE default/consumer facts when run with the external Agent-COM source root. No Rust API is added; the full warning/default contract and authoritative oracle remain pending"
-    },
-    {
-      "id": "P5-05",
-      "blocker": "semantics_not_implemented",
-      "gate": [
-        "tools/verify_p5_agent_com_git_object_preflight.py",
-        "tools/verify_p5_05a_workbook_importer.py",
-        "tools/verify_p5_05b_csv_reader.py",
-        "tools/verify_p5_05c_mat_reader.py",
-        "tools/verify_p5_05d_parameter_surface.py",
-        "tools/verify_p5_05e_com_parameters.py",
-        "tools/verify_p5_05f_parameter_resolver.py"
-      ],
-      "note": "importer (05a-c) + parameter surface report (05d) + typed COM parameter DTO merge (05e, workbook-priority/default-fallback/unconsumed-retained) + parameter resolver core (05f, 3/3 crosscheck) delivered; value consumption/default resolution is under P5-02 (02j/k)"
     },
     {
       "id": "P5-06",

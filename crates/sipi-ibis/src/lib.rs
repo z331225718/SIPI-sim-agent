@@ -61,6 +61,7 @@ mod series_switch_thresholds_v1;
 mod submodel_declaration_v1;
 mod test_data_declaration_v1;
 mod test_data_keywords_v1;
+mod typed_inventory_v1;
 mod vt_table_v1;
 
 pub use bus_label_declaration_v1::{
@@ -269,6 +270,10 @@ pub use test_data_declaration_v1::{
 pub use test_data_keywords_v1::{
     TEST_DATA_KEYWORDS_POLICY_V1, TestDataKeywordsErrorV1, TypedTestDataBlockV1,
     lift_test_data_block_v1,
+};
+pub use typed_inventory_v1::{
+    IBIS_TYPED_INVENTORY_POLICY_V1, IbisPinReferenceLinkageV1, IbisTypedInventoryErrorV1,
+    IbisTypedInventoryReportV1, IbisTypedInventoryServiceV1,
 };
 pub use vt_table_v1::{
     VT_EVALUATION_POLICY_V1, VtEvaluationErrorV1, VtKnotV1, VtTableErrorV1, VtTableV1,

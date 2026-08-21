@@ -1,0 +1,81 @@
+schema: sipi.p4a-03.typed-inventory-consumer.v1
+status: implemented_self_tested_boundary
+policy: sipi.p4a-03.typed-inventory-consumer.v1.declaration-linkage-only
+purpose: >-
+  Bind the first product-owned consumer that runs bounded structural parsing,
+  the semantic envelope, typed Model/Model Selector/Pin declarations, and
+  explicit caller-owned pin-reference classification in one fail-closed pass.
+source:
+  implementation: crates/sipi-ibis/src/typed_inventory_v1.rs
+  implementation_sha256: 59db07a732aec10cda62456aff51dc1a226d42531fc59977d7a0eeb9ab080540
+  export_surface: crates/sipi-ibis/src/lib.rs
+  parser: crates/sipi-ibis/src/lib.rs::parse_structural_v1
+  envelope: crates/sipi-ibis/src/lib.rs::build_semantic_envelope_v1
+  typed_model: crates/sipi-ibis/src/model_declaration_v1.rs::lift_model_declarations_v1
+  typed_selector: crates/sipi-ibis/src/model_selector_declaration_v1.rs::lift_model_selector_declaration_v1
+  typed_pin: crates/sipi-ibis/src/pin_declaration_v1.rs::lift_pin_declarations_v1
+  selected_asset: fixtures/ibis/as4c512m16md4v-053bin.ibs
+  selected_asset_sha256: d72cf62b56d67d30f4004f56ea3b79b4cb1241615692b147682f47540e615a0b
+audit:
+  path: docs/baselines/audits/2026-08-21-p4a-03-typed-inventory-consumer.md
+  sha256: 3828f6938bf0759221f1358b484e9b1868cce253c5efe5cba4bcae3caa97ccdf
+admission:
+  library_consumer_api: true
+  public_cli_route: false
+  product_runtime_invoked: false
+  bounded_ascii_input: true
+  structural_parser_reused: true
+  semantic_envelope_reused: true
+  model_declarations_lifted: true
+  model_selector_declarations_lifted: true
+  pin_declarations_lifted: true
+  selector_branch_must_reference_declared_model: true
+  pin_reference_classification: [declared_model, model_selector, caller_marker]
+  caller_marker_default: forbidden
+  model_or_selector_branch_selection: false
+  corner_or_pvt_selection: false
+  supply_or_reference_inference: false
+  electrical_behavior: false
+  transient_integration: false
+  ami_runtime: false
+  external_profile_acceptance: false
+  release_promotion: false
+verification:
+  unit_tests: 5
+  positive_scope: synthetic_declaration_selector_marker_fixture
+  negative_scope:
+    - nul_input_rejected_before_typed_result
+    - missing_model_type_rejected
+    - missing_caller_marker_rejected
+    - selected_asset_selector_branch_unknown_rejected
+selected_asset_observation:
+  status: structural_consumer_reached_fail_closed_boundary
+  observed_version: "5.0"
+  observed_component: AS4C512M16MD4V-053BIN
+  observed_model_block_count: 67
+  observed_model_selector_count: 4
+  rejection:
+    code: selector_branch_unknown
+    selector: DQ_PIN
+    model: DQ_60OHM_60OHM_PREEMP_ON
+  note: >-
+    The selected asset does not provide a complete model block set for all
+    DQ_PIN selector branches under this typed consumer. This is an observed
+    asset completeness gap, not permission to synthesize model declarations.
+remaining_fields:
+  - explicit_public_cli_or_caller_route_if_this_inventory_is_productized
+  - complete_selector_branch_model_blocks_for_selected_asset
+  - classify_later_pin_references_after_selector_gap_is_resolved
+  - explicit_owner_selected_model_selector_branch
+  - explicit_corner_and_pvt_policy
+  - electrical_profile_decoder_and_acceptance
+  - dynamic_endpoint_reference_supply_initial_state_timebase_stimulus_and_tolerance
+non_claims:
+  - not_complete_ibis_semantic_parser
+  - not_general_ibis_compatibility
+  - not_model_or_corner_selection
+  - not_electrical_behavior
+  - not_transient_or_quasi_static_upgrade
+  - not_ami_behavior_or_runtime
+  - not_external_profile_acceptance
+  - not_release_evidence
