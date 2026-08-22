@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 2821fe4afe658cb8522b8dcf4b8a71626d1b5f317e3d0d89bf4135eb50469ca4
+  tracked_paths_sha256: b7e370006c56401c7735700475a579ac268e323332a6c3bcdb8f53c0f449123e
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -95,6 +95,60 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    crates/sipi-agent-com-adapter/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-agent-com-adapter/src/bin/fake_com_backend.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-agent-com-adapter/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-agent-com-adapter/tests/adapter_contract.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-agent-com-adapter/tests/exact_upstream_smoke.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-agent-spice-adapter/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-agent-spice-adapter/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-agent-spice-adapter/tests/adapter.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-agent-spice-adapter/tests/fake_interpreter.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     crates/sipi-ami-host/Cargo.toml:
       rule: p1-rust-foundation
       class: quarantine
@@ -2543,6 +2597,12 @@ inventory:
       license: LicenseRef-Provenance-Pending
       provenance: project_authored
       distribution: non-distributed
+    crates/sipi-cli/src/bin/upstream_fake.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     crates/sipi-cli/src/com_run_artifact_preflight_v1.rs:
       rule: p1-rust-foundation
       class: quarantine
@@ -2555,6 +2615,12 @@ inventory:
       license: LicenseRef-Provenance-Pending
       provenance: project_authored
       distribution: non-distributed
+    crates/sipi-cli/src/upstream_migration.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     crates/sipi-cli/tests/cli.rs:
       rule: p1-rust-foundation
       class: quarantine
@@ -2562,6 +2628,12 @@ inventory:
       provenance: project_authored
       distribution: non-distributed
     crates/sipi-cli/tests/p6_current_topology.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-cli/tests/upstream_migration.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -4319,6 +4391,30 @@ inventory:
       license: LicenseRef-Provenance-Pending
       provenance: project_authored
       distribution: non-distributed
+    crates/sipi-pybert-adapter/Cargo.toml:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-pybert-adapter/src/bin/pb_fake_pybert.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-pybert-adapter/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-pybert-adapter/tests/process.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     crates/sipi-runtime/Cargo.toml:
       rule: p1-rust-foundation
       class: quarantine
@@ -4506,6 +4602,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/ami-candidate-quarantine-preflight.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/as-upstream-adapter-contracts.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8285,6 +8387,36 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-22-agent-spice-upstream-adapter.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-22-com-upstream-adapter.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-22-pb-upstream-first-migration.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-22-upstream-cli-integration.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-22-upstream-rust-candidate-coverage.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/authorized-material-registry.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -8472,6 +8604,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/com-r480-reference-availability-preflight.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/com-upstream-adapter.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -15155,6 +15293,18 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/pb-upstream-adapter-contract.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/pb-upstream-workflow-inventory.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/plan-remaining-items-ledger.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -15275,7 +15425,19 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/upstream-cli-integration.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/upstream-migration-inventory.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/upstream-rust-candidate-coverage.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -23357,6 +23519,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_as_upstream_adapters.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_channel_rfm_receiver_delegated_phase_amendment.py:
       rule: migration-tools
       class: migration_only
@@ -23448,6 +23616,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_com_r480_reference_availability.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_com_upstream_adapter.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -26537,6 +26711,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_pb_upstream_workflows.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_plan_open_items_gate_coverage.py:
       rule: migration-tools
       class: migration_only
@@ -26603,13 +26783,31 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_upstream_cli_integration.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_upstream_migration_inventory.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_upstream_rust_candidate_coverage.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_acceptance_profiles.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_as_upstream_adapters.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -26778,6 +26976,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_com_r480_reference_availability.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_com_upstream_adapter.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -30011,6 +30215,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_pb_upstream_workflows.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_plan_open_items_gate_coverage.py:
       rule: migration-tools
       class: migration_only
@@ -30113,7 +30323,19 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_upstream_cli_integration.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_upstream_migration_inventory.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_upstream_rust_candidate_coverage.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

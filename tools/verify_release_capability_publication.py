@@ -5,8 +5,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
+from shutil import which
+import subprocess
 import sys
 from typing import Any
 
@@ -168,7 +171,7 @@ def validate_command_descriptors(commands: list[dict[str, Any]]) -> None:
             or any(not isinstance(token, str) or not ROUTE_TOKEN.fullmatch(token) for token in route)
             or tuple(route) in seen_routes
             or availability not in {"available", "unavailable"}
-            or transport not in {"none", "stdin_json_v1"}
+            or transport not in {"none", "stdin_json_v1", "external_migration_adapter"}
             or any(value is not None and (not isinstance(value, str) or not value) for value in schemas)
             or not isinstance(nonclaim, str)
             or not nonclaim
@@ -178,6 +181,17 @@ def validate_command_descriptors(commands: list[dict[str, Any]]) -> None:
             raise PublicationError("command_manifest_invalid")
         seen_ids.add(command_id)
         seen_routes.add(tuple(route))
+        if transport == "external_migration_adapter" and (
+            availability != "available"
+            or schemas
+            != (
+                "sipi.upstream-migration-request.v1",
+                "sipi.upstream-migration-result.v1",
+            )
+            or nonclaim
+            != "external_upstream_transport_only_no_product_capability_or_acceptance"
+        ):
+            raise PublicationError("command_manifest_external_migration_boundary_invalid")
 
 
 def safe_report_path(relative: str) -> bool:
@@ -1336,15 +1350,46 @@ def render(publication: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def live_command_manifest() -> list[dict[str, Any]]:
+    cargo = os.environ.get("CARGO") or which("cargo")
+    if cargo is None:
+        suffix = ".exe" if os.name == "nt" else ""
+        candidate = Path(os.environ.get("CARGO_HOME", Path.home() / ".cargo")) / "bin" / f"cargo{suffix}"
+        if candidate.is_file():
+            cargo = str(candidate)
+    if cargo is None:
+        raise PublicationError("cargo_unavailable_for_live_command_manifest")
+    completed = subprocess.run(
+        [cargo, "run", "--locked", "-p", "sipi-cli", "--", "commands", "--json"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="strict",
+        timeout=120,
+    )
+    if completed.returncode != 0:
+        raise PublicationError("live_command_manifest_failed")
+    try:
+        document = json.loads(completed.stdout)
+    except json.JSONDecodeError as error:
+        raise PublicationError("live_command_manifest_invalid_json") from error
+    return command_manifest(document)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--publication", type=Path, default=PUBLICATION)
-    parser.add_argument("--command-manifest", type=Path, required=True)
+    parser.add_argument("--command-manifest", type=Path)
     parser.add_argument("--render", type=Path)
     arguments = parser.parse_args()
     try:
         publication = load_json(arguments.publication)
-        manifest = command_manifest(load_json(arguments.command_manifest))
+        manifest = (
+            command_manifest(load_json(arguments.command_manifest))
+            if arguments.command_manifest is not None
+            else live_command_manifest()
+        )
         validate(publication, manifest, ROOT)
         rendered = render(publication)
         if arguments.render is not None:

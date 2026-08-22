@@ -2,7 +2,7 @@ schema: sipi.license-manifest.v2
 status: provisional
 release_boundary:
   path: product-boundary.v1.yaml
-  sha256: dc9a22372bf601933313effb5e7e53f2f8e1e65c3b4fd9883331cc88ac194d55
+  sha256: aa0cb7ecb29fd073a5c47687e26199cf0da20669be3c48ea2296ef0d7c1d17b1
   status: provisional
 legacy_evidence:
   - id: legacy-license-manifest-v1
@@ -106,6 +106,18 @@ release_inputs:
       sbom_component_id: pkg:cargo/faer
       status: pending
       owner_action: {owner: sipi-license-owner, action: review direct faer rational-identification dependency and NOTICE, approval_ref: null}
+    - id: rust-process-wrap
+      component: process-wrap
+      role: runtime
+      source: https://crates.io/crates/process-wrap
+      requested_version: "9.1.0"
+      resolved_artifact: {version: null, sha256: null}
+      declared_spdx: MIT OR Apache-2.0
+      license_evidence_ref: evidence/third-party/process-wrap-license-pending
+      notice_requirement: pending
+      sbom_component_id: pkg:cargo/process-wrap@9.1.0
+      status: pending
+      owner_action: {owner: sipi-license-owner, action: review process-wrap and locked transitive distribution and NOTICE, approval_ref: null}
     - id: ieee-802-com-interp-sparam-direct-port
       component: ieee-802-com-interp-sparam
       role: runtime
@@ -195,6 +207,10 @@ release_inputs:
       status: pending
       source_evidence_ref: docs/baselines/p3c-fixed-pole-rational-identification-core.v1.yaml
       output_notice_id: NOTICE/faer
+    - dependency: rust-process-wrap
+      status: pending
+      source_evidence_ref: evidence/third-party/process-wrap-license-pending
+      output_notice_id: NOTICE/process-wrap
     - dependency: ieee-802-com-interp-sparam-direct-port
       status: pending
       source_evidence_ref: docs/baselines/p3c-agent-com-sparam-ieee-bsd-lineage-observation.v1.yaml

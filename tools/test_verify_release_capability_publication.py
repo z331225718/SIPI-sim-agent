@@ -294,7 +294,7 @@ class PublicationTests(unittest.TestCase):
         }
         publication = self.publication()
         available_ids = [row["id"] for row in publication["rows"] if row["product_surface"] == "available"]
-        self.assertEqual(len(available_ids), 27)
+        self.assertEqual(len(available_ids), 42)
         for row_id in available_ids:
             with self.subTest(row_id=row_id):
                 mutated = self.publication()
@@ -315,6 +315,24 @@ class PublicationTests(unittest.TestCase):
         row["evidence_ids"].append("tran-rc-pulse-current-external-compare-v2")
         with self.assertRaisesRegex(GATE.PublicationError, "publication_acceptance_authority_missing"):
             GATE.validate(publication, manifest_for(publication), ROOT)
+
+    def test_external_migration_routes_are_accounted_and_cannot_claim_acceptance(self) -> None:
+        publication = self.publication()
+        rows = [row for row in publication["rows"] if row["domain"] == "migration"]
+        self.assertEqual(len(rows), 15)
+        self.assertTrue(all(row["acceptance_state"] == "not_evaluated" for row in rows))
+        self.assertTrue(all(row["external_oracle"] is False for row in rows))
+
+        manifest = product_manifest()
+        command = next(
+            item for item in manifest if item["id"] == "upstream.agent-com.compare"
+        )
+        command["nonclaim"] = "product capability"
+        with self.assertRaisesRegex(
+            GATE.PublicationError,
+            "command_manifest_external_migration_boundary_invalid",
+        ):
+            GATE.validate(publication, manifest, ROOT)
 
     def test_rejects_promotion_and_unsafe_evidence(self) -> None:
         publication = self.publication()

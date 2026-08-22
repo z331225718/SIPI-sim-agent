@@ -1,0 +1,52 @@
+schema: sipi.upstream-cli-integration.v1
+status: external_migration_routes_integrated
+policy: integrate_upstream_workflows_before_rust_replacement
+feature_freeze:
+  new_domain_features_allowed: false
+  numerical_semantics_added: false
+  silent_fallback: forbidden
+transport: external_migration_adapter
+request_schema: sipi.upstream-migration-request.v1
+response_schema: sipi.upstream-migration-result.v1
+source_repositories:
+  agent_spice:
+    commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+    tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  pybert:
+    commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+    tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  agent_com:
+    commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+    tree: 7094ab6e84989b218730c52432c70da10261f8ea
+routes:
+  - {id: AS-01, command_id: upstream.agent-spice.fit-sparam, route: [upstream, agent-spice, fit-sparam], adapter_crate: sipi-agent-spice-adapter, status: route_integrated}
+  - {id: AS-02, command_id: upstream.agent-spice.fit-sparam-cascade, route: [upstream, agent-spice, fit-sparam-cascade], adapter_crate: sipi-agent-spice-adapter, status: route_integrated}
+  - {id: AS-03, command_id: upstream.agent-spice.fit-yparam, route: [upstream, agent-spice, fit-yparam], adapter_crate: sipi-agent-spice-adapter, status: route_integrated}
+  - {id: AS-04, command_id: upstream.agent-spice.tune-yparam-tran, route: [upstream, agent-spice, tune-yparam-tran], adapter_crate: sipi-agent-spice-adapter, status: route_integrated}
+  - {id: AS-05, command_id: upstream.agent-spice.run-hspice, route: [upstream, agent-spice, run-hspice], adapter_crate: sipi-agent-spice-adapter, status: route_integrated}
+  - {id: AS-06, command_id: upstream.agent-spice.run-rfm, route: [upstream, agent-spice, run-rfm], adapter_crate: sipi-agent-spice-adapter, status: route_integrated}
+  - {id: PB-01, command_id: upstream.pybert.sim, route: [upstream, pybert, sim], adapter_crate: sipi-pybert-adapter, status: route_integrated}
+  - {id: PB-02, command_id: upstream.pybert.sim-native, route: [upstream, pybert, sim-native], adapter_crate: sipi-pybert-adapter, status: route_integrated}
+  - {id: PB-03, command_id: upstream.pybert.sim-rust, route: [upstream, pybert, sim-rust], adapter_crate: sipi-pybert-adapter, status: route_integrated}
+  - {id: PB-04, command_id: upstream.pybert.sim-auto, route: [upstream, pybert, sim-auto], adapter_crate: sipi-pybert-adapter, status: route_integrated}
+  - {id: PB-05, command_id: upstream.pybert.sim-compare, route: [upstream, pybert, sim-compare], adapter_crate: sipi-pybert-adapter, status: route_integrated}
+  - {id: COM-01, command_id: upstream.agent-com.config-validate, route: [upstream, agent-com, config-validate], adapter_crate: sipi-agent-com-adapter, status: route_integrated}
+  - {id: COM-02, command_id: upstream.agent-com.run, route: [upstream, agent-com, run], adapter_crate: sipi-agent-com-adapter, status: route_integrated}
+  - {id: COM-03, command_id: upstream.agent-com.compare, route: [upstream, agent-com, compare], adapter_crate: sipi-agent-com-adapter, status: route_integrated}
+  - {id: COM-04, command_id: upstream.agent-com.public-api, route: [upstream, agent-com, public-api], adapter_crate: sipi-agent-com-adapter, status: route_integrated}
+scope:
+  product_capability: not_claimed
+  numerical_acceptance: not_evaluated
+  release_evidence: false
+  external_payload_publication: forbidden
+audit:
+  path: docs/baselines/audits/2026-08-22-upstream-cli-integration.md
+  sha256: 54ae6252a19d5f201e777e38319229ca6f8ff743f7a5dbf379687225c2f6fd27
+source_files:
+  - {path: crates/sipi-cli/src/main.rs, sha256: 1526c3ace08ee81e5806c70787908847fd19d0a053875753231e828a21b58292}
+  - {path: crates/sipi-cli/src/upstream_migration.rs, sha256: 9d047c028e488801747b0a6acc624d6b8f1acf81fd1af79cc7ce6808639de7f8}
+  - {path: crates/sipi-cli/Cargo.toml, sha256: e0ecb4f1d2ff24250db43861fdd9a49f91c941903ec5d9efe205ff6ee0680bb1}
+  - {path: crates/sipi-cli/tests/upstream_migration.rs, sha256: e9c5391d8d8e5f1027870f7ff4bb1422f910cabf0cc6c7fe5549159666497cea}
+verification:
+  focused_tests: crates/sipi-cli/tests/upstream_migration.rs
+  verifier: tools/verify_upstream_cli_integration.py

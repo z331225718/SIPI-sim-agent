@@ -82,7 +82,7 @@ EXPECTED_BINDINGS = {
     ),
     "com_publication": (
         "docs/baselines/release-capability-publication.v1.yaml",
-        "ef3e7285ca08d0234dba8f9499c652b55d9232c2e02e5f475a24464a7e25c4d4",
+        "883f7ea2e2a7214614d3a79892515201b1ca794c8fd3c0cd4393ede8663da57d",
         "public_com_command_remains_unavailable",
     ),
     "com_r480_reference_custody": (

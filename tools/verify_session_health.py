@@ -8,6 +8,8 @@ reports a single health verdict:
 - PLAN reference audit
 - owner-input request ledger binding
 - active upstream migration and deferred release ledgers
+- three pinned upstream adapter contracts and the 15-route CLI boundary
+- current Rust-candidate coverage for all 15 upstream rows
 - historical v0.2 remaining-items ledger
 - historical v0.2 open-item gate coverage
 - closed P5-05 parameter ingestion consumer
@@ -36,6 +38,12 @@ CHECKS = [
     ("owner-input-request", "tools/verify_owner_input_request.py", []),
     ("owner-input-request-current-reconciliation", "tools/verify_owner_decision_reconciliation_v2.py", []),
     ("upstream-migration-inventory", "tools/verify_upstream_migration_inventory.py", []),
+    ("agent-spice-upstream-adapter", "tools/verify_as_upstream_adapters.py", [], "exit_only"),
+    ("pybert-upstream-adapter", "tools/verify_pb_upstream_workflows.py", []),
+    ("agent-com-upstream-adapter", "tools/verify_com_upstream_adapter.py", [], "exit_only"),
+    ("upstream-cli-integration", "tools/verify_upstream_cli_integration.py", []),
+    ("upstream-rust-candidate-coverage", "tools/verify_upstream_rust_candidate_coverage.py", []),
+    ("release-capability-publication-live", "tools/verify_release_capability_publication.py", []),
     ("historical-v0.2-remaining-items-ledger", "tools/verify_plan_remaining_items_ledger.py", []),
     ("historical-v0.2-open-item-gate-coverage", "tools/verify_plan_open_items_gate_coverage.py", []),
     ("p5-05-parameter-ingestion", "tools/verify_p5_05g_parameter_ingestion.py", []),

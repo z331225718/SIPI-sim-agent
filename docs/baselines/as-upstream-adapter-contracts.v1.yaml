@@ -1,0 +1,410 @@
+schema: sipi.as-upstream-adapter-contracts.v1
+status: adapter_implemented_parity_pending
+policy: upstream_capability_first_then_rust_replacement
+source:
+  repository: agent-spice
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  module: agent_spice.cli
+  license: MIT
+  source_storage: external_git_object_only
+  source_payload_copied_into_sipi: false
+adapter:
+  crate: crates/sipi-agent-spice-adapter
+  request_enum: sipi_agent_spice_adapter::Request
+  response_type: sipi_agent_spice_adapter::ExecutionResult
+  launcher: [ "-m", "agent_spice.cli" ]
+  launcher_policy: production_default_with_explicit_test_override
+  argument_policy: caller_supplied_arguments_are_passed_through_without_rewrite
+  backend_policy: run_commands_require_one_explicit_backend_argument
+  defaults_policy: no_upstream_cli_default_is_injected_by_the_adapter
+  fallback_policy: no_silent_fallback_or_backend_substitution
+  process_limits:
+    wall_time: caller_supplied_bounded_duration
+    reader_drain_time: caller_supplied_secondary_deadline
+    stdout_bytes: caller_supplied_bounded_integer
+    stderr_bytes: caller_supplied_bounded_integer
+    argv_bytes: caller_supplied_bounded_integer
+    artifact_bytes: caller_supplied_bounded_integer
+    artifact_files: caller_supplied_bounded_integer
+    artifact_directories: caller_supplied_bounded_integer
+    artifact_max_depth: caller_supplied_bounded_integer
+    artifact_path_bytes: caller_supplied_bounded_integer
+  cancellation: cooperative_token_kills_and_reaps_child
+  process_tree_termination:
+    windows:
+      crate: process-wrap
+      version: 9.1.0
+      features: [std, job-object]
+      license: MIT OR Apache-2.0
+      lifecycle: child_created_suspended_then_assigned_to_job_before_resume
+      termination: job_object_start_kill_covers_descendants_after_parent_exit
+      normal_exit_cleanup: retained_job_is_terminated_before_result_publication
+      setup_failure: process_isolation_failed_and_suspended_child_kill_attempted_without_raw_fallback
+    non_windows: direct_child_kill_only_no_process_tree_claim
+  output_admission:
+    root: canonical_artifact_root
+    required_explicit_outputs:
+      AS-01: [--output]
+      AS-02: [--output-root]
+      AS-03: [--output]
+      AS-04: [--output-rfm, --work-dir]
+      AS-05: [--output-root]
+      AS-06: [--output-root]
+    optional_output_paths_are_also_checked: true
+    relative_paths_resolve_from: canonical_working_directory
+    missing_default_output_paths: rejected
+    output_symlink_target: rejected_even_when_dangling
+    symlink_parent: canonicalized_and_must_remain_inside_root
+    target_preexistence: rejected_before_spawn
+  post_success_required_artifacts:
+    AS-01: { "--output": file }
+    AS-02: { "--output-root": directory }
+    AS-03: { "--output": file }
+    AS-04: { "--output-rfm": file, "--work-dir": directory }
+    AS-05: { "--output-root": directory }
+    AS-06: { "--output-root": directory }
+    enforcement: targeted_path_not_whole_root_inference
+    checks: [exists, expected_file_or_directory_kind, not_symlink_or_windows_reparse_point, canonical_inside_artifact_root]
+    applies_when: child_exit_code_zero
+    failure_code: required_artifact_missing
+  custody: post-run_regular_file_manifest_without_symlink_or_windows_reparse_traversal
+  provenance:
+    contract_source: agent-spice@2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+    source_commit: contract_source_commit_not_runtime_attestation
+    source_identity: declared_migration_authority_not_authenticated_runtime_package
+    runtime_identity: caller_supplied_unverified
+    runtime_source_authenticated: false
+    command: typed_request_command
+    backend: parsed_from_exact_run_argv
+    invocation_sha256: bounded_canonical_argument_hash
+    artifact_manifest_sha256: bounded_canonical_manifest_hash
+  parity_rule: this adapter is transport parity only; existing Rust candidates are not workflow parity
+source_file_index:
+  cli:
+    path: src/agent_spice/cli.py
+    blob_oid: 321a32b860f969f0be74f883bedbbae3f67d6284
+    sha256: 908489c8c3a4826d49175c66b3d533413db4624b10fc3c797795b723b62262e1
+  sparam_fitting:
+    path: src/agent_spice/sparam/fitting.py
+    blob_oid: dd461c2f20f8b3fbf32cee90f79e430782ca9c76
+    sha256: db6be694d3959c1659a813dd108856651f97d3e0b206a1de14ccefe323c04f99
+  sparam_target_fit:
+    path: src/agent_spice/sparam/target_fit.py
+    blob_oid: b57e5a070533e6e57988ac65eb3b477cb1482a56
+    sha256: fa265ddfd440c994c062b92e0b935e5f2bae9baa90e95935cbb0ceb55181041d
+  sparam_artifacts:
+    path: src/agent_spice/sparam/artifacts.py
+    blob_oid: ba7011f89c7fe0f6bf73fad13bce9248b96de9e5
+    sha256: f3131cc5117c41ab13674aaf1dfba68ed7ebed332a8154994cd9907b31299948
+  sparam_cascade:
+    path: src/agent_spice/sparam/cascade.py
+    blob_oid: e7ee1c636252da2cb529d0a4e49d27d8c07548e9
+    sha256: 65770ace284c9de6f22c009e9cf3e8e4a62c378da8b6e233aa3c355301bc25ea
+  sparam_yparam:
+    path: src/agent_spice/sparam/yparam.py
+    blob_oid: 473746afe5efb3e5117c58b446e2a7ccb3ca8872
+    sha256: ca6ec999b93f78094c7ea58997676bd886130baf0bdaec04957c3c480ba5b713
+  sparam_y_tran_tuning:
+    path: src/agent_spice/sparam/y_tran_tuning.py
+    blob_oid: 9e23303dc75ea84b9fda079d0a24edb04ce8290c
+    sha256: da377cf4121da50b0b6e69ca0feec45999350a67d7aafa63e7e1e04357f9ec28
+  sparam_rfm:
+    path: src/agent_spice/sparam/rfm.py
+    blob_oid: 508e7ae8594fd25d5c2dc152b225c0cf84f61413
+    sha256: af2e2e3ab1ed7e9ac458dc73f15aedfd9cd8292dc9e5a2430cd095bc21415df4
+  sparam_rfm_ngspice:
+    path: src/agent_spice/sparam/rfm_ngspice.py
+    blob_oid: 6ac750e93ea9245d652be4c9ef1ca3c314e01dca
+    sha256: 7b26d8c02f575f4c52dccbdfddca3aa3fd2418774fac71f27d8cd66c84e147fc
+  hspice_alter:
+    path: src/agent_spice/hspice/alter.py
+    blob_oid: d162dc2a6c5a779625ae9fd736c35147b49fbebf
+    sha256: 5a18f537615b3276bb7c8b4d751e65e7dd21e17b1f5d3ab43d1fa732eb065bf4
+  hspice_audit:
+    path: src/agent_spice/hspice/audit.py
+    blob_oid: 0651fe8a6ebc11423ceb9a55305b0cdf9dae2641
+    sha256: 47424952b248e7fadb64f8ad9f863f0213b484ae2ac87cc56798fa251c4aed82
+  hspice_converter:
+    path: src/agent_spice/hspice/converter.py
+    blob_oid: 1bae09abf2cd52bff7c173311da9fee1458f3ca3
+    sha256: b33596007cbaa435cc1527677661d6e94a3779c20fd84d8c7f2640e84723e7dd
+  hspice_manifest:
+    path: src/agent_spice/hspice/manifest.py
+    blob_oid: 35d594ba7e5db9ab87f70abf562004b5ef876e51
+    sha256: 503fe6884614c5f0c5009535bad1e2f50642a15b398cf38ef667acf4a2458073
+  hspice_measure:
+    path: src/agent_spice/hspice/measure.py
+    blob_oid: 215790e18f5cc013fbe51791086e3bce362a889a
+    sha256: cbb851db87c951e1d3a76cc99f6d1bb9fc31a3c4c20234d25507cd85d71695f4
+  hspice_results:
+    path: src/agent_spice/hspice/results.py
+    blob_oid: 360b48be3accf8ae455ad9542ad1fc0dcd782779
+    sha256: e9d472e81de5083ba2ffe4631e5ee64114c42fbceda179b6eb686c58394e1cfe
+  backend_base:
+    path: src/agent_spice/backend/base.py
+    blob_oid: 0faf79c29d4f65529de408ee7dd757e28bba7de0
+    sha256: eada7c38a7a7700882582e5fd0746e1e1f7736c6ba038e4b6027932199136201
+  backend_native:
+    path: src/agent_spice/backend/native.py
+    blob_oid: 4e2f327a9a10b8de876e83df1fb31c359ba063f4
+    sha256: 79b20cb1d172fe778be9fab260a9989f186159fd191b767bce8d9337466ddabc
+  backend_ngspice:
+    path: src/agent_spice/backend/ngspice.py
+    blob_oid: e9d1952bf1b43ad9a89bae95f1724b893e8db6b8
+    sha256: eca6a855df25f44169d13f576f2c169596cfc6de29ef45c4829150d20b740672
+  backend_xyce:
+    path: src/agent_spice/backend/xyce.py
+    blob_oid: 2e6af5fbaca426c47c677bd73175601914c9becc
+    sha256: 74809883b9a54eb0a6265bae054861b1a0b4f90a57609f22e2d660eb79efd53c
+  project:
+    path: src/agent_spice/project.py
+    blob_oid: ab3f36b0428f6f7a7b590e8907b7c0058a71c24c
+    sha256: f145f204678bd5ffb283fe0261f99987e5a80499fb5f9d4369abb3272233d972
+  deck_builder:
+    path: src/agent_spice/deck/builder.py
+    blob_oid: 52e41800c37ae3ce232a1ca65d331850c50930cf
+    sha256: 34e0b7c5ded6f1515b606083c138f7bd2571241eb84bbd5f2484c6a7e9fc3b91
+  rfm_code_model:
+    path: src/agent_spice/lib/ngspice/rfm.cm
+    blob_oid: 78d6f40b9bb55ac71ab956ed4355291a68eb6c3e
+    sha256: a23fa36d39328c8a000eb405a66cd293dae6015f3f50df09c4ea887faa104bab
+  native_engine_manifest:
+    path: native/agent-spice-sim/Cargo.toml
+    blob_oid: b56d29811d0293c878b22485523f03ea06dc2d91
+    sha256: 72c7296fdfee4627d65dc5cb5ba35ec09a4ecff47a34b16af034cd7d5817cf74
+  python_dependency_manifest:
+    path: pyproject.toml
+    blob_oid: 29006b652445c770df4a01027357117adf9c95ad
+    sha256: c0f8264a2de1375a4f40a8834173d49859dd9c4717d718fc5f622f1ea4f68c88
+  license:
+    path: LICENSE
+    blob_oid: 55aac2e4f8c36a978d315efb02815972579b8293
+    sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+commands:
+  - id: AS-01
+    cli: fit-sparam
+    request_type: FitSparamRequest
+    source_paths: [cli, sparam_fitting, sparam_target_fit, sparam_artifacts]
+    positionals: [touchstone]
+    options:
+      - --output
+      - --report
+      - --html-report
+      - --fitted-touchstone
+      - --rfm
+      - --rfm-wrapper
+      - --report-top-rms
+      - --log
+      - --rms-target
+      - --priority-band
+      - --outside-band-weight
+      - --passivity
+      - --max-order
+      - --min-order
+      - --max-order-step
+      - --quality-profile
+      - --fail-on-quality
+      - --allow-quality-warnings
+      - --subckt-name
+      - --tuning-profile
+      - --pole-spacing
+      - --fit-iterations
+      - --hf-complex-pairs
+      - --hf-pair-damping
+      - --hf-pair-start-fraction
+      - --passivity-max-iterations
+      - --passivity-samples
+      - --passivity-active-variables
+    branches:
+      - argument_parser_rejection
+      - priority_band_or_full_band_target_selection
+      - adaptive_order_search_and_native_fit
+      - optional_passivity_check_or_enforcement
+      - optional_quality_gate_failure
+      - target_not_met_failure
+      - artifact_export_and_success
+    dependencies: [numpy, scipy, scikit-rf, cvxpy_for_optional_paths]
+    assets: [input_touchstone_sNp, optional_tuning_profile, output_spice_rfm_touchstone_reports]
+    upstream_error_surface: [ValueError, OSError, child_nonzero_exit]
+    adapter_status: implemented_transport_only
+    rust_status: candidate_present_parity_unbound
+    parity_status: not_evaluated
+  - id: AS-02
+    cli: fit-sparam-cascade
+    request_type: FitSparamCascadeRequest
+    source_paths: [cli, sparam_cascade, sparam_fitting, sparam_artifacts]
+    positionals: [manifest]
+    options:
+      - --output-root
+      - --report
+      - --rms-target
+      - --max-order
+      - --min-order
+      - --max-order-step
+      - --passivity-epsilon
+      - --cascade-passivity-epsilon
+      - --cascade-rms-target
+      - --cascade-refit-iterations
+      - --cascade-samples
+      - --reference-impedance
+      - --adjustment-iterations
+      - --minimum-scale
+      - --priority-band
+      - --outside-band-weight
+    branches:
+      - argument_and_manifest_rejection
+      - per_block_fit_and_order_search
+      - shared_frequency_grid_and_cascade_evaluation
+      - cascade_passivity_check
+      - optional_targeted_refit
+      - bounded_scale_adjustment
+      - report_and_artifact_publication
+    dependencies: [numpy, scipy, scikit-rf, cvxpy_for_passivity_paths]
+    assets: [version_1_cascade_json, ordered_two_port_touchstones, output_root_reports_models]
+    upstream_error_surface: [ValueError, OSError, JSON_decode_error, child_nonzero_exit]
+    adapter_status: implemented_transport_only
+    rust_status: candidate_present_parity_unbound
+    parity_status: not_evaluated
+  - id: AS-03
+    cli: fit-yparam
+    request_type: FitYparamRequest
+    source_paths: [cli, sparam_yparam, sparam_target_fit, sparam_artifacts]
+    positionals: [touchstone]
+    options:
+      - --output
+      - --derived-s-touchstone
+      - --report
+      - --html-report
+      - --log
+      - --subckt-name
+      - --n-poles-real
+      - --n-poles-cmplx
+      - --max-order
+      - --order-step
+      - --pole-spacing
+      - --fit-iterations
+      - --no-fit-proportional
+      - --max-y-rms-siemens
+      - --passivity
+      - --passivity-epsilon
+      - --conversion-condition-limit
+      - --exact-s-rfm
+      - --exact-s-touchstone
+      - --exact-s-rfm-wrapper
+      - --kyp-max-states
+      - --kyp-margin
+      - --kyp-max-relative-correction
+      - --kyp-solver
+    branches:
+      - argument_and_touchstone_rejection
+      - strict_s_to_y_conversion_condition_check
+      - effective_order_search
+      - positive_real_check_or_explicit_off
+      - optional_exact_y_to_s_lft_and_kyp_path
+      - output_report_and_optional_exports
+    dependencies: [numpy, scipy, scikit-rf, cvxpy_optional_kyp]
+    assets: [input_touchstone_sNp, optional_exact_outputs, output_y_spice_reports]
+    upstream_error_surface: [ValueError, OSError, numerical_condition_failure, child_nonzero_exit]
+    adapter_status: implemented_transport_only
+    rust_status: candidate_present_parity_unbound
+    parity_status: not_evaluated
+  - id: AS-04
+    cli: tune-yparam-tran
+    request_type: TuneYparamTranRequest
+    source_paths: [cli, sparam_y_tran_tuning, sparam_rfm, sparam_artifacts]
+    positionals: [touchstone, input_rfm, deck]
+    options:
+      - --output-rfm
+      - --report
+      - --work-dir
+      - --rfm-token
+      - --rms-measure
+      - --peak-measure
+      - --residual-poles
+      - --band-boundaries
+      - --hspice-bin
+      - --license-file
+      - --max-evaluations
+      - --max-static-rms-growth
+      - --max-sigma
+    branches:
+      - strict_csv_and_monotonicity_rejection
+      - exact_deck_token_and_measure_lookup
+      - static_in_band_accuracy_gate
+      - repeated_external_hspice_trial
+      - bounded_optimizer_search
+      - selected_candidate_write_and_report
+    dependencies: [numpy, scipy, scikit-rf, hspice_runtime, license_endpoint]
+    assets: [input_touchstone_sNp, input_y_derived_rfm, hspice_signoff_deck, hspice_measure_output]
+    upstream_error_surface: [ValueError, OSError, subprocess_failure, missing_measurement, child_nonzero_exit]
+    adapter_status: implemented_transport_only
+    rust_status: candidate_present_parity_unbound
+    parity_status: not_evaluated
+  - id: AS-05
+    cli: run-hspice
+    request_type: RunHspiceRequest
+    source_paths: [cli, hspice_alter, hspice_audit, hspice_converter, hspice_manifest, hspice_measure, hspice_results, backend_base, backend_native, backend_ngspice, backend_xyce, project, deck_builder, native_engine_manifest]
+    positionals: [deck]
+    options:
+      - --backend
+      - --output-root
+      - --execute
+      - --native-engine
+      - --rfm
+      - --rfm-subckt
+      - --dotnet
+    explicit_backend_values: [native, ngspice, xyce, xyce-xdm]
+    branches:
+      - deck_read_and_audit_rejection
+      - alter_case_split_and_manifest
+      - native_acceptance_and_optional_native_execution
+      - ngspice_conversion_and_optional_execution
+      - xyce_conversion_and_optional_execution
+      - xyce_xdm_conversion_and_optional_execution
+      - output_manifest_waveform_measurement_publication
+    dependencies: [native_engine_or_dotnet, ngspice_optional, xyce_optional, xdm_optional, hspice_deck_assets]
+    assets: [input_hspice_deck, include_files, probe_and_measure_outputs, optional_rfm_and_native_engine]
+    upstream_error_surface: [ValueError, OSError, unsupported_deck, backend_process_failure, child_nonzero_exit]
+    adapter_status: implemented_transport_with_explicit_backend
+    rust_status: fixed_profile_candidate_only
+    parity_status: profile_only_not_workflow_parity
+  - id: AS-06
+    cli: run-rfm
+    request_type: RunRfmRequest
+    source_paths: [cli, sparam_rfm, sparam_rfm_ngspice, hspice_audit, hspice_converter, hspice_results, backend_base, backend_native, backend_ngspice]
+    positionals: [deck]
+    options:
+      - --rfm
+      - --subckt-name
+      - --output-root
+      - --backend
+      - --ngspice
+      - --code-model
+      - --native-engine
+      - --dotnet
+      - --execute
+    explicit_backend_values: [native, ngspice]
+    branches:
+      - deck_and_rfm_parse_rejection
+      - frequency_response_verification
+      - native_nport_prepare_and_optional_execute
+      - ngspice_xspice_wrapper_prepare_and_optional_execute
+      - local_dependency_staging
+      - waveform_and_summary_publication
+    dependencies: [numpy, native_engine_or_dotnet, optional_ngspice, bundled_or_explicit_rfm_code_model]
+    assets: [input_spice_deck, cadence_rfm, include_files, rfm_code_model, waveform_outputs]
+    upstream_error_surface: [ValueError, OSError, RfmParseError, RfmNativeError, RfmNgspiceError, child_nonzero_exit]
+    adapter_status: implemented_transport_with_explicit_backend
+    rust_status: candidate_present_parity_unbound
+    parity_status: not_evaluated
+verification:
+  repository_contract_gate: does_not_require_external_source_worktree
+  exact_source_git_objects: checked_only_when_source_is_explicitly_supplied
+  exact_source_smoke: ignored_external_runner_only
+  numerical_parity: not_claimed
+  license_reclassification: not_claimed_by_this_slice
+  product_workspace_integration: pending_owner_gate
+audit:
+  path: docs/baselines/audits/2026-08-22-agent-spice-upstream-adapter.md
+  sha256: 4a6d9c2bdf72da06022038d8afdb0186720be91d651200a93308783f33afc47f

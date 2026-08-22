@@ -1,0 +1,148 @@
+schema: sipi.com-upstream-adapter.v1
+status: adapter_implemented_parity_pending
+purpose: strict_process_external_integration_of_pinned_agent_com_workflows
+upstream:
+  repository: https://github.com/z331225718/agent-com.git
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  declared_license: MIT
+  license_scope: source_only_pending_per_path_review
+  source_bytes_vendored: false
+adapter:
+  crate: crates/sipi-agent-com-adapter
+  schema: sipi.agent-com.process-adapter.v1
+  operations: [config_validate, run, compare, public_workflow]
+  public_workflow_sequence: [load_config, run_com, write_artifacts]
+  backend_mode: process_external_no_shell
+  windows_process_containment:
+    dependency: process-wrap
+    version: 9.1.0
+    registry_checksum: 2e842efad9119158434d193c6682e2ebee4b44d6ad801d7b349623b3f57cdf55
+    declared_license: MIT OR Apache-2.0
+    features: [std, job-object]
+    spawn: suspended_before_job_assignment_then_resumed
+    setup_failure: suspended_child_direct_kill_guard_fail_closed
+    termination: job_object_kill_for_timeout_cancel_output_and_normal_drain
+    drain: bounded_job_wait_and_pipe_join
+    non_windows: bounded_direct_child_only
+  working_directory:
+    ownership: caller_owned
+    validation: canonical_existing_directory_symlink_junction_fail_closed
+    process_current_dir: enforced
+    relative_request_paths: resolved_against_working_directory_before_transport
+    relative_artifact_paths: resolved_against_working_directory_before_containment
+  designated_output_boundary:
+    output_dir: caller_selected_runtime_root
+    log_file_and_progress_jsonl: must_be_descendants_of_output_dir
+    filesystem_sandbox: false
+    hostile_writer_custody: not_claimed
+    freshness: not_claimed_overwrite_semantics_remain_upstream_owned
+    cpu_memory_and_process_count_isolation: not_claimed
+  public_workflow_profile_admission:
+    omitted: pass_none_to_upstream_load_config
+    named_preset: explicit_from_name
+    custom: explicit_reader_required
+    empty_profile_spec: rejected
+  defaults: upstream_owned_omitted_when_not_explicit
+  numerical_policy: upstream_owned_no_rewrite
+  fallback: forbidden
+  bounded_io:
+    stdout: enforced
+    stderr: enforced
+    stdin: enforced_for_public_bridge
+    wall_time: enforced
+    cancellation: caller_owned_token
+    argv_bytes: enforced_including_executable_fixed_args_and_final_command_args
+    artifact_bytes: enforced_without_reading_artifact_payloads
+    secondary_reap_deadline: enforced
+    reader_and_stdin_join: bounded_secondary_deadline
+    windows_termination: process_wrap_job_object_kill_and_bounded_drain
+    output_root_and_ancestors: symlink_junction_fail_closed
+    artifact_entries: regular_files_or_directories_only_with_hard_count_limit
+  error_mapping:
+    exit_2: usage
+    exit_3: config_or_profile
+    exit_4: touchstone_input
+    exit_5: unsupported_path
+    exit_6: convergence
+    exit_8: internal
+source_bindings:
+  - {path: src/agent_com/cli.py, blob_oid_sha1: 7964d84bd52d60731bbf56ab9847bf4c190eacf9, bytes: 15589, content_sha256: 3ca1d26c097abaaa6197682a2c095dc2bc9d5810177429662a40463096fb51ca}
+  - {path: src/agent_com/__init__.py, blob_oid_sha1: 19942e5cc8e9ffa6572dd0ee6fc0861250ccf58b, bytes: 1719, content_sha256: 0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0}
+  - {path: src/agent_com/api.py, blob_oid_sha1: 3e7808982a63123f2bac65a86f3abb627c287be1, bytes: 21445, content_sha256: b7527f60d55b6f73fb449bc2472f957a6bc2a9ecf1d7bc8808756bf7fba39570}
+  - {path: src/agent_com/reporting.py, blob_oid_sha1: efbb14dda4d656a71e6915f5c5026b719e22d141, bytes: 82620, content_sha256: 14c4e4f0e5e51ee6fe76343ef133a565b8c922a0794acfe6c36ac3c7bbc1a0e1}
+  - {path: src/agent_com/models.py, blob_oid_sha1: 92167e385db50c76a9999c2df5118d46951b8243, bytes: 6994, content_sha256: e97bd1c67fbf53f940e45fb94905e6bd5e924b164a3eecf1548a652ba0f327af}
+  - {path: src/agent_com/config/consumption.py, blob_oid_sha1: 50fc02d837a67f3b503a73672ec4fbcc40d39b73, bytes: 210466, content_sha256: c6202e42b5e5ccb7fa1f78c780b9ecf031af5400b35cd23f20ef7348207d28a7}
+  - {path: src/agent_com/config/schema.py, blob_oid_sha1: 568eb7621d52a639a4ba0ef028e7dd39c10cca2a, bytes: 11477, content_sha256: df203a88eacb5e0738420230e6b14b78240e63a35c5fa6cd8914d6e64cd14ceb}
+  - {path: src/agent_com/config/materialize.py, blob_oid_sha1: a8856f91fe9208738446f539aa52ade2ea2c0bcf, bytes: 19030, content_sha256: 42f85e3cd5df74158acc10b9388f663419740b374756cdbd8332f052063d265c}
+  - {path: src/agent_com/errors.py, blob_oid_sha1: e1ab0878fc7a48083981930c06878ce7217dd136, bytes: 1335, content_sha256: 54d3d024dd160b1d38e21ed514d9e70de011ef515843463b2f2237cceff8154c}
+  - {path: src/agent_com/runtime.py, blob_oid_sha1: 89a1866b7d81a25653bcc9ef69adaf91fbf46cb1, bytes: 6077, content_sha256: 490a02e5bbb9af30278445b8f964a9d04d617ddf20c1773a5cd51a4b1ec5fd42}
+  - {path: CONFIG_CONSUMPTION_AUDIT.md, blob_oid_sha1: febe2e9de3f34283ee17f6686902f484d7e72005, bytes: 156435, content_sha256: be287c5a39375ced07baec4d9aaed79179994415ec0e9f3cc32fdbd7f57a50e6}
+  - {path: pyproject.toml, blob_oid_sha1: 0d5132b9d29649a5cb63fcf19cbe93ca1a25efab, bytes: 753, content_sha256: 04852f233455fd7ee66c40f502587b5061a07f74616ec09485ff7233ce4660d6}
+workflows:
+  - id: COM-01
+    public_entrypoint: config-validate
+    command: [config, validate]
+    source_entrypoint: src/agent_com/cli.py:main
+    reachable_modules: [src/agent_com/cli.py, src/agent_com/config/schema.py, src/agent_com/config/materialize.py, src/agent_com/config/consumption.py]
+    adapter_operation: config_validate
+    input_assets: [external_workbook_xlsx_csv_mat]
+    output_assets: [stdout_json_or_text]
+    matlab_runtime: not_reached
+    golden_result: not_reached
+    status: adapter_implemented_parity_pending
+  - id: COM-02
+    public_entrypoint: run
+    command: [run]
+    source_entrypoint: src/agent_com/cli.py:main
+    reachable_modules: [src/agent_com/cli.py, src/agent_com/api.py, src/agent_com/config/schema.py, src/agent_com/config/materialize.py, src/agent_com/config/consumption.py, src/agent_com/models.py, src/agent_com/runtime.py, src/agent_com/reporting.py]
+    adapter_operation: run
+    input_assets: [external_workbook_xlsx_csv_mat, external_touchstone_thru_fext_next, external_calibration_noise_optional]
+    output_assets: [external_output_directory_result_json_report_html_diagnostics_npz]
+    matlab_runtime: not_reached
+    golden_result: not_reached
+    status: adapter_implemented_parity_pending
+  - id: COM-03
+    public_entrypoint: compare
+    command: [compare]
+    source_entrypoint: src/agent_com/cli.py:main
+    reachable_modules: [src/agent_com/cli.py, src/agent_com/reporting.py]
+    adapter_operation: compare
+    input_assets: [external_golden_result_json, external_result_json]
+    output_assets: [stdout_compare_report]
+    matlab_runtime: not_reached
+    workbook: not_reached
+    status: adapter_implemented_parity_pending
+  - id: COM-04
+    public_entrypoint: load_config-run_com-write_artifacts
+    command: [python_bridge]
+    source_entrypoint: src/agent_com/__init__.py
+    reachable_modules: [src/agent_com/__init__.py, src/agent_com/api.py, src/agent_com/config/schema.py, src/agent_com/config/materialize.py, src/agent_com/config/consumption.py, src/agent_com/models.py, src/agent_com/runtime.py, src/agent_com/reporting.py]
+    adapter_operation: public_workflow
+    required_sequence: [load_config, run_com, write_artifacts]
+    input_assets: [external_workbook_xlsx_csv_mat, external_touchstone_thru_fext_next, external_calibration_noise_optional]
+    output_assets: [external_output_directory_result_json_report_html_diagnostics_npz]
+    matlab_runtime: not_reached
+    golden_result: not_reached
+    status: adapter_implemented_parity_pending
+consumption_audit:
+  source: CONFIG_CONSUMPTION_AUDIT.md
+  categories: [implemented, report_only, unimplemented, obsolete, unverified]
+  observed_summary: {implemented: 196, report_only: 26, unimplemented: 1, obsolete: 15, unverified: 0}
+  unimplemented_fields: [Do_White_Noise]
+  adapter_rule: transport_and_report_only_no_claim_of_field_parity
+  runtime_reads_are_not_parity: true
+  source_order_and_branch_coverage_remain_upstream_owned: true
+non_claims:
+  - no_rust_parity_acceptance
+  - no_matlab_oracle_generation
+  - no_workbook_bytes_or_golden_bytes_vendored
+  - no_license_conclusion_for_matlab_data_workbook_or_golden_assets
+  - no_default_or_numeric_or_alignment_or_tolerance_rewrite
+  - no_silent_fallback
+  - no_release_readiness
+  - no_filesystem_sandbox_or_hostile_writer_custody
+  - no_cpu_memory_or_process_count_isolation
+  - no_runtime_source_attestation
+  - designated_outputs_only_no_general_write_containment
+  - no_freshness_claim_for_com_overwrite_workflows

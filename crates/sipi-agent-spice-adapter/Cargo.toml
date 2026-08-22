@@ -1,0 +1,33 @@
+[package]
+name = "sipi-agent-spice-adapter"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Strict process-external adapters for the pinned Agent-Spice CLI workflows."
+autotests = false
+
+[lints]
+workspace = true
+
+[features]
+test-support = []
+
+[dependencies]
+sha2 = "0.10"
+
+[target.'cfg(windows)'.dependencies]
+process-wrap = { version = "=9.1.0", default-features = false, features = ["std", "job-object"] }
+
+[[bin]]
+name = "sipi-agent-spice-fake-interpreter"
+path = "tests/fake_interpreter.rs"
+test = false
+bench = false
+required-features = ["test-support"]
+
+[[test]]
+name = "adapter"
+path = "tests/adapter.rs"
+required-features = ["test-support"]

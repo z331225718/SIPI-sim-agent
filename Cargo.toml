@@ -1,6 +1,9 @@
 [workspace]
 members = [
   "crates/sipi-cli",
+  "crates/sipi-agent-com-adapter",
+  "crates/sipi-agent-spice-adapter",
+  "crates/sipi-pybert-adapter",
   "crates/sipi-channel",
   "crates/sipi-com",
   "crates/sipi-compare",

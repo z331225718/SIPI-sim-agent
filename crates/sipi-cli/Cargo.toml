@@ -6,12 +6,39 @@ license.workspace = true
 rust-version.workspace = true
 publish = false
 description = "Unsupported-only SIPI CLI foundation."
+autotests = false
+default-run = "sipi"
+
+[features]
+test-support = []
 
 [[bin]]
 name = "sipi"
 path = "src/main.rs"
 
+[[bin]]
+name = "sipi-upstream-fake"
+path = "src/bin/upstream_fake.rs"
+test = false
+bench = false
+required-features = ["test-support"]
+
+[[test]]
+name = "cli"
+path = "tests/cli.rs"
+
+[[test]]
+name = "p6_current_topology"
+path = "tests/p6_current_topology.rs"
+
+[[test]]
+name = "upstream_migration"
+path = "tests/upstream_migration.rs"
+required-features = ["test-support"]
+
 [dependencies]
+sipi-agent-com-adapter = { path = "../sipi-agent-com-adapter" }
+sipi-agent-spice-adapter = { path = "../sipi-agent-spice-adapter" }
 sipi-artifacts = { path = "../sipi-artifacts" }
 sipi-channel = { path = "../sipi-channel" }
 sipi-com = { path = "../sipi-com" }
@@ -20,6 +47,7 @@ sipi-contracts = { path = "../sipi-contracts" }
 sipi-ibis = { path = "../sipi-ibis" }
 sipi-link = { path = "../sipi-link" }
 sipi-pipeline = { path = "../sipi-pipeline" }
+sipi-pybert-adapter = { path = "../sipi-pybert-adapter" }
 sipi-runtime = { path = "../sipi-runtime" }
 sipi-rx-load = { path = "../sipi-rx-load" }
 sipi-tran = { path = "../sipi-tran" }

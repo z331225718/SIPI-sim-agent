@@ -19,14 +19,34 @@ profile-by-profile implementation order.  The large v0.2 PLAN body and its
 All three local worktrees contain unrelated dirt.  Read source identity from
 the fixed Git objects or a clean archive, never from worktree bytes.
 
+## Current integration status
+
+All 15 named rows now have a strict process-external adapter and an exact
+unified CLI route under `sipi upstream ... --stdin`:
+
+- `sipi-agent-spice-adapter`: AS-01..AS-06
+- `sipi-pybert-adapter`: PB-01..PB-05
+- `sipi-agent-com-adapter`: COM-01..COM-04
+
+The adapters bind the pinned contract source, explicit backend selection,
+bounded process I/O and artifacts, designated-output containment, and
+fail-closed errors. AS/PB require fresh targets; COM preserves upstream
+overwrite semantics and makes no general freshness or filesystem-sandbox
+claim. On Windows the process boundary uses a Job Object so
+timeouts and failures terminate descendants.  This is transport integration,
+not numerical Rust parity or a product-capability claim.
+
+All 15 inventory rows remain `completion: open`.  The next active work is the
+row-by-row oracle/license/parity phase; no new domain feature should be added.
+
 ## Execution order
 
-1. For one inventory row, enumerate the complete reachable upstream call
-   graph and all defaults, branches, dependencies, assets, errors, and output
-   artifacts.
-2. Add a strict process adapter without changing numerical semantics.  Record
-   the actual backend; `auto` fallback may never be silent.
-3. Bind an independent upstream oracle corpus and parity contract.
+1. Use the bound reachable inventory for one row to freeze all defaults,
+   branches, dependencies, assets, errors, and output artifacts.
+2. Reuse its integrated strict process adapter as the external oracle boundary;
+   do not create a second adapter or silently change `auto` selection.
+3. Bind an independent upstream oracle corpus, per-path license decision, and
+   branch-complete parity contract.
 4. Reuse an upstream native Rust implementation when eligible; otherwise port
    the missing behavior mechanically to the owning SIPI crate.
 5. Accept the Rust replacement only after branch-complete parity.  Consolidate

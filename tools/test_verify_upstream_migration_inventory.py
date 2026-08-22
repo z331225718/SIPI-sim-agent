@@ -37,6 +37,30 @@ class UpstreamMigrationInventoryTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.InventoryError, "unsubstantiated_parity"):
             self.validate(inventory=mutated)
 
+    def test_cli_integration_evidence_hash_is_bound(self) -> None:
+        mutated = copy.deepcopy(self.inventory)
+        mutated["integration_evidence"]["sha256"] = "0" * 64
+        with self.assertRaisesRegex(gate.InventoryError, "integration_evidence_hash_drift"):
+            self.validate(inventory=mutated)
+
+    def test_adapter_route_cannot_regress_to_not_started(self) -> None:
+        mutated = copy.deepcopy(self.inventory)
+        mutated["entries"][0]["adapter_status"] = "not_started"
+        with self.assertRaisesRegex(gate.InventoryError, "adapter_route_not_integrated"):
+            self.validate(inventory=mutated)
+
+    def test_reachable_inventory_binding_cannot_be_removed(self) -> None:
+        mutated = copy.deepcopy(self.inventory)
+        mutated["entries"][0]["reachable_inventory"] = "pending"
+        with self.assertRaisesRegex(gate.InventoryError, "reachable_inventory_unbound"):
+            self.validate(inventory=mutated)
+
+    def test_transport_boundary_cannot_claim_direct_port_review(self) -> None:
+        mutated = copy.deepcopy(self.inventory)
+        mutated["entries"][0]["license_review"] = "approved"
+        with self.assertRaisesRegex(gate.InventoryError, "license_scope_invalid"):
+            self.validate(inventory=mutated)
+
     def test_missing_upstream_workflow_is_rejected(self) -> None:
         mutated = copy.deepcopy(self.inventory)
         mutated["entries"].pop()

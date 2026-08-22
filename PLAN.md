@@ -12,7 +12,8 @@ Owner 已明确纠偏：当前阶段不增加新的领域功能。先完整覆�
 Agent-Spice、PyBERT、Agent-COM 三个固定提交已经公开实现的稳定工作流，
 再逐项以 Rust 替换；迁移、机械重构、算法改进和发布必须分开。
 
-- 当前实现主账本：[upstream-migration-inventory.v1](docs/baselines/upstream-migration-inventory.v1.yaml)，15 行均未完成。
+- 当前实现主账本：[upstream-migration-inventory.v1](docs/baselines/upstream-migration-inventory.v1.yaml)。15 行均已有严格的 process-external adapter 和统一 `sipi upstream ...` CLI 路由；15 行 Rust branch-complete parity 与最终 completion 仍全部 open。
+- 首轮整合证据：[upstream-cli-integration.v1](docs/baselines/upstream-cli-integration.v1.yaml) 与 [upstream-rust-candidate-coverage.v1](docs/baselines/upstream-rust-candidate-coverage.v1.yaml)。它们只声明固定 Git object 的可达 transport，不把外部 Python/native runtime 冒充 Rust 产品能力。
 - 发布阻断账本：[release-blockers-ledger.v1](docs/baselines/release-blockers-ledger.v1.yaml)，9 项全部延后到 consolidated candidate 冻结之后。
 - v0.2 的 19 项去向：[v0.2-v0.3 reconciliation](docs/baselines/v0.2-v0.3-migration-reconciliation.v1.yaml)。旧 ledger 与历史 evidence 不改写。
 - 交接执行顺序：[2026-08-22 upstream-first handoff](docs/handoff-20260822-upstream-first-rust-consolidation.md)。
@@ -23,6 +24,8 @@ self-test 或单 profile 通过都不能替代 upstream branch-complete parity�
 
 **首轮范围：** Agent-Spice 六个稳定命令、PyBERT 五个 simulation 命令、
 Agent-COM 三个 CLI 工作流和公共 `load_config/run_com/write_artifacts` API。
+该 15/15 process-external 整合层已经落地；当前活动阶段转为逐行绑定 oracle
+corpus、逐路径许可与 branch-complete parity，再机械替换为 owning crate 的 Rust 实现。
 研究命令、GUI/Web/Redis 和外部 MATLAB/workbook/golden/vendor 资产均已记账，
 但不作为首轮数值迁移完成条件，也不静默进入发行包。
 

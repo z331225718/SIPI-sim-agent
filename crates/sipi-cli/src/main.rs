@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 mod com_run_artifact_preflight_v1;
+mod upstream_migration;
 
 use std::{
     collections::BTreeMap,
@@ -95,6 +96,10 @@ use sipi_tran::{
     simulate_rc_pulse_with_context,
 };
 use sipi_types::{AxisView, FiniteF64, Ohms, Seconds, Volts};
+use upstream_migration::{
+    REQUEST_SCHEMA as UPSTREAM_MIGRATION_REQUEST_SCHEMA,
+    RESPONSE_SCHEMA as UPSTREAM_MIGRATION_RESPONSE_SCHEMA,
+};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const TARGET: &str = "x86_64-pc-windows-msvc";
@@ -253,6 +258,95 @@ const IBIS_QUASI_STATIC_ARTIFACT_BINDINGS: &[CallerBindingV1] = &[
     },
 ];
 
+const UPSTREAM_SPICE_BINDINGS: &[CallerBindingV1] = &[
+    CallerBindingV1 {
+        pointer: "/interpreter",
+        role: "caller_selected_external_interpreter",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/args",
+        role: "caller_selected_upstream_workflow_arguments",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/backend",
+        role: "caller_selected_upstream_backend_or_null",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/working_directory",
+        role: "caller_owned_working_directory",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/artifact_root",
+        role: "caller_owned_external_artifact_root",
+        explicit_required: true,
+    },
+];
+
+const UPSTREAM_PYBERT_BINDINGS: &[CallerBindingV1] = &[
+    CallerBindingV1 {
+        pointer: "/executable",
+        role: "caller_selected_external_executable",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/input",
+        role: "caller_selected_upstream_workflow_input",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/backend",
+        role: "caller_selected_upstream_backend",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/working_directory",
+        role: "caller_owned_working_directory",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/artifact_root",
+        role: "caller_owned_external_artifact_root",
+        explicit_required: true,
+    },
+];
+
+const UPSTREAM_COM_BINDINGS: &[CallerBindingV1] = &[
+    CallerBindingV1 {
+        pointer: "/executable",
+        role: "caller_selected_external_cli_executable",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/interpreter",
+        role: "caller_selected_external_python_interpreter",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/input",
+        role: "caller_selected_upstream_workflow_input",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/backend",
+        role: "caller_selected_upstream_backend",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/working_directory",
+        role: "caller_owned_working_directory",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/artifact_root",
+        role: "caller_owned_external_artifact_root",
+        explicit_required: true,
+    },
+];
+
 const DIAGNOSTIC_CODES_V1: &[DiagnosticCodeV1] = &[
     DiagnosticCodeV1 {
         code: "usage",
@@ -323,6 +417,41 @@ const DIAGNOSTIC_CODES_V1: &[DiagnosticCodeV1] = &[
         code: "self_check_failed",
         stage: "schema",
         rule_id: "cli.self-check.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "external_adapter_invalid_request",
+        stage: "admission",
+        rule_id: "upstream.external-migration-adapter.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "external_adapter_spawn_failed",
+        stage: "runtime",
+        rule_id: "upstream.external-migration-adapter.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "external_adapter_nonzero_exit",
+        stage: "runtime",
+        rule_id: "upstream.external-migration-adapter.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "external_adapter_timeout",
+        stage: "runtime",
+        rule_id: "upstream.external-migration-adapter.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "external_adapter_output_limit",
+        stage: "runtime",
+        rule_id: "upstream.external-migration-adapter.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "external_adapter_cancelled",
+        stage: "runtime",
+        rule_id: "upstream.external-migration-adapter.v1",
+    },
+    DiagnosticCodeV1 {
+        code: "external_adapter_failure",
+        stage: "runtime",
+        rule_id: "upstream.external-migration-adapter.v1",
     },
 ];
 
@@ -568,6 +697,156 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         response_schema: Some("sipi.com.run-artifact-specified-result.v1"),
         unavailable_reason: None,
         nonclaim: "product_owned_bounded_artifact_execution_non_oracle_only",
+    },
+    CommandDescriptorV1 {
+        id: "upstream.agent-spice.fit-sparam",
+        route: &["upstream", "agent-spice", "fit-sparam"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "external_migration_adapter",
+        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
+        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+    },
+    CommandDescriptorV1 {
+        id: "upstream.agent-spice.fit-sparam-cascade",
+        route: &["upstream", "agent-spice", "fit-sparam-cascade"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "external_migration_adapter",
+        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
+        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+    },
+    CommandDescriptorV1 {
+        id: "upstream.agent-spice.fit-yparam",
+        route: &["upstream", "agent-spice", "fit-yparam"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "external_migration_adapter",
+        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
+        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+    },
+    CommandDescriptorV1 {
+        id: "upstream.agent-spice.tune-yparam-tran",
+        route: &["upstream", "agent-spice", "tune-yparam-tran"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "external_migration_adapter",
+        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
+        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+    },
+    CommandDescriptorV1 {
+        id: "upstream.agent-spice.run-hspice",
+        route: &["upstream", "agent-spice", "run-hspice"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "external_migration_adapter",
+        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
+        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+    },
+    CommandDescriptorV1 {
+        id: "upstream.agent-spice.run-rfm",
+        route: &["upstream", "agent-spice", "run-rfm"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "external_migration_adapter",
+        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
+        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+    },
+    CommandDescriptorV1 {
+        id: "upstream.pybert.sim",
+        route: &["upstream", "pybert", "sim"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "external_migration_adapter",
+        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
+        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+    },
+    CommandDescriptorV1 {
+        id: "upstream.pybert.sim-native",
+        route: &["upstream", "pybert", "sim-native"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "external_migration_adapter",
+        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
+        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+    },
+    CommandDescriptorV1 {
+        id: "upstream.pybert.sim-rust",
+        route: &["upstream", "pybert", "sim-rust"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "external_migration_adapter",
+        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
+        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+    },
+    CommandDescriptorV1 {
+        id: "upstream.pybert.sim-auto",
+        route: &["upstream", "pybert", "sim-auto"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "external_migration_adapter",
+        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
+        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+    },
+    CommandDescriptorV1 {
+        id: "upstream.pybert.sim-compare",
+        route: &["upstream", "pybert", "sim-compare"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "external_migration_adapter",
+        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
+        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+    },
+    CommandDescriptorV1 {
+        id: "upstream.agent-com.config-validate",
+        route: &["upstream", "agent-com", "config-validate"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "external_migration_adapter",
+        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
+        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+    },
+    CommandDescriptorV1 {
+        id: "upstream.agent-com.run",
+        route: &["upstream", "agent-com", "run"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "external_migration_adapter",
+        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
+        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+    },
+    CommandDescriptorV1 {
+        id: "upstream.agent-com.compare",
+        route: &["upstream", "agent-com", "compare"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "external_migration_adapter",
+        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
+        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+    },
+    CommandDescriptorV1 {
+        id: "upstream.agent-com.public-api",
+        route: &["upstream", "agent-com", "public-api"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "external_migration_adapter",
+        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
+        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
     },
     CommandDescriptorV1 {
         id: "project.validate",
@@ -889,6 +1168,141 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         successful_exit: 0,
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
     },
+    CommandProtocolProfileV1 {
+        command_id: "upstream.agent-spice.fit-sparam",
+        example_id: None,
+        required_options: &["--stdin"],
+        caller_bindings: UPSTREAM_SPICE_BINDINGS,
+        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "upstream.agent-spice.fit-sparam-cascade",
+        example_id: None,
+        required_options: &["--stdin"],
+        caller_bindings: UPSTREAM_SPICE_BINDINGS,
+        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "upstream.agent-spice.fit-yparam",
+        example_id: None,
+        required_options: &["--stdin"],
+        caller_bindings: UPSTREAM_SPICE_BINDINGS,
+        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "upstream.agent-spice.tune-yparam-tran",
+        example_id: None,
+        required_options: &["--stdin"],
+        caller_bindings: UPSTREAM_SPICE_BINDINGS,
+        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "upstream.agent-spice.run-hspice",
+        example_id: None,
+        required_options: &["--stdin"],
+        caller_bindings: UPSTREAM_SPICE_BINDINGS,
+        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "upstream.agent-spice.run-rfm",
+        example_id: None,
+        required_options: &["--stdin"],
+        caller_bindings: UPSTREAM_SPICE_BINDINGS,
+        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "upstream.pybert.sim",
+        example_id: None,
+        required_options: &["--stdin"],
+        caller_bindings: UPSTREAM_PYBERT_BINDINGS,
+        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "upstream.pybert.sim-native",
+        example_id: None,
+        required_options: &["--stdin"],
+        caller_bindings: UPSTREAM_PYBERT_BINDINGS,
+        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "upstream.pybert.sim-rust",
+        example_id: None,
+        required_options: &["--stdin"],
+        caller_bindings: UPSTREAM_PYBERT_BINDINGS,
+        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "upstream.pybert.sim-auto",
+        example_id: None,
+        required_options: &["--stdin"],
+        caller_bindings: UPSTREAM_PYBERT_BINDINGS,
+        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "upstream.pybert.sim-compare",
+        example_id: None,
+        required_options: &["--stdin"],
+        caller_bindings: UPSTREAM_PYBERT_BINDINGS,
+        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "upstream.agent-com.config-validate",
+        example_id: None,
+        required_options: &["--stdin"],
+        caller_bindings: UPSTREAM_COM_BINDINGS,
+        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "upstream.agent-com.run",
+        example_id: None,
+        required_options: &["--stdin"],
+        caller_bindings: UPSTREAM_COM_BINDINGS,
+        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "upstream.agent-com.compare",
+        example_id: None,
+        required_options: &["--stdin"],
+        caller_bindings: UPSTREAM_COM_BINDINGS,
+        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
+    },
+    CommandProtocolProfileV1 {
+        command_id: "upstream.agent-com.public-api",
+        example_id: None,
+        required_options: &["--stdin"],
+        caller_bindings: UPSTREAM_COM_BINDINGS,
+        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
+        successful_exit: 0,
+        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
+    },
 ];
 
 struct Response {
@@ -904,6 +1318,11 @@ fn main() {
     let command = arguments.first().map_or("help", String::as_str);
     let response = if arguments == ["validate", "--stdin"] {
         ProcessAdapter::validate_stdin()
+    } else if let [command, repository, workflow, stdin] = &arguments[..]
+        && command == "upstream"
+        && stdin == "--stdin"
+    {
+        ProcessAdapter::upstream_migration_stdin(&format!("{repository}.{workflow}"))
     } else if arguments == ["ibis", "inspect", "--stdin"] {
         ProcessAdapter::ibis_inspect_stdin()
     } else if arguments == ["ibis", "dc-evaluate", "--stdin"] {
@@ -1040,6 +1459,20 @@ impl ProcessAdapter {
         match validate_request_v1(&input) {
             Ok(()) => success("{\"subject\":\"validation-request\"}".to_owned()),
             Err(_) => error(3, "contract_rejected", "stdin request was rejected"),
+        }
+    }
+
+    fn upstream_migration_stdin(route: &str) -> Response {
+        if !upstream_migration::known_route(route) {
+            return error(64, "usage", "unknown upstream migration workflow");
+        }
+        let input = match read_bounded_stdin_request(upstream_migration::max_request_bytes()) {
+            Ok(input) => input,
+            Err(code) => return error(2, code, "stdin request is invalid"),
+        };
+        match upstream_migration::execute(route, &input) {
+            Ok(result) => success(result),
+            Err(failure) => error(3, failure.kind.diagnostic_code(), "external adapter failed"),
         }
     }
 
@@ -3049,7 +3482,10 @@ fn command_manifest_is_valid(manifest: &[CommandDescriptorV1]) -> bool {
                         byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-'
                     })
             })
-            && matches!(descriptor.transport, "none" | "stdin_json_v1")
+            && matches!(
+                descriptor.transport,
+                "none" | "stdin_json_v1" | "external_migration_adapter"
+            )
             && match descriptor.availability {
                 CommandAvailabilityV1::Available => {
                     descriptor.unavailable_reason.is_none()
@@ -3089,7 +3525,7 @@ fn command_protocol_profiles_are_valid(
                         && !binding.role.is_empty()
                         && binding.explicit_required
                 })
-                && if descriptor.transport == "stdin_json_v1" {
+                && if is_stdin_transport(descriptor.transport) {
                     descriptor.request_schema.is_some()
                         && matches[0].validation_rule_id.is_some()
                         && match matches[0].example_id {
@@ -3141,7 +3577,26 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["project", "run"]
             | ["report", "inspect"]
             | ["com", "run-artifact"]
+            | ["upstream", "agent-spice", "fit-sparam"]
+            | ["upstream", "agent-spice", "fit-sparam-cascade"]
+            | ["upstream", "agent-spice", "fit-yparam"]
+            | ["upstream", "agent-spice", "tune-yparam-tran"]
+            | ["upstream", "agent-spice", "run-hspice"]
+            | ["upstream", "agent-spice", "run-rfm"]
+            | ["upstream", "pybert", "sim"]
+            | ["upstream", "pybert", "sim-native"]
+            | ["upstream", "pybert", "sim-rust"]
+            | ["upstream", "pybert", "sim-auto"]
+            | ["upstream", "pybert", "sim-compare"]
+            | ["upstream", "agent-com", "config-validate"]
+            | ["upstream", "agent-com", "run"]
+            | ["upstream", "agent-com", "compare"]
+            | ["upstream", "agent-com", "public-api"]
     )
+}
+
+fn is_stdin_transport(transport: &str) -> bool {
+    matches!(transport, "stdin_json_v1" | "external_migration_adapter")
 }
 
 fn descriptor_for_route(arguments: &[String]) -> Option<&'static CommandDescriptorV1> {
@@ -3198,7 +3653,11 @@ fn sha256_hex(bytes: &[u8]) -> String {
 }
 
 fn schema_bytes(id: &str) -> Result<Option<Vec<u8>>, sipi_contracts::ContractError> {
-    if id == CAPABILITIES_SCHEMA {
+    if id == UPSTREAM_MIGRATION_REQUEST_SCHEMA {
+        Ok(Some(
+            upstream_migration::REQUEST_SCHEMA_JSON.as_bytes().to_vec(),
+        ))
+    } else if id == CAPABILITIES_SCHEMA {
         capability_schema_json().map(Some)
     } else if id == sipi_contracts::VALIDATION_REQUEST_SCHEMA {
         validation_request_schema_json().map(Some)
@@ -3299,7 +3758,7 @@ fn command_protocol_catalog_json() -> Result<String, sipi_contracts::ContractErr
                 "{{\"command_id\":\"{}\",\"transport\":\"{}\",\"request_schema\":{request_schema},\"request_schema_sha256\":{request_schema_sha256},\"response_schema\":{response_schema},\"example_id\":{example_id},\"construction_state\":\"{}\",\"validation_rule_id\":{validation_rule_id},\"caller_bindings\":[{caller_bindings}],\"required_options\":[{options}],\"successful_exit\":{},\"diagnostic_contract\":\"{}\"}}",
                 profile.command_id,
                 descriptor.transport,
-                if descriptor.transport == "stdin_json_v1" {
+                if is_stdin_transport(descriptor.transport) {
                     "constructible"
                 } else {
                     "not_applicable"
@@ -3528,6 +3987,11 @@ impl CommandService {
                 "unsupported",
                 "report requires the exact inspect --stdin command",
             ),
+            [command, ..] if command == "upstream" => error(
+                64,
+                "usage",
+                "upstream requires one named migration workflow with --stdin",
+            ),
             _ => error(
                 64,
                 "usage",
@@ -3626,6 +4090,7 @@ fn doctor_json() -> String {
 
 fn schema_list_json() -> String {
     let schemas = [
+        UPSTREAM_MIGRATION_REQUEST_SCHEMA,
         CAPABILITIES_SCHEMA,
         ARTIFACT_REPORT_REQUEST_SCHEMA,
         CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA,
@@ -3683,7 +4148,8 @@ fn schema_show(id: &str) -> Response {
 
 fn validate_self(schema: Option<&str>) -> Response {
     if schema.is_some_and(|id| {
-        id != CAPABILITIES_SCHEMA
+        id != UPSTREAM_MIGRATION_REQUEST_SCHEMA
+            && id != CAPABILITIES_SCHEMA
             && id != ARTIFACT_REPORT_REQUEST_SCHEMA
             && id != CHANNEL_MATCHED_TWO_PORT_KERNEL_RUN_REQUEST_SCHEMA
             && id != ARRAY_COMPARE_REQUEST_SCHEMA
@@ -3717,6 +4183,10 @@ fn validate_self(schema: Option<&str>) -> Response {
             .all(|item| item.status == "unsupported")
         && deterministic_json(&catalog).is_ok()
         && !RULE_LEDGER_V1.is_empty()
+        && schema_bytes(UPSTREAM_MIGRATION_REQUEST_SCHEMA)
+            .ok()
+            .flatten()
+            .is_some()
         && validation_request_schema_json().is_ok()
         && artifact_report_request_schema_json().is_ok()
         && channel_matched_two_port_kernel_run_request_schema_json().is_ok()
@@ -4165,7 +4635,7 @@ mod tests {
     fn schema_list_uses_the_schema_inventory_order() {
         assert_eq!(
             schema_list_json(),
-            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.compare.aligned-arrays-request.v1\",\"sipi.compare.prbs9-metric-artifacts-request.v1\",\"sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-request.v3\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-artifact-batch-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-artifact-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.receiver.diagnostic-run-request.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.one-node-rc-pulse-request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\",\"sipi.com.run-artifact-request.v1\"]}"
+            "{\"schema\":\"sipi.cli-schema-list.v1\",\"schemas\":[\"sipi.upstream-migration-request.v1\",\"sipi.capabilities.v1\",\"sipi.artifact-report-request.v1\",\"sipi.channel.matched-two-port-kernel-run-request.v1\",\"sipi.compare.aligned-arrays-request.v1\",\"sipi.compare.prbs9-metric-artifacts-request.v1\",\"sipi.compare.selected-highloss-prbs9-waveform-only-artifacts-request.v3\",\"sipi.ibis.input-typ-dc-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-artifact-batch-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-artifact-evaluate.request.v1\",\"sipi.ibis.input-typ-quasi-static-evaluate.request.v1\",\"sipi.ibis.inspect.request.v1\",\"sipi.link-plan.v1\",\"sipi.link.causal-fir-request.v1\",\"sipi.project.fixed-tran-causal-fir-run-request.v1\",\"sipi.project.v1\",\"sipi.receiver-input.v1\",\"sipi.receiver-semantics.v1\",\"sipi.receiver.diagnostic-run-request.v1\",\"sipi.rx-load.selected-differential-rc-evaluate.request.v1\",\"sipi.tran.one-node-rc-pulse-request.v1\",\"sipi.tran.rc-pulse-request.v1\",\"sipi.validation-request.v1\",\"sipi.com.run-artifact-request.v1\"]}"
         );
     }
 

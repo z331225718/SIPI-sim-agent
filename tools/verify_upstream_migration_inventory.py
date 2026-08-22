@@ -19,6 +19,7 @@ RELEASE = ROOT / "docs/baselines/release-blockers-ledger.v1.yaml"
 RECONCILIATION = ROOT / "docs/baselines/v0.2-v0.3-migration-reconciliation.v1.yaml"
 HISTORICAL = ROOT / "docs/baselines/plan-remaining-items-ledger.v1.yaml"
 PLAN = ROOT / "PLAN.md"
+INTEGRATION_EVIDENCE = ROOT / "docs/baselines/upstream-cli-integration.v1.yaml"
 
 SCHEMA = "sipi.upstream-migration-inventory.v1"
 RELEASE_SCHEMA = "sipi.release-blockers-ledger.v1"
@@ -169,6 +170,16 @@ def validate(
         "completion_states_invalid",
     )
     _require(inventory.get("source_repositories") == EXPECTED_REPOS, "source_repository_binding_invalid")
+    integration = inventory.get("integration_evidence")
+    _require(isinstance(integration, dict), "integration_evidence_invalid")
+    _require(
+        integration.get("path") == "docs/baselines/upstream-cli-integration.v1.yaml",
+        "integration_evidence_path_invalid",
+    )
+    _require(
+        integration.get("sha256") == _sha256(INTEGRATION_EVIDENCE),
+        "integration_evidence_hash_drift",
+    )
 
     entries = inventory.get("entries")
     _require(isinstance(entries, list), "entries_invalid")
@@ -190,12 +201,28 @@ def validate(
         for crate in entry["target_crates"]:
             _require((root / "crates" / crate).is_dir(), f"target_crate_missing:{item_id}:{crate}")
         _require(entry["completion"] == "open", f"unsubstantiated_completion:{item_id}")
-        _require(entry["reachable_inventory"] == "pending", f"unsubstantiated_reachable_inventory:{item_id}")
-        _require(entry["license_review"] == "pending", f"unsubstantiated_license_review:{item_id}")
+        _require(
+            entry["adapter_status"] == "integrated_external_cli_route",
+            f"adapter_route_not_integrated:{item_id}",
+        )
+        _require(
+            entry["reachable_inventory"] == "pinned_reachable_inventory_bound",
+            f"reachable_inventory_unbound:{item_id}",
+        )
+        _require(
+            entry["license_review"] == "external_runtime_boundary_bound_direct_port_not_started",
+            f"license_scope_invalid:{item_id}",
+        )
         _require(entry["parity_status"] != "accepted", f"unsubstantiated_parity:{item_id}")
     _require(set(by_id) == set(EXPECTED_ENTRYPOINTS), "migration_entry_set_invalid")
     _require(
-        inventory.get("summary") == {"migration_rows": 15, "open": 15, "complete": 0, "new_feature_freeze": True},
+        inventory.get("summary") == {
+            "migration_rows": 15,
+            "external_adapter_routes_integrated": 15,
+            "open": 15,
+            "complete": 0,
+            "new_feature_freeze": True,
+        },
         "inventory_summary_invalid",
     )
 
@@ -244,6 +271,7 @@ def validate(
     return {
         "valid": True,
         "migration_rows": len(by_id),
+        "external_adapter_routes_integrated": len(by_id),
         "open": len(by_id),
         "release_blockers": len(release_by_id),
         "feature_freeze": True,

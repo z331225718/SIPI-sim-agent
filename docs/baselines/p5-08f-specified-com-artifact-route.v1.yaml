@@ -5,7 +5,7 @@ implementation:
   parameter_module: {path: crates/sipi-com/src/com_specified_parameter_ingestion_v1.rs, sha256: 9f5ed916d2566b66e2b3401ecd3fe8973020fce9755cf71496f3069c5d0b28b6}
   execution_module: {path: crates/sipi-com/src/com_specified_artifact_execution_v1.rs, sha256: b25be2b0450137ccd8a5cdf15640c5b8f0dff68aed19fb36452944198017633f}
   public_surface: {path: crates/sipi-com/src/lib.rs, sha256: 64f6e08a176f3f30f1d1144ffe30c97f78b6ca2a08cb8b5151fb69468b422368}
-  cli_surface: {path: crates/sipi-cli/src/main.rs, sha256: f9e41429321731659ea458de1bd4550fe0a195e6bc8ba0d3ff910980b36d26b0}
+  cli_surface: {path: crates/sipi-cli/src/main.rs, sha256: 1526c3ace08ee81e5806c70787908847fd19d0a053875753231e828a21b58292}
   contract_surface: {path: crates/sipi-contracts/src/lib.rs, sha256: 6bc98037d55bc76a93edeca8b5930d29daf84893a6c86e1134c72b07eb758d12}
   route: [com, run-artifact]
   request_schema: sipi.com.run-artifact-request.v1

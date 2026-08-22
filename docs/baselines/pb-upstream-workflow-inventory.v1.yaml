@@ -1,0 +1,171 @@
+schema: sipi.pb-upstream-workflow-inventory.v1
+status: observed_pinned_source_process_adapter_only
+date: 2026-08-22
+source:
+  repository: pybert
+  commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  cli_path: src/pybert/cli.py
+  cli_blob_oid_sha1: 4c1116007d31bcebf8db3252363eed7774c7b349
+  cli_content_sha256: 3826b0c156166e6f04b0e9997ce64a53a53867db6d89143b7c582ca2cf4337c9
+  license: BSD-3-Clause
+  license_path: LICENSE
+  license_blob_oid_sha1: 64d198ba43675ede5fbdef1ec918a63954951640
+  source_objects:
+    src/pybert/cli.py: 4c1116007d31bcebf8db3252363eed7774c7b349
+    src/pybert/pybert.py: 1af665c4595fff1ff5fb30341fe063bd10e5cd89
+    src/pybert/models/bert.py: f04340c1028078175b26d7882efeeaf96f001abf
+    src/pybert/models/dfe.py: e8bff47694dd1ae9ec9918ad1436ecb6419f6061
+    src/pybert/models/tx_tap.py: 5fe0384712a0128ced0f6860e482aa71beb567e9
+    src/pybert/models/viterbi.py: a296f36648477d128100fb2db21b66cbdf51ecfc
+    src/pybert/models/fec.py: 9316749d0fbd8dfc398b3687002f8696bc798b0d
+    src/pybert/engine/api.py: ddbda6e5e80b19ad8ab2d3aae4b304603115dbd8
+    src/pybert/engine/python_backend.py: 6b7b664d89da1502c74fc7cd97fe4451bf98ab82
+    src/pybert/engine/rust_backend.py: 1010aba98627f6777146f870f95d278d0b7e3b00
+    src/pybert/engine/compare.py: dd3bb82db423a43c0081aa72b87f550420d2dc47
+    src/pybert/engine/legacy_cli_adapter.py: 6efc14c8e1719b418571aaff7c8d9f2005c87b19
+    src/pybert/utility/channel.py: 5526c1c4d46a98e63e5600c5f5bb90cb96db4f96
+    src/pybert/utility/sigproc.py: 9e4abd5991e0d31123f5a4b7d3d3c8d618dc7140
+    src/pybert/utility/jitter.py: 467cd706906352883d9784ff29b17610034aede5
+    src/pybert/utility/statistical_eye.py: 195f87f48cecc55bf7bcda371c4c51b17111ea21
+    src/pybert/utility/ibisami.py: 9f1fb3b1496fd192b77207ffcecc4b2478d5f64e
+    src/pybert_web/engine_adapter.py: 8cdb9fb612635b58cf2e071a9e90d07d272faa61
+    src/pybert_web/models.py: ec69a14ed97dbb500e57e378c4d8f39d359aaf20
+    src/pybert_web/simulation.py: cdc065bd692ca4836a7c62eb5a71492ff34620c1
+    native/pybert-core/src/equalization.rs: ae91583c5675a82fe229918c41602b8531fb775d
+    native/pybert-core/src/input.rs: ae6d1883b65640d1719022df2c9e8b0763636dc0
+    native/pybert-core/src/jitter.rs: 92e0fd6e6b2d40590b967f5f5d057a3de2969672
+    native/pybert-core/src/simulation.rs: 1f19bff64315e0042bab89d67e9131c289f5e583
+    native/pybert-core/src/statistical_eye.rs: e2f9dea5d8734903514720d93b1a0ce2079a61ee
+  source_bytes_policy: exact_git_objects_only
+  source_bytes_in_repository: false
+adapter:
+  crate: crates/sipi-pybert-adapter
+  mode: process_external
+  executable_is_caller_supplied: true
+  numerical_code_copied: false
+  fallback_policy: upstream_decision_must_be_reported
+  default_policy: preserve_upstream_defaults_and_optional_arguments
+  alignment_policy: no_adapter_alignment_or_resampling
+  tolerance_policy: no_adapter_tolerance_or_acceptance_decision
+  artifact_policy: fresh_target_then_pinned_minimum_regular_outputs_and_bounded_recursive_inventory_sha256_no_links
+  cancellation_policy: caller_cancel_marker_or_deadline_kills_windows_job_or_nonwindows_direct_child
+workflows:
+  - id: PB-01
+    public_command: sim
+    cli_shape: [sim, CONFIG_FILE, optional(--results, RESULTS_FILE)]
+    requested_backend: python
+    input_load: PyBertCfg.load_from_file
+    execution: PythonSimulationBackend -> PyBERT.simulate
+    output: PyBERT pickle result; adapter resolves and hashes CONFIG_FILE with .pybert_data suffix when results is absent
+    reachable_numeric_surface:
+      channel: [default_Howard_Johnson_model, imported_S2P, termination_and_normalization, impulse_step_pulse]
+      tx: [symbol_generation, TX_FFE, periodic_noise, random_noise, optional_IBIS_AMI]
+      rx: [optional_CTLE, optional_RX_IBIS_AMI, optional_RX_FFE_DFE]
+      equalization: [DFE, optional_Viterbi_FEC, optional_AMI_GetWave_or_Init]
+      jitter: [crossing_times, data_dependent_and_spectral_jitter_paths]
+      eye_ber: [time_eye, bathtub, BER_and_statistical_eye_when_configured]
+      result: [PyBertData_pickle]
+    external_dependencies:
+      - numpy
+      - scipy
+      - scikit-rf
+      - pyibis-ami
+      - optional_IBIS_AMI_DLL_or_SO
+      - optional_PyChOpMarg
+    adapter_status: implemented_transport_only
+    parity_status: not_evaluated
+  - id: PB-02
+    public_command: sim-native
+    cli_shape: [sim-native, INPUT_FILE, --output-dir, OUTPUT_DIR]
+    requested_backend: rust
+    input_contract: NativeSimulationRequest accepts strict versioned JSON and optional contiguous float64 noise
+    execution: RustSimulationBackend -> optional pybert-native extension
+    output: meta.json plus arrays.npz
+    reachable_numeric_surface:
+      channel: [native_typed_channel_or_impulse_input]
+      tx: [native_symbol_or_PRBS_input, optional_FFE]
+      rx: [native_RX_filter_and_equalization]
+      equalization: [native_DFE, optional_CDR_and_FEC]
+      jitter: [native_crossing_and_jitter_helpers_when_requested]
+      eye_ber: [native_eye_bathtub_and_BER_helpers_when_requested]
+      result: [typed_native_result_arrays_and_metadata]
+    external_dependencies:
+      - optional_pybert_native_wheel
+      - Rust_extension_implementation_at_runtime
+    adapter_status: implemented_transport_only
+    parity_status: not_evaluated
+  - id: PB-03
+    public_command: sim-rust
+    cli_shape: [sim-rust, CONFIG_FILE, --output-dir, OUTPUT_DIR, optional(--statistical-time-points, N)]
+    requested_backend: rust
+    input_load: PyBertCfg.load_from_file
+    projection: legacy_pybert_to_web_request
+    execution: WebNativeSimulationBackend -> native Rust backend
+    output: meta.json plus arrays.npz
+    reachable_numeric_surface:
+      channel: [default_or_S2P_channel, source_and_load_impedance, impulse_policy]
+      tx: [pattern, TX_FFE, optional_TX_IBIS_AMI]
+      rx: [CTLE, RX_FFE, optional_RX_IBIS_AMI]
+      equalization: [DFE, CDR, optional_FEC]
+      jitter: [configured_random_or_deterministic_jitter_and_CDR_observation]
+      eye_ber: [sampled_eye, statistical_eye, BER]
+      result: [native_result_arrays_and_metadata]
+    external_dependencies:
+      - optional_pybert_native_wheel
+      - optional_IBIS_AMI_DLL_or_SO
+      - web_request_schema_and_native_backend
+    adapter_status: implemented_transport_only
+    parity_status: not_evaluated
+  - id: PB-04
+    public_command: sim-auto
+    cli_shape: [sim-auto, CONFIG_FILE, --output-dir, OUTPUT_DIR, optional(--statistical-time-points, N)]
+    requested_backend: auto
+    selection: native_validation_and_parity_gate_then_python_fallback
+    failure_chain: [native_projection_or_validation_failure, parity_gate_reason, selected_python, native_runtime_failure_is_error_after_selection]
+    output: meta.json plus arrays.npz; diagnostics.engine_selection is authoritative for selection
+    reachable_numeric_surface:
+      channel: [same_legacy_projection_or_native_path_as_sim-rust]
+      tx: [same_legacy_projection_or_native_path_as_sim-rust]
+      rx: [same_legacy_projection_or_native_path_as_sim-rust]
+      equalization: [same_legacy_projection_or_native_path_as_sim-rust]
+      jitter: [same_legacy_projection_or_native_path_as_sim-rust]
+      eye_ber: [same_legacy_projection_or_native_path_as_sim-rust]
+      result: [selected_backend_result_arrays_and_selection_diagnostics]
+    external_dependencies:
+      - optional_pybert_native_wheel
+      - optional_IBIS_AMI_DLL_or_SO
+      - Python_reference_dependencies_when_fallback_selected
+    adapter_status: implemented_transport_and_selection_report
+    parity_status: not_evaluated
+  - id: PB-05
+    public_command: sim-compare
+    cli_shape: [sim-compare, CONFIG_FILE, --output-dir, OUTPUT_DIR, optional(--statistical-time-points, N)]
+    requested_backend: compare
+    execution: Python_reference_then_native_candidate_then_compare_backend_results
+    candidate_failure_policy: comparison_report_passed_false_and_reference_artifact_is_retained
+    output: meta.json plus arrays.npz carrying reference result and comparison diagnostics
+    reachable_numeric_surface:
+      channel: [Python_reference_channel_and_native_candidate_channel]
+      tx: [Python_reference_TX_and_native_candidate_TX]
+      rx: [Python_reference_RX_and_native_candidate_RX]
+      equalization: [Python_reference_equalization_and_native_candidate_equalization]
+      jitter: [Python_reference_jitter_and_native_candidate_jitter]
+      eye_ber: [Python_reference_eye_BER_and_native_candidate_eye_BER]
+      result: [structured_array_metadata_diagnostics_and_comparison_report]
+    external_dependencies:
+      - all_PB-01_reference_dependencies
+      - all_PB-02_or_PB-03_native_dependencies
+    adapter_status: implemented_transport_only
+    parity_status: not_evaluated
+operational_tracks_not_first_numeric_completion:
+  - web_fastapi
+  - redis_worker
+  - desktop_gui
+  - notebook_and_storage
+non_claims:
+  - This evidence does not claim Rust parity for any workflow.
+  - This evidence does not import PyBERT source, fixtures, arrays, DLLs, or external paths.
+  - This adapter does not implement channel, TX, RX, equalization, jitter, eye, BER, or comparison algorithms.
+  - This adapter does not silently choose a backend; sim-auto selection is read from its published diagnostics.
+  - This evidence does not close source license, external runtime, oracle, or release gates.

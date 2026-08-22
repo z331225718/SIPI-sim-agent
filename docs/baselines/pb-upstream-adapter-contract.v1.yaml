@@ -1,0 +1,93 @@
+schema: sipi.pb-upstream-adapter-contract.v1
+status: implemented_candidate_transport_contract
+crate: crates/sipi-pybert-adapter
+workflow_ids: [PB-01, PB-02, PB-03, PB-04, PB-05]
+license_boundary:
+  adapter_spdx: MIT
+  external_pybert_spdx: BSD-3-Clause
+  source_copied_into_adapter: false
+  external_runtime: true
+  source_audit_path: docs/baselines/audits/2026-08-22-pb-upstream-first-migration.md
+  source_audit_sha256: 155e1fa7fd2d8374e3cf7e0e47bfae561abd902f945f414b7c958e0581d6aed7
+runtime_identity:
+  contract_source_only: true
+  launcher: caller_supplied
+  attestation: not_performed
+  runtime_source_authenticated: false
+process_termination:
+  windows_process_tree: process_wrap_9_1_job_object
+  windows_suspended_before_job_assignment: true
+  windows_job_setup_failure: fail_closed_and_kill_suspended_child
+  windows_job_raii_guard_after_assignment: true
+  windows_termination: terminate_job_object
+  windows_parent_exit_descendants_terminated_before_stream_drain: true
+  non_windows_process: direct_child_kill_no_tree_claim
+  stream_drain_deadline_required: true
+windows_dependencies:
+  process_wrap:
+    version: 9.1.0
+    features: [std, job-object]
+    license: MIT OR Apache-2.0
+    target_only: windows
+working_directory:
+  caller_owned: true
+  required: true
+  existing_directory: true
+  symlink_or_junction_rejected: true
+  canonicalized_before_spawn: true
+  child_current_dir: true
+  relative_paths_resolve_from: canonical_working_directory
+request_bounds:
+  max_request_bytes: 65536
+  max_stdout_bytes: 1048576
+  max_stderr_bytes: 1048576
+  max_artifact_files: 4096
+  max_artifact_directories: 4096
+  max_artifact_bytes: 536870912
+  max_artifact_depth: 64
+  timeout_seconds: 300
+  stream_drain_timeout_seconds: 1
+  cancellation: explicit_caller_marker
+command_rules:
+  exact_subcommands: [sim, sim-native, sim-rust, sim-auto, sim-compare]
+  sim_native_requires_output_dir: true
+  sim_rust_auto_compare_require_output_dir: true
+  sim_statistical_time_points_is_optional_and_forwarded_unchanged: true
+  legacy_sim_results_is_optional_and_forwarded_unchanged: true
+  executable_and_input_paths_are_caller_owned: true
+  parent_directory_components_rejected: true
+  symlink_artifacts_rejected: true
+backend_rules:
+  sim_requested_backend: python
+  sim_native_requested_backend: rust
+  sim_rust_requested_backend: rust
+  sim_auto_requested_backend: auto
+  sim_compare_requested_backend: compare
+  sim_auto_requires_diagnostics_engine_selection_on_success: true
+  sim_auto_records_requested_selected_fallback_reason_and_parity_gate: true
+  sim_compare_does_not_convert_candidate_error_to_success: true
+artifact_rules:
+  recursive_regular_files_only: true
+  nested_symlink_or_junction_rejected: true
+  canonical_file_must_remain_under_output_root: true
+  output_target_must_be_absent_before_spawn: true
+  preexisting_artifacts_never_count_as_current_run_output: true
+  concurrent_hostile_writer_custody: not_claimed
+  output_target_must_exist_after_success: true
+  sim_result_file_required_after_success: true
+  required_directory_target_must_exist: true
+  minimum_regular_artifacts:
+    PB-01: [resolved_pybert_data_file]
+    PB-02: [meta.json, arrays.npz]
+    PB-03: [meta.json, arrays.npz]
+    PB-04: [meta.json, arrays.npz]
+    PB-05: [meta.json, arrays.npz]
+  unrelated_files_do_not_substitute_for_minimum: true
+  relative_paths_normalized_to_forward_slash: true
+  sha256_per_file: true
+  sim_default_result_path_bound: true
+  numeric_payload_is_not_decoded: true
+  source_oracle_payload_is_not_stored: true
+verification_scope:
+  fake_process: [argument_shape, auto_selection, artifact_inventory, fresh_output_target_requirement, required_output_presence, minimum_regular_artifacts, empty_or_unrelated_directory_rejection, nested_junction_rejection, artifact_directory_bound, stdout_limit, timeout, deadline_overflow, parent_exited_descendant_pid_termination, missing_auto_selection]
+  exact_source_smoke: [commit_tree_cli_blob_and_cli_sha256_when_external_root_is_supplied]
