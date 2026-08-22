@@ -13,15 +13,20 @@ import argparse
 import hashlib
 import io
 import json
+import math
+import os
 import re
 import secrets
 import shutil
 import struct
 import subprocess
+import sys
 import tarfile
 import tempfile
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
+
+import run_pb_02_direct_replay as custody
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_UPSTREAM = Path(r"C:\Users\z3312\code\Py-bert-agent")
@@ -37,6 +42,13 @@ UPSTREAM_FACT_PATHS = (
     "src/pybert/engine/python_backend.py",
 )
 CRATE_RELATIVE = Path("crates/sipi-pybert-direct")
+FIXTURE_RELATIVE = CRATE_RELATIVE / "fixtures/pb-01-legacy-nrz.yaml"
+CANONICAL_ITEM_NAMES = (
+    "chnl_h", "tx_out_h", "ctle_out_h", "dfe_out_h", "chnl_s", "tx_s",
+    "ctle_s", "dfe_s", "tx_out_s", "ctle_out_s", "dfe_out_s", "chnl_p",
+    "tx_out_p", "ctle_out_p", "dfe_out_p", "chnl_H", "tx_H", "ctle_H",
+    "dfe_H", "tx_out_H", "ctle_out_H", "dfe_out_H", "tx_out",
+)
 ARRAY_NAMES = (
     "chnl_h",
     "tx_out_h",
@@ -189,17 +201,30 @@ def _process(process: subprocess.CompletedProcess[bytes], root: Path, result: st
 
 
 EXTRACTOR = r'''
-import hashlib, json, pickle, struct, sys
+import hashlib, io, json, pickle, struct, sys
+
+class RestrictedUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        raise pickle.UnpicklingError("globals are forbidden for candidate dictionary")
 
 names = json.loads(sys.argv[2])
 with open(sys.argv[1], "rb") as stream:
-    obj = pickle.load(stream)
+    payload = stream.read()
+obj = RestrictedUnpickler(io.BytesIO(payload)).load() if sys.argv[3] == "candidate" else pickle.loads(payload)
 if hasattr(obj, "the_data"):
     arrays = {name: obj.the_data.arrays.get(name) for name in names}
+    schema = {"kind": "PyBertData_class_pickle", "item_names": None, "array_keys": None}
 elif isinstance(obj, dict):
     arrays = obj.get("arrays", {})
+    schema = {
+        "kind": "python_pickle_dict",
+        "schema": obj.get("schema"),
+        "item_names": obj.get("item_names"),
+        "array_keys": sorted(arrays) if isinstance(arrays, dict) else None,
+    }
 else:
     arrays = {}
+    schema = {"kind": "unknown", "item_names": None, "array_keys": None}
 out = {}
 for name in names:
     value = arrays.get(name)
@@ -219,15 +244,16 @@ for name in names:
         "max_abs": max((abs(item) for item in values), default=0.0),
         "values": values,
     }
-print(json.dumps(out, sort_keys=True, separators=(",", ":")))
+print(json.dumps({"arrays": out, "artifact_schema": schema}, sort_keys=True, separators=(",", ":")))
 '''
 
 
-def _decode(uv: Path, upstream_root: Path, artifact_root: Path, relative: str) -> dict[str, Any]:
+def _decode(uv: Path, upstream_root: Path, artifact_root: Path, relative: str, mode: str, env: dict[str, str]) -> dict[str, Any]:
     artifact_path = (artifact_root / _safe_relative(relative)).resolve()
     process = subprocess.run(
-        [str(uv), "run", "--project", str(upstream_root), "--frozen", "python", "-c", EXTRACTOR, str(artifact_path), json.dumps(ARRAY_NAMES)],
+        [str(uv), "run", "--project", str(upstream_root), "--frozen", "python", "-c", EXTRACTOR, str(artifact_path), json.dumps(ARRAY_NAMES), mode],
         cwd=upstream_root,
+        env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
@@ -239,7 +265,7 @@ def _decode(uv: Path, upstream_root: Path, artifact_root: Path, relative: str) -
         summary = json.loads(process.stdout.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise RuntimeError("pickle extraction returned invalid JSON") from error
-    if not isinstance(summary, dict):
+    if not isinstance(summary, dict) or not isinstance(summary.get("arrays"), dict):
         raise RuntimeError("pickle extraction returned a non-object")
     return summary
 
@@ -256,86 +282,181 @@ def _compare(oracle: dict[str, Any], candidate: dict[str, Any]) -> dict[str, Any
         if left.get("length") != right.get("length"):
             blockers.append(f"{name}: length drift")
             continue
-        values = [abs(a - b) for a, b in zip(left["values"], right["values"])]
+        left_values = left.get("values", [])
+        right_values = right.get("values", [])
+        if not all(math.isfinite(value) for value in [*left_values, *right_values]):
+            blockers.append(f"{name}: non-finite numeric payload")
+            continue
+        values = [abs(a - b) for a, b in zip(left_values, right_values)]
         max_abs = max(values, default=0.0)
         scale = max(float(left.get("max_abs", 0.0)), float(right.get("max_abs", 0.0)), 1.0)
         tolerance = 1.0e-7 + 1.0e-6 * scale
         passed = max_abs <= tolerance
         if not passed:
             blockers.append(f"{name}: max_abs={max_abs} > tolerance={tolerance}")
-        rows.append({"name": name, "length": left["length"], "max_abs": max_abs, "tolerance": tolerance, "passed": passed})
-    return {"status": "passed" if not blockers else "blocked", "arrays": rows, "blockers": blockers}
+        rows.append({"name": name, "length": left["length"], "max_abs": max_abs, "scale": scale, "tolerance": tolerance, "passed": passed})
+    return {
+        "status": "passed" if not blockers else "blocked",
+        "policy": {"absolute_tolerance": 1.0e-7, "relative_scale": 1.0e-6, "formula": "absolute_tolerance + relative_scale * scale"},
+        "arrays": rows,
+        "blockers": blockers,
+    }
+
+
+def _binary_path(target: Path) -> Path:
+    return target / "release" / ("sipi-pybert-direct.exe" if os.name == "nt" else "sipi-pybert-direct")
+
+
+def _source_facts(root: Path, info: dict[str, str]) -> dict[str, Any]:
+    return {
+        **info,
+        "inventory": _inventory(root, (CRATE_RELATIVE.as_posix(),)),
+        "cargo_lock_sha256": custody._file_digest(root / CRATE_RELATIVE / "Cargo.lock"),
+        "rust_toolchain_sha256": custody._file_digest(root / "rust-toolchain.toml"),
+    }
+
+
+def _upstream_facts(root: Path, info: dict[str, str]) -> dict[str, Any]:
+    return {
+        **info,
+        "inventory": _inventory(root, UPSTREAM_FACT_PATHS),
+        "uv_lock_sha256": custody._file_digest(root / "uv.lock"),
+        "license_sha256": custody._file_digest(root / "LICENSE"),
+    }
+
+
+def _run_one(
+    *, run_root: Path, candidate_root: Path, upstream_root: Path, fixture: Path,
+    cargo: Path, rustc: Path, uv: Path, timeout: int,
+) -> dict[str, Any]:
+    target = run_root / "candidate-target"
+    target.mkdir()
+    build_env = custody._execution_env(rustc)
+    build_env["CARGO_TARGET_DIR"] = str(target)
+    build = custody._run(
+        [str(cargo), "build", "--manifest-path", str(candidate_root / CRATE_RELATIVE / "Cargo.toml"), "--release", "--locked"],
+        cwd=candidate_root, env=build_env, timeout=timeout,
+    )
+    binary = _binary_path(target)
+    build_summary = {
+        "exit_code": build.returncode,
+        "stdout_sha256": _sha256(build.stdout),
+        "stderr_sha256": _sha256(build.stderr),
+        "binary_sha256": custody._file_digest(binary),
+        "binary_bytes": binary.stat().st_size if binary.is_file() else None,
+    }
+    candidate_result = run_root / "candidate-result.pybert_data"
+    oracle_result = run_root / "oracle-result.pybert_data"
+    if build.returncode == 0 and binary.is_file():
+        candidate_process = custody._run(
+            [str(binary), "sim", str(fixture), "--results", str(candidate_result)],
+            cwd=candidate_root, env=custody._execution_env(rustc), timeout=timeout,
+        )
+        candidate_summary = _process(candidate_process, run_root, candidate_result.name)
+    else:
+        candidate_process = None
+        candidate_summary = {"exit_code": None, "skipped": True, "artifact": {"present": False, "path": candidate_result.name}}
+
+    oracle_fixture = upstream_root / "oracle-input.yaml"
+    oracle_env = custody._execution_env(rustc)
+    oracle_env["CARGO_TARGET_DIR"] = str(run_root / "upstream-target")
+    oracle_env["UV_PROJECT_ENVIRONMENT"] = str(run_root / "upstream-venv")
+    oracle_env["PATH"] = str(cargo.parent) + os.pathsep + oracle_env.get("PATH", "")
+    oracle_process = custody._run(
+        [str(uv), "run", "--project", str(upstream_root), "--frozen", "pybert", "sim", str(oracle_fixture), "--results", str(oracle_result)],
+        cwd=upstream_root, env=oracle_env, timeout=timeout,
+    )
+    oracle_summary = _process(oracle_process, run_root, oracle_result.name)
+    schema: dict[str, Any] | None = None
+    if candidate_process is None or candidate_process.returncode != 0 or oracle_process.returncode != 0:
+        comparison = {
+            "status": "blocked",
+            "policy": {"absolute_tolerance": 1.0e-7, "relative_scale": 1.0e-6, "formula": "absolute_tolerance + relative_scale * scale"},
+            "arrays": [],
+            "blockers": ["one replay exited non-zero"],
+        }
+    else:
+        candidate_decoded = _decode(uv, upstream_root, run_root, candidate_result.name, "candidate", oracle_env)
+        oracle_decoded = _decode(uv, upstream_root, run_root, oracle_result.name, "oracle", oracle_env)
+        schema = candidate_decoded["artifact_schema"]
+        comparison = _compare(oracle_decoded["arrays"], candidate_decoded["arrays"])
+        expected = list(CANONICAL_ITEM_NAMES)
+        if schema != {
+            "kind": "python_pickle_dict",
+            "schema": "sipi.pybert_data.v1",
+            "item_names": expected,
+            "array_keys": sorted(expected),
+        }:
+            comparison["status"] = "blocked"
+            comparison["blockers"].append("candidate artifact is not the exact canonical 23-key dictionary")
+    return {
+        "build": build_summary,
+        "candidate": candidate_summary,
+        "oracle": oracle_summary,
+        "candidate_artifact_schema": schema,
+        "comparison": comparison,
+    }
 
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
-    fixture = args.fixture.resolve()
     candidate_repo = args.candidate_repo.resolve()
     upstream_repo = args.upstream_repo.resolve()
-    if not fixture.is_file():
-        raise RuntimeError("fixture must be a regular file")
-    candidate_commit, candidate_tree = _commit_tree(candidate_repo, args.candidate_commit)
+    fixture_relative = custody._safe_fixture_relative(args.fixture)
+    toolchain, tools = custody._runtime_toolchain_identity(args.cargo, args.uv, args.timeout_seconds)
+    candidate_commit, _ = _commit_tree(candidate_repo, args.candidate_commit)
     upstream_commit, upstream_tree = _commit_tree(upstream_repo, args.upstream_commit)
     if (upstream_commit, upstream_tree) != (EXPECTED_UPSTREAM_COMMIT, EXPECTED_UPSTREAM_TREE):
         raise RuntimeError("upstream commit/tree is not pinned")
-    uv_identity, uv = _runtime_identity(str(args.uv), "uv", ("--version",))
-    candidate_identity, candidate_executable = _runtime_identity(str(args.candidate_executable), "candidate", ("--version",))
     work_parent = args.work_root.resolve() if args.work_root else Path(tempfile.mkdtemp(prefix="sipi-pb-01-leaf-"))
     work_parent.mkdir(parents=True, exist_ok=True)
     run_root = work_parent / args.run_id
+    if run_root.exists():
+        raise RuntimeError(f"run root already exists: {run_root}")
     run_root.mkdir()
     candidate_root, upstream_root = run_root / "candidate", run_root / "upstream"
     candidate_info = _materialize(candidate_repo, candidate_commit, candidate_root)
     upstream_info = _materialize(upstream_repo, upstream_commit, upstream_root)
-    candidate_fixture = _copy_fixture(fixture, candidate_root)
-    upstream_fixture = _copy_fixture(fixture, upstream_root)
-    candidate_result, oracle_result = "candidate-result.pybert_data", "oracle-result.pybert_data"
-    candidate_process = subprocess.run(
-        [str(candidate_executable), "sim", candidate_fixture["path"], "--results", candidate_result],
-        cwd=candidate_root,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=args.timeout_seconds,
-        check=False,
+    candidate_facts = _source_facts(candidate_root, candidate_info)
+    upstream_facts = _upstream_facts(upstream_root, upstream_info)
+    fixture, payload = custody._read_archived_fixture(candidate_root, fixture_relative)
+    if fixture.suffix not in {".yaml", ".yml"}:
+        raise RuntimeError("PB-01 scoped leaf fixture must be YAML")
+    (upstream_root / "oracle-input.yaml").write_bytes(payload)
+    replay = _run_one(
+        run_root=run_root, candidate_root=candidate_root, upstream_root=upstream_root,
+        fixture=fixture, cargo=tools["cargo"], rustc=tools["rustc"], uv=tools["uv"], timeout=args.timeout_seconds,
     )
-    oracle_process = subprocess.run(
-        [str(uv), "run", "--project", str(upstream_root), "--frozen", "pybert", "sim", upstream_fixture["path"], "--results", oracle_result],
-        cwd=upstream_root,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=args.timeout_seconds,
-        check=False,
-    )
-    candidate = _process(candidate_process, candidate_root, candidate_result)
-    oracle = _process(oracle_process, upstream_root, oracle_result)
-    if candidate_process.returncode != 0 or oracle_process.returncode != 0:
-        comparison = {"status": "blocked", "arrays": [], "blockers": ["one replay exited non-zero"]}
-    else:
-        oracle_arrays = _decode(uv, upstream_root, upstream_root, oracle_result)
-        candidate_arrays = _decode(uv, upstream_root, candidate_root, candidate_result)
-        comparison = _compare(oracle_arrays, candidate_arrays)
+    runner_path = Path(__file__).resolve()
+    custody_runner_path = Path(custody.__file__).resolve()
     report = {
         "schema": "sipi.pb-01-legacy-leaf-replay.v1",
-        "status": "passed" if comparison["status"] == "passed" else "blocked",
+        "status": "passed" if replay["comparison"]["status"] == "passed" else "blocked",
         "run_id": args.run_id,
         "fresh_run_nonce": secrets.token_hex(32),
         "source_mode": "git_archive_at_immutable_commit",
-        "candidate": {**candidate_info, "inventory": _inventory(candidate_root, (str(CRATE_RELATIVE),))},
-        "upstream": {**upstream_info, "inventory": _inventory(upstream_root, UPSTREAM_FACT_PATHS)},
-        "fixture": {"candidate": candidate_fixture, "upstream": upstream_fixture},
-        "runtime": {"uv": uv_identity, "candidate": candidate_identity},
-        "oracle": oracle,
-        "candidate_run": candidate,
-        "comparison": comparison,
+        "candidate": candidate_facts,
+        "upstream": upstream_facts,
+        "fixture": {"path": fixture_relative.as_posix(), "bytes": len(payload), "sha256": _sha256(payload)},
+        "toolchain": toolchain,
+        "harness": {
+            "source_mode": "content_addressed_working_tree_files",
+            "runner": {"path": "tools/run_pb_01_legacy_leaf_replay.py", "sha256": _file_sha256(runner_path)},
+            "custody_runner_helper": {"path": "tools/run_pb_02_direct_replay.py", "sha256": _file_sha256(custody_runner_path)},
+        },
+        "replay": replay,
+        "reproducibility": {"binary_bit_reproducible": False},
         "artifact_contract": {
             "result_suffix": ".pybert_data",
             "selected_arrays": list(ARRAY_NAMES),
+            "canonical_item_names": list(CANONICAL_ITEM_NAMES),
+            "array_key_policy": "exact_set_equal_to_canonical_item_names",
             "rust_codec": "python_pickle_dict_sipi.pybert_data.v1",
             "upstream_codec": "PyBertData_pickle",
         },
         "non_claims": [
-            "This is a scoped NRZ analytic-metallic-line leaf, not complete PyBERT branch parity.",
+            "This is one scoped NRZ analytic-metallic-line 23-key dictionary leaf, not complete PyBERT branch parity.",
             "The Rust artifact is a Python-readable canonical-item dictionary, not a PyBertData class-compatible pickle.",
-            "Imported S2P, .pybert_cfg pickle input, AMI/IBIS, adaptive DFE/Viterbi, jitter, eye, and bathtub branches remain open.",
+            "Imported S2P, .pybert_cfg pickle input, AMI/IBIS, periodic/random noise, adaptive DFE/Viterbi, and jitter/eye/bathtub branches remain open.",
             "The external Python invocation is oracle evidence only; the Rust candidate does not call Python at runtime.",
             "This report is not a license decision, product admission, release approval, or redistribution authorization.",
         ],
@@ -351,11 +472,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--candidate-repo", type=Path, default=ROOT)
     parser.add_argument("--candidate-commit", required=True)
-    parser.add_argument("--candidate-executable", type=Path, required=True)
     parser.add_argument("--upstream-repo", type=Path, default=DEFAULT_UPSTREAM)
     parser.add_argument("--upstream-commit", default=EXPECTED_UPSTREAM_COMMIT)
-    parser.add_argument("--fixture", type=Path, required=True)
-    parser.add_argument("--uv", default="uv")
+    parser.add_argument("--fixture", type=Path, default=FIXTURE_RELATIVE)
+    parser.add_argument("--cargo", default=os.environ.get("CARGO", "cargo"))
+    parser.add_argument("--uv", default=os.environ.get("UV", "uv"))
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--work-root", type=Path)
@@ -365,7 +486,7 @@ def main() -> int:
     try:
         report = run(args)
     except (OSError, RuntimeError, subprocess.SubprocessError) as error:
-        print(json.dumps({"status": "blocked", "error": str(error)}))
+        print(json.dumps({"status": "blocked", "error": str(error)}), file=sys.stderr)
         return 2
     print(json.dumps({"status": report["status"], "report": str(args.report)}, sort_keys=True))
     return 0 if report["status"] == "passed" else 1

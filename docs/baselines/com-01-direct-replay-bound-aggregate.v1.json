@@ -1,0 +1,114 @@
+{
+  "artifact_policy": "hashes_counts_error_categories_and_bounded_difference_keys_only",
+  "binary_bit_reproducible": false,
+  "blockers": [],
+  "candidate_static_identity": {
+    "archive_sha256": "47b4353dd79dbf55cfd6fc75c3db469c6b12ee0a00f99af5ac1fcdb598711c4e",
+    "build_log_policy": "stable_event_categories",
+    "build_stderr_sha256": "fb4f3e14f96262b323bc66d8d6fad1b602187c0a7f6c697b72fa0159e35272c8",
+    "build_stdout_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "cargo_lock_sha256": "7aad4efa1574a3108cd7bb7c05a01ebfe12b1ee1f82aa97029012cf0cda7a19f",
+    "commit": "8bcfd1d1bc511461615f19338e453f0148e5dcb1",
+    "inventory": {
+      "file_count": 17,
+      "sha256": "3d92e71ce173edd76ded1e45f209b8c40fb1760092227bd22e476bbcde19f478",
+      "total_bytes": 255043
+    },
+    "source_date_epoch": "1787428585",
+    "tree": "ed221a36f2d3325b0aac3f3336a9c8a14d13e99a"
+  },
+  "fingerprint_drift_count": 1,
+  "fixtures": [
+    {
+      "bytes": 63311,
+      "extension": ".xlsx",
+      "role": "primary_xlsx",
+      "sha256": "f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9"
+    },
+    {
+      "bytes": 4600,
+      "extension": ".csv",
+      "role": "package_warning_csv",
+      "sha256": "ebf22813b12e12d73bef253197eb747ac71db0bee4aee86a130fcba92dbaf295"
+    }
+  ],
+  "harness": {
+    "corpus_sha256": "f97460d56c39514bf8753673b29edb855f251244161331b703a7696590cbf1c6",
+    "diagnostic_path_normalization": "redacted_before_hash",
+    "orchestration_runner_sha256": "bef7d2e9d3cc67af60e64e23714fffd3b69b88f394a915babc5577ea206243e4",
+    "process_timeout_seconds": 300,
+    "scenario_count": 14,
+    "scenario_set_sha256": "abcb4cdecfb67f5de13439baec64cf45f752bc76a7765ace7434b2874523fa96",
+    "semantic_runner_sha256": "6d84145b661570f9aa5fac5ea730063201fe4eea8cb03fde0ea722e2a5809baa"
+  },
+  "non_claims": [
+    "no_complete_com_parity",
+    "no_global_migration_row_close",
+    "no_product_capability_promotion",
+    "no_release_readiness",
+    "no_configuration_value_payloads_committed",
+    "no_bit_reproducible_binary_claim"
+  ],
+  "outcomes": {
+    "error_code_match": 7,
+    "passed": 6,
+    "values_equal_fingerprint_drift": 1
+  },
+  "reports": [
+    {
+      "candidate_binary_sha256": "f79ddaf498f102a7a2258f3ff0950399178bd7038c42dede460edb2a47428663",
+      "fresh_run_nonce": "bb04623d5cabe70a97bae9a8cf0589b39babb39674b04aaa05681e29ab7fb904",
+      "path": "docs/baselines/com-01-direct-replay-bound-run1.v1.json",
+      "run_id": "com-01-bound-01",
+      "sha256": "ef71aa61934c161118101b0511cf823eacdc306aff0a098c120c2749b327c8ee"
+    },
+    {
+      "candidate_binary_sha256": "5b3961bf85f3c103ca18174d87947d0b6dd800587b745e65b790f03cc2ba76ed",
+      "fresh_run_nonce": "12d5f19c83f661faea62d4fe3721bb4ee35cc71aeb5524c17295a9b0696b6586",
+      "path": "docs/baselines/com-01-direct-replay-bound-run2.v1.json",
+      "run_id": "com-01-bound-02",
+      "sha256": "48c95080e040630f97e5f3a3682611fa1c0421d9ba71a29dd1b0f2275448407b"
+    }
+  ],
+  "scenario_summaries_sha256": "4b993ff38eb8941d02714868d3a39fe4d8f61705b0151216e73e6a4636d3bb8c",
+  "schema": "sipi.com-01-direct-replay-aggregate.v1",
+  "status": "open_differential_mismatch_fingerprint_only",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a"
+    },
+    "python": {
+      "executable": "python.exe",
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "path_redacted": true,
+      "role": "python",
+      "version_exit_code": 0,
+      "version_output_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "timeout_seconds": 300
+  },
+  "upstream": {
+    "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "inventory": {
+      "file_count": 70,
+      "sha256": "1cd0366c0d1cb7e14678ccfc5671918d6a36f8f993896aa2b4729fec487b621e",
+      "total_bytes": 1006648
+    },
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+  },
+  "values_aligned": true
+}

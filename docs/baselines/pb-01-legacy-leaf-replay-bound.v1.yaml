@@ -1,0 +1,84 @@
+schema: sipi.pb-01-legacy-leaf-replay-bound.v1
+status: accepted_scoped_23_key_leaf
+date: 2026-08-23
+scope:
+  workflow: PB-01
+  command: sim
+  fixture: crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml
+  claim: scoped_nrz_analytic_metallic_line_pickle_dictionary_leaf
+relationship:
+  predecessor_evidence: docs/baselines/pb-01-legacy-leaf.v1.yaml
+  supersedes: pending_immutable_replay_status_only
+  preserves_branch_default_error_artifact_inventory: true
+candidate:
+  commit: 8bcfd1d1bc511461615f19338e453f0148e5dcb1
+  tree: ed221a36f2d3325b0aac3f3336a9c8a14d13e99a
+  archive_sha256: 47b4353dd79dbf55cfd6fc75c3db469c6b12ee0a00f99af5ac1fcdb598711c4e
+  inventory_sha256: 338c2b1d8af8598a29b2dca1e86c864d75c8ee6a587ba3adf05f495968ff6613
+upstream:
+  commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  archive_sha256: e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25
+  inventory_sha256: 60550ce1cbb83fdf481e6cd2534b7063c684df3c6094838d2f4b6c1714776ed1
+  license_sha256: 4ca68aea5b8f43e0d7337b182fbc277e02dae37d85b04196d92a80e9344926c1
+fixture:
+  bytes: 1171
+  sha256: d63bb7ab3466ae70406cd2a555ae5a95cda1264021fed8fb1cdca85da961cc48
+artifact:
+  codec: python_pickle_dict_sipi.pybert_data.v1
+  item_name_count: 23
+  array_key_policy: exact_set_equal_to_canonical_item_names
+  selected_numeric_array_count: 12
+  comparison_status: passed
+  tolerance:
+    absolute: 1.0e-7
+    relative_scale: 1.0e-6
+    formula: absolute_tolerance + relative_scale * scale
+reproducibility:
+  source_mode: content_addressed_working_tree_files
+  binary_bit_reproducible: false
+replays:
+  - path: docs/baselines/pb-01-legacy-leaf-replay-bound-run-01.v1.json
+    sha256: b92a2529fc40b963b027dff33f759754b91c212f9accf442c1946e6387845ef2
+    run_id: pb-01-bound-03
+    fresh_run_nonce: 9ef349580bb8156e10db58339cfc155008c3dc3bb22c90a75d58cb6286ac3bf9
+  - path: docs/baselines/pb-01-legacy-leaf-replay-bound-run-02.v1.json
+    sha256: 34b10f99352408aa68c600e9d399fa456d64073967b4b661a399bd2a5203e53a
+    run_id: pb-01-bound-04
+    fresh_run_nonce: f1e58ffd954bdc9e0b57a41e36849a25a59a1a6e00d36bfa30d8181d560227e3
+aggregate:
+  path: docs/baselines/pb-01-legacy-leaf-replay-bound-aggregate.v1.json
+  sha256: 3a0bf1317aaf5c9352cbd53f99a3df90df92bba147bcb5904a2b15df9c6a0fff
+  schema: sipi.pb-01-legacy-leaf-replay-aggregate.v1
+  status: passed
+tools:
+  runner:
+    path: tools/run_pb_01_legacy_leaf_replay.py
+    sha256: c8ab583732d95228a3ecab9ad7e0f109857a8de90371b7ba42b5335dc7329795
+  aggregator:
+    path: tools/aggregate_pb_01_legacy_leaf_replay.py
+    sha256: e0859087012d8b0481c2ced08e7550b362021287a066733b4617b8eb3a6a8c29
+  custody_runner_helper:
+    path: tools/run_pb_02_direct_replay.py
+    sha256: 6c6a777a2e616e5778eaa7f396ba173791c67381d81cf00b473f87efb2553d0f
+  custody_aggregate_helper:
+    path: tools/aggregate_pb_02_direct_replay.py
+    sha256: 04a2d35fd7f1df1fc3728c0918fc752980b0e7c718eedf5a0285ff0bae24043a
+audit:
+  path: docs/baselines/audits/2026-08-23-pb-01-legacy-leaf-replay-bound.md
+  sha256: c40f8294ea325b023568fa3e8fe58641de0d0a14af9cea81ec3164151852dc60
+claims:
+  scoped_23_key_dictionary_leaf: true
+  exact_PyBertData_class_pickle: false
+  branch_complete: false
+  product_capability_admission: false
+  license_decision: false
+  release_approval: false
+open_branches:
+  - imported_S2P
+  - pybert_cfg_pickle_input
+  - AMI_and_IBIS_models
+  - periodic_and_random_noise
+  - adaptive_DFE_and_Viterbi
+  - jitter_eye_and_bathtub_analysis
+  - exact_PyBertData_class_pickle

@@ -1,0 +1,96 @@
+schema: sipi.agent-spice-as-01-fit-sparam-bound.v2
+status: completed_numeric_mismatch
+scope:
+  work_item: AS-01
+  upstream_entrypoint: fit-sparam
+  bounded_leaf: two_port_fitted_touchstone_json_log
+  custody_valid: true
+  numeric_mismatch_open: true
+  parity_claim: false
+  acceptance_tolerance: null
+  migration_row_closed: false
+  product_capability_promoted: false
+sources:
+  candidate:
+    commit: 8bcfd1d1bc511461615f19338e453f0148e5dcb1
+    tree: ed221a36f2d3325b0aac3f3336a9c8a14d13e99a
+    archive_sha256: aceb1c2c5498baa8424c0d28af759cc98e7f0b430912a889836157976b8e7276
+    inventory_sha256: 93c6806627f66ecac6274849df5b5d366331461d6f7b0a5b28a3e2debafb6fc5
+    cargo_lock_sha256: 7d1acce2bffd2ed3fcbf0ddb793fa1410123d1cbde7a7778a11bca43e78fe342
+    binary_sha256: a632369a302124efaba3d3a684c2a99c7d976245737fb7fe260efce0e4ba07c3
+  upstream:
+    commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+    tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+    archive_sha256: 282265e1c7b987407875a5c77fd1f2f0542cea9487407bb14b967a97b1ad6128
+    inventory_sha256: fbb2ef16cae6b23634fb2afc2d0394265ee0e99250650d03aa11773aff2c6622
+    license_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+harness:
+  source_mode: content_addressed_worktree_pending_owner_commit
+  runner:
+    path: tools/run_as_01_fit_sparam_bound.py
+    bytes: 32721
+    sha256: 308a7bb462b17bf31ca5b6e3dc482358d4434980ce56a8522fce8166516e152a
+    git_blob_sha1: 5c01016735a8a36d2c681c5701c48c5feaac019e
+  aggregator:
+    path: tools/aggregate_as_01_fit_sparam_bound.py
+    sha256: 5abb8b1ade63d867aaf967e1d68b0cad578d6f5213815c17da369ce5108e273f
+    git_blob_sha1: a381de12c82b54e92ade50343c09e98fd1868e99
+  oracle_lock:
+    path: docs/baselines/as-01-agent-spice-oracle-windows-py312.lock
+    bytes: 59090
+    sha256: 06df254491d64ba2dc870e2807b34b44fbacb36c17f88e7caeb09bbead43dabd
+    git_blob_sha1: 1851fb0e80ab9a9ea0d1ce09cb6f49c416e1e0b0
+    require_hashes: true
+  archived_preparation_runner:
+    path: tools/run_as_01_fit_sparam_oracle.py
+    sha256: 877336159f0680d3e49b6ddb11a560964dc23af7f292007f4aecdc09fb0a1c34
+  fixture_sha256: c10ebbb82a3cee4918831e11abe9e318df673d11c256bd114e1aed49eeb9b257
+  scenario_set_sha256: ceebf8f1e89cc134d62afa551cc3e6a2e2e20d20f50739c09cd9b34951c9db3f
+  comparison_sha256: df8f88848a201c07d891dbc5aec9d5007e408363f0df7179976cad9b53745be6
+formal_reports:
+  - path: docs/baselines/as-01-fit-sparam-bound-run-01.v1.json
+    sha256: 81d54d64b8880add9b11788e8cca158092f2fffd417fc846279bc83b4751a0b8
+    run_id: as01-bound-20260823-01
+    fresh_run_nonce: 4fab0a10a7390d99e5ada060a7e5b9701818e2e87741ac389fafaf3fda8b9e8b
+  - path: docs/baselines/as-01-fit-sparam-bound-run-02.v1.json
+    sha256: c01d070881f874711c96d1a4782068279a4fbc50ba71faee5a10ee40a4bb1c6c
+    run_id: as01-bound-20260823-02
+    fresh_run_nonce: 1f3160abfd337bc619f1d7a14f7936d1fce098d5392147ac539fee127b2a9b01
+aggregate:
+  path: docs/baselines/as-01-fit-sparam-bound-aggregate.v1.json
+  sha256: f7067810af8455fb2c1a861f3e73c8e03f95ff5acb210b4ce15fa80220886fec
+  status: completed_numeric_mismatch
+semantic_observation:
+  scenario_count: 10
+  numerical_scenarios: [full_band_defaults, priority_band_only, target_failure_and_success]
+  duplicate_noncoverage:
+    target_failure_and_success: duplicate_of_full_band_defaults
+  common_leaf:
+    upstream_report_rms: 0.030266038995446727
+    candidate_report_rms: 0.37790224348580714
+    report_rms_abs_delta: 0.3476362044903604
+    upstream_independent_touchstone_rms: 0.030266038995446727
+    candidate_independent_touchstone_rms: 0.18895112174290357
+    upstream_sampled_sigma_max: 0.5
+    candidate_sampled_sigma_max: 0.566611420285334
+    frequency_f64_sha256: 99ea2084035238e80f7016fea5a8b676009a619c98d0bd52e910a9d5038cb11c
+    upstream_fitted_touchstone_logical_sha256: 59cbd8308a38a5e40c5613af23906327c4d61bcdb94dbee14883dcee73279bca
+    candidate_fitted_touchstone_logical_sha256: 794b0107158330bf1d4d62cf1e8ad8141b8a366f047c480659b7e056960e9d0b
+  excluded_upstream_only_artifacts: [spice_subcircuit, rfm, rfm_wrapper, html_report]
+supersession:
+  prior_manifest: docs/baselines/as-01-fit-sparam-direct-port.v1.yaml
+  supersedes_preparation_only: true
+  supersedes_no_external_oracle_evidence_for_this_bounded_corpus_only: true
+  does_not_supersede_open_migration_or_non_parity_claims: true
+audit:
+  path: docs/baselines/audits/2026-08-23-as-01-fit-sparam-bound.md
+  sha256: 83d0d91c8115e532bcc5377c745e6cd1bf4a5939e55c81ba20c1113b7befbce6
+non_claims:
+  - no_complete_fit_sparam_parity
+  - no_acceptance_tolerance
+  - no_continuous_passivity_claim
+  - no_upstream_only_artifact_parity
+  - no_product_capability_promotion
+  - no_migration_row_close
+  - no_release_approval
+  - no_license_admission_change

@@ -1,0 +1,655 @@
+{
+  "artifact_policy": "hashes_counts_error_categories_and_bounded_difference_keys_only",
+  "candidate": {
+    "archive_sha256": "47b4353dd79dbf55cfd6fc75c3db469c6b12ee0a00f99af5ac1fcdb598711c4e",
+    "binary_sha256": "f79ddaf498f102a7a2258f3ff0950399178bd7038c42dede460edb2a47428663",
+    "build_log_policy": "stable_event_categories",
+    "build_stderr_sha256": "fb4f3e14f96262b323bc66d8d6fad1b602187c0a7f6c697b72fa0159e35272c8",
+    "build_stdout_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "cargo_lock_sha256": "7aad4efa1574a3108cd7bb7c05a01ebfe12b1ee1f82aa97029012cf0cda7a19f",
+    "commit": "8bcfd1d1bc511461615f19338e453f0148e5dcb1",
+    "inventory": {
+      "file_count": 17,
+      "sha256": "3d92e71ce173edd76ded1e45f209b8c40fb1760092227bd22e476bbcde19f478",
+      "total_bytes": 255043
+    },
+    "source_date_epoch": "1787428585",
+    "tree": "ed221a36f2d3325b0aac3f3336a9c8a14d13e99a"
+  },
+  "fingerprint_drift_count": 1,
+  "fixtures": [
+    {
+      "bytes": 63311,
+      "extension": ".xlsx",
+      "role": "primary_xlsx",
+      "sha256": "f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9"
+    },
+    {
+      "bytes": 4600,
+      "extension": ".csv",
+      "role": "package_warning_csv",
+      "sha256": "ebf22813b12e12d73bef253197eb747ac71db0bee4aee86a130fcba92dbaf295"
+    }
+  ],
+  "fresh_run_nonce": "bb04623d5cabe70a97bae9a8cf0589b39babb39674b04aaa05681e29ab7fb904",
+  "harness": {
+    "corpus_sha256": "f97460d56c39514bf8753673b29edb855f251244161331b703a7696590cbf1c6",
+    "diagnostic_path_normalization": "redacted_before_hash",
+    "orchestration_runner_sha256": "bef7d2e9d3cc67af60e64e23714fffd3b69b88f394a915babc5577ea206243e4",
+    "process_timeout_seconds": 300,
+    "scenario_count": 14,
+    "scenario_set_sha256": "abcb4cdecfb67f5de13439baec64cf45f752bc76a7765ace7434b2874523fa96",
+    "semantic_runner_sha256": "6d84145b661570f9aa5fac5ea730063201fe4eea8cb03fde0ea722e2a5809baa"
+  },
+  "non_claims": [
+    "no_complete_com_parity",
+    "no_global_migration_row_close",
+    "no_product_capability_promotion",
+    "no_release_readiness",
+    "no_configuration_value_payloads_committed"
+  ],
+  "outcomes": {
+    "error_code_match": 7,
+    "passed": 6,
+    "values_equal_fingerprint_drift": 1
+  },
+  "run_id": "com-01-bound-01",
+  "scenarios": [
+    {
+      "candidate_error_category": null,
+      "candidate_exit": 0,
+      "candidate_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "r480",
+        "projection_sha256": "36b6ee0f4f461eb051d539e7ab7a8187b0789a24c00409b8824391d43c8cb558",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "comparison": "passed",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "xlsx_json_default_r480",
+      "oracle_error_category": null,
+      "oracle_exit": 0,
+      "oracle_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "r480",
+        "projection_sha256": "36b6ee0f4f461eb051d539e7ab7a8187b0789a24c00409b8824391d43c8cb558",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": null,
+      "candidate_exit": 0,
+      "candidate_summary": {
+        "stdout_bytes": 46,
+        "stdout_sha256": "a7e4fa38f3a9ffc563554f0e9a4bbcbbe04d6fab79c087e46b3e73494710246d"
+      },
+      "comparison": "passed",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "xlsx_text_default_r480",
+      "oracle_error_category": null,
+      "oracle_exit": 0,
+      "oracle_summary": {
+        "stdout_bytes": 46,
+        "stdout_sha256": "a7e4fa38f3a9ffc563554f0e9a4bbcbbe04d6fab79c087e46b3e73494710246d"
+      },
+      "output": "text",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": null,
+      "candidate_exit": 0,
+      "candidate_summary": {
+        "consumption_summary": {
+          "status_counts": {
+            "implemented": {
+              "options": 63,
+              "parameters": 133,
+              "total": 196
+            },
+            "obsolete": {
+              "options": 5,
+              "parameters": 10,
+              "total": 15
+            },
+            "report_only": {
+              "options": 21,
+              "parameters": 5,
+              "total": 26
+            },
+            "unimplemented": {
+              "options": 1,
+              "parameters": 0,
+              "total": 1
+            },
+            "unverified": {
+              "options": 0,
+              "parameters": 0,
+              "total": 0
+            }
+          },
+          "total": 238
+        },
+        "materialized": {
+          "option_count": 90,
+          "option_keys_sha256": "db2dcb5e7d9b32ee6d2c55e905fe22d28a744581c8c3a88757754b61cfbd0137",
+          "parameter_count": 148,
+          "parameter_keys_sha256": "0d5ac58e2807c5cda038371fcb4f3b689359a393fe0053c6f9773927227ad870"
+        },
+        "materialized_fingerprint": "2d0791ee45451a46093e3318c16d3c3b3797ef3fecb687fa56db84aaa8ef7532",
+        "projection_sha256": "9d5ce30e6d90812ea7edfc9212c531a4b400194af70ead78cc38ffea40b47c45",
+        "schema_version": 1,
+        "top_level_keys": [
+          "config",
+          "config_consumption",
+          "execution",
+          "materialized",
+          "materialized_fingerprint",
+          "schema_version",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "comparison": "values_equal_fingerprint_drift",
+      "difference_keys": [],
+      "fingerprint_match": false,
+      "fixture_role": "primary_xlsx",
+      "id": "xlsx_materialized_json_default",
+      "oracle_error_category": null,
+      "oracle_exit": 0,
+      "oracle_summary": {
+        "consumption_summary": {
+          "status_counts": {
+            "implemented": {
+              "options": 63,
+              "parameters": 133,
+              "total": 196
+            },
+            "obsolete": {
+              "options": 5,
+              "parameters": 10,
+              "total": 15
+            },
+            "report_only": {
+              "options": 21,
+              "parameters": 5,
+              "total": 26
+            },
+            "unimplemented": {
+              "options": 1,
+              "parameters": 0,
+              "total": 1
+            },
+            "unverified": {
+              "options": 0,
+              "parameters": 0,
+              "total": 0
+            }
+          },
+          "total": 238
+        },
+        "materialized": {
+          "option_count": 90,
+          "option_keys_sha256": "db2dcb5e7d9b32ee6d2c55e905fe22d28a744581c8c3a88757754b61cfbd0137",
+          "parameter_count": 148,
+          "parameter_keys_sha256": "0d5ac58e2807c5cda038371fcb4f3b689359a393fe0053c6f9773927227ad870"
+        },
+        "materialized_fingerprint": "d6963c122533d58273e4ebf3224bade1dc38b040f740c1cd92d4c9727e4483dc",
+        "projection_sha256": "9305ec5f61f31bfb35dec92c91ecd886a0680a1180e58531da5bf9bc1f14f7b6",
+        "schema_version": 1,
+        "top_level_keys": [
+          "config",
+          "config_consumption",
+          "execution",
+          "materialized",
+          "materialized_fingerprint",
+          "schema_version",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "output": "materialized_json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": null,
+      "candidate_exit": 0,
+      "candidate_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "experimental_corrected",
+        "projection_sha256": "8859c9fec939865d8a8566ca8e4ae4edf7af77b5d438fc21462547d261e050ed",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "comparison": "passed",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "xlsx_experimental_corrected_profile",
+      "oracle_error_category": null,
+      "oracle_exit": 0,
+      "oracle_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "experimental_corrected",
+        "projection_sha256": "8859c9fec939865d8a8566ca8e4ae4edf7af77b5d438fc21462547d261e050ed",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": null,
+      "candidate_exit": 0,
+      "candidate_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "custom",
+        "projection_sha256": "e529b4d32331ad759fcedab142d720fdc05e323df373f46cae2b5f9c6d5f79ca",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "comparison": "passed",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "xlsx_custom_standard_reader",
+      "oracle_error_category": null,
+      "oracle_exit": 0,
+      "oracle_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "custom",
+        "projection_sha256": "e529b4d32331ad759fcedab142d720fdc05e323df373f46cae2b5f9c6d5f79ca",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": null,
+      "candidate_exit": 0,
+      "candidate_summary": {
+        "options": 90,
+        "package_blocks": 2,
+        "parameters": 148,
+        "profile": "r480",
+        "projection_sha256": "afb7a6522d8434f0414cfe9514b77e192d856241ac42e447bdc8de86f7d5380c",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": [
+          "R480-PKG-DUP-NAME"
+        ]
+      },
+      "comparison": "passed",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "package_warning_csv",
+      "id": "csv_package_warning_json_loader",
+      "oracle_error_category": null,
+      "oracle_exit": 0,
+      "oracle_summary": {
+        "options": 90,
+        "package_blocks": 2,
+        "parameters": 148,
+        "profile": "r480",
+        "projection_sha256": "afb7a6522d8434f0414cfe9514b77e192d856241ac42e447bdc8de86f7d5380c",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": [
+          "R480-PKG-DUP-NAME"
+        ]
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": null,
+      "candidate_exit": 0,
+      "candidate_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "custom",
+        "projection_sha256": "e529b4d32331ad759fcedab142d720fdc05e323df373f46cae2b5f9c6d5f79ca",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "comparison": "passed",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "xlsx_custom_fix_config_defaults",
+      "oracle_error_category": null,
+      "oracle_exit": 0,
+      "oracle_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "custom",
+        "projection_sha256": "e529b4d32331ad759fcedab142d720fdc05e323df373f46cae2b5f9c6d5f79ca",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": "argument_error",
+      "candidate_exit": 2,
+      "candidate_summary": {
+        "error_category": "argument_error",
+        "stderr_bytes": 83,
+        "stderr_sha256": "453347a91d36495bb9503edf090a6d98708fa598419364acf925ebb8ff829981",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "comparison": "error_code_match",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "mutually_exclusive_json_modes",
+      "oracle_error_category": "argument_error",
+      "oracle_exit": 2,
+      "oracle_summary": {
+        "error_category": "argument_error",
+        "stderr_bytes": 347,
+        "stderr_sha256": "3d11ab2ecf0682349c621229a36f9ce4ed4775145a174d8d1f492ecf1a45ff46",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "output": "json_and_materialized_json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": "profile_error",
+      "candidate_exit": 3,
+      "candidate_summary": {
+        "error_category": "profile_error",
+        "stderr_bytes": 73,
+        "stderr_sha256": "68ef45e782996207b6540473941b2c5abf20834b785fb7c4a7328f8991695c2d",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "comparison": "error_code_match",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "custom_profile_without_selector",
+      "oracle_error_category": "profile_error",
+      "oracle_exit": 3,
+      "oracle_summary": {
+        "error_category": "profile_error",
+        "stderr_bytes": 47,
+        "stderr_sha256": "c62d9db8fbf37be57cb20ea689f203760d3bfac4c3edf1fd5d61428fcc0a5104",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": "profile_error",
+      "candidate_exit": 3,
+      "candidate_summary": {
+        "error_category": "profile_error",
+        "stderr_bytes": 73,
+        "stderr_sha256": "cbbc66e5863fdce6dad8286c40a258a4a11c5f424936fc761ce93b4d0f209dcf",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "comparison": "error_code_match",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "reader_without_custom_profile",
+      "oracle_error_category": "profile_error",
+      "oracle_exit": 3,
+      "oracle_summary": {
+        "error_category": "profile_error",
+        "stderr_bytes": 47,
+        "stderr_sha256": "f2e9378a0a140d6c1bde9a3af14b7e8607f119b3ecd750640535ffdc67c7ba95",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": "profile_error",
+      "candidate_exit": 3,
+      "candidate_summary": {
+        "error_category": "profile_error",
+        "stderr_bytes": 71,
+        "stderr_sha256": "0ec9d59d9ca5a450c18d7ad0bfae2c890b0e5c56ec8698c42b9243567a02942a",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "comparison": "error_code_match",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "unknown_fix_id",
+      "oracle_error_category": "profile_error",
+      "oracle_exit": 3,
+      "oracle_summary": {
+        "error_category": "profile_error",
+        "stderr_bytes": 45,
+        "stderr_sha256": "d8ae1e3f85d978337b41685a3b587b0d389fed5b3a44f207ccfe71a28ae41687",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": "override_error",
+      "candidate_exit": 2,
+      "candidate_summary": {
+        "error_category": "override_error",
+        "stderr_bytes": 42,
+        "stderr_sha256": "5639a9c691cf89c521b858e7f5bc9a22f60e9ebc8f9e7e5fd52a5c86050562bf",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "comparison": "error_code_match",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "duplicate_override",
+      "oracle_error_category": "override_error",
+      "oracle_exit": 2,
+      "oracle_summary": {
+        "error_category": "override_error",
+        "stderr_bytes": 24,
+        "stderr_sha256": "35580f0dffeb19d801c8c23f4cb17aac3abe60e28cc29101ce465f2520714168",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": "unsupported_path",
+      "candidate_exit": 3,
+      "candidate_summary": {
+        "error_category": "unsupported_path",
+        "stderr_bytes": 77,
+        "stderr_sha256": "d50de239486fea93403c92f358f401aeef425cbbb556eb08fa3766b3041dbe61",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "comparison": "error_code_match",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "unsupported_text",
+      "id": "unsupported_extension",
+      "oracle_error_category": "unsupported_path",
+      "oracle_exit": 3,
+      "oracle_summary": {
+        "error_category": "unsupported_path",
+        "stderr_bytes": 56,
+        "stderr_sha256": "0da0002362fd1fbe985a0adce43ed11d77935a3894952c6d85f1c6a69383fd73",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": "input_error",
+      "candidate_exit": 3,
+      "candidate_summary": {
+        "error_category": "input_error",
+        "stderr_bytes": 50,
+        "stderr_sha256": "ce54f932b6857dc591230c5e62be94dc2020cef26f018bd65b80d38671e3dc7c",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "comparison": "error_code_match",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "missing_xlsx",
+      "id": "missing_config_path",
+      "oracle_error_category": "input_error",
+      "oracle_exit": 3,
+      "oracle_summary": {
+        "error_category": "input_error",
+        "stderr_bytes": 35,
+        "stderr_sha256": "6889453f9b622605d3b7eebfd69df1b70919d158cb362a20e2dbaaef351361db",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "output": "json",
+      "value_match": true
+    }
+  ],
+  "schema": "sipi.com-01-direct-replay.v1",
+  "source_mode": "git_archive_at_immutable_commit",
+  "status": "open_differential_mismatch_fingerprint_only",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a"
+    },
+    "python": {
+      "executable": "python.exe",
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "path_redacted": true,
+      "role": "python",
+      "version_exit_code": 0,
+      "version_output_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "timeout_seconds": 300
+  },
+  "upstream": {
+    "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "inventory": {
+      "file_count": 70,
+      "sha256": "1cd0366c0d1cb7e14678ccfc5671918d6a36f8f993896aa2b4729fec487b621e",
+      "total_bytes": 1006648
+    },
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+  },
+  "values_aligned": true,
+  "work_item": "COM-01"
+}
