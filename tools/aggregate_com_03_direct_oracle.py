@@ -5,11 +5,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 
 
 SCHEMA = "sipi.com-03-direct-port-oracle-aggregate.v1"
+BOUND_INPUT_SCHEMA = "sipi.com-03-direct-port-oracle.v2"
+BOUND_SCHEMA = "sipi.com-03-direct-port-oracle-aggregate.v2"
 
 
 def sha256(path: Path) -> str:
@@ -36,11 +39,35 @@ def scenario_projection(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def aggregate(first: Path, second: Path) -> dict[str, Any]:
+def aggregate(
+    first: Path,
+    second: Path,
+    *,
+    input_schema: str = "sipi.com-03-direct-port-oracle.v1",
+    aggregate_schema: str = SCHEMA,
+) -> dict[str, Any]:
+    if first.resolve() == second.resolve():
+        raise ValueError("fresh oracle reports must have distinct paths")
+    first_sha256 = sha256(first)
+    second_sha256 = sha256(second)
+    if first_sha256 == second_sha256:
+        raise ValueError("fresh oracle reports must have distinct complete report digests")
     left = json.loads(first.read_text(encoding="utf-8"))
     right = json.loads(second.read_text(encoding="utf-8"))
-    if left.get("schema") != "sipi.com-03-direct-port-oracle.v1" or right.get("schema") != left.get("schema"):
+    if left.get("schema") != input_schema or right.get("schema") != left.get("schema"):
         raise ValueError("oracle report schema drift")
+    if left.get("run_id") == right.get("run_id"):
+        raise ValueError("fresh oracle reports must have distinct run ids")
+    if input_schema == BOUND_INPUT_SCHEMA:
+        left_nonce = left.get("fresh_run_nonce")
+        right_nonce = right.get("fresh_run_nonce")
+        nonce_pattern = re.compile(r"[0-9a-f]{64}")
+        if not isinstance(left_nonce, str) or not nonce_pattern.fullmatch(left_nonce):
+            raise ValueError("bound oracle report nonce is missing or malformed")
+        if not isinstance(right_nonce, str) or not nonce_pattern.fullmatch(right_nonce):
+            raise ValueError("bound oracle report nonce is missing or malformed")
+        if left_nonce == right_nonce:
+            raise ValueError("fresh oracle reports must have distinct nonces")
     if left.get("source") != right.get("source"):
         raise ValueError("oracle source identity drift between fresh runs")
     if left.get("candidate") != right.get("candidate"):
@@ -53,14 +80,19 @@ def aggregate(first: Path, second: Path) -> dict[str, Any]:
     right_scenarios = [scenario_projection(item) for item in right.get("scenarios", [])]
     if left_scenarios != right_scenarios:
         raise ValueError("fresh oracle scenario outcomes are not identical")
+    left_invocation = {"report": first.name, "run_id": left["run_id"], "sha256": first_sha256}
+    right_invocation = {"report": second.name, "run_id": right["run_id"], "sha256": second_sha256}
+    if input_schema == BOUND_INPUT_SCHEMA:
+        left_invocation["fresh_run_nonce"] = left["fresh_run_nonce"]
+        right_invocation["fresh_run_nonce"] = right["fresh_run_nonce"]
     return {
-        "schema": SCHEMA,
+        "schema": aggregate_schema,
         "source": left["source"],
         "candidate": left["candidate"],
         "scenario_set_sha256": left["scenario_set_sha256"],
         "invocations": [
-            {"report": first.name, "run_id": left["run_id"], "sha256": sha256(first)},
-            {"report": second.name, "run_id": right["run_id"], "sha256": sha256(second)},
+            left_invocation,
+            right_invocation,
         ],
         "scenario_count": len(left_scenarios),
         "fresh_runs": 2,

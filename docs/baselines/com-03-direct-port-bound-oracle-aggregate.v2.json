@@ -1,0 +1,52 @@
+{
+  "all_cli_contracts_match": true,
+  "candidate": {
+    "binary_sha256": "ce31f4223cb067cba01c79a2523d5d29851d58a9fb164cabfc788cb2fc5fe6b1",
+    "build_log_normalization": "stable_event_categories",
+    "build_stderr_sha256": "def4cf84d2dfa92edc898eef6d4644bcd9897cb5d281fb7b8b94d7f2299edd0c",
+    "build_stdout_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "cargo_build": "clean_git_archive_with_independent_cargo_target_dir",
+    "cargo_lock_sha256": "66f32f5b9381dbf2a58331891977aa5031f344afc989676cc05c9a3fd1bc44a2",
+    "cargo_vv": "cargo 1.97.0 (c980f4866 2026-06-30)\nrelease: 1.97.0\ncommit-hash: c980f4866141969fab6254a680546a277789d6f0\ncommit-date: 2026-06-30\nhost: x86_64-pc-windows-msvc\nlibgit2: 1.9.2 (sys:0.20.4 vendored)\nlibcurl: 8.20.0-DEV (sys:0.4.88+curl-8.20.0 vendored ssl:Schannel)\nos: Windows 10.0.28000 (Windows 11 ProfessionalWorkstation) [64-bit]",
+    "commit": "81d19e7fab6621f57890cf6ac6a72bd64fc56b9a",
+    "direct_crate_inventory_sha256": "dc2f0e6e830a563a71a8211d5c964cc3d5bb31ca57dfa58aaa281e45f878e023",
+    "isolation": {
+      "candidate_source_root": "independent_temporary_directory",
+      "cargo_target_dir": "independent_temporary_directory"
+    },
+    "reproducibility_flags": "SOURCE_DATE_EPOCH+link_arg_/Brepro",
+    "rustc_vv": "rustc 1.97.0 (2d8144b78 2026-07-07)\nbinary: rustc\ncommit-hash: 2d8144b7880597b6e6d3dfd63a9a9efae3f533d3\ncommit-date: 2026-07-07\nhost: x86_64-pc-windows-msvc\nrelease: 1.97.0\nLLVM version: 22.1.6",
+    "source_date_epoch": "1787416137",
+    "status": "immutable_candidate_bound",
+    "toolchain": "1.97.0-x86_64-pc-windows-msvc",
+    "tree": "a950a66b15f0349b3bda72fc0ef022cdb931f07a"
+  },
+  "fresh_runs": 2,
+  "invocations": [
+    {
+      "fresh_run_nonce": "9ce9334f192250a93028cf85b7610866724c5b4647cad064ae4af164082ce451",
+      "report": "com-03-direct-port-bound-oracle.v2.json",
+      "run_id": "bound-20260823-01",
+      "sha256": "4cc4588cbae720c1264364197f84f04b21961d68af5e052a5182c5c4157d3d42"
+    },
+    {
+      "fresh_run_nonce": "8647c5584d01022662c89b183b21b7a520415801acaa6c16e4697085e5e34e26",
+      "report": "com-03-direct-port-bound-oracle-run2.v2.json",
+      "run_id": "bound-20260823-02",
+      "sha256": "1fdcaf1e060e5dbd4d5e2abef48eba82da2542b5ce729b85bba3bdfc1d644df2"
+    }
+  ],
+  "scenario_count": 23,
+  "scenario_outcomes_identical": true,
+  "scenario_set_sha256": "f9124ce5020bb29cca9b28ddeb5b6feda6ff3755b2fb49142254db44ccb46ffd",
+  "schema": "sipi.com-03-direct-port-oracle-aggregate.v2",
+  "source": {
+    "archive_inventory_sha256": "5f3f17e19edc07cf6498c9bfea20b8691082e2c05364b4462bc54df8549d0a04",
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "repository": "https://github.com/z331225718/agent-com.git",
+    "source_mode": "git_archive",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea",
+    "working_tree_clean": true
+  },
+  "stderr_is_not_a_frozen_contract": true
+}

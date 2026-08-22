@@ -1,5 +1,6 @@
 import copy
 import json
+import struct
 import sys
 import tempfile
 import unittest
@@ -28,11 +29,16 @@ class Pb02ReplayToolTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "arrays.npz"
             with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-                archive.writestr("z.npy", b"z-array")
-                archive.writestr("a.npy", b"a-array")
+                header = b"{'descr': '<f8', 'fortran_order': False, 'shape': (1,), }"
+                header_length = 128 - 10
+                padded_header = header + b" " * (header_length - len(header) - 1) + b"\n"
+                npy = b"\x93NUMPY\x01\x00" + struct.pack("<H", header_length) + padded_header + b"\x00" * 8
+                archive.writestr("z.npy", npy)
+                archive.writestr("a.npy", npy)
             summary = runner._npz_summary(path)
             self.assertEqual(list(summary["member_sha256"]), ["a.npy", "z.npy"])
-            self.assertEqual(summary["logical_sha256"], runner._sha256(runner._canonical(summary["member_sha256"])))
+            self.assertEqual(list(summary["logical_members"]), ["a.npy", "z.npy"])
+            self.assertEqual(summary["logical_sha256"], runner._sha256(runner._canonical(summary["logical_members"])))
 
     def test_aggregate_rejects_identity_drift(self):
         base = {
@@ -45,8 +51,8 @@ class Pb02ReplayToolTests(unittest.TestCase):
             "fixture": {"sha256": "f"},
             "replay": {
                 "parity": {"candidate_array_members_equal_oracle": True},
-                "candidate": {"artifacts": {"arrays": {"member_sha256": {"a.npy": "a"}, "logical_sha256": "la"}}},
-                "oracle": {"artifacts": {"arrays": {"member_sha256": {"a.npy": "a"}}}},
+                "candidate": {"artifacts": {"arrays": {"logical_members": {"a.npy": {"f64_sha256": "a"}}, "logical_sha256": "la"}}},
+                "oracle": {"artifacts": {"arrays": {"logical_members": {"a.npy": {"f64_sha256": "a"}}}}},
             },
         }
         second = copy.deepcopy(base)

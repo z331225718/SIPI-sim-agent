@@ -1,0 +1,92 @@
+schema: sipi.com-03-direct-port-bound.v2
+status: direct_port_scoped_corpus_immutable_candidate_bound_open
+scope:
+  work_item: COM-03
+  upstream_public_entrypoint: compare
+  target: lane_local_direct_port_only
+  product_capability_promoted: false
+  global_migration_row_closed: false
+  preparation_evidence: docs/baselines/com-03-direct-port.v1.yaml
+audit:
+  path: docs/baselines/audits/2026-08-23-com-03-direct-port-bound.md
+  sha256: 35c3a402a7f3cdc16ff64d38e798ec6bece63c4a6e9cc3e517fc115fdd7883c3
+candidate:
+  status: immutable_candidate_bound
+  repository: SIPI-sim-agent
+  commit: 81d19e7fab6621f57890cf6ac6a72bd64fc56b9a
+  tree: a950a66b15f0349b3bda72fc0ef022cdb931f07a
+  source_materialization: clean_git_archive
+  direct_crate_inventory_sha256: dc2f0e6e830a563a71a8211d5c964cc3d5bb31ca57dfa58aaa281e45f878e023
+  cargo_lock_sha256: 66f32f5b9381dbf2a58331891977aa5031f344afc989676cc05c9a3fd1bc44a2
+  toolchain: 1.97.0-x86_64-pc-windows-msvc
+  source_date_epoch: "1787416137"
+  cargo_build: clean_git_archive_with_independent_cargo_target_dir
+  reproducibility_flags: SOURCE_DATE_EPOCH+link_arg_/Brepro
+  binary_sha256: ce31f4223cb067cba01c79a2523d5d29851d58a9fb164cabfc788cb2fc5fe6b1
+  cargo_vv_sha256: 643140e343d0aa5b60b700719e50e0e4e42d0853538e8d690e6e9349d8104af3
+  rustc_vv_sha256: 2d5066e8be6f7880721498c191f3410484d32e1d93b6e206428490c2cc9f0c32
+  build_stdout_sha256: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+  build_stderr_sha256: def4cf84d2dfa92edc898eef6d4644bcd9897cb5d281fb7b8b94d7f2299edd0c
+  build_log_normalization: stable_event_categories
+  isolation:
+    candidate_source_root: independent_temporary_directory
+    cargo_target_dir: independent_temporary_directory
+source:
+  repository: https://github.com/z331225718/agent-com.git
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  archive_inventory_sha256: 5f3f17e19edc07cf6498c9bfea20b8691082e2c05364b4462bc54df8549d0a04
+  declared_license: MIT
+  source_storage: pinned_git_objects_or_clean_archive_only
+  preparation_source_paths_manifest: docs/baselines/com-03-direct-port.v1.yaml
+contract:
+  result_schema_version: 1
+  source_revision: r480
+  required_top_level_keys: [schema_version, source_revision, profile, cases, provenance, warnings, timings_s]
+  optional_top_level_keys: [input_manifest, report_manifest]
+  comparable_projection: [remove_timings_s, remove_provenance_platform, remove_provenance_python_version]
+  tolerance: absolute_only
+  relative_tolerance: 0.0
+  default_atol: 1.0e-12
+  exit_codes: {matched: 0, mismatch: 3, malformed_json: 2, invalid_schema: 3, negative_atol: 3, io_error: 1}
+  scenario_set_sha256: f9124ce5020bb29cca9b28ddeb5b6feda6ff3755b2fb49142254db44ccb46ffd
+oracle:
+  runner: tools/run_com_03_direct_bound_oracle.py
+  aggregate_runner: tools/aggregate_com_03_direct_bound_oracle.py
+  report_schema: sipi.com-03-direct-port-oracle.v2
+  aggregate_schema: sipi.com-03-direct-port-oracle-aggregate.v2
+  candidate_binding_status: immutable_candidate_bound
+  bound_mode: clean_git_archive_with_independent_cargo_target_dir
+  report_path_policy: redacted
+  diagnostic_policy: stable_categories_only
+  invocations:
+    - report: docs/baselines/com-03-direct-port-bound-oracle.v2.json
+      run_id: bound-20260823-01
+      fresh_run_nonce: 9ce9334f192250a93028cf85b7610866724c5b4647cad064ae4af164082ce451
+      sha256: 4cc4588cbae720c1264364197f84f04b21961d68af5e052a5182c5c4157d3d42
+    - report: docs/baselines/com-03-direct-port-bound-oracle-run2.v2.json
+      run_id: bound-20260823-02
+      fresh_run_nonce: 8647c5584d01022662c89b183b21b7a520415801acaa6c16e4697085e5e34e26
+      sha256: 1fdcaf1e060e5dbd4d5e2abef48eba82da2542b5ce729b85bba3bdfc1d644df2
+  aggregate_report: docs/baselines/com-03-direct-port-bound-oracle-aggregate.v2.json
+  aggregate_sha256: 91913af63899aedd0c00c891acd03b2240659fa1c5bb7db49cf8e4185a63dcc5
+  scenario_count: 23
+  scenario_set_sha256: f9124ce5020bb29cca9b28ddeb5b6feda6ff3755b2fb49142254db44ccb46ffd
+  upstream_archive_inventory_sha256: 5f3f17e19edc07cf6498c9bfea20b8691082e2c05364b4462bc54df8549d0a04
+  all_cli_contracts_match: true
+  stderr_diagnostic_text: not_frozen_contract
+  result_payloads_committed: false
+verification:
+  verifier: tools/verify_com_03_direct_bound_port.py
+  mutation_tests: tools/test_verify_com_03_direct_bound_port.py
+  rust_tests: 10
+  python_oracle_scenarios_per_invocation: 23
+non_claims:
+  - no_product_capability_promotion
+  - no_global_migration_row_close
+  - no_workbook_or_run_or_public_api_implementation
+  - no_golden_or_result_payloads_vendored
+  - no_numeric_com_metric_acceptance
+  - no_release_readiness
+  - no_full_argparse_or_all_dict_conversion_branch_matrix
+  - no_external_runtime_source_attestation

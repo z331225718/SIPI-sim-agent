@@ -11,11 +11,13 @@ payloads.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import io
 import json
 import os
 import shutil
+import math
 import subprocess
 import sys
 import tarfile
@@ -63,7 +65,7 @@ def _run(command: list[str], *, cwd: Path, env: dict[str, str], timeout: int) ->
 
 def _git(root: Path, *args: str, raw: bool = False) -> bytes | str:
     result = subprocess.run(
-        ["git", "-C", str(root), *args],
+        ["git", "-c", "core.autocrlf=false", "-C", str(root), *args],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=True,
@@ -158,10 +160,56 @@ def _normalize_meta(value: Any, *, key: str | None = None) -> Any:
     return value
 
 
+def _npy_logical_summary(payload: bytes) -> dict[str, Any]:
+    if len(payload) < 10 or payload[:6] != b"\x93NUMPY":
+        raise ValueError("NPZ member is not an NPY payload")
+    major = payload[6]
+    if major == 1:
+        header_length = int.from_bytes(payload[8:10], "little")
+        data_offset = 10 + header_length
+    elif major in (2, 3):
+        if len(payload) < 12:
+            raise ValueError("truncated NPY v2/v3 header")
+        header_length = int.from_bytes(payload[8:12], "little")
+        data_offset = 12 + header_length
+    else:
+        raise ValueError(f"unsupported NPY version: {major}")
+    if data_offset > len(payload):
+        raise ValueError("truncated NPY header")
+    try:
+        header = ast.literal_eval(payload[10:data_offset].decode("latin-1").strip()) if major == 1 else ast.literal_eval(payload[12:data_offset].decode("utf-8").strip())
+    except (SyntaxError, UnicodeDecodeError, ValueError) as error:
+        raise ValueError("invalid NPY header") from error
+    if not isinstance(header, dict) or not isinstance(header.get("descr"), str) or not isinstance(header.get("shape"), tuple):
+        raise ValueError("NPY header shape/dtype is invalid")
+    dtype = header["descr"]
+    shape = tuple(int(item) for item in header["shape"])
+    if any(item < 0 for item in shape):
+        raise ValueError("NPY shape contains a negative dimension")
+    count = math.prod(shape)
+    raw = payload[data_offset:]
+    if dtype in {"<f8", "|f8"}:
+        f64 = raw
+    elif dtype == ">f8":
+        f64 = b"".join(raw[index : index + 8][::-1] for index in range(0, len(raw), 8))
+    else:
+        raise ValueError(f"NPY member is not float64: {dtype}")
+    if len(raw) != count * 8:
+        raise ValueError("NPY payload length does not match float64 shape")
+    return {
+        "dtype": dtype,
+        "shape": list(shape),
+        "count": count,
+        "fortran_order": bool(header.get("fortran_order")),
+        "f64_sha256": _sha256(f64),
+    }
+
+
 def _npz_summary(path: Path) -> dict[str, Any]:
     payload = path.read_bytes()
     members: dict[str, str] = {}
     member_bytes: dict[str, int] = {}
+    logical_members: dict[str, dict[str, Any]] = {}
     with zipfile.ZipFile(io.BytesIO(payload), "r") as archive:
         for info in archive.infolist():
             if info.is_dir() or not info.filename.endswith(".npy"):
@@ -169,12 +217,14 @@ def _npz_summary(path: Path) -> dict[str, Any]:
             data = archive.read(info)
             members[info.filename] = _sha256(data)
             member_bytes[info.filename] = len(data)
+            logical_members[info.filename] = _npy_logical_summary(data)
     return {
         "sha256": _sha256(payload),
         "bytes": len(payload),
         "member_sha256": dict(sorted(members.items())),
         "member_bytes": dict(sorted(member_bytes.items())),
-        "logical_sha256": _sha256(_canonical(dict(sorted(members.items())))),
+        "logical_members": dict(sorted(logical_members.items())),
+        "logical_sha256": _sha256(_canonical(dict(sorted(logical_members.items())))),
     }
 
 
@@ -219,11 +269,11 @@ def _binary_path(target: Path) -> Path:
     return target / "release" / name
 
 
-def _logical_array_hashes(summary: dict[str, Any]) -> dict[str, str] | None:
+def _logical_array_hashes(summary: dict[str, Any]) -> dict[str, Any] | None:
     arrays = summary.get("artifacts", {}).get("arrays")
     if not isinstance(arrays, dict):
         return None
-    members = arrays.get("member_sha256")
+    members = arrays.get("logical_members")
     return members if isinstance(members, dict) else None
 
 
@@ -276,6 +326,9 @@ def _run_one(
     upstream_env = dict(os.environ)
     upstream_env["CARGO_TARGET_DIR"] = str(upstream_target)
     upstream_env["UV_PROJECT_ENVIRONMENT"] = str(run_root / "upstream-venv")
+    cargo_executable = Path(cargo)
+    if cargo_executable.is_file():
+        upstream_env["PATH"] = str(cargo_executable.resolve().parent) + os.pathsep + upstream_env.get("PATH", "")
     oracle = _run(
         [
             uv,
@@ -353,7 +406,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "source_mode": "git_archive_at_immutable_commit",
         "candidate": _source_facts(candidate_materialized, candidate_info, [str(CRATE_RELATIVE)]),
         "upstream": _upstream_facts(upstream_materialized, upstream_info),
-        "fixture": {"path": args.fixture.replace("\\", "/"), "sha256": fixture_hash, "bytes": fixture.stat().st_size},
+        "fixture": {"path": args.fixture.as_posix(), "sha256": fixture_hash, "bytes": fixture.stat().st_size},
         "toolchain": {"cargo": args.cargo, "uv": args.uv, "timeout_seconds": args.timeout_seconds},
         "replay": replay,
         "non_claims": [

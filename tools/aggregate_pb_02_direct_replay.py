@@ -61,10 +61,10 @@ def aggregate(first_path: Path, second_path: Path, output: Path) -> dict[str, An
         blockers.append("first replay does not prove candidate/oracle array equality")
     if second_parity.get("candidate_array_members_equal_oracle") is not True:
         blockers.append("second replay does not prove candidate/oracle array equality")
-    first_candidate_arrays = _get(first, "replay", "candidate", "artifacts", "arrays", "member_sha256")
-    second_candidate_arrays = _get(second, "replay", "candidate", "artifacts", "arrays", "member_sha256")
-    first_oracle_arrays = _get(first, "replay", "oracle", "artifacts", "arrays", "member_sha256")
-    second_oracle_arrays = _get(second, "replay", "oracle", "artifacts", "arrays", "member_sha256")
+    first_candidate_arrays = _get(first, "replay", "candidate", "artifacts", "arrays", "logical_members")
+    second_candidate_arrays = _get(second, "replay", "candidate", "artifacts", "arrays", "logical_members")
+    first_oracle_arrays = _get(first, "replay", "oracle", "artifacts", "arrays", "logical_members")
+    second_oracle_arrays = _get(second, "replay", "oracle", "artifacts", "arrays", "logical_members")
     if first_candidate_arrays != second_candidate_arrays:
         blockers.append("candidate array member hashes drift between replays")
     if first_oracle_arrays != second_oracle_arrays:

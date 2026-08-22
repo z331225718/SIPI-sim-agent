@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 7944c6478a3dfcebc5278e4ca0dd26a829ff3f218332928dbe5b10c42dfa96c6
+  tracked_paths_sha256: 8b14e8a46ce466c4f2936ecb776d83ae87fbef0291da6d160784516bdfb7bc64
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -8687,6 +8687,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-23-com-03-direct-port-bound.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/authorized-material-registry.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -8850,6 +8856,30 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/channel-s2p-matched-observation.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/com-03-direct-port-bound-oracle-aggregate.v2.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/com-03-direct-port-bound-oracle-run2.v2.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/com-03-direct-port-bound-oracle.v2.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/com-03-direct-port-bound.v2.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -21191,6 +21221,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/aggregate_com_03_direct_bound_oracle.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/aggregate_com_03_direct_oracle.py:
       rule: migration-tools
       class: migration_only
@@ -21552,6 +21588,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/run_all_tests.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/run_com_03_direct_bound_oracle.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -23934,6 +23976,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_channel_s2p_matched_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_com_03_direct_bound_port.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -27318,6 +27366,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_clean_room_templates.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_com_03_direct_bound_port.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

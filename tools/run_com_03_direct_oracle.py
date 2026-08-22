@@ -9,10 +9,12 @@ from __future__ import annotations
 import argparse
 import contextlib
 import copy
+from collections import Counter
 import hashlib
 import io
 import json
 import os
+import secrets
 import shutil
 import subprocess
 import sys
@@ -25,6 +27,7 @@ from typing import Any, Callable
 UPSTREAM_COMMIT = "5272ffe74702cd585054d975559b06f8afae7b6e"
 UPSTREAM_TREE = "7094ab6e84989b218730c52432c70da10261f8ea"
 SCHEMA = "sipi.com-03-direct-port-oracle.v1"
+BOUND_SCHEMA = "sipi.com-03-direct-port-oracle.v2"
 
 
 def git(root: Path, *args: str) -> str:
@@ -92,6 +95,7 @@ def candidate_identity(candidate_root: Path, candidate_commit: str) -> dict[str,
         "cargo_lock_sha256": git_blob_sha256(
             candidate_root, candidate_commit, "crates/sipi-agent-com-direct/Cargo.lock"
         ),
+        "source_date_epoch": git(candidate_root, "show", "-s", "--format=%ct", candidate_commit),
     }
 
 
@@ -127,6 +131,49 @@ def resolve_cargo_executable(explicit: Path | None) -> Path:
     raise RuntimeError("bound oracle cannot locate cargo")
 
 
+def resolve_rustc_executable(cargo: Path) -> Path:
+    discovered = shutil.which("rustc")
+    candidates = [Path(discovered)] if discovered else []
+    candidates.extend([cargo.with_name("rustc.exe"), cargo.with_name("rustc")])
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate.resolve()
+    raise RuntimeError("bound oracle cannot locate rustc")
+
+
+def tool_version(executable: Path, environment: dict[str, str]) -> str:
+    completed = subprocess.run(
+        [str(executable), "-Vv"],
+        env=environment,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    if completed.returncode != 0 or completed.stderr:
+        raise RuntimeError("bound oracle toolchain version query failed")
+    return completed.stdout.strip()
+
+
+def normalize_build_log(text: str) -> str:
+    events = []
+    for line in text.splitlines():
+        stripped = line.strip().lower()
+        if stripped.startswith("compiling "):
+            events.append("compiling")
+        elif stripped.startswith("finished "):
+            events.append("finished")
+        elif stripped.startswith("warning"):
+            events.append("warning")
+        elif stripped.startswith("error"):
+            events.append("error")
+        elif stripped:
+            events.append("other")
+    return json.dumps(Counter(events), sort_keys=True, separators=(",", ":"))
+
+
 @contextlib.contextmanager
 def bound_candidate_binary(
     *, candidate_root: Path, candidate_commit: str, toolchain: str, cargo_executable: Path | None
@@ -139,9 +186,19 @@ def bound_candidate_binary(
             target_root = Path(target_directory)
             materialize_git_archive(candidate_root, candidate_commit, source_root)
             environment = os.environ.copy()
-            environment.update({"CARGO_TARGET_DIR": str(target_root), "CARGO_INCREMENTAL": "0"})
+            environment.update(
+                {
+                    "CARGO_TARGET_DIR": str(target_root),
+                    "CARGO_INCREMENTAL": "0",
+                    "SOURCE_DATE_EPOCH": identity["source_date_epoch"],
+                    "RUSTFLAGS": "-C link-arg=/Brepro",
+                }
+            )
             if toolchain:
                 environment["RUSTUP_TOOLCHAIN"] = toolchain
+            rustc = resolve_rustc_executable(cargo)
+            cargo_vv = tool_version(cargo, environment)
+            rustc_vv = tool_version(rustc, environment)
             completed = subprocess.run(
                 [
                     str(cargo),
@@ -172,6 +229,16 @@ def bound_candidate_binary(
                     "toolchain": toolchain,
                     "cargo_build": "clean_git_archive_with_independent_cargo_target_dir",
                     "binary_sha256": file_sha256(binary),
+                    "cargo_vv": cargo_vv,
+                    "rustc_vv": rustc_vv,
+                    "build_stdout_sha256": digest(normalize_build_log(completed.stdout).encode()),
+                    "build_stderr_sha256": digest(normalize_build_log(completed.stderr).encode()),
+                    "build_log_normalization": "stable_event_categories",
+                    "reproducibility_flags": "SOURCE_DATE_EPOCH+link_arg_/Brepro",
+                    "isolation": {
+                        "candidate_source_root": "independent_temporary_directory",
+                        "cargo_target_dir": "independent_temporary_directory",
+                    },
                 }
             )
             yield binary, identity
@@ -426,6 +493,7 @@ def run(
     candidate_commit: str | None = None,
     toolchain: str | None = None,
     cargo_executable: Path | None = None,
+    evidence_schema: str = SCHEMA,
 ) -> dict[str, Any]:
     if candidate_root is None:
         if candidate_commit or toolchain or cargo_executable:
@@ -452,6 +520,11 @@ def run(
             toolchain=toolchain,
             cargo_executable=cargo_executable,
         )
+        if evidence_schema != BOUND_SCHEMA:
+            raise RuntimeError("immutable candidate runs require the additive v2 evidence schema")
+    if candidate_root is None and evidence_schema != SCHEMA:
+        raise RuntimeError("unbound preparation runs require the v1 evidence schema")
+    fresh_run_nonce = secrets.token_hex(32) if evidence_schema == BOUND_SCHEMA else None
     with binary_context as (effective_binary, candidate):
         upstream_archive_sha256 = git_archive_sha256(upstream_root, UPSTREAM_COMMIT)
         with pinned_source(upstream_root) as clean_root:
@@ -462,6 +535,8 @@ def run(
                 source_mode="git_worktree" if clean_root == upstream_root else "git_archive",
                 candidate=candidate,
                 upstream_archive_sha256=upstream_archive_sha256,
+                evidence_schema=evidence_schema,
+                fresh_run_nonce=fresh_run_nonce,
             )
 
 
@@ -473,6 +548,8 @@ def _run_clean(
     source_mode: str,
     candidate: dict[str, Any],
     upstream_archive_sha256: str,
+    evidence_schema: str,
+    fresh_run_nonce: str | None,
 ) -> dict[str, Any]:
     sys.path.insert(0, str(clean_root / "src"))
     from agent_com.cli import main as upstream_cli_main
@@ -527,8 +604,8 @@ def _run_clean(
                 }
             )
 
-    return {
-        "schema": SCHEMA,
+    report = {
+        "schema": evidence_schema,
         "run_id": run_id,
         "source": {
             "repository": "https://github.com/z331225718/agent-com.git",
@@ -550,6 +627,16 @@ def _run_clean(
         "all_cli_contracts_match": all(item["cli_contract_match"] for item in scenarios_report),
         "stderr_is_not_a_frozen_contract": True,
     }
+    if evidence_schema == BOUND_SCHEMA:
+        if fresh_run_nonce is None:
+            raise RuntimeError("bound oracle run did not create a fresh nonce")
+        report["fresh_run_nonce"] = fresh_run_nonce
+        report["execution"] = {
+            "candidate_source_root": "independent_temporary_directory",
+            "candidate_target_root": "independent_temporary_directory",
+            "scenario_output_root": "independent_temporary_directory",
+        }
+    return report
 
 
 def main() -> int:
@@ -562,6 +649,7 @@ def main() -> int:
     parser.add_argument("--candidate-commit")
     parser.add_argument("--toolchain")
     parser.add_argument("--cargo-executable", type=Path)
+    parser.add_argument("--bound-evidence", action="store_true")
     arguments = parser.parse_args()
     report = run(
         upstream_root=arguments.agent_com_root,
@@ -571,6 +659,7 @@ def main() -> int:
         candidate_commit=arguments.candidate_commit,
         toolchain=arguments.toolchain,
         cargo_executable=arguments.cargo_executable,
+        evidence_schema=BOUND_SCHEMA if arguments.bound_evidence else SCHEMA,
     )
     arguments.report.parent.mkdir(parents=True, exist_ok=True)
     with arguments.report.open("w", encoding="utf-8", newline="\n") as stream:
