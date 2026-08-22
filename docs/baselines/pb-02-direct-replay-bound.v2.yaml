@@ -1,0 +1,115 @@
+schema: sipi.pb-02-direct-replay-bound.v2
+status: accepted_scoped_native_core_bound_open
+date: 2026-08-23
+scope:
+  workflow: PB-02
+  command: sim-native
+  lane_crate: crates/sipi-pybert-direct
+  replay_mode: immutable_candidate_and_pinned_upstream_archive
+  exact_native_core_numerical_replay_only: true
+  product_capability_promoted: false
+  global_migration_row_closed: false
+  release_ready: false
+candidate:
+  commit: ec94468772182e17cf7b935ab2d7c0437ea7692e
+  tree: 5e0de1ac29f64f935339a4d5eed09fc1b43c6591
+  archive_sha256: ac09b63467b13aad97c035f0c165f5c5f3725d0f36247a6b5ca2eb257682e27e
+  inventory_sha256: f552c0b0bfe971d7f8b94123cdcb78cb798c18ca8ec7ccd9a832241c4a3731cc
+  cargo_lock_sha256: 9f282c66d2fecaec3e6dc1cd32d0d61dc2bb19da71c21ac1d1a3507378b443ee
+  rust_toolchain_sha256: 3cc13c37191008eaab5490eea2136223fa1bc5b5d2aa9c74a199a0c0c854aa90
+upstream:
+  repository: pybert
+  commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  archive_sha256: e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25
+  inventory_sha256: 26ccbee692b9c4984c6cee0cff6c3987fc013e914905a66019937f940a5abfb9
+  license_sha256: 4ca68aea5b8f43e0d7337b182fbc277e02dae37d85b04196d92a80e9344926c1
+  native_core_cargo_lock_sha256: null
+  uv_lock_sha256: 624b62d7a84fbc48579de17e2ae171f5e4190d6ad7e5231e67ddafb9d3fa0d86
+fixture:
+  path: crates/sipi-pybert-direct/fixtures/pb-02-nrz.json
+  bytes: 1245
+  sha256: 5bcd0b905f8a7f0ec5e2b7c3761a998e9553ac24a71b54f8b0d4e8e84261ea13
+replay_runner:
+  path: tools/run_pb_02_direct_replay.py
+  sha256: 6c6a777a2e616e5778eaa7f396ba173791c67381d81cf00b473f87efb2553d0f
+aggregate_runner:
+  path: tools/aggregate_pb_02_direct_replay.py
+  sha256: 04a2d35fd7f1df1fc3728c0918fc752980b0e7c718eedf5a0285ff0bae24043a
+reports:
+  first:
+    path: docs/baselines/pb-02-direct-replay-bound-run-01.v1.json
+    sha256: 3899be3eec0c561fe0526d71dd7f0c78f1d9e872334595fef7ebcdfddc149096
+    run_id: pb-02-bound-20260823-01
+    fresh_run_nonce: 5a37eedb1b9c36c1f616125296d97be92ec386bd26dc450545eef3d1b5537711
+  second:
+    path: docs/baselines/pb-02-direct-replay-bound-run-02.v1.json
+    sha256: 737b6a042f4251e380a3e66cf31089a3b28ba16e67c459ea7c4ab4915e8c3a6d
+    run_id: pb-02-bound-20260823-02
+    fresh_run_nonce: ff6a5f87048ab409a6b3eedb4628cf69f74eb8af4efef9703ea71e61c71e976b
+aggregate:
+  path: docs/baselines/pb-02-direct-replay-bound-aggregate.v1.json
+  sha256: ada25b3ea02cf98f7290cbea77192f46bd8f8043b4d3b7fa44cf8915d9197ab2
+toolchain:
+  timeout_seconds: 1200
+  cargo:
+    role: cargo
+    executable: cargo.exe
+    path_redacted: true
+    file_sha256: 86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7
+    version_exit_code: 0
+    version_output_sha256: 4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a
+  rustc:
+    role: rustc
+    executable: rustc.exe
+    path_redacted: true
+    file_sha256: 86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7
+    version_exit_code: 0
+    version_output_sha256: d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db
+  uv:
+    role: uv
+    executable: uv.exe
+    path_redacted: true
+    file_sha256: cd628b46729d01ad110146a647a633a6e5de0e091d73db46afaeee6fcb4ba648
+    version_exit_code: 0
+    version_output_sha256: 6811b26ed08e84a0a753846eb4784e33181cb77ceaf9b7cee4ac35af9b2ed001
+distinct_gate:
+  unique_resolved_report_paths: true
+  unique_report_sha256: true
+  unique_run_ids: true
+  unique_fresh_run_nonces: true
+  exact_toolchain_identity_across_runs: true
+  path_free_report_identity: true
+logical_arrays:
+  sha256: 5090a1478ea6e985342d8500c6220cdde5c7fa2c416abbdeb595dcdc380c275a
+  members:
+    channel_impulse_v_per_v.npy: {count: 2, dtype: '<f8', shape: [2], fortran_order: false, f64_sha256: 82d5182c90ecefa00f9e9d91f02ad8be6d9d082f377bd1f96c00f010bc053e36}
+    channel_output_v.npy: {count: 32, dtype: '<f8', shape: [32], fortran_order: false, f64_sha256: bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309}
+    ctle_output_v.npy: {count: 32, dtype: '<f8', shape: [32], fortran_order: false, f64_sha256: bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309}
+    rx_ffe_impulse_v_per_v.npy: {count: 32, dtype: '<f8', shape: [32], fortran_order: false, f64_sha256: 8034367eec76495180b08e634d0bf4236b83a30d9ce7be3fd843fe8860f4de41}
+    rx_filter_impulse_v_per_v.npy: {count: 1, dtype: '<f8', shape: [1], fortran_order: false, f64_sha256: 6c3c396ed6b5c36dcae172271f462051b1266b851e92df3deea8ac65478fd712}
+    rx_input_v.npy: {count: 32, dtype: '<f8', shape: [32], fortran_order: false, f64_sha256: bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309}
+    rx_output_v.npy: {count: 32, dtype: '<f8', shape: [32], fortran_order: false, f64_sha256: bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309}
+    symbols_v.npy: {count: 16, dtype: '<f8', shape: [16], fortran_order: false, f64_sha256: 6884fb21aa1699022a9207c5cfeecc8d67d10e93d698ad6e7e2ee75e5c47c365}
+    time_s.npy: {count: 32, dtype: '<f8', shape: [32], fortran_order: false, f64_sha256: 58bbee68c5a97e80d59296425c4726ebeabe38d848dc055134fb4a65f6d2b6b2}
+    tx_channel_impulse_v_per_v.npy: {count: 2, dtype: '<f8', shape: [2], fortran_order: false, f64_sha256: 82d5182c90ecefa00f9e9d91f02ad8be6d9d082f377bd1f96c00f010bc053e36}
+    tx_waveform_v.npy: {count: 32, dtype: '<f8', shape: [32], fortran_order: false, f64_sha256: 40b756e3bbe3ed90ade86b60c2f4d51764cd4033b577629835076308de2c1a35}
+wrapper_boundary:
+  strict_json_admission: sipi_owned_non_parity
+  artifact_writer: sipi_owned_non_parity
+  uncompressed_npz_writer: sipi_owned_non_parity
+  output_directory_symlink_rejection: sipi_owned_non_parity
+  upstream_native_parity_scope: excluded
+claims:
+  exact_native_core_numerical_parity_for_fixture: true
+  uncovered_input_branches_open: true
+  license_decision: false
+  product_capability_admission: false
+  release_approval: false
+audit:
+  path: docs/baselines/audits/2026-08-23-pb-02-direct-replay-bound.md
+  sha256: 59f332bea0c6c419d207cd025ed16eda0b366f0645c34cc1eff73630cda53101
+non_claims:
+  - This evidence covers only the explicit PB-02 fixture and not every SimulationInputV1 branch.
+  - SIPI strict JSON, artifact, NPZ, and symlink policies are wrapper behavior, not upstream sim-native semantics.
+  - This evidence is not a license decision, release approval, or product capability admission.

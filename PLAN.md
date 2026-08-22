@@ -34,14 +34,14 @@ corpus、逐路径许可与 branch-complete parity，再机械替换为 owning c
 `COM-03 compare`、`PB-02 sim-native` 与 `AS-05 run-hspice` 当前只形成
 standalone/quarantine 的 Rust candidate。COM 仅覆盖冻结 corpus；PB 仅搬入 pinned
 native numerical core，SIPI wrapper policy 不计作 upstream parity；AS 仅覆盖已经
-明确迁入的 admission 子集，且不执行 solver。三条 lane 的 current-candidate oracle
-必须在 preparation commit 后从 immutable clean archive 双次重放并由后续 evidence
-commit 记录；在此之前不得声称 branch-complete、admission-complete、完整输入分支、
-产品 direct route、waveform parity、许可结论或 release promotion。对应账本与候选
-证据见
+明确迁入的 admission 子集，且不执行 solver。COM 与 PB 已分别从不可变 preparation
+commit 的 clean archive 完成两次独立 current-candidate replay，并由 additive bound
+evidence 记录；这些观察仍只覆盖各自冻结 corpus/profile。不得据此声称
+branch-complete、admission-complete、完整输入分支、产品 direct route、waveform
+parity、许可结论或 release promotion。对应账本与候选证据见
 `docs/baselines/upstream-rust-parity-ledger.v1.yaml`、
-`docs/baselines/com-03-direct-port.v1.yaml`、
-`docs/baselines/pb-02-direct-port.v1.yaml` 和
+`docs/baselines/com-03-direct-port-bound.v2.yaml`、
+`docs/baselines/pb-02-direct-replay-bound.v2.yaml` 和
 `docs/baselines/as-05-run-hspice-direct-port.v1.yaml`。
 
 以下第 1 节及之后内容是 v0.2 历史计划。其 checklist 继续供旧 evidence/verifier

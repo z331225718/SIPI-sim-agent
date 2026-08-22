@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 8b14e8a46ce466c4f2936ecb776d83ae87fbef0291da6d160784516bdfb7bc64
+  tracked_paths_sha256: 7541a6e93596f633b98511a31c694711b0e6cf8d14b6ebab62095f108872fb68
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -8693,6 +8693,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-23-pb-02-direct-replay-bound.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/authorized-material-registry.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -15618,6 +15624,30 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/pb-02-direct-port.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/pb-02-direct-replay-bound-aggregate.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/pb-02-direct-replay-bound-run-01.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/pb-02-direct-replay-bound-run-02.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/pb-02-direct-replay-bound.v2.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -27113,6 +27143,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_pb_02_direct_replay_bound.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_pb_upstream_workflows.py:
       rule: migration-tools
       class: migration_only
@@ -30642,6 +30678,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_pb_02_direct_port.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_pb_02_direct_replay_bound.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
