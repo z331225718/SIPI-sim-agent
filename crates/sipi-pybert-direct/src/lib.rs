@@ -13,6 +13,8 @@ mod error;
 mod event;
 mod input;
 mod jitter;
+mod legacy_runtime;
+mod legacy_sim;
 mod output;
 mod pattern;
 mod pipeline;
@@ -51,6 +53,15 @@ pub use jitter::{
     CrossingConfig, CrossingError, DataDependentJitterResult, DualDiracJitterResult,
     SpectralJitterResult, TieTrackResult, assemble_tie_track, calculate_data_dependent_jitter,
     calculate_dual_dirac_jitter, calculate_spectral_jitter, find_crossing_times, find_crossings,
+};
+pub use legacy_runtime::{
+    LegacyConfigProjectionV1, LegacyRuntimeError, LegacySimReportV1, parse_legacy_config_v1,
+    run_legacy_sim_v1, write_legacy_result_v1,
+};
+pub use legacy_sim::{
+    DEFAULT_RESULT_EXTENSION, LEGACY_CONFIG_EXTENSIONS, LegacySimCandidateStatus, LegacySimError,
+    LegacySimRequestV1, NATIVE_CORE_ENTRYPOINT, OsStringLike, PB01_COMMAND, prepare_legacy_sim_v1,
+    validate_legacy_sim_request,
 };
 pub use output::{ArtifactRefV1, SimulationOutputV1};
 pub use pattern::{PatternError, SymbolModulation, generate_prbs_bits, modulate_bits};

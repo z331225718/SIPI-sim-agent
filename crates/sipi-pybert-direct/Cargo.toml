@@ -11,9 +11,13 @@ description = "Lane-local direct port of the pinned PyBERT native Rust core and 
 num-complex = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde-pickle = "1.2"
+serde_yaml = "0.9"
 rustfft = "6.4"
+same-file = "1.0"
 statrs = "0.18"
 thiserror = "2.0"
+yaml-rust2 = { version = "0.10", default-features = false }
 
 [[bin]]
 name = "sipi-pybert-direct"

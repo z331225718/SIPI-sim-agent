@@ -1,0 +1,174 @@
+{
+  "schema": "sipi.com-01-direct-port-corpus.v1",
+  "status": "pinned_differential_corpus_materialized_open",
+  "work_item": "COM-01",
+  "upstream": {
+    "repository": "https://github.com/z331225718/agent-com.git",
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+  },
+  "fixture_policy": "owner_supplied_external_fixture_plus_derived_temp_package_fixture",
+  "scenarios": [
+    {
+      "id": "xlsx_json_default_r480",
+      "fixture_role": "primary_xlsx",
+      "extension": ".xlsx",
+      "profile": "r480",
+      "reader": null,
+      "fix_ids": [],
+      "overrides": [],
+      "output": "json",
+      "expected_upstream": "passed"
+    },
+    {
+      "id": "xlsx_text_default_r480",
+      "fixture_role": "primary_xlsx",
+      "extension": ".xlsx",
+      "profile": "r480",
+      "reader": null,
+      "fix_ids": [],
+      "overrides": [],
+      "output": "text",
+      "expected_upstream": "passed"
+    },
+    {
+      "id": "xlsx_materialized_json_default",
+      "fixture_role": "primary_xlsx",
+      "extension": ".xlsx",
+      "profile": "r480",
+      "reader": null,
+      "fix_ids": [],
+      "overrides": [],
+      "output": "materialized_json",
+      "expected_upstream": "passed"
+    },
+    {
+      "id": "xlsx_experimental_corrected_profile",
+      "fixture_role": "primary_xlsx",
+      "extension": ".xlsx",
+      "profile": "experimental_corrected",
+      "reader": null,
+      "fix_ids": [],
+      "overrides": [],
+      "output": "json",
+      "expected_upstream": "passed"
+    },
+    {
+      "id": "xlsx_custom_standard_reader",
+      "fixture_role": "primary_xlsx",
+      "extension": ".xlsx",
+      "profile": "custom",
+      "reader": "standard",
+      "fix_ids": [],
+      "overrides": [],
+      "output": "json",
+      "expected_upstream": "passed"
+    },
+    {
+      "id": "csv_package_warning_json_loader",
+      "fixture_role": "package_warning_csv",
+      "extension": ".csv",
+      "profile": "r480",
+      "reader": null,
+      "fix_ids": [],
+      "overrides": [],
+      "output": "json",
+      "expected_upstream": "passed"
+    },
+    {
+      "id": "xlsx_custom_fix_config_defaults",
+      "fixture_role": "primary_xlsx",
+      "extension": ".xlsx",
+      "profile": "custom",
+      "reader": "r480",
+      "overrides": ["f_b=53.125"],
+      "output": "json",
+      "fix_ids": ["fix.config_defaults"],
+      "expected_upstream": "passed"
+    },
+    {
+      "id": "mutually_exclusive_json_modes",
+      "fixture_role": "primary_xlsx",
+      "extension": ".xlsx",
+      "profile": "r480",
+      "reader": null,
+      "fix_ids": [],
+      "overrides": [],
+      "output": "json_and_materialized_json",
+      "expected_upstream": "config_error"
+    },
+    {
+      "id": "custom_profile_without_selector",
+      "fixture_role": "primary_xlsx",
+      "extension": ".xlsx",
+      "profile": "custom",
+      "reader": null,
+      "fix_ids": [],
+      "overrides": [],
+      "output": "json",
+      "expected_upstream": "config_error"
+    },
+    {
+      "id": "reader_without_custom_profile",
+      "fixture_role": "primary_xlsx",
+      "extension": ".xlsx",
+      "profile": "r480",
+      "reader": "standard",
+      "fix_ids": [],
+      "overrides": [],
+      "output": "json",
+      "expected_upstream": "config_error"
+    },
+    {
+      "id": "unknown_fix_id",
+      "fixture_role": "primary_xlsx",
+      "extension": ".xlsx",
+      "profile": "custom",
+      "reader": "r480",
+      "fix_ids": ["fix.unknown"],
+      "overrides": [],
+      "output": "json",
+      "expected_upstream": "config_error"
+    },
+    {
+      "id": "duplicate_override",
+      "fixture_role": "primary_xlsx",
+      "extension": ".xlsx",
+      "profile": "r480",
+      "reader": null,
+      "fix_ids": [],
+      "overrides": ["f_b=53.125", "f_b=53.125"],
+      "output": "json",
+      "expected_upstream": "config_error"
+    },
+    {
+      "id": "unsupported_extension",
+      "fixture_role": "unsupported_text",
+      "extension": ".txt",
+      "profile": "r480",
+      "reader": null,
+      "fix_ids": [],
+      "overrides": [],
+      "output": "json",
+      "expected_upstream": "config_error"
+    },
+    {
+      "id": "missing_config_path",
+      "fixture_role": "missing_xlsx",
+      "extension": ".xlsx",
+      "profile": "r480",
+      "reader": null,
+      "fix_ids": [],
+      "overrides": [],
+      "output": "json",
+      "expected_upstream": "config_error"
+    }
+  ],
+  "non_claims": [
+    "no_workbook_bytes_vendored",
+    "no_com_runtime_execution",
+    "no_external_fixture_custody",
+    "no_product_capability_promotion",
+    "no_global_migration_row_close"
+  ]
+}

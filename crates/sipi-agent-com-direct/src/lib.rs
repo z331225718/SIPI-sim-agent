@@ -14,6 +14,15 @@ use std::fmt::{Display, Formatter};
 use std::fs;
 use std::path::Path;
 
+mod config_preflight_v1;
+mod config_validate_v1;
+
+pub use config_validate_v1::{
+    ARGUMENT_ERROR_EXIT_CODE_V1, CONFIG_VALIDATE_POLICY_V1, CONFIG_VALIDATE_SCHEMA_V1,
+    ConfigValidateErrorV1, ConfigValidateReportV1, ConfigValidateRequestV1,
+    UNSUPPORTED_SCOPE_EXIT_CODE_V1, ValidatedProfileV1, config_validate_v1,
+};
+
 pub const DIRECT_PORT_SCHEMA_V1: &str = "sipi.agent-com.direct-compare.v1";
 pub const RESULT_SCHEMA_VERSION_V1: u64 = 1;
 pub const RESULT_SOURCE_REVISION_V1: &str = "r480";

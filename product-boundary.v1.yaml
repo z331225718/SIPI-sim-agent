@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 7541a6e93596f633b98511a31c694711b0e6cf8d14b6ebab62095f108872fb68
+  tracked_paths_sha256: 71b960532145b560347b618718c600500486b0ce4c12827655b3a05bcc553dd7
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -143,13 +143,61 @@ inventory:
       license: LicenseRef-Provenance-Pending
       provenance: project_authored
       distribution: non-distributed
+    crates/sipi-agent-com-direct/SOURCE-MAP-COM-01.md:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     crates/sipi-agent-com-direct/SOURCE-MAP.md:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
       provenance: project_authored
       distribution: non-distributed
+    crates/sipi-agent-com-direct/quarantine/agent-com/NOTICE-AGENT-COM-CONFIG-MIT.md:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-agent-com-direct/quarantine/agent-com/consumption-registry.v1.json:
+      rule: com01-derived-consumption-registry
+      class: quarantine
+      license: MIT-derived
+      provenance: generated
+      distribution: non-distributed
+    crates/sipi-agent-com-direct/quarantine/agent-com/schemas/behavior-presets.yaml:
+      rule: com01-pinned-mit-resources
+      class: quarantine
+      license: MIT
+      provenance: external
+      distribution: non-distributed
+    crates/sipi-agent-com-direct/quarantine/agent-com/schemas/r480-config.schema.yaml:
+      rule: com01-pinned-mit-resources
+      class: quarantine
+      license: MIT
+      provenance: external
+      distribution: non-distributed
     crates/sipi-agent-com-direct/src/bin/compare.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-agent-com-direct/src/bin/config_validate.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-agent-com-direct/src/config_preflight_v1.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-agent-com-direct/src/config_validate_v1.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -203,13 +251,37 @@ inventory:
       license: LicenseRef-Provenance-Pending
       provenance: project_authored
       distribution: non-distributed
+    crates/sipi-agent-spice-direct/NOTICE-AGENT-SPICE-AS-01.txt:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     crates/sipi-agent-spice-direct/NOTICE-AGENT-SPICE-MIT.md:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
       provenance: project_authored
       distribution: non-distributed
+    crates/sipi-agent-spice-direct/src/bin/sipi-agent-spice-fit-sparam.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-agent-spice-direct/src/fit_sparam.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
     crates/sipi-agent-spice-direct/src/lib.rs:
+      rule: p1-rust-foundation
+      class: quarantine
+      license: LicenseRef-Provenance-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-agent-spice-direct/tests/as01.rs:
       rule: p1-rust-foundation
       class: quarantine
       license: LicenseRef-Provenance-Pending
@@ -4505,7 +4577,25 @@ inventory:
       license: LicenseRef-PyBERT-Native-Core-Pending
       provenance: project_authored
       distribution: non-distributed
+    crates/sipi-pybert-direct/NOTICE-PYBERT-PB01-DIRECT-PORT.md:
+      rule: p1-pybert-direct-scaffold-quarantine
+      class: quarantine
+      license: LicenseRef-PyBERT-Native-Core-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-pybert-direct/SOURCE-MAP-PB01.md:
+      rule: p1-pybert-direct-scaffold-quarantine
+      class: quarantine
+      license: LicenseRef-PyBERT-Native-Core-Pending
+      provenance: project_authored
+      distribution: non-distributed
     crates/sipi-pybert-direct/SOURCE-MAP.md:
+      rule: p1-pybert-direct-scaffold-quarantine
+      class: quarantine
+      license: LicenseRef-PyBERT-Native-Core-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml:
       rule: p1-pybert-direct-scaffold-quarantine
       class: quarantine
       license: LicenseRef-PyBERT-Native-Core-Pending
@@ -4583,6 +4673,18 @@ inventory:
       license: LicenseRef-PyBERT-Native-Core-Pending
       provenance: external
       distribution: non-distributed
+    crates/sipi-pybert-direct/src/legacy_runtime.rs:
+      rule: p1-pybert-direct-scaffold-quarantine
+      class: quarantine
+      license: LicenseRef-PyBERT-Native-Core-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-pybert-direct/src/legacy_sim.rs:
+      rule: p1-pybert-direct-scaffold-quarantine
+      class: quarantine
+      license: LicenseRef-PyBERT-Native-Core-Pending
+      provenance: project_authored
+      distribution: non-distributed
     crates/sipi-pybert-direct/src/lib.rs:
       rule: p1-pybert-native-core-quarantine
       class: quarantine
@@ -4650,6 +4752,12 @@ inventory:
       provenance: external
       distribution: non-distributed
     crates/sipi-pybert-direct/tests/direct.rs:
+      rule: p1-pybert-direct-scaffold-quarantine
+      class: quarantine
+      license: LicenseRef-PyBERT-Native-Core-Pending
+      provenance: project_authored
+      distribution: non-distributed
+    crates/sipi-pybert-direct/tests/legacy_runtime.rs:
       rule: p1-pybert-direct-scaffold-quarantine
       class: quarantine
       license: LicenseRef-PyBERT-Native-Core-Pending
@@ -4842,6 +4950,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/ami-candidate-quarantine-preflight.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/as-01-fit-sparam-direct-port.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8687,7 +8801,31 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-23-as-01-fit-sparam-direct-port.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-23-com-01-direct-port-preparation.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-23-com-03-direct-port-bound.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-23-pb-01-direct-port.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-23-pb-01-legacy-leaf-runtime.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -8862,6 +9000,24 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/channel-s2p-matched-observation.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/com-01-direct-port-corpus.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/com-01-direct-port-differential.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/com-01-direct-port-preparation.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -15623,6 +15779,18 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/pb-01-direct-port.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/pb-01-legacy-leaf.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/pb-02-direct-port.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -21263,6 +21431,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/aggregate_pb_01_direct_replay.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/aggregate_pb_02_direct_replay.py:
       rule: migration-tools
       class: migration_only
@@ -21618,6 +21792,18 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/run_all_tests.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/run_as_01_fit_sparam_oracle.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/run_com_01_direct_oracle.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -23549,6 +23735,18 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/run_pb_01_direct_replay.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/run_pb_01_legacy_leaf_replay.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/run_pb_02_direct_replay.py:
       rule: migration-tools
       class: migration_only
@@ -23849,6 +24047,18 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_pb_01_direct_replay.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_pb_01_legacy_leaf_replay.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_pb_02_direct_replay.py:
       rule: migration-tools
       class: migration_only
@@ -23868,6 +24078,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_replay_channel_rfm_receiver_handoff.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_run_com_01_direct_oracle.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -23928,6 +24144,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_as05_direct_port.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_as_01_fit_sparam_direct_port.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -24006,6 +24228,18 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_channel_s2p_matched_preflight.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_com_01_direct_differential.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_com_01_direct_port.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -27137,6 +27371,18 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_pb_01_direct_port.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_pb_01_legacy_leaf.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_pb_02_direct_port.py:
       rule: migration-tools
       class: migration_only
@@ -27252,6 +27498,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_as05_direct_port.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_as_01_fit_sparam_direct_port.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -27402,6 +27654,18 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_clean_room_templates.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_com_01_direct_differential.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_com_01_direct_port.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -30677,6 +30941,18 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_pb_01_direct_port.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_pb_01_legacy_leaf.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_pb_02_direct_port.py:
       rule: migration-tools
       class: migration_only
@@ -30898,6 +31174,27 @@ rules:
   distribution: non-distributed
   owner: sipi-migration-owner
   reason: imported Agent-Spice source is not a promoted Rust product crate
+- id: com01-pinned-mit-resources
+  include:
+  - crates/sipi-agent-com-direct/quarantine/agent-com/schemas/behavior-presets.yaml
+  - crates/sipi-agent-com-direct/quarantine/agent-com/schemas/r480-config.schema.yaml
+  class: quarantine
+  license: MIT
+  provenance: external
+  distribution: non-distributed
+  owner: sipi-clean-room-owner
+  reason: exact pinned Agent-COM MIT resources remain quarantined pending immutable
+    replay and release admission
+- id: com01-derived-consumption-registry
+  include:
+  - crates/sipi-agent-com-direct/quarantine/agent-com/consumption-registry.v1.json
+  class: quarantine
+  license: MIT-derived
+  provenance: generated
+  distribution: non-distributed
+  owner: sipi-clean-room-owner
+  reason: generated registry derived from pinned Agent-COM MIT source remains quarantined
+    and hash-bound
 - id: p1-rust-foundation
   include:
   - Cargo.toml
@@ -30907,6 +31204,9 @@ rules:
   exclude:
   - crates/sipi-ieee-com-sparam/**
   - crates/sipi-pybert-direct/**
+  - crates/sipi-agent-com-direct/quarantine/agent-com/consumption-registry.v1.json
+  - crates/sipi-agent-com-direct/quarantine/agent-com/schemas/behavior-presets.yaml
+  - crates/sipi-agent-com-direct/quarantine/agent-com/schemas/r480-config.schema.yaml
   class: quarantine
   license: LicenseRef-Provenance-Pending
   provenance: project_authored

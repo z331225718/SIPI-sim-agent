@@ -1,0 +1,150 @@
+schema: sipi.pb-01-legacy-leaf.v1
+status: implemented_scoped_leaf_pending_immutable_bound_replay
+date: 2026-08-23
+scope:
+  workflow: PB-01
+  command: sim
+  lane_crate: crates/sipi-pybert-direct
+  runtime_module: crates/sipi-pybert-direct/src/legacy_runtime.rs
+  cli_module: crates/sipi-pybert-direct/src/bin/sipi-pybert-direct.rs
+  fixture: crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml
+  product_workspace_modified: false
+  adapter_semantics_modified: false
+  new_domain_feature: false
+relationship:
+  predecessor_evidence: docs/baselines/pb-01-direct-port.v1.yaml
+  predecessor_role: full_branch_default_error_artifact_inventory
+  supersedes: boundary_only_candidate_status_for_scoped_leaf
+  preserves_predecessor_open_branch_inventory: true
+source:
+  repository: pybert
+  commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  license: BSD-3-Clause
+  source_map: crates/sipi-pybert-direct/SOURCE-MAP-PB01.md
+  notice: crates/sipi-pybert-direct/NOTICE-PYBERT-PB01-DIRECT-PORT.md
+  source_map_sha256: 511a856b037561c9b321a40da93adb6d6cffda88d6fd27583eb48312830b163b
+  notice_sha256: 5d64415798e9f62609502b968062d44ee82f767e3abbf7ca1acdd5a004b67562
+  objects:
+    src/pybert/cli.py: 4c1116007d31bcebf8db3252363eed7774c7b349
+    src/pybert/configuration.py: ef24ded89768291e7b5e945fab4fe50be3bd6c2d
+    src/pybert/pybert.py: 1af665c4595fff1ff5fb30341fe063bd10e5cd89
+    src/pybert/engine/python_backend.py: 6b7b664d89da1502c74fc7cd97fe4451bf98ab82
+    src/pybert/results.py: 4d8eafa77a20ef8a3ac307f6ae8c0397deb8e907
+candidate:
+  source_mode: working_tree_until_owner_commit
+  runtime_module_sha256: d57a8686cceee45073ebfc55e18663ca45e2956cc2575f3d39fb7b1f576eaa9a
+  cli_module_sha256: d7ab77ccabc021928b7a9e9768a46b15143bba6da5b6de18d4311595aff0756e
+  boundary_module_sha256: c190daba96a71ebb9b8d60af1c3deb56e76b812a95d73d9c6fa3219ecb7e9eba
+  status: executable_scoped_nrz_metallic_line_leaf
+  parser: yaml_rust2_exact_tag_policy_then_serde_yaml_projection
+  native_core: existing_sipi_pybert_direct_simulation_v1
+  runtime_python_dependency: false
+safety:
+  config_bytes_max: 1048576
+  yaml_depth_max: 64
+  allowed_root_tag: "!!python/object:pybert.configuration.PyBertCfg"
+  allowed_nested_tags: ["!!python/tuple"]
+  unclassified_tags_fail_closed: true
+  rx_n_taps_max: 256
+  dfe_tap_tuners_max: 64
+  total_samples_max: 50000000
+  result_bytes_max: 536870912
+  checked_arithmetic_before_native_allocation: true
+  result_path_alias_config_rejected: true
+fixture:
+  path: crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml
+  sha256: d63bb7ab3466ae70406cd2a555ae5a95cda1264021fed8fb1cdca85da961cc48
+  profile:
+    modulation: NRZ
+    pattern: PRBS-7
+    channel: analytic_metallic_line
+    tx_rx_ffe: cursor_only
+    ctle: bypass
+    dfe: bypass
+    noise: disabled
+  upstream_sim_cli: pinned_pybert_sim
+  rust_sim_cli: sipi-pybert-direct_sim
+artifact:
+  suffix: .pybert_data
+  rust_codec: python_pickle_dict_sipi.pybert_data.v1
+  upstream_codec: PyBertData_pickle
+  canonical_item_names:
+    - chnl_h
+    - tx_out_h
+    - ctle_out_h
+    - dfe_out_h
+    - chnl_s
+    - tx_s
+    - ctle_s
+    - dfe_s
+    - tx_out_s
+    - ctle_out_s
+    - dfe_out_s
+    - chnl_p
+    - tx_out_p
+    - ctle_out_p
+    - dfe_out_p
+    - chnl_H
+    - tx_H
+    - ctle_H
+    - dfe_H
+    - tx_out_H
+    - ctle_out_H
+    - dfe_out_H
+    - tx_out
+  item_name_count: 23
+  array_key_policy: exact_set_equal_to_canonical_item_names
+  array_key_count: 23
+  noncanonical_array_keys: []
+  schema_probe: runtime_generated_fixture_pickle_restricted_decode
+  compared_arrays:
+    - chnl_h
+    - tx_out_h
+    - ctle_out_h
+    - dfe_out_h
+    - chnl_s
+    - tx_out_s
+    - ctle_out_s
+    - dfe_out_s
+    - chnl_p
+    - tx_out_p
+    - ctle_out_p
+    - dfe_out_p
+  tolerance:
+    absolute: 1.0e-7
+    relative_scale: 1.0e-6
+oracle:
+  runner: tools/run_pb_01_legacy_leaf_replay.py
+  runner_sha256: 343acab1a082a71d235dc98995472d7e8b9c3a0fda2ae5b47d471004309845d3
+  mode: immutable_archive_two_stage_python_oracle_vs_rust_candidate
+  local_observation: passed
+  local_observation_report: external_temp_report_not_bound
+  bound_report: null
+  next_gate: owner_commit_then_two_independent_immutable_replays_and_report_binding
+parity:
+  status: scoped_leaf_observed_open
+  numeric_payload_compared: true
+  compared_array_count: 12
+  branch_complete: false
+  exact_pybert_data_class_pickle: false
+  row_promotion: forbidden
+claims:
+  scoped_nrz_metallic_line_leaf: true
+  exact_upstream_numeric_parity_all_branches: false
+  PyBertData_class_pickle_compatibility: false
+  product_capability_admission: false
+  license_decision: false
+  release_approval: false
+open_branches:
+  - imported_S2P
+  - pybert_cfg_pickle_input
+  - AMI_and_IBIS_models
+  - periodic_and_random_noise
+  - adaptive_DFE_and_Viterbi
+  - jitter_eye_and_bathtub_analysis
+  - exact_PyBertData_class_pickle
+  - immutable_candidate_commit_replay_binding
+audit:
+  path: docs/baselines/audits/2026-08-23-pb-01-legacy-leaf-runtime.md
+  sha256: 727c89862cfcf1bb381aaff3e2b878b7a7d7a524c5ae5b4cdefd3bb376987f07

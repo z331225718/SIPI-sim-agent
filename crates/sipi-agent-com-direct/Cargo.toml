@@ -5,14 +5,24 @@ edition = "2024"
 rust-version = "1.97"
 license = "MIT"
 publish = false
-description = "Lane-local direct port of the pinned Agent-COM result comparator."
+description = "Lane-local direct ports of the pinned Agent-COM compare and config-validate boundaries."
 
 [workspace]
 
 [dependencies]
+flate2 = "1"
+quick-xml = "0.37"
+sipi-com = { path = "../sipi-com" }
+sha2 = "0.10"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+serde_yaml = "0.9"
+zip = "2"
 
 [[bin]]
 name = "sipi-com-direct-compare"
 path = "src/bin/compare.rs"
+
+[[bin]]
+name = "sipi-com-direct-config-validate"
+path = "src/bin/config_validate.rs"

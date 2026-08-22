@@ -9,5 +9,13 @@ description = "Lane-local Agent-Spice direct-port admission model."
 
 [workspace]
 
+[dependencies]
+faer = { version = "0.24.4", default-features = false, features = ["std", "linalg"] }
+num-complex = "0.4"
+serde_json = "1"
+same-file = "1.0"
+sipi-channel = { path = "../sipi-channel" }
+sipi-types = { path = "../sipi-types" }
+
 [lints.rust]
 unsafe_code = "forbid"

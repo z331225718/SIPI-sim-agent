@@ -1,0 +1,123 @@
+schema: sipi.pb-01-direct-port.v1
+status: superseded_by_executable_scoped_leaf
+date: 2026-08-23
+scope:
+  workflow: PB-01
+  command: sim
+  lane_crate: crates/sipi-pybert-direct
+  candidate_module: crates/sipi-pybert-direct/src/legacy_sim.rs
+  product_workspace_modified: false
+  adapter_semantics_modified: false
+  new_domain_feature: false
+  numerical_replacement: not_started
+relationship:
+  record_role: predecessor_boundary_inventory
+  superseded_by: docs/baselines/pb-01-legacy-leaf.v1.yaml
+  supersession_scope: active_implementation_status_for_scoped_nrz_metallic_line_leaf
+  retained_scope: full_pb01_branch_default_error_artifact_inventory
+  executable_leaf_branch_complete: false
+source:
+  repository: pybert
+  commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  cli_path: src/pybert/cli.py
+  cli_blob_oid_sha1: 4c1116007d31bcebf8db3252363eed7774c7b349
+  cli_content_sha256: 3826b0c156166e6f04b0e9997ce64a53a53867db6d89143b7c582ca2cf4337c9
+  license: BSD-3-Clause
+  source_objects:
+    src/pybert/cli.py: 4c1116007d31bcebf8db3252363eed7774c7b349
+    src/pybert/configuration.py: ef24ded89768291e7b5e945fab4fe50be3bd6c2d
+    src/pybert/pybert.py: 1af665c4595fff1ff5fb30341fe063bd10e5cd89
+    src/pybert/results.py: 4d8eafa77a20ef8a3ac307f6ae8c0397deb8e907
+    src/pybert/engine/python_backend.py: 6b7b664d89da1502c74fc7cd97fe4451bf98ab82
+  source_bytes_policy: exact_git_objects_only
+  source_bytes_in_repository: false
+branch_inventory:
+  invocation:
+    command: sim
+    positional: [CONFIG_FILE]
+    optional: [--results, RESULTS_FILE]
+    config_click_type: click.Path(exists=true)
+    results_click_type: click.Path()
+  input_projection:
+    config_loader: PyBertCfg.load_from_file
+    accepted_extensions: [.yaml, .yml, .pybert_cfg]
+    yaml_loader: safe_loader_with_PyBertCfg_and_tuple_constructors
+    pickle_loader: legacy_pybert_cfg_only
+    unknown_extension: InvalidFileType
+    native_projection: not_present
+  execution:
+    backend: PythonSimulationBackend
+    validate: called_with_pybert_instance
+    simulate: PyBERT.simulate
+    initial_run: true
+    update_plots: true
+    aborted_callback: always_false
+    stage_callback: no_op
+  backend_selection:
+    requested_backend: python
+    selector: none
+    fallback: forbidden
+    auto_or_compare_branch: not_reachable_from_sim
+  artifacts:
+    default_result_path: CONFIG_FILE.with_suffix(.pybert_data)
+    explicit_result_path: RESULTS_FILE_forwarded_unchanged
+    codec: PyBertData_pickle
+    required_result_object: PyBertData
+    payload_decode_in_candidate: forbidden
+    save_errors: upstream_save_results_logs_and_does_not_raise
+  error_surface:
+    missing_config: click_path_exists_error
+    invalid_config_extension: InvalidFileType
+    malformed_or_wrong_type_config: PyBertCfg_load_error
+    simulation_backend_error: propagated_from_PythonSimulationBackend
+    result_write_error: logged_by_PyBert.save_results_artifact_postcondition_must_still_fail
+  reachable_numeric_branches:
+    channel: [default_Howard_Johnson_model, imported_S2P, termination_and_normalization, impulse_step_pulse]
+    tx: [symbol_generation, TX_FFE, periodic_noise, random_noise, optional_IBIS_AMI]
+    rx: [optional_CTLE, optional_RX_IBIS_AMI, optional_RX_FFE_DFE]
+    equalization: [DFE, optional_Viterbi_FEC, optional_AMI_GetWave_or_Init]
+    analysis: [crossing_times, data_dependent_and_spectral_jitter, time_eye, BER, statistical_eye, bathtub]
+candidate:
+  source_mode: working_tree_candidate_not_immutable
+  status: boundary_contract_only_legacy_projection_blocked
+  module_sha256: c190daba96a71ebb9b8d60af1c3deb56e76b812a95d73d9c6fa3219ecb7e9eba
+  request_type: LegacySimRequestV1
+  default_resolution: LegacySimRequestV1.resolved_results_path
+  native_core_reuse: sipi_pybert_direct::run_sim_native_file_reserved_for_proven_projection
+  does_not_parse_legacy_yaml_or_pickle: true
+  does_not_run_PyBERT_numeric_graph: true
+  does_not_fallback_to_native_input_guess: true
+oracle_runner:
+  prepare_path: tools/run_pb_01_direct_replay.py
+  aggregate_path: tools/aggregate_pb_01_direct_replay.py
+  prepare_sha256: eb82e484a55ad179ea11e03c8fc7e023cacfc13c7f0cc66494ea878527529b68
+  aggregate_sha256: 47f3666ae72a2cadbe8a8dcef0665e4b55ac8738b3ffbb27d8e397cbdbd9855f
+  mode: two_stage_source_preparation_then_optional_external_replay
+  stage_1: immutable_candidate_and_upstream_archive_identity_plus_opaque_config_hash
+  stage_2: optional_pinned_external_pybert_sim_and_caller_supplied_candidate_process
+  report_statuses: [prepared_open, observed_open]
+  result_payload: opaque_legacy_pickle_hash_only
+  reports_bound: false
+  aggregate_parity_gate: blocked_until_legacy_projection_and_comparator
+parity:
+  status: not_evaluated
+  numeric_payload_compared: false
+  branch_complete: false
+  row_promotion: forbidden
+claims:
+  exact_upstream_numeric_parity: false
+  PyBertData_pickle_compatibility: false
+  product_capability_admission: false
+  license_decision: false
+  release_approval: false
+audit:
+  path: docs/baselines/audits/2026-08-23-pb-01-direct-port.md
+  sha256: 9ccf235ee5949c057f2ec5974296b4ef56f2d638608e38e4af74c30e4c899299
+non_claims:
+  - This candidate does not copy PyBERT Python source, fixtures, arrays, pickle payloads, DLLs, or runtime assets.
+  - The predecessor boundary module itself does not implement a YAML/PyBertCfg parser, PyBertData codec, or legacy numeric simulation; the scoped executable leaf is recorded separately.
+  - The existing native core is reusable infrastructure only; it is not a PB-01 projection or parity result.
+  - The oracle runner does not decode or compare legacy pickle numeric payloads.
+  - SIPI wrapper behavior is not upstream PyBERT parity.
+  - This record is not a license conclusion, product admission, release approval, or redistribution authorization.

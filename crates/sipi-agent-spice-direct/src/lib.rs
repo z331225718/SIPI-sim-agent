@@ -1,12 +1,15 @@
 #![forbid(unsafe_code)]
 
-//! AS-05 direct-port admission model.
+//! AS-05 admission model plus the lane-local AS-01 `fit-sparam` direct port.
 //!
 //! This crate is intentionally lane-local and is not a product command yet.
 //! It records the pinned `run-hspice` branch contract before a Rust solver is
 //! promoted.  The model is executable for deck splitting, audit, conversion,
-//! dependency admission, and artifact planning; it never invokes a solver or
-//! claims numerical parity.
+//! dependency admission, and artifact planning. The AS-01 module contains a
+//! bounded native Rust fit route; neither lane claims product promotion or
+//! numerical parity without the pinned differential gate.
+
+pub mod fit_sparam;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{Display, Formatter};

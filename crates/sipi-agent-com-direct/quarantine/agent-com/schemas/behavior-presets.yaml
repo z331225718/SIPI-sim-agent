@@ -1,0 +1,15 @@
+schema_version: 1
+known_fix_ids:
+  - fix.calibration_per_case_td
+  - fix.cl120e_calibration_names
+  - fix.cl120e_calibration_pz_order
+  - fix.config_defaults
+  - fix.erl_best_phase
+  - fix.honor_tdr_bt_cutoff
+  - fix.quantization_without_rxffe
+  - fix.reject_duplicate_package_name
+  - fix.sigma_hp_rms
+presets:
+  r480: {enabled: true, reader_semantics: r480, fix_ids: []}
+  standard_io: {enabled: false, reader_semantics: standard, fix_ids: []}
+  experimental_corrected: {enabled: true, reader_semantics: r480, fix_ids: [fix.erl_best_phase, fix.reject_duplicate_package_name]}

@@ -1,0 +1,147 @@
+schema: sipi.com-01-direct-port-differential.v1
+status: implementation_materialized_open
+scope:
+  work_item: COM-01
+  upstream_public_entrypoint: config-validate
+  target: lane_local_direct_port_only
+  product_capability_promoted: false
+  global_migration_row_closed: false
+  direct_port_mode: product_owned_crate_schema_default_registry_materializer
+source:
+  repository: https://github.com/z331225718/agent-com.git
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  archive_inventory_sha256: 5f3f17e19edc07cf6498c9bfea20b8691082e2c05364b4462bc54df8549d0a04
+  declared_license: MIT
+  source_storage: pinned_git_objects_or_clean_archive_only
+  source_paths:
+    - {path: src/agent_com/cli.py, role: validate_parser_profile_selection_summary_and_error_mapping, git_blob_sha1: 7964d84bd52d60731bbf56ab9847bf4c190eacf9, bytes: 15589, content_sha256: 3ca1d26c097abaaa6197682a2c095dc2bc9d5810177429662a40463096fb51ca}
+    - {path: src/agent_com/config/__init__.py, role: config_public_exports, git_blob_sha1: 6c581ceb95ff6ba09c3e0569c8b1e49941a67010, bytes: 684, content_sha256: ab2fb8f93efc466fb1988b20f77eba0bd95dedea449e44af5afecf27e7642e30}
+    - {path: src/agent_com/config/consumption.py, role: configuration_consumption_report, git_blob_sha1: 50fc02d837a67f3b503a73672ec4fbcc40d39b73, bytes: 210466, content_sha256: c6202e42b5e5ccb7fa1f78c780b9ecf031af5400b35cd23f20ef7348207d28a7}
+    - {path: src/agent_com/config/derived.py, role: materialization_derived_core_helpers, git_blob_sha1: dc4ba2d07a42a93b8d2c916a07e94adc9865868f, bytes: 5098, content_sha256: eebbafa8dfad36376ed08b8f1241255ada872072a7571c22b1ec9bae9e668ffc}
+    - {path: src/agent_com/config/excel.py, role: xlsx_csv_mat_loaders_and_lookup, git_blob_sha1: 1cce4365b64f3bb0ef1f7617107d2df4c929afc7, bytes: 12218, content_sha256: 2886e9986b9c3a7c1fbdc6179878679ae26bb92f511c6b0689644f9a6c053c4d}
+    - {path: src/agent_com/config/literals.py, role: matlab_literal_parser, git_blob_sha1: d751e991bc5622423044950bbc69ee8b18d62b96, bytes: 4255, content_sha256: 146e7f72c7340d14badfdb63202db62af4c9174ad30f18f9c5a8fb90582fed56}
+    - {path: src/agent_com/config/materialize.py, role: source_order_materialization_and_defaults, git_blob_sha1: a8856f91fe9208738446f539aa52ade2ea2c0bcf, bytes: 19030, content_sha256: 42f85e3cd5df74158acc10b9388f663419740b374756cdbd8332f052063d265c}
+    - {path: src/agent_com/config/schema.py, role: config_schema_and_package_blocks, git_blob_sha1: 568eb7621d52a639a4ba0ef028e7dd39c10cca2a, bytes: 11477, content_sha256: df203a88eacb5e0738420230e6b14b78240e63a35c5fa6cd8914d6e64cd14ceb}
+    - {path: src/agent_com/capabilities.py, role: materialized_fingerprint_boundary, git_blob_sha1: 0be8fa93ce54bd79cb61e6cf388c105f87cc4c50, bytes: 2266, content_sha256: a5f7a529e4ed6aedaf29514e085cc963b3b9f52882e8226244aa909df17e51bf}
+    - {path: schemas/behavior-presets.yaml, role: profile_preset_and_fix_id_registry, git_blob_sha1: 7f67deffd1e6100f1d67912df786bbf7612eb5cc, bytes: 578, content_sha256: 906e1b05bedf620fa431406b0ea41fae81dd235e759ff2155c17e68dccdf6d3e}
+    - {path: schemas/r480-config.schema.yaml, role: full_source_schema_default_catalog, git_blob_sha1: 28ffa5a5ff9890911643808da16665293eb693b0, bytes: 70677, content_sha256: 55a98abea9de8f8335cdfa327b3fded733f23ce60220b39117a951577c14760c}
+reachable_inventory:
+  defaults:
+    - {id: default_profile, value: r480, status: ported}
+    - {id: default_reader_semantics, value: r480, status: ported}
+    - {id: default_json_mode, value: false, status: ported}
+    - {id: default_materialized_json_mode, value: false, status: ported}
+  branches:
+    - {id: load_xlsx, status: ported_materialized_with_preallocation_preflight}
+    - {id: load_csv, status: ported_materialized}
+    - {id: load_mat, status: ported_materialized_with_preallocation_preflight}
+    - {id: profile_r480, status: ported}
+    - {id: profile_experimental_corrected, status: summary_parity_only_materialized_branch_unisolated}
+    - {id: profile_custom_reader, status: summary_parity_only_materialized_branch_unisolated}
+    - {id: json_summary, status: ported_materialized}
+    - {id: text_summary, status: ported_materialized}
+    - {id: materialized_json, status: semantic_projection_equal_fingerprint_open}
+    - {id: package_duplicate_warning, status: ported_warning_and_fix_gate}
+  errors:
+    - {id: unsupported_extension, status: ported}
+    - {id: malformed_or_missing_input, status: ported_reader_error_category}
+    - {id: mutually_exclusive_json_modes, status: ported}
+    - {id: invalid_profile_selection, status: ported}
+    - {id: unknown_fix_id, status: ported}
+    - {id: duplicate_override, status: ported}
+    - {id: unbalanced_package_markers, status: ported}
+  artifacts:
+    - {id: json_summary, status: ported_materialized}
+    - {id: text_summary, status: ported_materialized}
+    - {id: materialized_json, status: hashes_counts_and_difference_keys_only}
+    - {id: stderr_diagnostics, status: category_only_not_frozen}
+  open:
+    - exact_python_float_and_integer_fingerprint_serialization
+    - selected_package_block_end_to_end_oracle_fixture
+    - full_consumption_provenance_trace_sections
+    - immutable_candidate_archive_replay_binding
+implementation:
+  crate: crates/sipi-agent-com-direct
+  package_license: MIT
+  source_mode: working_tree_until_owner_commit
+  cargo_toml_sha256: 6f7a7a08300c4a0ecc0e45c1060671361ce13c63c55914839e58c7fe6a50fd93
+  cargo_lock_sha256: 7aad4efa1574a3108cd7bb7c05a01ebfe12b1ee1f82aa97029012cf0cda7a19f
+  source_map: crates/sipi-agent-com-direct/SOURCE-MAP-COM-01.md
+  source_map_sha256: 1cf34865c2513e0d89d1fc87039e126993ab9827801d73dd744a1ab5f6d8ec62
+  files:
+    - {path: crates/sipi-agent-com-direct/src/lib.rs, role: direct_crate_module_boundary, sha256: 35588944d78fe104454ad6b55362c8bb9cd7e0d3e7b68209136cd13afa2cb640}
+    - {path: crates/sipi-agent-com-direct/src/config_preflight_v1.rs, role: xlsx_zip_xml_and_mat_preallocation_admission, sha256: cb5a824d45a8361959e76b35b32a5094e9b4253b429d858d6fb8eb945615d5df}
+    - {path: crates/sipi-agent-com-direct/src/config_validate_v1.rs, role: bounded_schema_default_materialization_and_consumption_consumer, sha256: 39ca4b22c0e749fba5afa7c74c9f1da40036f31811607d14cf02b677a9ddacd5}
+    - {path: crates/sipi-agent-com-direct/src/bin/config_validate.rs, role: config_validate_cli_transport, sha256: 64f371f72b0f1f900cb6219f766ea6eebdcf1d04f11c77f759bc43602ef75780}
+    - {path: crates/sipi-agent-com-direct/quarantine/agent-com/schemas/r480-config.schema.yaml, role: exact_pinned_schema_default_catalog}
+    - {path: crates/sipi-agent-com-direct/quarantine/agent-com/schemas/behavior-presets.yaml, role: exact_pinned_profile_catalog}
+    - {path: crates/sipi-agent-com-direct/quarantine/agent-com/consumption-registry.v1.json, role: derived_pinned_consumption_registry}
+  reuses:
+    - sipi-com::read_com_settings_xlsx_v1
+    - sipi-com::read_com_settings_csv_v1
+    - sipi-com::read_com_settings_mat_v1
+    - sipi-com::parse_literal_v1
+    - sipi-com::resolve_default_value_v1
+  candidate_status: worktree_materialized_open
+  embedded_resources:
+    - {path: crates/sipi-agent-com-direct/quarantine/agent-com/schemas/r480-config.schema.yaml, sha256: 55a98abea9de8f8335cdfa327b3fded733f23ce60220b39117a951577c14760c, license: MIT}
+    - {path: crates/sipi-agent-com-direct/quarantine/agent-com/schemas/behavior-presets.yaml, sha256: 906e1b05bedf620fa431406b0ea41fae81dd235e759ff2155c17e68dccdf6d3e, license: MIT}
+    - {path: crates/sipi-agent-com-direct/quarantine/agent-com/consumption-registry.v1.json, sha256: 43e2ddda5bb945c2ff5b82dc63e1c4581cb367ade6f63dc6e37cf15bc1667e54, source_sha256: 404ed2631b07ed8f5c42bcae24f8d38d1aadcaecab5f6a4c2bab7869d4668957, license: MIT-derived}
+  no_workbook_or_mat_bytes_vendored: true
+  safety_boundary:
+    max_config_file_bytes: 16777216
+    max_config_cells: 1000000
+    max_numeric_elements: 1000000
+    max_count_value: 1000000
+    array_dims_checked_mul: true
+    consumed_nan_and_infinity_fail_closed: true
+    optional_xlsx_nan_cell_uses_pinned_missing_default: true
+    pinned_positive_infinity_default_preserved: true
+    override_keys_canonicalized_after_case_insensitive_validation: true
+    reader_preflight_before_shared_allocation: true
+    xlsx_max_archive_entries: 2048
+    xlsx_max_entry_uncompressed_bytes: 16777216
+    xlsx_max_total_uncompressed_bytes: 67108864
+    xlsx_max_metadata_xml_bytes: 1048576
+    xlsx_max_shared_strings_bytes: 8388608
+    xlsx_max_sheet_xml_bytes: 16777216
+    xlsx_max_rectangular_grid_cells: 1000000
+    mat_max_expanded_bytes: 33554432
+    mat_max_elements: 1000000
+    mat_max_depth: 16
+    mat_max_dimensions: 16
+    mat_max_matrix_elements: 1000000
+    pinned_xlsx_and_mat_fixture_preflight_passed: true
+  shared_reader_review:
+    - {path: crates/sipi-com/src/workbook_v1.rs, sha256: 14840d58b29269db739a5c2844796222ecc64e1fe9b1936a7fb86651736f90c3, finding: target_xml_and_rectangular_grid_allocate_after_decode}
+    - {path: crates/sipi-com/src/mat_reader_v1.rs, sha256: c7e327dc724e219d34b776699870fbb2e62b669bbe11712186fd02607685864d, finding: compressed_elements_and_parameter_grid_allocate_after_decode}
+corpus:
+  path: docs/baselines/com-01-direct-port-corpus.v1.json
+  scenario_count: 14
+  scenario_set_sha256: abcb4cdecfb67f5de13439baec64cf45f752bc76a7765ace7434b2874523fa96
+  fixture_policy: owner_supplied_external_fixture_plus_derived_temp_package_fixture
+runner:
+  preparation_runner: tools/run_com_01_direct_oracle.py
+  preparation_runner_sha256: 6d84145b661570f9aa5fac5ea730063201fe4eea8cb03fde0ea722e2a5809baa
+  differential_verifier_sha256: fe000b5628abc1752e9f01d33936e9c2c9ffa835709e61f9c754460193ecd0c2
+  stage_1: pinned_source_and_candidate_archive_ready
+  stage_2: two_run_differential_execution_ready_with_external_fixture
+  report_schema: sipi.com-01-direct-port-differential.v1
+  candidate_binding: executable_supplied_at_run_time
+  latest_external_fixture_report: docs/baselines/com-01-direct-port-differential.v1.json
+  latest_external_fixture_report_sha256: a91e7f6ff543729dc9a52aa33bab138366c70a7e84ef4c25f55fb74f3b5ef258
+  latest_report_status: open_differential_mismatch_fingerprint_only
+  evidence_payload: hashes_counts_error_categories_and_bounded_difference_keys_only
+  complete_materialized_values_stored: false
+audit:
+  path: docs/baselines/audits/2026-08-23-com-01-direct-port-preparation.md
+  sha256: 1aac7535739a4506991ef04a6f9edc09fe41814ce9b4f7b3187ce8bbc76419c8
+non_claims:
+  - no_branch_complete_parity
+  - no_com_runtime_execution
+  - no_product_capability_promotion
+  - no_global_migration_row_close
+  - no_workbook_or_mat_bytes_vendored
+  - no_external_fixture_custody
+  - no_release_readiness

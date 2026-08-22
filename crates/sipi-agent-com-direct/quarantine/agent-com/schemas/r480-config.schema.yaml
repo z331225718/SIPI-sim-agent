@@ -1,0 +1,3220 @@
+schema_version: 1
+source: matlab_src/com_ieee8023_480.m
+source_sha256: 88db14d7d82dab980d223a5be02a28013c11e0d0239e0e97e36c9d36fef55596
+parameters:
+- key: A_DD
+  source_lines:
+  - 8923
+  required_in_any_call: true
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: A_DD
+    source_line: 8923
+    target: param.A_DD
+    scale: 1.0
+    evaluate_strings: false
+    required: true
+    default_expression: null
+- key: A_fe
+  source_lines:
+  - 8909
+  - 9611
+  required_in_any_call: true
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: A_fe
+    source_line: 8909
+    target: param.a_fext
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0.5'
+  - key: A_fe
+    source_line: 9611
+    target: param_struct.a_fext
+    scale: 1.0
+    evaluate_strings: true
+    required: true
+    default_expression: null
+- key: A_ft
+  source_lines:
+  - 8911
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: A_ft
+    source_line: 8911
+    target: param.a_icn_fext
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.a_fext
+- key: A_ne
+  source_lines:
+  - 8910
+  - 9612
+  required_in_any_call: true
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: A_ne
+    source_line: 8910
+    target: param.a_next
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0.5'
+  - key: A_ne
+    source_line: 9612
+    target: param_struct.a_next
+    scale: 1.0
+    evaluate_strings: true
+    required: true
+    default_expression: null
+- key: A_nt
+  source_lines:
+  - 8912
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: A_nt
+    source_line: 8912
+    target: param.a_icn_next
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.a_next
+- key: A_v
+  source_lines:
+  - 8908
+  - 9610
+  required_in_any_call: true
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: A_v
+    source_line: 8908
+    target: param.a_thru
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0.5'
+  - key: A_v
+    source_line: 9610
+    target: param_struct.a_thru
+    scale: 1.0
+    evaluate_strings: true
+    required: true
+    default_expression: null
+- key: AC_CM_RMS
+  source_lines:
+  - 9077
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: AC_CM_RMS
+    source_line: 9077
+    target: param.AC_CM_RMS
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: ACCM_MAX_Freq
+  source_lines:
+  - 9078
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: ACCM_MAX_Freq
+    source_line: 9078
+    target: param.ACCM_MAX_Freq
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.fb
+- key: AUTO_TFX
+  source_lines:
+  - 9197
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: AUTO_TFX
+    source_line: 9197
+    target: OP.AUTO_TFX
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: B_float_RSS_MAX
+  source_lines:
+  - 8848
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: B_float_RSS_MAX
+    source_line: 8848
+    target: param.B_float_RSS_MAX
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: b_max(1)
+  source_lines:
+  - 8939
+  required_in_any_call: true
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: b_max(1)
+    source_line: 8939
+    target: param.bmax
+    scale: 1.0
+    evaluate_strings: false
+    required: true
+    default_expression: null
+- key: b_max(2..N_b)
+  source_lines:
+  - 8947
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: b_max(2..N_b)
+    source_line: 8947
+    target: param.bmax
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '.2'
+- key: b_min(1)
+  source_lines:
+  - 8943
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: b_min(1)
+    source_line: 8943
+    target: param.bmin
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: -param.bmax(1)
+- key: b_min(2..N_b)
+  source_lines:
+  - 8948
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: b_min(2..N_b)
+    source_line: 8948
+    target: param.bmin
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: -1*param.bmax(2:param.ndfe)
+- key: BBN Q factor
+  source_lines:
+  - 9163
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: BBN Q factor
+    source_line: 9163
+    target: OP.BBN_Q_factor
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '5'
+- key: Bessel_Thomson
+  source_lines:
+  - 9192
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Bessel_Thomson
+    source_line: 9192
+    target: OP.Bessel_Thomson
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: beta_x
+  source_lines:
+  - 9059
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: beta_x
+    source_line: 9059
+    target: param.beta_x
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: bmaxg
+  source_lines:
+  - 8845
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: bmaxg
+    source_line: 8845
+    target: param.bmaxg
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0.2'
+- key: board_tl_gamma0_a1_a2
+  source_lines:
+  - 9039
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: board_tl_gamma0_a1_a2
+    source_line: 9039
+    target: param.brd_gamma0_a1_a2
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '[0 4.114e-4 2.547e-4]'
+- key: board_tl_tau
+  source_lines:
+  - 9040
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: board_tl_tau
+    source_line: 9040
+    target: param.brd_tau
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '6.191e-3'
+- key: board_Z_c
+  source_lines:
+  - 9041
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: board_Z_c
+    source_line: 9041
+    target: param.brd_Z_c
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '109.8'
+- key: BREAD_CRUMBS
+  source_lines:
+  - 9153
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: BREAD_CRUMBS
+    source_line: 9153
+    target: OP.BREAD_CRUMBS
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: BREAD_CRUMBS_FIELDS
+  source_lines:
+  - 9154
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: BREAD_CRUMBS_FIELDS
+    source_line: 9154
+    target: OP.BREAD_CRUMBS_FIELDS
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: ''''''
+- key: BTorder
+  source_lines:
+  - 9056
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: BTorder
+    source_line: 9056
+    target: param.BTorder
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '4'
+- key: Butterworth
+  source_lines:
+  - 9194
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Butterworth
+    source_line: 9194
+    target: OP.Butterworth
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '1'
+- key: c(-1)
+  source_lines:
+  - 8829
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: c(-1)
+    source_line: 8829
+    target: param.tx_ffe_cm1_values
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: c(-2)
+  source_lines:
+  - 8828
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: c(-2)
+    source_line: 8828
+    target: param.tx_ffe_cm2_values
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: c(-3)
+  source_lines:
+  - 8827
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: c(-3)
+    source_line: 8827
+    target: param.tx_ffe_cm3_values
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: c(-4)
+  source_lines:
+  - 8826
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: c(-4)
+    source_line: 8826
+    target: param.tx_ffe_cm4_values
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: c(0)
+  source_lines:
+  - 8802
+  required_in_any_call: true
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: c(0)
+    source_line: 8802
+    target: param.tx_ffe_c0_min
+    scale: 1.0
+    evaluate_strings: false
+    required: true
+    default_expression: null
+- key: c(1)
+  source_lines:
+  - 8830
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: c(1)
+    source_line: 8830
+    target: param.tx_ffe_cp1_values
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: c(2)
+  source_lines:
+  - 8831
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: c(2)
+    source_line: 8831
+    target: param.tx_ffe_cp2_values
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: c(3)
+  source_lines:
+  - 8832
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: c(3)
+    source_line: 8832
+    target: param.tx_ffe_cp3_values
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: C_0
+  source_lines:
+  - 8993
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: C_0
+    source_line: 8993
+    target: param.C_0
+    scale: 1.0e-09
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: C_1
+  source_lines:
+  - 8994
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: C_1
+    source_line: 8994
+    target: param.C_1
+    scale: 1.0e-09
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: C_b
+  source_lines:
+  - 8969
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: C_b
+    source_line: 8969
+    target: param.C_bump
+    scale: 1.0e-09
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: C_d
+  source_lines:
+  - 8966
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: C_d
+    source_line: 8966
+    target: param.C_diepad
+    scale: 1.0e-09
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: C_p
+  source_lines:
+  - 8965
+  - 9607
+  required_in_any_call: true
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: C_p
+    source_line: 8965
+    target: param.C_pkg_board
+    scale: 1.0e-09
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+  - key: C_p
+    source_line: 9607
+    target: param_struct.C_pkg_board
+    scale: 1.0e-09
+    evaluate_strings: true
+    required: true
+    default_expression: null
+- key: C_v
+  source_lines:
+  - 8972
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: C_v
+    source_line: 8972
+    target: param.C_v
+    scale: 1.0e-09
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: CDR
+  source_lines:
+  - 9222
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: CDR
+    source_line: 9222
+    target: OP.CDR
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '''MM'''
+- key: COM Pass threshold
+  source_lines:
+  - 8918
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: COM Pass threshold
+    source_line: 8918
+    target: param.pass_threshold
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: COM_CONTRIBUTION
+  source_lines:
+  - 9155
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: COM_CONTRIBUTION
+    source_line: 9155
+    target: OP.COM_CONTRIBUTION_CURVES
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: COMPUTE_RILN
+  source_lines:
+  - 9232
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: COMPUTE_RILN
+    source_line: 9232
+    target: OP.COMPUTE_RILN
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: COMPUTE_TDILN
+  source_lines:
+  - 9233
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: COMPUTE_TDILN
+    source_line: 9233
+    target: OP.COMPUTE_TDILN
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: OP.COMPUTE_RILN
+- key: crusor_gain
+  source_lines:
+  - 8906
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: crusor_gain
+    source_line: 8906
+    target: param.cursor_gain
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: CSV_REPORT
+  source_lines:
+  - 9128
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: CSV_REPORT
+    source_line: 9128
+    target: OP.CSV_REPORT
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'true'
+- key: CTLE_type
+  source_lines:
+  - 8881
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: CTLE_type
+    source_line: 8881
+    target: param.CTLE_type
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '''CL93'''
+- key: D_p
+  source_lines:
+  - 8836
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: D_p
+    source_line: 8836
+    target: param.D_p
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '4'
+- key: Delta_f
+  source_lines:
+  - 8801
+  required_in_any_call: true
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Delta_f
+    source_line: 8801
+    target: param.max_freq_step
+    scale: 1000000000.0
+    evaluate_strings: false
+    required: true
+    default_expression: null
+- key: delta_IL
+  source_lines:
+  - 9049
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: delta_IL
+    source_line: 9049
+    target: param.delta_IL
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '1'
+- key: DER_0
+  source_lines:
+  - 8914
+  required_in_any_call: true
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: DER_0
+    source_line: 8914
+    target: param.specBER
+    scale: 1.0
+    evaluate_strings: false
+    required: true
+    default_expression: null
+- key: DER_CDR
+  source_lines:
+  - 8915
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: DER_CDR
+    source_line: 8915
+    target: param.DER_CDR
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: 1e-2
+- key: DIAGNOSTICS
+  source_lines:
+  - 9126
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: DIAGNOSTICS
+    source_line: 9126
+    target: OP.DEBUG
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: Display frequency domain
+  source_lines:
+  - 9132
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Display frequency domain
+    source_line: 9132
+    target: OP.GET_FD
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: OP.GET_FD
+- key: DISPLAY_WINDOW
+  source_lines:
+  - 9127
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: DISPLAY_WINDOW
+    source_line: 9127
+    target: OP.DISPLAY_WINDOW
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'true'
+- key: Do_Colored_Noise
+  source_lines:
+  - 9256
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Do_Colored_Noise
+    source_line: 9256
+    target: OP.Do_Colored_Noise
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '1'
+- key: Do_White_Noise
+  source_lines:
+  - 9257
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Do_White_Noise
+    source_line: 9257
+    target: OP.Do_White_Noise
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: Do_XT_Noise
+  source_lines:
+  - 9254
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Do_XT_Noise
+    source_line: 9254
+    target: OP.Do_XT_Noise
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '1'
+- key: Dynamic TXFFE
+  source_lines:
+  - 8794
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Dynamic TXFFE
+    source_line: 8794
+    target: OP.dynamic_txffe
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '1'
+- key: EH_max
+  source_lines:
+  - 8877
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: EH_max
+    source_line: 8877
+    target: param.Max_VEO
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: inf
+- key: EH_min
+  source_lines:
+  - 8876
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: EH_min
+    source_line: 8876
+    target: param.Min_VEO
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: EH_min_test
+  source_lines:
+  - 8878
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: EH_min_test
+    source_line: 8878
+    target: param.Min_VEO_Test
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: Enforce Causality
+  source_lines:
+  - 9156
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Enforce Causality
+    source_line: 9156
+    target: OP.ENFORCE_CAUSALITY
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: Enforce Causality DIFF_TOL
+  source_lines:
+  - 9158
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Enforce Causality DIFF_TOL
+    source_line: 9158
+    target: OP.EC_DIFF_TOL
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 1e-3
+- key: Enforce Causality pulse start tolerance
+  source_lines:
+  - 9159
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Enforce Causality pulse start tolerance
+    source_line: 9159
+    target: OP.EC_PULSE_TOL
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0.01'
+- key: Enforce Causality REL_TOL
+  source_lines:
+  - 9157
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Enforce Causality REL_TOL
+    source_line: 9157
+    target: OP.EC_REL_TOL
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 1e-2
+- key: ERL
+  source_lines:
+  - 9183
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: ERL
+    source_line: 9183
+    target: OP.ERL
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: ERL Pass threshold
+  source_lines:
+  - 8919
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: ERL Pass threshold
+    source_line: 8919
+    target: param.ERL_pass_threshold
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: ERL_FOM
+  source_lines:
+  - 9166
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: ERL_FOM
+    source_line: 9166
+    target: OP.RL_norm_test
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '1'
+- key: ERL_ONLY
+  source_lines:
+  - 9182
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: ERL_ONLY
+    source_line: 9182
+    target: OP.ERL_ONLY
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: Error propagation COM margin
+  source_lines:
+  - 9227
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Error propagation COM margin
+    source_line: 9227
+    target: OP.COM_EP_margin
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: eta_0
+  source_lines:
+  - 8924
+  required_in_any_call: true
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: eta_0
+    source_line: 8924
+    target: param.eta_0
+    scale: 1.0
+    evaluate_strings: false
+    required: true
+    default_expression: null
+- key: EW
+  source_lines:
+  - 9138
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: EW
+    source_line: 9138
+    target: OP.EW
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: EXE_MODE
+  source_lines:
+  - 9122
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: EXE_MODE
+    source_line: 9122
+    target: OP.EXE_MODE
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '1'
+- key: exit if deployed
+  source_lines:
+  - 9120
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: exit if deployed
+    source_line: 9120
+    target: OP.exit_if_deployed
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: f_1
+  source_lines:
+  - 8800
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: f_1
+    source_line: 8800
+    target: param.f1
+    scale: 1000000000.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.max_start_freq/1e9
+- key: f_2
+  source_lines:
+  - 8798
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: f_2
+    source_line: 8798
+    target: param.f2
+    scale: 1000000000.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.fb/1e9
+- key: f_b
+  source_lines:
+  - 8797
+  required_in_any_call: true
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: f_b
+    source_line: 8797
+    target: param.fb
+    scale: 1000000000.0
+    evaluate_strings: false
+    required: true
+    default_expression: null
+- key: f_f
+  source_lines:
+  - 9052
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: f_f
+    source_line: 9052
+    target: param.f_f
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '4'
+- key: f_hp
+  source_lines:
+  - 9096
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: f_hp
+    source_line: 9096
+    target: param.f_hp
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: f_HP_P
+  source_lines:
+  - 8873
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: f_HP_P
+    source_line: 8873
+    target: param.f_HP_P
+    scale: 1000000000.0
+    evaluate_strings: true
+    required: false
+    default_expression: '[]'
+- key: f_HP_PZ
+  source_lines:
+  - 8871
+  - 8899
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: f_HP_PZ
+    source_line: 8871
+    target: param.f_HP
+    scale: 1000000000.0
+    evaluate_strings: true
+    required: false
+    default_expression: '[]'
+  - key: f_HP_PZ
+    source_line: 8899
+    target: param.f_HP
+    scale: 1000000000.0
+    evaluate_strings: true
+    required: false
+    default_expression: '[]'
+- key: f_HP_Z
+  source_lines:
+  - 8872
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: f_HP_Z
+    source_line: 8872
+    target: param.f_HP_Z
+    scale: 1000000000.0
+    evaluate_strings: true
+    required: false
+    default_expression: '[]'
+- key: f_min
+  source_lines:
+  - 8799
+  required_in_any_call: true
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: f_min
+    source_line: 8799
+    target: param.max_start_freq
+    scale: 1000000000.0
+    evaluate_strings: false
+    required: true
+    default_expression: null
+- key: f_n
+  source_lines:
+  - 9053
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: f_n
+    source_line: 9053
+    target: param.f_n
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '4'
+- key: f_p1
+  source_lines:
+  - 8887
+  - 8894
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: f_p1
+    source_line: 8887
+    target: param.CTLE_fp1
+    scale: 1000000000.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.fb/4
+  - key: f_p1
+    source_line: 8894
+    target: param.CTLE_fp1
+    scale: 1000000000.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.fb/4
+- key: f_p2
+  source_lines:
+  - 8888
+  - 8895
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: f_p2
+    source_line: 8888
+    target: param.CTLE_fp2
+    scale: 1000000000.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.fb
+  - key: f_p2
+    source_line: 8895
+    target: param.CTLE_fp2
+    scale: 1000000000.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.fb
+- key: f_r
+  source_lines:
+  - 9054
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: f_r
+    source_line: 9054
+    target: param.f_r
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '4'
+- key: f_v
+  source_lines:
+  - 9051
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: f_v
+    source_line: 9051
+    target: param.f_v
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '4'
+- key: f_z
+  source_lines:
+  - 8889
+  - 8896
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: f_z
+    source_line: 8889
+    target: param.CTLE_fz
+    scale: 1000000000.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.fb/4
+  - key: f_z
+    source_line: 8896
+    target: param.CTLE_fz
+    scale: 1000000000.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.fb/4
+- key: ffe_backoff
+  source_lines:
+  - 8862
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: ffe_backoff
+    source_line: 8862
+    target: param.ffe_backoff
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: ffe_main_cursor_min
+  source_lines:
+  - 8858
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: ffe_main_cursor_min
+    source_line: 8858
+    target: param.ffe_main_cursor_min
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '1'
+- key: FFE_OPT_METHOD
+  source_lines:
+  - 9258
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: FFE_OPT_METHOD
+    source_line: 9258
+    target: OP.FFE_OPT_METHOD
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '''MMSE'''
+- key: ffe_post_tap1_max
+  source_lines:
+  - 8860
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: ffe_post_tap1_max
+    source_line: 8860
+    target: param.ffe_post_tap1_max
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '.7'
+- key: ffe_post_tap_len
+  source_lines:
+  - 8854
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: ffe_post_tap_len
+    source_line: 8854
+    target: param.ffe_post_tap_len
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: ffe_pre_tap1_max
+  source_lines:
+  - 8859
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: ffe_pre_tap1_max
+    source_line: 8859
+    target: param.ffe_pre_tap1_max
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '.7'
+- key: ffe_pre_tap_len
+  source_lines:
+  - 8852
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: ffe_pre_tap_len
+    source_line: 8852
+    target: param.ffe_pre_tap_len
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: FFE_SNR
+  source_lines:
+  - 9255
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: FFE_SNR
+    source_line: 9255
+    target: OP.FFE_SNR
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '1'
+- key: ffe_tap_step_size
+  source_lines:
+  - 8856
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: ffe_tap_step_size
+    source_line: 8856
+    target: param.ffe_tap_step_size
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: ffe_tapn_max
+  source_lines:
+  - 8861
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: ffe_tapn_max
+    source_line: 8861
+    target: param.ffe_tapn_max
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '.7'
+- key: fixture delay time
+  source_lines:
+  - 9061
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: fixture delay time
+    source_line: 9061
+    target: param.tfx
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '-1'
+- key: flip
+  source_lines:
+  - 9095
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: flip
+    source_line: 9095
+    target: param.flip
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: FloatingDFE_Development
+  source_lines:
+  - 8795
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: FloatingDFE_Development
+    source_line: 8795
+    target: OP.FloatingDFE_Development
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '1'
+- key: Force BBN Q factor
+  source_lines:
+  - 9164
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Force BBN Q factor
+    source_line: 9164
+    target: OP.force_BBN_Q_factor
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: Force PDF bin size
+  source_lines:
+  - 9124
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Force PDF bin size
+    source_line: 9124
+    target: OP.force_pdf_bin_size
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: FORCE_TR
+  source_lines:
+  - 9170
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: FORCE_TR
+    source_line: 9170
+    target: OP.FORCE_TR
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: fraction_of_F_range_start_extrap_from
+  source_lines:
+  - 9231
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: fraction_of_F_range_start_extrap_from
+    source_line: 9231
+    target: OP.fraction_of_F_range_start_extrap_from
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0.75'
+- key: FT_COOP
+  source_lines:
+  - 9150
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: FT_COOP
+    source_line: 9150
+    target: OP.FT_COOP
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: G2_Qual
+  source_lines:
+  - 8952
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: G2_Qual
+    source_line: 8952
+    target: param.g2qual
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '[]'
+- key: g_DC
+  source_lines:
+  - 8886
+  - 8893
+  required_in_any_call: true
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: g_DC
+    source_line: 8886
+    target: param.ctle_gdc_values
+    scale: 1.0
+    evaluate_strings: true
+    required: true
+    default_expression: null
+  - key: g_DC
+    source_line: 8893
+    target: param.ctle_gdc_values
+    scale: 1.0
+    evaluate_strings: true
+    required: true
+    default_expression: null
+- key: g_DC_HP
+  source_lines:
+  - 8870
+  - 8898
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: g_DC_HP
+    source_line: 8870
+    target: param.g_DC_HP_values
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '[]'
+  - key: g_DC_HP
+    source_line: 8898
+    target: param.g_DC_HP_values
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '[]'
+- key: G_Qual
+  source_lines:
+  - 8951
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: G_Qual
+    source_line: 8951
+    target: param.gqual
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '[]'
+- key: GDC_MIN
+  source_lines:
+  - 8905
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: GDC_MIN
+    source_line: 8905
+    target: param.GDC_MIN
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: Grr
+  source_lines:
+  - 9063
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Grr
+    source_line: 9063
+    target: param.Grr
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: param.Grr_limit
+- key: Grr_limit
+  source_lines:
+  - 9062
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Grr_limit
+    source_line: 9062
+    target: param.Grr_limit
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '1'
+- key: Gx
+  source_lines:
+  - 9064
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Gx
+    source_line: 9064
+    target: param.Gx
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: Histogram_Window_Weight
+  source_lines:
+  - 9084
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Histogram_Window_Weight
+    source_line: 9084
+    target: OP.Histogram_Window_Weight
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '''rectangle'''
+- key: IDEAL_RX_TERM
+  source_lines:
+  - 9143
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: IDEAL_RX_TERM
+    source_line: 9143
+    target: OP.IDEAL_RX_TERM
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: IDEAL_TX_TERM
+  source_lines:
+  - 9139
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: IDEAL_TX_TERM
+    source_line: 9139
+    target: OP.IDEAL_TX_TERM
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: imb_C_fctr
+  source_lines:
+  - 9093
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: imb_C_fctr
+    source_line: 9093
+    target: param.imb_C_fctr
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '1'
+- key: imb_Z_fctr
+  source_lines:
+  - 9092
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: imb_Z_fctr
+    source_line: 9092
+    target: param.imb_Z_fctr
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '1'
+- key: Impulse response truncatio threshold
+  source_lines:
+  - 9199
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Impulse response truncatio threshold
+    source_line: 9199
+    target: OP.impulse_response_truncation_threshold
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 1e-3
+- key: Impulse response truncation threshold
+  source_lines:
+  - 9200
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Impulse response truncation threshold
+    source_line: 9200
+    target: OP.impulse_response_truncation_threshold
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 1e-3
+- key: INC_PACKAGE
+  source_lines:
+  - 9133
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: INC_PACKAGE
+    source_line: 9133
+    target: OP.INC_PACKAGE
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'true'
+- key: inc_reflect_board
+  source_lines:
+  - 9196
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: inc_reflect_board
+    source_line: 9196
+    target: OP.inc_reflect_board
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: Include PCB
+  source_lines:
+  - 9119
+  required_in_any_call: true
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Include PCB
+    source_line: 9119
+    target: OP.include_pcb
+    scale: 1.0
+    evaluate_strings: false
+    required: true
+    default_expression: null
+- key: Include PCB (table 92-13)
+  source_lines:
+  - 9074
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Include PCB (table 92-13)
+    source_line: 9074
+    target: OP.include_pcb
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: INCLUDE_CTLE
+  source_lines:
+  - 9121
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: INCLUDE_CTLE
+    source_line: 9121
+    target: OP.INCLUDE_CTLE
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '1'
+- key: INCLUDE_TX_RX_FILTER
+  source_lines:
+  - 9123
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: INCLUDE_TX_RX_FILTER
+    source_line: 9123
+    target: OP.INCLUDE_FILTER
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '1'
+- key: kappa1
+  source_lines:
+  - 8788
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: kappa1
+    source_line: 8788
+    target: param.kappa1
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '1'
+- key: kappa2
+  source_lines:
+  - 8789
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: kappa2
+    source_line: 8789
+    target: param.kappa2
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '1'
+- key: L
+  source_lines:
+  - 8913
+  required_in_any_call: true
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: L
+    source_line: 8913
+    target: param.levels
+    scale: 1.0
+    evaluate_strings: false
+    required: true
+    default_expression: null
+- key: L_s
+  source_lines:
+  - 8968
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: L_s
+    source_line: 8968
+    target: param.L_comp
+    scale: 1.0e-09
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: LIMIT_JITTER_CONTRIB_TO_DFE_SPAN
+  source_lines:
+  - 9198
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: LIMIT_JITTER_CONTRIB_TO_DFE_SPAN
+    source_line: 9198
+    target: OP.LIMIT_JITTER_CONTRIB_TO_DFE_SPAN
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: Local Search
+  source_lines:
+  - 9072
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: Local Search
+    source_line: 9072
+    target: param.LOCAL_SEARCH
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: M
+  source_lines:
+  - 8933
+  required_in_any_call: true
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: M
+    source_line: 8933
+    target: param.samples_per_ui
+    scale: 1.0
+    evaluate_strings: true
+    required: true
+    default_expression: null
+- key: Max burst length calculated
+  source_lines:
+  - 9226
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Max burst length calculated
+    source_line: 9226
+    target: OP.nburst
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: Min_VEO_Test
+  source_lines:
+  - 8879
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: Min_VEO_Test
+    source_line: 8879
+    target: param.Min_VEO_Test
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.Min_VEO_Test
+- key: MLSD
+  source_lines:
+  - 9236
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: MLSD
+    source_line: 9236
+    target: OP.MLSD
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: MLSE
+  source_lines:
+  - 9237
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: MLSE
+    source_line: 9237
+    target: OP.MLSE
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: OP.MLSD
+- key: N
+  source_lines:
+  - 9179
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: N
+    source_line: 9179
+    target: OP.N
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: N_b
+  source_lines:
+  - 8834
+  required_in_any_call: true
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: N_b
+    source_line: 8834
+    target: param.ndfe
+    scale: 1.0
+    evaluate_strings: false
+    required: true
+    default_expression: null
+- key: N_b_step
+  source_lines:
+  - 8851
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: N_b_step
+    source_line: 8851
+    target: param.dfe_delta
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: N_bf
+  source_lines:
+  - 8840
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: N_bf
+    source_line: 8840
+    target: param.N_bf
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '6'
+- key: N_bg
+  source_lines:
+  - 8839
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: N_bg
+    source_line: 8839
+    target: param.N_bg
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: N_bmax
+  source_lines:
+  - 8841
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: N_bmax
+    source_line: 8841
+    target: param.N_bmax
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.ndfe
+- key: N_bx
+  source_lines:
+  - 8837
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: N_bx
+    source_line: 8837
+    target: param.N_bx
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.ndfe
+- key: N_f
+  source_lines:
+  - 8842
+  - 8843
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: N_f
+    source_line: 8842
+    target: param.N_bmax
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.ndfe
+  - key: N_f
+    source_line: 8843
+    target: param.N_f
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.ndfe
+- key: N_qb
+  source_lines:
+  - 8916
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: N_qb
+    source_line: 8916
+    target: param.N_qb
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: N_tail_start
+  source_lines:
+  - 8849
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: N_tail_start
+    source_line: 8849
+    target: param.N_tail_start
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: N_tc
+  source_lines:
+  - 8927
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: N_tc
+    source_line: 8927
+    target: param.trunc
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.trunc
+- key: N_v
+  source_lines:
+  - 8835
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: N_v
+    source_line: 8835
+    target: param.N_v
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.ndfe
+- key: Noise_Crest_Factor
+  source_lines:
+  - 9076
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: Noise_Crest_Factor
+    source_line: 9076
+    target: param.Noise_Crest_Factor
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: num_ui_RXFF_noise
+  source_lines:
+  - 8868
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: num_ui_RXFF_noise
+    source_line: 8868
+    target: param.num_ui_RXFF_noise
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '2048'
+- key: Optimize_loop_speed_up
+  source_lines:
+  - 9223
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: Optimize_loop_speed_up
+    source_line: 9223
+    target: OP.Optimize_loop_speed_up
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: P_qc
+  source_lines:
+  - 8917
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: P_qc
+    source_line: 8917
+    target: param.P_qc
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: 2*param.specBER
+- key: package_tl_gamma0_a1_a2
+  source_lines:
+  - 9015
+  - 9644
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: package_tl_gamma0_a1_a2
+    source_line: 9015
+    target: param.pkg_gamma0_a1_a2
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '[0 1.734e-3 1.455e-4]'
+  - key: package_tl_gamma0_a1_a2
+    source_line: 9644
+    target: param_struct.pkg_gamma0_a1_a2
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '[0 1.734e-3 1.455e-4]'
+- key: package_tl_tau
+  source_lines:
+  - 9016
+  - 9645
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: package_tl_tau
+    source_line: 9016
+    target: param.pkg_tau
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '6.141e-3'
+  - key: package_tl_tau
+    source_line: 9645
+    target: param_struct.pkg_tau
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '6.141e-3'
+- key: package_Z_c
+  source_lines:
+  - 9017
+  - 9646
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: package_Z_c
+    source_line: 9017
+    target: param.pkg_Z_c
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '''[92 92 ; 70 70; 80 80; 100 100]'''
+  - key: package_Z_c
+    source_line: 9646
+    target: param_struct.pkg_Z_c
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '78.2'
+- key: PDF bin size
+  source_lines:
+  - 9125
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: PDF bin size
+    source_line: 9125
+    target: OP.BinSize
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 1e-5
+- key: PHY
+  source_lines:
+  - 9204
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: PHY
+    source_line: 9204
+    target: OP.PHY
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: OP.PMD_type
+- key: PKG_NAME
+  source_lines:
+  - 8763
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: PKG_NAME
+    source_line: 8763
+    target: param.PKG_NAME
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: ''''''
+- key: PKG_Tx_FFE_preset
+  source_lines:
+  - 9036
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: PKG_Tx_FFE_preset
+    source_line: 9036
+    target: param.PKG_Tx_FFE_preset
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: PLOT_CM
+  source_lines:
+  - 9230
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: PLOT_CM
+    source_line: 9230
+    target: OP.PLOT_CM
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: PMD_type
+  source_lines:
+  - 9203
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: PMD_type
+    source_line: 9203
+    target: OP.PMD_type
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '''C2C'''
+- key: Port Order
+  source_lines:
+  - 9048
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: Port Order
+    source_line: 9048
+    target: param.snpPortsOrder
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '[1 3 2 4]'
+- key: Q
+  source_lines:
+  - 9097
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: Q
+    source_line: 9097
+    target: param.Q
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: Q_budget_adj
+  source_lines:
+  - 8930
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: Q_budget_adj
+    source_line: 8930
+    target: param.Q_budget_adj
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: QL
+  source_lines:
+  - 9087
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: QL
+    source_line: 9087
+    target: param.QL
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.T_O/param.Qr/1000
+- key: Qr
+  source_lines:
+  - 9086
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: Qr
+    source_line: 9086
+    target: param.Qr
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.sigma_r
+- key: R_0
+  source_lines:
+  - 8978
+  required_in_any_call: true
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: R_0
+    source_line: 8978
+    target: param.Z0
+    scale: 1.0
+    evaluate_strings: true
+    required: true
+    default_expression: null
+- key: R_d
+  source_lines:
+  - 8973
+  - 9608
+  required_in_any_call: true
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: R_d
+    source_line: 8973
+    target: param.R_diepad
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '[50,50]'
+  - key: R_d
+    source_line: 9608
+    target: param_struct.R_diepad
+    scale: 1.0
+    evaluate_strings: true
+    required: true
+    default_expression: null
+- key: R_LM
+  source_lines:
+  - 8932
+  required_in_any_call: true
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: R_LM
+    source_line: 8932
+    target: param.R_LM
+    scale: 1.0
+    evaluate_strings: false
+    required: true
+    default_expression: null
+- key: Raised_Cosine
+  source_lines:
+  - 9195
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Raised_Cosine
+    source_line: 9195
+    target: OP.Raised_Cosine
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: RC_end
+  source_lines:
+  - 9058
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: RC_end
+    source_line: 9058
+    target: param.RC_end
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: param.fb*param.f_r
+- key: RC_Start
+  source_lines:
+  - 9057
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: RC_Start
+    source_line: 9057
+    target: param.RC_Start
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: param.fb/2
+- key: RESULT_DIR
+  source_lines:
+  - 9151
+  required_in_any_call: true
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: RESULT_DIR
+    source_line: 9151
+    target: OP.RESULT_DIR
+    scale: 1.0
+    evaluate_strings: false
+    required: true
+    default_expression: null
+- key: rho_x
+  source_lines:
+  - 9060
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: rho_x
+    source_line: 9060
+    target: param.rho_x
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '.618'
+- key: RUNTAG
+  source_lines:
+  - 9219
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: RUNTAG
+    source_line: 9219
+    target: OP.RUNTAG
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: ''''''
+- key: RX_CALIBRATION
+  source_lines:
+  - 9161
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: RX_CALIBRATION
+    source_line: 9161
+    target: OP.RX_CALIBRATION
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: RXFFE FLOAT CTL
+  source_lines:
+  - 9247
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: RXFFE FLOAT CTL
+    source_line: 9247
+    target: OP.RXFFE_FLOAT_CTL
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '''FOM'''
+- key: RXFFE TAP CONSTRAINT
+  source_lines:
+  - 9248
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: RXFFE TAP CONSTRAINT
+    source_line: 9248
+    target: OP.RXFFE_TAP_CONSTRAINT
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '''Unity Cursor'''
+- key: Rxnskew
+  source_lines:
+  - 9116
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: Rxnskew
+    source_line: 9116
+    target: param.Rxnskew
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: Rxpskew
+  source_lines:
+  - 9115
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: Rxpskew
+    source_line: 9115
+    target: param.Rxpskew
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: S-parameter magnitude extrapolation policy
+  source_lines:
+  - 9201
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: S-parameter magnitude extrapolation policy
+    source_line: 9201
+    target: OP.interp_sparam_mag
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '''linear_trend_to_DC'''
+- key: S-parameter phase extrapolation policy
+  source_lines:
+  - 9202
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: S-parameter phase extrapolation policy
+    source_line: 9202
+    target: OP.interp_sparam_phase
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '''extrap_cubic_to_dc_linear_to_inf'''
+- key: sample_adjustment
+  source_lines:
+  - 8934
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: sample_adjustment
+    source_line: 8934
+    target: param.ts_sample_adj_range
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '[0 0]'
+- key: samples_for_C2M
+  source_lines:
+  - 9082
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: samples_for_C2M
+    source_line: 9082
+    target: param.samples_for_C2M
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '100'
+- key: SAVE_CONFIG2MAT
+  source_lines:
+  - 9229
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: SAVE_CONFIG2MAT
+    source_line: 9229
+    target: OP.SAVE_CONFIG2MAT
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: SAVE_FIGURE_to_CSV
+  source_lines:
+  - 9131
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: SAVE_FIGURE_to_CSV
+    source_line: 9131
+    target: OP.SAVE_FIGURE_to_CSV
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: SAVE_FIGURES
+  source_lines:
+  - 9130
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: SAVE_FIGURES
+    source_line: 9130
+    target: OP.SAVE_FIGURES
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: SAVE_KEYWORD_FILE
+  source_lines:
+  - 9234
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: SAVE_KEYWORD_FILE
+    source_line: 9234
+    target: OP.SAVE_KEYWORD_FILE
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: SAVE_TD
+  source_lines:
+  - 9129
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: SAVE_TD
+    source_line: 9129
+    target: OP.SAVE_TD
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: SHOW_BRD
+  source_lines:
+  - 9189
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: SHOW_BRD
+    source_line: 9189
+    target: OP.SHOW_BRD
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: Sigma BBN step
+  source_lines:
+  - 9162
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Sigma BBN step
+    source_line: 9162
+    target: OP.sigma_bn_STEP
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 5e-3
+- key: sigma_r
+  source_lines:
+  - 9085
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: sigma_r
+    source_line: 9085
+    target: param.sigma_r
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '.020'
+- key: sigma_RJ
+  source_lines:
+  - 8922
+  required_in_any_call: true
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: sigma_RJ
+    source_line: 8922
+    target: param.sigma_RJ
+    scale: 1.0
+    evaluate_strings: false
+    required: true
+    default_expression: null
+- key: skew_ps
+  source_lines:
+  - 9091
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: skew_ps
+    source_line: 9091
+    target: param.skew_ps
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: SNR_TX
+  source_lines:
+  - 8931
+  required_in_any_call: true
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: SNR_TX
+    source_line: 8931
+    target: param.SNDR
+    scale: 1.0
+    evaluate_strings: true
+    required: true
+    default_expression: null
+- key: SNR_TXwC0
+  source_lines:
+  - 9235
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: SNR_TXwC0
+    source_line: 9235
+    target: OP.SNR_TXwC0
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: T_h
+  source_lines:
+  - 9080
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: T_h
+    source_line: 9080
+    target: param.T_O
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: param.T_O
+- key: T_k
+  source_lines:
+  - 9181
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: T_k
+    source_line: 9181
+    target: OP.T_k
+    scale: 1.0e-09
+    evaluate_strings: false
+    required: false
+    default_expression: '.6'
+- key: T_O
+  source_lines:
+  - 9079
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: T_O
+    source_line: 9079
+    target: param.T_O
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: T_r
+  source_lines:
+  - 9165
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: T_r
+    source_line: 9165
+    target: OP.transmitter_transition_time
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: 8e-3
+- key: T_r_filter_type
+  source_lines:
+  - 9169
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: T_r_filter_type
+    source_line: 9169
+    target: OP.T_r_filter_type
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: T_r_meas_point
+  source_lines:
+  - 9168
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: T_r_meas_point
+    source_line: 9168
+    target: OP.T_r_meas_point
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: TDECQ
+  source_lines:
+  - 9213
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: TDECQ
+    source_line: 9213
+    target: OP.TDECQ
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: TDMODE
+  source_lines:
+  - 9148
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: TDMODE
+    source_line: 9148
+    target: OP.TDMODE
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: OP.TDMODE
+- key: TDR
+  source_lines:
+  - 9177
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: TDR
+    source_line: 9177
+    target: OP.TDR
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: TDR_Butterworth
+  source_lines:
+  - 9193
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: TDR_Butterworth
+    source_line: 9193
+    target: OP.TDR_Butterworth
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'true'
+- key: TDR_duration
+  source_lines:
+  - 9178
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: TDR_duration
+    source_line: 9178
+    target: OP.TDR_duration
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '5'
+- key: TDR_f_BT_3db
+  source_lines:
+  - 9055
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: TDR_f_BT_3db
+    source_line: 9055
+    target: param.fb_BT_cutoff
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0.4730'
+- key: TDR_W_TXPKG
+  source_lines:
+  - 9191
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: TDR_W_TXPKG
+    source_line: 9191
+    target: OP.TDR_W_TXPKG
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: TIME_AXIS
+  source_lines:
+  - 9252
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: TIME_AXIS
+    source_line: 9252
+    target: OP.TIME_AXIS
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '''UI'''
+- key: TR_TDR
+  source_lines:
+  - 8975
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: TR_TDR
+    source_line: 8975
+    target: param.TR_TDR
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: 8e-3
+- key: trunc
+  source_lines:
+  - 8926
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: trunc
+    source_line: 8926
+    target: param.trunc
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '128'
+- key: ts_anchor
+  source_lines:
+  - 8935
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: ts_anchor
+    source_line: 8935
+    target: param.ts_anchor
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: TS_SRCH_MODE
+  source_lines:
+  - 9260
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: TS_SRCH_MODE
+    source_line: 9260
+    target: OP.TS_SRCH_MODE
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '''full-sweep'''
+- key: Tukey_Window
+  source_lines:
+  - 9075
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: Tukey_Window
+    source_line: 9075
+    target: param.Tukey_Window
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: Txnskew
+  source_lines:
+  - 9114
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: Txnskew
+    source_line: 9114
+    target: param.Txnskew
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: Txpskew
+  source_lines:
+  - 9113
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: Txpskew
+    source_line: 9113
+    target: param.Txpskew
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '0'
+- key: Use simple error propagation model
+  source_lines:
+  - 9225
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: Use simple error propagation model
+    source_line: 9225
+    target: OP.use_simple_EP_model
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: USE_ETA0_PSD
+  source_lines:
+  - 9228
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: USE_ETA0_PSD
+    source_line: 9228
+    target: OP.USE_ETA0_PSD
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: VEC Pass threshold
+  source_lines:
+  - 8920
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: VEC Pass threshold
+    source_line: 8920
+    target: param.VEC_pass_threshold
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: '0'
+- key: WC_PORTZ
+  source_lines:
+  - 9180
+  required_in_any_call: false
+  evaluate_strings_in_any_call: false
+  calls:
+  - key: WC_PORTZ
+    source_line: 9180
+    target: OP.WC_PORTZ
+    scale: 1.0
+    evaluate_strings: false
+    required: false
+    default_expression: 'false'
+- key: z_bp (FEXT)
+  source_lines:
+  - 9044
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: z_bp (FEXT)
+    source_line: 9044
+    target: param.z_bp_fext
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '72'
+- key: z_bp (NEXT)
+  source_lines:
+  - 9043
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: z_bp (NEXT)
+    source_line: 9043
+    target: param.z_bp_next
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '72'
+- key: z_bp (RX)
+  source_lines:
+  - 9045
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: z_bp (RX)
+    source_line: 9045
+    target: param.z_bp_rx
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '151'
+- key: z_bp (TX)
+  source_lines:
+  - 9042
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: z_bp (TX)
+    source_line: 9042
+    target: param.z_bp_tx
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '151'
+- key: z_p (FEXT)
+  source_lines:
+  - 9002
+  - 9631
+  required_in_any_call: true
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: z_p (FEXT)
+    source_line: 9002
+    target: param.z_p_fext_cases
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '''[ 8  24 30 45 ; 1  1   1 1;  1 1  1  1 ; 0.5 0.5  0.5  0.5   ]'''
+  - key: z_p (FEXT)
+    source_line: 9631
+    target: param_struct.z_p_fext_cases
+    scale: 1.0
+    evaluate_strings: true
+    required: true
+    default_expression: null
+- key: z_p (NEXT)
+  source_lines:
+  - 8996
+  - 9625
+  required_in_any_call: true
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: z_p (NEXT)
+    source_line: 8996
+    target: param.z_p_next_cases
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '''[ 8  24 30 45 ; 1  1   1 1;  1 1  1  1 ; 0.5 0.5  0.5  0.5   ]'''
+  - key: z_p (NEXT)
+    source_line: 9625
+    target: param_struct.z_p_next_cases
+    scale: 1.0
+    evaluate_strings: true
+    required: true
+    default_expression: null
+- key: z_p (RX)
+  source_lines:
+  - 9008
+  - 9637
+  required_in_any_call: true
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: z_p (RX)
+    source_line: 9008
+    target: param.z_p_rx_cases
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '''[ 8  24 30 45 ; 1  1   1 1;  1 1  1  1 ; 0.5 0.5  0.5  0.5   ]'''
+  - key: z_p (RX)
+    source_line: 9637
+    target: param_struct.z_p_rx_cases
+    scale: 1.0
+    evaluate_strings: true
+    required: true
+    default_expression: null
+- key: z_p (TX)
+  source_lines:
+  - 8980
+  - 9614
+  required_in_any_call: true
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: z_p (TX)
+    source_line: 8980
+    target: param.z_p_tx_cases
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '''[ 8  24 30 45 ; 1  1   1 1;  1 1  1  1 ; 0.5 0.5  0.5  0.5   ]'''
+  - key: z_p (TX)
+    source_line: 9614
+    target: param_struct.z_p_tx_cases
+    scale: 1.0
+    evaluate_strings: true
+    required: true
+    default_expression: null
+- key: z_p select
+  source_lines:
+  - 9160
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: z_p select
+    source_line: 9160
+    target: OP.pkg_len_select
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '1'
+- key: Z_t
+  source_lines:
+  - 8974
+  required_in_any_call: false
+  evaluate_strings_in_any_call: true
+  calls:
+  - key: Z_t
+    source_line: 8974
+    target: param.Z_t
+    scale: 1.0
+    evaluate_strings: true
+    required: false
+    default_expression: '50'
+dynamic_patterns:
+- name: txffe_tap
+  regex: ^c\([+-]?\d+\)$
+  scan: start at -1 and +1; stop each direction at the first missing key
+package_blocks:
+  start_marker: .START
+  end_marker: .END
+  name_column: 2
+  reference_key: PKG_NAME

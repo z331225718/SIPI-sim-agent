@@ -1,0 +1,19 @@
+AS-01 direct-port attribution
+
+The fit-sparam workflow in src/fit_sparam.rs mechanically ports the bounded
+Touchstone, fixed-pole residue, target-search, and artifact semantics from
+Agent-Spice commit 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5 (tree
+b6bde97128030d6cea0d68b2f0a35d807be8c402).
+
+Upstream project: agent-spice
+License: MIT
+License source: upstream LICENSE, SHA-256
+d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+Source inventory: docs/baselines/as-01-fit-sparam-direct-port.v1.yaml
+
+The path-identity preflight uses same-file 1.0.6, licensed MIT OR Unlicense.
+Its license text remains part of the normal third-party dependency inventory.
+
+This notice does not modify the repository-wide license or product-boundary
+records. Remaining unsupported upstream branches are listed in the bound
+AS-01 audit.
