@@ -1,0 +1,33 @@
+schema: sipi.v0.2-v0.3-migration-reconciliation.v1
+status: additive_rebaseline_no_historical_rewrite
+historical_ledger:
+  path: docs/baselines/plan-remaining-items-ledger.v1.yaml
+  sha256: 24313a4d2d57d77963ea6e20c0fba0aea14b197e62a320a3b907662ea6792927
+  item_count: 19
+active_migration_ledger: docs/baselines/upstream-migration-inventory.v1.yaml
+active_release_ledger: docs/baselines/release-blockers-ledger.v1.yaml
+mappings:
+  P1-04B: [AS-01, AS-02, AS-03, AS-04, AS-05, AS-06, PB-01, PB-02, PB-03, PB-04, PB-05, COM-01, COM-02, COM-03, COM-04]
+  P3B-02: [PB-01, PB-02, PB-03, PB-04, PB-05]
+  P3C-03: [PB-05, COM-02, COM-03, COM-04]
+  P4A-01: [PB-01]
+  P4A-03: [PB-01]
+  P4B-02: [PB-01, PB-02, PB-03, PB-04]
+  P4B-08: [PB-01, PB-02, PB-03, PB-04]
+  P4B-09: [PB-01, PB-02, PB-03, PB-04]
+  P5-02: [COM-01, COM-02, COM-04]
+  P5-06: [COM-02, COM-03, COM-04]
+  P7-01: [P7-01]
+  P7-02: [P7-02]
+  P7-03: [P7-03]
+  P7-04: [P7-04]
+  P7-05: [P7-05]
+  P7-06: [P7-06]
+  P7-07: [P7-07]
+  P7-08: [P7-08]
+  P7-09: [P7-09]
+non_claims:
+  - v0_2_evidence_and_ledger_are_not_rewritten
+  - mapping_does_not_accept_any_migration_row
+  - mapping_does_not_remove_any_release_blocker
+  - existing_rust_similarity_is_not_upstream_parity

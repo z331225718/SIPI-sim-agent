@@ -7,8 +7,9 @@ reports a single health verdict:
 - session slice reference audit
 - PLAN reference audit
 - owner-input request ledger binding
-- remaining-items ledger
-- open-item gate coverage
+- active upstream migration and deferred release ledgers
+- historical v0.2 remaining-items ledger
+- historical v0.2 open-item gate coverage
 - closed P5-05 parameter ingestion consumer
 - closed P5-09 wording boundary
 
@@ -34,8 +35,9 @@ CHECKS = [
     ("plan-reference-audit", "tools/audit_plan_references.py", []),
     ("owner-input-request", "tools/verify_owner_input_request.py", []),
     ("owner-input-request-current-reconciliation", "tools/verify_owner_decision_reconciliation_v2.py", []),
-    ("remaining-items-ledger", "tools/verify_plan_remaining_items_ledger.py", []),
-    ("open-item-gate-coverage", "tools/verify_plan_open_items_gate_coverage.py", []),
+    ("upstream-migration-inventory", "tools/verify_upstream_migration_inventory.py", []),
+    ("historical-v0.2-remaining-items-ledger", "tools/verify_plan_remaining_items_ledger.py", []),
+    ("historical-v0.2-open-item-gate-coverage", "tools/verify_plan_open_items_gate_coverage.py", []),
     ("p5-05-parameter-ingestion", "tools/verify_p5_05g_parameter_ingestion.py", []),
     (
         "p5-09-wording-retirement",

@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: e2acaad7c536d0003a2cd67e9b44a08c9d14c56aaf6896e673df470722747b38
+  tracked_paths_sha256: 2821fe4afe658cb8522b8dcf4b8a71626d1b5f317e3d0d89bf4135eb50469ca4
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -4482,6 +4482,12 @@ inventory:
       provenance: project_authored
       distribution: product
     docs/adr/ADR-014-selective-bsd3-direct-port-boundary.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/adr/ADR-015-upstream-capability-first-rust-consolidation.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -15173,6 +15179,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/release-blockers-ledger.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/release-capability-publication.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -15258,6 +15270,18 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/tran-rc-pulse-performance-budget.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/upstream-migration-inventory.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/v0.2-v0.3-migration-reconciliation.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -16440,6 +16464,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/handoff-20260820-p4b02-round249.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/handoff-20260822-upstream-first-rust-consolidation.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -26573,6 +26603,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_upstream_migration_inventory.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_acceptance_profiles.py:
       rule: migration-tools
       class: migration_only
@@ -30072,6 +30108,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_tran_rc_pulse_performance.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_upstream_migration_inventory.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

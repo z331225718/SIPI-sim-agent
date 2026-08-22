@@ -1,10 +1,33 @@
-# SIPI-sim-agent 实施计划 v0.2
+# SIPI-sim-agent 实施计划 v0.3
 
-> 状态：执行中，替代 v0.1 作为当前主计划
+> 状态：执行中；v0.3 upstream-first 重基线为当前主计划，以下 v0.2 正文保留为历史执行记录
 > 重基线日期：2026-08-09
 > 重基线仓库锚点：`9f9c76a`
 > 产品规格：[SPEC.md](SPEC.md)
-> 架构决策：[ADR-011](docs/adr/ADR-011-native-mit-rust-product-boundary.md)
+> 当前架构决策：[ADR-015](docs/adr/ADR-015-upstream-capability-first-rust-consolidation.md)
+
+## 0. v0.3 当前执行面：先整合原项目，再统一 Rust 重构
+
+Owner 已明确纠偏：当前阶段不增加新的领域功能。先完整覆盖
+Agent-Spice、PyBERT、Agent-COM 三个固定提交已经公开实现的稳定工作流，
+再逐项以 Rust 替换；迁移、机械重构、算法改进和发布必须分开。
+
+- 当前实现主账本：[upstream-migration-inventory.v1](docs/baselines/upstream-migration-inventory.v1.yaml)，15 行均未完成。
+- 发布阻断账本：[release-blockers-ledger.v1](docs/baselines/release-blockers-ledger.v1.yaml)，9 项全部延后到 consolidated candidate 冻结之后。
+- v0.2 的 19 项去向：[v0.2-v0.3 reconciliation](docs/baselines/v0.2-v0.3-migration-reconciliation.v1.yaml)。旧 ledger 与历史 evidence 不改写。
+- 交接执行顺序：[2026-08-22 upstream-first handoff](docs/handoff-20260822-upstream-first-rust-consolidation.md)。
+
+**功能冻结：** 新 public API、数值政策或产品路由只有在关闭一个具名 upstream
+migration row 时才允许进入。现有 SIPI Rust 实现一律先视为 candidate；相似功能、
+self-test 或单 profile 通过都不能替代 upstream branch-complete parity。
+
+**首轮范围：** Agent-Spice 六个稳定命令、PyBERT 五个 simulation 命令、
+Agent-COM 三个 CLI 工作流和公共 `load_config/run_com/write_artifacts` API。
+研究命令、GUI/Web/Redis 和外部 MATLAB/workbook/golden/vendor 资产均已记账，
+但不作为首轮数值迁移完成条件，也不静默进入发行包。
+
+以下第 1 节及之后内容是 v0.2 历史计划。其 checklist 继续供旧 evidence/verifier
+解释来源，不再决定 v0.3 的功能优先级。
 
 ## 1. 执行目标
 

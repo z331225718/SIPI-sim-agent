@@ -1,0 +1,20 @@
+schema: sipi.release-blockers-ledger.v1
+status: deferred_until_consolidated_candidate_freeze
+policy: sipi.upstream-capability-first-rust-consolidation.v1
+release_ready: false
+promotion_status: blocked
+items:
+  - {id: P7-01, status: blocked, reason: reproducible_twin_build_must_be_rerun_for_consolidated_candidate}
+  - {id: P7-02, status: blocked, reason: composition_must_bind_consolidated_candidate_and_strict_license_state}
+  - {id: P7-03, status: blocked, reason: archive_must_bind_consolidated_candidate_and_notice_sbom}
+  - {id: P7-04, status: blocked, reason: fresh_machine_user_and_loader_closure_missing}
+  - {id: P7-05, status: blocked, reason: capability_publication_remains_pre_release}
+  - {id: P7-06, status: blocked, reason: performance_baseline_raw_evidence_missing_and_candidate_not_frozen}
+  - {id: P7-07, status: blocked, reason: dependency_notice_and_first_party_approvals_missing}
+  - {id: P7-08, status: blocked, reason: replacement_and_retirement_wait_for_migration_completion}
+  - {id: P7-09, status: blocked, reason: deletion_and_release_audit_pending}
+non_claims:
+  - no_release_replay_before_consolidated_candidate_freeze
+  - no_currentness_promotion_from_historical_p7_evidence
+  - no_license_notice_or_fresh_machine_approval
+summary: {items: 9, blocked: 9}
