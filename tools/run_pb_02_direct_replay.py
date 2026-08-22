@@ -16,6 +16,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import shutil
 import math
 import subprocess
@@ -23,7 +24,7 @@ import sys
 import tarfile
 import tempfile
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Iterable
 
 
@@ -102,6 +103,52 @@ def _file_digest(path: Path) -> str | None:
         return _sha256(path.read_bytes())
     except OSError:
         return None
+
+
+def _safe_fixture_relative(value: Path | str) -> Path:
+    """Return a strictly repository-relative fixture path.
+
+    ``Path`` follows the host platform, so a Windows drive/UNC path could look
+    relative when this runner is inspected from a POSIX host (and vice versa).
+    Check both path grammars before accepting the value and reject traversal
+    components before joining it to either the working tree or an archive.
+    """
+
+    raw = os.fspath(value)
+    if not isinstance(raw, str) or not raw or "\x00" in raw:
+        raise RuntimeError("fixture must be a non-empty repository-relative path")
+    host_path = Path(raw)
+    posix_path = PurePosixPath(raw)
+    windows_path = PureWindowsPath(raw)
+    if (
+        host_path.is_absolute()
+        or bool(host_path.anchor)
+        or posix_path.is_absolute()
+        or bool(posix_path.anchor)
+        or windows_path.is_absolute()
+        or bool(windows_path.anchor)
+        or bool(windows_path.drive)
+        or raw.startswith(("/", "\\"))
+    ):
+        raise RuntimeError(f"fixture must be repository-relative: {raw}")
+    components = [component for component in re.split(r"[\\/]+", raw) if component not in ("", ".")]
+    if not components or any(component == ".." for component in components):
+        raise RuntimeError(f"fixture must not contain parent traversal: {raw}")
+    return Path(*components)
+
+
+def _read_archived_fixture(root: Path, relative: Path) -> tuple[Path, bytes]:
+    """Read only a fixture that is contained by the materialized archive."""
+
+    relative = _safe_fixture_relative(relative)
+    archive_root = root.resolve()
+    fixture = root / relative
+    resolved_fixture = fixture.resolve()
+    if resolved_fixture != archive_root and archive_root not in resolved_fixture.parents:
+        raise RuntimeError(f"archived fixture escapes candidate archive: {relative}")
+    if not resolved_fixture.is_file():
+        raise RuntimeError(f"archived fixture is missing: {relative}")
+    return resolved_fixture, resolved_fixture.read_bytes()
 
 
 def _iter_files(root: Path, prefixes: Iterable[str]) -> Iterable[tuple[str, Path]]:
@@ -368,16 +415,11 @@ def _run_one(
 def run(args: argparse.Namespace) -> dict[str, Any]:
     candidate_repo = args.candidate_repo.resolve()
     upstream_repo = args.upstream_repo.resolve()
+    fixture_relative = _safe_fixture_relative(args.fixture)
     candidate_commit, candidate_tree = _commit_tree(candidate_repo, args.candidate_commit)
     upstream_commit, upstream_tree = _commit_tree(upstream_repo, args.upstream_commit)
     if upstream_commit != EXPECTED_UPSTREAM_COMMIT or upstream_tree != EXPECTED_UPSTREAM_TREE:
         raise RuntimeError("upstream commit/tree is not the pinned PB-02 source")
-    fixture_source = (candidate_repo / args.fixture).resolve()
-    if not fixture_source.is_file():
-        raise RuntimeError(f"candidate fixture is missing: {args.fixture}")
-    fixture_hash = _file_digest(fixture_source)
-    if fixture_hash is None:
-        raise RuntimeError("candidate fixture cannot be read")
     work_parent = args.work_root.resolve() if args.work_root else Path(tempfile.mkdtemp(prefix="sipi-pb-02-replay-"))
     work_parent.mkdir(parents=True, exist_ok=True)
     run_root = work_parent / args.run_id
@@ -388,8 +430,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     upstream_materialized = run_root / "upstream"
     candidate_info = _materialize_git_archive(candidate_repo, candidate_commit, candidate_materialized)
     upstream_info = _materialize_git_archive(upstream_repo, upstream_commit, upstream_materialized)
-    fixture = candidate_materialized / args.fixture
-    (upstream_materialized / "oracle-input.json").write_bytes(fixture.read_bytes())
+    # Capture source inventories before uv/cargo can create build outputs in
+    # the materialized oracle tree.  Reports bind the immutable archive, not
+    # generated .pyd/.pyc files from a particular replay environment.
+    candidate_facts = _source_facts(candidate_materialized, candidate_info, [str(CRATE_RELATIVE)])
+    upstream_facts = _upstream_facts(upstream_materialized, upstream_info)
+    fixture, fixture_payload = _read_archived_fixture(candidate_materialized, fixture_relative)
+    fixture_hash = _sha256(fixture_payload)
+    (upstream_materialized / "oracle-input.json").write_bytes(fixture_payload)
     replay = _run_one(
         run_root=run_root,
         candidate_root=candidate_materialized,
@@ -404,9 +452,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "status": "passed" if all(replay["parity"].values()) else "blocked",
         "run_id": args.run_id,
         "source_mode": "git_archive_at_immutable_commit",
-        "candidate": _source_facts(candidate_materialized, candidate_info, [str(CRATE_RELATIVE)]),
-        "upstream": _upstream_facts(upstream_materialized, upstream_info),
-        "fixture": {"path": args.fixture.as_posix(), "sha256": fixture_hash, "bytes": fixture.stat().st_size},
+        "candidate": candidate_facts,
+        "upstream": upstream_facts,
+        "fixture": {"path": fixture_relative.as_posix(), "sha256": fixture_hash, "bytes": len(fixture_payload)},
         "toolchain": {"cargo": args.cargo, "uv": args.uv, "timeout_seconds": args.timeout_seconds},
         "replay": replay,
         "non_claims": [

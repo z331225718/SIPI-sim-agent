@@ -6,6 +6,8 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +18,112 @@ import run_pb_02_direct_replay as runner  # noqa: E402
 
 
 class Pb02ReplayToolTests(unittest.TestCase):
+    def test_safe_fixture_relative_rejects_absolute_anchor_drive_unc_and_parent(self):
+        unsafe = [
+            Path("/tmp/fixture.json"),
+            Path("../fixture.json"),
+            Path("nested/../../fixture.json"),
+            "C:\\fixture.json",
+            "C:fixture.json",
+            "\\\\server\\share\\fixture.json",
+            "\\fixture.json",
+        ]
+        for value in unsafe:
+            with self.subTest(value=value):
+                with self.assertRaises(RuntimeError):
+                    runner._safe_fixture_relative(value)
+
+    def test_archived_fixture_hash_ignores_dirty_worktree_bytes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "candidate"
+            relative = runner.FIXTURE_RELATIVE
+            archived = root / relative
+            archived.parent.mkdir(parents=True)
+            archived.write_bytes(b"committed fixture")
+            dirty_worktree = Path(temporary) / "worktree" / relative
+            dirty_worktree.parent.mkdir(parents=True)
+            dirty_worktree.write_bytes(b"dirty fixture")
+            _, payload = runner._read_archived_fixture(root, relative)
+            self.assertEqual(payload, b"committed fixture")
+            self.assertNotEqual(runner._sha256(payload), runner._sha256(dirty_worktree.read_bytes()))
+
+    def test_run_fixture_hash_comes_from_materialized_commit(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            candidate_repo = root / "candidate-repo"
+            upstream_repo = root / "upstream-repo"
+            fixture_relative = runner.FIXTURE_RELATIVE
+            worktree_fixture = candidate_repo / fixture_relative
+            worktree_fixture.parent.mkdir(parents=True)
+            worktree_fixture.write_bytes(b"dirty worktree fixture")
+            report_path = root / "report.json"
+            args = SimpleNamespace(
+                candidate_repo=candidate_repo,
+                upstream_repo=upstream_repo,
+                candidate_commit="candidate-commit",
+                upstream_commit=runner.EXPECTED_UPSTREAM_COMMIT,
+                fixture=fixture_relative,
+                run_id="fixture-origin-test",
+                report=report_path,
+                work_root=root / "runs",
+                cargo="cargo",
+                uv="uv",
+                timeout_seconds=1,
+                keep_work=True,
+            )
+
+            def materialize(repo, _commit, destination):
+                destination.mkdir(parents=True)
+                if repo == candidate_repo:
+                    archived_fixture = destination / fixture_relative
+                    archived_fixture.parent.mkdir(parents=True)
+                    archived_fixture.write_bytes(b"committed archive fixture")
+                return {"commit": "commit", "tree": "tree", "archive_sha256": "archive"}
+
+            replay = {
+                "parity": {
+                    "candidate_exit_zero": True,
+                    "oracle_exit_zero": True,
+                    "candidate_array_members_equal_oracle": True,
+                    "array_member_names": [],
+                }
+            }
+            with (
+                mock.patch.object(runner, "_commit_tree", side_effect=[("candidate", "candidate-tree"), (runner.EXPECTED_UPSTREAM_COMMIT, runner.EXPECTED_UPSTREAM_TREE)]),
+                mock.patch.object(runner, "_materialize_git_archive", side_effect=materialize),
+                mock.patch.object(runner, "_run_one", return_value=replay),
+            ):
+                result = runner.run(args)
+
+            committed = b"committed archive fixture"
+            self.assertEqual(result["fixture"]["sha256"], runner._sha256(committed))
+            self.assertEqual(result["fixture"]["bytes"], len(committed))
+            oracle_input = args.work_root / args.run_id / "upstream" / "oracle-input.json"
+            self.assertEqual(oracle_input.read_bytes(), committed)
+
+    def test_prebuild_inventory_does_not_change_with_generated_outputs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            crate = root / runner.CRATE_RELATIVE
+            source = crate / "src" / "lib.rs"
+            source.parent.mkdir(parents=True)
+            source.write_bytes(b"source")
+            info = {"commit": "commit", "tree": "tree", "archive_sha256": "archive"}
+            before = runner._source_facts(root, info, [str(runner.CRATE_RELATIVE)])
+            generated = crate / "target" / "release" / "generated.pyd"
+            generated.parent.mkdir(parents=True)
+            generated.write_bytes(b"generated after snapshot")
+            self.assertEqual(
+                before["inventory"]["entries"],
+                [
+                    {
+                        "path": "crates/sipi-pybert-direct/src/lib.rs",
+                        "sha256": runner._sha256(b"source"),
+                        "bytes": 6,
+                    }
+                ],
+            )
+
     def test_meta_normalization_removes_machine_local_input_path(self):
         value = {
             "input_file": "C:\\temporary\\candidate\\input.json",
