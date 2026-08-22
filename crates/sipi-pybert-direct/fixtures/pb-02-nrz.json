@@ -1,0 +1,62 @@
+{
+  "schema": "pybert.simulation.v1",
+  "runId": "pb-02-direct-oracle-v1",
+  "modulation": "nrz",
+  "pattern": {
+    "kind": "prbs",
+    "order": 7,
+    "seed": 17
+  },
+  "timebase": {
+    "sampleInterval": 1e-12,
+    "samplesPerUi": 2,
+    "dataRate": 5e11,
+    "nbits": 16
+  },
+  "channel": {
+    "kind": "impulse_response",
+    "value": {
+      "sampleInterval": 1e-12,
+      "impulseResponseVoltsPerSecond": [1e12, 0.25e12],
+      "sourceImpedance": 50.0,
+      "loadImpedance": 50.0
+    }
+  },
+  "tx": {
+    "amplitude": 0.5,
+    "ffe": {
+      "enabled": false,
+      "weights": [],
+      "cursorPosition": 0
+    },
+    "additiveNoise": null,
+    "periodicNoise": null
+  },
+  "rx": {
+    "nativeCtleEnabled": false,
+    "ctle": null,
+    "ffe": {
+      "enabled": false,
+      "weights": [],
+      "cursorPosition": 0
+    },
+    "dfeTaps": 0,
+    "dfe": null,
+    "viterbiEnabled": false,
+    "viterbi": null
+  },
+  "analysis": {
+    "statisticalEye": null,
+    "includeJitter": false,
+    "includeBathtub": false,
+    "berEyeBits": null,
+    "jitterEyeUis": null
+  },
+  "limits": {
+    "maxTotalSamples": 50000000,
+    "maxMemoryBytes": 2147483648,
+    "maxDistributionStates": 200000
+  },
+  "externalModels": [],
+  "legacyOptions": {}
+}

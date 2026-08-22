@@ -1,0 +1,333 @@
+schema: sipi.upstream-rust-parity-ledger.v1
+status: active_open_before_rust_parity
+as_of: '2026-08-22'
+policy: sipi.upstream-capability-first-rust-consolidation.v1
+state_machine:
+  order: [source_admitted, branch_frozen, oracle_bound, direct_port_present, parity_observed, completion]
+  pre_admission_state: source_identity_bound_pre_admission
+  stage_statuses: [verified, blocked, not_started]
+  transition_rule: contiguous_verified_prefix_then_blocked_or_not_started
+  terminal_states: [rust_parity_accepted, retained_external_runtime, excluded_by_owner]
+  open_completion_state: open
+  rust_parity_acceptance_requires:
+    - exact_source_blobs_and_per_path_license
+    - reachable_branch_default_error_artifact_unknown_counts_zero
+    - clean_pinned_two_fresh_oracle_runtime_attestation
+    - pre_frozen_tolerance
+    - candidate_source_hashes
+    - direct_rust_route
+    - direct_route_does_not_call_adapter
+    - mutation_coverage
+  non_parity_routes: [process_external_adapter, self_test, fixed_profile, generic_compare, similar_name_candidate]
+source_authority:
+  agent_spice: {commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5, tree: b6bde97128030d6cea0d68b2f0a35d807be8c402, license: MIT}
+  pybert: {commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe, tree: 5faef6bdb341d444ad65d82a11c0018b15805e24, license: BSD-3-Clause}
+  agent_com: {commit: 5272ffe74702cd585054d975559b06f8afae7b6e, tree: 7094ab6e84989b218730c52432c70da10261f8ea, license: MIT}
+evidence_bindings:
+  migration_inventory: {path: docs/baselines/upstream-migration-inventory.v1.yaml, sha256: 1d1a3fc2e43be26884554ca8a1d94217ade6142c0e1ae92a686eaba9b6ca5a86}
+  candidate_coverage: {path: docs/baselines/upstream-rust-candidate-coverage.v1.yaml, sha256: 13ef9790bf620cee9031008daa963ed8a5faaa14f636984d0a2c92fb92bff765}
+  cli_integration: {path: docs/baselines/upstream-cli-integration.v1.yaml, sha256: 567d853f375f535c1c3c5c2172b3486c1e49a57fc1b842b1ffe4028e0ec874ae}
+  audit_document: {path: docs/baselines/audits/2026-08-22-upstream-rust-parity-ledger.md, sha256: f49f108c46cd28fd843e505be64577f0358372c132d88b5cf748b7a73b1128e9}
+reserved_evidence_interfaces:
+  PB-02:
+    status: reserved_not_bound
+    required_fields: [simulation_input_v1_schema, native_extension_selection, native_result_artifacts, diagnostics, pinned_runtime_attestation, two_fresh_oracle_runs]
+  COM-03:
+    status: reserved_not_bound
+    required_fields: [result_json_loader, golden_schema, mismatch_report, tolerance, pinned_runtime_attestation, two_fresh_oracle_runs]
+rows:
+  - id: AS-01
+    repo: agent_spice
+    public_entrypoint: fit-sparam
+    adapter_route: {command_id: upstream.agent-spice.fit-sparam, adapter_crate: sipi-agent-spice-adapter}
+    source:
+      source_path: src/agent_spice/cli.py
+      entrypoint_blob_sha1: 321a32b860f969f0be74f883bedbbae3f67d6284
+      entrypoint_sha256: 908489c8c3a4826d49175c66b3d533413db4624b10fc3c797795b723b62262e1
+      reachable_inventory_ref: candidate_coverage.entries.AS-01.upstream
+      reachable_modules: [src/agent_spice/sparam/fitting.py, src/agent_spice/sparam/target_fit.py, src/agent_spice/sparam/io.py, src/agent_spice/sparam/artifacts.py, src/agent_spice/sparam/rational_lft.py, src/agent_spice/sparam/y_pr.py]
+      per_path_license: {status: pending_per_path_review, paths: []}
+    candidate_source_hashes: {status: partial_or_missing, evidence_ref: candidate_coverage.entries.AS-01.candidate.surfaces}
+    stages: {source_admitted: {status: blocked, missing: [per_path_license_approval_for_all_reachable_source_blobs]}, branch_frozen: {status: blocked, missing: [complete_reachable_branch_default_error_artifact_inventory]}, oracle_bound: {status: blocked, missing: [clean_pinned_two_fresh_oracle_runtime_attestation]}, direct_port_present: {status: blocked, missing: [direct_rust_route_without_adapter]}, parity_observed: {status: blocked, missing: [pre_frozen_tolerance_independent_parity_and_mutation_coverage]}, completion: {status: blocked, missing: [terminal_decision_or_rust_parity_acceptance]}}
+    direct_rust: {status: blocked, route: [], calls_adapter: null, source_hashes: []}
+    branch_inventory: {status: blocked, unknown_counts: null, evidence: []}
+    oracle: {status: blocked, corpus: [], runtime_attestation: null}
+    parity: {status: blocked, tolerance: null, observations: [], mutation_coverage: null}
+    completion: {status: open, terminal_state: null, authority_evidence: null}
+    current_state: source_identity_bound_pre_admission
+  - id: AS-02
+    repo: agent_spice
+    public_entrypoint: fit-sparam-cascade
+    adapter_route: {command_id: upstream.agent-spice.fit-sparam-cascade, adapter_crate: sipi-agent-spice-adapter}
+    source:
+      source_path: src/agent_spice/cli.py
+      entrypoint_blob_sha1: 321a32b860f969f0be74f883bedbbae3f67d6284
+      entrypoint_sha256: 908489c8c3a4826d49175c66b3d533413db4624b10fc3c797795b723b62262e1
+      reachable_inventory_ref: candidate_coverage.entries.AS-02.upstream
+      reachable_modules: [src/agent_spice/sparam/cascade.py, src/agent_spice/sparam/fitting.py, src/agent_spice/sparam/target_fit.py, src/agent_spice/sparam/artifacts.py]
+      per_path_license: {status: pending_per_path_review, paths: []}
+    candidate_source_hashes: {status: partial_or_missing, evidence_ref: candidate_coverage.entries.AS-02.candidate.surfaces}
+    stages: {source_admitted: {status: blocked, missing: [per_path_license_approval_for_all_reachable_source_blobs]}, branch_frozen: {status: blocked, missing: [complete_reachable_branch_default_error_artifact_inventory]}, oracle_bound: {status: blocked, missing: [clean_pinned_two_fresh_oracle_runtime_attestation]}, direct_port_present: {status: blocked, missing: [direct_rust_route_without_adapter]}, parity_observed: {status: blocked, missing: [pre_frozen_tolerance_independent_parity_and_mutation_coverage]}, completion: {status: blocked, missing: [terminal_decision_or_rust_parity_acceptance]}}
+    direct_rust: {status: blocked, route: [], calls_adapter: null, source_hashes: []}
+    branch_inventory: {status: blocked, unknown_counts: null, evidence: []}
+    oracle: {status: blocked, corpus: [], runtime_attestation: null}
+    parity: {status: blocked, tolerance: null, observations: [], mutation_coverage: null}
+    completion: {status: open, terminal_state: null, authority_evidence: null}
+    current_state: source_identity_bound_pre_admission
+  - id: AS-03
+    repo: agent_spice
+    public_entrypoint: fit-yparam
+    adapter_route: {command_id: upstream.agent-spice.fit-yparam, adapter_crate: sipi-agent-spice-adapter}
+    source:
+      source_path: src/agent_spice/cli.py
+      entrypoint_blob_sha1: 321a32b860f969f0be74f883bedbbae3f67d6284
+      entrypoint_sha256: 908489c8c3a4826d49175c66b3d533413db4624b10fc3c797795b723b62262e1
+      reachable_inventory_ref: candidate_coverage.entries.AS-03.upstream
+      reachable_modules: [src/agent_spice/sparam/yparam.py, src/agent_spice/sparam/artifacts.py, src/agent_spice/sparam/z_metrics.py]
+      per_path_license: {status: pending_per_path_review, paths: []}
+    candidate_source_hashes: {status: partial_or_missing, evidence_ref: candidate_coverage.entries.AS-03.candidate.surfaces}
+    stages: {source_admitted: {status: blocked, missing: [per_path_license_approval_for_all_reachable_source_blobs]}, branch_frozen: {status: blocked, missing: [complete_reachable_branch_default_error_artifact_inventory]}, oracle_bound: {status: blocked, missing: [clean_pinned_two_fresh_oracle_runtime_attestation]}, direct_port_present: {status: blocked, missing: [direct_rust_route_without_adapter]}, parity_observed: {status: blocked, missing: [pre_frozen_tolerance_independent_parity_and_mutation_coverage]}, completion: {status: blocked, missing: [terminal_decision_or_rust_parity_acceptance]}}
+    direct_rust: {status: blocked, route: [], calls_adapter: null, source_hashes: []}
+    branch_inventory: {status: blocked, unknown_counts: null, evidence: []}
+    oracle: {status: blocked, corpus: [], runtime_attestation: null}
+    parity: {status: blocked, tolerance: null, observations: [], mutation_coverage: null}
+    completion: {status: open, terminal_state: null, authority_evidence: null}
+    current_state: source_identity_bound_pre_admission
+  - id: AS-04
+    repo: agent_spice
+    public_entrypoint: tune-yparam-tran
+    adapter_route: {command_id: upstream.agent-spice.tune-yparam-tran, adapter_crate: sipi-agent-spice-adapter}
+    source:
+      source_path: src/agent_spice/cli.py
+      entrypoint_blob_sha1: 321a32b860f969f0be74f883bedbbae3f67d6284
+      entrypoint_sha256: 908489c8c3a4826d49175c66b3d533413db4624b10fc3c797795b723b62262e1
+      reachable_inventory_ref: candidate_coverage.entries.AS-04.upstream
+      reachable_modules: [src/agent_spice/sparam/y_tran_tuning.py, src/agent_spice/sparam/yparam.py, src/agent_spice/backend/base.py, src/agent_spice/hspice/results.py]
+      per_path_license: {status: pending_per_path_review, paths: []}
+    candidate_source_hashes: {status: partial_or_missing, evidence_ref: candidate_coverage.entries.AS-04.candidate.surfaces}
+    stages: {source_admitted: {status: blocked, missing: [per_path_license_approval_for_all_reachable_source_blobs]}, branch_frozen: {status: blocked, missing: [complete_reachable_branch_default_error_artifact_inventory]}, oracle_bound: {status: blocked, missing: [clean_pinned_two_fresh_oracle_runtime_attestation]}, direct_port_present: {status: blocked, missing: [direct_rust_route_without_adapter]}, parity_observed: {status: blocked, missing: [pre_frozen_tolerance_independent_parity_and_mutation_coverage]}, completion: {status: blocked, missing: [terminal_decision_or_rust_parity_acceptance]}}
+    direct_rust: {status: blocked, route: [], calls_adapter: null, source_hashes: []}
+    branch_inventory: {status: blocked, unknown_counts: null, evidence: []}
+    oracle: {status: blocked, corpus: [], runtime_attestation: null}
+    parity: {status: blocked, tolerance: null, observations: [], mutation_coverage: null}
+    completion: {status: open, terminal_state: null, authority_evidence: null}
+    current_state: source_identity_bound_pre_admission
+  - id: AS-05
+    repo: agent_spice
+    public_entrypoint: run-hspice
+    adapter_route: {command_id: upstream.agent-spice.run-hspice, adapter_crate: sipi-agent-spice-adapter}
+    source:
+      source_path: src/agent_spice/cli.py
+      entrypoint_blob_sha1: 321a32b860f969f0be74f883bedbbae3f67d6284
+      entrypoint_sha256: 908489c8c3a4826d49175c66b3d533413db4624b10fc3c797795b723b62262e1
+      reachable_inventory_ref: candidate_coverage.entries.AS-05.upstream
+      reachable_modules: [src/agent_spice/hspice/converter.py, src/agent_spice/hspice/audit.py, src/agent_spice/hspice/measure.py, src/agent_spice/hspice/results.py, src/agent_spice/backend/base.py, src/agent_spice/backend/ngspice.py, src/agent_spice/backend/xyce.py, src/agent_spice/backend/native.py, src/agent_spice/project.py, src/agent_spice/deck/builder.py]
+      per_path_license: {status: pending_per_path_review, paths: []}
+    candidate_source_hashes: {status: partial_or_missing, evidence_ref: candidate_coverage.entries.AS-05.candidate.surfaces}
+    stages: {source_admitted: {status: blocked, missing: [per_path_license_approval_for_all_reachable_source_blobs]}, branch_frozen: {status: blocked, missing: [complete_reachable_branch_default_error_artifact_inventory]}, oracle_bound: {status: blocked, missing: [clean_pinned_two_fresh_oracle_runtime_attestation]}, direct_port_present: {status: blocked, missing: [direct_rust_route_without_adapter]}, parity_observed: {status: blocked, missing: [pre_frozen_tolerance_independent_parity_and_mutation_coverage]}, completion: {status: blocked, missing: [terminal_decision_or_rust_parity_acceptance]}}
+    direct_rust: {status: blocked, route: [], calls_adapter: null, source_hashes: []}
+    branch_inventory: {status: blocked, unknown_counts: null, evidence: []}
+    oracle: {status: blocked, corpus: [], runtime_attestation: null}
+    parity: {status: blocked, tolerance: null, observations: [], mutation_coverage: null}
+    completion: {status: open, terminal_state: null, authority_evidence: null}
+    current_state: source_identity_bound_pre_admission
+  - id: AS-06
+    repo: agent_spice
+    public_entrypoint: run-rfm
+    adapter_route: {command_id: upstream.agent-spice.run-rfm, adapter_crate: sipi-agent-spice-adapter}
+    source:
+      source_path: src/agent_spice/cli.py
+      entrypoint_blob_sha1: 321a32b860f969f0be74f883bedbbae3f67d6284
+      entrypoint_sha256: 908489c8c3a4826d49175c66b3d533413db4624b10fc3c797795b723b62262e1
+      reachable_inventory_ref: candidate_coverage.entries.AS-06.upstream
+      reachable_modules: [src/agent_spice/sparam/rfm.py, src/agent_spice/sparam/rfm_ngspice.py, src/agent_spice/backend/ngspice.py, src/agent_spice/hspice/converter.py]
+      per_path_license: {status: pending_per_path_review, paths: []}
+    candidate_source_hashes: {status: partial_or_missing, evidence_ref: candidate_coverage.entries.AS-06.candidate.surfaces}
+    stages: {source_admitted: {status: blocked, missing: [per_path_license_approval_for_all_reachable_source_blobs]}, branch_frozen: {status: blocked, missing: [complete_reachable_branch_default_error_artifact_inventory]}, oracle_bound: {status: blocked, missing: [clean_pinned_two_fresh_oracle_runtime_attestation]}, direct_port_present: {status: blocked, missing: [direct_rust_route_without_adapter]}, parity_observed: {status: blocked, missing: [pre_frozen_tolerance_independent_parity_and_mutation_coverage]}, completion: {status: blocked, missing: [terminal_decision_or_rust_parity_acceptance]}}
+    direct_rust: {status: blocked, route: [], calls_adapter: null, source_hashes: []}
+    branch_inventory: {status: blocked, unknown_counts: null, evidence: []}
+    oracle: {status: blocked, corpus: [], runtime_attestation: null}
+    parity: {status: blocked, tolerance: null, observations: [], mutation_coverage: null}
+    completion: {status: open, terminal_state: null, authority_evidence: null}
+    current_state: source_identity_bound_pre_admission
+  - id: PB-01
+    repo: pybert
+    public_entrypoint: sim
+    adapter_route: {command_id: upstream.pybert.sim, adapter_crate: sipi-pybert-adapter}
+    source:
+      source_path: src/pybert/cli.py
+      entrypoint_blob_sha1: 4c1116007d31bcebf8db3252363eed7774c7b349
+      entrypoint_sha256: 3826b0c156166e6f04b0e9997ce64a53a53867db6d89143b7c582ca2cf4337c9
+      reachable_inventory_ref: candidate_coverage.entries.PB-01.upstream
+      reachable_modules: [src/pybert/pybert.py, src/pybert/engine/python_backend.py, src/pybert/engine/api.py, src/pybert/engine/result_adapter.py]
+      per_path_license: {status: pending_per_path_review, paths: []}
+    candidate_source_hashes: {status: partial_or_missing, evidence_ref: candidate_coverage.entries.PB-01.candidate.surfaces}
+    stages: {source_admitted: {status: blocked, missing: [per_path_license_approval_for_all_reachable_source_blobs]}, branch_frozen: {status: blocked, missing: [complete_reachable_branch_default_error_inventory]}, oracle_bound: {status: blocked, missing: [clean_pinned_two_fresh_oracle_runtime_attestation]}, direct_port_present: {status: blocked, missing: [direct_rust_route_without_adapter]}, parity_observed: {status: blocked, missing: [pre_frozen_tolerance_independent_parity_and_mutation_coverage]}, completion: {status: blocked, missing: [terminal_decision_or_rust_parity_acceptance]}}
+    direct_rust: {status: blocked, route: [], calls_adapter: null, source_hashes: []}
+    branch_inventory: {status: blocked, unknown_counts: null, evidence: []}
+    oracle: {status: blocked, corpus: [], runtime_attestation: null}
+    parity: {status: blocked, tolerance: null, observations: [], mutation_coverage: null}
+    completion: {status: open, terminal_state: null, authority_evidence: null}
+    current_state: source_identity_bound_pre_admission
+  - id: PB-02
+    repo: pybert
+    public_entrypoint: sim-native
+    adapter_route: {command_id: upstream.pybert.sim-native, adapter_crate: sipi-pybert-adapter}
+    reserved_interface: PB-02
+    source:
+      source_path: src/pybert/cli.py
+      entrypoint_blob_sha1: 4c1116007d31bcebf8db3252363eed7774c7b349
+      entrypoint_sha256: 3826b0c156166e6f04b0e9997ce64a53a53867db6d89143b7c582ca2cf4337c9
+      reachable_inventory_ref: candidate_coverage.entries.PB-02.upstream
+      reachable_modules: [src/pybert/engine/rust_backend.py, src/pybert/engine/api.py, src/pybert/engine/result_adapter.py]
+      per_path_license: {status: pending_per_path_review, paths: []}
+    candidate_source_hashes: {status: partial_or_missing, evidence_ref: candidate_coverage.entries.PB-02.candidate.surfaces}
+    stages: {source_admitted: {status: blocked, missing: [per_path_license_approval_for_all_reachable_source_blobs]}, branch_frozen: {status: blocked, missing: [complete_reachable_branch_default_error_artifact_inventory]}, oracle_bound: {status: blocked, missing: [clean_pinned_two_fresh_oracle_runtime_attestation]}, direct_port_present: {status: blocked, missing: [direct_rust_route_without_adapter]}, parity_observed: {status: blocked, missing: [pre_frozen_tolerance_independent_parity_and_mutation_coverage]}, completion: {status: blocked, missing: [terminal_decision_or_rust_parity_acceptance]}}
+    direct_rust: {status: blocked, route: [], calls_adapter: null, source_hashes: []}
+    branch_inventory: {status: blocked, unknown_counts: null, evidence: []}
+    oracle: {status: blocked, corpus: [], runtime_attestation: null}
+    parity: {status: blocked, tolerance: null, observations: [], mutation_coverage: null}
+    completion: {status: open, terminal_state: null, authority_evidence: null}
+    current_state: source_identity_bound_pre_admission
+  - id: PB-03
+    repo: pybert
+    public_entrypoint: sim-rust
+    adapter_route: {command_id: upstream.pybert.sim-rust, adapter_crate: sipi-pybert-adapter}
+    source:
+      source_path: src/pybert/cli.py
+      entrypoint_blob_sha1: 4c1116007d31bcebf8db3252363eed7774c7b349
+      entrypoint_sha256: 3826b0c156166e6f04b0e9997ce64a53a53867db6d89143b7c582ca2cf4337c9
+      reachable_inventory_ref: candidate_coverage.entries.PB-03.upstream
+      reachable_modules: [src/pybert/engine/legacy_cli_adapter.py, src/pybert/engine/rust_backend.py, src/pybert_web/engine_adapter.py, src/pybert_web/simulation.py]
+      per_path_license: {status: pending_per_path_review, paths: []}
+    candidate_source_hashes: {status: partial_or_missing, evidence_ref: candidate_coverage.entries.PB-03.candidate.surfaces}
+    stages: {source_admitted: {status: blocked, missing: [per_path_license_approval_for_all_reachable_source_blobs]}, branch_frozen: {status: blocked, missing: [complete_reachable_branch_default_error_artifact_inventory]}, oracle_bound: {status: blocked, missing: [clean_pinned_two_fresh_oracle_runtime_attestation]}, direct_port_present: {status: blocked, missing: [direct_rust_route_without_adapter]}, parity_observed: {status: blocked, missing: [pre_frozen_tolerance_independent_parity_and_mutation_coverage]}, completion: {status: blocked, missing: [terminal_decision_or_rust_parity_acceptance]}}
+    direct_rust: {status: blocked, route: [], calls_adapter: null, source_hashes: []}
+    branch_inventory: {status: blocked, unknown_counts: null, evidence: []}
+    oracle: {status: blocked, corpus: [], runtime_attestation: null}
+    parity: {status: blocked, tolerance: null, observations: [], mutation_coverage: null}
+    completion: {status: open, terminal_state: null, authority_evidence: null}
+    current_state: source_identity_bound_pre_admission
+  - id: PB-04
+    repo: pybert
+    public_entrypoint: sim-auto
+    adapter_route: {command_id: upstream.pybert.sim-auto, adapter_crate: sipi-pybert-adapter}
+    source:
+      source_path: src/pybert/cli.py
+      entrypoint_blob_sha1: 4c1116007d31bcebf8db3252363eed7774c7b349
+      entrypoint_sha256: 3826b0c156166e6f04b0e9997ce64a53a53867db6d89143b7c582ca2cf4337c9
+      reachable_inventory_ref: candidate_coverage.entries.PB-04.upstream
+      reachable_modules: [src/pybert/engine/legacy_cli_adapter.py, src/pybert_web/engine_adapter.py, src/pybert_web/simulation.py, src/pybert/engine/python_backend.py]
+      per_path_license: {status: pending_per_path_review, paths: []}
+    candidate_source_hashes: {status: partial_or_missing, evidence_ref: candidate_coverage.entries.PB-04.candidate.surfaces}
+    stages: {source_admitted: {status: blocked, missing: [per_path_license_approval_for_all_reachable_source_blobs]}, branch_frozen: {status: blocked, missing: [complete_reachable_branch_default_error_artifact_inventory]}, oracle_bound: {status: blocked, missing: [clean_pinned_two_fresh_oracle_runtime_attestation]}, direct_port_present: {status: blocked, missing: [direct_rust_route_without_adapter]}, parity_observed: {status: blocked, missing: [pre_frozen_tolerance_independent_parity_and_mutation_coverage]}, completion: {status: blocked, missing: [terminal_decision_or_rust_parity_acceptance]}}
+    direct_rust: {status: blocked, route: [], calls_adapter: null, source_hashes: []}
+    branch_inventory: {status: blocked, unknown_counts: null, evidence: []}
+    oracle: {status: blocked, corpus: [], runtime_attestation: null}
+    parity: {status: blocked, tolerance: null, observations: [], mutation_coverage: null}
+    completion: {status: open, terminal_state: null, authority_evidence: null}
+    current_state: source_identity_bound_pre_admission
+  - id: PB-05
+    repo: pybert
+    public_entrypoint: sim-compare
+    adapter_route: {command_id: upstream.pybert.sim-compare, adapter_crate: sipi-pybert-adapter}
+    source:
+      source_path: src/pybert/cli.py
+      entrypoint_blob_sha1: 4c1116007d31bcebf8db3252363eed7774c7b349
+      entrypoint_sha256: 3826b0c156166e6f04b0e9997ce64a53a53867db6d89143b7c582ca2cf4337c9
+      reachable_inventory_ref: candidate_coverage.entries.PB-05.upstream
+      reachable_modules: [src/pybert/engine/compare.py, src/pybert/engine/result_adapter.py, src/pybert_web/engine_adapter.py]
+      per_path_license: {status: pending_per_path_review, paths: []}
+    candidate_source_hashes: {status: partial_or_missing, evidence_ref: candidate_coverage.entries.PB-05.candidate.surfaces}
+    stages: {source_admitted: {status: blocked, missing: [per_path_license_approval_for_all_reachable_source_blobs]}, branch_frozen: {status: blocked, missing: [complete_reachable_branch_default_error_artifact_inventory]}, oracle_bound: {status: blocked, missing: [clean_pinned_two_fresh_oracle_runtime_attestation]}, direct_port_present: {status: blocked, missing: [direct_rust_route_without_adapter]}, parity_observed: {status: blocked, missing: [pre_frozen_tolerance_independent_parity_and_mutation_coverage]}, completion: {status: blocked, missing: [terminal_decision_or_rust_parity_acceptance]}}
+    direct_rust: {status: blocked, route: [], calls_adapter: null, source_hashes: []}
+    branch_inventory: {status: blocked, unknown_counts: null, evidence: []}
+    oracle: {status: blocked, corpus: [], runtime_attestation: null}
+    parity: {status: blocked, tolerance: null, observations: [], mutation_coverage: null}
+    completion: {status: open, terminal_state: null, authority_evidence: null}
+    current_state: source_identity_bound_pre_admission
+  - id: COM-01
+    repo: agent_com
+    public_entrypoint: config-validate
+    adapter_route: {command_id: upstream.agent-com.config-validate, adapter_crate: sipi-agent-com-adapter}
+    source:
+      source_path: src/agent_com/cli.py
+      entrypoint_blob_sha1: 7964d84bd52d60731bbf56ab9847bf4c190eacf9
+      entrypoint_sha256: 3ca1d26c097abaaa6197682a2c095dc2bc9d5810177429662a40463096fb51ca
+      reachable_inventory_ref: candidate_coverage.entries.COM-01.upstream
+      reachable_modules: [src/agent_com/config/__init__.py, src/agent_com/config/consumption.py, src/agent_com/config/excel.py, src/agent_com/config/materialize.py, src/agent_com/config/schema.py, src/agent_com/capabilities.py]
+      per_path_license: {status: pending_per_path_review, paths: []}
+    candidate_source_hashes: {status: partial_or_missing, evidence_ref: candidate_coverage.entries.COM-01.candidate.surfaces}
+    stages: {source_admitted: {status: blocked, missing: [per_path_license_approval_for_all_reachable_source_blobs]}, branch_frozen: {status: blocked, missing: [complete_reachable_branch_default_error_artifact_inventory]}, oracle_bound: {status: blocked, missing: [clean_pinned_two_fresh_oracle_runtime_attestation]}, direct_port_present: {status: blocked, missing: [direct_rust_route_without_adapter]}, parity_observed: {status: blocked, missing: [pre_frozen_tolerance_independent_parity_and_mutation_coverage]}, completion: {status: blocked, missing: [terminal_decision_or_rust_parity_acceptance]}}
+    direct_rust: {status: blocked, route: [], calls_adapter: null, source_hashes: []}
+    branch_inventory: {status: blocked, unknown_counts: null, evidence: []}
+    oracle: {status: blocked, corpus: [], runtime_attestation: null}
+    parity: {status: blocked, tolerance: null, observations: [], mutation_coverage: null}
+    completion: {status: open, terminal_state: null, authority_evidence: null}
+    current_state: source_identity_bound_pre_admission
+  - id: COM-02
+    repo: agent_com
+    public_entrypoint: run
+    adapter_route: {command_id: upstream.agent-com.run, adapter_crate: sipi-agent-com-adapter}
+    source:
+      source_path: src/agent_com/cli.py
+      entrypoint_blob_sha1: 7964d84bd52d60731bbf56ab9847bf4c190eacf9
+      entrypoint_sha256: 3ca1d26c097abaaa6197682a2c095dc2bc9d5810177429662a40463096fb51ca
+      reachable_inventory_ref: candidate_coverage.entries.COM-02.upstream
+      reachable_modules: [src/agent_com/api.py, src/agent_com/pipeline.py, src/agent_com/network/mixed_mode.py, src/agent_com/signal/fd_to_td.py, src/agent_com/equalization/apply.py, src/agent_com/equalization/ctle.py, src/agent_com/equalization/rx_ffe.py, src/agent_com/metrics/com.py, src/agent_com/metrics/tdiln.py, src/agent_com/runtime.py, src/agent_com/reporting.py]
+      per_path_license: {status: pending_per_path_review, paths: []}
+    candidate_source_hashes: {status: partial_or_missing, evidence_ref: candidate_coverage.entries.COM-02.candidate.surfaces}
+    stages: {source_admitted: {status: blocked, missing: [per_path_license_approval_for_all_reachable_source_blobs]}, branch_frozen: {status: blocked, missing: [complete_reachable_branch_default_error_artifact_inventory]}, oracle_bound: {status: blocked, missing: [clean_pinned_two_fresh_oracle_runtime_attestation]}, direct_port_present: {status: blocked, missing: [direct_rust_route_without_adapter]}, parity_observed: {status: blocked, missing: [pre_frozen_tolerance_independent_parity_and_mutation_coverage]}, completion: {status: blocked, missing: [terminal_decision_or_rust_parity_acceptance]}}
+    direct_rust: {status: blocked, route: [], calls_adapter: null, source_hashes: []}
+    branch_inventory: {status: blocked, unknown_counts: null, evidence: []}
+    oracle: {status: blocked, corpus: [], runtime_attestation: null}
+    parity: {status: blocked, tolerance: null, observations: [], mutation_coverage: null}
+    completion: {status: open, terminal_state: null, authority_evidence: null}
+    current_state: source_identity_bound_pre_admission
+  - id: COM-03
+    repo: agent_com
+    public_entrypoint: compare
+    adapter_route: {command_id: upstream.agent-com.compare, adapter_crate: sipi-agent-com-adapter}
+    reserved_interface: COM-03
+    source:
+      source_path: src/agent_com/cli.py
+      entrypoint_blob_sha1: 7964d84bd52d60731bbf56ab9847bf4c190eacf9
+      entrypoint_sha256: 3ca1d26c097abaaa6197682a2c095dc2bc9d5810177429662a40463096fb51ca
+      reachable_inventory_ref: candidate_coverage.entries.COM-03.upstream
+      reachable_modules: [src/agent_com/reporting.py, src/agent_com/models.py]
+      per_path_license: {status: pending_per_path_review, paths: []}
+    candidate_source_hashes: {status: partial_or_missing, evidence_ref: candidate_coverage.entries.COM-03.candidate.surfaces}
+    stages: {source_admitted: {status: blocked, missing: [per_path_license_approval_for_all_reachable_source_blobs]}, branch_frozen: {status: blocked, missing: [complete_reachable_branch_default_error_inventory]}, oracle_bound: {status: blocked, missing: [clean_pinned_two_fresh_oracle_runtime_attestation]}, direct_port_present: {status: blocked, missing: [direct_rust_route_without_adapter]}, parity_observed: {status: blocked, missing: [pre_frozen_tolerance_independent_parity_and_mutation_coverage]}, completion: {status: blocked, missing: [terminal_decision_or_rust_parity_acceptance]}}
+    direct_rust: {status: blocked, route: [], calls_adapter: null, source_hashes: []}
+    branch_inventory: {status: blocked, unknown_counts: null, evidence: []}
+    oracle: {status: blocked, corpus: [], runtime_attestation: null}
+    parity: {status: blocked, tolerance: null, observations: [], mutation_coverage: null}
+    completion: {status: open, terminal_state: null, authority_evidence: null}
+    current_state: source_identity_bound_pre_admission
+  - id: COM-04
+    repo: agent_com
+    public_entrypoint: load_config-run_com-write_artifacts
+    adapter_route: {command_id: upstream.agent-com.public-api, adapter_crate: sipi-agent-com-adapter}
+    source:
+      source_path: src/agent_com/__init__.py
+      entrypoint_blob_sha1: 19942e5cc8e9ffa6572dd0ee6fc0861250ccf58b
+      entrypoint_sha256: 0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0
+      reachable_inventory_ref: candidate_coverage.entries.COM-04.upstream
+      reachable_modules: [src/agent_com/__init__.py, src/agent_com/api.py, src/agent_com/config/excel.py, src/agent_com/config/materialize.py, src/agent_com/pipeline.py, src/agent_com/reporting.py, src/agent_com/runtime.py]
+      per_path_license: {status: pending_per_path_review, paths: []}
+    candidate_source_hashes: {status: partial_or_missing, evidence_ref: candidate_coverage.entries.COM-04.candidate.surfaces}
+    stages: {source_admitted: {status: blocked, missing: [per_path_license_approval_for_all_reachable_source_blobs]}, branch_frozen: {status: blocked, missing: [complete_reachable_branch_default_error_artifact_inventory]}, oracle_bound: {status: blocked, missing: [clean_pinned_two_fresh_oracle_runtime_attestation]}, direct_port_present: {status: blocked, missing: [direct_rust_route_without_adapter]}, parity_observed: {status: blocked, missing: [pre_frozen_tolerance_independent_parity_and_mutation_coverage]}, completion: {status: blocked, missing: [terminal_decision_or_rust_parity_acceptance]}}
+    direct_rust: {status: blocked, route: [], calls_adapter: null, source_hashes: []}
+    branch_inventory: {status: blocked, unknown_counts: null, evidence: []}
+    oracle: {status: blocked, corpus: [], runtime_attestation: null}
+    parity: {status: blocked, tolerance: null, observations: [], mutation_coverage: null}
+    completion: {status: open, terminal_state: null, authority_evidence: null}
+    current_state: source_identity_bound_pre_admission
+summary: {rows: 15, source_identity_bound_pre_admission: 15, source_admitted: 0, branch_frozen: 0, oracle_bound: 0, direct_port_present: 0, parity_observed: 0, completion: 0, open: 15, rust_parity_accepted: 0, retained_external_runtime: 0, excluded_by_owner: 0}
+rules:
+  external_adapter_is_not_direct_rust_route: true
+  source_admission_is_not_parity: true
+  branch_inventory_must_expose_unknown_counts: true
+  oracle_must_be_pinned_and_two_fresh_runs: true
+  tolerance_must_precede_observation: true
+  completion_must_have_terminal_evidence: true

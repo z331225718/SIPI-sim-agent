@@ -1,0 +1,122 @@
+schema: sipi.com-03-direct-port.v1
+status: direct_port_scoped_corpus_unbound_observation_open
+scope:
+  work_item: COM-03
+  upstream_public_entrypoint: compare
+  target: lane_local_direct_port_only
+  product_capability_promoted: false
+  global_migration_row_closed: false
+source:
+  repository: https://github.com/z331225718/agent-com.git
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  archive_inventory_sha256: 5f3f17e19edc07cf6498c9bfea20b8691082e2c05364b4462bc54df8549d0a04
+  declared_license: MIT
+  source_storage: pinned_git_objects_or_clean_archive_only
+  source_paths:
+    - path: src/agent_com/reporting.py
+      role: read_result_json_validate_result_contract_compare_result_json_comparable_recursive_compare
+      git_blob_sha1: efbb14dda4d656a71e6915f5c5026b719e22d141
+      bytes: 82620
+      content_sha256: 14c4e4f0e5e51ee6fe76343ef133a565b8c922a0794acfe6c36ac3c7bbc1a0e1
+      included_lines: [628, 637, 1482, 1542]
+      license: MIT
+    - path: src/agent_com/cli.py
+      role: compare_argument_default_and_matched_mismatch_exit_mapping
+      git_blob_sha1: 7964d84bd52d60731bbf56ab9847bf4c190eacf9
+      bytes: 15589
+      content_sha256: 3ca1d26c097abaaa6197682a2c095dc2bc9d5810177429662a40463096fb51ca
+      included_lines: [40, 74]
+      license: MIT
+    - path: schemas/result-v1.schema.json
+      role: result_artifact_contract_reference
+      git_blob_sha1: 9655622a259c4230d627ca2d2f7503d9bdec31f7
+      bytes: 1968
+      content_sha256: 00ace60e6d31fd37c4944681fa7fbfa390c763a69a3b42543a4b741bb4a8a247
+      included_lines: [1, 59]
+      license: MIT
+implementation:
+  crate: crates/sipi-agent-com-direct
+  package_license: MIT
+  source_map: crates/sipi-agent-com-direct/SOURCE-MAP.md
+  notice: crates/sipi-agent-com-direct/NOTICE-AGENT-COM-MIT.md
+  library: crates/sipi-agent-com-direct/src/lib.rs
+  cli: crates/sipi-agent-com-direct/src/bin/compare.rs
+  cli_binary: sipi-com-direct-compare
+  standalone_workspace: true
+contract:
+  result_schema_version: 1
+  source_revision: r480
+  required_top_level_keys: [schema_version, source_revision, profile, cases, provenance, warnings, timings_s]
+  optional_top_level_keys: [input_manifest, report_manifest]
+  comparable_projection: [remove_timings_s, remove_provenance_platform, remove_provenance_python_version]
+  tolerance: absolute_only
+  relative_tolerance: 0.0
+  default_atol: 1.0e-12
+  negative_atol: config_error
+  mismatch_report: {matched: boolean, mismatches: ordered_path_messages}
+  mismatch_message_paths: [object_key_set, array_length, scalar_leaf]
+  exit_codes: {matched: 0, mismatch: 3, malformed_json: 2, invalid_schema: 3, negative_atol: 3, io_error: 1}
+  python_compatibility_edges: [schema_version_true_equals_one, schema_version_float_equals_one, provenance_empty_sequence, provenance_pair_sequence]
+branch_matrix:
+  - identical_documents
+  - schema_version_true_equals_one
+  - schema_version_float_equals_one
+  - provenance_empty_sequence
+  - provenance_pair_sequence_metadata_ignored
+  - non_comparable_metadata_ignored
+  - numeric_within_absolute_atol
+  - numeric_and_nested_mismatch
+  - object_key_mismatch
+  - array_length_mismatch
+  - scalar_string_mismatch
+  - invalid_schema_version
+  - missing_required_key
+  - invalid_profile
+  - empty_cases
+  - non_contiguous_case_index
+  - negative_signal
+  - non_integer_cursor
+  - invalid_eye_width_shape
+  - malformed_json
+  - negative_atol
+  - missing_golden
+  - missing_result
+oracle:
+  runner: tools/run_com_03_direct_oracle.py
+  source_mode: clean_git_archive_when_external_worktree_dirty
+  candidate_binding_status: unbound_observation
+  bound_mode: clean_git_archive_with_independent_cargo_target_dir
+  report_path_policy: redacted
+  diagnostic_policy: stable_categories_only
+  invocations:
+    - report: docs/baselines/com-03-direct-port-oracle.v1.json
+      run_id: fresh-20260823-prep-01
+      sha256: a9249c3508454829ac9bfacd42e0c4c50a82989f1efa55c1c331c7edb894d33f
+    - report: docs/baselines/com-03-direct-port-oracle-run2.v1.json
+      run_id: fresh-20260823-prep-02
+      sha256: 08f0341602a2f6b6eec3c52e7a8729afa6b960f65ef402738c0b7348b0e5f1af
+  aggregate_report: docs/baselines/com-03-direct-port-oracle-aggregate.v1.json
+  aggregate_sha256: c9529b80073375b1fd7a043d71a83adbbbbfda2a384946e4e9f6413998fc1b6a
+  scenario_count: 23
+  scenario_set_sha256: f9124ce5020bb29cca9b28ddeb5b6feda6ff3755b2fb49142254db44ccb46ffd
+  upstream_archive_inventory_sha256: 5f3f17e19edc07cf6498c9bfea20b8691082e2c05364b4462bc54df8549d0a04
+  independent_upstream_function_and_cli_checked: true
+  all_cli_contracts_match: true
+  stderr_diagnostic_text: not_frozen_contract
+  result_payloads_committed: false
+verification:
+  verifier: tools/verify_com_03_direct_port.py
+  mutation_tests: tools/test_verify_com_03_direct_port.py
+  rust_tests: 10
+  python_oracle_scenarios_per_invocation: 23
+non_claims:
+  - no_product_capability_promotion
+  - no_global_migration_row_close
+  - no_external_runtime_source_attestation
+  - no_workbook_or_run_or_public_api_implementation
+  - no_golden_or_result_payloads_vendored
+  - no_numeric_com_metric_acceptance
+  - no_release_readiness
+  - no_full_argparse_or_all_dict_conversion_branch_matrix
+  - no_immutable_candidate_binding

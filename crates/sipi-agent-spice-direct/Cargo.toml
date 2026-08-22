@@ -1,0 +1,13 @@
+[package]
+name = "sipi-agent-spice-direct"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+rust-version = "1.97"
+publish = false
+description = "Lane-local Agent-Spice direct-port admission model."
+
+[workspace]
+
+[lints.rust]
+unsafe_code = "forbid"

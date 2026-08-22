@@ -2,7 +2,7 @@ schema: sipi.license-manifest.v2
 status: provisional
 release_boundary:
   path: product-boundary.v1.yaml
-  sha256: aa0cb7ecb29fd073a5c47687e26199cf0da20669be3c48ea2296ef0d7c1d17b1
+  sha256: 21f0ca94e0882e404dab9d62ff127479f37c9c829b15a6bb15c973d935a2b171
   status: provisional
 legacy_evidence:
   - id: legacy-license-manifest-v1
@@ -178,6 +178,18 @@ release_inputs:
       sbom_component_id: pkg:cargo/vecfit
       status: pending
       owner_action: {owner: sipi-license-owner, action: review quarantined sipi-circuit vecfit dependency and NOTICE, approval_ref: null}
+    - id: pybert-native-core-direct-port
+      component: pybert-native-core
+      role: runtime
+      source: native/pybert-core
+      requested_version: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+      resolved_artifact: {version: null, sha256: null}
+      declared_spdx: LicenseRef-PyBERT-Native-Core-Pending
+      license_evidence_ref: crates/sipi-pybert-direct/NOTICE-PYBERT-LICENSE-BOUNDARY.md
+      notice_requirement: required
+      sbom_component_id: pkg:generic/pybert-native-core@5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+      status: pending
+      owner_action: {owner: pybert-license-owner, action: resolve native-core Cargo MIT metadata versus pinned BSD-3-Clause notice conflict before any source migration or distribution, approval_ref: null}
   notices:
     - dependency: rust-rustfft
       status: pending
@@ -231,6 +243,10 @@ release_inputs:
       status: pending
       source_evidence_ref: docs/baselines/tran-provenance-preflight.v1.yaml
       output_notice_id: NOTICE/vecfit
+    - dependency: pybert-native-core-direct-port
+      status: pending
+      source_evidence_ref: crates/sipi-pybert-direct/NOTICE-PYBERT-LICENSE-BOUNDARY.md
+      output_notice_id: NOTICE/pybert-native-core
 blocking_actions:
   - id: first-party-product-promotion
     owner: sipi-release-owner

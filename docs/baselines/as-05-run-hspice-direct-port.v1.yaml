@@ -1,0 +1,137 @@
+schema: sipi.as-05-run-hspice-direct-port.v1
+status: partial_admission_candidate
+policy: exact_upstream_contract_then_rust_replacement
+source:
+  repository: agent-spice
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  license: MIT
+  source_storage: exact_git_object_or_clean_archive_only
+  source_payload_copied_into_sipi: false
+  runtime_source_attestation: not_performed
+  runtime_identity: caller_selected_external_solver
+source_paths:
+  - {id: cli, path: src/agent_spice/cli.py, blob_oid: 321a32b860f969f0be74f883bedbbae3f67d6284, sha256: 908489c8c3a4826d49175c66b3d533413db4624b10fc3c797795b723b62262e1, license: upstream_repo_mit, copied: false}
+  - {id: hspice_alter, path: src/agent_spice/hspice/alter.py, blob_oid: d162dc2a6c5a779625ae9fd736c35147b49fbebf, sha256: 5a18f537615b3276bb7c8b4d751e65e7dd21e17b1f5d3ab43d1fa732eb065bf4, license: upstream_repo_mit, copied: false}
+  - {id: hspice_audit, path: src/agent_spice/hspice/audit.py, blob_oid: 0651fe8a6ebc11423ceb9a55305b0cdf9dae2641, sha256: 47424952b248e7fadb64f8ad9f863f0213b484ae2ac87cc56798fa251c4aed82, license: upstream_repo_mit, copied: false}
+  - {id: hspice_converter, path: src/agent_spice/hspice/converter.py, blob_oid: 1bae09abf2cd52bff7c173311da9fee1458f3ca3, sha256: b33596007cbaa435cc1527677661d6e94a3779c20fd84d8c7f2640e84723e7dd, license: upstream_repo_mit, copied: false}
+  - {id: hspice_manifest, path: src/agent_spice/hspice/manifest.py, blob_oid: 35d594ba7e5db9ab87f70abf562004b5ef876e51, sha256: 503fe6884614c5f0c5009535bad1e2f50642a15b398cf38ef667acf4a2458073, license: upstream_repo_mit, copied: false}
+  - {id: hspice_measure, path: src/agent_spice/hspice/measure.py, blob_oid: 215790e18f5cc013fbe51791086e3bce362a889a, sha256: cbb851db87c951e1d3a76cc99f6d1bb9fc31a3c4c20234d25507cd85d71695f4, license: upstream_repo_mit, copied: false}
+  - {id: hspice_results, path: src/agent_spice/hspice/results.py, blob_oid: 360b48be3accf8ae455ad9542ad1fc0dcd782779, sha256: e9d472e81de5083ba2ffe4631e5ee64114c42fbceda179b6eb686c58394e1cfe, license: upstream_repo_mit, copied: false}
+  - {id: backend_base, path: src/agent_spice/backend/base.py, blob_oid: 0faf79c29d4f65529de408ee7dd757e28bba7de0, sha256: eada7c38a7a7700882582e5fd0746e1e1f7736c6ba038e4b6027932199136201, license: upstream_repo_mit, copied: false}
+  - {id: backend_native, path: src/agent_spice/backend/native.py, blob_oid: 4e2f327a9a10b8de876e83df1fb31c359ba063f4, sha256: 79b20cb1d172fe778be9fab260a9989f186159fd191b767bce8d9337466ddabc, license: upstream_repo_mit, copied: false}
+  - {id: backend_ngspice, path: src/agent_spice/backend/ngspice.py, blob_oid: e9d1952bf1b43ad9a89bae95f1724b893e8db6b8, sha256: eca6a855df25f44169d13f576f2c169596cfc6de29ef45c4829150d20b740672, license: upstream_repo_mit, copied: false}
+  - {id: backend_xyce, path: src/agent_spice/backend/xyce.py, blob_oid: 2e6af5fbaca426c47c677bd73175601914c9becc, sha256: 74809883b9a54eb0a6265bae054861b1a0b4f90a57609f22e2d660eb79efd53c, license: upstream_repo_mit, copied: false}
+  - {id: project, path: src/agent_spice/project.py, blob_oid: ab3f36b0428f6f7a7b590e8907b7c0058a71c24c, sha256: f145f204678bd5ffb283fe0261f99987e5a80499fb5f9d4369abb3272233d972, license: upstream_repo_mit, copied: false}
+  - {id: deck_builder, path: src/agent_spice/deck/builder.py, blob_oid: 52e41800c37ae3ce232a1ca65d331850c50930cf, sha256: 34e0b7c5ded6f1515b606083c138f7bd2571241eb84bbd5f2484c6a7e9fc3b91, license: upstream_repo_mit, copied: false}
+  - {id: native_engine_manifest, path: native/agent-spice-sim/Cargo.toml, blob_oid: b56d29811d0293c878b22485523f03ea06dc2d91, sha256: 72c7296fdfee4627d65dc5cb5ba35ec09a4ecff47a34b16af034cd7d5817cf74, license: upstream_repo_mit, copied: false}
+  - {id: python_dependency_manifest, path: pyproject.toml, blob_oid: 29006b652445c770df4a01027357117adf9c95ad, sha256: c0f8264a2de1375a4f40a8834173d49859dd9c4717d718fc5f622f1ea4f68c88, license: upstream_repo_mit, copied: false}
+  - {id: license, path: LICENSE, blob_oid: 55aac2e4f8c36a978d315efb02815972579b8293, sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2, license: MIT, copied: false}
+direct_port:
+  crate: crates/sipi-agent-spice-direct
+  crate_license: MIT
+  upstream_commit_constant: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  source_policy: lane_local_admission_model_only
+  copied_upstream_source: false
+  invokes_external_solver: false
+  numerical_implementation: absent_by_design
+  covered_semantics:
+    - bounded_deck_string_admission_and_ordered_alter_split
+    - quote_aware_shlex_posix_false_include_and_library_tokens
+    - ngspice_current_pwl_repeat_rewrite_and_rejection_reasons
+    - explicit_four_backend_prepare_and_execute_stage_plan
+  missing_semantics:
+    - file_read_source_hash_stable_source_path_and_case_artifact_writes
+    - recursive_dependency_staging_and_missing_dependency_errors
+    - compat_report_json_deck_case_output_measure_and_summary_schema
+    - native_ngspice_xyce_and_xdm_process_execution_and_result_extraction
+    - backend_failure_exit_codes_and_two_stage_xdm_artifact_lifecycle
+    - included_netlist_current_pwl_rewrite_and_touchstone_preflight
+    - runtime_source_attestation_and_external_solver_identity
+branch_graph:
+  input:
+    read_deck_utf8: required
+    source_sha256: recorded_before_case_split
+    deck_id: path_stem
+    split_alter_cases: [base_case, ordered_alter_cases, global_end_reappended_once, missing_end_preserved]
+  preparation:
+    audit: [directive_counts, include_paths, library_paths_and_sections, unsupported_directives]
+    dependency_staging: [relative_under_source_root, absolute_not_staged, outside_source_root_reported]
+    report: [deck_metadata, case_metadata, audit, outputs, actions, unsupported, summary]
+    required_case_artifacts: [case.cir, case.source.sp, compat_report.json]
+  backends:
+    native:
+      execute_false: [accept_hspice_syntax, preserve_deck_text, stage_dependencies]
+      execute_true: [native_engine_resolution, optional_rfm_passthrough, dotnet_or_apphost_process, stdout_stderr_capture, native_result_and_waveform_summary]
+      external_solver: native_agent_spice_engine
+    ngspice:
+      execute_false: [inc_to_include, probe_to_print, drop_option_post, stage_converted_dependencies]
+      execute_true: [ngspice_batch_process, waveform_csv_extraction, measure_extraction, run_summary]
+      external_solver: ngspice
+    xyce:
+      execute_false: [preserve_hspice_text, stage_dependencies]
+      execute_true: [xyce_process, stdout_stderr_capture, run_summary, solver_owned_waveform_artifacts]
+      external_solver: Xyce
+    xyce_xdm:
+      execute_false: [preserve_hspice_case_sp, prepare_case_cir]
+      execute_true: [xdm_hspice_to_xyce, require_generated_case, xyce_process, per_stage_logs, two_stage_summary]
+      external_solver: [xdm_bdl, Xyce]
+  error_surfaces:
+    - deck_read_os_error
+    - unsupported_directive_reported_blocked
+    - include_absolute_or_missing_or_escape_reported
+    - backend_process_start_failure
+    - backend_nonzero_exit
+    - xdm_nonzero_exit_without_xyce_stage
+    - xdm_missing_generated_case
+    - xyce_nonzero_exit_after_successful_xdm
+oracle_replay:
+  authority: clean_archive_from_exact_git_object
+  archive_commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  replay_fixture: tests/fixtures/hspice/corpus/alter_corners/alter_corners.sp
+  focused_upstream_tests: {command: "test_cli_run_hspice.py + hspice alter/audit/converter/corpus + backend commands", passed: 52, failed: 0}
+  prepare_only:
+    native: {exit: 0, cases: 3, required_files: [case.cir, case.source.sp, compat_report.json]}
+    ngspice: {exit: 0, cases: 3, required_files: [case.cir, case.source.sp, compat_report.json]}
+    xyce: {exit: 0, cases: 3, required_files: [case.cir, case.source.sp, compat_report.json]}
+    xyce_xdm: {exit: 0, cases: 3, required_files: [case.cir, case.source.sp, case.sp, compat_report.json]}
+  execute:
+    native: {exit: 0, cases: 3, observed_artifacts: [native_result.json, waveform.csv, run_summary.json, stdout.log, stderr.log]}
+    ngspice: {exit: 0, cases: 3, observed_artifacts: [waveform.csv, run_summary.json, stdout.log, stderr.log]}
+    xyce: {exit: 0, cases: 3, observed_artifacts: [case.cir.prn, run_summary.json, stdout.log, stderr.log]}
+    xyce_xdm: {exit: 1, stopped_case: alter_corners__base, observed_artifacts: [case.sp, case.cir, xdm-out/case.sp, xdm.stdout.log, xdm.stderr.log, xyce.stdout.log, xyce.stderr.log, run_summary.json]}
+  solver_availability_observation: [clean_archive_built_native_engine, ngspice_present, Xyce_present, xdm_bdl_present]
+  artifact_retention: external_temp_only_not_retained_in_product_tree
+  replay_tolerance:
+    prepared_case_text: byte_exact
+    compat_report: byte_exact_for_frozen_fixture
+    branch_exit_code: exact_integer
+    numeric_waveforms: not_frozen_until_rust_solver_port
+parity:
+  status: not_evaluated
+  direct_port_status: partial_admission_model
+  product_capability_claim: false
+  release_claim: false
+  completion: open
+differential_corpus:
+  status: pinned_rust_unit_corpus
+  cases:
+    - {id: quoted_include_lib, expectation: shlex_split_posix_false_path_tokens}
+    - {id: valid_current_pwl_repeat, expectation: exact_ngspice_behavioral_rewrite_and_multiplicity}
+    - {id: invalid_current_pwl_repeat_point, expectation: blocked_current_pwl_repeat_point_not_found}
+    - {id: invalid_current_pwl_repeat_window, expectation: blocked_invalid_current_pwl_repeat_window}
+    - {id: four_backends_alter_missing_end, expectation: all_backend_plans_ordered_alter_and_missing_end_preserved}
+blockers:
+  - Rust direct port is a partial admission candidate; it does not implement upstream file, artifact, process, or result branches.
+  - The pinned differential corpus covers quoted tokenization, current-PWL converter leaves, four backend planning, ALTER, and missing-END only.
+  - Rust native/netlist solver and backend process semantics are not implemented in the lane-local crate.
+  - Native/ngspice/Xyce/XDM numeric outputs are oracle evidence only; no Rust comparison is claimed.
+  - External solver artifacts are not retained under product custody.
+  - Per-dependency third-party licenses and runtime authenticity remain outside the MIT source review.
+  - Rust native/netlist solver and backend process semantics are not implemented in the lane-local crate.
+  - Native/ngspice/Xyce/XDM numeric outputs are oracle evidence only; no Rust comparison is claimed.
+  - External solver artifacts are not retained under product custody.
+  - Per-dependency third-party licenses and runtime authenticity remain outside the MIT source review.
+audit:
+  path: docs/baselines/audits/2026-08-22-as-05-run-hspice-direct-port.md
+  sha256: 3bbca46818ce9eb459cc261a7ee2a0f92ca60a1868731f49bd2b5f50223344de

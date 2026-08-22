@@ -1,0 +1,576 @@
+{
+  "all_cli_contracts_match": true,
+  "candidate": {
+    "reason": "preparation_worktree_is_not_an_immutable_candidate",
+    "status": "unbound_observation"
+  },
+  "run_id": "fresh-20260823-prep-01",
+  "rust_binary": {
+    "mode": "unbound_external_binary"
+  },
+  "scenario_count": 23,
+  "scenario_set_sha256": "f9124ce5020bb29cca9b28ddeb5b6feda6ff3755b2fb49142254db44ccb46ffd",
+  "scenarios": [
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "cf38d28ec234a65d4eb4485a7a806129f3e128aeb6ae467de0872adea5d6f45f",
+      "id": "identical",
+      "oracle_function": {
+        "kind": "matched",
+        "mismatches": []
+      },
+      "python_cli": {
+        "exit_code": 0,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": true, \"mismatches\": []}\n"
+      },
+      "result_sha256": "cf38d28ec234a65d4eb4485a7a806129f3e128aeb6ae467de0872adea5d6f45f",
+      "rust_cli": {
+        "exit_code": 0,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": true, \"mismatches\": []}\n"
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "afb141ca2ddcbe6d053c24f7fccde4776eb76e7f3d47c314f1994a084722b324",
+      "id": "schema_version_true_equals_one",
+      "oracle_function": {
+        "kind": "matched",
+        "mismatches": []
+      },
+      "python_cli": {
+        "exit_code": 0,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": true, \"mismatches\": []}\n"
+      },
+      "result_sha256": "afb141ca2ddcbe6d053c24f7fccde4776eb76e7f3d47c314f1994a084722b324",
+      "rust_cli": {
+        "exit_code": 0,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": true, \"mismatches\": []}\n"
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "c744c2df10c6cce32f7f444c6c86eee8d451a6c0cdd6a4538ef870619760660d",
+      "id": "schema_version_float_equals_one",
+      "oracle_function": {
+        "kind": "matched",
+        "mismatches": []
+      },
+      "python_cli": {
+        "exit_code": 0,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": true, \"mismatches\": []}\n"
+      },
+      "result_sha256": "c744c2df10c6cce32f7f444c6c86eee8d451a6c0cdd6a4538ef870619760660d",
+      "rust_cli": {
+        "exit_code": 0,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": true, \"mismatches\": []}\n"
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "081a2fd6cbc4c3291a78984a0c855449ca24a84caefd994a491066ae501c1138",
+      "id": "provenance_empty_sequence",
+      "oracle_function": {
+        "kind": "matched",
+        "mismatches": []
+      },
+      "python_cli": {
+        "exit_code": 0,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": true, \"mismatches\": []}\n"
+      },
+      "result_sha256": "081a2fd6cbc4c3291a78984a0c855449ca24a84caefd994a491066ae501c1138",
+      "rust_cli": {
+        "exit_code": 0,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": true, \"mismatches\": []}\n"
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "e307bdc116957961b9e31d501f3dcafc390485ed8e03f6b4177451784f3614e4",
+      "id": "provenance_pair_sequence_metadata_ignored",
+      "oracle_function": {
+        "kind": "matched",
+        "mismatches": []
+      },
+      "python_cli": {
+        "exit_code": 0,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": true, \"mismatches\": []}\n"
+      },
+      "result_sha256": "8c88013041831e920bd51881ce4b62726b02184f063941603df8bfbb5f7439e8",
+      "rust_cli": {
+        "exit_code": 0,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": true, \"mismatches\": []}\n"
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "cf38d28ec234a65d4eb4485a7a806129f3e128aeb6ae467de0872adea5d6f45f",
+      "id": "non_comparable_metadata_ignored",
+      "oracle_function": {
+        "kind": "matched",
+        "mismatches": []
+      },
+      "python_cli": {
+        "exit_code": 0,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": true, \"mismatches\": []}\n"
+      },
+      "result_sha256": "8e1e385f0f2e46c9853ecf89adc885e1de4e17f2bed94df42161559268e6ab42",
+      "rust_cli": {
+        "exit_code": 0,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": true, \"mismatches\": []}\n"
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 0.001,
+      "cli_contract_match": true,
+      "golden_sha256": "cf38d28ec234a65d4eb4485a7a806129f3e128aeb6ae467de0872adea5d6f45f",
+      "id": "numeric_within_absolute_atol",
+      "oracle_function": {
+        "kind": "matched",
+        "mismatches": []
+      },
+      "python_cli": {
+        "exit_code": 0,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": true, \"mismatches\": []}\n"
+      },
+      "result_sha256": "95e2cb0be4417fa53b31c471f7b74c90bb76b917b8c1928ef08567ef6247f8b6",
+      "rust_cli": {
+        "exit_code": 0,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": true, \"mismatches\": []}\n"
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 0.0,
+      "cli_contract_match": true,
+      "golden_sha256": "cf38d28ec234a65d4eb4485a7a806129f3e128aeb6ae467de0872adea5d6f45f",
+      "id": "numeric_and_nested_mismatch",
+      "oracle_function": {
+        "kind": "mismatched",
+        "mismatches": [
+          "$.cases[0].metrics.COM_dB: 1.2 != 1.3",
+          "$.cases[0].metrics.array[1]: 2.0 != 3.0"
+        ]
+      },
+      "python_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": false, \"mismatches\": [\"$.cases[0].metrics.COM_dB: 1.2 != 1.3\", \"$.cases[0].metrics.array[1]: 2.0 != 3.0\"]}\n"
+      },
+      "result_sha256": "214bb50684c0c8d266f4715c3227a28ecaf66cc021d05a33f5e4d8bec4cadb8c",
+      "rust_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": false, \"mismatches\": [\"$.cases[0].metrics.COM_dB: 1.2 != 1.3\", \"$.cases[0].metrics.array[1]: 2.0 != 3.0\"]}\n"
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "cf38d28ec234a65d4eb4485a7a806129f3e128aeb6ae467de0872adea5d6f45f",
+      "id": "object_key_mismatch",
+      "oracle_function": {
+        "kind": "mismatched",
+        "mismatches": [
+          "$.cases[0].metrics: keys differ"
+        ]
+      },
+      "python_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": false, \"mismatches\": [\"$.cases[0].metrics: keys differ\"]}\n"
+      },
+      "result_sha256": "d1fb7aeac2d8f59c6fc975689be1e37eae63166612d7dde79f9f972ba7d94aa6",
+      "rust_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": false, \"mismatches\": [\"$.cases[0].metrics: keys differ\"]}\n"
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "cf38d28ec234a65d4eb4485a7a806129f3e128aeb6ae467de0872adea5d6f45f",
+      "id": "array_length_mismatch",
+      "oracle_function": {
+        "kind": "mismatched",
+        "mismatches": [
+          "$.cases[0].metrics.array: list lengths differ"
+        ]
+      },
+      "python_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": false, \"mismatches\": [\"$.cases[0].metrics.array: list lengths differ\"]}\n"
+      },
+      "result_sha256": "d4d7804c97e598a0eabee5ee7fa1f8af5b8fe3e1e67576f0fe0fe90ddb4e6179",
+      "rust_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": false, \"mismatches\": [\"$.cases[0].metrics.array: list lengths differ\"]}\n"
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "07656f4846d04afd5b5f8ed5a3d4f788e997e9210a5bcc25a5f06737787ed7b7",
+      "id": "scalar_string_mismatch",
+      "oracle_function": {
+        "kind": "mismatched",
+        "mismatches": [
+          "$.cases[0].metrics.label: 'left' != 'right'"
+        ]
+      },
+      "python_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": false, \"mismatches\": [\"$.cases[0].metrics.label: 'left' != 'right'\"]}\n"
+      },
+      "result_sha256": "2d3af6e6687858b66424b154e8c487e2b5cfa1a37213d2c676e20760ef01ea33",
+      "rust_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": "{\"matched\": false, \"mismatches\": [\"$.cases[0].metrics.label: 'left' != 'right'\"]}\n"
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "a865ae4d1f163c5e15964fa978dae1730adbd6cc3cb06a2a309c96b0779b2846",
+      "id": "invalid_schema_version",
+      "oracle_function": {
+        "kind": "config_error"
+      },
+      "python_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "result_sha256": "a865ae4d1f163c5e15964fa978dae1730adbd6cc3cb06a2a309c96b0779b2846",
+      "rust_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "3d61cf45b7d8d120c200e0ece8b7967f088a5a29253efc381d6d0b0a7344e746",
+      "id": "missing_required_key",
+      "oracle_function": {
+        "kind": "config_error"
+      },
+      "python_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "result_sha256": "3d61cf45b7d8d120c200e0ece8b7967f088a5a29253efc381d6d0b0a7344e746",
+      "rust_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "a5b02ca7e6681b0f4ecc1f6ca5a30c39ab6cd55496beccf4576562d1b8915f82",
+      "id": "invalid_profile",
+      "oracle_function": {
+        "kind": "config_error"
+      },
+      "python_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "result_sha256": "a5b02ca7e6681b0f4ecc1f6ca5a30c39ab6cd55496beccf4576562d1b8915f82",
+      "rust_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "3b3f91873d6d0a4f84e178c62190d1184b89967bbcf7d29895e79fe25bbc5343",
+      "id": "empty_cases",
+      "oracle_function": {
+        "kind": "config_error"
+      },
+      "python_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "result_sha256": "3b3f91873d6d0a4f84e178c62190d1184b89967bbcf7d29895e79fe25bbc5343",
+      "rust_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "b123b7e7129becad6d3a83dce4cb3940a777c364872064b96233828d5f06bb9a",
+      "id": "non_contiguous_case_index",
+      "oracle_function": {
+        "kind": "config_error"
+      },
+      "python_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "result_sha256": "b123b7e7129becad6d3a83dce4cb3940a777c364872064b96233828d5f06bb9a",
+      "rust_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "a11f91c0fdba7e45d5d01c9a9fcebadb1582265fa722e0fc1debc6e1f015d2dd",
+      "id": "negative_signal",
+      "oracle_function": {
+        "kind": "config_error"
+      },
+      "python_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "result_sha256": "a11f91c0fdba7e45d5d01c9a9fcebadb1582265fa722e0fc1debc6e1f015d2dd",
+      "rust_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "0a67cfe6560bbc48dbb5c29739bf8359be1d13b56053267b22ec809c50f62c30",
+      "id": "non_integer_cursor",
+      "oracle_function": {
+        "kind": "config_error"
+      },
+      "python_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "result_sha256": "0a67cfe6560bbc48dbb5c29739bf8359be1d13b56053267b22ec809c50f62c30",
+      "rust_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "dbf18567d9eb9fb84409ef29a5d8de15a8d1567c9d050b53697710573ad2e80b",
+      "id": "invalid_eye_width_shape",
+      "oracle_function": {
+        "kind": "config_error"
+      },
+      "python_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "result_sha256": "dbf18567d9eb9fb84409ef29a5d8de15a8d1567c9d050b53697710573ad2e80b",
+      "rust_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "5209035eae69aa562548057a0218a9ce21acd559edc5978540ece05e7c388d61",
+      "id": "malformed_json",
+      "oracle_function": {
+        "kind": "value_error"
+      },
+      "python_cli": {
+        "exit_code": 2,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "result_sha256": "5209035eae69aa562548057a0218a9ce21acd559edc5978540ece05e7c388d61",
+      "rust_cli": {
+        "exit_code": 2,
+        "kind": "return",
+        "stderr_category": "json_error",
+        "stdout": ""
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": -1.0,
+      "cli_contract_match": true,
+      "golden_sha256": "cf38d28ec234a65d4eb4485a7a806129f3e128aeb6ae467de0872adea5d6f45f",
+      "id": "negative_atol",
+      "oracle_function": {
+        "kind": "config_error"
+      },
+      "python_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "config_error",
+        "stdout": ""
+      },
+      "result_sha256": "cf38d28ec234a65d4eb4485a7a806129f3e128aeb6ae467de0872adea5d6f45f",
+      "rust_cli": {
+        "exit_code": 3,
+        "kind": "return",
+        "stderr_category": "config_error",
+        "stdout": ""
+      },
+      "stderr_exact_match": true
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "cf38d28ec234a65d4eb4485a7a806129f3e128aeb6ae467de0872adea5d6f45f",
+      "id": "missing_golden",
+      "oracle_function": {
+        "kind": "io_error"
+      },
+      "python_cli": {
+        "exception": "FileNotFoundError",
+        "exit_code": 1,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": ""
+      },
+      "result_sha256": "cf38d28ec234a65d4eb4485a7a806129f3e128aeb6ae467de0872adea5d6f45f",
+      "rust_cli": {
+        "exit_code": 1,
+        "kind": "return",
+        "stderr_category": "io_error",
+        "stdout": ""
+      },
+      "stderr_exact_match": false
+    },
+    {
+      "atol": 1e-12,
+      "cli_contract_match": true,
+      "golden_sha256": "cf38d28ec234a65d4eb4485a7a806129f3e128aeb6ae467de0872adea5d6f45f",
+      "id": "missing_result",
+      "oracle_function": {
+        "kind": "io_error"
+      },
+      "python_cli": {
+        "exception": "FileNotFoundError",
+        "exit_code": 1,
+        "kind": "return",
+        "stderr_category": "empty",
+        "stdout": ""
+      },
+      "result_sha256": "cf38d28ec234a65d4eb4485a7a806129f3e128aeb6ae467de0872adea5d6f45f",
+      "rust_cli": {
+        "exit_code": 1,
+        "kind": "return",
+        "stderr_category": "io_error",
+        "stdout": ""
+      },
+      "stderr_exact_match": false
+    }
+  ],
+  "schema": "sipi.com-03-direct-port-oracle.v1",
+  "source": {
+    "archive_inventory_sha256": "5f3f17e19edc07cf6498c9bfea20b8691082e2c05364b4462bc54df8549d0a04",
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "repository": "https://github.com/z331225718/agent-com.git",
+    "source_mode": "git_archive",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea",
+    "working_tree_clean": true
+  },
+  "stderr_is_not_a_frozen_contract": true
+}

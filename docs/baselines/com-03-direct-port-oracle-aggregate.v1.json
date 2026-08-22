@@ -1,0 +1,33 @@
+{
+  "all_cli_contracts_match": true,
+  "candidate": {
+    "reason": "preparation_worktree_is_not_an_immutable_candidate",
+    "status": "unbound_observation"
+  },
+  "fresh_runs": 2,
+  "invocations": [
+    {
+      "report": "com-03-direct-port-oracle.v1.json",
+      "run_id": "fresh-20260823-prep-01",
+      "sha256": "a9249c3508454829ac9bfacd42e0c4c50a82989f1efa55c1c331c7edb894d33f"
+    },
+    {
+      "report": "com-03-direct-port-oracle-run2.v1.json",
+      "run_id": "fresh-20260823-prep-02",
+      "sha256": "08f0341602a2f6b6eec3c52e7a8729afa6b960f65ef402738c0b7348b0e5f1af"
+    }
+  ],
+  "scenario_count": 23,
+  "scenario_outcomes_identical": true,
+  "scenario_set_sha256": "f9124ce5020bb29cca9b28ddeb5b6feda6ff3755b2fb49142254db44ccb46ffd",
+  "schema": "sipi.com-03-direct-port-oracle-aggregate.v1",
+  "source": {
+    "archive_inventory_sha256": "5f3f17e19edc07cf6498c9bfea20b8691082e2c05364b4462bc54df8549d0a04",
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "repository": "https://github.com/z331225718/agent-com.git",
+    "source_mode": "git_archive",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea",
+    "working_tree_clean": true
+  },
+  "stderr_is_not_a_frozen_contract": true
+}
