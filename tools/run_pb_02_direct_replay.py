@@ -17,6 +17,7 @@ import io
 import json
 import os
 import re
+import secrets
 import shutil
 import math
 import subprocess
@@ -29,6 +30,7 @@ from typing import Any, Iterable
 
 
 ROOT = Path(__file__).resolve().parents[1]
+HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 DEFAULT_UPSTREAM = Path(r"C:\Users\z3312\code\Py-bert-agent")
 EXPECTED_UPSTREAM_COMMIT = "5bf6d7ea0ace261891aaeb611ffc1c267e160afe"
 EXPECTED_UPSTREAM_TREE = "5faef6bdb341d444ad65d82a11c0018b15805e24"
@@ -103,6 +105,89 @@ def _file_digest(path: Path) -> str | None:
         return _sha256(path.read_bytes())
     except OSError:
         return None
+
+
+def _tool_identity(value: str, role: str) -> dict[str, Any]:
+    """Return stable tool metadata without retaining an invocation path."""
+
+    raw = os.fspath(value)
+    basename = PureWindowsPath(raw).name or PurePosixPath(raw).name or role
+    return {"role": role, "executable": basename, "path_redacted": True}
+
+
+def _resolve_executable(value: str, role: str) -> Path:
+    """Resolve a literal executable file or a PATH command before execution."""
+
+    literal = Path(value)
+    if literal.is_file():
+        return literal.resolve()
+    resolved = shutil.which(value)
+    if resolved is None or not Path(resolved).is_file():
+        raise RuntimeError(f"{role} executable cannot be resolved")
+    return Path(resolved).resolve()
+
+
+def _runtime_tool_identity(value: str, role: str, version_args: tuple[str, ...]) -> dict[str, Any]:
+    """Capture executable identity and version hashes without retaining paths."""
+
+    executable = _resolve_executable(value, role)
+    identity = _tool_identity(str(executable), role)
+    file_sha256 = _file_digest(executable)
+    if not isinstance(file_sha256, str) or HEX64.fullmatch(file_sha256) is None:
+        raise RuntimeError(f"{role} executable digest unavailable")
+    identity["file_sha256"] = file_sha256
+    try:
+        version = subprocess.run(
+            [str(executable), *version_args],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+    except OSError as error:
+        raise RuntimeError(f"{role} version command failed") from error
+    if version.returncode != 0:
+        raise RuntimeError(f"{role} version command returned nonzero")
+    if not isinstance(version.stdout, bytes) or not isinstance(version.stderr, bytes):
+        raise RuntimeError(f"{role} version output unavailable")
+    version_output_sha256 = _sha256(version.stdout + b"\x00" + version.stderr)
+    if not isinstance(version_output_sha256, str) or HEX64.fullmatch(version_output_sha256) is None:
+        raise RuntimeError(f"{role} version digest unavailable")
+    identity["version_exit_code"] = version.returncode
+    identity["version_output_sha256"] = version_output_sha256
+    return identity
+
+
+def _rustc_from_cargo(cargo: Path) -> str:
+    suffix = cargo.suffix
+    rustc_name = f"rustc{suffix}" if suffix else "rustc"
+    sibling = cargo.with_name(rustc_name)
+    if sibling.is_file():
+        return str(sibling)
+    resolved = shutil.which("rustc")
+    if resolved is None:
+        raise RuntimeError("rustc executable cannot be resolved")
+    return resolved
+
+
+def _runtime_toolchain_identity(cargo: str, uv: str, timeout_seconds: int) -> tuple[dict[str, Any], dict[str, Path]]:
+    cargo_path = _resolve_executable(cargo, "cargo")
+    uv_path = _resolve_executable(uv, "uv")
+    rustc_path = Path(_rustc_from_cargo(cargo_path))
+    identities = {
+        "cargo": _runtime_tool_identity(str(cargo_path), "cargo", ("-Vv",)),
+        "rustc": _runtime_tool_identity(str(rustc_path), "rustc", ("-Vv",)),
+        "uv": _runtime_tool_identity(str(uv_path), "uv", ("--version",)),
+        "timeout_seconds": timeout_seconds,
+    }
+    return identities, {"cargo": cargo_path, "rustc": rustc_path, "uv": uv_path}
+
+
+def _execution_env(rustc: Path) -> dict[str, str]:
+    env = dict(os.environ)
+    for variable in ("RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER"):
+        env.pop(variable, None)
+    env["RUSTC"] = str(rustc)
+    return env
 
 
 def _safe_fixture_relative(value: Path | str) -> Path:
@@ -330,8 +415,9 @@ def _run_one(
     candidate_root: Path,
     upstream_root: Path,
     fixture: Path,
-    cargo: str,
-    uv: str,
+    cargo: Path,
+    rustc: Path,
+    uv: Path,
     timeout: int,
 ) -> dict[str, Any]:
     candidate_target = run_root / "candidate-target"
@@ -340,10 +426,10 @@ def _run_one(
     upstream_output = run_root / "upstream-output"
     candidate_target.mkdir(parents=True)
     upstream_target.mkdir(parents=True)
-    env = dict(os.environ)
+    env = _execution_env(rustc)
     env["CARGO_TARGET_DIR"] = str(candidate_target)
     build = _run(
-        [cargo, "build", "--manifest-path", str(candidate_root / "crates/sipi-pybert-direct/Cargo.toml"), "--release", "--locked"],
+        [str(cargo), "build", "--manifest-path", str(candidate_root / "crates/sipi-pybert-direct/Cargo.toml"), "--release", "--locked"],
         cwd=candidate_root,
         env=env,
         timeout=timeout,
@@ -358,7 +444,7 @@ def _run_one(
     }
     candidate_process: dict[str, Any]
     if build.returncode == 0 and binary.is_file():
-        candidate_env = dict(os.environ)
+        candidate_env = _execution_env(rustc)
         candidate_env["CARGO_TARGET_DIR"] = str(candidate_target)
         process = _run(
             [str(binary), str(fixture), "--output-dir", str(candidate_output)],
@@ -370,15 +456,15 @@ def _run_one(
     else:
         candidate_process = {"exit_code": None, "skipped": True, "artifacts": {}}
 
-    upstream_env = dict(os.environ)
+    upstream_env = _execution_env(rustc)
     upstream_env["CARGO_TARGET_DIR"] = str(upstream_target)
     upstream_env["UV_PROJECT_ENVIRONMENT"] = str(run_root / "upstream-venv")
-    cargo_executable = Path(cargo)
+    cargo_executable = cargo
     if cargo_executable.is_file():
         upstream_env["PATH"] = str(cargo_executable.resolve().parent) + os.pathsep + upstream_env.get("PATH", "")
     oracle = _run(
         [
-            uv,
+            str(uv),
             "run",
             "--project",
             str(upstream_root),
@@ -416,6 +502,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     candidate_repo = args.candidate_repo.resolve()
     upstream_repo = args.upstream_repo.resolve()
     fixture_relative = _safe_fixture_relative(args.fixture)
+    fresh_run_nonce = secrets.token_hex(32)
+    toolchain_identity, runtime_tools = _runtime_toolchain_identity(args.cargo, args.uv, args.timeout_seconds)
     candidate_commit, candidate_tree = _commit_tree(candidate_repo, args.candidate_commit)
     upstream_commit, upstream_tree = _commit_tree(upstream_repo, args.upstream_commit)
     if upstream_commit != EXPECTED_UPSTREAM_COMMIT or upstream_tree != EXPECTED_UPSTREAM_TREE:
@@ -443,19 +531,21 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         candidate_root=candidate_materialized,
         upstream_root=upstream_materialized,
         fixture=fixture,
-        cargo=args.cargo,
-        uv=args.uv,
+        cargo=runtime_tools["cargo"],
+        rustc=runtime_tools["rustc"],
+        uv=runtime_tools["uv"],
         timeout=args.timeout_seconds,
     )
     report = {
         "schema": "sipi.pb-02-direct-replay.v1",
         "status": "passed" if all(replay["parity"].values()) else "blocked",
         "run_id": args.run_id,
+        "fresh_run_nonce": fresh_run_nonce,
         "source_mode": "git_archive_at_immutable_commit",
         "candidate": candidate_facts,
         "upstream": upstream_facts,
         "fixture": {"path": fixture_relative.as_posix(), "sha256": fixture_hash, "bytes": len(fixture_payload)},
-        "toolchain": {"cargo": args.cargo, "uv": args.uv, "timeout_seconds": args.timeout_seconds},
+        "toolchain": toolchain_identity,
         "replay": replay,
         "non_claims": [
             "This report does not prove parity for uncovered SimulationInputV1 branches.",
