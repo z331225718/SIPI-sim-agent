@@ -1,0 +1,36 @@
+schema: sipi.as-06-run-rfm-source-map.v1
+status: additive_direct_port_inventory
+source:
+  repository: agent-spice
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  license: MIT
+  license_path: LICENSE
+  license_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+paths:
+  - upstream: src/agent_spice/sparam/rfm.py
+    upstream_git_blob_sha1: 508e7ae8594fd25d5c2dc152b225c0cf84f61413
+    upstream_sha256: af2e2e3ab1ed7e9ac458dc73f15aedfd9cd8292dc9e5a2430cd095bc21415df4
+    role: RFM parser canonical model and response evaluation
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+  - upstream: src/agent_spice/sparam/artifacts.py
+    upstream_git_blob_sha1: ba7011f89c7fe0f6bf73fad13bce9248b96de9e5
+    upstream_sha256: f3131cc5117c41ab13674aaf1dfba68ed7ebed332a8154994cd9907b31299948
+    role: RFM artifact and wrapper contract support
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+  - upstream: src/agent_spice/sparam/rfm_ngspice.py
+    upstream_git_blob_sha1: 6ac750e93ea9245d652be4c9ef1ca3c314e01dca
+    upstream_sha256: 7b26d8c02f575f4c52dccbdfddca3aa3fd2418774fac71f27d8cd66c84e147fc
+    role: portable preparation, dependency staging, conversion, and external result contract
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+implementation:
+  crate: crates/sipi-agent-spice-direct
+  module: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+  binary: sipi-agent-spice-run-rfm
+  portable_branches:
+    - nonempty-finite-frequency-vector
+    - effective-order-and-zero-proportional-contract
+    - response-major-multiport-evaluation
+  external_runtime_branches:
+    - native-engine
+    - ngspice-xspice-code-model

@@ -63,6 +63,22 @@ impl RfmModel {
         self.nports * self.nports
     }
 
+    /// Match the pinned importer’s effective order: a conjugate pair counts
+    /// as two state poles even though RFM stores its positive-imaginary
+    /// representative once.
+    pub fn effective_order(&self) -> usize {
+        self.poles
+            .iter()
+            .map(|pole| if pole.im != 0.0 { 2 } else { 1 })
+            .sum()
+    }
+
+    /// RFM has no proportional term; expose the importer’s zero-valued
+    /// coefficient contract for callers that inspect the canonical model.
+    pub fn proportional_coeff(&self) -> Vec<f64> {
+        vec![0.0; self.response_count()]
+    }
+
     pub fn evaluate_s(&self, frequency_hz: f64) -> Vec<Complex> {
         let s = Complex::new(0.0, 2.0 * std::f64::consts::PI * frequency_hz);
         (0..self.response_count())
@@ -82,6 +98,28 @@ impl RfmModel {
                         .sum::<Complex>()
             })
             .collect()
+    }
+
+    /// Evaluate every requested frequency using the same response-major
+    /// ordering as the upstream numpy implementation.
+    pub fn evaluate_s_many(&self, frequencies_hz: &[f64]) -> Result<Vec<Vec<Complex>>, RfmError> {
+        if frequencies_hz.is_empty() {
+            return Err(RfmError::InvalidOption(
+                "frequency vector must be non-empty".to_owned(),
+            ));
+        }
+        if frequencies_hz
+            .iter()
+            .any(|frequency| !frequency.is_finite())
+        {
+            return Err(RfmError::InvalidOption(
+                "frequency vector values must be finite".to_owned(),
+            ));
+        }
+        Ok(frequencies_hz
+            .iter()
+            .map(|frequency| self.evaluate_s(*frequency))
+            .collect())
     }
 }
 
@@ -1197,6 +1235,7 @@ pub fn run_rfm(request: &RunRfmRequest) -> Result<RunRfmResult, RfmError> {
             "nports": model.nports,
             "z0_ohm": model.z0,
             "stored_poles": model.poles.len(),
+            "effective_order": model.effective_order(),
         },
         "inputs": {
             "deck": {"path": "case.source.sp", "sha256": source_sha},
@@ -1548,13 +1587,60 @@ mod tests {
         fs::write(&path, "VERSION 200600\nNPORT 1\nMATRIX_TYPE S\nZ0 50\nBEGIN 1 1\nCONST 0\nC 0\nDELAY 0\nBEGIN_REAL 1\n1 0.5\nBEGIN_COMPLEX 0\nEND\n").unwrap();
         let model = parse_cadence_rfm(&path).unwrap();
         assert_eq!(model.poles.len(), 1);
+        assert_eq!(model.effective_order(), 1);
+        assert_eq!(model.proportional_coeff(), vec![0.0]);
         assert!(model.evaluate_s(1.0)[0].re.is_finite());
+        assert_eq!(
+            model.evaluate_s_many(&[0.0, 1.0]).unwrap(),
+            vec![model.evaluate_s(0.0), model.evaluate_s(1.0)]
+        );
+        assert!(matches!(
+            model.evaluate_s_many(&[]),
+            Err(RfmError::InvalidOption(message)) if message.contains("non-empty")
+        ));
+        assert!(matches!(
+            model.evaluate_s_many(&[f64::NAN]),
+            Err(RfmError::InvalidOption(message)) if message.contains("finite")
+        ));
+        assert!(matches!(
+            model.evaluate_s_many(&[f64::INFINITY]),
+            Err(RfmError::InvalidOption(message)) if message.contains("finite")
+        ));
         fs::write(&path, "VERSION 200600\nNPORT 1\nMATRIX_TYPE S\nZ0 50\nBEGIN 1 1\nCONST 0\nC 0\nDELAY 1\nBEGIN_REAL 0\nBEGIN_COMPLEX 0\nEND\n").unwrap();
         assert!(matches!(
             parse_cadence_rfm(&path),
             Err(RfmError::Unsupported(_))
         ));
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn effective_order_and_response_major_batch_match_upstream_model_contract() {
+        let model = RfmModel {
+            version: 200600,
+            nports: 2,
+            matrix_type: "S".to_owned(),
+            z0: 50.0,
+            poles: vec![Complex::new(-1.0, 2.0)],
+            residues: vec![
+                vec![Complex::new(0.0, 0.0)],
+                vec![Complex::new(0.0, 0.0)],
+                vec![Complex::new(0.0, 0.0)],
+                vec![Complex::new(0.0, 0.0)],
+            ],
+            constant: vec![
+                Complex::new(1.0, 0.0),
+                Complex::new(2.0, 0.0),
+                Complex::new(3.0, 0.0),
+                Complex::new(4.0, 0.0),
+            ],
+        };
+        assert_eq!(model.effective_order(), 2);
+        let samples = model.evaluate_s_many(&[0.0, 1.0]).unwrap();
+        assert_eq!(samples.len(), 2);
+        assert_eq!(samples[0].len(), 4);
+        assert_eq!(samples[0], model.constant);
+        assert_eq!(model.proportional_coeff(), vec![0.0; 4]);
     }
 
     #[test]
@@ -1645,12 +1731,10 @@ mod tests {
         let report: serde_json::Value =
             serde_json::from_slice(&fs::read(run_root.join("run_report.json")).unwrap()).unwrap();
         assert_eq!(report["conversion"]["backend"], "ngspice");
-        assert!(
-            !report["conversion"]["actions"]
-                .as_array()
-                .unwrap()
-                .is_empty()
-        );
+        assert!(!report["conversion"]["actions"]
+            .as_array()
+            .unwrap()
+            .is_empty());
         let _ = fs::remove_dir_all(root);
     }
 

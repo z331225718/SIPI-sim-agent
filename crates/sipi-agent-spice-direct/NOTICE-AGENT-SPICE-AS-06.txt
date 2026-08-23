@@ -1,0 +1,14 @@
+AS-06 direct-port attribution
+
+The run-rfm RFM model, response evaluation, and preparation contract in
+src/as06_run_rfm.rs are a mechanical Rust port of the pinned Agent-Spice
+sources listed in docs/baselines/as-06-run-rfm-source-map.v1.yaml.
+
+Upstream project: agent-spice
+Commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+Tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+License: MIT
+
+This additive notice does not modify repository-wide license, product-boundary,
+or shared source-map records. External native/ngspice solver execution remains
+an explicit runtime boundary and is fail-closed when unavailable.
