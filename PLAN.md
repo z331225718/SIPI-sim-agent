@@ -44,6 +44,21 @@ parity、许可结论或 release promotion。对应账本与候选证据见
 `docs/baselines/pb-02-direct-replay-bound.v2.yaml` 和
 `docs/baselines/as-05-run-hspice-direct-port.v1.yaml`。
 
+**2026-08-24 三库整合复核：** 当前阶段继续只迁移原项目已有行为，不新增
+领域功能。Agent-Spice 的固定 candidate 与数值重放已完成当前切片，但 AS-01..03
+仍为真实 `numeric_mismatch_open`，AS-04..06 仍受外部 solver/runtime 边界阻断。
+PyBERT 的 broad portable legacy leaf、PB-01/PB-02 固定 fixture replay 以及 PB-03..05
+分支矩阵均已绑定；AMI/IBIS/GetWave、完整分支 parity 和产品 promotion 继续 open。
+Agent-COM 已将 pinned S2P ERL-only r4.80 路径直接移植到 Rust，明确禁止 S 参数
+拟合并只走 FD-to-TD impulse。上游 `N=800` 与 Rust 的 ERL/ERL11、RMS、phase
+在既定 `1e-12` metric policy 内一致；中间 gated 数组因 NumPy/pocketfft 与
+Rust/rustfft 的 f64 运算顺序差异保持 bit-identity mismatch，跨独立绝对构建根的
+PE canonical digest 也保持 reproducibility open。对应 v4 immutable replay prep 为
+`78cc88e5`/`cd0d9c8b`；它不关闭 COM-02 全行、不授权 release，也不改变 15/15
+migration rows 仍为 open 的总状态。下一步只允许二选一：补充不扩大产品面的完整
+数组 residual evidence，或保留该 profile 为 scoped numeric observation；不得为了
+关账而放宽门槛、拟合 S 参数或抹除 PE 实质差异。
+
 以下第 1 节及之后内容是 v0.2 历史计划。其 checklist 继续供旧 evidence/verifier
 解释来源，不再决定 v0.3 的功能优先级。
 
