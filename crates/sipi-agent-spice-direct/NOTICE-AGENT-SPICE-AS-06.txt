@@ -1,8 +1,14 @@
 AS-06 direct-port attribution
 
-The run-rfm RFM model, response evaluation, and preparation contract in
+The run-rfm RFM model, response evaluation, expanded SPICE subcircuit artifact,
+and preparation contract in
 src/as06_run_rfm.rs are a mechanical Rust port of the pinned Agent-Spice
 sources listed in docs/baselines/as-06-run-rfm-source-map.v1.yaml.
+The expanded SPICE topology follows the upstream
+`NativeVectorFitting.write_spice_subcircuit_s` implementation in
+`src/agent_spice/sparam/native_vf.py`.
+The pinned raw-blob SHA-256 for that source is
+`90db63aadeeb0be5c0a29b750d617079d598f0afe7c441a0398a8648daad31a6`.
 
 Upstream project: agent-spice
 Commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5

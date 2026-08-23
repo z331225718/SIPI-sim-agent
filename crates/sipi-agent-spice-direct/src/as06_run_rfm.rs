@@ -627,6 +627,211 @@ pub fn write_cadence_rfm(path: impl AsRef<Path>, model: &RfmModel) -> Result<(),
     fs::write(path, text).map_err(|error| RfmError::Output(error.to_string()))
 }
 
+/// Write the expanded SPICE equivalent exposed by the pinned RFM importer.
+/// This is a solver-free artifact path; it does not refit or invoke a backend.
+pub fn write_spice_subcircuit(
+    model: &RfmModel,
+    path: impl AsRef<Path>,
+    subcircuit_name: Option<&str>,
+    create_reference_pins: bool,
+) -> Result<(), RfmError> {
+    if model.version != 200600
+        || model.matrix_type != "S"
+        || model.nports == 0
+        || model.nports > MAX_PORTS
+        || model.constant.len() != model.response_count()
+    {
+        return Err(RfmError::InvalidOption(
+            "RFM model dimensions are outside the bounded range".to_owned(),
+        ));
+    }
+    if model.z0 <= 0.0 || !model.z0.is_finite() {
+        return Err(RfmError::InvalidOption(
+            "RFM reference impedance must be finite and positive".to_owned(),
+        ));
+    }
+    if model.residues.len() != model.response_count()
+        || model
+            .residues
+            .iter()
+            .any(|row| row.len() != model.poles.len())
+    {
+        return Err(RfmError::InvalidOption(
+            "RFM residue dimensions do not match the model".to_owned(),
+        ));
+    }
+    let name = subcircuit_name.unwrap_or("rfm_imported");
+    if !valid_spice_token(name) {
+        return Err(RfmError::InvalidOption(
+            "subcircuit_name is not a valid SPICE token".to_owned(),
+        ));
+    }
+    let estimated_bytes = estimate_spice_subcircuit_bytes(
+        model.nports,
+        model.poles.len(),
+        create_reference_pins,
+        name.len(),
+    )
+    .ok_or_else(|| RfmError::Output("SPICE artifact size estimate overflowed".to_owned()))?;
+    if estimated_bytes > MAX_ARTIFACT_BYTES {
+        return Err(RfmError::Output(
+            "SPICE subcircuit exceeds byte budget".to_owned(),
+        ));
+    }
+    let path = path.as_ref();
+    if model.poles.iter().any(|pole| pole.im < 0.0) {
+        return Err(RfmError::Unsupported(
+            "RFM complex poles must use the positive-imaginary representative".to_owned(),
+        ));
+    }
+    let sqrt_z0 = model.z0.sqrt();
+    let gain_vccs = 1.0 / (2.0 * sqrt_z0);
+    let gain_cccs = sqrt_z0 / 2.0;
+    let gain_b = 2.0 / sqrt_z0;
+    let mut text = String::from(
+        "* EQUIVALENT CIRCUIT FOR NATIVE VECTOR FITTED S-MATRIX\n* Created using agent-spice native vector fitting\n*\n",
+    );
+    let input_nodes = (1..=model.nports)
+        .map(|index| {
+            if create_reference_pins {
+                format!("p{index} p{index}_ref")
+            } else {
+                format!("p{index}")
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+    text.push_str(&format!(".SUBCKT {name} {input_nodes}\n"));
+    for row in 0..model.nports {
+        let row_node = format!("p{}", row + 1);
+        let row_ref = if create_reference_pins {
+            format!("p{}_ref", row + 1)
+        } else {
+            "0".to_owned()
+        };
+        let state_node = format!("s{}", row + 1);
+        text.push_str("*\n");
+        text.push_str(&format!("* Port network for port {}\n", row + 1));
+        text.push_str(&format!("V{} {row_node} {state_node} 0\n", row + 1));
+        text.push_str(&format!(
+            "R{} {state_node} {row_ref} {:.17e}\n",
+            row + 1,
+            model.z0
+        ));
+        for column in 0..model.nports {
+            let response = row * model.nports + column;
+            let column_ref = if create_reference_pins {
+                format!("p{}_ref", column + 1)
+            } else {
+                "0".to_owned()
+            };
+            let d = model.constant[response].re;
+            if !d.is_finite()
+                || !model.constant[response].im.is_finite()
+                || model.constant[response].im.abs() > 1e-8 * d.abs().max(1.0)
+            {
+                return Err(RfmError::Unsupported(
+                    "RFM constant coefficients must be real".to_owned(),
+                ));
+            }
+            if d != 0.0 {
+                let g = gain_b * d * gain_vccs;
+                let f = gain_b * d * gain_cccs;
+                text.push_str(&format!(
+                    "Gd{}_{} {row_ref} {state_node} p{} {column_ref} {:.17e}\n",
+                    row + 1,
+                    column + 1,
+                    column + 1,
+                    g
+                ));
+                text.push_str(&format!(
+                    "Fd{}_{} {row_ref} {state_node} V{} {:.17e}\n",
+                    row + 1,
+                    column + 1,
+                    column + 1,
+                    f
+                ));
+            }
+            for (pole_index, pole) in model.poles.iter().enumerate() {
+                if !pole.re.is_finite() || !pole.im.is_finite() || pole.re >= 0.0 {
+                    return Err(RfmError::Unsupported(
+                        "RFM poles must be finite and stable".to_owned(),
+                    ));
+                }
+                let residue = model.residues[response][pole_index];
+                if !residue.re.is_finite() || !residue.im.is_finite() {
+                    return Err(RfmError::Unsupported(
+                        "RFM residues must be finite".to_owned(),
+                    ));
+                }
+                let g_re = gain_b * residue.re;
+                let g_im = gain_b * residue.im;
+                if pole.im == 0.0 {
+                    text.push_str(&format!(
+                        "Gr{}_{}_{} {row_ref} {state_node} x{}_a{} 0 {:.17e}\n",
+                        pole_index + 1,
+                        row + 1,
+                        column + 1,
+                        pole_index + 1,
+                        column + 1,
+                        g_re
+                    ));
+                } else if pole.im > 0.0 {
+                    text.push_str(&format!(
+                        "Gr{}_re_{}_{} {row_ref} {state_node} x{}_re_a{} 0 {:.17e}\n",
+                        pole_index + 1,
+                        row + 1,
+                        column + 1,
+                        pole_index + 1,
+                        column + 1,
+                        g_re
+                    ));
+                    text.push_str(&format!(
+                        "Gr{}_im_{}_{} {row_ref} {state_node} x{}_im_a{} 0 {:.17e}\n",
+                        pole_index + 1,
+                        row + 1,
+                        column + 1,
+                        pole_index + 1,
+                        column + 1,
+                        g_im
+                    ));
+                }
+            }
+        }
+        text.push_str("*\n");
+        text.push_str(&format!("* State networks driven by port {}\n", row + 1));
+        for (pole_index, pole) in model.poles.iter().enumerate() {
+            if pole.im == 0.0 {
+                let state = format!("x{}_a{}", pole_index + 1, row + 1);
+                text.push_str(&format!(
+                    "Cx{}_a{} {state} 0 1.0\nGx{}_a{} 0 {state} {row_node} {row_ref} {:.17e}\nFx{}_a{} 0 {state} V{} {:.17e}\nRp{}_a{} 0 {state} {:.17e}\n",
+                    pole_index + 1, row + 1, pole_index + 1, row + 1, gain_vccs,
+                    pole_index + 1, row + 1, row + 1, gain_cccs, pole_index + 1, row + 1, -1.0 / pole.re
+                ));
+            } else if pole.im > 0.0 {
+                let real = format!("x{}_re_a{}", pole_index + 1, row + 1);
+                let imag = format!("x{}_im_a{}", pole_index + 1, row + 1);
+                text.push_str(&format!(
+                    "Cx{}_re_a{} {real} 0 1.0\nGx{}_re_a{} 0 {real} {row_node} {row_ref} {:.17e}\nFx{}_re_a{} 0 {real} V{} {:.17e}\nRp{}_re_re_a{} 0 {real} {:.17e}\nGp{}_re_im_a{} 0 {real} {imag} 0 {:.17e}\nCx{}_im_a{} {imag} 0 1.0\nGp{}_im_re_a{} 0 {imag} {real} 0 {:.17e}\nRp{}_im_im_a{} 0 {imag} {:.17e}\n",
+                    pole_index + 1, row + 1, pole_index + 1, row + 1, 2.0 * gain_vccs,
+                    pole_index + 1, row + 1, row + 1, 2.0 * gain_cccs,
+                    pole_index + 1, row + 1, -1.0 / pole.re,
+                    pole_index + 1, row + 1, pole.im,
+                    pole_index + 1, row + 1, pole_index + 1, row + 1, -pole.im,
+                    pole_index + 1, row + 1, -1.0 / pole.re
+                ));
+            }
+        }
+    }
+    text.push_str(&format!(".ENDS {name}\n"));
+    if text.len() > MAX_ARTIFACT_BYTES {
+        return Err(RfmError::Output(
+            "SPICE subcircuit exceeds byte budget".to_owned(),
+        ));
+    }
+    write_text(path, &text)
+}
+
 /// Write the portable wrapper used by the upstream `run-rfm`/HSPICE path.
 /// The wrapper keeps positive/negative node pairs for every port; collapsing
 /// them to one shared reference silently changes an N-port S-element.
@@ -883,6 +1088,31 @@ fn write_text(path: &Path, text: &str) -> Result<(), RfmError> {
         fs::create_dir_all(parent).map_err(|error| RfmError::Output(error.to_string()))?;
     }
     fs::write(path, text).map_err(|error| RfmError::Output(error.to_string()))
+}
+
+// Each emitted SPICE line is bounded by the fixed token and f64 formatting
+// widths below. Check the worst-case topology before allocating the artifact.
+fn estimate_spice_subcircuit_bytes(
+    nports: usize,
+    pole_count: usize,
+    references: bool,
+    name_len: usize,
+) -> Option<usize> {
+    const LINE_BUDGET: usize = 192;
+    let response_lines = 2usize.checked_add(pole_count.checked_mul(2)?)?;
+    let state_lines = pole_count.checked_mul(8)?;
+    let response_count = nports.checked_mul(nports)?;
+    let line_count = nports
+        .checked_mul(4)?
+        .checked_add(response_count.checked_mul(response_lines)?)?
+        .checked_add(nports.checked_mul(state_lines)?)?
+        .checked_add(1)?;
+    let header_budget = 4096usize
+        .checked_add(nports.checked_mul(if references { 24 } else { 8 })?)?
+        .checked_add(name_len.checked_mul(2)?)?;
+    line_count
+        .checked_mul(LINE_BUDGET)?
+        .checked_add(header_budget)
 }
 
 fn parse_ngspice_measurements(text: &str) -> Vec<serde_json::Value> {
@@ -1641,6 +1871,70 @@ mod tests {
         assert_eq!(samples[0].len(), 4);
         assert_eq!(samples[0], model.constant);
         assert_eq!(model.proportional_coeff(), vec![0.0; 4]);
+    }
+
+    #[test]
+    fn expanded_spice_subcircuit_matches_native_vf_artifact_shape() {
+        let root = std::env::temp_dir().join(format!("sipi-as06-spice-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("rfm_imported.sp");
+        let model = RfmModel {
+            version: 200600,
+            nports: 1,
+            matrix_type: "S".to_owned(),
+            z0: 50.0,
+            poles: vec![Complex::new(-1.0, 0.0), Complex::new(-2.0, 3.0)],
+            residues: vec![vec![Complex::new(0.5, 0.0), Complex::new(0.25, -0.125)]],
+            constant: vec![Complex::new(0.1, 0.0)],
+        };
+        write_spice_subcircuit(&model, &path, Some("rfm_test"), true).unwrap();
+        let text = fs::read_to_string(&path).unwrap();
+        assert!(text.contains("* EQUIVALENT CIRCUIT FOR NATIVE VECTOR FITTED S-MATRIX"));
+        assert!(text.contains(".SUBCKT rfm_test p1 p1_ref"));
+        assert!(text.contains("V1 p1 s1 0"));
+        assert!(text.contains("R1 s1 p1_ref"));
+        assert!(text.contains("Gd1_1 p1_ref s1 p1 p1_ref"));
+        assert!(text.contains("Gr1_1_1 p1_ref s1 x1_a1"));
+        assert!(text.contains("Gr2_re_1_1 p1_ref s1 x2_re_a1"));
+        assert!(text.contains("Gr2_im_1_1 p1_ref s1 x2_im_a1"));
+        assert!(text.contains("Cx1_a1 x1_a1 0 1.0"));
+        assert!(text.contains("Cx2_re_a1 x2_re_a1 0 1.0"));
+        assert!(text.contains(".ENDS rfm_test"));
+        let invalid = RfmModel {
+            poles: vec![Complex::new(-2.0, -3.0)],
+            residues: vec![vec![Complex::new(0.25, 0.0)]],
+            ..model
+        };
+        assert!(matches!(
+            write_spice_subcircuit(&invalid, root.join("invalid.sp"), None, false),
+            Err(RfmError::Unsupported(message)) if message.contains("positive-imaginary")
+        ));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn expanded_spice_subcircuit_rejects_over_budget_topology_before_write() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as06-spice-budget-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("too-large.sp");
+        let model = RfmModel {
+            version: 200600,
+            nports: 1,
+            matrix_type: "S".to_owned(),
+            z0: 50.0,
+            poles: (0..5_000)
+                .map(|index| Complex::new(-(index as f64 + 1.0), 0.0))
+                .collect(),
+            residues: vec![vec![Complex::new(0.0, 0.0); 5_000]],
+            constant: vec![Complex::new(0.0, 0.0)],
+        };
+        assert!(matches!(
+            write_spice_subcircuit(&model, &path, None, false),
+            Err(RfmError::Output(message)) if message.contains("byte budget")
+        ));
+        assert!(!path.exists());
+        let _ = fs::remove_dir_all(root);
     }
 
     #[test]

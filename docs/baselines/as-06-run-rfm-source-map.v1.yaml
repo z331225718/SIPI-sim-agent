@@ -23,6 +23,11 @@ paths:
     upstream_sha256: 7b26d8c02f575f4c52dccbdfddca3aa3fd2418774fac71f27d8cd66c84e147fc
     role: portable preparation, dependency staging, conversion, and external result contract
     rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+  - upstream: src/agent_spice/sparam/native_vf.py
+    upstream_git_blob_sha1: 971a98924d52b9fb57738a6a729501dfda934968
+    upstream_sha256: 90db63aadeeb0be5c0a29b750d617079d598f0afe7c441a0398a8648daad31a6
+    role: NativeVectorFitting.write_spice_subcircuit_s expanded SPICE topology
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
 implementation:
   crate: crates/sipi-agent-spice-direct
   module: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
@@ -31,6 +36,7 @@ implementation:
     - nonempty-finite-frequency-vector
     - effective-order-and-zero-proportional-contract
     - response-major-multiport-evaluation
+    - expanded-native-vf-spice-subcircuit-artifact
   external_runtime_branches:
     - native-engine
     - ngspice-xspice-code-model
