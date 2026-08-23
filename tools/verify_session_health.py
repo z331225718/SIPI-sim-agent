@@ -10,7 +10,7 @@ reports a single health verdict:
 - active upstream migration and deferred release ledgers
 - three pinned upstream adapter contracts and the 15-route CLI boundary
 - current Rust-candidate coverage for all 15 upstream rows
-- immutable-bound Rust parity ledger successor for all 15 upstream rows
+- immutable-bound Rust parity ledger successors for all 15 upstream rows
 - historical v0.2 remaining-items ledger
 - historical v0.2 open-item gate coverage
 - closed P5-05 parameter ingestion consumer
@@ -45,6 +45,7 @@ CHECKS = [
     ("upstream-cli-integration", "tools/verify_upstream_cli_integration.py", []),
     ("upstream-rust-candidate-coverage", "tools/verify_upstream_rust_candidate_coverage_v2.py", []),
     ("upstream-rust-parity-ledger-v2", "tools/verify_upstream_rust_parity_ledger_v2.py", []),
+    ("upstream-rust-parity-ledger-v3", "tools/verify_upstream_rust_parity_ledger_v3.py", []),
     ("release-capability-publication-live", "tools/verify_release_capability_publication.py", []),
     ("historical-v0.2-remaining-items-ledger", "tools/verify_plan_remaining_items_ledger.py", []),
     ("historical-v0.2-open-item-gate-coverage", "tools/verify_plan_open_items_gate_coverage.py", []),
