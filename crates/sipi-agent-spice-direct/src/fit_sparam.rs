@@ -1367,7 +1367,11 @@ pub(crate) fn initial_poles(
     }
     let frequencies = |count: usize| -> Vec<f64> {
         if count == 1 {
-            return vec![fmax];
+            // Agent-Spice NativeVectorFitting seeds a one-pole log/linear grid
+            // at the lower edge (`geomspace/linspace(..., 1)`).  Seeding at
+            // fmax prevents the relocation pass from exploring the band when
+            // the worst residual is already at the upper edge.
+            return vec![fmin];
         }
         (0..count)
             .map(|index| {
@@ -2891,6 +2895,15 @@ mod tests {
                     .all(|(a, b)| (*a - *b).norm() < 1.0e-9)
             );
         }
+    }
+
+    #[test]
+    fn one_pole_initialization_matches_native_vector_fitting_lower_edge() {
+        let (poles, _) = initial_poles(&[1.0e6, 1.0e9], 1, 0, "log", 1.0e9).unwrap();
+        assert_eq!(
+            poles,
+            vec![Complex::new(-2.0 * std::f64::consts::PI * 1.0e-3, 0.0)]
+        );
     }
 
     #[test]
