@@ -9,7 +9,7 @@ from typing import Any
 
 import yaml
 
-from pb_03_replay_common import ROOT, sha256
+from pb_03_replay_common import ROOT, compare_windows_pe_custody, sha256, windows_pe_custody_shape, windows_pe_repro_policy
 
 
 MANIFESTS = {
@@ -54,8 +54,13 @@ def aggregate(row: str, first_path: Path, second_path: Path, output: Path) -> di
         blockers.append("at least one fresh external replay remains blocked")
     first_binary = first.get("build", {}).get("binary_sha256") if isinstance(first.get("build"), dict) else None
     second_binary = second.get("build", {}).get("binary_sha256") if isinstance(second.get("build"), dict) else None
-    if first_binary != second_binary:
-        blockers.append("candidate binary digests differ across fresh runs")
+    first_custody = first.get("build", {}).get("binary_custody") if isinstance(first.get("build"), dict) else None
+    second_custody = second.get("build", {}).get("binary_custody") if isinstance(second.get("build"), dict) else None
+    if not isinstance(first_custody, dict) or first_binary != first_custody.get("raw_sha256"):
+        blockers.append("first raw binary digest is not bound to PE custody")
+    if not isinstance(second_custody, dict) or second_binary != second_custody.get("raw_sha256"):
+        blockers.append("second raw binary digest is not bound to PE custody")
+    blockers.extend(compare_windows_pe_custody(first_custody, second_custody))
     manifest_path = MANIFESTS[row]
     audit_path = AUDITS[row]
     manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
@@ -71,8 +76,8 @@ def aggregate(row: str, first_path: Path, second_path: Path, output: Path) -> di
         "fixture": first.get("fixture"),
         "toolchain": first.get("toolchain"),
         "builds": [
-            {"report": reports[0]["path"], "binary_sha256": first_binary},
-            {"report": reports[1]["path"], "binary_sha256": second_binary},
+            {"report": reports[0]["path"], "binary_sha256": first_binary, "binary_custody": first_custody},
+            {"report": reports[1]["path"], "binary_sha256": second_binary, "binary_custody": second_custody},
         ],
         "manifest": {"path": manifest_path.relative_to(ROOT).as_posix(), "binding_sha256": manifest_binding(manifest)},
         "audit": {"path": audit_path.relative_to(ROOT).as_posix(), "sha256": sha256(audit_path.read_bytes())},
@@ -83,6 +88,18 @@ def aggregate(row: str, first_path: Path, second_path: Path, output: Path) -> di
             "unique_fresh_run_nonces": reports[0]["fresh_run_nonce"] != reports[1]["fresh_run_nonce"],
             "exact_toolchain_identity": first.get("toolchain") == second.get("toolchain"),
             "exact_binary_sha256": first_binary == second_binary,
+            "exact_binary_canonical_sha256": isinstance(first_custody, dict)
+            and isinstance(second_custody, dict)
+            and first_custody.get("canonical_sha256") == second_custody.get("canonical_sha256"),
+        },
+        "binary_custody_gate": {
+            "raw_sha256_equal": first_binary == second_binary,
+            "canonical_sha256_equal": isinstance(first_custody, dict)
+            and isinstance(second_custody, dict)
+            and first_custody.get("canonical_sha256") == second_custody.get("canonical_sha256"),
+            "normalization_shape_equal": windows_pe_custody_shape(first_custody) == windows_pe_custody_shape(second_custody),
+            "repro_policy": windows_pe_repro_policy(first_custody, second_custody),
+            "blockers": compare_windows_pe_custody(first_custody, second_custody),
         },
         "claims": {
             "independent_python_reference": True,
@@ -95,7 +112,7 @@ def aggregate(row: str, first_path: Path, second_path: Path, output: Path) -> di
         "non_claims": [
             "A pinned Python BackendRunResult artifact is an external oracle observation, not a release promotion.",
             "PB-04 selection and PB-05 payload compare remain fail-closed until the complete result contract is accepted.",
-            "Binary reproducibility is observed only as a binding; differing binary digests block aggregation and never promote a row.",
+            "Raw PE digests may differ when only approved timestamp/RSDS-GUID fields differ; canonical digest, profile/normalization shape, or REPRO payload drift blocks aggregation and never promotes a row.",
         ],
     }
     output.write_text(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")

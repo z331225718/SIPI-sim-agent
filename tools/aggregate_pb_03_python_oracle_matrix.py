@@ -11,6 +11,8 @@ from typing import Any
 
 import yaml
 
+from pb_03_replay_common import compare_windows_pe_custody, windows_pe_custody_shape, windows_pe_repro_policy
+
 
 ROOT = Path(__file__).resolve().parents[1]
 HEX32 = re.compile(r"[0-9a-f]{32}\Z")
@@ -82,8 +84,13 @@ def aggregate(first_path: Path, second_path: Path, output: Path) -> dict[str, An
         blockers.append("fresh run nonces must be distinct")
     first_binary = first.get("build", {}).get("binary_sha256") if isinstance(first.get("build"), dict) else None
     second_binary = second.get("build", {}).get("binary_sha256") if isinstance(second.get("build"), dict) else None
-    if first_binary != second_binary:
-        blockers.append("candidate binary digests differ across fresh runs")
+    first_custody = first.get("build", {}).get("binary_custody") if isinstance(first.get("build"), dict) else None
+    second_custody = second.get("build", {}).get("binary_custody") if isinstance(second.get("build"), dict) else None
+    if not isinstance(first_custody, dict) or first_binary != first_custody.get("raw_sha256"):
+        blockers.append("first raw binary digest is not bound to PE custody")
+    if not isinstance(second_custody, dict) or second_binary != second_custody.get("raw_sha256"):
+        blockers.append("second raw binary digest is not bound to PE custody")
+    blockers.extend(compare_windows_pe_custody(first_custody, second_custody))
     for label, report in (("first", first), ("second", second)):
         if report.get("schema") != "sipi.pb-03-python-oracle-matrix-replay.v1":
             blockers.append(f"{label} schema mismatch")
@@ -143,8 +150,8 @@ def aggregate(first_path: Path, second_path: Path, output: Path) -> dict[str, An
         "harness": first.get("harness"),
         "toolchain": first.get("toolchain"),
         "builds": [
-            {"report": stable(first_path), "binary_sha256": first_binary},
-            {"report": stable(second_path), "binary_sha256": second_binary},
+            {"report": stable(first_path), "binary_sha256": first_binary, "binary_custody": first_custody},
+            {"report": stable(second_path), "binary_sha256": second_binary, "binary_custody": second_custody},
         ],
         "manifest": {
             "path": stable(MANIFEST),
@@ -164,6 +171,18 @@ def aggregate(first_path: Path, second_path: Path, output: Path) -> dict[str, An
             "exact_upstream_identity": first.get("upstream") == second.get("upstream"),
             "exact_toolchain_identity": first.get("toolchain") == second.get("toolchain"),
             "exact_binary_sha256": first_binary == second_binary,
+            "exact_binary_canonical_sha256": isinstance(first_custody, dict)
+            and isinstance(second_custody, dict)
+            and first_custody.get("canonical_sha256") == second_custody.get("canonical_sha256"),
+        },
+        "binary_custody_gate": {
+            "raw_sha256_equal": first_binary == second_binary,
+            "canonical_sha256_equal": isinstance(first_custody, dict)
+            and isinstance(second_custody, dict)
+            and first_custody.get("canonical_sha256") == second_custody.get("canonical_sha256"),
+            "normalization_shape_equal": windows_pe_custody_shape(first_custody) == windows_pe_custody_shape(second_custody),
+            "repro_policy": windows_pe_repro_policy(first_custody, second_custody),
+            "blockers": compare_windows_pe_custody(first_custody, second_custody),
         },
         "blockers": blockers + ["portable branch payload mismatches and pinned upstream FEC runtime error remain open"],
         "claims": {
@@ -175,7 +194,7 @@ def aggregate(first_path: Path, second_path: Path, output: Path) -> dict[str, An
         "non_claims": [
             "A Python oracle execution is independent from the Rust candidate but does not close mismatched payload branches.",
             "AMI/IBIS/DLL/GetWave and exact PyBertData class restoration remain outside this portable matrix.",
-            "Binary reproducibility is observed only as a binding; differing binary digests block aggregation and never promote a row.",
+            "Raw PE digests may differ when only approved timestamp/RSDS-GUID fields differ; canonical digest, profile/normalization shape, or REPRO payload drift blocks aggregation and never promotes a row.",
         ],
     }
     output.parent.mkdir(parents=True, exist_ok=True)

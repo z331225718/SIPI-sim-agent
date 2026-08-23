@@ -16,6 +16,7 @@ import math
 import os
 import re
 import shutil
+import struct
 import subprocess
 import tarfile
 import tempfile
@@ -323,13 +324,386 @@ def _binary(target: Path) -> Path:
 
 
 def build_summary(result: dict[str, Any], binary: Path) -> dict[str, Any]:
-    """Emit a stable, closed build schema with the produced binary digest."""
+    """Emit a stable build schema plus a structural Windows PE digest."""
+    custody = windows_pe_replay_custody(binary) if binary.is_file() else None
     return {
         "exit_code": result.get("exit_code"),
         "stdout_sha256": result.get("stdout_sha256"),
         "stderr_sha256": result.get("stderr_sha256"),
         "binary_sha256": sha256(binary.read_bytes()) if binary.is_file() else None,
+        "binary_custody": custody,
     }
+
+
+def _u16(payload: bytes, offset: int) -> int:
+    if offset < 0 or offset + 2 > len(payload):
+        raise ValueError("PE field is out of bounds")
+    return struct.unpack_from("<H", payload, offset)[0]
+
+
+def _u32(payload: bytes, offset: int) -> int:
+    if offset < 0 or offset + 4 > len(payload):
+        raise ValueError("PE field is out of bounds")
+    return struct.unpack_from("<I", payload, offset)[0]
+
+
+def _rva_file_range(
+    rva: int,
+    size: int,
+    sections: list[tuple[int, int, int, int]],
+    payload_size: int,
+) -> tuple[int, int]:
+    if size < 0 or rva < 0:
+        raise ValueError("PE RVA range is negative")
+    if size == 0:
+        raise ValueError("PE RVA range is empty")
+    matches: list[tuple[int, int]] = []
+    for virtual_address, virtual_size, raw_pointer, raw_size in sections:
+        span = max(virtual_size, raw_size)
+        if virtual_address <= rva and rva + size <= virtual_address + span:
+            file_offset = raw_pointer + (rva - virtual_address)
+            if file_offset < raw_pointer or file_offset + size > raw_pointer + raw_size:
+                continue
+            if file_offset + size > payload_size:
+                continue
+            matches.append((file_offset, size))
+    if len(matches) != 1:
+        raise ValueError("PE RVA range has an ambiguous or missing section")
+    return matches[0]
+
+
+def windows_pe_replay_custody(binary: Path) -> dict[str, Any]:
+    """Hash a PE while normalizing only its structured reproducibility fields.
+
+    This intentionally does not search for or rewrite arbitrary bytes such as
+    PDB paths, CodeView ages, or linker payloads.  An unknown debug layout is
+    rejected instead of being silently omitted from the canonical digest.
+    """
+    payload = binary.read_bytes()
+    if len(payload) < 0x40 or payload[:2] != b"MZ":
+        raise ValueError("binary is not a PE image")
+    pe_offset = _u32(payload, 0x3C)
+    if pe_offset < 0x40 or pe_offset + 4 + 20 > len(payload) or payload[pe_offset : pe_offset + 4] != b"PE\0\0":
+        raise ValueError("PE header is invalid")
+    coff = pe_offset + 4
+    machine = _u16(payload, coff)
+    section_count = _u16(payload, coff + 2)
+    characteristics = _u16(payload, coff + 18)
+    optional_size = _u16(payload, coff + 16)
+    optional = coff + 20
+    optional_end = optional + optional_size
+    if section_count == 0 or optional_end > len(payload):
+        raise ValueError("PE section or optional header is invalid")
+    magic = _u16(payload, optional)
+    if machine != 0x8664:
+        raise ValueError("PE machine is not AMD64")
+    if magic != 0x20B:
+        raise ValueError("PE optional header is not PE32+")
+    if not characteristics & 0x0002:
+        raise ValueError("PE image is not executable")
+    profile = "pe32-plus"
+    number_of_rva_offset = optional + 108
+    data_directory = optional + 112
+    if number_of_rva_offset + 4 > optional_end:
+        raise ValueError("PE data-directory header is truncated")
+    directory_count = _u32(payload, number_of_rva_offset)
+    if directory_count > 16 or data_directory + directory_count * 8 > optional_end:
+        raise ValueError("PE data-directory table is invalid")
+    section_table = optional_end
+    section_end = section_table + section_count * 40
+    if section_end > len(payload):
+        raise ValueError("PE section table is truncated")
+    sections: list[tuple[int, int, int, int]] = []
+    for index in range(section_count):
+        entry = section_table + index * 40
+        virtual_size = _u32(payload, entry + 8)
+        virtual_address = _u32(payload, entry + 12)
+        raw_size = _u32(payload, entry + 16)
+        raw_pointer = _u32(payload, entry + 20)
+        if raw_size and (raw_pointer < section_end or raw_pointer + raw_size > len(payload)):
+            raise ValueError("PE section bytes are out of bounds")
+        sections.append((virtual_address, virtual_size, raw_pointer, raw_size))
+
+    normalized = bytearray(payload)
+    ranges: list[dict[str, Any]] = []
+    fields: list[str] = []
+
+    def zero_range(field: str, offset: int, size: int) -> None:
+        if size <= 0 or offset < 0 or offset + size > len(payload):
+            raise ValueError("PE normalization range is out of bounds")
+        if any(offset < item["offset"] + item["length"] and item["offset"] < offset + size for item in ranges):
+            raise ValueError("PE normalization ranges overlap")
+        raw = payload[offset : offset + size]
+        canonical_bytes = bytes(size)
+        fields.append(field)
+        ranges.append(
+            {
+                "field": field,
+                "offset": offset,
+                "length": size,
+                "raw_hex": raw.hex(),
+                "canonical_hex": canonical_bytes.hex(),
+            }
+        )
+        normalized[offset : offset + size] = canonical_bytes
+
+    zero_range("IMAGE_FILE_HEADER.TimeDateStamp", coff + 4, 4)
+    repro_entries: list[dict[str, Any]] = []
+    debug_rva = debug_size = 0
+    if directory_count > 6:
+        debug_rva = _u32(payload, data_directory + 6 * 8)
+        debug_size = _u32(payload, data_directory + 6 * 8 + 4)
+    if (debug_rva == 0) != (debug_size == 0):
+        raise ValueError("PE debug directory is partially specified")
+    if debug_rva:
+        debug_offset, debug_bytes = _rva_file_range(debug_rva, debug_size, sections, len(payload))
+        if debug_bytes % 28 != 0:
+            raise ValueError("PE debug directory has an incomplete entry")
+        debug_count = debug_bytes // 28
+        for index in range(debug_count):
+            entry = debug_offset + index * 28
+            debug_type = _u32(payload, entry + 12)
+            size_of_data = _u32(payload, entry + 16)
+            address_of_raw_data = _u32(payload, entry + 20)
+            pointer_to_raw_data = _u32(payload, entry + 24)
+            zero_range(f"IMAGE_DEBUG_DIRECTORY[{index}].TimeDateStamp", entry + 4, 4)
+            if size_of_data == 0:
+                if pointer_to_raw_data != 0 or address_of_raw_data != 0:
+                    raise ValueError("PE debug entry has an empty but non-null payload")
+                debug_payload = b""
+            else:
+                if pointer_to_raw_data == 0:
+                    if address_of_raw_data == 0:
+                        raise ValueError("PE debug entry payload is missing")
+                    payload_offset, _ = _rva_file_range(address_of_raw_data, size_of_data, sections, len(payload))
+                else:
+                    payload_offset = pointer_to_raw_data
+                    if payload_offset + size_of_data > len(payload):
+                        raise ValueError("PE debug entry payload is out of bounds")
+                debug_payload = payload[payload_offset : payload_offset + size_of_data]
+            if debug_type == 2:
+                if not address_of_raw_data or not pointer_to_raw_data:
+                    raise ValueError("PE CodeView debug entry lacks RVA or raw pointer")
+                rva_payload_offset, _ = _rva_file_range(address_of_raw_data, size_of_data, sections, len(payload))
+                if rva_payload_offset != pointer_to_raw_data:
+                    raise ValueError("PE CodeView RVA and raw pointer disagree")
+                if len(debug_payload) < 24 or debug_payload[:4] != b"RSDS" or b"\0" not in debug_payload[24:]:
+                    raise ValueError("PE CodeView debug entry is not RSDS")
+                zero_range(f"CodeView.RSDS[{index}].GUID", payload_offset + 4, 16)
+            elif debug_type == 16:
+                if len(repro_entries) >= 1:
+                    raise ValueError("PE has duplicate REPRO debug entries")
+                repro_entries.append(
+                    {
+                        "present": True,
+                        "debug_directory_index": index,
+                        "bytes": len(debug_payload),
+                        "raw_sha256": sha256(debug_payload),
+                    }
+                )
+            elif debug_type not in set(range(1, 18)):
+                raise ValueError(f"PE debug entry type {debug_type} is unsupported")
+    ranges.sort(key=lambda item: item["offset"])
+    fields = [item["field"] for item in ranges]
+    canonical_payload = bytes(normalized)
+    return {
+        "schema": "sipi.windows-pe-replay-custody.v1",
+        "raw_sha256": sha256(payload),
+        "canonical_sha256": sha256(canonical_payload),
+        "format": "PE",
+        "machine": machine,
+        "characteristics": characteristics,
+        "bytes": len(payload),
+        "profile": profile,
+        "repro_entry": repro_entries[0]
+        if repro_entries
+        else {"present": False, "debug_directory_index": None, "bytes": 0, "raw_sha256": None},
+        "normalization": {
+            "map": "zero-only:IMAGE_FILE_HEADER.TimeDateStamp+IMAGE_DEBUG_DIRECTORY.TimeDateStamp+CodeView.RSDS.GUID",
+            "fields": fields,
+            "ranges": ranges,
+            "changed_byte_count": sum(
+                sum(a != b for a, b in zip(bytes.fromhex(item["raw_hex"]), bytes.fromhex(item["canonical_hex"])))
+                for item in ranges
+            ),
+        },
+    }
+
+
+PE_CUSTODY_KEYS = {
+    "schema",
+    "raw_sha256",
+    "canonical_sha256",
+    "format",
+    "machine",
+    "characteristics",
+    "bytes",
+    "profile",
+    "repro_entry",
+    "normalization",
+}
+PE_REPRO_KEYS = {"present", "debug_directory_index", "bytes", "raw_sha256"}
+PE_NORMALIZATION_KEYS = {"map", "fields", "ranges", "changed_byte_count"}
+PE_RANGE_KEYS = {"field", "offset", "length", "raw_hex", "canonical_hex"}
+PE_RANGE_FIELD = re.compile(
+    r"(?:IMAGE_FILE_HEADER\.TimeDateStamp|IMAGE_DEBUG_DIRECTORY\[\d+\]\.TimeDateStamp|CodeView\.RSDS\[\d+\]\.GUID)\Z"
+)
+
+
+def validate_windows_pe_replay_custody(value: Any) -> list[str]:
+    """Validate the report-only PE custody schema without trusting its digest."""
+    errors: list[str] = []
+    if not isinstance(value, dict) or set(value) != PE_CUSTODY_KEYS:
+        return ["binary custody keys drift"]
+    if value.get("schema") != "sipi.windows-pe-replay-custody.v1":
+        errors.append("binary custody schema drift")
+    for key in ("raw_sha256", "canonical_sha256"):
+        if not isinstance(value.get(key), str) or HEX64.fullmatch(value[key]) is None:
+            errors.append(f"binary custody {key} drift")
+    if value.get("format") != "PE":
+        errors.append("binary custody format drift")
+    machine = value.get("machine")
+    if machine != 0x8664:
+        errors.append("binary custody machine drift")
+    characteristics = value.get("characteristics")
+    if isinstance(characteristics, bool) or not isinstance(characteristics, int) or not characteristics & 0x0002:
+        errors.append("binary custody executable characteristics drift")
+    if isinstance(value.get("bytes"), bool) or not isinstance(value.get("bytes"), int) or value["bytes"] <= 0:
+        errors.append("binary custody byte count drift")
+    if value.get("profile") != "pe32-plus":
+        errors.append("binary custody profile drift")
+
+    repro = value.get("repro_entry")
+    if not isinstance(repro, dict) or set(repro) != PE_REPRO_KEYS:
+        errors.append("binary custody REPRO entry drift")
+    elif repro.get("present") not in {True, False}:
+        errors.append("binary custody REPRO presence drift")
+    else:
+        if repro.get("present") and (isinstance(repro.get("debug_directory_index"), bool) or not isinstance(repro.get("debug_directory_index"), int) or repro["debug_directory_index"] < 0):
+            errors.append("binary custody REPRO index drift")
+        if not repro.get("present") and repro.get("debug_directory_index") is not None:
+            errors.append("binary custody absent REPRO index drift")
+        if isinstance(repro.get("bytes"), bool) or not isinstance(repro.get("bytes"), int) or repro["bytes"] < 0:
+            errors.append("binary custody REPRO byte count drift")
+        raw_repro = repro.get("raw_sha256")
+        if raw_repro is not None and (not isinstance(raw_repro, str) or HEX64.fullmatch(raw_repro) is None):
+            errors.append("binary custody REPRO digest drift")
+        if repro.get("present") and (not isinstance(raw_repro, str) or HEX64.fullmatch(raw_repro) is None):
+            errors.append("binary custody present REPRO digest missing")
+        if not repro.get("present") and (repro.get("bytes") != 0 or raw_repro is not None):
+            errors.append("binary custody absent REPRO payload drift")
+
+    normalization = value.get("normalization")
+    if not isinstance(normalization, dict) or set(normalization) != PE_NORMALIZATION_KEYS:
+        return errors + ["binary custody normalization keys drift"]
+    if normalization.get("map") != "zero-only:IMAGE_FILE_HEADER.TimeDateStamp+IMAGE_DEBUG_DIRECTORY.TimeDateStamp+CodeView.RSDS.GUID":
+        errors.append("binary custody normalization map drift")
+    fields = normalization.get("fields")
+    ranges = normalization.get("ranges")
+    if not isinstance(fields, list) or not all(isinstance(item, str) and PE_RANGE_FIELD.fullmatch(item) for item in fields):
+        errors.append("binary custody normalization fields drift")
+        fields = []
+    if not isinstance(ranges, list):
+        errors.append("binary custody normalization ranges drift")
+        ranges = []
+    if fields != [item.get("field") for item in ranges if isinstance(item, dict)]:
+        errors.append("binary custody normalization field map drift")
+    previous_end = -1
+    changed = 0
+    for item in ranges:
+        if not isinstance(item, dict) or set(item) != PE_RANGE_KEYS:
+            errors.append("binary custody normalization range keys drift")
+            continue
+        field = item.get("field")
+        offset = item.get("offset")
+        length = item.get("length")
+        raw_hex = item.get("raw_hex")
+        canonical_hex = item.get("canonical_hex")
+        if not isinstance(field, str) or PE_RANGE_FIELD.fullmatch(field) is None:
+            errors.append("binary custody normalization range field drift")
+        if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
+            errors.append("binary custody normalization range offset drift")
+        if isinstance(length, bool) or not isinstance(length, int) or length <= 0:
+            errors.append("binary custody normalization range length drift")
+        if not isinstance(offset, int) or not isinstance(length, int) or offset < previous_end:
+            errors.append("binary custody normalization ranges overlap or are unsorted")
+        if isinstance(offset, int) and isinstance(length, int):
+            previous_end = max(previous_end, offset + length)
+        try:
+            raw = bytes.fromhex(raw_hex) if isinstance(raw_hex, str) else b""
+            canonical_bytes = bytes.fromhex(canonical_hex) if isinstance(canonical_hex, str) else b""
+        except ValueError:
+            raw = canonical_bytes = b""
+            errors.append("binary custody normalization range bytes are not hex")
+        if isinstance(length, int) and (len(raw) != length or len(canonical_bytes) != length):
+            errors.append("binary custody normalization range byte length drift")
+        if canonical_bytes and any(canonical_bytes):
+            errors.append("binary custody normalization is not zero-only")
+        changed += sum(a != b for a, b in zip(raw, canonical_bytes))
+        if field == "IMAGE_FILE_HEADER.TimeDateStamp" and length != 4:
+            errors.append("binary custody COFF timestamp range drift")
+        if field != "IMAGE_FILE_HEADER.TimeDateStamp" and field and field.endswith("TimeDateStamp") and length != 4:
+            errors.append("binary custody debug timestamp range drift")
+        if field and field.endswith("GUID") and length != 16:
+            errors.append("binary custody RSDS GUID range drift")
+    if not any(item.get("field") == "IMAGE_FILE_HEADER.TimeDateStamp" for item in ranges if isinstance(item, dict)):
+        errors.append("binary custody COFF timestamp normalization missing")
+    if normalization.get("changed_byte_count") != changed:
+        errors.append("binary custody changed-byte count drift")
+    return errors
+
+
+def windows_pe_custody_shape(value: Any) -> dict[str, Any] | None:
+    """Return the cross-run shape, excluding raw normalized bytes."""
+    if validate_windows_pe_replay_custody(value):
+        return None
+    normalization = value["normalization"]
+    ranges = [
+        {key: item[key] for key in ("field", "offset", "length", "canonical_hex")}
+        for item in normalization["ranges"]
+    ]
+    return {
+        "format": value["format"],
+        "machine": value["machine"],
+        "characteristics": value["characteristics"],
+        "bytes": value["bytes"],
+        "profile": value["profile"],
+        "repro_present": value["repro_entry"]["present"],
+        "normalization": {
+            "map": normalization["map"],
+            "fields": normalization["fields"],
+            "ranges": ranges,
+        },
+    }
+
+
+def compare_windows_pe_custody(first: Any, second: Any) -> list[str]:
+    errors = validate_windows_pe_replay_custody(first) + validate_windows_pe_replay_custody(second)
+    if errors:
+        return errors
+    if first["canonical_sha256"] != second["canonical_sha256"]:
+        errors.append("canonical PE digests differ across fresh runs")
+    if windows_pe_custody_shape(first) != windows_pe_custody_shape(second):
+        errors.append("canonical PE profile or normalization map differs across fresh runs")
+    first_repro = first["repro_entry"]
+    second_repro = second["repro_entry"]
+    if first_repro["present"] and first_repro["raw_sha256"] != second_repro["raw_sha256"]:
+        errors.append("IMAGE_DEBUG_TYPE_REPRO payload digests differ across fresh runs")
+    return errors
+
+
+def windows_pe_repro_policy(first: Any, second: Any) -> str:
+    if validate_windows_pe_replay_custody(first) or validate_windows_pe_replay_custody(second):
+        return "invalid"
+    first_entry = first["repro_entry"]
+    second_entry = second["repro_entry"]
+    if not first_entry["present"] and not second_entry["present"]:
+        return "not_present"
+    if first_entry["present"] and second_entry["present"] and first_entry["raw_sha256"] == second_entry["raw_sha256"]:
+        return "present_equal"
+    if first_entry["present"] and second_entry["present"]:
+        return "present_raw_drift"
+    return "presence_mismatch"
 
 
 def payload_digest(summary: dict[str, Any], row: str) -> str | None:

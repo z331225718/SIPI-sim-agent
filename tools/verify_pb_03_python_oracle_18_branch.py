@@ -11,6 +11,8 @@ from typing import Any
 
 import yaml
 
+from pb_03_replay_common import compare_windows_pe_custody, validate_windows_pe_replay_custody, windows_pe_custody_shape, windows_pe_repro_policy
+
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "docs/baselines/pb-03-python-oracle-18-branch-d3154093.v1.yaml"
@@ -130,7 +132,7 @@ def verify_toolchain(value: Any, errors: list[str], label: str) -> None:
 
 
 def verify_build(value: Any, errors: list[str], label: str) -> None:
-    allowed = {"exit_code", "stdout_sha256", "stderr_sha256", "binary_sha256"}
+    allowed = {"exit_code", "stdout_sha256", "stderr_sha256", "binary_sha256", "binary_custody"}
     check(errors, isinstance(value, dict) and set(value) == allowed, f"{label} keys drift")
     if not isinstance(value, dict):
         return
@@ -139,6 +141,11 @@ def verify_build(value: Any, errors: list[str], label: str) -> None:
         check(errors, isinstance(value.get(key), str) and HEX64.fullmatch(value[key]) is not None, f"{label}.{key} digest drift")
     if value.get("exit_code") == 0:
         check(errors, isinstance(value.get("binary_sha256"), str) and HEX64.fullmatch(value["binary_sha256"]) is not None, f"{label}.binary_sha256 missing after successful build")
+        check(errors, not validate_windows_pe_replay_custody(value.get("binary_custody")), f"{label}.binary_custody schema drift")
+    elif value.get("binary_custody") is not None:
+        check(errors, not validate_windows_pe_replay_custody(value.get("binary_custody")), f"{label}.binary_custody failed-build drift")
+    if isinstance(value.get("binary_custody"), dict):
+        check(errors, value.get("binary_sha256") == value["binary_custody"].get("raw_sha256"), f"{label}.raw binary/custody digest split")
     if value.get("binary_sha256") is not None:
         check(errors, isinstance(value["binary_sha256"], str) and HEX64.fullmatch(value["binary_sha256"]) is not None, f"{label}.binary_sha256 drift")
 
@@ -254,6 +261,29 @@ def verify_aggregate(aggregate: dict[str, Any], reports: list[dict[str, Any]], b
     if isinstance(distinct, dict):
         for key in ("unique_report_paths", "unique_report_sha256", "unique_run_ids", "unique_fresh_run_nonces", "exact_candidate_identity", "exact_upstream_identity", "exact_toolchain_identity"):
             check(errors, distinct.get(key) is True, f"aggregate {key} drift")
+        check(errors, distinct.get("exact_binary_canonical_sha256") is True, "aggregate canonical PE reproducibility gate drift")
+    if len(reports) == 2:
+        first_custody = reports[0].get("build", {}).get("binary_custody") if isinstance(reports[0].get("build"), dict) else None
+        second_custody = reports[1].get("build", {}).get("binary_custody") if isinstance(reports[1].get("build"), dict) else None
+        check(errors, not compare_windows_pe_custody(first_custody, second_custody), "aggregate PE custody gate drift")
+        expected_builds = [
+            {
+                "report": binding["path"],
+                "binary_sha256": report.get("build", {}).get("binary_sha256"),
+                "binary_custody": report.get("build", {}).get("binary_custody"),
+            }
+            for binding, report in zip(bindings, reports)
+        ]
+        check(errors, aggregate.get("builds") == expected_builds, "aggregate binary custody binding drift")
+        custody_gate = aggregate.get("binary_custody_gate")
+        check(errors, isinstance(custody_gate, dict), "aggregate PE custody gate missing")
+        if isinstance(custody_gate, dict):
+            check(errors, set(custody_gate) == {"raw_sha256_equal", "canonical_sha256_equal", "normalization_shape_equal", "repro_policy", "blockers"}, "aggregate PE custody gate keys drift")
+            check(errors, custody_gate.get("raw_sha256_equal") == (reports[0].get("build", {}).get("binary_sha256") == reports[1].get("build", {}).get("binary_sha256")), "aggregate raw PE gate drift")
+            check(errors, custody_gate.get("canonical_sha256_equal") == (isinstance(first_custody, dict) and isinstance(second_custody, dict) and first_custody.get("canonical_sha256") == second_custody.get("canonical_sha256")), "aggregate canonical PE gate drift")
+            check(errors, custody_gate.get("normalization_shape_equal") == (windows_pe_custody_shape(first_custody) == windows_pe_custody_shape(second_custody)), "aggregate PE normalization gate drift")
+            check(errors, custody_gate.get("repro_policy") == windows_pe_repro_policy(first_custody, second_custody), "aggregate REPRO policy drift")
+            check(errors, custody_gate.get("blockers") == compare_windows_pe_custody(first_custody, second_custody), "aggregate PE gate blocker drift")
     check(errors, path_free(aggregate), "aggregate contains an absolute path")
 
 def verify(document: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
