@@ -1130,7 +1130,7 @@ fn legacy_arrays(
             "chnl_p",
             pulse_from(&channel, inferred_samples_per_ui(source)),
         ),
-        ("tx_out_p", pulse_from(&tx_h, samples_per_ui)),
+        ("tx_out_p", pulse_from(&tx_out_h, samples_per_ui)),
         ("ctle_out_p", pulse_from(&ctle_out_h, samples_per_ui)),
         ("dfe_out_p", pulse_from(&dfe_out_h, samples_per_ui)),
         ("chnl_H", response_spectrum(&channel)?),
@@ -1752,6 +1752,40 @@ dfe_tap_tuners:
 - !!python/tuple [false, -0.2, 0.4]
 "#
         .into()
+    }
+
+    #[test]
+    fn legacy_tx_out_p_uses_the_channelized_tx_impulse() {
+        let tx_impulse = vec![1.0, 0.0, 0.0, 0.0];
+        let tx_channel_impulse = vec![0.0, 1.0, 0.0, 0.0];
+        let output = SimulationOutputV1 {
+            schema: SIMULATION_SCHEMA_V1.into(),
+            run_id: "tx-out-p-regression".into(),
+            capabilities: crate::EngineCapabilitiesV1 {
+                stages: Vec::new(),
+                external_models: Vec::new(),
+            },
+            metrics: BTreeMap::new(),
+            events: Vec::new(),
+            arrays: BTreeMap::from([
+                ("channel_impulse_v_per_v".into(), vec![1.0, 0.0, 0.0, 0.0]),
+                ("tx_impulse_v_per_v".into(), tx_impulse.clone()),
+                (
+                    "tx_channel_impulse_v_per_v".into(),
+                    tx_channel_impulse.clone(),
+                ),
+                ("rx_filter_impulse_v_per_v".into(), vec![1.0]),
+                ("rx_ffe_impulse_v_per_v".into(), vec![1.0]),
+                ("tx_waveform_v".into(), vec![1.0, 0.0, 1.0, 0.0]),
+                ("symbols_v".into(), vec![1.0, -1.0]),
+            ]),
+            artifacts: Vec::new(),
+        };
+
+        let arrays = legacy_arrays(&output).unwrap();
+
+        assert_eq!(arrays["tx_out_p"], pulse_from(&tx_channel_impulse, 2));
+        assert_ne!(arrays["tx_out_p"], pulse_from(&tx_impulse, 2));
     }
 
     #[test]

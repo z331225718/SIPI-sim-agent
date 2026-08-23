@@ -86,6 +86,7 @@ fn direct_run_writes_upstream_artifact_names_and_metadata() {
         report.metadata["backend_metadata"]["engine"]["backend"],
         "rust"
     );
+    assert!(!report.output.arrays.contains_key("tx_impulse_v_per_v"));
     assert_eq!(report.diagnostics["pipeline"], "typed_simulation_input_v1");
     assert!(output_path.join("meta.json").is_file());
     assert!(output_path.join("arrays.npz").is_file());

@@ -133,7 +133,7 @@ fn projection_covers_portable_modulation_noise_and_viterbi_fields() {
     fs::write(
         &config_path,
         projection_yaml(
-            "mod_type: PAM-4\npn_mag: 0.001\npn_freq: 1000.0\nrn: 0.001\nrx_use_viterbi: true\nrx_viterbi_symbols: 2\ndfe_tap_tuners:\n- !!python/tuple [true, -0.2, 0.2]",
+            "f_max: 2.0\nmod_type: PAM-4\npn_mag: 0.001\npn_freq: 1000.0\nrn: 0.001\nrx_use_viterbi: true\nrx_viterbi_symbols: 2\ndfe_tap_tuners:\n- !!python/tuple [true, -0.2, 0.2]",
         ),
     )
     .unwrap();
@@ -166,11 +166,26 @@ fn projection_covers_portable_modulation_noise_and_viterbi_fields() {
             .map(Vec::len),
         Some(1)
     );
+    let pam4_run_path = root.join("pam4-run.yaml");
+    fs::write(
+        &pam4_run_path,
+        projection_yaml(
+            "f_max: 2.0\nmod_type: PAM-4\npn_mag: 0.001\npn_freq: 1000.0\nrn: 0.001\ndfe_tap_tuners:\n- !!python/tuple [true, -0.2, 0.2]",
+        ),
+    )
+    .unwrap();
+    let pam4_report = run_legacy_sim_v1(&LegacySimRequestV1 {
+        config_file: pam4_run_path,
+        results: Some(root.join("pam4-run.pybert_data")),
+    })
+    .unwrap();
+    assert!(matches!(pam4_report.input.modulation, ModulationV1::Pam4));
+    assert!(pam4_report.output.arrays.contains_key("dfe_output_v"));
     let fec_path = root.join("pam4-fec.yaml");
     fs::write(
         &fec_path,
         projection_yaml(
-            "mod_type: PAM-4\nrx_use_viterbi: true\nrx_viterbi_fec: true\ndfe_tap_tuners:\n- !!python/tuple [true, -0.2, 0.2]",
+            "f_max: 2.0\nmod_type: PAM-4\nrx_use_viterbi: true\nrx_viterbi_fec: true\ndfe_tap_tuners:\n- !!python/tuple [true, -0.2, 0.2]",
         ),
     )
     .unwrap();
@@ -195,9 +210,25 @@ fn projection_covers_portable_modulation_noise_and_viterbi_fields() {
             .as_ref()
             .is_some_and(|viterbi| viterbi.fec && viterbi.noise_sigma_v.is_none())
     );
+    let fec_report = run_legacy_sim_v1(&LegacySimRequestV1 {
+        config_file: fec_path.clone(),
+        results: Some(root.join("pam4-fec.pybert_data")),
+    })
+    .unwrap();
+    assert!(matches!(fec_report.input.modulation, ModulationV1::Pam4));
+    assert!(
+        fec_report
+            .output
+            .metrics
+            .contains_key("fec_encoded_bit_count")
+    );
     for (name, value) in [("nrz", "NRZ"), ("duo", "Duo-binary")] {
         let path = root.join(format!("{name}.yaml"));
-        fs::write(&path, projection_yaml(&format!("mod_type: {value}"))).unwrap();
+        fs::write(
+            &path,
+            projection_yaml(&format!("f_max: 2.0\nmod_type: {value}")),
+        )
+        .unwrap();
         let (_, projected) = project_legacy_config_v1(&path, name).unwrap();
         assert!(matches!(
             (name, projected.modulation),
@@ -248,7 +279,7 @@ fn projection_parses_portable_s2p_channel_and_ctle_files() {
     fs::write(
         &config_path,
         projection_yaml(
-            "use_ch_file: true\nch_file: channel.s2p\nuse_ctle_file: true\nctle_file: ctle.s2p",
+            "eye_bits: 1000\nuse_ch_file: true\nch_file: channel.s2p\nuse_ctle_file: true\nctle_file: ctle.s2p",
         ),
     )
     .unwrap();

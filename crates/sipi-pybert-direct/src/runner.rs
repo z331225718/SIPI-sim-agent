@@ -200,8 +200,15 @@ pub fn run_sim_native_json(
     output_dir: &Path,
 ) -> Result<DirectRunReport, DirectRunError> {
     let input = strict_simulation_input_json(input_json)?;
-    let output = simulate_native_v1(&input)?;
+    let output = native_cli_output(simulate_native_v1(&input)?);
     write_simulation_artifacts(input, input_file, output_dir, output, None)
+}
+
+/// Keep implementation-only arrays available to projected/legacy callers,
+/// while matching the pinned `sim-native` artifact member contract.
+fn native_cli_output(mut output: SimulationOutputV1) -> SimulationOutputV1 {
+    output.arrays.remove("tx_impulse_v_per_v");
+    output
 }
 
 /// Run an already projected, typed request through the same artifact boundary
@@ -1259,5 +1266,35 @@ impl Sha256State {
         for (word, value) in self.h.iter_mut().zip(state) {
             *word = word.wrapping_add(value);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn native_cli_hides_internal_tx_impulse_only() {
+        let arrays = BTreeMap::from([
+            ("tx_impulse_v_per_v".to_owned(), vec![1.0]),
+            ("tx_waveform_v".to_owned(), vec![2.0]),
+        ]);
+        let output = SimulationOutputV1 {
+            schema: crate::SIMULATION_SCHEMA_V1.to_owned(),
+            run_id: "test-run".to_owned(),
+            capabilities: crate::EngineCapabilitiesV1 {
+                stages: Vec::new(),
+                external_models: Vec::new(),
+            },
+            metrics: BTreeMap::new(),
+            events: Vec::new(),
+            arrays,
+            artifacts: Vec::new(),
+        };
+
+        let output = native_cli_output(output);
+
+        assert!(!output.arrays.contains_key("tx_impulse_v_per_v"));
+        assert_eq!(output.arrays.get("tx_waveform_v"), Some(&vec![2.0]));
     }
 }
