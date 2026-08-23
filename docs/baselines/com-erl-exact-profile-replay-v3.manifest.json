@@ -1,0 +1,133 @@
+{
+  "schema": "sipi.com.erl-only.exact-profile-replay.v3.manifest",
+  "status": "prep_schema_only_no_formal_reports",
+  "candidate": {
+    "commit": "955835369c28aacb3f49bd0cf95f3660587739d8",
+    "tree": "fbb415e5582ccf3ee70e4d0d472f1fc6856e0e26",
+    "archive_sha256": "005e06d1ab680a7ddf41a2110c5e8ea9e44b020e04c5d4369a78f05c15ea79f0"
+  },
+  "upstream": {
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea",
+    "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
+    "required_runtime": "uv run --frozen",
+    "required_lock": "uv.lock"
+  },
+  "fixture": {
+    "relative_path": "crates/sipi-agent-com-direct/tests/fixtures/erl_s2p_10db_at_26p56ghz.s2p",
+    "sha256": "7a59b41a385a95752d2d1159aab7772a10f7bd2c07e5122d770493151853c7a3",
+    "bytes": 830969,
+    "rows": 8001
+  },
+  "controls": {
+    "outer": {
+      "samples_per_ui": 32,
+      "levels": 4,
+      "bin_size": 0.00001,
+      "spec_ber": 0.00001,
+      "rl_norm_test": true
+    },
+    "tdr_profile": {
+      "name": "r480_s2p_erl_v1",
+      "samples_per_ui": 32,
+      "levels": 4,
+      "bin_size": 0.00001,
+      "spec_ber": 0.00001,
+      "rl_norm_test": true,
+      "baud_hz": 53125000000,
+      "sample_dt_s": 5.882352941176471e-13,
+      "s_reference_ohm": 100,
+      "zt_ohm": 50,
+      "transition_time_ns": 0.01,
+      "transition_filter_type": 1,
+      "transition_measurement_point": 0,
+      "receiver_cutoff_multiplier": 0.75,
+      "receiver_filter_enabled": true,
+      "tukey_enabled": true,
+      "fixture_delay_s": 0,
+      "tdr_delay_s": 5e-10,
+      "observation_duration_ui": 800,
+      "gate_n_bx": 0,
+      "gate_rho_x": 0.618,
+      "gate_grr": 1,
+      "gate_beta_x_db_per_s": 0
+    }
+  },
+  "control_crosswalk": {
+    "runtime_fields": {
+      "samples_per_ui": "materialized.parameters.samples_per_ui",
+      "levels": "materialized.parameters.levels",
+      "bin_size": "materialized.options.BinSize",
+      "spec_ber": "materialized.parameters.specBER",
+      "rl_norm_test": "materialized.options.RL_norm_test",
+      "baud_hz": "materialized.parameters.fb",
+      "sample_dt_s": "materialized.parameters.sample_dt",
+      "gate_rho_x": "materialized.parameters.rho_x",
+      "gate_grr": "materialized.parameters.Grr",
+      "gate_beta_x_db_per_s": "materialized.parameters.beta_x"
+    },
+    "raw_source_fields_not_runtime_controls": ["Z0", "T_r_filter_type", "T_r_meas_point", "T_k", "TDR_duration", "Tukey_Window"]
+  },
+  "runtime": {
+    "timeout_s": 180,
+    "build_timeout_s": 900,
+    "build_profile": "release",
+    "locked": true,
+    "rustc_wrapper": "cleared",
+    "cargo_build_rustc_wrapper": "cleared",
+    "rustc_workspace_wrapper": "cleared",
+    "cargo_incremental": "0",
+    "cargo_offline": true,
+    "uv_offline": true,
+    "explicit_rustc": true,
+    "upstream_command": "uv run --frozen --project . --python <pinned-python> python -c <probe>"
+  },
+  "policy": {
+    "s_parameter_fit": "forbidden",
+    "channel": "raw S11 FD-to-TD impulse",
+    "no_working_tree_overlay": true,
+    "custody": "raw+canonical+shape+REPRO required before aggregation"
+  },
+  "stage_mapping": {
+    "ptdr_gated": {"upstream": "ptdr_gated", "candidate": "gated"},
+    "ptdr_raw": {"status": "diagnostic_only_upstream_api_does_not_expose_raw_ptdr", "compared": false}
+  },
+  "numeric_policy": {
+    "float_fields": ["ERL", "ERL11", "ERL_RMS"],
+    "atol": 1e-12,
+    "rtol": 1e-12,
+    "phase_field": "ERL_phase_index",
+    "phase_policy": "exact"
+  },
+  "harness": {
+    "required": true,
+    "materialization": "future prep commit clean archive",
+    "working_tree_overlay": false,
+    "commit": "pending_harness_prep",
+    "tree": "pending_harness_prep",
+    "archive_sha256": "pending_harness_prep"
+  },
+  "runner": {
+    "path": "tools/run_com_erl_exact_profile_replay_v3.py",
+    "helper_path": "tools/com_erl_exact_profile_replay_v3_support.py",
+    "sha256": "e8b08b47018ac84da27942e34711523c733e2fb47ecdfce8983088c631e13a74",
+    "helper_sha256": "2a18207ffc9c34afb1ccd0dead28d9f3368c350f0f6b629b4c0720c682241ab4"
+  },
+  "verification_tools": {
+    "aggregator": {"path": "tools/aggregate_com_erl_exact_profile_replay_v3.py", "sha256": "8a0000e6e215b679e7cc17ae862b9a259e174c5c1ae81ac9625568eb9abc460e"},
+    "verifier": {"path": "tools/verify_com_erl_exact_profile_replay_v3.py", "sha256": "b36e56e1bead674ba89dcb1b7b739f49d09d9bae3e36629fe250a5ef07c51132"},
+    "tests": {"path": "tools/test_com_erl_exact_profile_replay_v3.py", "sha256": "a5f0ce47e2139ef6c6ba0fac918b572b57716ef11424fdce2a42dc248e138282"}
+  },
+  "audit": {
+    "path": "docs/baselines/audits/2026-08-24-com-erl-exact-profile-replay-v3-prep.md",
+    "sha256": "3ebe737cf73ea0eaca80487b140ea2efae5d9e8602c1bdf4e3f4469ae2a50c22"
+  },
+  "reports": {
+    "run_ids": ["com-erl-exact-v3-run1", "com-erl-exact-v3-run2"],
+    "paths": [
+      "docs/baselines/com-erl-exact-profile-replay-v3-run1.json",
+      "docs/baselines/com-erl-exact-profile-replay-v3-run2.json"
+    ],
+    "formal_reports_present": false
+  }
+}
