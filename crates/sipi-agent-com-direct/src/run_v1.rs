@@ -229,13 +229,23 @@ pub fn load_config_run_com_write_artifacts_v1(
 }
 
 #[derive(Clone, Debug)]
+struct PackageChannelV1 {
+    values: Vec<f64>,
+    source: Option<PathBuf>,
+    source_bytes: Option<Vec<u8>>,
+    already_pulse: bool,
+    source_sha256: String,
+    source_kind: &'static str,
+}
+
+#[derive(Clone, Debug)]
 struct PackageCaseV1 {
     identity: String,
     calibration_identity: String,
     document: Value,
-    pulse: Vec<f64>,
-    fext: Vec<Vec<f64>>,
-    next: Vec<Vec<f64>>,
+    pulse: PackageChannelV1,
+    fext: Vec<PackageChannelV1>,
+    next: Vec<PackageChannelV1>,
 }
 
 fn package_cases_from_config_v1(
@@ -267,8 +277,8 @@ fn package_cases_from_config_v1(
             limit: MAX_CROSSTALK_CHANNELS_V1 as u64,
         });
     }
-    let mut base = document;
-    if let Some(object) = base.as_object_mut() {
+    let mut document_base = document;
+    if let Some(object) = document_base.as_object_mut() {
         object.remove("package_cases");
         object.remove("cases");
     }
@@ -277,6 +287,18 @@ fn package_cases_from_config_v1(
         let case = value.as_object().ok_or_else(|| {
             DirectRunErrorV1::Parameters(format!("package_cases[{index}] must be an object"))
         })?;
+        if request.calibration_noise.is_some()
+            && ["fext", "next"].iter().any(|key| {
+                case.get(*key)
+                    .and_then(Value::as_array)
+                    .is_some_and(|values| !values.is_empty())
+            })
+        {
+            return Err(DirectRunErrorV1::InvalidRequest(
+                "calibration_noise is mutually exclusive with FEXT/NEXT in the pinned ChannelSet"
+                    .to_owned(),
+            ));
+        }
         let identity = case
             .get("case_id")
             .or_else(|| case.get("package_id"))
@@ -289,9 +311,9 @@ fn package_cases_from_config_v1(
             )));
         }
         let calibration_identity = case
-            .get("calibration_channel")
-            .or_else(|| case.get("calibration_id"))
+            .get("calibration_id")
             .and_then(Value::as_str)
+            .or_else(|| case.get("calibration_channel").and_then(Value::as_str))
             .map(str::to_owned)
             .unwrap_or_else(|| format!("{identity}:calibration"));
         if calibration_identity.is_empty() {
@@ -299,24 +321,41 @@ fn package_cases_from_config_v1(
                 "package_cases[{index}].calibration_channel must be non-empty"
             )));
         }
-        let pulse = parse_f64_array_v1(
+        let base = request.config.parent().unwrap_or_else(|| Path::new("."));
+        let pulse = parse_package_channel_v1(
             case.get("pulse").ok_or_else(|| {
                 DirectRunErrorV1::Parameters(format!("package_cases[{index}].pulse is required"))
             })?,
+            base,
             &format!("package_cases[{index}].pulse"),
         )?;
-        validate_impulse_v1(&pulse)?;
-        let fext = parse_case_channels_v1(case.get("fext"), index, "fext")?;
-        let next = parse_case_channels_v1(case.get("next"), index, "next")?;
-        let mut case_document = base.clone();
+        let fext = parse_case_channels_v1(case.get("fext"), base, index, "fext")?;
+        let next = parse_case_channels_v1(case.get("next"), base, index, "next")?;
+        if case.contains_key("calibration_path")
+            || case.contains_key("calibration_file")
+            || case.contains_key("calibration")
+            || case.contains_key("calibration_noise")
+            || case
+                .get("calibration_channel")
+                .is_some_and(Value::is_object)
+        {
+            return Err(DirectRunErrorV1::Unsupported(
+                "per-case calibration channels are not part of the pinned ChannelSet; use --calibration-noise once"
+                    .to_owned(),
+            ));
+        }
+        let mut case_document = document_base.clone();
         if let Some(object) = case_document.as_object_mut() {
             object.insert(
                 "package_case".to_owned(),
                 json!({
                     "case_id": identity,
-                    "pulse": pulse,
-                    "fext": fext,
-                    "next": next
+                    "pulse": pulse.values,
+                    "pulse_already_pulse": pulse.already_pulse,
+                    "fext": fext.iter().map(|value| value.values.clone()).collect::<Vec<_>>(),
+                    "fext_already_pulse": fext.iter().map(|value| value.already_pulse).collect::<Vec<_>>(),
+                    "next": next.iter().map(|value| value.values.clone()).collect::<Vec<_>>(),
+                    "next_already_pulse": next.iter().map(|value| value.already_pulse).collect::<Vec<_>>()
                 }),
             );
             for key in [
@@ -353,9 +392,10 @@ fn package_cases_from_config_v1(
 
 fn parse_case_channels_v1(
     value: Option<&Value>,
+    base: &Path,
     index: usize,
     role: &str,
-) -> Result<Vec<Vec<f64>>, DirectRunErrorV1> {
+) -> Result<Vec<PackageChannelV1>, DirectRunErrorV1> {
     let Some(value) = value else {
         return Ok(Vec::new());
     };
@@ -365,12 +405,138 @@ fn parse_case_channels_v1(
     rows.iter()
         .enumerate()
         .map(|(row, value)| {
-            let values =
-                parse_f64_array_v1(value, &format!("package_cases[{index}].{role}[{row}]"))?;
-            validate_impulse_v1(&values)?;
-            Ok(values)
+            parse_package_channel_v1(
+                value,
+                base,
+                &format!("package_cases[{index}].{role}[{row}]"),
+            )
         })
         .collect()
+}
+
+fn parse_package_channel_v1(
+    value: &Value,
+    base: &Path,
+    field: &str,
+) -> Result<PackageChannelV1, DirectRunErrorV1> {
+    let source_value = value.as_str().or_else(|| {
+        value
+            .as_object()
+            .and_then(|object| object.get("path"))
+            .and_then(Value::as_str)
+    });
+    if let Some(source_value) = source_value {
+        let source = if Path::new(source_value).is_absolute() {
+            PathBuf::from(source_value)
+        } else {
+            base.join(source_value)
+        };
+        let (loaded, source_bytes) = load_channel_input_snapshot_v1(&source)?;
+        return Ok(PackageChannelV1 {
+            values: loaded.values,
+            source: Some(source),
+            source_bytes: Some(source_bytes),
+            already_pulse: loaded.already_pulse,
+            source_sha256: loaded.source_sha256,
+            source_kind: loaded.source_kind,
+        });
+    }
+    let values = parse_f64_array_v1(value, field)?;
+    validate_impulse_v1(&values)?;
+    Ok(PackageChannelV1 {
+        source_sha256: sha256_f64_v1(&values),
+        values,
+        source: None,
+        source_bytes: None,
+        already_pulse: false,
+        source_kind: "package-case-inline-impulse",
+    })
+}
+
+fn load_channel_input_snapshot_v1(
+    path: &Path,
+) -> Result<(ImpulseInputV1, Vec<u8>), DirectRunErrorV1> {
+    let bytes = bounded_read_v1(path, MAX_IMPULSE_FILE_BYTES_V1)?;
+    let extension = path.extension().and_then(|value| value.to_str());
+    let mut staged = std::env::temp_dir().join(format!(
+        "sipi-com-channel-snapshot-{}",
+        sha256_bytes_v1(&bytes)
+    ));
+    if let Some(extension) = extension {
+        staged.set_extension(extension);
+    }
+    fs::write(&staged, &bytes).map_err(|error| DirectRunErrorV1::Input {
+        path: path.display().to_string(),
+        message: format!("cannot stage exact channel bytes: {error}"),
+    })?;
+    let loaded = load_channel_input_v1(&staged);
+    let _ = fs::remove_file(&staged);
+    Ok((loaded?, bytes))
+}
+
+fn stage_exact_input_v1(
+    root: &Path,
+    role: &str,
+    source: &Path,
+    limit: u64,
+) -> Result<(PathBuf, String, &'static str), DirectRunErrorV1> {
+    let bytes = bounded_read_v1(source, limit)?;
+    let mut staged = root.join(format!("{role}-source"));
+    if let Some(extension) = source.extension() {
+        staged.set_extension(extension);
+    }
+    fs::write(&staged, &bytes).map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
+    let source_kind = if source
+        .extension()
+        .and_then(|value| value.to_str())
+        .is_some_and(|value| value.eq_ignore_ascii_case("s4p"))
+    {
+        "s4p-calibration-channel"
+    } else {
+        "json-calibration-channel"
+    };
+    Ok((staged, sha256_bytes_v1(&bytes), source_kind))
+}
+
+fn stage_package_channel_v1(
+    root: &Path,
+    role: &str,
+    index: usize,
+    channel: &PackageChannelV1,
+) -> Result<PathBuf, DirectRunErrorV1> {
+    let mut path = root.join(format!("{role}-{index}"));
+    if let Some(source) = channel.source.as_ref() {
+        if let Some(extension) = source.extension() {
+            path.set_extension(extension);
+        }
+        let bytes = channel.source_bytes.as_ref().ok_or_else(|| {
+            DirectRunErrorV1::Execution("package source snapshot is missing".to_owned())
+        })?;
+        fs::write(&path, bytes).map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
+    } else {
+        path.set_extension("json");
+        fs::write(
+            &path,
+            serde_json::to_vec(&json!({"impulse": channel.values}))
+                .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?,
+        )
+        .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
+    }
+    Ok(path)
+}
+
+fn package_calibration_manifest_v1(
+    identity: &str,
+    source: Option<&PathBuf>,
+    snapshot: Option<&(PathBuf, String, &'static str)>,
+) -> Value {
+    json!({
+        "identity": identity,
+        "source": source,
+        "sha256": snapshot.map(|value| &value.1),
+        "source_kind": snapshot.map(|value| value.2),
+        "materialization": snapshot.map(|_| "staged_exact_bytes")
+    })
 }
 
 fn run_package_cases_v1(
@@ -387,6 +553,11 @@ fn run_package_cases_v1(
         fs::remove_dir_all(&root).map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
     }
     fs::create_dir_all(&root).map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
+    let calibration_snapshot = request
+        .calibration_noise
+        .as_ref()
+        .map(|path| stage_exact_input_v1(&root, "calibration", path, MAX_CONFIG_JSON_BYTES_V1))
+        .transpose()?;
     let mut published_cases = Vec::with_capacity(cases.len());
     let mut case_manifests = Vec::with_capacity(cases.len());
     let mut first_report = None;
@@ -396,38 +567,24 @@ fn run_package_cases_v1(
             fs::create_dir_all(&case_root)
                 .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
             let config_path = case_root.join("config.json");
-            let pulse_path = case_root.join("pulse.json");
+            let pulse_path = stage_package_channel_v1(&case_root, "thru", 0, &case.pulse)?;
             fs::write(
                 &config_path,
                 serde_json::to_vec(&case.document)
                     .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?,
             )
             .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
-            fs::write(
-                &pulse_path,
-                serde_json::to_vec(&json!({"impulse": case.pulse}))
-                    .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?,
-            )
-            .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
             let mut child =
                 DirectRunRequestV1::new(&config_path, &pulse_path, case_root.join("artifacts"));
-            child.calibration_noise = request.calibration_noise.clone();
+            child.calibration_noise = calibration_snapshot.as_ref().map(|value| value.0.clone());
             child.fext = Vec::with_capacity(case.fext.len());
-            for (channel, values) in case.fext.iter().enumerate() {
-                let path = case_root.join(format!("fext-{channel}.json"));
-                let payload = serde_json::to_vec(&json!({"impulse": values}))
-                    .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
-                fs::write(&path, payload)
-                    .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
+            for (channel, source) in case.fext.iter().enumerate() {
+                let path = stage_package_channel_v1(&case_root, "fext", channel, source)?;
                 child.fext.push(path);
             }
             child.next = Vec::with_capacity(case.next.len());
-            for (channel, values) in case.next.iter().enumerate() {
-                let path = case_root.join(format!("next-{channel}.json"));
-                let payload = serde_json::to_vec(&json!({"impulse": values}))
-                    .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
-                fs::write(&path, payload)
-                    .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
+            for (channel, source) in case.next.iter().enumerate() {
+                let path = stage_package_channel_v1(&case_root, "next", channel, source)?;
                 child.next.push(path);
             }
             let report = run_with_workflow(&child, schema)?;
@@ -444,6 +601,54 @@ fn run_package_cases_v1(
             published["case_index"] = json!(index);
             published["case_id"] = json!(case.identity);
             published["package_case_index"] = json!(index);
+            if let Some(path) = case.pulse.source.as_ref() {
+                published["channels"]["thru"] = json!(path);
+            }
+            if !case.fext.is_empty() {
+                let existing = published["channels"]["fext"]
+                    .as_array()
+                    .cloned()
+                    .unwrap_or_default();
+                published["channels"]["fext"] = json!(
+                    case.fext
+                        .iter()
+                        .enumerate()
+                        .map(|(index, channel)| {
+                            channel
+                                .source
+                                .as_ref()
+                                .map(|path| json!(path))
+                                .unwrap_or_else(|| {
+                                    existing.get(index).cloned().unwrap_or(Value::Null)
+                                })
+                        })
+                        .collect::<Vec<_>>()
+                );
+            }
+            if !case.next.is_empty() {
+                let existing = published["channels"]["next"]
+                    .as_array()
+                    .cloned()
+                    .unwrap_or_default();
+                published["channels"]["next"] = json!(
+                    case.next
+                        .iter()
+                        .enumerate()
+                        .map(|(index, channel)| {
+                            channel
+                                .source
+                                .as_ref()
+                                .map(|path| json!(path))
+                                .unwrap_or_else(|| {
+                                    existing.get(index).cloned().unwrap_or(Value::Null)
+                                })
+                        })
+                        .collect::<Vec<_>>()
+                );
+            }
+            if let Some(path) = request.calibration_noise.as_ref() {
+                published["channels"]["calibration_noise"] = json!(path);
+            }
             published["channel_identity"] = json!({
                 "thru": format!("{}:thru", case.identity),
                 "fext": case.fext.iter().enumerate().map(|(channel, _)| {
@@ -458,20 +663,33 @@ fn run_package_cases_v1(
                 "case_id": case.identity,
                 "thru": {
                     "identity": format!("{}:thru", case.identity),
-                    "sha256": sha256_f64_v1(&case.pulse),
-                    "sample_count": case.pulse.len()
+                    "sha256": case.pulse.source_sha256,
+                    "sample_count": case.pulse.values.len(),
+                    "source": case.pulse.source,
+                    "source_kind": case.pulse.source_kind,
+                    "already_pulse": case.pulse.already_pulse
                 },
                 "fext": case.fext.iter().enumerate().map(|(channel, values)| json!({
                     "identity": format!("{}:fext:{channel}", case.identity),
-                    "sha256": sha256_f64_v1(values),
-                    "sample_count": values.len()
+                    "sha256": values.source_sha256,
+                    "sample_count": values.values.len(),
+                    "source": values.source,
+                    "source_kind": values.source_kind,
+                    "already_pulse": values.already_pulse
                 })).collect::<Vec<_>>(),
                 "next": case.next.iter().enumerate().map(|(channel, values)| json!({
                     "identity": format!("{}:next:{channel}", case.identity),
-                    "sha256": sha256_f64_v1(values),
-                    "sample_count": values.len()
+                    "sha256": values.source_sha256,
+                    "sample_count": values.values.len(),
+                    "source": values.source,
+                    "source_kind": values.source_kind,
+                    "already_pulse": values.already_pulse
                 })).collect::<Vec<_>>(),
-                "calibration": {"identity": case.calibration_identity}
+                "calibration": package_calibration_manifest_v1(
+                    &case.calibration_identity,
+                    request.calibration_noise.as_ref(),
+                    calibration_snapshot.as_ref(),
+                )
             }));
             published_cases.push(published);
         }
@@ -928,6 +1146,13 @@ fn validate_request(request: &DirectRunRequestV1) -> Result<(), DirectRunErrorV1
             path: "fext/next channel count".to_owned(),
             limit: MAX_CROSSTALK_CHANNELS_V1 as u64,
         });
+    }
+    if request.calibration_noise.is_some() && (!request.fext.is_empty() || !request.next.is_empty())
+    {
+        return Err(DirectRunErrorV1::InvalidRequest(
+            "calibration_noise is mutually exclusive with FEXT/NEXT in the pinned ChannelSet"
+                .to_owned(),
+        ));
     }
     if request.artifact_id.is_empty()
         || request.artifact_id == "."
@@ -1815,9 +2040,38 @@ fn portable_branch_result_with_sigma_v1(
                 "package_case.pulse",
             )?;
             validate_impulse_v1(&pulse)?;
-            let fext = parse_case_channels_v1(package_case.get("fext"), 0, "fext")?;
-            let next = parse_case_channels_v1(package_case.get("next"), 0, "next")?;
-            (vec![identity], vec![(pulse, fext, next)])
+            let base = request
+                .and_then(|request| request.config.parent())
+                .unwrap_or_else(|| Path::new("."));
+            let fext = parse_case_channels_v1(package_case.get("fext"), base, 0, "fext")?;
+            let next = parse_case_channels_v1(package_case.get("next"), base, 0, "next")?;
+            let pulse_already_pulse = package_case
+                .get("pulse_already_pulse")
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+            let fext_already_pulse = fext
+                .iter()
+                .map(|channel| channel.already_pulse)
+                .collect::<Vec<_>>();
+            let next_already_pulse = next
+                .iter()
+                .map(|channel| channel.already_pulse)
+                .collect::<Vec<_>>();
+            (
+                vec![identity],
+                vec![(
+                    pulse,
+                    fext.into_iter()
+                        .map(|channel| channel.values)
+                        .collect::<Vec<_>>(),
+                    next.into_iter()
+                        .map(|channel| channel.values)
+                        .collect::<Vec<_>>(),
+                    pulse_already_pulse,
+                    fext_already_pulse,
+                    next_already_pulse,
+                )],
+            )
         } else {
             return Err(DirectRunErrorV1::Parameters(
                 "calibration requires parsed package_case channel state (pulse/fext/next)"
@@ -1870,7 +2124,20 @@ fn portable_branch_result_with_sigma_v1(
             .map_err(|_| CalibrationErrorV1::Evaluator)?;
             selected_case_orchestration.clear();
             let mut case_com_db = Vec::with_capacity(case_channels_source.len());
-            for (case_index, (identity, (case_impulse, case_fext, case_next))) in case_identities
+            for (
+                case_index,
+                (
+                    identity,
+                    (
+                        case_impulse,
+                        case_fext,
+                        case_next,
+                        case_already_pulse,
+                        fext_already_pulse,
+                        next_already_pulse,
+                    ),
+                ),
+            ) in case_identities
                 .iter()
                 .zip(case_channels_source.iter())
                 .enumerate()
@@ -1894,7 +2161,7 @@ fn portable_branch_result_with_sigma_v1(
                     source_sha256: sha256_f64_v1(case_impulse),
                     sample_interval_s: None,
                     source_kind: "package-case-channel-state",
-                    already_pulse: false,
+                    already_pulse: *case_already_pulse,
                     causality_correction_db: None,
                     truncation_db: None,
                     causality_iterations: None,
@@ -1912,8 +2179,12 @@ fn portable_branch_result_with_sigma_v1(
                     .clone()
                     .unwrap_or_else(|| case_input.values.clone());
                 let source_pulse =
-                    rectangular_pulse_response_v1(&source_values, calibration_samples_per_ui)
-                        .map_err(|_| CalibrationErrorV1::Evaluator)?;
+                    if case_input.already_pulse && orchestration.effective_values.is_none() {
+                        source_values
+                    } else {
+                        rectangular_pulse_response_v1(&source_values, calibration_samples_per_ui)
+                            .map_err(|_| CalibrationErrorV1::Evaluator)?
+                    };
                 let chain_pulse = orchestration
                     .effective_pulse
                     .clone()
@@ -1929,13 +2200,27 @@ fn portable_branch_result_with_sigma_v1(
                     .map_err(|_| CalibrationErrorV1::Evaluator)?;
                 let mut fext_pulses = case_fext
                     .iter()
-                    .map(|values| rectangular_pulse_response_v1(values, calibration_samples_per_ui))
+                    .enumerate()
+                    .map(|(index, values)| {
+                        if fext_already_pulse.get(index).copied().unwrap_or(false) {
+                            Ok(values.clone())
+                        } else {
+                            rectangular_pulse_response_v1(values, calibration_samples_per_ui)
+                        }
+                    })
                     .collect::<Result<Vec<_>, _>>()
                     .map_err(|_| CalibrationErrorV1::Evaluator)?;
                 fext_pulses.extend(orchestration.effective_fext_pulses.clone());
                 let mut next_pulses = case_next
                     .iter()
-                    .map(|values| rectangular_pulse_response_v1(values, calibration_samples_per_ui))
+                    .enumerate()
+                    .map(|(index, values)| {
+                        if next_already_pulse.get(index).copied().unwrap_or(false) {
+                            Ok(values.clone())
+                        } else {
+                            rectangular_pulse_response_v1(values, calibration_samples_per_ui)
+                        }
+                    })
                     .collect::<Result<Vec<_>, _>>()
                     .map_err(|_| CalibrationErrorV1::Evaluator)?;
                 next_pulses.extend(orchestration.effective_next_pulses.clone());
@@ -4198,7 +4483,10 @@ fn result_value_v1(
                 "thru": request.pulse,
                 "fext": request.fext,
                 "next": request.next,
-                "calibration_noise": null
+                // Keep the source channel identity in the public payload.  The
+                // upstream CaseResult carries this path; dropping it here made
+                // calibration runs look like ordinary COM cases to consumers.
+                "calibration_noise": request.calibration_noise,
             },
             "metrics": {
                 "FOM": selected_fom_db,
@@ -4885,6 +5173,159 @@ mod tests {
             "pkg-b:calibration"
         );
         assert!(report.result["provenance"]["package_cases"]["count"].is_number());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn package_case_file_channels_preserve_source_and_calibration_identity() {
+        let root = temp_root("package-case-files");
+        let config = root.join("params.json");
+        let pulse = root.join("fallback.json");
+        let thru = root.join("thru.json");
+        let fext = root.join("fext.json");
+        let next = root.join("next.json");
+        let calibration = root.join("calibration.json");
+        let output = root.join("artifacts");
+        let base_impulse = pulse_bytes()
+            .chunks_exact(8)
+            .map(|chunk| f64::from_le_bytes(chunk.try_into().unwrap()))
+            .collect::<Vec<_>>();
+        let fext_impulse = base_impulse
+            .iter()
+            .map(|value| value * 0.1)
+            .collect::<Vec<_>>();
+        let next_impulse = base_impulse
+            .iter()
+            .map(|value| value * 0.2)
+            .collect::<Vec<_>>();
+        let calibration_values = json!({
+            "frequency_hz": [0.0, 1.0, 2.0, 3.0],
+            "calibration_sdd21": [[1.0, 0.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0]],
+            "ctle_transfer": [[1.0, 0.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0]],
+            "fb_hz": 4.0,
+            "f_r": 1.0,
+            "f_hp_hz": 0.0,
+            "sigma_bn_v": 1.0,
+            "pass_threshold_db": 0.0,
+            "initial_step_v": 2.0
+        });
+        let mut document = canonical_parameters();
+        document["package_cases"] = json!([{
+            "case_id": "file-case",
+            "calibration_id": "cal-file",
+            "pulse": "thru.json"
+        }]);
+        fs::write(&config, serde_json::to_vec(&document).unwrap()).unwrap();
+        fs::write(
+            &pulse,
+            serde_json::to_vec(&json!({"impulse": base_impulse})).unwrap(),
+        )
+        .unwrap();
+        fs::write(
+            &thru,
+            serde_json::to_vec(&json!({"impulse": base_impulse})).unwrap(),
+        )
+        .unwrap();
+        fs::write(
+            &fext,
+            serde_json::to_vec(&json!({"impulse": fext_impulse})).unwrap(),
+        )
+        .unwrap();
+        fs::write(
+            &next,
+            serde_json::to_vec(&json!({"impulse": next_impulse})).unwrap(),
+        )
+        .unwrap();
+        fs::write(
+            &calibration,
+            serde_json::to_vec(&json!({"portable": {"calibration": calibration_values}})).unwrap(),
+        )
+        .unwrap();
+        let mut request = DirectRunRequestV1::new(&config, &pulse, &output);
+        request.calibration_noise = Some(calibration.clone());
+        let report = run_com_v1(&request).expect("file-backed package case");
+        let case = &report.result["cases"][0];
+        assert_eq!(case["case_id"], "file-case");
+        assert_eq!(case["channels"]["thru"], json!(thru));
+        assert_eq!(case["channels"]["calibration_noise"], json!(calibration));
+        let manifest = &report.result["provenance"]["package_cases"]["manifests"][0];
+        assert_eq!(manifest["calibration"]["identity"], "cal-file");
+        assert_eq!(manifest["calibration"]["source"], json!(calibration));
+        assert_eq!(
+            manifest["calibration"]["source_kind"],
+            "json-calibration-channel"
+        );
+        assert_eq!(
+            manifest["calibration"]["sha256"],
+            sha256_bytes_v1(&fs::read(&calibration).unwrap())
+        );
+        assert_eq!(manifest["thru"]["source"], json!(thru));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn package_calibration_and_crosstalk_are_mutually_exclusive() {
+        let root = temp_root("package-calibration-crosstalk-exclusive");
+        let config = root.join("params.json");
+        let calibration = root.join("calibration.json");
+        let pulse = root.join("pulse.f64le");
+        let mut document = canonical_parameters();
+        document["package_cases"] = json!([{
+            "case_id": "exclusive",
+            "pulse": pulse_bytes().iter().map(|_| 0.0).collect::<Vec<_>>(),
+            "fext": [pulse_bytes().iter().map(|_| 0.0).collect::<Vec<_>>()]
+        }]);
+        fs::write(&config, serde_json::to_vec(&document).unwrap()).unwrap();
+        fs::write(&pulse, pulse_bytes()).unwrap();
+        fs::write(&calibration, b"{}").unwrap();
+        let mut request = DirectRunRequestV1::new(&config, &pulse, root.join("out"));
+        request.calibration_noise = Some(calibration);
+        let error = run_com_v1(&request).expect_err("ChannelSet must reject mixed roles");
+        assert!(
+            matches!(error, DirectRunErrorV1::InvalidRequest(message) if message.contains("mutually exclusive"))
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn package_channel_snapshot_preserves_already_pulse_after_source_mutation() {
+        let root = temp_root("package-channel-snapshot");
+        let source = root.join("thru.json");
+        let stage = root.join("stage");
+        let original = json!({"pulse": [0.0, 1.0, 0.0, 0.0]});
+        fs::write(&source, serde_json::to_vec(&original).unwrap()).unwrap();
+        let channel = parse_package_channel_v1(&json!("thru.json"), &root, "package.pulse")
+            .expect("source snapshot");
+        let original_sha = sha256_bytes_v1(&serde_json::to_vec(&original).unwrap());
+        fs::write(&source, br#"{"pulse":[9.0,9.0,9.0,9.0]}"#).unwrap();
+        fs::create_dir_all(&stage).unwrap();
+        let staged = stage_package_channel_v1(&stage, "thru", 0, &channel).unwrap();
+        let loaded = load_channel_input_v1(&staged).unwrap();
+        assert!(channel.already_pulse);
+        assert_eq!(channel.source_sha256, original_sha);
+        assert_eq!(loaded.source_sha256, original_sha);
+        assert_eq!(loaded.values, vec![0.0, 1.0, 0.0, 0.0]);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn package_case_rejects_json_calibration_channel_alias() {
+        let root = temp_root("package-calibration-alias");
+        let config = root.join("params.json");
+        let pulse = root.join("pulse.f64le");
+        let mut document = canonical_parameters();
+        document["package_cases"] = json!([{
+            "case_id": "alias",
+            "pulse": [0.0, 1.0, 0.0, 0.0],
+            "calibration_channel": {"path": "controls.json"}
+        }]);
+        fs::write(&config, serde_json::to_vec(&document).unwrap()).unwrap();
+        fs::write(&pulse, pulse_bytes()).unwrap();
+        let error = run_com_v1(&DirectRunRequestV1::new(&config, &pulse, root.join("out")))
+            .expect_err("JSON calibration controls must not become a channel");
+        assert!(
+            matches!(error, DirectRunErrorV1::Unsupported(message) if message.contains("per-case calibration"))
+        );
         let _ = fs::remove_dir_all(root);
     }
 
@@ -5821,6 +6262,7 @@ mod tests {
     fn portable_calibration_runs_outer_loop_and_overrides_noise_payload() {
         let root = temp_root("portable-calibration");
         let config = root.join("config.json");
+        let calibration_path = root.join("calibration.json");
         let pulse = root.join("pulse.f64le");
         let complex = vec![[1.0, 0.0]; 4];
         let mut document = canonical_parameters();
@@ -5828,19 +6270,9 @@ mod tests {
             .chunks_exact(8)
             .map(|chunk| f64::from_le_bytes(chunk.try_into().unwrap()))
             .collect::<Vec<_>>();
-        let case_fext = case_pulse
-            .iter()
-            .map(|value| value * 0.1)
-            .collect::<Vec<_>>();
-        let case_next = case_pulse
-            .iter()
-            .map(|value| value * 0.05)
-            .collect::<Vec<_>>();
         document["package_case"] = json!({
             "case_id": "calibration-case",
-            "pulse": case_pulse,
-            "fext": [case_fext],
-            "next": [case_next]
+            "pulse": case_pulse
         });
         document["portable"] = json!({
             "calibration": {
@@ -5855,10 +6287,23 @@ mod tests {
                 "initial_step_v": 2.0
             }
         });
+        fs::write(
+            &calibration_path,
+            serde_json::to_vec(&json!({
+                "portable": {"calibration": document["portable"]["calibration"].clone()}
+            }))
+            .unwrap(),
+        )
+        .unwrap();
         fs::write(&config, serde_json::to_vec(&document).unwrap()).unwrap();
         fs::write(&pulse, pulse_bytes()).unwrap();
-        let report = run_com_v1(&DirectRunRequestV1::new(&config, &pulse, root.join("out")))
-            .expect("calibration branch");
+        let mut request = DirectRunRequestV1::new(&config, &pulse, root.join("out"));
+        request.calibration_noise = Some(calibration_path.clone());
+        let report = run_com_v1(&request).expect("calibration branch");
+        assert_eq!(
+            report.result["cases"][0]["channels"]["calibration_noise"],
+            json!(calibration_path)
+        );
         let branch = &report.result["cases"][0]["diagnostics"]["portable_branches"]["calibration"];
         assert!(branch["selected_noise"]["sigma_bn_v"].as_f64().is_some());
         assert!(
@@ -5878,12 +6323,12 @@ mod tests {
         assert!(
             selected[0]["fext_pulse_sha256"]
                 .as_array()
-                .is_some_and(|values| !values.is_empty())
+                .is_some_and(Vec::is_empty)
         );
         assert!(
             selected[0]["next_pulse_sha256"]
                 .as_array()
-                .is_some_and(|values| !values.is_empty())
+                .is_some_and(Vec::is_empty)
         );
         let per_sigma = branch["per_sigma_search_orchestration"]
             .as_array()
@@ -5892,7 +6337,7 @@ mod tests {
         assert_ne!(per_sigma[0]["sigma_ne_v"], per_sigma[1]["sigma_ne_v"]);
         assert_eq!(
             report.result["cases"][0]["diagnostics"]["crosstalk_inputs"]["integrated_into_metrics"],
-            true
+            false
         );
         assert!(
             report.result["cases"][0]["metrics"]["calibration_sigma_bn_v"]
