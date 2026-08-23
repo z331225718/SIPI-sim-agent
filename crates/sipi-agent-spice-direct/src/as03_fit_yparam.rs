@@ -1939,8 +1939,20 @@ mod tests {
         let root = std::env::temp_dir().join(format!("sipi-as03-fit-{}", std::process::id()));
         fs::create_dir_all(&root).unwrap();
         let input = root.join("network.s3p");
-        let row = std::iter::repeat_n("0", 18).collect::<Vec<_>>().join(" ");
-        fs::write(&input, format!("# GHz S RI R 50\n0.1 {row}\n1.0 {row}\n")).unwrap();
+        let row_low = [
+            0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.1, 0.0,
+        ]
+        .iter()
+        .map(ToString::to_string)
+        .collect::<Vec<_>>()
+        .join(" ");
+        let row_high = row_low.replacen("0.1", "0.12", 3);
+        fs::write(
+            &input,
+            format!("# GHz S RI R 50\n0.1 {row_low}\n1.0 {row_high}\n"),
+        )
+        .unwrap();
         let options = FitYparamOptions {
             n_poles_real: 1,
             n_poles_cmplx: 0,
