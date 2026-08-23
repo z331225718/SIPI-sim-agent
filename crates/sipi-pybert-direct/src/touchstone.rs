@@ -323,11 +323,11 @@ fn parse_two_column_response(
                     .into(),
             ));
         }
-        samples.push((time, Complex64::new(value, 0.0)));
+        samples.push((time, value));
     }
-    validate_frequency_rows(&samples)?;
+    validate_time_rows(&samples)?;
     let mut values = (0..sample_count)
-        .map(|index| interpolate(&samples, index as f64 * sample_interval.0).re)
+        .map(|index| interpolate_real(&samples, index as f64 * sample_interval.0))
         .collect::<Vec<_>>();
     let is_step = step.unwrap_or_else(|| {
         values.last().copied().is_some_and(|last| {
@@ -409,7 +409,7 @@ fn read_touchstone_text(path: &Path) -> Result<String, TouchstoneError> {
         .map_err(|_| TouchstoneError::InvalidData("file must be UTF-8".into()))
 }
 
-fn validate_frequency_rows(samples: &[(f64, Complex64)]) -> Result<(), TouchstoneError> {
+fn validate_time_rows(samples: &[(f64, f64)]) -> Result<(), TouchstoneError> {
     if samples.len() < 2 || samples.windows(2).any(|pair| pair[1].0 <= pair[0].0) {
         return Err(TouchstoneError::InvalidData(
             "frequency/time rows must contain at least two strictly increasing points".into(),
@@ -540,6 +540,48 @@ fn interpolate(samples: &[(f64, Complex64)], frequency: f64) -> Complex64 {
     let (left_frequency, left) = samples[index - 1];
     let (right_frequency, right) = samples[index];
     let ratio = (frequency - left_frequency) / (right_frequency - left_frequency);
+    // scikit-rf's ``coords="polar"`` interpolation used by the pinned
+    // PyBERT loader interpolates magnitude and phase, not the real and
+    // imaginary components independently.  Interpolate along the shortest
+    // phase arc so a wrapped +/-pi boundary does not invent a deep notch.
+    let magnitude = left.norm() + (right.norm() - left.norm()) * ratio;
+    let left_phase = left.arg();
+    let raw_phase_delta = right.arg() - left_phase;
+    // Match NumPy unwrap's strict ``abs(delta) > pi`` rule: an exact +/-pi
+    // delta is retained rather than folded to the opposite direction.
+    let phase_delta = if raw_phase_delta.abs() > std::f64::consts::PI {
+        raw_phase_delta - raw_phase_delta.signum() * std::f64::consts::TAU
+    } else {
+        raw_phase_delta
+    };
+    Complex64::from_polar(magnitude, left_phase + phase_delta * ratio)
+}
+
+/// Linear interpolation for PyBERT's real-valued import_time response files.
+/// This is intentionally separate from complex Touchstone interpolation:
+/// step/impulse files carry signed real samples and must not acquire a polar
+/// magnitude/phase interpretation.
+fn interpolate_real(samples: &[(f64, f64)], time: f64) -> f64 {
+    if time < samples[0].0 {
+        return 0.0;
+    }
+    if (time - samples[0].0).abs() <= f64::EPSILON {
+        return samples[0].1;
+    }
+    let Some(last) = samples.last() else {
+        return 0.0;
+    };
+    if time >= last.0 {
+        return if (time - last.0).abs() <= f64::EPSILON {
+            last.1
+        } else {
+            0.0
+        };
+    }
+    let index = samples.partition_point(|(sample_time, _)| *sample_time < time);
+    let (left_time, left) = samples[index - 1];
+    let (right_time, right) = samples[index];
+    let ratio = (time - left_time) / (right_time - left_time);
     left + (right - left) * ratio
 }
 
@@ -582,6 +624,60 @@ mod tests {
         )
         .unwrap();
         assert!(parse_s2p_response(&path, Seconds(1.0e-12), 64, Ohms(50.0), Ohms(50.0)).is_ok());
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn polar_interpolation_preserves_a_wrapped_phase_arc() {
+        let samples = [
+            (0.0, Complex64::from_polar(1.0, 170.0_f64.to_radians())),
+            (2.0, Complex64::from_polar(1.0, -170.0_f64.to_radians())),
+        ];
+        let midpoint = interpolate(&samples, 1.0);
+        assert!((midpoint.re + 1.0).abs() < 1.0e-12);
+        assert!(midpoint.im.abs() < 1.0e-12);
+    }
+
+    #[test]
+    fn polar_interpolation_keeps_exact_pi_ties_directional() {
+        let positive = interpolate(
+            &[
+                (0.0, Complex64::from_polar(1.0, 0.0)),
+                (2.0, Complex64::from_polar(1.0, std::f64::consts::PI)),
+            ],
+            1.0,
+        );
+        let negative = interpolate(
+            &[
+                (0.0, Complex64::from_polar(1.0, 0.0)),
+                (2.0, Complex64::from_polar(1.0, -std::f64::consts::PI)),
+            ],
+            1.0,
+        );
+        assert!(positive.im > 0.99);
+        assert!(negative.im < -0.99);
+    }
+
+    #[test]
+    fn real_interpolation_preserves_signed_crossing() {
+        let samples = [(0.0, -2.0), (2.0, 2.0)];
+        assert_eq!(interpolate_real(&samples, 0.5), -1.0);
+        assert_eq!(interpolate_real(&samples, 1.0), 0.0);
+        assert_eq!(interpolate_real(&samples, 1.5), 1.0);
+    }
+
+    #[test]
+    fn two_column_impulse_keeps_signed_crossing_samples() {
+        let path =
+            std::env::temp_dir().join(format!("pb-time-sign-{}.impulse", std::process::id()));
+        fs::write(&path, "0 -2\n1 0\n2 2\n").unwrap();
+        let response =
+            parse_two_column_response(&path, Seconds(1.0), 3, Ohms(50.0), Ohms(50.0), Some(false))
+                .unwrap();
+        assert_eq!(
+            response.impulse_response_volts_per_second,
+            vec![-2.0, 0.0, 2.0]
+        );
         let _ = fs::remove_file(path);
     }
 
