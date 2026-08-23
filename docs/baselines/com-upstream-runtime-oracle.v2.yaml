@@ -1,0 +1,29 @@
+schema: sipi.com-upstream-runtime-oracle.v2
+status: portable_numeric_observed_full_entrypoint_blocked
+upstream: {commit: 5272ffe74702cd585054d975559b06f8afae7b6e, tree: 7094ab6e84989b218730c52432c70da10261f8ea, archive_sha256: a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf, declared_license: MIT, materialization: git archive at immutable commit, runtime_source: pinned_archive_materialization, observation_scope: upstream_only, runtime_executed: true}
+oracle_contract:
+  portable_leaf: [constrained_mmse, force_rx_ffe, calibrate_receiver_noise]
+  full_entrypoint: agent_com.api.run_com
+  entrypoint_timeout_seconds: 15
+  entrypoint_blocker: r480_nonmmse_search_exceeds_bounded_probe_budget
+  dependencies: [numpy, scipy]
+  matlab_engine_requested: false
+  full_run_numeric_parity: false
+evidence:
+  com-02:
+    reports:
+      - {path: docs/baselines/com-02-upstream-runtime-oracle-v2-run1.json, sha256: 2a418a7cb199bd23d5c7d53c222f159233b463c8db4e58aa1fd1d8208400ca9d, run_id: com-02-upstream-v2-9, nonce: fbfe14a153099477021444cd324c809c713c6fc2b5d9d25beb0584a1efdcdae9}
+      - {path: docs/baselines/com-02-upstream-runtime-oracle-v2-run2.json, sha256: 3679114396f07997589aaaf56607120567f874f23197a8de372f0783abfd2023, run_id: com-02-upstream-v2-10, nonce: 597662a907a7d80fb3d7662563b8a14e721b2a062be14fb1ff473b4055701a76}
+    aggregate: {path: docs/baselines/com-02-upstream-runtime-oracle-v2-aggregate.json, sha256: 2d0e3c110b1c12e46f5e419fd3624a0122b5e27aba4ca2d58e0790f849c04e75}
+  com-04:
+    reports:
+      - {path: docs/baselines/com-04-upstream-runtime-oracle-v2-run1.json, sha256: 01d530239f22876d9507f9f2101b273271b05127dd5602d379a9e538338d3a12, run_id: com-04-upstream-v2-9, nonce: 3c1b776aedee5fa333bf39d91e000a6f1fce03d1a33d7cf2665add501f2b623b}
+      - {path: docs/baselines/com-04-upstream-runtime-oracle-v2-run2.json, sha256: 2e5791da41b0f4cb0852e7d9c14701a5f68453ba09c3dd0bdd4b3985db5fb1dc, run_id: com-04-upstream-v2-10, nonce: 81433c77af897a1a94c845856bd09ed9d5f084ca3319a0e1ea2723b218fe83de}
+    aggregate: {path: docs/baselines/com-04-upstream-runtime-oracle-v2-aggregate.json, sha256: dfb1bebb199bca6cfb07ffb060846f5ffc025577f9200bdbd4630397e967b460}
+execution_binding:
+  runner: {path: tools/run_com_upstream_oracle_probe_v2.py, sha256: 4ad0fffdaca4b1e581a43bb92a48cddb93ef630e651025f1856bcc96bef318c8}
+  aggregate: {path: tools/aggregate_com_upstream_oracle_probe_v2.py, sha256: 67f78f3c47d5626a54d74d9805065397d5ddbef6b1011a7cc5f5bcd66463107a}
+  verifier: {path: tools/verify_com_upstream_oracle_probe_v2.py, sha256: 275162a0be238ac39b82c29206ed319d88044eeb3ad6355bb80c53d227f5e09a}
+  mutations: {path: tools/test_verify_com_upstream_oracle_probe_v2.py, sha256: 6fb669075b1d7ab063989ffddb1449497cf970b967bb8da4787c6fbfbedbd6fb}
+  audit: {path: docs/baselines/audits/2026-08-23-com-upstream-runtime-oracle-v2.md, sha256: 52d07a557c67a47f4ffee1968df468f9f0354eea9935a53933941d94a1a7b992}
+non_claims: [no_full_run_numeric_parity, no_release_or_promotion, no_global_migration_row_close]

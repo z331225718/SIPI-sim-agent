@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: e68fe9db50a7eb62f2cde342f896dd959777f9a5eab5c3c4c2162c812def492e
+  tracked_paths_sha256: d190aef09996d4e2da9b459db26fbc10a14fd418b39deb14e7694cb098462282
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -5123,7 +5123,31 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/as-01-clean-archive-v3-aggregate.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/as-01-clean-archive-v3-run-01.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/as-01-clean-archive-v3-run-02.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/as-01-fit-sparam-bound-aggregate.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/as-01-fit-sparam-bound-clean-archive-v3.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -5207,6 +5231,30 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/as-02-fit-sparam-cascade-numeric-bound-v2.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/as-02-numeric-bound-v2-aggregate.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/as-02-numeric-bound-v2-run-01.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/as-02-numeric-bound-v2-run-02.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/as-03-direct-replay-aggregate.v1.json:
       rule: historical-docs
       class: migration_only
@@ -5250,6 +5298,30 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/as-03-fit-yparam-direct-port.v2.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/as-03-fit-yparam-numeric-bound-v2.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/as-03-numeric-bound-v2-aggregate.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/as-03-numeric-bound-v2-run-01.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/as-03-numeric-bound-v2-run-02.json:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -9245,6 +9317,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-23-as-01-fit-sparam-clean-archive-v3.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-23-as-01-fit-sparam-direct-port-v2.md:
       rule: historical-docs
       class: migration_only
@@ -9258,6 +9336,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-23-as-02-06-branch-coverage-matrix.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-23-as-02-as-03-numeric-bound-v2.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -9377,6 +9461,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-23-com-upstream-runtime-oracle-v2.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-23-p5-08f-specified-com-artifact-route-v2.md:
       rule: historical-docs
       class: migration_only
@@ -9384,6 +9474,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-23-pb-01-current-bound.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-23-pb-01-current-d3154093.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -9431,6 +9527,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-23-pb-02-current-d3154093.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/audits/2026-08-23-pb-02-direct-port-v2.md:
       rule: historical-docs
       class: migration_only
@@ -9450,6 +9552,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/audits/2026-08-23-pb-03-direct-replay-bound.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/audits/2026-08-23-pb-03-legacy-branch-coverage-d3154093.md:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -9749,6 +9857,24 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/com-02-upstream-runtime-oracle-v2-aggregate.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/com-02-upstream-runtime-oracle-v2-run1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/com-02-upstream-runtime-oracle-v2-run2.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/com-03-direct-port-bound-oracle-aggregate.v2.json:
       rule: historical-docs
       class: migration_only
@@ -9845,6 +9971,24 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/com-04-upstream-runtime-oracle-v2-aggregate.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/com-04-upstream-runtime-oracle-v2-run1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/com-04-upstream-runtime-oracle-v2-run2.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/com-clean-archive-rust-tests.v2.json:
       rule: historical-docs
       class: migration_only
@@ -9882,6 +10026,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/com-upstream-adapter.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/com-upstream-runtime-oracle.v2.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -16595,6 +16745,30 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/pb-01-legacy-leaf-current-d3154093-aggregate.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/pb-01-legacy-leaf-current-d3154093-run-01.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/pb-01-legacy-leaf-current-d3154093-run-02.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/pb-01-legacy-leaf-current-d3154093.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/pb-01-legacy-leaf-replay-bound-aggregate.v1.json:
       rule: historical-docs
       class: migration_only
@@ -16644,6 +16818,30 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/pb-02-05-branch-coverage-matrix.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/pb-02-direct-current-d3154093-aggregate.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/pb-02-direct-current-d3154093-run-01.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/pb-02-direct-current-d3154093-run-02.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/pb-02-direct-current-d3154093.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -16752,6 +16950,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/pb-03-direct-replay-current-bound-run-archive-02.v1.json:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/pb-03-legacy-branch-coverage-d3154093.v1.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -22475,6 +22679,18 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/aggregate_as_01_fit_sparam_bound_v3.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/aggregate_as_02_03_numeric_bound_v2.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/aggregate_as_02_fit_sparam_cascade.py:
       rule: migration-tools
       class: migration_only
@@ -22553,6 +22769,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/aggregate_com_upstream_oracle_probe_v2.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/aggregate_pb_01_direct_replay.py:
       rule: migration-tools
       class: migration_only
@@ -22596,6 +22818,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/aggregate_pb_current_bound.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/aggregate_pb_d3154093.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -22979,7 +23207,19 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/run_as_01_fit_sparam_bound_v3.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/run_as_01_fit_sparam_oracle.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/run_as_02_03_numeric_bound_v2.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -23070,6 +23310,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/run_com_portable_upstream_oracle.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/run_com_upstream_oracle_probe_v2.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -25463,7 +25709,19 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_as_01_fit_sparam_clean_archive_v3.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_as_01_fit_sparam_direct_port.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_as_02_03_numeric_bound_v2.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -25638,6 +25896,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_com_upstream_adapter.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_com_upstream_oracle_probe_v2.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -28787,6 +29051,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_pb_03_branch_coverage_d3154093.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/test_verify_pb_03_direct_replay_bound.py:
       rule: migration-tools
       class: migration_only
@@ -28806,6 +29076,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/test_verify_pb_current_bound.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/test_verify_pb_d3154093.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -28937,6 +29213,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_as_01_fit_sparam_clean_archive_v3.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_as_01_fit_sparam_direct_port.py:
       rule: migration-tools
       class: migration_only
@@ -28944,6 +29226,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_as_01_fit_sparam_direct_port_v2.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_as_02_03_numeric_bound_v2.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -29220,6 +29508,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_com_upstream_adapter.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_com_upstream_oracle_probe_v2.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -32519,6 +32813,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/verify_pb_03_branch_coverage_d3154093.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_pb_03_direct_replay_bound.py:
       rule: migration-tools
       class: migration_only
@@ -32538,6 +32838,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_pb_current_bound.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_pb_d3154093.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest

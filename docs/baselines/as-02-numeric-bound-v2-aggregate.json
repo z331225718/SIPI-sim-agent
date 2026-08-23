@@ -1,0 +1,72 @@
+{
+  "blockers": [],
+  "candidate": {
+    "archive_sha256": "02aefc5b1e23b22bc1716e9c2d7ada2905d57af68443cf9728c72bddb03eb0e4",
+    "commit": "9914a23dc747d94405f2fed9227538ae7aea8629",
+    "tree": "94a25c6254fdec3802b4946ec777ce65f22fdc0c"
+  },
+  "custody_valid": true,
+  "metrics": {
+    "candidate_block_rms": [
+      0.09972630684572593,
+      0.09972630684572593
+    ],
+    "candidate_cascade_mean_rms": 0.09868363144266268,
+    "upstream_block_rms": [
+      0.06916905397206313,
+      0.06916905397206313
+    ],
+    "upstream_cascade_mean_rms": 0.08305707108701127
+  },
+  "non_claims": [
+    "Numeric mismatch remains open.",
+    "No acceptance tolerance or product parity is claimed."
+  ],
+  "numeric_parity": false,
+  "parity_claim": false,
+  "reports": [
+    {
+      "fresh_run_nonce": "5ef5e42322b58ecacbd58dd213f66f489135e1708013f1f4d6ba213e962b328f",
+      "path": "docs/baselines/as-02-numeric-bound-v2-run-01.json",
+      "run_id": "20260823-as02-v2-05",
+      "sha256": "59892913a8d2dc18a8e7e9bcf1424ce78c55e60ce85a6d6b838ffdf0fac05234"
+    },
+    {
+      "fresh_run_nonce": "0e0ad89dcf4889b05cb6ee630f7fe421a0e60df8c25a3483a55d95d626a99fb9",
+      "path": "docs/baselines/as-02-numeric-bound-v2-run-02.json",
+      "run_id": "20260823-as02-v2-06",
+      "sha256": "cbe4c7999fb3c8bf12a283b4b84ce4f1e2d21baf51cfbe7b2bcef60e9847dbf2"
+    }
+  ],
+  "schema": "sipi.agent-spice-as-numeric-bound-aggregate.v2",
+  "status": "completed_numeric_mismatch_open",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "exit_code": 0,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "role": "cargo",
+      "version_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "python": {
+      "executable": "python.exe",
+      "exit_code": 0,
+      "file_sha256": "6293eebb696b1ed1221e9681f75f7df97e0be89cd9028ccee3221ed5fc826ee5",
+      "role": "python",
+      "version_sha256": "63ec139701a7903093eaa52dcfbd3f9dfd8a551ca5d992c1a938ce365089c26a"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "exit_code": 0,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "role": "rustc",
+      "version_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  },
+  "workflow": "AS-02"
+}

@@ -1,0 +1,41 @@
+schema: sipi.as-02-fit-sparam-cascade-numeric-bound.v2
+status: completed_numeric_mismatch_open
+parity_claim: false
+numeric_parity: false
+source:
+  candidate:
+    commit: 9914a23dc747d94405f2fed9227538ae7aea8629
+    tree: 94a25c6254fdec3802b4946ec777ce65f22fdc0c
+    archive_sha256: 02aefc5b1e23b22bc1716e9c2d7ada2905d57af68443cf9728c72bddb03eb0e4
+  upstream:
+    commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+    tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+    archive_sha256: a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144
+    license: MIT
+harness:
+  runner:
+    path: tools/run_as_02_03_numeric_bound_v2.py
+    sha256: dc5d52a6ee00c634d1a203dfb6af117cc5b3e25b5c8cdc2133ef383c09aa0bcc
+  aggregator:
+    path: tools/aggregate_as_02_03_numeric_bound_v2.py
+    sha256: d4c32ceeeb521fe184b0899a51579dadef59f7ca8d50461fb16a6d0ccc8b7e44
+  verifier:
+    path: tools/verify_as_02_03_numeric_bound_v2.py
+    sha256: 10086d0f3c6e19526f3f2825174f38c861ab434fdc8d62151193765b1c419d4d
+  mutation_tests:
+    path: tools/test_verify_as_02_03_numeric_bound_v2.py
+    sha256: 08c950062efd1a597a3757171265931fb7f1375f43fb5a1e8b5f02899dde9853
+reports:
+  - path: docs/baselines/as-02-numeric-bound-v2-run-01.json
+    sha256: 59892913a8d2dc18a8e7e9bcf1424ce78c55e60ce85a6d6b838ffdf0fac05234
+  - path: docs/baselines/as-02-numeric-bound-v2-run-02.json
+    sha256: cbe4c7999fb3c8bf12a283b4b84ce4f1e2d21baf51cfbe7b2bcef60e9847dbf2
+aggregate:
+  path: docs/baselines/as-02-numeric-bound-v2-aggregate.json
+  sha256: 74b288241236cd365997e569867736d426d00a2ee25128908c05837d7fee41a2
+audit:
+  path: docs/baselines/audits/2026-08-23-as-02-as-03-numeric-bound-v2.md
+  sha256: 4df48bb4debbb2475a09d7cdbb5b05beb84ea98a0c204510e0e7ea77b461fccb
+non_claims:
+  - no_numeric_parity
+  - no_acceptance_tolerance

@@ -1,0 +1,562 @@
+{
+  "artifact_contract": {
+    "array_key_policy": "exact_set_equal_to_canonical_item_names",
+    "canonical_item_names": [
+      "chnl_h",
+      "tx_out_h",
+      "ctle_out_h",
+      "dfe_out_h",
+      "chnl_s",
+      "tx_s",
+      "ctle_s",
+      "dfe_s",
+      "tx_out_s",
+      "ctle_out_s",
+      "dfe_out_s",
+      "chnl_p",
+      "tx_out_p",
+      "ctle_out_p",
+      "dfe_out_p",
+      "chnl_H",
+      "tx_H",
+      "ctle_H",
+      "dfe_H",
+      "tx_out_H",
+      "ctle_out_H",
+      "dfe_out_H",
+      "tx_out"
+    ],
+    "result_suffix": ".pybert_data",
+    "rust_codec": "python_pickle_dict_sipi.pybert_data.v1",
+    "selected_arrays": [
+      "chnl_h",
+      "tx_out_h",
+      "ctle_out_h",
+      "dfe_out_h",
+      "chnl_s",
+      "tx_out_s",
+      "ctle_out_s",
+      "dfe_out_s",
+      "chnl_p",
+      "tx_out_p",
+      "ctle_out_p",
+      "dfe_out_p"
+    ],
+    "upstream_codec": "PyBertData_pickle"
+  },
+  "candidate": {
+    "archive_sha256": "693c95330b36f0a8068db3ce9a44bf4d45bfd1b73f47189d8149d67cfd909a24",
+    "cargo_lock_sha256": "e90ff36b11380104b1fb9421609a929a2a6e94d8527e9282867f56a458d796ab",
+    "commit": "d3154093fd58aeaa596444825dc17be6cb7e35c0",
+    "inventory": {
+      "entries": [
+        {
+          "bytes": 16221,
+          "path": "crates/sipi-pybert-direct/Cargo.lock",
+          "sha256": "e90ff36b11380104b1fb9421609a929a2a6e94d8527e9282867f56a458d796ab"
+        },
+        {
+          "bytes": 1007,
+          "path": "crates/sipi-pybert-direct/Cargo.toml",
+          "sha256": "f815c121e3cf7291bedd08abf37439d7f446667452d7649827dee58acf5a2365"
+        },
+        {
+          "bytes": 2842,
+          "path": "crates/sipi-pybert-direct/NOTICE-PYBERT-LICENSE-BOUNDARY.md",
+          "sha256": "77c20eb0cc8411b7826666e6673b7c388ce508fd80029e0d302a116fa5d237e6"
+        },
+        {
+          "bytes": 1751,
+          "path": "crates/sipi-pybert-direct/NOTICE-PYBERT-PB01-DIRECT-PORT.md",
+          "sha256": "dc5f0d7fc13296e0609ae7b2f32014532997759243da9ef24b63bcd6c01cc9aa"
+        },
+        {
+          "bytes": 2093,
+          "path": "crates/sipi-pybert-direct/SOURCE-MAP-PB01.md",
+          "sha256": "251ed57342908225f8fc71ef2c3e3a22ad04c50d8a6ee8488d7df70a5dcaa8a5"
+        },
+        {
+          "bytes": 1512,
+          "path": "crates/sipi-pybert-direct/SOURCE-MAP.md",
+          "sha256": "77a539c3b089740719fe9152e43f4faf5e4359248df87d647e3685ab5d6699ed"
+        },
+        {
+          "bytes": 1171,
+          "path": "crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml",
+          "sha256": "d63bb7ab3466ae70406cd2a555ae5a95cda1264021fed8fb1cdca85da961cc48"
+        },
+        {
+          "bytes": 1245,
+          "path": "crates/sipi-pybert-direct/fixtures/pb-02-nrz.json",
+          "sha256": "5bcd0b905f8a7f0ec5e2b7c3761a998e9553ac24a71b54f8b0d4e8e84261ea13"
+        },
+        {
+          "bytes": 1170,
+          "path": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+          "sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f"
+        },
+        {
+          "bytes": 3407,
+          "path": "crates/sipi-pybert-direct/src/analysis.rs",
+          "sha256": "a1e2f15ca445bab1ac5cc95262b929ebf8caa90bf02d9f3e780d367db6aa066a"
+        },
+        {
+          "bytes": 5474,
+          "path": "crates/sipi-pybert-direct/src/bathtub.rs",
+          "sha256": "919f6d21c1fbc30a20258aa9d41319e3dde0ce7d013c392e4cba79d56d66f6b5"
+        },
+        {
+          "bytes": 8038,
+          "path": "crates/sipi-pybert-direct/src/bin/sipi-pybert-direct.rs",
+          "sha256": "8428a01ea6920b6853938cb0627d6e05af7743a80b0ae3ac5e236908c84c16a1"
+        },
+        {
+          "bytes": 1202,
+          "path": "crates/sipi-pybert-direct/src/capabilities.rs",
+          "sha256": "b09364910dfadf8c13efe5818c1b17cc9853b4055f29a7ac1c388cb28121f0b6"
+        },
+        {
+          "bytes": 8424,
+          "path": "crates/sipi-pybert-direct/src/channel.rs",
+          "sha256": "91961d25a6d4d604c78e6eedd42c5dbed0eba3e6bee85f624f901168ffa327ca"
+        },
+        {
+          "bytes": 12845,
+          "path": "crates/sipi-pybert-direct/src/decoder.rs",
+          "sha256": "81da93d719ca69542046a9ffef071d3876aad62830dfbb161ad76fb0121567f0"
+        },
+        {
+          "bytes": 4833,
+          "path": "crates/sipi-pybert-direct/src/equalization.rs",
+          "sha256": "fa286b527fc023f70edeb60777006ef431252527890098f63672b054fc11b295"
+        },
+        {
+          "bytes": 2911,
+          "path": "crates/sipi-pybert-direct/src/error.rs",
+          "sha256": "2392b0e657fcb20881976d8c7d9540f32dc2ad139006de6890e29acae9cbb247"
+        },
+        {
+          "bytes": 856,
+          "path": "crates/sipi-pybert-direct/src/event.rs",
+          "sha256": "b95d3b26a96529e9723681c6b123f702ec2decef49e429f59f554bbee8dd60f5"
+        },
+        {
+          "bytes": 24823,
+          "path": "crates/sipi-pybert-direct/src/input.rs",
+          "sha256": "b9805f54b79b0097726e36f4d683e0fffeb15a11aa1e11a4a31b886ec442a97a"
+        },
+        {
+          "bytes": 24270,
+          "path": "crates/sipi-pybert-direct/src/jitter.rs",
+          "sha256": "0f1fcc46d026b43edf13da64262833d2ac004a06369e584f5094f801296288c8"
+        },
+        {
+          "bytes": 81021,
+          "path": "crates/sipi-pybert-direct/src/legacy_runtime.rs",
+          "sha256": "a6e802ec8bf5d4ac9a44399657846897b8a1ed0eb10f9bc9c6c60931c92bf9ac"
+        },
+        {
+          "bytes": 8996,
+          "path": "crates/sipi-pybert-direct/src/legacy_sim.rs",
+          "sha256": "c190daba96a71ebb9b8d60af1c3deb56e76b812a95d73d9c6fa3219ecb7e9eba"
+        },
+        {
+          "bytes": 4502,
+          "path": "crates/sipi-pybert-direct/src/lib.rs",
+          "sha256": "c564bd0f976e40e605ed97aa36da0fa13e8a0eed7281746a4c1d30943d610e50"
+        },
+        {
+          "bytes": 26039,
+          "path": "crates/sipi-pybert-direct/src/numpy_normal.rs",
+          "sha256": "e5f9baff2d0a808ff77e01835023f42f6bfe6a990b62173254f128cffda2e4ca"
+        },
+        {
+          "bytes": 4359,
+          "path": "crates/sipi-pybert-direct/src/output.rs",
+          "sha256": "74a54504c38424532f19fa0f6a9b22942b07694ef771d4d3ab37dda1e7b3b1ac"
+        },
+        {
+          "bytes": 3707,
+          "path": "crates/sipi-pybert-direct/src/pattern.rs",
+          "sha256": "1c414cb04a54b9c46d09651d6909baaee925670d6a431a264ce9d45eced99274"
+        },
+        {
+          "bytes": 6332,
+          "path": "crates/sipi-pybert-direct/src/pipeline.rs",
+          "sha256": "10cd44ebb38ae35d7eec5324eabe9c3b9b1b33353c1315069ae1fcb85f82695f"
+        },
+        {
+          "bytes": 22895,
+          "path": "crates/sipi-pybert-direct/src/receiver.rs",
+          "sha256": "1794615295afc3e9aebdcb76dc140106f12a93c6ce781bc0828c450392e4ec43"
+        },
+        {
+          "bytes": 64597,
+          "path": "crates/sipi-pybert-direct/src/reference_runtime.rs",
+          "sha256": "f7710ffd976f6c6e09ef2ccd443a4e7a2b7ec666b093c2793c94ad3cbee43932"
+        },
+        {
+          "bytes": 3246,
+          "path": "crates/sipi-pybert-direct/src/response.rs",
+          "sha256": "9812483ad36a306103a0ea7830c49c4e1a0a71aae383d2a05fcbbc7f711902bd"
+        },
+        {
+          "bytes": 44872,
+          "path": "crates/sipi-pybert-direct/src/runner.rs",
+          "sha256": "0c6c17765720d3a4d193f3ab9121ce0d8e9304419afffeed4b2058fa11bc4dc9"
+        },
+        {
+          "bytes": 8362,
+          "path": "crates/sipi-pybert-direct/src/signal.rs",
+          "sha256": "d9ddaa2941dff69722c78823e55d223222aff25f8b38c493c956771d567b6557"
+        },
+        {
+          "bytes": 85833,
+          "path": "crates/sipi-pybert-direct/src/simulation.rs",
+          "sha256": "35074fe873d30e2854999d2ff60bd7d86ba0f89965cdc425a1b456b797e4ad6e"
+        },
+        {
+          "bytes": 43953,
+          "path": "crates/sipi-pybert-direct/src/statistical_eye.rs",
+          "sha256": "d7b98d3fb6efee9f5589877140882bd8f7843edf63d6534fc69ad86eef73fc3e"
+        },
+        {
+          "bytes": 24965,
+          "path": "crates/sipi-pybert-direct/src/touchstone.rs",
+          "sha256": "1003f00587c6c168338e1111b550df22ee49682c07a259ee1ea6e54107e5ae86"
+        },
+        {
+          "bytes": 452,
+          "path": "crates/sipi-pybert-direct/src/units.rs",
+          "sha256": "df775c9a0157cd9e52391cf6a6623db3bb316108d0dbe525ad7a053375d1cd03"
+        },
+        {
+          "bytes": 50793,
+          "path": "crates/sipi-pybert-direct/src/workflows.rs",
+          "sha256": "f48b441dd5e23dc54f8208fb8291cf8890fce599e28797699e04e1c5d6f6141c"
+        },
+        {
+          "bytes": 9051,
+          "path": "crates/sipi-pybert-direct/tests/direct.rs",
+          "sha256": "0d7981733c51820153eaaaedecfd93a8782d978e773bf0d348e6a17afa1ec14c"
+        },
+        {
+          "bytes": 12063,
+          "path": "crates/sipi-pybert-direct/tests/legacy_runtime.rs",
+          "sha256": "419771185c84a949003183d2dd891e39e225715ab7717bbe7d52c14ee8607e21"
+        },
+        {
+          "bytes": 19327,
+          "path": "crates/sipi-pybert-direct/tests/native_branch_matrix.rs",
+          "sha256": "a54694b0f38a24a371a1949fe19d099d50680b6fb0230aef24f7893c00aa7e26"
+        },
+        {
+          "bytes": 16657,
+          "path": "crates/sipi-pybert-direct/tests/workflows.rs",
+          "sha256": "02dfbd89b14a0303f72ad53fa1868e1691b8a4c18a4dda6a6c47a675518cf238"
+        }
+      ],
+      "sha256": "ea550701da812ed7c9952f034202e7285f9d3ba38f933536d41bf9d2b5e9dce6"
+    },
+    "rust_toolchain_sha256": "3cc13c37191008eaab5490eea2136223fa1bc5b5d2aa9c74a199a0c0c854aa90",
+    "tree": "2d51e84554558bb4947c0152259af9bf7f927efe"
+  },
+  "fixture": {
+    "archive_present": true,
+    "bytes": 1171,
+    "path": "crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml",
+    "sha256": "d63bb7ab3466ae70406cd2a555ae5a95cda1264021fed8fb1cdca85da961cc48"
+  },
+  "fresh_run_nonce": "758274ea16d0db4674a8f0ba3aed10d27aa586140e3872f2abf0d1d52700aa68",
+  "harness": {
+    "custody_runner_helper": {
+      "path": "tools/run_pb_02_direct_replay.py",
+      "sha256": "ccae9d8266912cc4b00174c39ed6ef8ac06cd5a31667c3f44d77c6cf4be5782e"
+    },
+    "runner": {
+      "path": "tools/run_pb_01_legacy_leaf_replay.py",
+      "sha256": "4632a402962b24bdc1cd2c2869c728d58f1dc9afe6e9372e6b4499203033bd87"
+    },
+    "source_mode": "git_archive_at_immutable_commit"
+  },
+  "non_claims": [
+    "This is one scoped NRZ analytic-metallic-line 23-key dictionary leaf, not complete PyBERT branch parity.",
+    "The Rust artifact is a Python-readable canonical-item dictionary, not a PyBertData class-compatible pickle.",
+    "Imported S2P, .pybert_cfg pickle input, AMI/IBIS, periodic/random noise, adaptive DFE/Viterbi, and jitter/eye/bathtub branches remain open.",
+    "The external Python invocation is oracle evidence only; the Rust candidate does not call Python at runtime.",
+    "This report is not a license decision, product admission, release approval, or redistribution authorization."
+  ],
+  "replay": {
+    "build": {
+      "binary_bytes": 3326464,
+      "binary_sha256": "ff07193470d9c18545f817e37b0a9178a621bab1e8e53e829da2deda0814ceee",
+      "exit_code": 0,
+      "stderr_sha256": "e6098a7ea0ef535118585ee071d7d22020d5a1981f35aa41a96fc401eb8df0b7",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "candidate": {
+      "artifact": {
+        "bytes": 413264,
+        "path": "candidate-result.pybert_data",
+        "present": true,
+        "sha256": "077a0bf54a88362589389af4172c00df4b56d9cab52f8126c71d3df2670d48cd"
+      },
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "1b89e90a65dcb1b94bf49c6788aed3229fa5a5202707ae12c28f46555b5dfc66"
+    },
+    "candidate_artifact_schema": {
+      "array_keys": [
+        "chnl_H",
+        "chnl_h",
+        "chnl_p",
+        "chnl_s",
+        "ctle_H",
+        "ctle_out_H",
+        "ctle_out_h",
+        "ctle_out_p",
+        "ctle_out_s",
+        "ctle_s",
+        "dfe_H",
+        "dfe_out_H",
+        "dfe_out_h",
+        "dfe_out_p",
+        "dfe_out_s",
+        "dfe_s",
+        "tx_H",
+        "tx_out",
+        "tx_out_H",
+        "tx_out_h",
+        "tx_out_p",
+        "tx_out_s",
+        "tx_s"
+      ],
+      "item_names": [
+        "chnl_h",
+        "tx_out_h",
+        "ctle_out_h",
+        "dfe_out_h",
+        "chnl_s",
+        "tx_s",
+        "ctle_s",
+        "dfe_s",
+        "tx_out_s",
+        "ctle_out_s",
+        "dfe_out_s",
+        "chnl_p",
+        "tx_out_p",
+        "ctle_out_p",
+        "dfe_out_p",
+        "chnl_H",
+        "tx_H",
+        "ctle_H",
+        "dfe_H",
+        "tx_out_H",
+        "ctle_out_H",
+        "dfe_out_H",
+        "tx_out"
+      ],
+      "kind": "python_pickle_dict",
+      "schema": "sipi.pybert_data.v1"
+    },
+    "comparison": {
+      "arrays": [
+        {
+          "length": 640,
+          "max_abs": 9.528047426564379e-11,
+          "name": "chnl_h",
+          "passed": true,
+          "scale": 1.0,
+          "tolerance": 1.1e-06
+        },
+        {
+          "length": 640,
+          "max_abs": 9.528047426564379e-11,
+          "name": "tx_out_h",
+          "passed": true,
+          "scale": 1.0,
+          "tolerance": 1.1e-06
+        },
+        {
+          "length": 640,
+          "max_abs": 9.528047426564379e-11,
+          "name": "ctle_out_h",
+          "passed": true,
+          "scale": 1.0,
+          "tolerance": 1.1e-06
+        },
+        {
+          "length": 640,
+          "max_abs": 9.528047426564379e-11,
+          "name": "dfe_out_h",
+          "passed": true,
+          "scale": 1.0,
+          "tolerance": 1.1e-06
+        },
+        {
+          "length": 640,
+          "max_abs": 9.814112272854558e-09,
+          "name": "chnl_s",
+          "passed": true,
+          "scale": 1.0,
+          "tolerance": 1.1e-06
+        },
+        {
+          "length": 640,
+          "max_abs": 7.901202549870368e-09,
+          "name": "tx_out_s",
+          "passed": true,
+          "scale": 1.0,
+          "tolerance": 1.1e-06
+        },
+        {
+          "length": 640,
+          "max_abs": 7.901202549870368e-09,
+          "name": "ctle_out_s",
+          "passed": true,
+          "scale": 1.0,
+          "tolerance": 1.1e-06
+        },
+        {
+          "length": 640,
+          "max_abs": 7.901202549870368e-09,
+          "name": "dfe_out_s",
+          "passed": true,
+          "scale": 1.0,
+          "tolerance": 1.1e-06
+        },
+        {
+          "length": 640,
+          "max_abs": 2.816567295366168e-09,
+          "name": "chnl_p",
+          "passed": true,
+          "scale": 1.0,
+          "tolerance": 1.1e-06
+        },
+        {
+          "length": 640,
+          "max_abs": 2.8165672971008915e-09,
+          "name": "tx_out_p",
+          "passed": true,
+          "scale": 1.0,
+          "tolerance": 1.1e-06
+        },
+        {
+          "length": 640,
+          "max_abs": 2.8165672971008915e-09,
+          "name": "ctle_out_p",
+          "passed": true,
+          "scale": 1.0,
+          "tolerance": 1.1e-06
+        },
+        {
+          "length": 640,
+          "max_abs": 2.8165672971008915e-09,
+          "name": "dfe_out_p",
+          "passed": true,
+          "scale": 1.0,
+          "tolerance": 1.1e-06
+        }
+      ],
+      "blockers": [],
+      "policy": {
+        "absolute_tolerance": 1e-07,
+        "formula": "absolute_tolerance + relative_scale * scale",
+        "relative_scale": 1e-06
+      },
+      "status": "passed"
+    },
+    "oracle": {
+      "artifact": {
+        "bytes": 98210,
+        "path": "oracle-result.pybert_data",
+        "present": true,
+        "sha256": "92d3d05a07e70781643ba8de71df84ad19bcc73ab060c67be864e882e7cc3872"
+      },
+      "exit_code": 0,
+      "stderr_sha256": "5459aad328c648c107ba2ed5c96dcf612a8ff6c373f2bb1eff06b589e2f7ebd0",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "reproducibility": {
+    "binary_bit_reproducible": false
+  },
+  "run_id": "pb-01-current-d3154093-archive-01",
+  "schema": "sipi.pb-01-legacy-leaf-replay.v1",
+  "source_mode": "git_archive_at_immutable_commit",
+  "status": "passed",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "timeout_seconds": 1200,
+    "uv": {
+      "executable": "uv.exe",
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_exit_code": 0,
+      "version_output_sha256": "ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "inventory": {
+      "entries": [
+        {
+          "bytes": 1466,
+          "path": "LICENSE",
+          "sha256": "4ca68aea5b8f43e0d7337b182fbc277e02dae37d85b04196d92a80e9344926c1"
+        },
+        {
+          "bytes": 12806,
+          "path": "src/pybert/cli.py",
+          "sha256": "3826b0c156166e6f04b0e9997ce64a53a53867db6d89143b7c582ca2cf4337c9"
+        },
+        {
+          "bytes": 10564,
+          "path": "src/pybert/configuration.py",
+          "sha256": "1e8080ac30c68f7cc093dfb4aceec58e78b0315943f3feedcad885964abd1678"
+        },
+        {
+          "bytes": 2296,
+          "path": "src/pybert/engine/python_backend.py",
+          "sha256": "85030e03db164293df9e723cd0ecf5293f4905bab46ee27d9e2e1d935d33b932"
+        },
+        {
+          "bytes": 68222,
+          "path": "src/pybert/pybert.py",
+          "sha256": "a2fdd33db845db09155e323a26465688d759e77ed2bcc4a23cb7a5298d5457dd"
+        },
+        {
+          "bytes": 5835,
+          "path": "src/pybert/results.py",
+          "sha256": "b8655be9eb47311a030adfe2ce4e54169bab502b6c6ccdde24ca182aaec08635"
+        },
+        {
+          "bytes": 626829,
+          "path": "uv.lock",
+          "sha256": "624b62d7a84fbc48579de17e2ae171f5e4190d6ad7e5231e67ddafb9d3fa0d86"
+        }
+      ],
+      "sha256": "60550ce1cbb83fdf481e6cd2534b7063c684df3c6094838d2f4b6c1714776ed1"
+    },
+    "license_sha256": "4ca68aea5b8f43e0d7337b182fbc277e02dae37d85b04196d92a80e9344926c1",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24",
+    "uv_lock_sha256": "624b62d7a84fbc48579de17e2ae171f5e4190d6ad7e5231e67ddafb9d3fa0d86"
+  }
+}

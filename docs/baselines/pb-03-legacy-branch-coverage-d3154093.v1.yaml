@@ -1,0 +1,105 @@
+schema: sipi.pb-03-legacy-branch-coverage-d3154093.v1
+version: 1
+successor_of: pb-02-05-branch-coverage-matrix.v1.yaml
+row: PB-03
+status: branch_probe_open
+purpose: >-
+  Additive content-addressed evidence that the pure-data sim-rust projection
+  reaches the portable legacy branches exercised by focused Rust tests. This
+  matrix does not assert Python payload parity or global PyBERT closure.
+source:
+  upstream_repository: pybert
+  upstream_commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  upstream_tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  candidate_commit: d3154093fd58aeaa596444825dc17be6cb7e35c0
+  candidate_tree: 2d51e84554558bb4947c0152259af9bf7f927efe
+  candidate_basis: immutable_candidate_commit
+  lane_inventory_sha256: ea550701da812ed7c9952f034202e7285f9d3ba38f933536d41bf9d2b5e9dce6
+  source_files:
+    crates/sipi-pybert-direct/src/legacy_runtime.rs: a6e802ec8bf5d4ac9a44399657846897b8a1ed0eb10f9bc9c6c60931c92bf9ac
+    crates/sipi-pybert-direct/src/touchstone.rs: 1003f00587c6c168338e1111b550df22ee49682c07a259ee1ea6e54107e5ae86
+    crates/sipi-pybert-direct/src/simulation.rs: 35074fe873d30e2854999d2ff60bd7d86ba0f89965cdc425a1b456b797e4ad6e
+    crates/sipi-pybert-direct/src/runner.rs: 0c6c17765720d3a4d193f3ab9121ce0d8e9304419afffeed4b2058fa11bc4dc9
+    crates/sipi-pybert-direct/src/input.rs: b9805f54b79b0097726e36f4d683e0fffeb15a11aa1e11a4a31b886ec442a97a
+    crates/sipi-pybert-direct/src/analysis.rs: a1e2f15ca445bab1ac5cc95262b929ebf8caa90bf02d9f3e780d367db6aa066a
+    crates/sipi-pybert-direct/tests/legacy_runtime.rs: 419771185c84a949003183d2dd891e39e225715ab7717bbe7d52c14ee8607e21
+    crates/sipi-pybert-direct/tests/native_branch_matrix.rs: a54694b0f38a24a371a1949fe19d099d50680b6fb0230aef24f7893c00aa7e26
+    crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml: 2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f
+portable_missing: []
+branches:
+  - id: config.pybert_cfg_bounded_state_mapping
+    status: exercised
+    test: legacy_runtime::projection_decodes_bounded_pybert_cfg_pickle_state_without_python
+  - id: config.pybert_cfg_protocol45_root_identity
+    status: exercised
+    test: legacy_runtime::tests::accepts_protocol4_pybert_cfg_root_without_restoring_a_python_class
+  - id: config.pybert_cfg_protocol45_nested_root_rejected
+    status: exercised
+    test: legacy_runtime::tests::rejects_protocol45_pybert_cfg_global_when_it_is_nested
+  - id: legacy.modulation.nrz
+    status: exercised
+    test: legacy_runtime::pinned_legacy_fixture_runs_in_rust_and_writes_python_pickle_dict
+  - id: legacy.modulation.pam4_duo_binary
+    status: exercised
+    test: legacy_runtime::projection_covers_portable_modulation_noise_and_viterbi_fields
+  - id: legacy.pattern.supported_prbs
+    status: exercised
+    test: legacy_runtime::projection_covers_portable_modulation_noise_and_viterbi_fields
+  - id: legacy.channel.rlgc
+    status: exercised
+    test: legacy_runtime::pinned_legacy_fixture_runs_in_rust_and_writes_python_pickle_dict
+  - id: legacy.channel.s2p_touchstone
+    status: exercised
+    test: legacy_runtime::projection_parses_portable_s2p_channel_and_ctle_files
+  - id: legacy.channel.s1p_s4p_differential_renumber
+    status: exercised
+    test: touchstone::tests::parses_s1p_s4p_renumber_and_two_column_responses
+  - id: legacy.channel.touchstone_reference_R_two_column_step_impulse
+    status: exercised
+    test: touchstone::tests::parses_s1p_s4p_renumber_and_two_column_responses
+  - id: legacy.rx.ctle_s2p_file_parser
+    status: exercised
+    test: legacy_runtime::projection_parses_portable_s2p_channel_and_ctle_files
+  - id: legacy.tx_rx.ffe_dfe_cdr
+    status: exercised
+    test: legacy_runtime::projection_covers_portable_modulation_noise_and_viterbi_fields
+  - id: legacy.tx.periodic_random_noise
+    status: exercised
+    test: legacy_runtime::projection_covers_portable_modulation_noise_and_viterbi_fields
+  - id: legacy.tx.random_noise_seed_and_zero_seed_effective_state
+    status: exercised
+    test: legacy_runtime::tests::random_noise_matches_numpy_default_rng_normal_sequence
+  - id: legacy.rx.viterbi_isi_fec_mapping
+    status: exercised
+    test: legacy_runtime::projection_covers_portable_modulation_noise_and_viterbi_fields
+  - id: legacy.analysis.jitter_eye_ber
+    status: exercised
+    test: legacy_runtime::pinned_legacy_fixture_runs_in_rust_and_writes_python_pickle_dict
+  - id: legacy.analysis.jitter_relative_threshold
+    status: exercised
+    test: legacy_runtime::legacy_thresh_is_projected_and_changes_native_jitter_threshold
+  - id: legacy.external.ami_ibis_ts4_getwave
+    status: external_blocked
+    blocker: host-owned external DLL/model/service is not distributable in this lane
+    test: legacy_runtime::projection_keeps_ami_external_boundary_fail_closed
+external_blockers:
+  - branch: legacy.external.ami_ibis_ts4_getwave
+    reason: host-owned external DLL/model/service remains quarantined
+  - branch: independent_python_payload_oracle
+    reason: no independent Python payload replay is claimed by this branch probe
+verification:
+  candidate_materialization: immutable_candidate_commit_source_bound
+  oracle: not_run
+  command: cargo test --manifest-path crates/sipi-pybert-direct/Cargo.toml --locked
+  focused_test_result: 18 PB-03 projection and parser branch probes passed
+  toolchain_sha256: 989c809c7316841a720726bb71c2fbc0780b77f45b8bdfcbc6bd6bb272fe6b47
+harness:
+  verifier: {path: tools/verify_pb_03_branch_coverage_d3154093.py, sha256: d5039df561dcb5f2163175620f4b9b74ee819b2b3ee042a5485ee39b85399b49}
+  mutation_tests: {path: tools/test_verify_pb_03_branch_coverage_d3154093.py, sha256: 9041d7b8d5559f38dd125d88649b5c5f4bfb82be1dc0eb87fc55a7709ba1dc24}
+audit: {path: docs/baselines/audits/2026-08-23-pb-03-legacy-branch-coverage-d3154093.md, sha256: c60e6aa4860e473d75e3abb04624ed31a21a67be8e4c51a2b29f3e53a2814dfa}
+claims:
+  portable_projection_branch_probe: true
+  oracle_payload_parity: false
+  global_row_closed: false
+  release_approval: false
+  license_decision: false

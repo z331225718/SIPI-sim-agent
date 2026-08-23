@@ -1,0 +1,79 @@
+{
+  "build": {
+    "binary_sha256": "782be36e99e5f45e6e9ff3454ee9210f7a2c7a5bbc3403536382cf7d5e143848",
+    "returncode": 0,
+    "stderr_bytes": 2812,
+    "stderr_sha256": "748b7e30e36abe51cf45efbab54038e0ee71d262b4db2dbe128394cbd3b08bf3",
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate": {
+    "archive_sha256": "02aefc5b1e23b22bc1716e9c2d7ada2905d57af68443cf9728c72bddb03eb0e4",
+    "commit": "9914a23dc747d94405f2fed9227538ae7aea8629",
+    "tree": "94a25c6254fdec3802b4946ec777ce65f22fdc0c"
+  },
+  "execution": {
+    "candidate": {
+      "returncode": 0,
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 78,
+      "stdout_sha256": "8cb8970cc97e86db7e126ac60118ba4c87b2e3a14a4af3db6449f3a9ca17626e"
+    },
+    "candidate_report_sha256": "0c8fd367f9d868ecbcde61e898cc6216a9fde77e424492263ab0cd6563df8eed",
+    "upstream": {
+      "returncode": 0,
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 200,
+      "stdout_sha256": "b017334c0faab6f7c497725b0e35e375dc0d2f039bf8154383cd1ecc20918a44"
+    },
+    "upstream_report_sha256": "7e14170945e998c72854c708130eff720d3d559d892db7f6d2aabce9976a2af3"
+  },
+  "fixture_sha256": "4da06c257a0f0108e4391d65f894b6bb0d62a24a8f00f82f0f0734e061f5de70",
+  "fresh_run_nonce": "47e8168422a9cee1bc0a009a4d64bf0c79c1887811d56035be970682bbd4c539",
+  "metrics": {
+    "candidate_y_mean_rms_siemens": 0.021953851325306414,
+    "candidate_y_rms_siemens": 0.04390770265061283,
+    "upstream_y_mean_rms_siemens": 0.012928922397961225,
+    "upstream_y_rms_siemens": 0.02585784479592245
+  },
+  "non_claims": [
+    "Numeric mismatch remains open.",
+    "No parity or acceptance tolerance is claimed."
+  ],
+  "numeric_parity": false,
+  "parity_claim": false,
+  "run_id": "20260823-as03-v2-06",
+  "schema": "sipi.agent-spice-as-numeric-bound.v2",
+  "status": "completed_numeric_mismatch_open",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "exit_code": 0,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "role": "cargo",
+      "version_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "python": {
+      "executable": "python.exe",
+      "exit_code": 0,
+      "file_sha256": "6293eebb696b1ed1221e9681f75f7df97e0be89cd9028ccee3221ed5fc826ee5",
+      "role": "python",
+      "version_sha256": "63ec139701a7903093eaa52dcfbd3f9dfd8a551ca5d992c1a938ce365089c26a"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "exit_code": 0,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "role": "rustc",
+      "version_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  },
+  "workflow": "AS-03"
+}

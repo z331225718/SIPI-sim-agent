@@ -1,0 +1,85 @@
+{
+  "build": {
+    "binary_sha256": "407f1dd008caf16523fd67696ccade8e0e059ec01ce188a1097e51a687a9031f",
+    "returncode": 0,
+    "stderr_bytes": 2812,
+    "stderr_sha256": "1987b36cf2ac9d32c1e79e1712c4de536e3d465c2909cbaf88dd2e0d714ee785",
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate": {
+    "archive_sha256": "02aefc5b1e23b22bc1716e9c2d7ada2905d57af68443cf9728c72bddb03eb0e4",
+    "commit": "9914a23dc747d94405f2fed9227538ae7aea8629",
+    "tree": "94a25c6254fdec3802b4946ec777ce65f22fdc0c"
+  },
+  "execution": {
+    "candidate": {
+      "returncode": 0,
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 125,
+      "stdout_sha256": "1c8b85ee707c032a6451208e404374e651e80dcef87d5da0277bcbf58fed71f2"
+    },
+    "candidate_report_sha256": "2c41a01eff0807f7c2b680ae1b17f7f598171375f82d5a44f6c24b2ac0e51666",
+    "upstream": {
+      "returncode": 0,
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 113,
+      "stdout_sha256": "4e95f704a54c3b5961bc3cd08e2c4ba80dc1ed742b35be040ecdddfa4ae61301"
+    },
+    "upstream_report_sha256": "ab695edeb4238d3e0b50f3ba1d77a66682e96ac8555acabdee838198f996be44"
+  },
+  "fixture_sha256": "4da06c257a0f0108e4391d65f894b6bb0d62a24a8f00f82f0f0734e061f5de70",
+  "fresh_run_nonce": "5ef5e42322b58ecacbd58dd213f66f489135e1708013f1f4d6ba213e962b328f",
+  "metrics": {
+    "candidate_block_rms": [
+      0.09972630684572593,
+      0.09972630684572593
+    ],
+    "candidate_cascade_mean_rms": 0.09868363144266268,
+    "upstream_block_rms": [
+      0.06916905397206313,
+      0.06916905397206313
+    ],
+    "upstream_cascade_mean_rms": 0.08305707108701127
+  },
+  "non_claims": [
+    "Numeric mismatch remains open.",
+    "No parity or acceptance tolerance is claimed."
+  ],
+  "numeric_parity": false,
+  "parity_claim": false,
+  "run_id": "20260823-as02-v2-05",
+  "schema": "sipi.agent-spice-as-numeric-bound.v2",
+  "status": "completed_numeric_mismatch_open",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "exit_code": 0,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "role": "cargo",
+      "version_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "python": {
+      "executable": "python.exe",
+      "exit_code": 0,
+      "file_sha256": "6293eebb696b1ed1221e9681f75f7df97e0be89cd9028ccee3221ed5fc826ee5",
+      "role": "python",
+      "version_sha256": "63ec139701a7903093eaa52dcfbd3f9dfd8a551ca5d992c1a938ce365089c26a"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "exit_code": 0,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "role": "rustc",
+      "version_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  },
+  "workflow": "AS-02"
+}

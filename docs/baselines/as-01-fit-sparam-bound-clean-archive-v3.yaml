@@ -1,0 +1,47 @@
+schema: sipi.agent-spice-as-01-clean-archive-bound.v3
+status: completed_numeric_mismatch
+scope:
+  work_item: AS-01
+  candidate_and_upstream: true
+  parity_claim: false
+  numeric_mismatch_open: true
+  acceptance_tolerance: null
+source:
+  candidate:
+    commit: 9914a23dc747d94405f2fed9227538ae7aea8629
+    tree: 94a25c6254fdec3802b4946ec777ce65f22fdc0c
+    archive_sha256: 4b6b7484974016ec58cc207676ed8ba4739e48fe62d256da8735bdefa43e5ccb
+  upstream:
+    commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+    tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+    archive_sha256: 282265e1c7b987407875a5c77fd1f2f0542cea9487407bb14b967a97b1ad6128
+    license: MIT
+  materialization: git_archive_clean_temporary_root
+harness:
+  runner:
+    path: tools/run_as_01_fit_sparam_bound_v3.py
+    sha256: d15a2aa6057de199538cf7d81ec0046f71832eaf7be1d85ebbdc9e62c8f4b48a
+  aggregator:
+    path: tools/aggregate_as_01_fit_sparam_bound_v3.py
+    sha256: 021b8243609d21f72702e18d904cd4a063d09fc9c25fb999b6c4535e74f5e25b
+  verifier:
+    path: tools/verify_as_01_fit_sparam_clean_archive_v3.py
+    sha256: 1aedbad22ffa325b92fbe68d0ad1dedf6beee7f5cd5ec59f87bd6a098a6d89e6
+  mutation_tests:
+    path: tools/test_verify_as_01_fit_sparam_clean_archive_v3.py
+    sha256: 567497da6066a60c8f7a701be379c1225f6fde9b3083cb5683e31f6eb9073e49
+reports:
+  - path: docs/baselines/as-01-clean-archive-v3-run-01.json
+    sha256: 7b212a08185071f9a7303a7bfc56c47d39c405b8ef2432e60426cf0786f515f5
+  - path: docs/baselines/as-01-clean-archive-v3-run-02.json
+    sha256: 1d9c254e6cf225bd1fdb14f44ef5f0ea66c6284b47e53c7fae3f96c82d8e5172
+aggregate:
+  path: docs/baselines/as-01-clean-archive-v3-aggregate.json
+  sha256: 59f3f0b9ee2a421eeedec5c3970f19daed22fb349a724a781ac7855b4ba7e877
+audit:
+  path: docs/baselines/audits/2026-08-23-as-01-fit-sparam-clean-archive-v3.md
+  sha256: ad8f3879d22295f017b4a33d0bbaa03c15bba77aa30244e9ea35c5021eddc246
+non_claims:
+  - no_numeric_parity
+  - no_acceptance_tolerance
+  - no_release_or_product_capability
