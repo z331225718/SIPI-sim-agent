@@ -197,6 +197,7 @@ struct PortableBranchResultV1 {
     calibration_sigma_bn_v: Option<f64>,
     calibration_sigma_ne_v: Option<f64>,
     calibration_sigma_hp_v: Option<f64>,
+    erl_only_metrics: Option<sipi_com::ErlOnlyMetricsV1>,
     // Apply_EQ can produce a full THRU/FEXT/NEXT set.  Keep the generated
     // crosstalk waveforms separate from caller-provided files so the run
     // boundary can compose both inputs without reducing Apply_EQ to a
@@ -690,8 +691,12 @@ fn run_with_workflow(
         .iter()
         .map(Vec::as_slice)
         .collect::<Vec<_>>();
-    let envelope = if fext_values.is_empty() && next_values.is_empty() {
+    let envelope = if let Some(metrics) = branches.erl_only_metrics.as_ref() {
+        sipi_com::erl_only_envelope_v1(metrics)
+            .map_err(|error| DirectRunErrorV1::Parameters(error.to_owned()))
+    } else if fext_values.is_empty() && next_values.is_empty() {
         execute_com_run_v1(&request_bytes, &chain_values, &dto)
+            .map_err(|error| DirectRunErrorV1::Execution(format!("{error:?}")))
     } else {
         execute_com_run_with_crosstalk_v1(
             &request_bytes,
@@ -700,8 +705,8 @@ fn run_with_workflow(
             &next_values,
             &dto,
         )
-    }
-    .map_err(|error| DirectRunErrorV1::Execution(format!("{error:?}")))?;
+        .map_err(|error| DirectRunErrorV1::Execution(format!("{error:?}")))
+    }?;
     if !envelope.admitted() {
         return Err(DirectRunErrorV1::Execution(
             envelope
@@ -1425,6 +1430,23 @@ fn portable_branch_result_with_sigma_v1(
         .get("portable")
         .and_then(Value::as_object)
         .unwrap_or_else(|| document.as_object().expect("canonical config object"));
+    if document
+        .get("portable")
+        .and_then(Value::as_object)
+        .is_some()
+    {
+        let top_level = document.as_object().expect("canonical config object");
+        if top_level.contains_key("erl_only") || top_level.contains_key("erl") {
+            return Err(DirectRunErrorV1::Unsupported(
+                "ERL-only controls cannot be split between portable and root config".to_owned(),
+            ));
+        }
+    }
+    if root.contains_key("erl_only") && root.contains_key("erl") {
+        return Err(DirectRunErrorV1::Unsupported(
+            "erl_only and erl aliases cannot both be present".to_owned(),
+        ));
+    }
     for unsupported in ["matlab_only_reporting", "wiener_hopf"] {
         if root.contains_key(unsupported) {
             return Err(DirectRunErrorV1::Unsupported(format!(
@@ -1440,6 +1462,7 @@ fn portable_branch_result_with_sigma_v1(
     let mut calibration_sigma_bn_v = None;
     let mut calibration_sigma_ne_v = None;
     let mut calibration_sigma_hp_v = None;
+    let mut erl_only_metrics = None;
     let mut effective_fext = Vec::new();
     let mut effective_next = Vec::new();
     let mut effective_fext_pulses = Vec::new();
@@ -2380,11 +2403,13 @@ fn portable_branch_result_with_sigma_v1(
             }),
         );
     }
-    if let Some(erl) = root
-        .get("erl_only")
-        .or_else(|| root.get("erl"))
-        .and_then(Value::as_object)
-    {
+    let erl_value = root.get("erl_only").or_else(|| root.get("erl"));
+    if erl_value.is_some_and(|value| !value.is_object()) {
+        return Err(DirectRunErrorV1::Unsupported(
+            "erl_only must be an object with r480 ERL controls".to_owned(),
+        ));
+    }
+    if let Some(erl) = erl_value.and_then(Value::as_object) {
         if effective_values.is_some() || effective_pulse.is_some() {
             return Err(DirectRunErrorV1::Unsupported(
                 "erl_only cannot be combined with another channel-producing branch".to_owned(),
@@ -2475,13 +2500,23 @@ fn portable_branch_result_with_sigma_v1(
         } else {
             -20.0 * rms.abs().log10()
         };
+        let erl_db_value = metric_db_value_v1(erl_db)?;
+        let erl11_db_value = metric_db_value_v1(erl_db)?;
+        let erl_rms_db_value = metric_db_value_v1(erl_rms_db)?;
+        erl_only_metrics = Some(sipi_com::ErlOnlyMetricsV1 {
+            erl_db,
+            erl11_db: erl_db,
+            erl_rms_db,
+            phase_index: best_phase,
+        });
         diagnostics.insert(
             "erl_only".to_owned(),
             json!({
                 "schema": "sipi.com.erl-only.r480.v1",
                 "dispatch": "r480.erl_only",
-                "erl_db": erl_db,
-                "erl_rms_db": erl_rms_db,
+                "erl_db": erl_db_value,
+                "erl11_db": erl11_db_value,
+                "erl_rms_db": erl_rms_db_value,
                 "phase_index": best_phase,
                 "worst_samples": best_samples,
                 "pulse_sha256": sha256_f64_v1(&pulse),
@@ -2498,6 +2533,7 @@ fn portable_branch_result_with_sigma_v1(
         calibration_sigma_bn_v,
         calibration_sigma_ne_v,
         calibration_sigma_hp_v,
+        erl_only_metrics,
         effective_fext,
         effective_next,
         effective_fext_pulses,
@@ -3666,6 +3702,21 @@ fn admission_request_bytes_v1(
     .map_err(|error| DirectRunErrorV1::Json(error.to_string()))
 }
 
+fn metric_db_value_v1(value: f64) -> Result<Value, DirectRunErrorV1> {
+    if value.is_nan() {
+        return Err(DirectRunErrorV1::Parameters(
+            "ERL dB metric cannot be NaN".to_owned(),
+        ));
+    }
+    Ok(if value.is_finite() {
+        json!(value)
+    } else if value.is_sign_negative() {
+        json!("-inf")
+    } else {
+        json!("inf")
+    })
+}
+
 #[allow(clippy::too_many_arguments)]
 fn result_value_v1(
     request: &DirectRunRequestV1,
@@ -3723,6 +3774,7 @@ fn result_value_v1(
             "metrics": {
                 "FOM": selected_fom_db,
                 "ERL": portable_diagnostics.get("erl_only").and_then(|value| value.get("erl_db")),
+                "ERL11": portable_diagnostics.get("erl_only").and_then(|value| value.get("erl11_db")),
                 "ERL_RMS": portable_diagnostics.get("erl_only").and_then(|value| value.get("erl_rms_db")),
                 "ERL_phase_index": portable_diagnostics.get("erl_only").and_then(|value| value.get("phase_index")),
                 "COM_dB": envelope.com_db(),
@@ -4433,6 +4485,41 @@ mod tests {
         );
         assert!(case["metrics"]["ERL"].is_number());
         assert!(case["metrics"]["ERL_phase_index"].is_number());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn erl_only_does_not_enter_com_chain_when_cursor_is_absent() {
+        let root = temp_root("erl-only-no-chain");
+        let config = root.join("params.json");
+        let pulse = root.join("flat.f64le");
+        let mut document = canonical_parameters();
+        document["portable"] = json!({
+            "erl_only": {
+                "samples_per_ui": 8,
+                "levels": 4,
+                "bin_size": 1.0e-5,
+                "spec_ber": 1.0e-4,
+                "rl_norm_test": true
+            }
+        });
+        fs::write(&config, serde_json::to_vec(&document).unwrap()).unwrap();
+        let flat = vec![0.01_f64; 64];
+        let bytes = flat
+            .iter()
+            .flat_map(|value| value.to_le_bytes())
+            .collect::<Vec<_>>();
+        fs::write(&pulse, bytes).unwrap();
+        let report = run_com_v1(&DirectRunRequestV1::new(
+            &config,
+            &pulse,
+            root.join("artifacts"),
+        ))
+        .expect("ERL-only must bypass COM chain");
+        let case = &report.result["cases"][0];
+        assert!(case["metrics"]["ERL"].is_number());
+        assert_eq!(case["metrics"]["ERL11"], case["metrics"]["ERL"]);
+        assert!(case["metrics"]["COM_dB"].is_null());
         let _ = fs::remove_dir_all(root);
     }
 
@@ -5412,6 +5499,68 @@ mod tests {
             matches!(error, DirectRunErrorV1::Unsupported(message) if message.contains("matlab_only_reporting"))
         );
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn malformed_erl_only_mapping_fails_closed() {
+        for (label, value) in [
+            ("false", json!(false)),
+            ("null", Value::Null),
+            ("scalar", json!(1)),
+        ] {
+            let root = temp_root(&format!("erl-only-{label}"));
+            let config = root.join("config.json");
+            let pulse = root.join("pulse.f64le");
+            let mut document = canonical_parameters();
+            document["portable"] = json!({"erl_only": value});
+            fs::write(&config, serde_json::to_vec(&document).unwrap()).unwrap();
+            fs::write(&pulse, pulse_bytes()).unwrap();
+            let error = run_com_v1(&DirectRunRequestV1::new(&config, &pulse, root.join("out")))
+                .expect_err("malformed ERL-only mapping must fail closed");
+            assert!(
+                matches!(error, DirectRunErrorV1::Unsupported(ref message) if message.contains("erl_only must be an object")),
+                "{label}: {error:?}"
+            );
+            let _ = fs::remove_dir_all(root);
+        }
+    }
+
+    #[test]
+    fn split_erl_only_entrypoints_fail_closed() {
+        let root = temp_root("erl-only-split");
+        let config = root.join("config.json");
+        let pulse = root.join("pulse.f64le");
+        let mut document = canonical_parameters();
+        let controls = json!({
+            "samples_per_ui": 8,
+            "levels": 4,
+            "bin_size": 1.0e-5,
+            "spec_ber": 1.0e-4,
+            "rl_norm_test": true
+        });
+        document["portable"] = json!({"erl_only": controls.clone()});
+        document["erl_only"] = controls;
+        fs::write(&config, serde_json::to_vec(&document).unwrap()).unwrap();
+        fs::write(&pulse, pulse_bytes()).unwrap();
+        let error = run_com_v1(&DirectRunRequestV1::new(&config, &pulse, root.join("out")))
+            .expect_err("split ERL-only entrypoints must fail closed");
+        assert!(
+            matches!(error, DirectRunErrorV1::Unsupported(message) if message.contains("split between"))
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn erl_db_metric_rejects_nan_and_preserves_infinity_tokens() {
+        assert!(matches!(
+            metric_db_value_v1(f64::NAN),
+            Err(DirectRunErrorV1::Parameters(message)) if message.contains("cannot be NaN")
+        ));
+        assert_eq!(metric_db_value_v1(f64::INFINITY).unwrap(), json!("inf"));
+        assert_eq!(
+            metric_db_value_v1(f64::NEG_INFINITY).unwrap(),
+            json!("-inf")
+        );
     }
 
     #[test]

@@ -77,6 +77,44 @@ pub struct ComRunResultEnvelopeV1 {
     invalid_reason: Option<String>,
 }
 
+/// Typed payload emitted by the validated portable ERL branch.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ErlOnlyMetricsV1 {
+    pub erl_db: f64,
+    pub erl11_db: f64,
+    pub erl_rms_db: f64,
+    pub phase_index: usize,
+}
+
+/// Build the ERL-only envelope only from a validated branch payload.
+pub fn erl_only_envelope_v1(
+    metrics: &ErlOnlyMetricsV1,
+) -> Result<ComRunResultEnvelopeV1, &'static str> {
+    if [metrics.erl_db, metrics.erl11_db, metrics.erl_rms_db]
+        .iter()
+        .any(|value| value.is_nan())
+    {
+        return Err("ERL-only metrics cannot contain NaN");
+    }
+    Ok(ComRunResultEnvelopeV1 {
+        schema: COM_RUN_RESULT_SCHEMA_V1,
+        policy: COM_RUN_EXECUTION_POLICY_V1,
+        admitted: true,
+        com_db: None,
+        vec_db: None,
+        veo_mv: None,
+        sigma_n_v: None,
+        available_signal_v: None,
+        interference_noise_v: None,
+        threshold_der: None,
+        eye_opening_v: None,
+        thru_selected_phase: None,
+        fext_selected_phases: Vec::new(),
+        next_selected_phases: Vec::new(),
+        invalid_reason: None,
+    })
+}
+
 impl ComRunResultEnvelopeV1 {
     pub const fn schema(&self) -> &'static str {
         self.schema
@@ -280,6 +318,27 @@ mod tests {
             "sipi.p5-08b.com-run-execution-v1.admission-to-result"
         );
         assert_eq!(COM_RUN_RESULT_SCHEMA_V1, "sipi.com.run-result.v1");
+    }
+
+    #[test]
+    fn erl_only_envelope_requires_typed_non_nan_payload() {
+        let valid = ErlOnlyMetricsV1 {
+            erl_db: f64::INFINITY,
+            erl11_db: f64::INFINITY,
+            erl_rms_db: 23.0,
+            phase_index: 2,
+        };
+        let envelope = erl_only_envelope_v1(&valid).expect("validated ERL payload");
+        assert!(envelope.admitted());
+        assert!(envelope.available_signal_v().is_none());
+        let invalid = ErlOnlyMetricsV1 {
+            erl_db: f64::NAN,
+            ..valid
+        };
+        assert_eq!(
+            erl_only_envelope_v1(&invalid),
+            Err("ERL-only metrics cannot contain NaN")
+        );
     }
 
     #[test]

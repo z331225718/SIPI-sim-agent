@@ -213,7 +213,7 @@ pub fn validate_result_json_v1(document: &Value) -> Result<(), DirectCompareErro
         let signal = metrics
             .get("A_s")
             .or_else(|| metrics.get("available_signal_v"));
-        if let Some(value) = signal {
+        if let Some(value) = signal.filter(|value| !value.is_null()) {
             let numeric = python_number(value);
             if numeric.is_none() || numeric.is_some_and(|number| number < 0.0) {
                 return Err(DirectCompareErrorV1::Schema(
