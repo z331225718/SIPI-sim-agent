@@ -111,10 +111,7 @@ def archive_repo(repo: Path, commit: str, destination: Path) -> dict[str, Any]:
     return {"commit": resolved, "tree": tree, "archive_sha256": sha256(payload)}
 
 
-def _tool(value: str, role: str, version_args: tuple[str, ...]) -> dict[str, Any]:
-    executable = resolve_executable(value)
-    if executable is None:
-        raise RuntimeError(f"{role} executable is unavailable")
+def _tool(executable: Path, role: str, version_args: tuple[str, ...]) -> dict[str, Any]:
     version = subprocess.run([str(executable), *version_args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
     if version.returncode != 0:
         raise RuntimeError(f"{role} version command failed")
@@ -143,11 +140,29 @@ def resolve_executable(value: str) -> Path | None:
     return None
 
 
+def resolve_toolchain(timeout: int) -> tuple[dict[str, Any], dict[str, Path]]:
+    """Resolve, hash, and version every tool once before a replay starts."""
+    specs = {
+        "cargo": ("cargo", ("-Vv",)),
+        "rustc": ("rustc", ("-Vv",)),
+        "uv": ("uv", ("--version",)),
+        "python": ("python", ("--version",)),
+    }
+    report: dict[str, Any] = {"timeout_seconds": timeout}
+    paths: dict[str, Path] = {}
+    for role, (value, version_args) in specs.items():
+        executable = resolve_executable(value)
+        if executable is None:
+            raise RuntimeError(f"{role} executable is unavailable")
+        paths[role] = executable
+        report[role] = _tool(executable, role, version_args)
+    return report, paths
+
+
 def toolchain(timeout: int) -> dict[str, Any]:
-    cargo = _tool("cargo", "cargo", ("-Vv",))
-    rustc = _tool("rustc", "rustc", ("-Vv",))
-    uv = _tool("uv", "uv", ("--version",))
-    return {"timeout_seconds": timeout, "cargo": cargo, "rustc": rustc, "uv": uv}
+    """Compatibility wrapper for callers that only need the report."""
+    report, _ = resolve_toolchain(timeout)
+    return report
 
 
 def fixture_info(root: Path, relative: str, fallback: Path | None = None) -> dict[str, Any]:
@@ -268,14 +283,20 @@ def comparison_summary(value: dict[str, Any]) -> dict[str, Any] | None:
     return details
 
 
-def run_command(command: list[str], cwd: Path, timeout: int) -> dict[str, Any]:
+def run_command(command: list[str], cwd: Path, timeout: int, tool_paths: dict[str, Path] | None = None) -> dict[str, Any]:
     resolved = list(command)
     environment = os.environ.copy()
     cargo_bin = Path.home() / ".cargo" / "bin"
     if cargo_bin.is_dir():
         environment["PATH"] = str(cargo_bin) + os.pathsep + environment.get("PATH", "")
-    if resolved and resolved[0] in {"cargo", "rustc", "uv"}:
-        executable = resolve_executable(resolved[0])
+    # Never inherit wrapper state from the host and make the selected compiler
+    # explicit for every Cargo invocation.
+    environment.pop("RUSTC_WRAPPER", None)
+    environment.pop("RUSTC_WORKSPACE_WRAPPER", None)
+    if tool_paths is not None and "rustc" in tool_paths:
+        environment["RUSTC"] = str(tool_paths["rustc"])
+    if resolved and resolved[0] in {"cargo", "rustc", "uv", "python"}:
+        executable = tool_paths.get(resolved[0]) if tool_paths is not None else resolve_executable(resolved[0])
         if executable is None:
             return {"exit_code": None, "error": f"{resolved[0]} executable unavailable", "stdout_sha256": None, "stderr_sha256": None}
         resolved[0] = str(executable)
@@ -299,6 +320,16 @@ def run_command(command: list[str], cwd: Path, timeout: int) -> dict[str, Any]:
 
 def _binary(target: Path) -> Path:
     return target / "release" / ("sipi-pybert-direct.exe" if os.name == "nt" else "sipi-pybert-direct")
+
+
+def build_summary(result: dict[str, Any], binary: Path) -> dict[str, Any]:
+    """Emit a stable, closed build schema with the produced binary digest."""
+    return {
+        "exit_code": result.get("exit_code"),
+        "stdout_sha256": result.get("stdout_sha256"),
+        "stderr_sha256": result.get("stderr_sha256"),
+        "binary_sha256": sha256(binary.read_bytes()) if binary.is_file() else None,
+    }
 
 
 def payload_digest(summary: dict[str, Any], row: str) -> str | None:
@@ -334,15 +365,28 @@ def compact_artifact(summary: dict[str, Any], row: str) -> dict[str, Any]:
     return value
 
 
-def run_once(row: str, candidate_repo: Path, upstream_repo: Path, fixture: str, candidate_commit: str, run_id: str, timeout: int) -> dict[str, Any]:
+def run_once(
+    row: str,
+    candidate_repo: Path,
+    upstream_repo: Path,
+    fixture: str,
+    candidate_commit: str,
+    candidate_tree: str,
+    candidate_archive_sha256: str,
+    run_id: str,
+    timeout: int,
+) -> dict[str, Any]:
     fixture = PurePosixPath(fixture).as_posix()
     if PureWindowsPath(fixture).is_absolute() or PurePosixPath(fixture).is_absolute() or ".." in PurePosixPath(fixture).parts:
         raise RuntimeError("fixture must be repository-relative")
+    toolchain_report, tool_paths = resolve_toolchain(timeout)
     with tempfile.TemporaryDirectory(prefix=f"sipi-{row.lower()}-") as work:
         work_root = Path(work)
         candidate_root = work_root / "candidate"
         upstream_root = work_root / "upstream"
         candidate_identity = archive_repo(candidate_repo, candidate_commit, candidate_root)
+        if candidate_identity.get("tree") != candidate_tree or candidate_identity.get("archive_sha256") != candidate_archive_sha256:
+            raise RuntimeError("candidate archive identity does not match the requested prep commit")
         candidate_archive_fixture_present = (candidate_root / fixture).is_file()
         if not candidate_archive_fixture_present:
             raise RuntimeError("fixed fixture is missing from the candidate archive")
@@ -360,16 +404,15 @@ def run_once(row: str, candidate_repo: Path, upstream_repo: Path, fixture: str, 
         candidate_target = candidate_root / "crates" / "sipi-pybert-direct" / "target"
         candidate_output = work_root / "candidate-output"
         upstream_output = work_root / "upstream-output"
-        build = run_command(["cargo", "build", "--manifest-path", str(candidate_root / "crates/sipi-pybert-direct/Cargo.toml"), "--release", "--locked"], candidate_root, timeout)
+        build_result = run_command(["cargo", "build", "--manifest-path", str(candidate_root / "crates/sipi-pybert-direct/Cargo.toml"), "--release", "--locked"], candidate_root, timeout, tool_paths)
         binary = _binary(candidate_target)
-        if build.get("exit_code") == 0:
-            build = {**build, "binary_sha256": sha256(binary.read_bytes()) if binary.is_file() else None}
+        build = build_summary(build_result, binary)
         command = {"PB-03": "sim-rust", "PB-04": "sim-auto", "PB-05": "sim-compare"}[row]
         if binary.is_file():
-            candidate_process = run_command([str(binary), command, str(fixture_path), "--output-dir", str(candidate_output)], candidate_root, timeout)
+            candidate_process = run_command([str(binary), command, str(fixture_path), "--output-dir", str(candidate_output)], candidate_root, timeout, tool_paths)
         else:
             candidate_process = {"exit_code": None, "skipped": True}
-        oracle_process = run_command(["uv", "run", "--project", str(upstream_root), "--frozen", "--extra", "native", "pybert", command, str(oracle_fixture), "--output-dir", str(upstream_output)], upstream_root, timeout)
+        oracle_process = run_command(["uv", "run", "--project", str(upstream_root), "--frozen", "--extra", "native", "pybert", command, str(oracle_fixture), "--output-dir", str(upstream_output)], upstream_root, timeout, tool_paths)
         candidate_artifact = artifact_summary(candidate_output)
         oracle_artifact = artifact_summary(upstream_output)
         candidate_payload = payload_digest(candidate_artifact, row)
@@ -491,6 +534,7 @@ def run_once(row: str, candidate_repo: Path, upstream_repo: Path, fixture: str, 
             "upstream": upstream_identity,
             "fixture": fixture_record,
             "build": build,
+            "toolchain": toolchain_report,
             "replay": {
                 "candidate_process": candidate_process,
                 "oracle_process": oracle_process,
@@ -511,7 +555,9 @@ def parse_run_args(row: str, fixture: str) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--candidate-repo", type=Path, default=ROOT)
     parser.add_argument("--upstream-repo", type=Path, default=DEFAULT_UPSTREAM)
-    parser.add_argument("--candidate-commit", default=str(git(ROOT, "rev-parse", "HEAD")))
+    parser.add_argument("--candidate-commit", required=True)
+    parser.add_argument("--candidate-tree", required=True)
+    parser.add_argument("--candidate-archive-sha256", required=True)
     parser.add_argument("--fixture", default=fixture)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -523,8 +569,7 @@ def parse_run_args(row: str, fixture: str) -> argparse.Namespace:
 
 def run_main(args: argparse.Namespace) -> int:
     try:
-        report = run_once(args.row, args.candidate_repo.resolve(), args.upstream_repo.resolve(), args.fixture, args.candidate_commit, args.run_id, args.timeout_seconds)
-        report["toolchain"] = toolchain(args.timeout_seconds)
+        report = run_once(args.row, args.candidate_repo.resolve(), args.upstream_repo.resolve(), args.fixture, args.candidate_commit, args.candidate_tree, args.candidate_archive_sha256, args.run_id, args.timeout_seconds)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     except (OSError, RuntimeError, ValueError) as error:
