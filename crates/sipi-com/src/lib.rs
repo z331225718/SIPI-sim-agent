@@ -132,7 +132,8 @@ pub use com_run_artifact_provenance_v1::{
 };
 pub use com_run_execution_v1::{
     COM_RUN_EXECUTION_POLICY_V1, COM_RUN_RESULT_SCHEMA_V1, ComRunExecutionErrorV1,
-    ComRunResultEnvelopeV1, execute_com_run_v1, execute_com_run_with_crosstalk_v1,
+    ComRunResultEnvelopeV1, ErlOnlyMetricsV1, erl_only_envelope_v1, execute_com_run_v1,
+    execute_com_run_with_crosstalk_v1,
 };
 pub use com_specified_artifact_execution_v1::{
     COM_RUN_ARTIFACT_SPECIFIED_POLICY_V1, COM_RUN_ARTIFACT_SPECIFIED_RESULT_SCHEMA_V1,
