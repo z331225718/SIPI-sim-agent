@@ -1,0 +1,270 @@
+schema: sipi.upstream-rust-parity-ledger.v2
+status: current_bound_open_no_upstream_parity
+as_of: '2026-08-23'
+policy: sipi.upstream-capability-first-rust-consolidation.v1
+successor:
+  predecessor: {path: docs/baselines/upstream-rust-parity-ledger.v1.yaml, sha256: dbe2d8033e3b2ebf827bab17eacb6a3c514c2ff0feca8c7bf0fda80350dc2a8e, retained: true}
+  reason: immutable_current_evidence_binding_without_historical_v1_rewrite
+evidence_commit:
+  commit: fa15b90c916ee27090d6a68a38f75f481aec270f
+  parent_preparation_commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed
+  tree: 49f8bc1f747caaab526fdefae417445f80d850f9
+  candidate_tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b
+  clean_archive_only: true
+candidate:
+  commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed
+  tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b
+  archive_sha256: c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9
+source_authority:
+  agent_spice: {commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5, tree: b6bde97128030d6cea0d68b2f0a35d807be8c402, license: MIT}
+  pybert: {commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe, tree: 5faef6bdb341d444ad65d82a11c0018b15805e24, license: BSD-3-Clause}
+  agent_com: {commit: 5272ffe74702cd585054d975559b06f8afae7b6e, tree: 7094ab6e84989b218730c52432c70da10261f8ea, license: MIT}
+evidence_bindings:
+  audit_document: {path: docs/baselines/audits/2026-08-23-upstream-rust-parity-ledger-v2.md, sha256: dec44ccf7f5f05b0e14207960098642162dec793ada4105cf039dd0d6a6aaf99}
+  candidate_coverage_v2: {path: docs/baselines/upstream-rust-candidate-coverage.v2.yaml, sha256: 5c0a261dbf09ccf8558823773378f79e2c5dace6cf607c7d00ce1038895869d3}
+  migration_inventory: {path: docs/baselines/upstream-migration-inventory.v1.yaml, sha256: 1d1a3fc2e43be26884554ca8a1d94217ade6142c0e1ae92a686eaba9b6ca5a86}
+  cli_integration: {path: docs/baselines/upstream-cli-integration.v1.yaml, sha256: 567d853f375f535c1c3c5c2172b3486c1e49a57fc1b842b1ffe4028e0ec874ae}
+rules:
+  migration_row_count: 15
+  all_completion: open
+  all_product_capability: not_claimed
+  numeric_upstream_parity: not_evaluated_or_blocked
+  external_transport_is_not_parity: true
+  fixed_fixture_scope_is_not_global: true
+  metadata_only_upstream_is_not_numeric_parity: true
+  clean_archive_no_worktree_overlay: required_for_bound_replays
+rows:
+  - id: AS-01
+    repo: agent_spice
+    public_entrypoint: fit-sparam
+    state: no_new_evidence_this_round
+    completion: open
+    parity: numeric_mismatch_open
+    product_capability: not_claimed
+    external_blocker: no_new_current_evidence
+    evidence_status: historical_only_not_currently_bound
+    candidate_coverage_entry: AS-01
+    evidence:
+      historical_manifest: {path: docs/baselines/as-01-fit-sparam-bound.v2.yaml, sha256: caa532ad7eb6eba5535d97787c2d17c2099d89f0ba33c8b8985eb21e51e4f0b0, bound_to_evidence_commit: false}
+      historical_audit: {path: docs/baselines/audits/2026-08-23-as-01-fit-sparam-bound.md, sha256: 83d0d91c8115e532bcc5377c745e6cd1bf4a5939e55c81ba20c1113b7befbce6}
+    non_claims: [no_current_immutable_replay, no_numeric_parity, no_row_close, no_release_or_promotion]
+  - id: AS-02
+    repo: agent_spice
+    public_entrypoint: fit-sparam-cascade
+    state: portable_observation_open
+    completion: open
+    parity: not_accepted
+    product_capability: not_claimed
+    external_blocker: none_for_portable_observation_but_parity_open
+    evidence_status: portable_observation_only
+    candidate_coverage_entry: AS-02
+    evidence:
+      manifest: {path: docs/baselines/as-02-fit-sparam-cascade-direct-port.v2.yaml, sha256: 5ebf955420a1f18236537406c41c53d24c9d3de02f2ebf33b1d508b16dc032e1, bound_to_evidence_commit: true}
+      audit: {path: docs/baselines/audits/2026-08-23-as-02-fit-sparam-cascade-v2.md, sha256: 6acdfe175a3a5223fb2652981b030f2487b12e671095f60b700df6d031dbd945}
+      candidate_source: {commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed, tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b, overlay_current_worktree: false}
+    non_claims: [no_numeric_parity, no_acceptance_tolerance, no_row_close, no_product_capability_promotion]
+  - id: AS-03
+    repo: agent_spice
+    public_entrypoint: fit-yparam
+    state: portable_observation_open
+    completion: open
+    parity: not_accepted
+    product_capability: not_claimed
+    external_blocker: none_for_portable_observation_but_parity_open
+    evidence_status: portable_observation_only
+    candidate_coverage_entry: AS-03
+    evidence:
+      manifest: {path: docs/baselines/as-03-fit-yparam-direct-port.v2.yaml, sha256: cdae79ecd87f96ad1839e3e1e9cfc5dad8e773081ae4e4157a6d4a6d95c2ea21, bound_to_evidence_commit: true}
+      audit: {path: docs/baselines/audits/2026-08-23-as-03-fit-yparam-v2.md, sha256: 7e9a38a50acf964eee44426403d11082dc1c2e951a59bccaea5aaa84b9fcc90b}
+      candidate_source: {commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed, tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b, overlay_current_worktree: false}
+    non_claims: [no_numeric_parity, no_acceptance_tolerance, no_row_close, no_product_capability_promotion]
+  - id: AS-04
+    repo: agent_spice
+    public_entrypoint: tune-yparam-tran
+    state: external_blocked
+    completion: open
+    parity: not_accepted
+    product_capability: not_claimed
+    external_blocker: external_reference_or_runtime_scope_open
+    evidence_status: external_blocker_open
+    candidate_coverage_entry: AS-04
+    evidence:
+      manifest: {path: docs/baselines/as-04-tune-yparam-tran-direct-port.v2.yaml, sha256: 3e42e662be21b1814f0b37fb915a66441d0af2bcc0ab7ddd1ca77d1fac4883c8, bound_to_evidence_commit: true}
+      audit: {path: docs/baselines/audits/2026-08-23-as-04-tune-yparam-tran-v2.md, sha256: 2585655813258816e5122e88b7556d328f2191595b836b60c5c0182268e83408}
+      candidate_source: {commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed, tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b, overlay_current_worktree: false}
+    non_claims: [no_numeric_parity, no_external_solver_result, no_row_close, no_product_capability_promotion]
+  - id: AS-05
+    repo: agent_spice
+    public_entrypoint: run-hspice
+    state: external_blocked
+    completion: open
+    parity: not_accepted
+    product_capability: not_claimed
+    external_blocker: external_reference_or_runtime_scope_open
+    evidence_status: external_blocker_open
+    candidate_coverage_entry: AS-05
+    evidence:
+      manifest: {path: docs/baselines/as-05-run-hspice-rust-control-direct-port.v2.yaml, sha256: 6ba0b596ba96b1cf41fb556027f25c60852917b90cf78c6ccce77c10f3856015, bound_to_evidence_commit: true}
+      audit: {path: docs/baselines/audits/2026-08-23-as-05-run-hspice-rust-control-v2.md, sha256: 1a95b47dec0a9872cf0c50d3fa41b2767d3aaeea2c24781ad6723b71269240be}
+      candidate_source: {commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed, tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b, overlay_current_worktree: false}
+    non_claims: [no_numeric_parity, no_external_solver_result, no_row_close, no_product_capability_promotion]
+  - id: AS-06
+    repo: agent_spice
+    public_entrypoint: run-rfm
+    state: external_blocked
+    completion: open
+    parity: not_accepted
+    product_capability: not_claimed
+    external_blocker: external_reference_or_runtime_scope_open
+    evidence_status: external_blocker_open
+    candidate_coverage_entry: AS-06
+    evidence:
+      manifest: {path: docs/baselines/as-06-run-rfm-direct-port.v2.yaml, sha256: b1b52a43dc8de03b98461b9af20629edfed5167df88fbc80135703df89deda90, bound_to_evidence_commit: true}
+      audit: {path: docs/baselines/audits/2026-08-23-as-06-run-rfm-v2.md, sha256: 7944aacab9717939b9912cce1312a1c7fa0ea33a54a30a1cb1f7e95f06df781b}
+      candidate_source: {commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed, tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b, overlay_current_worktree: false}
+    non_claims: [no_numeric_parity, no_external_solver_result, no_row_close, no_product_capability_promotion]
+  - id: PB-01
+    repo: pybert
+    public_entrypoint: sim
+    state: parity_blocked
+    completion: open
+    parity: blocked_payload_parity
+    product_capability: not_claimed
+    external_blocker: numeric_payload_parity_open
+    evidence_status: immutable_replay_bound_payload_parity_blocked
+    candidate_coverage_entry: PB-01
+    evidence:
+      manifest: {path: docs/baselines/pb-01-legacy-leaf.current-bound.v1.yaml, sha256: bf58448f3c6d6c024bc4591e45d75c247eb7586b3ea4b29ffbb45c54564ce268, bound_to_evidence_commit: true}
+      audit: {path: docs/baselines/audits/2026-08-23-pb-01-current-bound.md, sha256: 8b3381a44ae1262392ecbcfb45a009a1cfd4c34d297a63f8a75bd809c828266f}
+      candidate_source: {commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed, tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b, overlay_current_worktree: false}
+    non_claims: [no_numeric_payload_parity, no_row_close, no_external_reference_promotion, no_product_capability_promotion]
+  - id: PB-02
+    repo: pybert
+    public_entrypoint: sim-native
+    state: parity_blocked
+    completion: open
+    parity: blocked_payload_parity
+    product_capability: not_claimed
+    external_blocker: numeric_payload_parity_open
+    evidence_status: immutable_replay_bound_payload_parity_blocked
+    candidate_coverage_entry: PB-02
+    evidence:
+      manifest: {path: docs/baselines/pb-02-direct-port.current-bound.v1.yaml, sha256: 390003839a85243a6777011b1d3fe8e774d209d14560476d20203d6e42bb6071, bound_to_evidence_commit: true}
+      audit: {path: docs/baselines/audits/2026-08-23-pb-02-current-bound.md, sha256: 381b65de82fb3fc4b077fac3a0cfa13bb1ad86f81cfd70881a4094663b34062a}
+      candidate_source: {commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed, tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b, overlay_current_worktree: false}
+    non_claims: [no_numeric_payload_parity, no_row_close, no_external_reference_promotion, no_product_capability_promotion]
+  - id: PB-03
+    repo: pybert
+    public_entrypoint: sim-rust
+    state: fixed_fixture_scoped_pass_branch_scope_open
+    completion: open
+    parity: fixed_fixture_scoped_only_not_global
+    product_capability: not_claimed
+    external_blocker: branch_scope_open
+    evidence_status: fixed_fixture_replay_scope_pass
+    candidate_coverage_entry: PB-03
+    scope: {fixed_fixture_payload_parity: true, global_row_parity: false, branch_scope_open: true}
+    evidence:
+      manifest: {path: docs/baselines/pb-03-direct-port.current-bound.v1.yaml, sha256: 1a348ecb73e7e76dd9d562ffd7afd9dbe1c109e7c7bb29067b0683448a8dcb16, bound_to_evidence_commit: true}
+      audit: {path: docs/baselines/audits/2026-08-23-pb-03-current-bound.md, sha256: a7cf8e216aa98de672c2baa92f684d87011f84c968602f53b8e31c44504579f1}
+      candidate_source: {commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed, tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b, overlay_current_worktree: false}
+    non_claims: [no_global_payload_parity, no_row_close, no_branch_completion, no_product_capability_promotion]
+  - id: PB-04
+    repo: pybert
+    public_entrypoint: sim-auto
+    state: external_blocked
+    completion: open
+    parity: not_accepted
+    product_capability: not_claimed
+    external_blocker: external_python_reference_required
+    evidence_status: immutable_replay_external_blocked
+    candidate_coverage_entry: PB-04
+    evidence:
+      manifest: {path: docs/baselines/pb-04-direct-port.current-bound.v1.yaml, sha256: b13a8d42946d5685344f8e03c78dff3d8c40c51e1f57f52a093b69571742f8b1, bound_to_evidence_commit: true}
+      audit: {path: docs/baselines/audits/2026-08-23-pb-04-current-bound.md, sha256: 70ff7c652fc7822dd53371736be4f583b59e73887d67698dea661bc25c387907}
+      candidate_source: {commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed, tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b, overlay_current_worktree: false}
+    non_claims: [no_self_compare, no_numeric_payload_parity, no_row_close, no_product_capability_promotion]
+  - id: PB-05
+    repo: pybert
+    public_entrypoint: sim-compare
+    state: external_blocked
+    completion: open
+    parity: not_accepted
+    product_capability: not_claimed
+    external_blocker: external_reference_required_not_evaluated
+    evidence_status: immutable_replay_external_blocked
+    candidate_coverage_entry: PB-05
+    evidence:
+      manifest: {path: docs/baselines/pb-05-direct-port.current-bound.v1.yaml, sha256: 3876ae5a1e827d80ccfc08fdbb72a3b3bb743130d2efcccc2533de7c8439a39d, bound_to_evidence_commit: true}
+      audit: {path: docs/baselines/audits/2026-08-23-pb-05-current-bound.md, sha256: 925e86126e04db80671ef96b4830c8e38fa164918e5df792bac148f56a9c6bd4}
+      candidate_source: {commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed, tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b, overlay_current_worktree: false}
+    non_claims: [no_self_compare, no_numeric_payload_parity, no_row_close, no_product_capability_promotion]
+  - id: COM-01
+    repo: agent_com
+    public_entrypoint: config-validate
+    state: no_new_evidence_this_round
+    completion: open
+    parity: not_accepted
+    product_capability: not_claimed
+    external_blocker: no_new_current_evidence
+    evidence_status: historical_only_not_currently_bound
+    candidate_coverage_entry: COM-01
+    evidence:
+      historical_manifest: {path: docs/baselines/com-01-direct-replay-bound.v2.yaml, sha256: a5581ddfd6284a5345845c276915933f8529f6300cddc14c09fa2a534589db32, bound_to_evidence_commit: false}
+      historical_audit: {path: docs/baselines/audits/2026-08-23-com-01-direct-replay-bound.md, sha256: 5dec2592a9b83001b6f31cb1a56ac7e86399ff306ffdfaeb8d65a2df5d700c4b}
+    non_claims: [no_current_immutable_replay, no_numeric_parity, no_row_close, no_product_capability_promotion]
+  - id: COM-02
+    repo: agent_com
+    public_entrypoint: run
+    state: archive_derived_internal_semantic_observation_open
+    completion: open
+    parity: not_accepted
+    product_capability: not_claimed
+    external_blocker: upstream_metadata_only_no_runtime
+    evidence_status: archive_derived_internal_semantic_evidence_open
+    candidate_coverage_entry: COM-02
+    upstream_runtime: metadata_only
+    numeric_upstream_parity: not_evaluated
+    evidence:
+      manifest: {path: docs/baselines/com-02-direct-port.v2.yaml, sha256: aac102b3eb6795ec663e2d102c3c780b229844d151845e2c9d602c8843627e95, bound_to_evidence_commit: true}
+      audit: {path: docs/baselines/audits/2026-08-23-com-02-direct-semantic-replay-v2.md, sha256: 9069646b14618b25a317db2987619d3ce4b1a4b146cbafc3746febcdc66fabed}
+      candidate_source: {commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed, tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b, overlay_current_worktree: false}
+    non_claims: [no_numeric_upstream_parity, no_upstream_runtime_attestation, no_row_close, no_product_capability_promotion]
+  - id: COM-03
+    repo: agent_com
+    public_entrypoint: compare
+    state: no_new_evidence_this_round
+    completion: open
+    parity: not_accepted
+    product_capability: not_claimed
+    external_blocker: no_new_current_evidence
+    evidence_status: historical_only_not_currently_bound
+    candidate_coverage_entry: COM-03
+    evidence:
+      historical_manifest: {path: docs/baselines/com-03-direct-port-bound.v2.yaml, sha256: 13792b8be122d247cf3cb41a3361caec9fad1cb15c8f3633624d1d98da17a4ac, bound_to_evidence_commit: false}
+      historical_audit: {path: docs/baselines/audits/2026-08-23-com-03-direct-port-bound.md, sha256: 35c3a402a7f3cdc16ff64d38e798ec6bece63c4a6e9cc3e517fc115fdd7883c3}
+    non_claims: [no_current_immutable_replay, no_numeric_parity, no_row_close, no_product_capability_promotion]
+  - id: COM-04
+    repo: agent_com
+    public_entrypoint: load_config-run_com-write_artifacts
+    state: archive_derived_internal_semantic_observation_open
+    completion: open
+    parity: not_accepted
+    product_capability: not_claimed
+    external_blocker: upstream_metadata_only_no_runtime
+    evidence_status: archive_derived_internal_semantic_evidence_open
+    candidate_coverage_entry: COM-04
+    upstream_runtime: metadata_only
+    numeric_upstream_parity: not_evaluated
+    evidence:
+      manifest: {path: docs/baselines/com-04-direct-port.v2.yaml, sha256: 5d15015327a1efdc4e87e386342d819ae20f54456a07b9a63cb2be2dcd107a84, bound_to_evidence_commit: true}
+      audit: {path: docs/baselines/audits/2026-08-23-com-04-direct-semantic-replay-v2.md, sha256: 17a59d3b131231d2ea22e94424ecf4b5179b5ca78cf24adb31b254a05c5341c2}
+      candidate_source: {commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed, tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b, overlay_current_worktree: false}
+    non_claims: [no_numeric_upstream_parity, no_upstream_runtime_attestation, no_row_close, no_product_capability_promotion]
+summary:
+  rows: 15
+  completion_open: 15
+  parity_acceptance_count: 0
+  product_capability_claim_count: 0
+  current_immutable_replay_bound: 12
+  no_new_evidence_rows: 3

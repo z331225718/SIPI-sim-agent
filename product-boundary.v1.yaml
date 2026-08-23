@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: 058b5a25ec2f3ddf92a0ff1c4876bc41c23ff7dd65537deafb132ac02f9a3688
+  tracked_paths_sha256: e68fe9db50a7eb62f2cde342f896dd959777f9a5eab5c3c4c2162c812def492e
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -9485,6 +9485,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    docs/baselines/audits/2026-08-23-upstream-rust-parity-ledger-v2.md:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     docs/baselines/authorized-material-registry.v1.yaml:
       rule: historical-docs
       class: migration_only
@@ -17010,6 +17016,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     docs/baselines/upstream-rust-parity-ledger.v1.yaml:
+      rule: historical-docs
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    docs/baselines/upstream-rust-parity-ledger.v2.yaml:
       rule: historical-docs
       class: migration_only
       license: LicenseRef-See-License-Manifest
@@ -28901,6 +28913,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: project_authored
       distribution: evidence
+    tools/test_verify_upstream_rust_parity_ledger_v2.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
     tools/verify_acceptance_profiles.py:
       rule: migration-tools
       class: migration_only
@@ -32658,6 +32676,12 @@ inventory:
       provenance: project_authored
       distribution: evidence
     tools/verify_upstream_rust_parity_ledger.py:
+      rule: migration-tools
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: project_authored
+      distribution: evidence
+    tools/verify_upstream_rust_parity_ledger_v2.py:
       rule: migration-tools
       class: migration_only
       license: LicenseRef-See-License-Manifest
