@@ -235,6 +235,26 @@ fn projection_covers_portable_modulation_noise_and_viterbi_fields() {
             ("nrz", ModulationV1::Nrz) | ("duo", ModulationV1::DuoBinary)
         ));
     }
+    let duo_path = root.join("duo-run.yaml");
+    fs::write(
+        &duo_path,
+        projection_yaml(
+            "f_max: 2.0\nmod_type: Duo-binary\npn_mag: 0.001\npn_freq: 1000.0\nrn: 0.001\ndfe_tap_tuners:\n- !!python/tuple [true, -0.2, 0.2]",
+        ),
+    )
+    .unwrap();
+    let duo_result_path = root.join("duo-run.pybert_data");
+    let duo_result = run_legacy_sim_v1(&LegacySimRequestV1 {
+        config_file: duo_path,
+        results: Some(duo_result_path.clone()),
+    });
+    let duo_error =
+        duo_result.expect_err("Duo-binary jitter must fail closed when crossings are unavailable");
+    assert!(
+        duo_error.to_string().contains("crossing") || duo_error.to_string().contains("jitter"),
+        "Duo-binary failure must identify the jitter/crossing branch: {duo_error}"
+    );
+    assert!(!duo_result_path.exists(), "failed jitter must not publish a result artifact");
     let _ = fs::remove_dir_all(root);
 }
 

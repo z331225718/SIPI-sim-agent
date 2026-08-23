@@ -411,10 +411,22 @@ pub fn simulate_portable_reference_v1(
     if (input.analysis.include_jitter || input.analysis.include_bathtub)
         && let PatternV1::Prbs { order, .. } = &input.pattern
     {
+        // The legacy Python model builds a two-tap duobinary ideal pulse for
+        // crossing analysis.  Comparing against the held symbols loses the
+        // zero crossings for otherwise valid Duo-binary requests.
+        let jitter_ideal_waveform = if matches!(input.modulation, ModulationV1::DuoBinary) {
+            let mut duobinary_impulse = vec![0.0; samples_per_ui.saturating_mul(2)];
+            duobinary_impulse[0] = 0.5;
+            duobinary_impulse[samples_per_ui] = 0.5;
+            causal_convolve_truncated(&tx_waveform, &duobinary_impulse, sample_count)
+                .map_err(|error| error.to_string())?
+        } else {
+            tx_waveform.clone()
+        };
         reference_jitter(
             input,
             *order,
-            &tx_waveform,
+            &jitter_ideal_waveform,
             [
                 ("chnl", channel_output.as_slice()),
                 ("tx", rx_input.as_slice()),

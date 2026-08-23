@@ -760,10 +760,23 @@ pub fn simulate_native_v1_with_cancellation(
     }
     cancellation.check()?;
     if input.analysis.include_jitter || input.analysis.include_bathtub {
+        // PyBERT's legacy Duo-binary jitter path measures crossings against
+        // the duobinary pulse, not the held symbol stream.  Keep this ideal
+        // reference separate from the channel waveform so the Rust path
+        // reaches the same crossing branch instead of failing on a missing
+        // zero crossing.
+        let jitter_ideal_waveform = if matches!(input.modulation, ModulationV1::DuoBinary) {
+            let mut duobinary_impulse = vec![0.0; samples_per_ui.saturating_mul(2)];
+            duobinary_impulse[0] = 0.5;
+            duobinary_impulse[samples_per_ui] = 0.5;
+            causal_convolve_truncated(&linear.tx_waveform, &duobinary_impulse, sample_count)?
+        } else {
+            linear.tx_waveform.clone()
+        };
         let jitter = calculate_native_jitter_metrics(
             input,
             prbs_order.ok_or(NativeSimulationError::UnsupportedPattern)?,
-            &linear.tx_waveform,
+            &jitter_ideal_waveform,
             [
                 ("chnl", channel_output.as_slice()),
                 ("tx", linear.rx_input.as_slice()),
@@ -777,7 +790,8 @@ pub fn simulate_native_v1_with_cancellation(
             ],
             samples_per_ui,
             input.analysis.include_bathtub,
-        )?;
+        );
+        let jitter = jitter?;
         metrics.extend(jitter.metrics);
         arrays.extend(jitter.arrays);
         if input.analysis.include_bathtub {
