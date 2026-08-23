@@ -17,10 +17,13 @@ from run_com_erl_exact_profile_replay_v3 import (
     PROFILE,
     OUTER_CONTROLS,
     RUNTIME_TIMEOUT_S,
+    UPSTREAM_PYTHON_ENV,
     candidate_probe,
     canonical_config,
     resolve_linker,
+    upstream_probe,
     upstream_command,
+    validate_uv_cache_dir,
 )
 from com_erl_exact_profile_replay_v3_support import archive_materialize
 from verify_com_erl_exact_profile_replay_v3 import VerificationError, verify_aggregate, verify_manifest, verify_stage
@@ -122,7 +125,41 @@ class ComErlExactProfilePrepTests(unittest.TestCase):
     def test_upstream_uses_resolved_uv_and_python(self):
         command = upstream_command(Path("C:/resolved/uv.exe"), Path("C:/resolved/python.exe"), "probe")
         self.assertEqual(command[0:2], [str(Path("C:/resolved/uv.exe")), "run"])
+        self.assertIn("--offline", command)
         self.assertEqual(command[command.index("--python") + 1], str(Path("C:/resolved/python.exe")))
+
+    def test_upstream_python_encoding_is_explicit_utf8(self):
+        self.assertEqual(UPSTREAM_PYTHON_ENV, {"PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"})
+
+    def test_upstream_probe_passes_utf8_environment_to_uv(self):
+        class Completed:
+            returncode = 1
+            stdout = b""
+            stderr = b"blocked"
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch("run_com_erl_exact_profile_replay_v3.subprocess.run", return_value=Completed()) as run:
+                result = upstream_probe(Path(directory), Path(directory) / "input.s2p", Path("uv.exe"), Path("python.exe"), Path(directory))
+        self.assertEqual(result["status"], "failed")
+        env = run.call_args.kwargs["env"]
+        self.assertEqual(env["PYTHONIOENCODING"], "utf-8")
+        self.assertEqual(env["PYTHONUTF8"], "1")
+        self.assertEqual(env["UV_CACHE_DIR"], str(Path(directory).resolve()))
+
+    def test_uv_cache_requires_external_existing_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cache = root / "cache"
+            cache.mkdir()
+            with self.assertRaises(RuntimeError):
+                validate_uv_cache_dir(cache, (root,))
+            with self.assertRaises(RuntimeError):
+                validate_uv_cache_dir(root / "missing", tuple())
+            external = root.parent / (root.name + "-external-cache")
+            external.mkdir()
+            try:
+                self.assertEqual(validate_uv_cache_dir(external, (root,)), external.resolve())
+            finally:
+                external.rmdir()
 
     def test_git_archive_timeout_is_blocked(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -226,6 +263,9 @@ class ComErlExactProfilePrepTests(unittest.TestCase):
             ("runtime", {"rustc_workspace_wrapper": "ccache"}),
             ("runtime", {"linker": {"role": "rust-lld", "target": "other", "resolution": "drift", "probe_strategy": "drift"}}),
             ("runtime", {"native_toolchain": {"msvc_version": "drift"}}),
+            ("runtime", {"upstream_uv_cache": {"policy": "dedicated_external"}}),
+            ("runtime", {"upstream_command": "uv run --frozen --project ."}),
+            ("upstream", {"uv_lock_sha256": "0" * 64}),
         ]
         for key, value in mutations:
             mutated = json.loads(json.dumps(document))

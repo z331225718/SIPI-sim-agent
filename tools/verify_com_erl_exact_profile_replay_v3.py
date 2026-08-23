@@ -102,7 +102,7 @@ def verify_manifest(document: dict[str, Any]) -> dict[str, Any]:
     if candidate != {"commit": "955835369c28aacb3f49bd0cf95f3660587739d8", "tree": "fbb415e5582ccf3ee70e4d0d472f1fc6856e0e26", "archive_sha256": "005e06d1ab680a7ddf41a2110c5e8ea9e44b020e04c5d4369a78f05c15ea79f0"}:
         raise VerificationError("candidate identity")
     upstream = document.get("upstream", {})
-    if upstream.get("commit") != "5272ffe74702cd585054d975559b06f8afae7b6e" or upstream.get("tree") != "7094ab6e84989b218730c52432c70da10261f8ea" or upstream.get("archive_sha256") != "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf":
+    if upstream.get("commit") != "5272ffe74702cd585054d975559b06f8afae7b6e" or upstream.get("tree") != "7094ab6e84989b218730c52432c70da10261f8ea" or upstream.get("archive_sha256") != "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf" or upstream.get("required_runtime") != "uv run --frozen --offline --project . --python <pinned-python> python -c <probe>" or upstream.get("required_lock") != "uv.lock" or upstream.get("uv_lock_sha256") != "7711f8ef121491ffda0198462243f3aeb02b5a8b05f6b0c040cdab387293df8e":
         raise VerificationError("upstream identity")
     runner = document.get("runner", {})
     if runner.get("path") != "tools/run_com_erl_exact_profile_replay_v3.py" or runner.get("helper_path") != "tools/com_erl_exact_profile_replay_v3_support.py" or runner.get("sha256") != hashlib.sha256((ROOT / runner["path"]).read_bytes()).hexdigest() or runner.get("helper_sha256") != hashlib.sha256((ROOT / runner["helper_path"]).read_bytes()).hexdigest():
@@ -131,7 +131,7 @@ def verify_manifest(document: dict[str, Any]) -> dict[str, Any]:
     if document.get("runtime", {}).get("timeout_s") != 180 or document.get("runtime", {}).get("build_timeout_s") != 900:
         raise VerificationError("runtime timeout")
     runtime = document.get("runtime", {})
-    if runtime.get("build_profile") != "release" or not runtime.get("locked") or runtime.get("rustc_wrapper") != "cleared" or runtime.get("cargo_build_rustc_wrapper") != "cleared" or runtime.get("rustc_workspace_wrapper") != "cleared" or runtime.get("cargo_incremental") != "0" or runtime.get("cargo_offline") is not True or runtime.get("uv_offline") is not True or runtime.get("linker") != {"role": "rust-lld", "target": "x86_64-pc-windows-msvc", "resolution": "rustc --print sysroot/lib/rustlib/x86_64-pc-windows-msvc/bin/rust-lld.exe", "probe_strategy": "rust-lld --version; generic-driver exit 1 admitted"} or runtime.get("native_toolchain") != {"target": "x86_64-pc-windows-msvc", "msvc_version": "14.44.35207", "windows_sdk_version": "10.0.26100.0", "include_order": ["msvc", "sdk_ucrt", "sdk_shared", "sdk_um", "sdk_winrt", "sdk_cppwinrt"], "lib_order": ["msvc", "sdk_ucrt", "sdk_um"], "environment": "explicit PATH/INCLUDE/LIB; inherited LIB and INCLUDE forbidden", "required_key_libs": ["vcruntime.lib", "msvcrt.lib", "oldnames.lib", "ucrt.lib", "kernel32.lib", "user32.lib"]}:
+    if runtime.get("build_profile") != "release" or not runtime.get("locked") or runtime.get("rustc_wrapper") != "cleared" or runtime.get("cargo_build_rustc_wrapper") != "cleared" or runtime.get("rustc_workspace_wrapper") != "cleared" or runtime.get("cargo_incremental") != "0" or runtime.get("cargo_offline") is not True or runtime.get("uv_offline") is not True or runtime.get("linker") != {"role": "rust-lld", "target": "x86_64-pc-windows-msvc", "resolution": "rustc --print sysroot/lib/rustlib/x86_64-pc-windows-msvc/bin/rust-lld.exe", "probe_strategy": "rust-lld --version; generic-driver exit 1 admitted"} or runtime.get("upstream_command") != "uv run --frozen --offline --project . --python <pinned-python> python -c <probe>" or runtime.get("upstream_python_env") != {"PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"} or runtime.get("upstream_uv_cache") != {"required": True, "policy": "caller_supplied_external", "env_key": "UV_CACHE_DIR", "command_flag": "--offline", "inherited_cache_not_claimed": True, "path_emission": "path_free_policy_only"} or runtime.get("native_toolchain") != {"target": "x86_64-pc-windows-msvc", "msvc_version": "14.44.35207", "windows_sdk_version": "10.0.26100.0", "include_order": ["msvc", "sdk_ucrt", "sdk_shared", "sdk_um", "sdk_winrt", "sdk_cppwinrt"], "lib_order": ["msvc", "sdk_ucrt", "sdk_um"], "environment": "explicit PATH/INCLUDE/LIB; inherited LIB and INCLUDE forbidden", "required_key_libs": ["vcruntime.lib", "msvcrt.lib", "oldnames.lib", "ucrt.lib", "kernel32.lib", "user32.lib"]}:
         raise VerificationError("release locked build")
     if document.get("policy", {}).get("s_parameter_fit") != "forbidden" or document.get("policy", {}).get("channel") != "raw S11 FD-to-TD impulse":
         raise VerificationError("channel policy")
@@ -162,6 +162,8 @@ def verify_report(report: dict[str, Any], manifest: dict[str, Any]) -> None:
     for side in ("candidate", "upstream"):
         if report.get(side, {}).get("commit") != manifest[side]["commit"] or report.get(side, {}).get("tree") != manifest[side]["tree"] or report.get(side, {}).get("archive_sha256") != manifest[side]["archive_sha256"]:
             raise VerificationError(f"{side} identity")
+    if report.get("upstream", {}).get("uv_lock_sha256") != manifest["upstream"].get("uv_lock_sha256"):
+        raise VerificationError("upstream lock identity")
     input_payload = report.get("input", {})
     if input_payload.get("fixture_sha256") != FIXTURE_SHA256 or input_payload.get("fixture_bytes") != FIXTURE_BYTES or input_payload.get("fixture_rows") != FIXTURE_ROWS or input_payload.get("controls") != manifest["controls"]:
         raise VerificationError("report fixture or controls")
@@ -195,6 +197,12 @@ def verify_report(report: dict[str, Any], manifest: dict[str, Any]) -> None:
     execution = report.get("execution", {})
     if execution.get("timeout_s") != manifest["runtime"]["timeout_s"] or execution.get("build_timeout_s") != manifest["runtime"]["build_timeout_s"]:
         raise VerificationError("report runtime")
+    if execution.get("upstream_python_env") != manifest["runtime"].get("upstream_python_env"):
+        raise VerificationError("upstream Python encoding environment")
+    if execution.get("upstream_uv_cache_policy") != manifest["runtime"].get("upstream_uv_cache", {}).get("policy"):
+        raise VerificationError("upstream uv cache policy")
+    if execution.get("upstream_command") != manifest["runtime"].get("upstream_command"):
+        raise VerificationError("upstream runtime command")
     if execution.get("runner", {}).get("path") != manifest["runner"]["path"] or execution.get("runner", {}).get("sha256") != manifest["runner"]["sha256"] or execution.get("helper", {}).get("path") != manifest["runner"]["helper_path"] or execution.get("helper", {}).get("sha256") != manifest["runner"]["helper_sha256"]:
         raise VerificationError("report harness paths")
     toolchain = report.get("toolchain", {})

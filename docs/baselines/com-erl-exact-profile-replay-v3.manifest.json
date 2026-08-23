@@ -10,8 +10,9 @@
     "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
     "tree": "7094ab6e84989b218730c52432c70da10261f8ea",
     "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
-    "required_runtime": "uv run --frozen",
-    "required_lock": "uv.lock"
+    "required_runtime": "uv run --frozen --offline --project . --python <pinned-python> python -c <probe>",
+    "required_lock": "uv.lock",
+    "uv_lock_sha256": "7711f8ef121491ffda0198462243f3aeb02b5a8b05f6b0c040cdab387293df8e"
   },
   "fixture": {
     "relative_path": "crates/sipi-agent-com-direct/tests/fixtures/erl_s2p_10db_at_26p56ghz.s2p",
@@ -95,7 +96,19 @@
       "environment": "explicit PATH/INCLUDE/LIB; inherited LIB and INCLUDE forbidden",
       "required_key_libs": ["vcruntime.lib", "msvcrt.lib", "oldnames.lib", "ucrt.lib", "kernel32.lib", "user32.lib"]
     },
-    "upstream_command": "uv run --frozen --project . --python <pinned-python> python -c <probe>"
+    "upstream_command": "uv run --frozen --offline --project . --python <pinned-python> python -c <probe>",
+    "upstream_python_env": {
+      "PYTHONIOENCODING": "utf-8",
+      "PYTHONUTF8": "1"
+    },
+    "upstream_uv_cache": {
+      "required": true,
+      "policy": "caller_supplied_external",
+      "env_key": "UV_CACHE_DIR",
+      "command_flag": "--offline",
+      "inherited_cache_not_claimed": true,
+      "path_emission": "path_free_policy_only"
+    }
   },
   "policy": {
     "s_parameter_fit": "forbidden",
@@ -125,17 +138,17 @@
   "runner": {
     "path": "tools/run_com_erl_exact_profile_replay_v3.py",
     "helper_path": "tools/com_erl_exact_profile_replay_v3_support.py",
-    "sha256": "8fac5b7d3b8a51c05ddb1893ff3e4fe01d71709eace2bc94499c433138b5fdbf",
+    "sha256": "af32b4131c33717095009fa339c35fbdaa97605f366be94f535d2081431b21ec",
     "helper_sha256": "77fd60cfcc21161b5be997c6b72fc9c1dd45fceb0a8d94d977dda63b0f6f7ea9"
   },
   "verification_tools": {
     "aggregator": {"path": "tools/aggregate_com_erl_exact_profile_replay_v3.py", "sha256": "c098523e6e41156523300d5f8530094fe1f50844b43f22df6eddb324c8a3814a"},
-    "verifier": {"path": "tools/verify_com_erl_exact_profile_replay_v3.py", "sha256": "cb355b1d711ae13e9a4964a4ea9ac8b2c37fdcf24941a5b8083b74149af30bd2"},
-    "tests": {"path": "tools/test_com_erl_exact_profile_replay_v3.py", "sha256": "4bd0b8a25873236d3d1c8b5880492c421f6d0894f2fab82834682a65c160e7ed"}
+    "verifier": {"path": "tools/verify_com_erl_exact_profile_replay_v3.py", "sha256": "5b9ae74c5b679eb78b3acb6cb083aa756f1ac67dd873f2fee4299911f504c97a"},
+    "tests": {"path": "tools/test_com_erl_exact_profile_replay_v3.py", "sha256": "aa719ed32112d6d1258deaa74ed58d73e810d407f583ffbf88f4ebb1da302963"}
   },
   "audit": {
     "path": "docs/baselines/audits/2026-08-24-com-erl-exact-profile-replay-v3-linker-prep.md",
-    "sha256": "70284faf6338b439845aef1738fbd3ac1ca37695c5b4cd1c72a1f2160e7b4716"
+    "sha256": "dee9c1166a4e20e8ade56c508ef5ec394052e6f0edd3380b35334b6d8119754c"
   },
   "reports": {
     "run_ids": ["com-erl-exact-v3-run1", "com-erl-exact-v3-run2"],

@@ -42,6 +42,9 @@ FIXTURE_BYTES = 830969
 FIXTURE_ROWS = 8001
 RUNTIME_TIMEOUT_S = 180
 BUILD_TIMEOUT_S = 900
+UPSTREAM_PYTHON_ENV = {"PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
+UV_CACHE_POLICY = "caller_supplied_external"
+UPSTREAM_RUNTIME_COMMAND = "uv run --frozen --offline --project . --python <pinned-python> python -c <probe>"
 METRIC_FIELDS = ("ERL", "ERL11", "ERL_RMS", "ERL_phase_index")
 PROFILE = {
     "name": "r480_s2p_erl_v1",
@@ -133,7 +136,7 @@ def write_blocked_report(path: Path, run_id: str, reason: str, toolchain: dict[s
         "candidate": {"commit": CANDIDATE_COMMIT, "tree": CANDIDATE_TREE, "archive_sha256": CANDIDATE_ARCHIVE, "materialization": "git archive; no working-tree overlay"},
         "upstream": {"commit": UPSTREAM_COMMIT, "tree": UPSTREAM_TREE, "archive_sha256": UPSTREAM_ARCHIVE, "materialization": "git archive; no working-tree overlay"},
         "harness": {"required": True, "materialization": "future prep commit clean archive", "commit": "pending_harness_prep", "tree": "pending_harness_prep", "archive_sha256": "pending_harness_prep"},
-        "execution": {"runner": {"path": "tools/run_com_erl_exact_profile_replay_v3.py", "sha256": sha256_file(Path(__file__).resolve())}, "helper": {"path": "tools/com_erl_exact_profile_replay_v3_support.py", "sha256": sha256_file(Path(__file__).with_name("com_erl_exact_profile_replay_v3_support.py"))}, "timeout_s": RUNTIME_TIMEOUT_S, "build_timeout_s": BUILD_TIMEOUT_S},
+        "execution": {"runner": {"path": "tools/run_com_erl_exact_profile_replay_v3.py", "sha256": sha256_file(Path(__file__).resolve())}, "helper": {"path": "tools/com_erl_exact_profile_replay_v3_support.py", "sha256": sha256_file(Path(__file__).with_name("com_erl_exact_profile_replay_v3_support.py"))}, "timeout_s": RUNTIME_TIMEOUT_S, "build_timeout_s": BUILD_TIMEOUT_S, "upstream_python_env": UPSTREAM_PYTHON_ENV, "upstream_uv_cache_policy": UV_CACHE_POLICY, "upstream_command": UPSTREAM_RUNTIME_COMMAND},
         "toolchain": toolchain or {},
         "candidate_custody": {"status": "not_available", "reason": "binary was not produced before block"},
         "input": {"fixture_relative": FIXTURE_RELATIVE, "fixture_sha256": FIXTURE_SHA256, "fixture_bytes": FIXTURE_BYTES, "fixture_rows": FIXTURE_ROWS, "fixture_copies": {"independent": True, "read_only": True, "pre_sha256": {"candidate": FIXTURE_SHA256, "upstream": FIXTURE_SHA256}, "post_sha256": {"candidate": FIXTURE_SHA256, "upstream": FIXTURE_SHA256}}, "controls": {"outer": OUTER_CONTROLS, "tdr_profile": PROFILE}},
@@ -145,7 +148,7 @@ def write_blocked_report(path: Path, run_id: str, reason: str, toolchain: dict[s
     path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def upstream_probe(root: Path, fixture: Path, uv: Path, python: Path) -> dict[str, Any]:
+def upstream_probe(root: Path, fixture: Path, uv: Path, python: Path, uv_cache_dir: Path) -> dict[str, Any]:
     code = r'''
 import json
 from pathlib import Path
@@ -176,8 +179,9 @@ print(json.dumps({
     "diagnostic_keys": sorted(diag.keys()),
 }, sort_keys=True))
 '''.replace("__FIXTURE__", repr(str(fixture))).replace("__METRICS__", repr(list(METRIC_FIELDS)))
-    env = {"PYTHONPATH": str(root / "src"), "UV_OFFLINE": "1", "PYTHONNOUSERSITE": "1"}
+    env = {"PYTHONPATH": str(root / "src"), "UV_OFFLINE": "1", "PYTHONNOUSERSITE": "1", **UPSTREAM_PYTHON_ENV}
     command = upstream_command(uv, python, code)
+    env["UV_CACHE_DIR"] = str(uv_cache_dir.resolve())
     try:
         completed = subprocess.run(command, cwd=root, env=env, capture_output=True, timeout=RUNTIME_TIMEOUT_S, check=False)
     except subprocess.TimeoutExpired:
@@ -191,7 +195,16 @@ print(json.dumps({
 
 
 def upstream_command(uv: Path, python: Path, code: str) -> list[str]:
-    return [str(uv), "run", "--frozen", "--project", ".", "--python", str(python), "python", "-c", code]
+    return [str(uv), "run", "--frozen", "--offline", "--project", ".", "--python", str(python), "python", "-c", code]
+
+
+def validate_uv_cache_dir(cache: Path, forbidden_roots: tuple[Path, ...]) -> Path:
+    resolved = cache.resolve()
+    if not resolved.is_dir():
+        raise RuntimeError("uv cache directory is missing")
+    if any(resolved == root.resolve() or root.resolve() in resolved.parents for root in forbidden_roots):
+        raise RuntimeError("uv cache directory is inside a forbidden root")
+    return resolved
 
 
 def resolve_linker(rustc: Path, requested: Path | None) -> Path:
@@ -249,6 +262,7 @@ def main() -> int:
     parser.add_argument("--uv", type=Path, required=True)
     parser.add_argument("--python", type=Path, required=True)
     parser.add_argument("--git", type=Path, required=True)
+    parser.add_argument("--uv-cache-dir", type=Path, required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
@@ -260,11 +274,13 @@ def main() -> int:
     report_path = (args.repo.resolve() / report_relative).resolve()
     if args.repo.resolve() not in report_path.parents:
         raise SystemExit("report escapes repository")
+    report_path.unlink(missing_ok=True)
     try:
+        uv_cache_dir = validate_uv_cache_dir(args.uv_cache_dir, (args.repo, args.agent_com_root))
         native = discover_native_msvc()
         linker = resolve_linker(args.rustc, args.linker)
         preflight_toolchain = {"git": tool_identity(args.git.resolve(), RUNTIME_TIMEOUT_S), "cargo": tool_identity(args.cargo.resolve(), RUNTIME_TIMEOUT_S), "rustc": tool_identity(args.rustc.resolve(), RUNTIME_TIMEOUT_S), "uv": tool_identity(args.uv.resolve(), RUNTIME_TIMEOUT_S), "python": tool_identity(args.python.resolve(), RUNTIME_TIMEOUT_S), "linker": linker_identity(linker, RUNTIME_TIMEOUT_S), "compiler": native["msvc"]["compiler"], "msvc": native["msvc"], "sdk": native["sdk"]}
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError, RuntimeError):
         write_blocked_report(report_path, args.run_id, "tool_identity_unavailable")
         return 2
     identity_roles = ("git", "cargo", "rustc", "uv", "python", "linker", "compiler")
@@ -279,6 +295,7 @@ def main() -> int:
         candidate = temp / "candidate"
         upstream_sha = archive_materialize(args.git.resolve(), args.agent_com_root.resolve(), UPSTREAM_COMMIT, upstream, UPSTREAM_ARCHIVE)
         candidate_sha = archive_materialize(args.git.resolve(), args.repo.resolve(), CANDIDATE_COMMIT, candidate, CANDIDATE_ARCHIVE)
+        uv_cache_dir = validate_uv_cache_dir(uv_cache_dir, (args.repo, args.agent_com_root, upstream, candidate))
         fixture = candidate / FIXTURE_RELATIVE
         fixture_bytes = fixture.read_bytes()
         fixture_sha = sha256_bytes(fixture_bytes)
@@ -327,7 +344,7 @@ def main() -> int:
             raise RuntimeError("candidate release build failed: " + build.stderr.decode(errors="replace")[-2000:])
         binary = target / "release" / ("sipi-com-direct-run.exe" if os.name == "nt" else "sipi-com-direct-run")
         upstream_started = time.monotonic()
-        upstream_payload = upstream_probe(upstream, upstream_fixture, args.uv.resolve(), args.python.resolve())
+        upstream_payload = upstream_probe(upstream, upstream_fixture, args.uv.resolve(), args.python.resolve(), uv_cache_dir)
         upstream_elapsed = round(time.monotonic() - upstream_started, 6)
         candidate_payload = candidate_probe(binary, config, candidate_fixture, temp / "artifacts")
         copy_post_sha = {"candidate": sha256_file(candidate_fixture), "upstream": sha256_file(upstream_fixture)}
@@ -358,7 +375,7 @@ def main() -> int:
             "candidate_output": candidate_payload["metrics"],
             "artifact": {"candidate_result_sha256": candidate_payload["artifact_sha256"]},
             "toolchain": {"git": tool_identity(args.git.resolve(), RUNTIME_TIMEOUT_S), "cargo": tool_identity(args.cargo.resolve(), RUNTIME_TIMEOUT_S), "rustc": tool_identity(args.rustc.resolve(), RUNTIME_TIMEOUT_S), "uv": tool_identity(args.uv.resolve(), RUNTIME_TIMEOUT_S), "python": tool_identity(args.python.resolve(), RUNTIME_TIMEOUT_S), "linker": linker_identity(linker, RUNTIME_TIMEOUT_S), "compiler": native["msvc"]["compiler"], "msvc": native["msvc"], "sdk": native["sdk"], "rustc_wrapper": "cleared", "cargo_build_rustc_wrapper": "cleared", "rustc_workspace_wrapper": "cleared", "cargo_incremental": "0", "cargo_offline": True, "uv_offline": True},
-            "execution": {"runner": {"path": "tools/run_com_erl_exact_profile_replay_v3.py", "sha256": sha256_file(runner)}, "helper": {"path": "tools/com_erl_exact_profile_replay_v3_support.py", "sha256": sha256_file(helper)}, "timeout_s": RUNTIME_TIMEOUT_S, "build_timeout_s": BUILD_TIMEOUT_S, "upstream_elapsed_s": upstream_elapsed, "candidate_timeout_s": RUNTIME_TIMEOUT_S, "candidate_build_exit": build.returncode, "build_profile": "release", "locked": True},
+            "execution": {"runner": {"path": "tools/run_com_erl_exact_profile_replay_v3.py", "sha256": sha256_file(runner)}, "helper": {"path": "tools/com_erl_exact_profile_replay_v3_support.py", "sha256": sha256_file(helper)}, "timeout_s": RUNTIME_TIMEOUT_S, "build_timeout_s": BUILD_TIMEOUT_S, "upstream_elapsed_s": upstream_elapsed, "candidate_timeout_s": RUNTIME_TIMEOUT_S, "candidate_build_exit": build.returncode, "build_profile": "release", "locked": True, "upstream_python_env": UPSTREAM_PYTHON_ENV, "upstream_uv_cache_policy": UV_CACHE_POLICY, "upstream_command": UPSTREAM_RUNTIME_COMMAND},
             "parity": {"fields": list(METRIC_FIELDS), "numeric_policy": {"float_fields": ["ERL", "ERL11", "ERL_RMS"], "atol": 1.0e-12, "rtol": 1.0e-12, "phase_field": "ERL_phase_index", "phase_policy": "exact"}, "matched": not differences and not stage_differences and controls_equal, "differences": differences, "stage_differences": stage_differences, "controls_equal": controls_equal, "status": "matched" if not differences and not stage_differences and controls_equal else "numeric_mismatch_open"},
             "non_claims": ["no_s_parameter_fit", "no_release_or_promotion", "no_global_migration_row_close"],
         }
