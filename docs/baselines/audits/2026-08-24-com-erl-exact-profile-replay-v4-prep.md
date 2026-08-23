@@ -28,3 +28,10 @@ The N=1 upstream-only guard freezes count 15 and SHA
 Stage names use the upstream diagnostic contract exactly: tdr_time_s,
 tdr_impedance_ohm, and ptdr_gated. The N=1 guard does not build or run the
 candidate; candidate build/timeout fields are null rather than fabricated.
+
+The upstream lock binding is the raw Git-object bytes from pinned commit
+5272ffe74702cd585054d975559b06f8afae7b6e: blob b0d367...,
+79106 bytes, SHA
+5495d481034518d4424a55a27aa2319c90d2045bc280705748d66f44e159a00f.
+The previously recorded 7711... value was a non-canonical working-tree/
+newline digest and is not admitted.

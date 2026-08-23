@@ -12,7 +12,7 @@
     "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
     "required_runtime": "uv run --frozen --offline --project . --python <pinned-python> python -c <probe>",
     "required_lock": "uv.lock",
-    "uv_lock_sha256": "7711f8ef121491ffda0198462243f3aeb02b5a8b05f6b0c040cdab387293df8e"
+    "uv_lock_sha256": "5495d481034518d4424a55a27aa2319c90d2045bc280705748d66f44e159a00f"
   },
   "fixture": {
     "relative_path": "crates/sipi-agent-com-direct/tests/fixtures/erl_s2p_10db_at_26p56ghz.s2p",
@@ -136,12 +136,12 @@
   },
   "tools": {
     "runner": {"path": "tools/run_com_erl_exact_profile_replay_v4.py", "sha256": "6c285b16d07dabb96506173757fbeaa3c8ae0aa9bc0da81010fd8d52c13ddb16"},
-    "verifier": {"path": "tools/verify_com_erl_exact_profile_replay_v4.py", "sha256": "6e1ea7efe170d155e5adfa343fc4f3cb5f7abf70a7e8161a9266e6ef0ff18761"},
+    "verifier": {"path": "tools/verify_com_erl_exact_profile_replay_v4.py", "sha256": "2d308ec152eb67f00087e3a8e4fb39065b24a57e7c9d492c9fa08a814d329461"},
     "aggregator": {"path": "tools/aggregate_com_erl_exact_profile_replay_v4.py", "sha256": "1190cfbd5e6d578cb54e3c58d2980fb891110aaae6d2229be35729905fd3a2c0"},
-    "tests": {"path": "tools/test_com_erl_exact_profile_replay_v4.py", "sha256": "f192336949da0e174cef4582add8f48de2827a41525fd987d22156201b3fcb1c"},
+    "tests": {"path": "tools/test_com_erl_exact_profile_replay_v4.py", "sha256": "c5628581300ef7786edde7f019c76406a8933246e90c5ab17ab569e564f4da49"},
     "support": {"path": "tools/com_erl_exact_profile_replay_v3_support.py", "sha256": "77fd60cfcc21161b5be997c6b72fc9c1dd45fceb0a8d94d977dda63b0f6f7ea9"},
     "pe_helper": {"path": "tools/pb_03_replay_common.py", "sha256": "dcdb7527548dd867ee705a2f4b3020c18e7f328016b1f58d9fe261ed924039da"},
-    "audit": {"path": "docs/baselines/audits/2026-08-24-com-erl-exact-profile-replay-v4-prep.md", "sha256": "c1463ef49c1da56f8755935d8f2e09d6c1a9eea20c230aebc1db56f43d7f0a44"}
+    "audit": {"path": "docs/baselines/audits/2026-08-24-com-erl-exact-profile-replay-v4-prep.md", "sha256": "6d86e6a874e576a37dbc47e7cd3769672039ae96694799233aac69e3e6615fcb"}
   },
   "reports": {
     "positive": ["docs/baselines/com-erl-exact-profile-replay-v4-n800-run1.json", "docs/baselines/com-erl-exact-profile-replay-v4-n800-run2.json"],

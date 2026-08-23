@@ -131,6 +131,7 @@ class V4PrepTests(unittest.TestCase):
             ("reports", {"run_ids": ["com-erl-exact-v4-n800-run1"]}),
             ("tools", {"runner": {"path": "/opt/overlay.py", "sha256": "0" * 64}}),
             ("upstream", {"uv_lock_sha256": "0" * 64}),
+            ("upstream", {"uv_lock_sha256": "7711f8ef121491ffda0198462243f3aeb02b5a8b05f6b0c040cdab387293df8e"}),
         ]
         for key, value in mutations:
             mutated = copy.deepcopy(self.manifest)
