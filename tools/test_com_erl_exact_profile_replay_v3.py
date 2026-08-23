@@ -8,8 +8,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from com_erl_exact_profile_replay_v3_support import path_free
-from com_erl_exact_profile_replay_v3_support import tool_identity
+from com_erl_exact_profile_replay_v3_support import compiler_identity, linker_identity, path_free, tool_identity
 from run_com_erl_exact_profile_replay_v3 import (
     FIXTURE_BYTES,
     FIXTURE_RELATIVE,
@@ -20,6 +19,7 @@ from run_com_erl_exact_profile_replay_v3 import (
     RUNTIME_TIMEOUT_S,
     candidate_probe,
     canonical_config,
+    resolve_linker,
     upstream_command,
 )
 from com_erl_exact_profile_replay_v3_support import archive_materialize
@@ -65,6 +65,59 @@ class ComErlExactProfilePrepTests(unittest.TestCase):
                 identity = tool_identity(tool, 15)
         self.assertEqual(identity["status"], "failed")
         self.assertNotEqual(identity["version_exit"], 0)
+
+    def test_rust_lld_generic_driver_probe_is_explicitly_admitted(self):
+        class Completed:
+            returncode = 1
+            stdout = b"lld is a generic driver.\n"
+            stderr = b""
+        with tempfile.TemporaryDirectory() as directory:
+            linker = Path(directory) / "rust-lld.exe"
+            linker.write_bytes(b"rust-lld")
+            with mock.patch("subprocess.run", return_value=Completed()):
+                identity = linker_identity(linker, 180)
+        self.assertEqual(identity["role"], "rust-lld")
+        self.assertEqual(identity["status"], "ok_generic_driver")
+        self.assertEqual(identity["version_exit"], 1)
+        self.assertEqual(identity["probe_strategy"], "rust-lld --version; generic-driver exit 1 admitted")
+
+    def test_msvc_no_source_probe_is_explicitly_admitted(self):
+        class Completed:
+            returncode = 2
+            stdout = b"Microsoft C/C++ Optimizing Compiler\n"
+            stderr = b""
+        with tempfile.TemporaryDirectory() as directory:
+            compiler = Path(directory) / "cl.exe"
+            compiler.write_bytes(b"cl")
+            with mock.patch("subprocess.run", return_value=Completed()):
+                identity = compiler_identity(compiler, 180)
+        self.assertEqual(identity["role"], "msvc-cl")
+        self.assertEqual(identity["status"], "ok_no_source")
+        self.assertEqual(identity["version_exit"], 2)
+
+    def test_missing_explicit_linker_is_fail_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            class Completed:
+                returncode = 0
+                stdout = (Path(directory) / "sysroot").as_posix().encode() + b"\n"
+            with mock.patch("subprocess.run", return_value=Completed()):
+                with self.assertRaises(RuntimeError):
+                    resolve_linker(Path(directory) / "rustc.exe", Path(directory) / "missing-rust-lld.exe")
+
+    def test_arbitrary_linker_override_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sysroot = Path(directory) / "sysroot"
+            derived = sysroot / "lib" / "rustlib" / "x86_64-pc-windows-msvc" / "bin" / "rust-lld.exe"
+            derived.parent.mkdir(parents=True)
+            derived.write_bytes(b"lld")
+            other = Path(directory) / "other-linker.exe"
+            other.write_bytes(b"other")
+            class Completed:
+                returncode = 0
+                stdout = (sysroot.as_posix()).encode() + b"\n"
+            with mock.patch("subprocess.run", return_value=Completed()):
+                with self.assertRaises(RuntimeError):
+                    resolve_linker(Path(directory) / "rustc.exe", other)
 
     def test_upstream_uses_resolved_uv_and_python(self):
         command = upstream_command(Path("C:/resolved/uv.exe"), Path("C:/resolved/python.exe"), "probe")
@@ -171,6 +224,8 @@ class ComErlExactProfilePrepTests(unittest.TestCase):
             ("candidate", {"commit": "0" * 40}),
             ("runner", {"path": "/opt/overlay.py"}),
             ("runtime", {"rustc_workspace_wrapper": "ccache"}),
+            ("runtime", {"linker": {"role": "rust-lld", "target": "other", "resolution": "drift", "probe_strategy": "drift"}}),
+            ("runtime", {"native_toolchain": {"msvc_version": "drift"}}),
         ]
         for key, value in mutations:
             mutated = json.loads(json.dumps(document))

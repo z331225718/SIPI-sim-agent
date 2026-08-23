@@ -19,6 +19,8 @@ from typing import Any
 from com_erl_exact_profile_replay_v3_support import (
     archive_materialize,
     canonical_json,
+    linker_identity,
+    discover_native_msvc,
     json_metric,
     path_free,
     sha256_bytes,
@@ -192,6 +194,19 @@ def upstream_command(uv: Path, python: Path, code: str) -> list[str]:
     return [str(uv), "run", "--frozen", "--project", ".", "--python", str(python), "python", "-c", code]
 
 
+def resolve_linker(rustc: Path, requested: Path | None) -> Path:
+    completed = subprocess.run([str(rustc.resolve()), "--print", "sysroot"], capture_output=True, timeout=RUNTIME_TIMEOUT_S, check=False)
+    if completed.returncode != 0:
+        raise RuntimeError("rustc sysroot probe failed")
+    sysroot = Path(completed.stdout.decode("utf-8", errors="strict").strip())
+    linker = (sysroot / "lib" / "rustlib" / "x86_64-pc-windows-msvc" / "bin" / "rust-lld.exe").resolve()
+    if requested is not None and requested.resolve() != linker:
+        raise RuntimeError("linker override does not equal rustc-derived rust-lld")
+    if not linker.is_file():
+        raise RuntimeError("resolved rust-lld linker is missing")
+    return linker
+
+
 def candidate_probe(binary: Path, config: Path, fixture: Path, output: Path) -> dict[str, Any]:
     try:
         completed = subprocess.run(
@@ -230,6 +245,7 @@ def main() -> int:
     parser.add_argument("--agent-com-root", type=Path, required=True)
     parser.add_argument("--cargo", type=Path, required=True)
     parser.add_argument("--rustc", type=Path, required=True)
+    parser.add_argument("--linker", type=Path)
     parser.add_argument("--uv", type=Path, required=True)
     parser.add_argument("--python", type=Path, required=True)
     parser.add_argument("--git", type=Path, required=True)
@@ -245,11 +261,14 @@ def main() -> int:
     if args.repo.resolve() not in report_path.parents:
         raise SystemExit("report escapes repository")
     try:
-        preflight_toolchain = {"git": tool_identity(args.git.resolve(), RUNTIME_TIMEOUT_S), "cargo": tool_identity(args.cargo.resolve(), RUNTIME_TIMEOUT_S), "rustc": tool_identity(args.rustc.resolve(), RUNTIME_TIMEOUT_S), "uv": tool_identity(args.uv.resolve(), RUNTIME_TIMEOUT_S), "python": tool_identity(args.python.resolve(), RUNTIME_TIMEOUT_S)}
+        native = discover_native_msvc()
+        linker = resolve_linker(args.rustc, args.linker)
+        preflight_toolchain = {"git": tool_identity(args.git.resolve(), RUNTIME_TIMEOUT_S), "cargo": tool_identity(args.cargo.resolve(), RUNTIME_TIMEOUT_S), "rustc": tool_identity(args.rustc.resolve(), RUNTIME_TIMEOUT_S), "uv": tool_identity(args.uv.resolve(), RUNTIME_TIMEOUT_S), "python": tool_identity(args.python.resolve(), RUNTIME_TIMEOUT_S), "linker": linker_identity(linker, RUNTIME_TIMEOUT_S), "compiler": native["msvc"]["compiler"], "msvc": native["msvc"], "sdk": native["sdk"]}
     except (OSError, subprocess.SubprocessError):
         write_blocked_report(report_path, args.run_id, "tool_identity_unavailable")
         return 2
-    if any(identity.get("status") != "ok" or not identity.get("path_redacted") for identity in preflight_toolchain.values()):
+    identity_roles = ("git", "cargo", "rustc", "uv", "python", "linker", "compiler")
+    if any(preflight_toolchain[role].get("status") not in {"ok", "ok_generic_driver", "ok_no_source"} or not preflight_toolchain[role].get("path_redacted") for role in identity_roles):
         write_blocked_report(report_path, args.run_id, "tool_identity_failed", preflight_toolchain)
         return 2
     runner = Path(__file__).resolve()
@@ -276,14 +295,26 @@ def main() -> int:
         config = temp / "config.json"
         canonical_config(config)
         target = candidate / "target"
-        tool_dirs = [args.cargo.resolve().parent, args.rustc.resolve().parent, args.uv.resolve().parent, args.python.resolve().parent, args.git.resolve().parent]
-        env = {"PATH": os.pathsep.join(str(path) for path in tool_dirs), "RUSTC": str(args.rustc.resolve()), "RUSTC_WRAPPER": "", "CARGO_BUILD_RUSTC_WRAPPER": "", "RUSTC_WORKSPACE_WRAPPER": "", "CARGO_INCREMENTAL": "0", "CARGO_NET_OFFLINE": "true", "UV_OFFLINE": "1"}
+        compiler_temp = temp / "compiler-temp"
+        compiler_temp.mkdir()
+        tool_dirs = [args.cargo.resolve().parent, args.rustc.resolve().parent, args.uv.resolve().parent, args.python.resolve().parent, args.git.resolve().parent, linker.parent, native["bin_dir"]]
+        windows_root = Path("C:/Windows")
+        if not windows_root.is_dir() or not (windows_root / "System32" / "cmd.exe").is_file():
+            raise RuntimeError("Windows system root is unavailable")
+        env = {"PATH": os.pathsep.join(str(path) for path in tool_dirs), "RUSTC": str(args.rustc.resolve()), "RUSTC_WRAPPER": "", "CARGO_BUILD_RUSTC_WRAPPER": "", "RUSTC_WORKSPACE_WRAPPER": "", "CARGO_INCREMENTAL": "0", "CARGO_NET_OFFLINE": "true", "UV_OFFLINE": "1", "SystemRoot": str(windows_root), "windir": str(windows_root), "ComSpec": str(windows_root / "System32" / "cmd.exe"), "PATHEXT": ".COM;.EXE;.BAT;.CMD"}
         env["RUSTC"] = str(args.rustc.resolve())
         env["RUSTC_WRAPPER"] = ""
         env["CARGO_BUILD_RUSTC_WRAPPER"] = ""
         env["RUSTC_WORKSPACE_WRAPPER"] = ""
         env["CARGO_INCREMENTAL"] = "0"
         env["CARGO_NET_OFFLINE"] = "true"
+        env["CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER"] = str(linker)
+        env["CC_x86_64-pc-windows-msvc"] = str(native["compiler_path"])
+        env["CXX_x86_64-pc-windows-msvc"] = str(native["compiler_path"])
+        env["INCLUDE"] = os.pathsep.join(str(path) for path in native["include_dirs"])
+        env["LIB"] = os.pathsep.join(str(path) for path in native["lib_dirs"])
+        env["TEMP"] = str(compiler_temp)
+        env["TMP"] = str(compiler_temp)
         env["CARGO_TARGET_DIR"] = str(target)
         try:
             build = subprocess.run([str(args.cargo.resolve()), "build", "--release", "--offline", "--manifest-path", str(candidate / "crates/sipi-agent-com-direct/Cargo.toml"), "--locked", "--bin", "sipi-com-direct-run"], cwd=candidate, env=env, capture_output=True, timeout=BUILD_TIMEOUT_S, check=False)
@@ -326,7 +357,7 @@ def main() -> int:
             "upstream_output": upstream_payload["metrics"],
             "candidate_output": candidate_payload["metrics"],
             "artifact": {"candidate_result_sha256": candidate_payload["artifact_sha256"]},
-            "toolchain": {"git": tool_identity(args.git.resolve(), RUNTIME_TIMEOUT_S), "cargo": tool_identity(args.cargo.resolve(), RUNTIME_TIMEOUT_S), "rustc": tool_identity(args.rustc.resolve(), RUNTIME_TIMEOUT_S), "uv": tool_identity(args.uv.resolve(), RUNTIME_TIMEOUT_S), "python": tool_identity(args.python.resolve(), RUNTIME_TIMEOUT_S), "rustc_wrapper": "cleared", "cargo_build_rustc_wrapper": "cleared", "rustc_workspace_wrapper": "cleared", "cargo_incremental": "0", "cargo_offline": True, "uv_offline": True},
+            "toolchain": {"git": tool_identity(args.git.resolve(), RUNTIME_TIMEOUT_S), "cargo": tool_identity(args.cargo.resolve(), RUNTIME_TIMEOUT_S), "rustc": tool_identity(args.rustc.resolve(), RUNTIME_TIMEOUT_S), "uv": tool_identity(args.uv.resolve(), RUNTIME_TIMEOUT_S), "python": tool_identity(args.python.resolve(), RUNTIME_TIMEOUT_S), "linker": linker_identity(linker, RUNTIME_TIMEOUT_S), "compiler": native["msvc"]["compiler"], "msvc": native["msvc"], "sdk": native["sdk"], "rustc_wrapper": "cleared", "cargo_build_rustc_wrapper": "cleared", "rustc_workspace_wrapper": "cleared", "cargo_incremental": "0", "cargo_offline": True, "uv_offline": True},
             "execution": {"runner": {"path": "tools/run_com_erl_exact_profile_replay_v3.py", "sha256": sha256_file(runner)}, "helper": {"path": "tools/com_erl_exact_profile_replay_v3_support.py", "sha256": sha256_file(helper)}, "timeout_s": RUNTIME_TIMEOUT_S, "build_timeout_s": BUILD_TIMEOUT_S, "upstream_elapsed_s": upstream_elapsed, "candidate_timeout_s": RUNTIME_TIMEOUT_S, "candidate_build_exit": build.returncode, "build_profile": "release", "locked": True},
             "parity": {"fields": list(METRIC_FIELDS), "numeric_policy": {"float_fields": ["ERL", "ERL11", "ERL_RMS"], "atol": 1.0e-12, "rtol": 1.0e-12, "phase_field": "ERL_phase_index", "phase_policy": "exact"}, "matched": not differences and not stage_differences and controls_equal, "differences": differences, "stage_differences": stage_differences, "controls_equal": controls_equal, "status": "matched" if not differences and not stage_differences and controls_equal else "numeric_mismatch_open"},
             "non_claims": ["no_s_parameter_fit", "no_release_or_promotion", "no_global_migration_row_close"],

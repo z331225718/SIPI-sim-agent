@@ -54,6 +54,29 @@ def verify_stage(value: Any) -> None:
         raise VerificationError("stage schema")
 
 
+def verify_library_inventory(value: Any) -> None:
+    if set(value) != {"count", "combined_sha256", "files"} or not isinstance(value.get("count"), int) or value["count"] <= 0 or not re.fullmatch(r"[0-9a-f]{64}", value.get("combined_sha256", "")) or not isinstance(value.get("files"), list) or len(value["files"]) != value["count"]:
+        raise VerificationError("library inventory schema")
+    for item in value["files"]:
+        if set(item) != {"path", "sha256"} or not isinstance(item["path"], str) or PurePosixPath(item["path"]).is_absolute() or PureWindowsPath(item["path"]).is_absolute() or not item["path"].lower().endswith(".lib") or not re.fullmatch(r"[0-9a-f]{64}", item["sha256"]):
+            raise VerificationError("library inventory entry")
+    if canonical_sha(value["files"]) != value["combined_sha256"]:
+        raise VerificationError("library inventory digest")
+
+
+def verify_key_libraries(value: Any) -> None:
+    if not isinstance(value, dict):
+        raise VerificationError("key library schema")
+    for item in value.values():
+        if set(item) != {"present", "sha256", "path"} or not isinstance(item.get("present"), bool):
+            raise VerificationError("key library entry")
+        if item["present"]:
+            if not re.fullmatch(r"[0-9a-f]{64}", item.get("sha256", "")) or not isinstance(item.get("path"), str) or PurePosixPath(item["path"]).is_absolute() or PureWindowsPath(item["path"]).is_absolute():
+                raise VerificationError("key library identity")
+        elif item.get("sha256") is not None or item.get("path") is not None:
+            raise VerificationError("missing key library identity")
+
+
 def candidate_source_projection(candidate: dict[str, Any]) -> dict[str, Any]:
     return {key: candidate.get(key) for key in ("commit", "tree", "archive_sha256", "materialization", "runtime_executed", "cargo_lock_sha256")}
 
@@ -85,7 +108,7 @@ def verify_manifest(document: dict[str, Any]) -> dict[str, Any]:
     if runner.get("path") != "tools/run_com_erl_exact_profile_replay_v3.py" or runner.get("helper_path") != "tools/com_erl_exact_profile_replay_v3_support.py" or runner.get("sha256") != hashlib.sha256((ROOT / runner["path"]).read_bytes()).hexdigest() or runner.get("helper_sha256") != hashlib.sha256((ROOT / runner["helper_path"]).read_bytes()).hexdigest():
         raise VerificationError("runner/helper identity")
     audit = document.get("audit", {})
-    if audit.get("path") != "docs/baselines/audits/2026-08-24-com-erl-exact-profile-replay-v3-prep.md" or audit.get("sha256") != hashlib.sha256((ROOT / audit["path"]).read_bytes()).hexdigest():
+    if audit.get("path") != "docs/baselines/audits/2026-08-24-com-erl-exact-profile-replay-v3-linker-prep.md" or audit.get("sha256") != hashlib.sha256((ROOT / audit["path"]).read_bytes()).hexdigest():
         raise VerificationError("audit identity")
     verification_tools = document.get("verification_tools", {})
     for role in ("aggregator", "verifier", "tests"):
@@ -108,7 +131,7 @@ def verify_manifest(document: dict[str, Any]) -> dict[str, Any]:
     if document.get("runtime", {}).get("timeout_s") != 180 or document.get("runtime", {}).get("build_timeout_s") != 900:
         raise VerificationError("runtime timeout")
     runtime = document.get("runtime", {})
-    if runtime.get("build_profile") != "release" or not runtime.get("locked") or runtime.get("rustc_wrapper") != "cleared" or runtime.get("cargo_build_rustc_wrapper") != "cleared" or runtime.get("rustc_workspace_wrapper") != "cleared" or runtime.get("cargo_incremental") != "0" or runtime.get("cargo_offline") is not True or runtime.get("uv_offline") is not True:
+    if runtime.get("build_profile") != "release" or not runtime.get("locked") or runtime.get("rustc_wrapper") != "cleared" or runtime.get("cargo_build_rustc_wrapper") != "cleared" or runtime.get("rustc_workspace_wrapper") != "cleared" or runtime.get("cargo_incremental") != "0" or runtime.get("cargo_offline") is not True or runtime.get("uv_offline") is not True or runtime.get("linker") != {"role": "rust-lld", "target": "x86_64-pc-windows-msvc", "resolution": "rustc --print sysroot/lib/rustlib/x86_64-pc-windows-msvc/bin/rust-lld.exe", "probe_strategy": "rust-lld --version; generic-driver exit 1 admitted"} or runtime.get("native_toolchain") != {"target": "x86_64-pc-windows-msvc", "msvc_version": "14.44.35207", "windows_sdk_version": "10.0.26100.0", "include_order": ["msvc", "sdk_ucrt", "sdk_shared", "sdk_um", "sdk_winrt", "sdk_cppwinrt"], "lib_order": ["msvc", "sdk_ucrt", "sdk_um"], "environment": "explicit PATH/INCLUDE/LIB; inherited LIB and INCLUDE forbidden", "required_key_libs": ["vcruntime.lib", "msvcrt.lib", "oldnames.lib", "ucrt.lib", "kernel32.lib", "user32.lib"]}:
         raise VerificationError("release locked build")
     if document.get("policy", {}).get("s_parameter_fit") != "forbidden" or document.get("policy", {}).get("channel") != "raw S11 FD-to-TD impulse":
         raise VerificationError("channel policy")
@@ -175,12 +198,34 @@ def verify_report(report: dict[str, Any], manifest: dict[str, Any]) -> None:
     if execution.get("runner", {}).get("path") != manifest["runner"]["path"] or execution.get("runner", {}).get("sha256") != manifest["runner"]["sha256"] or execution.get("helper", {}).get("path") != manifest["runner"]["helper_path"] or execution.get("helper", {}).get("sha256") != manifest["runner"]["helper_sha256"]:
         raise VerificationError("report harness paths")
     toolchain = report.get("toolchain", {})
-    if set(toolchain) != {"git", "cargo", "rustc", "uv", "python", "rustc_wrapper", "cargo_build_rustc_wrapper", "rustc_workspace_wrapper", "cargo_incremental", "cargo_offline", "uv_offline"} or toolchain.get("rustc_wrapper") != "cleared" or toolchain.get("cargo_build_rustc_wrapper") != "cleared" or toolchain.get("rustc_workspace_wrapper") != "cleared" or toolchain.get("cargo_incremental") != "0" or toolchain.get("cargo_offline") is not True or toolchain.get("uv_offline") is not True:
+    if set(toolchain) != {"git", "cargo", "rustc", "uv", "python", "linker", "compiler", "msvc", "sdk", "rustc_wrapper", "cargo_build_rustc_wrapper", "rustc_workspace_wrapper", "cargo_incremental", "cargo_offline", "uv_offline"} or toolchain.get("rustc_wrapper") != "cleared" or toolchain.get("cargo_build_rustc_wrapper") != "cleared" or toolchain.get("rustc_workspace_wrapper") != "cleared" or toolchain.get("cargo_incremental") != "0" or toolchain.get("cargo_offline") is not True or toolchain.get("uv_offline") is not True:
         raise VerificationError("toolchain top-level schema")
     for role in ("git", "cargo", "rustc", "uv", "python"):
         identity = toolchain.get(role, {})
         if set(identity) != {"basename", "file_sha256", "version_output_sha256", "version_exit", "status", "path_redacted", "timeout_s"} or not isinstance(identity.get("basename"), str) or "/" in identity["basename"] or "\\" in identity["basename"] or not re.fullmatch(r"[0-9a-f]{64}", identity.get("file_sha256", "")) or not re.fullmatch(r"[0-9a-f]{64}", identity.get("version_output_sha256", "")) or identity.get("status") != "ok" or identity.get("path_redacted") is not True or identity.get("version_exit") != 0 or identity.get("timeout_s") != manifest["runtime"]["timeout_s"]:
             raise VerificationError("toolchain identity")
+    linker = toolchain.get("linker", {})
+    if set(linker) != {"role", "basename", "file_sha256", "version_output_sha256", "version_exit", "probe_strategy", "status", "path_redacted", "timeout_s"} or linker.get("role") != "rust-lld" or linker.get("probe_strategy") != "rust-lld --version; generic-driver exit 1 admitted" or linker.get("status") not in {"ok", "ok_generic_driver"} or linker.get("path_redacted") is not True or linker.get("timeout_s") != manifest["runtime"]["timeout_s"] or not isinstance(linker.get("basename"), str) or "/" in linker["basename"] or "\\" in linker["basename"] or not re.fullmatch(r"[0-9a-f]{64}", linker.get("file_sha256", "")) or not re.fullmatch(r"[0-9a-f]{64}", linker.get("version_output_sha256", "")) or linker.get("version_exit") not in {0, 1}:
+        raise VerificationError("linker identity")
+    compiler = toolchain.get("compiler", {})
+    if set(compiler) != {"role", "basename", "file_sha256", "version_output_sha256", "version_exit", "probe_strategy", "status", "path_redacted", "timeout_s"} or compiler.get("role") != "msvc-cl" or compiler.get("probe_strategy") != "cl.exe; no-source exit 2 admitted" or compiler.get("status") != "ok_no_source" or compiler.get("path_redacted") is not True or compiler.get("timeout_s") != manifest["runtime"]["timeout_s"] or not re.fullmatch(r"cl\.exe", compiler.get("basename", ""), re.IGNORECASE) or not re.fullmatch(r"[0-9a-f]{64}", compiler.get("file_sha256", "")) or not re.fullmatch(r"[0-9a-f]{64}", compiler.get("version_output_sha256", "")) or compiler.get("version_exit") not in {0, 2}:
+        raise VerificationError("compiler identity")
+    msvc = toolchain.get("msvc", {})
+    if set(msvc) != {"version", "include_order", "lib_order", "lib_inventory", "key_libs", "compiler"} or msvc.get("version") != manifest["runtime"]["native_toolchain"]["msvc_version"] or msvc.get("include_order") != ["msvc", "sdk_ucrt", "sdk_shared", "sdk_um", "sdk_winrt", "sdk_cppwinrt"] or msvc.get("lib_order") != ["msvc", "sdk_ucrt", "sdk_um"]:
+        raise VerificationError("MSVC binding")
+    verify_library_inventory(msvc.get("lib_inventory", {}))
+    verify_key_libraries(msvc.get("key_libs", {}))
+    if not all(msvc.get("key_libs", {}).get(name, {}).get("present") is True for name in ("vcruntime.lib", "msvcrt.lib", "oldnames.lib")):
+        raise VerificationError("MSVC required libraries")
+    sdk = toolchain.get("sdk", {})
+    if set(sdk) != {"version", "include_order", "lib_inventory", "key_libs"} or sdk.get("version") != manifest["runtime"]["native_toolchain"]["windows_sdk_version"] or sdk.get("include_order") != ["sdk_ucrt", "sdk_shared", "sdk_um", "sdk_winrt", "sdk_cppwinrt"] or set(sdk.get("lib_inventory", {})) != {"ucrt", "um"} or set(sdk.get("key_libs", {})) != {"ucrt", "um"}:
+        raise VerificationError("Windows SDK binding")
+    verify_library_inventory(sdk["lib_inventory"]["ucrt"])
+    verify_library_inventory(sdk["lib_inventory"]["um"])
+    verify_key_libraries(sdk["key_libs"]["ucrt"])
+    verify_key_libraries(sdk["key_libs"]["um"])
+    if not sdk["key_libs"]["ucrt"].get("ucrt.lib", {}).get("present") or not all(sdk["key_libs"]["um"].get(name, {}).get("present") for name in ("kernel32.lib", "user32.lib")):
+        raise VerificationError("Windows SDK required libraries")
     custody = report.get("candidate", {}).get("binary_custody")
     if validate_windows_pe_replay_custody(custody) or custody.get("raw_sha256") != report.get("candidate", {}).get("binary_sha256"):
         raise VerificationError("PE custody")

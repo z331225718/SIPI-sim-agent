@@ -80,6 +80,21 @@
     "cargo_offline": true,
     "uv_offline": true,
     "explicit_rustc": true,
+    "linker": {
+      "role": "rust-lld",
+      "target": "x86_64-pc-windows-msvc",
+      "resolution": "rustc --print sysroot/lib/rustlib/x86_64-pc-windows-msvc/bin/rust-lld.exe",
+      "probe_strategy": "rust-lld --version; generic-driver exit 1 admitted"
+    },
+    "native_toolchain": {
+      "target": "x86_64-pc-windows-msvc",
+      "msvc_version": "14.44.35207",
+      "windows_sdk_version": "10.0.26100.0",
+      "include_order": ["msvc", "sdk_ucrt", "sdk_shared", "sdk_um", "sdk_winrt", "sdk_cppwinrt"],
+      "lib_order": ["msvc", "sdk_ucrt", "sdk_um"],
+      "environment": "explicit PATH/INCLUDE/LIB; inherited LIB and INCLUDE forbidden",
+      "required_key_libs": ["vcruntime.lib", "msvcrt.lib", "oldnames.lib", "ucrt.lib", "kernel32.lib", "user32.lib"]
+    },
     "upstream_command": "uv run --frozen --project . --python <pinned-python> python -c <probe>"
   },
   "policy": {
@@ -110,17 +125,17 @@
   "runner": {
     "path": "tools/run_com_erl_exact_profile_replay_v3.py",
     "helper_path": "tools/com_erl_exact_profile_replay_v3_support.py",
-    "sha256": "e8b08b47018ac84da27942e34711523c733e2fb47ecdfce8983088c631e13a74",
-    "helper_sha256": "2a18207ffc9c34afb1ccd0dead28d9f3368c350f0f6b629b4c0720c682241ab4"
+    "sha256": "8fac5b7d3b8a51c05ddb1893ff3e4fe01d71709eace2bc94499c433138b5fdbf",
+    "helper_sha256": "77fd60cfcc21161b5be997c6b72fc9c1dd45fceb0a8d94d977dda63b0f6f7ea9"
   },
   "verification_tools": {
-    "aggregator": {"path": "tools/aggregate_com_erl_exact_profile_replay_v3.py", "sha256": "8a0000e6e215b679e7cc17ae862b9a259e174c5c1ae81ac9625568eb9abc460e"},
-    "verifier": {"path": "tools/verify_com_erl_exact_profile_replay_v3.py", "sha256": "b36e56e1bead674ba89dcb1b7b739f49d09d9bae3e36629fe250a5ef07c51132"},
-    "tests": {"path": "tools/test_com_erl_exact_profile_replay_v3.py", "sha256": "a5f0ce47e2139ef6c6ba0fac918b572b57716ef11424fdce2a42dc248e138282"}
+    "aggregator": {"path": "tools/aggregate_com_erl_exact_profile_replay_v3.py", "sha256": "c098523e6e41156523300d5f8530094fe1f50844b43f22df6eddb324c8a3814a"},
+    "verifier": {"path": "tools/verify_com_erl_exact_profile_replay_v3.py", "sha256": "cb355b1d711ae13e9a4964a4ea9ac8b2c37fdcf24941a5b8083b74149af30bd2"},
+    "tests": {"path": "tools/test_com_erl_exact_profile_replay_v3.py", "sha256": "4bd0b8a25873236d3d1c8b5880492c421f6d0894f2fab82834682a65c160e7ed"}
   },
   "audit": {
-    "path": "docs/baselines/audits/2026-08-24-com-erl-exact-profile-replay-v3-prep.md",
-    "sha256": "3ebe737cf73ea0eaca80487b140ea2efae5d9e8602c1bdf4e3f4469ae2a50c22"
+    "path": "docs/baselines/audits/2026-08-24-com-erl-exact-profile-replay-v3-linker-prep.md",
+    "sha256": "70284faf6338b439845aef1738fbd3ac1ca37695c5b4cd1c72a1f2160e7b4716"
   },
   "reports": {
     "run_ids": ["com-erl-exact-v3-run1", "com-erl-exact-v3-run2"],

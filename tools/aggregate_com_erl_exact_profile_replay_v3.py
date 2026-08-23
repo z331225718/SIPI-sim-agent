@@ -76,6 +76,9 @@ def main() -> int:
             raise SystemExit("stage mapping mismatch")
         if report.get("execution", {}).get("runner", {}).get("path") != manifest["runner"]["path"] or report.get("execution", {}).get("helper", {}).get("path") != manifest["runner"]["helper_path"]:
             raise SystemExit("runner/helper path mismatch")
+        linker = report.get("toolchain", {}).get("linker", {})
+        if linker.get("role") != "rust-lld" or linker.get("probe_strategy") != "rust-lld --version; generic-driver exit 1 admitted" or linker.get("status") not in {"ok", "ok_generic_driver"}:
+            raise SystemExit("linker identity mismatch")
         if report.get("status") == "external_blocked" or report.get("parity", {}).get("status") not in {"matched", "numeric_mismatch_open"}:
             raise SystemExit("blocked report cannot aggregate")
     if reports[0].get("candidate") != reports[1].get("candidate"):
