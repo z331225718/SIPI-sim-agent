@@ -17,8 +17,6 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CANDIDATE_COMMIT = "706191a1d0a9be7fed77e10b7ba90195d01b1911"
-CANDIDATE_TREE = "ef51159ea5d471405d3018e8eadc10df607b6e2f"
 UPSTREAM_COMMIT = "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5"
 UPSTREAM_TREE = "b6bde97128030d6cea0d68b2f0a35d807be8c402"
 UPSTREAM_ROOT = Path(r"C:\Users\z3312\code\agent-spice")
@@ -74,19 +72,26 @@ def run(command: list[str], cwd: Path, env: dict[str, str]) -> dict[str, Any]:
     }
 
 
-def execute(row: str, *, run_id: str, report_path: Path, python: Path, cargo: Path) -> dict[str, Any]:
+def execute(row: str, *, run_id: str, report_path: Path, python: Path, cargo: Path, candidate_commit: str, candidate_tree: str, candidate_archive_sha256: str) -> dict[str, Any]:
     if row not in {"AS-02", "AS-03"}:
         raise ValueError("row must be AS-02 or AS-03")
+    if len(candidate_commit) != 40 or len(candidate_tree) != 40 or len(candidate_archive_sha256) != 64 or any(c not in "0123456789abcdef" for c in candidate_commit + candidate_tree + candidate_archive_sha256):
+        raise ValueError("candidate commit/tree/archive must be lowercase hexadecimal identities")
     fresh_nonce = secrets.token_hex(32)
     run_root = Path(tempfile.mkdtemp(prefix=f"sipi-{row.lower()}-numeric-"))
-    stable = Path(tempfile.gettempdir()) / f"sipi-{CANDIDATE_COMMIT[:12]}-numeric-candidate"
+    stable = Path(tempfile.gettempdir()) / f"sipi-{candidate_commit[:12]}-numeric-candidate"
     if stable.exists():
         shutil.rmtree(stable)
     stable.mkdir(parents=True)
     try:
         candidate_root = stable / "candidate"
         upstream_root = run_root / "upstream"
-        candidate_archive_sha = archive(ROOT, CANDIDATE_COMMIT, candidate_root)
+        actual_tree = subprocess.check_output(["git", "-C", str(ROOT), "show", "-s", "--format=%T", candidate_commit], text=True).strip()
+        if actual_tree != candidate_tree:
+            raise RuntimeError("candidate commit/tree binding mismatch")
+        candidate_archive_sha = archive(ROOT, candidate_commit, candidate_root)
+        if candidate_archive_sha != candidate_archive_sha256:
+            raise RuntimeError("candidate archive SHA binding mismatch")
         upstream_archive_sha = archive(UPSTREAM_ROOT, UPSTREAM_COMMIT, upstream_root)
         target = stable / "target"
         rustc = cargo.with_name("rustc.exe")
@@ -129,7 +134,7 @@ def execute(row: str, *, run_id: str, report_path: Path, python: Path, cargo: Pa
                 raise RuntimeError(f"AS-03 report missing upstream={upstream_result} candidate={candidate_result}")
             up = json.loads(upstream_report.read_text(encoding="utf-8")); cand = json.loads(candidate_report.read_text(encoding="utf-8"))
             metrics = {"upstream_y_rms_siemens": up["y_rms_siemens"], "candidate_y_rms_siemens": cand["y_rms_siemens"], "upstream_y_mean_rms_siemens": up["y_mean_rms_siemens"], "candidate_y_mean_rms_siemens": cand["y_mean_rms_siemens"], "upstream_snapshot": {key: up.get(key) for key in ("selected_order", "model_order", "pole_relocation_iterations", "target_met", "exact_delivery_gate") if key in up}, "candidate_snapshot": {key: cand.get(key) for key in ("selected_order", "model_order", "pole_relocation_iterations", "target_met", "exact_delivery_gate") if key in cand}}
-        report = {"schema": "sipi.agent-spice-as-numeric-bound.v3", "workflow": row, "status": "completed_numeric_mismatch_open", "parity_claim": False, "numeric_parity": False, "run_id": run_id, "fresh_run_nonce": fresh_nonce, "runner": {"repo_relative_path": "tools/run_as_02_03_numeric_bound_v3.py", "sha256": sha(Path(__file__))}, "wrapper_policy": WRAPPER_POLICY, "candidate": {"commit": CANDIDATE_COMMIT, "tree": CANDIDATE_TREE, "archive_sha256": candidate_archive_sha}, "upstream": {"commit": UPSTREAM_COMMIT, "tree": UPSTREAM_TREE, "archive_sha256": upstream_archive_sha}, "build": {**build, "binary_sha256": sha(binary)}, "toolchain": {"cargo": tool_identity(cargo, "cargo", ("--version",)), "rustc": tool_identity(rustc, "rustc", ("--version",)), "python": tool_identity(python, "python", ("--version",))}, "fixture": {"kind": FIXTURE_KIND, "generated_by_runner_constant": FIXTURE_GENERATED_BY, "sha256": sha(input_path)}, "fixture_sha256": sha(input_path), "execution": {"upstream": upstream_result, "candidate": candidate_result, "upstream_report_sha256": sha(upstream_report), "candidate_report_sha256": sha(candidate_report)}, "metrics": metrics, "non_claims": ["Numeric mismatch remains open.", "No parity or acceptance tolerance is claimed."]}
+        report = {"schema": "sipi.agent-spice-as-numeric-bound.v3", "workflow": row, "status": "completed_numeric_mismatch_open", "parity_claim": False, "numeric_parity": False, "run_id": run_id, "fresh_run_nonce": fresh_nonce, "runner": {"repo_relative_path": "tools/run_as_02_03_numeric_bound_v3.py", "sha256": sha(Path(__file__))}, "wrapper_policy": WRAPPER_POLICY, "candidate": {"commit": candidate_commit, "tree": candidate_tree, "archive_sha256": candidate_archive_sha}, "upstream": {"commit": UPSTREAM_COMMIT, "tree": UPSTREAM_TREE, "archive_sha256": upstream_archive_sha}, "build": {**build, "binary_sha256": sha(binary)}, "toolchain": {"cargo": tool_identity(cargo, "cargo", ("--version",)), "rustc": tool_identity(rustc, "rustc", ("--version",)), "python": tool_identity(python, "python", ("--version",))}, "fixture": {"kind": FIXTURE_KIND, "generated_by_runner_constant": FIXTURE_GENERATED_BY, "sha256": sha(input_path)}, "fixture_sha256": sha(input_path), "execution": {"upstream": upstream_result, "candidate": candidate_result, "upstream_report_sha256": sha(upstream_report), "candidate_report_sha256": sha(candidate_report)}, "metrics": metrics, "non_claims": ["Numeric mismatch remains open.", "No parity or acceptance tolerance is claimed."]}
         report_path.parent.mkdir(parents=True, exist_ok=True)
         report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
         return report
@@ -145,8 +150,11 @@ def main() -> int:
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--python", type=Path, required=True)
     parser.add_argument("--cargo", type=Path, default=Path.home() / ".cargo/bin/cargo.exe")
+    parser.add_argument("--candidate-commit", required=True)
+    parser.add_argument("--candidate-tree", required=True)
+    parser.add_argument("--candidate-archive-sha256", required=True)
     args = parser.parse_args()
-    report = execute(args.row, run_id=args.run_id, report_path=args.report, python=args.python.resolve(), cargo=args.cargo.resolve())
+    report = execute(args.row, run_id=args.run_id, report_path=args.report, python=args.python.resolve(), cargo=args.cargo.resolve(), candidate_commit=args.candidate_commit, candidate_tree=args.candidate_tree, candidate_archive_sha256=args.candidate_archive_sha256)
     print(json.dumps({"workflow": args.row, "status": report["status"], "report": args.report.name}, sort_keys=True))
     return 0
 
