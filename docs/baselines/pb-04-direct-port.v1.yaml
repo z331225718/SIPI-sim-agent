@@ -1,0 +1,50 @@
+schema: sipi.pb-04-direct-port.v1
+version: 1
+row: PB-04
+status: open_blocked
+source:
+  upstream_repository: Py-bert-agent
+  upstream_commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  upstream_tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  candidate_commit: eb2a13f53fb54f09956a0ec8196fad9bc3da220f
+  candidate_tree: cba5db1a594115f1859c23b67d20f4da5f356f53
+scope:
+  command: sim-auto
+  leaf: crates/sipi-pybert-direct/src/workflows.rs::run_sim_auto_file
+  cli: crates/sipi-pybert-direct/src/bin/sipi-pybert-direct.rs
+  selection_contract: upstream auto requests auto and selects Python while the native-auto parity gate is blocked; this Rust-only lane preserves that selection and fails closed when the external Python reference is unavailable
+  candidate_policy: admitted portable inputs never silently substitute a Rust reference for the upstream Python backend; external or unprojectable controls fail closed with external_python_reference_required
+  fixture: crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml
+  payload_gate: selection/parity-gate semantic payload plus native arrays/metrics/diagnostics in the auto artifact
+  budget: bounded legacy projection and strict option parsing
+  replay_source: immutable candidate archive plus content-addressed PB direct-port lane overlay; preparation commit remains null
+evidence:
+  reports:
+    - path: docs/baselines/pb-04-direct-replay-bound-run-13.v1.json
+      sha256: 0be330e69546bec90c70a78d0671e97e900c4ac6a8f76f16d2cfd2c9a8ce6f41
+      run_id: pb-04-bound-20260823-19
+      fresh_run_nonce: 5c49d91114414fd284d64b626393e986
+    - path: docs/baselines/pb-04-direct-replay-bound-run-14.v1.json
+      sha256: c81b86611032bfafd2869158a53d3c361df7250a277266a8522e63430ba7e1b4
+      run_id: pb-04-bound-20260823-20
+      fresh_run_nonce: cabfc9b805ca470195a855d5993e2fb4
+  aggregate:
+    path: docs/baselines/pb-04-direct-replay-bound-aggregate.v1.json
+    sha256: 7795c09c39b4592ac8f9b985b40ab70a5e87ba04c453ffbee97601a76e5d25be
+  audit: docs/baselines/audits/2026-08-23-pb-04-direct-replay-bound.md
+blockers:
+  - The pinned upstream parity gate is blocked; upstream selects Python and this Rust-only lane returns `external_python_reference_required` without publishing a substituted Rust artifact.
+  - Legacy controls outside the bounded Rust projection still require the external Python reference and remain typed fail-closed errors.
+  - Unprojectable AMI/IBIS/DLL/service controls still require the external Python backend and remain fail-closed.
+claims:
+  selection_semantics_observed: true
+  actual_portable_backend_observed: true
+  independent_reference_observed: true
+  candidate_auto_parity: false
+  global_row_closed: false
+  release_approval: false
+  license_decision: false
+non_claims:
+  - The fail-closed Python selection does not promote the Rust lane or prove native Web result parity.
+  - The independent Rust PB-01 reference remains separately testable but is not substituted into the auto workflow.
+  - This evidence is not a license decision, release approval, or product capability admission.

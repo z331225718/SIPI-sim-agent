@@ -1,0 +1,158 @@
+schema: sipi.pb-02-direct-port.v2
+status: direct_port_native_core_candidate_replay_unbound_open
+date: 2026-08-22
+scope:
+  workflow: PB-02
+  command: sim-native
+  lane_crate: crates/sipi-pybert-direct
+  product_workspace_modified: false
+  adapter_semantics_modified: false
+  new_domain_feature: false
+source:
+  repository: pybert
+  commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  core_manifest:
+    path: native/pybert-core/Cargo.toml
+    blob_sha1: 0af08f1305c37718ab27f77cbf400adc1093d48e
+    sha256: 3c4065fbab3426421c43af0d2f04bbd09fe36c18d2544321d21d3cc2c4bb952c
+    declared_license: MIT
+  python_extension_boundary:
+    path: native/pybert-python/src/lib.rs
+    blob_sha1: 89aa11197349da28f7a8d1427113d5ff3ff65f9b
+    sha256: d6cdd06c3fb6a86efe8af0616fc6ef9e1e896fcac9262a339e5cf30877f6ed13
+    declared_license: MIT
+    runtime_license_scope: BSD-3-Clause
+    copied_into_lane: false
+  python_cli:
+    path: src/pybert/cli.py
+    blob_sha1: 4c1116007d31bcebf8db3252363eed7774c7b349
+    sha256: 3826b0c156166e6f04b0e9997ce64a53a53867db6d89143b7c582ca2cf4337c9
+    declared_license: BSD-3-Clause
+  python_backend:
+    path: src/pybert/engine/rust_backend.py
+    blob_sha1: 1010aba98627f6777146f870f95d278d0b7e3b00
+    sha256: a63eeae3066d4cb1cbb05dd9edca05f90bda389d3f145b3be9464cac95ef3ce2
+    declared_license: BSD-3-Clause
+  license_file:
+    path: LICENSE
+    blob_sha1: 64d198ba43675ede5fbdef1ec918a63954951640
+    sha256: 4ca68aea5b8f43e0d7337b182fbc277e02dae37d85b04196d92a80e9344926c1
+    declared_license: BSD-3-Clause
+direct_port_files:
+  license_boundary: native_core_manifest_declares_MIT
+  source_bytes_copied_from_exact_git_objects: true
+  files:
+    native/pybert-core/src/analysis.rs: {target: crates/sipi-pybert-direct/src/analysis.rs, blob_sha1: 0f2a5abc9d627a350501effcddf4ac22104e8f1f, sha256: a1e2f15ca445bab1ac5cc95262b929ebf8caa90bf02d9f3e780d367db6aa066a}
+    native/pybert-core/src/bathtub.rs: {target: crates/sipi-pybert-direct/src/bathtub.rs, blob_sha1: 7b79b052f4571657756ede7df928c3db1ebaf809, sha256: 919f6d21c1fbc30a20258aa9d41319e3dde0ce7d013c392e4cba79d56d66f6b5}
+    native/pybert-core/src/capabilities.rs: {target: crates/sipi-pybert-direct/src/capabilities.rs, blob_sha1: 6091c051643c6c51f8f954314c2745929e113f92, sha256: b09364910dfadf8c13efe5818c1b17cc9853b4055f29a7ac1c388cb28121f0b6}
+    native/pybert-core/src/channel.rs: {target: crates/sipi-pybert-direct/src/channel.rs, blob_sha1: 44665b5afa3956a55611b1b5e862a99e251de17d, sha256: 91961d25a6d4d604c78e6eedd42c5dbed0eba3e6bee85f624f901168ffa327ca}
+    native/pybert-core/src/decoder.rs: {target: crates/sipi-pybert-direct/src/decoder.rs, blob_sha1: 7566dbcb34588a386ca53b2edbd113c1a384573a, sha256: 81da93d719ca69542046a9ffef071d3876aad62830dfbb161ad76fb0121567f0}
+    native/pybert-core/src/equalization.rs: {target: crates/sipi-pybert-direct/src/equalization.rs, blob_sha1: ae91583c5675a82fe229918c41602b8531fb775d, sha256: fa286b527fc023f70edeb60777006ef431252527890098f63672b054fc11b295}
+    native/pybert-core/src/event.rs: {target: crates/sipi-pybert-direct/src/event.rs, blob_sha1: 525cf44fb2b50ffc79f1b9efa1fadd138369ca41, sha256: b95d3b26a96529e9723681c6b123f702ec2decef49e429f59f554bbee8dd60f5}
+    native/pybert-core/src/jitter.rs: {target: crates/sipi-pybert-direct/src/jitter.rs, blob_sha1: 92e0fd6e6b2d40590b967f5f5d057a3de2969672, sha256: 0f1fcc46d026b43edf13da64262833d2ac004a06369e584f5094f801296288c8}
+    native/pybert-core/src/output.rs: {target: crates/sipi-pybert-direct/src/output.rs, blob_sha1: 54cfa6b4d51c6ef923885d29a9004dd5265b26d2, sha256: 74a54504c38424532f19fa0f6a9b22942b07694ef771d4d3ab37dda1e7b3b1ac}
+    native/pybert-core/src/pattern.rs: {target: crates/sipi-pybert-direct/src/pattern.rs, blob_sha1: b8d31f2a1039ac80d5697411c86889efa9dbf5b3, sha256: 1c414cb04a54b9c46d09651d6909baaee925670d6a431a264ce9d45eced99274}
+    native/pybert-core/src/pipeline.rs: {target: crates/sipi-pybert-direct/src/pipeline.rs, blob_sha1: 51f3277ab45dbe73679087dbcc04a652a735f6f6, sha256: 10cd44ebb38ae35d7eec5324eabe9c3b9b1b33353c1315069ae1fcb85f82695f}
+    native/pybert-core/src/receiver.rs: {target: crates/sipi-pybert-direct/src/receiver.rs, blob_sha1: 50c315f82892fdf233fe55aef7b3a96a177d9dde, sha256: 1794615295afc3e9aebdcb76dc140106f12a93c6ce781bc0828c450392e4ec43}
+    native/pybert-core/src/response.rs: {target: crates/sipi-pybert-direct/src/response.rs, blob_sha1: 8833f7a3f74a1450124539192e1090ac071d52b9, sha256: 9812483ad36a306103a0ea7830c49c4e1a0a71aae383d2a05fcbbc7f711902bd}
+    native/pybert-core/src/signal.rs: {target: crates/sipi-pybert-direct/src/signal.rs, blob_sha1: e67f7985fe8e353ebbd2e215bc2dd17020521378, sha256: d9ddaa2941dff69722c78823e55d223222aff25f8b38c493c956771d567b6557}
+    native/pybert-core/src/statistical_eye.rs: {target: crates/sipi-pybert-direct/src/statistical_eye.rs, blob_sha1: e2f9dea5d8734903514720d93b1a0ce2079a61ee, sha256: d7b98d3fb6efee9f5589877140882bd8f7843edf63d6534fc69ad86eef73fc3e}
+    native/pybert-core/src/units.rs: {target: crates/sipi-pybert-direct/src/units.rs, blob_sha1: 57ad85737a7231f5c6ae77312cc77b1446aae3d4, sha256: df775c9a0157cd9e52391cf6a6623db3bb316108d0dbe525ad7a053375d1cd03}
+  adapted_files:
+    native/pybert-core/src/error.rs:
+      target: crates/sipi-pybert-direct/src/error.rs
+      blob_sha1: dc981e70baf221b7a2f474e7fe27cc371d2d8da2
+      source_sha256: 64a082b795379ee3e0265c5c9e103bbaa3f17421a05f2cc7c6fd6ee78cd8b891
+      target_sha256: 2392b0e657fcb20881976d8c7d9540f32dc2ad139006de6890e29acae9cbb247
+      delta: additive_jitter_relative_threshold_validation_error
+    native/pybert-core/src/input.rs:
+      target: crates/sipi-pybert-direct/src/input.rs
+      blob_sha1: ae6d1883b65640d1719022df2c9e8b0763636dc0
+      source_sha256: 3de56d604e0eac89cea31ae0c99bb8a7607f15a99c6cfef4cd818386a2003134
+      target_sha256: b9805f54b79b0097726e36f4d683e0fffeb15a11aa1e11a4a31b886ec442a97a
+      delta: additive_portable_legacy_noise_dfe_jitter_and_touchstone_ctle_controls
+    native/pybert-core/src/simulation.rs:
+      target: crates/sipi-pybert-direct/src/simulation.rs
+      blob_sha1: 1f19bff64315e0042bab89d67e9131c289f5e583
+      source_sha256: 99425e94e6336dd39330ce6c1db4bbd0c43699ed7abc9e8a1fe8f56acde239fd
+      target_sha256: 35074fe873d30e2854999d2ff60bd7d86ba0f89965cdc425a1b456b797e4ad6e
+      delta: additive_portable_legacy_noise_dfe_jitter_threshold_and_touchstone_ctle_consumption
+    native/pybert-core/src/lib.rs:
+      target: crates/sipi-pybert-direct/src/lib.rs
+      blob_sha1: a8cdc5b34e282c5b1e663f1c1b0a85bf03606b51
+      source_sha256: 94db66853fa4117e90db395a75dc41e1a103e652cfef5831d773193b66d3b457
+      target_sha256: c564bd0f976e40e605ed97aa36da0fa13e8a0eed7281746a4c1d30943d610e50
+      delta: additive_legacy_runner_workflow_reference_pipeline_typed_result_adapter_touchstone_modules_and_reexports
+  additive_lane_files:
+    - crates/sipi-pybert-direct/src/runner.rs
+    - crates/sipi-pybert-direct/src/bin/sipi-pybert-direct.rs
+    - crates/sipi-pybert-direct/tests/direct.rs
+    - crates/sipi-pybert-direct/fixtures/pb-02-nrz.json
+artifact_contract:
+  input: strict_SimulationInputV1_JSON_only
+  rejects_unknown_fields: true
+  does_not_coerce_legacy_yaml: true
+  output_files: [meta.json, arrays.npz]
+  metadata_schema: pybert.native-cli-result.v1
+  arrays_format: NumPy_NPY_float64_members_in_uncompressed_NPZ_container
+  diagnostics: typed_pipeline_capabilities_events_and_cancellation
+  errors: typed_json_on_stderr_and_nonzero_exit_without_success_artifacts
+  output_directory_links_rejected: true
+wrapper_boundary:
+  owner: sipi_lane
+  strict_json_admission: true
+  artifact_writer: true
+  uncompressed_npz_writer: true
+  output_directory_symlink_rejection: true
+  upstream_parity_claim: excluded_from_native_numerical_core_parity
+python_extension_boundary:
+  source_only_contract: native/pybert-python/src/lib.rs
+  copied_or_built_into_product: false
+  clean_archive_cargo_check: passed
+  clean_archive_release_build: passed
+  pyo3_numpy_abi_boundary: verified_against_pinned_source
+fresh_replay:
+  status: historical_observation_unbound_pending_immutable_runner
+  runner: tools/run_pb_02_direct_replay.py
+  reports: []
+  aggregate: null
+  fixture: crates/sipi-pybert-direct/fixtures/pb-02-nrz.json
+  fixture_sha256: 5bcd0b905f8a7f0ec5e2b7c3761a998e9553ac24a71b54f8b0d4e8e84261ea13
+  oracle_runtime: pinned_clean_archive_pybert_native_extension
+  historical_observation:
+    oracle_processes: 2
+    product_processes: 2
+    oracle_array_hashes_equal: true
+    product_array_hashes_equal: true
+    oracle_product_array_hashes_equal: true
+    product_meta_sha256: 27735e7c5767dff07322f40d03e412a740c3a53e54e2446606b9bfcc2ff32573
+    product_arrays_npz_sha256: 1d87aa3cd71aa0c0a673c50c6083c94ef519b73b3d82620ecbbbc532d4ebf957
+    exact_array_hashes:
+      channel_impulse_v_per_v: 82d5182c90ecefa00f9e9d91f02ad8be6d9d082f377bd1f96c00f010bc053e36
+      channel_output_v: bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309
+      ctle_output_v: bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309
+      rx_ffe_impulse_v_per_v: 8034367eec76495180b08e634d0bf4236b83a30d9ce7be3fd843fe8860f4de41
+      rx_filter_impulse_v_per_v: 6c3c396ed6b5c36dcae172271f462051b1266b851e92df3deea8ac65478fd712
+      rx_input_v: bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309
+      rx_output_v: bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309
+      symbols_v: 6884fb21aa1699022a9207c5cfeecc8d67d10e93d698ad6e7e2ee75e5c47c365
+      time_s: 58bbee68c5a97e80d59296425c4726ebeabe38d848dc055134fb4a65f6d2b6b2
+      tx_channel_impulse_v_per_v: 82d5182c90ecefa00f9e9d91f02ad8be6d9d082f377bd1f96c00f010bc053e36
+      tx_waveform_v: 40b756e3bbe3ed90ade86b60c2f4d51764cd4033b577629835076308de2c1a35
+parity:
+  scope: one_explicit_PRBS7_NRZ_impulse_response_profile
+  status: historical_unbound_observation_only
+  tolerance: pending_immutable_replay
+  all_uncovered_input_branches_remain_open: true
+  row_promotion: forbidden_until_independent_branch_matrix_is_complete
+audit:
+  path: docs/baselines/audits/2026-08-23-pb-02-direct-port-v2.md
+  sha256: d1af8374f5c0f6725f1d33376f939162f963010e8a86efd38474b9f34dac51f3
+non_claims:
+  - This lane does not implement PB-03 legacy YAML projection, PB-04 selection, or PB-05 comparison.
+  - This lane does not copy the Python CLI or PyO3 extension source.
+  - The historical two-run observation is not immutable candidate evidence; reproducible admission waits for two reports and an aggregate from the pinned replay runner.
+  - Strict JSON admission, artifact writing, NPZ compression choice, and symlink rejection are SIPI wrapper policies and are excluded from the upstream native numerical parity claim.
+  - This lane does not change the product CLI, adapter, root Cargo workspace, PLAN, ledger, or release capability.
+  - This evidence is not a release or legal conclusion; BSD-3-Clause applies to the referenced PyBERT Python runtime boundary, while the copied native crate declares MIT.

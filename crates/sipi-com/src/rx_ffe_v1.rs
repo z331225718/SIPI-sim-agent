@@ -156,7 +156,10 @@ pub fn force_rx_ffe_v1(
     {
         return Err(RxFfeErrorV1::InvalidControls);
     }
-    let count = precursor_count + postcursor_count + 1;
+    let count = precursor_count
+        .checked_add(postcursor_count)
+        .and_then(|value| value.checked_add(1))
+        .ok_or(RxFfeErrorV1::InvalidControls)?;
     let mut matrix = vec![vec![0.0_f64; count]; count];
     for output_tap in 0..count {
         for input_tap in 0..count {
@@ -170,7 +173,7 @@ pub fn force_rx_ffe_v1(
     let mut forcing = vec![0.0_f64; count];
     forcing[precursor_count] = values[cursor_index];
     if dfe_first_max != 0.0 && postcursor_count > 0 {
-        let postcursor_index = cursor_index + samples_per_ui;
+        let postcursor_index = cursor_index.saturating_add(samples_per_ui);
         let postcursor = if postcursor_index < values.len() {
             values[postcursor_index]
         } else {
@@ -229,15 +232,23 @@ fn rxffe_floating_locations_v1(
     bank_count: usize,
 ) -> Result<Vec<i64>, RxFfeErrorV1> {
     let source: Vec<f64> = values.to_vec();
-    let length = end_one_based - start_one_based + 1;
     if start_one_based < 1
         || end_one_based < start_one_based
         || end_one_based > source.len()
         || taps_per_bank < 1
         || bank_count < 1
         || coefficient_limit < 0.0
-        || length < taps_per_bank
-        || bank_count * taps_per_bank > length
+    {
+        return Err(RxFfeErrorV1::InvalidBankControls);
+    }
+    let length = end_one_based
+        .checked_sub(start_one_based)
+        .and_then(|value| value.checked_add(1))
+        .ok_or(RxFfeErrorV1::InvalidBankControls)?;
+    if length < taps_per_bank
+        || bank_count
+            .checked_mul(taps_per_bank)
+            .is_none_or(|count| count > length)
     {
         return Err(RxFfeErrorV1::InvalidBankControls);
     }
@@ -453,7 +464,10 @@ pub fn force_floating_rx_ffe_v1(
     {
         return Err(RxFfeErrorV1::InvalidFloatingControls);
     }
-    let count = precursor_count + maximum_postcursor_count + 1;
+    let count = precursor_count
+        .checked_add(maximum_postcursor_count)
+        .and_then(|value| value.checked_add(1))
+        .ok_or(RxFfeErrorV1::InvalidFloatingControls)?;
     let mut matrix = vec![vec![0.0_f64; count]; count];
     for output_tap in 0..count {
         for input_tap in 0..count {
@@ -467,7 +481,7 @@ pub fn force_floating_rx_ffe_v1(
     let mut forcing = vec![0.0_f64; count];
     forcing[precursor_count] = values[cursor_index];
     if dfe_first_max != 0.0 {
-        let postcursor_index = cursor_index + samples_per_ui;
+        let postcursor_index = cursor_index.saturating_add(samples_per_ui);
         let postcursor = if postcursor_index < values.len() {
             values[postcursor_index]
         } else {

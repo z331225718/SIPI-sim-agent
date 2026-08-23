@@ -1,0 +1,63 @@
+!!python/object:pybert.configuration.PyBertCfg
+date_created: 2026-08-23
+version: 7.2.1
+bit_rate: 10.0
+nbits: 1000
+pattern: PRBS-7
+seed: 1
+nspui: 32
+eye_bits: 1000
+mod_type: NRZ
+debug: false
+f_max: 4.0
+f_step: 10.0
+use_ch_file: false
+ch_file: ''
+impulse_length: 0.0
+Rdc: 0.1876
+w0: 10000000.0
+R0: 1.452
+Theta0: 0.02
+Z0: 100.0
+v0: 0.67
+l_ch: 0.0
+renumber: false
+use_window: false
+vod: 1.0
+rs: 100.0
+cout: 0.5
+pn_mag: 0.0
+pn_freq: 11.0
+rn: 0.0
+tx_taps:
+- !!python/tuple [false, 0.0, -0.05, 0.05]
+- !!python/tuple [false, 0.0, -0.1, 0.1]
+- !!python/tuple [false, 0.0, -0.2, 0.2]
+- !!python/tuple [false, 0.0, -0.2, 0.2]
+- !!python/tuple [false, 0.0, -0.1, 0.1]
+- !!python/tuple [false, 0.0, -0.05, 0.05]
+rin: 100.0
+cin: 0.5
+rx_bw: 12.0
+peak_freq: 5.0
+peak_mag: 1.7
+ctle_enable: false
+rx_n_taps: 15
+rx_n_pre: 5
+sum_ideal: true
+decision_scaler: 0.5
+gain: 0.1
+n_ave: 100.0
+sum_bw: 12.0
+use_agc: true
+delta_t: 0.1
+alpha: 0.01
+n_lock_ave: 500
+rel_lock_tol: 0.1
+lock_sustain: 500
+dfe_tap_tuners:
+- !!python/tuple [true, -0.2, 0.4]
+- !!python/tuple [false, -0.15, 0.15]
+- !!python/tuple [false, -0.05, 0.1]
+- !!python/tuple [false, -0.05, 0.1]
+- !!python/tuple [false, -0.05, 0.1]

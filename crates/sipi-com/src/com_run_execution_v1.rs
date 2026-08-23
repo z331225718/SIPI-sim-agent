@@ -6,7 +6,7 @@
 //! Fail-closed: unadmitted requests or chain errors emit structured failure
 //! envelopes; invalid inputs fail closed cleanly.
 
-use crate::com_chain_v1::{ComChainErrorV1, run_com_chain_v1};
+use crate::com_chain_v1::{ComChainErrorV1, run_com_chain_with_crosstalk_v1};
 use crate::com_parameter_resolver_v1::{
     ComParameterResolverErrorV1, resolve_com_parameter_controls_v1,
 };
@@ -67,6 +67,13 @@ pub struct ComRunResultEnvelopeV1 {
     vec_db: Option<f64>,
     veo_mv: Option<f64>,
     sigma_n_v: Option<f64>,
+    available_signal_v: Option<f64>,
+    interference_noise_v: Option<f64>,
+    threshold_der: Option<f64>,
+    eye_opening_v: Option<f64>,
+    thru_selected_phase: Option<i64>,
+    fext_selected_phases: Vec<i64>,
+    next_selected_phases: Vec<i64>,
     invalid_reason: Option<String>,
 }
 
@@ -92,6 +99,31 @@ impl ComRunResultEnvelopeV1 {
     pub const fn sigma_n_v(&self) -> Option<f64> {
         self.sigma_n_v
     }
+
+    pub const fn available_signal_v(&self) -> Option<f64> {
+        self.available_signal_v
+    }
+
+    pub const fn interference_noise_v(&self) -> Option<f64> {
+        self.interference_noise_v
+    }
+
+    pub const fn threshold_der(&self) -> Option<f64> {
+        self.threshold_der
+    }
+
+    pub const fn eye_opening_v(&self) -> Option<f64> {
+        self.eye_opening_v
+    }
+    pub const fn thru_selected_phase(&self) -> Option<i64> {
+        self.thru_selected_phase
+    }
+    pub fn fext_selected_phases(&self) -> &[i64] {
+        &self.fext_selected_phases
+    }
+    pub fn next_selected_phases(&self) -> &[i64] {
+        &self.next_selected_phases
+    }
     pub fn invalid_reason(&self) -> Option<&str> {
         self.invalid_reason.as_deref()
     }
@@ -101,6 +133,20 @@ impl ComRunResultEnvelopeV1 {
 pub fn execute_com_run_v1(
     request_bytes: &[u8],
     pulse_response: &[f64],
+    dto: &ComParametersV1,
+) -> Result<ComRunResultEnvelopeV1, ComRunExecutionErrorV1> {
+    execute_com_run_with_crosstalk_v1(request_bytes, pulse_response, &[], &[], dto)
+}
+
+/// Execute an admitted COM request with already-resolved FEXT/NEXT pulse
+/// responses. Each crosstalk input is carried into the residual-PDF and
+/// combined-noise stages; no S-parameter fitting or channel inference occurs
+/// in this entry point.
+pub fn execute_com_run_with_crosstalk_v1(
+    request_bytes: &[u8],
+    pulse_response: &[f64],
+    fext_pulses: &[&[f64]],
+    next_pulses: &[&[f64]],
     dto: &ComParametersV1,
 ) -> Result<ComRunResultEnvelopeV1, ComRunExecutionErrorV1> {
     let admission = match com_run_admission_v1(request_bytes) {
@@ -114,6 +160,13 @@ pub fn execute_com_run_v1(
                 vec_db: None,
                 veo_mv: None,
                 sigma_n_v: None,
+                available_signal_v: None,
+                interference_noise_v: None,
+                threshold_der: None,
+                eye_opening_v: None,
+                thru_selected_phase: None,
+                fext_selected_phases: Vec::new(),
+                next_selected_phases: Vec::new(),
                 invalid_reason: Some(legacy_v1_admission_error_code(&err).to_owned()),
             });
         }
@@ -127,12 +180,20 @@ pub fn execute_com_run_v1(
             vec_db: None,
             veo_mv: None,
             sigma_n_v: None,
+            available_signal_v: None,
+            interference_noise_v: None,
+            threshold_der: None,
+            eye_opening_v: None,
+            thru_selected_phase: None,
+            fext_selected_phases: Vec::new(),
+            next_selected_phases: Vec::new(),
             invalid_reason: admission.invalid_reason().map(|s| s.to_string()),
         });
     }
 
     let controls = resolve_com_parameter_controls_v1(dto)?;
-    let report = run_com_chain_v1(pulse_response, &controls)?;
+    let report =
+        run_com_chain_with_crosstalk_v1(pulse_response, fext_pulses, next_pulses, &controls)?;
 
     Ok(ComRunResultEnvelopeV1 {
         schema: COM_RUN_RESULT_SCHEMA_V1,
@@ -142,6 +203,21 @@ pub fn execute_com_run_v1(
         vec_db: Some(report.metrics().vec_db()),
         veo_mv: Some(report.metrics().veo_mv()),
         sigma_n_v: Some(report.noise().sigma_gaussian_v()),
+        available_signal_v: Some(report.metrics().available_signal_v()),
+        interference_noise_v: Some(report.metrics().interference_noise_v()),
+        threshold_der: Some(report.metrics().threshold_der()),
+        eye_opening_v: report.metrics().eye_opening_v(),
+        thru_selected_phase: Some(report.residual().selected_phase()),
+        fext_selected_phases: report
+            .fext()
+            .iter()
+            .map(|value| value.selected_phase())
+            .collect(),
+        next_selected_phases: report
+            .next()
+            .iter()
+            .map(|value| value.selected_phase())
+            .collect(),
         invalid_reason: None,
     })
 }
@@ -219,6 +295,9 @@ mod tests {
         assert!(env.vec_db().is_some());
         assert!(env.veo_mv().is_some());
         assert!(env.sigma_n_v().is_some());
+        assert!(env.available_signal_v().is_some());
+        assert!(env.interference_noise_v().is_some());
+        assert!(env.threshold_der().is_some());
         assert_eq!(env.invalid_reason(), None);
     }
 
@@ -287,6 +366,27 @@ mod tests {
         assert_eq!(
             execute_com_run_v1(&req, &[], &dto),
             Err(ComRunExecutionErrorV1::Chain(ComChainErrorV1::EmptyPulse))
+        );
+    }
+
+    #[test]
+    fn crosstalk_execution_reaches_metric_payload() {
+        let request = valid_request_json();
+        let pulse = pulse64();
+        let fext = pulse.iter().map(|value| value * 0.2).collect::<Vec<_>>();
+        let next = pulse.iter().map(|value| value * 0.1).collect::<Vec<_>>();
+        let baseline = execute_com_run_v1(&request, &pulse, &sample_dto()).expect("baseline");
+        let with_crosstalk = execute_com_run_with_crosstalk_v1(
+            &request,
+            &pulse,
+            &[fext.as_slice()],
+            &[next.as_slice()],
+            &sample_dto(),
+        )
+        .expect("crosstalk");
+        assert!(
+            with_crosstalk.com_db() != baseline.com_db()
+                || with_crosstalk.vec_db() != baseline.vec_db()
         );
     }
 

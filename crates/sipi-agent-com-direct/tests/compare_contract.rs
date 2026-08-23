@@ -53,3 +53,66 @@ fn validation_is_independent_of_compare_order() {
     value["cases"][0]["case_index"] = json!(1);
     assert!(validate_result_json_v1(&value).is_err());
 }
+
+#[test]
+fn compare_projects_reporting_payload_semantics_not_only_exit_status() {
+    let left = document(json!({
+        "COM_dB": 0.9,
+        "VEC_dB": 20.0,
+        "channels": {"thru": "impulse", "fext": [], "next": []},
+        "diagnostics": {"channel_impulse": {"sample_count": 64, "sha256": "stable"}}
+    }));
+    let mut right = left.clone();
+    right["cases"][0]["metrics"]["channels"]["thru"] = json!("different-impulse");
+    let report = compare_result_json_v1(&bytes(&left), &bytes(&right), DEFAULT_ATOL_V1).unwrap();
+    assert!(!report.matched());
+    assert!(
+        report
+            .mismatches()
+            .iter()
+            .any(|message| message.contains("channels"))
+    );
+}
+
+#[test]
+fn compare_catches_search_metric_waveform_and_artifact_semantics() {
+    let mut left = document(json!({
+        "FOM": 53.4,
+        "COM_dB": 0.9,
+        "portable_branches": {"search": {"fom_db": 53.4}},
+    }));
+    left["cases"][0]["channels"] = json!({
+        "thru": {"source_kind": "json-impulse", "sha256": "wave-a"},
+        "fext": [],
+        "next": [],
+    });
+    left["cases"][0]["diagnostics"] = json!({
+        "portable_branches": {"search": {"fom_db": 53.4}},
+        "channel_impulse": {"sample_count": 300, "sha256": "wave-a"},
+    });
+    left["report_manifest"] = json!({"kind": "diagnostic_fallback", "figures": []});
+    let mut right = left.clone();
+    right["cases"][0]["metrics"]["FOM"] = json!(53.5);
+    right["cases"][0]["diagnostics"]["channel_impulse"]["sha256"] = json!("wave-b");
+    right["report_manifest"]["kind"] = json!("plot_bundle");
+    let report = compare_result_json_v1(&bytes(&left), &bytes(&right), DEFAULT_ATOL_V1).unwrap();
+    assert!(!report.matched());
+    assert!(
+        report
+            .mismatches()
+            .iter()
+            .any(|message| message.contains("FOM"))
+    );
+    assert!(
+        report
+            .mismatches()
+            .iter()
+            .any(|message| message.contains("channel_impulse"))
+    );
+    assert!(
+        report
+            .mismatches()
+            .iter()
+            .any(|message| message.contains("report_manifest"))
+    );
+}

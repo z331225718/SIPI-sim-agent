@@ -5,9 +5,10 @@
 //! (P5-04i) -> residual-channel PDF with DFE cancellation (P5-04g) ->
 //! r4.80 noise-PDF build (P5-04h) -> combined noise PDF (P5-04e) ->
 //! COM/VEC/VEO metrics (P5-04c). The equalizer search loop (P5-04t),
-//! frequency-domain receiver noise (P5-04o), crosstalk (P5-04p) and
-//! TX-FFE tap synthesis (P5-04j) are explicit caller-supplied inputs,
-//! never composed or guessed here. Fail-closed: every stage rejection
+//! frequency-domain receiver noise (P5-04o) and TX-FFE tap synthesis
+//! (P5-04j) remain explicit caller-supplied inputs. FEXT/NEXT pulse inputs
+//! are composed through the portable residual PDF and noise-PDF stages
+//! rather than being silently ignored. Fail-closed: every stage rejection
 //! and every non-finite control is a hard error.
 
 use crate::build_noise_pdf_v1::{R480NoisePdfV1, build_r480_noise_pdf_v1};
@@ -192,6 +193,8 @@ impl ComChainControlsV1 {
 pub struct ComChainReportV1 {
     cursor: CursorSampleV1,
     residual: ResidualPdfResultV1,
+    fext: Vec<ResidualPdfResultV1>,
+    next: Vec<ResidualPdfResultV1>,
     noise: R480NoisePdfV1,
     combined: CombinedNoisePdfV1,
     metrics: ComMetricsV1,
@@ -204,6 +207,12 @@ impl ComChainReportV1 {
     pub fn residual(&self) -> &ResidualPdfResultV1 {
         &self.residual
     }
+    pub fn fext(&self) -> &[ResidualPdfResultV1] {
+        &self.fext
+    }
+    pub fn next(&self) -> &[ResidualPdfResultV1] {
+        &self.next
+    }
     pub fn noise(&self) -> &R480NoisePdfV1 {
         &self.noise
     }
@@ -215,11 +224,25 @@ impl ComChainReportV1 {
     }
 }
 
-/// Run the fixed-tap chain: cursor -> residual PDF -> noise build ->
-/// combined noise -> COM metrics. THRU single-phase path only in this
-/// core (FEXT/NEXT phase selection stays out of scope).
+/// Run the fixed-tap chain without crosstalk channels.
 pub fn run_com_chain_v1(
     pulse_response: &[f64],
+    controls: &ComChainControlsV1,
+) -> Result<ComChainReportV1, ComChainErrorV1> {
+    run_com_chain_with_crosstalk_v1(pulse_response, &[], &[], controls)
+}
+
+/// Run the fixed-tap chain with portable FEXT/NEXT pulse inputs.
+///
+/// The upstream non-MMSE path constructs a residual PDF for each crosstalk
+/// channel, selects its worst phase, and convolves those PDFs into the
+/// combined noise distribution. The caller supplies already-resolved
+/// impulse/pulse responses; channel fitting and top-level search remain
+/// outside this stage.
+pub fn run_com_chain_with_crosstalk_v1(
+    pulse_response: &[f64],
+    fext_pulses: &[&[f64]],
+    next_pulses: &[&[f64]],
     controls: &ComChainControlsV1,
 ) -> Result<ComChainReportV1, ComChainErrorV1> {
     if pulse_response.is_empty() {
@@ -227,6 +250,14 @@ pub fn run_com_chain_v1(
     }
     if pulse_response.iter().any(|value| !value.is_finite()) {
         return Err(ComChainErrorV1::NonFinite);
+    }
+    for pulse in fext_pulses.iter().chain(next_pulses.iter()) {
+        if pulse.is_empty() {
+            return Err(ComChainErrorV1::EmptyPulse);
+        }
+        if pulse.iter().any(|value| !value.is_finite()) {
+            return Err(ComChainErrorV1::NonFinite);
+        }
     }
     let cursor = cursor_sample_index_v1(
         pulse_response,
@@ -252,10 +283,58 @@ pub fn run_com_chain_v1(
         controls.dfe_max_count,
         None,
     )?;
+    let fext = fext_pulses
+        .iter()
+        .map(|pulse| {
+            residual_channel_pdf_v1(
+                pulse,
+                "FEXT",
+                0,
+                controls.samples_per_ui,
+                controls.levels,
+                controls.bin_size,
+                0,
+                None,
+                None,
+                0.0,
+                false,
+                None,
+                None,
+            )
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let next = next_pulses
+        .iter()
+        .map(|pulse| {
+            residual_channel_pdf_v1(
+                pulse,
+                "NEXT",
+                0,
+                controls.samples_per_ui,
+                controls.levels,
+                controls.bin_size,
+                0,
+                None,
+                None,
+                0.0,
+                false,
+                None,
+                None,
+            )
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let fext_pdfs = fext
+        .iter()
+        .map(|result| result.pdf().clone())
+        .collect::<Vec<_>>();
+    let next_pdfs = next
+        .iter()
+        .map(|result| result.pdf().clone())
+        .collect::<Vec<_>>();
     let noise = build_r480_noise_pdf_v1(
         residual.pdf(),
-        &[],
-        &[],
+        &fext_pdfs,
+        &next_pdfs,
         controls.levels,
         controls.available_signal_v,
         controls.r_lm_ohm,
@@ -274,8 +353,8 @@ pub fn run_com_chain_v1(
     )?;
     let combined = combine_r480_noise_pdf_v1(
         residual.pdf(),
-        &[],
-        &[],
+        &fext_pdfs,
+        &next_pdfs,
         noise.gaussian_pdf(),
         noise.jitter_pdf(),
         controls.spec_ber,
@@ -296,6 +375,8 @@ pub fn run_com_chain_v1(
     Ok(ComChainReportV1 {
         cursor,
         residual,
+        fext,
+        next,
         noise,
         combined,
         metrics,
@@ -378,6 +459,27 @@ mod tests {
         assert!(metrics.veo_mv().is_finite());
         assert!(report.noise().sigma_gaussian_v() > 0.0);
         assert!(report.noise().ber_q() > 3.0 && report.noise().ber_q() < 4.0);
+    }
+
+    #[test]
+    fn crosstalk_pulses_are_integrated_into_semantic_metrics() {
+        let thru = pulse64();
+        let fext = thru.iter().map(|value| value * 0.25).collect::<Vec<_>>();
+        let next = thru.iter().map(|value| value * 0.15).collect::<Vec<_>>();
+        let baseline = run_com_chain_v1(&thru, &controls()).expect("baseline");
+        let with_crosstalk = run_com_chain_with_crosstalk_v1(
+            &thru,
+            &[fext.as_slice()],
+            &[next.as_slice()],
+            &controls(),
+        )
+        .expect("crosstalk chain");
+        assert_eq!(with_crosstalk.fext().len(), 1);
+        assert_eq!(with_crosstalk.next().len(), 1);
+        assert!(
+            with_crosstalk.metrics().com_db() != baseline.metrics().com_db()
+                || with_crosstalk.metrics().vec_db() != baseline.metrics().vec_db()
+        );
     }
 
     #[test]

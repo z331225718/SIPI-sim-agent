@@ -1,0 +1,47 @@
+schema: sipi.pb-03-direct-port.v1
+version: 1
+row: PB-03
+status: open_blocked
+source:
+  upstream_repository: Py-bert-agent
+  upstream_commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  upstream_tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  candidate_commit: eb2a13f53fb54f09956a0ec8196fad9bc3da220f
+  candidate_tree: cba5db1a594115f1859c23b67d20f4da5f356f53
+scope:
+  command: sim-rust
+  leaf: crates/sipi-pybert-direct/src/workflows.rs::run_sim_rust_file
+  cli: crates/sipi-pybert-direct/src/bin/sipi-pybert-direct.rs
+  core: simulate_native_v1 reuses the copied pinned native pybert-core implementation
+  fixture: crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml
+  payload_gate: exact float64 shape and logical-byte digest for the 44 stable native arrays
+  artifact_gate: pybert.native-cli-result.v1 with meta.json and arrays.npz
+  budget: bounded legacy projection plus 16 MiB reference and 1 MiB metadata limits
+  replay_source: immutable candidate archive plus content-addressed PB direct-port lane overlay; preparation commit remains null
+evidence:
+  reports:
+    - path: docs/baselines/pb-03-direct-replay-bound-run-13.v1.json
+      sha256: b8c966b969ec144f797830efffadb9001c6aacd2ae0ae1d1af12366c0c318dc5
+      run_id: pb-03-bound-20260823-17
+      fresh_run_nonce: 7c5cd1b603ff42508b9ff584bec9d64e
+    - path: docs/baselines/pb-03-direct-replay-bound-run-14.v1.json
+      sha256: 20a7202b1d3cecf26c5a66ed33d2b7417449e1a6f697061cf3c301e0a16a21bc
+      run_id: pb-03-bound-20260823-18
+      fresh_run_nonce: 59f4d54ce3ed4f648b0b0f759bf373cc
+  aggregate:
+    path: docs/baselines/pb-03-direct-replay-bound-aggregate.v1.json
+    sha256: 6537353959d94c3b28ec8e9bcd404dd881bf409e2a73f1b840532c72345067c5
+  audit: docs/baselines/audits/2026-08-23-pb-03-direct-replay-bound.md
+blockers:
+  - The candidate preparation commit is still null; the replay uses a content-addressed lane overlay and therefore cannot promote the global row.
+  - The two fixed-corpus replays passed the native payload gate, but they do not cover every projection branch or external model boundary.
+claims:
+  native_core_reused: true
+  payload_parity: false
+  global_row_closed: false
+  release_approval: false
+  license_decision: false
+non_claims:
+  - This evidence is limited to one fixed NRZ corpus and does not cover every legacy projection branch.
+  - Wrapper, auto-selection, compare metadata, and untested native branches remain open.
+  - This record is not a license decision, release approval, or product capability admission.

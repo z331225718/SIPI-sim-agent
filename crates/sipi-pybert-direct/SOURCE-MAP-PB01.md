@@ -21,7 +21,12 @@ already quarantined pinned native Rust core; its separate source/license map is
 `fixtures/pb-01-legacy-nrz.yaml` is authored test input, not an upstream source
 copy.
 
-The direct-port boundary intentionally remains scoped: imported S2P,
-`.pybert_cfg` pickle input, AMI/IBIS models, random/periodic noise, adaptive
-DFE/Viterbi, jitter/eye/bathtub analysis, and exact `PyBertData` class pickle
-compatibility are not claimed by this slice.
+The direct-port boundary intentionally remains scoped at the external/runtime
+edges. Imported S2P channel and CTLE files, deterministic random/periodic
+noise, adaptive DFE/Viterbi, and jitter/eye/bathtub analysis are now projected
+through the same portable native core and covered by the PB-01 branch matrix.
+The portable `.pybert_cfg` input branch is admitted by a bounded Rust
+pickle-state decoder that accepts only the pinned `PyBertCfg` mapping shape; it
+never restores Python classes or invokes a Python runtime. External AMI/IBIS,
+TS4/GetWave DLLs, and exact `PyBertData` class pickle compatibility remain
+outside this lane.

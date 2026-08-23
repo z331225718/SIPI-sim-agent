@@ -56,14 +56,17 @@ from verify_p4b_dual_ami_pe_loader_declarations import (
 )
 from verify_p3b_link_stage_capabilities import verify as verify_link_stage_capabilities
 from verify_p4a_ibis_conformance_matrix import MatrixError, validate as validate_ibis_matrix
-from verify_p5_08f_specified_com_artifact_route import RouteError as ComArtifactRouteError
-from verify_p5_08f_specified_com_artifact_route import validate as validate_com_artifact_route
+from verify_p5_08f_specified_com_artifact_route import RouteError as ComArtifactRouteErrorV1
+from verify_p5_08f_specified_com_artifact_route import validate as validate_com_artifact_route_v1
+from verify_p5_08f_specified_com_artifact_route_v2 import RouteError as ComArtifactRouteErrorV2
+from verify_p5_08f_specified_com_artifact_route_v2 import validate as validate_com_artifact_route
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = "sipi.release-capability-publication.v1"
+SUCCESSOR_SCHEMA = "sipi.release-capability-publication.v2"
 COMMAND_SCHEMA = "sipi.command-manifest.v1"
-PUBLICATION = ROOT / "docs" / "baselines" / "release-capability-publication.v1.yaml"
+PUBLICATION = ROOT / "docs" / "baselines" / "release-capability-publication.v2.yaml"
 FORBIDDEN_TOKENS = ("certified", "release-ready", "release_ready", "legal approved", "legally approved")
 SAFE_REPORT_ROOT = Path("docs/baselines")
 COMMAND_DESCRIPTOR_FIELDS = {
@@ -220,7 +223,20 @@ def validate(publication: dict[str, Any], manifest: list[dict[str, Any]], root: 
         "schema", "publication_scope", "release_ready", "promotion_status",
         "global_blockers", "non_claims", "rows", "report_index",
     }
-    if set(publication) != required or publication["schema"] != SCHEMA:
+    if set(publication) == required and publication.get("schema") == SCHEMA:
+        pass
+    elif set(publication) == required | {"predecessor"} and publication.get("schema") == SUCCESSOR_SCHEMA:
+        predecessor = publication.get("predecessor")
+        if predecessor != {
+            "path": "docs/baselines/release-capability-publication.v1.yaml",
+            "sha256": "883f7ea2e2a7214614d3a79892515201b1ca794c8fd3c0cd4393ede8663da57d",
+            "retained": True,
+        }:
+            raise PublicationError("publication_predecessor_binding_invalid")
+        predecessor_path = root / predecessor["path"]
+        if not predecessor_path.is_file() or hashlib.sha256(predecessor_path.read_bytes()).hexdigest() != predecessor["sha256"]:
+            raise PublicationError("publication_predecessor_hash_drift")
+    else:
         raise PublicationError("publication_schema_invalid")
     if publication["publication_scope"] != "pre_release_evidence" or publication["release_ready"] is not False:
         raise PublicationError("publication_promotion_invalid")
@@ -500,7 +516,7 @@ def _validate_com_artifact_route(
 ) -> None:
     row = next((item for item in rows if item["id"] == "com-run-artifact"), None)
     command = manifest_by_id.get("com.run-artifact")
-    evidence_id = "p5-08f-specified-com-artifact-route"
+    evidence_id = row["evidence_ids"][0] if row is not None and isinstance(row.get("evidence_ids"), list) and len(row["evidence_ids"]) == 1 else None
     evidence = index_by_id.get(evidence_id)
     if (
         row is None
@@ -526,14 +542,23 @@ def _validate_com_artifact_route(
     if (
         evidence is None
         or evidence["kind"] != "capability_contract"
-        or evidence["path"] != "docs/baselines/p5-08f-specified-com-artifact-route.v1.yaml"
+        or evidence["path"] != (
+            "docs/baselines/p5-08f-specified-com-artifact-route.v2.yaml"
+            if evidence_id == "p5-08f-specified-com-artifact-route-v2"
+            else "docs/baselines/p5-08f-specified-com-artifact-route.v1.yaml"
+        )
         or evidence["subject"] != "com"
         or evidence["evidence_state"] != "specified"
     ):
         raise PublicationError("publication_com_artifact_evidence_invalid")
     try:
-        result = validate_com_artifact_route()
-    except (ComArtifactRouteError, OSError, RuntimeError, ValueError):
+        if evidence_id == "p5-08f-specified-com-artifact-route-v2":
+            result = validate_com_artifact_route()
+        elif evidence_id == "p5-08f-specified-com-artifact-route":
+            result = validate_com_artifact_route_v1()
+        else:
+            raise ValueError("unsupported_com_artifact_evidence_id")
+    except (ComArtifactRouteErrorV1, ComArtifactRouteErrorV2, OSError, RuntimeError, ValueError):
         raise PublicationError("publication_com_artifact_evidence_invalid") from None
     if result.get("valid") is not True or result.get("p5_08_closed") is not False:
         raise PublicationError("publication_com_artifact_evidence_promoted")

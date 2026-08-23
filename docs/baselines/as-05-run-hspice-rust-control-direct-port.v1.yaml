@@ -1,0 +1,77 @@
+schema: sipi.as-05-run-hspice-rust-control-direct-port.v1
+status: implemented_control_external_solver_open
+source:
+  repository: agent-spice
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  license: MIT
+  source_payload_copied_into_sipi: false
+direct_port:
+  crate: crates/sipi-agent-spice-direct
+  module: crates/sipi-agent-spice-direct/src/lib.rs
+  binary: sipi-agent-spice-run-hspice
+  upstream_commit_constant: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  invokes_external_solver: true_when_execute_requested
+  numerical_implementation: bounded_preparation_and_explicit_process_dispatch
+  covered_semantics:
+    - file_read_and_bounded_deck_admission
+    - ordered_alter_case_materialization
+    - project_manifest_backend_and_output_layout
+    - quote_aware_logical_line_audit_and_compatibility_reports
+    - nonblocking_model_and_endcomment_audit
+    - recursive_bounded_dependency_staging
+    - deterministic_ngspice_conversion_and_s_domain_touchstone_admission_boundary
+    - touchstone_s_element_explicitly_unsupported_without_y_substitution
+    - explicit_native_ngspice_xyce_xyce_xdm_process_dispatch
+    - ngspice_measurement_and_waveform_result_extraction
+    - native_result_object_validation_and_nonzero_backend_blocking
+  unsupported_semantics:
+    - native_ngspice_xyce_and_xdm_solver_runtime_identity
+    - numerical_solver_parity_without_external_runtime
+branch_graph:
+  branches:
+    - bounded_source_read_and_alter_split
+    - project_manifest_and_run_directory_dispatch
+    - case_audit_and_conversion
+    - recursive_dependency_staging
+    - model_and_endcomment_nonblocking_audit
+    - s_domain_touchstone_exporter_unavailable_block
+    - ngspice_touchstone_s_element_unsupported_without_y_substitution
+    - blocked_unsupported_directive_path
+    - explicit_external_backend_dispatch
+    - backend_result_measure_and_waveform_summary
+    - backend_failure_and_parity_open_report
+oracle_replay:
+  archive_commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  corpus: [alter_case_preparation, ngspice_conversion_and_dependencies, s_element_preflight, unsupported_directive_block, external_backend_required]
+  replay_count: 2
+  binding_status: unbound_preparation_observation
+  content_addressed: false
+  immutable_source_binding: false
+  run_reports:
+    - docs/baselines/as-05-direct-replay-run-01.v1.json
+    - docs/baselines/as-05-direct-replay-run-02.v1.json
+  aggregate: docs/baselines/as-05-direct-replay-aggregate.v1.json
+  numeric_tolerance: not_claimed
+  parity_status: open_external_solver
+differential_corpus:
+  status: preparation_observation
+  cases:
+    - id: alter_case_preparation
+      expectation: materialize_cases_without_solver_claim
+    - id: ngspice_conversion_and_dependencies
+      expectation: convert_and_stage_nested_local_dependencies_without_solver_claim
+    - id: s_element_preflight
+      expectation: preserve_s_element_and_report_s_domain_exporter_unsupported_without_y_substitution
+    - id: unsupported_directive_block
+      expectation: report_blocked_without_fake_result
+    - id: external_backend_required
+      expectation: execute_only_with_explicit_backend_and_preserve_failure
+evidence:
+  runner: tools/run_as_05_run_hspice.py
+  aggregate: tools/aggregate_as_05_run_hspice.py
+  verifier: tools/verify_as_05_rust_control.py
+  mutation_tests: tools/test_verify_as_remaining_direct_ports.py
+audit:
+  path: docs/baselines/audits/2026-08-23-as-05-run-hspice-rust-control.md
+  sha256: cd78cd5690e32c849b9f3c847339477a92678ed70989b91cbe96d60843441d62

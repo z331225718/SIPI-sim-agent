@@ -54,6 +54,47 @@ fn prepared_artifact_contract_is_backend_specific_without_execution() {
 }
 
 #[test]
+fn project_manifest_and_run_directory_match_upstream_contract() {
+    let manifest = serde_yaml::from_str::<serde_yaml::Value>(
+        "name: demo_pdn\nbackend: NGSPICE\ninputs:\n  hspice_deck: decks/main.sp\noutputs:\n  root: runs-out\n",
+    )
+    .unwrap();
+    let parsed = sipi_agent_spice_direct::ProjectManifest::from_mapping(&manifest).unwrap();
+    assert_eq!(parsed.name, "demo_pdn");
+    assert_eq!(parsed.backend, Backend::Ngspice);
+    assert_eq!(
+        parsed.hspice_deck.as_deref(),
+        Some(std::path::Path::new("decks/main.sp"))
+    );
+    assert_eq!(parsed.output_root, std::path::PathBuf::from("runs-out"));
+    let root = std::env::temp_dir().join(format!("sipi-as05-project-{}", std::process::id()));
+    let run =
+        sipi_agent_spice_direct::prepare_project_run_directory(&root, "demo_pdn", "base").unwrap();
+    assert_eq!(run, root.join("demo_pdn/base"));
+    assert!(run.is_dir());
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn project_manifest_dispatch_reaches_deck_backend_and_report_contract() {
+    let root = std::env::temp_dir().join(format!("sipi-as05-project-run-{}", std::process::id()));
+    std::fs::create_dir_all(root.join("decks")).unwrap();
+    std::fs::write(root.join("decks/main.sp"), ".tran 1p 1n\n.end\n").unwrap();
+    std::fs::write(
+        root.join("project.yaml"),
+        "name: demo_pdn\nbackend: native\ninputs:\n  hspice_deck: decks/main.sp\noutputs:\n  root: runs-out\n",
+    )
+    .unwrap();
+    let result =
+        sipi_agent_spice_direct::run_hspice_project(root.join("project.yaml"), false, None)
+            .unwrap();
+    assert_eq!(result.status, PreparationStatus::Compatible);
+    assert!(root.join("runs-out/main/main__base/case.cir").is_file());
+    assert!(root.join("runs-out/main/run_report.json").is_file());
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
 fn pinned_differential_corpus_covers_quotes_repeat_rejections_backends_alter_and_missing_end() {
     let quoted = audit_deck(
         ".include 'models/pdn with space.inc'\n.lib \"./corners with space.lib\" tt\n.end\n",

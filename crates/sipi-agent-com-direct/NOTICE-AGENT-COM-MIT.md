@@ -3,8 +3,9 @@
 This lane-local direct port is derived from the following files in the pinned
 Agent-COM Git object `5272ffe74702cd585054d975559b06f8afae7b6e` (tree
 `7094ab6e84989b218730c52432c70da10261f8ea`). The upstream repository declares
-the MIT license in `LICENSE-MANIFEST.md` and `LICENSE`. The source-path map,
-Git blob identities, and content hashes are recorded in `SOURCE-MAP.md`.
+the MIT license in `LICENSE-MANIFEST.md` and `LICENSE`. The source-path maps,
+Git blob identities, and content hashes are recorded in `SOURCE-MAP.md`,
+`SOURCE-MAP-COM-02.md`, and `SOURCE-MAP-COM-04.md`.
 
 The direct-port implementation retains the upstream MIT attribution. It does
 not copy Agent-COM source bytes, result artifacts, workbooks, MATLAB files, or

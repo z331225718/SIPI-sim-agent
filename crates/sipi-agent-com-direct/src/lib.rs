@@ -1,11 +1,14 @@
 #![forbid(unsafe_code)]
+#![recursion_limit = "512"]
 
-//! Lane-local direct port of Agent-COM's `compare` workflow.
+//! Lane-local direct ports of Agent-COM's `compare`, `run_com`, and public
+//! artifact workflows.
 //!
-//! The implementation is deliberately limited to the pinned upstream result
-//! reader/validator/comparator.  It does not read workbooks, run COM, infer
-//! defaults, or compare product-specific metric DTOs.  Source provenance and
-//! the MIT boundary are recorded in `SOURCE-MAP.md` and `NOTICE-AGENT-COM-MIT.md`.
+//! The comparator validates and recursively compares semantic result payloads;
+//! the run/API leaves execute the portable COM stages and publish bounded
+//! artifacts. Workbook-only, MATLAB-only, and unported search branches remain
+//! fail-closed. Source provenance and the MIT boundary are recorded in the
+//! lane source maps and `NOTICE-AGENT-COM-MIT.md`.
 
 use serde::Serialize;
 use serde_json::Value;
@@ -16,11 +19,18 @@ use std::path::Path;
 
 mod config_preflight_v1;
 mod config_validate_v1;
+mod run_v1;
 
 pub use config_validate_v1::{
     ARGUMENT_ERROR_EXIT_CODE_V1, CONFIG_VALIDATE_POLICY_V1, CONFIG_VALIDATE_SCHEMA_V1,
     ConfigValidateErrorV1, ConfigValidateReportV1, ConfigValidateRequestV1,
     UNSUPPORTED_SCOPE_EXIT_CODE_V1, ValidatedProfileV1, config_validate_v1,
+};
+pub use run_v1::{
+    COM_02_DIRECT_PORT_SCHEMA_V1, COM_04_DIRECT_PORT_SCHEMA_V1, COM_DIRECT_RESULT_SCHEMA_V1,
+    DirectRunErrorV1, DirectRunReportV1, DirectRunRequestV1, MAX_CROSSTALK_CHANNELS_V1,
+    MAX_SEARCH_FREQUENCY_POINTS_V1, MAX_SEARCH_TX_FFE_CANDIDATES_V1, RunArtifactSetV1,
+    load_config_run_com_write_artifacts_v1, run_com_v1, write_artifacts_v1, write_run_artifacts_v1,
 };
 
 pub const DIRECT_PORT_SCHEMA_V1: &str = "sipi.agent-com.direct-compare.v1";

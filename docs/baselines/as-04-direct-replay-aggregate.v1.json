@@ -1,0 +1,53 @@
+{
+  "binding_status": "unbound_preparation_observation",
+  "content_addressed_replay": false,
+  "corpus": [
+    "valid_nelder_mead_external_stub",
+    "invalid_csv",
+    "duplicate_rfm_token",
+    "missing_hspice_measure",
+    "external_hspice_blocker"
+  ],
+  "corpus_expected": true,
+  "fresh_reports": 2,
+  "immutable_source_binding": false,
+  "independent_report_sha256": [
+    "c9e0810d0647b20f7ca3ecda69a4f75a827ba5916339b68e3dffb79e4ee62150",
+    "7bef4e8ddf11b607ebbc3560ea4575f78fde95b421ba8fc37e68f7ed92d60883"
+  ],
+  "numeric_comparison": "not_claimed",
+  "observation_status": "unbound_preparation_observation_not_replayed_after_fail_closed_changes",
+  "parity_status": "open",
+  "replay_instance_sha256": [
+    "daa21793ae881dc625df9897490113b80ddb40e5e0cd5dc89878aa108fdf177a",
+    "649c97f000b6515b65ef7e1994a22272edab1c87c5f133ae163c1786dd7ec20a"
+  ],
+  "returncodes": [
+    [
+      0,
+      0
+    ],
+    [
+      0,
+      0
+    ]
+  ],
+  "run_tree_sha256": [
+    [
+      "b298a052321fe106769f916983b861153cfb7d0c59c416c7f89c68421ea012ea",
+      "b298a052321fe106769f916983b861153cfb7d0c59c416c7f89c68421ea012ea"
+    ],
+    [
+      "b298a052321fe106769f916983b861153cfb7d0c59c416c7f89c68421ea012ea",
+      "b298a052321fe106769f916983b861153cfb7d0c59c416c7f89c68421ea012ea"
+    ]
+  ],
+  "runs_per_report": 2,
+  "schema": "sipi.agent-spice-as-04-replay-aggregate.v1",
+  "upstream": {
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "license": "MIT",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  },
+  "workflow": "AS-04"
+}\n

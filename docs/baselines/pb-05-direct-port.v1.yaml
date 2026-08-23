@@ -1,0 +1,50 @@
+schema: sipi.pb-05-direct-port.v1
+version: 1
+row: PB-05
+status: open_blocked
+source:
+  upstream_repository: Py-bert-agent
+  upstream_commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  upstream_tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  candidate_commit: eb2a13f53fb54f09956a0ec8196fad9bc3da220f
+  candidate_tree: cba5db1a594115f1859c23b67d20f4da5f356f53
+scope:
+  command: sim-compare
+  leaf: crates/sipi-pybert-direct/src/workflows.rs::run_sim_compare_file
+  cli: crates/sipi-pybert-direct/src/bin/sipi-pybert-direct.rs
+  comparator_contract: pybert.engine-compare.v1 compares arrays (including nested 2-D eye payloads), scalar metrics, recursive metadata, diagnostics, and non-gating performance with rtol 1e-8 and atol 1e-10
+  reference_contract: external JSON BackendRunResult payloads are bounded and validated; absent reference is rejected as not_evaluated and never self-compares the Rust candidate
+  fixture: crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml
+  payload_gate: actual array/metric/metadata/diagnostics comparison report with status_only_comparison false; reference shapes are retained in arrays.npz
+  budget: bounded legacy projection and 16 MiB serialized reference input
+  replay_source: immutable candidate archive plus content-addressed PB direct-port lane overlay; preparation commit remains null
+evidence:
+  reports:
+    - path: docs/baselines/pb-05-direct-replay-bound-run-13.v1.json
+      sha256: 1ab177f67ed18ad950304312289b5668ba131ec78baaf8169b01ada54d4576fd
+      run_id: pb-05-bound-20260823-25
+      fresh_run_nonce: 3a8a8e8b576740fc82aebeaba2841e59
+    - path: docs/baselines/pb-05-direct-replay-bound-run-14.v1.json
+      sha256: e0a8ccbba3bf199069214c5a474150b984a245b5b19f25fcd9b18f9f47711af7
+      run_id: pb-05-bound-20260823-26
+      fresh_run_nonce: ad9bad897de14ac3b0f625c97668991b
+  aggregate:
+    path: docs/baselines/pb-05-direct-replay-bound-aggregate.v1.json
+    sha256: 82403db6b377e02a88ef783145e05b2fa8aaaf6098d8047f9a449c96c1bd5bd4
+  audit: docs/baselines/audits/2026-08-23-pb-05-direct-replay-bound.md
+  audit_sha256: 7eea2950f3519c387893175c3980bcb759a0f28accb9c8b97f2786be2580e82b
+blockers:
+  - The pinned upstream compare report is a real array/metadata payload comparison and is not status-only; it currently reports native-vs-Python differences, so no parity promotion is claimed.
+  - Independent Python result-adapter parity remains external to the Rust-only lane; no-reference calls are fail-closed not_evaluated.
+claims:
+  comparator_payload_semantics_observed: true
+  independent_rust_reference_observed: false
+  nested_array_shape_observed: true
+  candidate_failure_reference_retention_observed: true
+  payload_parity: false
+  global_row_closed: false
+  release_approval: false
+  license_decision: false
+non_claims:
+  - The Rust portable reference comparison is not upstream Python parity and cannot close this row.
+  - This evidence is a bounded replay plus focused mutations, not a license decision, release approval, or product capability admission.

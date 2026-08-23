@@ -7,3 +7,7 @@ rust-candidate-source-map.v1.yaml text eol=lf
 clean-room-register.v1.yaml text eol=lf
 docs/clean-room/independent-spec-template.v1.md text eol=lf
 docs/clean-room/specs/** text eol=lf
+# Replay evidence is generated on both Windows and Unix. Treat CRLF as a
+# line ending while preserving the remaining whitespace checks.
+docs/baselines/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+docs/baselines/audits/*.md whitespace=-blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

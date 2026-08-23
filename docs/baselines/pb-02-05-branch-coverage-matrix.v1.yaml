@@ -1,0 +1,298 @@
+schema: pybert.pb-02-05-branch-coverage.v1
+purpose: >-
+  Content-addressed branch inventory for PB-02 through PB-05. A portable branch
+  is not marked missing merely because an upstream Python/DLL oracle remains
+  unavailable; those boundaries are listed separately as blockers.
+source:
+  upstream_repository: pybert
+  upstream_commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  upstream_tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  candidate_basis: working-tree-content-addressed
+  preparation_commit: null
+  source_files:
+    crates/sipi-pybert-direct/src/input.rs: b9805f54b79b0097726e36f4d683e0fffeb15a11aa1e11a4a31b886ec442a97a
+    crates/sipi-pybert-direct/src/error.rs: 2392b0e657fcb20881976d8c7d9540f32dc2ad139006de6890e29acae9cbb247
+    crates/sipi-pybert-direct/src/simulation.rs: 35074fe873d30e2854999d2ff60bd7d86ba0f89965cdc425a1b456b797e4ad6e
+    crates/sipi-pybert-direct/src/legacy_runtime.rs: ef1b492feb9d0f18f37862f4690084856c97fa87214e76dd283497a095412ace
+    crates/sipi-pybert-direct/src/touchstone.rs: 1003f00587c6c168338e1111b550df22ee49682c07a259ee1ea6e54107e5ae86
+    crates/sipi-pybert-direct/src/reference_runtime.rs: f7710ffd976f6c6e09ef2ccd443a4e7a2b7ec666b093c2793c94ad3cbee43932
+    crates/sipi-pybert-direct/src/workflows.rs: f48b441dd5e23dc54f8208fb8291cf8890fce599e28797699e04e1c5d6f6141c
+    crates/sipi-pybert-direct/src/lib.rs: c564bd0f976e40e605ed97aa36da0fa13e8a0eed7281746a4c1d30943d610e50
+    crates/sipi-pybert-direct/src/runner.rs: e90d8e0a7191f5c4948a9114fd386a54cacd1fea1eb259c7f924d8957a0ca4d7
+    crates/sipi-pybert-direct/src/numpy_normal.rs: e5f9baff2d0a808ff77e01835023f42f6bfe6a990b62173254f128cffda2e4ca
+    crates/sipi-pybert-direct/src/bin/sipi-pybert-direct.rs: 8428a01ea6920b6853938cb0627d6e05af7743a80b0ae3ac5e236908c84c16a1
+    crates/sipi-pybert-direct/tests/native_branch_matrix.rs: a54694b0f38a24a371a1949fe19d099d50680b6fb0230aef24f7893c00aa7e26
+    crates/sipi-pybert-direct/tests/legacy_runtime.rs: 4e7b37d44b890edafeebd5042c28a2eb63f1e9e27d14fbfb2df5fb943866d407
+    crates/sipi-pybert-direct/tests/workflows.rs: 02dfbd89b14a0303f72ad53fa1868e1691b8a4c18a4dda6a6c47a675518cf238
+    crates/sipi-pybert-direct/tests/direct.rs: 3c3c267f7b8baa14f397e553e27a2a367883de1cc68539cbe7a48f19046ca89b
+    crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml: 2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f
+portable_missing: []
+rows:
+  PB-02:
+    command: sim-native
+    implementation_status: portable_branches_covered
+    source_reuse:
+      native_request: crates/sipi-pybert-direct/src/input.rs
+      native_core: crates/sipi-pybert-direct/src/simulation.rs
+      cli_boundary: crates/sipi-pybert-direct/src/runner.rs
+    branches:
+      - id: modulation.nrz
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_all_modulation_branches
+      - id: modulation.pam4
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_all_modulation_branches
+      - id: modulation.duo_binary
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_all_modulation_branches
+      - id: pattern.prbs
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_every_upstream_prbs_order
+      - id: pattern.explicit_bits
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_explicit_bits_and_disabled_equalizers
+      - id: channel.impulse_response
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_impulse_tx_rx_ffe_dfe_ber_branches
+      - id: channel.metallic_line.analytic_and_frequency_grid
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_analytic_ctle_and_metallic_line_grid_branches
+      - id: channel.metallic_line.native_fft_grid
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_native_fft_channel_and_ctle_defaults
+      - id: channel.external_model
+        status: external_blocked
+        blocker: host-owned AMI/IBIS/external service
+        test: native_branch_matrix::native_request_fail_closed_branches_are_explicit
+      - id: tx.ffe.enabled
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_impulse_tx_rx_ffe_dfe_ber_branches
+      - id: tx.ffe.disabled
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_explicit_bits_and_disabled_equalizers
+      - id: tx.additive_noise
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_additive_periodic_noise_branch
+      - id: tx.periodic_noise
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_additive_periodic_noise_branch
+      - id: rx.ctle.analytic
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_analytic_ctle_and_metallic_line_grid_branches
+      - id: rx.ctle.analytic_native_fft_grid
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_native_fft_channel_and_ctle_defaults
+      - id: rx.ctle.imported_touchstone_impulse
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_imported_ctle_impulse_branch
+      - id: rx.ffe.enabled
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_impulse_tx_rx_ffe_dfe_ber_branches
+      - id: rx.ffe.disabled
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_explicit_bits_and_disabled_equalizers
+      - id: rx.ffe.zero_taps_identity
+        status: implemented
+        test: legacy_runtime::tests::preserves_zero_seed_randomization_and_zero_tap_identity
+      - id: rx.dfe_cdr
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_impulse_tx_rx_ffe_dfe_ber_branches
+      - id: rx.dfe.dummy_zero_taps_and_default_cdr
+        status: implemented
+        test: legacy_runtime::tests::maps_cursor_and_rx_ffe_without_external_python
+      - id: rx.dfe.adaptive_and_duobinary
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_adaptive_dfe_and_duobinary_receiver_branches
+      - id: rx.dfe.contiguous_tap_limits
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_adaptive_dfe_and_duobinary_receiver_branches
+      - id: rx.viterbi.isi
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_viterbi_isi_and_pam4_fec_branches
+      - id: rx.viterbi.fec_pam4
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_viterbi_isi_and_pam4_fec_branches
+      - id: analysis.ber
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_impulse_tx_rx_ffe_dfe_ber_branches
+      - id: analysis.ber.default_dfe_telemetry
+        status: implemented
+        test: legacy_runtime::tests::maps_cursor_and_rx_ffe_without_external_python
+      - id: analysis.random_noise.effective_seed_and_replay
+        status: implemented
+        test: legacy_runtime::tests::random_noise_matches_numpy_default_rng_normal_sequence
+      - id: analysis.jitter
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_jitter_bathtub_and_statistical_eye_branches
+      - id: analysis.jitter.relative_threshold_projection
+        status: implemented
+        test: legacy_runtime::legacy_thresh_is_projected_and_changes_native_jitter_threshold
+      - id: analysis.bathtub
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_jitter_bathtub_and_statistical_eye_branches
+      - id: analysis.independent_jitter_bathtub_switches
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_independent_jitter_and_bathtub_switches
+      - id: analysis.statistical_eye.nrz
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_jitter_bathtub_and_statistical_eye_branches
+      - id: fail_closed.cancel_resource_contract
+        status: implemented
+        test: native_branch_matrix::native_request_fail_closed_branches_are_explicit
+      - id: fail_closed.missing_stage_and_noise_shape
+        status: implemented
+        test: native_branch_matrix::native_request_fail_closed_branches_are_explicit
+  PB-03:
+    command: sim-rust
+    implementation_status: portable_projection_branches_covered
+    source_reuse:
+      legacy_projection: crates/sipi-pybert-direct/src/legacy_runtime.rs
+      portable_s2p_parser: crates/sipi-pybert-direct/src/touchstone.rs
+      native_core: crates/sipi-pybert-direct/src/simulation.rs
+    branches:
+      - id: legacy.modulation.nrz
+        status: implemented
+        test: legacy_runtime::pinned_legacy_fixture_runs_in_rust_and_writes_python_pickle_dict
+      - id: legacy.modulation.pam4
+        status: implemented
+        test: legacy_runtime::projection_covers_portable_modulation_noise_and_viterbi_fields
+      - id: legacy.modulation.duo_binary
+        status: implemented
+        test: legacy_runtime::projection_covers_portable_modulation_noise_and_viterbi_fields
+      - id: legacy.prbs.cli_supported_orders
+        status: implemented
+        test: legacy_runtime::projection_covers_portable_modulation_noise_and_viterbi_fields
+      - id: legacy.channel.rlgc
+        status: implemented
+        test: legacy_runtime::pinned_legacy_fixture_runs_in_rust_and_writes_python_pickle_dict
+      - id: legacy.channel.s2p_file_parser
+        status: implemented
+        test: legacy_runtime::projection_parses_portable_s2p_channel_and_ctle_files
+      - id: legacy.channel.s1p_s4p_differential_and_renumber
+        status: implemented
+        test: touchstone::tests::parses_s1p_s4p_renumber_and_two_column_responses
+      - id: legacy.channel.touchstone_reference_R
+        status: implemented
+        test: touchstone::tests::parses_s1p_s4p_renumber_and_two_column_responses
+      - id: legacy.channel.two_column_step_impulse
+        status: implemented
+        test: touchstone::tests::parses_s1p_s4p_renumber_and_two_column_responses
+      - id: legacy.rx.ctle_s2p_file_parser
+        status: implemented
+        test: legacy_runtime::projection_parses_portable_s2p_channel_and_ctle_files
+      - id: legacy.tx_rx.ffe_dfe_cdr
+        status: implemented
+        test: legacy_runtime::projection_covers_portable_modulation_noise_and_viterbi_fields
+      - id: legacy.tx.periodic_random_noise
+        status: implemented
+        test: legacy_runtime::projection_covers_portable_modulation_noise_and_viterbi_fields
+      - id: legacy.tx.random_noise_seed_and_zero_seed_effective_state
+        status: implemented
+        test: legacy_runtime::tests::random_noise_matches_numpy_default_rng_normal_sequence
+      - id: legacy.rx.viterbi_isi_fec_mapping
+        status: implemented
+        test: legacy_runtime::projection_covers_portable_modulation_noise_and_viterbi_fields
+      - id: legacy.external.ami_ibis_ts4_getwave
+        status: external_blocked
+        blocker: external DLL/model/service; PB-01 dependency
+        test: legacy_runtime::projection_keeps_ami_external_boundary_fail_closed
+      - id: legacy.config.pybert_cfg_bounded_data_pickle
+        status: implemented
+        test: legacy_runtime::projection_decodes_bounded_pybert_cfg_pickle_state_without_python
+      - id: legacy.config.pybert_cfg_protocol45_root_identity
+        status: implemented
+        test: legacy_runtime::tests::accepts_protocol4_pybert_cfg_root_without_restoring_a_python_class
+      - id: legacy.config.pybert_cfg_protocol45_nested_root_rejected
+        status: implemented
+        test: legacy_runtime::tests::rejects_protocol45_pybert_cfg_global_when_it_is_nested
+  PB-04:
+    command: sim-auto
+    implementation_status: upstream_python_selection_preserved_rust_only_fail_closed
+    source_reuse:
+      selection_and_gate: crates/sipi-pybert-direct/src/workflows.rs
+      cli_boundary: crates/sipi-pybert-direct/src/bin/sipi-pybert-direct.rs
+    branches:
+      - id: auto.native_projection_admitted
+        status: implemented_blocked
+        blocker: upstream parity gate remains blocked, so auto cannot select Rust without changing the pinned selection semantics
+        test: workflows::sim_rust_publishes_native_artifacts_but_auto_preserves_python_selection
+      - id: auto.parity_gate_blocked
+        status: implemented_blocked
+        blocker: upstream native Web result parity gate remains blocked
+        test: workflows::sim_rust_publishes_native_artifacts_but_auto_preserves_python_selection
+      - id: auto.native_projection_failure_selection
+        status: external_blocked
+        blocker: unprojectable legacy controls still require the external Python reference; AMI/IBIS and other host-owned models are not portable
+        test: workflows::auto_external_projection_failure_is_structured_and_fail_closed
+      - id: auto.no_silent_python_fallback
+        status: implemented
+        test: workflows::sim_rust_publishes_native_artifacts_but_auto_preserves_python_selection
+      - id: auto.external_python_reference_required
+        status: implemented_blocked
+        blocker: the pinned upstream fallback is Python and this Rust-only lane fails closed without a Python runtime
+        test: workflows::sim_rust_publishes_native_artifacts_but_auto_preserves_python_selection
+  PB-05:
+    command: sim-compare
+    implementation_status: portable_compare_contract_covered_external_oracle_blocked
+    source_reuse:
+      result_adapter: crates/sipi-pybert-direct/src/runner.rs
+      compare_workflow: crates/sipi-pybert-direct/src/workflows.rs
+      cli_boundary: crates/sipi-pybert-direct/src/bin/sipi-pybert-direct.rs
+    branches:
+      - id: compare.arrays.numeric
+        status: implemented
+        test: workflows::compare_checks_payload_and_rejects_waveform_mutation
+      - id: compare.arrays.discrete_bits_and_indices
+        status: implemented
+        test: native_branch_matrix::native_request_reaches_viterbi_isi_and_pam4_fec_branches
+      - id: compare.metrics
+        status: implemented
+        test: workflows::compare_output_schema_is_validated_before_use
+      - id: compare.metadata_recursive
+        status: implemented
+        test: workflows::compare_consumes_full_metadata_and_diagnostics_payload
+      - id: compare.diagnostics_recursive
+        status: implemented
+        test: workflows::compare_consumes_full_metadata_and_diagnostics_payload
+      - id: compare.performance_non_gating
+        status: implemented
+        test: workflows::compare_consumes_full_metadata_and_diagnostics_payload
+      - id: compare.candidate_failure_reference_retained
+        status: implemented
+        test: workflows::compare_retains_reference_when_candidate_fails_after_projection
+      - id: compare.external_reference_result_adapter
+        status: implemented
+        test: workflows::compare_shadow_populates_full_result_adapter_payload
+      - id: compare.no_reference_not_evaluated
+        status: implemented_blocked
+        blocker: an independent Python BackendRunResult is required; no-reference comparison is rejected as not_evaluated
+        test: workflows::sim_compare_without_reference_is_not_evaluated
+      - id: compare.nested_two_dimensional_arrays
+        status: implemented
+        test: workflows::compare_preserves_external_two_dimensional_eye_shape_in_npz
+      - id: compare.arrays.bool_int_float_dtype_preserved
+        status: implemented
+        test: workflows::compare_preserves_result_adapter_bool_int_float_dtypes
+      - id: compare.arrays.decision_names_strict_without_integer_inference
+        status: implemented
+        test: workflows::compare_treats_decision_names_as_strict_even_when_encoded_as_float64
+      - id: compare.artifact.npz_dtype_and_deflate_contract
+        status: implemented
+        test: direct::typed_npz_artifact_preserves_bool_int_float_dtypes_and_shapes
+      - id: compare.no_status_only_gate
+        status: implemented
+        test: workflows::compare_rejects_empty_payloads_instead_of_comparing_status_only
+      - id: compare.python_reference_result_adapter
+        status: external_blocked
+        blocker: independent Python result adapter/oracle remains external to the Rust-only lane
+        test: tools/run_pb_05_direct_replay.py
+external_blockers:
+  - row: PB-03
+    branch: tx_rx.ami_ibis_ts4_getwave
+    reason: external DLL/model/service is not distributable in this lane
+  - row: PB-04
+    branch: auto.python_fallback
+    reason: pinned native Web parity gate remains blocked; admitted portable inputs use a Rust reference adapter and no promotion is claimed
+  - row: PB-05
+    branch: python_reference_oracle
+    reason: independent Python result adapter is required for parity, not replaced by the portable Rust reference

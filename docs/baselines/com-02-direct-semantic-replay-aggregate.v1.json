@@ -1,0 +1,43 @@
+{
+  "candidate": {
+    "reason": "semantic replay uses the caller-provided current binary",
+    "status": "unbound_observation"
+  },
+  "fresh_runs": 2,
+  "scenario_count": 10,
+  "schema": "sipi.com-02.direct-semantic-replay-aggregate.v1",
+  "semantic_payload_sha256": [
+    "dea1769fe4a8d703039afb11c5fb1490718611abe9e4238494ebfb23e4f6cfff",
+    "dea1769fe4a8d703039afb11c5fb1490718611abe9e4238494ebfb23e4f6cfff"
+  ],
+  "semantic_replays_identical": true,
+  "source": {
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "declared_license": "MIT",
+    "reachable_paths": [
+      "src/agent_com/api.py",
+      "src/agent_com/pipeline.py",
+      "src/agent_com/network/mixed_mode.py",
+      "src/agent_com/signal/interpolation.py",
+      "src/agent_com/signal/fd_to_td.py",
+      "src/agent_com/equalization/apply.py",
+      "src/agent_com/equalization/ctle.py",
+      "src/agent_com/equalization/rx_ffe.py",
+      "src/agent_com/equalization/search.py",
+      "src/agent_com/equalization/mmse.py",
+      "src/agent_com/equalization/fvlms_rxffe.py",
+      "src/agent_com/equalization/tx_ffe.py",
+      "src/agent_com/equalization/dfe.py",
+      "src/agent_com/signal/filters.py",
+      "src/agent_com/noise/discrete_pdf.py",
+      "src/agent_com/metrics/com.py",
+      "src/agent_com/metrics/tdiln.py",
+      "src/agent_com/runtime.py",
+      "src/agent_com/calibration.py",
+      "src/agent_com/legacy_csv.py",
+      "src/agent_com/reporting.py"
+    ],
+    "repository": "https://github.com/z331225718/agent-com.git",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+  }
+}

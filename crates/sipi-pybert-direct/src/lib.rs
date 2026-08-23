@@ -15,16 +15,20 @@ mod input;
 mod jitter;
 mod legacy_runtime;
 mod legacy_sim;
+mod numpy_normal;
 mod output;
 mod pattern;
 mod pipeline;
 mod receiver;
+mod reference_runtime;
 mod response;
 mod runner;
 mod signal;
 mod simulation;
 mod statistical_eye;
+mod touchstone;
 mod units;
+mod workflows;
 
 pub use analysis::{BerError, BerResult, calculate_ber};
 pub use bathtub::{BathtubError, make_bathtub};
@@ -56,7 +60,7 @@ pub use jitter::{
 };
 pub use legacy_runtime::{
     LegacyConfigProjectionV1, LegacyRuntimeError, LegacySimReportV1, parse_legacy_config_v1,
-    run_legacy_sim_v1, write_legacy_result_v1,
+    project_legacy_config_v1, run_legacy_sim_v1, write_legacy_result_v1,
 };
 pub use legacy_sim::{
     DEFAULT_RESULT_EXTENSION, LEGACY_CONFIG_EXTENSIONS, LegacySimCandidateStatus, LegacySimError,
@@ -74,10 +78,15 @@ pub use receiver::{
     CdrConfig, CdrError, CdrState, DfeConfig, DfeDecision, DfeError, DfeModulation, DfeRunError,
     DfeRunOptions, DfeRunResult, DfeState, run_dfe, run_dfe_with_external_clocks, run_ideal_dfe,
 };
+pub use reference_runtime::simulate_portable_reference_v1;
 pub use response::{ResponseError, ResponseV1, calculate_responses};
 pub use runner::{
-    DirectRunError, DirectRunReport, run_sim_native_file, run_sim_native_json,
-    strict_simulation_input_json,
+    ArrayDTypeV1, DirectRunError, DirectRunReport, NumericArrayV1, TypedArrayV1, npz_bytes_nd,
+    npz_bytes_typed_nd, run_sim_native_file, run_sim_native_input, run_sim_native_json,
+    strict_simulation_input_json, write_simulation_artifacts,
+    write_simulation_artifacts_with_schema_and_backend,
+    write_simulation_artifacts_with_schema_and_backend_and_shapes,
+    write_simulation_artifacts_with_schema_and_backend_and_shapes_and_typed_arrays,
 };
 pub use signal::{
     SignalError, causal_convolve_truncated, convolve_truncated, forward_real_spectrum,
@@ -92,6 +101,11 @@ pub use statistical_eye::{
     StatisticalEyeContourV1, StatisticalEyeError, StatisticalEyeInputV1, StatisticalEyeResultV1,
     calculate_statistical_contours, calculate_statistical_eye,
 };
+pub use touchstone::{TouchstoneError, parse_s2p_response, parse_touchstone_response};
 pub use units::{Hertz, Ohms, Seconds, Volts};
+pub use workflows::{
+    CompareReference, WorkflowError, compare_native_outputs, run_sim_auto_file,
+    run_sim_compare_file, run_sim_rust_file,
+};
 
 pub const SIMULATION_SCHEMA_V1: &str = "pybert.simulation.v1";

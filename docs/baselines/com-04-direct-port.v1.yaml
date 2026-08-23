@@ -1,0 +1,188 @@
+schema: sipi.com-04-direct-port.v1
+status: direct_port_scoped_semantic_replay_open
+scope:
+  work_item: COM-04
+  upstream_public_entrypoint: load_config_run_com_write_artifacts
+  target: lane_local_direct_port_only
+  product_capability_promoted: false
+  global_migration_row_closed: false
+  source_map: crates/sipi-agent-com-direct/SOURCE-MAP-COM-04.md
+audit: docs/baselines/audits/2026-08-23-com-04-direct-semantic-replay.md
+source:
+  repository: https://github.com/z331225718/agent-com.git
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  declared_license: MIT
+  source_storage: pinned_git_objects_or_clean_archive_only
+  source_paths:
+    - path: src/agent_com/__init__.py
+      license: MIT
+      git_blob_sha1: 19942e5cc8e9ffa6572dd0ee6fc0861250ccf58b
+      bytes: 1719
+      content_sha256: 0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0
+    - path: src/agent_com/api.py
+      license: MIT
+      git_blob_sha1: 3e7808982a63123f2bac65a86f3abb627c287be1
+      bytes: 21445
+      content_sha256: b7527f60d55b6f73fb449bc2472f957a6bc2a9ecf1d7bc8808756bf7fba39570
+    - path: src/agent_com/models.py
+      license: MIT
+      git_blob_sha1: 92167e385db50c76a9999c2df5118d46951b8243
+      bytes: 6994
+      content_sha256: e97bd1c67fbf53f940e45fb94905e6bd5e924b164a3eecf1548a652ba0f327af
+    - path: src/agent_com/config/excel.py
+      license: MIT
+      git_blob_sha1: 1cce4365b64f3bb0ef1f7617107d2df4c929afc7
+      bytes: 12218
+      content_sha256: 2886e9986b9c3a7c1fbdc6179878679ae26bb92f511c6b0689644f9a6c053c4d
+    - path: src/agent_com/config/materialize.py
+      license: MIT
+      git_blob_sha1: a8856f91fe9208738446f539aa52ade2ea2c0bcf
+      bytes: 19030
+      content_sha256: 42f85e3cd5df74158acc10b9388f663419740b374756cdbd8332f052063d265c
+    - path: src/agent_com/pipeline.py
+      license: MIT
+      git_blob_sha1: c44f4a5d0e818331e843a888af2083af6c712d04
+      bytes: 7178
+      content_sha256: 6c66e5f99669ddb6b8d9bfa48bfc214339e55fa60128b702047eec490d741a1f
+    - path: src/agent_com/network/mixed_mode.py
+      license: MIT
+      git_blob_sha1: 1e0cc74e9002d424497672a7b72afa9ae0d82052
+      bytes: 1986
+      content_sha256: 392afba5a580ffd7d4a343710ef7ea06b386efe8660dd85cabff1a1c70d7acaf
+    - path: src/agent_com/signal/interpolation.py
+      license: MIT
+      git_blob_sha1: 87898d999ec20ac8f531bba72efbbd83d9e43d43
+      bytes: 8693
+      content_sha256: eab64c2f260778f468cef50b102749919704420d22914c1302a22a8b94da5a5b
+    - path: src/agent_com/signal/fd_to_td.py
+      license: MIT
+      git_blob_sha1: 6f3af024ea20df0011843ea19a090788f1aabbc9
+      bytes: 5831
+      content_sha256: 703a360837cbaa18494ee03ba8df8d908dc6bf3c516d80d3dddf83af6637c687
+    - path: src/agent_com/equalization/apply.py
+      license: MIT
+      git_blob_sha1: 07534980f64cbe86b6ceff3c2f5f9107d4fd7b24
+      bytes: 4246
+      content_sha256: 6d9907ce3c12cd6e4e26da2a52e7d474f829ffcecea5dc153086d8a42ef607bb
+    - path: src/agent_com/equalization/ctle.py
+      license: MIT
+      git_blob_sha1: 5c913f32563ff27cbf62c0ab0e6a8b6150df9ad5
+      bytes: 1927
+      content_sha256: c79738b504b2967c17a6bb41e4e1f4af8e88566891ab16ba067b893ff20293f6
+    - path: src/agent_com/equalization/rx_ffe.py
+      license: MIT
+      git_blob_sha1: 8900bd460c9347ec7551dee4224366fbb24b22df
+      bytes: 12939
+      content_sha256: 4165278cfccf21cf7e32011ecea9f368cf1ae6c442619e059b3d15480a0eb34a
+    - path: src/agent_com/equalization/search.py
+      license: MIT
+      git_blob_sha1: 58f6e5e3f8f36b94faddf0248f3df2ff11e1e3cd
+      bytes: 53859
+      content_sha256: 924930c43332f169ce1d66048d3f70610c8bf459af2f0210d6995533c277003d
+    - path: src/agent_com/equalization/mmse.py
+      license: MIT
+      git_blob_sha1: 61c54806da030dac1cb889261f344564c02f38f6
+      bytes: 33933
+      content_sha256: d0542c3a091b5c79a1ba69270878387326dcb09c6ed2d385667709f541d9f4c9
+    - path: src/agent_com/equalization/fvlms_rxffe.py
+      license: MIT
+      git_blob_sha1: 525361878ad4802bf9d4968678ebd512b7c7a527
+      bytes: 19769
+      content_sha256: 16943815872c49de3d3f73639a340adbfb635450c5a3b6f9adb3a7009cc4cb59
+    - path: src/agent_com/equalization/tx_ffe.py
+      license: MIT
+      git_blob_sha1: 94c3e72471bfe531d1b2b9a1fd1c45c516ed903c
+      bytes: 6611
+      content_sha256: 17a9b2691fcf0281c2b065eca1fe49897866f743ca5e6bdefabb70270e532e84
+    - path: src/agent_com/equalization/dfe.py
+      license: MIT
+      git_blob_sha1: a930579b8b71490735c128452f326ecbd94b4b40
+      bytes: 9190
+      content_sha256: 4b9802b343e62b16d9e43341925d92b8e26fd172eb282a36bdaeed1d9019c853
+    - path: src/agent_com/signal/filters.py
+      license: MIT
+      git_blob_sha1: 3c43bf74124fb9264576566841facc5b5259ccd7
+      bytes: 4734
+      content_sha256: 79b3218a1315b53ae0e7e518a43d62e043658c105a7022a0fa868d0b34cb74b6
+    - path: src/agent_com/noise/discrete_pdf.py
+      license: MIT
+      git_blob_sha1: a13466bac4359ea1e3a29f1391604c474f2c46ca
+      bytes: 23992
+      content_sha256: 5bf331e0e515a014fa5f4d938ffe137ac1bf34c97280a19f32455b75d13e485e
+    - path: src/agent_com/metrics/com.py
+      license: MIT
+      git_blob_sha1: c1c2d976615806910d3e9dab221641c318c4297a
+      bytes: 2932
+      content_sha256: 46727c06b46d4cb91b330bf5b26ea269d882050cf809c3c946fc2ad37b8920ea
+    - path: src/agent_com/metrics/tdiln.py
+      license: MIT
+      git_blob_sha1: 53aacf1c15b57cf314f0e7db5148884bf7afe3c2
+      bytes: 7068
+      content_sha256: d0465246f6fd5d22d5978f5cdf2a78f7fccdfbfdd7ad0676092b4494d3698873
+    - path: src/agent_com/reporting.py
+      license: MIT
+      git_blob_sha1: efbb14dda4d656a71e6915f5c5026b719e22d141
+      bytes: 82620
+      content_sha256: 14c4e4f0e5e51ee6fe76343ef133a565b8c922a0794acfe6c36ac3c7bbc1a0e1
+    - path: src/agent_com/runtime.py
+      license: MIT
+      git_blob_sha1: 89a1866b7d81a25653bcc9ef69adaf91fbf46cb1
+      bytes: 6077
+      content_sha256: 490a02e5bbb9af30278445b8f964a9d04d617ddf20c1773a5cd51a4b1ec5fd42
+    - path: src/agent_com/calibration.py
+      license: MIT
+      git_blob_sha1: e48994720dfae9aab0aceecff4b7677383f06648
+      bytes: 6979
+      content_sha256: e97f0d1ee1dc563604e5954b664b465048fe431f69deed7ac580598cccf0b9a8
+    - path: src/agent_com/legacy_csv.py
+      license: MIT
+      git_blob_sha1: 48b18486fc9894022200b68b0d9aed8aedf56796
+      bytes: 3603
+      content_sha256: 6afe8a86318d6614475bd1ffbbb3fd0e3e06cd0bd42ede4fa84cfbc88704dc1a
+    - path: src/agent_com/_orchestration.py
+      license: MIT
+      git_blob_sha1: 5d260a0aab941f1a1955fe3abef36d85a56034c0
+      bytes: 90877
+      content_sha256: 069a5c08f9da6ad5b5be5648723eb05b0e3de8cf0dcb1ae7f54e23df7ab0db69
+contract:
+  direct_binary: sipi-com-direct-public-api
+  direct_library: load_config_run_com_write_artifacts_v1
+  workflow: [load_config, run_com, write_artifacts]
+  artifacts: [result.json, report.html, diagnostics.json]
+  semantic_result_payload: [source_revision, profile, cases, channels, metrics, diagnostics, warnings, provenance, input_manifest, report_manifest]
+  overwrite: explicit_only
+  bounded_output: true
+  resource_budgets: {config_bytes: 16777216, impulse_bytes_per_channel: 8388608, max_crosstalk_channels: 64, result_bytes: 16777216, report_bytes: 65536, diagnostics_bytes: 262144, fd_to_td_bins: 2097152, search_frequency_points: 262144, search_tx_ffe_candidates: 1000000, mmse_candidates: 16384, mmse_matrix_dimension: 512, rxffe_candidates: 16384, rxffe_waveform_samples: 262144, calibration_iterations: 512}
+  portable_semantic_branches: [fd_to_td_json, mixed_mode_pn_skew, fext_next_waveform_inputs, equalization_apply, tdiln, search_nonmmse_no_rxffe, mmse_kkt_search, fvlms_rxffe_search, calibration_noise_controller, workbook_csv_mat_reuse, legacy_csv_projection]
+  external_blocked: [plotting_format, matlab_engine, proprietary_golden]
+oracle:
+  runner: tools/run_com_04_direct_semantic_replay.py
+  aggregate_runner: tools/aggregate_com_04_direct_semantic_replay.py
+  report_schema: sipi.com-04.direct-semantic-replay.v1
+  aggregate_schema: sipi.com-04.direct-semantic-replay-aggregate.v1
+  replay_count: 2
+  scenario_count: 10
+  report_path_policy: semantic_fields_only
+  payloads_committed: false
+evidence:
+  reports:
+    - path: docs/baselines/com-04-direct-semantic-replay-run1.v1.json
+      sha256: e990dbd3e226ef2dc53643c363dbb7c2448ef340c09aa5c3117bfb12501c7714
+    - path: docs/baselines/com-04-direct-semantic-replay-run2.v1.json
+      sha256: ed7d9ddaa6f09089732f0023ffdda3862a0ffa1eba04a32973b6bf55d85c448d
+  aggregate:
+    path: docs/baselines/com-04-direct-semantic-replay-aggregate.v1.json
+    sha256: 400d49b938620ff958de4e372fccc82961cb2dad7b5f1dffc6cc081289b4cbeb
+  status: unbound_observation_open
+verification:
+  verifier: tools/verify_com_04_direct_semantic_replay.py
+  mutation_tests: tools/test_verify_com_04_direct_semantic_replay.py
+  rust_tests: 10
+non_claims:
+  - no_product_capability_promotion
+  - no_global_migration_row_close
+  - no_matlab_engine_or_proprietary_golden_parity
+  - no_numeric_upstream_parity_claim
+  - no_workbook_or_matlab_source_vendoring
+  - no_release_readiness

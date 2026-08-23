@@ -12,13 +12,15 @@
 //!
 //! The envelope types are structured after the observed MATLAB oracle
 //! output surface (P5-06b metric surface): network metrics, output
-//! metrics, and per-case checkpoints. This crate carries STRUCTURE ONLY:
-//! no COM computation, no behavior profile, no compare, no acceptance.
+//! metrics, and per-case checkpoints. Portable numerical stages are exposed
+//! alongside the envelope; MATLAB-only reporting and acceptance remain out
+//! of scope for this crate.
 
 mod bathtub_fit_v1;
 mod bathtub_v1;
 mod build_noise_pdf_v1;
 mod c2m_eye_v1;
+mod calibration_v1;
 mod candidate_eval_v1;
 mod candidate_helpers_v1;
 mod canonical_input_keys_v1;
@@ -40,23 +42,28 @@ mod csv_reader_v1;
 mod db_tolerance_v1;
 mod dfe_v1;
 mod discrete_pdf_v1;
+mod equalization_apply_v1;
 mod equalizer_frontend_v1;
 mod erf_v1;
 mod eye_contour_v1;
+mod fd_to_td_v1;
 mod horizontal_margin_v1;
 mod ingest_v1;
 mod mat_reader_v1;
 mod matlab_literal_v1;
 mod mixed_mode_v1;
+mod mmse_v1;
 mod parameter_surface_v1;
 mod qfactor_ber_v1;
 mod receiver_noise_v1;
 mod residual_channel_pdf_v1;
 mod resolve_parameters_v1;
 mod rx_ffe_v1;
+mod rxffe_search_v1;
 mod sampled_signal_pdf_v1;
 mod search_loop_v1;
 mod search_support_v1;
+mod tdiln_v1;
 mod tx_ffe_v1;
 mod value_consumption_v1;
 mod warning_detector_v1;
@@ -71,6 +78,11 @@ pub use bathtub_v1::{
 };
 pub use build_noise_pdf_v1::{BUILD_NOISE_PDF_POLICY_V1, R480NoisePdfV1, build_r480_noise_pdf_v1};
 pub use c2m_eye_v1::{C2M_EYE_POLICY_V1, C2mEyeErrorV1, calculate_c2m_vertical_eye_v1};
+pub use calibration_v1::{
+    CALIBRATION_POLICY_V1, CalibrationErrorV1, CalibrationIterationV1, CalibrationNoiseResultV1,
+    CalibrationResultV1, MAX_CALIBRATION_ITERATIONS_V1, calculate_r480_calibration_noise_v1,
+    calibrate_receiver_noise_v1,
+};
 pub use candidate_eval_v1::{
     CANDIDATE_EVAL_POLICY_V1, CandidateEvalErrorV1, CandidateEvalOptionsV1, CandidateEvalParamsV1,
     NonMmseSearchResultV1, c2m_candidate_fom_v1, evaluate_candidate_v1,
@@ -85,6 +97,7 @@ pub use canonical_input_keys_v1::{
 };
 pub use com_chain_v1::{
     COM_CHAIN_POLICY_V1, ComChainControlsV1, ComChainErrorV1, ComChainReportV1, run_com_chain_v1,
+    run_com_chain_with_crosstalk_v1,
 };
 pub use com_metrics_v1::{
     COM_METRICS_POLICY_V1, ComMetricsErrorV1, ComMetricsV1, calculate_com_metrics_v1,
@@ -119,7 +132,7 @@ pub use com_run_artifact_provenance_v1::{
 };
 pub use com_run_execution_v1::{
     COM_RUN_EXECUTION_POLICY_V1, COM_RUN_RESULT_SCHEMA_V1, ComRunExecutionErrorV1,
-    ComRunResultEnvelopeV1, execute_com_run_v1,
+    ComRunResultEnvelopeV1, execute_com_run_v1, execute_com_run_with_crosstalk_v1,
 };
 pub use com_specified_artifact_execution_v1::{
     COM_RUN_ARTIFACT_SPECIFIED_POLICY_V1, COM_RUN_ARTIFACT_SPECIFIED_RESULT_SCHEMA_V1,
@@ -154,6 +167,10 @@ pub use dfe_v1::{
 pub use discrete_pdf_v1::{
     DISCRETE_PDF_POLICY_V1, DiscretePdfV1, PdfErrorV1, convolve_v1, normal_pdf_v1,
 };
+pub use equalization_apply_v1::{
+    EQUALIZATION_APPLY_POLICY_V1, EqualizationApplyErrorV1, EqualizedChannelsV1,
+    apply_r480_equalization_v1,
+};
 pub use equalizer_frontend_v1::{
     CursorSampleV1, EQUALIZER_FRONTEND_POLICY_V1, EqualizerErrorV1, cursor_sample_index_v1,
     fd_ctle_v1, td_ctle_v1,
@@ -162,6 +179,10 @@ pub use erf_v1::{ERF_POLICY_V1, erf_v1, erfcinv_v1, erfinv_v1};
 pub use eye_contour_v1::{
     EYE_CONTOUR_POLICY_V1, EyeContourErrorV1, EyeContourV1, EyeGridV1, TimeColumnContourV1,
     statistical_eye_contour_v1,
+};
+pub use fd_to_td_v1::{
+    FD_TO_TD_POLICY_V1, FdToTdErrorV1, FdToTdOptionsV1, ImpulseResultV1, MAX_FD_TO_TD_BINS_V1,
+    rectangular_pulse_response_fd_v1, s21_to_impulse_dc_v1,
 };
 pub use horizontal_margin_v1::{
     HORIZONTAL_MARGIN_POLICY_V1, HorizontalMarginErrorV1, HorizontalMarginsV1,
@@ -174,7 +195,12 @@ pub use ingest_v1::{
 pub use mat_reader_v1::{MAT_READER_POLICY_V1, read_com_settings_mat_v1};
 pub use matlab_literal_v1::{LiteralV1, parse_literal_v1};
 pub use mixed_mode_v1::{
-    FourPortSMatrixV1, NETWORK_INGEST_POLICY_V1, com_mixed_mode_v1, com_t_v1, sdd21_v1,
+    FourPortSMatrixV1, MixedModeErrorV1, NETWORK_INGEST_POLICY_V1, apply_r480_pn_skew_v1,
+    com_mixed_mode_spectrum_v1, com_mixed_mode_v1, com_t_v1, sdd21_v1,
+};
+pub use mmse_v1::{
+    MAX_MMSE_CANDIDATES_V1, MAX_MMSE_MATRIX_DIM_V1, MMSE_POLICY_V1, MmseCandidateSpecV1,
+    MmseErrorV1, MmseResultV1, MmseSearchResultV1, constrained_mmse_v1, search_mmse_candidates_v1,
 };
 pub use parameter_surface_v1::{
     PARAMETER_SURFACE_POLICY_V1, ParameterPairV1, ParameterSurfaceReportV1,
@@ -199,6 +225,11 @@ pub use rx_ffe_v1::{
     FLOATING_RX_FFE_POLICY_V1, ForcedRxFfeResultV1, RX_FFE_POLICY_V1, RxFfeErrorV1,
     apply_rx_ffe_v1, force_floating_rx_ffe_v1, force_rx_ffe_v1,
 };
+pub use rxffe_search_v1::{
+    MAX_RXFFE_SEARCH_CANDIDATES_V1, MAX_RXFFE_SEARCH_WAVEFORM_SAMPLES_V1, RXFFE_SEARCH_POLICY_V1,
+    RxFfeSearchCandidateV1, RxFfeSearchErrorV1, RxFfeSearchEvaluationV1, RxFfeSearchResultV1,
+    search_fvlms_rxffe_candidates_v1,
+};
 pub use sampled_signal_pdf_v1::{
     PAM4_SYMBOL_VALUES, SAMPLED_SIGNAL_PDF_POLICY_V1, accelerated_sampled_signal_pdf_v1,
     from_values_v1, sampled_signal_pdf_v1, sparse_pam_component_v1,
@@ -207,13 +238,15 @@ pub use search_loop_v1::{
     SEARCH_LOOP_POLICY_V1, SearchFullOptionsV1, SearchFullParamsV1, SearchLoopErrorV1,
     SearchLoopOptionsV1, SearchLoopParamsV1, SearchLoopResultV1, anchored_cursor, peak_window,
     r480_sample_offsets, rectangular_pulse_response_v1, search_r480_nonmmse_no_xtalk_v1,
-    shift_matrix, skip_high_pass_local_search, skip_local_search, validate_supported_branch,
+    search_r480_nonmmse_no_xtalk_with_sigma_v1, shift_matrix, skip_high_pass_local_search,
+    skip_local_search, validate_supported_branch,
 };
 pub use search_support_v1::{
     CtleParamsV1, SEARCH_SUPPORT_POLICY_V1, SearchErrorV1, apply_ctle_candidate_v1,
     ctle_frequency_response_v1, high_pass_candidates_v1, indexed_config_value_v1,
     qualified_ctle_pair_v1, selected_accm_rms_v1, selected_sndr_v1, system_noise_response_v1,
 };
+pub use tdiln_v1::{TDILN_POLICY_V1, TdIlnErrorV1, TdIlnResultV1, r480_tdiln_v1};
 pub use tx_ffe_v1::{
     CandidateSelectionV1, FomSelectionV1, TX_FFE_POLICY_V1, TxFfeErrorV1, TxFfeGridV1,
     build_txffe_grid_v1, first_strict_best_v1, full_grid_matrix_v1, select_fom_tracker_v1,

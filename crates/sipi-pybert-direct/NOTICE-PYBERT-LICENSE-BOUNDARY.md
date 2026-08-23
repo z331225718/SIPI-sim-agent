@@ -1,13 +1,15 @@
 # PyBERT native-core license boundary
 
-This quarantined migration crate contains exact copies of nineteen Rust source
-files from `native/pybert-core/src` at PyBERT Git commit
+This quarantined migration crate contains exact copies of seventeen Rust source
+files plus two hash-bound additive adaptations of `native/pybert-core/src` at PyBERT Git commit
 `5bf6d7ea0ace261891aaeb611ffc1c267e160afe` (tree
 `5faef6bdb341d444ad65d82a11c0018b15805e24`). The exact source paths, Git blob
 identities, content hashes, and destination paths are recorded in
 `SOURCE-MAP.md` and `docs/baselines/pb-02-direct-port.v1.yaml`.
 
-The pinned `native/pybert-core/Cargo.toml` declares `license = "MIT"`, but the
+The `input.rs` and `simulation.rs` adaptations only add portable Touchstone CTLE
+impulse admission/consumption; they do not replace the copied native numerical
+stages. The pinned `native/pybert-core/Cargo.toml` declares `license = "MIT"`, but the
 pinned tree does not contain a separate MIT license text inside
 `native/pybert-core`. The pinned repository root `LICENSE` is the following
 BSD-3-Clause text (SHA-256

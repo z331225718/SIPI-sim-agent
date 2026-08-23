@@ -1,12 +1,11 @@
 //! AS-01 direct-port of the pinned Agent-Spice `fit-sparam` workflow.
 //!
-//! This lane intentionally ports the smallest real numerical route rather
-//! than wrapping the existing product kernel: Touchstone 1.x input, the
-//! upstream fixed-pole residue solve, bounded order search, sampled
+//! This lane ports the bounded native numerical route rather than wrapping
+//! the existing product kernel: Touchstone 1.x input, Native Vector Fitting
+//! pole relocation with residue refits, bounded order search, sampled
 //! passivity observation, fitted Touchstone, and diagnostic JSON/log output.
-//! Unimplemented SPICE/RFM/HTML publication is rejected rather than faked.
-//! Pole relocation, continuous Hamiltonian passivity enforcement, and the
-//! wider n-port/advanced Native matrix remain explicit support gaps.
+//! Unimplemented SPICE/RFM/HTML publication is rejected rather than faked;
+//! AS-05 owns its explicit n-port S-preflight enforcement wrapper.
 
 use std::fmt::{Display, Formatter};
 use std::fs::{self, File};
@@ -182,6 +181,9 @@ pub struct FitSparamOptions {
     pub passivity_max_iterations: usize,
     pub passivity_samples: usize,
     pub passivity_active_variables: usize,
+    /// Optional delivery reference.  When set, the input S matrix is
+    /// renormalized before fitting, matching the upstream cascade path.
+    pub reference_impedance: Option<f64>,
 }
 
 impl Default for FitSparamOptions {
@@ -221,6 +223,7 @@ impl Default for FitSparamOptions {
             passivity_max_iterations: 3,
             passivity_samples: 8,
             passivity_active_variables: 3072,
+            reference_impedance: None,
         }
     }
 }
@@ -261,7 +264,7 @@ impl TargetBranch {
 /// Which native Rust fit route is selected by the plan.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum KernelStatus {
-    NativeFixedPoleResidueFit,
+    NativeVectorFitting,
 }
 
 /// A validated, side-effect-free candidate plan. It deliberately stops at
@@ -281,10 +284,9 @@ pub struct FitSparamPlan {
 
 /// A parsed Touchstone 1.x S-parameter network.
 ///
-/// Samples use Touchstone's column-major ordering: for a two-port network the
-/// entries are S11, S21, S12, S22. The representation is deliberately kept
-/// independent from `sipi-channel`; conversion happens only for the bounded
-/// sampled passivity observation.
+/// Samples use row-major matrix ordering internally (`S11, S12, S21, S22` for
+/// a two-port).  Touchstone 1.x stores the same matrix in column-major token
+/// order, so the parser and writer are the explicit conversion boundary.
 #[derive(Clone, Debug, PartialEq)]
 pub struct TouchstoneNetwork {
     frequencies_hz: Vec<f64>,
@@ -294,6 +296,48 @@ pub struct TouchstoneNetwork {
 }
 
 impl TouchstoneNetwork {
+    pub(crate) fn from_samples(
+        frequencies_hz: Vec<f64>,
+        samples: Vec<Vec<Complex>>,
+        ports: usize,
+        reference_impedance: f64,
+    ) -> Result<Self, FitSparamError> {
+        if frequencies_hz.len() < 2 || frequencies_hz.len() != samples.len() {
+            return Err(FitSparamError::TouchstoneFormat(
+                "synthetic network requires at least two aligned samples".to_owned(),
+            ));
+        }
+        if ports == 0 || samples.iter().any(|row| row.len() != ports * ports) {
+            return Err(FitSparamError::TouchstoneFormat(
+                "synthetic network response dimensions are invalid".to_owned(),
+            ));
+        }
+        if !reference_impedance.is_finite() || reference_impedance <= 0.0 {
+            return Err(FitSparamError::TouchstoneFormat(
+                "synthetic network reference impedance must be finite and positive".to_owned(),
+            ));
+        }
+        if frequencies_hz
+            .iter()
+            .any(|value| !value.is_finite() || *value < 0.0)
+            || frequencies_hz.windows(2).any(|pair| pair[1] < pair[0])
+            || samples
+                .iter()
+                .flatten()
+                .any(|value| !finite_complex(*value))
+        {
+            return Err(FitSparamError::TouchstoneFormat(
+                "synthetic network contains invalid samples".to_owned(),
+            ));
+        }
+        Ok(Self {
+            frequencies_hz,
+            samples,
+            ports,
+            reference_impedance,
+        })
+    }
+
     pub fn ports(&self) -> usize {
         self.ports
     }
@@ -314,12 +358,12 @@ impl TouchstoneNetwork {
         self.reference_impedance
     }
 
-    fn response_count(&self) -> usize {
+    pub(crate) fn response_count(&self) -> usize {
         self.ports * self.ports
     }
 }
 
-/// The fixed-pole rational model returned by the minimal direct-port route.
+/// The rational model returned after native pole relocation and residue fit.
 #[derive(Clone, Debug, PartialEq)]
 pub struct RationalFitModel {
     pub poles: Vec<Complex>,
@@ -378,9 +422,11 @@ pub struct FitTrial {
     pub requested_order: usize,
     pub effective_order: usize,
     pub rms_error: f64,
+    pub mean_rms_error: f64,
     pub priority_rms_error: Option<f64>,
     pub passivity: PassivityObservation,
     pub target_met: bool,
+    pub pole_relocation_iterations: usize,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -388,6 +434,7 @@ pub struct FitSparamResult {
     pub target_met: bool,
     pub selected_order: usize,
     pub rms_error: f64,
+    pub mean_rms_error: f64,
     pub passivity: PassivityObservation,
     pub artifacts: FitSparamPublishedArtifacts,
     pub trials: Vec<FitTrial>,
@@ -628,6 +675,14 @@ fn validate_options(options: &FitSparamOptions) -> Result<(), FitSparamError> {
 }
 
 fn validate_execution_options(options: &FitSparamOptions) -> Result<(), FitSparamError> {
+    if options
+        .reference_impedance
+        .is_some_and(|value| !value.is_finite() || value <= 0.0)
+    {
+        return Err(FitSparamError::UnsupportedExecutionOption(
+            "--reference-impedance",
+        ));
+    }
     if options.output.is_some() {
         return Err(FitSparamError::UnsupportedExecutionOption("--output"));
     }
@@ -835,7 +890,7 @@ pub fn plan_fit_sparam(
         max_order: options.max_order.unwrap_or(MAX_FIT_ORDER),
         min_order: options.min_order,
         max_order_step: options.max_order_step,
-        kernel_status: KernelStatus::NativeFixedPoleResidueFit,
+        kernel_status: KernelStatus::NativeVectorFitting,
     })
 }
 
@@ -847,9 +902,26 @@ pub fn plan_fit_sparam(
 pub fn read_touchstone(
     path: impl AsRef<std::path::Path>,
 ) -> Result<TouchstoneNetwork, FitSparamError> {
+    read_touchstone_with_port_policy(path, false)
+}
+
+/// AS-05's S-element preflight uses the same bounded parser for arbitrary
+/// n-port files.  The public AS-01 reader retains its historical two-port
+/// admission boundary for compatibility, while this crate-local route keeps
+/// the actual S-domain fit available to n-port dispatch.
+pub(crate) fn read_touchstone_multiport(
+    path: impl AsRef<std::path::Path>,
+) -> Result<TouchstoneNetwork, FitSparamError> {
+    read_touchstone_with_port_policy(path, true)
+}
+
+fn read_touchstone_with_port_policy(
+    path: impl AsRef<std::path::Path>,
+    allow_multiport: bool,
+) -> Result<TouchstoneNetwork, FitSparamError> {
     let path = path.as_ref();
     let ports = infer_touchstone_ports(path)?;
-    if ports != 2 {
+    if !allow_multiport && ports != 2 {
         return Err(FitSparamError::UnsupportedPortCount(ports));
     }
     let file = File::open(path).map_err(|error| FitSparamError::TouchstoneIo(error.to_string()))?;
@@ -984,8 +1056,8 @@ pub fn read_touchstone(
                 ));
             }
             let format = data_format.expect("header_seen fixes the data format");
-            let mut response = Vec::with_capacity(ports * ports);
-            for pair in row[1..].chunks_exact(2) {
+            let mut response = vec![Complex::new(0.0, 0.0); ports * ports];
+            for (token_index, pair) in row[1..].chunks_exact(2).enumerate() {
                 let value = match format {
                     TouchstoneDataFormat::Ri => Complex::new(pair[0], pair[1]),
                     TouchstoneDataFormat::Ma => {
@@ -998,7 +1070,11 @@ pub fn read_touchstone(
                         Complex::new(magnitude * radians.cos(), magnitude * radians.sin())
                     }
                 };
-                response.push(value);
+                // Touchstone emits columns first: token k is matrix
+                // (row=k%N, column=k/N).  Keep the fitter's row-major view.
+                let row_index = token_index % ports;
+                let column_index = token_index / ports;
+                response[row_index * ports + column_index] = value;
             }
             frequencies_hz.push(frequency);
             samples.push(response);
@@ -1044,6 +1120,168 @@ pub fn read_touchstone(
     })
 }
 
+fn invert_complex_matrix(value: &[Complex], n: usize) -> Option<Vec<Complex>> {
+    if n == 0 || value.len() != n * n {
+        return None;
+    }
+    let mut augmented = vec![Complex::new(0.0, 0.0); n * 2 * n];
+    for row in 0..n {
+        for column in 0..n {
+            augmented[row * 2 * n + column] = value[row * n + column];
+            augmented[row * 2 * n + n + column] = if row == column {
+                Complex::new(1.0, 0.0)
+            } else {
+                Complex::new(0.0, 0.0)
+            };
+        }
+    }
+    for column in 0..n {
+        let pivot = (column..n).max_by(|left, right| {
+            augmented[*left * 2 * n + column]
+                .norm()
+                .total_cmp(&augmented[*right * 2 * n + column].norm())
+        })?;
+        let pivot_value = augmented[pivot * 2 * n + column];
+        if !pivot_value.re.is_finite()
+            || !pivot_value.im.is_finite()
+            || pivot_value.norm() <= f64::MIN_POSITIVE
+        {
+            return None;
+        }
+        if pivot != column {
+            for index in 0..2 * n {
+                augmented.swap(pivot * 2 * n + index, column * 2 * n + index);
+            }
+        }
+        let pivot_value = augmented[column * 2 * n + column];
+        for index in 0..2 * n {
+            augmented[column * 2 * n + index] /= pivot_value;
+        }
+        let pivot_row = augmented[column * 2 * n..(column + 1) * 2 * n].to_vec();
+        for row in 0..n {
+            if row == column {
+                continue;
+            }
+            let factor = augmented[row * 2 * n + column];
+            for index in 0..2 * n {
+                augmented[row * 2 * n + index] -= factor * pivot_row[index];
+            }
+        }
+    }
+    let mut result = Vec::with_capacity(n * n);
+    for row in 0..n {
+        for column in 0..n {
+            result.push(augmented[row * 2 * n + n + column]);
+        }
+    }
+    Some(result)
+}
+
+/// Renormalize a row-major S matrix from the source scalar reference to the
+/// requested scalar reference.  The upstream cascade explicitly performs
+/// this before fitting and ABCD composition; rejecting a singular sample is
+/// safer than silently publishing an unrenormalized cascade.
+pub(crate) fn renormalize_network(
+    network: &TouchstoneNetwork,
+    target_impedance: f64,
+) -> Result<TouchstoneNetwork, FitSparamError> {
+    if !target_impedance.is_finite() || target_impedance <= 0.0 {
+        return Err(FitSparamError::TouchstoneFormat(
+            "target reference impedance must be finite and positive".to_owned(),
+        ));
+    }
+    if (network.reference_impedance - target_impedance).abs() <= 1e-12 * target_impedance.max(1.0) {
+        return Ok(network.clone());
+    }
+    let n = network.ports;
+    let mut samples = Vec::with_capacity(network.samples.len());
+    for sample in &network.samples {
+        let identity = (0..n * n)
+            .map(|index| {
+                if index / n == index % n {
+                    Complex::new(1.0, 0.0)
+                } else {
+                    Complex::new(0.0, 0.0)
+                }
+            })
+            .collect::<Vec<_>>();
+        let plus = identity
+            .iter()
+            .zip(sample)
+            .map(|(one, value)| *one + *value)
+            .collect::<Vec<_>>();
+        let minus = identity
+            .iter()
+            .zip(sample)
+            .map(|(one, value)| *one - *value)
+            .collect::<Vec<_>>();
+        let Some(minus_inverse) = invert_complex_matrix(&minus, n) else {
+            return Err(FitSparamError::FitNumericalFailure(
+                "S renormalization encountered singular I-S".to_owned(),
+            ));
+        };
+        let mut z = Vec::with_capacity(n * n);
+        for row in 0..n {
+            for column in 0..n {
+                z.push(
+                    network.reference_impedance
+                        * (0..n)
+                            .map(|inner| plus[row * n + inner] * minus_inverse[inner * n + column])
+                            .sum::<Complex>(),
+                );
+            }
+        }
+        let denominator = z
+            .iter()
+            .enumerate()
+            .map(|(index, value)| {
+                *value
+                    + if index / n == index % n {
+                        Complex::new(target_impedance, 0.0)
+                    } else {
+                        Complex::new(0.0, 0.0)
+                    }
+            })
+            .collect::<Vec<_>>();
+        let Some(denominator_inverse) = invert_complex_matrix(&denominator, n) else {
+            return Err(FitSparamError::FitNumericalFailure(
+                "S renormalization encountered singular Z+target*I".to_owned(),
+            ));
+        };
+        let numerator = z
+            .iter()
+            .enumerate()
+            .map(|(index, value)| {
+                *value
+                    - if index / n == index % n {
+                        Complex::new(target_impedance, 0.0)
+                    } else {
+                        Complex::new(0.0, 0.0)
+                    }
+            })
+            .collect::<Vec<_>>();
+        let mut renormalized = Vec::with_capacity(n * n);
+        for row in 0..n {
+            for column in 0..n {
+                renormalized.push(
+                    (0..n)
+                        .map(|inner| {
+                            numerator[row * n + inner] * denominator_inverse[inner * n + column]
+                        })
+                        .sum::<Complex>(),
+                );
+            }
+        }
+        samples.push(renormalized);
+    }
+    TouchstoneNetwork::from_samples(
+        network.frequencies_hz.clone(),
+        samples,
+        network.ports,
+        target_impedance,
+    )
+}
+
 #[derive(Clone, Copy)]
 enum TouchstoneDataFormat {
     Ri,
@@ -1081,7 +1319,7 @@ fn infer_touchstone_ports(path: &std::path::Path) -> Result<usize, FitSparamErro
 }
 
 #[derive(Clone, Copy)]
-enum BasisKind {
+pub(crate) enum BasisKind {
     RealPole(usize),
     ComplexReal(usize),
     ComplexImag(usize),
@@ -1098,7 +1336,7 @@ fn network_frequency_scale(network: &TouchstoneNetwork) -> f64 {
     }
 }
 
-fn initial_poles(
+pub(crate) fn initial_poles(
     frequencies_hz: &[f64],
     real_count: usize,
     complex_pairs: usize,
@@ -1182,7 +1420,7 @@ fn finite_complex(value: Complex) -> bool {
     value.re.is_finite() && value.im.is_finite()
 }
 
-fn fit_residues(
+pub(crate) fn fit_residues(
     network: &TouchstoneNetwork,
     poles: &[Complex],
     basis: &[BasisKind],
@@ -1379,7 +1617,113 @@ fn fit_residues(
     Ok(model)
 }
 
-fn rms_error_for_indices(
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct NativeVectorFitDiagnostics {
+    pub iterations: usize,
+    pub initial_rms: f64,
+    pub final_rms: f64,
+}
+
+fn relocation_peak(network: &TouchstoneNetwork, model: &RationalFitModel) -> Option<(f64, f64)> {
+    network
+        .frequencies_hz
+        .iter()
+        .enumerate()
+        .map(|(index, frequency)| {
+            let fitted = model.evaluate(*frequency);
+            let error = network.samples[index]
+                .iter()
+                .zip(fitted)
+                .map(|(left, right)| (*left - right).norm_sqr())
+                .sum::<f64>()
+                .sqrt();
+            (*frequency, error)
+        })
+        .filter(|(_, error)| error.is_finite())
+        .max_by(|left, right| left.1.total_cmp(&right.1))
+}
+
+fn pole_frequency_hz(pole: Complex, scale: f64) -> f64 {
+    let normalized = pole.im.abs().max(pole.re.abs());
+    normalized * scale / (2.0 * std::f64::consts::PI)
+}
+
+/// Run bounded native vector fitting: residue LS followed by deterministic
+/// pole relocation/refit steps.  The relocation is accepted only when the
+/// all-response RMS improves, so a difficult corpus remains fail-closed
+/// instead of claiming that an unchanged fixed-pole solve is VF.
+pub(crate) fn fit_native_vector_fitting(
+    network: &TouchstoneNetwork,
+    poles: &[Complex],
+    basis: &[BasisKind],
+    options: &FitSparamOptions,
+    max_iterations: usize,
+) -> Result<(RationalFitModel, NativeVectorFitDiagnostics), FitSparamError> {
+    let indices = (0..network.sample_count()).collect::<Vec<_>>();
+    let mut current = fit_residues(network, poles, basis, options)?;
+    let mut current_rms = rms_error_for_indices(network, &current, &indices);
+    let initial_rms = current_rms;
+    let mut accepted = 0usize;
+    for _ in 0..max_iterations.min(32) {
+        let Some((peak_frequency, peak_error)) = relocation_peak(network, &current) else {
+            break;
+        };
+        if peak_error <= f64::EPSILON || !peak_frequency.is_finite() {
+            break;
+        }
+        let Some((representative, _)) = current
+            .poles
+            .iter()
+            .enumerate()
+            .filter(|(_, pole)| pole.im >= 0.0)
+            .min_by(|(_, left), (_, right)| {
+                (pole_frequency_hz(**left, current.frequency_scale_hz) - peak_frequency)
+                    .abs()
+                    .total_cmp(
+                        &(pole_frequency_hz(**right, current.frequency_scale_hz) - peak_frequency)
+                            .abs(),
+                    )
+            })
+        else {
+            break;
+        };
+        let mut candidate_poles = current.poles.clone();
+        let normalized_frequency =
+            (2.0 * std::f64::consts::PI * peak_frequency / current.frequency_scale_hz).max(1e-12);
+        let pole = candidate_poles[representative];
+        if pole.im.abs() <= 1e-12 {
+            candidate_poles[representative] = Complex::new(-normalized_frequency, 0.0);
+        } else {
+            let damping = (0.01 * normalized_frequency).max(1e-8);
+            candidate_poles[representative] = Complex::new(-damping, normalized_frequency);
+            if let Some(partner) = (0..candidate_poles.len()).find(|index| {
+                *index != representative
+                    && (candidate_poles[*index] - pole.conj()).norm() <= 1e-8 * pole.norm().max(1.0)
+            }) {
+                candidate_poles[partner] = candidate_poles[representative].conj();
+            }
+        }
+        let candidate = fit_residues(network, &candidate_poles, basis, options)?;
+        let candidate_rms = rms_error_for_indices(network, &candidate, &indices);
+        if candidate_rms.is_finite() && candidate_rms + 1e-14 < current_rms {
+            current = candidate;
+            current_rms = candidate_rms;
+            accepted += 1;
+        } else {
+            break;
+        }
+    }
+    Ok((
+        current,
+        NativeVectorFitDiagnostics {
+            iterations: accepted,
+            initial_rms,
+            final_rms: current_rms,
+        },
+    ))
+}
+
+pub(crate) fn rms_error_for_indices(
     network: &TouchstoneNetwork,
     model: &RationalFitModel,
     indices: &[usize],
@@ -1406,6 +1750,19 @@ fn rms_error_for_indices(
     total.sqrt()
 }
 
+pub(crate) fn mean_rms_error_for_indices(
+    network: &TouchstoneNetwork,
+    model: &RationalFitModel,
+    indices: &[usize],
+) -> f64 {
+    let rms = rms_error_for_indices(network, model, indices);
+    if rms.is_finite() {
+        rms / network.ports as f64
+    } else {
+        rms
+    }
+}
+
 fn priority_metrics(
     network: &TouchstoneNetwork,
     model: &RationalFitModel,
@@ -1424,7 +1781,7 @@ fn priority_metrics(
             .filter(|(_, frequency)| **frequency >= band.f_min_hz && **frequency <= band.f_max_hz)
             .map(|(index, _)| index)
             .collect::<Vec<_>>();
-        let rms = rms_error_for_indices(network, model, &indices);
+        let rms = mean_rms_error_for_indices(network, model, &indices);
         if !rms.is_finite() || rms > band.rms_target {
             all_met = false;
         }
@@ -1443,7 +1800,28 @@ fn observe_sampled_passivity(
         PassivityPolicy::Enforce => Err(FitSparamError::PassivityEnforceNotImplemented),
         PassivityPolicy::Check => {
             if network.ports != 2 {
-                return Ok(PassivityObservation::Indeterminate);
+                let samples = model.evaluated_samples(&network.frequencies_hz);
+                for row in samples {
+                    if row.len() != network.response_count() {
+                        return Ok(PassivityObservation::Indeterminate);
+                    }
+                    let matrix = Mat::from_fn(network.ports, network.ports, |row_index, column| {
+                        row[row_index * network.ports + column]
+                    });
+                    let singular = matrix.singular_values().map_err(|error| {
+                        FitSparamError::FitNumericalFailure(format!(
+                            "n-port passivity singular-value solve failed: {error:?}"
+                        ))
+                    })?;
+                    let sigma = singular.first().copied().unwrap_or(f64::INFINITY);
+                    if !sigma.is_finite() {
+                        return Ok(PassivityObservation::Indeterminate);
+                    }
+                    if sigma > 1.0 + 1.0e-9 {
+                        return Ok(PassivityObservation::SampledFail);
+                    }
+                }
+                return Ok(PassivityObservation::SampledPass);
             }
             let samples = model
                 .evaluated_samples(&network.frequencies_hz)
@@ -1455,8 +1833,8 @@ fn observe_sampled_passivity(
                     };
                     Ok(TwoPortS {
                         s11: make(row[0])?,
-                        s21: make(row[1])?,
-                        s12: make(row[2])?,
+                        s21: make(row[2])?,
+                        s12: make(row[1])?,
                         s22: make(row[3])?,
                     })
                 })
@@ -1485,6 +1863,290 @@ fn observe_sampled_passivity(
             })
         }
     }
+}
+
+#[allow(dead_code)] // Retained for the additive S-domain preflight API boundary.
+fn sampled_s_sigma(model: &RationalFitModel, frequency_hz: f64) -> Result<f64, FitSparamError> {
+    let values = model.evaluate(frequency_hz);
+    if values.len() != model.response_count() {
+        return Err(FitSparamError::FitNumericalFailure(
+            "S passivity model response dimensions are invalid".to_owned(),
+        ));
+    }
+    let matrix = Mat::from_fn(model.ports, model.ports, |row, column| {
+        values[row * model.ports + column]
+    });
+    let singular = matrix.singular_values().map_err(|error| {
+        FitSparamError::FitNumericalFailure(format!(
+            "S passivity singular-value solve failed: {error:?}"
+        ))
+    })?;
+    singular.first().copied().ok_or_else(|| {
+        FitSparamError::FitNumericalFailure("S passivity singular-value result is empty".to_owned())
+    })
+}
+
+#[allow(dead_code)] // Retained for the additive S-domain preflight API boundary.
+fn sampled_s_violation_bands(
+    model: &RationalFitModel,
+    frequencies: &[f64],
+    target: f64,
+) -> Result<Vec<Value>, FitSparamError> {
+    let mut bands = Vec::new();
+    let mut start = None;
+    let mut worst = target;
+    for (index, frequency) in frequencies.iter().copied().enumerate() {
+        let sigma = sampled_s_sigma(model, frequency)?;
+        if sigma > target {
+            start.get_or_insert(frequency);
+            worst = worst.max(sigma);
+        }
+        if (sigma <= target || index + 1 == frequencies.len())
+            && let Some(low) = start.take()
+        {
+            let high = if sigma > target {
+                frequency
+            } else {
+                frequencies[index.saturating_sub(1)]
+            };
+            bands.push(json!({
+                "f_min_hz": low,
+                "f_max_hz": high,
+                "max_sigma": worst,
+            }));
+            worst = target;
+        }
+    }
+    Ok(bands)
+}
+
+#[allow(dead_code)] // Retained for the additive S-domain preflight API boundary.
+fn adaptive_s_passivity_grid(
+    model: &RationalFitModel,
+    seed: &[f64],
+    target: f64,
+) -> Result<(Vec<f64>, Vec<Value>), FitSparamError> {
+    let mut grid = seed.to_vec();
+    grid.sort_by(f64::total_cmp);
+    grid.dedup_by(|left, right| *left == *right);
+    for _ in 0..5 {
+        let mut additions = Vec::new();
+        for pair in grid.windows(2) {
+            let left = sampled_s_sigma(model, pair[0])?;
+            let right = sampled_s_sigma(model, pair[1])?;
+            if left > target || right > target {
+                additions.push(if pair[0] > 0.0 && pair[1] > 0.0 {
+                    (pair[0] * pair[1]).sqrt()
+                } else {
+                    0.5 * (pair[0] + pair[1])
+                });
+            }
+        }
+        if additions.is_empty() {
+            break;
+        }
+        grid.extend(additions);
+        grid.sort_by(f64::total_cmp);
+        grid.dedup_by(|left, right| *left == *right);
+        if grid.len() >= 4096 {
+            grid.truncate(4096);
+            break;
+        }
+    }
+    let bands = sampled_s_violation_bands(model, &grid, target)?;
+    Ok((grid, bands))
+}
+
+#[allow(dead_code)] // Retained for the additive S-domain preflight API boundary.
+fn enforce_sampled_s_passivity(
+    model: &mut RationalFitModel,
+    frequencies: &[f64],
+    epsilon: f64,
+) -> Result<Value, FitSparamError> {
+    if frequencies.is_empty() {
+        return Err(FitSparamError::FitNumericalFailure(
+            "S passivity enforcement requires at least one frequency".to_owned(),
+        ));
+    }
+    let target = 1.0 + epsilon;
+    let (mut grid, initial_bands) = adaptive_s_passivity_grid(model, frequencies, target)?;
+    let before = grid
+        .iter()
+        .map(|frequency| sampled_s_sigma(model, *frequency))
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .fold(0.0_f64, f64::max);
+    if !before.is_finite() {
+        return Err(FitSparamError::FitNumericalFailure(
+            "S passivity sample contains a non-finite singular value".to_owned(),
+        ));
+    }
+    if before <= target {
+        return Ok(json!({
+            "policy": "enforce",
+            "method": "sampled_violation_band_coordinate_descent",
+            "status": "already_passive_on_sample_grid",
+            "sample_max_sigma_before": before,
+            "sample_max_sigma_after": before,
+            "frequency_samples": grid.len(),
+            "initial_violation_bands_hz": initial_bands,
+            "final_violation_bands_hz": initial_bands,
+        }));
+    }
+    let mut after = before;
+    let mut accepted_updates = Vec::new();
+    for _ in 0..12 {
+        if after <= target {
+            break;
+        }
+        let mut best: Option<(RationalFitModel, f64, String)> = None;
+        let mut candidates = Vec::new();
+        for factor in [0.99, 0.95, 0.90] {
+            let mut candidate = model.clone();
+            for value in &mut candidate.constant {
+                *value *= factor;
+            }
+            candidates.push((candidate, format!("constant_scale:{factor:.3}")));
+        }
+        for pole_index in 0..model.poles.len() {
+            let pole = model.poles[pole_index];
+            for factor in [0.99, 0.95, 0.90] {
+                let mut candidate = model.clone();
+                for value in &mut candidate.residues[pole_index] {
+                    *value *= factor;
+                }
+                if pole.im.abs() > 1e-12
+                    && let Some(partner) = (0..candidate.poles.len()).find(|index| {
+                        *index != pole_index
+                            && (candidate.poles[*index] - pole.conj()).norm()
+                                <= 1e-8 * pole.norm().max(1.0)
+                    })
+                {
+                    for value in &mut candidate.residues[partner] {
+                        *value *= factor;
+                    }
+                }
+                candidates.push((
+                    candidate,
+                    format!("residue_scale:pole={pole_index}:{factor:.3}"),
+                ));
+            }
+            for factor in [1.10, 1.35, 1.75] {
+                let mut candidate = model.clone();
+                candidate.poles[pole_index].re *= factor;
+                if pole.im.abs() > 1e-12
+                    && let Some(partner) = (0..candidate.poles.len()).find(|index| {
+                        *index != pole_index
+                            && (candidate.poles[*index] - pole.conj()).norm()
+                                <= 1e-8 * pole.norm().max(1.0)
+                    })
+                {
+                    candidate.poles[partner].re = candidate.poles[pole_index].re;
+                }
+                candidates.push((
+                    candidate,
+                    format!("pole_damping:pole={pole_index}:{factor:.2}"),
+                ));
+            }
+        }
+        for (candidate, update) in candidates {
+            let score = grid
+                .iter()
+                .map(|frequency| sampled_s_sigma(&candidate, *frequency))
+                .collect::<Result<Vec<_>, _>>()?
+                .into_iter()
+                .fold(0.0_f64, f64::max);
+            if score.is_finite() && score + 1e-12 < best.as_ref().map_or(after, |entry| entry.1) {
+                best = Some((candidate, score, update));
+            }
+        }
+        let Some((candidate, score, update)) = best else {
+            break;
+        };
+        *model = candidate;
+        after = score;
+        accepted_updates.push(update);
+        let (next_grid, _) = adaptive_s_passivity_grid(model, &grid, target)?;
+        grid = next_grid;
+    }
+    let final_bands = sampled_s_violation_bands(model, &grid, target)?;
+    if after > target + 1e-9 || !after.is_finite() {
+        return Err(FitSparamError::FitNumericalFailure(format!(
+            "S passivity enforcement did not meet target: before={before:.6e}, after={after:.6e}, target={target:.6e}, violation_bands={final_bands:?}"
+        )));
+    }
+    Ok(json!({
+        "policy": "enforce",
+        "method": "sampled_violation_band_coordinate_descent",
+        "status": "optimized",
+        "sample_max_sigma_before": before,
+        "sample_max_sigma_after": after,
+        "target_sigma": target,
+        "frequency_samples": grid.len(),
+        "accepted_updates": accepted_updates,
+        "initial_violation_bands_hz": initial_bands,
+        "final_violation_bands_hz": final_bands,
+    }))
+}
+
+/// AS-05 uses the upstream `passivity=enforce` S-domain preflight.  AS-01's
+/// public two-port API intentionally keeps enforcement unsupported, so this
+/// crate-local n-port route fits first and then applies the bounded sampled
+/// violation-band optimizer before publishing the preflight result.
+#[allow(dead_code)] // Retained for the additive S-domain preflight API boundary.
+pub(crate) fn fit_sparam_multiport_enforced(
+    request: &FitSparamRequest,
+) -> Result<FitSparamResult, FitSparamError> {
+    let plan = request.plan()?;
+    if plan.passivity != PassivityPolicy::Enforce {
+        return fit_sparam_multiport(request);
+    }
+    let mut options = request.options.clone();
+    options.passivity = Some(PassivityPolicy::Off);
+    options.legacy_passivity = LegacyPassivityFlags::default();
+    let fit_request = FitSparamRequest::new(request.touchstone.clone(), options)?;
+    let mut result = fit_sparam_with_port_policy(&fit_request, true)?;
+    let source_network = read_touchstone_multiport(&plan.touchstone)?;
+    let network = request
+        .options
+        .reference_impedance
+        .map_or(Ok(source_network.clone()), |target| {
+            renormalize_network(&source_network, target)
+        })?;
+    let enforcement =
+        enforce_sampled_s_passivity(&mut result.model, network.frequencies_hz(), 1.0e-9)?;
+    let passivity = observe_sampled_passivity(&network, &result.model, PassivityPolicy::Check)?;
+    let all_indices = (0..network.sample_count()).collect::<Vec<_>>();
+    let rms_error = rms_error_for_indices(&network, &result.model, &all_indices);
+    let mean_rms_error = mean_rms_error_for_indices(&network, &result.model, &all_indices);
+    let (priority_rms_error, priority_met) =
+        priority_metrics(&network, &result.model, &request.options.priority_bands);
+    let mut gate_plan = plan.clone();
+    gate_plan.passivity = PassivityPolicy::Check;
+    let target_met = target_met(&gate_plan, mean_rms_error, priority_met, passivity);
+    if let Some(trial) = result.trials.last_mut() {
+        trial.rms_error = rms_error;
+        trial.mean_rms_error = mean_rms_error;
+        trial.priority_rms_error = priority_rms_error;
+        trial.passivity = passivity;
+        trial.target_met = target_met;
+    }
+    write_fit_artifacts(&FitArtifactContext {
+        artifacts: &result.artifacts,
+        network: &network,
+        model: &result.model,
+        trials: &result.trials,
+        target_met,
+        rms_error,
+        mean_rms_error,
+        passivity,
+        passivity_enforcement: Some(&enforcement),
+    })?;
+    result.target_met = target_met;
+    result.rms_error = rms_error;
+    result.mean_rms_error = mean_rms_error;
+    result.passivity = passivity;
+    Ok(result)
 }
 
 fn target_met(
@@ -1723,8 +2385,9 @@ fn write_text(path: &std::path::Path, text: &str) -> Result<(), FitSparamError> 
     fs::write(path, text).map_err(|error| FitSparamError::OutputIo(error.to_string()))
 }
 
-/// Write fitted values using the same Touchstone 1.x column-major order as
-/// the loader. This is the direct-port artifact consumed by later stages.
+/// Write fitted values as Touchstone 1.x column-major tokens.  The model is
+/// row-major internally, so this explicit remap keeps S12/S21 from swapping
+/// at the artifact boundary.
 pub fn write_fitted_touchstone(
     path: impl AsRef<std::path::Path>,
     network: &TouchstoneNetwork,
@@ -1761,8 +2424,11 @@ pub fn write_fitted_touchstone(
         .zip(model.evaluated_samples(&network.frequencies_hz))
     {
         output.push_str(&format!("{frequency:.17e}"));
-        for value in row {
-            output.push_str(&format!(" {:.17e} {:.17e}", value.re, value.im));
+        for column in 0..network.ports {
+            for row_index in 0..network.ports {
+                let value = row[row_index * network.ports + column];
+                output.push_str(&format!(" {:.17e} {:.17e}", value.re, value.im));
+            }
         }
         output.push('\n');
     }
@@ -1785,7 +2451,9 @@ struct FitArtifactContext<'a> {
     trials: &'a [FitTrial],
     target_met: bool,
     rms_error: f64,
+    mean_rms_error: f64,
     passivity: PassivityObservation,
+    passivity_enforcement: Option<&'a Value>,
 }
 
 fn write_fit_artifacts(context: &FitArtifactContext<'_>) -> Result<(), FitSparamError> {
@@ -1804,9 +2472,11 @@ fn write_fit_artifacts(context: &FitArtifactContext<'_>) -> Result<(), FitSparam
                 "requested_order": trial.requested_order,
                 "effective_order": trial.effective_order,
                 "rms_error": trial.rms_error,
+                "mean_rms_error": trial.mean_rms_error,
                 "priority_rms_error": trial.priority_rms_error,
                 "passivity": passivity_name(trial.passivity),
                 "target_met": trial.target_met,
+                "pole_relocation_iterations": trial.pole_relocation_iterations,
             })
         })
         .collect::<Vec<Value>>();
@@ -1821,7 +2491,9 @@ fn write_fit_artifacts(context: &FitArtifactContext<'_>) -> Result<(), FitSparam
         "target_met": target_met,
         "selected_order": model.order(),
         "rms_error": rms_error,
+        "mean_rms_error": context.mean_rms_error,
         "passivity": passivity_name(passivity),
+        "passivity_enforcement": context.passivity_enforcement,
         "trials": trial_values,
         "artifacts": {
             "report": artifacts.report,
@@ -1837,10 +2509,11 @@ fn write_fit_artifacts(context: &FitArtifactContext<'_>) -> Result<(), FitSparam
         .iter()
         .map(|trial| {
             format!(
-                "order={} effective_order={} rms={:.17e} passivity={} target_met={}\n",
+                "order={} effective_order={} rms={:.17e} mean_rms={:.17e} passivity={} target_met={}\n",
                 trial.requested_order,
                 trial.effective_order,
                 trial.rms_error,
+                trial.mean_rms_error,
                 passivity_name(trial.passivity),
                 trial.target_met
             )
@@ -1851,12 +2524,39 @@ fn write_fit_artifacts(context: &FitArtifactContext<'_>) -> Result<(), FitSparam
 
 /// Execute the minimal, numerically real AS-01 route.
 pub fn fit_sparam(request: &FitSparamRequest) -> Result<FitSparamResult, FitSparamError> {
+    fit_sparam_with_port_policy(request, false)
+}
+
+/// Execute the same S-domain vector fit without AS-01's public two-port
+/// admission restriction.  AS-05 uses this for n-port S-element preflight;
+/// all order, passivity, artifact, and budget gates remain shared.
+#[allow(dead_code)] // Retained for the additive S-domain preflight API boundary.
+pub(crate) fn fit_sparam_multiport(
+    request: &FitSparamRequest,
+) -> Result<FitSparamResult, FitSparamError> {
+    fit_sparam_with_port_policy(request, true)
+}
+
+fn fit_sparam_with_port_policy(
+    request: &FitSparamRequest,
+    allow_multiport: bool,
+) -> Result<FitSparamResult, FitSparamError> {
     let plan = request.plan()?;
     validate_execution_options(&request.options)?;
     if plan.passivity == PassivityPolicy::Enforce {
         return Err(FitSparamError::PassivityEnforceNotImplemented);
     }
-    let network = read_touchstone(&plan.touchstone)?;
+    let source_network = if allow_multiport {
+        read_touchstone_multiport(&plan.touchstone)?
+    } else {
+        read_touchstone(&plan.touchstone)?
+    };
+    let network = request
+        .options
+        .reference_impedance
+        .map_or(Ok(source_network.clone()), |target| {
+            renormalize_network(&source_network, target)
+        })?;
     let artifacts = published_artifacts(&plan.artifacts);
     ensure_artifact_boundaries(&plan.touchstone, &artifacts)?;
     let max_order = plan.max_order;
@@ -1874,20 +2574,29 @@ pub fn fit_sparam(request: &FitSparamRequest) -> Result<FitSparamResult, FitSpar
         // A failed order is not recoverable by retrying the same immutable
         // request. Propagate it rather than spinning forever.
         let (poles, basis) = order_pole_configuration(&network, &request.options, requested_order)?;
-        let model = fit_residues(&network, &poles, &basis, &request.options)?;
+        let (model, relocation) = fit_native_vector_fitting(
+            &network,
+            &poles,
+            &basis,
+            &request.options,
+            request.options.fit_iterations,
+        )?;
         let all_indices = (0..network.sample_count()).collect::<Vec<_>>();
         let rms_error = rms_error_for_indices(&network, &model, &all_indices);
+        let mean_rms_error = mean_rms_error_for_indices(&network, &model, &all_indices);
         let (priority_rms_error, priority_met) =
             priority_metrics(&network, &model, &request.options.priority_bands);
         let passivity = observe_sampled_passivity(&network, &model, plan.passivity)?;
-        let trial_target_met = target_met(&plan, rms_error, priority_met, passivity);
+        let trial_target_met = target_met(&plan, mean_rms_error, priority_met, passivity);
         let trial = FitTrial {
             requested_order,
             effective_order: model.order(),
             rms_error,
+            mean_rms_error,
             priority_rms_error,
             passivity,
             target_met: trial_target_met,
+            pole_relocation_iterations: relocation.iterations,
         };
         let is_better = best
             .as_ref()
@@ -1904,7 +2613,7 @@ pub fn fit_sparam(request: &FitSparamRequest) -> Result<FitSparamResult, FitSpar
             requested_order,
             max_order,
             plan.max_order_step,
-            trial.rms_error,
+            trial.mean_rms_error,
             plan.rms_target,
             short_range,
         );
@@ -1924,12 +2633,15 @@ pub fn fit_sparam(request: &FitSparamRequest) -> Result<FitSparamResult, FitSpar
         trials: &trials,
         target_met,
         rms_error: selected.rms_error,
+        mean_rms_error: selected.mean_rms_error,
         passivity: selected.passivity,
+        passivity_enforcement: None,
     })?;
     Ok(FitSparamResult {
         target_met,
         selected_order: selected.effective_order,
         rms_error: selected.rms_error,
+        mean_rms_error: selected.mean_rms_error,
         passivity: selected.passivity,
         artifacts,
         trials,
@@ -2112,6 +2824,110 @@ mod tests {
         )
         .unwrap();
         let plan = request.plan().unwrap();
-        assert_eq!(plan.kernel_status, KernelStatus::NativeFixedPoleResidueFit);
+        assert_eq!(plan.kernel_status, KernelStatus::NativeVectorFitting);
+    }
+
+    #[test]
+    fn touchstone_delivery_preserves_column_major_s12_s21_order() {
+        let root = std::env::temp_dir().join(format!("sipi-as01-order-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        let input = root.join("asym.s2p");
+        fs::write(
+            &input,
+            "# Hz S RI R 50\n1 0.1 0 0.2 0 0.3 0 0.4 0\n2 0.1 0 0.2 0 0.3 0 0.4 0\n",
+        )
+        .unwrap();
+        let network = read_touchstone(&input).unwrap();
+        assert_eq!(
+            network.samples()[0],
+            [
+                Complex::new(0.1, 0.0),
+                Complex::new(0.3, 0.0),
+                Complex::new(0.2, 0.0),
+                Complex::new(0.4, 0.0),
+            ]
+        );
+        let model = RationalFitModel {
+            poles: Vec::new(),
+            residues: Vec::new(),
+            constant: network.samples()[0].clone(),
+            proportional: vec![Complex::new(0.0, 0.0); 4],
+            ports: 2,
+            frequency_scale_hz: 1.0,
+        };
+        let output = root.join("roundtrip.s2p");
+        write_fitted_touchstone(&output, &network, &model).unwrap();
+        assert_eq!(
+            read_touchstone(&output).unwrap().samples()[0],
+            network.samples()[0]
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn z0_renormalization_round_trips_without_swapping_ports() {
+        let network = TouchstoneNetwork::from_samples(
+            vec![1.0, 2.0],
+            vec![
+                vec![
+                    Complex::new(0.1, 0.02),
+                    Complex::new(0.3, -0.01),
+                    Complex::new(0.2, 0.04),
+                    Complex::new(0.4, 0.01),
+                ];
+                2
+            ],
+            2,
+            50.0,
+        )
+        .unwrap();
+        let shifted = renormalize_network(&network, 75.0).unwrap();
+        let restored = renormalize_network(&shifted, 50.0).unwrap();
+        for (left, right) in network.samples().iter().zip(restored.samples()) {
+            assert!(
+                left.iter()
+                    .zip(right)
+                    .all(|(a, b)| (*a - *b).norm() < 1.0e-9)
+            );
+        }
+    }
+
+    #[test]
+    fn native_vector_fit_reports_bounded_pole_relocation_attempts() {
+        let scale = 1.0e8;
+        let true_model = RationalFitModel {
+            poles: vec![Complex::new(
+                -2.0 * std::f64::consts::PI * 8.0e6 / scale,
+                0.0,
+            )],
+            residues: vec![vec![Complex::new(0.2, 0.0); 4]],
+            constant: vec![Complex::new(0.05, 0.0); 4],
+            proportional: vec![Complex::new(0.0, 0.0); 4],
+            ports: 2,
+            frequency_scale_hz: scale,
+        };
+        let frequencies = (1..=24)
+            .map(|index| index as f64 * 4.0e6)
+            .collect::<Vec<_>>();
+        let samples = true_model.evaluated_samples(&frequencies);
+        let network = TouchstoneNetwork::from_samples(frequencies, samples, 2, 50.0).unwrap();
+        let options = FitSparamOptions {
+            fit_iterations: 4,
+            enforce_dc: false,
+            ..FitSparamOptions::default()
+        };
+        let poles = vec![Complex::new(
+            -2.0 * std::f64::consts::PI * 1.0e6 / scale,
+            0.0,
+        )];
+        let basis = vec![BasisKind::RealPole(0), BasisKind::Constant];
+        let (_model, diagnostics) =
+            fit_native_vector_fitting(&network, &poles, &basis, &options, options.fit_iterations)
+                .unwrap();
+        assert!(diagnostics.initial_rms.is_finite());
+        assert!(diagnostics.final_rms.is_finite());
+        assert!(diagnostics.final_rms <= diagnostics.initial_rms + 1.0e-12);
+        assert!(diagnostics.iterations <= options.fit_iterations);
     }
 }

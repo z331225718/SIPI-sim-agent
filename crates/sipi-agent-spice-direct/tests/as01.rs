@@ -59,10 +59,7 @@ fn pinned_as01_corpus_covers_full_band_priority_band_and_artifact_overrides() {
         explicit.artifacts.fitted_touchstone,
         PathBuf::from("out/result.s2p")
     );
-    assert_eq!(
-        explicit.kernel_status,
-        KernelStatus::NativeFixedPoleResidueFit
-    );
+    assert_eq!(explicit.kernel_status, KernelStatus::NativeVectorFitting);
 }
 
 #[test]

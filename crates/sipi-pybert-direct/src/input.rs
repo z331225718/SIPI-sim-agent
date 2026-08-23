@@ -265,6 +265,10 @@ pub struct TxConfigV1 {
 #[serde(rename_all = "camelCase")]
 pub struct AdditiveNoiseV1 {
     pub samples_v: Vec<f64>,
+    /// Seed used to resolve the legacy random-noise waveform. This is
+    /// provenance only; the native core consumes the materialized samples.
+    #[serde(default)]
+    pub effective_seed: Option<u64>,
 }
 
 impl AdditiveNoiseV1 {
@@ -361,15 +365,20 @@ impl Default for RxConfigV1 {
 
 impl RxConfigV1 {
     fn validate(&self) -> Result<(), ContractError> {
+        if self
+            .dfe
+            .as_ref()
+            .and_then(|dfe| dfe.tap_limits.as_ref())
+            .is_some_and(|limits| limits.len() != self.dfe_taps as usize)
+        {
+            return Err(ContractError::InvalidDfe);
+        }
         if let Some(ctle) = &self.ctle {
             ctle.validate()?;
         }
         self.ffe.validate()?;
         if let Some(dfe) = &self.dfe {
             dfe.validate()?;
-            if self.dfe_taps == 0 {
-                return Err(ContractError::InvalidDfe);
-            }
         }
         if let Some(viterbi) = &self.viterbi {
             viterbi.validate()?;
@@ -391,6 +400,11 @@ pub struct CtleConfigV1 {
     pub frequency_step_hz: Option<Hertz>,
     #[serde(default)]
     pub frequency_max_hz: Option<Hertz>,
+    /// Optional impulse response imported from a portable legacy Touchstone
+    /// file. Values are dimensionless V/V samples at the request timebase;
+    /// analytic fields above remain populated as the legacy metadata surface.
+    #[serde(default)]
+    pub impulse_response_v_per_v: Option<Vec<f64>>,
 }
 
 impl CtleConfigV1 {
@@ -402,25 +416,41 @@ impl CtleConfigV1 {
             return Err(ContractError::InvalidCtle);
         }
         match (self.frequency_step_hz, self.frequency_max_hz) {
-            (None, None) => Ok(()),
+            (None, None) if self.valid_imported_impulse() => Ok(()),
             (Some(step), Some(maximum))
                 if step.is_finite_positive()
                     && maximum.is_finite_positive()
                     && maximum.0 >= step.0
                     && ((maximum.0 / step.0).round() - maximum.0 / step.0).abs() <= 1.0e-10 =>
             {
-                Ok(())
+                if self.valid_imported_impulse() {
+                    Ok(())
+                } else {
+                    Err(ContractError::InvalidCtle)
+                }
             }
+            (None, None) => Err(ContractError::InvalidCtle),
             _ => Err(ContractError::InvalidCtle),
         }
+    }
+
+    fn valid_imported_impulse(&self) -> bool {
+        self.impulse_response_v_per_v
+            .as_ref()
+            .is_none_or(|impulse| {
+                !impulse.is_empty()
+                    && impulse.len() <= 16 * 1024 * 1024
+                    && impulse.iter().all(|sample| sample.is_finite())
+            })
     }
 }
 
 /// Typed controls for the bounded native DFE/CDR stage.
 ///
 /// The tap count remains in `RxConfigV1` for wire compatibility with earlier
-/// v1 requests. Limits and precomputed weights intentionally remain host-owned
-/// until their matching optimizer contract is migrated.
+/// v1 requests.  Legacy tuner limits are optional because the older typed
+/// callers did not carry them; the admitted PyBERT projection populates them
+/// so the Rust DFE can enforce the same bounded update interval.
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DfeConfigV1 {
@@ -436,6 +466,8 @@ pub struct DfeConfigV1 {
     pub bandwidth: Hertz,
     pub use_agc: bool,
     pub agc_n_ave: u32,
+    #[serde(default)]
+    pub tap_limits: Option<Vec<(f64, f64)>>,
 }
 
 impl DfeConfigV1 {
@@ -451,6 +483,11 @@ impl DfeConfigV1 {
             || !self.bandwidth.0.is_finite()
             || self.bandwidth.0 < 0.0
             || self.agc_n_ave == 0
+            || self.tap_limits.as_ref().is_some_and(|limits| {
+                limits
+                    .iter()
+                    .any(|(lower, upper)| !lower.is_finite() || !upper.is_finite() || lower > upper)
+            })
         {
             return Err(ContractError::InvalidDfe);
         }
@@ -583,6 +620,11 @@ pub struct AnalysisConfigV1 {
     /// Omitted requests retain the original complete-waveform v1 behavior.
     #[serde(default)]
     pub jitter_eye_uis: Option<u64>,
+    /// Relative spectral threshold used to classify periodic jitter.  The
+    /// legacy PyBERT ``thresh`` setting projects here instead of being
+    /// silently discarded; omission preserves PyBERT's 3-sigma default.
+    #[serde(default)]
+    pub jitter_rel_thresh: Option<f64>,
 }
 
 impl Default for AnalysisConfigV1 {
@@ -593,6 +635,7 @@ impl Default for AnalysisConfigV1 {
             include_bathtub: true,
             ber_eye_bits: None,
             jitter_eye_uis: None,
+            jitter_rel_thresh: None,
         }
     }
 }
@@ -607,6 +650,12 @@ impl AnalysisConfigV1 {
         }
         if self.jitter_eye_uis == Some(0) {
             return Err(ContractError::InvalidJitterEyeUis);
+        }
+        if self
+            .jitter_rel_thresh
+            .is_some_and(|value| !value.is_finite() || value <= 0.0)
+        {
+            return Err(ContractError::InvalidJitterRelThresh);
         }
         Ok(())
     }

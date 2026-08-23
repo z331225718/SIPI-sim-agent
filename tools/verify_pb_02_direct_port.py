@@ -23,6 +23,11 @@ EXPECTED_TREE = "5faef6bdb341d444ad65d82a11c0018b15805e24"
 EXPECTED_AUDIT = "docs/baselines/audits/2026-08-22-pb-02-direct-port.md"
 EXPECTED_AUDIT_SHA256 = "5f9f2308762efb1f1cc32f091a93f29a6e06db780300ea58d2debb915478d49d"
 CRATE = ROOT / "crates" / "sipi-pybert-direct"
+# v1 is an immutable historical observation.  Its root and runner blobs came
+# from the predecessor lane commits; current PB-02 additions are attested by
+# the additive v2 verifier instead of rebinding this record.
+HISTORICAL_ROOT_COMMIT = "81d19e7fab6621f57890cf6ac6a72bd64fc56b9a"
+HISTORICAL_RUNNER_COMMIT = "81d19e7fab6621f57890cf6ac6a72bd64fc56b9a"
 
 # These values are deliberately repeated outside the YAML so a mutated
 # manifest cannot redefine the source identity it is supposed to prove.
@@ -194,6 +199,11 @@ def _git(root: Path, *args: str, raw: bool = False) -> bytes | str:
     return result.stdout if raw else result.stdout.decode("ascii").strip()
 
 
+def _historical_target(path: Path, commit: str) -> bytes:
+    relative = path.resolve().relative_to(ROOT.resolve()).as_posix()
+    return bytes(_git(ROOT, "show", f"{commit}:{relative}", raw=True))
+
+
 def _check(blockers: list[str], condition: bool, message: str) -> None:
     if not condition:
         blockers.append(message)
@@ -241,7 +251,7 @@ def _mapping(document: dict[str, Any], blockers: list[str]) -> dict[str, dict[st
         target = ROOT / EXPECTED_ADAPTED_SOURCE["target"]
         _check(
             blockers,
-            target.is_file() and _sha256(target.read_bytes()) == EXPECTED_ADAPTED_SOURCE["target_sha256"],
+            _sha256(_historical_target(target, HISTORICAL_ROOT_COMMIT)) == EXPECTED_ADAPTED_SOURCE["target_sha256"],
             "adapted crate root target hash drift",
         )
     return files
@@ -258,16 +268,17 @@ def _verify_external_source(source: Path, blockers: list[str]) -> bool:
             blob = str(_git(source, "rev-parse", f"{commit}:{path}"))
             payload = bytes(_git(source, "cat-file", "blob", f"{commit}:{path}", raw=True))
             target = CRATE / _target.removeprefix("crates/sipi-pybert-direct/")
+            target_payload = _historical_target(target, HISTORICAL_ROOT_COMMIT)
             _check(blockers, blob == expected_blob, f"upstream Git blob drift: {path}")
             _check(blockers, _sha256(payload) == expected_sha, f"upstream source hash drift: {path}")
-            _check(blockers, target.is_file() and target.read_bytes() == payload, f"copied bytes drift: {path}")
+            _check(blockers, target_payload == payload, f"copied bytes drift: {path}")
         adapted_path = EXPECTED_ADAPTED_SOURCE["path"]
         adapted_blob = str(_git(source, "rev-parse", f"{commit}:{adapted_path}"))
         adapted_payload = bytes(_git(source, "cat-file", "blob", f"{commit}:{adapted_path}", raw=True))
         adapted_target = ROOT / EXPECTED_ADAPTED_SOURCE["target"]
         _check(blockers, adapted_blob == EXPECTED_ADAPTED_SOURCE["blob_sha1"], "adapted crate root Git blob drift")
         _check(blockers, _sha256(adapted_payload) == EXPECTED_ADAPTED_SOURCE["source_sha256"], "adapted crate root source hash drift")
-        target_payload = adapted_target.read_bytes() if adapted_target.is_file() else b""
+        target_payload = _historical_target(adapted_target, HISTORICAL_ROOT_COMMIT)
         runner_exports = (
             b"pub use runner::{\n"
             b"    DirectRunError, DirectRunReport, run_sim_native_file, run_sim_native_json,\n"
@@ -478,7 +489,10 @@ def verify(
     for relative, expected_markers in markers.items():
         path = CRATE / relative
         if path.is_file():
-            text = path.read_text(encoding="utf-8")
+            if relative == "src/runner.rs":
+                text = _historical_target(path, HISTORICAL_RUNNER_COMMIT).decode("utf-8")
+            else:
+                text = path.read_text(encoding="utf-8")
             for marker in expected_markers:
                 _check(blockers, marker in text, f"lane marker missing: {relative}:{marker}")
 

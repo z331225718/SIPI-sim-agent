@@ -1,0 +1,218 @@
+{
+  "blockers": [
+    "first replay is not passed",
+    "second replay is not passed",
+    "candidate/oracle payload parity is not proven"
+  ],
+  "candidate": {
+    "archive_sha256": "c8f41dda40504b4e3d3a6e3e0cd5e5edb562d0b64a20d8e80608716db475747b",
+    "commit": "eb2a13f53fb54f09956a0ec8196fad9bc3da220f",
+    "tree": "cba5db1a594115f1859c23b67d20f4da5f356f53",
+    "working_tree_overlay": {
+      "crates/sipi-pybert-direct/Cargo.lock": "e90ff36b11380104b1fb9421609a929a2a6e94d8527e9282867f56a458d796ab",
+      "crates/sipi-pybert-direct/Cargo.toml": "f815c121e3cf7291bedd08abf37439d7f446667452d7649827dee58acf5a2365",
+      "crates/sipi-pybert-direct/NOTICE-PYBERT-LICENSE-BOUNDARY.md": "77c20eb0cc8411b7826666e6673b7c388ce508fd80029e0d302a116fa5d237e6",
+      "crates/sipi-pybert-direct/NOTICE-PYBERT-PB01-DIRECT-PORT.md": "dc5f0d7fc13296e0609ae7b2f32014532997759243da9ef24b63bcd6c01cc9aa",
+      "crates/sipi-pybert-direct/SOURCE-MAP-PB01.md": "251ed57342908225f8fc71ef2c3e3a22ad04c50d8a6ee8488d7df70a5dcaa8a5",
+      "crates/sipi-pybert-direct/SOURCE-MAP.md": "77a539c3b089740719fe9152e43f4faf5e4359248df87d647e3685ab5d6699ed",
+      "crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml": "d63bb7ab3466ae70406cd2a555ae5a95cda1264021fed8fb1cdca85da961cc48",
+      "crates/sipi-pybert-direct/fixtures/pb-02-nrz.json": "5bcd0b905f8a7f0ec5e2b7c3761a998e9553ac24a71b54f8b0d4e8e84261ea13",
+      "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f",
+      "crates/sipi-pybert-direct/src/analysis.rs": "a1e2f15ca445bab1ac5cc95262b929ebf8caa90bf02d9f3e780d367db6aa066a",
+      "crates/sipi-pybert-direct/src/bathtub.rs": "919f6d21c1fbc30a20258aa9d41319e3dde0ce7d013c392e4cba79d56d66f6b5",
+      "crates/sipi-pybert-direct/src/bin/sipi-pybert-direct.rs": "8428a01ea6920b6853938cb0627d6e05af7743a80b0ae3ac5e236908c84c16a1",
+      "crates/sipi-pybert-direct/src/capabilities.rs": "b09364910dfadf8c13efe5818c1b17cc9853b4055f29a7ac1c388cb28121f0b6",
+      "crates/sipi-pybert-direct/src/channel.rs": "91961d25a6d4d604c78e6eedd42c5dbed0eba3e6bee85f624f901168ffa327ca",
+      "crates/sipi-pybert-direct/src/decoder.rs": "81da93d719ca69542046a9ffef071d3876aad62830dfbb161ad76fb0121567f0",
+      "crates/sipi-pybert-direct/src/equalization.rs": "fa286b527fc023f70edeb60777006ef431252527890098f63672b054fc11b295",
+      "crates/sipi-pybert-direct/src/error.rs": "2392b0e657fcb20881976d8c7d9540f32dc2ad139006de6890e29acae9cbb247",
+      "crates/sipi-pybert-direct/src/event.rs": "b95d3b26a96529e9723681c6b123f702ec2decef49e429f59f554bbee8dd60f5",
+      "crates/sipi-pybert-direct/src/input.rs": "b9805f54b79b0097726e36f4d683e0fffeb15a11aa1e11a4a31b886ec442a97a",
+      "crates/sipi-pybert-direct/src/jitter.rs": "0f1fcc46d026b43edf13da64262833d2ac004a06369e584f5094f801296288c8",
+      "crates/sipi-pybert-direct/src/legacy_runtime.rs": "ef1b492feb9d0f18f37862f4690084856c97fa87214e76dd283497a095412ace",
+      "crates/sipi-pybert-direct/src/legacy_sim.rs": "c190daba96a71ebb9b8d60af1c3deb56e76b812a95d73d9c6fa3219ecb7e9eba",
+      "crates/sipi-pybert-direct/src/lib.rs": "c564bd0f976e40e605ed97aa36da0fa13e8a0eed7281746a4c1d30943d610e50",
+      "crates/sipi-pybert-direct/src/numpy_normal.rs": "e5f9baff2d0a808ff77e01835023f42f6bfe6a990b62173254f128cffda2e4ca",
+      "crates/sipi-pybert-direct/src/output.rs": "74a54504c38424532f19fa0f6a9b22942b07694ef771d4d3ab37dda1e7b3b1ac",
+      "crates/sipi-pybert-direct/src/pattern.rs": "1c414cb04a54b9c46d09651d6909baaee925670d6a431a264ce9d45eced99274",
+      "crates/sipi-pybert-direct/src/pipeline.rs": "10cd44ebb38ae35d7eec5324eabe9c3b9b1b33353c1315069ae1fcb85f82695f",
+      "crates/sipi-pybert-direct/src/receiver.rs": "1794615295afc3e9aebdcb76dc140106f12a93c6ce781bc0828c450392e4ec43",
+      "crates/sipi-pybert-direct/src/reference_runtime.rs": "f7710ffd976f6c6e09ef2ccd443a4e7a2b7ec666b093c2793c94ad3cbee43932",
+      "crates/sipi-pybert-direct/src/response.rs": "9812483ad36a306103a0ea7830c49c4e1a0a71aae383d2a05fcbbc7f711902bd",
+      "crates/sipi-pybert-direct/src/runner.rs": "e90d8e0a7191f5c4948a9114fd386a54cacd1fea1eb259c7f924d8957a0ca4d7",
+      "crates/sipi-pybert-direct/src/signal.rs": "d9ddaa2941dff69722c78823e55d223222aff25f8b38c493c956771d567b6557",
+      "crates/sipi-pybert-direct/src/simulation.rs": "35074fe873d30e2854999d2ff60bd7d86ba0f89965cdc425a1b456b797e4ad6e",
+      "crates/sipi-pybert-direct/src/statistical_eye.rs": "d7b98d3fb6efee9f5589877140882bd8f7843edf63d6534fc69ad86eef73fc3e",
+      "crates/sipi-pybert-direct/src/touchstone.rs": "1003f00587c6c168338e1111b550df22ee49682c07a259ee1ea6e54107e5ae86",
+      "crates/sipi-pybert-direct/src/units.rs": "df775c9a0157cd9e52391cf6a6623db3bb316108d0dbe525ad7a053375d1cd03",
+      "crates/sipi-pybert-direct/src/workflows.rs": "f48b441dd5e23dc54f8208fb8291cf8890fce599e28797699e04e1c5d6f6141c",
+      "crates/sipi-pybert-direct/tests/direct.rs": "3c3c267f7b8baa14f397e553e27a2a367883de1cc68539cbe7a48f19046ca89b",
+      "crates/sipi-pybert-direct/tests/legacy_runtime.rs": "4e7b37d44b890edafeebd5042c28a2eb63f1e9e27d14fbfb2df5fb943866d407",
+      "crates/sipi-pybert-direct/tests/native_branch_matrix.rs": "a54694b0f38a24a371a1949fe19d099d50680b6fb0230aef24f7893c00aa7e26",
+      "crates/sipi-pybert-direct/tests/workflows.rs": "02dfbd89b14a0303f72ad53fa1868e1691b8a4c18a4dda6a6c47a675518cf238"
+    }
+  },
+  "claims": {
+    "global_row_closed": false,
+    "payload_parity": false,
+    "release_approval": false
+  },
+  "distinct_gate": {
+    "exact_toolchain_identity": true,
+    "unique_fresh_run_nonces": true,
+    "unique_report_paths": true,
+    "unique_report_sha256": true,
+    "unique_run_ids": true
+  },
+  "fixture": {
+    "archive_present": false,
+    "archive_present_before_overlay": false,
+    "bytes": 1170,
+    "path": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+    "sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f",
+    "working_tree_overlay_present": true
+  },
+  "non_claims": [
+    "A frozen fixture does not cover all branches.",
+    "This aggregate is not a license decision or release approval."
+  ],
+  "payload": {
+    "candidate_logical_sha256": null,
+    "equal": false,
+    "oracle_logical_sha256": "308b1e18b247c07ef7b6268a1bcb7b7fc55dabdfb70c3f85f180215e54eb13b5"
+  },
+  "reports": [
+    {
+      "fresh_run_nonce": "5c49d91114414fd284d64b626393e986",
+      "path": "docs/baselines/pb-04-direct-replay-bound-run-13.v1.json",
+      "payload": {
+        "candidate_logical_sha256": null,
+        "equal": false,
+        "oracle_logical_sha256": "308b1e18b247c07ef7b6268a1bcb7b7fc55dabdfb70c3f85f180215e54eb13b5"
+      },
+      "run_id": "pb-04-bound-20260823-19",
+      "sha256": "0be330e69546bec90c70a78d0671e97e900c4ac6a8f76f16d2cfd2c9a8ce6f41"
+    },
+    {
+      "fresh_run_nonce": "cabfc9b805ca470195a855d5993e2fb4",
+      "path": "docs/baselines/pb-04-direct-replay-bound-run-14.v1.json",
+      "payload": {
+        "candidate_logical_sha256": null,
+        "equal": false,
+        "oracle_logical_sha256": "308b1e18b247c07ef7b6268a1bcb7b7fc55dabdfb70c3f85f180215e54eb13b5"
+      },
+      "run_id": "pb-04-bound-20260823-20",
+      "sha256": "c81b86611032bfafd2869158a53d3c361df7250a277266a8522e63430ba7e1b4"
+    }
+  ],
+  "row": "PB-04",
+  "schema": "sipi.pb-direct-replay-aggregate.v1",
+  "status": "blocked",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "timeout_seconds": 1200,
+    "uv": {
+      "executable": "uv.EXE",
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_exit_code": 0,
+      "version_output_sha256": "ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+  },
+  "workflow_semantics": {
+    "compare_first": {
+      "candidate": null,
+      "oracle": null,
+      "payload_gate": null
+    },
+    "compare_second": {
+      "candidate": null,
+      "oracle": null,
+      "payload_gate": null
+    },
+    "first": {
+      "candidate": {
+        "fallback_reason": "native Web result contract parity is incomplete",
+        "implementation": "external_python_reference_required",
+        "parity_gate": {
+          "reason": "native Web result contract parity is incomplete",
+          "status": "blocked",
+          "version": "pybert.native-auto-parity.v1"
+        },
+        "requested": "auto",
+        "rust_only": false,
+        "selected": "python"
+      },
+      "expected": {
+        "parity_gate_status": "blocked",
+        "requested": "auto",
+        "selected": "python"
+      },
+      "oracle": {
+        "fallback_reason": "native Web result contract parity is incomplete",
+        "implementation": null,
+        "parity_gate": {
+          "reason": "native Web result contract parity is incomplete",
+          "status": "blocked",
+          "version": "pybert.native-auto-parity.v1"
+        },
+        "requested": "auto",
+        "rust_only": null,
+        "selected": "python"
+      }
+    },
+    "payload_is_not_status_only": true,
+    "second": {
+      "candidate": {
+        "fallback_reason": "native Web result contract parity is incomplete",
+        "implementation": "external_python_reference_required",
+        "parity_gate": {
+          "reason": "native Web result contract parity is incomplete",
+          "status": "blocked",
+          "version": "pybert.native-auto-parity.v1"
+        },
+        "requested": "auto",
+        "rust_only": false,
+        "selected": "python"
+      },
+      "expected": {
+        "parity_gate_status": "blocked",
+        "requested": "auto",
+        "selected": "python"
+      },
+      "oracle": {
+        "fallback_reason": "native Web result contract parity is incomplete",
+        "implementation": null,
+        "parity_gate": {
+          "reason": "native Web result contract parity is incomplete",
+          "status": "blocked",
+          "version": "pybert.native-auto-parity.v1"
+        },
+        "requested": "auto",
+        "rust_only": null,
+        "selected": "python"
+      }
+    }
+  }
+}

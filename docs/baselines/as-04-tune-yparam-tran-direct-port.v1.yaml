@@ -1,0 +1,68 @@
+schema: sipi.as-04-tune-yparam-tran-direct-port.v1
+status: implemented_control_external_hspice_open
+source:
+  repository: agent-spice
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  license: MIT
+  source_payload_copied_into_sipi: false
+direct_port:
+  crate: crates/sipi-agent-spice-direct
+  module: crates/sipi-agent-spice-direct/src/as04_tune_yparam_tran.rs
+  binary: sipi-agent-spice-tune-yparam-tran
+  upstream_commit_constant: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  invokes_external_solver: true
+  numerical_implementation: bounded_nelder_mead_residue_trial_control
+  covered_semantics:
+    - strict_csv_and_monotonicity_rejection
+    - exact_deck_token_occurrence_and_replacement
+    - static_in_band_accuracy_and_sigma_gate
+    - response_grouped_n_port_static_gate
+    - bounded_nelder_mead_reflection_expansion_contraction_and_shrink
+    - bounded_external_hspice_trial_and_measure_lookup
+    - selected_trial_write_and_report
+  unsupported_semantics:
+    - commercial_hspice_runtime_identity
+    - numerical_transient_parity_without_hspice
+branch_graph:
+  branches:
+    - strict_csv_and_monotonicity_rejection
+    - exact_deck_token_and_measure_lookup
+    - static_gate_rejection
+    - repeated_external_hspice_trial
+    - bounded_nelder_mead_optimizer_search
+    - selected_trial_write_and_report
+oracle_replay:
+  archive_commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  corpus: [valid_nelder_mead_external_stub, invalid_csv, duplicate_rfm_token, missing_hspice_measure, external_hspice_blocker]
+  replay_count: 2
+  binding_status: unbound_preparation_observation
+  content_addressed: false
+  immutable_source_binding: false
+  run_reports:
+    - docs/baselines/as-04-direct-replay-run-01.v1.json
+    - docs/baselines/as-04-direct-replay-run-02.v1.json
+  aggregate: docs/baselines/as-04-direct-replay-aggregate.v1.json
+  numeric_tolerance: not_claimed
+  parity_status: open_external_runtime
+differential_corpus:
+  status: preparation_observation
+  cases:
+    - id: valid_nelder_mead_external_stub
+      expectation: portable_optimizer_and_external_measure_contract_with_stub
+    - id: invalid_csv
+      expectation: reject_before_trial
+    - id: duplicate_rfm_token
+      expectation: reject_before_trial
+    - id: missing_hspice_measure
+      expectation: reject_without_selected_rfm
+    - id: external_hspice_blocker
+      expectation: fail_closed_no_fake_artifact
+evidence:
+  runner: tools/run_as_04_tune_yparam_tran.py
+  aggregate: tools/aggregate_as_04_tune_yparam_tran.py
+  verifier: tools/verify_as_04_direct_port.py
+  mutation_tests: tools/test_verify_as_remaining_direct_ports.py
+audit:
+  path: docs/baselines/audits/2026-08-23-as-04-tune-yparam-tran-direct-port.md
+  sha256: a8e7772d4874c95d2ed208d921dbf6e78cdf2de7c5fa87e8a895aba33e1a3b9c

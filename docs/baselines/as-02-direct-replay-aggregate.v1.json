@@ -1,0 +1,52 @@
+{
+  "binding_status": "unbound_preparation_observation",
+  "content_addressed_replay": false,
+  "corpus": [
+    "two_block_ordered_intersection",
+    "priority_band_refit",
+    "malformed_manifest",
+    "zero_forward_transmission"
+  ],
+  "corpus_expected": true,
+  "fresh_reports": 2,
+  "immutable_source_binding": false,
+  "independent_report_sha256": [
+    "956fcfe780a94887a0f10e84f6473adf85e8d1fdb8d722f41dc587f4abed4173",
+    "11d0a5cc3df8422eebdc8da4f777abdd65a8d3bcb22f0077fff9a320817b9bf7"
+  ],
+  "numeric_comparison": "not_claimed",
+  "observation_status": "unbound_preparation_observation_not_replayed_after_fail_closed_changes",
+  "parity_status": "open",
+  "replay_instance_sha256": [
+    "ce21b8127ddd00ba12ee8ca3fc74d46565b6b02610ce556caa86484a3e09d61f",
+    "8ad4b98b5dbbf76d977c2571e6a2552c6af36be209f89fe09632e5641dd96c78"
+  ],
+  "returncodes": [
+    [
+      0,
+      0
+    ],
+    [
+      0,
+      0
+    ]
+  ],
+  "run_tree_sha256": [
+    [
+      "4cc125fb8b2a5b7cbe572db330c8c1039731c37fd1bea05504fda44c369c7538",
+      "4cc125fb8b2a5b7cbe572db330c8c1039731c37fd1bea05504fda44c369c7538"
+    ],
+    [
+      "4cc125fb8b2a5b7cbe572db330c8c1039731c37fd1bea05504fda44c369c7538",
+      "4cc125fb8b2a5b7cbe572db330c8c1039731c37fd1bea05504fda44c369c7538"
+    ]
+  ],
+  "runs_per_report": 2,
+  "schema": "sipi.agent-spice-as-02-replay-aggregate.v1",
+  "upstream": {
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "license": "MIT",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  },
+  "workflow": "AS-02"
+}\n

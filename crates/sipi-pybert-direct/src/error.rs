@@ -52,6 +52,8 @@ pub enum ContractError {
     InvalidBerEyeBits,
     #[error("jitter eye-UI count must be greater than zero when supplied")]
     InvalidJitterEyeUis,
+    #[error("jitter relative threshold must be finite and greater than zero when supplied")]
+    InvalidJitterRelThresh,
     #[error("resource limits must be greater than zero")]
     InvalidResourceLimit,
     #[error("progress values must be finite and within [0, 1]")]

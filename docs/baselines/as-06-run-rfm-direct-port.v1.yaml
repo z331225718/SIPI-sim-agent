@@ -1,0 +1,77 @@
+schema: sipi.as-06-run-rfm-direct-port.v1
+status: implemented_executable_external_runtime_open
+source:
+  repository: agent-spice
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  license: MIT
+  source_payload_copied_into_sipi: false
+direct_port:
+  crate: crates/sipi-agent-spice-direct
+  module: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+  binary: sipi-agent-spice-run-rfm
+  upstream_commit_constant: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  invokes_external_solver: true_when_execute_requested
+  numerical_implementation: cadence_rfm_union_pole_parser_and_response_preflight
+  covered_semantics:
+    - deck_and_rfm_parse_rejection
+    - version_200600_s_matrix_parser
+    - response_specific_pole_union_and_zero_fill
+    - bounded_frequency_response_verification
+    - recursive_dependency_staging_and_wrapper_injection
+    - terminal_end_star_comment_wrapper_injection
+    - deterministic_ngspice_deck_conversion
+    - content_addressed_input_and_runtime_manifest
+    - ngspice_measurement_and_waveform_result_contract
+    - explicit_native_or_ngspice_prepare_and_execute_selection
+  unsupported_semantics:
+    - native_or_ngspice_solver_runtime_identity
+    - waveform_and_measure_numeric_parity_without_explicit_runtime
+branch_graph:
+  branches:
+    - deck_and_rfm_parse_rejection
+    - frequency_response_verification
+    - recursive_dependency_staging
+    - wrapper_injection_and_common_ground_contract
+    - terminal_end_star_comment_injection
+    - ngspice_deck_conversion_and_unsupported_gate
+    - native_nport_prepare_and_optional_execute
+    - ngspice_wrapper_prepare_and_optional_execute
+    - backend_result_summary
+    - normalized_input_and_execution_report_publication
+oracle_replay:
+  archive_commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  corpus: [one_port_real_pole, response_union_poles, nested_dependency_staging, terminal_end_star_comment, nonzero_delay_rejection, missing_response_block]
+  replay_count: 2
+  binding_status: unbound_preparation_observation
+  content_addressed: false
+  immutable_source_binding: false
+  run_reports:
+    - docs/baselines/as-06-direct-replay-run-01.v1.json
+    - docs/baselines/as-06-direct-replay-run-02.v1.json
+  aggregate: docs/baselines/as-06-direct-replay-aggregate.v1.json
+  numeric_tolerance: not_claimed
+  parity_status: open
+differential_corpus:
+  status: preparation_observation
+  cases:
+    - id: one_port_real_pole
+      expectation: prepare_and_reconstruct_response
+    - id: response_union_poles
+      expectation: zero_fill_union_without_refit
+    - id: nested_dependency_staging
+      expectation: recursively_stage_local_deck_dependencies
+    - id: terminal_end_star_comment
+      expectation: inject_wrapper_before_terminal_end_star_comment
+    - id: nonzero_delay_rejection
+      expectation: reject_before_execute
+    - id: missing_response_block
+      expectation: reject_before_fake_artifact
+evidence:
+  runner: tools/run_as_06_run_rfm.py
+  aggregate: tools/aggregate_as_06_run_rfm.py
+  verifier: tools/verify_as_06_direct_port.py
+  mutation_tests: tools/test_verify_as_remaining_direct_ports.py
+audit:
+  path: docs/baselines/audits/2026-08-23-as-06-run-rfm-direct-port.md
+  sha256: ad814960851059cdb90d4adf370f3faad4c9f894be8839185614e78ab7880c41

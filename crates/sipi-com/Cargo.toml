@@ -5,12 +5,13 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 publish = false
-description = "Clean-room typed stage-output envelope for the R480 COM surface (structure only)."
+description = "Clean-room portable Rust stages for the R480 COM surface."
 
 [dependencies]
 serde_json = "1"
 flate2 = "1"
 quick-xml = "0.37"
+rustfft = "6.4.1"
 sipi-types = { path = "../sipi-types" }
 sipi-artifacts = { path = "../sipi-artifacts" }
 zip = "2"

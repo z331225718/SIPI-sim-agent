@@ -42,7 +42,7 @@ CHECKS = [
     ("pybert-upstream-adapter", "tools/verify_pb_upstream_workflows.py", []),
     ("agent-com-upstream-adapter", "tools/verify_com_upstream_adapter.py", [], "exit_only"),
     ("upstream-cli-integration", "tools/verify_upstream_cli_integration.py", []),
-    ("upstream-rust-candidate-coverage", "tools/verify_upstream_rust_candidate_coverage.py", []),
+    ("upstream-rust-candidate-coverage", "tools/verify_upstream_rust_candidate_coverage_v2.py", []),
     ("release-capability-publication-live", "tools/verify_release_capability_publication.py", []),
     ("historical-v0.2-remaining-items-ledger", "tools/verify_plan_remaining_items_ledger.py", []),
     ("historical-v0.2-open-item-gate-coverage", "tools/verify_plan_open_items_gate_coverage.py", []),

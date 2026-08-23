@@ -220,7 +220,7 @@ def product_manifest() -> list[dict]:
 
 class PublicationTests(unittest.TestCase):
     def publication(self) -> dict:
-        return json.loads((ROOT / "docs" / "baselines" / "release-capability-publication.v1.yaml").read_text(encoding="utf-8"))
+        return json.loads((ROOT / "docs" / "baselines" / "release-capability-publication.v2.yaml").read_text(encoding="utf-8"))
 
     def test_current_publication_is_valid_and_deterministic(self) -> None:
         publication = self.publication()
@@ -594,7 +594,7 @@ class PublicationTests(unittest.TestCase):
         publication = self.publication()
         evidence = next(
             item for item in publication["report_index"]
-            if item["id"] == "p5-08f-specified-com-artifact-route"
+            if item["id"] == "p5-08f-specified-com-artifact-route-v2"
         )
         evidence["evidence_state"] = "observed"
         with self.assertRaisesRegex(GATE.PublicationError, "publication_com_artifact_evidence_invalid"):

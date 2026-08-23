@@ -5,14 +5,18 @@ edition = "2024"
 rust-version = "1.97"
 license = "MIT"
 publish = false
-description = "Lane-local direct ports of the pinned Agent-COM compare and config-validate boundaries."
+description = "Lane-local direct ports of the pinned Agent-COM compare, run, and public artifact boundaries."
 
 [workspace]
 
 [dependencies]
 flate2 = "1"
 quick-xml = "0.37"
+sipi-channel = { path = "../sipi-channel" }
 sipi-com = { path = "../sipi-com" }
+sipi-types = { path = "../sipi-types" }
+sipi-touchstone = { path = "../sipi-touchstone" }
+same-file = "1"
 sha2 = "0.10"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -26,3 +30,11 @@ path = "src/bin/compare.rs"
 [[bin]]
 name = "sipi-com-direct-config-validate"
 path = "src/bin/config_validate.rs"
+
+[[bin]]
+name = "sipi-com-direct-run"
+path = "src/bin/run.rs"
+
+[[bin]]
+name = "sipi-com-direct-public-api"
+path = "src/bin/public_api.rs"

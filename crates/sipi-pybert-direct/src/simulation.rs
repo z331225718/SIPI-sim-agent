@@ -322,6 +322,9 @@ pub fn simulate_native_v1_with_cancellation(
         .as_ref()
         .filter(|_| input.rx.native_ctle_enabled)
         .map_or(Ok(vec![1.0]), |ctle| {
+            if let Some(impulse) = &ctle.impulse_response_v_per_v {
+                return Ok(impulse[..impulse.len().min(sample_count)].to_vec());
+            }
             legacy_ctle_impulse(
                 ctle,
                 sample_count,
@@ -419,7 +422,7 @@ pub fn simulate_native_v1_with_cancellation(
                     decision_scaler: dfe.decision_scaler.0,
                     modulation,
                     n_ave: dfe.n_ave as usize,
-                    limits: None,
+                    limits: dfe.tap_limits.clone(),
                 },
                 CdrConfig {
                     delta_t: dfe.delta_t.0,
@@ -470,6 +473,9 @@ pub fn simulate_native_v1_with_cancellation(
         ("rx_peak_abs_v".into(), rx_peak_abs),
         ("rx_rms_v".into(), rx_rms),
     ]);
+    if let PatternV1::Prbs { seed, .. } = &input.pattern {
+        metrics.insert("effective_prbs_seed".into(), *seed as f64);
+    }
     if let Some(encoded_bits) = &fec_encoded_bits {
         metrics.insert("fec_encoded_bit_count".into(), encoded_bits.len() as f64);
     }
@@ -482,6 +488,7 @@ pub fn simulate_native_v1_with_cancellation(
         ),
         ("symbols_v".into(), symbols.clone()),
         ("tx_waveform_v".into(), linear.tx_waveform.clone()),
+        ("tx_impulse_v_per_v".into(), linear.tx_impulse.clone()),
         ("channel_output_v".into(), channel_output.clone()),
         ("channel_impulse_v_per_v".into(), channel_impulse),
         (
@@ -544,7 +551,15 @@ pub fn simulate_native_v1_with_cancellation(
     }
     let mut post_receiver_bits = None;
     if let Some(additive_noise) = &input.tx.additive_noise {
-        arrays.insert("additive_noise_v".into(), additive_noise.samples_v.clone());
+        arrays.insert("random_noise_v".into(), additive_noise.samples_v.clone());
+        arrays.insert("additive_noise_v".into(), receiver_input_noise.clone());
+        metrics.insert(
+            "random_noise_sample_count".into(),
+            additive_noise.samples_v.len() as f64,
+        );
+        if let Some(seed) = additive_noise.effective_seed {
+            metrics.insert("effective_noise_seed".into(), seed as f64);
+        }
     }
     if let Some(periodic_noise) = periodic_noise {
         arrays.insert("periodic_noise_v".into(), periodic_noise);
@@ -1070,7 +1085,7 @@ fn calculate_native_jitter_stage(
         &track.ideal_times_s,
         &track.jitter_s,
         &data_dependent.data_independent_tie_s,
-        3.0,
+        input.analysis.jitter_rel_thresh.unwrap_or(3.0),
     )?;
     let dual_dirac = calculate_dual_dirac_jitter(
         ui_s,

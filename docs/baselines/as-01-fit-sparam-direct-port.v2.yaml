@@ -1,0 +1,268 @@
+schema: sipi.agent-spice-as-01-direct-port.v2
+status: native_vector_fitting_candidate_open
+scope:
+  work_item: AS-01
+  upstream_public_entrypoint: fit-sparam
+  target: lane_local_rust_candidate
+  product_capability_promoted: false
+  migration_row_closed: false
+  new_domain_functionality_added: false
+source:
+  repository: agent-spice
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  archive_inventory_sha256: 7d59068d63e89913b4db6fc091eeedb94f01617353fdf60118ff584239f05a98
+  declared_license: MIT
+  source_storage: pinned_git_objects_or_clean_archive_only
+  reachable_source_paths:
+    - path: src/agent_spice/cli.py
+      role: public_parser_defaults_branch_and_exit_mapping
+      git_blob_sha1: 321a32b860f969f0be74f883bedbbae3f67d6284
+      bytes: 135330
+      content_sha256: 908489c8c3a4826d49175c66b3d533413db4624b10fc3c797795b723b62262e1
+    - path: src/agent_spice/sparam/fitting.py
+      role: native_vector_fit_and_quality_artifact_orchestration
+      git_blob_sha1: dd461c2f20f8b3fbf32cee90f79e430782ca9c76
+      bytes: 157618
+      content_sha256: db6be694d3959c1659a813dd108856651f97d3e0b206a1de14ccefe323c04f99
+    - path: src/agent_spice/sparam/target_fit.py
+      role: target_order_search_and_passivity_branch_selection
+      git_blob_sha1: b57e5a070533e6e57988ac65eb3b477cb1482a56
+      bytes: 15726
+      content_sha256: fa265ddfd440c994c062b92e0b935e5f2bae9baa90e95935cbb0ceb55181041d
+    - path: src/agent_spice/sparam/io.py
+      role: Touchstone_metadata_and_reference_impedance_input
+      git_blob_sha1: 0954ee70e24bba1339cdb89bd94f700906166122
+      bytes: 2872
+      content_sha256: 6517a688e3230a012767743b3f2fef98b106bc757dc3e18cb5be0269b85ef7c9
+    - path: src/agent_spice/sparam/artifacts.py
+      role: fitted_touchstone_rfm_wrapper_and_report_exports
+      git_blob_sha1: ba7011f89c7fe0f6bf73fad13bce9248b96de9e5
+      bytes: 18185
+      content_sha256: f3131cc5117c41ab13674aaf1dfba68ed7ebed332a8154994cd9907b31299948
+    - path: src/agent_spice/sparam/rational_lft.py
+      role: optional_rational_conversion_surface
+      git_blob_sha1: 969f7657565e67492e8b53ecfc35def0f00b7ee1
+      bytes: 9569
+      content_sha256: bc43fb22b4c4e49f4e0b5c654a58a6576d18c36e4e8c421d8f155d8aca5045a4
+    - path: src/agent_spice/sparam/y_pr.py
+      role: optional_passivity_and_y_domain_support_surface
+      git_blob_sha1: 40e3a7abc18de1ef234a6870df7a4c7d4b83a9f2
+      bytes: 16910
+      content_sha256: 317df34b898bb912f7b6e033f371aa568759303a30024914c0c8739071f2d38f
+  supporting_test_paths:
+    - tests/test_cli_fit_sparam.py
+    - tests/test_sparam_fitting.py
+    - tests/test_sparam_native_vf.py
+  license_path: LICENSE
+  license_content_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+implementation:
+  crate: crates/sipi-agent-spice-direct
+  module: crates/sipi-agent-spice-direct/src/fit_sparam.rs
+  source_mode: working_tree_until_owner_commit
+  module_sha256: f343d1d75c256d1c9c0d85ce1f3cd903df79a9e1e145ab3a2ab3a050b56be624
+  test_sha256: 44d892e0676717e5939e8673b8df450ba168447b1a08143255b7cd5f6afff085
+  cli_sha256: 5546e6e42ceb8fe2cb5ea57615d57053f4a79da16f2a6f2ba05a6707e8957c9f
+  cargo_toml_sha256: f6c0bf28ea8d2b5aaf9bd1d6c3b572107eb93ba9833938c1667c3ad519b3361c
+  cargo_lock_sha256: b6ef55bcebb1669e20e8980c510f40ec0c9445f758ecc68208828e2968168879
+  notice: crates/sipi-agent-spice-direct/NOTICE-AGENT-SPICE-AS-01.txt
+  notice_sha256: d43d8a5e91aa303434466ede2fcf4237860eae53148732f6cb87dc8de0b88dbc
+  audit:
+    path: docs/baselines/audits/2026-08-23-as-01-fit-sparam-direct-port-v2.md
+    sha256: b7471aedac57760773646b3371136f6ab2aac633996d4be977bd4f33caca44c9
+  candidate_status: bounded_two_port_diagnostic_fit_workflow
+  calls_external_adapter: false
+  calls_external_solver: false
+  numerical_solver: faer_col_piv_qr_least_squares
+  calls_existing_product_fit_kernel: false
+  kernel_reason: direct_ported_upstream_residue_solve_with_explicit_two_port_support_boundary
+  side_effects: reads_bounded_touchstone_and_writes_fitted_touchstone_json_log_only
+  rust_tests:
+    - crates/sipi-agent-spice-direct/src/fit_sparam.rs
+    - crates/sipi-agent-spice-direct/tests/as01.rs
+runtime_support:
+  ports: [2]
+  touchstone_versions: ["1.x"]
+  data_formats: [RI, MA, DB]
+  artifacts_written:
+    - fitted_touchstone
+    - diagnostic_json
+    - diagnostic_log
+  path_identity_preflight:
+    paths:
+      - input_touchstone
+      - diagnostic_json
+      - fitted_touchstone
+      - diagnostic_log
+    rejects:
+      - lexical_normalized_alias
+      - canonical_symlink_alias
+      - existing_file_identity_alias
+    failure_atomicity: no_artifact_write_before_preflight
+  artifact_options_rejected:
+    - --output
+    - --html-report
+    - --rfm
+    - --rfm-wrapper
+  unconsumed_options_rejected:
+    - --report-top-rms
+    - --outside-band-weight
+    - "weighted --priority-band"
+    - --quality-profile
+    - --fail-on-quality
+    - --allow-quality-warnings
+    - --subckt-name
+    - --tuning-profile
+    - --fit-iterations
+    - --hf-complex-pairs
+    - --hf-pair-damping
+    - --hf-pair-start-fraction
+    - --passivity-max-iterations
+    - --passivity-samples
+    - --passivity-active-variables
+    - "--pole-spacing resonance"
+  budgets:
+    touchstone_bytes: 16777216
+    touchstone_line_bytes: 65536
+    touchstone_samples: 8192
+    priority_bands: 16
+    max_fit_order: 100
+    max_order_step: 100
+    real_matrix_rows: 16384
+    real_matrix_columns: 204
+    real_matrix_cells: 2000000
+    artifact_bytes_each: 4194304
+    artifact_path_bytes: 4096
+contract:
+  positional_arguments: [touchstone]
+  public_options:
+    - --output
+    - --report
+    - --html-report
+    - --fitted-touchstone
+    - --rfm
+    - --rfm-wrapper
+    - --report-top-rms
+    - --log
+    - --rms-target
+    - --priority-band
+    - --outside-band-weight
+    - --passivity
+    - --max-order
+    - --min-order
+    - --max-order-step
+    - --quality-profile
+    - --fail-on-quality
+    - --allow-quality-warnings
+    - --subckt-name
+    - --tuning-profile
+    - --pole-spacing
+    - --fit-iterations
+    - --hf-complex-pairs
+    - --hf-pair-damping
+    - --hf-pair-start-fraction
+    - --passivity-max-iterations
+    - --passivity-samples
+    - --passivity-active-variables
+  defaults:
+    report_top_rms: 5
+    outside_band_weight: 0.1
+    passivity: check
+    max_order: 100
+    min_order: 1
+    max_order_step: 8
+    quality_profile: explore
+    fail_on_quality: false
+    allow_quality_warnings: false
+    subckt_name: s_equivalent
+    pole_spacing: log
+    fit_iterations: 14
+    hf_complex_pairs: 2
+    hf_pair_damping: 0.03
+    hf_pair_start_fraction: 0.68
+    passivity_max_iterations: 3
+    passivity_samples: 8
+    passivity_active_variables: 3072
+  target_selection:
+    no_priority_band: full_band_rms_required
+    priority_band_without_full_target: priority_band_only
+    priority_band_with_full_target: priority_band_and_full_band
+    full_band_gate_formula: not priority_bands or rms_target_is_present
+  passivity_precedence:
+    explicit_policy_conflicts_with_legacy_flags: true
+    legacy_enforce_precedes_skip_check: true
+    otherwise: check
+  errors:
+    - argparse_rejection
+    - invalid_priority_band
+    - missing_or_nonpositive_rms_target
+    - invalid_order_or_order_step
+    - invalid_report_top_rms
+    - invalid_subcircuit_name
+    - unsupported_pole_spacing
+    - invalid_fit_or_passivity_budget
+    - value_error
+    - os_error
+    - child_nonzero_exit
+  artifact_defaults:
+    output_when_omitted: <touchstone_stem>_fitted.sp
+    report_when_output_omitted: <output_stem>_report.json
+    html_report_when_output_omitted: <output_stem>_report.html
+    report_when_output_explicit: fit_report.json_in_output_parent
+    html_report_when_output_explicit: fit_report.html_in_output_parent
+    fitted_touchstone: output_suffix_replaced_by_input_suffix
+    rfm: output_suffix_replaced_by_rfm
+    rfm_wrapper: <rfm_stem>_rfm_wrapper.sp
+    log: <touchstone_stem>.log_in_report_parent
+  reachable_branches:
+    - argument_parser_rejection
+    - priority_band_or_full_band_target_selection
+    - explicit_or_legacy_passivity_resolution
+    - adaptive_order_search
+    - native_fit
+    - optional_passivity_check
+    - optional_passivity_enforcement
+    - optional_quality_gate_failure
+    - target_not_met_failure
+    - fitted_touchstone_export
+    - rfm_export
+    - rfm_wrapper_export
+    - json_html_log_report_export
+    - fit_success
+    - fit_failure
+oracle:
+  status: preparation_only
+  runner: tools/run_as_01_fit_sparam_oracle.py
+  stages:
+    - upstream_pinned_execution
+    - rust_candidate_execution
+  required_future_runs: 2
+  report_payloads_committed: false
+  source_mode: clean_git_archive_when_external_worktree_dirty
+  tolerance: not_set_until_two_stage_reports_are_reviewed
+  corpus:
+    - missing_rms_target
+    - full_band_defaults
+    - priority_band_only
+    - priority_band_and_full_band
+    - explicit_output_artifact_family
+    - legacy_passivity_precedence
+    - passivity_flag_conflict
+    - invalid_priority_band
+    - invalid_order
+    - target_failure_and_success
+non_claims:
+  - no_product_capability_promotion
+  - no_migration_row_close
+  - no_numeric_parity
+  - no_passivity_parity
+  - no_generic_touchstone_parser_parity
+  - no_artifact_content_parity
+  - no_external_oracle_evidence
+  - no_n_port_above_two_support
+  - no_pole_relocation
+  - no_continuous_passivity_enforcement
+  - no_spice_subcircuit_artifact
+  - no_rfm_or_wrapper_artifact
+  - no_html_report_artifact
+  - no_license_admission

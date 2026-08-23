@@ -1,0 +1,74 @@
+schema: sipi.as-03-fit-yparam-direct-port.v1
+status: implemented_executable_numeric_parity_open
+source:
+  repository: agent-spice
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  license: MIT
+  source_payload_copied_into_sipi: false
+direct_port:
+  crate: crates/sipi-agent-spice-direct
+  module: crates/sipi-agent-spice-direct/src/as03_fit_yparam.rs
+  binary: sipi-agent-spice-fit-yparam
+  upstream_commit_constant: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  invokes_external_solver: false
+  numerical_implementation: strict_s_to_y_and_native_vector_fitting_with_native_kyp_lmi_p_cd_gate
+  covered_semantics:
+    - bounded_touchstone_1_x_n_p_admission_and_format_conversion
+    - strict_s_to_y_conversion_condition_gate
+    - touchstone_column_major_to_row_major_delivery_remap
+    - effective_order_search
+    - native_vector_fitting_pole_relocation_and_residue_refit
+    - sampled_positive_real_observation
+    - y_model_and_optional_derived_s_publication_with_physical_frequency_scaling
+    - complex_pole_real_and_imaginary_residue_delivery_paths
+    - html_report_and_exact_rational_y_to_s_lft
+    - exact_s_rfm_wrapper_and_touchstone_publication
+    - native_kyp_lmi_p_solve_and_bounded_cd_correction_exact_delivery_gate
+  unsupported_semantics:
+    - proportional_or_descriptor_exact_delivery_input_branch
+    - upstream_numpy_scipy_numeric_parity
+branch_graph:
+  branches:
+    - argument_and_touchstone_rejection
+    - arbitrary_n_port_matrix_conversion
+    - touchstone_column_major_delivery_remap
+    - strict_s_to_y_conversion_condition_check
+    - effective_order_search
+    - native_vector_fit_pole_relocation_iterations
+    - positive_real_check_or_explicit_off
+    - output_report_and_optional_exports
+    - native_kyp_lmi_p_solve_and_bounded_cd_correction_exact_gate
+    - exact_delivery_gate_and_retries
+oracle_replay:
+  archive_commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  corpus: [well_conditioned_two_port, nport_exact_html, ill_conditioned_i_plus_s, unsupported_exact_rfm]
+  replay_count: 2
+  binding_status: unbound_preparation_observation
+  content_addressed: false
+  immutable_source_binding: false
+  run_reports:
+    - docs/baselines/as-03-direct-replay-run-01.v1.json
+    - docs/baselines/as-03-direct-replay-run-02.v1.json
+  aggregate: docs/baselines/as-03-direct-replay-aggregate.v1.json
+  numeric_tolerance: not_claimed
+  parity_status: open
+differential_corpus:
+  status: preparation_observation
+  cases:
+    - id: well_conditioned_two_port
+      expectation: direct_pass_or_explicit_numeric_open
+    - id: nport_exact_html
+      expectation: nport_fit_with_html_and_exact_s_rfm_artifacts
+    - id: ill_conditioned_i_plus_s
+      expectation: reject_conversion_condition
+    - id: unsupported_exact_rfm
+      expectation: reject_before_fake_artifact
+evidence:
+  runner: tools/run_as_03_fit_yparam.py
+  aggregate: tools/aggregate_as_03_fit_yparam.py
+  verifier: tools/verify_as_03_direct_port.py
+  mutation_tests: tools/test_verify_as_remaining_direct_ports.py
+audit:
+  path: docs/baselines/audits/2026-08-23-as-03-fit-yparam-direct-port.md
+  sha256: 4cdfb59201ce0a7b083b55dd0798b8e4c2e2176617c7aa6a697c682c96016115

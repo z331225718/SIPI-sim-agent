@@ -1,0 +1,82 @@
+schema: sipi.as-02-fit-sparam-cascade-direct-port.v1
+status: implemented_executable_numeric_parity_open
+source:
+  repository: agent-spice
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  license: MIT
+  source_payload_copied_into_sipi: false
+direct_port:
+  crate: crates/sipi-agent-spice-direct
+  module: crates/sipi-agent-spice-direct/src/as02_fit_sparam_cascade.rs
+  binary: sipi-agent-spice-fit-sparam-cascade
+  upstream_commit_constant: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  invokes_external_solver: false
+  numerical_implementation: bounded_native_vector_fitting_with_pole_relocation_and_abcd_cascade
+  covered_semantics:
+    - version_1_manifest_and_ordered_block_admission
+    - per_block_touchstone_fit_and_target_search
+    - native_vector_fitting_pole_relocation_and_residue_refit
+    - priority_band_fit_and_full_band_gate_selection
+    - common_frequency_intersection_and_abcd_cascade
+    - sampled_singular_value_passivity_gate
+    - bounded_hamiltonian_crossover_detection
+    - adaptive_hamiltonian_violation_bands
+    - constant_residue_and_pole_damping_coordinate_optimization
+    - bounded_sampled_passivity_enforcement
+    - bounded_single_and_all_block_passivity_adjustment_with_rms_guards
+    - priority_only_full_band_postcheck
+    - impact_ranked_cascade_refit_with_artifact_restore
+    - spice_html_rfm_wrapper_and_s_equivalent_artifacts
+    - z0_renormalization_and_physical_frequency_rfm_export
+    - row_major_internal_to_touchstone_column_major_delivery
+  unsupported_semantics:
+    - continuous_hamiltonian_trajectory_and_upstream_numeric_parity
+    - arbitrary_n_port_touchstone_not_reachable_in_pinned_cascade_cli
+branch_graph:
+  branches:
+    - argument_and_manifest_rejection
+    - per_block_fit_and_order_search
+    - native_vector_fit_pole_relocation_iterations
+    - priority_band_fit_and_gate_selection
+    - shared_frequency_grid_and_cascade_evaluation
+    - cascade_passivity_check
+    - hamiltonian_crossover_grid
+    - hamiltonian_violation_band_adaptive_sampling
+    - constant_residue_pole_damping_coordinate_candidates
+    - group_scale_candidate_selection
+    - bounded_cascade_refit
+    - cascade_refit_accept_reject_history
+    - report_and_touchstone_publication
+oracle_replay:
+  archive_commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  corpus: [two_block_ordered_intersection, priority_band_refit, malformed_manifest, zero_forward_transmission]
+  replay_count: 2
+  binding_status: unbound_preparation_observation
+  content_addressed: false
+  immutable_source_binding: false
+  run_reports:
+    - docs/baselines/as-02-direct-replay-run-01.v1.json
+    - docs/baselines/as-02-direct-replay-run-02.v1.json
+  aggregate: docs/baselines/as-02-direct-replay-aggregate.v1.json
+  numeric_tolerance: not_claimed
+  parity_status: open
+differential_corpus:
+  status: preparation_observation
+  cases:
+    - id: two_block_ordered_intersection
+      expectation: direct_pass_or_explicit_numeric_open
+    - id: priority_band_refit
+      expectation: direct_pass_with_priority_band_and_refit_artifacts
+    - id: malformed_manifest
+      expectation: reject_before_output
+    - id: zero_forward_transmission
+      expectation: reject_before_fake_cascade
+evidence:
+  runner: tools/run_as_02_fit_sparam_cascade.py
+  aggregate: tools/aggregate_as_02_fit_sparam_cascade.py
+  verifier: tools/verify_as_02_direct_port.py
+  mutation_tests: tools/test_verify_as_remaining_direct_ports.py
+audit:
+  path: docs/baselines/audits/2026-08-23-as-02-fit-sparam-cascade-direct-port.md
+  sha256: 6070151541c147527f8488ade417c6e787b9a6653811ca152d2205e8c45a3067

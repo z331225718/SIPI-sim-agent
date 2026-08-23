@@ -1,0 +1,32 @@
+{
+  "schema": "sipi.com-02.upstream-runtime-oracle.v1",
+  "oracle_kind": "upstream_runtime_execution",
+  "source": {
+    "repository": "C:\\Users\\z3312\\code\\COM",
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea",
+    "license": "MIT",
+    "paths": [
+      "src/agent_com/calibration.py",
+      "src/agent_com/equalization/mmse.py",
+      "src/agent_com/equalization/rx_ffe.py"
+    ]
+  },
+  "invocation": "tools/run_com_portable_upstream_oracle.py",
+  "calibration": {
+    "sigma_bn_v": 0.5,
+    "iteration_count": 4,
+    "minimum_com_db": [2.5, 0.5, 1.5, 2.0]
+  },
+  "mmse": {
+    "fom_db": 43.763557168673756,
+    "sigma_e": 0.10806147499418581,
+    "condition_number": 48.75574106661312,
+    "rx_ffe": [1.029723991507431, -0.29723991507431013],
+    "dfe": [-0.09129511677282395]
+  },
+  "rx_ffe_search": {
+    "taps": [-0.09953659492767464, 1.0, -0.04634050723253687, -0.016687608689096408],
+    "filtered_waveform_sha256": "1ed52c1aaaf41dd6d75853db325efaaaeb5631ba8aa8f904b2f7b57fadba8285"
+  }
+}

@@ -1,0 +1,4216 @@
+{
+  "candidate": {
+    "reason": "semantic replay uses the caller-provided current binary",
+    "status": "unbound_observation"
+  },
+  "mode": "com-02",
+  "payloads_committed": false,
+  "portable_semantic_branches": [
+    "fd_to_td_json",
+    "mixed_mode_pn_skew",
+    "fext_next_waveform_inputs",
+    "equalization_apply",
+    "tdiln",
+    "search_nonmmse_no_rxffe",
+    "mmse_kkt_search",
+    "fvlms_rxffe_search",
+    "calibration_noise_controller",
+    "workbook_csv_mat_reuse",
+    "legacy_csv_projection"
+  ],
+  "replay_count": 2,
+  "replays": [
+    {
+      "exit_code": 0,
+      "mode": "com-02",
+      "scenario_count": 10,
+      "scenarios": [
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "legacy.csv",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "base",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "legacy_csv": {
+              "column_count": 98,
+              "header_sha256": "f4d7a7b031b32ec8abbe660a14cc3e2310ed7c59445f54189049fab67a3d6a5f",
+              "row_count": 1
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {},
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "base",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "41b4a280e5a840e8d79a6a0b6c7a209b46d860ab45061f4e2e103a9a9dcd11f2",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "fd_to_td",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {},
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "fd_to_td",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": 0,
+              "sample_count": 64,
+              "sha256": "4754f173a126bf9b57118d845846dbc98e21da10600d66b6db5da2616ac76702",
+              "source_kind": "json-s21-fd-to-td-impulse",
+              "truncation_db": -292.78220803788435
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "fa2980378ba521a222f03f180c6e2764106aa369e91b336df9b026a666088e86",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "mixed_mode",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {
+              "mixed_mode": {
+                "channel_impulse_sha256": "4754f173a126bf9b57118d845846dbc98e21da10600d66b6db5da2616ac76702",
+                "channelized": true,
+                "policy": "sipi.p5-04a.network-ingest-v1.mixed-mode-transform-only",
+                "port_order": [
+                  1,
+                  2,
+                  3,
+                  4
+                ],
+                "sample_count": 65,
+                "schema": "sipi.com.network.mixed-mode.v1",
+                "sdd21_first": [
+                  0.026298624215282385,
+                  0.0
+                ],
+                "sdd21_last": [
+                  -0.00804387891053735,
+                  2.037267161134289e-16
+                ],
+                "sdd21_sha256": "7ab719d157800ce1ff2dbd130af096a6564f6d4dc2101ce791d2eee2443185ac"
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "mixed_mode",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "4754f173a126bf9b57118d845846dbc98e21da10600d66b6db5da2616ac76702",
+              "source_kind": "mixed-mode-channel-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "cfa25730ba841867dab931526c4a644459a6512600dae1e8758f31dbb31dc620",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "fext_next",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [
+                {
+                  "impulse_sha256": "6345c3563fe0ce8c85652082d441354eaa088bbcc10fa1dc6f6a46d85cb65bbd",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse"
+                }
+              ],
+              "next": [
+                {
+                  "impulse_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse"
+                }
+              ]
+            },
+            "crosstalk_inputs": {
+              "fext": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "6345c3563fe0ce8c85652082d441354eaa088bbcc10fa1dc6f6a46d85cb65bbd",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse",
+                  "source_sha256": "650fcd1de1ff7dbad6b1a46a2d45e2e87126f62884612a22634b09370a1d8e22",
+                  "truncation_db": null
+                }
+              ],
+              "fext_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "1a16df29214dc25f4199b8e6e1e588a021f680f5574529bb1641db5e120e531f",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "integrated_into_metrics": true,
+              "next": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse",
+                  "source_sha256": "7ebbf1053a8495ef3baa0f10fc608e503c861e600e33aa9b7245101feb75aecf",
+                  "truncation_db": null
+                }
+              ],
+              "next_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.405234307899148,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -480.0,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.74,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07773544671614956
+            },
+            "portable_branches": {},
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "fext_next",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "e4170b61bc119d63087dc034a214e6f9aadad5dc2edb255c4504533b85a33140",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "equalization",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "536de383dfd12ce7a4243a074644fabd244453eac8bd18e3505c03db10f282c1",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "equalized-channel-impulse",
+                  "source_sha256": null,
+                  "truncation_db": null
+                }
+              ],
+              "fext_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "f20cd21b0b2c7de9069d5d23c27d27487ce97c2620625dad615a592544623e53",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "integrated_into_metrics": true,
+              "next": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "e99fba48549366f1d62557fe2bb9514cdd3f68c687956593abd4fa2d27774639",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "equalized-channel-impulse",
+                  "source_sha256": null,
+                  "truncation_db": null
+                }
+              ],
+              "next_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "bb9f0546530113f60ca71a4581765289ea50951488573a7173e7aaabbef1cc8b",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -2.6707781674043507,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -360.0000000000001,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.68,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.06262234097598939
+            },
+            "portable_branches": {
+              "equalization": {
+                "channel_types": [
+                  "THRU",
+                  "FEXT",
+                  "NEXT"
+                ],
+                "ctle_type": "CL93",
+                "impulse_count": 3,
+                "impulse_sha256": [
+                  "1871eb1ef3038f1019c1d77f33e1747bf4d9dfb0ec9220f1098be09d9a06e406",
+                  "536de383dfd12ce7a4243a074644fabd244453eac8bd18e3505c03db10f282c1",
+                  "e99fba48549366f1d62557fe2bb9514cdd3f68c687956593abd4fa2d27774639"
+                ],
+                "policy": "sipi.com.equalization.apply-r480-v1.ctle-tx-rx-ffe",
+                "pulse_count": 3,
+                "pulse_sha256": [
+                  "d166daa7e0a5327fdabc6576e299cc4996c4a00c785c55ad3645682394c4da1b",
+                  "f20cd21b0b2c7de9069d5d23c27d27487ce97c2620625dad615a592544623e53",
+                  "bb9f0546530113f60ca71a4581765289ea50951488573a7173e7aaabbef1cc8b"
+                ],
+                "rx_ffe": {
+                  "enabled": true,
+                  "precursor_count": 1,
+                  "tap_count": 3,
+                  "taps_sha256": "0336c8812a809fc0b04153f9a42501335382f0f6a56c79b2adff0c981bd23443"
+                },
+                "schema": "sipi.com.equalization.apply-r480.v1",
+                "tx_ffe_tap_count": 2
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "equalization",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "1871eb1ef3038f1019c1d77f33e1747bf4d9dfb0ec9220f1098be09d9a06e406",
+              "source_kind": "equalized-channel-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "c8230c283073178b8670c584420748a3a776f1437344219bb5c4c45529b8aaa5",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "tdiln",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {
+              "tdiln": {
+                "fit_sha256": "2648bb5d8560e01b7abbbbd733852106a434deac70613a9f9736df8541930660",
+                "fitted_pulse_sha256": "764c16422502c85be576749c7504fd19875eea439afd8b439ff0a90926fe6282",
+                "fom_pdf_v": 0.21,
+                "fom_v": 0.09176108014572128,
+                "iln_db_sha256": "0ba2fbc59df7e37da6a81b5eadd453c78bb309b231ef975462cb6ce3c55c3d80",
+                "iln_pulse_sha256": "4a4a8e7ac820c8cc2ae0e05f98799469989c0d6734f062fe2e8e424eddd7c069",
+                "pdf": {
+                  "bin_size": 0.01,
+                  "min_bin": -26,
+                  "sample_count": 53
+                },
+                "policy": "sipi.com.metrics.tdiln-v1.complex-il-fit-filtered-impulse-pdf",
+                "reference_pulse_sha256": "71a234055ee2827a0dd6d0feba80a1e0467c2db8555387c49ad020dd2a151534",
+                "schema": "sipi.com.metrics.tdiln.v1",
+                "selected_phase": 0,
+                "snr_isi_fom_db": 14.36033144478941,
+                "snr_isi_fom_pdf_db": 7.169115892649494
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "tdiln",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "b75d22d3be293f6298cdd20100dc3cc577e0ee1c4f9dba139350da80ddb05da1",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "search",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -35.63797838702298,
+              "FOM": 53.42661625274711,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -59520.0,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 30.26,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.48764299389109117
+            },
+            "portable_branches": {
+              "search": {
+                "calibration_sigma_ne_v": null,
+                "ctle_index": 0,
+                "cursor_index": 56,
+                "fom_db": 53.42661625274711,
+                "high_pass_index": 0,
+                "policy": "sipi.p5-04t.search-loop.v1.nonmmse-no-rxffe",
+                "schema": "sipi.com.equalization.search-r480.v1",
+                "search_input_sample_count": 300,
+                "search_input_sha256": "d406ac4ed9e3ffe3803eb149450b3da6b91a8bd5fbad74be61174b02457b3316",
+                "search_input_source_kind": "json-impulse",
+                "selected_pulse_sample_count": 300,
+                "selected_pulse_sha256": "3882856e5b33702ba470c23d7094b1da021ceef26e12ee446d06b78e76a0709a",
+                "selected_tx_taps": [
+                  0.3,
+                  0.6,
+                  -0.1
+                ],
+                "sigma_tx_v": 0.30909649961313573,
+                "tx_grid_index": 0
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "search",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 300,
+              "sha256": "d406ac4ed9e3ffe3803eb149450b3da6b91a8bd5fbad74be61174b02457b3316",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "3e682f13abe850aefbbce39f02a1a848bcc92a9368776ecebc9dee07abbf651c",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "calibration",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "package-case-fext",
+                  "source_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "truncation_db": null
+                }
+              ],
+              "fext_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "integrated_into_metrics": true,
+              "next": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "2089ef4283ee01364d2543cfec36d025fc8d10b576b3df44cea2b15ebdc88fe0",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "package-case-next",
+                  "source_sha256": "2089ef4283ee01364d2543cfec36d025fc8d10b576b3df44cea2b15ebdc88fe0",
+                  "truncation_db": null
+                }
+              ],
+              "next_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "30d4a215ce10d912e9d14d4ddcbb35c0f96e7e370fc4cce07213ce8c47b593af",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": 0.0,
+              "calibration_sigma_hp_v": 0.0,
+              "calibration_sigma_ne_v": 0.0,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07490742989901064
+            },
+            "portable_branches": {
+              "calibration": {
+                "calibration_s4p": false,
+                "case_channel_source": "parsed-package-case-channel-state",
+                "channel_source": "calibration_sdd21",
+                "evaluate_cases": "reruns every package case through COM for each sigma",
+                "evaluator": "evaluate_cases(sigma_bn_v)-fresh-reference-COM",
+                "final_step_v": 2.0,
+                "frequency_sample_count": 4,
+                "initial_noise": {
+                  "sigma_bn_v": 1.0,
+                  "sigma_hp_v": 1.0,
+                  "sigma_ne_v": 0.999348739275554
+                },
+                "iterations": [
+                  {
+                    "case_com_db": [
+                      -3.1672498419049933
+                    ],
+                    "minimum_com_db": -3.1672498419049933,
+                    "sigma_bn_v": 0.0,
+                    "step_v": 2.0
+                  }
+                ],
+                "minimum_com_db": -3.1672498419049933,
+                "per_sigma_search_orchestration": [
+                  {
+                    "cases": [
+                      {
+                        "case_id": "calibration-replay-case",
+                        "case_index": 0,
+                        "channel_impulse_sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+                        "com_db": -3.1672498419049933,
+                        "fext_pulse_sha256": [
+                          "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3"
+                        ],
+                        "next_pulse_sha256": [
+                          "30d4a215ce10d912e9d14d4ddcbb35c0f96e7e370fc4cce07213ce8c47b593af"
+                        ],
+                        "search_fom_db": null,
+                        "search_input_sha256": null,
+                        "selected_pulse_sha256": "89dc2c02e2a7fd002ee89ddbe8a72f564c37862ad4799a25d8e16e3e2ec9fb8d"
+                      }
+                    ],
+                    "sigma_bn_v": 0.0,
+                    "sigma_ne_v": 0.0
+                  }
+                ],
+                "policy": "sipi.com.calibration-v1.r480-receiver-noise-controller",
+                "schema": "sipi.com.calibration.r480.v1",
+                "selected_case_orchestration": [
+                  {
+                    "case_id": "calibration-replay-case",
+                    "case_index": 0,
+                    "channel_impulse_sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+                    "com_db": -3.1672498419049933,
+                    "fext_pulse_sha256": [
+                      "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3"
+                    ],
+                    "next_pulse_sha256": [
+                      "30d4a215ce10d912e9d14d4ddcbb35c0f96e7e370fc4cce07213ce8c47b593af"
+                    ],
+                    "search_fom_db": null,
+                    "search_input_sha256": null,
+                    "selected_pulse_sha256": "89dc2c02e2a7fd002ee89ddbe8a72f564c37862ad4799a25d8e16e3e2ec9fb8d"
+                  }
+                ],
+                "selected_noise": {
+                  "sigma_bn_v": 0.0,
+                  "sigma_hp_v": 0.0,
+                  "sigma_ne_v": 0.0
+                }
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "calibration",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "e802f72972733be53725a3a5fa89eefc185050ffdaac7e1172b6dcfece83214c",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "mmse",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": 1.514414278762367,
+              "FOM": 43.76355716867353,
+              "VEC_dB": 15.917600346881501,
+              "VEO_mV": 160.00000000000003,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.42,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.02661432833235839
+            },
+            "portable_branches": {
+              "mmse": {
+                "candidate_index": 0,
+                "condition_number": 48.755741066615855,
+                "ctle_index": 2,
+                "dfe": [
+                  -0.09129511677282351
+                ],
+                "dfe_limited": [
+                  -0.09129511677282351
+                ],
+                "equalized_sbr": [
+                  0.0,
+                  1.0,
+                  0.1
+                ],
+                "fom_db": 43.76355716867353,
+                "high_pass_index": 1,
+                "kkt_normalization": 1.0,
+                "policy": "sipi.com.equalization.mmse-v1.kkt-bounded-search",
+                "pre_rx_sbr": [
+                  0.1,
+                  1.0,
+                  0.2
+                ],
+                "rx_ffe": [
+                  1.029723991507431,
+                  -0.2972399150743097
+                ],
+                "sbr_kkt_consistent": true,
+                "schema": "sipi.com.equalization.mmse-r480.v1",
+                "sigma_e": 0.1080614749941886
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "mmse",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "a52ee0063a5760ff68229391934e19b4e5016d311829a58806fcfa5df3e36289",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "rx_ffe_search",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": 1.514414278762367,
+              "FOM": 54.43226990362654,
+              "VEC_dB": 15.917600346881501,
+              "VEO_mV": 160.00000000000003,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.42,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.02661432833235839
+            },
+            "portable_branches": {
+              "rx_ffe_search": {
+                "available_signal_v": 16.503704057391193,
+                "candidate_index": 0,
+                "ctle_gain_db": 0.0,
+                "ctle_index": 0,
+                "cursor_v": 0.9902222434434717,
+                "dfe_max": [
+                  0.5
+                ],
+                "dfe_min": [
+                  -0.5
+                ],
+                "dfe_taps": [
+                  3.065742163499192e-18
+                ],
+                "filtered_waveform": [
+                  -0.0007971572461072968,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -0.0011622420361677105,
+                  0.0,
+                  0.0,
+                  0.0,
+                  4.6340507232536104e-05,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -7.047314121155779e-19,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.9902222434434717,
+                  0.0,
+                  0.0,
+                  0.0,
+                  3.0357660829594124e-18,
+                  0.0,
+                  0.0,
+                  0.0,
+                  3.469446951953614e-18,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.008238809420894442,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "filtered_waveform_sha256": "1ed52c1aaaf41dd6d75853db325efaaaeb5631ba8aa8f904b2f7b57fadba8285",
+                "floating_locations": [],
+                "fom_db": 54.43226990362654,
+                "full_fom_evaluation": true,
+                "h_j": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "high_pass_gain_db": 0.0,
+                "high_pass_index": 0,
+                "itick": 0,
+                "policy": "sipi.com.equalization.fvlms-rxffe-v1.force-strict-best-search",
+                "residual_rms_v": 0.00025075835959719784,
+                "rx_ffe_gain_db": 0.0,
+                "schema": "sipi.com.equalization.fvlms-rxffe-r480.v1",
+                "sigma_isi_v": 0.00025075835959719784,
+                "sigma_j_v": 0.0,
+                "sigma_n_v": 0.001,
+                "sigma_ne_v": 0.0,
+                "sigma_total_v": 0.03133054374193225,
+                "sigma_tx_v": 0.03131357679043105,
+                "sigma_xt_v": 0.0,
+                "taps": [
+                  -0.09953659492767464,
+                  1.0,
+                  -0.04634050723253687,
+                  -0.016687608689096408
+                ],
+                "tx_grid_index": 0,
+                "tx_precursor_count": 0,
+                "tx_source_indices": [
+                  0
+                ],
+                "tx_taps": [
+                  1.0
+                ]
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "rx_ffe_search",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "9926574a074d630c1c4e6443ae3e96ab97fd0a70806aa18ed01c207a30488937",
+          "source_revision": "r480"
+        }
+      ],
+      "semantic": {
+        "scenarios": [
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "legacy_csv": {
+              "column_count": 98,
+              "header_sha256": "f4d7a7b031b32ec8abbe660a14cc3e2310ed7c59445f54189049fab67a3d6a5f",
+              "row_count": 1
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {},
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "base",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {},
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "fd_to_td",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": 0,
+              "sample_count": 64,
+              "sha256": "4754f173a126bf9b57118d845846dbc98e21da10600d66b6db5da2616ac76702",
+              "source_kind": "json-s21-fd-to-td-impulse",
+              "truncation_db": -292.78220803788435
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {
+              "mixed_mode": {
+                "channel_impulse_sha256": "4754f173a126bf9b57118d845846dbc98e21da10600d66b6db5da2616ac76702",
+                "channelized": true,
+                "policy": "sipi.p5-04a.network-ingest-v1.mixed-mode-transform-only",
+                "port_order": [
+                  1,
+                  2,
+                  3,
+                  4
+                ],
+                "sample_count": 65,
+                "schema": "sipi.com.network.mixed-mode.v1",
+                "sdd21_first": [
+                  0.026298624215282385,
+                  0.0
+                ],
+                "sdd21_last": [
+                  -0.00804387891053735,
+                  2.037267161134289e-16
+                ],
+                "sdd21_sha256": "7ab719d157800ce1ff2dbd130af096a6564f6d4dc2101ce791d2eee2443185ac"
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "mixed_mode",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "4754f173a126bf9b57118d845846dbc98e21da10600d66b6db5da2616ac76702",
+              "source_kind": "mixed-mode-channel-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [
+                {
+                  "impulse_sha256": "6345c3563fe0ce8c85652082d441354eaa088bbcc10fa1dc6f6a46d85cb65bbd",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse"
+                }
+              ],
+              "next": [
+                {
+                  "impulse_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse"
+                }
+              ]
+            },
+            "crosstalk_inputs": {
+              "fext": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "6345c3563fe0ce8c85652082d441354eaa088bbcc10fa1dc6f6a46d85cb65bbd",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse",
+                  "source_sha256": "650fcd1de1ff7dbad6b1a46a2d45e2e87126f62884612a22634b09370a1d8e22",
+                  "truncation_db": null
+                }
+              ],
+              "fext_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "1a16df29214dc25f4199b8e6e1e588a021f680f5574529bb1641db5e120e531f",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "integrated_into_metrics": true,
+              "next": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse",
+                  "source_sha256": "7ebbf1053a8495ef3baa0f10fc608e503c861e600e33aa9b7245101feb75aecf",
+                  "truncation_db": null
+                }
+              ],
+              "next_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.405234307899148,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -480.0,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.74,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07773544671614956
+            },
+            "portable_branches": {},
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "fext_next",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "536de383dfd12ce7a4243a074644fabd244453eac8bd18e3505c03db10f282c1",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "equalized-channel-impulse",
+                  "source_sha256": null,
+                  "truncation_db": null
+                }
+              ],
+              "fext_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "f20cd21b0b2c7de9069d5d23c27d27487ce97c2620625dad615a592544623e53",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "integrated_into_metrics": true,
+              "next": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "e99fba48549366f1d62557fe2bb9514cdd3f68c687956593abd4fa2d27774639",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "equalized-channel-impulse",
+                  "source_sha256": null,
+                  "truncation_db": null
+                }
+              ],
+              "next_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "bb9f0546530113f60ca71a4581765289ea50951488573a7173e7aaabbef1cc8b",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -2.6707781674043507,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -360.0000000000001,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.68,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.06262234097598939
+            },
+            "portable_branches": {
+              "equalization": {
+                "channel_types": [
+                  "THRU",
+                  "FEXT",
+                  "NEXT"
+                ],
+                "ctle_type": "CL93",
+                "impulse_count": 3,
+                "impulse_sha256": [
+                  "1871eb1ef3038f1019c1d77f33e1747bf4d9dfb0ec9220f1098be09d9a06e406",
+                  "536de383dfd12ce7a4243a074644fabd244453eac8bd18e3505c03db10f282c1",
+                  "e99fba48549366f1d62557fe2bb9514cdd3f68c687956593abd4fa2d27774639"
+                ],
+                "policy": "sipi.com.equalization.apply-r480-v1.ctle-tx-rx-ffe",
+                "pulse_count": 3,
+                "pulse_sha256": [
+                  "d166daa7e0a5327fdabc6576e299cc4996c4a00c785c55ad3645682394c4da1b",
+                  "f20cd21b0b2c7de9069d5d23c27d27487ce97c2620625dad615a592544623e53",
+                  "bb9f0546530113f60ca71a4581765289ea50951488573a7173e7aaabbef1cc8b"
+                ],
+                "rx_ffe": {
+                  "enabled": true,
+                  "precursor_count": 1,
+                  "tap_count": 3,
+                  "taps_sha256": "0336c8812a809fc0b04153f9a42501335382f0f6a56c79b2adff0c981bd23443"
+                },
+                "schema": "sipi.com.equalization.apply-r480.v1",
+                "tx_ffe_tap_count": 2
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "equalization",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "1871eb1ef3038f1019c1d77f33e1747bf4d9dfb0ec9220f1098be09d9a06e406",
+              "source_kind": "equalized-channel-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {
+              "tdiln": {
+                "fit_sha256": "2648bb5d8560e01b7abbbbd733852106a434deac70613a9f9736df8541930660",
+                "fitted_pulse_sha256": "764c16422502c85be576749c7504fd19875eea439afd8b439ff0a90926fe6282",
+                "fom_pdf_v": 0.21,
+                "fom_v": 0.09176108014572128,
+                "iln_db_sha256": "0ba2fbc59df7e37da6a81b5eadd453c78bb309b231ef975462cb6ce3c55c3d80",
+                "iln_pulse_sha256": "4a4a8e7ac820c8cc2ae0e05f98799469989c0d6734f062fe2e8e424eddd7c069",
+                "pdf": {
+                  "bin_size": 0.01,
+                  "min_bin": -26,
+                  "sample_count": 53
+                },
+                "policy": "sipi.com.metrics.tdiln-v1.complex-il-fit-filtered-impulse-pdf",
+                "reference_pulse_sha256": "71a234055ee2827a0dd6d0feba80a1e0467c2db8555387c49ad020dd2a151534",
+                "schema": "sipi.com.metrics.tdiln.v1",
+                "selected_phase": 0,
+                "snr_isi_fom_db": 14.36033144478941,
+                "snr_isi_fom_pdf_db": 7.169115892649494
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "tdiln",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -35.63797838702298,
+              "FOM": 53.42661625274711,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -59520.0,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 30.26,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.48764299389109117
+            },
+            "portable_branches": {
+              "search": {
+                "calibration_sigma_ne_v": null,
+                "ctle_index": 0,
+                "cursor_index": 56,
+                "fom_db": 53.42661625274711,
+                "high_pass_index": 0,
+                "policy": "sipi.p5-04t.search-loop.v1.nonmmse-no-rxffe",
+                "schema": "sipi.com.equalization.search-r480.v1",
+                "search_input_sample_count": 300,
+                "search_input_sha256": "d406ac4ed9e3ffe3803eb149450b3da6b91a8bd5fbad74be61174b02457b3316",
+                "search_input_source_kind": "json-impulse",
+                "selected_pulse_sample_count": 300,
+                "selected_pulse_sha256": "3882856e5b33702ba470c23d7094b1da021ceef26e12ee446d06b78e76a0709a",
+                "selected_tx_taps": [
+                  0.3,
+                  0.6,
+                  -0.1
+                ],
+                "sigma_tx_v": 0.30909649961313573,
+                "tx_grid_index": 0
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "search",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 300,
+              "sha256": "d406ac4ed9e3ffe3803eb149450b3da6b91a8bd5fbad74be61174b02457b3316",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "package-case-fext",
+                  "source_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "truncation_db": null
+                }
+              ],
+              "fext_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "integrated_into_metrics": true,
+              "next": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "2089ef4283ee01364d2543cfec36d025fc8d10b576b3df44cea2b15ebdc88fe0",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "package-case-next",
+                  "source_sha256": "2089ef4283ee01364d2543cfec36d025fc8d10b576b3df44cea2b15ebdc88fe0",
+                  "truncation_db": null
+                }
+              ],
+              "next_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "30d4a215ce10d912e9d14d4ddcbb35c0f96e7e370fc4cce07213ce8c47b593af",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": 0.0,
+              "calibration_sigma_hp_v": 0.0,
+              "calibration_sigma_ne_v": 0.0,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07490742989901064
+            },
+            "portable_branches": {
+              "calibration": {
+                "calibration_s4p": false,
+                "case_channel_source": "parsed-package-case-channel-state",
+                "channel_source": "calibration_sdd21",
+                "evaluate_cases": "reruns every package case through COM for each sigma",
+                "evaluator": "evaluate_cases(sigma_bn_v)-fresh-reference-COM",
+                "final_step_v": 2.0,
+                "frequency_sample_count": 4,
+                "initial_noise": {
+                  "sigma_bn_v": 1.0,
+                  "sigma_hp_v": 1.0,
+                  "sigma_ne_v": 0.999348739275554
+                },
+                "iterations": [
+                  {
+                    "case_com_db": [
+                      -3.1672498419049933
+                    ],
+                    "minimum_com_db": -3.1672498419049933,
+                    "sigma_bn_v": 0.0,
+                    "step_v": 2.0
+                  }
+                ],
+                "minimum_com_db": -3.1672498419049933,
+                "per_sigma_search_orchestration": [
+                  {
+                    "cases": [
+                      {
+                        "case_id": "calibration-replay-case",
+                        "case_index": 0,
+                        "channel_impulse_sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+                        "com_db": -3.1672498419049933,
+                        "fext_pulse_sha256": [
+                          "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3"
+                        ],
+                        "next_pulse_sha256": [
+                          "30d4a215ce10d912e9d14d4ddcbb35c0f96e7e370fc4cce07213ce8c47b593af"
+                        ],
+                        "search_fom_db": null,
+                        "search_input_sha256": null,
+                        "selected_pulse_sha256": "89dc2c02e2a7fd002ee89ddbe8a72f564c37862ad4799a25d8e16e3e2ec9fb8d"
+                      }
+                    ],
+                    "sigma_bn_v": 0.0,
+                    "sigma_ne_v": 0.0
+                  }
+                ],
+                "policy": "sipi.com.calibration-v1.r480-receiver-noise-controller",
+                "schema": "sipi.com.calibration.r480.v1",
+                "selected_case_orchestration": [
+                  {
+                    "case_id": "calibration-replay-case",
+                    "case_index": 0,
+                    "channel_impulse_sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+                    "com_db": -3.1672498419049933,
+                    "fext_pulse_sha256": [
+                      "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3"
+                    ],
+                    "next_pulse_sha256": [
+                      "30d4a215ce10d912e9d14d4ddcbb35c0f96e7e370fc4cce07213ce8c47b593af"
+                    ],
+                    "search_fom_db": null,
+                    "search_input_sha256": null,
+                    "selected_pulse_sha256": "89dc2c02e2a7fd002ee89ddbe8a72f564c37862ad4799a25d8e16e3e2ec9fb8d"
+                  }
+                ],
+                "selected_noise": {
+                  "sigma_bn_v": 0.0,
+                  "sigma_hp_v": 0.0,
+                  "sigma_ne_v": 0.0
+                }
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "calibration",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": 1.514414278762367,
+              "FOM": 43.76355716867353,
+              "VEC_dB": 15.917600346881501,
+              "VEO_mV": 160.00000000000003,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.42,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.02661432833235839
+            },
+            "portable_branches": {
+              "mmse": {
+                "candidate_index": 0,
+                "condition_number": 48.755741066615855,
+                "ctle_index": 2,
+                "dfe": [
+                  -0.09129511677282351
+                ],
+                "dfe_limited": [
+                  -0.09129511677282351
+                ],
+                "equalized_sbr": [
+                  0.0,
+                  1.0,
+                  0.1
+                ],
+                "fom_db": 43.76355716867353,
+                "high_pass_index": 1,
+                "kkt_normalization": 1.0,
+                "policy": "sipi.com.equalization.mmse-v1.kkt-bounded-search",
+                "pre_rx_sbr": [
+                  0.1,
+                  1.0,
+                  0.2
+                ],
+                "rx_ffe": [
+                  1.029723991507431,
+                  -0.2972399150743097
+                ],
+                "sbr_kkt_consistent": true,
+                "schema": "sipi.com.equalization.mmse-r480.v1",
+                "sigma_e": 0.1080614749941886
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "mmse",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": 1.514414278762367,
+              "FOM": 54.43226990362654,
+              "VEC_dB": 15.917600346881501,
+              "VEO_mV": 160.00000000000003,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.42,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.02661432833235839
+            },
+            "portable_branches": {
+              "rx_ffe_search": {
+                "available_signal_v": 16.503704057391193,
+                "candidate_index": 0,
+                "ctle_gain_db": 0.0,
+                "ctle_index": 0,
+                "cursor_v": 0.9902222434434717,
+                "dfe_max": [
+                  0.5
+                ],
+                "dfe_min": [
+                  -0.5
+                ],
+                "dfe_taps": [
+                  3.065742163499192e-18
+                ],
+                "filtered_waveform": [
+                  -0.0007971572461072968,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -0.0011622420361677105,
+                  0.0,
+                  0.0,
+                  0.0,
+                  4.6340507232536104e-05,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -7.047314121155779e-19,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.9902222434434717,
+                  0.0,
+                  0.0,
+                  0.0,
+                  3.0357660829594124e-18,
+                  0.0,
+                  0.0,
+                  0.0,
+                  3.469446951953614e-18,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.008238809420894442,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "filtered_waveform_sha256": "1ed52c1aaaf41dd6d75853db325efaaaeb5631ba8aa8f904b2f7b57fadba8285",
+                "floating_locations": [],
+                "fom_db": 54.43226990362654,
+                "full_fom_evaluation": true,
+                "h_j": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "high_pass_gain_db": 0.0,
+                "high_pass_index": 0,
+                "itick": 0,
+                "policy": "sipi.com.equalization.fvlms-rxffe-v1.force-strict-best-search",
+                "residual_rms_v": 0.00025075835959719784,
+                "rx_ffe_gain_db": 0.0,
+                "schema": "sipi.com.equalization.fvlms-rxffe-r480.v1",
+                "sigma_isi_v": 0.00025075835959719784,
+                "sigma_j_v": 0.0,
+                "sigma_n_v": 0.001,
+                "sigma_ne_v": 0.0,
+                "sigma_total_v": 0.03133054374193225,
+                "sigma_tx_v": 0.03131357679043105,
+                "sigma_xt_v": 0.0,
+                "taps": [
+                  -0.09953659492767464,
+                  1.0,
+                  -0.04634050723253687,
+                  -0.016687608689096408
+                ],
+                "tx_grid_index": 0,
+                "tx_precursor_count": 0,
+                "tx_source_indices": [
+                  0
+                ],
+                "tx_taps": [
+                  1.0
+                ]
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "rx_ffe_search",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          }
+        ]
+      },
+      "semantic_sha256": "dea1769fe4a8d703039afb11c5fb1490718611abe9e4238494ebfb23e4f6cfff"
+    },
+    {
+      "exit_code": 0,
+      "mode": "com-02",
+      "scenario_count": 10,
+      "scenarios": [
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "legacy.csv",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "base",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "legacy_csv": {
+              "column_count": 98,
+              "header_sha256": "f4d7a7b031b32ec8abbe660a14cc3e2310ed7c59445f54189049fab67a3d6a5f",
+              "row_count": 1
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {},
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "base",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "41b4a280e5a840e8d79a6a0b6c7a209b46d860ab45061f4e2e103a9a9dcd11f2",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "fd_to_td",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {},
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "fd_to_td",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": 0,
+              "sample_count": 64,
+              "sha256": "4754f173a126bf9b57118d845846dbc98e21da10600d66b6db5da2616ac76702",
+              "source_kind": "json-s21-fd-to-td-impulse",
+              "truncation_db": -292.78220803788435
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "fa2980378ba521a222f03f180c6e2764106aa369e91b336df9b026a666088e86",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "mixed_mode",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {
+              "mixed_mode": {
+                "channel_impulse_sha256": "4754f173a126bf9b57118d845846dbc98e21da10600d66b6db5da2616ac76702",
+                "channelized": true,
+                "policy": "sipi.p5-04a.network-ingest-v1.mixed-mode-transform-only",
+                "port_order": [
+                  1,
+                  2,
+                  3,
+                  4
+                ],
+                "sample_count": 65,
+                "schema": "sipi.com.network.mixed-mode.v1",
+                "sdd21_first": [
+                  0.026298624215282385,
+                  0.0
+                ],
+                "sdd21_last": [
+                  -0.00804387891053735,
+                  2.037267161134289e-16
+                ],
+                "sdd21_sha256": "7ab719d157800ce1ff2dbd130af096a6564f6d4dc2101ce791d2eee2443185ac"
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "mixed_mode",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "4754f173a126bf9b57118d845846dbc98e21da10600d66b6db5da2616ac76702",
+              "source_kind": "mixed-mode-channel-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "cfa25730ba841867dab931526c4a644459a6512600dae1e8758f31dbb31dc620",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "fext_next",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [
+                {
+                  "impulse_sha256": "6345c3563fe0ce8c85652082d441354eaa088bbcc10fa1dc6f6a46d85cb65bbd",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse"
+                }
+              ],
+              "next": [
+                {
+                  "impulse_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse"
+                }
+              ]
+            },
+            "crosstalk_inputs": {
+              "fext": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "6345c3563fe0ce8c85652082d441354eaa088bbcc10fa1dc6f6a46d85cb65bbd",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse",
+                  "source_sha256": "650fcd1de1ff7dbad6b1a46a2d45e2e87126f62884612a22634b09370a1d8e22",
+                  "truncation_db": null
+                }
+              ],
+              "fext_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "1a16df29214dc25f4199b8e6e1e588a021f680f5574529bb1641db5e120e531f",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "integrated_into_metrics": true,
+              "next": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse",
+                  "source_sha256": "7ebbf1053a8495ef3baa0f10fc608e503c861e600e33aa9b7245101feb75aecf",
+                  "truncation_db": null
+                }
+              ],
+              "next_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.405234307899148,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -480.0,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.74,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07773544671614956
+            },
+            "portable_branches": {},
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "fext_next",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "e4170b61bc119d63087dc034a214e6f9aadad5dc2edb255c4504533b85a33140",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "equalization",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "536de383dfd12ce7a4243a074644fabd244453eac8bd18e3505c03db10f282c1",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "equalized-channel-impulse",
+                  "source_sha256": null,
+                  "truncation_db": null
+                }
+              ],
+              "fext_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "f20cd21b0b2c7de9069d5d23c27d27487ce97c2620625dad615a592544623e53",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "integrated_into_metrics": true,
+              "next": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "e99fba48549366f1d62557fe2bb9514cdd3f68c687956593abd4fa2d27774639",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "equalized-channel-impulse",
+                  "source_sha256": null,
+                  "truncation_db": null
+                }
+              ],
+              "next_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "bb9f0546530113f60ca71a4581765289ea50951488573a7173e7aaabbef1cc8b",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -2.6707781674043507,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -360.0000000000001,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.68,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.06262234097598939
+            },
+            "portable_branches": {
+              "equalization": {
+                "channel_types": [
+                  "THRU",
+                  "FEXT",
+                  "NEXT"
+                ],
+                "ctle_type": "CL93",
+                "impulse_count": 3,
+                "impulse_sha256": [
+                  "1871eb1ef3038f1019c1d77f33e1747bf4d9dfb0ec9220f1098be09d9a06e406",
+                  "536de383dfd12ce7a4243a074644fabd244453eac8bd18e3505c03db10f282c1",
+                  "e99fba48549366f1d62557fe2bb9514cdd3f68c687956593abd4fa2d27774639"
+                ],
+                "policy": "sipi.com.equalization.apply-r480-v1.ctle-tx-rx-ffe",
+                "pulse_count": 3,
+                "pulse_sha256": [
+                  "d166daa7e0a5327fdabc6576e299cc4996c4a00c785c55ad3645682394c4da1b",
+                  "f20cd21b0b2c7de9069d5d23c27d27487ce97c2620625dad615a592544623e53",
+                  "bb9f0546530113f60ca71a4581765289ea50951488573a7173e7aaabbef1cc8b"
+                ],
+                "rx_ffe": {
+                  "enabled": true,
+                  "precursor_count": 1,
+                  "tap_count": 3,
+                  "taps_sha256": "0336c8812a809fc0b04153f9a42501335382f0f6a56c79b2adff0c981bd23443"
+                },
+                "schema": "sipi.com.equalization.apply-r480.v1",
+                "tx_ffe_tap_count": 2
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "equalization",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "1871eb1ef3038f1019c1d77f33e1747bf4d9dfb0ec9220f1098be09d9a06e406",
+              "source_kind": "equalized-channel-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "c8230c283073178b8670c584420748a3a776f1437344219bb5c4c45529b8aaa5",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "tdiln",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {
+              "tdiln": {
+                "fit_sha256": "2648bb5d8560e01b7abbbbd733852106a434deac70613a9f9736df8541930660",
+                "fitted_pulse_sha256": "764c16422502c85be576749c7504fd19875eea439afd8b439ff0a90926fe6282",
+                "fom_pdf_v": 0.21,
+                "fom_v": 0.09176108014572128,
+                "iln_db_sha256": "0ba2fbc59df7e37da6a81b5eadd453c78bb309b231ef975462cb6ce3c55c3d80",
+                "iln_pulse_sha256": "4a4a8e7ac820c8cc2ae0e05f98799469989c0d6734f062fe2e8e424eddd7c069",
+                "pdf": {
+                  "bin_size": 0.01,
+                  "min_bin": -26,
+                  "sample_count": 53
+                },
+                "policy": "sipi.com.metrics.tdiln-v1.complex-il-fit-filtered-impulse-pdf",
+                "reference_pulse_sha256": "71a234055ee2827a0dd6d0feba80a1e0467c2db8555387c49ad020dd2a151534",
+                "schema": "sipi.com.metrics.tdiln.v1",
+                "selected_phase": 0,
+                "snr_isi_fom_db": 14.36033144478941,
+                "snr_isi_fom_pdf_db": 7.169115892649494
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "tdiln",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "b75d22d3be293f6298cdd20100dc3cc577e0ee1c4f9dba139350da80ddb05da1",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "search",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -35.63797838702298,
+              "FOM": 53.42661625274711,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -59520.0,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 30.26,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.48764299389109117
+            },
+            "portable_branches": {
+              "search": {
+                "calibration_sigma_ne_v": null,
+                "ctle_index": 0,
+                "cursor_index": 56,
+                "fom_db": 53.42661625274711,
+                "high_pass_index": 0,
+                "policy": "sipi.p5-04t.search-loop.v1.nonmmse-no-rxffe",
+                "schema": "sipi.com.equalization.search-r480.v1",
+                "search_input_sample_count": 300,
+                "search_input_sha256": "d406ac4ed9e3ffe3803eb149450b3da6b91a8bd5fbad74be61174b02457b3316",
+                "search_input_source_kind": "json-impulse",
+                "selected_pulse_sample_count": 300,
+                "selected_pulse_sha256": "3882856e5b33702ba470c23d7094b1da021ceef26e12ee446d06b78e76a0709a",
+                "selected_tx_taps": [
+                  0.3,
+                  0.6,
+                  -0.1
+                ],
+                "sigma_tx_v": 0.30909649961313573,
+                "tx_grid_index": 0
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "search",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 300,
+              "sha256": "d406ac4ed9e3ffe3803eb149450b3da6b91a8bd5fbad74be61174b02457b3316",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "3e682f13abe850aefbbce39f02a1a848bcc92a9368776ecebc9dee07abbf651c",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "calibration",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "package-case-fext",
+                  "source_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "truncation_db": null
+                }
+              ],
+              "fext_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "integrated_into_metrics": true,
+              "next": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "2089ef4283ee01364d2543cfec36d025fc8d10b576b3df44cea2b15ebdc88fe0",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "package-case-next",
+                  "source_sha256": "2089ef4283ee01364d2543cfec36d025fc8d10b576b3df44cea2b15ebdc88fe0",
+                  "truncation_db": null
+                }
+              ],
+              "next_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "30d4a215ce10d912e9d14d4ddcbb35c0f96e7e370fc4cce07213ce8c47b593af",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": 0.0,
+              "calibration_sigma_hp_v": 0.0,
+              "calibration_sigma_ne_v": 0.0,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07490742989901064
+            },
+            "portable_branches": {
+              "calibration": {
+                "calibration_s4p": false,
+                "case_channel_source": "parsed-package-case-channel-state",
+                "channel_source": "calibration_sdd21",
+                "evaluate_cases": "reruns every package case through COM for each sigma",
+                "evaluator": "evaluate_cases(sigma_bn_v)-fresh-reference-COM",
+                "final_step_v": 2.0,
+                "frequency_sample_count": 4,
+                "initial_noise": {
+                  "sigma_bn_v": 1.0,
+                  "sigma_hp_v": 1.0,
+                  "sigma_ne_v": 0.999348739275554
+                },
+                "iterations": [
+                  {
+                    "case_com_db": [
+                      -3.1672498419049933
+                    ],
+                    "minimum_com_db": -3.1672498419049933,
+                    "sigma_bn_v": 0.0,
+                    "step_v": 2.0
+                  }
+                ],
+                "minimum_com_db": -3.1672498419049933,
+                "per_sigma_search_orchestration": [
+                  {
+                    "cases": [
+                      {
+                        "case_id": "calibration-replay-case",
+                        "case_index": 0,
+                        "channel_impulse_sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+                        "com_db": -3.1672498419049933,
+                        "fext_pulse_sha256": [
+                          "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3"
+                        ],
+                        "next_pulse_sha256": [
+                          "30d4a215ce10d912e9d14d4ddcbb35c0f96e7e370fc4cce07213ce8c47b593af"
+                        ],
+                        "search_fom_db": null,
+                        "search_input_sha256": null,
+                        "selected_pulse_sha256": "89dc2c02e2a7fd002ee89ddbe8a72f564c37862ad4799a25d8e16e3e2ec9fb8d"
+                      }
+                    ],
+                    "sigma_bn_v": 0.0,
+                    "sigma_ne_v": 0.0
+                  }
+                ],
+                "policy": "sipi.com.calibration-v1.r480-receiver-noise-controller",
+                "schema": "sipi.com.calibration.r480.v1",
+                "selected_case_orchestration": [
+                  {
+                    "case_id": "calibration-replay-case",
+                    "case_index": 0,
+                    "channel_impulse_sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+                    "com_db": -3.1672498419049933,
+                    "fext_pulse_sha256": [
+                      "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3"
+                    ],
+                    "next_pulse_sha256": [
+                      "30d4a215ce10d912e9d14d4ddcbb35c0f96e7e370fc4cce07213ce8c47b593af"
+                    ],
+                    "search_fom_db": null,
+                    "search_input_sha256": null,
+                    "selected_pulse_sha256": "89dc2c02e2a7fd002ee89ddbe8a72f564c37862ad4799a25d8e16e3e2ec9fb8d"
+                  }
+                ],
+                "selected_noise": {
+                  "sigma_bn_v": 0.0,
+                  "sigma_hp_v": 0.0,
+                  "sigma_ne_v": 0.0
+                }
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "calibration",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "e802f72972733be53725a3a5fa89eefc185050ffdaac7e1172b6dcfece83214c",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "mmse",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": 1.514414278762367,
+              "FOM": 43.76355716867353,
+              "VEC_dB": 15.917600346881501,
+              "VEO_mV": 160.00000000000003,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.42,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.02661432833235839
+            },
+            "portable_branches": {
+              "mmse": {
+                "candidate_index": 0,
+                "condition_number": 48.755741066615855,
+                "ctle_index": 2,
+                "dfe": [
+                  -0.09129511677282351
+                ],
+                "dfe_limited": [
+                  -0.09129511677282351
+                ],
+                "equalized_sbr": [
+                  0.0,
+                  1.0,
+                  0.1
+                ],
+                "fom_db": 43.76355716867353,
+                "high_pass_index": 1,
+                "kkt_normalization": 1.0,
+                "policy": "sipi.com.equalization.mmse-v1.kkt-bounded-search",
+                "pre_rx_sbr": [
+                  0.1,
+                  1.0,
+                  0.2
+                ],
+                "rx_ffe": [
+                  1.029723991507431,
+                  -0.2972399150743097
+                ],
+                "sbr_kkt_consistent": true,
+                "schema": "sipi.com.equalization.mmse-r480.v1",
+                "sigma_e": 0.1080614749941886
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "mmse",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "a52ee0063a5760ff68229391934e19b4e5016d311829a58806fcfa5df3e36289",
+          "source_revision": "r480"
+        },
+        {
+          "artifact_files": [
+            "diagnostics.json",
+            "report.html",
+            "result.json"
+          ],
+          "binary_schema": "sipi.com-02.direct-port.v1",
+          "exit_code": 0,
+          "result_schema": 1,
+          "scenario": "rx_ffe_search",
+          "semantic": {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": 1.514414278762367,
+              "FOM": 54.43226990362654,
+              "VEC_dB": 15.917600346881501,
+              "VEO_mV": 160.00000000000003,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.42,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.02661432833235839
+            },
+            "portable_branches": {
+              "rx_ffe_search": {
+                "available_signal_v": 16.503704057391193,
+                "candidate_index": 0,
+                "ctle_gain_db": 0.0,
+                "ctle_index": 0,
+                "cursor_v": 0.9902222434434717,
+                "dfe_max": [
+                  0.5
+                ],
+                "dfe_min": [
+                  -0.5
+                ],
+                "dfe_taps": [
+                  3.065742163499192e-18
+                ],
+                "filtered_waveform": [
+                  -0.0007971572461072968,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -0.0011622420361677105,
+                  0.0,
+                  0.0,
+                  0.0,
+                  4.6340507232536104e-05,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -7.047314121155779e-19,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.9902222434434717,
+                  0.0,
+                  0.0,
+                  0.0,
+                  3.0357660829594124e-18,
+                  0.0,
+                  0.0,
+                  0.0,
+                  3.469446951953614e-18,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.008238809420894442,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "filtered_waveform_sha256": "1ed52c1aaaf41dd6d75853db325efaaaeb5631ba8aa8f904b2f7b57fadba8285",
+                "floating_locations": [],
+                "fom_db": 54.43226990362654,
+                "full_fom_evaluation": true,
+                "h_j": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "high_pass_gain_db": 0.0,
+                "high_pass_index": 0,
+                "itick": 0,
+                "policy": "sipi.com.equalization.fvlms-rxffe-v1.force-strict-best-search",
+                "residual_rms_v": 0.00025075835959719784,
+                "rx_ffe_gain_db": 0.0,
+                "schema": "sipi.com.equalization.fvlms-rxffe-r480.v1",
+                "sigma_isi_v": 0.00025075835959719784,
+                "sigma_j_v": 0.0,
+                "sigma_n_v": 0.001,
+                "sigma_ne_v": 0.0,
+                "sigma_total_v": 0.03133054374193225,
+                "sigma_tx_v": 0.03131357679043105,
+                "sigma_xt_v": 0.0,
+                "taps": [
+                  -0.09953659492767464,
+                  1.0,
+                  -0.04634050723253687,
+                  -0.016687608689096408
+                ],
+                "tx_grid_index": 0,
+                "tx_precursor_count": 0,
+                "tx_source_indices": [
+                  0
+                ],
+                "tx_taps": [
+                  1.0
+                ]
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "rx_ffe_search",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          "semantic_sha256": "9926574a074d630c1c4e6443ae3e96ab97fd0a70806aa18ed01c207a30488937",
+          "source_revision": "r480"
+        }
+      ],
+      "semantic": {
+        "scenarios": [
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "legacy_csv": {
+              "column_count": 98,
+              "header_sha256": "f4d7a7b031b32ec8abbe660a14cc3e2310ed7c59445f54189049fab67a3d6a5f",
+              "row_count": 1
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {},
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "base",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {},
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "fd_to_td",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": 0,
+              "sample_count": 64,
+              "sha256": "4754f173a126bf9b57118d845846dbc98e21da10600d66b6db5da2616ac76702",
+              "source_kind": "json-s21-fd-to-td-impulse",
+              "truncation_db": -292.78220803788435
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {
+              "mixed_mode": {
+                "channel_impulse_sha256": "4754f173a126bf9b57118d845846dbc98e21da10600d66b6db5da2616ac76702",
+                "channelized": true,
+                "policy": "sipi.p5-04a.network-ingest-v1.mixed-mode-transform-only",
+                "port_order": [
+                  1,
+                  2,
+                  3,
+                  4
+                ],
+                "sample_count": 65,
+                "schema": "sipi.com.network.mixed-mode.v1",
+                "sdd21_first": [
+                  0.026298624215282385,
+                  0.0
+                ],
+                "sdd21_last": [
+                  -0.00804387891053735,
+                  2.037267161134289e-16
+                ],
+                "sdd21_sha256": "7ab719d157800ce1ff2dbd130af096a6564f6d4dc2101ce791d2eee2443185ac"
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "mixed_mode",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "4754f173a126bf9b57118d845846dbc98e21da10600d66b6db5da2616ac76702",
+              "source_kind": "mixed-mode-channel-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [
+                {
+                  "impulse_sha256": "6345c3563fe0ce8c85652082d441354eaa088bbcc10fa1dc6f6a46d85cb65bbd",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse"
+                }
+              ],
+              "next": [
+                {
+                  "impulse_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse"
+                }
+              ]
+            },
+            "crosstalk_inputs": {
+              "fext": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "6345c3563fe0ce8c85652082d441354eaa088bbcc10fa1dc6f6a46d85cb65bbd",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse",
+                  "source_sha256": "650fcd1de1ff7dbad6b1a46a2d45e2e87126f62884612a22634b09370a1d8e22",
+                  "truncation_db": null
+                }
+              ],
+              "fext_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "1a16df29214dc25f4199b8e6e1e588a021f680f5574529bb1641db5e120e531f",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "integrated_into_metrics": true,
+              "next": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "json-impulse",
+                  "source_sha256": "7ebbf1053a8495ef3baa0f10fc608e503c861e600e33aa9b7245101feb75aecf",
+                  "truncation_db": null
+                }
+              ],
+              "next_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.405234307899148,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -480.0,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.74,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07773544671614956
+            },
+            "portable_branches": {},
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "fext_next",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "536de383dfd12ce7a4243a074644fabd244453eac8bd18e3505c03db10f282c1",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "equalized-channel-impulse",
+                  "source_sha256": null,
+                  "truncation_db": null
+                }
+              ],
+              "fext_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "f20cd21b0b2c7de9069d5d23c27d27487ce97c2620625dad615a592544623e53",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "integrated_into_metrics": true,
+              "next": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "e99fba48549366f1d62557fe2bb9514cdd3f68c687956593abd4fa2d27774639",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "equalized-channel-impulse",
+                  "source_sha256": null,
+                  "truncation_db": null
+                }
+              ],
+              "next_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "bb9f0546530113f60ca71a4581765289ea50951488573a7173e7aaabbef1cc8b",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -2.6707781674043507,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -360.0000000000001,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.68,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.06262234097598939
+            },
+            "portable_branches": {
+              "equalization": {
+                "channel_types": [
+                  "THRU",
+                  "FEXT",
+                  "NEXT"
+                ],
+                "ctle_type": "CL93",
+                "impulse_count": 3,
+                "impulse_sha256": [
+                  "1871eb1ef3038f1019c1d77f33e1747bf4d9dfb0ec9220f1098be09d9a06e406",
+                  "536de383dfd12ce7a4243a074644fabd244453eac8bd18e3505c03db10f282c1",
+                  "e99fba48549366f1d62557fe2bb9514cdd3f68c687956593abd4fa2d27774639"
+                ],
+                "policy": "sipi.com.equalization.apply-r480-v1.ctle-tx-rx-ffe",
+                "pulse_count": 3,
+                "pulse_sha256": [
+                  "d166daa7e0a5327fdabc6576e299cc4996c4a00c785c55ad3645682394c4da1b",
+                  "f20cd21b0b2c7de9069d5d23c27d27487ce97c2620625dad615a592544623e53",
+                  "bb9f0546530113f60ca71a4581765289ea50951488573a7173e7aaabbef1cc8b"
+                ],
+                "rx_ffe": {
+                  "enabled": true,
+                  "precursor_count": 1,
+                  "tap_count": 3,
+                  "taps_sha256": "0336c8812a809fc0b04153f9a42501335382f0f6a56c79b2adff0c981bd23443"
+                },
+                "schema": "sipi.com.equalization.apply-r480.v1",
+                "tx_ffe_tap_count": 2
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "equalization",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "1871eb1ef3038f1019c1d77f33e1747bf4d9dfb0ec9220f1098be09d9a06e406",
+              "source_kind": "equalized-channel-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07464349092085518
+            },
+            "portable_branches": {
+              "tdiln": {
+                "fit_sha256": "2648bb5d8560e01b7abbbbd733852106a434deac70613a9f9736df8541930660",
+                "fitted_pulse_sha256": "764c16422502c85be576749c7504fd19875eea439afd8b439ff0a90926fe6282",
+                "fom_pdf_v": 0.21,
+                "fom_v": 0.09176108014572128,
+                "iln_db_sha256": "0ba2fbc59df7e37da6a81b5eadd453c78bb309b231ef975462cb6ce3c55c3d80",
+                "iln_pulse_sha256": "4a4a8e7ac820c8cc2ae0e05f98799469989c0d6734f062fe2e8e424eddd7c069",
+                "pdf": {
+                  "bin_size": 0.01,
+                  "min_bin": -26,
+                  "sample_count": 53
+                },
+                "policy": "sipi.com.metrics.tdiln-v1.complex-il-fit-filtered-impulse-pdf",
+                "reference_pulse_sha256": "71a234055ee2827a0dd6d0feba80a1e0467c2db8555387c49ad020dd2a151534",
+                "schema": "sipi.com.metrics.tdiln.v1",
+                "selected_phase": 0,
+                "snr_isi_fom_db": 14.36033144478941,
+                "snr_isi_fom_pdf_db": 7.169115892649494
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "tdiln",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -35.63797838702298,
+              "FOM": 53.42661625274711,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -59520.0,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 30.26,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.48764299389109117
+            },
+            "portable_branches": {
+              "search": {
+                "calibration_sigma_ne_v": null,
+                "ctle_index": 0,
+                "cursor_index": 56,
+                "fom_db": 53.42661625274711,
+                "high_pass_index": 0,
+                "policy": "sipi.p5-04t.search-loop.v1.nonmmse-no-rxffe",
+                "schema": "sipi.com.equalization.search-r480.v1",
+                "search_input_sample_count": 300,
+                "search_input_sha256": "d406ac4ed9e3ffe3803eb149450b3da6b91a8bd5fbad74be61174b02457b3316",
+                "search_input_source_kind": "json-impulse",
+                "selected_pulse_sample_count": 300,
+                "selected_pulse_sha256": "3882856e5b33702ba470c23d7094b1da021ceef26e12ee446d06b78e76a0709a",
+                "selected_tx_taps": [
+                  0.3,
+                  0.6,
+                  -0.1
+                ],
+                "sigma_tx_v": 0.30909649961313573,
+                "tx_grid_index": 0
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "search",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 300,
+              "sha256": "d406ac4ed9e3ffe3803eb149450b3da6b91a8bd5fbad74be61174b02457b3316",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "package-case-fext",
+                  "source_sha256": "7341b3c45462a718200381fc3c3ac88297a04eda79a0fccc205edf2c07cd7690",
+                  "truncation_db": null
+                }
+              ],
+              "fext_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "integrated_into_metrics": true,
+              "next": [
+                {
+                  "causality_correction_db": null,
+                  "causality_iterations": null,
+                  "impulse_sha256": "2089ef4283ee01364d2543cfec36d025fc8d10b576b3df44cea2b15ebdc88fe0",
+                  "sample_count": 64,
+                  "sample_interval_s": null,
+                  "source_kind": "package-case-next",
+                  "source_sha256": "2089ef4283ee01364d2543cfec36d025fc8d10b576b3df44cea2b15ebdc88fe0",
+                  "truncation_db": null
+                }
+              ],
+              "next_pulses": [
+                {
+                  "sample_count": 64,
+                  "sha256": "30d4a215ce10d912e9d14d4ddcbb35c0f96e7e370fc4cce07213ce8c47b593af",
+                  "source_kind": "rectangular-pulse-response"
+                }
+              ],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": -3.1672498419049933,
+              "FOM": null,
+              "VEC_dB": 313.07119549054045,
+              "VEO_mV": -439.99999999999994,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": 0.0,
+              "calibration_sigma_hp_v": 0.0,
+              "calibration_sigma_ne_v": 0.0,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.72,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.07490742989901064
+            },
+            "portable_branches": {
+              "calibration": {
+                "calibration_s4p": false,
+                "case_channel_source": "parsed-package-case-channel-state",
+                "channel_source": "calibration_sdd21",
+                "evaluate_cases": "reruns every package case through COM for each sigma",
+                "evaluator": "evaluate_cases(sigma_bn_v)-fresh-reference-COM",
+                "final_step_v": 2.0,
+                "frequency_sample_count": 4,
+                "initial_noise": {
+                  "sigma_bn_v": 1.0,
+                  "sigma_hp_v": 1.0,
+                  "sigma_ne_v": 0.999348739275554
+                },
+                "iterations": [
+                  {
+                    "case_com_db": [
+                      -3.1672498419049933
+                    ],
+                    "minimum_com_db": -3.1672498419049933,
+                    "sigma_bn_v": 0.0,
+                    "step_v": 2.0
+                  }
+                ],
+                "minimum_com_db": -3.1672498419049933,
+                "per_sigma_search_orchestration": [
+                  {
+                    "cases": [
+                      {
+                        "case_id": "calibration-replay-case",
+                        "case_index": 0,
+                        "channel_impulse_sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+                        "com_db": -3.1672498419049933,
+                        "fext_pulse_sha256": [
+                          "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3"
+                        ],
+                        "next_pulse_sha256": [
+                          "30d4a215ce10d912e9d14d4ddcbb35c0f96e7e370fc4cce07213ce8c47b593af"
+                        ],
+                        "search_fom_db": null,
+                        "search_input_sha256": null,
+                        "selected_pulse_sha256": "89dc2c02e2a7fd002ee89ddbe8a72f564c37862ad4799a25d8e16e3e2ec9fb8d"
+                      }
+                    ],
+                    "sigma_bn_v": 0.0,
+                    "sigma_ne_v": 0.0
+                  }
+                ],
+                "policy": "sipi.com.calibration-v1.r480-receiver-noise-controller",
+                "schema": "sipi.com.calibration.r480.v1",
+                "selected_case_orchestration": [
+                  {
+                    "case_id": "calibration-replay-case",
+                    "case_index": 0,
+                    "channel_impulse_sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+                    "com_db": -3.1672498419049933,
+                    "fext_pulse_sha256": [
+                      "3132ecba9e3da164a45e121fbebb0acbd150a652110093aa1fe4d241cf7697a3"
+                    ],
+                    "next_pulse_sha256": [
+                      "30d4a215ce10d912e9d14d4ddcbb35c0f96e7e370fc4cce07213ce8c47b593af"
+                    ],
+                    "search_fom_db": null,
+                    "search_input_sha256": null,
+                    "selected_pulse_sha256": "89dc2c02e2a7fd002ee89ddbe8a72f564c37862ad4799a25d8e16e3e2ec9fb8d"
+                  }
+                ],
+                "selected_noise": {
+                  "sigma_bn_v": 0.0,
+                  "sigma_hp_v": 0.0,
+                  "sigma_ne_v": 0.0
+                }
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "calibration",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": 1.514414278762367,
+              "FOM": 43.76355716867353,
+              "VEC_dB": 15.917600346881501,
+              "VEO_mV": 160.00000000000003,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.42,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.02661432833235839
+            },
+            "portable_branches": {
+              "mmse": {
+                "candidate_index": 0,
+                "condition_number": 48.755741066615855,
+                "ctle_index": 2,
+                "dfe": [
+                  -0.09129511677282351
+                ],
+                "dfe_limited": [
+                  -0.09129511677282351
+                ],
+                "equalized_sbr": [
+                  0.0,
+                  1.0,
+                  0.1
+                ],
+                "fom_db": 43.76355716867353,
+                "high_pass_index": 1,
+                "kkt_normalization": 1.0,
+                "policy": "sipi.com.equalization.mmse-v1.kkt-bounded-search",
+                "pre_rx_sbr": [
+                  0.1,
+                  1.0,
+                  0.2
+                ],
+                "rx_ffe": [
+                  1.029723991507431,
+                  -0.2972399150743097
+                ],
+                "sbr_kkt_consistent": true,
+                "schema": "sipi.com.equalization.mmse-r480.v1",
+                "sigma_e": 0.1080614749941886
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "mmse",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          },
+          {
+            "case_index": 0,
+            "channels": {
+              "calibration_noise": null,
+              "fext": [],
+              "next": []
+            },
+            "crosstalk_inputs": {
+              "fext": [],
+              "fext_pulses": [],
+              "integrated_into_metrics": false,
+              "next": [],
+              "next_pulses": [],
+              "policy": "sipi.p5-06f.com-chain-v1.fext-next-residual-noise-pdf"
+            },
+            "metrics": {
+              "COM_dB": 1.514414278762367,
+              "FOM": 54.43226990362654,
+              "VEC_dB": 15.917600346881501,
+              "VEO_mV": 160.00000000000003,
+              "available_signal_v": 0.5,
+              "calibration_sigma_bn_v": null,
+              "calibration_sigma_hp_v": null,
+              "calibration_sigma_ne_v": null,
+              "eye_opening_v": null,
+              "interference_noise_v": 0.42,
+              "sigma_N_V": 0.010044899373313801,
+              "threshold_der": 0.02661432833235839
+            },
+            "portable_branches": {
+              "rx_ffe_search": {
+                "available_signal_v": 16.503704057391193,
+                "candidate_index": 0,
+                "ctle_gain_db": 0.0,
+                "ctle_index": 0,
+                "cursor_v": 0.9902222434434717,
+                "dfe_max": [
+                  0.5
+                ],
+                "dfe_min": [
+                  -0.5
+                ],
+                "dfe_taps": [
+                  3.065742163499192e-18
+                ],
+                "filtered_waveform": [
+                  -0.0007971572461072968,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -0.0011622420361677105,
+                  0.0,
+                  0.0,
+                  0.0,
+                  4.6340507232536104e-05,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -7.047314121155779e-19,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.9902222434434717,
+                  0.0,
+                  0.0,
+                  0.0,
+                  3.0357660829594124e-18,
+                  0.0,
+                  0.0,
+                  0.0,
+                  3.469446951953614e-18,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.008238809420894442,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "filtered_waveform_sha256": "1ed52c1aaaf41dd6d75853db325efaaaeb5631ba8aa8f904b2f7b57fadba8285",
+                "floating_locations": [],
+                "fom_db": 54.43226990362654,
+                "full_fom_evaluation": true,
+                "h_j": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "high_pass_gain_db": 0.0,
+                "high_pass_index": 0,
+                "itick": 0,
+                "policy": "sipi.com.equalization.fvlms-rxffe-v1.force-strict-best-search",
+                "residual_rms_v": 0.00025075835959719784,
+                "rx_ffe_gain_db": 0.0,
+                "schema": "sipi.com.equalization.fvlms-rxffe-r480.v1",
+                "sigma_isi_v": 0.00025075835959719784,
+                "sigma_j_v": 0.0,
+                "sigma_n_v": 0.001,
+                "sigma_ne_v": 0.0,
+                "sigma_total_v": 0.03133054374193225,
+                "sigma_tx_v": 0.03131357679043105,
+                "sigma_xt_v": 0.0,
+                "taps": [
+                  -0.09953659492767464,
+                  1.0,
+                  -0.04634050723253687,
+                  -0.016687608689096408
+                ],
+                "tx_grid_index": 0,
+                "tx_precursor_count": 0,
+                "tx_source_indices": [
+                  0
+                ],
+                "tx_taps": [
+                  1.0
+                ]
+              }
+            },
+            "report_manifest": {
+              "actual_figure_count": 0,
+              "expected_figure_count": 0,
+              "figures": [],
+              "kind": "diagnostic_fallback",
+              "plotting": {
+                "reason": "reporting plot format is non-core and no external renderer is bundled",
+                "status": "external_blocked"
+              }
+            },
+            "scenario": "rx_ffe_search",
+            "waveform": {
+              "causality_correction_db": null,
+              "causality_iterations": null,
+              "sample_count": 64,
+              "sha256": "9e32976b2372d9e5ea52c768b9c3311fca2a754cb68104aea23b84803d2af6b4",
+              "source_kind": "json-impulse",
+              "truncation_db": null
+            },
+            "workflow": [
+              "load_config",
+              "run_com",
+              "write_artifacts"
+            ]
+          }
+        ]
+      },
+      "semantic_sha256": "dea1769fe4a8d703039afb11c5fb1490718611abe9e4238494ebfb23e4f6cfff"
+    }
+  ],
+  "run_id": "run2",
+  "scenario_count": 10,
+  "schema": "sipi.com-02.direct-semantic-replay.v1",
+  "semantic_payload_fields": [
+    "scenarios[].scenario",
+    "cases[].case_index",
+    "cases[].channels",
+    "cases[].metrics.COM_dB/VEC_dB/VEO_mV/sigma_N_V",
+    "cases[].metrics.FOM (portable search selection when requested)",
+    "cases[].metrics.available_signal_v/interference_noise_v/threshold_der/eye_opening_v",
+    "cases[].metrics.calibration_sigma_bn_v/calibration_sigma_ne_v/calibration_sigma_hp_v",
+    "cases[].diagnostics.channel_impulse",
+    "cases[].diagnostics.crosstalk_inputs",
+    "cases[].diagnostics.portable_branches",
+    "report_manifest"
+  ],
+  "semantic_replays_identical": true,
+  "source": {
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "declared_license": "MIT",
+    "reachable_paths": [
+      "src/agent_com/api.py",
+      "src/agent_com/pipeline.py",
+      "src/agent_com/network/mixed_mode.py",
+      "src/agent_com/signal/interpolation.py",
+      "src/agent_com/signal/fd_to_td.py",
+      "src/agent_com/equalization/apply.py",
+      "src/agent_com/equalization/ctle.py",
+      "src/agent_com/equalization/rx_ffe.py",
+      "src/agent_com/equalization/search.py",
+      "src/agent_com/equalization/mmse.py",
+      "src/agent_com/equalization/fvlms_rxffe.py",
+      "src/agent_com/equalization/tx_ffe.py",
+      "src/agent_com/equalization/dfe.py",
+      "src/agent_com/signal/filters.py",
+      "src/agent_com/noise/discrete_pdf.py",
+      "src/agent_com/metrics/com.py",
+      "src/agent_com/metrics/tdiln.py",
+      "src/agent_com/runtime.py",
+      "src/agent_com/calibration.py",
+      "src/agent_com/legacy_csv.py",
+      "src/agent_com/reporting.py"
+    ],
+    "repository": "https://github.com/z331225718/agent-com.git",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+  },
+  "unsupported_fail_closed": [
+    "matlab_only_reporting",
+    "wiener_hopf_source_unimplemented"
+  ]
+}

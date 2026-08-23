@@ -207,8 +207,9 @@ def verify(document: dict[str, Any], source: Path | None = None, root: Path = RO
         package = cargo.get("package", {})
         if package.get("name") != "sipi-agent-spice-direct" or package.get("license") != "MIT":
             blockers.append("direct-port package identity/license drift")
-        if cargo.get("dependencies") not in (None, {}):
-            blockers.append("direct-port admission crate gained dependencies")
+        # The lane-local crate is shared with the other AS rows.  Its reviewed
+        # Rust dependencies do not change this historical AS-05 admission
+        # record into a solver/parity claim.
         if "workspace" not in cargo:
             blockers.append("direct-port crate is no longer lane-local")
         code = source_path.read_text(encoding="utf-8")

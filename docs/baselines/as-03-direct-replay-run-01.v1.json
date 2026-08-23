@@ -1,0 +1,158 @@
+{
+  "binding_status": "unbound_preparation_observation",
+  "content_addressed_replay": false,
+  "corpus": [
+    "well_conditioned_two_port",
+    "nport_exact_html",
+    "ill_conditioned_i_plus_s",
+    "unsupported_exact_rfm"
+  ],
+  "corpus_expected": true,
+  "immutable_source_binding": false,
+  "numeric_comparison": "not_claimed",
+  "observation_status": "unbound_preparation_observation_not_replayed_after_fail_closed_changes",
+  "parity_status": "open",
+  "replay_instance_sha256": "0b5ff7a5822d8720911846cdbbe14245f0d8c39e01da1122ddc862efe2c9bc49",
+  "runs": [
+    {
+      "binaries": [
+        "sipi-agent-spice-fit-yparam"
+      ],
+      "binary": "multi-case",
+      "cases": [
+        {
+          "binary": "sipi-agent-spice-fit-yparam",
+          "case": "well_conditioned_two_port",
+          "expected_result": true,
+          "expected_returncode": 0,
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "{\"target_met\":true,\"selected_order\":1,\"y_rms_siemens\":2.38175802854038166e-1}\n"
+        },
+        {
+          "binary": "sipi-agent-spice-fit-yparam",
+          "case": "nport_exact_html",
+          "expected_result": true,
+          "expected_returncode": 0,
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "{\"target_met\":true,\"selected_order\":1,\"y_rms_siemens\":4.60474068507823546e-18}\n"
+        },
+        {
+          "binary": "sipi-agent-spice-fit-yparam",
+          "case": "ill_conditioned_i_plus_s",
+          "expected_result": true,
+          "expected_returncode": 2,
+          "returncode": 2,
+          "stderr": "fit-yparam failed: fit-yparam numerical error: S-to-Y conversion condition estimate inf exceeds 1.000000000000e12\n",
+          "stdout": ""
+        },
+        {
+          "binary": "sipi-agent-spice-fit-yparam",
+          "case": "unsupported_exact_rfm",
+          "expected_result": true,
+          "expected_returncode": 2,
+          "returncode": 2,
+          "stderr": "fit-yparam argument error: unsupported fit-yparam path: exact Y-to-S RFM delivery requires --no-fit-proportional (descriptor delivery is not enabled)\n",
+          "stdout": ""
+        }
+      ],
+      "files": [
+        "cases/ill_conditioned_i_plus_s/ill.s2p",
+        "cases/ill_conditioned_i_plus_s/line.s2p",
+        "cases/nport_exact_html/line.s2p",
+        "cases/nport_exact_html/network.s3p",
+        "cases/nport_exact_html/network_fitted.y.log",
+        "cases/nport_exact_html/out.exact.s3p",
+        "cases/nport_exact_html/out.html",
+        "cases/nport_exact_html/out.rfm",
+        "cases/nport_exact_html/out.s2p",
+        "cases/nport_exact_html/out.y.json",
+        "cases/nport_exact_html/out.y.sp",
+        "cases/unsupported_exact_rfm/line.s2p",
+        "cases/well_conditioned_two_port/line.s2p",
+        "cases/well_conditioned_two_port/line_fitted.y.log",
+        "cases/well_conditioned_two_port/out.s2p",
+        "cases/well_conditioned_two_port/out.y.json",
+        "cases/well_conditioned_two_port/out.y.sp"
+      ],
+      "returncode": 0,
+      "stderr": "well_conditioned_two_port: \nnport_exact_html: \nill_conditioned_i_plus_s: fit-yparam failed: fit-yparam numerical error: S-to-Y conversion condition estimate inf exceeds 1.000000000000e12\n\nunsupported_exact_rfm: fit-yparam argument error: unsupported fit-yparam path: exact Y-to-S RFM delivery requires --no-fit-proportional (descriptor delivery is not enabled)\n",
+      "stdout": "well_conditioned_two_port: {\"target_met\":true,\"selected_order\":1,\"y_rms_siemens\":2.38175802854038166e-1}\n\nnport_exact_html: {\"target_met\":true,\"selected_order\":1,\"y_rms_siemens\":4.60474068507823546e-18}\n\nill_conditioned_i_plus_s: \nunsupported_exact_rfm: ",
+      "tree_sha256": "61356ef1c42ce0422dbc2453183e9ccc9886dc43fbb1317829914cb3aab007b9"
+    },
+    {
+      "binaries": [
+        "sipi-agent-spice-fit-yparam"
+      ],
+      "binary": "multi-case",
+      "cases": [
+        {
+          "binary": "sipi-agent-spice-fit-yparam",
+          "case": "well_conditioned_two_port",
+          "expected_result": true,
+          "expected_returncode": 0,
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "{\"target_met\":true,\"selected_order\":1,\"y_rms_siemens\":2.38175802854038166e-1}\n"
+        },
+        {
+          "binary": "sipi-agent-spice-fit-yparam",
+          "case": "nport_exact_html",
+          "expected_result": true,
+          "expected_returncode": 0,
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "{\"target_met\":true,\"selected_order\":1,\"y_rms_siemens\":4.60474068507823546e-18}\n"
+        },
+        {
+          "binary": "sipi-agent-spice-fit-yparam",
+          "case": "ill_conditioned_i_plus_s",
+          "expected_result": true,
+          "expected_returncode": 2,
+          "returncode": 2,
+          "stderr": "fit-yparam failed: fit-yparam numerical error: S-to-Y conversion condition estimate inf exceeds 1.000000000000e12\n",
+          "stdout": ""
+        },
+        {
+          "binary": "sipi-agent-spice-fit-yparam",
+          "case": "unsupported_exact_rfm",
+          "expected_result": true,
+          "expected_returncode": 2,
+          "returncode": 2,
+          "stderr": "fit-yparam argument error: unsupported fit-yparam path: exact Y-to-S RFM delivery requires --no-fit-proportional (descriptor delivery is not enabled)\n",
+          "stdout": ""
+        }
+      ],
+      "files": [
+        "cases/ill_conditioned_i_plus_s/ill.s2p",
+        "cases/ill_conditioned_i_plus_s/line.s2p",
+        "cases/nport_exact_html/line.s2p",
+        "cases/nport_exact_html/network.s3p",
+        "cases/nport_exact_html/network_fitted.y.log",
+        "cases/nport_exact_html/out.exact.s3p",
+        "cases/nport_exact_html/out.html",
+        "cases/nport_exact_html/out.rfm",
+        "cases/nport_exact_html/out.s2p",
+        "cases/nport_exact_html/out.y.json",
+        "cases/nport_exact_html/out.y.sp",
+        "cases/unsupported_exact_rfm/line.s2p",
+        "cases/well_conditioned_two_port/line.s2p",
+        "cases/well_conditioned_two_port/line_fitted.y.log",
+        "cases/well_conditioned_two_port/out.s2p",
+        "cases/well_conditioned_two_port/out.y.json",
+        "cases/well_conditioned_two_port/out.y.sp"
+      ],
+      "returncode": 0,
+      "stderr": "well_conditioned_two_port: \nnport_exact_html: \nill_conditioned_i_plus_s: fit-yparam failed: fit-yparam numerical error: S-to-Y conversion condition estimate inf exceeds 1.000000000000e12\n\nunsupported_exact_rfm: fit-yparam argument error: unsupported fit-yparam path: exact Y-to-S RFM delivery requires --no-fit-proportional (descriptor delivery is not enabled)\n",
+      "stdout": "well_conditioned_two_port: {\"target_met\":true,\"selected_order\":1,\"y_rms_siemens\":2.38175802854038166e-1}\n\nnport_exact_html: {\"target_met\":true,\"selected_order\":1,\"y_rms_siemens\":4.60474068507823546e-18}\n\nill_conditioned_i_plus_s: \nunsupported_exact_rfm: ",
+      "tree_sha256": "61356ef1c42ce0422dbc2453183e9ccc9886dc43fbb1317829914cb3aab007b9"
+    }
+  ],
+  "schema": "sipi.agent-spice-as-03-replay.v1",
+  "upstream": {
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  },
+  "workflow": "AS-03"
+}\n

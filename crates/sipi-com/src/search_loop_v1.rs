@@ -400,6 +400,10 @@ pub struct SearchLoopResultV1 {
     pub tx_grid_index: i64,
     pub cursor_index: usize,
     pub sigma_tx_v: f64,
+    /// Selected source-order SBR/pulse.  The caller must use this waveform
+    /// for the final COM chain rather than publishing FOM alone.
+    pub selected_pulse: Vec<f64>,
+    pub selected_tx_taps: Vec<f64>,
 }
 
 /// Port of search_r480_nonmmse_no_xtalk (no-RxFFE composite loop).
@@ -410,6 +414,42 @@ pub fn search_r480_nonmmse_no_xtalk_v1(
     crosstalk_frequency_hz: &[f64],
     crosstalk: &[XtalkChannelV1],
     calibration_noise: fn(usize, usize, f64) -> f64,
+    peak_window_pulse: Option<&[f64]>,
+    td_crosstalk_outer_product: bool,
+    ac_common_mode_transfers: &[Vec<Complex64>],
+    package_case_index: usize,
+    full: &SearchFullParamsV1,
+    options: &SearchFullOptionsV1,
+) -> Result<SearchLoopResultV1, SearchLoopErrorV1> {
+    search_r480_nonmmse_no_xtalk_with_sigma_v1(
+        unequalized_impulse,
+        frequency_hz,
+        noise_frequency_hz,
+        crosstalk_frequency_hz,
+        crosstalk,
+        calibration_noise,
+        None,
+        peak_window_pulse,
+        td_crosstalk_outer_product,
+        ac_common_mode_transfers,
+        package_case_index,
+        full,
+        options,
+    )
+}
+
+/// Search variant used by calibration orchestration.  When supplied, the
+/// per-sigma calibrated receiver noise replaces the source callback result
+/// for every CTLE/high-pass candidate; the legacy wrapper above preserves the
+/// source callback API for callers without an outer calibration loop.
+pub fn search_r480_nonmmse_no_xtalk_with_sigma_v1(
+    unequalized_impulse: &[f64],
+    frequency_hz: &[f64],
+    noise_frequency_hz: &[f64],
+    crosstalk_frequency_hz: &[f64],
+    crosstalk: &[XtalkChannelV1],
+    calibration_noise: fn(usize, usize, f64) -> f64,
+    calibration_sigma_ne_v: Option<f64>,
     peak_window_pulse: Option<&[f64]>,
     td_crosstalk_outer_product: bool,
     ac_common_mode_transfers: &[Vec<Complex64>],
@@ -520,7 +560,9 @@ pub fn search_r480_nonmmse_no_xtalk_v1(
                     &full.ctle,
                 )?
             };
-            let sigma_ne = calibration_noise(ctle_index, high_pass_index, high_pass_gain_db);
+            let sigma_ne = calibration_sigma_ne_v.unwrap_or_else(|| {
+                calibration_noise(ctle_index, high_pass_index, high_pass_gain_db)
+            });
             let ctle_impulse = if full.include_ctle {
                 apply_ctle_candidate_v1(
                     unequalized_impulse,
@@ -648,6 +690,8 @@ pub fn search_r480_nonmmse_no_xtalk_v1(
                                 tx_grid_index: candidate_index as i64,
                                 cursor_index: cand.cursor_index,
                                 sigma_tx_v: cand.sigma_tx_v,
+                                selected_pulse: sbr.clone(),
+                                selected_tx_taps: taps.clone(),
                             });
                         }
                     }

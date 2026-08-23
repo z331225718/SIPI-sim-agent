@@ -1,0 +1,113 @@
+schema: sipi.com-02-04.branch-coverage.v1
+source:
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  license: MIT
+portable_missing: []
+external_blocked:
+  - branch: plotting_format
+    reason: report plotting is an optional format renderer, not a COM metric dependency
+  - branch: matlab_engine
+    reason: upstream MATLAB engine/runtime is not redistributable in this Rust leaf
+  - branch: proprietary_golden
+    reason: upstream golden data is not available for distribution
+source_unimplemented:
+  - branch: wiener_hopf
+    upstream: src/agent_com/equalization/wiener_hopf.py
+    reason: pinned upstream module explicitly raises UnsupportedPathError because r4.80 has no Wiener-Hopf implementation
+branches:
+  - id: mixed_mode
+    upstream: src/agent_com/network/mixed_mode.py
+    status: portable_reused
+    rust: sipi-com::com_mixed_mode_spectrum_v1
+    payload: sdd21 complex spectrum, validated port_order, PN skew, optional FD-to-TD impulse
+  - id: public_s4p_touchstone
+    upstream: src/agent_com/network/mixed_mode.py, src/agent_com/api.py
+    status: portable_direct
+    rust: sipi-com-direct::load_s4p_impulse_v1, sipi-touchstone::selected_four_port_v1
+    payload: four-port Touchstone SDD21 FD-to-TD impulse, source digest, port-order diagnostics
+  - id: package_case_fanout
+    upstream: src/agent_com/api.py::cases, src/agent_com/pipeline.py
+    status: portable_direct
+    rust: sipi-com-direct::run_package_cases_v1
+    payload: per-case case_id/index, independent channel manifests, stable THRU/FEXT/NEXT identity, calibration-channel identity and payload
+  - id: erl_only_dispatch
+    upstream: src/agent_com/api.py::_run_s2p_erl_only, src/agent_com/erl/runner.py, src/agent_com/erl/metric.py
+    status: portable_direct
+    rust: sipi-com-direct::portable_branch_result_v1 erl_only
+    payload: ERL/ERL_RMS/phase index, worst samples, PTDR pulse digest, dispatch identity
+  - id: fd_to_td
+    upstream: src/agent_com/signal/interpolation.py, src/agent_com/signal/fd_to_td.py
+    status: portable_direct
+    rust: sipi-com::s21_to_impulse_dc_v1
+    payload: impulse samples, causality/truncation diagnostics, source digest
+  - id: ctle
+    upstream: src/agent_com/equalization/ctle.py
+    status: portable_reused
+    rust: sipi-com::fd_ctle_v1, sipi-com::td_ctle_v1
+    payload: equalized waveform and branch hashes
+  - id: rx_ffe_apply_force
+    upstream: src/agent_com/equalization/rx_ffe.py
+    status: portable_reused
+    rust: sipi-com::apply_rx_ffe_v1, sipi-com::force_rx_ffe_v1, sipi-com::force_floating_rx_ffe_v1
+    payload: taps, filtered waveform, force matrix, floating locations
+  - id: rx_ffe_search
+    upstream: src/agent_com/equalization/fvlms_rxffe.py
+    status: portable_direct
+    rust: sipi-com::search_fvlms_rxffe_candidates_v1
+    payload: strict-best candidate, taps, filtered waveform, source FOM/DFE/jitter/noise/C2M payload, residual and total noise/FOM
+  - id: mmse_solver_search
+    upstream: src/agent_com/equalization/mmse.py
+    status: portable_direct
+    rust: sipi-com::constrained_mmse_v1, sipi-com::search_mmse_candidates_v1
+    payload: KKT solution, bound replay, condition estimate, FOM, strict-best index, pre/equalized SBR payload
+  - id: nonmmse_search_channel_orchestration
+    upstream: src/agent_com/equalization/search.py, src/agent_com/equalization/ctle.py
+    status: portable_direct
+    rust: sipi-com-direct::portable_branch_result_v1 -> sipi-com::search_r480_nonmmse_no_xtalk_v1
+    payload: generated Apply_EQ/mixed-mode search input digest, sigma_ne-aware selected pulse/taps/FOM, final COM chain identity
+  - id: tx_ffe_dfe_filters
+    upstream: src/agent_com/equalization/tx_ffe.py, src/agent_com/equalization/dfe.py, src/agent_com/signal/filters.py
+    status: portable_reused
+    rust: sipi-com existing TX-FFE/DFE/receiver-noise stages
+    payload: candidate taps, DFE limits, filtered response
+  - id: fext_next_noise_pdf
+    upstream: src/agent_com/noise/discrete_pdf.py
+    status: portable_reused
+    rust: sipi-com residual/build/combine PDF stages
+    payload: residual waveforms, crosstalk manifests, COM metrics, S4P aggressor FD-to-TD identity
+  - id: calibration_noise
+    upstream: src/agent_com/calibration.py
+    status: portable_direct
+    rust: sipi-com::calculate_r480_calibration_noise_v1, sipi-com::calibrate_receiver_noise_v1
+    payload: sigma_ne/sigma_hp, source S4P-derived SDD21 or SDD21 input, fresh evaluate_cases(sigma) package COM from parsed pulse/FEXT/NEXT channel state, per-iteration case COM, sigma_ne-aware search/equalizer FOM, selected per-case search/pulse digests, selected sigma_bn and step
+  - id: com_metrics
+    upstream: src/agent_com/metrics/com.py
+    status: portable_reused
+    rust: sipi-com::calculate_com_metrics_v1
+    payload: COM/VEC/VEO/DER/noise metrics
+  - id: tdiln
+    upstream: src/agent_com/metrics/tdiln.py
+    status: portable_reused
+    rust: sipi-com::r480_tdiln_v1
+    payload: fit, ILN/pulse/PDF hashes and FOM/SNR
+  - id: workbook_config
+    upstream: src/agent_com/config/excel.py, src/agent_com/config/materialize.py
+    status: portable_reused
+    rust: COM-01 config_validate_v1 plus sipi-com workbook/csv/mat readers
+    payload: materialized parameters/options and source digest
+  - id: legacy_csv_input
+    upstream: src/agent_com/config/excel.py::ComSettings.from_csv
+    status: portable_reused
+    rust: sipi-com::read_com_settings_csv_v1
+    payload: RFC4180/UTF-8-SIG typed cells, TD CSV waveform parser, and materialized controls
+  - id: legacy_csv_output
+    upstream: src/agent_com/legacy_csv.py
+    status: portable_direct_schema_projection
+    rust: sipi-com-direct source-schema legacy.csv writer
+    payload: legacy-output-r480 column order, MATLAB scalar/array serialization, known COM metrics and explicit empty cells
+  - id: reporting_models_api
+    upstream: src/agent_com/models.py, src/agent_com/api.py, src/agent_com/pipeline.py
+    status: portable_reused
+    rust: DirectRunReportV1 and ordered public workflow
+    payload: result/report/diagnostics/provenance/artifact manifests

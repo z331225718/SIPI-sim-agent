@@ -33,6 +33,18 @@ impl ComMetricsV1 {
     pub fn veo_mv(self) -> f64 {
         self.veo_mv
     }
+
+    pub fn interference_noise_v(self) -> f64 {
+        self.interference_noise_v
+    }
+
+    pub fn threshold_der(self) -> f64 {
+        self.threshold_der
+    }
+
+    pub fn eye_opening_v(self) -> Option<f64> {
+        self.eye_opening_v
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
