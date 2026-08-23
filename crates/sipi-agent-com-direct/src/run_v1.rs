@@ -17,9 +17,10 @@ use sipi_com::{
     CtleParamsV1, FdToTdOptionsV1, MmseCandidateSpecV1, ReceiverNoiseOptionsV1,
     ReceiverNoiseParamsV1, ResolvedDefaultV1, RxFfeSearchCandidateV1, RxFfeSearchEvaluationV1,
     SearchFullOptionsV1, SearchFullParamsV1, SearchLoopResultV1, apply_r480_equalization_v1,
-    apply_r480_pn_skew_v1, calculate_r480_calibration_noise_v1, calibrate_receiver_noise_v1,
-    com_mixed_mode_spectrum_v1, execute_com_run_v1, execute_com_run_with_crosstalk_v1,
-    merge_com_parameters_v1, r480_tdiln_v1, rectangular_pulse_response_v1, s21_to_impulse_dc_v1,
+    apply_r480_pn_skew_v1, butterworth_filter_v1, calculate_r480_calibration_noise_v1,
+    calibrate_receiver_noise_v1, com_mixed_mode_spectrum_v1, execute_com_run_v1,
+    execute_com_run_with_crosstalk_v1, merge_com_parameters_v1, r480_tdiln_v1,
+    raised_cosine_filter_v1, rectangular_pulse_response_v1, s21_to_impulse_dc_v1,
     sampled_signal_pdf_v1, search_fvlms_rxffe_candidates_v1, search_mmse_candidates_v1,
     search_r480_nonmmse_no_xtalk_with_sigma_v1,
 };
@@ -175,6 +176,7 @@ struct LoadedConfigV1 {
 struct ImpulseInputV1 {
     values: Vec<f64>,
     erl_values: Option<Vec<f64>>,
+    erl_time_s: Option<Vec<f64>>,
     source_sha256: String,
     sample_interval_s: Option<f64>,
     source_kind: &'static str,
@@ -185,6 +187,12 @@ struct ImpulseInputV1 {
     causality_correction_db: Option<f64>,
     truncation_db: Option<f64>,
     causality_iterations: Option<usize>,
+}
+
+#[derive(Clone, Debug)]
+struct ErlTdrInputV1 {
+    impulse: Vec<f64>,
+    time_s: Vec<f64>,
 }
 
 #[derive(Clone, Debug)]
@@ -510,6 +518,7 @@ fn run_with_workflow(
     }
     let loaded = load_config_v1(request)?;
     validate_output_input_custody_v1(request, Some(&loaded.document))?;
+    let erl_s2p_exact = exact_erl_s2p_profile_v1(&loaded.document, &request.pulse)?;
     let input_impulse = if request
         .pulse
         .extension()
@@ -517,6 +526,8 @@ fn run_with_workflow(
         .is_some_and(|value| value.eq_ignore_ascii_case("s4p"))
     {
         load_s4p_impulse_v1(&request.pulse)?
+    } else if erl_s2p_exact {
+        load_erl_s2p_impulse_v1(&request.pulse)?
     } else {
         load_impulse_v1(&request.pulse)?
     };
@@ -554,6 +565,7 @@ fn run_with_workflow(
                     source_sha256: sha256_f64_v1(&values),
                     values,
                     erl_values: None,
+                    erl_time_s: None,
                     sample_interval_s: None,
                     source_kind: "package-case-fext",
                     already_pulse: false,
@@ -577,6 +589,7 @@ fn run_with_workflow(
                     source_sha256: sha256_f64_v1(&values),
                     values,
                     erl_values: None,
+                    erl_time_s: None,
                     sample_interval_s: None,
                     source_kind: "package-case-next",
                     already_pulse: false,
@@ -610,6 +623,7 @@ fn run_with_workflow(
         ImpulseInputV1 {
             values,
             erl_values: input_impulse.erl_values.clone(),
+            erl_time_s: input_impulse.erl_time_s.clone(),
             source_sha256: input_impulse.source_sha256.clone(),
             sample_interval_s: input_impulse.sample_interval_s,
             source_kind: branches
@@ -1184,7 +1198,12 @@ fn merge_cli_calibration_v1(
             .and_then(Value::as_object)
             .cloned()
             .unwrap_or_default();
-        merged.extend(calibration.as_object().expect("calibration object").clone());
+        let calibration_object = calibration.as_object().ok_or_else(|| {
+            DirectRunErrorV1::Parameters(
+                "--calibration-noise JSON must contain a calibration object".to_owned(),
+            )
+        })?;
+        merged.extend(calibration_object.clone());
         portable.insert("calibration".to_owned(), Value::Object(merged));
     } else {
         portable.insert("calibration".to_owned(), calibration);
@@ -1278,7 +1297,7 @@ fn resolved_from_json_v1(value: &Value) -> Result<ResolvedDefaultV1, String> {
                 .iter()
                 .map(|row| {
                     row.as_array()
-                        .expect("array checked")
+                        .ok_or_else(|| "matrix row must be an array".to_owned())?
                         .iter()
                         .map(|value| {
                             value
@@ -1426,21 +1445,22 @@ fn portable_branch_result_with_sigma_v1(
     controls: Option<&BTreeMap<String, ResolvedDefaultV1>>,
     calibration_sigma_ne_override: Option<f64>,
 ) -> Result<PortableBranchResultV1, DirectRunErrorV1> {
+    let document_object = document.as_object().ok_or_else(|| {
+        DirectRunErrorV1::Json("canonical config object must be an object".to_owned())
+    })?;
     let root = document
         .get("portable")
         .and_then(Value::as_object)
-        .unwrap_or_else(|| document.as_object().expect("canonical config object"));
+        .unwrap_or(document_object);
     if document
         .get("portable")
         .and_then(Value::as_object)
         .is_some()
+        && (document_object.contains_key("erl_only") || document_object.contains_key("erl"))
     {
-        let top_level = document.as_object().expect("canonical config object");
-        if top_level.contains_key("erl_only") || top_level.contains_key("erl") {
-            return Err(DirectRunErrorV1::Unsupported(
-                "ERL-only controls cannot be split between portable and root config".to_owned(),
-            ));
-        }
+        return Err(DirectRunErrorV1::Unsupported(
+            "ERL-only controls cannot be split between portable and root config".to_owned(),
+        ));
     }
     if root.contains_key("erl_only") && root.contains_key("erl") {
         return Err(DirectRunErrorV1::Unsupported(
@@ -1870,6 +1890,7 @@ fn portable_branch_result_with_sigma_v1(
                 let case_input = ImpulseInputV1 {
                     values: case_impulse.clone(),
                     erl_values: None,
+                    erl_time_s: None,
                     source_sha256: sha256_f64_v1(case_impulse),
                     sample_interval_s: None,
                     source_kind: "package-case-channel-state",
@@ -2368,6 +2389,7 @@ fn portable_branch_result_with_sigma_v1(
             |values| ImpulseInputV1 {
                 values: values.clone(),
                 erl_values: None,
+                erl_time_s: None,
                 source_sha256: impulse.source_sha256.clone(),
                 sample_interval_s: impulse.sample_interval_s,
                 source_kind: "portable-channel-producing-search-input",
@@ -2432,13 +2454,27 @@ fn portable_branch_result_with_sigma_v1(
         };
         let pulse = rectangular_pulse_response_v1(erl_source, samples_per_ui)
             .map_err(|error| DirectRunErrorV1::Parameters(format!("erl_only pulse: {error:?}")))?;
+        let gated = if let Some(time_s) = impulse.erl_time_s.as_deref() {
+            if time_s.len() != pulse.len() {
+                return Err(DirectRunErrorV1::Unsupported(
+                    "erl_only TDR time and PTDR waveform lengths differ".to_owned(),
+                ));
+            }
+            erl_gate_v1(&pulse, time_s, 0.0, 1.0 / 53.125e9, 0, 0.01, 0.618, 1, 0.0)?
+        } else if impulse.source_kind.starts_with("touchstone-") {
+            return Err(DirectRunErrorV1::Unsupported(
+                "erl_only Touchstone input has no validated TDR time axis".to_owned(),
+            ));
+        } else {
+            pulse.clone()
+        };
         let mut best_phase = 0usize;
         let mut best_selector = f64::NEG_INFINITY;
         let mut best_quantile = 0.0;
         let mut last_quantile = 0.0;
         let mut best_samples = Vec::new();
         for phase in 0..samples_per_ui {
-            let samples = pulse
+            let samples = gated
                 .iter()
                 .skip(phase)
                 .step_by(samples_per_ui)
@@ -2453,17 +2489,32 @@ fn portable_branch_result_with_sigma_v1(
             let quantile = -pdf.first_quantile(spec_ber).map_err(|error| {
                 DirectRunErrorV1::Parameters(format!("erl_only quantile: {error:?}"))
             })?;
+            if !quantile.is_finite() {
+                return Err(DirectRunErrorV1::Parameters(
+                    "erl_only PDF quantile is non-finite".to_owned(),
+                ));
+            }
             last_quantile = quantile;
             let selector = if erl
                 .get("rl_norm_test")
                 .and_then(Value::as_bool)
                 .unwrap_or(true)
             {
-                samples
-                    .iter()
-                    .map(|value| value * value)
-                    .sum::<f64>()
-                    .sqrt()
+                let sum = samples.iter().try_fold(0.0_f64, |sum, value| {
+                    let next = sum + value * value;
+                    next.is_finite().then_some(next).ok_or_else(|| {
+                        DirectRunErrorV1::Parameters(
+                            "erl_only phase selector overflowed".to_owned(),
+                        )
+                    })
+                })?;
+                let selector = sum.sqrt();
+                if !selector.is_finite() {
+                    return Err(DirectRunErrorV1::Parameters(
+                        "erl_only phase selector is non-finite".to_owned(),
+                    ));
+                }
+                selector
             } else {
                 quantile
             };
@@ -2493,8 +2544,18 @@ fn portable_branch_result_with_sigma_v1(
         } else {
             -20.0 * erl_quantile.abs().log10()
         };
-        let rms = pulse.iter().map(|value| value * value).sum::<f64>().sqrt()
-            / (pulse.len() as f64).sqrt();
+        let rms_sum = gated.iter().try_fold(0.0_f64, |sum, value| {
+            let next = sum + value * value;
+            next.is_finite()
+                .then_some(next)
+                .ok_or_else(|| DirectRunErrorV1::Parameters("erl_only RMS overflowed".to_owned()))
+        })?;
+        let rms = (rms_sum / (gated.len() as f64)).sqrt();
+        if !rms.is_finite() {
+            return Err(DirectRunErrorV1::Parameters(
+                "erl_only RMS is non-finite".to_owned(),
+            ));
+        }
         let erl_rms_db = if rms == 0.0 {
             f64::INFINITY
         } else {
@@ -2519,8 +2580,12 @@ fn portable_branch_result_with_sigma_v1(
                 "erl_rms_db": erl_rms_db_value,
                 "phase_index": best_phase,
                 "worst_samples": best_samples,
-                "pulse_sha256": sha256_f64_v1(&pulse),
-                "pulse_sample_count": pulse.len()
+                "impulse_sha256": sha256_f64_v1(erl_source),
+                "impulse_sample_count": erl_source.len(),
+                "ptdr_sha256": sha256_f64_v1(&pulse),
+                "ptdr_sample_count": pulse.len(),
+                "gated_sha256": sha256_f64_v1(&gated),
+                "gated_sample_count": gated.len()
             }),
         );
     }
@@ -2877,7 +2942,9 @@ fn parse_rxffe_evaluation_v1(
     let evaluation_parameters = CandidateEvalParamsV1 {
         samples_per_ui: required_usize_v1(parameters, "samples_per_ui", &parameters_branch)?,
         r_lm: required_f64_v1(parameters, "r_lm", &parameters_branch)?,
-        levels: usize::try_from(levels).expect("u32 fits usize on supported targets"),
+        levels: usize::try_from(levels).map_err(|_| {
+            DirectRunErrorV1::Parameters(format!("{parameters_branch}.levels is too large"))
+        })?,
         sigma_x: required_f64_v1(parameters, "sigma_x", &parameters_branch)?,
         dfe_delta: required_f64_v1(parameters, "dfe_delta", &parameters_branch)?,
         n_tail_start: required_i64_v1(parameters, "n_tail_start", &parameters_branch)?,
@@ -3181,7 +3248,10 @@ fn parse_four_port_array_v1(
                     "{branch}.{key}[{sample_index}] must have four rows"
                 )));
             }
-            let mut result = [[Complex64::try_new(0.0, 0.0).expect("zero"); 4]; 4];
+            let zero = Complex64::try_new(0.0, 0.0).map_err(|_| {
+                DirectRunErrorV1::Parameters(format!("{branch}.{key}[{sample_index}] has invalid zero"))
+            })?;
+            let mut result = [[zero; 4]; 4];
             for (row_index, row) in rows.iter().enumerate() {
                 let entries = row.as_array().ok_or_else(|| {
                     DirectRunErrorV1::Parameters(format!(
@@ -3285,7 +3355,344 @@ fn load_channel_input_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1
     }
 }
 
+fn complex_mul_v1(left: Complex64, right: Complex64) -> Result<Complex64, DirectRunErrorV1> {
+    Complex64::try_new(
+        left.real() * right.real() - left.imaginary() * right.imaginary(),
+        left.real() * right.imaginary() + left.imaginary() * right.real(),
+    )
+    .map_err(|_| DirectRunErrorV1::Channel("non-finite complex product".to_owned()))
+}
+
+fn complex_add_v1(left: Complex64, right: Complex64) -> Result<Complex64, DirectRunErrorV1> {
+    Complex64::try_new(
+        left.real() + right.real(),
+        left.imaginary() + right.imaginary(),
+    )
+    .map_err(|_| DirectRunErrorV1::Channel("non-finite complex sum".to_owned()))
+}
+
+fn complex_sub_v1(left: Complex64, right: Complex64) -> Result<Complex64, DirectRunErrorV1> {
+    Complex64::try_new(
+        left.real() - right.real(),
+        left.imaginary() - right.imaginary(),
+    )
+    .map_err(|_| DirectRunErrorV1::Channel("non-finite complex difference".to_owned()))
+}
+
+fn exact_erl_s2p_profile_v1(document: &Value, path: &Path) -> Result<bool, DirectRunErrorV1> {
+    let is_s2p = path
+        .extension()
+        .and_then(|value| value.to_str())
+        .is_some_and(|value| value.eq_ignore_ascii_case("s2p"));
+    if !is_s2p {
+        return Ok(false);
+    }
+    let document_object = document.as_object().ok_or_else(|| {
+        DirectRunErrorV1::Json("canonical config object must be an object".to_owned())
+    })?;
+    if document_object.contains_key("erl_only") || document_object.contains_key("erl") {
+        return Err(DirectRunErrorV1::Unsupported(
+            "S2P ERL-only aliases must be under typed portable.erl_only".to_owned(),
+        ));
+    }
+    let Some(portable) = document.get("portable").and_then(Value::as_object) else {
+        return Ok(false);
+    };
+    if portable.contains_key("erl") {
+        return Err(DirectRunErrorV1::Unsupported(
+            "S2P ERL-only portable.erl alias is not admitted".to_owned(),
+        ));
+    }
+    let Some(erl) = portable.get("erl_only") else {
+        return Ok(false);
+    };
+    let Some(erl) = erl.as_object() else {
+        return Err(DirectRunErrorV1::Unsupported(
+            "S2P ERL-only requires a typed portable.erl_only object".to_owned(),
+        ));
+    };
+    if erl.contains_key("erl") {
+        return Err(DirectRunErrorV1::Unsupported(
+            "S2P ERL-only portable.erl alias is not admitted".to_owned(),
+        ));
+    }
+    let Some(profile) = erl.get("tdr_profile").and_then(Value::as_object) else {
+        return Err(DirectRunErrorV1::Unsupported(
+            "S2P ERL-only requires the exact r480_s2p_erl_v1 tdr_profile".to_owned(),
+        ));
+    };
+    let required = [
+        ("name", "r480_s2p_erl_v1"),
+        ("samples_per_ui", "32"),
+        ("levels", "4"),
+        ("bin_size", "0.00001"),
+        ("spec_ber", "0.00001"),
+        ("rl_norm_test", "true"),
+        ("baud_hz", "53125000000"),
+        ("sample_dt_s", "0.0000000000005882352941176471"),
+        ("s_reference_ohm", "100"),
+        ("zt_ohm", "50"),
+        ("transition_time_ns", "0.01"),
+        ("transition_filter_type", "1"),
+        ("transition_measurement_point", "0"),
+        ("receiver_cutoff_multiplier", "0.75"),
+        ("receiver_filter_enabled", "true"),
+        ("tukey_enabled", "true"),
+        ("fixture_delay_s", "0"),
+        ("tdr_delay_s", "0.0000000005"),
+        ("observation_duration_ui", "800"),
+        ("gate_n_bx", "0"),
+        ("gate_rho_x", "0.618"),
+        ("gate_grr", "1"),
+        ("gate_beta_x_db_per_s", "0"),
+    ];
+    let exact = required.iter().all(|(key, expected)| match *expected {
+        "r480_s2p_erl_v1" => profile.get(*key).and_then(Value::as_str) == Some(expected),
+        "true" => profile.get(*key).and_then(Value::as_bool) == Some(true),
+        _ => profile
+            .get(*key)
+            .and_then(Value::as_f64)
+            .and_then(|value| {
+                expected
+                    .parse::<f64>()
+                    .ok()
+                    .filter(|target| value.is_finite() && value.to_bits() == target.to_bits())
+            })
+            .is_some(),
+    });
+    if !exact || profile.len() != required.len() {
+        return Err(DirectRunErrorV1::Unsupported(
+            "S2P ERL-only tdr_profile does not exactly match pinned r480 controls".to_owned(),
+        ));
+    }
+    let outer_controls = [
+        ("samples_per_ui", "32"),
+        ("levels", "4"),
+        ("bin_size", "0.00001"),
+        ("spec_ber", "0.00001"),
+        ("rl_norm_test", "true"),
+    ];
+    let outer_keys = [
+        "samples_per_ui",
+        "levels",
+        "bin_size",
+        "spec_ber",
+        "rl_norm_test",
+        "tdr_profile",
+    ];
+    let outer_exact = erl.len() == outer_keys.len()
+        && erl.keys().all(|key| outer_keys.contains(&key.as_str()))
+        && outer_controls
+            .iter()
+            .all(|(key, expected)| match *expected {
+                "true" => erl.get(*key).and_then(Value::as_bool) == Some(true),
+                _ => erl
+                    .get(*key)
+                    .and_then(Value::as_f64)
+                    .and_then(|value| {
+                        expected.parse::<f64>().ok().filter(|target| {
+                            value.is_finite() && value.to_bits() == target.to_bits()
+                        })
+                    })
+                    .is_some(),
+            });
+    if !outer_exact {
+        return Err(DirectRunErrorV1::Unsupported(
+            "S2P ERL-only outer controls do not match pinned r480 profile".to_owned(),
+        ));
+    }
+    Ok(true)
+}
+
+fn load_erl_s2p_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> {
+    load_impulse_mode_v1(path, true)
+}
+
+/// Port the pinned r4.80 S2P ERL-only TDR preparation.  This is intentionally
+/// an impulse-producing path: no rational model or S-parameter fit is used.
+fn s2p_erl_impulse_v1(
+    reflection: &[Complex64],
+    frequency_hz: &[f64],
+) -> Result<ErlTdrInputV1, DirectRunErrorV1> {
+    if reflection.len() != frequency_hz.len() || reflection.len() < 3 {
+        return Err(DirectRunErrorV1::Channel(
+            "S2P ERL reflection axis mismatch".to_owned(),
+        ));
+    }
+    let receiver = butterworth_filter_v1(frequency_hz, 0.75, 53.125e9, true)
+        .map_err(|error| DirectRunErrorV1::Channel(format!("S2P ERL receiver: {error:?}")))?;
+    let tukey = raised_cosine_filter_v1(frequency_hz, 0.75 * 53.125e9, 53.125e9, true)
+        .map_err(|error| DirectRunErrorV1::Channel(format!("S2P ERL Tukey: {error:?}")))?;
+    let mut filtered = Vec::with_capacity(reflection.len());
+    for ((value, frequency), (receiver, tukey)) in reflection
+        .iter()
+        .zip(frequency_hz)
+        .zip(receiver.iter().zip(tukey.iter()))
+    {
+        let frequency_ghz = *frequency / 1.0e9;
+        let gaussian =
+            (-2.0 * (std::f64::consts::PI * frequency_ghz * 0.01 / 1.6832).powi(2)).exp();
+        let angle = -2.0 * std::f64::consts::PI * frequency_ghz * 0.01 * 3.0
+            - 2.0 * std::f64::consts::PI * *frequency * 500.0e-12;
+        let transition = Complex64::try_new(gaussian * angle.cos(), gaussian * angle.sin())
+            .map_err(|_| DirectRunErrorV1::Channel("non-finite transition filter".to_owned()))?;
+        let receiver = Complex64::try_new(receiver.real() * *tukey, receiver.imaginary() * *tukey)
+            .map_err(|_| DirectRunErrorV1::Channel("non-finite receiver filter".to_owned()))?;
+        filtered.push(complex_mul_v1(
+            complex_mul_v1(*value, transition)?,
+            receiver,
+        )?);
+    }
+    let impulse = s21_to_impulse_dc_v1(
+        &filtered,
+        frequency_hz,
+        &FdToTdOptionsV1 {
+            sample_dt_s: 1.0 / (53.125e9 * 32.0),
+            magnitude_policy: "linear_trend_to_DC".to_owned(),
+            phase_policy: "extrap_cubic_to_dc_linear_to_inf".to_owned(),
+            debug: false,
+            truncation_threshold: 1.0e-5,
+            ..FdToTdOptionsV1::default()
+        },
+    )
+    .map_err(|error| DirectRunErrorV1::Channel(format!("S2P ERL FD-to-TD: {error:?}")))?;
+    let delay_s = 500.0e-12;
+    let ui_s = 1.0 / 53.125e9;
+    let shifted_time = impulse
+        .time_s
+        .iter()
+        .map(|time| {
+            let shifted = *time - delay_s;
+            if shifted.is_finite() {
+                Ok(shifted)
+            } else {
+                Err(DirectRunErrorV1::Channel(
+                    "non-finite S2P ERL observation time".to_owned(),
+                ))
+            }
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let end = impulse
+        .time_s
+        .iter()
+        .position(|time| *time >= delay_s + 800.0 * ui_s)
+        .map_or(impulse.time_s.len(), |index| index + 1);
+    let start = impulse
+        .time_s
+        .iter()
+        .position(|time| *time - delay_s >= 0.01e-9)
+        .unwrap_or(0);
+    let observation_start = start.min(end);
+    let selected = impulse.voltage[observation_start..end].to_vec();
+    let selected_time = shifted_time[observation_start..end].to_vec();
+    if selected.is_empty() || selected_time.len() != selected.len() {
+        return Err(DirectRunErrorV1::Channel(
+            "S2P ERL TDR window is empty".to_owned(),
+        ));
+    }
+    validate_impulse_v1(&selected)?;
+    Ok(ErlTdrInputV1 {
+        impulse: selected,
+        time_s: selected_time,
+    })
+}
+
+/// Exact r4.80 `erl_gate` semantics for the admitted S2P profile.  The
+/// The gate is applied after the trimmed TDR observation, preserving the
+/// source's leading zero/factor window and its unchanged tail.
+#[allow(clippy::too_many_arguments)]
+fn erl_gate_v1(
+    ptdr: &[f64],
+    time_s: &[f64],
+    tfx_s: f64,
+    ui_s: f64,
+    n_bx: i64,
+    transition_ns: f64,
+    rho_x: f64,
+    grr: i64,
+    beta_x_db_per_s: f64,
+) -> Result<Vec<f64>, DirectRunErrorV1> {
+    if ptdr.len() != time_s.len()
+        || ptdr.is_empty()
+        || !ptdr.iter().chain(time_s).all(|value| value.is_finite())
+        || !tfx_s.is_finite()
+        || !ui_s.is_finite()
+        || ui_s <= 0.0
+        || n_bx < 0
+        || !transition_ns.is_finite()
+        || transition_ns < 0.0
+        || !rho_x.is_finite()
+        || !beta_x_db_per_s.is_finite()
+        || !matches!(grr, 0..=2)
+    {
+        return Err(DirectRunErrorV1::Channel(
+            "invalid ERL gate inputs".to_owned(),
+        ));
+    }
+    let transition_delay = 3.0 * transition_ns * 1.0e-9;
+    let gate_start = tfx_s + transition_delay;
+    let Some(start) = time_s.iter().position(|time| *time >= gate_start) else {
+        return Ok(ptdr.to_vec());
+    };
+    let gate_end = (n_bx as f64 + 1.0) * ui_s + tfx_s + transition_delay;
+    let end = time_s
+        .iter()
+        .position(|time| *time > gate_end)
+        .unwrap_or(ptdr.len().saturating_sub(1));
+    let tk = gate_end;
+    let mut gated = ptdr.to_vec();
+    gated[..start].fill(0.0);
+    for index in start..=end.min(ptdr.len().saturating_sub(1)) {
+        let x = (time_s[index] - tfx_s - transition_delay) / ui_s;
+        let reflection = if grr == 2 {
+            rho_x
+        } else {
+            (1.0 + rho_x)
+                * rho_x
+                * (-(x - n_bx as f64 - 1.0).powi(2) / (1.0 + n_bx as f64).powi(2)).exp()
+        };
+        let loss = if n_bx > 0 && beta_x_db_per_s != 0.0 {
+            10.0_f64.powf(beta_x_db_per_s * (time_s[index] - tk) / 20.0)
+        } else {
+            1.0
+        };
+        let value = ptdr[index] * loss * reflection;
+        if !value.is_finite() {
+            return Err(DirectRunErrorV1::Channel(
+                "non-finite ERL gate output".to_owned(),
+            ));
+        }
+        gated[index] = value;
+    }
+    Ok(gated)
+}
+
 fn load_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> {
+    load_impulse_mode_v1(path, false)
+}
+
+fn touchstone_limits_v1() -> Result<TouchstoneParseLimitsV1, DirectRunErrorV1> {
+    let max_file_bytes =
+        NonZeroUsize::new(MAX_IMPULSE_FILE_BYTES_V1 as usize).ok_or_else(|| {
+            DirectRunErrorV1::Touchstone("invalid zero Touchstone file limit".to_owned())
+        })?;
+    let max_line_bytes = NonZeroUsize::new(16 * 1024).ok_or_else(|| {
+        DirectRunErrorV1::Touchstone("invalid zero Touchstone line limit".to_owned())
+    })?;
+    let max_records = NonZeroUsize::new(MAX_TOUCHSTONE_RECORDS_V1).ok_or_else(|| {
+        DirectRunErrorV1::Touchstone("invalid zero Touchstone record limit".to_owned())
+    })?;
+    Ok(TouchstoneParseLimitsV1::new(
+        max_file_bytes,
+        max_line_bytes,
+        max_records,
+    ))
+}
+
+fn load_impulse_mode_v1(
+    path: &Path,
+    erl_s2p_mode: bool,
+) -> Result<ImpulseInputV1, DirectRunErrorV1> {
     let bytes = bounded_read_v1(path, MAX_IMPULSE_FILE_BYTES_V1)?;
     let source_sha256 = sha256_bytes_v1(&bytes);
     let extension = path
@@ -3293,11 +3700,7 @@ fn load_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> {
         .and_then(|extension| extension.to_str())
         .unwrap_or_default();
     if extension.eq_ignore_ascii_case("s2p") || extension.eq_ignore_ascii_case("ts") {
-        let limits = TouchstoneParseLimitsV1::new(
-            NonZeroUsize::new(MAX_IMPULSE_FILE_BYTES_V1 as usize).expect("nonzero"),
-            NonZeroUsize::new(16 * 1024).expect("nonzero"),
-            NonZeroUsize::new(MAX_TOUCHSTONE_RECORDS_V1).expect("nonzero"),
-        );
+        let limits = touchstone_limits_v1()?;
         let parsed = parse_touchstone_hz_s_ri_50_two_port_v1(&bytes, limits)
             .map_err(|error| DirectRunErrorV1::Touchstone(format!("{error:?}")))?;
         let frequency_hz = parsed
@@ -3320,17 +3723,39 @@ fn load_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> {
             .iter()
             .map(|row| row.s11())
             .collect::<Vec<_>>();
-        let erl_values =
-            s21_to_impulse_dc_v1(&reflection, &frequency_hz, &FdToTdOptionsV1::default())
-                .ok()
-                .and_then(|value| {
-                    validate_impulse_v1(&value.voltage)
-                        .ok()
-                        .map(|_| value.voltage)
-                });
+        let differential_reflection = parsed
+            .rows()
+            .iter()
+            .map(|row| {
+                let differential = complex_add_v1(
+                    complex_sub_v1(row.s11(), row.s12())?,
+                    complex_sub_v1(row.s22(), row.s21())?,
+                )?;
+                Complex64::try_new(0.5 * differential.real(), 0.5 * differential.imaginary())
+                    .map_err(|_| {
+                        DirectRunErrorV1::Channel("non-finite differential reflection".to_owned())
+                    })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let (erl_values, erl_time_s) = if erl_s2p_mode {
+            let tdr = s2p_erl_impulse_v1(&differential_reflection, &frequency_hz)?;
+            (Some(tdr.impulse), Some(tdr.time_s))
+        } else {
+            (
+                s21_to_impulse_dc_v1(&reflection, &frequency_hz, &FdToTdOptionsV1::default())
+                    .ok()
+                    .and_then(|value| {
+                        validate_impulse_v1(&value.voltage)
+                            .ok()
+                            .map(|_| value.voltage)
+                    }),
+                None,
+            )
+        };
         return Ok(ImpulseInputV1 {
             values: result.voltage,
             erl_values,
+            erl_time_s,
             source_sha256,
             sample_interval_s: result
                 .time_s
@@ -3371,6 +3796,7 @@ fn load_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> {
         return Ok(ImpulseInputV1 {
             values,
             erl_values: None,
+            erl_time_s: None,
             source_sha256,
             sample_interval_s: None,
             source_kind: if explicit_pulse {
@@ -3390,6 +3816,7 @@ fn load_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> {
         return Ok(ImpulseInputV1 {
             values,
             erl_values: None,
+            erl_time_s: None,
             source_sha256,
             sample_interval_s: None,
             source_kind: "td-csv-impulse",
@@ -3407,12 +3834,17 @@ fn load_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> {
     }
     let values = bytes
         .chunks_exact(8)
-        .map(|chunk| f64::from_le_bytes(chunk.try_into().expect("eight-byte chunk")))
+        .map(|chunk| {
+            let mut bytes = [0_u8; 8];
+            bytes.copy_from_slice(chunk);
+            f64::from_le_bytes(bytes)
+        })
         .collect::<Vec<_>>();
     validate_impulse_v1(&values)?;
     Ok(ImpulseInputV1 {
         values,
         erl_values: None,
+        erl_time_s: None,
         source_sha256,
         sample_interval_s: None,
         source_kind: "f64le-impulse",
@@ -3426,11 +3858,7 @@ fn load_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> {
 fn load_s4p_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> {
     let bytes = bounded_read_v1(path, MAX_IMPULSE_FILE_BYTES_V1)?;
     let source_sha256 = sha256_bytes_v1(&bytes);
-    let limits = TouchstoneParseLimitsV1::new(
-        NonZeroUsize::new(MAX_IMPULSE_FILE_BYTES_V1 as usize).expect("nonzero"),
-        NonZeroUsize::new(16 * 1024).expect("nonzero"),
-        NonZeroUsize::new(MAX_TOUCHSTONE_RECORDS_V1).expect("nonzero"),
-    );
+    let limits = touchstone_limits_v1()?;
     let parsed = parse_selected_four_port_hz_s_ri_50_v2(&bytes, limits)
         .map_err(|error| DirectRunErrorV1::Touchstone(format!("{error:?}")))?;
     let frequency_hz = parsed
@@ -3443,7 +3871,10 @@ fn load_s4p_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> 
         .iter()
         .map(|row| {
             let source = row.matrix();
-            let mut matrix = [[Complex64::try_new(0.0, 0.0).expect("zero"); 4]; 4];
+            let zero = Complex64::try_new(0.0, 0.0).map_err(|_| {
+                DirectRunErrorV1::Touchstone("invalid zero S4P matrix sample".to_owned())
+            })?;
+            let mut matrix = [[zero; 4]; 4];
             for (output, row) in matrix.iter_mut().enumerate() {
                 for (incident, value) in row.iter_mut().enumerate() {
                     *value = source.at(output, incident).ok_or_else(|| {
@@ -3470,6 +3901,7 @@ fn load_s4p_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> 
     Ok(ImpulseInputV1 {
         values: result.voltage,
         erl_values: reflection,
+        erl_time_s: Some(result.time_s.clone()),
         source_sha256,
         sample_interval_s: result
             .time_s
@@ -3486,11 +3918,7 @@ fn load_s4p_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> 
 
 fn load_s4p_calibration_document_v1(path: &Path) -> Result<Value, DirectRunErrorV1> {
     let bytes = bounded_read_v1(path, MAX_IMPULSE_FILE_BYTES_V1)?;
-    let limits = TouchstoneParseLimitsV1::new(
-        NonZeroUsize::new(MAX_IMPULSE_FILE_BYTES_V1 as usize).expect("nonzero"),
-        NonZeroUsize::new(16 * 1024).expect("nonzero"),
-        NonZeroUsize::new(MAX_TOUCHSTONE_RECORDS_V1).expect("nonzero"),
-    );
+    let limits = touchstone_limits_v1()?;
     let parsed = parse_selected_four_port_hz_s_ri_50_v2(&bytes, limits)
         .map_err(|error| DirectRunErrorV1::Touchstone(format!("{error:?}")))?;
     let mut frequency_hz = Vec::with_capacity(parsed.rows().len());
@@ -3653,6 +4081,7 @@ fn load_frequency_domain_json_v1(
     Ok(ImpulseInputV1 {
         values: result.voltage,
         erl_values: None,
+        erl_time_s: None,
         source_sha256,
         sample_interval_s,
         source_kind: "json-s21-fd-to-td-impulse",
@@ -4108,7 +4537,11 @@ fn matlab_csv_value_v1(value: Option<&Value>) -> Result<String, DirectRunErrorV1
                 let rows = values
                     .iter()
                     .map(|item| {
-                        let row = item.as_array().expect("array checked");
+                        let row = item.as_array().ok_or_else(|| {
+                            DirectRunErrorV1::Artifact(
+                                "legacy CSV array rank changed during serialization".to_owned(),
+                            )
+                        })?;
                         row.iter()
                             .map(|cell| matlab_csv_value_v1(Some(cell)))
                             .collect::<Result<Vec<_>, _>>()
@@ -4569,8 +5002,34 @@ mod tests {
             "touchstone-two-port-s21-fd-to-td-impulse"
         );
         assert!(!input.values.is_empty());
+        assert_eq!(input.erl_values.as_ref().map(Vec::len), Some(1));
         assert!(input.causality_correction_db.is_some());
         assert!(input.truncation_db.is_some());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn unadmitted_s2p_erl_profile_fails_closed_without_guessing_controls() {
+        let root = temp_root("touchstone-erl-tdr");
+        let path = root.join("erl.s2p");
+        let mut data = String::from("# Hz S RI R 50.0\n");
+        for index in 0..65 {
+            let frequency = index as f64 * 26.56e9 / 64.0;
+            let phase = -2.0 * std::f64::consts::PI * frequency * 1.0e-9;
+            let pole = 26.56e9 / (10.0_f64 - 1.0).sqrt();
+            let scale = 1.0 / (1.0 + (frequency / pole).powi(2));
+            let real = scale * (phase.cos() + (frequency / pole) * phase.sin());
+            let imaginary = scale * (phase.sin() - (frequency / pole) * phase.cos());
+            data.push_str(&format!(
+                "{frequency:.17e} 0.1 0 {real:.17e} {imaginary:.17e} {real:.17e} {imaginary:.17e} 0.1 0\n"
+            ));
+        }
+        fs::write(&path, data).unwrap();
+        let error =
+            load_erl_s2p_impulse_v1(&path).expect_err("unadmitted profile must fail closed");
+        assert!(
+            matches!(error, DirectRunErrorV1::Channel(message) if message.contains("anti-causal"))
+        );
         let _ = fs::remove_dir_all(root);
     }
 
@@ -5523,6 +5982,157 @@ mod tests {
             );
             let _ = fs::remove_dir_all(root);
         }
+    }
+
+    #[test]
+    fn s2p_erl_dispatch_requires_the_exact_pinned_profile() {
+        let path = Path::new("fixture.s2p");
+        let ordinary = canonical_parameters();
+        assert!(!exact_erl_s2p_profile_v1(&ordinary, path).expect("ordinary S2P route"));
+        let mut root_alias = ordinary.clone();
+        root_alias["erl_only"] = json!({});
+        assert!(matches!(
+            exact_erl_s2p_profile_v1(&root_alias, path),
+            Err(DirectRunErrorV1::Unsupported(message)) if message.contains("aliases")
+        ));
+        let mut portable_alias = ordinary.clone();
+        portable_alias["portable"] = json!({"erl": {}});
+        assert!(matches!(
+            exact_erl_s2p_profile_v1(&portable_alias, path),
+            Err(DirectRunErrorV1::Unsupported(message)) if message.contains("alias")
+        ));
+
+        let mut typed = ordinary.clone();
+        typed["portable"] = json!({"erl_only": {"tdr_profile": {"name": "r480_s2p_erl_v1"}}});
+        assert!(matches!(
+            exact_erl_s2p_profile_v1(&typed, path),
+            Err(DirectRunErrorV1::Unsupported(message)) if message.contains("does not exactly match")
+        ));
+
+        typed["portable"]["erl_only"] = json!({
+            "samples_per_ui": 32,
+            "levels": 4,
+            "bin_size": 0.00001,
+            "spec_ber": 0.00001,
+            "rl_norm_test": true,
+            "tdr_profile": {
+            "name": "r480_s2p_erl_v1",
+            "samples_per_ui": 32,
+            "levels": 4,
+            "bin_size": 0.00001,
+            "spec_ber": 0.00001,
+            "rl_norm_test": true,
+            "baud_hz": 53125000000_u64,
+            "sample_dt_s": 0.0000000000005882352941176471_f64,
+            "s_reference_ohm": 100,
+            "zt_ohm": 50,
+            "transition_time_ns": 0.01,
+            "transition_filter_type": 1,
+            "transition_measurement_point": 0,
+            "receiver_cutoff_multiplier": 0.75,
+            "receiver_filter_enabled": true,
+            "tukey_enabled": true,
+            "fixture_delay_s": 0,
+            "tdr_delay_s": 0.0000000005,
+            "observation_duration_ui": 800,
+            "gate_n_bx": 0,
+            "gate_rho_x": 0.618,
+            "gate_grr": 1,
+            "gate_beta_x_db_per_s": 0
+            }
+        });
+        assert!(exact_erl_s2p_profile_v1(&typed, path).expect("exact ERL profile"));
+        let mut extra = typed.clone();
+        extra["portable"]["erl_only"]["unexpected_control"] = json!(1);
+        assert!(matches!(
+            exact_erl_s2p_profile_v1(&extra, path),
+            Err(DirectRunErrorV1::Unsupported(message)) if message.contains("outer controls")
+        ));
+        typed["portable"]["erl_only"]["tdr_profile"]["zt_ohm"] = json!(50.000000000001_f64);
+        assert!(matches!(
+            exact_erl_s2p_profile_v1(&typed, path),
+            Err(DirectRunErrorV1::Unsupported(message)) if message.contains("does not exactly match")
+        ));
+    }
+
+    #[test]
+    fn erl_gate_exact_profile_is_a_checked_noop_before_gate_start() {
+        let pulse = [0.25, -0.5, 0.75];
+        let time = [0.0, 1.0e-12, 2.0e-12];
+        let gated = erl_gate_v1(&pulse, &time, 0.0, 1.0 / 53.125e9, 0, 0.01, 0.618, 1, 0.0)
+            .expect("profile gate");
+        assert_eq!(gated, pulse);
+        assert!(
+            erl_gate_v1(
+                &pulse,
+                &[0.0],
+                500.0e-12,
+                1.0 / 53.125e9,
+                0,
+                0.01,
+                0.618,
+                1,
+                0.0
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn pinned_8001_point_s2p_fixture_checkpoint_uses_exact_bytes() {
+        let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/erl_s2p_10db_at_26p56ghz.s2p");
+        let bytes = fs::read(&fixture).expect("pinned fixture bytes");
+        assert_eq!(
+            sha256_bytes_v1(&bytes),
+            "7a59b41a385a95752d2d1159aab7772a10f7bd2c07e5122d770493151853c7a3"
+        );
+        let limits = touchstone_limits_v1().expect("Touchstone limits");
+        let parsed =
+            parse_touchstone_hz_s_ri_50_two_port_v1(&bytes, limits).expect("8001-point fixture");
+        assert_eq!(parsed.rows().len(), 8001);
+        let first = parsed.rows().first().expect("first fixture row");
+        let last = parsed.rows().last().expect("last fixture row");
+        assert_eq!(first.frequency_hz(), 0.0);
+        assert_eq!(last.frequency_hz(), 80.0e9);
+        assert_eq!(
+            first.s11(),
+            Complex64::try_new(0.0, 0.0).expect("finite SDD11")
+        );
+        assert_eq!(
+            last.s11(),
+            Complex64::try_new(0.0, 0.0).expect("finite SDD11")
+        );
+    }
+
+    #[test]
+    fn pinned_8001_point_s2p_erl_metric_checkpoint() {
+        let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/erl_s2p_10db_at_26p56ghz.s2p");
+        let input = load_erl_s2p_impulse_v1(&fixture).expect("pinned S2P ERL input");
+        let source = input.erl_values.expect("pinned SDD11 impulse");
+        let pulse = rectangular_pulse_response_v1(&source, 32).expect("pinned PTDR pulse");
+        let mut best = (f64::NEG_INFINITY, 0usize, 0.0);
+        for phase in 0..32 {
+            let samples = pulse
+                .iter()
+                .skip(phase)
+                .step_by(32)
+                .copied()
+                .collect::<Vec<_>>();
+            let pdf = sampled_signal_pdf_v1(&samples, 4, 1.0e-4, false).expect("pinned PDF");
+            let quantile = -pdf.first_quantile(1.0e-5).expect("pinned quantile");
+            let selector = samples
+                .iter()
+                .map(|value| value * value)
+                .sum::<f64>()
+                .sqrt();
+            if selector > best.0 {
+                best = (selector, phase, quantile);
+            }
+        }
+        assert_eq!(best.1, 21);
+        assert!((-20.0 * best.2.abs().log10() - 0.014778577737990855).abs() < 1.0e-12);
     }
 
     #[test]

@@ -206,7 +206,7 @@ pub fn parse_touchstone_hz_s_ri_50_two_port_v1(
             if saw_option {
                 return Err(TouchstoneError::DuplicateOptionLine);
             }
-            if content != b"# Hz S RI R 50.0" {
+            if content != b"# Hz S RI R 50.0" && content != b"# Hz S RI R 50" {
                 return Err(TouchstoneError::UnsupportedOptionLine);
             }
             saw_option = true;
@@ -330,6 +330,13 @@ mod tests {
         assert_eq!(
             parse_touchstone_hz_s_ri_50_two_port_v1(b"# Hz S MA R 50.0", limits()).unwrap_err(),
             TouchstoneError::UnsupportedOptionLine
+        );
+        assert!(
+            parse_touchstone_hz_s_ri_50_two_port_v1(
+                b"# Hz S RI R 50\n0 0 0 0 0 0 0 0 0\n1 0 0 0 0 0 0 0 0",
+                limits()
+            )
+            .is_ok()
         );
         assert_eq!(
             parse_touchstone_hz_s_ri_50_two_port_v1(b"0 0 0 0 0 0 0 0 0", limits()).unwrap_err(),
