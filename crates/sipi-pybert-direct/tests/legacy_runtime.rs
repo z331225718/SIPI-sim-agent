@@ -254,7 +254,10 @@ fn projection_covers_portable_modulation_noise_and_viterbi_fields() {
         duo_error.to_string().contains("crossing") || duo_error.to_string().contains("jitter"),
         "Duo-binary failure must identify the jitter/crossing branch: {duo_error}"
     );
-    assert!(!duo_result_path.exists(), "failed jitter must not publish a result artifact");
+    assert!(
+        !duo_result_path.exists(),
+        "failed jitter must not publish a result artifact"
+    );
     let _ = fs::remove_dir_all(root);
 }
 
