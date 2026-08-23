@@ -112,7 +112,7 @@ fn minimal_numeric_route_reads_fits_and_writes_the_artifact_family() {
     let _ = fs::remove_dir_all(&root);
     fs::create_dir_all(&root).unwrap();
     let input = root.join("through.s2p");
-    let text = "# Hz S RI R 50\n0 0 0 0.5 0 0.5 0 0 0\n1000000 0 0 0.5 0 0.5 0 0 0\n2000000 0 0 0.5 0 0.5 0 0 0\n3000000 0 0 0.5 0 0.5 0 0 0\n4000000 0 0 0.5 0 0.5 0 0 0\n5000000 0 0 0.5 0 0.5 0 0 0\n";
+    let text = "# Hz S RI R 50\n0 0 0 0.5000 0 0.5000 0 0 0\n1000000 0 0 0.5001 0 0.5001 0 0 0\n2000000 0 0 0.4999 0 0.4999 0 0 0\n3000000 0 0 0.5000 0 0.5000 0 0 0\n4000000 0 0 0.5001 0 0.5001 0 0 0\n5000000 0 0 0.4999 0 0.4999 0 0 0\n";
     fs::write(&input, text).unwrap();
     let network = read_touchstone(&input).unwrap();
     assert_eq!(network.ports(), 2);
@@ -192,7 +192,7 @@ fn sampled_passivity_check_is_observational_and_bounded() {
     let input = root.join("passive.s2p");
     fs::write(
         &input,
-        "# Hz S RI R 50\n0 0 0 0.1 0 0.1 0 0 0\n1000000 0 0 0.1 0 0.1 0 0 0\n2000000 0 0 0.1 0 0.1 0 0 0\n",
+        "# Hz S RI R 50\n0 0 0 0.10 0 0.10 0 0 0\n1000000 0 0 0.11 0 0.11 0 0 0\n2000000 0 0 0.09 0 0.09 0 0 0\n",
     )
     .unwrap();
     let result = fit_sparam(
@@ -379,7 +379,7 @@ fn execution_budgets_and_unimplemented_artifacts_fail_closed() {
     assert!(matches!(
         error,
         FitSparamError::BudgetExceeded {
-            kind: "least-squares matrix cells",
+            kind: "relocation least-squares matrix cells",
             ..
         }
     ));

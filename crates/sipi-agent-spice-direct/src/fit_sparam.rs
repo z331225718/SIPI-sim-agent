@@ -12,7 +12,10 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 
-use faer::{Mat, linalg::solvers::SolveLstsq};
+use faer::{
+    Mat,
+    linalg::solvers::{Qr, SolveLstsq},
+};
 use num_complex::Complex64 as Complex;
 use serde_json::{Value, json};
 use sipi_channel::{
@@ -656,6 +659,11 @@ fn validate_options(options: &FitSparamOptions) -> Result<(), FitSparamError> {
     }
     if options.fit_iterations == 0 {
         return Err(FitSparamError::InvalidFitIterations);
+    }
+    if options.enforce_dc && !options.fit_constant {
+        return Err(FitSparamError::UnsupportedExecutionOption(
+            "--enforce-dc requires --fit-constant",
+        ));
     }
     if options.passivity_max_iterations == 0
         || options.passivity_samples == 0
@@ -1462,14 +1470,9 @@ pub(crate) fn fit_residues(
             limit: MAX_TOUCHSTONE_SAMPLES * 2,
             actual: usize::MAX,
         })?;
-    let column_count = active
-        .len()
-        .checked_mul(2)
-        .ok_or(FitSparamError::BudgetExceeded {
-            kind: "least-squares columns",
-            limit: MAX_REAL_MATRIX_COLUMNS,
-            actual: usize::MAX,
-        })?;
+    // One real unknown per real basis column. Complex pairs use the two
+    // explicit real columns (ComplexReal and ComplexImag).
+    let column_count = active.len();
     if row_count > MAX_REAL_MATRIX_ROWS {
         return Err(FitSparamError::BudgetExceeded {
             kind: "least-squares rows",
@@ -1531,35 +1534,26 @@ pub(crate) fn fit_residues(
         scales.push(1.0 / norm);
     }
     let system = Mat::from_fn(row_count, column_count, |row, column| {
-        let sample = sample_indices[row / 2];
+        let sample = sample_indices[row % sample_indices.len()];
         let value = basis_value(
-            basis[active[column / 2]],
+            basis[active[column]],
             poles,
             Complex::new(
                 0.0,
                 2.0 * std::f64::consts::PI * network.frequencies_hz[sample] / frequency_scale_hz,
             ),
-        ) * scales[column / 2];
-        if row % 2 == 0 {
-            if column % 2 == 0 { value.re } else { -value.im }
-        } else if column % 2 == 0 {
-            value.im
-        } else {
-            value.re
-        }
+        ) * scales[column];
+        if row < sample_indices.len() { value.re } else { value.im }
     });
     let response = Mat::from_fn(row_count, response_count, |row, column| {
-        let value = network.samples[sample_indices[row / 2]][column];
-        if row % 2 == 0 { value.re } else { value.im }
+        let value = network.samples[sample_indices[row % sample_indices.len()]][column];
+        if row < sample_indices.len() { value.re } else { value.im }
     });
     let solved = system.as_ref().col_piv_qr().solve_lstsq(response.as_ref());
     let mut coefficients = vec![vec![Complex::new(0.0, 0.0); response_count]; basis.len()];
     for (active_index, basis_index) in active.iter().enumerate() {
         for response_index in 0..response_count {
-            let value = Complex::new(
-                solved[(2 * active_index, response_index)] * scales[active_index],
-                solved[(2 * active_index + 1, response_index)] * scales[active_index],
-            );
+            let value = Complex::new(solved[(active_index, response_index)] * scales[active_index], 0.0);
             if !finite_complex(value) {
                 return Err(FitSparamError::FitNumericalFailure(
                     "least-squares coefficients are non-finite".to_owned(),
@@ -1581,9 +1575,9 @@ pub(crate) fn fit_residues(
                 let imag = &coefficients[basis_index + 1];
                 for response_index in 0..response_count {
                     residues[*pole][response_index] =
-                        real[response_index] + Complex::new(0.0, 1.0) * imag[response_index];
+                        Complex::new(real[response_index].re, imag[response_index].re);
                     residues[*pole + 1][response_index] =
-                        real[response_index] - Complex::new(0.0, 1.0) * imag[response_index];
+                        Complex::new(real[response_index].re, -imag[response_index].re);
                 }
             }
             BasisKind::ComplexImag(_) => {}
@@ -1603,8 +1597,10 @@ pub(crate) fn fit_residues(
         let dc_target = &network.samples[0];
         let without_constant = model.evaluate(0.0);
         for response_index in 0..response_count {
-            model.constant[response_index] =
-                dc_target[response_index] - without_constant[response_index];
+            model.constant[response_index] = Complex::new(
+                (dc_target[response_index] - without_constant[response_index]).re,
+                0.0,
+            );
         }
     }
     if model
@@ -1628,34 +1624,316 @@ pub(crate) struct NativeVectorFitDiagnostics {
     pub final_rms: f64,
 }
 
-fn relocation_peak(network: &TouchstoneNetwork, model: &RationalFitModel) -> Option<(f64, f64)> {
-    network
-        .frequencies_hz
-        .iter()
-        .enumerate()
-        .map(|(index, frequency)| {
-            let fitted = model.evaluate(*frequency);
-            let error = network.samples[index]
+/// Relocate common poles using the same real sigma-equation used by the
+/// pinned NativeVectorFitting implementation.  The numerator residues are
+/// eliminated by one real least-squares solve, then the denominator roots are
+/// the eigenvalues of the resulting companion-like matrix.
+fn relocate_common_denominator(
+    network: &TouchstoneNetwork,
+    model: &RationalFitModel,
+    options: &FitSparamOptions,
+) -> Result<(Vec<Complex>, Vec<BasisKind>), FitSparamError> {
+    let mut unique = Vec::new();
+    for pole in &model.poles {
+        if pole.im >= 0.0 {
+            unique.push(*pole);
+        }
+    }
+    let mut real_count = 0usize;
+    let mut complex_count = 0usize;
+    for pole in &unique {
+        if pole.im == 0.0 {
+            real_count += 1;
+        } else {
+            complex_count += 1;
+        }
+    }
+    let model_order = real_count + 2 * complex_count;
+    if model_order == 0 {
+        return Err(FitSparamError::FitNumericalFailure(
+            "common-denominator relocation has no poles".to_owned(),
+        ));
+    }
+    let response_count = network.response_count();
+    let sample_count = network.sample_count();
+    let scale = model.frequency_scale_hz;
+    let mut numerator_columns = model_order;
+    let constant_column = options.fit_constant.then(|| {
+        let column = numerator_columns;
+        numerator_columns += 1;
+        column
+    });
+    let proportional_column = options.fit_proportional.then(|| {
+        let column = numerator_columns;
+        numerator_columns += 1;
+        column
+    });
+    let denominator_columns = model_order + 1;
+    let dimension_m = 2 * sample_count;
+    let dimension_n = numerator_columns + denominator_columns;
+    let work_cells = dimension_m
+        .checked_mul(dimension_n)
+        .ok_or(FitSparamError::BudgetExceeded {
+            kind: "relocation least-squares matrix cells",
+            limit: MAX_REAL_MATRIX_CELLS,
+            actual: usize::MAX,
+        })?;
+    if work_cells > MAX_REAL_MATRIX_CELLS {
+        return Err(FitSparamError::BudgetExceeded {
+            kind: "relocation least-squares matrix cells",
+            limit: MAX_REAL_MATRIX_CELLS,
+            actual: work_cells,
+        });
+    }
+    if dimension_n > MAX_REAL_MATRIX_COLUMNS {
+        return Err(FitSparamError::BudgetExceeded {
+            kind: "relocation least-squares columns",
+            limit: MAX_REAL_MATRIX_COLUMNS,
+            actual: dimension_n,
+        });
+    }
+    let mut basis_values = vec![vec![Complex::new(0.0, 0.0); model_order]; sample_count];
+    for (sample, frequency) in network.frequencies_hz.iter().enumerate() {
+        let s = Complex::new(0.0, 2.0 * std::f64::consts::PI * *frequency / scale);
+        let mut column = 0usize;
+        for pole in &unique {
+            if pole.im == 0.0 {
+                basis_values[sample][column] = Complex::new(1.0, 0.0) / (s - *pole);
+                column += 1;
+            } else {
+                basis_values[sample][column] = Complex::new(1.0, 0.0) / (s - *pole)
+                    + Complex::new(1.0, 0.0) / (s - pole.conj());
+                basis_values[sample][column + 1] = {
+                    let imaginary = Complex::new(0.0, 1.0);
+                    imaginary / (s - *pole) - imaginary / (s - pole.conj())
+                };
+                column += 2;
+            }
+        }
+    }
+    let response_weights = (0..response_count)
+        .map(|response| {
+            network
+                .samples
                 .iter()
-                .zip(fitted)
-                .map(|(left, right)| (*left - right).norm_sqr())
+                .fold(0.0, |sum, sample| sum + sample[response].norm_sqr())
+        })
+        .map(f64::sqrt)
+        .map(|value| value.max(f64::MIN_POSITIVE).sqrt())
+        .collect::<Vec<_>>();
+    let mut weighted_energy = 0.0;
+    for values in &network.samples {
+        for (response, value) in values.iter().enumerate() {
+            let norm = response_weights[response] * response_weights[response];
+            weighted_energy += norm * norm * value.norm_sqr();
+        }
+    }
+    let weight_extra = (weighted_energy.sqrt() / (response_count * sample_count) as f64)
+        .sqrt()
+        .max(f64::MIN_POSITIVE);
+    let reduced_dimension = dimension_m.min(dimension_n);
+    let rows_r12 = if reduced_dimension == dimension_m {
+        sample_count
+    } else {
+        numerator_columns
+    };
+    let rows_r22 = if reduced_dimension == dimension_m {
+        sample_count
+    } else {
+        denominator_columns
+    };
+    let data_rows = response_count
+        .checked_mul(rows_r22)
+        .ok_or(FitSparamError::BudgetExceeded {
+            kind: "relocation projected rows",
+            limit: MAX_REAL_MATRIX_ROWS,
+            actual: usize::MAX,
+        })?;
+    let projected_cells = (data_rows + 1)
+        .checked_mul(denominator_columns)
+        .ok_or(FitSparamError::BudgetExceeded {
+            kind: "relocation projected matrix cells",
+            limit: MAX_REAL_MATRIX_CELLS,
+            actual: usize::MAX,
+        })?;
+    if projected_cells > MAX_REAL_MATRIX_CELLS {
+        return Err(FitSparamError::BudgetExceeded {
+            kind: "relocation projected matrix cells",
+            limit: MAX_REAL_MATRIX_CELLS,
+            actual: projected_cells,
+        });
+    }
+    let mut projected_values = vec![0.0; (data_rows + 1) * denominator_columns];
+    for block in 0..response_count {
+        let work = Mat::from_fn(dimension_m, dimension_n, |row, column| {
+            let sample = row % sample_count;
+            let imaginary_row = row >= sample_count;
+            let response = network.samples[sample][block];
+            let value = if column < numerator_columns {
+                if column < model_order {
+                    basis_values[sample][column]
+                } else if constant_column.is_some_and(|constant| column == constant) {
+                    Complex::new(1.0, 0.0)
+                } else if proportional_column.is_some_and(|proportional| column == proportional) {
+                    Complex::new(
+                        0.0,
+                        2.0 * std::f64::consts::PI * network.frequencies_hz[sample] / scale,
+                    )
+                } else {
+                    Complex::new(0.0, 0.0)
+                }
+            } else {
+                let denominator_column = column - numerator_columns;
+                if denominator_column < model_order {
+                    -response * basis_values[sample][denominator_column]
+                } else {
+                    -response
+                }
+            };
+            if imaginary_row { value.im } else { value.re }
+        });
+        let qr = Qr::new(work.as_ref());
+        let r = qr.R();
+        for row in 0..rows_r22 {
+            for column in 0..denominator_columns {
+                projected_values[(block * rows_r22 + row) * denominator_columns + column] =
+                    response_weights[block]
+                        * r[(rows_r12 + row, numerator_columns + column)];
+            }
+        }
+    }
+    for column in 0..model_order {
+        projected_values[data_rows * denominator_columns + column] = weight_extra
+            * basis_values
+                .iter()
+                .map(|values| values[column].re)
+                .sum::<f64>();
+    }
+    projected_values[data_rows * denominator_columns + model_order] =
+        weight_extra * sample_count as f64;
+    let projected = Mat::from_fn(data_rows + 1, denominator_columns, |row, column| {
+        projected_values[row * denominator_columns + column]
+    });
+    let scales = (0..denominator_columns)
+        .map(|column| {
+            let norm = (0..data_rows + 1)
+                .map(|row| projected[(row, column)].powi(2))
                 .sum::<f64>()
                 .sqrt();
-            (*frequency, error)
+            if norm.is_finite() && norm > 0.0 {
+                1.0 / norm
+            } else {
+                1.0
+            }
         })
-        .filter(|(_, error)| error.is_finite())
-        .max_by(|left, right| left.1.total_cmp(&right.1))
+        .collect::<Vec<_>>();
+    let scaled = Mat::from_fn(data_rows + 1, denominator_columns, |row, column| {
+        projected[(row, column)] * scales[column]
+    });
+    let projected_rhs = Mat::from_fn(data_rows + 1, 1, |row, _| {
+        if row == data_rows {
+            weight_extra * (response_count * sample_count) as f64
+        } else {
+            0.0
+        }
+    });
+    let solved = scaled
+        .as_ref()
+        .col_piv_qr()
+        .solve_lstsq(projected_rhs.as_ref());
+    let mut c_res = vec![0.0; model_order];
+    let mut d_res = 0.0;
+    for column in 0..denominator_columns {
+        let value = solved[(column, 0)] * scales[column];
+        if column == model_order {
+            d_res = value;
+        } else {
+            c_res[column] = value;
+        }
+    }
+    if !d_res.is_finite() || c_res.iter().any(|value| !value.is_finite()) {
+        return Err(FitSparamError::FitNumericalFailure(
+            "common-denominator relocation produced non-finite coefficients".to_owned(),
+        ));
+    }
+    if d_res == 0.0 {
+        return Err(FitSparamError::FitNumericalFailure(
+            "common-denominator relocation produced zero d_res".to_owned(),
+        ));
+    }
+    if d_res.abs() < 1e-8 {
+        d_res = 1e-8 * d_res.signum();
+    }
+    let mut h = Mat::from_fn(model_order, model_order, |_, _| 0.0);
+    let mut residue_column = 0usize;
+    for pole in &unique {
+        if pole.im == 0.0 {
+            h[(residue_column, residue_column)] = pole.re;
+            residue_column += 1;
+        } else {
+            h[(residue_column, residue_column)] = pole.re;
+            h[(residue_column, residue_column + 1)] = pole.im;
+            h[(residue_column + 1, residue_column)] = -pole.im;
+            h[(residue_column + 1, residue_column + 1)] = pole.re;
+            residue_column += 2;
+        }
+    }
+    let mut row = 0usize;
+    for pole in &unique {
+        let subtraction_rows = if pole.im == 0.0 { 1 } else { 2 };
+        for local_row in 0..subtraction_rows {
+            let factor = if pole.im != 0.0 && local_row == 0 {
+                2.0
+            } else if pole.im == 0.0 {
+                1.0
+            } else {
+                0.0
+            };
+            for column in 0..model_order {
+                h[(row + local_row, column)] -= factor * c_res[column] / d_res;
+            }
+        }
+        row += subtraction_rows;
+    }
+    let eigen = h.eigen().map_err(|error| {
+        FitSparamError::FitNumericalFailure(format!("pole relocation eigensolve failed: {error:?}"))
+    })?;
+    let mut relocated = Vec::new();
+    for value in eigen.S().column_vector().iter().copied() {
+        if value.im >= 0.0 {
+            relocated.push(Complex::new(-value.re.abs(), value.im));
+        }
+    }
+    relocated.sort_by(|left, right| {
+        left.im
+            .abs()
+            .total_cmp(&right.im.abs())
+            .then_with(|| left.re.total_cmp(&right.re))
+    });
+    if relocated.len() != unique.len() {
+        return Err(FitSparamError::FitNumericalFailure(
+            "pole relocation eigensolve did not return a complete conjugate set".to_owned(),
+        ));
+    }
+    let mut poles = Vec::with_capacity(model_order);
+    let mut basis = Vec::with_capacity(model_order);
+    for pole in relocated {
+        if pole.im == 0.0 {
+            let index = poles.len();
+            poles.push(pole);
+            basis.push(BasisKind::RealPole(index));
+        } else {
+            let index = poles.len();
+            poles.push(pole);
+            poles.push(pole.conj());
+            basis.push(BasisKind::ComplexReal(index));
+            basis.push(BasisKind::ComplexImag(index));
+        }
+    }
+    Ok((poles, basis))
 }
 
-fn pole_frequency_hz(pole: Complex, scale: f64) -> f64 {
-    let normalized = pole.im.abs().max(pole.re.abs());
-    normalized * scale / (2.0 * std::f64::consts::PI)
-}
-
-/// Run bounded native vector fitting: residue LS followed by deterministic
-/// pole relocation/refit steps.  The relocation is accepted only when the
-/// all-response RMS improves, so a difficult corpus remains fail-closed
-/// instead of claiming that an unchanged fixed-pole solve is VF.
+/// Run NativeVectorFitting-style common-denominator relocation and residue refits.
 pub(crate) fn fit_native_vector_fitting(
     network: &TouchstoneNetwork,
     poles: &[Complex],
@@ -1667,60 +1945,31 @@ pub(crate) fn fit_native_vector_fitting(
     let mut current = fit_residues(network, poles, basis, options)?;
     let mut current_rms = rms_error_for_indices(network, &current, &indices);
     let initial_rms = current_rms;
-    let mut accepted = 0usize;
-    for _ in 0..max_iterations.min(32) {
-        let Some((peak_frequency, peak_error)) = relocation_peak(network, &current) else {
-            break;
-        };
-        if peak_error <= f64::EPSILON || !peak_frequency.is_finite() {
-            break;
+    let mut iterations = 0usize;
+    for _ in 0..max_iterations {
+        let (candidate_poles, mut candidate_basis) =
+            relocate_common_denominator(network, &current, options)?;
+        if options.fit_constant {
+            candidate_basis.push(BasisKind::Constant);
         }
-        let Some((representative, _)) = current
-            .poles
-            .iter()
-            .enumerate()
-            .filter(|(_, pole)| pole.im >= 0.0)
-            .min_by(|(_, left), (_, right)| {
-                (pole_frequency_hz(**left, current.frequency_scale_hz) - peak_frequency)
-                    .abs()
-                    .total_cmp(
-                        &(pole_frequency_hz(**right, current.frequency_scale_hz) - peak_frequency)
-                            .abs(),
-                    )
-            })
-        else {
-            break;
-        };
-        let mut candidate_poles = current.poles.clone();
-        let normalized_frequency =
-            (2.0 * std::f64::consts::PI * peak_frequency / current.frequency_scale_hz).max(1e-12);
-        let pole = candidate_poles[representative];
-        if pole.im.abs() <= 1e-12 {
-            candidate_poles[representative] = Complex::new(-normalized_frequency, 0.0);
-        } else {
-            let damping = (0.01 * normalized_frequency).max(1e-8);
-            candidate_poles[representative] = Complex::new(-damping, normalized_frequency);
-            if let Some(partner) = (0..candidate_poles.len()).find(|index| {
-                *index != representative
-                    && (candidate_poles[*index] - pole.conj()).norm() <= 1e-8 * pole.norm().max(1.0)
-            }) {
-                candidate_poles[partner] = candidate_poles[representative].conj();
-            }
+        if options.fit_proportional {
+            candidate_basis.push(BasisKind::Proportional);
         }
-        let candidate = fit_residues(network, &candidate_poles, basis, options)?;
+        let candidate = fit_residues(network, &candidate_poles, &candidate_basis, options)?;
         let candidate_rms = rms_error_for_indices(network, &candidate, &indices);
-        if candidate_rms.is_finite() && candidate_rms + 1e-14 < current_rms {
-            current = candidate;
-            current_rms = candidate_rms;
-            accepted += 1;
-        } else {
-            break;
+        if !candidate_rms.is_finite() {
+            return Err(FitSparamError::FitNumericalFailure(
+                "vector-fit residue refit produced a non-finite RMS".to_owned(),
+            ));
         }
+        current = candidate;
+        current_rms = candidate_rms;
+        iterations += 1;
     }
     Ok((
         current,
         NativeVectorFitDiagnostics {
-            iterations: accepted,
+            iterations,
             initial_rms,
             final_rms: current_rms,
         },
@@ -2940,7 +3189,144 @@ mod tests {
                 .unwrap();
         assert!(diagnostics.initial_rms.is_finite());
         assert!(diagnostics.final_rms.is_finite());
-        assert!(diagnostics.final_rms <= diagnostics.initial_rms + 1.0e-12);
-        assert!(diagnostics.iterations <= options.fit_iterations);
+        assert_eq!(diagnostics.iterations, options.fit_iterations);
+    }
+
+    #[test]
+    fn native_vector_fit_sigma_relocation_fixture_is_reproducible() {
+        let frequencies = vec![1.0e6, 1.0e7, 1.0e8, 1.0e9];
+        let samples = frequencies
+            .iter()
+            .map(|frequency| {
+                let diagonal = if *frequency < 1.0e8 {
+                    Complex::new(0.8, 0.0)
+                } else if *frequency < 1.0e9 {
+                    Complex::new(0.7, 0.0)
+                } else {
+                    Complex::new(0.4, 0.0)
+                };
+                vec![
+                    Complex::new(0.01, 0.0),
+                    Complex::new(0.0, 0.0),
+                    Complex::new(0.0, 0.0),
+                    diagonal,
+                ]
+            })
+            .collect::<Vec<_>>();
+        let network =
+            TouchstoneNetwork::from_samples(frequencies.clone(), samples, 2, 50.0).unwrap();
+        let options = FitSparamOptions {
+            n_poles_real: 1,
+            n_poles_cmplx: 0,
+            fit_constant: true,
+            fit_proportional: false,
+            enforce_dc: false,
+            ..FitSparamOptions::default()
+        };
+        let (poles, basis) = initial_poles(
+            &frequencies,
+            options.n_poles_real,
+            options.n_poles_cmplx,
+            "log",
+            network_frequency_scale(&network),
+        )
+        .unwrap();
+        let (model, diagnostics) =
+            fit_native_vector_fitting(&network, &poles, &basis, &options, 2).unwrap();
+        assert_eq!(diagnostics.iterations, 2);
+        assert!(diagnostics.final_rms.is_finite());
+        assert_eq!(model.order(), 1);
+    }
+
+    #[test]
+    fn native_vector_fit_rejects_all_zero_response_without_relocation_success() {
+        let network = TouchstoneNetwork::from_samples(
+            vec![1.0e6, 2.0e6],
+            vec![vec![Complex::new(0.0, 0.0)], vec![Complex::new(0.0, 0.0)]],
+            1,
+            50.0,
+        )
+        .unwrap();
+        let options = FitSparamOptions {
+            enforce_dc: false,
+            n_poles_real: 1,
+            n_poles_cmplx: 0,
+            ..FitSparamOptions::default()
+        };
+        let poles = vec![Complex::new(-1.0, 0.0)];
+        let basis = vec![BasisKind::RealPole(0), BasisKind::Constant];
+        assert!(fit_native_vector_fitting(&network, &poles, &basis, &options, 1).is_err());
+    }
+
+    #[test]
+    fn native_vector_fit_rejects_rank_deficient_constant_response() {
+        let network = TouchstoneNetwork::from_samples(
+            vec![1.0e6, 2.0e6],
+            vec![vec![Complex::new(0.1, 0.0)], vec![Complex::new(0.1, 0.0)]],
+            1,
+            50.0,
+        )
+        .unwrap();
+        let options = FitSparamOptions {
+            enforce_dc: false,
+            n_poles_real: 1,
+            n_poles_cmplx: 0,
+            ..FitSparamOptions::default()
+        };
+        let poles = vec![Complex::new(-1.0, 0.0)];
+        let basis = vec![BasisKind::RealPole(0), BasisKind::Constant];
+        assert!(fit_native_vector_fitting(&network, &poles, &basis, &options, 1).is_err());
+    }
+
+    #[test]
+    fn residue_refit_uses_real_coefficients_for_conjugate_pairs() {
+        let scale = 6.5e8;
+        let poles = vec![
+            Complex::new(-0.2, 1.1),
+            Complex::new(-0.2, -1.1),
+            Complex::new(-0.8, 0.0),
+        ];
+        let basis = vec![
+            BasisKind::ComplexReal(0),
+            BasisKind::ComplexImag(0),
+            BasisKind::RealPole(2),
+            BasisKind::Constant,
+            BasisKind::Proportional,
+        ];
+        let true_model = RationalFitModel {
+            poles: poles.clone(),
+            residues: vec![
+                vec![Complex::new(0.4, 0.25)],
+                vec![Complex::new(0.4, -0.25)],
+                vec![Complex::new(-0.1, 0.0)],
+            ],
+            constant: vec![Complex::new(0.02, 0.0)],
+            proportional: vec![Complex::new(0.001, 0.0)],
+            ports: 1,
+            frequency_scale_hz: scale,
+        };
+        let frequencies = (1..=12)
+            .map(|index| index as f64 * 1.0e8)
+            .collect::<Vec<_>>();
+        let network = TouchstoneNetwork::from_samples(
+            frequencies.clone(),
+            true_model.evaluated_samples(&frequencies),
+            1,
+            50.0,
+        )
+        .unwrap();
+        let options = FitSparamOptions {
+            fit_constant: true,
+            fit_proportional: true,
+            enforce_dc: false,
+            ..FitSparamOptions::default()
+        };
+        let model = fit_residues(&network, &poles, &basis, &options).unwrap();
+        assert!(model.constant.iter().all(|value| value.im.abs() < 1.0e-10));
+        assert!(model.proportional.iter().all(|value| value.im.abs() < 1.0e-10));
+        assert!(model.residues[2][0].im.abs() < 1.0e-10);
+        assert!((model.residues[0][0].re - 0.4).abs() < 1.0e-8);
+        assert!((model.residues[0][0].im - 0.25).abs() < 1.0e-8);
+        assert!((model.residues[1][0] - model.residues[0][0].conj()).norm() < 1.0e-10);
     }
 }
