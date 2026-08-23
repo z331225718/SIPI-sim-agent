@@ -1,0 +1,226 @@
+{
+  "blockers": [
+    "full result-adapter reference exceeds the current 16 MiB JSON admission budget"
+  ],
+  "build": {
+    "binary_custody": {
+      "bytes": 3326976,
+      "canonical_sha256": "91783cb0bd9711e9d420c3fead103804e6a00612d9e4588c223d992550ec2c01",
+      "characteristics": 34,
+      "format": "PE",
+      "machine": 34404,
+      "normalization": {
+        "changed_byte_count": 32,
+        "fields": [
+          "IMAGE_FILE_HEADER.TimeDateStamp",
+          "IMAGE_DEBUG_DIRECTORY[0].TimeDateStamp",
+          "IMAGE_DEBUG_DIRECTORY[1].TimeDateStamp",
+          "IMAGE_DEBUG_DIRECTORY[2].TimeDateStamp",
+          "CodeView.RSDS[0].GUID"
+        ],
+        "map": "zero-only:IMAGE_FILE_HEADER.TimeDateStamp+IMAGE_DEBUG_DIRECTORY.TimeDateStamp+CodeView.RSDS.GUID",
+        "ranges": [
+          {
+            "canonical_hex": "00000000",
+            "field": "IMAGE_FILE_HEADER.TimeDateStamp",
+            "length": 4,
+            "offset": 240,
+            "raw_hex": "20418b6a"
+          },
+          {
+            "canonical_hex": "00000000",
+            "field": "IMAGE_DEBUG_DIRECTORY[0].TimeDateStamp",
+            "length": 4,
+            "offset": 2927620,
+            "raw_hex": "20418b6a"
+          },
+          {
+            "canonical_hex": "00000000",
+            "field": "IMAGE_DEBUG_DIRECTORY[1].TimeDateStamp",
+            "length": 4,
+            "offset": 2927648,
+            "raw_hex": "20418b6a"
+          },
+          {
+            "canonical_hex": "00000000",
+            "field": "IMAGE_DEBUG_DIRECTORY[2].TimeDateStamp",
+            "length": 4,
+            "offset": 2927676,
+            "raw_hex": "20418b6a"
+          },
+          {
+            "canonical_hex": "00000000000000000000000000000000",
+            "field": "CodeView.RSDS[0].GUID",
+            "length": 16,
+            "offset": 2927984,
+            "raw_hex": "fcd8aa4a89fe154d977d1a936f101fee"
+          }
+        ]
+      },
+      "profile": "pe32-plus",
+      "raw_sha256": "5de258ec5587d1033a4fd3306a2b19f22fb739897572d23771183098936b5f69",
+      "repro_entry": {
+        "bytes": 0,
+        "debug_directory_index": null,
+        "present": false,
+        "raw_sha256": null
+      },
+      "schema": "sipi.windows-pe-replay-custody.v1"
+    },
+    "binary_sha256": "5de258ec5587d1033a4fd3306a2b19f22fb739897572d23771183098936b5f69",
+    "exit_code": 0,
+    "stderr_sha256": "cee73a2a3161a4951be295eca76b4ded3982077f039eabeb6bdc9b99e2640c4a",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate": {
+    "archive_sha256": "1b19a54bd4a3517a698a55b85b316e1e85658b611b3674881930303df1fb56dd",
+    "commit": "884b430bee61d365793a3810beaeb76f58bee25c",
+    "tree": "d87b058e754eea1ae5f104df034a81b4b13dcb1d"
+  },
+  "candidate_artifact": {
+    "arrays_present": false,
+    "meta_present": false
+  },
+  "candidate_process": {
+    "exit_code": 1,
+    "stderr_json": {
+      "code": "reference_unavailable",
+      "diagnostics": {
+        "compare_reference": {
+          "reference_kind": "independent_external_oracle",
+          "reference_retained_on_candidate_failure": false,
+          "source": "external_python_reference_required"
+        },
+        "comparison": {
+          "passed": false,
+          "reason": "not_evaluated",
+          "reference_required": "external_python_reference_required",
+          "schema": "pybert.engine-compare.v1",
+          "status_only_comparison": false
+        },
+        "reason": "reference JSON is not a regular file within the 16 MiB budget"
+      },
+      "message": "workflow reference is unavailable: reference JSON is not a regular file within the 16 MiB budget",
+      "schema": "pybert.workflow-error.v1",
+      "source": {
+        "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+        "repository": "pybert",
+        "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+      }
+    },
+    "stderr_sha256": "b831dcf12ba1a89f0391674a9a8eac5966f28733c7edd3f59e2631fd8f47205d",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "claims": {
+    "global_row_closed": false,
+    "independent_python_reference": true,
+    "payload_compare": false,
+    "promotion": false,
+    "release_approval": false,
+    "same_crate_self_compare": false
+  },
+  "comparison": {
+    "passed": false,
+    "reason": "not_evaluated",
+    "reference_required": "external_python_reference_required",
+    "schema": "pybert.engine-compare.v1",
+    "status_only_comparison": false
+  },
+  "fixture": {
+    "archive_present": true,
+    "archive_source_sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f",
+    "oracle_copy": "content_addressed_copy_from_candidate_archive",
+    "path": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+    "sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f",
+    "source": "candidate_archive"
+  },
+  "fresh_run_nonce": "f3a2b064245944ee90f9532207a4a70f",
+  "harness": {
+    "python_external_reference": {
+      "path": "tools/pb_python_external_reference.py",
+      "sha256": "0c656cc43e2919c242d8b7af797cbda02eea0b00405e8c34bae0ace6fa4e04fb",
+      "snapshot": "candidate_prep_archive_harness_snapshot"
+    },
+    "runner": {
+      "path": "tools/run_pb_04_05_python_external.py",
+      "sha256": "a6cd763204bc6490d4e41e2a028bf93e04eb1ab6f678bfb3a1b25fb9d9242bcc"
+    }
+  },
+  "non_claims": [
+    "The external JSON is produced by the pinned Python BackendRunResult adapter, not a Rust shadow.",
+    "AMI/IBIS/DLL/service branches and exact PyBertData class pickle restoration remain outside this portable result."
+  ],
+  "oracle": {
+    "backend": "python",
+    "independent": true,
+    "process": {
+      "exit_code": 0,
+      "stderr_sha256": "1a4f465ed27e814f8870090c38e22a4fb47eb5f10ea3eff67f5ea9678ec0ca9b",
+      "stdout_sha256": "58727421ed3778ed26d24b9b3078a708685f989c2a062d0187629ccff598d310"
+    },
+    "reference": {
+      "array_count": 38,
+      "bytes": 51903132,
+      "metrics_keys": [],
+      "present": true,
+      "result_adapter_schema": "pybert.engine.result_adapter.v1",
+      "schema": "pybert.backend-run-result.v1",
+      "sha256": "8b99a68a7d7fb7354c43e575809ac852b82b58038794055f9461baafdd6a2abc",
+      "two_dimensional_arrays": [
+        "eye_chnl",
+        "eye_ctle",
+        "eye_dfe",
+        "eye_rx",
+        "eye_tx"
+      ]
+    },
+    "source_command": "PythonSimulationBackend"
+  },
+  "row": "PB-05",
+  "run_id": "pb-05-python-external-884b430b-run-02",
+  "schema": "sipi.pb-04-05-python-external-replay.v1",
+  "selection": null,
+  "source_mode": "git_archive_at_candidate_prep_commit_plus_candidate_archive_fixture_copy_and_harness_snapshot",
+  "status": "blocked",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.EXE",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a"
+    },
+    "python": {
+      "executable": "python.EXE",
+      "file_sha256": "ee3131591ecdc30ebc9221769239e9d89df47380ed01e1b25ba2c68f6e808417",
+      "path_redacted": true,
+      "role": "python",
+      "version_exit_code": 0,
+      "version_output_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "executable": "rustc.EXE",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "timeout_seconds": 1800,
+    "uv": {
+      "executable": "uv.EXE",
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_exit_code": 0,
+      "version_output_sha256": "ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+  },
+  "version": 1
+}

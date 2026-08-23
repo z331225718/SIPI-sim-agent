@@ -1,0 +1,122 @@
+schema: sipi.pb-03-python-oracle-18-branch-d3154093.v1
+version: 1
+successor_of: pb-03-python-oracle-matrix-d3154093.v1.yaml
+row: PB-03
+status: branch_payload_oracle_open
+purpose: >-
+  Additive branch inventory joining the 18 pure-code PB-03 projection probes
+  to the independent pinned Python payload oracle. A branch is not called
+  parity merely because its Rust projection test passed: the oracle status is
+  explicit for every branch and only fields emitted by the Python adapter are
+  compared.
+source:
+  upstream_repository: pybert
+  upstream_commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  upstream_tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  upstream_archive_sha256: e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25
+  candidate_commit: 884b430bee61d365793a3810beaeb76f58bee25c
+  candidate_tree: d87b058e754eea1ae5f104df034a81b4b13dcb1d
+  candidate_archive_sha256: 1b19a54bd4a3517a698a55b85b316e1e85658b611b3674881930303df1fb56dd
+  candidate_basis: immutable_candidate_commit
+corpus:
+  path: docs/baselines/pb-03-python-oracle-corpus-d3154093.v1.json
+  sha256: 1b20fb24beec541067d58238efa8aec568cb9e7a181cdf23a41e973da3defdc7
+  cases: [nrz-base, pam4-noise-dfe, duo-noise-dfe, pam4-viterbi-isi, pam4-viterbi-fec, nrz-s2p, nrz-analytic-ctle]
+  reports:
+    - path: docs/baselines/pb-03-python-oracle-matrix-d315-run-01.v1.json
+      sha256: 2f9a9c206cb8c249045dd5617f6c179a206466d01fbaa00fdeb6a4d7f08ede54
+      run_id: pb-03-python-oracle-884b430b-run-01
+      fresh_run_nonce: 743feff3bac042059e6a568e141bb5fb
+    - path: docs/baselines/pb-03-python-oracle-matrix-d315-run-02.v1.json
+      sha256: 63d470294e0b47e06ee186f31ed060f948a95db6f345b98b41972346eac15af4
+      run_id: pb-03-python-oracle-884b430b-run-02
+      fresh_run_nonce: cc4189d439b343559635446bb77766d1
+  aggregate:
+    path: docs/baselines/pb-03-python-oracle-matrix-d315-aggregate.v1.json
+    sha256: 84005c74df8217a990a84413a80d7a817fb633fef0a6bb0ea9582953f33185a0
+branch_inventory:
+  - id: config.pybert_cfg_bounded_state_mapping
+    rust_probe: exercised
+    oracle: not_applicable_configuration_parser
+  - id: config.pybert_cfg_protocol45_root_identity
+    rust_probe: exercised
+    oracle: not_applicable_configuration_parser
+  - id: config.pybert_cfg_protocol45_nested_root_rejected
+    rust_probe: exercised
+    oracle: not_applicable_configuration_parser
+  - id: legacy.modulation.nrz
+    rust_probe: exercised
+    oracle: {case: nrz-base, status: payload_compared, fields: 13}
+  - id: legacy.modulation.pam4_duo_binary
+    rust_probe: exercised
+    oracle: {status: partial, compared: {modulation: pam4, case: pam4-noise-dfe, status: passed, fields: 13}, blocked: {modulation: duo, case: duo-noise-dfe, status: blocked, fields: 0}}
+  - id: legacy.pattern.supported_prbs
+    rust_probe: exercised
+    oracle: {case: nrz-base, status: payload_compared, fields: 13}
+  - id: legacy.channel.rlgc
+    rust_probe: exercised
+    oracle: {case: nrz-base, status: payload_compared, fields: 13}
+  - id: legacy.channel.s2p_touchstone
+    rust_probe: exercised
+    oracle: {case: nrz-s2p, status: payload_mismatch, reason: immutable candidate channel and receiver arrays differ}
+  - id: legacy.channel.s1p_s4p_differential_renumber
+    rust_probe: exercised
+    oracle: not_yet_payload_bound
+  - id: legacy.channel.touchstone_reference_R_two_column_step_impulse
+    rust_probe: exercised
+    oracle: not_yet_payload_bound
+  - id: legacy.rx.ctle_s2p_file_parser
+    rust_probe: exercised
+    oracle: not_yet_payload_bound
+  - id: legacy.tx_rx.ffe_dfe_cdr
+    rust_probe: exercised
+    oracle: {case: pam4-noise-dfe, status: payload_compared, fields: 13}
+  - id: legacy.tx.periodic_random_noise
+    rust_probe: exercised
+    oracle: {case: pam4-noise-dfe, status: payload_compared, fields: 13}
+  - id: legacy.tx.random_noise_seed_and_zero_seed_effective_state
+    rust_probe: exercised
+    oracle: {case: pam4-noise-dfe, status: payload_compared, fields: 13}
+  - id: legacy.rx.viterbi_isi_fec_mapping
+    rust_probe: exercised
+    oracle: {case: pam4-viterbi-isi, status: payload_mismatch, reason: pinned Python viterbi telemetry differs}
+  - id: legacy.analysis.jitter_eye_ber
+    rust_probe: exercised
+    oracle: {case: nrz-base, status: payload_compared, fields: 13}
+  - id: legacy.analysis.jitter_relative_threshold
+    rust_probe: exercised
+    oracle: not_yet_payload_bound
+  - id: legacy.external.ami_ibis_ts4_getwave
+    rust_probe: external_blocked
+    oracle: external_blocked
+    reason: host-owned DLL/model/service
+portable_branch_probe_missing: []
+python_payload_oracle_missing:
+  - legacy.channel.s1p_s4p_differential_renumber
+  - legacy.channel.touchstone_reference_R_two_column_step_impulse
+  - legacy.rx.ctle_s2p_file_parser
+  - legacy.analysis.jitter_relative_threshold
+external_blockers:
+  - legacy.external.ami_ibis_ts4_getwave
+  - legacy.config.exact_pybert_data_class_pickle
+  - legacy.rx.viterbi_fec
+harness:
+  oracle: {path: tools/pb_03_python_oracle.py, sha256: 4748ac8768b22200cd116ac13da7dd8738894ef1636931a401728c15d2b1a480}
+  runner: {path: tools/run_pb_03_python_oracle_matrix.py, sha256: 31e5dddd19f608497cfb34a95b5fb0b223b51d790db09b44207485dc1223b5f3}
+  aggregator: {path: tools/aggregate_pb_03_python_oracle_matrix.py, sha256: 779b8f74e4690a9c473bcf0640d4ac4b3813d8f193714cea6cca6bbf51b77683}
+  verifier: {path: tools/verify_pb_03_python_oracle_matrix.py, sha256: ce3a9b97cad8ed041b44bc96ca8ffe8619d94be87f50cbb45a09445667ae5d30}
+  mutation_tests: {path: tools/test_verify_pb_03_python_oracle_matrix.py, sha256: 1f638cf5bc24a5172834c9e7b56007654c5bb179af959aa983525d09b95a559c}
+  eighteen_branch_verifier: {path: tools/verify_pb_03_python_oracle_18_branch.py, sha256: fa31b7d5f4fca4229bd847ad7ff78fad8d635c4fc4a801691230e7a47b68b26f}
+  eighteen_branch_mutation_tests: {path: tools/test_verify_pb_03_python_oracle_18_branch.py, sha256: 6858334b552298b54fa1428114ba0f57627ed27c9d2e2c8e2a171b5cefa328ce}
+audit:
+  path: docs/baselines/audits/2026-08-24-pb-03-python-oracle-18-branch-d3154093.md
+  sha256: 5d28551f3358a5d44b749b6376f9356abc63b517517ae2bd7c5eaa66cbfebf33
+claims:
+  independent_python_payload_oracle: true
+  eighteen_branch_inventory: true
+  portable_branch_probe_complete: true
+  python_payload_parity_complete: false
+  global_branch_parity: false
+  portable_missing: []
+  promotion: false
+  release_approval: false

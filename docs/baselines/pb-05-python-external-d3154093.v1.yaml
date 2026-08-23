@@ -1,0 +1,77 @@
+schema: sipi.pb-05-python-external-d3154093.v1
+version: 1
+successor_of: pb-05-direct-port.v1.yaml
+row: PB-05
+status: external_python_reference_observed_compare_not_evaluated
+purpose: >-
+  Additive archive-only evidence that sim-compare receives an independent
+  pinned Python BackendRunResult payload and fails closed when the complete
+  result JSON exceeds the current admission budget. No same-crate shadow is
+  generated and no status-only comparison is accepted.
+source:
+  upstream_repository: pybert
+  upstream_commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  upstream_tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  upstream_archive_sha256: e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25
+  candidate_commit: 884b430bee61d365793a3810beaeb76f58bee25c
+  candidate_tree: d87b058e754eea1ae5f104df034a81b4b13dcb1d
+  candidate_archive_sha256: 1b19a54bd4a3517a698a55b85b316e1e85658b611b3674881930303df1fb56dd
+  candidate_basis: immutable_candidate_commit
+  fixture:
+    path: crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml
+    archive_present: true
+    sha256: 2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f
+    source: candidate_archive
+    archive_source_sha256: 2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f
+    oracle_copy: content_addressed_copy_from_candidate_archive
+oracle:
+  backend: PythonSimulationBackend
+  schema: pybert.backend-run-result.v1
+  result_adapter_schema: pybert.engine.result_adapter.v1
+  arrays: 38
+  two_dimensional_eye_arrays: [eye_chnl, eye_ctle, eye_dfe, eye_rx, eye_tx]
+  independent: true
+comparison:
+  source: external_python_reference_required
+  status: not_evaluated
+  status_only_comparison: false
+  reason: full result-adapter reference exceeds current 16 MiB JSON admission budget
+evidence:
+  reports:
+    - path: docs/baselines/pb-05-python-external-d315-run-01.v1.json
+      sha256: 8f84b9ae467d144d903359c05fe742fab4edb7c82b7e4948b29bccffc843f2a8
+      run_id: pb-05-python-external-884b430b-run-01
+      fresh_run_nonce: 43d0667bf8a54f8685343911389ed75c
+    - path: docs/baselines/pb-05-python-external-d315-run-02.v1.json
+      sha256: 45d0143bce93fc0afac6c3d3c36149f166ae26f9c155a45211228807bdfd786c
+      run_id: pb-05-python-external-884b430b-run-02
+      fresh_run_nonce: f3a2b064245944ee90f9532207a4a70f
+  aggregate:
+    path: docs/baselines/pb-05-python-external-d315-aggregate.v1.json
+    sha256: fde12dc9f9c477937dea8a756a01e096a9ddad608eb649f8aca13424879d2f83
+  fresh_replays: 2
+harness:
+  runner: {path: tools/run_pb_04_05_python_external.py, sha256: a6cd763204bc6490d4e41e2a028bf93e04eb1ab6f678bfb3a1b25fb9d9242bcc}
+  oracle: {path: tools/pb_python_external_reference.py, sha256: 0c656cc43e2919c242d8b7af797cbda02eea0b00405e8c34bae0ace6fa4e04fb}
+  aggregator: {path: tools/aggregate_pb_04_05_python_external.py, sha256: 6a13b146e990d4ffc8602abd0c830baa5662b9540d4f4b3b30fac5ed0e5d30e2}
+  verifier: {path: tools/verify_pb_04_05_python_external.py, sha256: 1c0eae44850c99d09cf4d1e499a357e43ce5d8b722626da41e27125e8de52184}
+  mutation_tests: {path: tools/test_verify_pb_04_05_python_external.py, sha256: ada6bd5d334861f4c592fdc1a98f712707765992f2a61f2823dc0488d4d3f199}
+verification:
+  command: python tools/verify_pb_04_05_python_external.py --row PB-05
+  result: valid
+  mutation_tests: 11_passed
+audit:
+  path: docs/baselines/audits/2026-08-24-pb-05-python-external-d3154093.md
+  sha256: 967b68228563a20aab024dd06e386591fe15a9156c04de9d583a0310bca0a5f5
+claims:
+  independent_python_reference: true
+  same_crate_self_compare: false
+  payload_compare: false
+  global_row_closed: false
+  promotion: false
+  release_approval: false
+external_blockers:
+  - branch: legacy.external.ami_ibis_ts4_getwave
+    reason: host-owned DLL/model/service remains quarantined
+  - branch: legacy.config.exact_pybert_data_class_pickle
+    reason: exact class restoration is outside this data-only result adapter

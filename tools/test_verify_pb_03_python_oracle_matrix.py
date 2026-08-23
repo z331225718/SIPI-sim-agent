@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import sys
 import unittest
 from pathlib import Path
+
+import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 
@@ -26,10 +29,9 @@ class VerifyPb03PythonOracleMatrixTests(unittest.TestCase):
         cls.second = json.loads(REPORT_TWO.read_text(encoding="utf-8"))
         cls.aggregate = json.loads(AGGREGATE.read_text(encoding="utf-8"))
 
-    def test_previous_evidence_is_rejected_until_prep_replay_rebind(self) -> None:
+    def test_current_evidence_is_bound_to_prep_replay(self) -> None:
         result = verify_pair(self.first, self.second, self.aggregate)
-        self.assertFalse(result["valid"], result)
-        self.assertTrue(any("source mode mismatch" in error for error in result["errors"]))
+        self.assertTrue(result["valid"], result)
         self.assertEqual(self.first["status"], "blocked")
         self.assertTrue(self.first["claims"]["independent_python_payload_oracle"])
         self.assertFalse(self.first["claims"]["global_branch_parity"])
@@ -65,6 +67,20 @@ class VerifyPb03PythonOracleMatrixTests(unittest.TestCase):
         result = verify_pair(self.first, self.second, document)
         self.assertFalse(result["valid"])
 
+        document = copy.deepcopy(self.first)
+        duo = next(case for case in document["cases"] if case["id"] == "duo-noise-dfe")
+        duo["status"] = "passed"
+        duo["payload"]["equal"] = True
+        self.assertFalse(verify(document)["valid"])
+
+        document = copy.deepcopy(self.first)
+        passed = next(case for case in document["cases"] if case["id"] == "nrz-base")
+        passed["payload"]["fields"][-1]["name"] = passed["payload"]["fields"][0]["name"]
+        self.assertFalse(verify(document)["valid"])
+        passed["payload"]["fields"][-1]["name"] = passed["expected_fields"][-1]
+        passed["blockers"] = ["unexpected"]
+        self.assertFalse(verify(document)["valid"])
+
     def test_distinct_replay_mutation_is_rejected(self) -> None:
         second = copy.deepcopy(self.second)
         second["run_id"] = self.first["run_id"]
@@ -72,6 +88,8 @@ class VerifyPb03PythonOracleMatrixTests(unittest.TestCase):
         self.assertFalse(result["valid"])
 
     def test_toolchain_and_build_contract_mutations_are_rejected(self) -> None:
+        manifest = yaml.safe_load((Path(__file__).resolve().parents[1] / "docs/baselines/pb-03-python-oracle-matrix-d3154093.v1.yaml").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["harness"]["mutation_tests"]["sha256"], hashlib.sha256(Path(__file__).read_bytes()).hexdigest())
         document = copy.deepcopy(self.first)
         document["toolchain"]["unexpected"] = True
         self.assertFalse(verify(document)["valid"])

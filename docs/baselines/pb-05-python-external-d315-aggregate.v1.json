@@ -1,0 +1,251 @@
+{
+  "audit": {
+    "path": "docs/baselines/audits/2026-08-24-pb-05-python-external-d3154093.md",
+    "sha256": "967b68228563a20aab024dd06e386591fe15a9156c04de9d583a0310bca0a5f5"
+  },
+  "binary_custody_gate": {
+    "blockers": [],
+    "canonical_sha256_equal": true,
+    "normalization_shape_equal": true,
+    "raw_sha256_equal": false,
+    "repro_policy": "not_present"
+  },
+  "blockers": [
+    "at least one fresh external replay remains blocked"
+  ],
+  "builds": [
+    {
+      "binary_custody": {
+        "bytes": 3326976,
+        "canonical_sha256": "91783cb0bd9711e9d420c3fead103804e6a00612d9e4588c223d992550ec2c01",
+        "characteristics": 34,
+        "format": "PE",
+        "machine": 34404,
+        "normalization": {
+          "changed_byte_count": 32,
+          "fields": [
+            "IMAGE_FILE_HEADER.TimeDateStamp",
+            "IMAGE_DEBUG_DIRECTORY[0].TimeDateStamp",
+            "IMAGE_DEBUG_DIRECTORY[1].TimeDateStamp",
+            "IMAGE_DEBUG_DIRECTORY[2].TimeDateStamp",
+            "CodeView.RSDS[0].GUID"
+          ],
+          "map": "zero-only:IMAGE_FILE_HEADER.TimeDateStamp+IMAGE_DEBUG_DIRECTORY.TimeDateStamp+CodeView.RSDS.GUID",
+          "ranges": [
+            {
+              "canonical_hex": "00000000",
+              "field": "IMAGE_FILE_HEADER.TimeDateStamp",
+              "length": 4,
+              "offset": 240,
+              "raw_hex": "c4408b6a"
+            },
+            {
+              "canonical_hex": "00000000",
+              "field": "IMAGE_DEBUG_DIRECTORY[0].TimeDateStamp",
+              "length": 4,
+              "offset": 2927620,
+              "raw_hex": "c4408b6a"
+            },
+            {
+              "canonical_hex": "00000000",
+              "field": "IMAGE_DEBUG_DIRECTORY[1].TimeDateStamp",
+              "length": 4,
+              "offset": 2927648,
+              "raw_hex": "c4408b6a"
+            },
+            {
+              "canonical_hex": "00000000",
+              "field": "IMAGE_DEBUG_DIRECTORY[2].TimeDateStamp",
+              "length": 4,
+              "offset": 2927676,
+              "raw_hex": "c4408b6a"
+            },
+            {
+              "canonical_hex": "00000000000000000000000000000000",
+              "field": "CodeView.RSDS[0].GUID",
+              "length": 16,
+              "offset": 2927984,
+              "raw_hex": "808087d6242c514f90f072de4e908529"
+            }
+          ]
+        },
+        "profile": "pe32-plus",
+        "raw_sha256": "62ecb9a764b647d81433961fabbf2a0339fdf317aa872fb65b1ceb7a7eda89f8",
+        "repro_entry": {
+          "bytes": 0,
+          "debug_directory_index": null,
+          "present": false,
+          "raw_sha256": null
+        },
+        "schema": "sipi.windows-pe-replay-custody.v1"
+      },
+      "binary_sha256": "62ecb9a764b647d81433961fabbf2a0339fdf317aa872fb65b1ceb7a7eda89f8",
+      "report": "docs/baselines/pb-05-python-external-d315-run-01.v1.json"
+    },
+    {
+      "binary_custody": {
+        "bytes": 3326976,
+        "canonical_sha256": "91783cb0bd9711e9d420c3fead103804e6a00612d9e4588c223d992550ec2c01",
+        "characteristics": 34,
+        "format": "PE",
+        "machine": 34404,
+        "normalization": {
+          "changed_byte_count": 32,
+          "fields": [
+            "IMAGE_FILE_HEADER.TimeDateStamp",
+            "IMAGE_DEBUG_DIRECTORY[0].TimeDateStamp",
+            "IMAGE_DEBUG_DIRECTORY[1].TimeDateStamp",
+            "IMAGE_DEBUG_DIRECTORY[2].TimeDateStamp",
+            "CodeView.RSDS[0].GUID"
+          ],
+          "map": "zero-only:IMAGE_FILE_HEADER.TimeDateStamp+IMAGE_DEBUG_DIRECTORY.TimeDateStamp+CodeView.RSDS.GUID",
+          "ranges": [
+            {
+              "canonical_hex": "00000000",
+              "field": "IMAGE_FILE_HEADER.TimeDateStamp",
+              "length": 4,
+              "offset": 240,
+              "raw_hex": "20418b6a"
+            },
+            {
+              "canonical_hex": "00000000",
+              "field": "IMAGE_DEBUG_DIRECTORY[0].TimeDateStamp",
+              "length": 4,
+              "offset": 2927620,
+              "raw_hex": "20418b6a"
+            },
+            {
+              "canonical_hex": "00000000",
+              "field": "IMAGE_DEBUG_DIRECTORY[1].TimeDateStamp",
+              "length": 4,
+              "offset": 2927648,
+              "raw_hex": "20418b6a"
+            },
+            {
+              "canonical_hex": "00000000",
+              "field": "IMAGE_DEBUG_DIRECTORY[2].TimeDateStamp",
+              "length": 4,
+              "offset": 2927676,
+              "raw_hex": "20418b6a"
+            },
+            {
+              "canonical_hex": "00000000000000000000000000000000",
+              "field": "CodeView.RSDS[0].GUID",
+              "length": 16,
+              "offset": 2927984,
+              "raw_hex": "fcd8aa4a89fe154d977d1a936f101fee"
+            }
+          ]
+        },
+        "profile": "pe32-plus",
+        "raw_sha256": "5de258ec5587d1033a4fd3306a2b19f22fb739897572d23771183098936b5f69",
+        "repro_entry": {
+          "bytes": 0,
+          "debug_directory_index": null,
+          "present": false,
+          "raw_sha256": null
+        },
+        "schema": "sipi.windows-pe-replay-custody.v1"
+      },
+      "binary_sha256": "5de258ec5587d1033a4fd3306a2b19f22fb739897572d23771183098936b5f69",
+      "report": "docs/baselines/pb-05-python-external-d315-run-02.v1.json"
+    }
+  ],
+  "candidate": {
+    "archive_sha256": "1b19a54bd4a3517a698a55b85b316e1e85658b611b3674881930303df1fb56dd",
+    "commit": "884b430bee61d365793a3810beaeb76f58bee25c",
+    "tree": "d87b058e754eea1ae5f104df034a81b4b13dcb1d"
+  },
+  "claims": {
+    "global_row_closed": false,
+    "independent_python_reference": true,
+    "promotion": false,
+    "release_approval": false,
+    "same_crate_self_compare": false
+  },
+  "distinct_gate": {
+    "exact_binary_canonical_sha256": true,
+    "exact_binary_sha256": false,
+    "exact_toolchain_identity": true,
+    "unique_fresh_run_nonces": true,
+    "unique_report_paths": true,
+    "unique_report_sha256": true,
+    "unique_run_ids": true
+  },
+  "fixture": {
+    "archive_present": true,
+    "archive_source_sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f",
+    "oracle_copy": "content_addressed_copy_from_candidate_archive",
+    "path": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+    "sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f",
+    "source": "candidate_archive"
+  },
+  "manifest": {
+    "binding_sha256": "0758d6fca532b1b2f855d6747bb3ffe0613e7baedf08282ac11fefc9deb5b26c",
+    "path": "docs/baselines/pb-05-python-external-d3154093.v1.yaml"
+  },
+  "non_claims": [
+    "A pinned Python BackendRunResult artifact is an external oracle observation, not a release promotion.",
+    "PB-04 selection and PB-05 payload compare remain fail-closed until the complete result contract is accepted.",
+    "Raw PE digests may differ when only approved timestamp/RSDS-GUID fields differ; canonical digest, profile/normalization shape, or REPRO payload drift blocks aggregation and never promotes a row."
+  ],
+  "reports": [
+    {
+      "fresh_run_nonce": "43d0667bf8a54f8685343911389ed75c",
+      "path": "docs/baselines/pb-05-python-external-d315-run-01.v1.json",
+      "run_id": "pb-05-python-external-884b430b-run-01",
+      "sha256": "8f84b9ae467d144d903359c05fe742fab4edb7c82b7e4948b29bccffc843f2a8"
+    },
+    {
+      "fresh_run_nonce": "f3a2b064245944ee90f9532207a4a70f",
+      "path": "docs/baselines/pb-05-python-external-d315-run-02.v1.json",
+      "run_id": "pb-05-python-external-884b430b-run-02",
+      "sha256": "45d0143bce93fc0afac6c3d3c36149f166ae26f9c155a45211228807bdfd786c"
+    }
+  ],
+  "row": "PB-05",
+  "schema": "sipi.pb-04-05-python-external-aggregate.v1",
+  "source_mode": "git_archive_at_candidate_prep_commit_plus_candidate_archive_fixture_copy_and_harness_snapshot",
+  "status": "blocked",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.EXE",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a"
+    },
+    "python": {
+      "executable": "python.EXE",
+      "file_sha256": "ee3131591ecdc30ebc9221769239e9d89df47380ed01e1b25ba2c68f6e808417",
+      "path_redacted": true,
+      "role": "python",
+      "version_exit_code": 0,
+      "version_output_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "executable": "rustc.EXE",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "timeout_seconds": 1800,
+    "uv": {
+      "executable": "uv.EXE",
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_exit_code": 0,
+      "version_output_sha256": "ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+  },
+  "version": 1
+}

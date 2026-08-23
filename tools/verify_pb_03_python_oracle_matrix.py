@@ -20,10 +20,11 @@ REPORT_TWO = ROOT / "docs/baselines/pb-03-python-oracle-matrix-d315-run-02.v1.js
 AGGREGATE = ROOT / "docs/baselines/pb-03-python-oracle-matrix-d315-aggregate.v1.json"
 BRANCH_MANIFEST = ROOT / "docs/baselines/pb-03-python-oracle-18-branch-d3154093.v1.yaml"
 BRANCH_AUDIT = ROOT / "docs/baselines/audits/2026-08-24-pb-03-python-oracle-18-branch-d3154093.md"
+MATRIX_MANIFEST = ROOT / "docs/baselines/pb-03-python-oracle-matrix-d3154093.v1.yaml"
 CORPUS = ROOT / "docs/baselines/pb-03-python-oracle-corpus-d3154093.v1.json"
-CANDIDATE_COMMIT = "d3154093fd58aeaa596444825dc17be6cb7e35c0"
-CANDIDATE_TREE = "2d51e84554558bb4947c0152259af9bf7f927efe"
-CANDIDATE_ARCHIVE = "693c95330b36f0a8068db3ce9a44bf4d45bfd1b73f47189d8149d67cfd909a24"
+CANDIDATE_COMMIT = "884b430bee61d365793a3810beaeb76f58bee25c"
+CANDIDATE_TREE = "d87b058e754eea1ae5f104df034a81b4b13dcb1d"
+CANDIDATE_ARCHIVE = "1b19a54bd4a3517a698a55b85b316e1e85658b611b3674881930303df1fb56dd"
 UPSTREAM_COMMIT = "5bf6d7ea0ace261891aaeb611ffc1c267e160afe"
 UPSTREAM_TREE = "5faef6bdb341d444ad65d82a11c0018b15805e24"
 UPSTREAM_ARCHIVE = "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25"
@@ -220,8 +221,22 @@ def verify_report(report: Any, root: Path, label: str) -> list[str]:
             check(errors, isinstance(process, dict) and isinstance(process.get("exit_code"), int), f"{label}: oracle process missing {case_id}")
             payload = case.get("payload")
             check(errors, isinstance(payload, dict), f"{label}: payload comparison missing {case_id}")
-            if isinstance(payload, dict) and case.get("status") == "passed":
-                check(errors, payload.get("equal") is True, f"{label}: passed case lacks payload equality {case_id}")
+            if case.get("status") == "passed":
+                check(errors, isinstance(candidate_meta, dict) and candidate_meta.get("schema") == "pybert.native-cli-result.v1", f"{label}: passed candidate schema missing {case_id}")
+                check(errors, isinstance(oracle_meta, dict) and oracle_meta.get("schema") == "pybert.python-oracle-result.v1", f"{label}: passed oracle schema missing {case_id}")
+                check(errors, isinstance(case.get("candidate_process"), dict) and case["candidate_process"].get("exit_code") == 0, f"{label}: passed candidate exit drift {case_id}")
+                check(errors, isinstance(process, dict) and process.get("exit_code") == 0, f"{label}: passed oracle exit drift {case_id}")
+                check(errors, isinstance(payload, dict) and payload.get("equal") is True, f"{label}: passed case lacks payload equality {case_id}")
+                check(errors, isinstance(payload, dict) and payload.get("compared_field_count") == len(expected), f"{label}: passed field count drift {case_id}")
+                fields = payload.get("fields") if isinstance(payload, dict) else None
+                check(errors, isinstance(fields, list) and len(fields) == len(expected), f"{label}: passed field list drift {case_id}")
+                if isinstance(fields, list):
+                    names = [field.get("name") if isinstance(field, dict) else None for field in fields]
+                    check(errors, names == expected, f"{label}: passed field names drift {case_id}")
+                    check(errors, all(isinstance(field, dict) and field.get("passed") is True for field in fields), f"{label}: passed field gate drift {case_id}")
+                check(errors, case.get("blockers") == [], f"{label}: passed case retains blockers {case_id}")
+            elif isinstance(payload, dict):
+                check(errors, payload.get("equal") is not True, f"{label}: blocked case claims payload equality {case_id}")
             if isinstance(payload, dict):
                 fields = payload.get("fields")
                 check(errors, isinstance(fields, list), f"{label}: payload fields missing {case_id}")
@@ -319,6 +334,17 @@ def verify_pair(first: dict[str, Any], second: dict[str, Any], aggregate: dict[s
         if isinstance(distinct, dict):
             check(errors, distinct.get("exact_binary_canonical_sha256") is True, "aggregate canonical PE reproducibility gate drift")
         try:
+            matrix_manifest = yaml.safe_load(MATRIX_MANIFEST.read_text(encoding="utf-8"))
+            manifest_harness = matrix_manifest.get("harness") if isinstance(matrix_manifest, dict) else None
+            check(errors, isinstance(manifest_harness, dict), "matrix manifest harness missing")
+            if isinstance(manifest_harness, dict):
+                for name, binding in manifest_harness.items():
+                    check(errors, isinstance(binding, dict), f"matrix manifest harness {name} malformed")
+                    if isinstance(binding, dict):
+                        path_text = binding.get("path")
+                        check(errors, isinstance(path_text, str) and safe_relative(path_text), f"matrix manifest harness {name} path drift")
+                        if isinstance(path_text, str) and safe_relative(path_text):
+                            check(errors, binding.get("sha256") == sha256((root / path_text).read_bytes()), f"matrix manifest harness {name} hash drift")
             manifest = yaml.safe_load(BRANCH_MANIFEST.read_text(encoding="utf-8"))
             check(errors, aggregate.get("manifest") == {"path": "docs/baselines/pb-03-python-oracle-18-branch-d3154093.v1.yaml", "binding_sha256": manifest_binding(manifest)}, "aggregate manifest binding drift")
             check(errors, aggregate.get("audit") == {"path": "docs/baselines/audits/2026-08-24-pb-03-python-oracle-18-branch-d3154093.md", "sha256": sha256(BRANCH_AUDIT.read_bytes())}, "aggregate audit binding drift")

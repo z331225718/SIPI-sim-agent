@@ -1,0 +1,2076 @@
+{
+  "build": {
+    "binary_custody": {
+      "bytes": 3326976,
+      "canonical_sha256": "91783cb0bd9711e9d420c3fead103804e6a00612d9e4588c223d992550ec2c01",
+      "characteristics": 34,
+      "format": "PE",
+      "machine": 34404,
+      "normalization": {
+        "changed_byte_count": 32,
+        "fields": [
+          "IMAGE_FILE_HEADER.TimeDateStamp",
+          "IMAGE_DEBUG_DIRECTORY[0].TimeDateStamp",
+          "IMAGE_DEBUG_DIRECTORY[1].TimeDateStamp",
+          "IMAGE_DEBUG_DIRECTORY[2].TimeDateStamp",
+          "CodeView.RSDS[0].GUID"
+        ],
+        "map": "zero-only:IMAGE_FILE_HEADER.TimeDateStamp+IMAGE_DEBUG_DIRECTORY.TimeDateStamp+CodeView.RSDS.GUID",
+        "ranges": [
+          {
+            "canonical_hex": "00000000",
+            "field": "IMAGE_FILE_HEADER.TimeDateStamp",
+            "length": 4,
+            "offset": 240,
+            "raw_hex": "063f8b6a"
+          },
+          {
+            "canonical_hex": "00000000",
+            "field": "IMAGE_DEBUG_DIRECTORY[0].TimeDateStamp",
+            "length": 4,
+            "offset": 2927620,
+            "raw_hex": "063f8b6a"
+          },
+          {
+            "canonical_hex": "00000000",
+            "field": "IMAGE_DEBUG_DIRECTORY[1].TimeDateStamp",
+            "length": 4,
+            "offset": 2927648,
+            "raw_hex": "063f8b6a"
+          },
+          {
+            "canonical_hex": "00000000",
+            "field": "IMAGE_DEBUG_DIRECTORY[2].TimeDateStamp",
+            "length": 4,
+            "offset": 2927676,
+            "raw_hex": "063f8b6a"
+          },
+          {
+            "canonical_hex": "00000000000000000000000000000000",
+            "field": "CodeView.RSDS[0].GUID",
+            "length": 16,
+            "offset": 2927984,
+            "raw_hex": "1b3f66a2f4df6040a187c08e619f572f"
+          }
+        ]
+      },
+      "profile": "pe32-plus",
+      "raw_sha256": "509c1e383d7ac956e5292251279324385f9c5d6a7f7f5a9f7fc46b10403482e6",
+      "repro_entry": {
+        "bytes": 0,
+        "debug_directory_index": null,
+        "present": false,
+        "raw_sha256": null
+      },
+      "schema": "sipi.windows-pe-replay-custody.v1"
+    },
+    "binary_sha256": "509c1e383d7ac956e5292251279324385f9c5d6a7f7f5a9f7fc46b10403482e6",
+    "exit_code": 0,
+    "stderr_sha256": "3896a69652ebe400f37c06b044be6f1a76f174cd422ca738283cf9f76f73f50e",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate": {
+    "archive_sha256": "1b19a54bd4a3517a698a55b85b316e1e85658b611b3674881930303df1fb56dd",
+    "commit": "884b430bee61d365793a3810beaeb76f58bee25c",
+    "tree": "d87b058e754eea1ae5f104df034a81b4b13dcb1d"
+  },
+  "cases": [
+    {
+      "blockers": [],
+      "candidate": {
+        "array_names": null,
+        "backend": null,
+        "diagnostics": {},
+        "metrics": null,
+        "schema": "pybert.native-cli-result.v1",
+        "source_command": null
+      },
+      "candidate_process": {
+        "exit_code": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "0add11fb92e104bbb8748655af48a11c4b035d9277164ef9030e0cd7f1052d0b"
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "rx_input_v",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v",
+        "dfe_decisions",
+        "dfe_clock_times_s",
+        "dfe_clocks",
+        "dfe_locked",
+        "dfe_ui_estimates_s",
+        "random_noise_v",
+        "additive_noise_v"
+      ],
+      "id": "nrz-base",
+      "oracle": {
+        "array_names": [
+          "additive_noise_v",
+          "channel_impulse_v_per_v",
+          "channel_output_v",
+          "ctle_output_v",
+          "dfe_clock_times_s",
+          "dfe_clocks",
+          "dfe_decisions",
+          "dfe_locked",
+          "dfe_output_v",
+          "dfe_ui_estimates_s",
+          "random_noise_v",
+          "rx_input_v",
+          "rx_output_v"
+        ],
+        "backend": "python",
+        "diagnostics": {
+          "backend": "python"
+        },
+        "metrics": null,
+        "schema": "pybert.python-oracle-result.v1",
+        "source_command": "PythonSimulationBackend"
+      },
+      "oracle_process": {
+        "exit_code": 0,
+        "stderr_sha256": "0f852739cd70900a5c8b4ac09fd36d93efd59f5c81a544a2009d912c247153f6",
+        "stdout_sha256": "98e36a770a93fbe10aa06cf4309f213051494e4109a9ba360fb6176c2b2d06ea"
+      },
+      "payload": {
+        "compared_field_count": 13,
+        "equal": true,
+        "fields": [
+          {
+            "candidate": {
+              "count": 640,
+              "dtype": "float64",
+              "f64_sha256": "22e4f6861a06c7a03a783e0f93cb5df1caada8812c49a5a866cf7f6b383697af",
+              "shape": [
+                640
+              ]
+            },
+            "max_abs": 9.528047426564379e-11,
+            "name": "channel_impulse_v_per_v",
+            "oracle": {
+              "count": 640,
+              "dtype": "float64",
+              "f64_sha256": "661c4aaea08932963b33f659b3a5e15413ba2ab30e8f51ef4df9c3dff8dcb624",
+              "shape": [
+                640
+              ]
+            },
+            "passed": true,
+            "scale": 0.017761877024014498,
+            "tolerance": 1.0177618770240146e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "a208dba81e601cbfefa77c9e907c65b933832ae994689cdd070f2e5b44ec72cf",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 1.5443559264749496e-08,
+            "name": "channel_output_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "08bcfc868d811bcf7e3ee3f1cbb82304c2fa9e615210d9ca353c8b2800d29433",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 0.4998107963685434,
+            "tolerance": 1.4998107963685434e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "274f5ca2fed530382c5604c6a93e091cbf923559f6d1f1e5254d41167ad98fba",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 1.3431195572399801e-08,
+            "name": "rx_input_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "98851991759602a836e12738b2d2d1ef4b9c2d4fb46514c05f00cad628de19bf",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 0.4851591466629174,
+            "tolerance": 1.4851591466629172e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "274f5ca2fed530382c5604c6a93e091cbf923559f6d1f1e5254d41167ad98fba",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 1.3431195572399801e-08,
+            "name": "ctle_output_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "98851991759602a836e12738b2d2d1ef4b9c2d4fb46514c05f00cad628de19bf",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 0.4851591466629174,
+            "tolerance": 1.4851591466629172e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "035e68b494ff59731d21a03bcd2c976a644109cd407bcc72b47c56d97b44cd5a",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 1.3431195572399801e-08,
+            "name": "rx_output_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "5667c43621754c228ca0ea9865b571aabdcb977c24884b2939a85073e7d90279",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 0.4851591466629174,
+            "tolerance": 1.4851591466629172e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "035e68b494ff59731d21a03bcd2c976a644109cd407bcc72b47c56d97b44cd5a",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 1.3431195572399801e-08,
+            "name": "dfe_output_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "5667c43621754c228ca0ea9865b571aabdcb977c24884b2939a85073e7d90279",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 0.4851591466629174,
+            "tolerance": 1.4851591466629172e-06
+          },
+          {
+            "candidate": {
+              "count": 1000,
+              "dtype": "float64",
+              "f64_sha256": "03c5dfcd3be67f5c2f4135625ad1f7d34b1bf1547de8104b3943ea0dbf44c36c",
+              "shape": [
+                1000
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "dfe_decisions",
+            "oracle": {
+              "count": 1000,
+              "dtype": "float64",
+              "f64_sha256": "03c5dfcd3be67f5c2f4135625ad1f7d34b1bf1547de8104b3943ea0dbf44c36c",
+              "shape": [
+                1000
+              ]
+            },
+            "passed": true,
+            "scale": 1.0,
+            "tolerance": 2e-06
+          },
+          {
+            "candidate": {
+              "count": 1001,
+              "dtype": "float64",
+              "f64_sha256": "e3e34d21fbe85e96aa5b3efb611aa56eed882c7d97ed92164736ac918e1bd416",
+              "shape": [
+                1001
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "dfe_clock_times_s",
+            "oracle": {
+              "count": 1001,
+              "dtype": "float64",
+              "f64_sha256": "e3e34d21fbe85e96aa5b3efb611aa56eed882c7d97ed92164736ac918e1bd416",
+              "shape": [
+                1001
+              ]
+            },
+            "passed": true,
+            "scale": 1.0000132800000005e-07,
+            "tolerance": 1.000000100001328e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "ba9473e963f5e752e1e25218b633c87c943fd90447a2830957f2efa2198a767a",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "dfe_clocks",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "ba9473e963f5e752e1e25218b633c87c943fd90447a2830957f2efa2198a767a",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 1.0,
+            "tolerance": 2e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "24a046dc04fefdb652e4077b41162490b344a4dd45f918505477f84c592f3070",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "dfe_locked",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "24a046dc04fefdb652e4077b41162490b344a4dd45f918505477f84c592f3070",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 0.0,
+            "tolerance": 1e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "1afcb51ee476ad84beaf58d167ef9718f5c72c350aea7ad2bb7b3791f186bf27",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 1.2924697071141057e-26,
+            "name": "dfe_ui_estimates_s",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "4a9221a824462a6746d0987c67bda1355fab331991ed9b2a5f53bbef334c406c",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 1.0010300000000001e-10,
+            "tolerance": 1.000000000100103e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "24a046dc04fefdb652e4077b41162490b344a4dd45f918505477f84c592f3070",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "random_noise_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "24a046dc04fefdb652e4077b41162490b344a4dd45f918505477f84c592f3070",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 0.0,
+            "tolerance": 1e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "24a046dc04fefdb652e4077b41162490b344a4dd45f918505477f84c592f3070",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "additive_noise_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "24a046dc04fefdb652e4077b41162490b344a4dd45f918505477f84c592f3070",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 0.0,
+            "tolerance": 1e-06
+          }
+        ]
+      },
+      "status": "passed"
+    },
+    {
+      "blockers": [],
+      "candidate": {
+        "array_names": null,
+        "backend": null,
+        "diagnostics": {},
+        "metrics": null,
+        "schema": "pybert.native-cli-result.v1",
+        "source_command": null
+      },
+      "candidate_process": {
+        "exit_code": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "9ebe6817a9efecf0aaa44f38df233c17bb0a826cf565597fa15e31e5a6ea1f88"
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "rx_input_v",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v",
+        "dfe_decisions",
+        "dfe_clock_times_s",
+        "dfe_clocks",
+        "dfe_locked",
+        "dfe_ui_estimates_s",
+        "random_noise_v",
+        "additive_noise_v"
+      ],
+      "id": "pam4-noise-dfe",
+      "oracle": {
+        "array_names": [
+          "additive_noise_v",
+          "channel_impulse_v_per_v",
+          "channel_output_v",
+          "ctle_output_v",
+          "dfe_clock_times_s",
+          "dfe_clocks",
+          "dfe_decisions",
+          "dfe_locked",
+          "dfe_output_v",
+          "dfe_ui_estimates_s",
+          "random_noise_v",
+          "rx_input_v",
+          "rx_output_v"
+        ],
+        "backend": "python",
+        "diagnostics": {
+          "backend": "python"
+        },
+        "metrics": null,
+        "schema": "pybert.python-oracle-result.v1",
+        "source_command": "PythonSimulationBackend"
+      },
+      "oracle_process": {
+        "exit_code": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "bb6b2c7b182fdae762c2b798c2fceec0e8b33723084a1b1c86c32bf80c951b45"
+      },
+      "payload": {
+        "compared_field_count": 13,
+        "equal": true,
+        "fields": [
+          {
+            "candidate": {
+              "count": 640,
+              "dtype": "float64",
+              "f64_sha256": "a7bfbfddb43669f52b7900b8e6f78b99908acf0b52a63287642295931ad61843",
+              "shape": [
+                640
+              ]
+            },
+            "max_abs": 2.4854524802208136e-10,
+            "name": "channel_impulse_v_per_v",
+            "oracle": {
+              "count": 640,
+              "dtype": "float64",
+              "f64_sha256": "2b201c7ead9bcababd3e7f8cd8fc1741942341d5ecf2cfe5725997994bcd681f",
+              "shape": [
+                640
+              ]
+            },
+            "passed": true,
+            "scale": 0.035523754048028995,
+            "tolerance": 1.035523754048029e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "05f7c09f2352e8ba75d56c18daaad35441526a03896861496c1ff3589103a5d2",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 3.3493876769319364e-08,
+            "name": "channel_output_v",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "c0bc8441cb6787984f50bf5957948a395570cb9d0c53a8f5f51a1620d922586d",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 0.3504156825955363,
+            "tolerance": 1.3504156825955363e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "c6be8f938cda632e0fd2ac8afd8e93143d252fe679a325f499d75f06962e843a",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 2.8369341611989007e-08,
+            "name": "rx_input_v",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "f107410ab4f02e8fec803b78c574a6accb6afdc638813dde52fc634f36fe27b7",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 0.37013535364085737,
+            "tolerance": 1.3701353536408573e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "c6be8f938cda632e0fd2ac8afd8e93143d252fe679a325f499d75f06962e843a",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 2.8369341611989007e-08,
+            "name": "ctle_output_v",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "f107410ab4f02e8fec803b78c574a6accb6afdc638813dde52fc634f36fe27b7",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 0.37013535364085737,
+            "tolerance": 1.3701353536408573e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "054ceec4cbee028e43fb3698b96d2e832febdb949f197ac99f2848db265f4f7f",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 2.8369341611989007e-08,
+            "name": "rx_output_v",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "4347780ab9d1f3e7edcab1620e743a615db8ab77822917786970c0a14a84ff16",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 0.37013535364085737,
+            "tolerance": 1.3701353536408573e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "054ceec4cbee028e43fb3698b96d2e832febdb949f197ac99f2848db265f4f7f",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 2.8369341611989007e-08,
+            "name": "dfe_output_v",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "4347780ab9d1f3e7edcab1620e743a615db8ab77822917786970c0a14a84ff16",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 0.37013535364085737,
+            "tolerance": 1.3701353536408573e-06
+          },
+          {
+            "candidate": {
+              "count": 500,
+              "dtype": "float64",
+              "f64_sha256": "41e78484dbff126435466050c423c8fe6dd6c66c5a738762c9db1feb7c13ec8a",
+              "shape": [
+                500
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "dfe_decisions",
+            "oracle": {
+              "count": 500,
+              "dtype": "float64",
+              "f64_sha256": "41e78484dbff126435466050c423c8fe6dd6c66c5a738762c9db1feb7c13ec8a",
+              "shape": [
+                500
+              ]
+            },
+            "passed": true,
+            "scale": 1.0,
+            "tolerance": 2e-06
+          },
+          {
+            "candidate": {
+              "count": 501,
+              "dtype": "float64",
+              "f64_sha256": "5a74132f9c5274f3464526d969ab2a6f85e9d61259788b208f74f33f65b6b3bb",
+              "shape": [
+                501
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "dfe_clock_times_s",
+            "oracle": {
+              "count": 501,
+              "dtype": "float64",
+              "f64_sha256": "5a74132f9c5274f3464526d969ab2a6f85e9d61259788b208f74f33f65b6b3bb",
+              "shape": [
+                501
+              ]
+            },
+            "passed": true,
+            "scale": 1.0010001899999999e-07,
+            "tolerance": 1.000000100100019e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "22bc70a2b531168f3a0f2451500dac4e469e2f2431bbdd3a5fe05dcf094346b8",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "dfe_clocks",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "22bc70a2b531168f3a0f2451500dac4e469e2f2431bbdd3a5fe05dcf094346b8",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 1.0,
+            "tolerance": 2e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "eec19bc6af0b3b6dfb97a08782c65f4bb3c3203e789a015d2008b0d689ad08be",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "dfe_locked",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "eec19bc6af0b3b6dfb97a08782c65f4bb3c3203e789a015d2008b0d689ad08be",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 0.0,
+            "tolerance": 1e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "9e9835020834acf524e4de26f336a1ec9ffecc11c5cf37a9d64c7e04ebbc43d8",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 2.5849394142282115e-26,
+            "name": "dfe_ui_estimates_s",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "db9b6e60a27dca9640406c4a7858609adb601841c23e34e1fccab3561e16404a",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 2.00106e-10,
+            "tolerance": 1.000000000200106e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "5e42b116f774c2875a49d8e3a49e279e51266f7fee158a355b2cd265bf6e6b0c",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "random_noise_v",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "5e42b116f774c2875a49d8e3a49e279e51266f7fee158a355b2cd265bf6e6b0c",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 0.038994585111713484,
+            "tolerance": 1.0389945851117133e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "16e1132abe24d1bc43d3aee58ca7cb13a9e6bb1eca8e04318caa8bef3157f453",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 2.9240169313604625e-11,
+            "name": "additive_noise_v",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "e1e50e74e5e5aaeee4f5a0d44aa1a28113077437570a894828cb704c50334fae",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 0.04682850181685129,
+            "tolerance": 1.0468285018168513e-06
+          }
+        ]
+      },
+      "status": "passed"
+    },
+    {
+      "blockers": [
+        "NPZ load failed: FileNotFoundError",
+        "candidate sim-rust process failed",
+        "candidate artifact schema mismatch"
+      ],
+      "candidate": {
+        "schema": null
+      },
+      "candidate_process": {
+        "exit_code": 1,
+        "stderr_json": {
+          "code": "artifact_error",
+          "message": "workflow artifact failed: native simulation failed: ideal and actual crossing arrays must be non-empty and finite",
+          "schema": "pybert.workflow-error.v1",
+          "source": {
+            "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+            "repository": "pybert",
+            "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+          }
+        },
+        "stderr_sha256": "996adbbdbae11a3bdf46862be3a6c2b82c82fda44c38938a9a5a423e410079d7",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "rx_input_v",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v",
+        "dfe_decisions",
+        "dfe_clock_times_s",
+        "dfe_clocks",
+        "dfe_locked",
+        "dfe_ui_estimates_s",
+        "random_noise_v",
+        "additive_noise_v"
+      ],
+      "id": "duo-noise-dfe",
+      "oracle": {
+        "array_names": [
+          "additive_noise_v",
+          "channel_impulse_v_per_v",
+          "channel_output_v",
+          "ctle_output_v",
+          "dfe_clock_times_s",
+          "dfe_clocks",
+          "dfe_decisions",
+          "dfe_locked",
+          "dfe_output_v",
+          "dfe_ui_estimates_s",
+          "random_noise_v",
+          "rx_input_v",
+          "rx_output_v"
+        ],
+        "backend": "python",
+        "diagnostics": {
+          "backend": "python"
+        },
+        "metrics": null,
+        "schema": "pybert.python-oracle-result.v1",
+        "source_command": "PythonSimulationBackend"
+      },
+      "oracle_process": {
+        "exit_code": 0,
+        "stderr_sha256": "27748ecdfd14cca77a8ed755999345d9884208c838f44bb5298a6becce3b1a01",
+        "stdout_sha256": "eb48574a4e55fbcc337871b8b92a17bda9c6ce850592879ea794fe19d49f9ca1"
+      },
+      "payload": {
+        "compared_field_count": 0,
+        "equal": false,
+        "fields": []
+      },
+      "status": "blocked"
+    },
+    {
+      "blockers": [
+        "payload mismatch: viterbi_state_path",
+        "payload mismatch: viterbi_symbols_v"
+      ],
+      "candidate": {
+        "array_names": null,
+        "backend": null,
+        "diagnostics": {},
+        "metrics": null,
+        "schema": "pybert.native-cli-result.v1",
+        "source_command": null
+      },
+      "candidate_process": {
+        "exit_code": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "2cd8efe9942094a718cc9945c23cdd7a92091722c998dab5780ab7c89b137209"
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "rx_input_v",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v",
+        "dfe_decisions",
+        "dfe_clock_times_s",
+        "viterbi_state_path",
+        "viterbi_symbols_v",
+        "random_noise_v",
+        "additive_noise_v"
+      ],
+      "id": "pam4-viterbi-isi",
+      "oracle": {
+        "array_names": [
+          "additive_noise_v",
+          "channel_impulse_v_per_v",
+          "channel_output_v",
+          "ctle_output_v",
+          "dfe_clock_times_s",
+          "dfe_clocks",
+          "dfe_decisions",
+          "dfe_locked",
+          "dfe_output_v",
+          "dfe_ui_estimates_s",
+          "random_noise_v",
+          "rx_input_v",
+          "rx_output_v",
+          "viterbi_state_path",
+          "viterbi_symbols_v"
+        ],
+        "backend": "python",
+        "diagnostics": {
+          "backend": "python"
+        },
+        "metrics": null,
+        "schema": "pybert.python-oracle-result.v1",
+        "source_command": "PythonSimulationBackend"
+      },
+      "oracle_process": {
+        "exit_code": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "9c42b5d36fd6540288c0903053009b9ff0b3e7c57979994d51ac1934535c0c45"
+      },
+      "payload": {
+        "compared_field_count": 12,
+        "equal": false,
+        "fields": [
+          {
+            "candidate": {
+              "count": 640,
+              "dtype": "float64",
+              "f64_sha256": "a7bfbfddb43669f52b7900b8e6f78b99908acf0b52a63287642295931ad61843",
+              "shape": [
+                640
+              ]
+            },
+            "max_abs": 2.4854524802208136e-10,
+            "name": "channel_impulse_v_per_v",
+            "oracle": {
+              "count": 640,
+              "dtype": "float64",
+              "f64_sha256": "2b201c7ead9bcababd3e7f8cd8fc1741942341d5ecf2cfe5725997994bcd681f",
+              "shape": [
+                640
+              ]
+            },
+            "passed": true,
+            "scale": 0.035523754048028995,
+            "tolerance": 1.035523754048029e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "05f7c09f2352e8ba75d56c18daaad35441526a03896861496c1ff3589103a5d2",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 3.3493876769319364e-08,
+            "name": "channel_output_v",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "c0bc8441cb6787984f50bf5957948a395570cb9d0c53a8f5f51a1620d922586d",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 0.3504156825955363,
+            "tolerance": 1.3504156825955363e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "6095a44f2a74ea793cb05ec76638c5c06cad560e1a1bb05cce5ec35bd5d2f6df",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 2.836934165362237e-08,
+            "name": "rx_input_v",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "700e844031340232c6f6df9a35bacba1d743810e99079d411cbe8a419a242d6a",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 0.3692666451412557,
+            "tolerance": 1.3692666451412556e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "6095a44f2a74ea793cb05ec76638c5c06cad560e1a1bb05cce5ec35bd5d2f6df",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 2.836934165362237e-08,
+            "name": "ctle_output_v",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "700e844031340232c6f6df9a35bacba1d743810e99079d411cbe8a419a242d6a",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 0.3692666451412557,
+            "tolerance": 1.3692666451412556e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "99f439546a94a74faa25f197c0f5caeef54ab18a80b72544273d4061b5c8c3ed",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 2.836934165362237e-08,
+            "name": "rx_output_v",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "fa0d0925efc55718dfab5c5e2a65fa31ec0f4df42a4f72c7e0ca4c5d5fb8f567",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 0.3692666451412557,
+            "tolerance": 1.3692666451412556e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "99f439546a94a74faa25f197c0f5caeef54ab18a80b72544273d4061b5c8c3ed",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 2.836934165362237e-08,
+            "name": "dfe_output_v",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "fa0d0925efc55718dfab5c5e2a65fa31ec0f4df42a4f72c7e0ca4c5d5fb8f567",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 0.3692666451412557,
+            "tolerance": 1.3692666451412556e-06
+          },
+          {
+            "candidate": {
+              "count": 500,
+              "dtype": "float64",
+              "f64_sha256": "fa80fb75b8e2bd7389e205576a917a8636eae2e2f063314535eb61ff16cc0acd",
+              "shape": [
+                500
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "dfe_decisions",
+            "oracle": {
+              "count": 500,
+              "dtype": "float64",
+              "f64_sha256": "fa80fb75b8e2bd7389e205576a917a8636eae2e2f063314535eb61ff16cc0acd",
+              "shape": [
+                500
+              ]
+            },
+            "passed": true,
+            "scale": 1.0,
+            "tolerance": 2e-06
+          },
+          {
+            "candidate": {
+              "count": 501,
+              "dtype": "float64",
+              "f64_sha256": "3aa5921b724881981068d305f05426644660defb8544dba8c704b48d9b7652bd",
+              "shape": [
+                501
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "dfe_clock_times_s",
+            "oracle": {
+              "count": 501,
+              "dtype": "float64",
+              "f64_sha256": "3aa5921b724881981068d305f05426644660defb8544dba8c704b48d9b7652bd",
+              "shape": [
+                501
+              ]
+            },
+            "passed": true,
+            "scale": 1.0010002600000007e-07,
+            "tolerance": 1.000000100100026e-06
+          },
+          {
+            "candidate": {
+              "count": 500,
+              "dtype": "float64",
+              "f64_sha256": "ecf74913f7725d0839fb0290aabefb939be3d222903d2e8a87cb8ce511185ec7",
+              "shape": [
+                500
+              ]
+            },
+            "max_abs": 13.0,
+            "name": "viterbi_state_path",
+            "oracle": {
+              "count": 500,
+              "dtype": "float64",
+              "f64_sha256": "4815d24207ca503e5b14b4f2fdace4cde4483796588487f49a0268ab6ecabf3e",
+              "shape": [
+                500
+              ]
+            },
+            "passed": false,
+            "scale": 15.0,
+            "tolerance": 1.6e-05
+          },
+          {
+            "candidate": {
+              "count": 500,
+              "dtype": "float64",
+              "f64_sha256": "79e3962df7275efb9551ace8fb5a5929967ee27d11477c21989df305dfa905c7",
+              "shape": [
+                500
+              ]
+            },
+            "max_abs": 0.6666666666666666,
+            "name": "viterbi_symbols_v",
+            "oracle": {
+              "count": 500,
+              "dtype": "float64",
+              "f64_sha256": "6d4716fbffe303cd082581472f9d0d4d3fdd9947c3b01a99825f202409dad6b9",
+              "shape": [
+                500
+              ]
+            },
+            "passed": false,
+            "scale": 1.0,
+            "tolerance": 2e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "5e42b116f774c2875a49d8e3a49e279e51266f7fee158a355b2cd265bf6e6b0c",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "random_noise_v",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "5e42b116f774c2875a49d8e3a49e279e51266f7fee158a355b2cd265bf6e6b0c",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 0.038994585111713484,
+            "tolerance": 1.0389945851117133e-06
+          },
+          {
+            "candidate": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "5e42b116f774c2875a49d8e3a49e279e51266f7fee158a355b2cd265bf6e6b0c",
+              "shape": [
+                16000
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "additive_noise_v",
+            "oracle": {
+              "count": 16000,
+              "dtype": "float64",
+              "f64_sha256": "5e42b116f774c2875a49d8e3a49e279e51266f7fee158a355b2cd265bf6e6b0c",
+              "shape": [
+                16000
+              ]
+            },
+            "passed": true,
+            "scale": 0.038994585111713484,
+            "tolerance": 1.0389945851117133e-06
+          }
+        ]
+      },
+      "status": "blocked"
+    },
+    {
+      "blockers": [
+        "NPZ load failed: FileNotFoundError",
+        "independent Python oracle process failed",
+        "Python oracle artifact schema mismatch"
+      ],
+      "candidate": {
+        "array_names": null,
+        "backend": null,
+        "diagnostics": {},
+        "metrics": null,
+        "schema": "pybert.native-cli-result.v1",
+        "source_command": null
+      },
+      "candidate_process": {
+        "exit_code": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "7540d5758c0954c4680e483fa5474fcd135f3177144f36793f657a86a5a6ce4c"
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "rx_input_v",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v",
+        "dfe_decisions",
+        "dfe_clock_times_s",
+        "viterbi_state_path",
+        "viterbi_symbols_v"
+      ],
+      "id": "pam4-viterbi-fec",
+      "oracle": {
+        "schema": null
+      },
+      "oracle_process": {
+        "exit_code": 1,
+        "stderr_sha256": "a6a813acd4617cdca599cc0ea59aa14ca30f9958e28c78c94e2ed7bb87012dd9",
+        "stdout_sha256": "8f0cd296bcf361bcbe8ba6ad42926d51366552ad5ac78a7d98f1272aaf1aa6f8"
+      },
+      "payload": {
+        "compared_field_count": 0,
+        "equal": false,
+        "fields": []
+      },
+      "status": "blocked"
+    },
+    {
+      "blockers": [
+        "payload shape mismatch: channel_impulse_v_per_v",
+        "payload mismatch: channel_output_v",
+        "payload mismatch: rx_input_v",
+        "payload mismatch: ctle_output_v",
+        "payload mismatch: rx_output_v",
+        "payload mismatch: dfe_output_v",
+        "payload shape mismatch: dfe_decisions",
+        "payload shape mismatch: dfe_clock_times_s",
+        "payload mismatch: dfe_clocks",
+        "payload mismatch: dfe_locked"
+      ],
+      "candidate": {
+        "array_names": null,
+        "backend": null,
+        "diagnostics": {},
+        "metrics": null,
+        "schema": "pybert.native-cli-result.v1",
+        "source_command": null
+      },
+      "candidate_process": {
+        "exit_code": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "418a4b95ab2762a634b414f38f0382b0696fa1bfe9df96b5d50aaa6769696c34"
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "rx_input_v",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v",
+        "dfe_decisions",
+        "dfe_clock_times_s",
+        "dfe_clocks",
+        "dfe_locked",
+        "dfe_ui_estimates_s"
+      ],
+      "id": "nrz-s2p",
+      "oracle": {
+        "array_names": [
+          "additive_noise_v",
+          "channel_impulse_v_per_v",
+          "channel_output_v",
+          "ctle_output_v",
+          "dfe_clock_times_s",
+          "dfe_clocks",
+          "dfe_decisions",
+          "dfe_locked",
+          "dfe_output_v",
+          "dfe_ui_estimates_s",
+          "random_noise_v",
+          "rx_input_v",
+          "rx_output_v"
+        ],
+        "backend": "python",
+        "diagnostics": {
+          "backend": "python"
+        },
+        "metrics": null,
+        "schema": "pybert.python-oracle-result.v1",
+        "source_command": "PythonSimulationBackend"
+      },
+      "oracle_process": {
+        "exit_code": 0,
+        "stderr_sha256": "a17c56d9942e7c0eaddbd2140913f3c05b4d1ac409a763da8a02e9f269b38f99",
+        "stdout_sha256": "fbab221633bebe61056ef5a1342a221a8e4128e650d682f399c9ca715421cac2"
+      },
+      "payload": {
+        "compared_field_count": 11,
+        "equal": false,
+        "fields": [
+          {
+            "candidate": {
+              "count": 8192,
+              "dtype": "float64",
+              "f64_sha256": "dfbe07cd337cbd0f86fed193aa874cef4420896af6037a476e7d77cdbf1f1db4",
+              "shape": [
+                8192
+              ]
+            },
+            "name": "channel_impulse_v_per_v",
+            "oracle": {
+              "count": 800,
+              "dtype": "float64",
+              "f64_sha256": "c3fed6b441bf5d4dbd0dc47977b44cd5c7607fd93f042d9de76b3961bfc9daf4",
+              "shape": [
+                800
+              ]
+            },
+            "passed": false,
+            "reason": "shape_mismatch"
+          },
+          {
+            "candidate": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "0a4918695d68bc848613c0256e7d6e938e77354faf423a48eb88fc0e573b3186",
+              "shape": [
+                8000
+              ]
+            },
+            "max_abs": 0.5705224645787159,
+            "name": "channel_output_v",
+            "oracle": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "6a6f1e3386ccc832a2c01b91e71411b14584e1bc36f747a47d8d4d2374c610eb",
+              "shape": [
+                8000
+              ]
+            },
+            "passed": false,
+            "scale": 0.2999656419262768,
+            "tolerance": 1.2999656419262767e-06
+          },
+          {
+            "candidate": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "a95e49c7173118c3863f9b6d3eeead83ff3442133996a2582e3729f8adaeb75a",
+              "shape": [
+                8000
+              ]
+            },
+            "max_abs": 0.5705224645787159,
+            "name": "rx_input_v",
+            "oracle": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "c63fd03c2f2854eb96963520df63f8be3a54eaa56aaa17b4351a255d108d8fbc",
+              "shape": [
+                8000
+              ]
+            },
+            "passed": false,
+            "scale": 0.2999656419262768,
+            "tolerance": 1.2999656419262767e-06
+          },
+          {
+            "candidate": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "a95e49c7173118c3863f9b6d3eeead83ff3442133996a2582e3729f8adaeb75a",
+              "shape": [
+                8000
+              ]
+            },
+            "max_abs": 0.5705224645787159,
+            "name": "ctle_output_v",
+            "oracle": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "c63fd03c2f2854eb96963520df63f8be3a54eaa56aaa17b4351a255d108d8fbc",
+              "shape": [
+                8000
+              ]
+            },
+            "passed": false,
+            "scale": 0.2999656419262768,
+            "tolerance": 1.2999656419262767e-06
+          },
+          {
+            "candidate": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "b950ec43c7e45ebe51e9b5cedc1801afa174db3d041efe51b46aeffe9bc621dd",
+              "shape": [
+                8000
+              ]
+            },
+            "max_abs": 0.5705224645787159,
+            "name": "rx_output_v",
+            "oracle": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "8c9b10dbcbea72a4b0108ed8205a89d06d1f74874b9c6e8ec23f659fb4a2f1ff",
+              "shape": [
+                8000
+              ]
+            },
+            "passed": false,
+            "scale": 0.2999656419262768,
+            "tolerance": 1.2999656419262767e-06
+          },
+          {
+            "candidate": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "b950ec43c7e45ebe51e9b5cedc1801afa174db3d041efe51b46aeffe9bc621dd",
+              "shape": [
+                8000
+              ]
+            },
+            "max_abs": 0.5705224645787159,
+            "name": "dfe_output_v",
+            "oracle": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "eda14922f55dc1642ced005496249e81a6fe22db0f5f896561a796216fe4e8f7",
+              "shape": [
+                8000
+              ]
+            },
+            "passed": false,
+            "scale": 0.2999656419262768,
+            "tolerance": 1.2999656419262767e-06
+          },
+          {
+            "candidate": {
+              "count": 1000,
+              "dtype": "float64",
+              "f64_sha256": "e3b0e3f1666303b7bdd7cde7597df8025cfa7b4a21d2d77176c6a5ef3eecab38",
+              "shape": [
+                1000
+              ]
+            },
+            "name": "dfe_decisions",
+            "oracle": {
+              "count": 999,
+              "dtype": "float64",
+              "f64_sha256": "0649f08857bd7be8e7d1d7412c39045f8e24ccafd54bf95ac1268199c0039ce7",
+              "shape": [
+                999
+              ]
+            },
+            "passed": false,
+            "reason": "shape_mismatch"
+          },
+          {
+            "candidate": {
+              "count": 1001,
+              "dtype": "float64",
+              "f64_sha256": "8ea89c42f859c660d79691df3abc2a4a7d63f4f28f33997cbab3b8e3b7a55464",
+              "shape": [
+                1001
+              ]
+            },
+            "name": "dfe_clock_times_s",
+            "oracle": {
+              "count": 1000,
+              "dtype": "float64",
+              "f64_sha256": "c5480977b0836619e1d11ac697cdff66ee45cef4f4e0503e783b160ccf687f70",
+              "shape": [
+                1000
+              ]
+            },
+            "passed": false,
+            "reason": "shape_mismatch"
+          },
+          {
+            "candidate": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "fba453aa8519c085e65f7393d30cd772d080c5d98d915c795f8b532aa216efa2",
+              "shape": [
+                8000
+              ]
+            },
+            "max_abs": 1.0,
+            "name": "dfe_clocks",
+            "oracle": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "643f71c9c0849dddce03ebd3045536f82fc944a7dc7c0b702c2bcc0adda8b4c2",
+              "shape": [
+                8000
+              ]
+            },
+            "passed": false,
+            "scale": 1.0,
+            "tolerance": 2e-06
+          },
+          {
+            "candidate": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "4f7988030a00d082fe445e00a2ac5dab502300ff1b80e8592dd569867b60ef74",
+              "shape": [
+                8000
+              ]
+            },
+            "max_abs": 1.0,
+            "name": "dfe_locked",
+            "oracle": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "fe32e029ed9aa15f5a1c47a599cf74e14febb0ec1ced9ebfca67eb7a5ee26ce7",
+              "shape": [
+                8000
+              ]
+            },
+            "passed": false,
+            "scale": 1.0,
+            "tolerance": 2e-06
+          },
+          {
+            "candidate": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "d74b8e7bc24fe6dc4f90f11b2bc56b1b78c549a80a95dff7fdded307d92ee83c",
+              "shape": [
+                8000
+              ]
+            },
+            "max_abs": 2.959999999999931e-13,
+            "name": "dfe_ui_estimates_s",
+            "oracle": {
+              "count": 8000,
+              "dtype": "float64",
+              "f64_sha256": "925902026e7bac533e5aaaaa2bb4a5fb0ceee40b21903c6c03b6551a1da37685",
+              "shape": [
+                8000
+              ]
+            },
+            "passed": true,
+            "scale": 1.00154e-10,
+            "tolerance": 1.000000000100154e-06
+          }
+        ]
+      },
+      "status": "blocked"
+    },
+    {
+      "blockers": [
+        "payload mismatch: ctle_output_v",
+        "payload mismatch: rx_output_v",
+        "payload mismatch: dfe_output_v",
+        "payload mismatch: dfe_decisions",
+        "payload mismatch: dfe_clocks",
+        "payload mismatch: dfe_locked"
+      ],
+      "candidate": {
+        "array_names": null,
+        "backend": null,
+        "diagnostics": {},
+        "metrics": null,
+        "schema": "pybert.native-cli-result.v1",
+        "source_command": null
+      },
+      "candidate_process": {
+        "exit_code": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "cd878638b0910087bf7b6253c461267f88ac17ca7431036679ecac466e9408a4"
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "rx_input_v",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v",
+        "dfe_decisions",
+        "dfe_clock_times_s",
+        "dfe_clocks",
+        "dfe_locked",
+        "dfe_ui_estimates_s",
+        "random_noise_v",
+        "additive_noise_v"
+      ],
+      "id": "nrz-analytic-ctle",
+      "oracle": {
+        "array_names": [
+          "additive_noise_v",
+          "channel_impulse_v_per_v",
+          "channel_output_v",
+          "ctle_output_v",
+          "dfe_clock_times_s",
+          "dfe_clocks",
+          "dfe_decisions",
+          "dfe_locked",
+          "dfe_output_v",
+          "dfe_ui_estimates_s",
+          "random_noise_v",
+          "rx_input_v",
+          "rx_output_v"
+        ],
+        "backend": "python",
+        "diagnostics": {
+          "backend": "python"
+        },
+        "metrics": null,
+        "schema": "pybert.python-oracle-result.v1",
+        "source_command": "PythonSimulationBackend"
+      },
+      "oracle_process": {
+        "exit_code": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "eab4c08bc9ebe5adc1aa0f5113f7f5f97502b368fdfbc50fc9b8d853ca56f050"
+      },
+      "payload": {
+        "compared_field_count": 13,
+        "equal": false,
+        "fields": [
+          {
+            "candidate": {
+              "count": 640,
+              "dtype": "float64",
+              "f64_sha256": "22e4f6861a06c7a03a783e0f93cb5df1caada8812c49a5a866cf7f6b383697af",
+              "shape": [
+                640
+              ]
+            },
+            "max_abs": 9.528047426564379e-11,
+            "name": "channel_impulse_v_per_v",
+            "oracle": {
+              "count": 640,
+              "dtype": "float64",
+              "f64_sha256": "661c4aaea08932963b33f659b3a5e15413ba2ab30e8f51ef4df9c3dff8dcb624",
+              "shape": [
+                640
+              ]
+            },
+            "passed": true,
+            "scale": 0.017761877024014498,
+            "tolerance": 1.0177618770240146e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "a208dba81e601cbfefa77c9e907c65b933832ae994689cdd070f2e5b44ec72cf",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 1.5443559264749496e-08,
+            "name": "channel_output_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "08bcfc868d811bcf7e3ee3f1cbb82304c2fa9e615210d9ca353c8b2800d29433",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 0.4998107963685434,
+            "tolerance": 1.4998107963685434e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "274f5ca2fed530382c5604c6a93e091cbf923559f6d1f1e5254d41167ad98fba",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 1.3431195572399801e-08,
+            "name": "rx_input_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "98851991759602a836e12738b2d2d1ef4b9c2d4fb46514c05f00cad628de19bf",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 0.4851591466629174,
+            "tolerance": 1.4851591466629172e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "22dda769f891dda155dac225a87b6316532faa18847b9dfef3d90697533057c6",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 0.08607572399639721,
+            "name": "ctle_output_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "8a953ce7640297e52aa4853753cb8ea20effe7de336fb555a471507b3612541c",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": false,
+            "scale": 0.37645610577033434,
+            "tolerance": 1.3764561057703343e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "71e529b1a8e37a3cb5c27fbde7aec1959f4d724a4734667e483478269d460af8",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 0.08607572399639721,
+            "name": "rx_output_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "3115556aa725102a2bf2c28fc7c99c7a5812619141d9e205e0ab343ba8941e9e",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": false,
+            "scale": 0.37645610577033434,
+            "tolerance": 1.3764561057703343e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "544d5522054d0cbfe56961bd444ddf0649c3a2f04598cbf3e9bb5c56be431912",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 0.08607572399639721,
+            "name": "dfe_output_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "a06341872b6aa19fb0256f75f9895df9cf11d14c2312875707c4bf712b005df2",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": false,
+            "scale": 0.37645610577033434,
+            "tolerance": 1.3764561057703343e-06
+          },
+          {
+            "candidate": {
+              "count": 1000,
+              "dtype": "float64",
+              "f64_sha256": "40775acf0f283cba0631053ef33b54c8f3cdbf45f508f17bb550ad5c74d5ce7c",
+              "shape": [
+                1000
+              ]
+            },
+            "max_abs": 2.0,
+            "name": "dfe_decisions",
+            "oracle": {
+              "count": 1000,
+              "dtype": "float64",
+              "f64_sha256": "53d6bf778e9dbeeeb79d3c5c72afcdc818b55fbe75a216dc6e866fb90df6f9e1",
+              "shape": [
+                1000
+              ]
+            },
+            "passed": false,
+            "scale": 1.0,
+            "tolerance": 2e-06
+          },
+          {
+            "candidate": {
+              "count": 1001,
+              "dtype": "float64",
+              "f64_sha256": "24a7a8ea6172a2ef38c118b7ef2089cc17ca6cc10d3d0e10d14491cbe3cf5241",
+              "shape": [
+                1001
+              ]
+            },
+            "max_abs": 1.6149999999847583e-11,
+            "name": "dfe_clock_times_s",
+            "oracle": {
+              "count": 1001,
+              "dtype": "float64",
+              "f64_sha256": "58b8809226e28a63dd2546f7b290b936e8ba9ea5b83c6f3c7c10d44c2288279c",
+              "shape": [
+                1001
+              ]
+            },
+            "passed": true,
+            "scale": 1.0006567499999994e-07,
+            "tolerance": 1.000000100065675e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "b91b9170b97aa2172f67e0db7c7377b62f7808820ab46e53f36a4fac1a5fe90c",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 1.0,
+            "name": "dfe_clocks",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "813119207bb3ba55b277b5006615041e4130650ed853c583487bfd53cb43687b",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": false,
+            "scale": 1.0,
+            "tolerance": 2e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "c4b9c29e2dfec7c02944de4107a786d1a30e8a6d0717d9b2ab1e511587480dc6",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 1.0,
+            "name": "dfe_locked",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "a01bd5e068be443a530ccc5ae1f52ccc4ac6e69a3c488e1aeb248d41b3d437c7",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": false,
+            "scale": 1.0,
+            "tolerance": 2e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "66f64cda48ce3092c1bef46a77be9d35e833bc4c734c48dd35b7022d022aac91",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 2.280000000000172e-13,
+            "name": "dfe_ui_estimates_s",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "76ab556a4742a6586bfe45f66e57070e09c8d352c6415eb10049ee8473dcf8dd",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 1.0012700000000001e-10,
+            "tolerance": 1.0000000001001269e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "24a046dc04fefdb652e4077b41162490b344a4dd45f918505477f84c592f3070",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "random_noise_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "24a046dc04fefdb652e4077b41162490b344a4dd45f918505477f84c592f3070",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 0.0,
+            "tolerance": 1e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "24a046dc04fefdb652e4077b41162490b344a4dd45f918505477f84c592f3070",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "additive_noise_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "24a046dc04fefdb652e4077b41162490b344a4dd45f918505477f84c592f3070",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 0.0,
+            "tolerance": 1e-06
+          }
+        ]
+      },
+      "status": "blocked"
+    }
+  ],
+  "claims": {
+    "global_branch_parity": false,
+    "independent_python_payload_oracle": true,
+    "portable_cases_only": true,
+    "promotion": false
+  },
+  "corpus": {
+    "case_count": 7,
+    "file_names": [
+      "pb-03-ctle.s2p",
+      "pb-03-s2p.s2p"
+    ],
+    "path": "docs/baselines/pb-03-python-oracle-corpus-d3154093.v1.json",
+    "sha256": "1b20fb24beec541067d58238efa8aec568cb9e7a181cdf23a41e973da3defdc7"
+  },
+  "external_blockers": [
+    {
+      "branch": "legacy.external.ami_ibis_ts4_getwave",
+      "reason": "host-owned DLL/model/service remains outside the portable corpus"
+    },
+    {
+      "branch": "legacy.config.exact_pybert_data_class_pickle",
+      "reason": "the oracle executes the class but the Rust artifact contract remains data-only"
+    }
+  ],
+  "fixture": {
+    "archive_present": true,
+    "archive_source_sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f",
+    "path": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+    "sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f",
+    "source": "candidate_archive"
+  },
+  "fresh_run_nonce": "cc4189d439b343559635446bb77766d1",
+  "harness": {
+    "python_oracle": {
+      "path": "tools/pb_03_python_oracle.py",
+      "sha256": "4748ac8768b22200cd116ac13da7dd8738894ef1636931a401728c15d2b1a480",
+      "snapshot": "candidate_prep_archive_harness_snapshot"
+    },
+    "runner": {
+      "path": "tools/run_pb_03_python_oracle_matrix.py",
+      "sha256": "31e5dddd19f608497cfb34a95b5fb0b223b51d790db09b44207485dc1223b5f3"
+    }
+  },
+  "non_claims": [
+    "The Python process is independent of the Rust candidate and is not sim-rust.",
+    "Case payload parity does not close untested PyBERT branches or external model branches."
+  ],
+  "row": "PB-03",
+  "run_id": "pb-03-python-oracle-884b430b-run-02",
+  "schema": "sipi.pb-03-python-oracle-matrix-replay.v1",
+  "source_mode": "git_archive_at_candidate_prep_commit_plus_content_addressed_input_corpus_and_harness_snapshot",
+  "status": "blocked",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.EXE",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a"
+    },
+    "python": {
+      "executable": "python.EXE",
+      "file_sha256": "ee3131591ecdc30ebc9221769239e9d89df47380ed01e1b25ba2c68f6e808417",
+      "path_redacted": true,
+      "role": "python",
+      "version_exit_code": 0,
+      "version_output_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "executable": "rustc.EXE",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "timeout_seconds": 1800,
+    "uv": {
+      "executable": "uv.EXE",
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_exit_code": 0,
+      "version_output_sha256": "ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+  },
+  "version": 1
+}

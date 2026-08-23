@@ -71,9 +71,9 @@ class VerifyPb0318BranchTests(unittest.TestCase):
 
     def test_duo_branch_requires_report_derived_partial_contract(self) -> None:
         branch = next(item for item in self.document["branch_inventory"] if item["id"] == "legacy.modulation.pam4_duo_binary")
-        self.assertNotEqual(branch["oracle"].get("status"), "partial")
         contract = verifier.derive_duo_contract(self.document, verifier.ROOT, [])
         self.assertIsNotNone(contract)
+        self.assertEqual(branch["oracle"], contract)
         mutated = copy.deepcopy(self.document)
         duo = next(item for item in mutated["branch_inventory"] if item["id"] == "legacy.modulation.pam4_duo_binary")
         duo["oracle"] = contract

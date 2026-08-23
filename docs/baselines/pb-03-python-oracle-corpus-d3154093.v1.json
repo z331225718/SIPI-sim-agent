@@ -1,0 +1,176 @@
+{
+  "schema": "sipi.pb-03-python-oracle-corpus.v1",
+  "version": 1,
+  "base_fixture": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+  "cases": [
+    {
+      "id": "nrz-base",
+      "overrides": {},
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "rx_input_v",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v",
+        "dfe_decisions",
+        "dfe_clock_times_s",
+        "dfe_clocks",
+        "dfe_locked",
+        "dfe_ui_estimates_s",
+        "random_noise_v",
+        "additive_noise_v"
+      ]
+    },
+    {
+      "id": "pam4-noise-dfe",
+      "overrides": {
+        "mod_type": "PAM-4",
+        "pn_mag": 0.01,
+        "rn": 0.01,
+        "random_noise_seed": 99
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "rx_input_v",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v",
+        "dfe_decisions",
+        "dfe_clock_times_s",
+        "dfe_clocks",
+        "dfe_locked",
+        "dfe_ui_estimates_s",
+        "random_noise_v",
+        "additive_noise_v"
+      ]
+    },
+    {
+      "id": "duo-noise-dfe",
+      "overrides": {
+        "mod_type": "Duo-binary",
+        "pn_mag": 0.01,
+        "rn": 0.01,
+        "random_noise_seed": 99
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "rx_input_v",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v",
+        "dfe_decisions",
+        "dfe_clock_times_s",
+        "dfe_clocks",
+        "dfe_locked",
+        "dfe_ui_estimates_s",
+        "random_noise_v",
+        "additive_noise_v"
+      ]
+    },
+    {
+      "id": "pam4-viterbi-isi",
+      "overrides": {
+        "mod_type": "PAM-4",
+        "rn": 0.01,
+        "random_noise_seed": 99,
+        "rx_use_viterbi": true,
+        "rx_viterbi_symbols": 2,
+        "rx_viterbi_fec": false,
+        "debug": true
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "rx_input_v",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v",
+        "dfe_decisions",
+        "dfe_clock_times_s",
+        "viterbi_state_path",
+        "viterbi_symbols_v",
+        "random_noise_v",
+        "additive_noise_v"
+      ]
+    },
+    {
+      "id": "pam4-viterbi-fec",
+      "overrides": {
+        "mod_type": "PAM-4",
+        "impulse_length": 100.0,
+        "random_noise_seed": 99,
+        "rx_use_viterbi": true,
+        "rx_viterbi_symbols": 2,
+        "rx_viterbi_fec": true,
+        "debug": true
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "rx_input_v",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v",
+        "dfe_decisions",
+        "dfe_clock_times_s",
+        "viterbi_state_path",
+        "viterbi_symbols_v"
+      ]
+    },
+    {
+      "id": "nrz-s2p",
+      "overrides": {
+        "nspui": 8,
+        "f_max": 1.0,
+        "f_step": 100.0,
+        "impulse_length": 10.0,
+        "use_ch_file": true,
+        "ch_file": "pb-03-s2p.s2p",
+        "ctle_enable": false,
+        "random_noise_seed": 99
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "rx_input_v",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v",
+        "dfe_decisions",
+        "dfe_clock_times_s",
+        "dfe_clocks",
+        "dfe_locked",
+        "dfe_ui_estimates_s"
+      ]
+    },
+    {
+      "id": "nrz-analytic-ctle",
+      "overrides": {
+        "ctle_enable": true,
+        "random_noise_seed": 99
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "rx_input_v",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v",
+        "dfe_decisions",
+        "dfe_clock_times_s",
+        "dfe_clocks",
+        "dfe_locked",
+        "dfe_ui_estimates_s",
+        "random_noise_v",
+        "additive_noise_v"
+      ]
+    }
+  ],
+  "files": {
+    "pb-03-s2p.s2p": "# Hz S RI R 50\n100000000 0.0 0.0 0.7 0.0 0.02 0.0 0.0 0.0\n1000000000 0.0 0.0 0.65 0.0 0.02 0.0 0.0 0.0\n4000000000 0.0 0.0 0.5 0.0 0.02 0.0 0.0 0.0\n",
+    "pb-03-ctle.s2p": "# Hz S RI R 50\n100000000 0.0 0.0 1.0 0.0 0.0 0.0 0.0 0.0\n1000000000 0.0 0.0 0.9 0.0 0.0 0.0 0.0 0.0\n4000000000 0.0 0.0 0.7 0.0 0.0 0.0 0.0 0.0\n"
+  }
+}
