@@ -1,0 +1,198 @@
+{
+  "acceptance_tolerance": null,
+  "candidate": {
+    "archive_sha256": "c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9",
+    "commit": "64b783f66d7e986d0975be5ac3946b453b15c4ed",
+    "tree": "0e11721f2bb5b564002820cc7a5aaab45e30ba3b"
+  },
+  "corpus": [
+    "one_port_real_pole",
+    "response_union_poles",
+    "nested_dependency_staging",
+    "terminal_end_star_comment",
+    "nonzero_delay_rejection",
+    "missing_response_block"
+  ],
+  "external_runtime_blocked": true,
+  "fresh_run_nonce": "05860ffcf587c654bbb6ff0f94815caf4e3a6d25c06f2d2d30945d21b3320f62",
+  "helper": {
+    "path": "tools/run_as_remaining.py",
+    "sha256": "33397fcb3bc7416b3c9db42207e55f42a362e28c04a90f4dfe5466477447fef0"
+  },
+  "numeric_parity": false,
+  "parity_claim": false,
+  "replay": {
+    "cases": [
+      {
+        "binary": "sipi-agent-spice-run-rfm",
+        "case": "one_port_real_pole",
+        "expected_result": true,
+        "expected_returncode": 0,
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\"status\":\"PREPARED\",\"response_samples\":65,\"report\":\"<RUN_ROOT>\\cases\\one_port_real_pole\\out\\deck\\rfm_direct\\run_report.json\"}\n"
+      },
+      {
+        "binary": "sipi-agent-spice-run-rfm",
+        "case": "response_union_poles",
+        "expected_result": true,
+        "expected_returncode": 0,
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\"status\":\"PREPARED\",\"response_samples\":65,\"report\":\"<RUN_ROOT>\\cases\\response_union_poles\\out\\deck\\rfm_direct\\run_report.json\"}\n"
+      },
+      {
+        "binary": "sipi-agent-spice-run-rfm",
+        "case": "nested_dependency_staging",
+        "expected_result": true,
+        "expected_returncode": 0,
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\"status\":\"PREPARED\",\"response_samples\":65,\"report\":\"<RUN_ROOT>\\cases\\nested_dependency_staging\\out\\deck\\rfm_direct\\run_report.json\"}\n"
+      },
+      {
+        "binary": "sipi-agent-spice-run-rfm",
+        "case": "terminal_end_star_comment",
+        "expected_result": true,
+        "expected_returncode": 0,
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\"status\":\"PREPARED\",\"response_samples\":65,\"report\":\"<RUN_ROOT>\\cases\\terminal_end_star_comment\\out\\deck\\rfm_direct\\run_report.json\"}\n"
+      },
+      {
+        "binary": "sipi-agent-spice-run-rfm",
+        "case": "nonzero_delay_rejection",
+        "expected_result": true,
+        "expected_returncode": 2,
+        "returncode": 2,
+        "stderr": "run-rfm failed: unsupported run-rfm path: non-zero delay\n",
+        "stdout": ""
+      },
+      {
+        "binary": "sipi-agent-spice-run-rfm",
+        "case": "missing_response_block",
+        "expected_result": true,
+        "expected_returncode": 2,
+        "returncode": 2,
+        "stderr": "run-rfm failed: run-rfm RFM parse error: one or more response blocks are missing\n",
+        "stdout": ""
+      }
+    ],
+    "corpus_expected": true,
+    "files": [
+      "cases/missing_response_block/deck.sp",
+      "cases/missing_response_block/line.s2p",
+      "cases/missing_response_block/model.rfm",
+      "cases/nested_dependency_staging/deck.sp",
+      "cases/nested_dependency_staging/line.s2p",
+      "cases/nested_dependency_staging/model.rfm",
+      "cases/nested_dependency_staging/models/nested.inc",
+      "cases/nested_dependency_staging/models/top.inc",
+      "cases/nested_dependency_staging/out/deck/rfm_direct/case.cir",
+      "cases/nested_dependency_staging/out/deck/rfm_direct/case.source.sp",
+      "cases/nested_dependency_staging/out/deck/rfm_direct/model.input.rfm",
+      "cases/nested_dependency_staging/out/deck/rfm_direct/model.runtime.rfm",
+      "cases/nested_dependency_staging/out/deck/rfm_direct/models/nested.inc",
+      "cases/nested_dependency_staging/out/deck/rfm_direct/models/top.inc",
+      "cases/nested_dependency_staging/out/deck/rfm_direct/rfm_direct_wrapper.sp",
+      "cases/nested_dependency_staging/out/deck/rfm_direct/rfm_run_manifest.json",
+      "cases/nested_dependency_staging/out/deck/rfm_direct/run_report.json",
+      "cases/nonzero_delay_rejection/deck.sp",
+      "cases/nonzero_delay_rejection/line.s2p",
+      "cases/nonzero_delay_rejection/model.rfm",
+      "cases/one_port_real_pole/deck.sp",
+      "cases/one_port_real_pole/line.s2p",
+      "cases/one_port_real_pole/model.rfm",
+      "cases/one_port_real_pole/out/deck/rfm_direct/case.cir",
+      "cases/one_port_real_pole/out/deck/rfm_direct/case.source.sp",
+      "cases/one_port_real_pole/out/deck/rfm_direct/model.input.rfm",
+      "cases/one_port_real_pole/out/deck/rfm_direct/model.runtime.rfm",
+      "cases/one_port_real_pole/out/deck/rfm_direct/rfm_direct_wrapper.sp",
+      "cases/one_port_real_pole/out/deck/rfm_direct/rfm_run_manifest.json",
+      "cases/one_port_real_pole/out/deck/rfm_direct/run_report.json",
+      "cases/response_union_poles/deck.sp",
+      "cases/response_union_poles/line.s2p",
+      "cases/response_union_poles/model.rfm",
+      "cases/response_union_poles/out/deck/rfm_direct/case.cir",
+      "cases/response_union_poles/out/deck/rfm_direct/case.source.sp",
+      "cases/response_union_poles/out/deck/rfm_direct/model.input.rfm",
+      "cases/response_union_poles/out/deck/rfm_direct/model.runtime.rfm",
+      "cases/response_union_poles/out/deck/rfm_direct/rfm_direct_wrapper.sp",
+      "cases/response_union_poles/out/deck/rfm_direct/rfm_run_manifest.json",
+      "cases/response_union_poles/out/deck/rfm_direct/run_report.json",
+      "cases/terminal_end_star_comment/deck.sp",
+      "cases/terminal_end_star_comment/line.s2p",
+      "cases/terminal_end_star_comment/model.rfm",
+      "cases/terminal_end_star_comment/out/deck/rfm_direct/case.cir",
+      "cases/terminal_end_star_comment/out/deck/rfm_direct/case.source.sp",
+      "cases/terminal_end_star_comment/out/deck/rfm_direct/model.input.rfm",
+      "cases/terminal_end_star_comment/out/deck/rfm_direct/model.runtime.rfm",
+      "cases/terminal_end_star_comment/out/deck/rfm_direct/rfm_direct_wrapper.sp",
+      "cases/terminal_end_star_comment/out/deck/rfm_direct/rfm_run_manifest.json",
+      "cases/terminal_end_star_comment/out/deck/rfm_direct/run_report.json"
+    ],
+    "input_files": [
+      "cases/missing_response_block/deck.sp",
+      "cases/missing_response_block/line.s2p",
+      "cases/missing_response_block/model.rfm",
+      "cases/nested_dependency_staging/deck.sp",
+      "cases/nested_dependency_staging/line.s2p",
+      "cases/nested_dependency_staging/model.rfm",
+      "cases/nested_dependency_staging/models/nested.inc",
+      "cases/nested_dependency_staging/models/top.inc",
+      "cases/nonzero_delay_rejection/deck.sp",
+      "cases/nonzero_delay_rejection/line.s2p",
+      "cases/nonzero_delay_rejection/model.rfm",
+      "cases/one_port_real_pole/deck.sp",
+      "cases/one_port_real_pole/line.s2p",
+      "cases/one_port_real_pole/model.rfm",
+      "cases/response_union_poles/deck.sp",
+      "cases/response_union_poles/line.s2p",
+      "cases/response_union_poles/model.rfm",
+      "cases/terminal_end_star_comment/deck.sp",
+      "cases/terminal_end_star_comment/line.s2p",
+      "cases/terminal_end_star_comment/model.rfm"
+    ],
+    "input_tree_sha256": "f9d5e0a213ea657ddea9832ce1efcf89a953dfc842d7c776d2ff2641b40aff9e",
+    "tree_sha256": "6111e3f04204c076a4998c02aa98c050d066bd16a55c91093289516c882144c0"
+  },
+  "run_id": "as06-bound-20260823-01",
+  "runner": {
+    "path": "tools/run_as_remaining_bound.py",
+    "sha256": "d33520f2ae6e3fe6a245d3bb93e5291517dfffa946e19381051a0bd044da319a"
+  },
+  "schema": "sipi.agent-spice-as-06-bound-replay.v2",
+  "source_mode": "candidate_and_upstream_git_archive_at_immutable_commit",
+  "status": "completed_external_blocker_open",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "python": {
+      "executable": "python.exe",
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "path_redacted": true,
+      "role": "python",
+      "version_exit_code": 0,
+      "version_output_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  }
+}

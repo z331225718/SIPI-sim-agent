@@ -436,10 +436,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "source_mode": "git_archive_at_immutable_commit",
         "candidate": candidate_facts,
         "upstream": upstream_facts,
-        "fixture": {"path": fixture_relative.as_posix(), "bytes": len(payload), "sha256": _sha256(payload)},
+        "fixture": {"path": fixture_relative.as_posix(), "bytes": len(payload), "sha256": _sha256(payload), "archive_present": True},
         "toolchain": toolchain,
         "harness": {
-            "source_mode": "content_addressed_working_tree_files",
+            "source_mode": "git_archive_at_immutable_commit",
             "runner": {"path": "tools/run_pb_01_legacy_leaf_replay.py", "sha256": _file_sha256(runner_path)},
             "custody_runner_helper": {"path": "tools/run_pb_02_direct_replay.py", "sha256": _file_sha256(custody_runner_path)},
         },

@@ -1,0 +1,172 @@
+{
+  "acceptance_tolerance": null,
+  "candidate": {
+    "archive_sha256": "c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9",
+    "commit": "64b783f66d7e986d0975be5ac3946b453b15c4ed",
+    "tree": "0e11721f2bb5b564002820cc7a5aaab45e30ba3b"
+  },
+  "corpus": [
+    "two_block_ordered_intersection",
+    "priority_band_refit",
+    "malformed_manifest",
+    "zero_forward_transmission"
+  ],
+  "external_runtime_blocked": false,
+  "fresh_run_nonce": "79fb680c8509e727768f1e062f5668ac4d82b24005653527153793c634f5b233",
+  "helper": {
+    "path": "tools/run_as_remaining.py",
+    "sha256": "33397fcb3bc7416b3c9db42207e55f42a362e28c04a90f4dfe5466477447fef0"
+  },
+  "numeric_parity": false,
+  "parity_claim": false,
+  "replay": {
+    "cases": [
+      {
+        "binary": "sipi-agent-spice-fit-sparam-cascade",
+        "case": "two_block_ordered_intersection",
+        "expected_result": true,
+        "expected_returncode": 0,
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\"status\":\"PASS\",\"report\":\"<RUN_ROOT>\\cases\\two_block_ordered_intersection\\out\\cascade_report.json\"}\n"
+      },
+      {
+        "binary": "sipi-agent-spice-fit-sparam-cascade",
+        "case": "priority_band_refit",
+        "expected_result": true,
+        "expected_returncode": 0,
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\"status\":\"PASS\",\"report\":\"<RUN_ROOT>\\cases\\priority_band_refit\\out\\cascade_report.json\"}\n"
+      },
+      {
+        "binary": "sipi-agent-spice-fit-sparam-cascade",
+        "case": "malformed_manifest",
+        "expected_result": true,
+        "expected_returncode": 2,
+        "returncode": 2,
+        "stderr": "fit-sparam-cascade failed: invalid cascade manifest: manifest version must be 1\n",
+        "stdout": ""
+      },
+      {
+        "binary": "sipi-agent-spice-fit-sparam-cascade",
+        "case": "zero_forward_transmission",
+        "expected_result": true,
+        "expected_returncode": 2,
+        "returncode": 2,
+        "stderr": "fit-sparam-cascade failed: cascade numerical error: raw cascade has zero forward transmission\n",
+        "stdout": ""
+      }
+    ],
+    "corpus_expected": true,
+    "files": [
+      "cases/malformed_manifest/cascade.json",
+      "cases/malformed_manifest/line.s2p",
+      "cases/priority_band_refit/cascade.json",
+      "cases/priority_band_refit/line.s2p",
+      "cases/priority_band_refit/out/blocks/a/a.rfm",
+      "cases/priority_band_refit/out/blocks/a/a_fitted.s2p",
+      "cases/priority_band_refit/out/blocks/a/a_rfm_wrapper.sp",
+      "cases/priority_band_refit/out/blocks/a/a_s_equivalent.sp",
+      "cases/priority_band_refit/out/blocks/a/fit.log",
+      "cases/priority_band_refit/out/blocks/a/fit_report.html",
+      "cases/priority_band_refit/out/blocks/a/fit_report.json",
+      "cases/priority_band_refit/out/blocks/b/b.rfm",
+      "cases/priority_band_refit/out/blocks/b/b_fitted.s2p",
+      "cases/priority_band_refit/out/blocks/b/b_rfm_wrapper.sp",
+      "cases/priority_band_refit/out/blocks/b/b_s_equivalent.sp",
+      "cases/priority_band_refit/out/blocks/b/fit.log",
+      "cases/priority_band_refit/out/blocks/b/fit_report.html",
+      "cases/priority_band_refit/out/blocks/b/fit_report.json",
+      "cases/priority_band_refit/out/cascade_fitted.s2p",
+      "cases/priority_band_refit/out/cascade_report.json",
+      "cases/two_block_ordered_intersection/cascade.json",
+      "cases/two_block_ordered_intersection/line.s2p",
+      "cases/two_block_ordered_intersection/out/blocks/a/a.rfm",
+      "cases/two_block_ordered_intersection/out/blocks/a/a_fitted.s2p",
+      "cases/two_block_ordered_intersection/out/blocks/a/a_rfm_wrapper.sp",
+      "cases/two_block_ordered_intersection/out/blocks/a/a_s_equivalent.sp",
+      "cases/two_block_ordered_intersection/out/blocks/a/fit.log",
+      "cases/two_block_ordered_intersection/out/blocks/a/fit_report.html",
+      "cases/two_block_ordered_intersection/out/blocks/a/fit_report.json",
+      "cases/two_block_ordered_intersection/out/blocks/b/b.rfm",
+      "cases/two_block_ordered_intersection/out/blocks/b/b_fitted.s2p",
+      "cases/two_block_ordered_intersection/out/blocks/b/b_rfm_wrapper.sp",
+      "cases/two_block_ordered_intersection/out/blocks/b/b_s_equivalent.sp",
+      "cases/two_block_ordered_intersection/out/blocks/b/fit.log",
+      "cases/two_block_ordered_intersection/out/blocks/b/fit_report.html",
+      "cases/two_block_ordered_intersection/out/blocks/b/fit_report.json",
+      "cases/two_block_ordered_intersection/out/cascade_fitted.s2p",
+      "cases/two_block_ordered_intersection/out/cascade_report.json",
+      "cases/zero_forward_transmission/cascade.json",
+      "cases/zero_forward_transmission/line.s2p",
+      "cases/zero_forward_transmission/out/blocks/a/a.rfm",
+      "cases/zero_forward_transmission/out/blocks/a/a_fitted.s2p",
+      "cases/zero_forward_transmission/out/blocks/a/a_rfm_wrapper.sp",
+      "cases/zero_forward_transmission/out/blocks/a/a_s_equivalent.sp",
+      "cases/zero_forward_transmission/out/blocks/a/fit.log",
+      "cases/zero_forward_transmission/out/blocks/a/fit_report.html",
+      "cases/zero_forward_transmission/out/blocks/a/fit_report.json",
+      "cases/zero_forward_transmission/out/blocks/b/b.rfm",
+      "cases/zero_forward_transmission/out/blocks/b/b_fitted.s2p",
+      "cases/zero_forward_transmission/out/blocks/b/b_rfm_wrapper.sp",
+      "cases/zero_forward_transmission/out/blocks/b/b_s_equivalent.sp",
+      "cases/zero_forward_transmission/out/blocks/b/fit.log",
+      "cases/zero_forward_transmission/out/blocks/b/fit_report.html",
+      "cases/zero_forward_transmission/out/blocks/b/fit_report.json",
+      "cases/zero_forward_transmission/zero.s2p"
+    ],
+    "input_files": [
+      "cases/malformed_manifest/cascade.json",
+      "cases/malformed_manifest/line.s2p",
+      "cases/priority_band_refit/cascade.json",
+      "cases/priority_band_refit/line.s2p",
+      "cases/two_block_ordered_intersection/cascade.json",
+      "cases/two_block_ordered_intersection/line.s2p",
+      "cases/zero_forward_transmission/cascade.json",
+      "cases/zero_forward_transmission/line.s2p",
+      "cases/zero_forward_transmission/zero.s2p"
+    ],
+    "input_tree_sha256": "815ca01dc6f1940e8b88b81852c14ddbc07d8c307541a1fad98513843d4b3487",
+    "tree_sha256": "f73e8f06853228218a6c69e0c69181b365b56cc510cdc8a328e517288c9994f5"
+  },
+  "run_id": "as02-bound-20260823-02",
+  "runner": {
+    "path": "tools/run_as_remaining_bound.py",
+    "sha256": "d33520f2ae6e3fe6a245d3bb93e5291517dfffa946e19381051a0bd044da319a"
+  },
+  "schema": "sipi.agent-spice-as-02-bound-replay.v2",
+  "source_mode": "candidate_and_upstream_git_archive_at_immutable_commit",
+  "status": "completed_portable_observation_open",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "python": {
+      "executable": "python.exe",
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "path_redacted": true,
+      "role": "python",
+      "version_exit_code": 0,
+      "version_output_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  }
+}

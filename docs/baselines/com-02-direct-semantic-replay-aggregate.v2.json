@@ -1,0 +1,272 @@
+{
+  "binary_sha256_by_run": [
+    "a732fd28ace30a8b81ecba57028ef9af6fc50a6a50344e386631fd00880830fb",
+    "3414d891698e6c10e76db6e873d08bde278695fc9f0c44b5c25fad3ef0ddf424"
+  ],
+  "build_source_exact_equal": true,
+  "candidate": {
+    "archive_bytes": 39065600,
+    "archive_sha256": "c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9",
+    "binary": "target/debug/sipi-com-direct-run.exe",
+    "binary_bytes": 20912128,
+    "binary_sha256": "a732fd28ace30a8b81ecba57028ef9af6fc50a6a50344e386631fd00880830fb",
+    "commit": "64b783f66d7e986d0975be5ac3946b453b15c4ed",
+    "materialization": "git archive; no working-tree overlay",
+    "status": "bound_clean_git_archive",
+    "tree": "0e11721f2bb5b564002820cc7a5aaab45e30ba3b"
+  },
+  "execution_binding": {
+    "build_source": {
+      "archive_sha256": "c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9",
+      "command": [
+        "cargo",
+        "build",
+        "--manifest-path",
+        "crates/sipi-agent-com-direct/Cargo.toml",
+        "--locked",
+        "--bin",
+        "sipi-com-direct-run"
+      ],
+      "returncode": 0,
+      "rustc_wrapper_cleared": true,
+      "source_commit": "64b783f66d7e986d0975be5ac3946b453b15c4ed",
+      "source_mode": "candidate_git_archive_at_immutable_commit",
+      "source_tree": "0e11721f2bb5b564002820cc7a5aaab45e30ba3b",
+      "timed_out": false,
+      "timeout_seconds": 300
+    },
+    "fixture": {
+      "corpus_sha256": "98952015e93c26c07bae79e6be9fecf939ed4d90b280cec9696ca4b0486df38c",
+      "generator": "archived tools/com_direct_semantic_replay.py::write_fixture",
+      "inputs": [
+        {
+          "bytes": 225,
+          "name": "params.json",
+          "scenario": "base",
+          "sha256": "13f23ce7009c5841ce767ec88084583abf21b15afaa49890c6adfc79c89c6766"
+        },
+        {
+          "bytes": 1346,
+          "name": "pulse.json",
+          "scenario": "base",
+          "sha256": "05a4eff667ab0b9245bfc987ff66632270b14c5816fb530ae040c8889fa8a325"
+        },
+        {
+          "bytes": 225,
+          "name": "params.json",
+          "scenario": "fd_to_td",
+          "sha256": "13f23ce7009c5841ce767ec88084583abf21b15afaa49890c6adfc79c89c6766"
+        },
+        {
+          "bytes": 3930,
+          "name": "thru-fd.json",
+          "scenario": "fd_to_td",
+          "sha256": "6ff089c6ca9a707027957e8717f39eb0dc4113628108510ca23b24ef88e64358"
+        },
+        {
+          "bytes": 19020,
+          "name": "params.json",
+          "scenario": "mixed_mode",
+          "sha256": "8f06d4955315a4583b911a3f548d0fe34cdf70cc69a375a5ae5c7ab33ceaba9f"
+        },
+        {
+          "bytes": 1346,
+          "name": "pulse.json",
+          "scenario": "mixed_mode",
+          "sha256": "05a4eff667ab0b9245bfc987ff66632270b14c5816fb530ae040c8889fa8a325"
+        },
+        {
+          "bytes": 1396,
+          "name": "fext.json",
+          "scenario": "fext_next",
+          "sha256": "650fcd1de1ff7dbad6b1a46a2d45e2e87126f62884612a22634b09370a1d8e22"
+        },
+        {
+          "bytes": 1419,
+          "name": "next.json",
+          "scenario": "fext_next",
+          "sha256": "7ebbf1053a8495ef3baa0f10fc608e503c861e600e33aa9b7245101feb75aecf"
+        },
+        {
+          "bytes": 241,
+          "name": "params.json",
+          "scenario": "fext_next",
+          "sha256": "f52624109ef199a99612fc8fe66a126f95631973262c7590d54e64728bb6f986"
+        },
+        {
+          "bytes": 1346,
+          "name": "pulse.json",
+          "scenario": "fext_next",
+          "sha256": "05a4eff667ab0b9245bfc987ff66632270b14c5816fb530ae040c8889fa8a325"
+        },
+        {
+          "bytes": 4959,
+          "name": "params.json",
+          "scenario": "equalization",
+          "sha256": "6c2c77d6b4b449da11cde1a9c7161a62c8bcc811b44e196c1dc836de46f1cd52"
+        },
+        {
+          "bytes": 1346,
+          "name": "pulse.json",
+          "scenario": "equalization",
+          "sha256": "05a4eff667ab0b9245bfc987ff66632270b14c5816fb530ae040c8889fa8a325"
+        },
+        {
+          "bytes": 4258,
+          "name": "params.json",
+          "scenario": "tdiln",
+          "sha256": "c947fbbd182a9401d0e7365e60a811c3a524c1ce8061ccb949f3dc5bcf0902ad"
+        },
+        {
+          "bytes": 1346,
+          "name": "pulse.json",
+          "scenario": "tdiln",
+          "sha256": "05a4eff667ab0b9245bfc987ff66632270b14c5816fb530ae040c8889fa8a325"
+        },
+        {
+          "bytes": 4689,
+          "name": "params.json",
+          "scenario": "search",
+          "sha256": "5360bb5ad079fa9d4fdbda5afcb51503a8eefae4b99131a3ee5f3cbf85865502"
+        },
+        {
+          "bytes": 5550,
+          "name": "pulse.json",
+          "scenario": "search",
+          "sha256": "cb8788ed1dcae9198057b39e152c2c7552e26f3c2ad731e97e44175b5a7da19c"
+        },
+        {
+          "bytes": 5017,
+          "name": "params.json",
+          "scenario": "calibration",
+          "sha256": "0951c05d0159d477b8f1cc5dcd3bac010cbf0446415bda0438e6de0b0f9f093c"
+        },
+        {
+          "bytes": 1346,
+          "name": "pulse.json",
+          "scenario": "calibration",
+          "sha256": "05a4eff667ab0b9245bfc987ff66632270b14c5816fb530ae040c8889fa8a325"
+        },
+        {
+          "bytes": 661,
+          "name": "params.json",
+          "scenario": "mmse",
+          "sha256": "9c0be4741e5922586e40f479bb0623d134ec46d78604c85b83ac4e97493c0045"
+        },
+        {
+          "bytes": 1346,
+          "name": "pulse.json",
+          "scenario": "mmse",
+          "sha256": "05a4eff667ab0b9245bfc987ff66632270b14c5816fb530ae040c8889fa8a325"
+        },
+        {
+          "bytes": 1550,
+          "name": "params.json",
+          "scenario": "rx_ffe_search",
+          "sha256": "052c6d6c3025d3725536ed34d460834803c461f539b355370bb418280d50a96c"
+        },
+        {
+          "bytes": 1346,
+          "name": "pulse.json",
+          "scenario": "rx_ffe_search",
+          "sha256": "05a4eff667ab0b9245bfc987ff66632270b14c5816fb530ae040c8889fa8a325"
+        }
+      ],
+      "scenario_count": 10
+    },
+    "helper": {
+      "path": "tools/com_direct_semantic_replay.py",
+      "sha256": "3212e4bed33ab8456adf8fd55a322fced54a2576ebf311ff94807ca4fc143f4b"
+    },
+    "runner": {
+      "path": "tools/run_com_02_direct_semantic_replay.py",
+      "sha256": "2f5b8e6b33a1405c15347e1deed3e2b8b47344f7e99537307408a8e66a5510bb"
+    },
+    "source_probe": {
+      "s2p_forbids_matched_kernel": true,
+      "s2p_uses_validated_fd_to_td_leaf": true,
+      "s4p_forbids_matched_kernel": true,
+      "s4p_uses_validated_fd_to_td_leaf": true,
+      "s_parameter_fit": "forbidden",
+      "source": "crates/sipi-agent-com-direct/src/run_v1.rs",
+      "source_sha256": "706ebbdb39fea6f36bd4d0499b17f1b8e932728b72998192c450f7d30cffe65e"
+    },
+    "toolchain": {
+      "cargo": {
+        "executable": "cargo.exe",
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "cargo",
+        "timed_out": false,
+        "timeout_seconds": 30,
+        "version_exit_code": 0,
+        "version_output_sha256": "f4f564f8936fa8eb53bca8bbe50666489252bbcbeaae0cb0dd54682444697e52"
+      },
+      "path_redacted": true,
+      "rustc": {
+        "executable": "rustc.exe",
+        "file_sha256": "6d1c5543ed3a45cfbc1c1332d42d6550d883c14d3c2e323427e631c331cebeeb",
+        "path_redacted": true,
+        "role": "rustc",
+        "timed_out": false,
+        "timeout_seconds": 30,
+        "version_exit_code": 0,
+        "version_output_sha256": "ac31499b5910ed7ddbf1a62e57e03c1d0ca49fa78efc075b291afa8d192a4d44"
+      }
+    },
+    "v2_wrapper": {
+      "path": "tools/com_direct_semantic_replay_v2.py",
+      "sha256": "fcf23acf31ab9f5c0a84fc7ba4175790837f6ce36e3c7f7b462d5e2f9b3fa300"
+    }
+  },
+  "fresh_runs": 2,
+  "non_claims": [
+    "no_numeric_upstream_parity_claim",
+    "no_release_or_promotion",
+    "no_product_capability_promotion",
+    "no_global_migration_row_close"
+  ],
+  "nonces": [
+    "d34163a553ba35cbe2c42685e23d5043751d07bcd29f56e473ccbc57e6e1a788",
+    "59dd0a5f3dbd425c5bb9ec056f596e0851a4950a01901316c11f6f0b6fb4780c"
+  ],
+  "parity": {
+    "external_blockers": [
+      "matlab_engine",
+      "proprietary_golden",
+      "plotting_format"
+    ],
+    "numeric_upstream_parity_claim": false,
+    "status": "semantic_replay_only"
+  },
+  "report_paths": [
+    "docs/baselines/com-02-direct-semantic-replay-run1.v2.json",
+    "docs/baselines/com-02-direct-semantic-replay-run2.v2.json"
+  ],
+  "report_sha256": [
+    "115a21da6d92a948b0b6f9c1c9d49735e7ab6073a151f58d30f5213bfd33ea19",
+    "ceae3d45fdef62acef6d32535fe717ad5830f404e3b53fc70b27dc0f70efc145"
+  ],
+  "run_ids": [
+    "com-02-v2-fresh-1-d34163a553ba35cbe2c42685e23d5043751d07bcd29f56e473ccbc57e6e1a788",
+    "com-02-v2-fresh-2-59dd0a5f3dbd425c5bb9ec056f596e0851a4950a01901316c11f6f0b6fb4780c"
+  ],
+  "schema": "sipi.com-02.direct-semantic-replay-aggregate.v2",
+  "semantic_payload_sha256": [
+    "dea1769fe4a8d703039afb11c5fb1490718611abe9e4238494ebfb23e4f6cfff",
+    "dea1769fe4a8d703039afb11c5fb1490718611abe9e4238494ebfb23e4f6cfff"
+  ],
+  "semantic_replays_identical": true,
+  "status": "bound_clean_archive_observation",
+  "toolchain_exact_equal": true,
+  "upstream": {
+    "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "declared_license": "MIT",
+    "materialization": "git archive at immutable commit metadata-only",
+    "repository": "https://github.com/z331225718/agent-com.git",
+    "runtime_executed": false,
+    "source_map": "crates/sipi-agent-com-direct/SOURCE-MAP-COM-02.md",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+  }
+}

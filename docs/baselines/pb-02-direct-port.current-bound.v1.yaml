@@ -1,0 +1,31 @@
+schema: sipi.pb-02-current-bound.v1
+version: 1
+row: PB-02
+status: blocked_payload_parity
+source:
+  candidate_commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed
+  candidate_tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b
+  candidate_archive_sha256: c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9
+  upstream_commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  upstream_tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  upstream_archive_sha256: e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25
+  lane_inventory_sha256: 0f35cfc3e50b8fa61b720a081ba04fe3eb02171d594aacb0f7a3474349bf0fa4
+fixture:
+  path: crates/sipi-pybert-direct/fixtures/pb-02-nrz.json
+  sha256: 5bcd0b905f8a7f0ec5e2b7c3761a998e9553ac24a71b54f8b0d4e8e84261ea13
+harness:
+  runner: {path: tools/run_pb_02_direct_replay.py, sha256: ccae9d8266912cc4b00174c39ed6ef8ac06cd5a31667c3f44d77c6cf4be5782e}
+  helper: {path: tools/run_pb_02_direct_replay.py, sha256: ccae9d8266912cc4b00174c39ed6ef8ac06cd5a31667c3f44d77c6cf4be5782e}
+  aggregate: {path: tools/aggregate_pb_current_bound.py, sha256: 212b6acd0beff77b96f82e93b98bf2bfc7aa68c4594fed8928c479bfcccf05b2}
+  verifier: {path: tools/verify_pb_current_bound.py, sha256: b8916de7a25d149825fc1943e87e22b1f699c443754750833b385291db948672}
+toolchain_sha256: 60ca29c7c595cafcd3d9e6bbe59d71427095ed48804caca15127fec5bebc8ef2
+evidence:
+  reports:
+    - {path: docs/baselines/pb-02-direct-replay-current-bound-run-archive-01.v1.json, sha256: 714c622c7e80e6c0aea882e8a1df602a2e57202cc1b391b0083a0ed7f57b6c53, run_id: pb-02-current-bound-archive-01, fresh_run_nonce: 80914ed7a46dc590968ccb200a21649d5d854b78f1c56e777d905d57c036cd4d}
+    - {path: docs/baselines/pb-02-direct-replay-current-bound-run-archive-02.v1.json, sha256: a96e045092f0f44ce9a8efed99b5c48dda46b5637e270d63747c2b9f3a135901, run_id: pb-02-current-bound-archive-02, fresh_run_nonce: d094d9fd26ac11029e10db7e75b529c16a44da89c942edd07ce793c27a58b1f9}
+  aggregate: {path: docs/baselines/pb-02-direct-replay-current-bound-aggregate-archive.v1.json, sha256: f33fc4fd0e682ab334ed52d37938319ee11b3741611e92b8ba53f6512056bf47}
+audit: {path: docs/baselines/audits/2026-08-23-pb-02-current-bound.md, sha256: 381b65de82fb3fc4b077fac3a0cfa13bb1ad86f81cfd70881a4094663b34062a}
+claims: {payload_parity: false, global_row_closed: false, promotion: false}
+blockers:
+  - Candidate and Python payload NPZ logical members differ in both immutable replays.
+  - External AMI/IBIS models remain quarantined and non-distributed.

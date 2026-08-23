@@ -1,0 +1,142 @@
+{
+  "acceptance_tolerance": null,
+  "candidate": {
+    "archive_sha256": "c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9",
+    "commit": "64b783f66d7e986d0975be5ac3946b453b15c4ed",
+    "tree": "0e11721f2bb5b564002820cc7a5aaab45e30ba3b"
+  },
+  "corpus": [
+    "well_conditioned_two_port",
+    "nport_exact_html",
+    "ill_conditioned_i_plus_s",
+    "unsupported_exact_rfm"
+  ],
+  "external_runtime_blocked": false,
+  "fresh_run_nonce": "3c013da9de108754ec6973bcab38175441a9281ad95149caf4f439845dc4c09e",
+  "helper": {
+    "path": "tools/run_as_remaining.py",
+    "sha256": "33397fcb3bc7416b3c9db42207e55f42a362e28c04a90f4dfe5466477447fef0"
+  },
+  "numeric_parity": false,
+  "parity_claim": false,
+  "replay": {
+    "cases": [
+      {
+        "binary": "sipi-agent-spice-fit-yparam",
+        "case": "well_conditioned_two_port",
+        "expected_result": true,
+        "expected_returncode": 0,
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\"target_met\":true,\"selected_order\":1,\"y_rms_siemens\":2.38175802854038166e-1}\n"
+      },
+      {
+        "binary": "sipi-agent-spice-fit-yparam",
+        "case": "nport_exact_html",
+        "expected_result": true,
+        "expected_returncode": 0,
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\"target_met\":true,\"selected_order\":1,\"y_rms_siemens\":4.60474068507823546e-18}\n"
+      },
+      {
+        "binary": "sipi-agent-spice-fit-yparam",
+        "case": "ill_conditioned_i_plus_s",
+        "expected_result": true,
+        "expected_returncode": 2,
+        "returncode": 2,
+        "stderr": "fit-yparam failed: fit-yparam numerical error: S-to-Y conversion condition estimate inf exceeds 1.000000000000e12\n",
+        "stdout": ""
+      },
+      {
+        "binary": "sipi-agent-spice-fit-yparam",
+        "case": "unsupported_exact_rfm",
+        "expected_result": true,
+        "expected_returncode": 2,
+        "returncode": 2,
+        "stderr": "fit-yparam argument error: unsupported fit-yparam path: exact Y-to-S RFM delivery requires --no-fit-proportional (descriptor delivery is not enabled)\n",
+        "stdout": ""
+      }
+    ],
+    "corpus_expected": true,
+    "files": [
+      "cases/ill_conditioned_i_plus_s/ill.s2p",
+      "cases/ill_conditioned_i_plus_s/line.s2p",
+      "cases/nport_exact_html/line.s2p",
+      "cases/nport_exact_html/network.s3p",
+      "cases/nport_exact_html/network_fitted.y.log",
+      "cases/nport_exact_html/out.exact.s3p",
+      "cases/nport_exact_html/out.html",
+      "cases/nport_exact_html/out.rfm",
+      "cases/nport_exact_html/out.s2p",
+      "cases/nport_exact_html/out.y.json",
+      "cases/nport_exact_html/out.y.sp",
+      "cases/unsupported_exact_rfm/line.s2p",
+      "cases/well_conditioned_two_port/line.s2p",
+      "cases/well_conditioned_two_port/line_fitted.y.log",
+      "cases/well_conditioned_two_port/out.s2p",
+      "cases/well_conditioned_two_port/out.y.json",
+      "cases/well_conditioned_two_port/out.y.sp"
+    ],
+    "input_files": [
+      "cases/ill_conditioned_i_plus_s/ill.s2p",
+      "cases/ill_conditioned_i_plus_s/line.s2p",
+      "cases/nport_exact_html/line.s2p",
+      "cases/nport_exact_html/network.s3p",
+      "cases/nport_exact_html/network_fitted.y.log",
+      "cases/nport_exact_html/out.exact.s3p",
+      "cases/nport_exact_html/out.html",
+      "cases/nport_exact_html/out.rfm",
+      "cases/nport_exact_html/out.s2p",
+      "cases/nport_exact_html/out.y.json",
+      "cases/nport_exact_html/out.y.sp",
+      "cases/unsupported_exact_rfm/line.s2p",
+      "cases/well_conditioned_two_port/line.s2p",
+      "cases/well_conditioned_two_port/line_fitted.y.log",
+      "cases/well_conditioned_two_port/out.s2p",
+      "cases/well_conditioned_two_port/out.y.json",
+      "cases/well_conditioned_two_port/out.y.sp"
+    ],
+    "input_tree_sha256": "174b0799185fdb4532c83ec5ce96c537487bc7ac3e774dc50ba2e170cb902270",
+    "tree_sha256": "174b0799185fdb4532c83ec5ce96c537487bc7ac3e774dc50ba2e170cb902270"
+  },
+  "run_id": "as03-bound-20260823-02",
+  "runner": {
+    "path": "tools/run_as_remaining_bound.py",
+    "sha256": "d33520f2ae6e3fe6a245d3bb93e5291517dfffa946e19381051a0bd044da319a"
+  },
+  "schema": "sipi.agent-spice-as-03-bound-replay.v2",
+  "source_mode": "candidate_and_upstream_git_archive_at_immutable_commit",
+  "status": "completed_portable_observation_open",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "python": {
+      "executable": "python.exe",
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "path_redacted": true,
+      "role": "python",
+      "version_exit_code": 0,
+      "version_output_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  }
+}

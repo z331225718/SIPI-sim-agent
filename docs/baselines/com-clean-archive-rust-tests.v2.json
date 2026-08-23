@@ -1,0 +1,30 @@
+{
+  "candidate": {
+    "archive_sha256": "c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9",
+    "commit": "64b783f66d7e986d0975be5ac3946b453b15c4ed",
+    "materialization": "git archive; no working-tree overlay",
+    "tree": "0e11721f2bb5b564002820cc7a5aaab45e30ba3b"
+  },
+  "command": [
+    "cargo",
+    "test",
+    "--manifest-path",
+    "crates/sipi-agent-com-direct/Cargo.toml",
+    "--lib",
+    "--locked"
+  ],
+  "returncode": 0,
+  "schema": "sipi.com.clean-archive-rust-contract-tests.v2",
+  "stdout_bytes": 4428,
+  "stdout_sha256": "daf756cc68a1b159ef09d90c3d8d98a54a583fd392d2ba5ec25442f30c7d6e84",
+  "tests": {
+    "custody": [
+      "run_v1::tests::output_custody_rejects_input_ancestor_before_any_artifact_change",
+      "run_v1::tests::output_custody_rejects_hardlink_alias_before_rename",
+      "run_v1::tests::output_custody_rejects_reuse_workbook_path_after_config_load",
+      "run_v1::tests::output_custody_rejects_nested_channel_array_path_before_write"
+    ],
+    "passed": 49,
+    "s2p_fd_to_td": "run_v1::tests::touchstone_route_resolves_s21_to_impulse_without_fitting"
+  }
+}

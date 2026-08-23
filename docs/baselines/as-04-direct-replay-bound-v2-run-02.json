@@ -1,0 +1,152 @@
+{
+  "acceptance_tolerance": null,
+  "candidate": {
+    "archive_sha256": "c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9",
+    "commit": "64b783f66d7e986d0975be5ac3946b453b15c4ed",
+    "tree": "0e11721f2bb5b564002820cc7a5aaab45e30ba3b"
+  },
+  "corpus": [
+    "valid_nelder_mead_external_stub",
+    "invalid_csv",
+    "duplicate_rfm_token",
+    "missing_hspice_measure",
+    "external_hspice_blocker"
+  ],
+  "external_runtime_blocked": true,
+  "fresh_run_nonce": "4da0339dc3683e6872334dd20f7873ec57fbb7aad9c571c5910303df758675d3",
+  "helper": {
+    "path": "tools/run_as_remaining.py",
+    "sha256": "33397fcb3bc7416b3c9db42207e55f42a362e28c04a90f4dfe5466477447fef0"
+  },
+  "numeric_parity": false,
+  "parity_claim": false,
+  "replay": {
+    "cases": [
+      {
+        "binary": "sipi-agent-spice-tune-yparam-tran",
+        "case": "valid_nelder_mead_external_stub",
+        "expected_result": true,
+        "expected_returncode": 2,
+        "returncode": 2,
+        "stderr": "tune-yparam-tran failed: tune-yparam-tran HSPICE error: HSPICE execution is unavailable: external executable custody is required\n",
+        "stdout": ""
+      },
+      {
+        "binary": "sipi-agent-spice-tune-yparam-tran",
+        "case": "invalid_csv",
+        "expected_result": true,
+        "expected_returncode": 2,
+        "returncode": 2,
+        "stderr": "argument error: residual-poles must be comma-separated finite numbers\n",
+        "stdout": ""
+      },
+      {
+        "binary": "sipi-agent-spice-tune-yparam-tran",
+        "case": "duplicate_rfm_token",
+        "expected_result": true,
+        "expected_returncode": 2,
+        "returncode": 2,
+        "stderr": "tune-yparam-tran failed: tune-yparam-tran HSPICE error: HSPICE execution is unavailable: external executable custody is required\n",
+        "stdout": ""
+      },
+      {
+        "binary": "sipi-agent-spice-tune-yparam-tran",
+        "case": "missing_hspice_measure",
+        "expected_result": true,
+        "expected_returncode": 2,
+        "returncode": 2,
+        "stderr": "tune-yparam-tran failed: tune-yparam-tran HSPICE error: HSPICE execution is unavailable: external executable custody is required\n",
+        "stdout": ""
+      },
+      {
+        "binary": "sipi-agent-spice-tune-yparam-tran",
+        "case": "external_hspice_blocker",
+        "expected_result": true,
+        "expected_returncode": 2,
+        "returncode": 2,
+        "stderr": "tune-yparam-tran failed: tune-yparam-tran HSPICE error: HSPICE execution is unavailable: external executable custody is required\n",
+        "stdout": ""
+      }
+    ],
+    "corpus_expected": true,
+    "files": [
+      "cases/duplicate_rfm_token/line.s2p",
+      "cases/duplicate_rfm_token/model.rfm",
+      "cases/duplicate_rfm_token/signoff.sp",
+      "cases/external_hspice_blocker/line.s2p",
+      "cases/external_hspice_blocker/model.rfm",
+      "cases/external_hspice_blocker/signoff.sp",
+      "cases/invalid_csv/line.s2p",
+      "cases/invalid_csv/model.rfm",
+      "cases/invalid_csv/signoff.sp",
+      "cases/missing_hspice_measure/fake_hspice.cmd",
+      "cases/missing_hspice_measure/line.s2p",
+      "cases/missing_hspice_measure/model.rfm",
+      "cases/missing_hspice_measure/signoff.sp",
+      "cases/valid_nelder_mead_external_stub/fake_hspice.cmd",
+      "cases/valid_nelder_mead_external_stub/line.s2p",
+      "cases/valid_nelder_mead_external_stub/model.rfm",
+      "cases/valid_nelder_mead_external_stub/signoff.sp"
+    ],
+    "input_files": [
+      "cases/duplicate_rfm_token/line.s2p",
+      "cases/duplicate_rfm_token/model.rfm",
+      "cases/duplicate_rfm_token/signoff.sp",
+      "cases/external_hspice_blocker/line.s2p",
+      "cases/external_hspice_blocker/model.rfm",
+      "cases/external_hspice_blocker/signoff.sp",
+      "cases/invalid_csv/line.s2p",
+      "cases/invalid_csv/model.rfm",
+      "cases/invalid_csv/signoff.sp",
+      "cases/missing_hspice_measure/fake_hspice.cmd",
+      "cases/missing_hspice_measure/line.s2p",
+      "cases/missing_hspice_measure/model.rfm",
+      "cases/missing_hspice_measure/signoff.sp",
+      "cases/valid_nelder_mead_external_stub/fake_hspice.cmd",
+      "cases/valid_nelder_mead_external_stub/line.s2p",
+      "cases/valid_nelder_mead_external_stub/model.rfm",
+      "cases/valid_nelder_mead_external_stub/signoff.sp"
+    ],
+    "input_tree_sha256": "97e8bfcfa3b315d54691fae0f7cc2bff20a7a1299f56ec8598a2a18ba30d07e5",
+    "tree_sha256": "97e8bfcfa3b315d54691fae0f7cc2bff20a7a1299f56ec8598a2a18ba30d07e5"
+  },
+  "run_id": "as04-bound-20260823-02",
+  "runner": {
+    "path": "tools/run_as_remaining_bound.py",
+    "sha256": "d33520f2ae6e3fe6a245d3bb93e5291517dfffa946e19381051a0bd044da319a"
+  },
+  "schema": "sipi.agent-spice-as-04-bound-replay.v2",
+  "source_mode": "candidate_and_upstream_git_archive_at_immutable_commit",
+  "status": "completed_external_blocker_open",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "python": {
+      "executable": "python.exe",
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "path_redacted": true,
+      "role": "python",
+      "version_exit_code": 0,
+      "version_output_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  }
+}

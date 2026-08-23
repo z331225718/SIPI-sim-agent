@@ -1,0 +1,187 @@
+{
+  "blockers": [
+    "candidate process or artifact schema/payload gate failed",
+    "candidate/oracle logical payload gate failed"
+  ],
+  "build": {
+    "binary_sha256": "59e080baad6bb76732e8e31828a6ca1d536156d10f06255719df8799a50918c5",
+    "exit_code": 0,
+    "stderr_sha256": "9ee7588697bae616deb6bf9e25af87c355b465f0706ddb597ef11dc043ab6014",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate": {
+    "archive_sha256": "c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9",
+    "commit": "64b783f66d7e986d0975be5ac3946b453b15c4ed",
+    "tree": "0e11721f2bb5b564002820cc7a5aaab45e30ba3b"
+  },
+  "claims": {
+    "global_row_closed": false,
+    "payload_parity": false,
+    "release_approval": false
+  },
+  "fixture": {
+    "archive_present": true,
+    "bytes": 1170,
+    "path": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+    "sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f"
+  },
+  "fresh_run_nonce": "ccd96bbcdb05453496ba90704d30ce5a",
+  "non_claims": [
+    "This is one frozen fixture only.",
+    "Wrapper, selection, comparison, and uncovered branches remain open unless their payload gate passes.",
+    "This evidence is not a license decision or release approval."
+  ],
+  "replay": {
+    "candidate_artifact": {
+      "arrays_present": false,
+      "meta_present": false
+    },
+    "candidate_process": {
+      "exit_code": 1,
+      "stderr_json": {
+        "code": "auto_parity_blocked",
+        "diagnostics": {
+          "engine_selection": {
+            "fallback_reason": "native Web result contract parity is incomplete",
+            "fallback_status": "external_python_reference_required",
+            "implementation": "external_python_reference_required",
+            "parity_gate": {
+              "reason": "native Web result contract parity is incomplete",
+              "status": "blocked",
+              "version": "pybert.native-auto-parity.v1"
+            },
+            "requested": "auto",
+            "rust_only": false,
+            "selected": "python"
+          },
+          "parity_gate": {
+            "reason": "native Web result contract parity is incomplete",
+            "status": "blocked",
+            "version": "pybert.native-auto-parity.v1"
+          }
+        },
+        "message": "sim-auto parity gate is blocked: {\"engine_selection\":{\"fallback_reason\":\"native Web result contract parity is incomplete\",\"fallback_status\":\"external_python_reference_required\",\"implementation\":\"external_python_reference_required\",\"parity_gate\":{\"reason\":\"native Web result contract parity is incomplete\",\"status\":\"blocked\",\"version\":\"pybert.native-auto-parity.v1\"},\"requested\":\"auto\",\"rust_only\":false,\"selected\":\"python\"},\"parity_gate\":{\"reason\":\"native Web result contract parity is incomplete\",\"status\":\"blocked\",\"version\":\"pybert.native-auto-parity.v1\"}}",
+        "schema": "pybert.workflow-error.v1",
+        "source": {
+          "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+          "repository": "pybert",
+          "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+        }
+      },
+      "stderr_sha256": "45955cd44bef2b53f8f91229335c69fbd407bdcc30b2b96498dc393050570937",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "comparison": {
+      "candidate": null,
+      "oracle": null,
+      "payload_gate": null
+    },
+    "oracle_artifact": {
+      "arrays": {
+        "bytes": 2157745,
+        "logical_member_count": 38,
+        "logical_members": {},
+        "logical_sha256": "308b1e18b247c07ef7b6268a1bcb7b7fc55dabdfb70c3f85f180215e54eb13b5",
+        "sha256": "cfa7eac0545e883d66f92776b44861e4d483ad36df2bc289068d0c6137eccd5f"
+      },
+      "arrays_present": true,
+      "comparison": null,
+      "meta_json_valid": true,
+      "meta_payload_sha256": "486f968a9caea1cf2b9e351fc7d9b9ff6189d879cb48d90f4d6103b4c4919789",
+      "meta_present": true,
+      "meta_schema": "pybert.cli-auto-result.v1",
+      "meta_sha256": "fd3196fff55a08f602796aff02d9d9de82def991c4c618af07ec8abd217ed79d",
+      "selection": {
+        "fallback_reason": "native Web result contract parity is incomplete",
+        "implementation": null,
+        "parity_gate": {
+          "reason": "native Web result contract parity is incomplete",
+          "status": "blocked",
+          "version": "pybert.native-auto-parity.v1"
+        },
+        "requested": "auto",
+        "rust_only": null,
+        "selected": "python"
+      }
+    },
+    "oracle_process": {
+      "exit_code": 0,
+      "stderr_sha256": "918d3e0a6569cb80c643b7b7fdf5bdc21b8c7f5c7c71772cb608df994cf3b704",
+      "stdout_sha256": "9f69ade699a8ae76fb16d91faa68944f6a8b3e8ea2712b9c322c5486ee4a6662"
+    },
+    "payload": {
+      "candidate_logical_sha256": null,
+      "equal": false,
+      "oracle_logical_sha256": "308b1e18b247c07ef7b6268a1bcb7b7fc55dabdfb70c3f85f180215e54eb13b5"
+    },
+    "selection": {
+      "candidate": {
+        "fallback_reason": "native Web result contract parity is incomplete",
+        "implementation": "external_python_reference_required",
+        "parity_gate": {
+          "reason": "native Web result contract parity is incomplete",
+          "status": "blocked",
+          "version": "pybert.native-auto-parity.v1"
+        },
+        "requested": "auto",
+        "rust_only": false,
+        "selected": "python"
+      },
+      "expected": {
+        "parity_gate_status": "blocked",
+        "requested": "auto",
+        "selected": "python"
+      },
+      "oracle": {
+        "fallback_reason": "native Web result contract parity is incomplete",
+        "implementation": null,
+        "parity_gate": {
+          "reason": "native Web result contract parity is incomplete",
+          "status": "blocked",
+          "version": "pybert.native-auto-parity.v1"
+        },
+        "requested": "auto",
+        "rust_only": null,
+        "selected": "python"
+      }
+    },
+    "semantic_gate": true
+  },
+  "row": "PB-04",
+  "run_id": "pb-04-current-bound-archive-01",
+  "schema": "sipi.pb-04-direct-replay.v1",
+  "source_mode": "git_archive_at_immutable_commit",
+  "status": "blocked",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "timeout_seconds": 1200,
+    "uv": {
+      "executable": "uv.EXE",
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_exit_code": 0,
+      "version_output_sha256": "ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+  }
+}

@@ -1,0 +1,89 @@
+schema: sipi.as-03-fit-yparam-direct-port.v2
+status: completed_portable_observation_open
+source:
+  candidate:
+    commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed
+    tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b
+    archive_sha256: c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9
+  upstream:
+    commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+    tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+    archive_sha256: a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144
+    license: MIT
+  materialization:
+    candidate: git_archive_clean_temporary_root
+    overlay_current_worktree: false
+direct_port:
+  crate: crates/sipi-agent-spice-direct
+  module: crates/sipi-agent-spice-direct/src/as03_fit_yparam.rs
+  external_runtime_blocked: false
+  parity_claim: false
+harness:
+  runner:
+    path: tools/run_as_remaining_bound.py
+    sha256: d33520f2ae6e3fe6a245d3bb93e5291517dfffa946e19381051a0bd044da319a
+  aggregator:
+    path: tools/aggregate_as_remaining_bound.py
+    sha256: 1b135cfedbe78bd37c18a0ff4cc1e3c52e727b9cb81832912a33d56a7a14a638
+  verifier:
+    path: tools/verify_as_remaining_bound.py
+    sha256: d62b9596b9e13598723105c391c740fd5daf72749a103d3f23621d473e749f54
+  mutation_tests:
+    path: tools/test_verify_as_remaining_bound.py
+    sha256: 805a86631f719c8e9f79e6a40a3fcf84fa65f1f8ab1c3e16a9ba0ab0056ccadd
+  helper:
+    path: tools/run_as_remaining.py
+    sha256: 33397fcb3bc7416b3c9db42207e55f42a362e28c04a90f4dfe5466477447fef0
+toolchain:
+  cargo:
+    executable: cargo.exe
+    file_sha256: 86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7
+    path_redacted: true
+    role: cargo
+    version_exit_code: 0
+    version_output_sha256: e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb
+  python:
+    executable: python.exe
+    file_sha256: 3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd
+    path_redacted: true
+    role: python
+    version_exit_code: 0
+    version_output_sha256: 92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e
+  rustc:
+    executable: rustc.exe
+    file_sha256: 86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7
+    path_redacted: true
+    role: rustc
+    version_exit_code: 0
+    version_output_sha256: 55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e
+corpus:
+- well_conditioned_two_port
+- nport_exact_html
+- ill_conditioned_i_plus_s
+- unsupported_exact_rfm
+reports:
+- path: docs/baselines/as-03-direct-replay-bound-v2-run-01.json
+  sha256: 6de663ca133ba318a3edbc201214ddbdfd08c70d136672150e5a8895a8d504c3
+  run_id: as03-bound-20260823-01
+  fresh_run_nonce: ee1195f1e853c627cb9bc5341024edad69dda596f14fe27febcf87ae19438a11
+- path: docs/baselines/as-03-direct-replay-bound-v2-run-02.json
+  sha256: 5f3bf9ae4e4adc93c5b5343b7c14b89bf2238c4fda7cbb0eaac01b2931bb09bd
+  run_id: as03-bound-20260823-02
+  fresh_run_nonce: 3c013da9de108754ec6973bcab38175441a9281ad95149caf4f439845dc4c09e
+aggregate:
+  path: docs/baselines/as-03-direct-replay-bound-v2-aggregate.json
+  sha256: beb6c01f3d0e28557961873b21504b3aea5bc19169d9189ab266bfe50d06a8c1
+audit:
+  path: docs/baselines/audits/2026-08-23-as-03-fit-yparam-v2.md
+  sha256: 7e9a38a50acf964eee44426403d11082dc1c2e951a59bccaea5aaa84b9fcc90b
+non_claims:
+- no_numeric_parity
+- no_acceptance_tolerance
+- no_product_capability_promotion
+- no_migration_row_close
+- no_external_solver_result
+fixture:
+  corpus_sha256: b46fd01f578993012e5a31942c411528fd0163d3fbbcb94c2ebe4a5c7c3e0efb
+  input_tree_sha256:
+  - 174b0799185fdb4532c83ec5ce96c537487bc7ac3e774dc50ba2e170cb902270
+  - 174b0799185fdb4532c83ec5ce96c537487bc7ac3e774dc50ba2e170cb902270

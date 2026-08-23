@@ -1,0 +1,82 @@
+{
+  "acceptance_tolerance": null,
+  "blockers": [],
+  "candidate": {
+    "archive_sha256": "c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9",
+    "commit": "64b783f66d7e986d0975be5ac3946b453b15c4ed",
+    "tree": "0e11721f2bb5b564002820cc7a5aaab45e30ba3b"
+  },
+  "corpus": [
+    "valid_nelder_mead_external_stub",
+    "invalid_csv",
+    "duplicate_rfm_token",
+    "missing_hspice_measure",
+    "external_hspice_blocker"
+  ],
+  "custody_valid": true,
+  "helper": {
+    "path": "tools/run_as_remaining.py",
+    "sha256": "33397fcb3bc7416b3c9db42207e55f42a362e28c04a90f4dfe5466477447fef0"
+  },
+  "input_tree_sha256": [
+    "97e8bfcfa3b315d54691fae0f7cc2bff20a7a1299f56ec8598a2a18ba30d07e5",
+    "97e8bfcfa3b315d54691fae0f7cc2bff20a7a1299f56ec8598a2a18ba30d07e5"
+  ],
+  "numeric_parity": false,
+  "parity_claim": false,
+  "reports": [
+    {
+      "fresh_run_nonce": "7d54939f5fefebbe59dc29173d83e9d495099668cb0c34bc67d01e3d6bdee1c3",
+      "path": "docs/baselines/as-04-direct-replay-bound-v2-run-01.json",
+      "run_id": "as04-bound-20260823-01",
+      "sha256": "5ce94bbdb1376326f30010f1028981d94e143f09ee26c70cada4fb3554c3c478"
+    },
+    {
+      "fresh_run_nonce": "4da0339dc3683e6872334dd20f7873ec57fbb7aad9c571c5910303df758675d3",
+      "path": "docs/baselines/as-04-direct-replay-bound-v2-run-02.json",
+      "run_id": "as04-bound-20260823-02",
+      "sha256": "16a1475ccb0bf7b4ef5c428d8ca5b5f26d18a33eb97b411b5d59b5e20705f468"
+    }
+  ],
+  "run_tree_sha256": [
+    "97e8bfcfa3b315d54691fae0f7cc2bff20a7a1299f56ec8598a2a18ba30d07e5",
+    "97e8bfcfa3b315d54691fae0f7cc2bff20a7a1299f56ec8598a2a18ba30d07e5"
+  ],
+  "runner": {
+    "path": "tools/run_as_remaining_bound.py",
+    "sha256": "d33520f2ae6e3fe6a245d3bb93e5291517dfffa946e19381051a0bd044da319a"
+  },
+  "schema": "sipi.agent-spice-as-04-bound-aggregate.v2",
+  "status": "completed_external_blocker_open",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "python": {
+      "executable": "python.exe",
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "path_redacted": true,
+      "role": "python",
+      "version_exit_code": 0,
+      "version_output_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  }
+}

@@ -544,7 +544,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "source_mode": "git_archive_at_immutable_commit",
         "candidate": candidate_facts,
         "upstream": upstream_facts,
-        "fixture": {"path": fixture_relative.as_posix(), "sha256": fixture_hash, "bytes": len(fixture_payload)},
+        "fixture": {"path": fixture_relative.as_posix(), "sha256": fixture_hash, "bytes": len(fixture_payload), "archive_present": True},
         "toolchain": toolchain_identity,
         "replay": replay,
         "non_claims": [

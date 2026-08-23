@@ -1,0 +1,85 @@
+schema: sipi.com-04.direct-port.v2
+status: bound_clean_archive_observation_open
+scope:
+  work_item: COM-04
+  upstream_public_entrypoint: load_config_run_com_write_artifacts
+  target: lane_local_direct_port_only
+  preparation_commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed
+  preparation_tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b
+candidate:
+  commit: 64b783f66d7e986d0975be5ac3946b453b15c4ed
+  tree: 0e11721f2bb5b564002820cc7a5aaab45e30ba3b
+  archive_sha256: c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9
+  archive_bytes: 39065600
+  materialization: git archive; no working-tree overlay
+  binary_sha256_by_run: [f2344f274f15d21ecb8d89e326ebc8cef06d63b233e317d4458c2d2b9f51fd54, f4ed7ff77c7c3f94e75fa7fb8f23d2a86b55d6bb9f9a35d01b7b2cfdb5ccdd4b]
+  binary: target/debug/sipi-com-direct-public-api.exe
+upstream:
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  declared_license: MIT
+  source_map: crates/sipi-agent-com-direct/SOURCE-MAP-COM-04.md
+  archive_sha256: a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf
+  materialization: git archive at immutable commit metadata-only
+  runtime_executed: false
+audit: docs/baselines/audits/2026-08-23-com-04-direct-semantic-replay-v2.md
+audit_sha256: 17a59d3b131231d2ea22e94424ecf4b5179b5ca78cf24adb31b254a05c5341c2
+contract:
+  workflow: [load_config, run_com, write_artifacts]
+  s_parameter_fit: forbidden
+  touchstone_routes: [S2P, S4P]
+  impulse_leaf: sipi-com::s21_to_impulse_dc_v1
+  custody: reject_equal_ancestor_descendant_symlink_hardlink_before_artifact_mutation
+  semantic_payload: [cases, channels, metrics, diagnostics.channel_impulse, portable_branches, report_manifest]
+  portable_scenarios: 10
+oracle:
+  runner: tools/run_com_04_direct_semantic_replay.py
+  helper: tools/com_direct_semantic_replay.py
+  v2_wrapper: tools/com_direct_semantic_replay_v2.py
+  aggregate_runner: tools/aggregate_com_semantic_replay_v2.py
+  fresh_runs: 2
+  inner_replay_count: 2
+  scenario_count: 10
+  status: semantic_replay_only
+  numeric_upstream_parity_claim: false
+execution_binding:
+  runner_sha256: f92ef79818429693b6782e8fb8a776424baf3613f77822a9e2c9e6347ba9adc8
+  aggregate_runner_sha256: b4343bcc63b2dea1db566b74d5cd42dbf06b0f1d5e778b86a8852b4095909814
+  contract_test_runner_sha256: 0d27b2af76d72d887b2e833ac1c050907169d4b722e5b51f71b5207f43c86ada
+  helper_sha256: 3212e4bed33ab8456adf8fd55a322fced54a2576ebf311ff94807ca4fc143f4b
+  v2_wrapper_sha256: fcf23acf31ab9f5c0a84fc7ba4175790837f6ce36e3c7f7b462d5e2f9b3fa300
+  fixture_corpus_sha256: 98952015e93c26c07bae79e6be9fecf939ed4d90b280cec9696ca4b0486df38c
+  input_count: 22
+  source_probe_sha256: 706ebbdb39fea6f36bd4d0499b17f1b8e932728b72998192c450f7d30cffe65e
+  toolchain:
+    path_redacted: true
+    cargo: {role: cargo, executable: cargo.exe, file_sha256: 86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7, version_output_sha256: f4f564f8936fa8eb53bca8bbe50666489252bbcbeaae0cb0dd54682444697e52, version_exit_code: 0, path_redacted: true, timeout_seconds: 30, timed_out: false}
+    rustc: {role: rustc, executable: rustc.exe, file_sha256: 6d1c5543ed3a45cfbc1c1332d42d6550d883c14d3c2e323427e631c331cebeeb, version_output_sha256: ac31499b5910ed7ddbf1a62e57e03c1d0ca49fa78efc075b291afa8d192a4d44, version_exit_code: 0, path_redacted: true, timeout_seconds: 30, timed_out: false}
+evidence:
+  reports:
+    - path: docs/baselines/com-04-direct-semantic-replay-run1.v2.json
+      sha256: 1e213e1692bf142ad14560b60ac109c644cf278acc627a33537dcea3fc80ec55
+      run_id: com-04-v2-fresh-1-390c12a4fee0c840af081eb380f26df4bb1d3d808acd4018943f4b78996829e5
+      nonce: 390c12a4fee0c840af081eb380f26df4bb1d3d808acd4018943f4b78996829e5
+    - path: docs/baselines/com-04-direct-semantic-replay-run2.v2.json
+      sha256: d17026eeb32411deacf42ef61d0a84fc0262f0268c60e5b6e83c0da272b18b01
+      run_id: com-04-v2-fresh-2-85f0ff37b3e056b749874ed02fd1d563ba227c762a3ab9cc75ad3ed8e697dfd9
+      nonce: 85f0ff37b3e056b749874ed02fd1d563ba227c762a3ab9cc75ad3ed8e697dfd9
+  aggregate:
+    path: docs/baselines/com-04-direct-semantic-replay-aggregate.v2.json
+    sha256: 155f9272e0e7c7a50bf84bc78289155b33c8c519456db749b1dd924f5bb6075b
+  clean_archive_rust_tests:
+    path: docs/baselines/com-clean-archive-rust-tests.v2.json
+    sha256: 8a5faaf85526bdbf930e82bfca8eacbff932968833eb85e865a51d6ed9fed538
+verification:
+  verifier: tools/verify_com_direct_semantic_replay_v2.py
+  verifier_sha256: 0cd2623d2607d743d5d482f230bfee35413445435c581a922165d7d1861cf6c1
+  mutation_tests: tools/test_verify_com_direct_semantic_replay_v2.py
+  mutation_tests_sha256: aa61e52a027d881c66f8aa04f7116e2b7fe8581a54fb148404c231d156776954
+non_claims:
+  - no_numeric_upstream_parity_claim
+  - no_release_or_promotion
+  - no_product_capability_promotion
+  - no_global_migration_row_close
+  - no_working_tree_overlay
+  - no_s_parameter_fitting

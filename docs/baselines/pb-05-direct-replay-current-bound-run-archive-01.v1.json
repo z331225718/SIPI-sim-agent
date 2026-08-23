@@ -1,0 +1,179 @@
+{
+  "blockers": [
+    "candidate/oracle payload parity not_evaluated: external_python_reference_required"
+  ],
+  "build": {
+    "binary_sha256": "c69350ed1e41129d055345bcf9744bb61ee9de21d4cd9576d6ad799254041cfd",
+    "exit_code": 0,
+    "stderr_sha256": "00ace3bf1c0bad80f64872f640de3f90002e62fd8fa5986382c473be28fe00fd",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate": {
+    "archive_sha256": "c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9",
+    "commit": "64b783f66d7e986d0975be5ac3946b453b15c4ed",
+    "tree": "0e11721f2bb5b564002820cc7a5aaab45e30ba3b"
+  },
+  "claims": {
+    "global_row_closed": false,
+    "payload_parity": false,
+    "release_approval": false
+  },
+  "fixture": {
+    "archive_present": true,
+    "bytes": 1170,
+    "path": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+    "sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f"
+  },
+  "fresh_run_nonce": "d86e412d8a664bec981240553bcd2f87",
+  "non_claims": [
+    "This is one frozen fixture only.",
+    "Wrapper, selection, comparison, and uncovered branches remain open unless their payload gate passes.",
+    "This evidence is not a license decision or release approval."
+  ],
+  "replay": {
+    "candidate_artifact": {
+      "arrays_present": false,
+      "meta_present": false
+    },
+    "candidate_process": {
+      "exit_code": 1,
+      "stderr_json": {
+        "code": "reference_unavailable",
+        "diagnostics": {
+          "compare_reference": {
+            "reference_kind": "independent_external_oracle",
+            "reference_retained_on_candidate_failure": false,
+            "source": "external_python_reference_required"
+          },
+          "comparison": {
+            "passed": false,
+            "reason": "not_evaluated",
+            "reference_required": "external_python_reference_required",
+            "schema": "pybert.engine-compare.v1",
+            "status_only_comparison": false
+          },
+          "reason": "external_python_reference_required: sim-compare requires --reference-json; comparison is not_evaluated without an independent reference payload"
+        },
+        "message": "workflow reference is unavailable: external_python_reference_required: sim-compare requires --reference-json; comparison is not_evaluated without an independent reference payload",
+        "schema": "pybert.workflow-error.v1",
+        "source": {
+          "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+          "repository": "pybert",
+          "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+        }
+      },
+      "stderr_sha256": "5b7f630d3dfbb097fad672be0c66aceca857a28972df34475fbc2bf3b7e34ddd",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "comparison": {
+      "candidate": {
+        "arrays_passed": null,
+        "metadata_passed": null,
+        "metrics_passed": null,
+        "passed": false,
+        "reason": "not_evaluated",
+        "reference_required": "external_python_reference_required",
+        "schema": "pybert.engine-compare.v1",
+        "source": "external_python_reference_required",
+        "status_only_comparison": false
+      },
+      "oracle": {
+        "arrays_passed": false,
+        "metadata_passed": false,
+        "metrics_passed": null,
+        "passed": false,
+        "reason": null,
+        "reference_required": null,
+        "schema": "pybert.engine-compare.v1",
+        "source": null,
+        "status_only_comparison": null
+      },
+      "payload_gate": {
+        "candidate_artifact_present": false,
+        "logical_arrays_equal": false,
+        "oracle_artifact_present": true,
+        "status_only_comparison": false
+      }
+    },
+    "oracle_artifact": {
+      "arrays": {
+        "bytes": 2157745,
+        "logical_member_count": 38,
+        "logical_members": {},
+        "logical_sha256": "308b1e18b247c07ef7b6268a1bcb7b7fc55dabdfb70c3f85f180215e54eb13b5",
+        "sha256": "cfa7eac0545e883d66f92776b44861e4d483ad36df2bc289068d0c6137eccd5f"
+      },
+      "arrays_present": true,
+      "comparison": {
+        "arrays_passed": false,
+        "metadata_passed": false,
+        "metrics_passed": null,
+        "passed": false,
+        "reason": null,
+        "reference_required": null,
+        "schema": "pybert.engine-compare.v1",
+        "source": null,
+        "status_only_comparison": null
+      },
+      "meta_json_valid": true,
+      "meta_payload_sha256": "7f376bc8b8bea84c8761d7c23382717137b73645864bebe0beba05c4e47682f5",
+      "meta_present": true,
+      "meta_schema": "pybert.cli-compare-result.v1",
+      "meta_sha256": "e78b3f602f66697de0afceb249e8074b826b97a6e5abb57e9f8d6565a89fcf40",
+      "selection": null
+    },
+    "oracle_process": {
+      "exit_code": 0,
+      "stderr_sha256": "c0d7636b4ef0c7fda3b6c2b81ca17a95277bb775e223f00d5b3b999dc8ae98a9",
+      "stdout_sha256": "692920703abd0ed29350ee54bd021c82329efb1ce68a8cfb6357128347e1e638"
+    },
+    "payload": {
+      "candidate_logical_sha256": null,
+      "equal": false,
+      "oracle_logical_sha256": "308b1e18b247c07ef7b6268a1bcb7b7fc55dabdfb70c3f85f180215e54eb13b5"
+    },
+    "selection": {
+      "candidate": null,
+      "expected": null,
+      "oracle": null
+    },
+    "semantic_gate": true
+  },
+  "row": "PB-05",
+  "run_id": "pb-05-current-bound-archive-01",
+  "schema": "sipi.pb-05-direct-replay.v1",
+  "source_mode": "git_archive_at_immutable_commit",
+  "status": "blocked",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "timeout_seconds": 1200,
+    "uv": {
+      "executable": "uv.EXE",
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_exit_code": 0,
+      "version_output_sha256": "ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+  }
+}

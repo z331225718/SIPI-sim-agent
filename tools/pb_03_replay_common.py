@@ -111,27 +111,6 @@ def archive_repo(repo: Path, commit: str, destination: Path) -> dict[str, Any]:
     return {"commit": resolved, "tree": tree, "archive_sha256": sha256(payload)}
 
 
-def overlay_lane_worktree(repo: Path, destination: Path) -> dict[str, str]:
-    """Overlay only the PB direct-port lane and record every file digest."""
-    source_root = repo / "crates" / "sipi-pybert-direct"
-    if not source_root.is_dir():
-        raise RuntimeError("PB direct-port lane is missing from the candidate worktree")
-    overlay: dict[str, str] = {}
-    for source in sorted(source_root.rglob("*")):
-        relative_to_lane = source.relative_to(source_root)
-        if not source.is_file() or "target" in relative_to_lane.parts:
-            continue
-        relative = source.relative_to(repo).as_posix()
-        target = destination / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        payload = source.read_bytes()
-        target.write_bytes(payload)
-        overlay[relative] = sha256(payload)
-    if not overlay:
-        raise RuntimeError("PB direct-port worktree overlay is empty")
-    return overlay
-
-
 def _tool(value: str, role: str, version_args: tuple[str, ...]) -> dict[str, Any]:
     executable = resolve_executable(value)
     if executable is None:
@@ -365,20 +344,16 @@ def run_once(row: str, candidate_repo: Path, upstream_repo: Path, fixture: str, 
         upstream_root = work_root / "upstream"
         candidate_identity = archive_repo(candidate_repo, candidate_commit, candidate_root)
         candidate_archive_fixture_present = (candidate_root / fixture).is_file()
-        candidate_overlay = overlay_lane_worktree(candidate_repo, candidate_root)
-        candidate_identity = {**candidate_identity, "working_tree_overlay": candidate_overlay}
+        if not candidate_archive_fixture_present:
+            raise RuntimeError("fixed fixture is missing from the candidate archive")
         upstream_identity = archive_repo(upstream_repo, UPSTREAM_COMMIT, upstream_root)
-        fixture_source = candidate_repo / fixture
-        if not fixture_source.is_file():
-            raise RuntimeError("fixed fixture is missing from the candidate source tree")
-        fixture_bytes = fixture_source.read_bytes()
-        for tree in (candidate_root, upstream_root):
-            fixture_target = tree / fixture
-            fixture_target.parent.mkdir(parents=True, exist_ok=True)
-            if fixture_target.is_file() and fixture_target.read_bytes() != fixture_bytes:
-                raise RuntimeError("archive fixture differs from the fixed corpus")
-            if not fixture_target.is_file():
-                fixture_target.write_bytes(fixture_bytes)
+        fixture_bytes = (candidate_root / fixture).read_bytes()
+        oracle_fixture = upstream_root / fixture
+        oracle_fixture.parent.mkdir(parents=True, exist_ok=True)
+        if oracle_fixture.is_file() and oracle_fixture.read_bytes() != fixture_bytes:
+            raise RuntimeError("oracle fixture differs from the candidate archive corpus")
+        if not oracle_fixture.is_file():
+            oracle_fixture.write_bytes(fixture_bytes)
         fixture_path = candidate_root / fixture
         # The direct crate is its own workspace, so Cargo places artifacts next
         # to its manifest rather than at the repository root.
@@ -394,7 +369,7 @@ def run_once(row: str, candidate_repo: Path, upstream_repo: Path, fixture: str, 
             candidate_process = run_command([str(binary), command, str(fixture_path), "--output-dir", str(candidate_output)], candidate_root, timeout)
         else:
             candidate_process = {"exit_code": None, "skipped": True}
-        oracle_process = run_command(["uv", "run", "--project", str(upstream_root), "--frozen", "--extra", "native", "pybert", command, str(upstream_root / fixture), "--output-dir", str(upstream_output)], upstream_root, timeout)
+        oracle_process = run_command(["uv", "run", "--project", str(upstream_root), "--frozen", "--extra", "native", "pybert", command, str(oracle_fixture), "--output-dir", str(upstream_output)], upstream_root, timeout)
         candidate_artifact = artifact_summary(candidate_output)
         oracle_artifact = artifact_summary(upstream_output)
         candidate_payload = payload_digest(candidate_artifact, row)
@@ -505,14 +480,10 @@ def run_once(row: str, candidate_repo: Path, upstream_repo: Path, fixture: str, 
             blockers.append("workflow semantic gate failed")
         fixture_record = fixture_info(candidate_root, fixture)
         fixture_record["archive_present"] = candidate_archive_fixture_present
-        fixture_record["archive_present_before_overlay"] = candidate_archive_fixture_present
-        fixture_record["working_tree_overlay_present"] = fixture in candidate_overlay
-        if not candidate_archive_fixture_present and fixture not in candidate_overlay:
-            blockers.append("fixed fixture is not present in the candidate archive or content-addressed lane overlay")
         return {
             "schema": f"sipi.{row.lower()}-direct-replay.v1",
             "status": "passed" if not blockers else "blocked",
-            "source_mode": "git_archive_plus_lane_working_tree_content_addressed",
+            "source_mode": "git_archive_at_immutable_commit",
             "row": row,
             "run_id": run_id,
             "fresh_run_nonce": uuid.uuid4().hex,

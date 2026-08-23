@@ -1,0 +1,169 @@
+{
+  "acceptance_tolerance": null,
+  "candidate": {
+    "archive_sha256": "c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9",
+    "commit": "64b783f66d7e986d0975be5ac3946b453b15c4ed",
+    "tree": "0e11721f2bb5b564002820cc7a5aaab45e30ba3b"
+  },
+  "corpus": [
+    "alter_case_preparation",
+    "ngspice_conversion_and_dependencies",
+    "s_element_preflight",
+    "unsupported_directive_block",
+    "external_backend_required"
+  ],
+  "external_runtime_blocked": true,
+  "fresh_run_nonce": "bfc2424294192f9b47545a9912f9dde90cf366c6e5feca3cbf8a852a63ecbff8",
+  "helper": {
+    "path": "tools/run_as_remaining.py",
+    "sha256": "33397fcb3bc7416b3c9db42207e55f42a362e28c04a90f4dfe5466477447fef0"
+  },
+  "numeric_parity": false,
+  "parity_claim": false,
+  "replay": {
+    "cases": [
+      {
+        "binary": "sipi-agent-spice-run-hspice",
+        "case": "alter_case_preparation",
+        "expected_result": true,
+        "expected_returncode": 0,
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\"status\":\"compatible\",\"case_count\":2,\"output_root\":\"<RUN_ROOT>\\cases\\alter_case_preparation\\out\"}\n"
+      },
+      {
+        "binary": "sipi-agent-spice-run-hspice",
+        "case": "ngspice_conversion_and_dependencies",
+        "expected_result": true,
+        "expected_returncode": 0,
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\"status\":\"auto_converted\",\"case_count\":1,\"output_root\":\"<RUN_ROOT>\\cases\\ngspice_conversion_and_dependencies\\out\"}\n"
+      },
+      {
+        "binary": "sipi-agent-spice-run-hspice",
+        "case": "s_element_preflight",
+        "expected_result": true,
+        "expected_returncode": 1,
+        "returncode": 1,
+        "stderr": "",
+        "stdout": "{\"status\":\"blocked\",\"case_count\":1,\"output_root\":\"<RUN_ROOT>\\cases\\s_element_preflight\\out\"}\n"
+      },
+      {
+        "binary": "sipi-agent-spice-run-hspice",
+        "case": "unsupported_directive_block",
+        "expected_result": true,
+        "expected_returncode": 1,
+        "returncode": 1,
+        "stderr": "",
+        "stdout": "{\"status\":\"blocked\",\"case_count\":1,\"output_root\":\"<RUN_ROOT>\\cases\\unsupported_directive_block\\out\"}\n"
+      },
+      {
+        "binary": "sipi-agent-spice-run-hspice",
+        "case": "external_backend_required",
+        "expected_result": true,
+        "expected_returncode": 2,
+        "returncode": 2,
+        "stderr": "run-hspice failed: execution unavailable: external simulator execution is fail-closed: executable custody is required\n",
+        "stdout": ""
+      }
+    ],
+    "corpus_expected": true,
+    "files": [
+      "cases/alter_case_preparation/deck.sp",
+      "cases/alter_case_preparation/line.s2p",
+      "cases/alter_case_preparation/out/deck/deck__alter_001_high/case.cir",
+      "cases/alter_case_preparation/out/deck/deck__alter_001_high/case.source.sp",
+      "cases/alter_case_preparation/out/deck/deck__alter_001_high/compat_report.json",
+      "cases/alter_case_preparation/out/deck/deck__alter_001_high/dependencies.json",
+      "cases/alter_case_preparation/out/deck/deck__base/case.cir",
+      "cases/alter_case_preparation/out/deck/deck__base/case.source.sp",
+      "cases/alter_case_preparation/out/deck/deck__base/compat_report.json",
+      "cases/alter_case_preparation/out/deck/deck__base/dependencies.json",
+      "cases/alter_case_preparation/out/deck/run_report.json",
+      "cases/external_backend_required/deck.sp",
+      "cases/external_backend_required/line.s2p",
+      "cases/ngspice_conversion_and_dependencies/deck.sp",
+      "cases/ngspice_conversion_and_dependencies/line.s2p",
+      "cases/ngspice_conversion_and_dependencies/models/nested.inc",
+      "cases/ngspice_conversion_and_dependencies/models/top.inc",
+      "cases/ngspice_conversion_and_dependencies/out/deck/deck__base/case.cir",
+      "cases/ngspice_conversion_and_dependencies/out/deck/deck__base/case.source.sp",
+      "cases/ngspice_conversion_and_dependencies/out/deck/deck__base/compat_report.json",
+      "cases/ngspice_conversion_and_dependencies/out/deck/deck__base/dependencies.json",
+      "cases/ngspice_conversion_and_dependencies/out/deck/deck__base/models/nested.inc",
+      "cases/ngspice_conversion_and_dependencies/out/deck/deck__base/models/top.inc",
+      "cases/ngspice_conversion_and_dependencies/out/deck/run_report.json",
+      "cases/s_element_preflight/deck.sp",
+      "cases/s_element_preflight/line.s2p",
+      "cases/s_element_preflight/out/deck/deck__base/case.cir",
+      "cases/s_element_preflight/out/deck/deck__base/case.source.sp",
+      "cases/s_element_preflight/out/deck/deck__base/compat_report.json",
+      "cases/s_element_preflight/out/deck/deck__base/dependencies.json",
+      "cases/s_element_preflight/out/deck/deck__base/preflight.log",
+      "cases/s_element_preflight/out/deck/run_report.json",
+      "cases/unsupported_directive_block/deck.sp",
+      "cases/unsupported_directive_block/line.s2p",
+      "cases/unsupported_directive_block/out/deck/deck__base/case.cir",
+      "cases/unsupported_directive_block/out/deck/deck__base/case.source.sp",
+      "cases/unsupported_directive_block/out/deck/deck__base/compat_report.json",
+      "cases/unsupported_directive_block/out/deck/deck__base/dependencies.json",
+      "cases/unsupported_directive_block/out/deck/run_report.json"
+    ],
+    "input_files": [
+      "cases/alter_case_preparation/deck.sp",
+      "cases/alter_case_preparation/line.s2p",
+      "cases/external_backend_required/deck.sp",
+      "cases/external_backend_required/line.s2p",
+      "cases/ngspice_conversion_and_dependencies/deck.sp",
+      "cases/ngspice_conversion_and_dependencies/line.s2p",
+      "cases/ngspice_conversion_and_dependencies/models/nested.inc",
+      "cases/ngspice_conversion_and_dependencies/models/top.inc",
+      "cases/s_element_preflight/deck.sp",
+      "cases/s_element_preflight/line.s2p",
+      "cases/unsupported_directive_block/deck.sp",
+      "cases/unsupported_directive_block/line.s2p"
+    ],
+    "input_tree_sha256": "07fe229c3da62282a06bab3cd270a2649b53f1ef9388b34b8554cfe90536cd98",
+    "tree_sha256": "74eb941a694de108fb16e97a4aa4b276c22a065a219aea53d114419ead323ba8"
+  },
+  "run_id": "as05-bound-20260823-02",
+  "runner": {
+    "path": "tools/run_as_remaining_bound.py",
+    "sha256": "d33520f2ae6e3fe6a245d3bb93e5291517dfffa946e19381051a0bd044da319a"
+  },
+  "schema": "sipi.agent-spice-as-05-bound-replay.v2",
+  "source_mode": "candidate_and_upstream_git_archive_at_immutable_commit",
+  "status": "completed_external_blocker_open",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "python": {
+      "executable": "python.exe",
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "path_redacted": true,
+      "role": "python",
+      "version_exit_code": 0,
+      "version_output_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  }
+}

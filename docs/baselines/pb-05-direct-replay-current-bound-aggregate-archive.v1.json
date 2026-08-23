@@ -1,0 +1,163 @@
+{
+  "blockers": [
+    "PB-05 remains open by contract: blocked"
+  ],
+  "candidate": {
+    "archive_sha256": "c89bc44b36849724b9544eb6222a6431ecd3855ce4c943e6a3845cafe19375b9",
+    "commit": "64b783f66d7e986d0975be5ac3946b453b15c4ed",
+    "tree": "0e11721f2bb5b564002820cc7a5aaab45e30ba3b"
+  },
+  "claims": {
+    "global_row_closed": false,
+    "payload_parity": false,
+    "release_approval": false
+  },
+  "fixture": {
+    "archive_present": true,
+    "bytes": 1170,
+    "path": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+    "sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f"
+  },
+  "non_claims": [
+    "This aggregate is immutable replay evidence, not a license decision, release approval, or promotion."
+  ],
+  "reports": [
+    {
+      "fresh_run_nonce": "d86e412d8a664bec981240553bcd2f87",
+      "path": "docs/baselines/pb-05-direct-replay-current-bound-run-archive-01.v1.json",
+      "run_id": "pb-05-current-bound-archive-01",
+      "sha256": "3e5999e07716892a190249994dfc16488814d005eca5af76514949cd5cdf5fac",
+      "status": "blocked"
+    },
+    {
+      "fresh_run_nonce": "e6f84346026443d891ec272529fb8f82",
+      "path": "docs/baselines/pb-05-direct-replay-current-bound-run-archive-02.v1.json",
+      "run_id": "pb-05-current-bound-archive-02",
+      "sha256": "dcec6690f0fbf75859a9d4a76e2a22784253cb6f382cc43d7f256e3b6638bbd3",
+      "status": "blocked"
+    }
+  ],
+  "row": "PB-05",
+  "schema": "sipi.pb-current-bound-replay-aggregate.v1",
+  "semantic": {
+    "first": {
+      "comparison": {
+        "candidate": {
+          "arrays_passed": null,
+          "metadata_passed": null,
+          "metrics_passed": null,
+          "passed": false,
+          "reason": "not_evaluated",
+          "reference_required": "external_python_reference_required",
+          "schema": "pybert.engine-compare.v1",
+          "source": "external_python_reference_required",
+          "status_only_comparison": false
+        },
+        "oracle": {
+          "arrays_passed": false,
+          "metadata_passed": false,
+          "metrics_passed": null,
+          "passed": false,
+          "reason": null,
+          "reference_required": null,
+          "schema": "pybert.engine-compare.v1",
+          "source": null,
+          "status_only_comparison": null
+        },
+        "payload_gate": {
+          "candidate_artifact_present": false,
+          "logical_arrays_equal": false,
+          "oracle_artifact_present": true,
+          "status_only_comparison": false
+        }
+      },
+      "payload": {
+        "candidate_logical_sha256": null,
+        "equal": false,
+        "oracle_logical_sha256": "308b1e18b247c07ef7b6268a1bcb7b7fc55dabdfb70c3f85f180215e54eb13b5"
+      },
+      "selection": {
+        "candidate": null,
+        "expected": null,
+        "oracle": null
+      },
+      "semantic_gate": true
+    },
+    "second": {
+      "comparison": {
+        "candidate": {
+          "arrays_passed": null,
+          "metadata_passed": null,
+          "metrics_passed": null,
+          "passed": false,
+          "reason": "not_evaluated",
+          "reference_required": "external_python_reference_required",
+          "schema": "pybert.engine-compare.v1",
+          "source": "external_python_reference_required",
+          "status_only_comparison": false
+        },
+        "oracle": {
+          "arrays_passed": false,
+          "metadata_passed": false,
+          "metrics_passed": null,
+          "passed": false,
+          "reason": null,
+          "reference_required": null,
+          "schema": "pybert.engine-compare.v1",
+          "source": null,
+          "status_only_comparison": null
+        },
+        "payload_gate": {
+          "candidate_artifact_present": false,
+          "logical_arrays_equal": false,
+          "oracle_artifact_present": true,
+          "status_only_comparison": false
+        }
+      },
+      "payload": {
+        "candidate_logical_sha256": null,
+        "equal": false,
+        "oracle_logical_sha256": "308b1e18b247c07ef7b6268a1bcb7b7fc55dabdfb70c3f85f180215e54eb13b5"
+      },
+      "selection": {
+        "candidate": null,
+        "expected": null,
+        "oracle": null
+      },
+      "semantic_gate": true
+    }
+  },
+  "status": "blocked",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "timeout_seconds": 1200,
+    "uv": {
+      "executable": "uv.EXE",
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_exit_code": 0,
+      "version_output_sha256": "ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+  }
+}
